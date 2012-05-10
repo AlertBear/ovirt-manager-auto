@@ -42,7 +42,7 @@ DEF_TIMEOUT = 900
 DEF_SLEEP = 10
 ''' A default sleep for waitForXPath, waitForRestElemStatus, ... '''
 api = None
-sdkInit = False
+sdkInit = None
 
 def dump_entity(ds, root_name):
 
@@ -97,12 +97,32 @@ class APIUtil(object):
         return
 
     @abc.abstractmethod
-    def syncAction(self, actions, action, positive, **kwargs):
+    def syncAction(self, entity, action, positive, **kwargs):
         return
 
     @property
     def logger(self):
         return logging.getLogger(self.collection_name)
+    
+
+    def makeAction(self, async, expiry, **params):
+        '''
+        Description: build action (post body for actions urls)
+        Author: edolinin
+        Parameters:
+           * async - type of action (synchronic or not)
+           * expiry - action axpiration time
+        Return: action
+        '''
+
+        action = Action()
+        action.async = str(async).lower()
+        action.grace_period = GracePeriod()
+        action.grace_period.expiry = expiry
+        action.grace_period.absolute = 'false'
+        for p in params:
+            setattr(action, p, params[p])
+        return action
 
 
 
@@ -112,11 +132,13 @@ class SdkUtil(APIUtil):
         super(SdkUtil, self).__init__(element, collection)
 
         global sdkInit
-
+       
         if not sdkInit:
             user_with_domain = '{0}@{1}'.format(self.opts['user'], self.opts['user_domain'])
             self.api = sdkApi.API(self.opts['uri'], user_with_domain, self.opts['password'])
-            sdkInit = True
+            sdkInit = self.api
+        else:
+            self.api = sdkInit
 
     def get(self, collection=None, **kwargs):
 
@@ -172,7 +194,7 @@ class SdkUtil(APIUtil):
     
 
     def __set_property(self, entity, property_name, property_value):
-        exec('entity.set_%s(property_value)' % property_name)
+        getattr(entity, 'set_' + property_name)(property_value)
 
 
     def update(self, origEntity, newEntity, positive):
@@ -257,15 +279,22 @@ class SdkUtil(APIUtil):
     
 
     def __getCollection(self, collection_name):
-        collection = None
-        exec('collection = self.api.' + collection_name)
-
-        return collection
+        return getattr(self.api, collection_name)
     
 
-    def syncAction(self, actions, action, positive, async=False,
-                positive_async_stat=[202], positive_sync_stat=[200,201], negative_stat=[500, 400], **params):
-        return
+    def syncAction(self, entity, action, positive, async=False, **params):
+
+        act = self.makeAction(async, 10, **params)
+
+        try:
+            getattr(entity, action)(act)
+        except RequestError as e:
+            if positive:
+                errorMsg = "Failed to run an action '{0}', status: {1},reason: {2}, details: {3}"
+                self.logger.error(errorMsg.format(action, e.status, e.reason, e.detail))
+                return False
+      
+        return True
 
 APIUtil.register(SdkUtil)
             
@@ -515,7 +544,7 @@ class RestUtil(APIUtil):
         Return: query results
         '''
 
-        href = self.links[self.collection_name]
+        href = self.links[self.collection_name + '/search']
         templ = template_parser.URITemplate(href)
         qhref = templ.sub({"query": constraint})
 
@@ -529,7 +558,7 @@ class RestUtil(APIUtil):
         return getattr(parse(ret['body']), self.element_name)
 
 
-    def syncAction(self, actions, action, positive, async=False,
+    def syncAction(self, entity, action, positive, async=False,
                 positive_async_stat=[202], positive_sync_stat=[200,201], negative_stat=[500, 400], **params):
         '''
         Description: run synchronic action
@@ -542,13 +571,14 @@ class RestUtil(APIUtil):
         Return: status (True if Action test succeeded, False otherwise)
         '''
 
+        actions = entity.actions
         if validator.compareActionLink(actions, action, self.logger):
 
             def getActionHref(actions, action):
                 results = filter(lambda x: x.get_rel()==action, actions.get_link())
                 return results[0].get_href()
 
-            actionHref = getActionHref(actions, action)
+            actionHref = getActionHref(entity.actions, action)
             actionBody = dump_entity(self.makeAction(async, 10, **params),
                                     'action')
 
@@ -589,26 +619,6 @@ class RestUtil(APIUtil):
 
         else:
             return False
-
-
-    def makeAction(self, async, expiry, **params):
-        '''
-        Description: build action (post body for actions urls)
-        Author: edolinin
-        Parameters:
-           * async - type of action (synchronic or not)
-           * expiry - action axpiration time
-        Return: action
-        '''
-
-        action = Action()
-        action.async = str(async).lower()
-        action.grace_period = GracePeriod()
-        action.grace_period.expiry = expiry
-        action.grace_period.absolute = 'false'
-        for p in params:
-            setattr(action, p, params[p])
-        return action
 
 
     def getEtreeParsed(self, link):

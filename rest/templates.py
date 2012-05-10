@@ -21,7 +21,7 @@ from utils.data_structures import StorageDomain
 from utils.restutils import get_api
 
 ELEMENT = 'template'
-COLLECTION = 'template'
+COLLECTION = 'templates'
 util = get_api(ELEMENT, COLLECTION)
 
 
@@ -38,13 +38,10 @@ def exportTemplate(positive, template, storagedomain, exclusive='false'):
     '''
 
     templObj = util.find(template)
-
+ 
     sd = StorageDomain(name=storagedomain)
 
-    print dir(templObj)
-
     actionParams = dict(storage_domain=sd, exclusive=exclusive)
-    if not util.syncAction(templObj.actions, "export", positive, **actionParams):
-        return not positive
-
-    return True
+    
+    return util.syncAction(templObj, "export", positive, **actionParams)
+      
