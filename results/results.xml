@@ -1,0 +1,51 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdk logfile="/var/tmp/sdkTests20120510_105918.log" testfile="simple.xml">
+  <Datacenters>
+    <start_time>2012-05-10 10:59:18</start_time>
+    <end_time>2012-05-10 10:59:18</end_time>
+    <status>Pass</status>
+    <test_name>Create Default Data Center</test_name>
+    <test_positive>TRUE</test_positive>
+    <iter_num>1</iter_num>
+    <tcms_test_case></tcms_test_case>
+    <test_parameters>name='DefaultRestLena14', storage_type='nfs', version='3.0'</test_parameters>
+    <test_description></test_description>
+    <test_type>sdk</test_type>
+  </Datacenters>
+  <Datacenters>
+    <start_time>2012-05-10 10:59:18</start_time>
+    <end_time>2012-05-10 10:59:19</end_time>
+    <status>Pass</status>
+    <test_name>Update Data Center Name and Description</test_name>
+    <test_positive>TRUE</test_positive>
+    <iter_num>2</iter_num>
+    <tcms_test_case></tcms_test_case>
+    <test_parameters>datacenter='DefaultRestLena14', name='RestDataCenterUpdated', description='Data Center Description'</test_parameters>
+    <test_description></test_description>
+    <test_type>sdk</test_type>
+  </Datacenters>
+  <Datacenters>
+    <start_time>2012-05-10 10:59:19</start_time>
+    <end_time>2012-05-10 10:59:19</end_time>
+    <status>Pass</status>
+    <test_name>Search for Data Centers</test_name>
+    <test_positive>TRUE</test_positive>
+    <iter_num>3</iter_num>
+    <tcms_test_case></tcms_test_case>
+    <test_parameters>query_key='type', query_val='nfs', key_name='storage_type'</test_parameters>
+    <test_description></test_description>
+    <test_type>rest</test_type>
+  </Datacenters>
+  <Datacenters>
+    <start_time>2012-05-10 10:59:19</start_time>
+    <end_time>2012-05-10 10:59:19</end_time>
+    <status>Pass</status>
+    <test_name>Remove Data Centers</test_name>
+    <test_positive>TRUE</test_positive>
+    <iter_num>4</iter_num>
+    <tcms_test_case></tcms_test_case>
+    <test_parameters>datacenter='RestDataCenterUpdated'</test_parameters>
+    <test_description></test_description>
+    <test_type>rest</test_type>
+  </Datacenters>
+</sdk>
