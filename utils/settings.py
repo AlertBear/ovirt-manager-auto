@@ -192,7 +192,6 @@ def readTestRunOpts(path, redefs):
     opts['parallel_configs'] = runSection.get('parallel_configs', [])
     opts['parallel_sections'] = runSection.get('parallel_sections', [])
 
-    opts['source_folder'] = runSection['source_folder']
     opts['engine'] = runSection['engine']
 
     timestamp = strftime('%Y%m%d_%H%M%S')

@@ -20,7 +20,7 @@
 from utils.data_structures import Cluster, Version, MemoryOverCommit, \
     TransparentHugePages, MemoryPolicy, SchedulingPolicyThresholds, \
     SchedulingPolicy, ErrorHandlingOptions, CPU
-from utils.restutils import TestUtils
+from utils.api_utils import TestUtils
 import logging
 import re
 from ovirtsdk.api import API

@@ -18,27 +18,26 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 
-class RESTException(Exception):
+class APIException(Exception):
     '''
-    All exceptions specific for the RHEVM REST framework should inherit from
-    this.
+    All exceptions specific for the framework should inherit from this.
     '''
     pass
 
-class EntityNotFound(RESTException):
+class EntityNotFound(APIException):
     '''
     Raised when a RHEVM REST framework entity like a Host, DataCenter or Storage
     domain, etc, couldn't be found.
     '''
     pass
 
-class RESTTimeout(RESTException):
+class APITimeout(APIException):
     '''
-    Raised when some RHEVM REST action timeouts.
+    Raised when some action timeouts.
     '''
     pass
 
-class RestApiCommandError(Exception):
+class APICommandError(Exception):
     '''
     Raised when running commands via RestTestRunnerWrapper
     '''

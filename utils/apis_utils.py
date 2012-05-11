@@ -20,7 +20,7 @@ import http
 import template_parser
 import validator
 import time
-from restutils_exceptions import EntityNotFound, RESTTimeout, RestApiCommandError
+from apis_exceptions import EntityNotFound, APITimeout, APICommandError
 from lxml import etree
 from time import strftime
 import os
@@ -37,14 +37,17 @@ from ovirtsdk.infrastructure.errors import RequestError
 XSD_FILE = os.path.join(os.path.dirname(__file__), '..', 'conf/api.xsd')
 MEDIA_TYPE = 'application/xml'
 DEF_TIMEOUT = 900
-''' A default timeout for waitForXPath, waitForRestElemStatus, ... '''
+''' A default timeout for waitForXPath, waitForElemStatus, ... '''
 
 DEF_SLEEP = 10
-''' A default sleep for waitForXPath, waitForRestElemStatus, ... '''
+''' A default sleep for waitForXPath, waitForElemStatus, ... '''
 api = None
 sdkInit = None
 
 def dump_entity(ds, root_name):
+    '''
+    Dump DS element to xml format
+    '''
 
     old_stdout = sys.stdout
     sys.stdout = mystdout = StringIO()
@@ -54,6 +57,9 @@ def dump_entity(ds, root_name):
 
 
 def get_api(element, collection):
+    '''
+    Fetch proper API instance based on engine type
+    '''
     
     global api
     if settings.opts['engine'] == 'rest':
@@ -65,6 +71,9 @@ def get_api(element, collection):
 
 
 class APIUtil(object):
+    '''
+    Basic class for API functionality
+    '''
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, element, collection, **kwargs):
@@ -100,6 +109,10 @@ class APIUtil(object):
     def syncAction(self, entity, action, positive, **kwargs):
         return
 
+    @abc.abstractmethod
+    def waitForElemStatus(self, elm, status, **kwargs):
+        return
+
     @property
     def logger(self):
         return logging.getLogger(self.collection_name)
@@ -127,6 +140,9 @@ class APIUtil(object):
 
 
 class SdkUtil(APIUtil):
+    '''
+    Implements SDK APIs methods
+    '''
 
     def __init__(self, element, collection):
         super(SdkUtil, self).__init__(element, collection)
@@ -141,6 +157,13 @@ class SdkUtil(APIUtil):
             self.api = sdkInit
 
     def get(self, collection=None, **kwargs):
+        '''
+        Description: get collection by its name
+        Author: edolinin
+        Parameters:
+           * collection - collection name to get
+        Return: parsed GET response
+        '''
 
         if not collection:
             collection = self.collection_name
@@ -152,6 +175,18 @@ class SdkUtil(APIUtil):
 
 
     def create(self, entity, positive, expectedEntity=None, incrementBy=1, async=False):
+        '''
+        Description: creates a new element
+        Author: edolinin
+        Parameters:
+           * entity - entity for post body
+           * positive - if positive or negative verification should be done
+           * expectedEntity - if there are some expected entity different from sent
+           * incrementBy - increment by number of elements
+           * async -sycnh or asynch request
+        Return: POST response (None on parse error.),
+                status (True if POST test succeeded, False otherwise.)
+        '''
 
         collection = self.__getCollection(self.collection_name)
         initialCollectionSize = len(collection.list())
@@ -194,10 +229,22 @@ class SdkUtil(APIUtil):
     
 
     def __set_property(self, entity, property_name, property_value):
+        '''
+        Set property for sdk object
+        '''
         getattr(entity, 'set_' + property_name)(property_value)
 
 
     def update(self, origEntity, newEntity, positive):
+        '''
+        Description: update an element
+        Author: edolinin
+        Parameters:
+           * origEntity - original entity
+           * newEntity - entity for post body
+           * positive - if positive or negative verification should be done
+        Return: PUT response, status (True if PUT test succeeded, False otherwise)
+        '''
                     
         response = None
         for attr in newEntity.__dict__.keys():
@@ -233,6 +280,14 @@ class SdkUtil(APIUtil):
 
 
     def delete(self, entity, positive, **kwargs):
+        '''
+        Description: delete an element
+        Author: edolinin
+        Parameters:
+           * entity - entity to delete
+           * positive - if positive or negative verification should be done
+        Return: status (True if DELETE test succeeded, False otherwise)
+        '''
 
         response = None
         try:
@@ -251,6 +306,13 @@ class SdkUtil(APIUtil):
 
 
     def query(self, constraint, **kwargs):
+        '''
+        Description: run search query
+        Author: edolinin
+        Parameters:
+           * constraint - query for search
+        Return: query results
+        '''
 
         self.logger.debug("SEARCH content is --  collection:%(col)s query:%(q)s" \
                         % {'col': self.collection_name, 'q': constraint})
@@ -263,6 +325,16 @@ class SdkUtil(APIUtil):
 
 
     def find(self, val, attribute='name', absLink=True):
+        '''
+        Description: find entity by name
+        Author: edolinin
+        Parameters:
+           * val - name of entity to look for
+           * attribute - attribute name for searching
+           * absLink - absolute link or just a  suffix
+        Return: found entity or exception EntityNotFound
+        '''
+
         
         collection = self.__getCollection(self.collection_name)
         results = None
@@ -279,10 +351,23 @@ class SdkUtil(APIUtil):
     
 
     def __getCollection(self, collection_name):
+        '''
+        Returns sdk collection object
+        '''
         return getattr(self.api, collection_name)
     
 
     def syncAction(self, entity, action, positive, async=False, **params):
+        '''
+        Description: run synchronic action
+        Author: edolinin
+        Parameters:
+           * entity - target entity
+           * action - desired action
+           * positive - if positive or negative verification should be done
+           * asynch - synch or asynch action
+        Return: status (True if Action test succeeded, False otherwise)
+        '''
 
         act = self.makeAction(async, 10, **params)
 
@@ -295,6 +380,55 @@ class SdkUtil(APIUtil):
                 return False
       
         return True
+    
+
+    def waitForElemStatus(self, elm, status, timeout=DEF_TIMEOUT,
+                                        ignoreFinalStates=False):
+        '''
+        Description: Wait till the sdk element (the Host, VM) gets the desired
+        status or till timeout.
+
+        Author: edolinin
+        Parameters:
+            * elm - sdk element to probe for a status
+            * status - a string represents status to wait for. it could be
+                       multiple statuses as a string with space delimiter
+                       Example: "active maintenance inactive"
+            * timeout - maximum time to continue status probing
+        Return: status (True if element get the desired status, False otherwise)
+        '''
+
+        handleTimeout = 0
+        while handleTimeout <= timeout:
+            
+            if not hasattr(elm, 'status'):
+                self.logger.error("Element %s doesn't have attribute status"\
+                                % (self.element_name))
+                return False
+
+            if elm.get_status().state.lower() in status.lower().split():
+                self.logger.info("%s status is '%s'" \
+                                % (self.element_name, elm.get_status().state))
+                return True
+            elif elm.status.state.find("fail") != -1 and not ignoreFinalStates:
+                self.logger.error("%s status is '%s'"\
+                                % (self.element_name, elm.get_status().state))
+                return False
+            elif elm.status.state.find("up") != -1 and not ignoreFinalStates:
+                self.logger.error("%s status is '%s'"\
+                                % (self.element_name, elm.get_status().state))
+                return False
+            else:
+                self.logger.debug("Waiting for status '%s', currently status is '%s' "\
+                                % (status, elm.get_status().state))
+                time.sleep(DEF_SLEEP)
+                handleTimeout = handleTimeout + DEF_SLEEP
+                continue
+
+        self.logger.error("Interrupt because of timeout. %s status is '%s'." \
+                        % (self.element_name, elm.status.state))
+        return False
+
 
 APIUtil.register(SdkUtil)
             
@@ -346,6 +480,7 @@ class RestUtil(APIUtil):
         Author: edolinin
         Parameters:
            * href - url for get request
+           * elm - element name
            * absLink - if href url is absolute url (True) or just a suffix
         Return: parsed GET response
         '''
@@ -366,20 +501,28 @@ class RestUtil(APIUtil):
 
         self.logger.debug("Response body for GET request is: %s " % ret['body'])
 
-        return getattr(parse(ret['body']), elm)
+        if hasattr(parse(ret['body']), elm):
+            return getattr(parse(ret['body']), elm)
+        else:
+            return parse(ret['body'])
         
 
     def create(self, entity, positive,
                 expected_pos_status=[200, 201, 202], expected_neg_status=[500, 400],
                 expectedEntity=None, incrementBy=1, async=False):
         '''
-        Description: implements POST method and verify the response according to test type
+        Description: implements POST method and verify the response
         Author: edolinin
         Parameters:
-           * href - url for POST request
            * entity - entity for post body
-           * positive - if positive (codes 200,201,202) or negative (code 500,400) verification should be done
-        Return: POST response (None on parse error.), status (True if POST test succeeded, False otherwise.)
+           * positive - if positive or negative verification should be done
+           * expected_pos_status - list of expected statuses for positive request
+           * expected_neg_status - list of expected statuses for negative request
+           * expectedEntity - if there are some expected entity different from sent
+           * incrementBy - increment by number of elements
+           * async -sycnh or asynch request
+        Return: POST response (None on parse error.),
+                status (True if POST test succeeded, False otherwise.)
         '''
 
         href = self.links[self.collection_name]
@@ -433,12 +576,14 @@ class RestUtil(APIUtil):
     def update(self, origEntity, newEntity, positive, expected_pos_status=[200, 201],
                                         expected_neg_status=[500, 400]):
         '''
-        Description: implements PUT method and verify the response according to test type
+        Description: implements PUT method and verify the response
         Author: edolinin
         Parameters:
-           * entity - entity for post body
-           * expected - list of valid HTTP codes for PUT response
-           * positive - if positive (codes from 'expected' list) or negative (code 500,400) verification should be done
+           * origEntity - original entity
+           * newEntity - entity for post body
+           * positive - if positive or negative verification should be done
+           * expected_pos_status - list of expected statuses for positive request
+           * expected_neg_status - list of expected statuses for negative request
         Return: PUT response, status (True if PUT test succeeded, False otherwise)
         '''
 
@@ -476,12 +621,15 @@ class RestUtil(APIUtil):
     def delete(self, entity, positive, body=None, element_name=None,
                 expected_pos_status=[200, 202, 204], expected_neg_status=[500, 400]):
         '''
-        Description: implements DELETE method and verify the reponse according to test type
+        Description: implements DELETE method and verify the reponse
         Author: edolinin
         Parameters:
-           * href - url for DELETE request (specific entity)
-           * positive - if positive (code 204) or negative (code 500,400) verification should be done
-           * entity - entity for post body
+           * entity - entity to delete
+           * positive - if positive or negative verification should be done
+           * body - entity for post body
+           * element_name - element name
+           * expected_pos_status - list of expected statuses for positive request
+           * expected_neg_status - list of expected statuses for negative request
         Return: status (True if DELETE test succeeded, False otherwise)
         '''
 
@@ -515,9 +663,9 @@ class RestUtil(APIUtil):
         Description: find entity by name
         Author: edolinin
         Parameters:
-           * href - url for search in
-           * name - name of entity to look for
+           * val - name of entity to look for
            * attribute - attribute name for searching
+           * absLink - absolute link or just a  suffix
         Return: found entity or exception EntityNotFound
         '''
 
@@ -534,13 +682,13 @@ class RestUtil(APIUtil):
         return results
 
 
-    def query(self, constraint,  expected_pos_status=[200, 201]):
+    def query(self, constraint,  expected_status=[200, 201]):
         '''
         Description: run search query
         Author: edolinin
         Parameters:
-           * href - url for search
-           * name - query
+           * constraint - query for search
+           * expected_status - list of expected statuses for positive request
         Return: query results
         '''
 
@@ -553,21 +701,25 @@ class RestUtil(APIUtil):
         self.logger.debug("Response body for QUERY request is: %s " % ret['body'])
 
         self.validateResponseViaXSD(href, ret)
-        validator.compareResponseCode(ret, expected_pos_status, self.logger)
+        validator.compareResponseCode(ret, expected_status, self.logger)
 
         return getattr(parse(ret['body']), self.element_name)
 
 
     def syncAction(self, entity, action, positive, async=False,
-                positive_async_stat=[202], positive_sync_stat=[200,201], negative_stat=[500, 400], **params):
+                positive_async_stat=[202], positive_sync_stat=[200,201],
+                negative_stat=[500, 400], **params):
         '''
         Description: run synchronic action
         Author: edolinin
         Parameters:
-           * actions - all allowed actions for an object
+           * entity - target entity
            * action - desired action
-           * positive - if positive (codes 201,202, status - COMPLETE)
-            or negative (code 500,400, status - FAILED) verification should be done
+           * positive - if positive or negative verification should be done
+           * asynch - synch or asynch action
+           * positive_async_stat - asynch expected status
+           * positive_sync_stat - synch expected status
+           * negative_stat - negative test expected status
         Return: status (True if Action test succeeded, False otherwise)
         '''
 
@@ -655,21 +807,19 @@ class RestUtil(APIUtil):
                 return True
 
 
-    def waitForRestElemStatus(self, restElement, status,
-                              timeout=DEF_TIMEOUT, restElementName='host',
-                              ignoreFinalStates=False):
+    def waitForElemStatus(self, restElement, status,
+                              timeout=DEF_TIMEOUT, ignoreFinalStates=False):
         '''
         Description: Wait till the rest element (the Host, VM) gets the desired
         status or till timeout.
 
         Author: edolinin
         Parameters:
-            * restElement - rest dom element to probe for a status
+            * restElement - rest element to probe for a status
             * status - a string represents status to wait for. it could be
                        multiple statuses as a string with space delimiter
                        Example: "active maintenance inactive"
             * timeout - maximum time to continue status probing
-            * restElementName - the text string in the name sub-tag of the element
         Return: status (True if element get the desired status, False otherwise)
         '''
 
@@ -684,21 +834,26 @@ class RestUtil(APIUtil):
                 return False
 
             if restElement.status.state.lower() in status.lower().split():
-                self.logger.info("%s status is %s" % (restElementName, restElement.status.state))
+                self.logger.info("%s status is '%s'" \
+                                % (self.element_name, restElement.status.state))
                 return True
             elif restElement.status.state.find("fail") != -1 and not ignoreFinalStates:
-                self.logger.error("%s status is  %s" % (restElementName, restElement.status.state))
+                self.logger.error("%s status is '%s'"\
+                                % (self.element_name, restElement.status.state))
                 return False
             elif restElement.status.state.find("up") != -1 and not ignoreFinalStates:
-                self.logger.error("%s status is  %s" % (restElementName, restElement.status.state))
+                self.logger.error("%s status is '%s'"\
+                                % (self.element_name, restElement.status.state))
                 return False
             else:
-                self.logger.debug("Waiting for status %s currently status is %s " % (status, restElement.status.state))
+                self.logger.debug("Waiting for status '%s' currently status is '%s' "\
+                                % (status, restElement.status.state))
                 time.sleep(DEF_SLEEP)
                 handleTimeout = handleTimeout + DEF_SLEEP
                 continue
 
-        self.logger.error("Interrupt because of timeout. %s status is %s." % (restElementName, restElement.status.state))
+        self.logger.error("Interrupt because of timeout. %s status is '%s'."\
+                        % (self.element_name, restElement.status.state))
         return False
 
 APIUtil.register(RestUtil)
@@ -740,7 +895,7 @@ class TimeoutingSampler(object):
         self.last_sample_time = None
         ''' Time of last sample. '''
 
-        self.timeout_exc_cls = RESTTimeout
+        self.timeout_exc_cls = APITimeout
         ''' Class of exception to be raised.  '''
         self.timeout_exc_args = ()
         ''' An args for __init__ of the timeout exception. '''
@@ -770,7 +925,7 @@ class RestTestRunnerWrapper():
         restWrapper = RestTestRunnerWrapper('10.35.113.80')
         try:
             status = restWrapper.runCommand('rest.datacenters.addDataCenter','true',name='test',storage_type='NFS',version='2.2')
-        except RestApiCommandError:
+        except APICommandError:
             ...
 
     Author: edolinin
@@ -821,7 +976,7 @@ class RestTestRunnerWrapper():
         * args - list of function's non-keyword arguments
         * kwargs - dictionary with function's keyword arguments
 
-        Exceptions: raises RestApiCommandError in case of error
+        Exceptions: raises APICommandError in case of error
 
         '''
 
@@ -842,4 +997,4 @@ class RestTestRunnerWrapper():
         try:
             return eval(cmd)
         except Exception as e:
-            raise RestApiCommandError(cmd, e)
+            raise APICommandError(cmd, e)

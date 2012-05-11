@@ -17,8 +17,8 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-from utils.data_structures import DataCenter, Version, StorageDomain
-from utils.restutils import get_api
+from utils.data_structures import DataCenter, Version
+from utils.apis_utils import get_api
 import re
 from utils.validator import compareCollectionSize
 
@@ -78,7 +78,6 @@ def removeDataCenter(positive, datacenter):
      Author: edolinin
      Parameters:
         * datacenter - name of a data center that should removed
-        * force - force removal (default is None)
      Return: status (True if data center was removed properly, False otherwise)
      '''
 
@@ -96,9 +95,9 @@ def searchForDataCenter(positive, query_key, query_val, key_name):
     Parameters:
        * query_key - name of property to search for
        * query_val - value of the property to search for
-       * key_name - name of the property in data center object equivalent to query_key, required if expected_count is not set
-       * expected_count - expected number of data centers, if not provided - get automatically
-    Return: status (True if expected number of data centers equal to found by search, False otherwise)
+       * key_name - property in data center object equivalent to query_key
+    Return: status (True if expected number of data centers equal to
+                    found by search, False otherwise)
     '''
 
     expected_count = 0
@@ -119,23 +118,4 @@ def searchForDataCenter(positive, query_key, query_val, key_name):
 
     return status
 
-
-def activateHost(positive, host, wait=False):
-    '''
-    Description: activate host (set status to UP)
-    Author: edolinin
-    Parameters:
-       * host - name of a host to be activated
-    Return: status (True if host was activated properly, False otherwise)
-    '''
-    util = TestUtils('host', logger)
-
-    hostObj = util.find('hosts', host)
-    status = util.syncAction(hostObj.actions, "activate", positive)
-    if status and wait and positive:
-        testHostStatus = util.waitForRestElemStatus(hostObj, "up", 180)
-    else:
-        testHostStatus = True
-
-    return status and testHostStatus
 

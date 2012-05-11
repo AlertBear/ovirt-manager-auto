@@ -17,31 +17,30 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-from utils.data_structures import StorageDomain
-from utils.restutils import get_api
+from utils.data_structures import Host
+from utils.apis_utils import get_api
 
-ELEMENT = 'template'
-COLLECTION = 'templates'
+ELEMENT = 'host'
+COLLECTION = 'hosts'
 util = get_api(ELEMENT, COLLECTION)
 
 
-def exportTemplate(positive, template, storagedomain, exclusive='false'):
+def activateHost(positive, host, wait=False):
     '''
-    Description: export template
+    Description: activate host (set status to UP)
     Author: edolinin
     Parameters:
-       * template - name of template that should be exported
-       * storagedomain - name of export storage domain where to export to
-       * exclusive - 'true' if overwrite already existed templates with the same
-                       name, 'false' otherwise ('false' by default)
-    Return: status (True if template was exported properly, False otherwise)
+       * host - name of a host to be activated
+    Return: status (True if host was activated properly, False otherwise)
     '''
+    hostObj = util.find(host)
 
-    templObj = util.find(template)
- 
-    sd = StorageDomain(name=storagedomain)
-
-    actionParams = dict(storage_domain=sd, exclusive=exclusive)
+    status = util.syncAction(hostObj, "activate", positive)
     
-    return util.syncAction(templObj, "export", positive, **actionParams)
-      
+    if status and wait and positive:
+        testHostStatus = util.waitForElemStatus(hostObj, "up", 30)
+    else:
+        testHostStatus = True
+
+    return status and testHostStatus
+

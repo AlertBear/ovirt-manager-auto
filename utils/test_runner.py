@@ -17,7 +17,7 @@ from utils.configobj import ConfigObj
 from utils.reports import initializeLogger, DefaultResultsReporter, JUnitResultsReporter
 from utils.http import check_connection
 from utils.settings import opts, populateOptsFromArgv, readTestRunOpts
-from utils.restutils_exceptions import EntityNotFound
+from utils.apis_exceptions import EntityNotFound
 
 from lxml import etree
 
@@ -198,7 +198,6 @@ class TestRunner(object):
                 # action module path
                 ifActionDict = {    
                                 'test_action':  actionParams[0],
-                                'source_folder':    opts['source_folder'],
                                 }
                 funcPackage, funcName = self.resolveFuncPath(ifActionDict, opts)
 
@@ -350,8 +349,6 @@ class TestRunner(object):
             self.logger.error("Action is not implemented yet '{0}'".format(testCase['test_action']))
             return None, None
        
-        if not test_action[0] == 'utils':
-            test_action = [opts['source_folder']] + test_action
         modPath = '.'.join(test_action[:-1])
         funcName = test_action[-1]
         return modPath, funcName
