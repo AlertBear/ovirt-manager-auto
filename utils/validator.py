@@ -17,7 +17,22 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-from xml.dom.minidom import parseString
+from cStringIO import StringIO
+import sys
+import utils.data_structures as ds
+
+
+def dump_entity(ds, root_name):
+    '''
+    Dump DS element to xml format
+    '''
+
+    old_stdout = sys.stdout
+    sys.stdout = mystdout = StringIO()
+    ds.export(mystdout, 0, name_=root_name)
+    sys.stdout = old_stdout
+    return mystdout.getvalue()
+
 
 def compareResponseCode(resp, expected, logger):
     try:
@@ -62,157 +77,79 @@ def compareActionLink(actions, action,logger):
         logger.error("Required action : '%s' doesn't exist in actions links: %s " % (action, [lambda x: x.get_rel(), actions.get_link()]))
         return False
 
+def getAttibuteValue(elm, attrName):
 
-def compareEntitiesDumps(entityExp, entityAct, logger):
-    """
-    Description: Function to compare 2 xml strings
+    return getattr(elm, 'get_' + attrName)()
+
+
+def compareElements(expElm, actElm, logger, root):
+    '''
+    Recursive function for elements comparison,
+    elements are compared vis DS scheme
     Parameters:
-     * entityExp - expected xml string
-     * entityAct - actual xml string
-     * logger - logger instance
-    Return: True if comparison succeeded, False otherwise
-    """
+    * expElm - expected element
+    * actElm - actual element
+    * logger - logger instance
+    * root - name of the root node
+    Returns: True is elements are equal, False otherwise
+    '''
 
-    try:
-        xmlExp = parseString(entityExp)
-        xmlAct = parseString(entityAct)
+    equal = True
 
-        logger.debug("Running entity validation")
-
-        if not elementEqual(xmlExp.documentElement, xmlExp, xmlAct, logger):
-            raise AssertionError
-
-        logger.debug("Compared entities are equal")
+    if not actElm:
+        logger.warn("Attribute '{0}' doesn't exist in actual results".format(root))
         return True
 
-    except AssertionError:
-        logger.error("Compared entities are not equal")
-        return False
+    elmClass = expElm.__class__.__name__
+    elmInstance = getattr(ds, elmClass)()
 
+    if elmInstance.superclass:
+        # merge element's and its superclass dict items
+        elmInstance.member_data_items_.update(elmInstance.superclass.member_data_items_)
+    
+    attrList = elmInstance.member_data_items_.keys()
+   
+    for attr in attrList:
+        attrExpVal = getAttibuteValue(expElm, attr)
+        attrActVal = getAttibuteValue(actElm, attr)
 
-def elementEqual(mainNode, xmlExp, xmlAct, logger):
-    """
-    Description: Recursive function to compare expected and actual xml objects.
-    Compared only nodes that appear in both expected and actual xmls.
-    If some nodes don't appear in actual xml objects - comparison
-    just skip them since they may appear as links or as nodes attributes.
-    Parameters:
-     * mainNode - main node to start from
-     * xmlExp - expected xml dom object
-     * xmlAct - actual xml dom object
-     * logger - logger instance
-    Return: True if comparison succeeded, False otherwise
-    """
+        attrType = elmInstance.member_data_items_[attr].get_data_type()
+        attrContainer = elmInstance.member_data_items_[attr].get_container()
+        
+        if attrExpVal is not None:
+            if attrActVal is None:
+                MSG = "Attribute '{0}->{1}' doesn't exist in actual results"
+                logger.warn(MSG.format(root, attr))
+                continue
 
-    status = True
+            if attrType.startswith('xs:'):
+                if attrContainer and isinstance(attrExpVal, list):
+                    attrExpVal = attrExpVal[0]
 
-    # these attributes should not be compared
-    exclude_from_check = [['vm','template','id'],]
+                if attrExpVal==attrActVal:
+                    MSG = "Property '{0}->{1}' has correct value: {2}"
+                    logger.info(MSG.format(root, attr, attrExpVal))
+                else:
+                    equal = False
+                    MSG = "Property '{0}->{1}' has wrong value, expected: {2};actual: {3}"
+                    logger.error(MSG.format(root, attr, attrExpVal, attrActVal))
+            else:
+                nodeName = "{0}->{1}".format(root, attr)
+                if isinstance(attrExpVal, list):
+                    for i in range(0,len(attrExpVal)):
+                        if i > len(attrActVal)-1:
+                            MSG = "Attribute '{0}' with index {1} doesn't exist in actual results"
+                            logger.warn(MSG.format(nodeName, i))
+                            continue
+                        if not compareElements(attrExpVal[i], attrActVal[i], logger, nodeName):
+                            equal = False
+                else:
+                    if not compareElements(attrExpVal, attrActVal, logger, nodeName):
+                        equal = False
 
-    for node in mainNode.childNodes:
-            # take relevant xml nodes only
-            if node.nodeType == 1 and xmlExp.getElementsByTagName(node.tagName) \
-            and node.tagName!='link' and node.tagName!='status':
+    return equal
 
-                # expected xml node
-                for i in range(0, len(xmlExp.getElementsByTagName(node.tagName))):
-                    nodeExp = xmlExp.getElementsByTagName(node.tagName)[i].firstChild
-                    # check for existence of this node in xmlAct
-                    if xmlAct.getElementsByTagName(node.tagName):
-                        try:
-                            nodeAct = xmlAct.getElementsByTagName(node.tagName)[i].firstChild
-
-                            if nodeExp and nodeExp.nodeValue:
-                                if nodeAct: # if actual node exists - run the comparison
-                                    if nodeExp.nodeValue == nodeAct.nodeValue:
-                                        logger.debug("Node '{0}->{1}' is OK: {2}".format(mainNode.nodeName,
-                                                                        node.tagName, nodeExp.nodeValue))
-                                    else:
-                                        status = False
-                                        logger.error("Node '{0}->{1}' has wrong value, expected: {2}, actual`: {3}".format(
-                                                    mainNode.nodeName, node.tagName, nodeExp.nodeValue, nodeAct.nodeValue))
-                                else:
-                                    continue
-
-                            elif nodeExp: # node has children nodes
-                                if not elementEqual(node, xmlExp.getElementsByTagName(node.tagName)[i],
-                                xmlAct.getElementsByTagName(node.tagName)[i], logger):
-                                    status = False
-
-                            if node.attributes:
-                                nodeAtrExp = node
-                                nodeAtrAct = xmlAct.getElementsByTagName(node.tagName)[0]
-                            else:
-                                nodeAtrExp = nodeExp
-                                nodeAtrAct = nodeAct
-
-                            # compare nodes attributes
-                            if nodeAtrExp and nodeAtrAct:
-                                if nodeAtrExp.attributes and nodeAtrAct.attributes:
-                                    for attributeName in nodeAtrExp.attributes.keys():
-                                        if nodeAtrExp.attributes[attributeName].value == nodeAtrAct.attributes[attributeName].value:
-                                            logger.debug("Node '{0}->{1}->{2}' is OK: {3}".format(mainNode.nodeName,
-                                                            node.tagName, nodeAtrExp.attributes[attributeName].name,
-                                                            nodeAtrExp.attributes[attributeName].value))
-                                        else:
-                                            if mainNode.nodeName!="supported_versions" and \
-                                            [mainNode.nodeName, node.tagName, nodeAtrExp.attributes[attributeName].name] not in exclude_from_check:
-                                                logger.error("Node '{0}->{1}->{2}' has wrong value, expected: {3}, actual: {4}".format(
-                                                        mainNode.nodeName, node.tagName, nodeAtrExp.attributes[attributeName].name,
-                                                        nodeAtrExp.attributes[attributeName].value, nodeAtrAct.attributes[attributeName].value))
-                                                status = False
-                            elif nodeAtrExp and not nodeAtrAct:
-                                logger.error("Node '{0}->{1}->{2}' doesn't exist".format(mainNode.nodeName,
-                                                                        node.tagName, nodeAtrExp.nodeName))
-                                status = False
-                        except IndexError:
-                            logger.error("Node '{0}->{1}->{2}' doesn't exist".format(mainNode.nodeName,
-                                                                        node.tagName, nodeExp.nodeValue))
-                            status = False
-
-    return status
-
-
-def compareNodesAttributes(doc,nodeName,nodeAttribute,expectedVal,logger):
-
-    docXml = parseString(doc)
-    compElement = docXml.getElementsByTagName(nodeName)[0]
-    compAttribute = compElement.getElementsByTagName(nodeAttribute)[0].firstChild
-
-    if compAttribute.nodeValue == expectedVal:
-        logger.debug("Attributes '" + nodeAttribute + "' are equal for '" + nodeName + "': " + expectedVal)
-        status = True
-    else:
-        logger.error("Attributes '" + nodeAttribute + "' are no equal for '" + nodeName + "', expected: '" + expectedVal + "', actual: '" + compAttribute.nodeValue + "'")
-        status = False
-
-    return status
-
-
-def compareNodesAttributesInSet(doc,nodeName,nodeAttribute,expectedValSet,logger):
-
-    docXml = parseString(doc)
-    compElements = docXml.getElementsByTagName(nodeName)
-    status = True
-
-    for compElement in compElements:
-        compAttribute = compElement.getElementsByTagName(nodeAttribute)[0].firstChild
-
-        if compAttribute.nodeValue in expectedValSet:
-            logger.debug("Attributes '" + nodeAttribute + "' are equal for '" + nodeName + "': " + compAttribute.nodeValue)
-        else:
-            logger.error("Attributes '" + nodeAttribute + "' doesn't exist for '" + nodeName + "', expected: '" + str(expectedValSet) + "', actual: '" + compAttribute.nodeValue+ "'")
-            status = False
-
-    if len(compElements) == len(expectedValSet):
-        logger.debug("Attributes set size is correct: " + str(len(compElements)))
-    else:
-        logger.error("Attributes set size is wrong, expected:  %(exp)s, actual: %(act)s" % {'exp': len(expectedValSet) , 'act': len(compElements)})
-        status = False
-
-    return status
-
-
+        
 def compareStrings(positive,strA=None,strB=None):
     """
     Compare two strings

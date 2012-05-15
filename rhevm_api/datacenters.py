@@ -18,18 +18,21 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 from utils.data_structures import DataCenter, Version
-from utils.apis_utils import get_api
+from utils.test_utils import get_api
 import re
 from utils.validator import compareCollectionSize
+from utils.test_utils import split
+import threading
+import Queue
 
 ELEMENT = 'data_center'
 COLLECTION = 'datacenters'
 util = get_api(ELEMENT, COLLECTION)
 
+
 def addDataCenter(positive, **kwargs):
     '''
      Description: Add new data center
-     Author: edolinin
      Parameters:
         * name - name of a new data center
         * storage_type - storage type data center will support
@@ -50,7 +53,6 @@ def addDataCenter(positive, **kwargs):
 def updateDataCenter(positive, datacenter, **kwargs):
     '''
      Description: Update existed data center
-     Author: edolinin
      Parameters:
         * datacenter - name of a data center that should updated
         * name - new name of a data center (if relevant)
@@ -60,7 +62,13 @@ def updateDataCenter(positive, datacenter, **kwargs):
      '''
 
     dc = util.find(datacenter)
-    dcUpd = DataCenter(**kwargs)
+    dcUpd = DataCenter()
+
+    if 'name' in kwargs:
+        dcUpd.set_name(kwargs.pop('name'))
+
+    if 'description' in kwargs:
+        dcUpd.set_description(kwargs.pop('description'))
 
     if 'version' in kwargs:
         majorV, minorV = kwargs.pop('version').split(".")
@@ -83,15 +91,12 @@ def removeDataCenter(positive, datacenter):
 
     dc = util.find(datacenter)
 
-    status = util.delete(dc, positive)
-
-    return status
+    return util.delete(dc, positive)
 
 
 def searchForDataCenter(positive, query_key, query_val, key_name):
     '''
     Description: search for a data center by desired property
-    Author: edolinin
     Parameters:
        * query_key - name of property to search for
        * query_val - value of the property to search for
@@ -117,5 +122,54 @@ def searchForDataCenter(positive, query_key, query_val, key_name):
     status = compareCollectionSize(query_dcs, expected_count, util.logger)
 
     return status
+
+
+def removeDataCenterAsynch(positive, datacenter, queue):
+    '''
+     Description: Remove existed data center, using threading for removing of multiple objects
+     Parameters:
+        * datacenter - name of a data center that should removed
+        * queue - queue of threads
+     Return: status (True if data center was removed properly, False otherwise)
+     '''
+
+    try:
+        dc = util.find(datacenter)
+    except EntityNotFound:
+        queue.put(False)
+        return False
+
+    status = util.delete(dc,positive)
+    time.sleep(30)
+
+    queue.put(status)
+    
+
+def removeDataCenters(positive, datacenters):
+    '''
+     Description: Remove several data centers, using threading
+     Parameters:
+        * datacenters - name of data centers that should removed separated by comma
+     Return: status (True if all data centers were removed properly, False otherwise)
+     '''
+
+    datacentersList = split(datacenters)
+
+    status = True
+
+    threadQueue = Queue.Queue()
+    for dc in datacentersList:
+        thread = threading.Thread(target=removeDataCenterAsynch,
+            name="Remove DC " + dc, args=(positive, dc, threadQueue))
+        thread.start()
+        thread.join()
+
+    while not threadQueue.empty():
+        dcStatus = threadQueue.get()
+        if not dcStatus:
+            status = False
+
+    return status
+
 
 

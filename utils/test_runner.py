@@ -816,11 +816,6 @@ class TestSuiteRunner:
 
         results_reporters = default_reporter, junit_reporter
 
-        if self.type == 'dtest':
-            from rest_dtests.run import main as dtests_main
-            dtests_main(self.config)
-            return
-
         for test in opts['tests']:
             self.run_suite_test(test, results_reporters)
 

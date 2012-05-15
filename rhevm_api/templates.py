@@ -18,7 +18,7 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 from utils.data_structures import StorageDomain
-from utils.apis_utils import get_api
+from utils.test_utils import get_api
 
 ELEMENT = 'template'
 COLLECTION = 'templates'

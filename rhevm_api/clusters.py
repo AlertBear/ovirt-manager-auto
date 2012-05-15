@@ -20,17 +20,22 @@
 from utils.data_structures import Cluster, Version, MemoryOverCommit, \
     TransparentHugePages, MemoryPolicy, SchedulingPolicyThresholds, \
     SchedulingPolicy, ErrorHandlingOptions, CPU
-from utils.api_utils import TestUtils
-import logging
+from utils.test_utils import get_api
 import re
-from ovirtsdk.api import API
+from utils.validator import compareCollectionSize
+from utils.test_utils import split
+from Queue import Queue
+from threading import Thread
+from utils.apis_exceptions import EntityNotFound
+import time
+from rhevm_api.hosts import activateHost
 
-node_name = 'cluster'
-logger = logging.getLogger('clusters')
-util = TestUtils(node_name, logger)
-dcUtil = TestUtils('data_center', logger)
 
-api = API('https://aqua-rhel.qa.lab.tlv.redhat.com:8443/api/', 'vdcadmin@qa.lab.tlv.redhat.com', '123456')
+ELEMENT = 'cluster'
+COLLECTION = 'clusters'
+util = get_api(ELEMENT, COLLECTION)
+dcUtil = get_api('data_center', 'datacenters')
+hostUtil = get_api('host', 'hosts')
 
 
 def addCluster(positive, **kwargs):
@@ -61,13 +66,14 @@ def addCluster(positive, **kwargs):
                     (migrate, do_not_migrate, migrate_highly_available)
     Return: status (True if cluster was removed properly, False otherwise)
     '''
+    
     cpu = kwargs.pop('cpu')
     clusterCPU = CPU(id = cpu)
 
     majorV, minorV = kwargs.pop('version').split(".")
     cpuVersion = Version(major=majorV, minor = minorV)
 
-    clusterDC = dcUtil.find('datacenters', kwargs.pop('data_center'))
+    clusterDC = dcUtil.find(kwargs.pop('data_center'))
     
     overcommit = None
     transparentHugepages = None
@@ -76,9 +82,11 @@ def addCluster(positive, **kwargs):
         overcommit = MemoryOverCommit(percent = kwargs.pop('mem_ovrcmt_prc'))
 
     if kwargs.get('transparent_hugepages'):
-        transparentHugepages = TransparentHugePages(enabled = kwargs.pop('transparent_hugepages'))
+        transparentHugepages = TransparentHugePages(enabled = \
+                        kwargs.pop('transparent_hugepages'))
 
-    memoryPolicy = MemoryPolicy(overcommit = overcommit, transparent_hugepages = transparentHugepages)
+    memoryPolicy = MemoryPolicy(overcommit = overcommit,
+            transparent_hugepages = transparentHugepages)
 
     schedulingPolicy = None
     if kwargs.get('scheduling_policy'):
@@ -104,16 +112,12 @@ def addCluster(positive, **kwargs):
                 scheduling_policy = schedulingPolicy,
                 error_handling = errorHandling, **kwargs)
 
-    cl, status = util.create('clusters', cl, positive, 'clusters', api)
+    cl, status = util.create(cl, positive)
 
     return status
 
 
-def updateCluster(positive, cluster, name=None, cpu=None, data_center=None, 
-                  description=None, version=None, mem_ovrcmt_prc=None, 
-                  thrhld_low=None, thrhld_high=None, duration=None, 
-                  scheduling_policy=None, transparent_hugepages=None, 
-                  on_error=None):
+def updateCluster(positive, cluster, **kwargs):
     '''
     Description: Update cluster
     Author: edolinin
@@ -142,61 +146,70 @@ def updateCluster(positive, cluster, name=None, cpu=None, data_center=None,
                     (migrate, do_not_migrate, migrate_highly_available)
     Return: status (True if cluster was removed properly, False otherwise)
     '''
-    boolean_positive = positive.lower() == 'true'
-    cl = util.find(links['clusters'], cluster)
 
-    if name is not None:
-        cl.name = name
+    cl = util.find(cluster)
 
-    if description is not None:
-        cl.description = description
+    clUpd = Cluster()
 
-    if cpu is not None:
-        cl.cpu = fmt.CPU()
-        cl.cpu.id = cpu
+    if 'name' in kwargs:
+        clUpd.set_name(kwargs.pop('name'))
 
-    if version is not None:
-        cl.version = fmt.Version()
-        cl.version.major = version.split(".")[0]
-        cl.version.minor = version.split(".")[1]
+    if 'description' in kwargs:
+        clUpd.set_description(kwargs.pop('description'))
 
-    if data_center is not None:
-        cl.data_center = fmt.DataCenter()
-        cl.data_center.id = util.find(links['datacenters'], data_center).id
+    if 'version' in kwargs:
+        majorV, minorV = kwargs.pop('version').split(".")
+        clVersion = Version(major=majorV, minor = minorV)
+        clUpd.set_verion(clVersion)
 
-    if mem_ovrcmt_prc is not None or \
-    transparent_hugepages is not None:
-        cl.memory_policy = fmt.MemoryPolicy()
-        if mem_ovrcmt_prc is not None:
-            cl.memory_policy.overcommit = fmt.Overcommit()
-            cl.memory_policy.overcommit.percent = mem_ovrcmt_prc
-        if transparent_hugepages is not None:
-            cl.memory_policy.transparent_hugepages = fmt.transparent_hugepages()
-            cl.memory_policy.transparent_hugepages.enabled = transparent_hugepages
+    if 'cpu' in kwargs:
+        clCPU = CPU(id = kwargs.pop('cpu'))
+        clUpd.set_cpu(clCPU)
 
-    if on_error:
-        cl.error_handling = fmt.ErrorHandling()
-        cl.error_handling.on_error = on_error
+    if 'data_center' in kwargs:
+        clDC = dcUtil.find(kwargs.pop('data_center'))
+        clUpd.set_data_center(clDC)
 
-    if scheduling_policy is not None:
-        if not hasattr(cl, 'scheduling_policy'):
-            cl.scheduling_policy = fmt.SchedulingPolicy()
-        cl.scheduling_policy.policy = scheduling_policy
+    if 'mem_ovrcmt_prc' in kwargs or \
+    'transparent_hugepages' in kwargs:
 
-    # If at least one threshold tag parameter is set.
-    if max(thrhld_low, thrhld_high, duration) is not None:
-        assert hasattr(cl, 'scheduling_policy')
-        clspth = cl.scheduling_policy.thresholds = fmt.Thresholds()
-        if thrhld_low:
-            clspth.low = thrhld_low
-        if thrhld_high:
-            clspth.high = thrhld_high
-        if duration:
-            clspth.duration = duration
+        if kwargs.get('mem_ovrcmt_prc'):
+            overcommit = MemoryOverCommit(percent = kwargs.pop('mem_ovrcmt_prc'))
 
-    cl, status = util.update(links['clusters'],cl.href, cl, [201, 200], positive)
+        if kwargs.get('transparent_hugepages'):
+            transparentHugepages = TransparentHugePages(enabled = \
+                            kwargs.pop('transparent_hugepages'))
 
+        memoryPolicy = MemoryPolicy(overcommit = overcommit,
+            transparent_hugepages = transparentHugepages)
+
+        clUpd.set_memory_policy(memoryPolicy)
+
+    if 'scheduling_policy' in kwargs:
+        thresholds = None
+        thresholdLow = kwargs.get('thrhld_low')
+        thresholdHigh = kwargs.get('thrhld_high')
+        thresholdDuration = kwargs.get('duration')
+
+        # If at least one threshold tag parameter is set.
+        if max(thresholdLow, thresholdHigh, thresholdDuration) is not None:
+            thresholds = SchedulingPolicyThresholds(high = thresholdHigh,
+                        duration = thresholdDuration, low = thresholdLow)
+
+        schedulingPolicy = SchedulingPolicy(policy = kwargs.pop('scheduling_policy'),
+                            thresholds = thresholds)
+
+        clUpd.set_scheduling_policy(schedulingPolicy)
+
+    errorHandling = None
+    if 'on_error' in kwargs:
+        errorHandling = ErrorHandlingOptions(on_error = kwargs.pop('on_error').split(','))
+        clUpd.set_error_handling(errorHandling)
+
+    clUpd, status = util.update(cl, clUpd, positive)
+    
     return status
+
 
 def removeCluster(positive, cluster):
     '''
@@ -206,9 +219,10 @@ def removeCluster(positive, cluster):
        * cluster - name of a cluster that should be removed
     Return: status (True if cluster was removed properly, False otherwise)
     '''
-    boolean_positive = positive.lower() == 'true'
-    cl = util.find(links['clusters'], cluster)
-    return util.delete(cl.href, positive)
+
+    cl = util.find(cluster)
+
+    return util.delete(cl, positive)
 
 
 def removeClusterAsynch(positive, tasksQ, resultsQ):
@@ -219,13 +233,50 @@ def removeClusterAsynch(positive, tasksQ, resultsQ):
     cl = tasksQ.get(True)
     status = False
     try:
-        clObj = util.find(links['clusters'], cl)
-        status = util.delete(clObj.href,positive)
+        clObj = util.find(cl)
+        status = util.delete(clObj, positive)
     except EntityNotFound as e:
-        logger.error(str(e))
+        util.logger.error(str(e))
     finally:
         resultsQ.put((cl, status))
         tasksQ.task_done()
+
+
+
+def waitForClustersGone(positive, clusters, timeout=30, samplingPeriod=5):
+    '''
+    Wait for clusters to disappear from the setup. This function will block up to `timeout`
+    seconds, sampling the clusters list every `samplingPeriod` seconds,
+    until no cluster specified by names in `clusters` exists.
+
+    Parameters:
+        * clusters - comma (and no space) separated string of cluster names to wait for.
+        * timeout - Time in seconds for the clusters to disapear.
+        * samplingPeriod - Time in seconds for sampling the cluster list.
+    '''
+    
+    clsList = split(clusters)
+    t_start = time.time()
+    while time.time() - t_start < timeout and 0 < timeout:
+        clusters = util.get(absLink=False)
+        remainingCls = []
+        for cl in clusters:
+            clName = getattr(cl, 'name')
+            if clName in clsList:
+                remainingCls.append(clName)
+
+        if len(remainingCls)>0:
+            util.logger.info("Waiting for %d clusters to disappear.",
+                                                len(remainingCls))
+            time.sleep(samplingPeriod)
+        else:
+            util.logger.info("All %d clusters are gone.", len(clsList))
+            return positive
+
+    remainingClsNames = [cl.name for cl in remainingCls]
+    util.logger.error("Clusters %s didn't disappear until timeout." % remainingClsNames)
+    return not positive
+
 
 
 def removeClusters(positive, clusters):
@@ -235,7 +286,7 @@ def removeClusters(positive, clusters):
     Parameters:
         * clusters - Comma (no space) separated list of cluster names.
     '''
-    assert positive.lower() == 'true'
+    
     tasksQ = Queue()
     resultsQ = Queue()
     threads = set()
@@ -251,7 +302,7 @@ def removeClusters(positive, clusters):
     for cl in clsList:
         tasksQ.put(cl)
     tasksQ.join() # block until all tasks are done
-    logger.info(threads)
+    util.logger.info(threads)
     for t in threads:
         t.join()
 
@@ -259,15 +310,15 @@ def removeClusters(positive, clusters):
     while not resultsQ.empty():
         cl, removalOK = resultsQ.get()
         if removalOK:
-            logger.info("Cluster '%s' deleted asynchronously." % cl)
+            util.logger.info("Cluster '%s' deleted asynchronously." % cl)
         else:
-            logger.error("Failed to asynchronously remove cluster '%s'." % cl)
-        status &= removalOK
+            util.logger.error("Failed to asynchronously remove cluster '%s'." % cl)
+            status = False
 
     return status and waitForClustersGone(positive, clusters)
 
 
-def searchForCluster(positive,query_key,query_val,key_name):
+def searchForCluster(positive, query_key, query_val, key_name):
     '''
     Description: search for clusters by desired property
     Author: edolinin
@@ -280,17 +331,94 @@ def searchForCluster(positive,query_key,query_val,key_name):
     '''
 
     expected_count = 0
-    clusters = util.get(links['clusters'])
+    clusters = util.get(absLink=False)
+
     for cl in clusters:
         clProperty = getattr(cl, key_name)
         if re.match(r'(.*)\*$',query_val):
-            if re.match(r'^' + query_val,clProperty):
+            if re.match(r'^' + query_val, clProperty):
                 expected_count = expected_count + 1
         else:
             if clProperty == query_val:
                 expected_count = expected_count + 1
 
-    query_vms = util.query(links['clusters/search'], query_key + "=" + query_val)
-    status = validator.compareCollectionSize(query_vms,expected_count,util.logger)
+    contsraint = "{0}={1}".format(query_key, query_val)
+    query_cls = util.query(contsraint)
+    status = compareCollectionSize(query_cls, expected_count, util.logger)
 
     return status
+
+
+def isHostAttachedToCluster(positive, host, cluster):
+    """
+    Function checks if host attached to cluster.
+        host       = host name
+        cluster    = cluster name
+    """
+    # Find cluster
+    try:
+        clId = util.find(cluster).get_id()
+        hostObj = hostUtil.find(host)
+    except EntityNotFound:
+        return not positive
+
+    # Check if host connected to cluster
+    return hostObj.get_cluster().get_id() == clId
+
+
+def connectClusterToDataCenter(positive, cluster, datacenter):
+    """
+    Function connects cluster to dataCenter
+    If cluster already connected to datacenter, it will just return true
+    If cluster's "datacenter" field is empty, it will be updated with datacenter
+    else, function will return False, since cluster's datacenter field cannot be updated, if not empty
+        cluster    = cluster name
+        datacenter = data center name
+    """
+    hostList = []
+    dcFieldExist = True
+
+    # Search for datacenter
+    try:
+        dcId = dcUtil.find(datacenter).get_id()
+        clusterObj = util.find(cluster)
+    except EntityNotFound:
+        return not positive
+
+    clId = clusterObj.get_id()
+
+    # Check if datacenter field exist in cluster object
+    try:
+        clusterdcId = clusterObj.get_data_center().get_id()
+    except:
+        dcFieldExist = False
+
+    # Check if cluster already connected to datacenter
+    if dcFieldExist and clusterdcId == dcId:
+        return positive
+    # Get all hosts in setup
+    try:
+        hostObjList = hostUtil.get(absLink=False)
+    except EntityNotFound:
+        return not positive
+
+    # Deactivate all "UP" hosts, which are connected to cluster
+    hosts = filter(lambda hostObj: hostObj.get_cluster().get_id() == clId and \
+                   hostObj.get_status().get_state() == "up", hostObjList)
+    for hostObj in hosts:
+        if not deactivateHost(positive, hostObj.get_name()):
+            util.logger.error('deactivateHost Failed')
+            return False
+        hostList.append(hostObj)
+
+    # Update cluster: will work only in case data center is empty
+    if not updateCluster(positive, cluster=cluster, data_center=datacenter):
+        util.logger.error('updateCluster with dataCenter failed')
+        return False
+
+    # Activate the hosts that were deactivated earlier
+    for hostObj in hostList:
+        if not activateHost(positive, hostObj.get_name()):
+            util.logger.error('activateHost Failed')
+            return False
+    return True

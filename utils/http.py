@@ -19,11 +19,11 @@
 
 import httplib
 import base64
-from restutils_exceptions import RESTException
+from apis_exceptions import APIException
 from socket import error as SocketError
 
 import logging
-logger = logging.getLogger('rest-Main')
+logger = logging.getLogger('main')
 
 def open_connection(opts):
     if opts['scheme'] == 'https':
@@ -80,7 +80,7 @@ def HEAD_for_links(opts):
         response = cnx.getresponse()
         if not 200 == response.status:
             MSG = "Bad HTTP response status: {0.status} {0.reason}"
-            raise RESTException(MSG.format(response))
+            raise APIException(MSG.format(response))
         for s in response.getheader('Link').split(','):
             parse_link(s, links)
         return links
