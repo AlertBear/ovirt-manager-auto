@@ -90,7 +90,6 @@ def removeDataCenter(positive, datacenter):
      '''
 
     dc = util.find(datacenter)
-
     return util.delete(dc, positive)
 
 

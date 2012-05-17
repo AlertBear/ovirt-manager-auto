@@ -130,7 +130,7 @@ class RestUtil(APIUtil):
             href = collection
 
         collection = self.get(href)
-           
+
         entity = validator.dump_entity(entity, self.element_name)
         initialCollectionSize = len(collection)
 
@@ -280,7 +280,7 @@ class RestUtil(APIUtil):
         return results
 
 
-    def query(self, constraint,  expected_status=[200, 201]):
+    def query(self, constraint,  expected_status=[200, 201], href=None):
         '''
         Description: run search query
         Author: edolinin
@@ -289,8 +289,8 @@ class RestUtil(APIUtil):
            * expected_status - list of expected statuses for positive request
         Return: query results
         '''
-
-        href = self.links[self.collection_name + '/search']
+        if not href:
+            href = self.links[self.collection_name + '/search']
         templ = template_parser.URITemplate(href)
         qhref = templ.sub({"query": constraint})
 
