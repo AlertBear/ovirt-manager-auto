@@ -23,7 +23,7 @@ and preparing the environment for the tests.
 """
 
 import argparse
-from utils.configobj import ConfigObj
+from configobj import ConfigObj
 import os
 import re
 from time import strftime

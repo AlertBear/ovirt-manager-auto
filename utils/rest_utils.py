@@ -24,7 +24,7 @@ from apis_exceptions import EntityNotFound
 from lxml import etree
 from utils.data_structures import parseString as parse
 from utils.data_structures import *
-from utils.apis_utils import APIUtil
+from utils.apis_utils import APIUtil, TimeoutingSampler
 import os
 
 DEF_TIMEOUT = 900 # default timeout

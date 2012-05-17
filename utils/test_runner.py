@@ -13,7 +13,7 @@ from dateutil.tz import tzutc
 import logging
 import code
 
-from utils.configobj import ConfigObj
+from configobj import ConfigObj
 from utils.reports import initializeLogger, DefaultResultsReporter, JUnitResultsReporter
 from utils.http import check_connection
 from utils.settings import opts, populateOptsFromArgv, readTestRunOpts
