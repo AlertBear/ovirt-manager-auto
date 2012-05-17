@@ -26,7 +26,7 @@ def dump_entity(ds, root_name):
     '''
     Dump DS element to xml format
     '''
-
+    
     old_stdout = sys.stdout
     sys.stdout = mystdout = StringIO()
     ds.export(mystdout, 0, name_=root_name)
@@ -79,7 +79,7 @@ def compareActionLink(actions, action,logger):
 
 def getAttibuteValue(elm, attrName):
 
-    return getattr(elm, 'get_' + attrName)()
+    return getattr(elm, 'get_' + attrName.rstrip('_'))()
 
 
 def compareElements(expElm, actElm, logger, root):
@@ -93,7 +93,7 @@ def compareElements(expElm, actElm, logger, root):
     * root - name of the root node
     Returns: True is elements are equal, False otherwise
     '''
-
+    ignore = ['href', 'status', 'rel']
     equal = True
 
     if not actElm:
@@ -110,6 +110,9 @@ def compareElements(expElm, actElm, logger, root):
     attrList = elmInstance.member_data_items_.keys()
    
     for attr in attrList:
+        if attr in ignore:
+            continue
+
         attrExpVal = getAttibuteValue(expElm, attr)
         attrActVal = getAttibuteValue(actElm, attr)
 
@@ -126,7 +129,7 @@ def compareElements(expElm, actElm, logger, root):
                 if attrContainer and isinstance(attrExpVal, list):
                     attrExpVal = attrExpVal[0]
 
-                if attrExpVal==attrActVal:
+                if str(attrExpVal)==str(attrActVal):
                     MSG = "Property '{0}->{1}' has correct value: {2}"
                     logger.info(MSG.format(root, attr, attrExpVal))
                 else:

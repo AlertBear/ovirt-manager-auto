@@ -109,7 +109,7 @@ class RestUtil(APIUtil):
 
     def create(self, entity, positive,
                 expected_pos_status=[200, 201, 202], expected_neg_status=[500, 400],
-                expectedEntity=None, incrementBy=1, async=False):
+                expectedEntity=None, incrementBy=1, async=False, collection=None):
         '''
         Description: implements POST method and verify the response
         Author: edolinin
@@ -126,7 +126,11 @@ class RestUtil(APIUtil):
         '''
 
         href = self.links[self.collection_name]
+        if collection:
+            href = collection
+
         collection = self.get(href)
+           
         entity = validator.dump_entity(entity, self.element_name)
         initialCollectionSize = len(collection)
 
@@ -271,8 +275,6 @@ class RestUtil(APIUtil):
             collection = self.get(href)
             results = filter(lambda r: getattr(r, attribute) == val, collection)[0]
         except Exception:
-            import traceback
-            print traceback.format_exc()
             raise EntityNotFound("Entity %s not found on url '%s'." % (val, href))
 
         return results
@@ -368,6 +370,29 @@ class RestUtil(APIUtil):
         else:
             return False
 
+
+    def getElemFromLink(self, elm, link_name, attr, get_href=False):
+        '''
+        Description: get element's collection from specified link
+        Parameters:
+           * elm - element object
+           * link_name - link name
+           * attr - attribute to get (usually name of desired element)
+           * get_href - if to return href link or no
+        Return: element obj or None if not found
+        '''
+        for link in elm.get_link():
+            if link.get_rel() == link_name:
+                if get_href:
+                    return link.get_href()
+
+                linkCont = self.get(link.get_href())
+                if isinstance(linkCont, list):
+                    return linkCont
+                else:
+                    return getattr(linkCont, 'get_' + attr)()
+        return None
+    
 
     def getEtreeParsed(self, link):
         return etree.fromstring(self.getNoParse(link))

@@ -23,6 +23,7 @@ from time import strftime
 import settings
 import abc
 import logging
+from utils.data_structures import Action, GracePeriod
 
 
 class APIUtil(object):
@@ -68,6 +69,10 @@ class APIUtil(object):
     def waitForElemStatus(self, elm, status, **kwargs):
         return
 
+    @abc.abstractmethod
+    def getElemFromLink(self, elm, link_name, **kwagrs):
+        return
+
     @property
     def logger(self):
         return logging.getLogger(self.collection_name)
@@ -91,6 +96,26 @@ class APIUtil(object):
         for p in params:
             setattr(action, p, params[p])
         return action
+    
+
+    def getElemFromElemColl(self, elm, collection_name, elm_name, name_val):
+        '''
+        Description: get element from element's collection
+        Parameters:
+           * elm - element object
+           * collection_name - collection name
+           * elm_name - element name
+           * name_val - name of element to loof for
+        Return: element obj or None if not found
+        '''
+        # get element's collection from element link
+        objs = self.getElemFromLink(elm, collection_name, attr=elm_name)
+        # get element by name
+        for obj in objs:
+            if obj.get_name() == name_val:
+                return obj
+
+        return None
 
 
 class TimeoutingSampler(object):

@@ -62,11 +62,12 @@ class SdkUtil(APIUtil):
             
         self.logger.debug("GET request content is --  collection:%(col)s " \
                         % {'col': collection })
-
+      
         return self.__getCollection(collection).list()
+    
 
-
-    def create(self, entity, positive, expectedEntity=None, incrementBy=1, async=False):
+    def create(self, entity, positive, expectedEntity=None, incrementBy=1,
+            async=False, collection=None):
         '''
         Description: creates a new element
         Author: edolinin
@@ -80,7 +81,9 @@ class SdkUtil(APIUtil):
                 status (True if POST test succeeded, False otherwise.)
         '''
 
-        collection = self.__getCollection(self.collection_name)
+        if not collection:
+            collection = self.__getCollection(self.collection_name)
+           
         initialCollectionSize = len(collection.list())
        
         self.logger.debug("CREATE api content is --  collection:%(col)s element:%(elm)s " \
@@ -89,7 +92,7 @@ class SdkUtil(APIUtil):
         response = None
         try:
             response = collection.add(entity)
-           
+             
             if not async:
                 if not self.opts['parallel_run'] and \
                     not validator.compareCollectionSize(collection.list(),
@@ -176,7 +179,6 @@ class SdkUtil(APIUtil):
            * positive - if positive or negative verification should be done
         Return: status (True if DELETE test succeeded, False otherwise)
         '''
-
         response = None
         try:
             self.logger.debug("DELETE entity: {0}".format(entity.get_id()))
@@ -243,6 +245,20 @@ class SdkUtil(APIUtil):
         Returns sdk collection object
         '''
         return getattr(self.api, collection_name)
+    
+
+    def getElemFromLink(self, elm, link_name, get_href=False, **kwargs):
+        '''
+        Description: get element's collection from specified link
+        Parameters:
+           * elm - element object
+           * link_name - link name
+        Return: element obj or None if not found
+        '''
+        if get_href:
+            return getattr(elm, link_name)
+        else:
+            return getattr(elm, link_name).list()
     
 
     def syncAction(self, entity, action, positive, async=False, **params):

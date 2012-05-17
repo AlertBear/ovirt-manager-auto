@@ -46,3 +46,28 @@ def split(s):
     Return: A sequence of strings-like objects.
     '''
     return s.replace(',', ' ').split()
+
+
+def getStat(name, elm_name, collection_name, stat_types):
+    '''
+    Description: gets the given statistic from a host
+    Parameters:
+      * name - name of a host or vm
+      * obj_type - "hosts" or "vms"
+      * stat_type - a list of any stat that REST API gives back,
+        for example 'memory.used', 'swap.total', etc.
+    Return: a dictionary with the requested and found stats
+    '''
+    util = get_api(elm_name, collection_name)
+    elm_obj = util.find(name)
+    statistics = util.getElemFromLink(elm_obj, 'statistics', 'statistic')
+    values = {}
+    for stat in statistics:
+        if stat.get_name() in stat_types:
+            datum =  stat.get_values().get_value()[0].get_datum()
+            if stat.get_values().get_type() == "INTEGER":
+                values[stat.get_name()] = int(float(datum))
+                #return int(stat.values.value.datum)
+            elif stat.get_values().get_type() == "DECIMAL":
+                values[stat.get_name()] = float(datum)
+    return values

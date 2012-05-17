@@ -28,7 +28,7 @@ from Queue import Queue
 from threading import Thread
 from utils.apis_exceptions import EntityNotFound
 import time
-from rhevm_api.hosts import activateHost
+from rhevm_api.hosts import activateHost, deactivateHost
 
 
 ELEMENT = 'cluster'
@@ -422,3 +422,41 @@ def connectClusterToDataCenter(positive, cluster, datacenter):
             util.logger.error('activateHost Failed')
             return False
     return True
+
+
+def attachHostToCluster(positive, host, cluster):
+    """
+    Function attaches host to cluster.
+        host       = host name
+        cluster    = cluster name
+    """
+
+    util.logger.info("Attach Host %s to Cluster %s" % (host, cluster))
+    # Find cluster
+    try:
+        clObj = util.find(cluster)
+        hostObj = hostUtil.find(host)
+    except EntityNotFound:
+        return not positive
+
+    # Deactivate host if not already in 'Maintenance'
+    if not hostObj.get_status() == 'Maintenance':
+        util.logger.info("Suspending Host %s" % host)
+        if not deactivateHost(positive, host):
+            util.logger.error("Failed to deactivate Host %s" % host)
+            return False
+
+    # Update host cluster
+    util.logger.info("Updating Host %s" % host)
+    updateStat = updateHost(positive=positive, host=host, cluster=cluster)
+    if not updateStat:
+        util.logger.error('updateHost Failed')
+        return False
+
+    # Activate host
+    if not activateHost(positive, host):
+        util.logger.error("Failed to activate Host %s" % host)
+        return False
+
+    # Verify host indeed attached to cluster
+    return isHostAttachedToCluster(positive, host, cluster)
