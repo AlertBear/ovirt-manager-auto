@@ -81,7 +81,7 @@ def addRoleToUser(positive, user, role):
     '''
     userObj = util.find(user)
     roleObj = rlUtil.find(role)
-    usersRoles = util.getElemFromLink(userObj, 'roles', attr='role', get_href=True)
+    usersRoles = util.getElemFromLink(userObj, link_name='roles', attr='role', get_href=True)
 
     role, status = rlUtil.create(roleObj, positive, collection=usersRoles)
     return status
@@ -107,7 +107,7 @@ def addTagToUser(positive, user, tag):
     Return: status (True if tag was added properly, False otherwise)
     '''
     userObj = util.find(user)
-    usersTags = util.getElemFromLink(userObj, 'tags', attr='tag', get_href=True)
+    usersTags = util.getElemFromLink(userObj, link_name='tags', attr='tag', get_href=True)
 
     tagObj = Tag(name=tag)
     tagObj, status = taglUtil.create(tagObj, positive, collection=usersTags)
@@ -127,7 +127,7 @@ def verifyADUserProperties(positive, domain, user, expected_username=None,
     Return: status (True if all user properties are as expected, False otherwise)
     '''
     domainObj = domUtil.find(domain)
-    query_user = util.getElemFromElemColl(domainObj, 'users', 'user', user)
+    query_user = util.getElemFromElemColl(domainObj, user)
    # query_users = util.query(domainObj.links.get(name='users/search').href, "name=" + user)
   
     userExpected = User(user_name=expected_username, department=expected_department)
@@ -147,7 +147,7 @@ def searchForUserInAD(positive, query_key, query_val, key_name, domain):
     '''
     # Get what's needed.
     domainObj = domUtil.find(domain)
-    users = util.getElemFromLink(domainObj, 'users', attr='user')
+    users = util.getElemFromLink(domainObj)
 
     # Do the matching.
     matches = []

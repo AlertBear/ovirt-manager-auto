@@ -38,6 +38,68 @@ dcUtil = get_api('data_center', 'datacenters')
 hostUtil = get_api('host', 'hosts')
 
 
+def _prepareClusterObject(**kwargs):
+
+    cl = Cluster()
+
+    if 'name' in kwargs:
+        cl.set_name(kwargs.pop('name'))
+
+    if 'description' in kwargs:
+        cl.set_description(kwargs.pop('description'))
+
+    if 'version' in kwargs:
+        majorV, minorV = kwargs.pop('version').split(".")
+        clVersion = Version(major=majorV, minor = minorV)
+        cl.set_verion(clVersion)
+
+    if 'cpu' in kwargs:
+        clCPU = CPU(id = kwargs.pop('cpu'))
+        cl.set_cpu(clCPU)
+
+    if 'data_center' in kwargs:
+        clDC = dcUtil.find(kwargs.pop('data_center'))
+        cl.set_data_center(clDC)
+
+    if 'mem_ovrcmt_prc' in kwargs or \
+    'transparent_hugepages' in kwargs:
+
+        if kwargs.get('mem_ovrcmt_prc'):
+            overcommit = MemoryOverCommit(percent = kwargs.pop('mem_ovrcmt_prc'))
+
+        if kwargs.get('transparent_hugepages'):
+            transparentHugepages = TransparentHugePages(enabled = \
+                            kwargs.pop('transparent_hugepages'))
+
+        memoryPolicy = MemoryPolicy(overcommit = overcommit,
+            transparent_hugepages = transparentHugepages)
+
+        cl.set_memory_policy(memoryPolicy)
+
+    if 'scheduling_policy' in kwargs:
+        thresholds = None
+        thresholdLow = kwargs.get('thrhld_low')
+        thresholdHigh = kwargs.get('thrhld_high')
+        thresholdDuration = kwargs.get('duration')
+
+        # If at least one threshold tag parameter is set.
+        if max(thresholdLow, thresholdHigh, thresholdDuration) is not None:
+            thresholds = SchedulingPolicyThresholds(high = thresholdHigh,
+                        duration = thresholdDuration, low = thresholdLow)
+
+        schedulingPolicy = SchedulingPolicy(policy = kwargs.pop('scheduling_policy'),
+                            thresholds = thresholds)
+
+        cl.set_scheduling_policy(schedulingPolicy)
+
+    errorHandling = None
+    if 'on_error' in kwargs:
+        errorHandling = ErrorHandlingOptions(on_error = kwargs.pop('on_error').split(','))
+        cl.set_error_handling(errorHandling)
+
+    return cl
+
+
 def addCluster(positive, **kwargs):
     '''
     Description: add cluster
@@ -67,51 +129,7 @@ def addCluster(positive, **kwargs):
     Return: status (True if cluster was removed properly, False otherwise)
     '''
     
-    cpu = kwargs.pop('cpu')
-    clusterCPU = CPU(id = cpu)
-
-    majorV, minorV = kwargs.pop('version').split(".")
-    cpuVersion = Version(major=majorV, minor = minorV)
-
-    clusterDC = dcUtil.find(kwargs.pop('data_center'))
-    
-    overcommit = None
-    transparentHugepages = None
-  
-    if kwargs.get('mem_ovrcmt_prc'):
-        overcommit = MemoryOverCommit(percent = kwargs.pop('mem_ovrcmt_prc'))
-
-    if kwargs.get('transparent_hugepages'):
-        transparentHugepages = TransparentHugePages(enabled = \
-                        kwargs.pop('transparent_hugepages'))
-
-    memoryPolicy = MemoryPolicy(overcommit = overcommit,
-            transparent_hugepages = transparentHugepages)
-
-    schedulingPolicy = None
-    if kwargs.get('scheduling_policy'):
-        thresholds = None
-        thresholdLow = kwargs.get('thrhld_low')
-        thresholdHigh = kwargs.get('thrhld_high')
-        thresholdDuration = kwargs.get('duration')
-
-        # If at least one threshold tag parameter is set.
-        if max(thresholdLow, thresholdHigh, thresholdDuration) is not None:
-            thresholds = SchedulingPolicyThresholds(high = thresholdHigh,
-                        duration = thresholdDuration, low = thresholdLow)
-
-        schedulingPolicy = SchedulingPolicy(policy = kwargs.pop('scheduling_policy'),
-                            thresholds = thresholds)
-
-    errorHandling = None
-    if kwargs.get('on_error'):
-        errorHandling = ErrorHandlingOptions(on_error = kwargs.pop('on_error').split(','))
-
-    cl = Cluster(cpu = clusterCPU, version = cpuVersion, 
-                data_center = clusterDC, memory_policy = memoryPolicy,
-                scheduling_policy = schedulingPolicy,
-                error_handling = errorHandling, **kwargs)
-
+    cl = _prepareClusterObject(**kwargs)
     cl, status = util.create(cl, positive)
 
     return status
@@ -148,64 +166,7 @@ def updateCluster(positive, cluster, **kwargs):
     '''
 
     cl = util.find(cluster)
-
-    clUpd = Cluster()
-
-    if 'name' in kwargs:
-        clUpd.set_name(kwargs.pop('name'))
-
-    if 'description' in kwargs:
-        clUpd.set_description(kwargs.pop('description'))
-
-    if 'version' in kwargs:
-        majorV, minorV = kwargs.pop('version').split(".")
-        clVersion = Version(major=majorV, minor = minorV)
-        clUpd.set_verion(clVersion)
-
-    if 'cpu' in kwargs:
-        clCPU = CPU(id = kwargs.pop('cpu'))
-        clUpd.set_cpu(clCPU)
-
-    if 'data_center' in kwargs:
-        clDC = dcUtil.find(kwargs.pop('data_center'))
-        clUpd.set_data_center(clDC)
-
-    if 'mem_ovrcmt_prc' in kwargs or \
-    'transparent_hugepages' in kwargs:
-
-        if kwargs.get('mem_ovrcmt_prc'):
-            overcommit = MemoryOverCommit(percent = kwargs.pop('mem_ovrcmt_prc'))
-
-        if kwargs.get('transparent_hugepages'):
-            transparentHugepages = TransparentHugePages(enabled = \
-                            kwargs.pop('transparent_hugepages'))
-
-        memoryPolicy = MemoryPolicy(overcommit = overcommit,
-            transparent_hugepages = transparentHugepages)
-
-        clUpd.set_memory_policy(memoryPolicy)
-
-    if 'scheduling_policy' in kwargs:
-        thresholds = None
-        thresholdLow = kwargs.get('thrhld_low')
-        thresholdHigh = kwargs.get('thrhld_high')
-        thresholdDuration = kwargs.get('duration')
-
-        # If at least one threshold tag parameter is set.
-        if max(thresholdLow, thresholdHigh, thresholdDuration) is not None:
-            thresholds = SchedulingPolicyThresholds(high = thresholdHigh,
-                        duration = thresholdDuration, low = thresholdLow)
-
-        schedulingPolicy = SchedulingPolicy(policy = kwargs.pop('scheduling_policy'),
-                            thresholds = thresholds)
-
-        clUpd.set_scheduling_policy(schedulingPolicy)
-
-    errorHandling = None
-    if 'on_error' in kwargs:
-        errorHandling = ErrorHandlingOptions(on_error = kwargs.pop('on_error').split(','))
-        clUpd.set_error_handling(errorHandling)
-
+    clUpd = _prepareClusterObject(**kwargs)
     clUpd, status = util.update(cl, clUpd, positive)
     
     return status
@@ -325,9 +286,8 @@ def searchForCluster(positive, query_key, query_val, key_name):
     Parameters:
        * query_key - name of property to search for
        * query_val - value of the property to search for
-       * key_name - name of the property in cluster object equivalent to query_key, required if expected_count is not set
-       * expected_count - expected number of clusters, if not provided - get automatically
-    Return: status (True if expected number of clusters equal to found by search, False otherwise)
+       * key_name - name of the property in object equivalent to query_key
+    Return: status (True if expected number is equal to found by search, False otherwise)
     '''
 
     expected_count = 0

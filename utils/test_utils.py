@@ -21,6 +21,12 @@
 from utils.rest_utils import RestUtil
 from utils.sdk_utils import SdkUtil
 import settings
+from utilities.utils import readConfFile
+#The location of all supported elements
+elementsConf = "conf/elements.conf"
+#The name of section in the element configuration file
+elementConfSection = 'elements'
+#The location of all supported os
 
 api = None
 
@@ -60,7 +66,7 @@ def getStat(name, elm_name, collection_name, stat_types):
     '''
     util = get_api(elm_name, collection_name)
     elm_obj = util.find(name)
-    statistics = util.getElemFromLink(elm_obj, 'statistics', 'statistic')
+    statistics = util.getElemFromLink(elm_obj, link_name='statistics', attr='statistic')
     values = {}
     for stat in statistics:
         if stat.get_name() in stat_types:
@@ -71,3 +77,69 @@ def getStat(name, elm_name, collection_name, stat_types):
             elif stat.get_values().get_type() == "DECIMAL":
                 values[stat.get_name()] = float(datum)
     return values
+
+
+
+def validateElementStatus(positive, element, collection, elementName,
+                                        expectedStatus, dcName=None):
+    '''
+    The function validateElementStatus compare the status of given element with expected status.
+        element = specific element (host,datacenter...)
+        elementName = the name of element (<host name> in case of given element is a host)
+        expectedStatus = expected status(es) of element (The status of element that we are expecting)
+        dcName = the name of Data Center (to retrieve the status of storage domain entity, None by default)
+    return values : Boolean value (True/False ) True in case of succes otherwise False
+    '''
+    attribute = "state"
+    try:
+        supportedElements = readConfFile(elementsConf, elementConfSection)
+    except Exception as err:
+        util.logger.error(err)
+        return False
+
+    util = get_api(element, collection)
+
+    if element not in supportedElements:
+        msg = "Unknown element {0}, supported elements are {1}"
+        util.logger.error(msg.format(element, supportedElements.keys()))
+        return False
+
+    elementObj = None
+    MSG = "Can't find element {0} of type {1} - {2}"
+
+    if element.lower() == "storagedomain":
+        if dcName is None:
+            ERR = "name of Data Center is missing"
+            util.logger.warning(MSG.format(elementName, element, ERR))
+            return False
+
+        try:    # Fetch Data Center object in order to get storage domain status
+            dcUtil = get_api('data_center', 'datacenters')
+            dcObj = dcUtil.find(dcName)
+        except EntityNotFound:
+            ERR = "Data Center object is needed in order to get storage domain status"
+            util.logger.warning(MSG.format(dcName, "datacenter", ERR))
+            return False
+
+        elementObj = util.getElemFromElemColl(dcObj, 'storagedomains',
+                                'storagedomain', element)
+    else:
+        try:
+            elementObj = util.find(elementName)
+        except Exception as err:
+            util.logger.error(MSG.format(elementName, elementToFind, err))
+            return False
+
+        if not hasattr(elementObj.get_status(), attribute):
+            msg = "Element {0} doesn't have attribute \'{1}\'"
+            util.logger.error(msg.format(element, attribute))
+            return False
+
+    expectedStatuses = [status.strip().upper() for status in expectedStatus.split(',')]
+    result = elementObj.get_status().get_state().upper() in expectedStatuses
+
+    MSG = "Status of element {0} is \'{1}\' expected statuses are {2}"
+    util.logger.warning(MSG.format(elementName,
+        elementObj.get_status().get_state().upper(), expectedStatuses))
+
+    return result

@@ -28,6 +28,40 @@ dcUtil = get_api('data_center', 'datacenters')
 clUtil = get_api('cluster', 'clusters')
 
 
+def _prepareNetworkObject(**kwargs):
+    
+    net = Network()
+
+    if 'name' in kwargs:
+        net.set_name(kwargs.get('name'))
+
+    if 'description' in kwargs:
+        net.set_description(kwargs.get('description'))
+
+    if 'stp' in kwargs:
+        net.set_stp(kwargs.get('stp'))
+
+    if 'display' in kwargs:
+        netUpd.set_display(kwargs.get('display'))
+
+    if 'data_center' in kwargs:
+        net.set_data_center(dcUtil.find(data_center))
+
+    address = kwargs.get('address')
+    netmask = kwargs.get('netmask')
+    gateway = kwargs.get('gateway')
+
+    if address or netmask or gateway:
+        ip = IP(address=address, netmask=netmask, gateway=gateway)
+        net.set_ip(ip)
+
+    vlan = kwargs.get('vlan_id')
+    if vlan:
+        net.set_vlan(id=vlan_id)
+
+    return net
+
+
 def addNetwork(positive, **kwargs):
     '''
     Description: add network to a data center
@@ -44,30 +78,7 @@ def addNetwork(positive, **kwargs):
     Return: status (True if network was added properly, False otherwise)
     '''
 
-    netDC = dcUtil.find(kwargs.pop('data_center'))
-    
-    address = None
-    netmask = None
-    gateway = None
-
-    if 'address' in kwargs:
-        address = kwargs.pop('address')
-
-    if 'netmask' in kwargs:
-        netmask = kwargs.pop('netmask')
-
-    if 'gateway' in kwargs:
-        gateway = kwargs.pop('gateway')
-  
-    ip = None
-    if address or netmask or gateway:
-        ip = IP(address=address, netmask=netmask, gateway=gateway)
-
-    Vlan = None
-    if 'vlan_id' in kwargs:
-        Vlan = Vlan(id=kwargs.pop('vlan_id'))
-       
-    net = Network(data_center = netDC, ip=ip, vlan=Vlan, **kwargs)
+    net = _prepareNetworkObject(**kwargs)
     net, status = util.create(net, positive)
 
     return status
@@ -115,35 +126,7 @@ def updateNetwork(positive, network, **kwargs):
         raise EntityNotFound
 
     net = util.find(network)
-    netUpd = Network()
-    
-    if 'name' in kwargs:
-        netUpd.set_name(kwargs.get('name'))
-
-    if 'description' in kwargs:
-        netUpd.set_description(kwargs.get('description'))
-
-    if 'stp' in kwargs:
-        netUpd.set_stp(kwargs.get('stp'))
-
-    if 'display' in kwargs:
-        netUpd.set_display(kwargs.get('display'))
-
-    if 'data_center' in kwargs:
-        netUpd.set_data_center(dcUtil.find(data_center))
-
-    address = kwargs.get('address')
-    netmask = kwargs.get('netmask')
-    gateway = kwargs.get('gateway')
-
-    if address or netmask or gateway:
-        ip = IP(address=address, netmask=netmask, gateway=gateway)
-        netUpd.set_ip(ip)
-     
-    vlan = kwargs.get('vlan_id')
-    if vlan:
-        netUpd.set_vlan(id=vlan_id)
-       
+    netUpd = _prepareNetworkObject(**kwargs)
     netUpd, status = util.update(net, netUpd, positive)
     
     return status
@@ -164,7 +147,6 @@ def removeNetwork(positive, network, data_center=None,):
         raise EntityNotFound
 
     net = util.find(network)
-
     return util.delete(net, positive)
 
 
@@ -195,8 +177,7 @@ def addNetworkToCluster(positive, network, cluster):
     network_objs = util.get(absLink=False)
     cluster_obj = clUtil.find(cluster)
     cluster_cd_id = cluster_obj.get_data_center().get_id()
-    clNetworks = util.getElemFromLink(cluster_obj, 'networks',
-                                attr='network', get_href=True)
+    clNetworks = util.getElemFromLink(cluster_obj, get_href=True)
    
     if network_objs is None:
         raise EntityNotFound('Found Empty networks element')
@@ -249,7 +230,7 @@ def removeNetworkFromCluster(positive, network, cluster):
     Return: status (True if network was detached properly, False otherwise)
     '''
     cluster_obj = clUtil.find(cluster)
-    net_obj = util.getElemFromElemColl(cluster_obj, 'networks', 'network', network)
+    net_obj = util.getElemFromElemColl(cluster_obj, network)
     if net_obj:
         return util.delete(net_obj, positive)
     else:
@@ -275,7 +256,7 @@ def getNetworkConfig(positive, cluster, network, datacenter=None, tag=None):
     '''
     try:
         clusterObj = util.find(cluster)
-        netObj = util.getElemFromElemColl(clusterObj, 'networks', 'network', network)
+        netObj = util.getElemFromElemColl(clusterObj, network)
     except EntityNotFound:
         return False, {'value': None}
 

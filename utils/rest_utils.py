@@ -125,12 +125,11 @@ class RestUtil(APIUtil):
                 status (True if POST test succeeded, False otherwise.)
         '''
 
-        href = self.links[self.collection_name]
-        if collection:
-            href = collection
+        href = collection
+        if not href:
+            href = self.links[self.collection_name]
 
         collection = self.get(href)
-
         entity = validator.dump_entity(entity, self.element_name)
         initialCollectionSize = len(collection)
 
@@ -371,7 +370,7 @@ class RestUtil(APIUtil):
             return False
 
 
-    def getElemFromLink(self, elm, link_name, attr, get_href=False):
+    def getElemFromLink(self, elm, link_name=None, attr=None, get_href=False):
         '''
         Description: get element's collection from specified link
         Parameters:
@@ -381,6 +380,12 @@ class RestUtil(APIUtil):
            * get_href - if to return href link or no
         Return: element obj or None if not found
         '''
+        if not link_name:
+            link_name = self.collection_name
+
+        if not attr:
+            attr = self.element_name
+            
         for link in elm.get_link():
             if link.get_rel() == link_name:
                 if get_href:

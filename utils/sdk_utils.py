@@ -247,7 +247,7 @@ class SdkUtil(APIUtil):
         return getattr(self.api, collection_name)
     
 
-    def getElemFromLink(self, elm, link_name, get_href=False, **kwargs):
+    def getElemFromLink(self, elm, link_name=None, get_href=False, **kwargs):
         '''
         Description: get element's collection from specified link
         Parameters:
@@ -255,6 +255,9 @@ class SdkUtil(APIUtil):
            * link_name - link name
         Return: element obj or None if not found
         '''
+        if not link_name:
+            link_name = self.collection_name
+            
         if get_href:
             return getattr(elm, link_name)
         else:

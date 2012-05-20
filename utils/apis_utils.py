@@ -18,7 +18,7 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 import time
-from apis_exceptions import APITimeout, APICommandError
+from apis_exceptions import APITimeout, APICommandError, EntityNotFound
 from time import strftime
 import settings
 import abc
@@ -98,7 +98,7 @@ class APIUtil(object):
         return action
     
 
-    def getElemFromElemColl(self, elm, collection_name, elm_name, name_val):
+    def getElemFromElemColl(self, elm, name_val, collection_name=None, elm_name=None):
         '''
         Description: get element from element's collection
         Parameters:
@@ -108,6 +108,12 @@ class APIUtil(object):
            * name_val - name of element to loof for
         Return: element obj or None if not found
         '''
+        if not collection_name:
+            collection_name = self.collection_name
+
+        if not elm_name:
+            elm_name = self.element_name
+            
         # get element's collection from element link
         objs = self.getElemFromLink(elm, collection_name, attr=elm_name)
         # get element by name
@@ -115,7 +121,7 @@ class APIUtil(object):
             if obj.get_name() == name_val:
                 return obj
 
-        return None
+        raise EntityNotFound("Entity '{0}' not found".format(name_val))
 
 
 class TimeoutingSampler(object):

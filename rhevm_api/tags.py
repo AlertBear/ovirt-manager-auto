@@ -24,6 +24,23 @@ ELEMENT = 'tag'
 COLLECTION = 'tags'
 util = get_api(ELEMENT, COLLECTION)
 
+def _prepareTagObject(**kwargs):
+
+    tag = Tag()
+
+    if 'name' in kwargs:
+        tag.set_name(kwargs.get('name'))
+
+    if 'description' in kwargs:
+        tag.set_description(kwargs.get('description'))
+
+    if 'parent' in kwargs:
+        parentName = util.find(kwargs.pop('parent'))
+        parent = Tag(name=parentName)
+        tag.set_parent(TagParent(tag=parent))
+
+    return tag
+
 
 def addTag(positive, **kwargs):
     '''
@@ -36,12 +53,7 @@ def addTag(positive, **kwargs):
     Return: status (True if tag was created properly, False otherwise)
     '''
 
-    parent = None
-    if 'parent' in kwargs:
-        parentName = util.find(kwargs.pop('parent'))
-        parent = Tag(name=parentName)
-   
-    tag = Tag(parent = TagParent(tag=parent), **kwargs)
+    tag = _prepareTagObject(**kwargs)
     tag, status = util.create(tag, positive)
 
     return status
@@ -60,19 +72,7 @@ def updateTag(positive, tag, **kwargs):
     '''
 
     tagObj = util.find(tag)
-    tagUpd = Tag()
-
-    if 'name' in kwargs:
-        tagUpd.set_name(kwargs.get('name'))
-
-    if 'description' in kwargs:
-        tagUpd.set_description(kwargs.get('description'))
-
-    if 'parent' in kwargs:
-        parentName = util.find(kwargs.pop('parent'))
-        parent = Tag(name=parentName)
-        tagUpd.set_parent(TagParent(tag=parent))
-
+    tagUpd = _prepareTagObject(**kwargs)
     tagUpd, status = util.update(tagObj, tagUpd, positive)
     return status
 

@@ -31,7 +31,7 @@ from utilities.utils import getIpAddressByHostName, getHostName, readConfFile
 from utils.test_utils import split, getStat
 #from utils.test_utils import searchElement, split, getStat, waitForXPath
 #from utils.validator import XPathMatch, XPathLinks, compareCollectionSize
-#from utils.test_utils import getClusterCompatibilityVersion, validateElementStatus
+#from utils.test_utils import validateElementStatus
 #from vms import startVm, stopVm, startVms, stopVms, runLoadOnGuest
 
 ELEMENT = 'host'
@@ -717,12 +717,8 @@ def attachHostNic(positive, host, nic, network):
     cluster = hostObj.get_cluster().get_id()
     clusterObj = clUtil.find(cluster, 'id')
 
-    hostNic = util.getElemFromElemColl(hostObj, 'nics', 'host_nic', nic)
-    clusterNet = util.getElemFromElemColl(clusterObj, 'networks', 'network', network)
-
-    if not clusterNet:
-        util.logger.error('Network {0} is not found at cluster {1}'.format(network, cluster))
-        return False
+    hostNic = util.getElemFromElemColl(hostObj, nic, 'nics', 'host_nic')
+    clusterNet = util.getElemFromElemColl(clusterObj, network, 'networks', 'network')
 
     status = util.syncAction(hostNic, "attach", positive, network=clusterNet.get_network())
 
@@ -765,7 +761,7 @@ def updateHostNic(positive, host, nic, network=None, boot_protocol=None,
     cluster = hostObj.get_cluster().get_name()
     clusterObj = clUtil.find(cluster)
 
-    nicObj = util.getElemFromElemColl(hostObj, 'nics', 'nic', nic)
+    nicObj = util.getElemFromElemColl(hostObj, nic, 'nics', 'nic')
 
     if network:
         nicObj.network.id = util.find(clusterObj.link['networks'].href, network).id
@@ -804,7 +800,7 @@ def detachHostNic(positive, host, nic, network):
     hostObj = util.find(host)
     cluster = hostObj.get_cluster().get_id()
     clusterObj = clUtil.find(cluster, 'id')
-    nicObj = util.getElemFromElemColl(hostObj, 'nics', 'host_nic', nic)
+    nicObj = util.getElemFromElemColl(hostObj, nic, 'nics', 'host_nic')
 
     # Try to get the network object by his dataCenter id
     # to avoid duplicate network names
@@ -1109,7 +1105,7 @@ def addTagToHost(positive, host, tag):
 
     hostObj = util.find(host)
     tagObj = Tag(name=tag)
-    hostTags = util.getElemFromLink(hostObj, 'tags', attr='tag', get_href=True)
+    hostTags = util.getElemFromLink(hostObj, link_name='tags', attr='tag', get_href=True)
     tagObj, status = util.create(tagObj, positive, collection=hostTags)
     return status
 
@@ -1125,7 +1121,7 @@ def removeTagFromHost(positive, host, tag):
     '''
 
     hostObj = util.find(host)
-    tagObj = util.getElemFromElemColl(hostObj, 'tags', 'tag', tag)
+    tagObj = util.getElemFromElemColl(hostObj, tag, 'tags', 'tag')
     if tagObj:
         return util.delete(tagObj, positive)
     else:
@@ -1149,7 +1145,7 @@ def checkHostStatistics(positive, host):
 
     numOfExpStat = len(expectedStatistics)
     status = True
-    statistics = util.getElemFromLink(hostObj, 'statistics', 'get_statistic')
+    statistics = util.getElemFromLink(hostObj, link_name='statistics', attr='statistic')
 
     for stat in statistics:
         datum =  stat.get_values().get_value()[0].get_datum()
@@ -1325,23 +1321,25 @@ def getHostCompatibilityVersion(positive, host):
        * host - host name
     Return: True and compatibilty version or False and None
     '''
+
     try:
         hostObj = util.find(host)
     except EntityNotFound:
         return False, {'hostCompatibilityVersion' : None}
+
     clId = hostObj.get_cluster().get_id()
-    
     try:
-        clObj = util.findById(links['clusters'], clId)
+        clObj = clUtil.find(clId, 'id')
     except EntityNotFound:
         return False, {'hostCompatibilityVersion' : None}
-    cluster = clObj.name
-
-    status,clCompVer = getClusterCompatibilityVersion(positive, cluster)
+    
+    cluster = clObj.get_name()
+    status, clCompVer = getClusterCompatibilityVersion(positive, cluster)
     if not status:
         return False, {'hostCompatibilityVersion' : None}
     hostCompatibilityVersion = clCompVer['clusterCompatibilityVersion']
     return True, {'hostCompatibilityVersion' : hostCompatibilityVersion}
+
 
 def waitForHostNicState(positive, host, nic, state, interval=1, attempts=1):
     '''
@@ -1457,3 +1455,20 @@ def reinstallOvirt(positive, host, image='rhev-hypervisor.iso'):
     testHostStatus = util.waitForRestElemStatus(hostObj, "up", 800)
     return status and testHostStatus
 
+
+def getClusterCompatibilityVersion(positive, cluster):
+    '''
+    Description: Get Cluster compatibility version
+    Author: istein
+    Parameters:
+       * cluster - cluster name
+    Return: True and compatibilty version or False and None
+    '''
+    try:
+        clusterObj = clUtil.find(cluster)
+    except Exception as err:
+        util.logger.error(err)
+        return False, {'clusterCompatibilityVersion' : None}
+    clVersion = '{0}.{1}'.format(clusterObj.get_version().get_major(),
+                                clusterObj.get_version().get_minor())
+    return True, {'clusterCompatibilityVersion' : clVersion}

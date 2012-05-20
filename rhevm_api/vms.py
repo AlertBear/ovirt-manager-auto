@@ -24,6 +24,8 @@ import utils.data_structures as data_st
 from utils.test_utils import get_api
 from utils.apis_utils import TimeoutingSampler
 from utilities.utils import readConfFile
+import re
+from utils.validator import compareCollectionSize
 
 GBYTE = 1024*1024*1024
 ELEMENTS = os.path.join(os.path.dirname(__file__), '../conf/elements.conf')
@@ -489,3 +491,50 @@ def stopVms(vms, wait='true'):
             resultsList.append(False)
 
     return all(resultsList)
+
+
+def searchForVm(positive, query_key, query_val, key_name):
+    '''
+    Description: search for a data center by desired property
+    Parameters:
+       * query_key - name of property to search for
+       * query_val - value of the property to search for
+       * key_name - property in data center object equivalent to query_key
+    Return: status (True if expected number of data centers equal to
+                    found by search, False otherwise)
+    '''
+
+    expected_count = 0
+    vms = VM_API.get(absLink=False)
+
+    for vm in vms:
+        vmProperty = getattr(vm, key_name)
+        if re.match(r'(.*)\*$',query_val):
+            if re.match(r'^' + query_val, vmProperty):
+                expected_count = expected_count + 1
+        else:
+            if vmProperty == query_val:
+                expected_count = expected_count + 1
+
+    contsraint = "{0}={1}".format(query_key, query_val)
+    query_vms = VM_API.query(contsraint)
+    status = compareCollectionSize(query_vms, expected_count, VM_API.logger)
+
+    return status
+
+
+def detachVm(positive, vm):
+    '''
+    Description: run detach vm action
+    Author: edolinin
+    Parameters:
+       * vm - name of vm
+    Return: status (True if vm was detached properly, False otherwise)
+    '''
+    vmObj = VM_API.find(vm)
+    expectedStatus = vmObj.get_status().get_state()
+
+    status = VM_API.syncAction(vmObj, "detach", positive)
+    if status and positive:
+        return VM_API.waitForElemStatus(vmObj, expectedStatus, VM_ACTION_TIMEOUT)
+    return status
