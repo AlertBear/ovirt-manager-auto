@@ -26,6 +26,7 @@ from utils.apis_utils import TimeoutingSampler
 from utilities.utils import readConfFile
 import re
 from utils.validator import compareCollectionSize
+from utils.apis_exceptions import APITimeout
 
 GBYTE = 1024*1024*1024
 ELEMENTS = os.path.join(os.path.dirname(__file__), '../conf/elements.conf')
@@ -34,12 +35,16 @@ DEFAULT_CLUSTER = 'Default'
 NAME_ATTR = 'name'
 ID_ATTR = 'id'
 VM_ACTION_TIMEOUT = 180
+VM_IMAGE_OPT_TIMEOUT = 300
+VM_SAMPLING_PERIOD = 3
+ADD_DISK_KWARGS = ['size', 'type', 'interface', 'format', 'bootable',
+                   'sparse', 'wipe_after_deletion', 'propagate_errors']
 
 VM_API = get_api('vm', 'vms')
 CLUSTER_API = get_api('cluster', 'clusters')
 TEMPLATE_API = get_api('template', 'templates')
 HOST_API = get_api('host', 'hosts')
-STORAGE_DOMAIN_API = get_api('storagedomain', 'storagedomains')
+STORAGE_DOMAIN_API = get_api('storage_domain', 'storagedomains')
 logger = logging.getLogger(__package__ + __name__)
 
 
@@ -409,7 +414,7 @@ def startVm(positive, vm, wait_for_status=ENUMS['vm_state_powering_up']):
         for statusOk in sampler:
             if statusOk:
                 return True
-    except RESTTimeout as e:
+    except APITimeout as e:
         logger.error('Timeouted when waiting for vm %s status to be %s',
                      vm, wait_for_status)
         return False
@@ -487,7 +492,7 @@ def stopVms(vms, wait='true'):
                 if statusOk:
                     resultsList.append(True)
                     break
-        except RESTTimeout:
+        except APITimeout:
             resultsList.append(False)
 
     return all(resultsList)
@@ -538,3 +543,103 @@ def detachVm(positive, vm):
     if status and positive:
         return VM_API.waitForElemStatus(vmObj, expectedStatus, VM_ACTION_TIMEOUT)
     return status
+
+
+def _getVmDisks(vm):
+    vmObj = VM_API.find(vm)
+    disks = VM_API.getElemFromLink(vmObj, link_name='disks', attr='disk',
+                                    get_href=True)
+    return VM_API.get(disks, 'disk')
+
+def addDisk(positive, vm, size, wait=True, storagedomain=None,
+            timeout=VM_IMAGE_OPT_TIMEOUT, **kwargs):
+    '''
+    Description: add disk to vm
+    Parameters:
+        * vm - vm name
+        * size - disk size
+        * wait - wait until finish if True or exit without waiting
+        * storagedomain - storage domain name(relevant only for the first disk)
+        * timeout - waiting timeout
+       * kwargs:
+        * type - disk type
+        * interface - disk interface
+        * format - disk format type
+        * sparse - if disk sparse or preallocated
+        * bootable - if disk bootable or not
+        * wipe_after_deletion - if disk should be wiped after deletion or not
+        * propagate_errors - if propagate errors or not
+    Return: status (True if disk was added properly, False otherwise)
+    '''
+    vmObj = VM_API.find(vm)
+    disk = data_st.Disk(size=size, format=ENUMS['format_cow'],
+                        interface=ENUMS['interface_ide'], sparse=True)
+
+    # replace disk params from kwargs
+    for param_name in ADD_DISK_KWARGS:
+        param_val = kwargs.pop(param_name, None)
+        if param_val is not None:
+            setattr(disk, param_name, param_val)
+
+    # Report the unknown arguments that remains.
+    if 0 < len(kwargs):
+        E = "addDisk() got an unexpected keyword arguments %s"
+        raise TypeError(E % kwargs)
+
+    if storagedomain:
+        sd = STORAGE_DOMAIN_API.find(storagedomain)
+        disk.set_storage_domains(sd)
+
+    disks = VM_API.getElemFromLink(vmObj, link_name='disks', attr='disk',
+                                    get_href=True)
+    vmObj, status = VM_API.create(disk, positive, collection=disks)
+    if status and positive and wait:
+        return VM_API.waitForElemStatus(vmObj, "DOWN", timeout)
+    return status
+
+def removeDisk(positive, vm, disk, wait=True):
+    '''
+    Description: remove disk from vm
+    Parameters:
+       * vm - vm name
+       * disk - name of disk that should be removed
+       * wait - wait until finish if True
+    Return: True if disk was removed properly, False otherwise
+    '''
+    for d in _getVmDisks(vm):
+        if d.name.lower() == disk.lower():
+            status = VM_API.delete(d, positive)
+
+    diskExist = True
+    if positive and status and wait:
+        startTime = time.time()
+        logger.debug('Waiting for disk to be removed.')
+        while diskExist:
+            disks = _getVmDisks(vm)
+            disks = filter(lambda x: x.name.lower() == disk.lower(), disks)
+            diskExist = bool(disks)
+            if VM_IMAGE_OPT_TIMEOUT < time.time() - startTime:
+                raise APITimeout('Timeouted when waiting for disk to be removed')
+            time.sleep(VM_SAMPLING_PERIOD)
+
+    return not diskExist
+
+def removeDisks(positive, vm, num_of_disks, wait=True):
+    '''
+    Description: remove certain number of disks from vm
+    Parameters:
+      * vm - vm name
+      * num_of_disks - number of disks that should be removed
+      * wait - wait until finish if True
+    Return: status (True if disks were removed properly, False otherwise)
+    '''
+    rc = True
+    disks = _getVmDisks(vm)
+    if disks:
+        cnt = int(num_of_disks)
+        actual_cnt = len(disks)
+        cnt_rm = actual_cnt if actual_cnt < cnt else cnt
+        for i in xrange(cnt_rm):
+            disk = disks.pop()
+            rc = rc and removeDisk(positive, vm, disk.name, wait)
+    return rc
