@@ -74,7 +74,7 @@ class RestUtil(APIUtil):
                                   'error: %s. body: %s' % (err, ret['body']))
 
 
-    def get(self, href=None, elm=None, absLink=True):
+    def get(self, href=None, elm=None, absLink=True, listOnly=False):
         '''
         Description: implements GET method and verify the reponse (codes 200,201)
         Author: edolinin
@@ -84,11 +84,14 @@ class RestUtil(APIUtil):
            * absLink - if href url is absolute url (True) or just a suffix
         Return: parsed GET response
         '''
-        if not href:
+        if href is None:
             href=self.collection_name
 
         if not absLink:
-            href = self.links[href]
+            if href:
+                href = self.links[href]
+            else:
+                href = self.opts['uri']
 
         if not elm:
             elm=self.element_name
@@ -104,6 +107,8 @@ class RestUtil(APIUtil):
         if hasattr(parse(ret['body']), elm):
             return getattr(parse(ret['body']), elm)
         else:
+            if listOnly:
+                self.logger.error("Element '{0}' not found at {1}".format(elm, ret['body']))
             return parse(ret['body'])
         
 
@@ -124,12 +129,12 @@ class RestUtil(APIUtil):
         Return: POST response (None on parse error.),
                 status (True if POST test succeeded, False otherwise.)
         '''
-
+        
         href = collection
         if not href:
             href = self.links[self.collection_name]
 
-        collection = self.get(href)
+        collection = self.get(href, listOnly=True)
         entity = validator.dump_entity(entity, self.element_name)
         initialCollectionSize = len(collection)
 
@@ -137,7 +142,7 @@ class RestUtil(APIUtil):
                             % {'uri': href, 'body': entity })
         ret = http.POST(self.opts, href, entity, MEDIA_TYPE)
 
-        collection = self.get(href)
+        collection = self.get(href, listOnly=True)
 
         self.validateResponseViaXSD(href, ret)
         self.logger.debug("Response body for CREATE request is: %s " % ret['body'])
@@ -255,7 +260,7 @@ class RestUtil(APIUtil):
         return True
 
 
-    def find(self, val, attribute='name', absLink=True):
+    def find(self, val, attribute='name', absLink=True, collection=None):
         '''
         Description: find entity by name
         Author: edolinin
@@ -269,9 +274,11 @@ class RestUtil(APIUtil):
         href = self.collection_name
         if absLink:
             href = self.links[self.collection_name]
+
+        if not collection:
+            collection = self.get(href, listOnly=True)
      
         try:
-            collection = self.get(href)
             results = filter(lambda r: getattr(r, attribute) == val, collection)[0]
         except Exception:
             raise EntityNotFound("Entity %s not found on url '%s'." % (val, href))

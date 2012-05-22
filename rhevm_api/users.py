@@ -82,7 +82,6 @@ def addRoleToUser(positive, user, role):
     userObj = util.find(user)
     roleObj = rlUtil.find(role)
     usersRoles = util.getElemFromLink(userObj, link_name='roles', attr='role', get_href=True)
-
     role, status = rlUtil.create(roleObj, positive, collection=usersRoles)
     return status
 

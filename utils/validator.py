@@ -54,7 +54,7 @@ def compareActionStatus(status, expected, logger):
         return False
 
 
-def compareCollectionSize(collection, expectedSize,logger):
+def compareCollectionSize(collection, expectedSize, logger):
 
     if collection is not None:
         try:

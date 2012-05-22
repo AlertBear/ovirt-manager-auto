@@ -59,6 +59,10 @@ class SdkUtil(APIUtil):
 
         if not collection:
             collection = self.collection_name
+
+        href = kwargs.pop('href', None)
+        if href is not None:
+            return self.api
             
         self.logger.debug("GET request content is --  collection:%(col)s " \
                         % {'col': collection })
