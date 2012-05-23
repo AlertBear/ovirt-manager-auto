@@ -158,15 +158,17 @@ class RestUtil(APIUtil):
                                                         self.logger):
                     return None, False
 
-            if(parse(ret['body'])):
+            if ret['body']:
                 self.logger.info("New entity was added")
                 actlEntity = validator.dump_entity(parse(ret['body']),
-                                                    self.element_name)
+                                                    self.selement_name)
                 expEntity = entity if not expectedEntity else expectedEntity
 
                 if not validator.compareElements(parse(expEntity),
                 parse(actlEntity), self.logger, self.element_name):
                     return None, False
+            else:
+                return ret['body'], True
 
         else:
             if not validator.compareResponseCode(ret, expected_neg_status, self.logger):
