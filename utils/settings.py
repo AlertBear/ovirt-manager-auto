@@ -193,6 +193,8 @@ def readTestRunOpts(path, redefs):
     opts['parallel_sections'] = runSection.get('parallel_sections', [])
 
     opts['engine'] = runSection['engine']
+    opts['data_struct_mod'] = runSection['data_struct_mod']
+    opts['api_xsd'] = runSection['api_xsd']
 
     timestamp = strftime('%Y%m%d_%H%M%S')
     opts['log'] = "%s/%sTests%s.log" % (opts['logdir'], opts['engine'], timestamp)

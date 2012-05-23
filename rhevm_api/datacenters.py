@@ -17,17 +17,19 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-from utils.data_structures import DataCenter, Version
-from utils.test_utils import get_api
+from utils.apis_utils import getDS
+from rhevm_api.test_utils import get_api, split
 import re
 from utils.validator import compareCollectionSize
-from utils.test_utils import split
 import threading
 import Queue
 
 ELEMENT = 'data_center'
 COLLECTION = 'datacenters'
 util = get_api(ELEMENT, COLLECTION)
+
+DataCenter = getDS('DataCenter')
+Version = getDS('Version')
 
 
 def addDataCenter(positive, **kwargs):

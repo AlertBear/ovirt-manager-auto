@@ -17,8 +17,8 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-from utils.data_structures import VmPool
-from utils.test_utils import get_api
+from utils.apis_utils import getDS
+from rhevm_api.test_utils import get_api
 import re
 from utils.validator import compareCollectionSize
 from vms import detachVm, startVm, stopVm, removeVms
@@ -32,6 +32,8 @@ util = get_api(ELEMENT, COLLECTION)
 vmUtil = get_api('vm', 'vms')
 clUtil = get_api('cluster', 'clusters')
 templUtil = get_api('template', 'templates')
+
+VmPool = getDS('VmPool')
 
 
 def _prepareVmPoolObject(**kwargs):

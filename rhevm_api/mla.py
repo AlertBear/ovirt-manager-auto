@@ -16,15 +16,20 @@
 # License along with this software; if not, write to the Free
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+
+from utils.apis_utils import getDS
 import os
 from utilities.utils import readConfFile
-from utils.test_utils import split
-from utils.data_structures import Role, Permits, Permit, Permission
-from utils.test_utils import get_api
+from rhevm_api.test_utils import get_api, split 
 
 ELEMENTS=os.path.join(os.path.dirname(__file__), '../conf/elements.conf')
 ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
 CONF_PERMITS = readConfFile(ELEMENTS, 'RHEVM Permits')
+
+Role = getDS('Role')
+Permits = getDS('Permits')
+Permit = getDS('Permit')
+Permission = getDS('Permission')
 
 ELEMENT = 'role'
 COLLECTION = 'roles'

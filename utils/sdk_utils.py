@@ -199,7 +199,7 @@ class SdkUtil(APIUtil):
         return response, True
 
 
-    def query(self, constraint, **kwargs):
+    def query(self, constraint, exp_status=None, href=None, event_id=None):
         '''
         Description: run search query
         Author: edolinin
@@ -207,11 +207,16 @@ class SdkUtil(APIUtil):
            * constraint - query for search
         Return: query results
         '''
-
+        search = None
         self.logger.debug("SEARCH content is --  collection:%(col)s query:%(q)s" \
                         % {'col': self.collection_name, 'q': constraint})
         collection = self.__getCollection(self.collection_name)
-        search = collection.list(constraint)
+        
+        if event_id is not None:
+            search = collection.list(constraint, from_event_id=event_id)
+        else:
+            search = collection.list(constraint)
+            
         self.logger.debug("Response for QUERY request is: %s " % search)
 
         return search

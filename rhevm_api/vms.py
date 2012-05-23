@@ -20,8 +20,8 @@
 import os.path
 import time
 import logging
-import utils.data_structures as data_st
-from utils.test_utils import get_api
+from utils.apis_utils import data_st
+from rhevm_api.test_utils import get_api
 from utils.apis_utils import TimeoutingSampler
 from utilities.utils import readConfFile
 import re
@@ -45,6 +45,7 @@ CLUSTER_API = get_api('cluster', 'clusters')
 TEMPLATE_API = get_api('template', 'templates')
 HOST_API = get_api('host', 'hosts')
 STORAGE_DOMAIN_API = get_api('storage_domain', 'storagedomains')
+DISKS_API = get_api('disk', 'disks')
 logger = logging.getLogger(__package__ + __name__)
 
 
@@ -551,6 +552,7 @@ def _getVmDisks(vm):
                                     get_href=True)
     return VM_API.get(disks, 'disk')
 
+
 def addDisk(positive, vm, size, wait=True, storagedomain=None,
             timeout=VM_IMAGE_OPT_TIMEOUT, **kwargs):
     '''
@@ -590,12 +592,12 @@ def addDisk(positive, vm, size, wait=True, storagedomain=None,
         sd = STORAGE_DOMAIN_API.find(storagedomain)
         disk.set_storage_domains(sd)
 
-    disks = VM_API.getElemFromLink(vmObj, link_name='disks', attr='disk',
-                                    get_href=True)
-    vmObj, status = VM_API.create(disk, positive, collection=disks)
+    disks = DISKS_API.getElemFromLink(vmObj, get_href=True)
+    vmObj, status = DISKS_API.create(disk, positive, collection=disks)
     if status and positive and wait:
         return VM_API.waitForElemStatus(vmObj, "DOWN", timeout)
     return status
+
 
 def removeDisk(positive, vm, disk, wait=True):
     '''
@@ -623,6 +625,7 @@ def removeDisk(positive, vm, disk, wait=True):
             time.sleep(VM_SAMPLING_PERIOD)
 
     return not diskExist
+
 
 def removeDisks(positive, vm, num_of_disks, wait=True):
     '''

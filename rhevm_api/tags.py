@@ -17,12 +17,16 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-from utils.data_structures import Tag, TagParent
-from utils.test_utils import get_api
+from rhevm_api.test_utils import get_api
+from utils.apis_utils import getDS
 
 ELEMENT = 'tag'
 COLLECTION = 'tags'
 util = get_api(ELEMENT, COLLECTION)
+
+Tag = getDS('Tag')
+TagParent = getDS('TagParent')
+
 
 def _prepareTagObject(**kwargs):
 

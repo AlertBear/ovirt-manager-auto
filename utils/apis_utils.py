@@ -17,6 +17,7 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
+import sys
 import time
 from apis_exceptions import APITimeout, APICommandError, EntityNotFound
 from time import strftime
@@ -25,6 +26,16 @@ import abc
 import logging
 from utils.data_structures import Action, GracePeriod
 
+XSD_PATH = settings.opts['api_xsd']
+DS_PATH = settings.opts['data_struct_mod']
+__import__(DS_PATH)
+data_st = sys.modules[DS_PATH]
+
+DEF_TIMEOUT = 900 # default timeout
+DEF_SLEEP = 10 # default sleep
+
+def getDS(ds_name):
+    return getattr(data_st, ds_name)
 
 class APIUtil(object):
     '''
@@ -122,6 +133,30 @@ class APIUtil(object):
                 return obj
 
         raise EntityNotFound("Entity '{0}' not found".format(name_val))
+
+
+    def waitForQuery(self, query, event_id=None, timeout=DEF_TIMEOUT, sleep=DEF_SLEEP):
+        '''
+        Waits until the query `xpath` on doc specified by `link` is evaluates as
+        True.
+
+        Parameters:
+            * query - query to wait for.
+            * event_id - event id.
+            * timeout - Maximal number of seconds to wait.
+            * sleep - A sampling period.
+        Author: jhenner
+        '''
+
+        MSG = 'Waiting for query `%s` and event_id %s up to %d seconds, sampling every %d second.'
+        self.logger.info(MSG % (query, event_id, timeout, sleep))
+        sampler = TimeoutingSampler(timeout, sleep, self.query)
+        TIMEOUT_MSG_TMPL = "Timeouted when waiting for query '{0}' and event '{1}'"
+        sampler.timeout_exc_args = TIMEOUT_MSG_TMPL.format(query, event_id),
+        sampler.func_args = query, [200, 201], None, event_id
+        for sampleOk in sampler:
+            if sampleOk:
+                return True
 
 
 class TimeoutingSampler(object):

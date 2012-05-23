@@ -17,10 +17,9 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-from utils.data_structures import User, Domain, Groups, Group, Roles, Role, Tag
-from utils.test_utils import get_api
+from utils.apis_utils import getDS
+from rhevm_api.test_utils import get_api, split
 from utils.validator import compareElements, compareCollectionSize
-from utils.test_utils import split
 
 ELEMENT = 'user'
 COLLECTION = 'users'
@@ -29,6 +28,13 @@ domUtil = get_api('domain', 'domains')
 rlUtil = get_api('role', 'roles')
 taglUtil = get_api('tag', 'tags')
 
+User = getDS('User')
+Domain = getDS('Domain')
+Groups = getDS('Groups')
+Group = getDS('Group')
+Roles = getDS('Roles')
+Role = getDS('Role')
+Tag = getDS('Tag')
 
 def addUser(positive, **kwargs):
     '''

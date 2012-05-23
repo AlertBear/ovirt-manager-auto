@@ -31,14 +31,18 @@ from rhevm_api.clusters import isHostAttachedToCluster,attachHostToCluster,conne
 #from utils.storage_api import getVmsInfo,getImagesList,getVolumeInfo
 from rhevm_api.vms import removeVms, stopVms
 from rhevm_api.templates import removeTemplates
-from utils.test_utils import validateElementStatus
+from rhevm_api.test_utils import validateElementStatus, get_api
 from utilities.utils import getIpAddressByHostName
-
-from utils.data_structures import StorageDomain, IscsiDetails, Host, Storage, LogicalUnit
-from utils.test_utils import get_api
+from utils.apis_utils import getDS
 
 ELEMENTS = os.path.join(os.path.dirname(__file__), '../conf/elements.conf')
 ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
+
+StorageDomain = getDS('StorageDomain')
+IscsiDetails = getDS('IscsiDetails')
+Host = getDS('Host')
+Storage = getDS('Storage')
+LogicalUnit = getDS('LogicalUnit')
 
 ELEMENT = 'storage_domain'
 COLLECTION = 'storagedomains'

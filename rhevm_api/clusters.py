@@ -17,25 +17,31 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-from utils.data_structures import Cluster, Version, MemoryOverCommit, \
-    TransparentHugePages, MemoryPolicy, SchedulingPolicyThresholds, \
-    SchedulingPolicy, ErrorHandlingOptions, CPU
-from utils.test_utils import get_api
+from utils.apis_utils import getDS
+from rhevm_api.test_utils import get_api, split
 import re
 from utils.validator import compareCollectionSize
-from utils.test_utils import split
 from Queue import Queue
 from threading import Thread
 from utils.apis_exceptions import EntityNotFound
 import time
 from rhevm_api.hosts import activateHost, deactivateHost
 
-
 ELEMENT = 'cluster'
 COLLECTION = 'clusters'
 util = get_api(ELEMENT, COLLECTION)
 dcUtil = get_api('data_center', 'datacenters')
 hostUtil = get_api('host', 'hosts')
+
+Cluster = getDS('Cluster')
+Version = getDS('Version')
+MemoryOverCommit = getDS('MemoryOverCommit')
+TransparentHugePages = getDS('TransparentHugePages')
+MemoryPolicy = getDS('MemoryPolicy')
+SchedulingPolicyThresholds = getDS('SchedulingPolicyThresholds')
+SchedulingPolicy = getDS('SchedulingPolicy')
+ErrorHandlingOptions = getDS('ErrorHandlingOptions')
+CPU = getDS('CPU')
 
 
 def _prepareClusterObject(**kwargs):

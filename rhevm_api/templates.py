@@ -17,9 +17,8 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-from utils.data_structures import Template, Cluster, CPU, CpuTopology,\
-                                    StorageDomain, VM, NIC
-from utils.test_utils import get_api
+from utils.apis_utils import getDS
+from rhevm_api.test_utils import get_api
 import time
 import re
 from utils.validator import compareCollectionSize
@@ -32,6 +31,15 @@ sdUtil = get_api('storage_domain', 'storagedomains')
 clUtil = get_api('cluster', 'clusters')
 vmUtil = get_api('vm', 'vms')
 nicUtil = get_api('nic', 'nics')
+
+Template = getDS('Template')
+Cluster = getDS('Cluster')
+CPU = getDS('CPU')
+CpuTopology = getDS('CpuTopology')
+StorageDomain = getDS('StorageDomain')
+VM = getDS('VM')
+NIC = getDS('NIC')
+
 
 def _prepareTemplateObject(**kwargs):
 

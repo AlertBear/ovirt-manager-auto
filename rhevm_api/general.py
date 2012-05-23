@@ -15,10 +15,10 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-
+from utils.apis_utils import getDS
 from utils import validator
-from utils.data_structures import VM
-from utils.test_utils import get_api
+from rhevm_api.test_utils import get_api
+
 util = get_api('', '')
 permitUtil = get_api('permit', 'capabilities')
 vmUtil = get_api('vm', 'vms')
@@ -27,6 +27,8 @@ domUtil = get_api('domain', 'domains')
 userUtil = get_api('user', 'users')
 sdUtil = get_api('storage_domain', 'storagedomains')
 dcUtil = get_api('data_center', 'datacenters')
+
+VM = getDS('VM')
 
 
 def checkSystemVersionTag(positive):

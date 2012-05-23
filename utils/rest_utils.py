@@ -24,12 +24,12 @@ from apis_exceptions import EntityNotFound
 from lxml import etree
 from utils.data_structures import parseString as parse
 from utils.data_structures import *
-from utils.apis_utils import APIUtil, TimeoutingSampler
+from utils.apis_utils import APIUtil, XSD_PATH
 import os
 
 DEF_TIMEOUT = 900 # default timeout
 DEF_SLEEP = 10 # default sleep
-XSD_FILE = os.path.join(os.path.dirname(__file__), '..', 'conf/api.xsd')
+XSD_FILE = os.path.join(os.path.dirname(__file__), '..', XSD_PATH)
 MEDIA_TYPE = 'application/xml'
 
 
@@ -286,7 +286,7 @@ class RestUtil(APIUtil):
         return results
 
 
-    def query(self, constraint,  expected_status=[200, 201], href=None):
+    def query(self, constraint, expected_status=[200, 201], href=None, event_id=None):
         '''
         Description: run search query
         Author: edolinin
@@ -299,6 +299,8 @@ class RestUtil(APIUtil):
             href = self.links[self.collection_name + '/search']
         templ = template_parser.URITemplate(href)
         qhref = templ.sub({"query": constraint})
+        if event_id:
+            qhref = templ.sub({"query": constraint, "event_id": event_id})
 
         self.logger.debug("SEARCH request content is --  url:%(uri)s" % {'uri': qhref})
         ret = http.GET(self.opts, qhref, MEDIA_TYPE)
@@ -404,40 +406,6 @@ class RestUtil(APIUtil):
                 else:
                     return getattr(linkCont, 'get_' + attr)()
         return None
-    
-
-    def getEtreeParsed(self, link):
-        return etree.fromstring(self.getNoParse(link))
-
-
-    def getAndXpathEval(self, link, xpath):
-        return self.getEtreeParsed(link).xpath(xpath)
-
-
-    def waitForXPath(self, link, xpath, timeout=DEF_TIMEOUT, sleep=DEF_SLEEP):
-        '''
-        Waits until the query `xpath` on doc specified by `link` is evaluates as
-        True.
-
-        Parameters:
-            * link - A string specifying the resource, as it is required by
-                     getNoParse.
-            * xpath - string, a XPath querry to wait to evaluate as True.
-            * timeout - Maximal number of seconds to wait.
-            * sleep - A sampling period.
-        Author: jhenner
-        '''
-
-        MSG = 'Waiting for xpath `%s` up to %d seconds, sampling every %d second.'
-        self.logger.info(MSG % (xpath, timeout, sleep))
-        sampler = TimeoutingSampler(timeout, sleep, self.getAndXpathEval)
-        TIMEOUT_MSG_TMPL = "Timeouted when waiting for sampled {0} " \
-                           "to match xpath `{1}`."
-        sampler.timeout_exc_args = TIMEOUT_MSG_TMPL.format(link, xpath),
-        sampler.func_args = link, xpath
-        for sampleOk in sampler:
-            if sampleOk:
-                return True
 
 
     def waitForElemStatus(self, restElement, status,

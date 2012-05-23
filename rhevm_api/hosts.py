@@ -17,8 +17,8 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-from utils.data_structures import Host, Options, Option, PowerManagement
-from utils.test_utils import get_api
+from utils.apis_utils import getDS
+from rhevm_api.test_utils import get_api, split, getStat
 import os
 import time
 from lxml import etree
@@ -28,17 +28,17 @@ from utils.apis_exceptions import APITimeout, EntityNotFound
 import utilities.ssh_session as ssh_session
 import re
 from utilities.utils import getIpAddressByHostName, getHostName, readConfFile
-from utils.test_utils import split, getStat
-#from utils.test_utils import searchElement, split, getStat, waitForXPath
-#from utils.validator import XPathMatch, XPathLinks, compareCollectionSize
-#from utils.test_utils import validateElementStatus
-#from vms import startVm, stopVm, startVms, stopVms, runLoadOnGuest
 
 ELEMENT = 'host'
 COLLECTION = 'hosts'
 util = get_api(ELEMENT, COLLECTION)
 clUtil = get_api('cluster', 'clusters')
 dcUtil = get_api('data_center', 'datacenters')
+
+Host = getDS('Host')
+Options = getDS('Options')
+Option = getDS('Option')
+PowerManagement = getDS('PowerManagement')
 
 SED = '/bin/sed'
 SERVICE = '/sbin/service'
