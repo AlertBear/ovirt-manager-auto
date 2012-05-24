@@ -22,9 +22,7 @@ import validator
 import time
 from apis_exceptions import EntityNotFound
 from lxml import etree
-from utils.data_structures import parseString as parse
-from utils.data_structures import *
-from utils.apis_utils import APIUtil, XSD_PATH
+from utils.apis_utils import APIUtil, XSD_PATH, parse
 import os
 
 DEF_TIMEOUT = 900 # default timeout
@@ -161,7 +159,7 @@ class RestUtil(APIUtil):
             if ret['body']:
                 self.logger.info("New entity was added")
                 actlEntity = validator.dump_entity(parse(ret['body']),
-                                                    self.selement_name)
+                                                    self.element_name)
                 expEntity = entity if not expectedEntity else expectedEntity
 
                 if not validator.compareElements(parse(expEntity),

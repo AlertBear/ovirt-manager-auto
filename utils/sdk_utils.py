@@ -223,7 +223,7 @@ class SdkUtil(APIUtil):
 
 
 
-    def find(self, val, attribute='name', absLink=True):
+    def find(self, val, attribute='name', absLink=True, collection=None):
         '''
         Description: find entity by name
         Author: edolinin
@@ -234,8 +234,9 @@ class SdkUtil(APIUtil):
         Return: found entity or exception EntityNotFound
         '''
 
-        
-        collection = self.__getCollection(self.collection_name)
+        if not collection:
+            collection = self.__getCollection(self.collection_name)
+            
         results = None
         try:
             if attribute == 'name':

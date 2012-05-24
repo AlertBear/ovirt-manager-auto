@@ -48,7 +48,8 @@ def _prepareNetworkObject(**kwargs):
         netUpd.set_display(kwargs.get('display'))
 
     if 'data_center' in kwargs:
-        net.set_data_center(dcUtil.find(data_center))
+        dc = kwargs.get('data_center')
+        net.set_data_center(dcUtil.find(dc))
 
     address = kwargs.get('address')
     netmask = kwargs.get('netmask')

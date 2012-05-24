@@ -30,6 +30,7 @@ XSD_PATH = settings.opts['api_xsd']
 DS_PATH = settings.opts['data_struct_mod']
 __import__(DS_PATH)
 data_st = sys.modules[DS_PATH]
+parse = data_st.parseString
 
 DEF_TIMEOUT = 900 # default timeout
 DEF_SLEEP = 10 # default sleep

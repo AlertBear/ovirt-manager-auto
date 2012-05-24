@@ -57,7 +57,7 @@ def _prepareClusterObject(**kwargs):
     if 'version' in kwargs:
         majorV, minorV = kwargs.pop('version').split(".")
         clVersion = Version(major=majorV, minor = minorV)
-        cl.set_verion(clVersion)
+        cl.set_version(clVersion)
 
     if 'cpu' in kwargs:
         clCPU = CPU(id = kwargs.pop('cpu'))
@@ -69,6 +69,9 @@ def _prepareClusterObject(**kwargs):
 
     if 'mem_ovrcmt_prc' in kwargs or \
     'transparent_hugepages' in kwargs:
+
+        transparentHugepages = None
+        overcommit = None
 
         if kwargs.get('mem_ovrcmt_prc'):
             overcommit = MemoryOverCommit(percent = kwargs.pop('mem_ovrcmt_prc'))
@@ -426,3 +429,53 @@ def attachHostToCluster(positive, host, cluster):
 
     # Verify host indeed attached to cluster
     return isHostAttachedToCluster(positive, host, cluster)
+
+
+def checkClusterParams(positive, cluster, thrhld_low=None, thrhld_high=None,
+                       duration=None, scheduling_policy=None, mem_ovrcmt_prc=None,
+                       mem_trnspt_hp=None):
+
+    cl = util.find(cluster)
+
+    ERROR = "%s of %s has wrong value, expected: %s, actual: %s."
+    status = True
+
+    try:
+        # Check the scheduling policy thresholds and duration if requested:
+        if max(thrhld_low, thrhld_high, duration, scheduling_policy) \
+                is not None:
+            clspth = cl.get_scheduling_policy().get_thresholds()
+            if (None is not thrhld_low) and (clspth.get_low() != int(thrhld_low)):
+                status = False
+                util.logger.error(ERROR % ("Thresholds low",
+                    cl.get_name(), thrhld_low, clspth.get_low()))
+
+            if (None is not thrhld_low) and  (clspth.get_high() != int(thrhld_high)):
+                status = False
+                util.logger.error(ERROR % ("Thresholds high",
+                    cl.get_name(), thrhld_high, clspth.get_high()))
+
+            if (None is not duration) and (clspth.get_duration() !=  int(duration)):
+                status = False
+                util.logger.error(ERROR % ("Duration",
+                    cl.get_name(), duration, clspth.get_duration()))
+
+            # Check the scheduling_policy strategy if requested:
+            if (None is not scheduling_policy) and \
+            (cl.get_scheduling_policy().get_policy() != scheduling_policy):
+                status = False
+                util.logger.error(ERROR % ("Scheduling policy",
+                    cl.get_name(), scheduling_policy, cl.get_scheduling_policy().get_policy()))
+
+        # Check the memory policy if requested:
+        if (None is not mem_ovrcmt_prc) \
+                    and (cl.get_memory_policy().get_overcommit().get_percent() \
+                    != int(mem_ovrcmt_prc)):
+            status = False
+            util.logger.error(ERROR % ("Memory overcommit percent",
+                cl.get_name(), mem_ovrcmt_prc,
+                cl.get_memory_policy().get_overcommit().get_percent()))
+    except AttributeError as e:
+        util.logger.error("checkClusterParams: %s" % str(e))
+        return not positive
+    return status == positive

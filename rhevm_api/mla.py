@@ -196,10 +196,7 @@ def addPermitsToUser(positive, user, role, obj, attr):
     userPermits = permisUtil.getElemFromLink(userObj, get_href=True)
     permit, status = permisUtil.create(permit, positive, collection=userPermits)
 
-    if positive:
-        return status
-    else:
-        return not status
+    return status
 
 
 def addPermitsToGroup(positive, group, role, obj, attr):
@@ -213,11 +210,8 @@ def addPermitsToGroup(positive, group, role, obj, attr):
     groupPermits = permisUtil.getElemFromLink(groupObj, get_href=True)
     permit, status = permisUtil.create(permit, positive, collection=groupPermits)
 
-    if positive:
-        return status
-    else:
-        return not status
-
+    return status
+    
 
 def addVMPermissionsToUser(positive, user, vm, role=ENUMS['role_name_user_vm_manager']):
     '''
@@ -305,11 +299,8 @@ def addUserPermitsForObj(positive, user, role, obj, group=False):
     objPermits = permisUtil.getElemFromLink(obj, get_href=True)
     permit, status = permisUtil.create(permit, positive, collection=objPermits)
 
-    if positive:
-        return status
-    else:
-        return not status
-
+    return status
+    
 
 def addPermissionsForTemplate(positive, user, template, role="TemplateAdmin"):
     '''

@@ -19,7 +19,7 @@
 
 from cStringIO import StringIO
 import sys
-import utils.data_structures as ds
+from utils.apis_utils import data_st as ds
 
 
 def dump_entity(ds, root_name):
@@ -134,7 +134,7 @@ def compareElements(expElm, actElm, logger, root):
                     logger.info(MSG.format(root, attr, attrExpVal))
                 else:
                     equal = False
-                    MSG = "Property '{0}->{1}' has wrong value, expected: {2};actual: {3}"
+                    MSG = "Property '{0}->{1}' has wrong value, expected: '{2}'; actual: '{3}'"
                     logger.error(MSG.format(root, attr, attrExpVal, attrActVal))
             else:
                 nodeName = "{0}->{1}".format(root, attr)

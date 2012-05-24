@@ -28,6 +28,7 @@ from utils.apis_exceptions import APITimeout, EntityNotFound
 import utilities.ssh_session as ssh_session
 import re
 from utilities.utils import getIpAddressByHostName, getHostName, readConfFile
+from utils.validator import compareCollectionSize
 
 ELEMENT = 'host'
 COLLECTION = 'hosts'
@@ -366,7 +367,7 @@ def waitForOvirtAppearance(positive, host, attempts=10, interval=3):
     return False
 
 
-def waitForHostsStates(positive, names, states='up', *args, **kwargs):
+def waitForHostsStates(positive, names, states='up'):
     '''
     Wait until all of the hosts identified by names exist and have the desired
     status.
@@ -375,15 +376,19 @@ def waitForHostsStates(positive, names, states='up', *args, **kwargs):
         * states - A state of the hosts to wait for.
     Author: jhenner
     '''
+    query_hosts = ''
     names = split(names)
+    host_count = 0
     for host in names:
+        host_count +=1
         util.find(host)
-
-    host_selector = ' or '.join(['name="%s"' % name for name in names])
-    xpath = '%d=count(/hosts/host[(%s) and status/state="%s"])' \
-                % (len(names), host_selector, states)
+        if host_count == 1:
+            query_hosts += "name={0} and status={1}".format(host, states)
+        else:
+            query_hosts += " or name={0} and status={1}".format(host, states)
+  
     try:
-        util.waitForXPath(COLLECTION, xpath, *args, **kwargs)
+        util.waitForQuery(query_hosts)
     except APITimeout as e:
         logger.error(e)
         return False
@@ -414,7 +419,7 @@ def addHost(positive, name, wait=True, vdcPort=None, **kwargs):
     else:
         host_address = kwargs.pop('address')
 
-    hostCl = clUtil.find(kwargs.pop('cluster'))
+    hostCl = clUtil.find(kwargs.get('cluster', 'Default'))
 
     osType ='rhel'
     root_password = kwargs.get('root_password')
@@ -432,8 +437,8 @@ def addHost(positive, name, wait=True, vdcPort=None, **kwargs):
 
         if not wait:
             return status and positive
-        if host:
-            return status and util.waitForRestElemStatus(host, "up", 800)
+        if hasattr(host, 'href'):
+            return status and util.waitForElemStatus(host, "up", 800)
         else:
             return status and not positive
 
@@ -477,7 +482,7 @@ def updateHost(positive, host, **kwargs):
         hostUpd.set_root_password(kwargs.pop('root_password'))
 
     if 'cluster' in kwargs:
-        cl = clUtil.find(kwargs.pop('cluster'))
+        cl = clUtil.find(kwargs.pop('cluster', 'Default'))
         hostUpd.set_cluster(cl)
     
     if 'pm' in kwargs:
@@ -492,11 +497,11 @@ def updateHost(positive, host, **kwargs):
 
         if pm_port or pm_secure:
             pmOptions = Options()
+            if pm_port.strip():
+                op = Option(name='port', value=pm_port)
+                pmOptions.add_option(op)
             if pm_secure:
                 op = Option(name='secure', value=pm_secure)
-                pmOptions.add_option(op)
-            if pm_port:
-                op = Option(name='port', value=pm_port)
                 pmOptions.add_option(op)
             if pm_slot:
                 op = Option(name='slot', value=pm_slot)
@@ -506,7 +511,8 @@ def updateHost(positive, host, **kwargs):
             enabled=kwargs.get('pm'), username=pm_username, password=pm_password,
             options=pmOptions)
 
-    hostUpd.power_management = hostPm
+        hostUpd.set_power_management(hostPm)
+        
     hostObj, status = util.update(hostObj, hostUpd, positive)
 
     return status
@@ -587,7 +593,7 @@ def installHost(positive, host, root_password, override_iptables='false'):
                              root_password=root_password,
                              override_iptables=override_iptables.lower())
 
-    testHostStatus = util.waitForRestElemStatus(hostObj, "up", 800)
+    testHostStatus = util.waitForElemStatus(hostObj, "up", 800)
 
     return status and testHostStatus
 
@@ -720,7 +726,7 @@ def attachHostNic(positive, host, nic, network):
     hostNic = util.getElemFromElemColl(hostObj, nic, 'nics', 'host_nic')
     clusterNet = util.getElemFromElemColl(clusterObj, network, 'networks', 'network')
 
-    status = util.syncAction(hostNic, "attach", positive, network=clusterNet.get_network())
+    status = util.syncAction(hostNic, "attach", positive, network=clusterNet)
 
     return status
 
@@ -1148,7 +1154,7 @@ def checkHostStatistics(positive, host):
     statistics = util.getElemFromLink(hostObj, link_name='statistics', attr='statistic')
 
     for stat in statistics:
-        datum =  stat.get_values().get_value()[0].get_datum()
+        datum =  str(stat.get_values().get_value()[0].get_datum())
         if not re.match('(\d+\.\d+)|(\d+)', datum):
             util.logger.error('Wrong value for ' + stat.get_name() + ': ' + datum)
             status = False

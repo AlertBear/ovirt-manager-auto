@@ -27,6 +27,7 @@ util = get_api(ELEMENT, COLLECTION)
 domUtil = get_api('domain', 'domains')
 rlUtil = get_api('role', 'roles')
 taglUtil = get_api('tag', 'tags')
+groupUtil = get_api('group', 'groups')
 
 User = getDS('User')
 Domain = getDS('Domain')
@@ -177,7 +178,7 @@ def groupExists(positive, group_name):
        * group_name - name of the group to be checked
     Return: status (True if group does exist, False otherwise)
     '''
-    util.find(group_name)
+    groupUtil.find(group_name)
     return True
 
 
@@ -189,7 +190,7 @@ def addGroup(positive, group_name):
     Return: status (True if group was created properly, False otherwise)
     '''
     group.name = Group(name=group_name)
-    group, status = util.create(group, positive)
+    group, status = groupUtil.create(group, positive)
 
     return status
 
@@ -202,5 +203,5 @@ def deleteGroup(positive, group_name):
        * group_name - name of the group to be deleted
     Return: status (True if group was deleted, False otherwise)
     '''
-    groupObj = util.find(group_name)
+    groupObj = groupUtil.find(group_name)
     return util.delete(groupObj, positive)
