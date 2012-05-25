@@ -28,6 +28,7 @@ from utils.validator import compareCollectionSize
 from utils.apis_exceptions import APITimeout, EntityNotFound
 from rhevm_api.networks import getClusterNetwork
 from utilities.jobs import Job, JobsSet
+from Queue import Queue
 
 GBYTE = 1024*1024*1024
 ELEMENTS = os.path.join(os.path.dirname(__file__), '../conf/elements.conf')
@@ -491,7 +492,7 @@ def stopVms(vms, wait='true'):
     return all(resultsList)
 
 
-def searchForVm(positive, query_key, query_val, key_name):
+def searchForVm(positive, query_key, query_val, key_name, expected_count=None):
     '''
     Description: search for a data center by desired property
     Parameters:
@@ -501,18 +502,18 @@ def searchForVm(positive, query_key, query_val, key_name):
     Return: status (True if expected number of data centers equal to
                     found by search, False otherwise)
     '''
+    if not expected_count:
+        expected_count = 0
+        vms = VM_API.get(absLink=False)
 
-    expected_count = 0
-    vms = VM_API.get(absLink=False)
-
-    for vm in vms:
-        vmProperty = getattr(vm, key_name)
-        if re.match(r'(.*)\*$',query_val):
-            if re.match(r'^' + query_val, vmProperty):
-                expected_count = expected_count + 1
-        else:
-            if vmProperty == query_val:
-                expected_count = expected_count + 1
+        for vm in vms:
+            vmProperty = getattr(vm, key_name)
+            if re.match(r'(.*)\*$',query_val):
+                if re.match(r'^' + query_val, vmProperty):
+                    expected_count = expected_count + 1
+            else:
+                if vmProperty == query_val:
+                    expected_count = expected_count + 1
 
     contsraint = "{0}={1}".format(query_key, query_val)
     query_vms = VM_API.query(contsraint)

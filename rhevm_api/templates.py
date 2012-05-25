@@ -18,7 +18,7 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 from utils.apis_utils import getDS
-from rhevm_api.test_utils import get_api
+from rhevm_api.test_utils import get_api, split
 import time
 import re
 from utils.validator import compareCollectionSize

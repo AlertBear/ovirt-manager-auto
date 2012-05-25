@@ -251,7 +251,7 @@ def detachStorageDomain(positive, datacenter, storagedomain):
     Return: status (True if storage domain was detached properly,
                     False otherwise)
     '''
-    storDomObj = _getDCStorage(datacenter, storagedomain)
+    storDomObj = getDCStorage(datacenter, storagedomain)
     return util.delete(storDomObj, positive)
 
 
@@ -267,7 +267,7 @@ def activateStorageDomain(positive, datacenter, storagedomain, wait=True):
                     False otherwise)
     '''
     
-    storDomObj = _getDCStorage(datacenter, storagedomain)
+    storDomObj = getDCStorage(datacenter, storagedomain)
 
     if positive and validateElementStatus(positive, 'storagedomain', COLLECTION,
                                     storagedomain, 'active', datacenter):
@@ -293,7 +293,7 @@ def deactivateStorageDomain(positive, datacenter, storagedomain, wait=True):
                     False otherwise)
     '''
     
-    storDomObj = _getDCStorage(datacenter, storagedomain)
+    storDomObj = getDCStorage(datacenter, storagedomain)
 
     async = 'false' if wait else 'true'
     status = util.syncAction(storDomObj, "deactivate", positive, async=async)
@@ -471,7 +471,7 @@ def isStorageDomainMaster(positive, dataCenterName, storageDomainName):
     return values : Boolean value (True/False ) True in case storage domain is a master,otherwise False
     '''
     
-    storDomObj = _getDCStorage(dataCenterName, storageDomainName)
+    storDomObj = getDCStorage(dataCenterName, storageDomainName)
     attribute='master'
     if not hasattr(storDomObj, attribute):
         util.logger.error("Storage Domain " + storageDomainName + \

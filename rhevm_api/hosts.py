@@ -42,6 +42,7 @@ Options = getDS('Options')
 Option = getDS('Option')
 IP = getDS('IP')
 PowerManagement = getDS('PowerManagement')
+Tag = getDS('Tag')
 
 SED = '/bin/sed'
 SERVICE = '/sbin/service'
@@ -1008,7 +1009,7 @@ def sendSNRequest(positive, host_name, host_nics=None, auto_nics=None, **options
     return util.syncCollectionAction(host_obj.link['nics'].href + '/setupnetworks',
                                      etree.tostring(root), positive)
 
-def searchForHost(positive, query_key, query_val, key_name):
+def searchForHost(positive, query_key, query_val, key_name, expected_count=None):
     '''
     Description: search for a host by desired property
     Author: edolinin
@@ -1020,18 +1021,18 @@ def searchForHost(positive, query_key, query_val, key_name):
     Return: status (True if expected number of hosts equal to found by search,
     False otherwise)
     '''
+    if not expected_count:
+        expected_count = 0
+        hosts = util.get(absLink=False)
 
-    expected_count = 0
-    hosts = util.get(absLink=False)
-
-    for host in hosts:
-        hostProperty = getattr(host, key_name)
-        if re.match(r'(.*)\*$',query_val):
-            if re.match(r'^' + query_val, hostProperty):
-                expected_count = expected_count + 1
-        else:
-            if hostProperty == query_val:
-                expected_count = expected_count + 1
+        for host in hosts:
+            hostProperty = getattr(host, key_name)
+            if re.match(r'(.*)\*$',query_val):
+                if re.match(r'^' + query_val, hostProperty):
+                    expected_count = expected_count + 1
+            else:
+                if hostProperty == query_val:
+                    expected_count = expected_count + 1
 
     contsraint = "{0}={1}".format(query_key, query_val)
     query_hosts = util.query(contsraint)
