@@ -85,7 +85,7 @@ def _prepareTemplateObject(**kwargs):
     storagedomain = kwargs.pop('storagedomain', None)
     if storagedomain:
         sd = sdUtil.find(storagedomain)
-        templ.set_storagedomain(StorageDomain(id=sd.get_id()))
+        templ.set_storage_domain(StorageDomain(id=sd.get_id()))
 
     return templ
     

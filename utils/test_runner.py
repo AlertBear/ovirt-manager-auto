@@ -421,7 +421,11 @@ class TestRunner(object):
 
     def _run_test_case(self, i, testCallable, testCase, testParametersStrOrg, valsToIterate, loopParamVals, modPath, funcName, testGroup):
         self.logger.debug("test_type: %s modPath: %s, funcName: %s", testCase['test_type'], modPath, funcName)
-        exec("from " + modPath + " import " + funcName)
+        try:
+            exec("from " + modPath + " import " + funcName)
+        except ImportError:
+            self.logger.info("Can't import action {0}\n{1}".format(funcName, TESTS_LOG_SEPARATOR))
+            return
 
         testStatus = True
         reportStats = {}
