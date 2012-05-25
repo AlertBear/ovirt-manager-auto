@@ -87,7 +87,7 @@ def _prepareStorageDomainObject(positive, **kwargs):
                         target=lun_target, port=lun_port)
         sd.set_storage(Storage(type_=storage_type, logical_unit=[logical_unit]))
         
-        if type.lower() == 'data':
+        if type and type.lower() == 'data':
             if 'iscsi_storage_format' in kwargs:
                 sd.set_storage_format(kwargs.pop('iscsi_storage_format'))
             elif host:
@@ -207,6 +207,18 @@ def searchForStorageDomain(positive, query_key, query_val, key_name):
     return status
 
 
+def getDCStorages(datacenter):
+
+    dcObj = dcUtil.find(datacenter)
+    return util.getElemFromLink(dcObj, get_href=True)
+
+
+def getDCStorage(datacenter, storagedomain):
+
+    dcObj = dcUtil.find(datacenter)
+    return util.getElemFromElemColl(dcObj, storagedomain)
+
+
 def attachStorageDomain(positive, datacenter, storagedomain, wait=True):
     '''
     Description: attach storage domain to data center
@@ -218,11 +230,10 @@ def attachStorageDomain(positive, datacenter, storagedomain, wait=True):
     Return: status (True if storage domain was attached properly,
                     False otherwise)
     '''
-    dcObj = dcUtil.find(datacenter)
     storDomObj = util.find(storagedomain)
     attachDom = StorageDomain(id=storDomObj.get_id())
 
-    dcStorages = util.getElemFromLink(dcObj, COLLECTION, attr=ELEMENT, get_href=True)
+    dcStorages = getDCStorages(datacenter)
     attachDom, status = util.create(attachDom, positive, collection=dcStorages,
                                                             async=(not wait))
     if status and positive and wait:
@@ -240,8 +251,7 @@ def detachStorageDomain(positive, datacenter, storagedomain):
     Return: status (True if storage domain was detached properly,
                     False otherwise)
     '''
-    dcObj = dcUtil.find(datacenter)
-    storDomObj = util.getElemFromElemColl(dcObj, storagedomain)
+    storDomObj = _getDCStorage(datacenter, storagedomain)
     return util.delete(storDomObj, positive)
 
 
@@ -256,10 +266,10 @@ def activateStorageDomain(positive, datacenter, storagedomain, wait=True):
     Return: status (True if storage domain was activated properly,
                     False otherwise)
     '''
-    dcObj = dcUtil.find(datacenter)
-    storDomObj = util.getElemFromElemColl(dcObj, storagedomain)
+    
+    storDomObj = _getDCStorage(datacenter, storagedomain)
 
-    if positive and validateElementStatus(positive, ELEMENT, COLLECTION,
+    if positive and validateElementStatus(positive, 'storagedomain', COLLECTION,
                                     storagedomain, 'active', datacenter):
         util.logger.warning("Storage domain %s already activated" % (storagedomain))
         return True
@@ -282,8 +292,8 @@ def deactivateStorageDomain(positive, datacenter, storagedomain, wait=True):
     Return: status (True if storage domain was deactivated properly,
                     False otherwise)
     '''
-    dcObj = dcUtil.find(datacenter)
-    storDomObj = util.getElemFromElemColl(dcObj, storagedomain)
+    
+    storDomObj = _getDCStorage(datacenter, storagedomain)
 
     async = 'false' if wait else 'true'
     status = util.syncAction(storDomObj, "deactivate", positive, async=async)
@@ -383,10 +393,10 @@ def importStorageDomain(positive, type, storage_type, address, path, host):
     Return: status (True if storage domain was imported properly, False otherwise)
     '''
    
-    sdStorage = Storage(type=storage_type, address=address, path=path)
+    sdStorage = Storage(type_=storage_type, address=address, path=path)
     h = Host(name=host)
 
-    sd = StorageDomain(type=type, host=h, storage=sdStorage)
+    sd = StorageDomain(type_=type, host=h, storage=sdStorage)
     sd, status = util.create(sd, positive)
 
     return status
@@ -444,7 +454,7 @@ def waitForStorageDomainStatus(positive, dataCenterName, storageDomainName,
     '''
     handleTimeout = 0
     while handleTimeout <= timeOut:
-        if validateElementStatus(positive, ELEMENT, COLLECTION, storageDomainName,
+        if validateElementStatus(positive, 'storagedomain', COLLECTION, storageDomainName,
                                  expectedStatus, dataCenterName):
             return True
         time.sleep(sleepTime)
@@ -460,9 +470,8 @@ def isStorageDomainMaster(positive, dataCenterName, storageDomainName):
         storageDomainName = The name or ip address of storage domain
     return values : Boolean value (True/False ) True in case storage domain is a master,otherwise False
     '''
-
-    dcObj = dcUtil.find(dataCenterName)
-    storDomObj = util.getElemFromElemColl(dcObj, storageDomainName)
+    
+    storDomObj = _getDCStorage(dataCenterName, storageDomainName)
     attribute='master'
     if not hasattr(storDomObj, attribute):
         util.logger.error("Storage Domain " + storageDomainName + \
@@ -660,9 +669,8 @@ def cleanDataCenter(positive,datacenter,formatIsoStorage='false'):
             return False
 
     util.logger.info("Find all non master storage domains")
-    dcObj = dcUtil.find(datacenter)
-    sdObjList = util.getElemFromLink(dcObj, get_href=True)
-   
+    sdObjList = getDCStorages(datacenter)
+    
     nonMasterSdObjects = filter(lambda sdObj: sdObj.get_master() == 'false', sdObjList)
 
     util.logger.info("Find Master Domain")
@@ -759,13 +767,9 @@ def execOnNonMasterDomains(positive, datacenter, operation, type):
     '''
 
     status = True
-
-    # Find data center
-    dcObj = dcUtil.find(datacenter)
-
-    # Get all storage domains, connected to this datacenter
-    sdObjList = util.getElemFromLink(dcObj, get_href=True)
-
+    
+    sdObjList = getDCStorages(datacenter)
+    
     # Find the Non-master & type storage domains.
     if type == 'all':
         sdObjects = filter(lambda sdObj: sdObj.get_master() == 'false', sdObjList)
@@ -802,12 +806,8 @@ def findMasterStorageDomain(positive,datacenter):
        * datacenter - datacenter name
     Return: master domain storage domain if found, empty string ' ' otherwise)
     '''
-
-    # Find data center
-    dcObj = dcUtil.find(datacenter)
-
-    # Get all storage domains, connected to this datacenter
-    sdObjList = util.getElemFromLink(dcObj, get_href=True)
+    
+    sdObjList = getDCStorages(datacenter)
 
     # Find the master DATA storage domain.
     masterResult = filter(lambda sdObj: sdObj.get_type() == \

@@ -20,13 +20,14 @@
 import os.path
 import time
 import logging
-from utils.apis_utils import data_st
+from utils.apis_utils import data_st, TimeoutingSampler
 from rhevm_api.test_utils import get_api
-from utils.apis_utils import TimeoutingSampler
 from utilities.utils import readConfFile
 import re
 from utils.validator import compareCollectionSize
-from utils.apis_exceptions import APITimeout
+from utils.apis_exceptions import APITimeout, EntityNotFound
+from rhevm_api.networks import getClusterNetwork
+from utilities.jobs import Job, JobsSet
 
 GBYTE = 1024*1024*1024
 ELEMENTS = os.path.join(os.path.dirname(__file__), '../conf/elements.conf')
@@ -35,6 +36,7 @@ DEFAULT_CLUSTER = 'Default'
 NAME_ATTR = 'name'
 ID_ATTR = 'id'
 VM_ACTION_TIMEOUT = 180
+VM_REMOVE_SNAPSHOT_TIMEOUT = 300
 VM_IMAGE_OPT_TIMEOUT = 300
 VM_SAMPLING_PERIOD = 3
 ADD_DISK_KWARGS = ['size', 'type', 'interface', 'format', 'bootable',
@@ -46,6 +48,9 @@ TEMPLATE_API = get_api('template', 'templates')
 HOST_API = get_api('host', 'hosts')
 STORAGE_DOMAIN_API = get_api('storage_domain', 'storagedomains')
 DISKS_API = get_api('disk', 'disks')
+NIC_API = get_api('nic', 'nics')
+SNAPSHOT_API = get_api('snapshot', 'snapshots')
+
 logger = logging.getLogger(__package__ + __name__)
 
 
@@ -248,18 +253,17 @@ def removeVm(positive, vm, **kwargs):
        * waitTime - waiting time interval
     Return: status (True if vm was removed properly, False otherwise)
     '''
-    opts = dict()
+    body = None
     force = kwargs.pop('force', None)
     if force:
-        action = data_st.Action(force=True)
-        opts.update(action=action)
+        body = data_st.Action(force=True)
 
     vmObj = VM_API.find(vm)
     stopVM = kwargs.pop('stopVM', 'false')
     if stopVM.lower() == 'true' and vmObj.status.state.lower() != 'down':
         if not stopVm(positive, vm):
             return False
-    status = VM_API.delete(vmObj, positive, **opts)
+    status = VM_API.delete(vmObj, positive, body=body, element_name='action')
 
     wait = kwargs.pop('wait', False)
     if positive and wait and status:
@@ -408,18 +412,11 @@ def startVm(positive, vm, wait_for_status=ENUMS['vm_state_powering_up']):
     if wait_for_status is None:
         return True
 
-    sampler = TimeoutingSampler(VM_ACTION_TIMEOUT, 10, VM_API.getAndXpathEval)
-    sampler.func_args = (vmObj,
-                         '/vm[status/state="%s"]' % wait_for_status.lower())
-    try:
-        for statusOk in sampler:
-            if statusOk:
-                return True
-    except APITimeout as e:
-        logger.error('Timeouted when waiting for vm %s status to be %s',
-                     vm, wait_for_status)
-        return False
+    query = "name={0} and status={1}".format(vm, wait_for_status.lower())
 
+    return VM_API.waitForQuery(query, timeout=VM_ACTION_TIMEOUT, sleep=10)
+
+    
 def startVms(vms, wait_for_status=ENUMS['vm_state_powering_up']):
     '''
     Start several vms simultaneously. Only action response is checked, no
@@ -485,17 +482,12 @@ def stopVms(vms, wait='true'):
         return True
 
     resultsList = []
+    query = 'name={0} and status=down'
     for vmObj in vmObjectsList:
-        sampler = TimeoutingSampler(VM_ACTION_TIMEOUT, 5, VM_API.getAndXpathEval)
-        sampler.func_args = (vmObj, '/vm[status/state="down"]')
-        try:
-            for statusOk in sampler:
-                if statusOk:
-                    resultsList.append(True)
-                    break
-        except APITimeout:
-            resultsList.append(False)
-
+        query =query.format(vm.get_name())
+        querySt = VM_API.waitForQuery(query, timeout=VM_ACTION_TIMEOUT, sleep=DEF_SLEEP)
+        resultsList.append(querySt)
+       
     return all(resultsList)
 
 
@@ -648,3 +640,625 @@ def removeDisks(positive, vm, num_of_disks, wait=True):
             disk = disks.pop()
             rc = rc and removeDisk(positive, vm, disk.name, wait)
     return rc
+
+
+def migrateVm(positive, vm, host=None, wait=True):
+    '''
+    Migrate the VM.
+
+    If the host was specified, after the migrate action was performed,
+    the method is checking whether the VM status is UP or POWERING_UP
+    and whether the VM runs on required destination host.
+
+    If the host was not specified, after the migrate action was performed, the
+    method is checking whether the VM is UP or POWERING_UP
+    and whether the VM runs on host different to the source host.
+
+    Author: edolinin, jhenner
+    Parameters:
+       * vm - name of vm
+       * host - Name of the destionation host to migrate VM on, or
+                None for RHEVM destination host autoselection.
+       * wait - When True wait until end of action,
+                     False return without waiting.
+    Return: True if vm was migrated and test is positive,
+            False otherwise.
+    '''
+    vmObj = VM_API.find(vm)
+    actionParams = {}
+
+    if not vmObj.get_host():
+        logger.error('There is no host for vm {0}'.format(vm))
+        return False
+    
+    sourceHostName = vmObj.get_host().get_name()
+    migrateQuery = ''
+
+    # If the host is not specified, we should let RHEVM to autoselect host.
+    if host:
+        destHostObj = HOST_API.find(host)
+        actionParams['host'] = destHostObj
+        # Check the vm to be UP or POWERING_UP and whether it is on the host we
+        # wanted it to be.
+        migrateQuery = "name={0} and status=powering_up or name={0} and status=up"\
+                                                                .format(sourceHostName)
+    else:
+        # Check the vm to be UP or POWERING_UP and whether it moved.
+        migrateQuery = "name={0} and status=!powering_up or name={0} and status!=up"\
+                                                                .format(sourceHostName)
+
+    if not VM_API.syncAction(vmObj, "migrate", positive, **actionParams):
+        return False
+
+    # Check the VM only if we do the positive test. We know the action status
+    # failed so with fingers crossed we can assume that VM didn't migrate.
+    if not wait or not positive:
+        logger.warning('Not going to wait till VM migration completes. \
+        wait=%s, positive=%s' % (str(wait), positive))
+        return True
+
+    VM_API.waitForQuery(migrateQuery, timeout=VM_ACTION_TIMEOUT, sleep=DEF_SLEEP)
+
+    # Check whether we tried to migrate vm to different cluster
+    # in this case we return False, since this action shouldn't be allowed.
+    logger.info('Getting the VM host after VM migrated.')
+    realDestHostObj = VM_API.find(vm).get_host()
+    if vmObj.get_cluster().get_id() != realDestHostObj.get_cluster().get_id():
+        return False
+
+    if host:
+        MSG = 'VM is on the destination host and is UP or POWERING_UP.'
+        logger.info(MSG)
+    else:
+        MSG = 'VM host has changed and is UP or POWERING_UP.'
+        logger.info(MSG)
+    return True
+
+
+def checkVmHasCdromAttached(positive, vmName):
+    '''
+    Check whether vm has cdrom attached
+    Author: jvorcak
+    Parameters:
+       * vmName - name of the virtual machine
+    Return (True if vm has at least one cdrom attached, False otherwise)
+    '''
+    vmObj = VM_API.find(vmName)
+    cdroms = VM_API.getElemFromLink(vmObj, link_name='cdroms', attr='cdrom',
+                                    get_href=True)
+
+    if not cdroms:
+        VM_API.logger.error('There are no cdroms attached to vm %s', vmName)
+        return not positive
+    return positive
+
+
+def _prepareNicObj(**kwargs):
+
+
+    nic = data_st.NIC()
+
+    name = kwargs.pop('name', None)
+    if name:
+        nic.set_name(name)
+
+    interface = kwargs.pop('interface', None)
+    if interface:
+        nic.set_interface(interface)
+
+    mac_address = kwargs.pop('mac_address', None)
+    if mac_address:
+        nic.set_mac(data_st.MAC(address=mac_address))
+        
+    network = kwargs.pop('network', None)
+    if network:
+        cl = kwargs.pop('cluster', None)
+        cl = CLUSTER_API.find(cl, 'id')
+        clNet = getClusterNetwork(cl.name, network)
+        nic.set_network(clNet)
+
+    return nic
+
+def getVmNics(vm):
+
+    vmObj = VM_API.find(vm)
+    return VM_API.getElemFromLink(vmObj, link_name='nics', attr='vm_nic', get_href=True)
+
+def getVmNic(vm, nic):
+
+    vmObj = VM_API.find(vm)
+    return VM_API.getElemFromElemColl(vmObj, nic, 'nics', 'nic')
+
+
+def addNic(positive, vm, **kwargs):
+    '''
+    Description: add nic to vm
+    Author: edolinin
+    Parameters:
+       * vm - vm where nic should be added
+       * name - nic name
+       * network - network name
+       * interface - nic type. available types: virtio, rtl8139 and e1000
+                     (for 2.2 also rtl8139_virtio)
+       * mac_address - nic mac address
+    Return: status (True if nic was added properly, False otherwise)
+    '''
+    # TODO: Check whether there still is the type PV available.
+
+    vmObj = VM_API.find(vm)
+    expectedStatus = vmObj.get_status().get_state()
+    
+    cluster = vmObj.cluster.id
+    kwargs['cluster'] = cluster
+    nic = _prepareNicObj(**kwargs)
+    vmNics = getVmNics(vm)
+
+    nic, status = NIC_API.create(nic, positive, collection=vmNics)
+    if positive and status:
+        return VM_API.waitForElemStatus(vmObj, expectedStatus, VM_ACTION_TIMEOUT)
+    return status
+
+
+def addVmNics(positive, vm, namePrefix, networks):
+    '''
+    Adding multipe nics with different network each one
+    Author: atal
+    Parameters:
+        * vm - vm name
+        * namePrefix - the prefix for each VM nic name
+        * networks - list of network names
+    return True with VM nic names list alse False with empty list
+    '''
+    vm_nics = []
+    regex = re.compile('\w(\d+)', re.I)
+    for net in networks:
+        match = regex.search(net)
+        if not match:
+            return False, {'vmNics': None}
+        name = namePrefix + str(match.group(1))
+        vm_nics.append(name)
+        if not addNic(positive, vm, name, net):
+            return False, {'vmNics': None}
+    return True, {'vmNics': vm_nics}
+
+
+def updateNic(positive, vm, nic, **kwargs):
+    '''
+    Description: update nic of vm
+    Author: edolinin
+    Parameters:
+       * vm - vm where nic should be updated
+       * nic - nic name that should be updated
+       * name - new nic name
+       * network - network name
+       * interface - nic type. available types: virtio, rtl8139 and e1000
+                     (for 2.2 also rtl8139_virio)
+       * mac_address - nic mac address
+    Return: status (True if nic was updated properly, False otherwise)
+    '''
+
+    vmObj = VM_API.find(vm)
+    cluster = vmObj.cluster.id
+    kwargs['cluster'] = cluster
+    
+    nicNew = _prepareNicObj(**kwargs)
+    nic = getVmNic(vm, nic)
+   
+    nic, status = NIC_API.update(nic, nicNew, positive)
+    return status
+
+
+def removeNic(positive, vm, nic):
+    '''
+    Description: remove nic from vm
+    Author: edolinin
+    Parameters:
+       * vm - vm where nic should be removed
+       * nic - nic name that should be removed
+    Return: status (True if nic was removed properly, False otherwise)
+    '''
+    vmObj = VM_API.find(vm)
+    nic = getVmNic(vm, nic)
+
+    expectedStatus = vmObj.get_status().get_state()
+
+    status = VM_API.delete(nic, positive)
+    if positive and status:
+        return VM_API.waitForElemStatus(vmObj, expectedStatus, VM_ACTION_TIMEOUT)
+    return status
+
+def removeLockedVm(vm, vdc, vdc_pass, psql_username='postgres', psql_db='rhevm'):
+    '''
+    Remove locked vm with flag force=true
+    Make sure that vm no longer exists, otherwise set it's status to down,
+    and remove it
+    Author: jvorcak
+    Parameters:
+       * vm - name of the VM
+       * vdc - address of the setup
+       * vdc_pass - password for the vdc
+       * psql_username - psql username
+       * psql_db - name of the DB
+    '''
+    vmObj = VM_API.find(vm)
+
+    if removeVm(True, vmObj.get_name(), force='true'):
+        return True
+
+    # clean if vm has not been removed
+    logger.error('Locked vm has not been removed with force flag')
+
+    updateVmStatusInDatabase(vmObj.get_name(), 0, vdc, vdc_pass,
+            psql_username, psql_db)
+
+    return removeVm("true", vmObj.get_name())
+
+
+def _getVmSnapshots(vm):
+    vmObj = VM_API.find(vm)
+    snapshots = SNAPSHOT_API.getElemFromLink(vmObj, get_href=True)
+    return snapshots
+
+def _getVmSnapshot(vm, snap):
+    vmObj = VM_API.find(vm)
+    return SNAPSHOT_API.getElemFromElemColl(vmObj, snap, 'snapshots',
+                        'snapshot', prop='description')
+    
+
+def addSnapshot(positive, vm, description, wait=True):
+    '''
+    Description: add snapshot to vm
+    Author: edolinin
+    Parameters:
+       * vm - vm where snapshot should be added
+       * description - snapshot name
+       * wait - wait untill finish when True or exist without waiting when False
+    Return: status (True if snapshot was added properly, False otherwise)
+    '''
+    snapshot = data_st.Snapshot()
+    snapshot.set_description(description)
+
+    vmSnapshots = _getVmSnapshots(vm)
+    snapshot, status = SNAPSHOT_API.create(snapshot, positive, collection=vmSnapshots)
+
+    time.sleep(30)
+
+    snapshot = _getVmSnapshot(vm, description)
+    snapshotStatus = True
+    if status and positive and wait:
+        snapshotStatus = SNAPSHOT_API.waitForElemStatus(snapshot, 'ok', VM_IMAGE_OPT_TIMEOUT)
+        if snapshotStatus:
+            snapshotStatus = validateSnapshot(positive, vm, description)
+    return status and snapshotStatus
+
+
+def restoreSnapshot(positive, vm, description):
+    '''
+    Description: restore vm snapshot
+    Author: edolinin
+    Parameters:
+       * vm - vm where snapshot should be restored
+       * description - snapshot name
+    Return: status (True if snapshot was restored properly, False otherwise)
+    '''
+
+    vmObj = VM_API.find(vm)
+    snapshot = _getVmSnapshot(vm, description)
+    expectedStatus = vmObj.status.state
+
+    status = SNAPSHOT_API.syncAction(snapshot, "restore", positive)
+    time.sleep(60)
+    if status and positive:
+        return SNAPSHOT_API.waitForElemStatus(vmObj, expectedStatus, VM_ACTION_TIMEOUT)
+
+    return status
+
+
+def validateSnapshot(positive, vm, snapshot):
+    '''
+    Description: Validate snapshot if exist
+    Author: egerman
+    Parameters:
+       * vm - vm where snapshot should be restored
+       * snapshot - snapshot name
+    Return: status (True if snapshot exist, False otherwise)
+    '''
+    return _getVmSnapshot(vm, description) is not None
+
+
+def removeSnapshot(positive, vm, description, timeout=VM_REMOVE_SNAPSHOT_TIMEOUT):
+    '''
+    Description: remove vm snapshot
+    Author: jhenner
+    Parameters:
+       * vm          - vm where snapshot should be removed.
+       * description - Snapshot description. Beware that snapshots aren't
+                       uniquely identified by description.
+       * timeout     - How long this would block until machine status switches
+                       back to the one before deletion.
+                       If timeout < 0, return immediately after getting the action
+                       response, don't check the action on snapshot really did
+                       something.
+    Return: If positive:
+                True iff snapshot was removed properly.
+            If negative:
+                True iff snapshot removal failed.
+    '''
+
+    snapshot = _getVmSnapshot(vm, description)
+    
+    if not SNAPSHOT_API.delete(snapshot, positive):
+        return False
+
+    if timeout < 0:
+        return True
+    args = vm, description
+    if positive:
+        # Wait until snapshot disappears.
+        try:
+            for ret in TimeoutingSampler(timeout, 5,  _getVmSnapshot, *args):
+                if not ret:
+                    logger.info('Snapshot %s disappeared.',
+                                snapshot.description)
+                    return True
+            pass  # Unreachable
+        except EntityNotFound:
+            return True
+        except APITimeout:
+            logger.error('Timeouted when waiting snapshot %s disappear.',
+                         snapshot.description)
+            return False
+    else:
+        # Check whether snapshot didn't disappear.
+        logger.info('Checking whether url %s exists.', snapshot.href)
+        try:
+            for ret in TimeoutingSampler(timeout, 5,  _getVmSnapshot, *args):
+                if not ret:
+                    logger.info('Snapshot %s disappeared.',
+                                snapshot.description)
+                    return False
+            pass  # Unreachable
+        except EntityNotFound:
+            return True
+        except APITimeout:
+            logger.info(
+                'Snapshot still exists (http status %d when checking url %s).'
+            )
+            return True
+
+
+def runVmOnce(positive, vm, pause=None, display_type=None, stateless=None,
+        cdrom_image=None, floppy_image=None, boot_dev=None, host=None,
+        domainName=None, user_name=None, password=None):
+    '''
+    Description: run vm once
+    Author: edolinin
+    Parameters:
+       * vm - name of vm
+       * pause - if pause the vm after starting
+       * display_type - type of display to use in start up
+       * stateless - if vm should be stateless or not
+       * cdrom_image - cdrom image to use
+       * floppy_image - floppy image to use
+       * boot_dev - boot device to use
+       * domainName - name of the domain for VM
+       * user_name - name of the user
+       * password - password for specified user
+    Return: status (True if vm was run properly, False otherwise)
+    '''
+    #TODO Consider merging this method with the startVm.
+    vm_obj = VM_API.find(vm)
+
+    vm_for_action = data_st.VM()
+    if display_type:
+        vm_for_action.set_display(data_st.Display(type=display_type))
+        
+    if None is not stateless:
+        vm_for_action.set_stateless(stateless)
+
+    if None is not cdrom_image:
+        cdrom = data_st.CdRom()
+        cdrom.set_file(data_st.File(id=cdrom_image))
+        vm_for_action.cdroms.add_cdrom(cdrom)
+
+    if None is not floppy_image:
+        floppy = data_st.Floppy()
+        floppy.set_file(data_st.File(id=floppy_image))
+        vm_for_action.floppies.add_floppy(floppy)
+
+    if None is not boot_dev:
+        boot_dev_seq = data_st.Boot()
+        for dev in boot_dev.split(","):
+            boot_dev_seq.add_device(dev)
+            vm_for_action.set_os(OperatingSystem.set_boot(boot_dev_seq))
+
+    if None is not host:
+        raise NotImplementedError(
+                "Setting host in runVmOnce was discontinued.\n"
+                "Please change the VM affinity with updateVm instead.\n"
+                "Bug 743674 - runOnce doesn't start on the specific host"
+        )
+
+    if None is not domainName:
+        domain = data_st.Domain()
+
+        if password is None:
+                logger.error('You have to specify password with username')
+                return False
+
+        if None is not user_name:
+            domain.set_user(data_st.User(user_name=user_name, password=password))
+            
+        vm_for_action.set_domain(domain)
+
+    # default value True
+    status = True
+
+    if pause:
+        status = VM_API.syncAction(vm_obj, 'start', positive, pause=pause,
+                                 vm=vm_for_action)
+        if positive and status:
+            # in case status is False we shouldn't wait for rest element status
+            if pause.lower() == 'true':
+                state = wait_for_status=ENUMS['vm_state_paused']
+            else:
+                state = ENUMS['vm_state_powering_up']
+            return VM_API.waitForElemStatus(vm_obj, state,
+                                                      VM_ACTION_TIMEOUT)
+    else:
+        status = VM_API.syncAction(vm_obj, 'start', positive, vm=vm_for_action)
+        if positive and status:
+            # in case status is False we shouldn't wait for rest element status
+            return VM_API.waitForElemStatus(vm_obj,
+                   ENUMS['vm_state_powering_up'], VM_ACTION_TIMEOUT)
+    return status
+
+
+def suspendVm(positive, vm, wait=True):
+    '''
+    Suspend VM.
+
+    Wait for status UP, then the suspend action is performed and then it awaits status
+    SUSPENDED, sampling every 10 seconds.
+
+    Author: jhenner
+    Parameters:
+       * vm - name of vm
+       * wait - wait until and of action when positive equal to True
+    Return: status (True if vm suspended and test is positive, False otherwise)
+    '''
+    vmObj = VM_API.find(vm)
+            
+    async = 'false'
+    if not wait:
+        async = 'true'
+
+    if not VM_API.syncAction(vmObj, 'suspend', positive, async=async):
+        return False
+    if wait and positive:
+        return VM_API.waitForElemStatus(vmObj, 'suspended', VM_ACTION_TIMEOUT)
+
+
+def suspendVms(vms):
+    '''
+    Suspend several vms simultaneously. Only action response is checked, no
+    checking for vm SUSPENDED status is performed.
+
+    Parameters:
+      * vms - Names of VMs to suspend.
+    Returns: True iff all VMs suspended.
+    '''
+    jobs = [Job(target=suspendVm, args=(True, vm)) for vm in split(vms)]
+    js = JobsSet()
+    js.addJobs(jobs)
+    js.start()
+    js.join()
+
+    status = True
+    for job in jobs:
+        if job.exception:
+            status = False
+            logger.error('Suspending vm %s failed: %s.',
+                            job.args[1], job.exception)
+        elif not job.result:
+            status = False
+            logger.error('Suspending vm %s failed.', job.args[1])
+        else:
+            logger.info('Suspending vm %s succeed.', job.args[1])
+    return status
+
+
+def shutdownVm(positive, vm):
+    '''
+    Description: shutdown vm
+    Author: edolinin
+    Parameters:
+       * vm - name of vm
+    Return: status (True if vm was stopped properly, False otherwise)
+    '''
+    return changeVMStatus(positive, vm, 'shutdown', 'down')
+
+
+def migrateVm(positive, vm, host=None, wait=True):
+    '''
+    Migrate the VM.
+
+    If the host was specified, after the migrate action was performed,
+    the method is checking whether the VM status is UP or POWERING_UP
+    and whether the VM runs on required destination host.
+
+    If the host was not specified, after the migrate action was performed, the
+    method is checking whether the VM is UP or POWERING_UP
+    and whether the VM runs on host different to the source host.
+
+    Author: edolinin, jhenner
+    Parameters:
+       * vm - name of vm
+       * host - Name of the destionation host to migrate VM on, or
+                None for RHEVM destination host autoselection.
+       * wait - When True wait until end of action,
+                     False return without waiting.
+    Return: True if vm was migrated and test is positive,
+            False otherwise.
+    '''
+    vmObj = VM_API.find(vm)
+    actionParams = {}
+    sourceHost = vmObj.host.name
+
+    # If the host is not specified, we should let RHEVM to autoselect host.
+    query = 'name={0} and status=powering_up or name={0} and status=up'
+    if host:
+        destHostObj = HOST_API.find(host)
+        actionParams['host'] = destHostObj
+        # Check the vm to be UP or POWERING_UP and whether it is on the host we
+        # wanted it to be.
+        query = query.format(destHostObj.name)
+    else:
+        # Check the vm to be UP or POWERING_UP and whether it moved.
+        query = query.format(sourceHost)
+       
+    if not VM_API.syncAction(vmObj, "migrate", positive, **actionParams):
+        return False
+
+    # Check the VM only if we do the positive test. We know the action status
+    # failed so with fingers crossed we can assume that VM didn't migrate.
+    if not wait or not positive:
+        logger.warning('Not going to wait till VM migration completes. \
+        wait=%s, positive=%s' % (str(wait), positive))
+        return True
+
+    if not VM_API.waitForQuery(query, timeout=VM_ACTION_TIMEOUT, sleep=10):
+        return False
+
+    # Check whether we tried to migrate vm to different cluster
+    # in this case we return False, since this action shouldn't be allowed.
+    logger.info('Getting the VM host after VM migrated.')
+    realDestHostObj = VM_API.find(vm).host.id
+    if vmObj.cluster.id != realDestHostObj.cluster.id:
+        return False
+
+    if host:
+        MSG = 'VM is on the destination host and is UP or POWERING_UP.'
+        logger.info(MSG)
+    else:
+        MSG = 'VM host has changed and is UP or POWERING_UP.'
+        logger.info(MSG)
+    return True
+
+
+def ticketVm(positive, vm, expiry):
+    '''
+    Description: ticket vm
+    Author: edolinin
+    Parameters:
+       * vm - vm to ticket
+       * expiry - ticket expiration time
+    Return: status (True if vm was ticketed properly, False otherwise)
+    '''
+    vmObj = VM_API.find(vm)
+
+    ticket = data_st.Ticket()
+    ticket.set_expiry(int(expiry))
+
+    return VM_API.syncAction(vmObj, "ticket", positive, ticket=ticket)
+    

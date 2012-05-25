@@ -193,8 +193,8 @@ def validateElementStatus(positive, element, collection, elementName,
             util.logger.warning(MSG.format(dcName, "datacenter", ERR))
             return False
 
-        elementObj = util.getElemFromElemColl(dcObj, 'storagedomains',
-                                'storagedomain', element)
+        elementObj = util.getElemFromElemColl(dcObj, elementName,
+                             'storagedomains', 'storage_domain')
     else:
         try:
             elementObj = util.find(elementName)
@@ -272,11 +272,12 @@ def updateVmStatusInDatabase(vmName, status, vdc, vdc_pass,
     Return: (True if sql command has been executed successfuly,
              False otherwise)
     '''
+    util = get_api('vm', 'vms')
+    vm = util.find(vmName)
     machine = Machine(vdc, 'root', vdc_pass).util('linux')
-    vm = util.find(links['vms'], vmName)
     cmd = ["psql", "-U", psql_username, psql_db, "-c",
             r'"UPDATE vm_dynamic SET status=%d WHERE vm_guid=\'%s\'"' %
-            (status,vm.id)]
+            (status,vm.get_id())]
 
     return machine.runCmd(cmd)
 

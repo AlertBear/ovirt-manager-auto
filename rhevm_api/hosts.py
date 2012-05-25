@@ -29,6 +29,7 @@ import utilities.ssh_session as ssh_session
 import re
 from utilities.utils import getIpAddressByHostName, getHostName, readConfFile
 from utils.validator import compareCollectionSize
+from rhevm_api.networks import getClusterNetwork
 
 ELEMENT = 'host'
 COLLECTION = 'hosts'
@@ -39,6 +40,7 @@ dcUtil = get_api('data_center', 'datacenters')
 Host = getDS('Host')
 Options = getDS('Options')
 Option = getDS('Option')
+IP = getDS('IP')
 PowerManagement = getDS('PowerManagement')
 
 SED = '/bin/sed'
@@ -708,6 +710,12 @@ def fenceHost(positive, host, fence_type):
     return (testHostStatus and status) == positive
 
 
+def getHostNic(host, nic):
+
+    hostObj = util.find(host)
+    return util.getElemFromElemColl(hostObj, nic, 'nics', 'host_nic')
+
+
 def attachHostNic(positive, host, nic, network):
     '''
     Description: attach network interface card to host
@@ -720,12 +728,11 @@ def attachHostNic(positive, host, nic, network):
     '''
 
     hostObj = util.find(host)
-    cluster = hostObj.get_cluster().get_id()
-    clusterObj = clUtil.find(cluster, 'id')
-
-    hostNic = util.getElemFromElemColl(hostObj, nic, 'nics', 'host_nic')
-    clusterNet = util.getElemFromElemColl(clusterObj, network, 'networks', 'network')
-
+    cluster = hostObj.get_cluster().get_name()
+   
+    hostNic = getHostNic(host, nic)
+    clusterNet = getClusterNetwork(cluster, network)
+   
     status = util.syncAction(hostNic, "attach", positive, network=clusterNet)
 
     return status
@@ -765,19 +772,17 @@ def updateHostNic(positive, host, nic, network=None, boot_protocol=None,
 
     hostObj = util.find(host)
     cluster = hostObj.get_cluster().get_name()
-    clusterObj = clUtil.find(cluster)
-
-    nicObj = util.getElemFromElemColl(hostObj, nic, 'nics', 'nic')
+    
+    nicObj = getHostNic(host, nic)
 
     if network:
-        nicObj.network.id = util.find(clusterObj.link['networks'].href, network).id
+        net = getClusterNetwork(cluster, network)
+        nicObj.set_network(net)
     if boot_protocol:
-        nicObj.boot_protocol = boot_protocol
-    if ip:
-        nicObj.ip.address = ip
-    if netmask:
-        nicObj.ip.netmask = netmask
-
+        nicObj.set_boot_protocol(boot_protocol)
+    if ip or netmask:
+        nicObj.set_ip(IP(address=ip, netmask=netmask))
+   
     # Build up bonding options if needed
     bondOpts = ""
     if bondOptions:
@@ -806,7 +811,7 @@ def detachHostNic(positive, host, nic, network):
     hostObj = util.find(host)
     cluster = hostObj.get_cluster().get_id()
     clusterObj = clUtil.find(cluster, 'id')
-    nicObj = util.getElemFromElemColl(hostObj, nic, 'nics', 'host_nic')
+    nicObj = getHostNic(host, nic)
 
     # Try to get the network object by his dataCenter id
     # to avoid duplicate network names
@@ -1258,13 +1263,9 @@ def waitForSPM(datacenter, timeout, sleep):
     Return: True if an SPM gets elected before timeout. It rises
     RESTTimeout exception on timeout.
     '''
-    sampler = TimeoutingSampler(timeout, sleep,
-                                getHost, True, datacenter, True)
-    sampler.timeout_exc_args = \
-            "Timeout when waiting for SPM to appear in DC %s."  % datacenter,
-    for s in sampler:
-        if s[0]:
-            return True
+    query='name={0} and status=down'.format(datacenter)
+    return dcUtil.waitForQuery(query, timeout=timeout, sleep=sleep)
+ 
 
 def getHostNicAttr(positive, host, nic, attr):
     '''

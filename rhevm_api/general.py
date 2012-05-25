@@ -187,7 +187,7 @@ def checkSummary(positive, domain):
      return status
 
 
-def removeNonExistingObject(entity_id='non_existing_object_id'):
+def removeNonExistingVm(positive, entity_id='non_existing_object_id'):
     '''
     Description: Tries to remove non-existing object
     Author: jvorcak

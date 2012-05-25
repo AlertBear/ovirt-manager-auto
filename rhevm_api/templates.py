@@ -22,6 +22,7 @@ from rhevm_api.test_utils import get_api
 import time
 import re
 from utils.validator import compareCollectionSize
+from rhevm_api.networks import getClusterNetwork
 
 CREATE_TEMPLATE_TIMEOUT = 900
 ELEMENT = 'template'
@@ -232,16 +233,27 @@ def addTemplateNic(positive, template, name, network='rhevm',interface=None):
     Return: status (True if nic was added properly, False otherwise)
     '''
     templObj = util.find(template)
-    clusterObj = clUtil.find(templObj.get_cluster().get_id(), 'id')
-
+   
     nic = NIC(name=name, interface=interface)
-    clusterNet = util.getElemFromElemColl(clusterObj, network, 'networks', 'network')
+    clusterNet = getClusterNetwork(templObj.get_cluster().get_name())
     nic.set_network(clusterNet)
 
-    templateNics = util.getElemFromLink(templObj, link_name='nics', attr='nic', get_href=True)
+    templateNics = getTemplatesNics(template)
     nic, status = nicUtil.create(nic, positive, collection=templateNics)
 
     return  status
+
+
+def getTemplatesNics(template):
+    
+    templObj = util.find(template)
+    return util.getElemFromLink(templObj, link_name='nics', attr='nic', get_href=True)
+
+
+def getTemplatesNic(template, nic):
+
+    templObj = util.find(template)
+    return util.getElemFromElemColl(templObj, nic, 'nics', 'nic')
 
 
 def updateTemplateNic(positive, template, nic, name=None, network=None, interface=None):
@@ -257,8 +269,7 @@ def updateTemplateNic(positive, template, nic, name=None, network=None, interfac
     Return: status (True if nic was updated properly, False otherwise)
     '''
     templObj = util.find(template)
-    clusterObj = clUtil.find(templObj.get_cluster().get_id(), 'id')
-    nicObj = util.getElemFromElemColl(templObj, nic, 'nics', 'nic')
+    nicObj = getTemplatesNic(template, nic)
 
     nicNew = NIC()
     if name:
@@ -266,7 +277,7 @@ def updateTemplateNic(positive, template, nic, name=None, network=None, interfac
     if interface:
         nicNew.set_interface(interface)
     if network:
-        clusterNet = util.getElemFromElemColl(clusterObj, network, 'networks', 'network')
+        clusterNet = getClusterNetwork(templObj.get_cluster().get_name())
         nicNew.set_network(clusterNet)
 
     nic, status = util.update(nicObj, nicNew, positive)
@@ -283,8 +294,7 @@ def removeTemplateNic(positive, template, nic):
        * nic - nic name that should be removed
     Return: status (True if nic was removed properly, False otherwise)
     '''
-    templObj = util.find(template)
-    nicObj = util.getElemFromElemColl(templObj, nic, 'nics', 'nic')
+    nicObj = getTemplatesNic(template, nic)
     return util.delete(nicObj,positive)
 
 

@@ -110,7 +110,8 @@ class APIUtil(object):
         return action
     
 
-    def getElemFromElemColl(self, elm, name_val, collection_name=None, elm_name=None):
+    def getElemFromElemColl(self, elm, name_val, collection_name=None,
+                                    elm_name=None, prop='name'):
         '''
         Description: get element from element's collection
         Parameters:
@@ -130,7 +131,8 @@ class APIUtil(object):
         objs = self.getElemFromLink(elm, collection_name, attr=elm_name)
         # get element by name
         for obj in objs:
-            if obj.get_name() == name_val:
+            propVal = getattr(obj, prop)
+            if propVal == name_val:
                 return obj
 
         raise EntityNotFound("Entity '{0}' not found".format(name_val))
@@ -152,12 +154,18 @@ class APIUtil(object):
         MSG = 'Waiting for query `%s` and event_id %s up to %d seconds, sampling every %d second.'
         self.logger.info(MSG % (query, event_id, timeout, sleep))
         sampler = TimeoutingSampler(timeout, sleep, self.query)
-        TIMEOUT_MSG_TMPL = "Timeouted when waiting for query '{0}' and event '{1}'"
+        TIMEOUT_MSG_TMPL = "Timeout when waiting for query '{0}' on '{1}'"\
+                                        .format(query, self.collection_name)
         sampler.timeout_exc_args = TIMEOUT_MSG_TMPL.format(query, event_id),
         sampler.func_args = query, [200, 201], None, event_id
-        for sampleOk in sampler:
-            if sampleOk:
-                return True
+
+        try:
+            for sampleOk in sampler:
+                if sampleOk:
+                    return True
+        except APITimeout:
+            self.logger.error(TIMEOUT_MSG_TMPL)
+            return False
 
 
 class TimeoutingSampler(object):

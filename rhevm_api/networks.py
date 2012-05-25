@@ -168,6 +168,18 @@ def removeMultiNetworks(positive, networks):
     return True
 
 
+def getClusterNetwork(cluster, network):
+
+    clusterObj = clUtil.find(cluster)
+    return util.getElemFromElemColl(clusterObj, network)
+
+
+def getClusterNetworks(cluster):
+
+    clusterObj = clUtil.find(cluster)
+    return util.getElemFromLink(clusterObj, get_href=True)
+
+
 def addNetworkToCluster(positive, network, cluster):
     '''
     Description: attach network to cluster
@@ -181,7 +193,7 @@ def addNetworkToCluster(positive, network, cluster):
     network_objs = util.get(absLink=False)
     cluster_obj = clUtil.find(cluster)
     cluster_cd_id = cluster_obj.get_data_center().get_id()
-    clNetworks = util.getElemFromLink(cluster_obj, get_href=True)
+    clNetworks = getClusterNetworks(cluster)
    
     if network_objs is None:
         raise EntityNotFound('Found Empty networks element')
@@ -233,8 +245,9 @@ def removeNetworkFromCluster(positive, network, cluster):
        * cluster - name of a cluster to detach from
     Return: status (True if network was detached properly, False otherwise)
     '''
-    cluster_obj = clUtil.find(cluster)
-    net_obj = util.getElemFromElemColl(cluster_obj, network)
+
+    net_obj = getClusterNetwork(cluster, network)
+
     if net_obj:
         return util.delete(net_obj, positive)
     else:
@@ -259,8 +272,7 @@ def getNetworkConfig(positive, cluster, network, datacenter=None, tag=None):
      return: True and value of the given filed, otherwise False and None
     '''
     try:
-        clusterObj = util.find(cluster)
-        netObj = util.getElemFromElemColl(clusterObj, network)
+        netObj = getClusterNetwork(cluster, network)
     except EntityNotFound:
         return False, {'value': None}
 

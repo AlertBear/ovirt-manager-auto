@@ -277,7 +277,7 @@ class RestUtil(APIUtil):
 
         if not collection:
             collection = self.get(href, listOnly=True)
-     
+            
         try:
             results = filter(lambda r: getattr(r, attribute) == val, collection)[0]
         except Exception:
@@ -313,7 +313,7 @@ class RestUtil(APIUtil):
 
 
     def syncAction(self, entity, action, positive, async=False,
-                positive_async_stat=[202], positive_sync_stat=[200,201],
+                positive_async_stat=[200, 202], positive_sync_stat=[200,201],
                 negative_stat=[500, 400], **params):
         '''
         Description: run synchronic action
@@ -430,31 +430,38 @@ class RestUtil(APIUtil):
         while handleTimeout <= timeout:
             restElement = self.get(restElement.href)
 
-            if not hasattr(restElement, 'status'):
-                self.logger.error("Element %s doesn't have attribute status" % (restElementName))
+            elemStat = None
+            if hasattr(restElement, 'status'):
+                elemStat = restElement.status.state.lower()
+            elif hasattr(restElement, 'snapshot_status'):
+                elemStat = restElement.snapshot_status.lower()
+            else:
+                self.logger.error("Element %s doesn't have attribute status" % \
+                                                        (self.element_name))
                 return False
-
-            if restElement.status.state.lower() in status.lower().split():
+          
+            elemStat = restElement.status.state.lower()
+            if elemStat in status.lower().split():
                 self.logger.info("%s status is '%s'" \
-                                % (self.element_name, restElement.status.state))
+                                % (self.element_name, elemStat))
                 return True
-            elif restElement.status.state.find("fail") != -1 and not ignoreFinalStates:
+            elif elemStat.find("fail") != -1 and not ignoreFinalStates:
                 self.logger.error("%s status is '%s'"\
-                                % (self.element_name, restElement.status.state))
+                                % (self.element_name, elemStat))
                 return False
-            elif restElement.status.state.find("up") != -1 and not ignoreFinalStates:
+            elif elemStat.find("up") != -1 and not ignoreFinalStates:
                 self.logger.error("%s status is '%s'"\
-                                % (self.element_name, restElement.status.state))
+                                % (self.element_name, elemStat))
                 return False
             else:
                 self.logger.debug("Waiting for status '%s' currently status is '%s' "\
-                                % (status, restElement.status.state))
+                                % (status, elemStat))
                 time.sleep(DEF_SLEEP)
                 handleTimeout = handleTimeout + DEF_SLEEP
                 continue
 
         self.logger.error("Interrupt because of timeout. %s status is '%s'."\
-                        % (self.element_name, restElement.status.state))
+                        % (self.element_name, elemStat))
         return False
 
 APIUtil.register(RestUtil)
