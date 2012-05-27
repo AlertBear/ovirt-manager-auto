@@ -19,6 +19,8 @@
 
 from utils.apis_utils import getDS
 from rhevm_api.test_utils import get_api, split
+import re
+from utils.validator import compareCollectionSize
 
 ELEMENT = 'gluster_volume'
 COLLECTION = 'glustervolumes'
@@ -33,6 +35,9 @@ Options = getDS('Options')
 IP = getDS('IP')
 GlusterBricks = getDS('GlusterBricks')
 GlusterBrick = getDS('GlusterBrick')
+Option = getDS('Option')
+
+VOL_ACTION_TIMEOUT = 180
 
 
 def _prepareVolume(**kwargs):
@@ -137,6 +142,13 @@ def addClusterVolume(positive, cluster, **kwargs):
     return status
 
 
+def getClusterVolume(cluster, volume):
+
+    clObj = clUtil.find(cluster)
+    clVolumes = util.getElemFromLink(clObj, get_href=False)
+    return util.find(volume, absLink=False, collection=clVolumes)
+
+
 def removeClusterVolume(positive, cluster, volume):
     '''
     Description: Remove cluster volume
@@ -147,9 +159,7 @@ def removeClusterVolume(positive, cluster, volume):
     Return: status (True if volume was removed properly, False otherwise)
      '''
 
-    clObj = clUtil.find(cluster)
-    clVolumes = util.getElemFromLink(clObj, get_href=False)
-    vol  = util.find(volume, absLink=False, collection=clVolumes)
+    vol = getClusterVolume(cluster, volume)
     return util.delete(vol, positive)
 
 
@@ -166,8 +176,7 @@ def searchForClusterVolumes(positive, cluster, query_key, query_val, key_name):
     '''
 
     expected_count = 0
-    clObj = clUtil.find(cluster)
-    clVolumes = util.getElemFromLink(clObj, get_href=True)
+    clVolumes = getClusterVolumes(cluster)
 
     for clVol in clVolumes:
         volProperty = getattr(clVol, key_name)
@@ -178,8 +187,9 @@ def searchForClusterVolumes(positive, cluster, query_key, query_val, key_name):
             if volProperty == query_val:
                 expected_count = expected_count + 1
 
+    clVolumes = getClusterVolumes(cluster, True)
     contsraint = "{0}={1}".format(query_key, query_val)
-    query_vols = util.query(contsraint, href=clVolumes)
+    query_vols = util.query(contsraint, href=clVolumes + '?search={query}')
     status = compareCollectionSize(query_vols, expected_count, util.logger)
 
     return status == positive
@@ -237,4 +247,107 @@ def removeClusterVolumes(positive, cluster, volumes):
     return status
 
 
+def getClusterVolumes(cluster, get_href=False):
 
+    clObj = clUtil.find(cluster)
+    return util.getElemFromLink(clObj, get_href=get_href)
+
+
+def runVolAction(positive, cluster, volume, status, wait_for_status, **opts):
+
+    if not positive:
+        wait_for_status = None
+
+    vol = getClusterVolume(cluster, volume)
+    if not util.syncAction(vol, status, positive, opts):
+        return False
+
+    if wait_for_status is None:
+        return True
+
+    query = "name={0} and status={1}".format(volume, wait_for_status.lower())
+    clVols = getClusterVolumes(cluster)
+    return util.waitForQuery(query, href=clVols,
+            timeout=VOL_ACTION_TIMEOUT, sleep=10)
+
+
+def startVolume(positive, cluster, volume):
+    '''
+    Description: start volume
+    Parameters:
+       * cluster - name of cluster
+       * volume - name of volume
+      
+    Return: status (True if volume was started properly, False otherwise)
+    '''
+
+    return runVolAction(positive, cluster, volume, 'start', 'up')
+
+
+def stopVolume(positive, cluster, volume):
+    '''
+    Description: start volume
+    Parameters:
+       * cluster - name of cluster
+       * volume - name of volume
+
+    Return: status (True if volume was started properly, False otherwise)
+    '''
+
+    return runVolAction(positive, cluster, volume, 'stop', 'down')
+
+
+def rebalanceVolume(positive, cluster, volume):
+    '''
+    Description: start volume
+    Parameters:
+       * cluster - name of cluster
+       * volume - name of volume
+
+    Return: status (True if volume was started properly, False otherwise)
+    '''
+
+    return runVolAction(positive, cluster, volume, 'rebalance', 'up')
+
+
+def resetAllVolumeOptions(positive, cluster, volume):
+    '''
+    Description: start volume
+    Parameters:
+       * cluster - name of cluster
+       * volume - name of volume
+
+    Return: status (True if volume was started properly, False otherwise)
+    '''
+
+    return runVolAction(positive, cluster, volume, 'resetAllOptions', 'up')
+
+
+def setVolumeOption(positive, cluster, volume, opt_name, opt_value):
+    '''
+    Description: start volume
+    Parameters:
+       * cluster - name of cluster
+       * volume - name of volume
+
+    Return: status (True if volume was started properly, False otherwise)
+    '''
+
+    option = Option(name=opt_name, value=opt_value)
+    return runVolAction(positive, cluster, volume, 'setOption', 'up',
+                                                        option=option)
+                                                        
+
+def resetVolumeOption(positive, cluster, volume, opt_name):
+    '''
+    Description: start volume
+    Parameters:
+       * cluster - name of cluster
+       * volume - name of volume
+
+    Return: status (True if volume was started properly, False otherwise)
+    '''
+
+    option = Option(name=opt_name)
+    return runVolAction(positive, cluster, volume, 'resetOption', 'up',
+                                                        option=option)

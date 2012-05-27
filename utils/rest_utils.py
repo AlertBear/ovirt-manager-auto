@@ -346,9 +346,9 @@ class RestUtil(APIUtil):
                             actionHref,
                             actionBody,
                             MEDIA_TYPE)
-
-            resp_action = parse(ret['body'])
+  
             self.logger.debug("Response body for action request is: %s " % ret['body'])
+            resp_action = parse(ret['body'])
             self.validateResponseViaXSD(actionHref, ret)
 
             if positive and not async:
