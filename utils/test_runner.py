@@ -424,7 +424,7 @@ class TestRunner(object):
         try:
             exec("from " + modPath + " import " + funcName)
         except ImportError:
-            self.logger.info("Can't import action {0}\n{1}".format(funcName, TESTS_LOG_SEPARATOR))
+            self.logger.error("Can't import action {0}\n{1}".format(funcName, TESTS_LOG_SEPARATOR))
             return
 
         testStatus = True
