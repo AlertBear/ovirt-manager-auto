@@ -39,7 +39,7 @@ from utils.apis_exceptions import APITimeout, EntityNotFound
 from utilities.tools import updateGuestTools, isToolsInstalledOnGuest, \
     removeToolsFromGuest, waitForGuestReboot,installAutoUpgraderCD, \
     installToolsFromDir, verifyToolsFilesExist
-from upgradeSetup.prepSetup import Rhevm
+#from upgradeSetup.prepSetup import Rhevm
 from rhevm_api.threads import CreateThread, ThreadSafeDict
 import shutil
 import string
