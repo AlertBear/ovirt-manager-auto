@@ -125,12 +125,21 @@ def addClusterVolume(positive, cluster, **kwargs):
         * replica_count - replica count
         * stripe_count - stripe_count
         * access_protocols - comma separated access protocols
-        * access_control_list - comma separated dictinaries of access controls ips,
-            example: {'netmask': ..., 'gateway': ...., 'address': ...}, {...}
-        * options - comma separated dictinaries of options,
-            example: {'type': ..., 'name': ...., 'value': ...}, {...}
-        * bricks - comma separated dictinaries of bricks,
-            example: {'server_id': ..., 'brick_dir': ....}, {...}
+        * access_control_list - list of dictinaries of access controls ips,
+            example: [{'netmask': ..., 'gateway': ...., 'address': ...}, {...}]
+        * options - list of dictinaries of options,
+            example: [{'type': ..., 'name': ...., 'value': ...}, {...}]
+        * bricks - list of dictinaries of bricks,
+            example: [{'server_id': ..., 'brick_dir': ....}, {...}]
+     Parameters string example:
+    <params_pattern>
+        cluster='',name='',volume_type='',transport_types='',replica_count='',
+        stripe_count='',access_protocols'',
+        access_control_list=[{'netmask':'','gateway':'','address':''},],
+        bricks=[{'server_id':'','brick_dir':''},],
+        options=[{'name':'','type':'','value':''},]
+    </params_pattern>
+    
     Return: status (True if data center was added properly, False otherwise)
     '''
 
@@ -286,7 +295,7 @@ def startVolume(positive, cluster, volume):
 
 def stopVolume(positive, cluster, volume):
     '''
-    Description: start volume
+    Description: stop volume
     Parameters:
        * cluster - name of cluster
        * volume - name of volume
@@ -299,7 +308,7 @@ def stopVolume(positive, cluster, volume):
 
 def rebalanceVolume(positive, cluster, volume):
     '''
-    Description: start volume
+    Description: rebalance volume
     Parameters:
        * cluster - name of cluster
        * volume - name of volume
@@ -329,6 +338,8 @@ def setVolumeOption(positive, cluster, volume, opt_name, opt_value):
     Parameters:
        * cluster - name of cluster
        * volume - name of volume
+       * opt_name - option name
+       * opt_value - option value
 
     Return: status (True if volume was started properly, False otherwise)
     '''
@@ -344,6 +355,7 @@ def resetVolumeOption(positive, cluster, volume, opt_name):
     Parameters:
        * cluster - name of cluster
        * volume - name of volume
+       * opt_name - option name
 
     Return: status (True if volume was started properly, False otherwise)
     '''

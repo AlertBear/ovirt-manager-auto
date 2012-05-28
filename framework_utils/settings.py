@@ -67,6 +67,9 @@ def populateOptsFromArgv(argv):
     parser.add_argument('--logdir', '-logdir',
                                 default = '/var/tmp',
                                 help='path to the log directory (%(default)s)')
+    parser.add_argument('--log', '-log',
+                                default = None,
+                                help='path to the log files')
     parser.add_argument('--junitResultsFile', '-junit', metavar='JUNIT_XML_FILE',
                                 default=junit_results_default,
                                 help='path to the junit results file (%(default)s)',
@@ -196,8 +199,9 @@ def readTestRunOpts(path, redefs):
     opts['data_struct_mod'] = runSection['data_struct_mod']
     opts['api_xsd'] = runSection['api_xsd']
 
-    timestamp = strftime('%Y%m%d_%H%M%S')
-    opts['log'] = "%s/%sTests%s.log" % (opts['logdir'], opts['engine'], timestamp)
+    if not opts['log']:
+        timestamp = strftime('%Y%m%d_%H%M%S')
+        opts['log'] = "%s/%sTests%s.log" % (opts['logdir'], opts['engine'], timestamp)
 
     reportSection = config['REPORT']
     opts['has_sub_tests'] = reportSection['has_sub_tests']
