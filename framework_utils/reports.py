@@ -19,7 +19,7 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 import logging
-from utils.settings import opts
+from framework_utils.settings import opts
 from lxml.etree import Element, ElementTree, PI
 from lxml.builder import E
 import threading

@@ -19,7 +19,7 @@
 
 from cStringIO import StringIO
 import sys
-from utils.apis_utils import data_st as ds
+from framework_utils.apis_utils import data_st as ds
 
 
 def dump_entity(ds, root_name):

@@ -20,9 +20,9 @@ import http
 import template_parser
 import validator
 import time
-from apis_exceptions import EntityNotFound
+from framework_utils.apis_exceptions import EntityNotFound
 from lxml import etree
-from utils.apis_utils import APIUtil, XSD_PATH, parse
+from framework_utils.apis_utils import APIUtil, XSD_PATH, parse
 import os
 
 DEF_TIMEOUT = 900 # default timeout

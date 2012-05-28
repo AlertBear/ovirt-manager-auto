@@ -14,10 +14,10 @@ import logging
 import code
 
 from configobj import ConfigObj
-from utils.reports import initializeLogger, DefaultResultsReporter, JUnitResultsReporter
-from utils.http import check_connection
-from utils.settings import opts, populateOptsFromArgv, readTestRunOpts
-from utils.apis_exceptions import EntityNotFound
+from framework_utils.reports import initializeLogger, DefaultResultsReporter, JUnitResultsReporter
+from framework_utils.http import check_connection
+from framework_utils.settings import opts, populateOptsFromArgv, readTestRunOpts
+from framework_utils.apis_exceptions import EntityNotFound
 
 from lxml import etree
 

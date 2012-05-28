@@ -17,18 +17,18 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-from utils.apis_utils import getDS
+from framework_utils.apis_utils import getDS
 from rhevm_api.test_utils import get_api, split, getStat
 import os
 import time
 from lxml import etree
 from utilities import machine
-from utils.apis_utils import TimeoutingSampler
-from utils.apis_exceptions import APITimeout, EntityNotFound
+from framework_utils.apis_utils import TimeoutingSampler
+from framework_utils.apis_exceptions import APITimeout, EntityNotFound
 import utilities.ssh_session as ssh_session
 import re
 from utilities.utils import getIpAddressByHostName, getHostName, readConfFile
-from utils.validator import compareCollectionSize
+from framework_utils.validator import compareCollectionSize
 from rhevm_api.networks import getClusterNetwork
 
 ELEMENT = 'host'

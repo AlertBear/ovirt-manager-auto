@@ -19,15 +19,16 @@
 
 import sys
 import time
-from apis_exceptions import APITimeout, APICommandError, EntityNotFound
+from framework_utils.apis_exceptions import APITimeout, APICommandError, EntityNotFound
 from time import strftime
 import settings
 import abc
 import logging
-from utils.data_structures import Action, GracePeriod
+from framework_utils.data_structures import Action, GracePeriod
 
-XSD_PATH = settings.opts['api_xsd']
-DS_PATH = settings.opts['data_struct_mod']
+
+XSD_PATH = settings.opts.get('api_xsd', 'conf/api.xsd')
+DS_PATH = settings.opts.get('data_struct_mod', 'framework_utils.data_structures')
 __import__(DS_PATH)
 data_st = sys.modules[DS_PATH]
 parse = data_st.parseString
@@ -36,7 +37,9 @@ DEF_TIMEOUT = 900 # default timeout
 DEF_SLEEP = 10 # default sleep
 
 def getDS(ds_name):
-    return getattr(data_st, ds_name)
+    if hasattr(data_st, ds_name):
+        return getattr(data_st, ds_name)
+    return None
 
 class APIUtil(object):
     '''
@@ -231,7 +234,7 @@ class TestRunnerWrapper():
     Required settings options are defined in constructor.
 
     Usage Example:
-        from utils.restutils import TestRunnerWrapper
+        from framework_utils.restutils import TestRunnerWrapper
         wrapper = TestRunnerWrapper('10.35.113.80')
         try:
             status = wrapper.runCommand('rest.datacenters.addDataCenter','true',name='test',storage_type='NFS',version='2.2')
@@ -250,7 +253,7 @@ class TestRunnerWrapper():
         the same as in settings.conf, if omitted - defaults are set
         '''
 
-        from utils.settings import opts
+        from framework_utils.settings import opts
         import logging
 
         opts['host'] = ip
@@ -271,7 +274,8 @@ class TestRunnerWrapper():
         opts['in_parallel'] = kwargs.get('in_parallel', [])
         opts['parallel_run'] = True if opts['in_parallel'] else False
         opts['standalone'] = kwargs.get('standalone', False)
-
+        opts['api_xsd'] = kwargs.get('api_xsd', '')
+      
         self.logger = logging.getLogger(__name__)
         print "Log file is initialized at {0}".format(opts['log'])
 

@@ -18,7 +18,7 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 from rhevm_api.test_utils import get_api
-from utils.apis_utils import getDS
+from framework_utils.apis_utils import getDS
 
 ELEMENT = 'tag'
 COLLECTION = 'tags'

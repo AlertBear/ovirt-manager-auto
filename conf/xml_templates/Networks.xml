@@ -1,0 +1,335 @@
+<input>
+<test_case>
+   <test_name>START_GROUP:NetworkSanity </test_name>
+   <test_action/>
+   <parameters>n/a1</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report/>
+</test_case>
+<test_case>
+   <test_name>Validate if RHEVM in DataCenter</test_name>
+   <test_action>getNetworkConfig</test_action>
+   <parameters>cluster='{cluster}', network='rhevm',datacenter='{datacenter}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name>Validate if RHEVM Status is Operational</test_name>
+   <test_action>validateNetwork</test_action>
+   <parameters>cluster='{cluster}', network='rhevm',tag='status', val='operational'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name>Create sw1 Logical Network</test_name>
+   <test_action>addNetwork</test_action>
+   <parameters>name='{networks[0]}',data_center='{datacenter}',vlan_id='{vlan_id[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name>Update Logical Network sw1 with stp</test_name>
+   <test_action>updateNetwork</test_action>
+   <parameters>network='{networks[0]}', stp='true'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name>Attach sw1 to Cluster</test_name>
+   <test_action>addNetworkToCluster</test_action>
+   <parameters>network='{networks[0]}', cluster='{cluster}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name>Validate if sw1 Status is non-operational</test_name>
+   <test_action>validateNetwork</test_action>
+   <parameters>cluster='{cluster}', network='{networks[0]}',tag='status', val='non_operational'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name>Detach sw1 from cluster</test_name>
+   <test_action>removeNetworkFromCluster</test_action>
+   <parameters>network='{networks[0]}', cluster='{cluster}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name>Remove sw1 from DataCenter</test_name>
+   <test_action>removeNetwork</test_action>
+   <parameters>network='{networks[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name>Create Logical network sw1 with vlan</test_name>
+   <test_action>addNetwork</test_action>
+   <parameters>name='{networks[0]}',data_center='{datacenter}',vlan_id='{vlan_id[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name>Create Logical Network sw2</test_name>
+   <test_action>addNetwork</test_action>
+   <parameters>name='{networks[1]}',data_center='{datacenter}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name>Attach sw1 and sw2 to Cluster</test_name>
+   <test_action>addNetworkToCluster</test_action>
+   <parameters>network='{networks}', cluster='{cluster}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({networks})</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name>Count Host1 nics</test_name>
+   <test_action>countHostNics</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output>nicsNumber-&gt;nicCounter</fetch_output>
+   <report>NO</report>
+</test_case>
+<test_case>
+   <test_name>Add sw1 to Host1 eth1</test_name>
+   <test_action>attachHostNic</test_action>
+   <parameters>host='{vds[0]}', nic='eth1', network='{networks[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name>Add Bond0 sw2 to Host1 </test_name>
+   <test_action>addBond</test_action>
+   <parameters>host='{vds[0]}',name='{bond[0]}', slaves='[bond_nics]',network='{networks[1]}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(%nicCounter%&gt;=4)</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name>Get host status</test_name>
+   <test_action>getElementAttr</test_action>
+   <parameters>element='hosts',name='{vds[0]}',attr='status'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output>attrValue-&gt;hostStat</fetch_output>
+   <report>NO</report>
+</test_case>
+<test_case>
+   <test_name>Move Host to Maintnance</test_name>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(%hostStat%=='UP')</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name>Update Host Nic</test_name>
+   <test_action>updateHostNic</test_action>
+   <parameters>host='{vds[0]}', nic='{vlan_nic}.{vlan_id[0]}',boot_protocol='static',ip='1.1.1.1',netmask='255.255.255.0'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name>Move host up</test_name>
+   <test_action>activateHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name>Save Network Configuration</test_name>
+   <test_action>commitNetConfig</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name>Validate if sw1 status is operational</test_name>
+   <test_action>validateNetwork</test_action>
+   <parameters>cluster='{cluster}', network='{networks[0]}',tag='status', val='operational'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name>Validate if sw2 status is operational</test_name>
+   <test_action>validateNetwork</test_action>
+   <parameters>cluster='{cluster}', network='{networks[1]}',tag='status', val='operational'</parameters>
+   <positive>TRUE</positive>
+   <run>if(%nicCounter%&gt;=4)</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name>Wait for storage domain to get up</test_name>
+   <test_action>waitForStorageDomainStatus</test_action>
+   <parameters>dataCenterName='{datacenter}',storageDomainName='{storage}',expectedStatus='ACTIVE'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>NO</report>
+</test_case>
+<test_case>
+   <test_name>Create VM </test_name>
+   <test_action>addVm</test_action>
+   <parameters>name='{vm_name[0]}',data_center='{datacenter}',cluster='{cluster}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name>Add rhevm network to VM</test_name>
+   <test_action>addNic</test_action>
+   <parameters>vm='{vm_name[0]}',name='nic1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name>Add sw1 network to VM</test_name>
+   <test_action>addNic</test_action>
+   <parameters>vm='{vm_name[0]}',name='nic2',network='{networks[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name>Add sw2 network to VM</test_name>
+   <test_action>addNic</test_action>
+   <parameters>vm='{vm_name[0]}',name='nic3',network='{networks[1]}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(%nicCounter%&gt;=4)</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name>Update VM nic</test_name>
+   <test_action>updateNic</test_action>
+   <parameters>vm='{vm_name[0]}',nic='nic1', type='e{nic_type_rtl8139}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name>Remove network sw2 from VM</test_name>
+   <test_action>removeNic</test_action>
+   <parameters>vm='{vm_name[0]}',nic='nic3'</parameters>
+   <positive>TRUE</positive>
+   <run>if(%nicCounter%&gt;=4)</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name>Remove network sw1 from VM</test_name>
+   <test_action>removeNic</test_action>
+   <parameters>vm='{vm_name[0]}',nic='nic2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name>Remove VM</test_name>
+   <test_action>removeVm</test_action>
+   <parameters>vm='{vm_name[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name> Detach sw1 and sw2 from cluster</test_name>
+   <test_action>removeNetworkFromCluster</test_action>
+   <parameters>network='{networks}', cluster='{cluster}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({networks})</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name>Remove bond from host1</test_name>
+   <test_action>detachHostNic</test_action>
+   <parameters>host='{vds[0]}', nic='{bond[0]}', network='{networks[1]}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(%nicCounter%&gt;=4)</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name>Remove vlan from host1</test_name>
+   <test_action>detachHostNic</test_action>
+   <parameters>host='{vds[0]}', nic='{vlan_nic}.{vlan_id[0]}', network='{networks[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name>Save Network Configuration</test_name>
+   <test_action>commitNetConfig</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name>Remove sw1 and sw2 from DataCenter</test_name>
+   <test_action>removeNetwork</test_action>
+   <parameters>network='{networks}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({networks})</run>
+   <fetch_output/>
+   <report>YES</report>
+</test_case>
+<test_case>
+   <test_name>END_GROUP:NetworkSanity</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+</test_case>
+</input>

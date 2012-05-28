@@ -19,7 +19,7 @@
 
 import httplib
 import base64
-from apis_exceptions import APIException
+from framework_utils.apis_exceptions import APIException
 from socket import error as SocketError
 
 import logging
@@ -70,7 +70,7 @@ def parse_link(s, links):
 
 def HEAD_for_links(opts):
 
-    if opts['standalone']:
+    if opts.get('standalone', True):
         return
     
     cnx = open_connection(opts)

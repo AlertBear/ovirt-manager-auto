@@ -1,0 +1,9 @@
+<input>
+<test_case>
+   <test_name>Name of the test</test_name>
+   <test_action/>
+   <parameters>test parameters</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+</input>

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
-from utils.test_runner import TestSuiteRunner
-from utils.settings import populateOptsFromArgv, CmdLineError
+from framework_utils.test_runner import TestSuiteRunner
+from framework_utils.settings import populateOptsFromArgv, CmdLineError
 from sys import argv, exit, stderr
 import traceback
 

@@ -18,9 +18,9 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-from utils.rest_utils import RestUtil
-from utils.sdk_utils import SdkUtil
-import utils.settings as settings
+from framework_utils.rest_utils import RestUtil
+from framework_utils.sdk_utils import SdkUtil
+import framework_utils.settings as settings
 from utilities.utils import readConfFile
 import logging
 import time
@@ -30,12 +30,12 @@ from contextlib import contextmanager
 from traceback import format_exc
 import os
 import shlex
-import utils.settings as settings
+import framework_utils.settings as settings
 from utilities.utils import readConfFile, calculateTemplateUuid,\
 convertMacToIp, pingToVms, getIpAddressByHostName, createDirTree
 from utilities.machine import Machine, eServiceAction
 from utilities.cobblerApi import Cobbler
-from utils.apis_exceptions import APITimeout, EntityNotFound
+from framework_utils.apis_exceptions import APITimeout, EntityNotFound
 from utilities.tools import updateGuestTools, isToolsInstalledOnGuest, \
     removeToolsFromGuest, waitForGuestReboot,installAutoUpgraderCD, \
     installToolsFromDir, verifyToolsFilesExist
@@ -61,9 +61,10 @@ def get_api(element, collection):
     '''
 
     global api
-    if settings.opts['engine'] == 'rest':
+    engine = settings.opts.get('engine', 'rest')
+    if engine == 'rest':
         api = RestUtil(element, collection)
-    if settings.opts['engine'] == 'sdk':
+    if engine == 'sdk':
         api = SdkUtil(element, collection)
 
     return api

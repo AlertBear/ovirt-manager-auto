@@ -20,12 +20,12 @@
 import os.path
 import time
 import logging
-from utils.apis_utils import data_st, TimeoutingSampler
+from framework_utils.apis_utils import data_st, TimeoutingSampler
 from rhevm_api.test_utils import get_api
 from utilities.utils import readConfFile
 import re
-from utils.validator import compareCollectionSize
-from utils.apis_exceptions import APITimeout, EntityNotFound
+from framework_utils.validator import compareCollectionSize
+from framework_utils.apis_exceptions import APITimeout, EntityNotFound
 from rhevm_api.networks import getClusterNetwork
 from utilities.jobs import Job, JobsSet
 from Queue import Queue

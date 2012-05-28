@@ -17,11 +17,11 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-from utils.apis_utils import getDS
+from framework_utils.apis_utils import getDS
 from rhevm_api.test_utils import get_api, split
 import time
 import re
-from utils.validator import compareCollectionSize
+from framework_utils.validator import compareCollectionSize
 from rhevm_api.networks import getClusterNetwork
 
 CREATE_TEMPLATE_TIMEOUT = 900

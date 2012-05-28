@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import threading
 import logging
-import utils.settings as settings
+import framework_utils.settings as settings
 from utilities.utils import readConfFile
 logger = logging.getLogger('threads')
 

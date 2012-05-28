@@ -17,7 +17,7 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-from utils.apis_utils import getDS
+from framework_utils.apis_utils import getDS
 import os
 from utilities.utils import readConfFile
 from rhevm_api.test_utils import get_api, split 

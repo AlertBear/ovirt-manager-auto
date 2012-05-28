@@ -19,11 +19,11 @@
 
 import validator
 import time
-from apis_exceptions import EntityNotFound
-from utils.data_structures import *
+from framework_utils.apis_exceptions import EntityNotFound
+from framework_utils.data_structures import *
 from ovirtsdk import api as sdkApi
 from ovirtsdk.infrastructure.errors import RequestError
-from utils.apis_utils import APIUtil
+from framework_utils.apis_utils import APIUtil
 
 sdkInit = None
 

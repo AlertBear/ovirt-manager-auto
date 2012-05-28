@@ -18,8 +18,8 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 import os
 from utilities.utils import readConfFile
-from utils.apis_exceptions import EntityNotFound
-from utils.validator import compareCollectionSize
+from framework_utils.apis_exceptions import EntityNotFound
+from framework_utils.validator import compareCollectionSize
 import time
 import re
 import utilities.machine as hostUtil
@@ -28,12 +28,12 @@ from rhevm_api.hosts import deactivateHost, removeHost, getHostCompatibilityVers
 from rhevm_api.clusters import addCluster, removeCluster
 from rhevm_api.hosts import addHost,waitForHostsStates,getHost
 from rhevm_api.clusters import isHostAttachedToCluster,attachHostToCluster,connectClusterToDataCenter
-#from utils.storage_api import getVmsInfo,getImagesList,getVolumeInfo
+#from rhevm_api.storage_api import getVmsInfo,getImagesList,getVolumeInfo
 from rhevm_api.vms import removeVms, stopVms
 from rhevm_api.templates import removeTemplates
 from rhevm_api.test_utils import validateElementStatus, get_api
 from utilities.utils import getIpAddressByHostName
-from utils.apis_utils import getDS
+from framework_utils.apis_utils import getDS
 
 ELEMENTS = os.path.join(os.path.dirname(__file__), '../conf/elements.conf')
 ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
