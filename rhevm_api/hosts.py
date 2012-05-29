@@ -501,8 +501,8 @@ def updateHost(positive, host, **kwargs):
 
         if pm_port or pm_secure:
             pmOptions = Options()
-            if pm_port.strip():
-                op = Option(name='port', value=pm_port)
+            if pm_port:
+                op = Option(name='port', value=pm_port.strip())
                 pmOptions.add_option(op)
             if pm_secure:
                 op = Option(name='secure', value=pm_secure)
