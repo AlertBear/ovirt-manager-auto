@@ -23,6 +23,7 @@ import time
 import re
 from framework_utils.validator import compareCollectionSize
 from rhevm_api.networks import getClusterNetwork
+from utilities.jobs import Job, JobsSet
 
 CREATE_TEMPLATE_TIMEOUT = 900
 ELEMENT = 'template'
@@ -185,7 +186,7 @@ def removeTemplates(positive, templates):
 
     status = True
     for job in jobs:
-        status &= job.result
+        status = status and job.result
         if not job.result:
             util.logger.error('Removing template %s failed', job.args[1])
     return status

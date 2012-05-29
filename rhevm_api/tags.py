@@ -39,8 +39,7 @@ def _prepareTagObject(**kwargs):
         tag.set_description(kwargs.get('description'))
 
     if 'parent' in kwargs:
-        parentName = util.find(kwargs.pop('parent'))
-        parent = Tag(name=parentName)
+        parent = util.find(kwargs.pop('parent'))
         tag.set_parent(TagParent(tag=parent))
 
     return tag

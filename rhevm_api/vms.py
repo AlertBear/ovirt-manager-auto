@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 # Copyright (C) 2010 Red Hat, Inc.
 #
 # This is free software; you can redistribute it and/or modify it
@@ -20,8 +19,9 @@
 import os.path
 import time
 import logging
+from copy import deepcopy
 from framework_utils.apis_utils import data_st, TimeoutingSampler
-from rhevm_api.test_utils import get_api
+from rhevm_api.test_utils import get_api, split
 from utilities.utils import readConfFile
 import re
 from framework_utils.validator import compareCollectionSize
@@ -29,6 +29,7 @@ from framework_utils.apis_exceptions import APITimeout, EntityNotFound
 from rhevm_api.networks import getClusterNetwork
 from utilities.jobs import Job, JobsSet
 from Queue import Queue
+from threading import Thread
 
 GBYTE = 1024*1024*1024
 ELEMENTS = os.path.join(os.path.dirname(__file__), '../conf/elements.conf')
@@ -40,6 +41,7 @@ VM_ACTION_TIMEOUT = 180
 VM_REMOVE_SNAPSHOT_TIMEOUT = 300
 VM_IMAGE_OPT_TIMEOUT = 300
 VM_SAMPLING_PERIOD = 3
+BLANK_TEMPLATE = '00000000-0000-0000-0000-000000000000'
 ADD_DISK_KWARGS = ['size', 'type', 'interface', 'format', 'bootable',
                    'sparse', 'wipe_after_deletion', 'propagate_errors']
 
@@ -51,6 +53,8 @@ STORAGE_DOMAIN_API = get_api('storage_domain', 'storagedomains')
 DISKS_API = get_api('disk', 'disks')
 NIC_API = get_api('nic', 'nics')
 SNAPSHOT_API = get_api('snapshot', 'snapshots')
+TAG_API = get_api('tag', 'tags')
+CDROM_API = get_api('cdrom', 'cdroms')
 
 logger = logging.getLogger(__package__ + __name__)
 
@@ -492,7 +496,7 @@ def stopVms(vms, wait='true'):
     return all(resultsList)
 
 
-def searchForVm(positive, query_key, query_val, key_name, expected_count=None):
+def searchForVm(positive, query_key, query_val, key_name=None, expected_count=None):
     '''
     Description: search for a data center by desired property
     Parameters:
@@ -1262,4 +1266,195 @@ def ticketVm(positive, vm, expiry):
     ticket.set_expiry(int(expiry))
 
     return VM_API.syncAction(vmObj, "ticket", positive, ticket=ticket)
+
+
+def addTagToVm(positive, vm, tag):
+    '''
+    Description: add tag to vm
+    Author: edolinin
+    Parameters:
+       * vm - vm to add tag to
+       * tag - tag name
+    Return: status (True if tag was added properly, False otherwise)
+    '''
     
+    vmObj = VM_API.find(vm)
+    vmTags = VM_API.getElemFromLink(vmObj, link_name='tags', attr='tag', get_href=True)
+
+    tagObj = data_st.Tag()
+    tagObj.set_name(tag)
+
+    tagObj, status = TAG_API.create(tagObj, positive, collection=vmTags)
+    return status
+
+
+def removeTagFromVm(positive, vm, tag):
+    '''
+    Description: remove tag from vm
+    Author: edolinin
+    Parameters:
+       * vm - vm to remove tag from
+       * tag - tag name
+    Return: status (True if tag was removed properly, False otherwise)
+    '''
+    vmObj = VM_API.find(vm)
+    tagObj = VM_API.getElemFromElemColl(vmObj, tag, 'tags', 'tag')
+    return VM_API.delete(tagObj, positive)
+
+
+def exportVm(positive, vm, storagedomain, exclusive='false',
+             discard_snapshots='false'):
+    '''
+    Description: export vm to export storage domain
+    Author: edolinin, jhenner
+    Parameters:
+       * vm - name of vm to export
+       * storagedomain - name of export storage domain where to export vm to
+       * exclusive - overwrite any existing vm of the same name
+                       in the destination domain ('false' by default)
+       * discard_snapshots - do not include vm snapshots
+                               with the exported vm ('false' by default)
+    Return: status (True if vm was exported properly, False otherwise)
+    '''
+    vmObj = VM_API.find(links['vms'], vm)
+    sd = data_st.StorageDomain(name=storagedomain)
+    
+    expectedStatus = vmObj.status.state
+
+    actionParams = dict(storage_domain=sd, exclusive=exclusive,
+                        discard_snapshots=discard_snapshots)
+    status = VM_API.syncAction(vmObj, "export", positive, **actionParams)
+    if status and positive:
+        return VM_API.waitForElemStatus(vmObj, expectedStatus, 300)
+    return status
+
+
+def importVm(positive, vm, export_storagedomain, import_storagedomain,
+             cluster):
+    '''
+    Description: import vm
+    Author: edolinin
+    Parameters:
+       * vm - vm to import
+       * datacenter - name of data center
+       * export_storagedomain -storage domain where to export vm from
+       * import_storagedomain -storage domain where to import vm to
+    Return: status (True if vm was imported properly, False otherwise)
+    '''
+    expStorDomObj = STORAGE_DOMAIN_API.find(export_storagedomain)
+    sdVms = VM_API.getElemFromLink(expStorDomObj, link_name='vms', attr='vm',
+                                                            get_href=True)
+    vmObj = VM_API.find(vm, collection=sdVms)
+
+    expectedStatus = vmObj.status.state
+
+    sd = data_st.StorageDomain(name=import_storagedomain)
+    cl = data_st.Cluster(name=cluster)
+  
+    status = VM_API.syncAction(vmObj, "import", positive, storage_domain=sd, cluster=cl)
+    #TODO: replac sleep with true diagnostic
+    time.sleep(30)
+    if status and positive:
+        return util.waitForElemStatus(vmObj, expectedStatus, 300)
+    return status
+
+
+def moveVm(positive, vm, storagedomain, wait=True):
+    '''
+    Description: move vm to another storage domain
+    Author: edolinin
+    Parameters:
+       * vm - name of vm
+       * storagedomain - name of storage domain to move vm to
+    Return: status (True if vm was moved properly, False otherwise)
+    '''
+    vmObj = VM_API.find(vm)
+    expectedStatus = vmObj.status.state
+    storageDomainId = STORAGE_DOMAIN_API.find(storagedomain).id
+    sd = data_st.StorageDomain(id=storageDomainId)
+    
+    async = 'false'
+    if not wait:
+        async = 'true'
+    status = VM_API.syncAction(vmObj, "move", positive, storage_domain=sd, async=async)
+    if positive and status and wait:
+        return VM_API.waitForElemStatus(vmObj, expectedStatus, VM_IMAGE_OPT_TIMEOUT)
+    return status
+
+
+def changeCDWhileRunning(vm_name, cdrom_image):
+    '''
+    Description: Change cdrom image while vm is running
+    Since the change is for current session only, there is
+    no change in the API except of event, that's why there's no validation
+    in this method.
+    To check whether cdrom has been changed, event test must follow
+    after this test case
+    Author: jvorcak
+    Parameters:
+       * vm_name - name of the virtual machine
+       * cdrom_image - image to be changed
+    Return (True if reponse code is 200 for change request,
+            False otherwise)
+    '''
+    vmObj = VM_API.find(vm_name)
+    cdroms = CDROM_API.getElemFromLink(vmObj, link_name='cdroms',
+                                             attr='cdrom', get_href=True)
+    if not cdroms:
+        VM_API.logger.error('There is no cdrom attached to vm')
+        return False
+
+    newCdrom = cdroms[0]
+    newCdrom.set_file(data_st.File(id=cdrom_image))
+    cdroms[0].set_href(cdroms[0].href + "?current")
+    
+    cdrom, status = CDROM_API.update(cdroms[0], newCdrom, positive)
+
+    return status
+
+
+def cloneVmFromTemplate(positive, name, template, cluster, timeout=VM_IMAGE_OPT_TIMEOUT,
+                        clone='true', vol_sparse=None, vol_format=None):
+    '''
+    Description: clone vm from a pre-defined template
+    Author: edolinin
+    Parameters:
+       * template - template name
+       * cluster - cluster name
+       * timeout - action timeout (depends on disk size or system load
+       * clone - true/false - if true, template disk will be copied
+       * vol_sparse - true/false - convert VM disk to sparse/preallocated
+       * vol_format - COW/RAW - convert VM disk format
+    Return: status (True if vm was cloned properly, False otherwise)
+    '''
+    vm = data_st.VM(name=name)
+
+    templObj = TEMPLATE_API.find(template)
+    vm.set_template(templObj)
+   
+    clusterObj = CLUSTER_API.find(cluster)
+    vm.set_cluster(clusterObj)
+
+    expectedVm = None
+    diskArray = data_st.Disks()
+    if clone and clone.lower() == 'true':
+        diskArray.set_clone(clone)
+        disks = DISKS_API.getElemFromLink(templObj, link_name='disks',
+                                             attr='disk', get_href=True)
+        for dsk in disks:
+            disk = data_st.Disk(id=dsk.id)
+            if vol_sparse:
+                disk.set_sparse(vol_sparse)
+            if vol_format:
+                disk.set_format(vol_format)
+
+            diskArray.add_disk(disk)
+        vm.set_disks(diskArray)
+        expectedVm = deepcopy(vm)
+        expectedVm.set_template(id=BLANK_TEMPLATE)
+
+    vm, status = VM_API.create(vm, positive, expectedVm)
+
+    if positive and status:
+        return VM_API.waitForElemStatus(vm, "DOWN", timeout)
+    return status

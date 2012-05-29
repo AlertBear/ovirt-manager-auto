@@ -36,6 +36,7 @@ COLLECTION = 'hosts'
 util = get_api(ELEMENT, COLLECTION)
 clUtil = get_api('cluster', 'clusters')
 dcUtil = get_api('data_center', 'datacenters')
+tagUtil = get_api('tag', 'tags')
 
 Host = getDS('Host')
 Options = getDS('Options')
@@ -1009,7 +1010,7 @@ def sendSNRequest(positive, host_name, host_nics=None, auto_nics=None, **options
     return util.syncCollectionAction(host_obj.link['nics'].href + '/setupnetworks',
                                      etree.tostring(root), positive)
 
-def searchForHost(positive, query_key, query_val, key_name, expected_count=None):
+def searchForHost(positive, query_key, query_val, key_name=None, expected_count=None):
     '''
     Description: search for a host by desired property
     Author: edolinin
@@ -1118,7 +1119,7 @@ def addTagToHost(positive, host, tag):
     hostObj = util.find(host)
     tagObj = Tag(name=tag)
     hostTags = util.getElemFromLink(hostObj, link_name='tags', attr='tag', get_href=True)
-    tagObj, status = util.create(tagObj, positive, collection=hostTags)
+    tagObj, status = tagUtil.create(tagObj, positive, collection=hostTags)
     return status
 
 
