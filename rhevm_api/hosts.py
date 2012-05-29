@@ -423,7 +423,7 @@ def addHost(positive, name, wait=True, vdcPort=None, **kwargs):
     else:
         host_address = kwargs.pop('address')
 
-    hostCl = clUtil.find(kwargs.get('cluster', 'Default'))
+    hostCl = clUtil.find(kwargs.pop('cluster', 'Default'))
 
     osType ='rhel'
     root_password = kwargs.get('root_password')
