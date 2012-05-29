@@ -501,8 +501,8 @@ def updateHost(positive, host, **kwargs):
 
         if pm_port or pm_secure:
             pmOptions = Options()
-            if pm_port:
-                op = Option(name='port', value=pm_port.strip())
+            if pm_port and pm_port.strip():
+                op = Option(name='port', value=pm_port)
                 pmOptions.add_option(op)
             if pm_secure:
                 op = Option(name='secure', value=pm_secure)
@@ -730,7 +730,7 @@ def attachHostNic(positive, host, nic, network):
     '''
 
     hostObj = util.find(host)
-    cluster = hostObj.get_cluster().get_name()
+    cluster = clUtil.find(hostObj.cluster.id, 'id').get_name()
    
     hostNic = getHostNic(host, nic)
     clusterNet = getClusterNetwork(cluster, network)
@@ -773,7 +773,7 @@ def updateHostNic(positive, host, nic, network=None, boot_protocol=None,
     '''
 
     hostObj = util.find(host)
-    cluster = hostObj.get_cluster().get_name()
+    cluster = clUtil.find(hostObj.cluster.id, 'id').get_name()
     
     nicObj = getHostNic(host, nic)
 
@@ -811,8 +811,7 @@ def detachHostNic(positive, host, nic, network):
     Return: status (True if nic was detach properly from host, False otherwise)
     '''
     hostObj = util.find(host)
-    cluster = hostObj.get_cluster().get_id()
-    clusterObj = clUtil.find(cluster, 'id')
+    clusterObj = clUtil.find(hostObj.cluster.id, 'id')
     nicObj = getHostNic(host, nic)
 
     # Try to get the network object by his dataCenter id

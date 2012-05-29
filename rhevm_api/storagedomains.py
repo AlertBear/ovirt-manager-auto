@@ -236,6 +236,8 @@ def attachStorageDomain(positive, datacenter, storagedomain, wait=True):
     dcStorages = getDCStorages(datacenter)
     attachDom, status = util.create(attachDom, positive, collection=dcStorages,
                                                             async=(not wait))
+
+    dcObj = dcUtil.find(datacenter)
     if status and positive and wait:
         return util.waitForElemStatus(dcObj, "UP", 60, "datacenter")
     return status
