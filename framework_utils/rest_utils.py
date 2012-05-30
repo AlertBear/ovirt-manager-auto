@@ -367,21 +367,21 @@ class RestUtil(APIUtil):
                 if not validator.compareResponseCode(ret, positive_sync_stat, self.logger):
                     return False
                 if resp_action and not validator.compareActionStatus(resp_action.status.state,
-                                                                    "complete",
+                                                                    ["complete"],
                                                                     self.logger):
                     return False
             elif positive and async:
                 if not validator.compareResponseCode(ret, positive_async_stat, self.logger):
                     return False
                 if resp_action and not validator.compareActionStatus(resp_action.status.state,
-                                                                    "pending",
+                                                                    ["pending", "complete"],
                                                                     self.logger):
                     return False
             else:
                 if not validator.compareResponseCode(ret, negative_stat, self.logger):
                     return False
                 if resp_action and not validator.compareActionStatus(resp_action.status.state,
-                                                                    "failed",
+                                                                    ["failed"],
                                                                     self.logger):
                     return False
 

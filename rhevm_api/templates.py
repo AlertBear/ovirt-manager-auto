@@ -64,9 +64,9 @@ def _prepareTemplateObject(**kwargs):
         templ.set_type(type)
 
     cluster = kwargs.pop('cluster', None)
-    if type:
+    if cluster:
         cl = clUtil.find(cluster)
-        templ.set_cluster(Cluster(id=cl.get_id()))
+        templ.set_cluster(Cluster(id=cl.id))
 
     cpu_socket = kwargs.pop('cpu_socket', None)
     cpu_cores = kwargs.pop('cpu_cores', None)

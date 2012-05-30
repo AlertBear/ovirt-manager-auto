@@ -46,7 +46,7 @@ def compareResponseCode(resp, expected, logger):
 
 def compareActionStatus(status, expected, logger):
     try:
-        assert status == expected
+        assert status in expected
         logger.debug("Action status is valid: %(exp)s " % {'exp': expected })
         return True
     except AssertionError:
@@ -126,7 +126,8 @@ def compareElements(expElm, actElm, logger, root):
                 continue
 
             if attrType.startswith('xs:'):
-                if attrContainer and isinstance(attrExpVal, list):
+                if attrContainer and isinstance(attrExpVal, list) \
+                    and not isinstance(attrActVal, list) :
                     attrExpVal = attrExpVal[0]
 
                 if str(attrExpVal)==str(attrActVal):
