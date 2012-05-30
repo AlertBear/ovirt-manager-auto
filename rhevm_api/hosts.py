@@ -392,7 +392,7 @@ def waitForHostsStates(positive, names, states='up'):
             query_hosts += " or name={0} and status={1}".format(host, states)
   
     try:
-        util.waitForQuery(query_hosts)
+        util.waitForQuery(query_hosts, timeout=1200)
     except APITimeout as e:
         logger.error(e)
         return False
@@ -596,10 +596,10 @@ def installHost(positive, host, root_password, override_iptables='false'):
     status = util.syncAction(hostObj, "install", positive,
                              root_password=root_password,
                              override_iptables=override_iptables.lower())
+    if not status:
+        return False
 
-    testHostStatus = util.waitForElemStatus(hostObj, "up", 800)
-
-    return status and testHostStatus
+    return util.waitForElemStatus(hostObj, "up", 800)
 
 
 def approveHost(positive, host, cluster='Default'):
