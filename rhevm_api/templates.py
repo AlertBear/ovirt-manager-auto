@@ -234,9 +234,9 @@ def addTemplateNic(positive, template, name, network='rhevm',interface=None):
     Return: status (True if nic was added properly, False otherwise)
     '''
     templObj = util.find(template)
-   
     nic = NIC(name=name, interface=interface)
-    clusterNet = getClusterNetwork(templObj.get_cluster().get_name())
+    cluster = clUtil.find(templObj.cluster.id, 'id')
+    clusterNet = getClusterNetwork(cluster.name, network)
     nic.set_network(clusterNet)
 
     templateNics = getTemplatesNics(template)

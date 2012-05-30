@@ -431,10 +431,10 @@ class RestUtil(APIUtil):
             restElement = self.get(restElement.href)
 
             elemStat = None
-            if hasattr(restElement, 'status'):
-                elemStat = restElement.status.state.lower()
-            elif hasattr(restElement, 'snapshot_status'):
+            if hasattr(restElement, 'snapshot_status'):
                 elemStat = restElement.snapshot_status.lower()
+            elif hasattr(restElement, 'status'):
+                elemStat = restElement.status.state.lower()
             else:
                 self.logger.error("Element %s doesn't have attribute status" % \
                                                         (self.element_name))

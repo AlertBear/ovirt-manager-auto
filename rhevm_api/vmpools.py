@@ -117,7 +117,7 @@ def updateVmPool(positive, vmpool, **kwargs):
         for vm in vmUtil.get(absLink=False):
             if not hasattr(vm, "vmpool"):
                 continue
-            if vm.get_vmpool().get_id() == pool.get_id():
+            if vm.vmpool and vm.vmpool.id == pool.get_id():
                 vms_in_pool.append(vm)
 
         compareCollectionSize(vms_in_pool, size, util.logger)

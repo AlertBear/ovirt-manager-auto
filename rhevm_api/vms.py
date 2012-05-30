@@ -368,6 +368,7 @@ def waitForVmsGone(positive, vms, timeout=30, samplingPeriod=5):
     logger.error("VMs %s didn't disappear until timeout." % remainingVmsNames)
     return not positive
 
+
 def changeVMStatus(positive, vm, action, expectedStatus, async='true'):
     '''
     Description: change vm status
@@ -1056,25 +1057,29 @@ def runVmOnce(positive, vm, pause=None, display_type=None, stateless=None,
 
     vm_for_action = data_st.VM()
     if display_type:
-        vm_for_action.set_display(data_st.Display(type=display_type))
+        vm_for_action.set_display(data_st.Display(type_=display_type))
         
     if None is not stateless:
         vm_for_action.set_stateless(stateless)
 
     if None is not cdrom_image:
         cdrom = data_st.CdRom()
+        vmCdroms = data_st.CdRoms()
         cdrom.set_file(data_st.File(id=cdrom_image))
-        vm_for_action.cdroms.add_cdrom(cdrom)
+        vmCdroms.add_cdrom(cdrom)
+        vm_for_action.set_cdroms(vmCdroms)
 
     if None is not floppy_image:
         floppy = data_st.Floppy()
+        floppies = data_st.Floppies()
         floppy.set_file(data_st.File(id=floppy_image))
-        vm_for_action.floppies.add_floppy(floppy)
+        floppies.add_floppy(floppy)
+        vm_for_action.set_floppies(floppies)
 
     if None is not boot_dev:
         boot_dev_seq = data_st.Boot()
         for dev in boot_dev.split(","):
-            boot_dev_seq.add_device(dev)
+            boot_dev_seq.set_boot_device(dev)
             vm_for_action.set_os(OperatingSystem.set_boot(boot_dev_seq))
 
     if None is not host:
@@ -1208,7 +1213,9 @@ def migrateVm(positive, vm, host=None, wait=True):
     '''
     vmObj = VM_API.find(vm)
     actionParams = {}
-    sourceHost = vmObj.host.name
+    sourceHostId = vmObj.host.id
+    sourceHost = HOST_API.find(sourceHostId, 'id')
+
 
     # If the host is not specified, we should let RHEVM to autoselect host.
     query = 'name={0} and status=powering_up or name={0} and status=up'
@@ -1399,7 +1406,7 @@ def changeCDWhileRunning(vm_name, cdrom_image):
     '''
     vmObj = VM_API.find(vm_name)
     cdroms = CDROM_API.getElemFromLink(vmObj, link_name='cdroms',
-                                             attr='cdrom', get_href=True)
+                                             attr='cdrom', get_href=False)
     if not cdroms:
         VM_API.logger.error('There is no cdrom attached to vm')
         return False
@@ -1440,7 +1447,7 @@ def cloneVmFromTemplate(positive, name, template, cluster, timeout=VM_IMAGE_OPT_
     if clone and clone.lower() == 'true':
         diskArray.set_clone(clone)
         disks = DISKS_API.getElemFromLink(templObj, link_name='disks',
-                                             attr='disk', get_href=True)
+                                             attr='disk', get_href=False)
         for dsk in disks:
             disk = data_st.Disk(id=dsk.id)
             if vol_sparse:

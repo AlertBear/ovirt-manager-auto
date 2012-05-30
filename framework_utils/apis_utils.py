@@ -133,10 +133,11 @@ class APIUtil(object):
         # get element's collection from element link
         objs = self.getElemFromLink(elm, collection_name, attr=elm_name)
         # get element by name
-        for obj in objs:
-            propVal = getattr(obj, prop)
-            if propVal == name_val:
-                return obj
+        if objs:
+            for obj in objs:
+                propVal = getattr(obj, prop)
+                if propVal == name_val:
+                    return obj
 
         raise EntityNotFound("Entity '{0}' not found".format(name_val))
 
