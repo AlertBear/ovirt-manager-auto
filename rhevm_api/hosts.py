@@ -535,7 +535,7 @@ def removeHost(positive,host):
     return util.delete(hostObj, positive)
 
 
-def activateHost(positive, host, wait=False):
+def activateHost(positive, host, wait=True):
     '''
     Description: activate host (set status to UP)
     Author: edolinin

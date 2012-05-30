@@ -132,7 +132,7 @@ def _prepareVmObject(**kwargs):
         vm.set_custom_properties(_createCustomPropertiesFromArg(custom_prop))
 
     # memory policy
-    vm.set_memory_policy(data_st.VmMemoryPolicy(guaranteed=
+    vm.set_memory_policy(data_st.MemoryPolicy(guaranteed=
         kwargs.pop('memory_guaranteed', None)))
 
     # placement policy
@@ -1316,7 +1316,7 @@ def exportVm(positive, vm, storagedomain, exclusive='false',
                                with the exported vm ('false' by default)
     Return: status (True if vm was exported properly, False otherwise)
     '''
-    vmObj = VM_API.find(links['vms'], vm)
+    vmObj = VM_API.find(vm)
     sd = data_st.StorageDomain(name=storagedomain)
     
     expectedStatus = vmObj.status.state

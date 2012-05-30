@@ -52,6 +52,7 @@ hostUtil = get_api('host', 'hosts')
 templUtil = get_api('template', 'templates')
 vmUtil = get_api('vm', 'vms')
 clUtil = get_api('cluster', 'clusters')
+fileUtil = get_api('file', 'files')
 
 
 def _prepareStorageDomainObject(positive, **kwargs):
@@ -847,7 +848,8 @@ def getStorageDomainFile(positive, storagedomain, file):
      '''
 
     storDomObj = util.find(storagedomain)
-    fileObj = util.getElemFromElemColl(storDomObj, 'files', 'file', file)
+    fileObj = fileUtil.getElemFromElemColl(storDomObj, 'files', 'file', file)
+    
     if fileObj:
         return positive
     else:
