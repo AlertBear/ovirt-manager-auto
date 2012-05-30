@@ -63,6 +63,19 @@ def _prepareNetworkObject(**kwargs):
     if vlan:
         net.set_vlan(id=vlan_id)
 
+    usages = kwargs.get('usages')
+    if usages:
+        netUsages = Usages()
+        for usage in usages:
+            netUsages.add_usage(usage)
+        net.set_usages(netUsages)
+
+
+    mtu = kwargs.get('mtu')
+    if mtu:
+        net.set_mtu(mtu)
+        
+
     return net
 
 

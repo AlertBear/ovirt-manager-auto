@@ -339,32 +339,29 @@ def removeVms(positive, vms, stop='false'):
         status &= removalOK
     return status and waitForVmsGone(positive, vms)
 
+
 def waitForVmsGone(positive, vms, timeout=30, samplingPeriod=5):
     '''
     Wait for VMs to disappear from the setup. This function will block up to `timeout`
     seconds, sampling the VMs list every `samplingPeriod` seconds, until no VMs
     specified by names in `vms` exists.
 
-    Author: jhenner
     Parameters:
         * vms - comma (and no space) separated string of VM names to wait for.
         * timeout - Time in seconds for the vms to disapear.
         * samplingPeriod - Time in seconds for sampling the vms list.
     '''
     t_start = time.time()
-    # Construct a xpath query. For VMs Default and RestVM it would be:
-    # /vms/vm[./name="Default" or ./name="RestVM"]
     vmsList = vms.split(',')
-    QUERY = '/vms/vm[%s]' % \
-                ' or '.join([ './name="%s"' % vm for vm in vmsList ])
+    QUERY = ' or '.join([ 'name="%s"' % vm for vm in vmsList ])
     while time.time() - t_start < timeout and 0 < timeout:
-        remainingVms = VM_API.getAndXpathEval(VM_API.get(absLink=False), QUERY)
-        logger.info("Waiting for %d VMs to disappear.", len(remainingVms))
-        if not len(remainingVms):
+        foundVms = VM_API.query(QUERY)
+        if not len(foundVms):
             logger.info("All %d VMs are gone.", len(vmsList))
             return positive
         time.sleep(samplingPeriod)
-    remainingVmsNames = [vm.name for vm in remainingVms]
+        
+    remainingVmsNames = [vm.name for vm in foundVms]
     logger.error("VMs %s didn't disappear until timeout." % remainingVmsNames)
     return not positive
 
@@ -1079,7 +1076,7 @@ def runVmOnce(positive, vm, pause=None, display_type=None, stateless=None,
     if None is not boot_dev:
         boot_dev_seq = data_st.Boot()
         for dev in boot_dev.split(","):
-            boot_dev_seq.set_boot_device(dev)
+            boot_dev_seq.set_dev(dev)
             vm_for_action.set_os(OperatingSystem.set_boot(boot_dev_seq))
 
     if None is not host:
@@ -1212,6 +1209,9 @@ def migrateVm(positive, vm, host=None, wait=True):
             False otherwise.
     '''
     vmObj = VM_API.find(vm)
+    if not vmObj.host:
+        logger.error("VM has no attribute 'host': " + dir(vmObj))
+        return False
     actionParams = {}
     sourceHostId = vmObj.host.id
     sourceHost = HOST_API.find(sourceHostId, 'id')
@@ -1415,7 +1415,7 @@ def changeCDWhileRunning(vm_name, cdrom_image):
     newCdrom.set_file(data_st.File(id=cdrom_image))
     cdroms[0].set_href(cdroms[0].href + "?current")
     
-    cdrom, status = CDROM_API.update(cdroms[0], newCdrom, positive)
+    cdrom, status = CDROM_API.update(cdroms[0], newCdrom, True)
 
     return status
 

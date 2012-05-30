@@ -102,12 +102,19 @@ class RestUtil(APIUtil):
 
         self.logger.debug("Response body for GET request is: %s " % ret['body'])
 
-        if hasattr(parse(ret['body']), elm):
-            return getattr(parse(ret['body']), elm)
+        parsedResp = None
+        try:
+            parsedResp = parse(ret['body'])
+        except XMLSyntaxError:
+            self.logger.error("Cant parse xml response")
+            return False
+
+        if hasattr(parsedResp, elm):
+            return getattr(parsedResp, elm)
         else:
             if listOnly:
                 self.logger.error("Element '{0}' not found at {1}".format(elm, ret['body']))
-            return parse(ret['body'])
+            return parsedResp
         
 
     def create(self, entity, positive,
@@ -348,8 +355,13 @@ class RestUtil(APIUtil):
                             MEDIA_TYPE)
   
             self.logger.debug("Response body for action request is: %s " % ret['body'])
-            resp_action = parse(ret['body'])
-            self.validateResponseViaXSD(actionHref, ret)
+            resp_action = None
+            try:
+                resp_action = parse(ret['body'])
+                self.validateResponseViaXSD(actionHref, ret)
+            except XMLSyntaxError:
+                 self.logger.error("Cant parse xml response")
+                 return False
 
             if positive and not async:
                 if not validator.compareResponseCode(ret, positive_sync_stat, self.logger):
@@ -440,7 +452,6 @@ class RestUtil(APIUtil):
                                                         (self.element_name))
                 return False
           
-            elemStat = restElement.status.state.lower()
             if elemStat in status.lower().split():
                 self.logger.info("%s status is '%s'" \
                                 % (self.element_name, elemStat))
