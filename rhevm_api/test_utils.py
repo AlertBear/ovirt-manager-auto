@@ -974,7 +974,7 @@ def convertMacToIpAddress(positive, mac, subnetClassB = '10.35', vlan=0):
     return False, {'ip' : None}
 
 
-def searchElement(positive, element, keyName, searchValue):
+def searchElement(positive, element, collection, keyName, searchValue):
     '''
     The function searchElement search specific element by key name and value.
         element = specific element (host,datacenter...)
@@ -982,16 +982,17 @@ def searchElement(positive, element, keyName, searchValue):
         searchValue = the value what we want find(Example: key name = ip,search value = 1.1.1.1)
     return values : True and list of elements or False and None
     '''
+    util = get_api(element, collection)
     try:
         supportedElements = readConfFile(elementsConf, elementConfSection)
     except Exception as err:
-        logger.error(err)
+        util.logger.error(err)
         return False, None
     if not element in supportedElements:
-        logger.error ("Unknown element %s , supported elements: %s" % (element, ",".join(supportedElements.keys())))
+        util.logger.error ("Unknown element %s , supported elements: %s" % (element, ",".join(supportedElements.keys())))
         return False, None
 
-    elements = util.query(links[supportedElements[element] + '/search'], keyName + "=" + searchValue)
+    elements = util.query(keyName + "=" + searchValue)
     if elements:
         return True, elements
 

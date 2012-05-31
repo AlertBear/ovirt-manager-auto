@@ -18,7 +18,7 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 from framework_utils.apis_utils import getDS
-from rhevm_api.test_utils import get_api, split, getStat
+from rhevm_api.test_utils import get_api, split, getStat, searchElement
 import os
 import time
 from lxml import etree
@@ -392,7 +392,7 @@ def waitForHostsStates(positive, names, states='up'):
             query_hosts += " or name={0} and status={1}".format(host, states)
   
     try:
-        util.waitForQuery(query_hosts, timeout=1200)
+        util.waitForQuery(query_hosts, timeout=1000)
     except APITimeout as e:
         logger.error(e)
         return False
@@ -1193,9 +1193,10 @@ def checkHostSpmStatus(positive, hostName):
         util.logger.error("Element host" + hostName + " doesn't have attribute " + attribute)
         return False
 
+    spmStatus = hostObj.get_storage_manager().valueOf_
     util.logger.info("checkHostSpmStatus - SPM Status of host " + hostName + \
-                                " is: " + hostObj.get_storage_manager().upper())
-    return (hostObj.get_storage_manager().lower() == 'true') == positive
+                    " is: " + str(spmStatus))
+    return spmStatus == positive
 
 
 def checkHostSubelementPresence(positive, host, element_path):
@@ -1229,9 +1230,7 @@ def getHost(positive, dataCenter='Default', spm=True, hostName=None):
                    first HSM found will be returned.
     return: True and located host name in case of success, otherwise false and None
     '''
-    queryKey = 'cluster'
-    element='host'
-
+  
     try:
         clusters = clUtil.get(absLink=False)
         dataCenterObj = dcUtil.find(dataCenter)
@@ -1239,9 +1238,9 @@ def getHost(positive, dataCenter='Default', spm=True, hostName=None):
         return False, {'hostName': None}
 
     clusters = (cl for cl in clusters if hasattr(cl, 'data_center') \
-                and cl.get_data_center.id == dataCenterObj.id)
+        and cl.get_data_center() and cl.get_data_center().id == dataCenterObj.id)
     for cluster in clusters:
-        elementStatus, hosts = searchElement(positive, element, queryKey, cluster.name)
+        elementStatus, hosts = searchElement(positive, ELEMENT, COLLECTION, 'cluster', cluster.name)
         if not elementStatus:
             return False, {'hostName': None}
         for host in hosts:

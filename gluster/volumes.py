@@ -264,13 +264,13 @@ def getClusterVolumes(cluster, get_href=False):
     return util.getElemFromLink(clObj, get_href=get_href)
 
 
-def runVolAction(positive, cluster, volume, status, wait_for_status, **opts):
+def runVolAction(positive, cluster, volume, action, wait_for_status, **opts):
 
     if not positive:
         wait_for_status = None
 
     vol = getClusterVolume(cluster, volume)
-    if not util.syncAction(vol, status, positive, opts):
+    if not util.syncAction(vol, action, positive, **opts):
         return False
 
     if wait_for_status is None:
@@ -318,7 +318,7 @@ def rebalanceVolume(positive, cluster, volume):
     Return: status (True if volume was started properly, False otherwise)
     '''
 
-    return runVolAction(positive, cluster, volume, 'rebalance', 'up')
+    return runVolAction(positive, cluster, volume, 'rebalance', None)
 
 
 def resetAllVolumeOptions(positive, cluster, volume):
@@ -331,7 +331,7 @@ def resetAllVolumeOptions(positive, cluster, volume):
     Return: status (True if volume was started properly, False otherwise)
     '''
 
-    return runVolAction(positive, cluster, volume, 'resetAllOptions', 'up')
+    return runVolAction(positive, cluster, volume, 'resetAllOptions', None)
 
 
 def setVolumeOption(positive, cluster, volume, opt_name, opt_value):
@@ -347,7 +347,7 @@ def setVolumeOption(positive, cluster, volume, opt_name, opt_value):
     '''
 
     option = Option(name=opt_name, value=opt_value)
-    return runVolAction(positive, cluster, volume, 'setOption', 'up',
+    return runVolAction(positive, cluster, volume, 'setOption', None,
                                                         option=option)
                                                         
 
@@ -363,5 +363,5 @@ def resetVolumeOption(positive, cluster, volume, opt_name):
     '''
 
     option = Option(name=opt_name)
-    return runVolAction(positive, cluster, volume, 'resetOption', 'up',
+    return runVolAction(positive, cluster, volume, 'resetOption', None,
                                                         option=option)

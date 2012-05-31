@@ -247,7 +247,7 @@ class RestUtil(APIUtil):
                 element_name = self.element_name
             body = validator.dump_entity(body, element_name)
             self.logger.debug("DELETE request content is --  url:%(uri)s body:%(body)s " \
-                                                        % {'uri': entity.href, 'body': entity })
+                                                        % {'uri': entity.href, 'body': body })
             ret = http.DELETE(self.opts, entity.href, body, MEDIA_TYPE)
         else:
             self.logger.debug("DELETE request content is --  url:%(uri)s" \
