@@ -416,7 +416,7 @@ def startVm(positive, vm, wait_for_status=ENUMS['vm_state_powering_up']):
         return True
 
     query = "name={0} and status={1} or name={0} and status=up".format(vm,
-                                    wait_for_status.lower())
+                                    wait_for_status.lower().replace('_',''))
 
     return VM_API.waitForQuery(query, timeout=VM_ACTION_TIMEOUT, sleep=10)
 
@@ -1364,7 +1364,7 @@ def importVm(positive, vm, export_storagedomain, import_storagedomain,
     #TODO: replac sleep with true diagnostic
     time.sleep(30)
     if status and positive:
-        return util.waitForElemStatus(vmObj, expectedStatus, 300)
+        return VM_API.waitForElemStatus(vmObj, expectedStatus, 300)
     return status
 
 

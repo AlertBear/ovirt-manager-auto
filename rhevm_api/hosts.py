@@ -1239,17 +1239,17 @@ def getHost(positive, dataCenter='Default', spm=True, hostName=None):
         return False, {'hostName': None}
 
     clusters = (cl for cl in clusters if hasattr(cl, 'data_center') \
-                and cl.get_data_center().get_id() == dataCenterObj.get_id())
+                and cl.get_data_center.id == dataCenterObj.id)
     for cluster in clusters:
-        elementStatus, hosts = searchElement(positive, element, queryKey, cluster.get_name())
+        elementStatus, hosts = searchElement(positive, element, queryKey, cluster.name)
         if not elementStatus:
             return False, {'hostName': None}
         for host in hosts:
-            spmStatus = checkHostSpmStatus(positive, host.get_name())
+            spmStatus = checkHostSpmStatus(positive, host.name)
             if spm and spmStatus:
-                return True, {'hostName': host.get_name()}
-            elif not spm and not spmStatus and (not hostName or hostName == host.get_name()):
-                return True, {'hostName': host.get_name()}
+                return True, {'hostName': host.name}
+            elif not spm and not spmStatus and (not hostName or hostName == host.name):
+                return True, {'hostName': host.name}
     return False, {'hostName': None}
 
 
@@ -1264,8 +1264,13 @@ def waitForSPM(datacenter, timeout, sleep):
     Return: True if an SPM gets elected before timeout. It rises
     RESTTimeout exception on timeout.
     '''
-    query='name={0} and status=down'.format(datacenter)
-    return dcUtil.waitForQuery(query, timeout=timeout, sleep=sleep)
+    sampler = TimeoutingSampler(timeout, sleep,
+                                getHost, True, datacenter, True)
+    sampler.timeout_exc_args = \
+            "Timeout when waiting for SPM to appear in DC %s."  % datacenter,
+    for s in sampler:
+        if s[0]:
+            return True
  
 
 def getHostNicAttr(positive, host, nic, attr):

@@ -26,6 +26,7 @@ ELEMENT = 'gluster_volume'
 COLLECTION = 'glustervolumes'
 util = get_api(ELEMENT, COLLECTION)
 clUtil = get_api('cluster', 'clusters')
+hostUtil = get_api('host', 'hosts')
 
 GlusterVolume = getDS('GlusterVolume')
 TransportTypes = getDS('TransportTypes')
@@ -105,7 +106,8 @@ def _prepareVolume(**kwargs):
     if bricks:
         volBricks = GlusterBricks()
         for brick in bricks:
-            server_id = brick.get('server_id', '')
+            host = brick.get('server', '')
+            server_id = hostUtil.find(host).id
             brick_dir = brick.get('brick_dir', '')
             volBricks.add_brick(GlusterBrick(server_id=server_id, brick_dir=brick_dir))
         vol.set_bricks(volBricks)
@@ -130,13 +132,13 @@ def addClusterVolume(positive, cluster, **kwargs):
         * options - list of dictinaries of options,
             example: [{'type': ..., 'name': ...., 'value': ...}, {...}]
         * bricks - list of dictinaries of bricks,
-            example: [{'server_id': ..., 'brick_dir': ....}, {...}]
+            example: [{'server': ..., 'brick_dir': ....}, {...}]
      Parameters string example:
     <params_pattern>
         cluster='',name='',volume_type='',transport_types='',replica_count='',
         stripe_count='',access_protocols'',
         access_control_list=[{'netmask':'','gateway':'','address':''},],
-        bricks=[{'server_id':'','brick_dir':''},],
+        bricks=[{'server':'','brick_dir':''},],
         options=[{'name':'','type':'','value':''},]
     </params_pattern>
     
@@ -275,7 +277,7 @@ def runVolAction(positive, cluster, volume, status, wait_for_status, **opts):
         return True
 
     query = "name={0} and status={1}".format(volume, wait_for_status.lower())
-    clVols = getClusterVolumes(cluster)
+    clVols = getClusterVolumes(cluster, True)
     return util.waitForQuery(query, href=clVols,
             timeout=VOL_ACTION_TIMEOUT, sleep=10)
 

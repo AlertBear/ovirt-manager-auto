@@ -833,7 +833,7 @@ def getStorageDomainFiles(positive, storagedomain, files_count):
      '''
 
     storDomObj = util.find(storagedomain)
-    storFiles = util.getElemFromLink(storDomObj, link_name='files', attr='file', get_href=True)
+    storFiles = util.getElemFromLink(storDomObj, 'files', attr='file', get_href=True)
     return compareCollectionSize(storFiles, files_count, util.logger)
 
 
@@ -848,7 +848,7 @@ def getStorageDomainFile(positive, storagedomain, file):
      '''
 
     storDomObj = util.find(storagedomain)
-    fileObj = fileUtil.getElemFromElemColl(storDomObj, 'files', 'file', file)
+    fileObj = fileUtil.getElemFromElemColl(storDomObj, file, 'files', 'file')
     
     if fileObj:
         return positive
