@@ -270,7 +270,7 @@ def removeVm(positive, vm, **kwargs):
             return False
     status = VM_API.delete(vmObj, positive, body=body, element_name='action')
 
-    wait = kwargs.pop('wait', False)
+    wait = kwargs.pop('wait', True)
     if positive and wait and status:
         return waitForVmsGone(positive, vm, kwargs.pop('timeout', 60),
                 kwargs.pop('waitTime', 10))
@@ -416,7 +416,7 @@ def startVm(positive, vm, wait_for_status=ENUMS['vm_state_powering_up']):
         return True
 
     query = "name={0} and status={1} or name={0} and status=up".format(vm,
-                                                    wait_for_status.lower())
+                                    wait_for_status.lower())
 
     return VM_API.waitForQuery(query, timeout=VM_ACTION_TIMEOUT, sleep=10)
 

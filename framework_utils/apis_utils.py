@@ -142,7 +142,8 @@ class APIUtil(object):
         raise EntityNotFound("Entity '{0}' not found".format(name_val))
 
 
-    def waitForQuery(self, query, event_id=None, timeout=DEF_TIMEOUT, sleep=DEF_SLEEP):
+    def waitForQuery(self, query, event_id=None, timeout=DEF_TIMEOUT,
+                                        sleep=DEF_SLEEP, href=None):
         '''
         Waits until the query `xpath` on doc specified by `link` is evaluates as
         True.
@@ -161,7 +162,7 @@ class APIUtil(object):
         TIMEOUT_MSG_TMPL = "Timeout when waiting for query '{0}' on '{1}'"\
                                         .format(query, self.collection_name)
         sampler.timeout_exc_args = TIMEOUT_MSG_TMPL.format(query, event_id),
-        sampler.func_args = query, [200, 201], None, event_id
+        sampler.func_args = query, [200, 201], href, event_id
 
         try:
             for sampleOk in sampler:
