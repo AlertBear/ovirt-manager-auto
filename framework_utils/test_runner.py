@@ -442,7 +442,7 @@ class TestRunner(object):
         iteration = ''
         if testCase['test_report'].lower() != "no":
             opts['iteration'] = opts['iteration'] + 1
-            iteration = str(opts['iteration'])
+            iteration = "%03d" % opts['iteration']
 
         self.logger.info( "Iteration number: " + iteration)
         self.logger.info( "Current loop index: " + str(i))

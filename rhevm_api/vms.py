@@ -1077,8 +1077,9 @@ def runVmOnce(positive, vm, pause=None, display_type=None, stateless=None,
     if None is not boot_dev:
         boot_dev_seq = data_st.Boot()
         for dev in boot_dev.split(","):
+            os = data_st.OperatingSystem()
             boot_dev_seq.set_dev(dev)
-            vm_for_action.set_os(data_st.OperatingSystem.set_boot(boot_dev_seq))
+            vm_for_action.set_os(os.set_boot(boot_dev_seq))
 
     if None is not host:
         raise NotImplementedError(
@@ -1461,7 +1462,7 @@ def cloneVmFromTemplate(positive, name, template, cluster, timeout=VM_IMAGE_OPT_
         expectedVm = deepcopy(vm)
         expectedVm.set_template(data_st.Template(id=BLANK_TEMPLATE))
 
-    vm, status = VM_API.create(vm, positive, expectedVm)
+    vm, status = VM_API.create(vm, positive, expectedEntity=expectedVm)
 
     if positive and status:
         return VM_API.waitForElemStatus(vm, "DOWN", timeout)

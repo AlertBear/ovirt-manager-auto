@@ -284,8 +284,6 @@ class RestUtil(APIUtil):
 
         if not collection:
             collection = self.get(href, listOnly=True)
-        else:
-            href = collection.href
             
         try:
             results = filter(lambda r: getattr(r, attribute) == val, collection)[0]
