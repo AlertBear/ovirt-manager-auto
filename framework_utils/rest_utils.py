@@ -105,7 +105,7 @@ class RestUtil(APIUtil):
         parsedResp = None
         try:
             parsedResp = parse(ret['body'])
-        except XMLSyntaxError:
+        except etree.XMLSyntaxError:
             self.logger.error("Cant parse xml response")
             return False
 
@@ -284,6 +284,8 @@ class RestUtil(APIUtil):
 
         if not collection:
             collection = self.get(href, listOnly=True)
+        else:
+            href = collection.href
             
         try:
             results = filter(lambda r: getattr(r, attribute) == val, collection)[0]
@@ -359,7 +361,7 @@ class RestUtil(APIUtil):
             try:
                 resp_action = parse(ret['body'])
                 self.validateResponseViaXSD(actionHref, ret)
-            except XMLSyntaxError:
+            except etree.XMLSyntaxError:
                  self.logger.error("Cant parse xml response")
                  return False
 

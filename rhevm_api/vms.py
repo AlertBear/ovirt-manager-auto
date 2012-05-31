@@ -415,7 +415,8 @@ def startVm(positive, vm, wait_for_status=ENUMS['vm_state_powering_up']):
     if wait_for_status is None:
         return True
 
-    query = "name={0} and status={1}".format(vm, wait_for_status.lower())
+    query = "name={0} and status={1} or name={0} and status=up".format(vm,
+                                                    wait_for_status.lower())
 
     return VM_API.waitForQuery(query, timeout=VM_ACTION_TIMEOUT, sleep=10)
 
@@ -966,7 +967,7 @@ def validateSnapshot(positive, vm, snapshot):
        * snapshot - snapshot name
     Return: status (True if snapshot exist, False otherwise)
     '''
-    return _getVmSnapshot(vm, description) is not None
+    return _getVmSnapshot(vm, snapshot) is not None
 
 
 def removeSnapshot(positive, vm, description, timeout=VM_REMOVE_SNAPSHOT_TIMEOUT):
@@ -1077,7 +1078,7 @@ def runVmOnce(positive, vm, pause=None, display_type=None, stateless=None,
         boot_dev_seq = data_st.Boot()
         for dev in boot_dev.split(","):
             boot_dev_seq.set_dev(dev)
-            vm_for_action.set_os(OperatingSystem.set_boot(boot_dev_seq))
+            vm_for_action.set_os(data_st.OperatingSystem.set_boot(boot_dev_seq))
 
     if None is not host:
         raise NotImplementedError(
@@ -1210,7 +1211,7 @@ def migrateVm(positive, vm, host=None, wait=True):
     '''
     vmObj = VM_API.find(vm)
     if not vmObj.host:
-        logger.error("VM has no attribute 'host': " + dir(vmObj))
+        logger.error("VM has no attribute 'host': %s" % dir(vmObj))
         return False
     actionParams = {}
     sourceHostId = vmObj.host.id
@@ -1350,7 +1351,7 @@ def importVm(positive, vm, export_storagedomain, import_storagedomain,
     '''
     expStorDomObj = STORAGE_DOMAIN_API.find(export_storagedomain)
     sdVms = VM_API.getElemFromLink(expStorDomObj, link_name='vms', attr='vm',
-                                                            get_href=True)
+                                                            get_href=False)
     vmObj = VM_API.find(vm, collection=sdVms)
 
     expectedStatus = vmObj.status.state
@@ -1458,7 +1459,7 @@ def cloneVmFromTemplate(positive, name, template, cluster, timeout=VM_IMAGE_OPT_
             diskArray.add_disk(disk)
         vm.set_disks(diskArray)
         expectedVm = deepcopy(vm)
-        expectedVm.set_template(id=BLANK_TEMPLATE)
+        expectedVm.set_template(data_st.Template(id=BLANK_TEMPLATE))
 
     vm, status = VM_API.create(vm, positive, expectedVm)
 

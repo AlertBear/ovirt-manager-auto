@@ -60,6 +60,10 @@ def _prepareVmPoolObject(**kwargs):
     if template:
         pool.set_template(templUtil.find(template))
 
+    id = kwargs.pop('id', None)
+    if id:
+        pool.set_id(id)
+
     return pool
 
 
@@ -107,6 +111,11 @@ def updateVmPool(positive, vmpool, **kwargs):
     '''
     size = kwargs.get('size', 0)
     pool = util.find(vmpool)
+    poolTemp = pool.template.id
+    kwargs['template'] = templUtil.find(poolTemp, 'id').name
+    poolCl = pool.cluster.id
+    kwargs['cluster'] = clUtil.find(poolCl, 'id').name
+    kwargs['id'] = pool.id
     poolNew = _prepareVmPoolObject(**kwargs)
 
     pool, status = util.update(pool, poolNew, positive)
