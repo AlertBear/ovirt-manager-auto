@@ -1077,9 +1077,10 @@ def runVmOnce(positive, vm, pause=None, display_type=None, stateless=None,
     if None is not boot_dev:
         boot_dev_seq = data_st.Boot()
         for dev in boot_dev.split(","):
-            os = data_st.OperatingSystem()
             boot_dev_seq.set_dev(dev)
-            vm_for_action.set_os(os.set_boot(boot_dev_seq))
+            os = data_st.OperatingSystem()
+            os.add_boot(boot_dev_seq)
+            vm_for_action.set_os(os)
 
     if None is not host:
         raise NotImplementedError(

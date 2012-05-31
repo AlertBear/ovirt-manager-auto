@@ -1195,8 +1195,9 @@ def checkHostSpmStatus(positive, hostName):
 
     spmStatus = hostObj.get_storage_manager().valueOf_
     util.logger.info("checkHostSpmStatus - SPM Status of host " + hostName + \
-                    " is: " + str(spmStatus))
-    return spmStatus == positive
+                    " is: " + spmStatus)
+                    
+    return (spmStatus == 'true') == positive
 
 
 def checkHostSubelementPresence(positive, host, element_path):

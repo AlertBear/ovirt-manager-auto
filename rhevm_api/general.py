@@ -176,7 +176,7 @@ def checkSummary(positive, domain):
                                             attr='storage_domain', get_href=True)
          for dcSd in dcStorages:
             try:
-                if dcSd.get_status().get_state() == 'active':
+                if dcSd.status.state == 'active':
                     sdActive.append(dcSd)
             except AttributeError:
                 pass
