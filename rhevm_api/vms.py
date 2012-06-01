@@ -369,6 +369,25 @@ def waitForVmsGone(positive, vms, timeout=60, samplingPeriod=10):
     return not positive
 
 
+def waitForVmsStates(positive, names, states='up', *args, **kwargs):
+    '''
+    Wait until all of the vms identified by names exist and have the desired
+    status.
+    Parameters:
+        * names - A comma separated names of the hosts with status to wait for.
+        * states - A state of the hosts to wait for.
+    Author: jhenner
+    '''
+    names = split(names)
+    for vm in names:
+        VM_API.find(vm)
+
+    query = ' and '.join([ 'name="%s" and status=%s' % (vm, states) for vm in names ])
+
+    return VM_API.waitForQuery(query, timeout=VM_ACTION_TIMEOUT, sleep=10)
+
+
+
 def changeVMStatus(positive, vm, action, expectedStatus, async='true'):
     '''
     Description: change vm status
@@ -1473,4 +1492,43 @@ def cloneVmFromTemplate(positive, name, template, cluster, timeout=VM_IMAGE_OPT_
 
     if positive and status:
         return VM_API.waitForElemStatus(vm, "DOWN", timeout)
+    return status
+
+
+def checkVmStatistics(positive, vm):
+    '''
+    Description: check existence and format of vm statistics values
+    Author: edolinin
+    Parameters:
+        * vm - vm where to check statistics
+    Return: status (True if all statistics appear and in correct format,
+                    False otherwise)
+    '''
+    status = True
+    vmObj = VM_API.find(vm)
+
+    expectedStatistics = ['memory.installed', 'memory.used',
+                          'cpu.current.guest', 'cpu.current.hypervisor',
+                          'cpu.current.total']
+
+    numOfExpStat = len(expectedStatistics)
+    statistics = VM_API.getElemFromLink(vmObj, link_name='statistics', attr='statistic')
+
+    for stat in statistics:
+        datum =  str(stat.get_values().get_value()[0].get_datum())
+        if not re.match('(\d+\.\d+)|(\d+)', datum):
+            util.logger.error('Wrong value for ' + stat.get_name() + ': ' + datum)
+            status = False
+        else:
+            util.logger.info('Correct value for ' + stat.get_name() + ': ' + datum)
+
+        if stat.get_name() in expectedStatistics:
+            expectedStatistics.remove(stat.get_name())
+
+    if len(expectedStatistics) == 0:
+         util.logger.info('All ' + str(numOfExpStat) + ' statistics appear')
+    else:
+         util.logger.error('The following statistics are missing: ' + str(expectedStatistics))
+         status = False
+
     return status
