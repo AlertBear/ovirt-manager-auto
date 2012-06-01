@@ -53,19 +53,20 @@ class XPathMatch(object):
         self.api = api_util
        
 
-    def __call__(self, positive, link, xpath, rslt_eval='0. < result'):
+    def __call__(self, positive, link, xpath, rslt_eval='0. < result',
+                                                        absLink=False):
         """
         See the doc for XPathMatch for more details.
         """
         # A hack to make the XPathMatch able to match against the tags in the
         # RHEVM entry-point url.
         if link.startswith('/'):
-            matching_nodes = self.getAndXpathEval(link, xpath)
+            matching_nodes = self.getAndXpathEval(link, xpath, absLink)
         else:
             if 'api' == link:
-                matching_nodes = self.getAndXpathEval(None, xpath)
+                matching_nodes = self.getAndXpathEval(None, xpath, absLink)
             else:
-                matching_nodes = self.getAndXpathEval(link, xpath)
+                matching_nodes = self.getAndXpathEval(link, xpath, absLink)
 
         if positive != eval(rslt_eval, None, {'result' : matching_nodes}):
             E = "XPath '%s' result evaluated using '%s' not equal to %s."
@@ -76,12 +77,12 @@ class XPathMatch(object):
             return True
         
 
-    def getEtreeParsed(self, link):
-        return etree.fromstring(self.api.get(link, absLink=False, noParse=True))
+    def getEtreeParsed(self, link, absLink):
+        return etree.fromstring(self.api.get(link, absLink=absLink, noParse=True))
 
 
-    def getAndXpathEval(self, link, xpath):
-        return self.getEtreeParsed(link).xpath(xpath)
+    def getAndXpathEval(self, link, xpath, absLink):
+        return self.getEtreeParsed(link, absLink).xpath(xpath)
 
 
 class XPathLinks(XPathMatch):
@@ -103,4 +104,6 @@ class XPathLinks(XPathMatch):
 
     def __call__(self, positive, entity, link_name, xpath, rslt_eval='0. < result'):
         entityObj = self.api.find(entity)
-        return XPathMatch.__call__(self, positive, entityObj.link[link_name].href, xpath, rslt_eval)
+        link = self.api.getElemFromLink(entityObj, link_name=link_name,
+                                                    attr=None, get_href=True)
+        return XPathMatch.__call__(self, positive, link, xpath, rslt_eval, True)
