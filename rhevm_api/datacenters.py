@@ -168,7 +168,7 @@ def removeDataCenters(positive, datacenters):
     while not threadQueue.empty():
         dcStatus = threadQueue.get()
         if not dcStatus:
-            status = False
+            status = status and False
 
     return status
 

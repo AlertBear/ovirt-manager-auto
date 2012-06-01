@@ -80,6 +80,18 @@ def split(s):
     return s.replace(',', ' ').split()
 
 
+def sleep(seconds):
+    """
+        Suspend execution for the given number of seconds.
+        Author: egerman
+        Parameters:
+         * seconds - time to sleep in seconds
+        Return: True
+    """
+    time.sleep(seconds)
+    return True
+
+
 def getStat(name, elm_name, collection_name, stat_types):
     '''
     Description: gets the given statistic from a host

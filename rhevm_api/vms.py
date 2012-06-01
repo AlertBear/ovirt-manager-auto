@@ -355,7 +355,7 @@ def waitForVmsGone(positive, vms, timeout=60, samplingPeriod=10):
         * samplingPeriod - Time in seconds for sampling the vms list.
     '''
     t_start = time.time()
-    vmsList = vms.split(',')
+    vmsList = split(vms)
     QUERY = ' or '.join([ 'name="%s"' % vm for vm in vmsList ])
     while time.time() - t_start < timeout and 0 < timeout:
         foundVms = VM_API.query(QUERY)

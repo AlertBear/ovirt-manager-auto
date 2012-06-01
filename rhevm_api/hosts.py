@@ -547,7 +547,7 @@ def activateHost(positive, host, wait=True):
     status = util.syncAction(hostObj, "activate", positive)
 
     if status and wait and positive:
-        testHostStatus = util.waitForElemStatus(hostObj, "up", 180)
+        testHostStatus = util.waitForElemStatus(hostObj, "up", 200)
     else:
         testHostStatus = True
 

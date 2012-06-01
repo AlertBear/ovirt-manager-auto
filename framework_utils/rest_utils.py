@@ -460,7 +460,7 @@ class RestUtil(APIUtil):
                 self.logger.error("%s status is '%s'"\
                                 % (self.element_name, elemStat))
                 return False
-            elif elemStat.find("up") != -1 and not ignoreFinalStates:
+            elif elemStat == 'up' and not ignoreFinalStates:
                 self.logger.error("%s status is '%s'"\
                                 % (self.element_name, elemStat))
                 return False
