@@ -19,6 +19,7 @@
 
 from rhevm_api.test_utils import get_api
 from framework_utils.apis_utils import getDS
+from rhevm_api.xpath_utils import XPathMatch
 
 ELEMENT = 'tag'
 COLLECTION = 'tags'
@@ -26,6 +27,8 @@ util = get_api(ELEMENT, COLLECTION)
 
 Tag = getDS('Tag')
 TagParent = getDS('TagParent')
+
+xpathMatch = XPathMatch(util)
 
 
 def _prepareTagObject(**kwargs):

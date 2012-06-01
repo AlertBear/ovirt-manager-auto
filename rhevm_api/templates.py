@@ -24,6 +24,7 @@ import re
 from framework_utils.validator import compareCollectionSize
 from rhevm_api.networks import getClusterNetwork
 from utilities.jobs import Job, JobsSet
+from rhevm_api.xpath_utils import XPathMatch
 
 CREATE_TEMPLATE_TIMEOUT = 900
 ELEMENT = 'template'
@@ -41,6 +42,8 @@ CpuTopology = getDS('CpuTopology')
 StorageDomain = getDS('StorageDomain')
 VM = getDS('VM')
 NIC = getDS('NIC')
+
+xpathMatch = XPathMatch(util)
 
 
 def _prepareTemplateObject(**kwargs):

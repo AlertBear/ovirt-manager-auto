@@ -34,6 +34,7 @@ from rhevm_api.templates import removeTemplates
 from rhevm_api.test_utils import validateElementStatus, get_api
 from utilities.utils import getIpAddressByHostName
 from framework_utils.apis_utils import getDS
+from rhevm_api.xpath_utils import XPathMatch
 
 ELEMENTS = os.path.join(os.path.dirname(__file__), '../conf/elements.conf')
 ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
@@ -53,6 +54,8 @@ templUtil = get_api('template', 'templates')
 vmUtil = get_api('vm', 'vms')
 clUtil = get_api('cluster', 'clusters')
 fileUtil = get_api('file', 'files')
+
+xpathMatch = XPathMatch(util)
 
 
 def _prepareStorageDomainObject(positive, **kwargs):

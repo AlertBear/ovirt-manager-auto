@@ -72,7 +72,7 @@ class RestUtil(APIUtil):
                                   'error: %s. body: %s' % (err, ret['body']))
 
 
-    def get(self, href=None, elm=None, absLink=True, listOnly=False):
+    def get(self, href=None, elm=None, absLink=True, listOnly=False, noParse=False):
         '''
         Description: implements GET method and verify the reponse (codes 200,201)
         Author: edolinin
@@ -101,6 +101,9 @@ class RestUtil(APIUtil):
         validator.compareResponseCode(ret, [200, 201], self.logger)
 
         self.logger.debug("Response body for GET request is: %s " % ret['body'])
+
+        if noParse:
+            return ret['body']
 
         parsedResp = None
         try:
@@ -474,5 +477,6 @@ class RestUtil(APIUtil):
         self.logger.error("Interrupt because of timeout. %s status is '%s'."\
                         % (self.element_name, elemStat))
         return False
+
 
 APIUtil.register(RestUtil)

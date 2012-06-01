@@ -30,6 +30,7 @@ import re
 from utilities.utils import getIpAddressByHostName, getHostName, readConfFile
 from framework_utils.validator import compareCollectionSize
 from rhevm_api.networks import getClusterNetwork
+from rhevm_api.xpath_utils import XPathMatch, XPathLinks
 
 ELEMENT = 'host'
 COLLECTION = 'hosts'
@@ -37,6 +38,9 @@ util = get_api(ELEMENT, COLLECTION)
 clUtil = get_api('cluster', 'clusters')
 dcUtil = get_api('data_center', 'datacenters')
 tagUtil = get_api('tag', 'tags')
+
+xpathMatch = XPathMatch(util)
+xpathHostsLinks = XPathLinks(util)
 
 Host = getDS('Host')
 Options = getDS('Options')

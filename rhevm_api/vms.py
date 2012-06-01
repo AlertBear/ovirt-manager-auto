@@ -30,6 +30,7 @@ from rhevm_api.networks import getClusterNetwork
 from utilities.jobs import Job, JobsSet
 from Queue import Queue
 from threading import Thread
+from rhevm_api.xpath_utils import XPathMatch
 
 GBYTE = 1024*1024*1024
 ELEMENTS = os.path.join(os.path.dirname(__file__), '../conf/elements.conf')
@@ -57,6 +58,7 @@ TAG_API = get_api('tag', 'tags')
 CDROM_API = get_api('cdrom', 'cdroms')
 
 logger = logging.getLogger(__package__ + __name__)
+xpathMatch = XPathMatch(VM_API)
 
 
 def _prepareVmObject(**kwargs):
@@ -1517,18 +1519,18 @@ def checkVmStatistics(positive, vm):
     for stat in statistics:
         datum =  str(stat.get_values().get_value()[0].get_datum())
         if not re.match('(\d+\.\d+)|(\d+)', datum):
-            util.logger.error('Wrong value for ' + stat.get_name() + ': ' + datum)
+            logger.error('Wrong value for ' + stat.get_name() + ': ' + datum)
             status = False
         else:
-            util.logger.info('Correct value for ' + stat.get_name() + ': ' + datum)
+            logger.info('Correct value for ' + stat.get_name() + ': ' + datum)
 
         if stat.get_name() in expectedStatistics:
             expectedStatistics.remove(stat.get_name())
 
     if len(expectedStatistics) == 0:
-         util.logger.info('All ' + str(numOfExpStat) + ' statistics appear')
+         logger.info('All ' + str(numOfExpStat) + ' statistics appear')
     else:
-         util.logger.error('The following statistics are missing: ' + str(expectedStatistics))
+         logger.error('The following statistics are missing: ' + str(expectedStatistics))
          status = False
 
     return status

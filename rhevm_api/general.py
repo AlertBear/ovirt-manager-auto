@@ -18,6 +18,7 @@
 from framework_utils.apis_utils import getDS
 from framework_utils import validator
 from rhevm_api.test_utils import get_api
+from rhevm_api.xpath_utils import XPathMatch
 
 util = get_api('', '')
 permitUtil = get_api('permit', 'capabilities')
@@ -27,6 +28,8 @@ domUtil = get_api('domain', 'domains')
 userUtil = get_api('user', 'users')
 sdUtil = get_api('storage_domain', 'storagedomains')
 dcUtil = get_api('data_center', 'datacenters')
+
+xpathMatch = XPathMatch(util)
 
 VM = getDS('VM')
 

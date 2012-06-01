@@ -26,6 +26,7 @@ from threading import Thread
 from framework_utils.apis_exceptions import EntityNotFound
 import time
 from rhevm_api.hosts import activateHost, deactivateHost
+from rhevm_api.xpath_utils import XPathMatch
 
 ELEMENT = 'cluster'
 COLLECTION = 'clusters'
@@ -42,6 +43,8 @@ SchedulingPolicyThresholds = getDS('SchedulingPolicyThresholds')
 SchedulingPolicy = getDS('SchedulingPolicy')
 ErrorHandlingOptions = getDS('ErrorHandlingOptions')
 CPU = getDS('CPU')
+
+xpathMatch = XPathMatch(util)
 
 
 def _prepareClusterObject(**kwargs):
