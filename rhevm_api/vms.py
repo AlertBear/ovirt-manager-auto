@@ -276,6 +276,7 @@ def removeVm(positive, vm, **kwargs):
                 kwargs.pop('waitTime', 10))
     return status
 
+
 def removeVmAsynch(positive, tasksQ, resultsQ, stopVm=False):
     '''
     Removes the cluster. It's supposed to be a worker of Thread.
@@ -296,10 +297,12 @@ def removeVmAsynch(positive, tasksQ, resultsQ, stopVm=False):
 
         status = VM_API.delete(vmObj, positive)
     except EntityNotFound as e:
-        logger.error(str(e))
+        logger.warn(str(e))
+        status = True
     finally:
         resultsQ.put((vm, status))
         tasksQ.task_done()
+        
 
 def removeVms(positive, vms, stop='false'):
     '''
@@ -336,11 +339,11 @@ def removeVms(positive, vms, stop='false'):
             logger.info("VM '%s' deleted asynchronously." % vm)
         else:
             logger.error("Failed to asynchronously remove VM '%s'." % vm)
-        status &= removalOK
-    return status and waitForVmsGone(positive, vms)
+        status = status and removalOK
+    return waitForVmsGone(positive, vms) and status
 
 
-def waitForVmsGone(positive, vms, timeout=30, samplingPeriod=5):
+def waitForVmsGone(positive, vms, timeout=60, samplingPeriod=10):
     '''
     Wait for VMs to disappear from the setup. This function will block up to `timeout`
     seconds, sampling the VMs list every `samplingPeriod` seconds, until no VMs
@@ -1138,6 +1141,9 @@ def suspendVm(positive, vm, wait=True):
     Return: status (True if vm suspended and test is positive, False otherwise)
     '''
     vmObj = VM_API.find(vm)
+    
+    if not VM_API.waitForElemStatus(vmObj, 'up', VM_ACTION_TIMEOUT):
+        return False
             
     async = 'false'
     if not wait:

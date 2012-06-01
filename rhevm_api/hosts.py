@@ -547,7 +547,7 @@ def activateHost(positive, host, wait=True):
     status = util.syncAction(hostObj, "activate", positive)
 
     if status and wait and positive:
-        testHostStatus = util.waitForElemStatus(hostObj, "up", 10)
+        testHostStatus = util.waitForElemStatus(hostObj, "up", 180)
     else:
         testHostStatus = True
 
@@ -575,7 +575,7 @@ def deactivateHost(positive, host, expected_status=ENUMS['host_state_maintenance
     getHostStateAgain = util.find(host).get_status().get_state()
     state_changed = hostState != getHostStateAgain
     if state_changed:
-        testHostStatus = util.waitForElemStatus(hostObj, expected_status, 10)
+        testHostStatus = util.waitForElemStatus(hostObj, expected_status, 180)
         return testHostStatus and positive
     else:
         return not positive
