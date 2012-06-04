@@ -48,6 +48,7 @@ Option = getDS('Option')
 IP = getDS('IP')
 PowerManagement = getDS('PowerManagement')
 Tag = getDS('Tag')
+StorageManager = getDS('StorageManager')
 
 SED = '/bin/sed'
 SERVICE = '/sbin/service'
@@ -493,6 +494,12 @@ def updateHost(positive, host, **kwargs):
         cl = clUtil.find(kwargs.pop('cluster', 'Default'))
         hostUpd.set_cluster(cl)
     
+    if 'storage_manager_priority' or 'storage_manager' in kwargs:
+        value = kwargs.pop('storage_manager', hostObj.storage_manager.valueOf_)
+        priority_ = kwargs.pop('storage_manager_priority', hostObj.storage_manager.priority)
+        sm = StorageManager(priority=priority_, valueOf_=value)
+        hostUpd.set_storage_manager(sm)
+
     if 'pm' in kwargs:
         pm_address = kwargs.get('pm_address')
         pm_username = kwargs.get('pm_username')
@@ -1203,6 +1210,63 @@ def checkHostSpmStatus(positive, hostName):
                     
     return (spmStatus == 'true') == positive
 
+def checkSPMPriority(positive, hostName, expectedPriority):
+    '''
+    Description: check SPM priority of host
+    Author: imeerovi
+    Parameters:
+    * hostName - name/ip of host
+    * expectedPriority - expecded value of SPM priority on host
+    Return: True if SPM priority value is equal to expected value.
+            False in other case.
+    '''
+
+    attribute = 'storage_manager'
+    hostObj = util.find(hostName)
+
+    if not hasattr(hostObj, attribute):
+        util.logger.error("Element host %s doesn't have attribute %s",
+                           hostName, attribute)
+        return False
+
+    spmPriority = hostObj.get_storage_manager().get_priority()
+    util.logger.info("checkSPMPriority - SPM Value of host %s is %s",
+                     hostName, str(spmPriority))
+    return (str(spmPriority) == expectedPriority)
+
+def setSPMPriority(positive, hostName, spmPriority):
+    '''
+    Description: set SPM priority on host
+    Author: imeerovi
+    Parameters:
+    * hostName - name/ip of host
+    * spmPriority - expecded value of SPM priority on host
+    Return: True if spm value is set OK.
+            False in other case.
+    '''
+
+    attribute = 'storage_manager'
+    hostObj = util.find(hostName)
+
+    if not hasattr(hostObj, attribute):
+        util.logger.error("Element host %s doesn't have attribute %s",
+                          hostName, attribute)
+        return False
+
+    util.logger.info("setSPMPriority - SPM Value of host is set to %s is %s",
+                     hostName, str(spmPriority))
+
+    # Update host
+    util.logger.info("Updating Host %s", hostName)
+    updateStat = updateHost(positive=positive, host=hostName,
+                            storage_manager_priority=spmPriority)
+    if not updateStat:
+        util.logger.error('updateHost Failed')
+        return False
+
+    if hostObj.get_storage_manager().get_priority() == spmPriority:
+        return True
+    return False
 
 def checkHostSubelementPresence(positive, host, element_path):
     '''
