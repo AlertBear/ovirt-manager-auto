@@ -59,16 +59,22 @@ def _prepareClusterObject(**kwargs):
 
     if 'version' in kwargs:
         majorV, minorV = kwargs.pop('version').split(".")
-        clVersion = Version(major=majorV, minor = minorV)
+        clVersion = Version(major=majorV, minor=minorV)
         cl.set_version(clVersion)
 
     if 'cpu' in kwargs:
-        clCPU = CPU(id = kwargs.pop('cpu'))
+        clCPU = CPU(id=kwargs.pop('cpu'))
         cl.set_cpu(clCPU)
 
     if 'data_center' in kwargs:
         clDC = dcUtil.find(kwargs.pop('data_center'))
         cl.set_data_center(clDC)
+
+    if 'gluster_support' in kwargs:
+        cl.set_gluster_service(kwargs.pop('gluster_support'))
+
+    if 'virt_support' in kwargs:
+        cl.set_virt_service(kwargs.pop('virt_support'))
 
     if 'mem_ovrcmt_prc' in kwargs or \
     'transparent_hugepages' in kwargs:
@@ -77,14 +83,14 @@ def _prepareClusterObject(**kwargs):
         overcommit = None
 
         if kwargs.get('mem_ovrcmt_prc'):
-            overcommit = MemoryOverCommit(percent = kwargs.pop('mem_ovrcmt_prc'))
+            overcommit = MemoryOverCommit(percent=kwargs.pop('mem_ovrcmt_prc'))
 
         if kwargs.get('transparent_hugepages'):
-            transparentHugepages = TransparentHugePages(enabled = \
-                            kwargs.pop('transparent_hugepages'))
+            transparentHugepages = TransparentHugePages(
+                                enabled=kwargs.pop('transparent_hugepages'))
 
-        memoryPolicy = MemoryPolicy(overcommit = overcommit,
-            transparent_hugepages = transparentHugepages)
+        memoryPolicy = MemoryPolicy(overcommit=overcommit,
+                                    transparent_hugepages=transparentHugepages)
 
         cl.set_memory_policy(memoryPolicy)
 
@@ -96,17 +102,19 @@ def _prepareClusterObject(**kwargs):
 
         # If at least one threshold tag parameter is set.
         if max(thresholdLow, thresholdHigh, thresholdDuration) is not None:
-            thresholds = SchedulingPolicyThresholds(high = thresholdHigh,
-                        duration = thresholdDuration, low = thresholdLow)
+            thresholds = SchedulingPolicyThresholds(high=thresholdHigh,
+                        duration=thresholdDuration, low=thresholdLow)
 
-        schedulingPolicy = SchedulingPolicy(policy = kwargs.pop('scheduling_policy'),
-                            thresholds = thresholds)
+        schedulingPolicy = SchedulingPolicy(
+                                policy=kwargs.pop('scheduling_policy'),
+                                thresholds=thresholds)
 
         cl.set_scheduling_policy(schedulingPolicy)
 
     errorHandling = None
     if 'on_error' in kwargs:
-        errorHandling = ErrorHandlingOptions(on_error = kwargs.pop('on_error').split(','))
+        errorHandling = ErrorHandlingOptions(
+                                on_error=kwargs.pop('on_error').split(','))
         cl.set_error_handling(errorHandling)
 
     return cl
@@ -117,11 +125,13 @@ def addCluster(positive, **kwargs):
     Description: add cluster
     Author: edolinin
     Parameters:
-       * name - name of a cluster 
+       * name - name of a cluster
        * cpu - CPU name
        * data_center - name of data center attached to cluster
        * description - description of cluster
        * version - supported version (2.2, 3)
+       * gluster_support - Gluster support (boolean)
+       * virt_support - virt support (boolean)
        * mem_ovrcmt_prc - The percentage of host memory allowed
                           Recommended values include 100 (None),
                           150 (Server Load) and 200 (Desktop Load)
@@ -130,20 +140,19 @@ def addCluster(positive, **kwargs):
        * thrhld_low - the lowest CPU usage percentage the host can have
                        before being considered underutilized.
        * duration - the number of seconds the host needs to be overloaded
-                    before the scheduler starts and moves the load to 
+                    before the scheduler starts and moves the load to
                     another host
        * scheduling_policy - VM scheduling mode for hosts in the cluster
                              (evenly_distributed, power_saving)
-       * transparent_hugepages - boolean, Defines the availability of 
+       * transparent_hugepages - boolean, Defines the availability of
                                 Transparent Hugepages
        * on_error - in case of non - operational
                     (migrate, do_not_migrate, migrate_highly_available)
     Return: status (True if cluster was removed properly, False otherwise)
     '''
-    
+
     cl = _prepareClusterObject(**kwargs)
     cl, status = util.create(cl, positive)
-
     return status
 
 
@@ -152,12 +161,14 @@ def updateCluster(positive, cluster, **kwargs):
     Description: Update cluster
     Author: edolinin
     Parameters:
-       * cluster - name of a cluster 
+       * cluster - name of a cluster
        * name - change cluster name
        * cpu - CPU name
        * data_center - name of data center attached to cluster
        * description - description of cluster
        * version - supported version (2.2, 3)
+       * gluster_support - Gluster support (boolean)
+       * virt_support - virt support (boolean)
        * mem_ovrcmt_prc - The percentage of host memory allowed
                           Recommended values include 100 (None),
                           150 (Server Load) and 200 (Desktop Load)
@@ -166,11 +177,11 @@ def updateCluster(positive, cluster, **kwargs):
        * thrhld_low - the lowest CPU usage percentage the host can have
                        before being considered underutilized.
        * duration - the number of seconds the host needs to be overloaded
-                    before the scheduler starts and moves the load to 
+                    before the scheduler starts and moves the load to
                     another host
        * scheduling_policy - VM scheduling mode for hosts in the cluster
                              (evenly_distributed, power_saving)
-       * transparent_hugepages - boolean, Defines the availability of 
+       * transparent_hugepages - boolean, Defines the availability of
                                 Transparent Hugepages
        * on_error - in case of non - operational
                     (migrate, do_not_migrate, migrate_highly_available)
@@ -180,7 +191,7 @@ def updateCluster(positive, cluster, **kwargs):
     cl = util.find(cluster)
     clUpd = _prepareClusterObject(**kwargs)
     clUpd, status = util.update(cl, clUpd, positive)
-    
+
     return status
 
 
@@ -213,7 +224,6 @@ def removeClusterAsynch(positive, tasksQ, resultsQ):
     finally:
         resultsQ.put((cl, status))
         tasksQ.task_done()
-
 
 
 def waitForClustersGone(positive, clusters, timeout=30, samplingPeriod=5):

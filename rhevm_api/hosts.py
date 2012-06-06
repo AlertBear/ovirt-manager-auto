@@ -1207,8 +1207,9 @@ def checkHostSpmStatus(positive, hostName):
     spmStatus = hostObj.get_storage_manager().valueOf_
     util.logger.info("checkHostSpmStatus - SPM Status of host " + hostName + \
                     " is: " + spmStatus)
-                    
+
     return (spmStatus == 'true') == positive
+
 
 def checkSPMPriority(positive, hostName, expectedPriority):
     '''
@@ -1231,8 +1232,9 @@ def checkSPMPriority(positive, hostName, expectedPriority):
 
     spmPriority = hostObj.get_storage_manager().get_priority()
     util.logger.info("checkSPMPriority - SPM Value of host %s is %s",
-                     hostName, str(spmPriority))
+                     hostName, spmPriority)
     return (str(spmPriority) == expectedPriority)
+
 
 def setSPMPriority(positive, hostName, spmPriority):
     '''
@@ -1254,19 +1256,49 @@ def setSPMPriority(positive, hostName, spmPriority):
         return False
 
     util.logger.info("setSPMPriority - SPM Value of host is set to %s is %s",
-                     hostName, str(spmPriority))
+                     hostName, spmPriority)
 
     # Update host
     util.logger.info("Updating Host %s", hostName)
     updateStat = updateHost(positive=positive, host=hostName,
                             storage_manager_priority=spmPriority)
     if not updateStat:
-        util.logger.error('updateHost Failed')
         return False
 
-    if hostObj.get_storage_manager().get_priority() == spmPriority:
-        return True
-    return False
+    return hostObj.get_storage_manager().get_priority() == int(spmPriority)
+
+
+def setSPMStatus(positive, hostName, spmStatus):
+    '''
+    Description: set SPM status on host
+    Author: imeerovi
+    Parameters:
+    * hostName - name/ip of host
+    * spmPriority - expected value of SPM status on host
+    Return: True if spm value is set OK.
+            False in other case.
+    '''
+
+    attribute = 'storage_manager'
+    hostObj = util.find(hostName)
+
+    if not hasattr(hostObj, attribute):
+        util.logger.error("Element host %s doesn't have attribute %s",
+                          hostName, attribute)
+        return False
+
+    util.logger.info("setSPMStatus - SPM Value of host is set to %s is %s",
+                     hostName, spmStatus)
+
+    # Update host
+    util.logger.info("Updating Host %s", hostName)
+    updateStat = updateHost(positive=positive, host=hostName,
+                            storage_manager=spmStatus)
+    if not updateStat:
+        return False
+
+    return hostObj.get_storage_manager().get_valueOf_() == spmStatus
+
 
 def checkHostSubelementPresence(positive, host, element_path):
     '''

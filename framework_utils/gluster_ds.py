@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 #
-# Generated Wed May 23 11:55:32 2012 by generateDS.py version 2.7a.
+# Generated Wed Jun  6 14:33:08 2012 by generateDS.py version 2.7a.
 #
 
 import sys
@@ -5498,10 +5498,12 @@ class Cluster(BaseResource):
         'version': MemberSpec_('version', 'Version', 0),
         'supported_versions': MemberSpec_('supported_versions', 'SupportedVersions', 0),
         'error_handling': MemberSpec_('error_handling', 'ErrorHandlingOptions', 0),
+        'virt_service': MemberSpec_('virt_service', 'xs:boolean', 0),
+        'gluster_service': MemberSpec_('gluster_service', 'xs:boolean', 0),
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, cpu=None, data_center=None, memory_policy=None, scheduling_policy=None, version=None, supported_versions=None, error_handling=None):
+    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, cpu=None, data_center=None, memory_policy=None, scheduling_policy=None, version=None, supported_versions=None, error_handling=None, virt_service=None, gluster_service=None):
         super(Cluster, self).__init__(href, id, name, description, actions, creation_status, link, )
         self.cpu = cpu
         self.data_center = data_center
@@ -5510,6 +5512,8 @@ class Cluster(BaseResource):
         self.version = version
         self.supported_versions = supported_versions
         self.error_handling = error_handling
+        self.virt_service = virt_service
+        self.gluster_service = gluster_service
     def factory(*args_, **kwargs_):
         if Cluster.subclass:
             return Cluster.subclass(*args_, **kwargs_)
@@ -5530,6 +5534,10 @@ class Cluster(BaseResource):
     def set_supported_versions(self, supported_versions): self.supported_versions = supported_versions
     def get_error_handling(self): return self.error_handling
     def set_error_handling(self, error_handling): self.error_handling = error_handling
+    def get_virt_service(self): return self.virt_service
+    def set_virt_service(self, virt_service): self.virt_service = virt_service
+    def get_gluster_service(self): return self.gluster_service
+    def set_gluster_service(self, gluster_service): self.gluster_service = gluster_service
     def export(self, outfile, level, namespace_='', name_='Cluster', namespacedef_=''):
         showIndent(outfile, level)
         outfile.write('<%s%s%s' % (namespace_, name_, namespacedef_ and ' ' + namespacedef_ or '', ))
@@ -5560,6 +5568,12 @@ class Cluster(BaseResource):
             self.supported_versions.export(outfile, level, namespace_, name_='supported_versions')
         if self.error_handling is not None:
             self.error_handling.export(outfile, level, namespace_, name_='error_handling')
+        if self.virt_service is not None:
+            showIndent(outfile, level)
+            outfile.write('<%svirt_service>%s</%svirt_service>\n' % (namespace_, self.gds_format_boolean(self.gds_str_lower(str(self.virt_service)), input_name='virt_service'), namespace_))
+        if self.gluster_service is not None:
+            showIndent(outfile, level)
+            outfile.write('<%sgluster_service>%s</%sgluster_service>\n' % (namespace_, self.gds_format_boolean(self.gds_str_lower(str(self.gluster_service)), input_name='gluster_service'), namespace_))
     def hasContent_(self):
         if (
             self.cpu is not None or
@@ -5569,6 +5583,8 @@ class Cluster(BaseResource):
             self.version is not None or
             self.supported_versions is not None or
             self.error_handling is not None or
+            self.virt_service is not None or
+            self.gluster_service is not None or
             super(Cluster, self).hasContent_()
             ):
             return True
@@ -5625,6 +5641,12 @@ class Cluster(BaseResource):
             self.error_handling.exportLiteral(outfile, level, name_='error_handling')
             showIndent(outfile, level)
             outfile.write('),\n')
+        if self.virt_service is not None:
+            showIndent(outfile, level)
+            outfile.write('virt_service=%s,\n' % self.virt_service)
+        if self.gluster_service is not None:
+            showIndent(outfile, level)
+            outfile.write('gluster_service=%s,\n' % self.gluster_service)
     def build(self, node):
         self.buildAttributes(node, node.attrib, [])
         for child in node:
@@ -5662,6 +5684,26 @@ class Cluster(BaseResource):
             obj_ = ErrorHandling.factory()
             obj_.build(child_)
             self.set_error_handling(obj_)
+        elif nodeName_ == 'virt_service':
+            sval_ = child_.text
+            if sval_ in ('true', '1'):
+                ival_ = True
+            elif sval_ in ('false', '0'):
+                ival_ = False
+            else:
+                raise_parse_error(child_, 'requires boolean')
+            ival_ = self.gds_validate_boolean(ival_, node, 'virt_service')
+            self.virt_service = ival_
+        elif nodeName_ == 'gluster_service':
+            sval_ = child_.text
+            if sval_ in ('true', '1'):
+                ival_ = True
+            elif sval_ in ('false', '0'):
+                ival_ = False
+            else:
+                raise_parse_error(child_, 'requires boolean')
+            ival_ = self.gds_validate_boolean(ival_, node, 'gluster_service')
+            self.gluster_service = ival_
         super(Cluster, self).buildChildren(child_, node, nodeName_, True)
 # end class Cluster
 
@@ -9932,19 +9974,25 @@ class Storage(BaseResource):
         'path': MemberSpec_('path', 'xs:string', 0),
         'mount_options': MemberSpec_('mount_options', 'xs:string', 0),
         'vfs_type': MemberSpec_('vfs_type', 'xs:string', 0),
+        'nfs_version': MemberSpec_('nfs_version', 'xs:unsignedShort', 0),
+        'nfs_timeo': MemberSpec_('nfs_timeo', 'xs:unsignedShort', 0),
+        'nfs_retrans': MemberSpec_('nfs_retrans', 'xs:unsignedShort', 0),
         'logical_unit': MemberSpec_('logical_unit', 'LogicalUnit', 1),
         'volume_group': MemberSpec_('volume_group', 'VolumeGroup', 0),
         'host': MemberSpec_('host', 'Host', 0),
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, type_=None, address=None, path=None, mount_options=None, vfs_type=None, logical_unit=None, volume_group=None, host=None):
+    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, type_=None, address=None, path=None, mount_options=None, vfs_type=None, nfs_version=None, nfs_timeo=None, nfs_retrans=None, logical_unit=None, volume_group=None, host=None):
         super(Storage, self).__init__(href, id, name, description, actions, creation_status, link, )
         self.type_ = type_
         self.address = address
         self.path = path
         self.mount_options = mount_options
         self.vfs_type = vfs_type
+        self.nfs_version = nfs_version
+        self.nfs_timeo = nfs_timeo
+        self.nfs_retrans = nfs_retrans
         if logical_unit is None:
             self.logical_unit = []
         else:
@@ -9967,6 +10015,12 @@ class Storage(BaseResource):
     def set_mount_options(self, mount_options): self.mount_options = mount_options
     def get_vfs_type(self): return self.vfs_type
     def set_vfs_type(self, vfs_type): self.vfs_type = vfs_type
+    def get_nfs_version(self): return self.nfs_version
+    def set_nfs_version(self, nfs_version): self.nfs_version = nfs_version
+    def get_nfs_timeo(self): return self.nfs_timeo
+    def set_nfs_timeo(self, nfs_timeo): self.nfs_timeo = nfs_timeo
+    def get_nfs_retrans(self): return self.nfs_retrans
+    def set_nfs_retrans(self, nfs_retrans): self.nfs_retrans = nfs_retrans
     def get_logical_unit(self): return self.logical_unit
     def set_logical_unit(self, logical_unit): self.logical_unit = logical_unit
     def add_logical_unit(self, value): self.logical_unit.append(value)
@@ -10006,6 +10060,15 @@ class Storage(BaseResource):
         if self.vfs_type is not None:
             showIndent(outfile, level)
             outfile.write('<%svfs_type>%s</%svfs_type>\n' % (namespace_, self.gds_format_string(quote_xml(self.vfs_type).encode(ExternalEncoding), input_name='vfs_type'), namespace_))
+        if self.nfs_version is not None:
+            showIndent(outfile, level)
+            outfile.write('<%snfs_version>%s</%snfs_version>\n' % (namespace_, self.gds_format_integer(self.nfs_version, input_name='nfs_version'), namespace_))
+        if self.nfs_timeo is not None:
+            showIndent(outfile, level)
+            outfile.write('<%snfs_timeo>%s</%snfs_timeo>\n' % (namespace_, self.gds_format_integer(self.nfs_timeo, input_name='nfs_timeo'), namespace_))
+        if self.nfs_retrans is not None:
+            showIndent(outfile, level)
+            outfile.write('<%snfs_retrans>%s</%snfs_retrans>\n' % (namespace_, self.gds_format_integer(self.nfs_retrans, input_name='nfs_retrans'), namespace_))
         for logical_unit_ in self.logical_unit:
             logical_unit_.export(outfile, level, namespace_, name_='logical_unit')
         if self.volume_group is not None:
@@ -10019,6 +10082,9 @@ class Storage(BaseResource):
             self.path is not None or
             self.mount_options is not None or
             self.vfs_type is not None or
+            self.nfs_version is not None or
+            self.nfs_timeo is not None or
+            self.nfs_retrans is not None or
             self.logical_unit or
             self.volume_group is not None or
             self.host is not None or
@@ -10051,6 +10117,15 @@ class Storage(BaseResource):
         if self.vfs_type is not None:
             showIndent(outfile, level)
             outfile.write('vfs_type=%s,\n' % quote_python(self.vfs_type).encode(ExternalEncoding))
+        if self.nfs_version is not None:
+            showIndent(outfile, level)
+            outfile.write('nfs_version=%d,\n' % self.nfs_version)
+        if self.nfs_timeo is not None:
+            showIndent(outfile, level)
+            outfile.write('nfs_timeo=%d,\n' % self.nfs_timeo)
+        if self.nfs_retrans is not None:
+            showIndent(outfile, level)
+            outfile.write('nfs_retrans=%d,\n' % self.nfs_retrans)
         showIndent(outfile, level)
         outfile.write('logical_unit=[\n')
         level += 1
@@ -10103,6 +10178,30 @@ class Storage(BaseResource):
             vfs_type_ = child_.text
             vfs_type_ = self.gds_validate_string(vfs_type_, node, 'vfs_type')
             self.vfs_type = vfs_type_
+        elif nodeName_ == 'nfs_version':
+            sval_ = child_.text
+            try:
+                ival_ = int(sval_)
+            except (TypeError, ValueError), exp:
+                raise_parse_error(child_, 'requires integer: %s' % exp)
+            ival_ = self.gds_validate_integer(ival_, node, 'nfs_version')
+            self.nfs_version = ival_
+        elif nodeName_ == 'nfs_timeo':
+            sval_ = child_.text
+            try:
+                ival_ = int(sval_)
+            except (TypeError, ValueError), exp:
+                raise_parse_error(child_, 'requires integer: %s' % exp)
+            ival_ = self.gds_validate_integer(ival_, node, 'nfs_timeo')
+            self.nfs_timeo = ival_
+        elif nodeName_ == 'nfs_retrans':
+            sval_ = child_.text
+            try:
+                ival_ = int(sval_)
+            except (TypeError, ValueError), exp:
+                raise_parse_error(child_, 'requires integer: %s' % exp)
+            ival_ = self.gds_validate_integer(ival_, node, 'nfs_retrans')
+            self.nfs_retrans = ival_
         elif nodeName_ == 'logical_unit':
             obj_ = LogicalUnit.factory()
             obj_.build(child_)
@@ -13891,15 +13990,18 @@ class Disk(BaseDevice):
         'format': MemberSpec_('format', 'xs:string', 0),
         'sparse': MemberSpec_('sparse', 'xs:boolean', 0),
         'bootable': MemberSpec_('bootable', 'xs:boolean', 0),
+        'shareable': MemberSpec_('shareable', 'xs:boolean', 0),
+        'allow_snapshot': MemberSpec_('allow_snapshot', 'xs:boolean', 0),
         'wipe_after_delete': MemberSpec_('wipe_after_delete', 'xs:boolean', 0),
         'propagate_errors': MemberSpec_('propagate_errors', 'xs:boolean', 0),
         'statistics': MemberSpec_('statistics', 'Statistics', 0),
         'active': MemberSpec_('active', 'xs:boolean', 0),
         'quota': MemberSpec_('quota', 'Quota', 0),
+        'lunStorage': MemberSpec_('lunStorage', 'Storage', 0),
         }
     subclass = None
     superclass = BaseDevice
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, vm=None, template=None, image_id=None, storage_domains=None, size=None, type_=None, status=None, interface=None, format=None, sparse=None, bootable=None, wipe_after_delete=None, propagate_errors=None, statistics=None, active=None, quota=None):
+    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, vm=None, template=None, image_id=None, storage_domains=None, size=None, type_=None, status=None, interface=None, format=None, sparse=None, bootable=None, shareable=None, allow_snapshot=None, wipe_after_delete=None, propagate_errors=None, statistics=None, active=None, quota=None, lunStorage=None):
         super(Disk, self).__init__(href, id, name, description, actions, creation_status, link, vm, template, )
         self.image_id = image_id
         self.storage_domains = storage_domains
@@ -13910,11 +14012,14 @@ class Disk(BaseDevice):
         self.format = format
         self.sparse = sparse
         self.bootable = bootable
+        self.shareable = shareable
+        self.allow_snapshot = allow_snapshot
         self.wipe_after_delete = wipe_after_delete
         self.propagate_errors = propagate_errors
         self.statistics = statistics
         self.active = active
         self.quota = quota
+        self.lunStorage = lunStorage
     def factory(*args_, **kwargs_):
         if Disk.subclass:
             return Disk.subclass(*args_, **kwargs_)
@@ -13939,6 +14044,10 @@ class Disk(BaseDevice):
     def set_sparse(self, sparse): self.sparse = sparse
     def get_bootable(self): return self.bootable
     def set_bootable(self, bootable): self.bootable = bootable
+    def get_shareable(self): return self.shareable
+    def set_shareable(self, shareable): self.shareable = shareable
+    def get_allow_snapshot(self): return self.allow_snapshot
+    def set_allow_snapshot(self, allow_snapshot): self.allow_snapshot = allow_snapshot
     def get_wipe_after_delete(self): return self.wipe_after_delete
     def set_wipe_after_delete(self, wipe_after_delete): self.wipe_after_delete = wipe_after_delete
     def get_propagate_errors(self): return self.propagate_errors
@@ -13949,6 +14058,8 @@ class Disk(BaseDevice):
     def set_active(self, active): self.active = active
     def get_quota(self): return self.quota
     def set_quota(self, quota): self.quota = quota
+    def get_lunStorage(self): return self.lunStorage
+    def set_lunStorage(self, lunStorage): self.lunStorage = lunStorage
     def export(self, outfile, level, namespace_='', name_='Disk', namespacedef_=''):
         showIndent(outfile, level)
         outfile.write('<%s%s%s' % (namespace_, name_, namespacedef_ and ' ' + namespacedef_ or '', ))
@@ -13990,6 +14101,12 @@ class Disk(BaseDevice):
         if self.bootable is not None:
             showIndent(outfile, level)
             outfile.write('<%sbootable>%s</%sbootable>\n' % (namespace_, self.gds_format_boolean(self.gds_str_lower(str(self.bootable)), input_name='bootable'), namespace_))
+        if self.shareable is not None:
+            showIndent(outfile, level)
+            outfile.write('<%sshareable>%s</%sshareable>\n' % (namespace_, self.gds_format_boolean(self.gds_str_lower(str(self.shareable)), input_name='shareable'), namespace_))
+        if self.allow_snapshot is not None:
+            showIndent(outfile, level)
+            outfile.write('<%sallow_snapshot>%s</%sallow_snapshot>\n' % (namespace_, self.gds_format_boolean(self.gds_str_lower(str(self.allow_snapshot)), input_name='allow_snapshot'), namespace_))
         if self.wipe_after_delete is not None:
             showIndent(outfile, level)
             outfile.write('<%swipe_after_delete>%s</%swipe_after_delete>\n' % (namespace_, self.gds_format_boolean(self.gds_str_lower(str(self.wipe_after_delete)), input_name='wipe_after_delete'), namespace_))
@@ -14003,6 +14120,8 @@ class Disk(BaseDevice):
             outfile.write('<%sactive>%s</%sactive>\n' % (namespace_, self.gds_format_boolean(self.gds_str_lower(str(self.active)), input_name='active'), namespace_))
         if self.quota is not None:
             self.quota.export(outfile, level, namespace_, name_='quota')
+        if self.lunStorage is not None:
+            self.lunStorage.export(outfile, level, namespace_, name_='lunStorage')
     def hasContent_(self):
         if (
             self.image_id is not None or
@@ -14014,11 +14133,14 @@ class Disk(BaseDevice):
             self.format is not None or
             self.sparse is not None or
             self.bootable is not None or
+            self.shareable is not None or
+            self.allow_snapshot is not None or
             self.wipe_after_delete is not None or
             self.propagate_errors is not None or
             self.statistics is not None or
             self.active is not None or
             self.quota is not None or
+            self.lunStorage is not None or
             super(Disk, self).hasContent_()
             ):
             return True
@@ -14066,6 +14188,12 @@ class Disk(BaseDevice):
         if self.bootable is not None:
             showIndent(outfile, level)
             outfile.write('bootable=%s,\n' % self.bootable)
+        if self.shareable is not None:
+            showIndent(outfile, level)
+            outfile.write('shareable=%s,\n' % self.shareable)
+        if self.allow_snapshot is not None:
+            showIndent(outfile, level)
+            outfile.write('allow_snapshot=%s,\n' % self.allow_snapshot)
         if self.wipe_after_delete is not None:
             showIndent(outfile, level)
             outfile.write('wipe_after_delete=%s,\n' % self.wipe_after_delete)
@@ -14085,6 +14213,12 @@ class Disk(BaseDevice):
             showIndent(outfile, level)
             outfile.write('quota=model_.quota(\n')
             self.quota.exportLiteral(outfile, level)
+            showIndent(outfile, level)
+            outfile.write('),\n')
+        if self.lunStorage is not None:
+            showIndent(outfile, level)
+            outfile.write('lunStorage=model_.Storage(\n')
+            self.lunStorage.exportLiteral(outfile, level, name_='lunStorage')
             showIndent(outfile, level)
             outfile.write('),\n')
     def build(self, node):
@@ -14147,6 +14281,26 @@ class Disk(BaseDevice):
                 raise_parse_error(child_, 'requires boolean')
             ival_ = self.gds_validate_boolean(ival_, node, 'bootable')
             self.bootable = ival_
+        elif nodeName_ == 'shareable':
+            sval_ = child_.text
+            if sval_ in ('true', '1'):
+                ival_ = True
+            elif sval_ in ('false', '0'):
+                ival_ = False
+            else:
+                raise_parse_error(child_, 'requires boolean')
+            ival_ = self.gds_validate_boolean(ival_, node, 'shareable')
+            self.shareable = ival_
+        elif nodeName_ == 'allow_snapshot':
+            sval_ = child_.text
+            if sval_ in ('true', '1'):
+                ival_ = True
+            elif sval_ in ('false', '0'):
+                ival_ = False
+            else:
+                raise_parse_error(child_, 'requires boolean')
+            ival_ = self.gds_validate_boolean(ival_, node, 'allow_snapshot')
+            self.allow_snapshot = ival_
         elif nodeName_ == 'wipe_after_delete':
             sval_ = child_.text
             if sval_ in ('true', '1'):
@@ -14185,6 +14339,10 @@ class Disk(BaseDevice):
             obj_ = Quota.factory()
             obj_.build(child_)
             self.set_quota(obj_)
+        elif nodeName_ == 'lunStorage':
+            obj_ = Storage.factory()
+            obj_.build(child_)
+            self.set_lunStorage(obj_)
         super(Disk, self).buildChildren(child_, node, nodeName_, True)
 # end class Disk
 
@@ -15794,11 +15952,13 @@ class Tags(BaseResources):
 class Usb(GeneratedsSuper):
     member_data_items_ = {
         'enabled': MemberSpec_('enabled', 'xs:boolean', 0),
+        'type_': MemberSpec_('type_', 'xs:string', 0),
         }
     subclass = None
     superclass = None
-    def __init__(self, enabled=None):
+    def __init__(self, enabled=None, type_=None):
         self.enabled = enabled
+        self.type_ = type_
     def factory(*args_, **kwargs_):
         if Usb.subclass:
             return Usb.subclass(*args_, **kwargs_)
@@ -15807,6 +15967,8 @@ class Usb(GeneratedsSuper):
     factory = staticmethod(factory)
     def get_enabled(self): return self.enabled
     def set_enabled(self, enabled): self.enabled = enabled
+    def get_type(self): return self.type_
+    def set_type(self, type_): self.type_ = type_
     def export(self, outfile, level, namespace_='', name_='Usb', namespacedef_=''):
         showIndent(outfile, level)
         outfile.write('<%s%s%s' % (namespace_, name_, namespacedef_ and ' ' + namespacedef_ or '', ))
@@ -15825,9 +15987,13 @@ class Usb(GeneratedsSuper):
         if self.enabled is not None:
             showIndent(outfile, level)
             outfile.write('<%senabled>%s</%senabled>\n' % (namespace_, self.gds_format_boolean(self.gds_str_lower(str(self.enabled)), input_name='enabled'), namespace_))
+        if self.type_ is not None:
+            showIndent(outfile, level)
+            outfile.write('<%stype>%s</%stype>\n' % (namespace_, self.gds_format_string(quote_xml(self.type_).encode(ExternalEncoding), input_name='type'), namespace_))
     def hasContent_(self):
         if (
-            self.enabled is not None
+            self.enabled is not None or
+            self.type_ is not None
             ):
             return True
         else:
@@ -15843,6 +16009,9 @@ class Usb(GeneratedsSuper):
         if self.enabled is not None:
             showIndent(outfile, level)
             outfile.write('enabled=%s,\n' % self.enabled)
+        if self.type_ is not None:
+            showIndent(outfile, level)
+            outfile.write('type_=%s,\n' % quote_python(self.type_).encode(ExternalEncoding))
     def build(self, node):
         self.buildAttributes(node, node.attrib, [])
         for child in node:
@@ -15861,6 +16030,10 @@ class Usb(GeneratedsSuper):
                 raise_parse_error(child_, 'requires boolean')
             ival_ = self.gds_validate_boolean(ival_, node, 'enabled')
             self.enabled = ival_
+        elif nodeName_ == 'type':
+            type_ = child_.text
+            type_ = self.gds_validate_string(type_, node, 'type')
+            self.type_ = type_
 # end class Usb
 
 
@@ -18437,6 +18610,9 @@ class Action(BaseResource):
         'connectivity_timeout': MemberSpec_('connectivity_timeout', 'xs:int', 0),
         'pause': MemberSpec_('pause', 'xs:boolean', 0),
         'force': MemberSpec_('force', 'xs:boolean', 0),
+        'option': MemberSpec_('option', 'Option', 0),
+        'fix_layout': MemberSpec_('fix_layout', 'xs:boolean', 0),
+        'detach': MemberSpec_('detach', 'xs:boolean', 0),
         'status': MemberSpec_('status', 'Status', 0),
         'fault': MemberSpec_('fault', 'Fault', 0),
         'iscsi_target': MemberSpec_('iscsi_target', 'xs:string', 1),
@@ -18444,7 +18620,7 @@ class Action(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, async=None, grace_period=None, host=None, network=None, root_password=None, image=None, fence_type=None, ticket=None, iscsi=None, storage_domain=None, cluster=None, discard_snapshots=None, exclusive=None, vm=None, host_nics=None, check_connectivity=None, connectivity_timeout=None, pause=None, force=None, status=None, fault=None, iscsi_target=None, power_management=None):
+    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, async=None, grace_period=None, host=None, network=None, root_password=None, image=None, fence_type=None, ticket=None, iscsi=None, storage_domain=None, cluster=None, discard_snapshots=None, exclusive=None, vm=None, host_nics=None, check_connectivity=None, connectivity_timeout=None, pause=None, force=None, option=None, fix_layout=None, detach=None, status=None, fault=None, iscsi_target=None, power_management=None):
         super(Action, self).__init__(href, id, name, description, actions, creation_status, link, )
         self.async = async
         self.grace_period = grace_period
@@ -18465,6 +18641,9 @@ class Action(BaseResource):
         self.connectivity_timeout = connectivity_timeout
         self.pause = pause
         self.force = force
+        self.option = option
+        self.fix_layout = fix_layout
+        self.detach = detach
         self.status = status
         self.fault = fault
         if iscsi_target is None:
@@ -18516,6 +18695,12 @@ class Action(BaseResource):
     def set_pause(self, pause): self.pause = pause
     def get_force(self): return self.force
     def set_force(self, force): self.force = force
+    def get_option(self): return self.option
+    def set_option(self, option): self.option = option
+    def get_fix_layout(self): return self.fix_layout
+    def set_fix_layout(self, fix_layout): self.fix_layout = fix_layout
+    def get_detach(self): return self.detach
+    def set_detach(self, detach): self.detach = detach
     def get_status(self): return self.status
     def set_status(self, status): self.status = status
     def get_fault(self): return self.fault
@@ -18590,6 +18775,14 @@ class Action(BaseResource):
         if self.force is not None:
             showIndent(outfile, level)
             outfile.write('<%sforce>%s</%sforce>\n' % (namespace_, self.gds_format_boolean(self.gds_str_lower(str(self.force)), input_name='force'), namespace_))
+        if self.option is not None:
+            self.option.export(outfile, level, namespace_, name_='option')
+        if self.fix_layout is not None:
+            showIndent(outfile, level)
+            outfile.write('<%sfix_layout>%s</%sfix_layout>\n' % (namespace_, self.gds_format_boolean(self.gds_str_lower(str(self.fix_layout)), input_name='fix_layout'), namespace_))
+        if self.detach is not None:
+            showIndent(outfile, level)
+            outfile.write('<%sdetach>%s</%sdetach>\n' % (namespace_, self.gds_format_boolean(self.gds_str_lower(str(self.detach)), input_name='detach'), namespace_))
         if self.status is not None:
             self.status.export(outfile, level, namespace_, name_='status')
         if self.fault is not None:
@@ -18620,6 +18813,9 @@ class Action(BaseResource):
             self.connectivity_timeout is not None or
             self.pause is not None or
             self.force is not None or
+            self.option is not None or
+            self.fix_layout is not None or
+            self.detach is not None or
             self.status is not None or
             self.fault is not None or
             self.iscsi_target or
@@ -18722,6 +18918,18 @@ class Action(BaseResource):
         if self.force is not None:
             showIndent(outfile, level)
             outfile.write('force=%s,\n' % self.force)
+        if self.option is not None:
+            showIndent(outfile, level)
+            outfile.write('option=model_.Option(\n')
+            self.option.exportLiteral(outfile, level, name_='option')
+            showIndent(outfile, level)
+            outfile.write('),\n')
+        if self.fix_layout is not None:
+            showIndent(outfile, level)
+            outfile.write('fix_layout=%s,\n' % self.fix_layout)
+        if self.detach is not None:
+            showIndent(outfile, level)
+            outfile.write('detach=%s,\n' % self.detach)
         if self.status is not None:
             showIndent(outfile, level)
             outfile.write('status=model_.status(\n')
@@ -18874,6 +19082,30 @@ class Action(BaseResource):
                 raise_parse_error(child_, 'requires boolean')
             ival_ = self.gds_validate_boolean(ival_, node, 'force')
             self.force = ival_
+        elif nodeName_ == 'option':
+            obj_ = Option.factory()
+            obj_.build(child_)
+            self.set_option(obj_)
+        elif nodeName_ == 'fix_layout':
+            sval_ = child_.text
+            if sval_ in ('true', '1'):
+                ival_ = True
+            elif sval_ in ('false', '0'):
+                ival_ = False
+            else:
+                raise_parse_error(child_, 'requires boolean')
+            ival_ = self.gds_validate_boolean(ival_, node, 'fix_layout')
+            self.fix_layout = ival_
+        elif nodeName_ == 'detach':
+            sval_ = child_.text
+            if sval_ in ('true', '1'):
+                ival_ = True
+            elif sval_ in ('false', '0'):
+                ival_ = False
+            else:
+                raise_parse_error(child_, 'requires boolean')
+            ival_ = self.gds_validate_boolean(ival_, node, 'detach')
+            self.detach = ival_
         elif nodeName_ == 'status':
             obj_ = Status.factory()
             obj_.build(child_)
@@ -19225,8 +19457,8 @@ def parseLiteral(inFileName):
     rootObj.build(rootNode)
     # Enable Python to collect the space used by the DOM.
     doc = None
-    sys.stdout.write('#from data_structures import *\n\n')
-    sys.stdout.write('import data_structures as model_\n\n')
+    sys.stdout.write('#from gluster_ds import *\n\n')
+    sys.stdout.write('import gluster_ds as model_\n\n')
     sys.stdout.write('rootObj = model_.rootTag(\n')
     rootObj.exportLiteral(sys.stdout, 0, name_=rootTag)
     sys.stdout.write(')\n')
@@ -19543,6 +19775,7 @@ ClassesMapping = {
 	 'brick_states':GlusterStates,
 	 'file':PayloadFile,
 	 'data_center':DataCenter,
+	 'lunStorage':Storage,
 	 'host_states':HostStates,
 	 'linkCapabilities':LinkCapabilities,
 	 'storage_manager':StorageManager,

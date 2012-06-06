@@ -100,7 +100,7 @@ def _prepareVolume(**kwargs):
             type = opt.get('type', '')
             name = opt.get('name', '')
             value = opt.get('value', '')
-            opts.add_option(Option(name=name, value=value, type=type))
+            opts.add_option(Option(name=name, value=value, type_=type))
         vol.set_options(opts)
 
     bricks = kwargs.pop('bricks', None)
