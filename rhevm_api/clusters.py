@@ -246,7 +246,7 @@ def waitForClustersGone(positive, clusters, timeout=30, samplingPeriod=5):
             util.logger.info("All %d clusters are gone.", len(clsList))
             return positive
 
-    remainingClsNames = [cl.name for cl in remainingCls]
+    remainingClsNames = [cl for cl in remainingCls]
     util.logger.error("Clusters %s didn't disappear until timeout." % remainingClsNames)
     return not positive
 

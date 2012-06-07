@@ -20,6 +20,7 @@
 from cStringIO import StringIO
 import sys
 from framework_utils.apis_utils import data_st as ds
+import re
 
 
 def dump_entity(ds, root_name):
@@ -81,7 +82,7 @@ def getAttibuteValue(elm, attrName):
 
     return getattr(elm, 'get_' + attrName.rstrip('_'))()
 
-
+    
 def compareElements(expElm, actElm, logger, root):
     '''
     Recursive function for elements comparison,
@@ -101,6 +102,13 @@ def compareElements(expElm, actElm, logger, root):
         return True
 
     elmClass = expElm.__class__.__name__
+    if elmClass == 'ClusterNetwork':
+        elmClass = 'Network'
+    elif elmClass == 'VMCdRom':
+        elmClass = 'CdRom'
+    elif elmClass == 'RolePermits':
+        elmClass = 'Permits'
+   
     elmInstance = getattr(ds, elmClass)()
 
     if elmInstance.superclass:
@@ -113,8 +121,14 @@ def compareElements(expElm, actElm, logger, root):
         if attr in ignore:
             continue
 
-        attrExpVal = getAttibuteValue(expElm, attr)
-        attrActVal = getAttibuteValue(actElm, attr)
+        try:
+            attrExpVal = getAttibuteValue(expElm, attr)
+            attrActVal = getAttibuteValue(actElm, attr)
+        except AttributeError:
+            logger.error("Element '{0}' has no attribute '{1}'".\
+                                        format(actElm, attr))
+            equal = False
+            continue
 
         attrType = elmInstance.member_data_items_[attr].get_data_type()
         attrContainer = elmInstance.member_data_items_[attr].get_container()
@@ -129,6 +143,10 @@ def compareElements(expElm, actElm, logger, root):
                 if attrContainer and isinstance(attrExpVal, list) \
                     and not isinstance(attrActVal, list) :
                     attrExpVal = attrExpVal[0]
+
+                if re.search('boolean', attrType):
+                    attrExpVal = str(attrExpVal).lower()
+                    attrActVal = str(attrActVal).lower()
 
                 if str(attrExpVal)==str(attrActVal):
                     MSG = "Property '{0}->{1}' has correct value: {2}"

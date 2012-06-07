@@ -211,10 +211,10 @@ def searchForStorageDomain(positive, query_key, query_val, key_name):
     return status
 
 
-def getDCStorages(datacenter):
+def getDCStorages(datacenter, get_href=True):
 
     dcObj = dcUtil.find(datacenter)
-    return util.getElemFromLink(dcObj, get_href=True)
+    return util.getElemFromLink(dcObj, get_href=get_href)
 
 
 def getDCStorage(datacenter, storagedomain):
@@ -243,7 +243,7 @@ def attachStorageDomain(positive, datacenter, storagedomain, wait=True):
 
     dcObj = dcUtil.find(datacenter)
     if status and positive and wait:
-        return util.waitForElemStatus(dcObj, "UP", 60, "datacenter")
+        return dcUtil.waitForElemStatus(dcObj, "UP", 60, "datacenter")
     return status
 
 
@@ -283,7 +283,8 @@ def activateStorageDomain(positive, datacenter, storagedomain, wait=True):
     async = 'false' if wait else 'true'
     status = util.syncAction(storDomObj, "activate", positive, async=async)
     if status and positive and wait:
-        return util.waitForElemStatus(storDomObj, "active", 180)
+        return util.waitForElemStatus(storDomObj, "active", 180,
+                            collection=getDCStorages(datacenter, False))
     return status
 
 
@@ -304,7 +305,8 @@ def deactivateStorageDomain(positive, datacenter, storagedomain, wait=True):
     async = 'false' if wait else 'true'
     status = util.syncAction(storDomObj, "deactivate", positive, async=async)
     if positive and status and wait:
-        return util.waitForElemStatus(storDomObj, "inactive maintenance", 180)
+        return util.waitForElemStatus(storDomObj, "inactive maintenance", 180,
+                                    collection=getDCStorages(datacenter, False))
     return status
 
 

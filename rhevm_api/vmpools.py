@@ -34,6 +34,7 @@ clUtil = get_api('cluster', 'clusters')
 templUtil = get_api('template', 'templates')
 
 VmPool = getDS('VmPool')
+Template = getDS('Template')
 
 
 def _prepareVmPoolObject(**kwargs):
@@ -58,7 +59,8 @@ def _prepareVmPoolObject(**kwargs):
 
     template = kwargs.pop('template', None)
     if template:
-        pool.set_template(templUtil.find(template))
+        templObj = templUtil.find(template)
+        pool.set_template(Template(id=templObj.id))
 
     id = kwargs.pop('id', None)
     if id:

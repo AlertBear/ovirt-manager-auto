@@ -18,6 +18,7 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 from lxml import etree
+from framework_utils.apis_exceptions import EngineTypeError
 
 
 class XPathMatch(object):
@@ -51,7 +52,7 @@ class XPathMatch(object):
         See the doc for XPathMatch for more details.
         """
         self.api = api_util
-       
+
 
     def __call__(self, positive, link, xpath, rslt_eval='0. < result',
                                                         absLink=False):
@@ -60,6 +61,10 @@ class XPathMatch(object):
         """
         # A hack to make the XPathMatch able to match against the tags in the
         # RHEVM entry-point url.
+        if self.api.opts['engine'] != 'rest':
+            raise EngineTypeError("Engine type '%s' not supported by xpath" \
+                                                % self.api.opts['engine'])
+
         if link.startswith('/'):
             matching_nodes = self.getAndXpathEval(link, xpath, absLink)
         else:
@@ -103,6 +108,11 @@ class XPathLinks(XPathMatch):
        
 
     def __call__(self, positive, entity, link_name, xpath, rslt_eval='0. < result'):
+
+        if self.api.opts['engine'] != 'rest':
+            raise EngineTypeError("Engine type '%s' not supported by xpath" \
+                                                % self.api.opts['engine'])
+                                                
         entityObj = self.api.find(entity)
         link = self.api.getElemFromLink(entityObj, link_name=link_name,
                                                     attr=None, get_href=True)

@@ -19,7 +19,6 @@
 import os.path
 import time
 import logging
-from copy import deepcopy
 from framework_utils.apis_utils import data_st, TimeoutingSampler
 from rhevm_api.test_utils import get_api, split
 from utilities.utils import readConfFile
@@ -107,7 +106,7 @@ def _prepareVmObject(**kwargs):
         search_by = ID_ATTR
     if template_name:
         template = TEMPLATE_API.find(template_name, search_by)
-        vm.set_template(template)
+        vm.set_template(data_st.Template(id=template.id))
 
     # type
     vm.set_type(kwargs.pop('type', ENUMS['vm_type_desktop'] if add else None))
@@ -143,7 +142,7 @@ def _prepareVmObject(**kwargs):
     phost = kwargs.pop('placement_host', None)
     if phost and phost != ENUMS['placement_host_any_host_in_cluster']:
         aff_host = HOST_API.find(phost)
-        ppolicy.set_host(aff_host)
+        ppolicy.set_host(data_st.Host(id=aff_host.id))
     vm.set_placement_policy(ppolicy)
 
     # storagedomain
@@ -569,8 +568,8 @@ def detachVm(positive, vm):
 def _getVmDisks(vm):
     vmObj = VM_API.find(vm)
     disks = VM_API.getElemFromLink(vmObj, link_name='disks', attr='disk',
-                                    get_href=True)
-    return VM_API.get(disks, 'disk')
+                                    get_href=False)
+    return disks
 
 
 def addDisk(positive, vm, size, wait=True, storagedomain=None,
@@ -668,79 +667,6 @@ def removeDisks(positive, vm, num_of_disks, wait=True):
             disk = disks.pop()
             rc = rc and removeDisk(positive, vm, disk.name, wait)
     return rc
-
-
-def migrateVm(positive, vm, host=None, wait=True):
-    '''
-    Migrate the VM.
-
-    If the host was specified, after the migrate action was performed,
-    the method is checking whether the VM status is UP or POWERING_UP
-    and whether the VM runs on required destination host.
-
-    If the host was not specified, after the migrate action was performed, the
-    method is checking whether the VM is UP or POWERING_UP
-    and whether the VM runs on host different to the source host.
-
-    Author: edolinin, jhenner
-    Parameters:
-       * vm - name of vm
-       * host - Name of the destionation host to migrate VM on, or
-                None for RHEVM destination host autoselection.
-       * wait - When True wait until end of action,
-                     False return without waiting.
-    Return: True if vm was migrated and test is positive,
-            False otherwise.
-    '''
-    vmObj = VM_API.find(vm)
-    actionParams = {}
-
-    if not vmObj.get_host():
-        logger.error('There is no host for vm {0}'.format(vm))
-        return False
-    
-    sourceHostName = vmObj.get_host().get_name()
-    migrateQuery = ''
-
-    # If the host is not specified, we should let RHEVM to autoselect host.
-    if host:
-        destHostObj = HOST_API.find(host)
-        actionParams['host'] = destHostObj
-        # Check the vm to be UP or POWERING_UP and whether it is on the host we
-        # wanted it to be.
-        migrateQuery = "name={0} and status=powering_up or name={0} and status=up"\
-                                                                .format(sourceHostName)
-    else:
-        # Check the vm to be UP or POWERING_UP and whether it moved.
-        migrateQuery = "name={0} and status=!powering_up or name={0} and status!=up"\
-                                                                .format(sourceHostName)
-
-    if not VM_API.syncAction(vmObj, "migrate", positive, **actionParams):
-        return False
-
-    # Check the VM only if we do the positive test. We know the action status
-    # failed so with fingers crossed we can assume that VM didn't migrate.
-    if not wait or not positive:
-        logger.warning('Not going to wait till VM migration completes. \
-        wait=%s, positive=%s' % (str(wait), positive))
-        return True
-
-    VM_API.waitForQuery(migrateQuery, timeout=VM_ACTION_TIMEOUT, sleep=DEF_SLEEP)
-
-    # Check whether we tried to migrate vm to different cluster
-    # in this case we return False, since this action shouldn't be allowed.
-    logger.info('Getting the VM host after VM migrated.')
-    realDestHostObj = VM_API.find(vm).get_host()
-    if vmObj.get_cluster().get_id() != realDestHostObj.get_cluster().get_id():
-        return False
-
-    if host:
-        MSG = 'VM is on the destination host and is UP or POWERING_UP.'
-        logger.info(MSG)
-    else:
-        MSG = 'VM host has changed and is UP or POWERING_UP.'
-        logger.info(MSG)
-    return True
 
 
 def checkVmHasCdromAttached(positive, vmName):
@@ -922,10 +848,10 @@ def removeLockedVm(vm, vdc, vdc_pass, psql_username='postgres', psql_db='rhevm')
     return removeVm("true", vmObj.get_name())
 
 
-def _getVmSnapshots(vm):
+def _getVmSnapshots(vm, get_href=True):
     vmObj = VM_API.find(vm)
-    snapshots = SNAPSHOT_API.getElemFromLink(vmObj, get_href=True)
-    return snapshots
+    return SNAPSHOT_API.getElemFromLink(vmObj, get_href=get_href)
+
 
 def _getVmSnapshot(vm, snap):
     vmObj = VM_API.find(vm)
@@ -954,7 +880,8 @@ def addSnapshot(positive, vm, description, wait=True):
     snapshot = _getVmSnapshot(vm, description)
     snapshotStatus = True
     if status and positive and wait:
-        snapshotStatus = SNAPSHOT_API.waitForElemStatus(snapshot, 'ok', VM_IMAGE_OPT_TIMEOUT)
+        snapshotStatus = SNAPSHOT_API.waitForElemStatus(snapshot, 'ok',
+                    VM_IMAGE_OPT_TIMEOUT, collection=_getVmSnapshots(vm, False))
         if snapshotStatus:
             snapshotStatus = validateSnapshot(positive, vm, description)
     return status and snapshotStatus
@@ -977,7 +904,8 @@ def restoreSnapshot(positive, vm, description):
     status = SNAPSHOT_API.syncAction(snapshot, "restore", positive)
     time.sleep(60)
     if status and positive:
-        return SNAPSHOT_API.waitForElemStatus(vmObj, expectedStatus, VM_ACTION_TIMEOUT)
+        return SNAPSHOT_API.waitForElemStatus(vmObj, expectedStatus,
+                    VM_ACTION_TIMEOUT, collection=_getVmSnapshots(vm, False))
 
     return status
 
@@ -1243,22 +1171,12 @@ def migrateVm(positive, vm, host=None, wait=True):
         logger.error("VM has no attribute 'host': %s" % dir(vmObj))
         return False
     actionParams = {}
-    sourceHostId = vmObj.host.id
-    sourceHost = HOST_API.find(sourceHostId, 'id')
-
 
     # If the host is not specified, we should let RHEVM to autoselect host.
-    query = 'name={0} and status=powering_up or name={0} and status=up'
     if host:
         destHostObj = HOST_API.find(host)
-        actionParams['host'] = destHostObj
-        # Check the vm to be UP or POWERING_UP and whether it is on the host we
-        # wanted it to be.
-        query = query.format(destHostObj.name)
-    else:
-        # Check the vm to be UP or POWERING_UP and whether it moved.
-        query = query.format(sourceHost)
-       
+        actionParams['host'] = data_st.Host(id=destHostObj.id)
+
     if not VM_API.syncAction(vmObj, "migrate", positive, **actionParams):
         return False
 
@@ -1269,22 +1187,16 @@ def migrateVm(positive, vm, host=None, wait=True):
         wait=%s, positive=%s' % (str(wait), positive))
         return True
 
-    if not VM_API.waitForQuery(query, timeout=VM_ACTION_TIMEOUT, sleep=10):
-        return False
+    VM_API.waitForElemStatus(vmObj, 'powering_up', 300)
 
     # Check whether we tried to migrate vm to different cluster
     # in this case we return False, since this action shouldn't be allowed.
     logger.info('Getting the VM host after VM migrated.')
-    realDestHostObj = VM_API.find(vm).host.id
+    realDestHostId = VM_API.find(vm).host.id
+    realDestHostObj = HOST_API.find(realDestHostId, 'id')
     if vmObj.cluster.id != realDestHostObj.cluster.id:
         return False
 
-    if host:
-        MSG = 'VM is on the destination host and is UP or POWERING_UP.'
-        logger.info(MSG)
-    else:
-        MSG = 'VM host has changed and is UP or POWERING_UP.'
-        logger.info(MSG)
     return True
 
 
@@ -1387,8 +1299,8 @@ def importVm(positive, vm, export_storagedomain, import_storagedomain,
 
     sd = data_st.StorageDomain(name=import_storagedomain)
     cl = data_st.Cluster(name=cluster)
-  
-    status = VM_API.syncAction(vmObj, "import", positive, storage_domain=sd, cluster=cl)
+
+    status = VM_API.syncAction(vmObj, "import_vm", positive, storage_domain=sd, cluster=cl)
     #TODO: replac sleep with true diagnostic
     time.sleep(30)
     if status and positive:
@@ -1487,7 +1399,7 @@ def cloneVmFromTemplate(positive, name, template, cluster, timeout=VM_IMAGE_OPT_
 
             diskArray.add_disk(disk)
         vm.set_disks(diskArray)
-        expectedVm = deepcopy(vm)
+        expectedVm = vm
         expectedVm.set_template(data_st.Template(id=BLANK_TEMPLATE))
 
     vm, status = VM_API.create(vm, positive, expectedEntity=expectedVm)

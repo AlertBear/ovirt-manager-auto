@@ -60,7 +60,6 @@ def get_api(element, collection):
     Fetch proper API instance based on engine type
     '''
 
-    global api
     engine = settings.opts.get('engine', 'rest')
     if engine == 'rest':
         api = RestUtil(element, collection)

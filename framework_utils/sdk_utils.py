@@ -48,6 +48,7 @@ class SdkUtil(APIUtil):
         else:
             self.api = sdkInit
 
+
     def get(self, collection=None, **kwargs):
         '''
         Description: get collection by its name
@@ -61,13 +62,20 @@ class SdkUtil(APIUtil):
             collection = self.collection_name
 
         href = kwargs.pop('href', None)
-        if href is not None:
+        if href == '':
             return self.api
             
         self.logger.debug("GET request content is --  collection:%(col)s " \
                         % {'col': collection })
       
-        return self.__getCollection(collection).list()
+        results = None
+        try:
+            results = self.__getCollection(collection).list()
+        except AttributeError as exc:
+            raise EntityNotFound("Can't get collection '{0}': {1}".\
+                                format(collection, exc.message))
+
+        return results
     
 
     def create(self, entity, positive, expectedEntity=None, incrementBy=1,
@@ -89,9 +97,12 @@ class SdkUtil(APIUtil):
             collection = self.__getCollection(self.collection_name)
            
         initialCollectionSize = len(collection.list())
-       
-        self.logger.debug("CREATE api content is --  collection:%(col)s element:%(elm)s " \
-        % {'col': self.collection_name, 'elm': validator.dump_entity(entity, self.element_name) })
+
+        try:
+            self.logger.debug("CREATE api content is --  collection:%(col)s element:%(elm)s " \
+            % {'col': self.collection_name, 'elm': validator.dump_entity(entity, self.element_name) })
+        except Exception:
+            pass
 
         response = None
         try:
@@ -120,7 +131,7 @@ class SdkUtil(APIUtil):
                                                     initialCollectionSize,
                                                     self.logger):
                     return None, False
-     
+
         return response, True
     
 
@@ -141,7 +152,6 @@ class SdkUtil(APIUtil):
            * positive - if positive or negative verification should be done
         Return: PUT response, True if PUT test succeeded, False otherwise
         '''
-                    
         response = None
         for attr in newEntity.__dict__.keys():
             try:
@@ -150,31 +160,40 @@ class SdkUtil(APIUtil):
                     self.__set_property(origEntity, attr, attrVal)
             except AttributeError:
                 self.logger.warn("Attribute doesn't exist %s" % attr)
-            
+
+
+        dumpedEntity = None
         try:
-            self.logger.debug("UPDATE api content is --  collection :%(col)s element:%(elm)s " \
+            dumpedEntity = validator.dump_entity(newEntity, self.element_name)
+        except Exception:
+            pass
+
+        self.logger.debug("UPDATE api content is --  collection :%(col)s element:%(elm)s " \
             % {
                 'col': self.collection_name,
-                'elm': validator.dump_entity(origEntity, self.element_name)
+                'elm': dumpedEntity
             })
+            
+        try:
 
-            response = origEntity.update()
-            self.logger.info(self.element_name + " was updated")
+            if positive:
+                response = origEntity.update()
+                self.logger.info(self.element_name + " was updated")
 
-            if not validator.compareElements(newEntity, response,
-                                self.logger, self.element_name):
-                return None, False
+                if not validator.compareElements(newEntity, response,
+                                    self.logger, self.element_name):
+                    return None, False
 
         except RequestError as e:
             if positive:
-                errorMsg = "Failed to update an element, status: {0},reason: {1}, details: {2}"
-                self.logger.error(errorMsg.format(e.status, e.reason, e.detail))
+                errorMsg = "Failed to update an element, status: {0}, reason: {1}, details: {2}"
+                self.logger.error(errorMsg.format(e.status, e.reason, e))
                 return None, False
  
         return response, True
 
 
-    def delete(self, entity, positive, **kwargs):
+    def delete(self, entity, positive, body=None, **kwargs):
         '''
         Description: delete an element
         Author: edolinin
@@ -186,8 +205,8 @@ class SdkUtil(APIUtil):
         response = None
         try:
             self.logger.debug("DELETE entity: {0}".format(entity.get_id()))
-            if kwargs:
-                response = entity.delete(**kwargs)
+            if body:
+                response = entity.delete(body)
             else:
                 response = entity.delete()
         except RequestError as e:
@@ -207,10 +226,14 @@ class SdkUtil(APIUtil):
            * constraint - query for search
         Return: query results
         '''
+        collection = href
+        if not href:
+            collection = self.collection_name
+            
         search = None
-        self.logger.debug("SEARCH content is --  collection:%(col)s query:%(q)s" \
-                        % {'col': self.collection_name, 'q': constraint})
-        collection = self.__getCollection(self.collection_name)
+        self.logger.debug("SEARCH content is --  collection:%(col)s query:%(q)s event id:%(id)s" \
+            % {'col': self.collection_name, 'q': constraint, 'id': event_id})
+        collection = self.__getCollection(collection)
         
         if event_id is not None:
             search = collection.list(constraint, from_event_id=event_id)
@@ -235,14 +258,14 @@ class SdkUtil(APIUtil):
         '''
 
         if not collection:
-            collection = self.__getCollection(self.collection_name)
-            
+            collection = self.__getCollection(self.collection_name).list()
+  
         results = None
         try:
             if attribute == 'name':
-                results = filter(lambda r: r.get_name() == val, collection.list())[0]
+                results = filter(lambda r: r.get_name() == val, collection)[0]
             if attribute == 'id':
-                results = filter(lambda r: r.get_id() == val, collection.list())[0]
+                results = filter(lambda r: r.get_id() == val, collection)[0]
         except Exception:
             raise EntityNotFound("Entity %s not found  for collection '%s'." \
                                 % (val, self.collection_name))
@@ -288,22 +311,42 @@ class SdkUtil(APIUtil):
 
         act = self.makeAction(async, 10, **params)
 
+        try:
+            self.logger.info("Running action {0} on {1}"\
+            .format(validator.dump_entity(act, 'action'), entity))
+        except Exception:
+            pass
+
         if not validator.compareActionLink(entity.get_actions(), action, self.logger):
             return False
 
         try:
-            getattr(entity, action)(act)
+            act =getattr(entity, action)(act)
         except RequestError as e:
             if positive:
                 errorMsg = "Failed to run an action '{0}', status: {1},reason: {2}, details: {3}"
                 self.logger.error(errorMsg.format(action, e.status, e.reason, e.detail))
                 return False
-      
+
+        if positive and not async:
+            if not validator.compareActionStatus(act.status.state, ["complete"],
+                                                                    self.logger):
+                return False
+
+        elif positive and async:
+            if not validator.compareActionStatus(act.status.state, ["pending", "complete"],
+                                                                    self.logger):
+                return False
+        else:
+            if act.status and not validator.compareActionStatus(act.status.state, ["failed"],
+                                                                    self.logger):
+                return False
+
         return True
     
 
     def waitForElemStatus(self, elm, status, timeout=DEF_TIMEOUT,
-                                        ignoreFinalStates=False):
+                            ignoreFinalStates=False, collection=None):
         '''
         Description: Wait till the sdk element (the Host, VM) gets the desired
         status or till timeout.
@@ -320,33 +363,51 @@ class SdkUtil(APIUtil):
 
         handleTimeout = 0
         while handleTimeout <= timeout:
+
+            elm = self.find(elm.name, collection=collection)
+
+            elemStat = None
+            if hasattr(elm, 'snapshot_status'):
+                elemStat = elm.snapshot_status.lower()
+            elif hasattr(elm, 'status'):
+                elemStat = elm.status.state.lower()
+            else:
+                self.logger.error("Element %s doesn't have attribute status" % \
+                                                        (self.element_name))
+                return False
+
+            try:
+                self.logger.info("Element {0} Waiting for the status {1}".\
+                format(validator.dump_entity(elm, self.element_name), status))
+            except Exception:
+                pass
             
             if not hasattr(elm, 'status'):
                 self.logger.error("Element %s doesn't have attribute status"\
                                 % (self.element_name))
                 return False
 
-            if elm.get_status().state.lower() in status.lower().split():
+            if elemStat in status.lower().split():
                 self.logger.info("%s status is '%s'" \
-                                % (self.element_name, elm.get_status().state))
+                                % (self.element_name, elemStat))
                 return True
-            elif elm.status.state.find("fail") != -1 and not ignoreFinalStates:
+            elif elemStat.find("fail") != -1 and not ignoreFinalStates:
                 self.logger.error("%s status is '%s'"\
-                                % (self.element_name, elm.get_status().state))
+                                % (self.element_name, elemStat))
                 return False
-            elif elm.status.state.find("up") != -1 and not ignoreFinalStates:
+            elif elemStat == 'up' and not ignoreFinalStates:
                 self.logger.error("%s status is '%s'"\
-                                % (self.element_name, elm.get_status().state))
+                                % (self.element_name, elemStat))
                 return False
             else:
                 self.logger.debug("Waiting for status '%s', currently status is '%s' "\
-                                % (status, elm.get_status().state))
+                                % (status, elemStat))
                 time.sleep(DEF_SLEEP)
                 handleTimeout = handleTimeout + DEF_SLEEP
                 continue
 
         self.logger.error("Interrupt because of timeout. %s status is '%s'." \
-                        % (self.element_name, elm.status.state))
+                        % (self.element_name, elemStat))
         return False
 
 

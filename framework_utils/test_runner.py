@@ -17,7 +17,7 @@ from configobj import ConfigObj
 from framework_utils.reports import initializeLogger, DefaultResultsReporter, JUnitResultsReporter
 from framework_utils.http import check_connection
 from framework_utils.settings import opts, populateOptsFromArgv, readTestRunOpts
-from framework_utils.apis_exceptions import EntityNotFound
+from framework_utils.apis_exceptions import EntityNotFound, EngineTypeError
 
 from lxml import etree
 
@@ -424,9 +424,10 @@ class TestRunner(object):
         try:
             exec("from " + modPath + " import " + funcName)
         except ImportError:
-            self.logger.error("Can't import action {0}\n{1}".format(funcName, TESTS_LOG_SEPARATOR))
+            self.logger.error("Can't import action {0}\n{1}".format(funcName, \
+                                                    TESTS_LOG_SEPARATOR))
             return
-
+     
         testStatus = True
         reportStats = {}
         startTime = datetime.now(tzutc())
@@ -496,6 +497,9 @@ class TestRunner(object):
         except NO_TB_EXCEPTIONS as e:
             testStatus = False
             self.logger.error(e)
+        except EngineTypeError as e:
+            self.logger.error("{0}\n{1}".format(e, TESTS_LOG_SEPARATOR))
+            return
         except Exception as e:
             testStatus = False
             self.log_traceback(e, testCase['test_name'])

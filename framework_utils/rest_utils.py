@@ -423,8 +423,8 @@ class RestUtil(APIUtil):
         return None
 
 
-    def waitForElemStatus(self, restElement, status,
-                              timeout=DEF_TIMEOUT, ignoreFinalStates=False):
+    def waitForElemStatus(self, restElement, status, timeout=DEF_TIMEOUT,
+                            ignoreFinalStates=False, collection=None):
         '''
         Description: Wait till the rest element (the Host, VM) gets the desired
         status or till timeout.
@@ -438,8 +438,6 @@ class RestUtil(APIUtil):
             * timeout - maximum time to continue status probing
         Return: status (True if element get the desired status, False otherwise)
         '''
-
-        restElement = self.get(restElement.href)
 
         handleTimeout = 0
         while handleTimeout <= timeout:

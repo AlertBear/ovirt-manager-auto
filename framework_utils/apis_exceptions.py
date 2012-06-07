@@ -37,6 +37,12 @@ class APITimeout(APIException):
     '''
     pass
 
+class EngineTypeError(APIException):
+    '''
+    Raised when action doesn't support provided api engine
+    '''
+    pass
+
 class APICommandError(Exception):
     '''
     Raised when running commands via RestTestRunnerWrapper

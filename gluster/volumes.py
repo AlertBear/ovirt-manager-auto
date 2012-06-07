@@ -27,6 +27,7 @@ COLLECTION = 'glustervolumes'
 util = get_api(ELEMENT, COLLECTION)
 clUtil = get_api('cluster', 'clusters')
 hostUtil = get_api('host', 'hosts')
+brickUtil = get_api('brick', 'bricks')
 
 GlusterVolume = getDS('GlusterVolume')
 TransportTypes = getDS('TransportTypes')
@@ -104,15 +105,23 @@ def _prepareVolume(**kwargs):
 
     bricks = kwargs.pop('bricks', None)
     if bricks:
-        volBricks = GlusterBricks()
-        for brick in bricks:
-            host = brick.get('server', '')
-            server_id = hostUtil.find(host).id
-            brick_dir = brick.get('brick_dir', '')
-            volBricks.add_brick(GlusterBrick(server_id=server_id, brick_dir=brick_dir))
+        volBricks =  _prepareBricks(bricks)
         vol.set_bricks(volBricks)
 
     return vol
+
+
+def _prepareBricks(bricks):
+
+    volBricks = GlusterBricks()
+    for brick in bricks:
+        host = brick.get('server', '')
+        server_id = hostUtil.find(host).id
+        brick_dir = brick.get('brick_dir', '')
+        volBricks.add_brick(GlusterBrick(server_id=server_id, brick_dir=brick_dir))
+    print volBricks
+
+    return volBricks
 
 
 def addClusterVolume(positive, cluster, **kwargs):
@@ -365,3 +374,28 @@ def resetVolumeOption(positive, cluster, volume, opt_name):
     option = Option(name=opt_name)
     return runVolAction(positive, cluster, volume, 'resetOption', None,
                                                         option=option)
+
+
+def addBrickToVolume(positive, cluster, volume, bricks):
+    '''
+    Description: Add brick to volume
+    Parameters:
+        * cluster - cluster name
+        * volume - volume name
+        * bricks - list of dictinaries of bricks,
+            example: [{'server': ..., 'brick_dir': ....}, {...}]
+    Parameters string example:
+    <params_pattern>
+        cluster='',volume='',bricks=[{'server':'','brick_dir':''},]
+    </params_pattern>
+
+    Return: status (True if data center was added properly, False otherwise)
+    '''
+
+    vol = getClusterVolume(cluster, volume)
+    volBricksColl = util.getElemFromLink(vol, link_name='bricks', get_href=True)
+    volBricks = _prepareBricks(bricks)
+   
+    volBricks, status = brickUtil.create(volBricks, positive, collection=volBricksColl)
+
+    return status
