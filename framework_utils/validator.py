@@ -80,7 +80,10 @@ def compareActionLink(actions, action,logger):
 
 def getAttibuteValue(elm, attrName):
 
-    return getattr(elm, 'get_' + attrName.rstrip('_'))()
+    if attrName.startswith('type'):
+        attrName = attrName.rstrip('_')
+        
+    return getattr(elm, 'get_' + attrName)()
 
     
 def compareElements(expElm, actElm, logger, root):
