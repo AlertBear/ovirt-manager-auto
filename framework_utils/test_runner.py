@@ -423,7 +423,7 @@ class TestRunner(object):
         self.logger.debug("test_type: %s modPath: %s, funcName: %s", testCase['test_type'], modPath, funcName)
         try:
             exec("from " + modPath + " import " + funcName)
-        except ImportError:
+        except Exception:
             self.logger.error("Can't import action {0}\n{1}".format(funcName, \
                                                     TESTS_LOG_SEPARATOR))
             return
