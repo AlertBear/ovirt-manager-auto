@@ -4,6 +4,7 @@ from framework_utils.test_runner import TestSuiteRunner
 from framework_utils.settings import populateOptsFromArgv, CmdLineError
 from sys import argv, exit, stderr
 import traceback
+from socket import error as SocketError
 
 try:
     redefs = populateOptsFromArgv(argv)
@@ -11,6 +12,8 @@ try:
     suiteRunner.run_suite()
 except KeyboardInterrupt:
     pass
+except SocketError:
+    exit(2)
 except CmdLineError as e:
     print >>stderr, e
     print >>stderr, "Exitting with failure."

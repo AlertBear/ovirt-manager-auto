@@ -197,6 +197,12 @@ def readTestRunOpts(path, redefs):
 
     opts['engine'] = runSection['engine']
     opts['data_struct_mod'] = runSection['data_struct_mod']
+    
+    try:
+        __import__(opts['data_struct_mod'])
+    except ImportError as exc:
+        raise ImportError("Can't import 'data_struct_mod': {0}".format(exc))
+    
     opts['api_xsd'] = runSection['api_xsd']
 
     if not opts['log']:

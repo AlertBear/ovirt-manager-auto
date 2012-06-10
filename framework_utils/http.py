@@ -21,6 +21,7 @@ import httplib
 import base64
 from framework_utils.apis_exceptions import APIException
 from socket import error as SocketError
+from httplib import BadStatusLine
 
 import logging
 logger = logging.getLogger('main')
@@ -39,9 +40,9 @@ def check_connection(opts):
     # try the established connection
     try:
         cnx.request('HEAD', opts['uri'], headers = basic_headers(opts))
-    except SocketError as e:
-        logging.exception("Socket connection problem for " + opts['uri'])
-        raise
+    except Exception:
+        logging.error("Connection problem for " + opts['uri'])
+        raise SocketError
     finally:
         cnx.close()
 
@@ -84,9 +85,9 @@ def HEAD_for_links(opts):
         for s in response.getheader('Link').split(','):
             parse_link(s, links)
         return links
-    except SocketError:
-        logger.exception("Socket connection problem for " + opts['uri'])
-        raise
+    except (SocketError, BadStatusLine):
+        logger.error("Connection problem for " + opts['uri'])
+        raise SocketError
     finally:
         cnx.close()
         

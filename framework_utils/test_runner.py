@@ -18,6 +18,7 @@ from framework_utils.reports import initializeLogger, DefaultResultsReporter, JU
 from framework_utils.http import check_connection
 from framework_utils.settings import opts, populateOptsFromArgv, readTestRunOpts
 from framework_utils.apis_exceptions import EntityNotFound, EngineTypeError
+from socket import error as SocketError
 
 from lxml import etree
 
@@ -497,6 +498,8 @@ class TestRunner(object):
         except NO_TB_EXCEPTIONS as e:
             testStatus = False
             self.logger.error(e)
+        except SocketError:
+            raise
         except EngineTypeError as e:
             self.logger.error("{0}\n{1}".format(e, TESTS_LOG_SEPARATOR))
             return
@@ -513,9 +516,11 @@ class TestRunner(object):
             outParamKey = fetchOutputTransl.get(outputKey, outputKey)
             self.output[outParamKey] = outputDict[outputKey]
 
-            # add fetched output to report if necessary
-            if outputKey in opts['add_report_nodes']:
-                reportStats[outParamKey] = outputDict[outputKey]
+        # add fetched output to report if necessary
+        if opts['add_report_nodes'] != 'no':
+            for outputKey in opts['add_report_nodes']:
+                outParamKey = fetchOutputTransl.get(outputKey, outputKey)
+                reportStats[outParamKey] = outputDict.get(outputKey, None)
 
         endTime = datetime.now(tzutc())
 
@@ -806,6 +811,7 @@ class TestSuiteRunner:
             if filename in names:
                 return os.path.join(root, filename)
         MSG = "Test %s not found in and it's subdirs %s." % (filename, confRoot)
+        self.logger.exception(MSG)
         raise CannotRunTests, MSG
 
     def run_suite(self):
@@ -894,8 +900,11 @@ class TestSuiteRunner:
                                 results_reporters, config_section, self.autoDevices)
                     test_cases = testRunner.load(testFilePath)
                     testRunner.run_test(test_cases)
+        except SocketError:
+            raise
         except Exception as ex:
             MSG = "Can't run tests from input file '{0}' because of {1.__class__.__name__}: {1}".format(testName, ex)
+            self.logger.exception(MSG)
             raise CannotRunTests, MSG, exc_info()[2]
 
 
