@@ -97,7 +97,7 @@ def compareElements(expElm, actElm, logger, root):
     * root - name of the root node
     Returns: True is elements are equal, False otherwise
     '''
-    ignore = ['href', 'status', 'rel']
+    ignore = ['href', 'status', 'rel', 'role', 'active', 'total']
     equal = True
 
     if not actElm:

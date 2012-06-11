@@ -904,8 +904,7 @@ def restoreSnapshot(positive, vm, description):
     status = SNAPSHOT_API.syncAction(snapshot, "restore", positive)
     time.sleep(60)
     if status and positive:
-        return SNAPSHOT_API.waitForElemStatus(vmObj, expectedStatus,
-                    VM_ACTION_TIMEOUT, collection=_getVmSnapshots(vm, False))
+        return VM_API.waitForElemStatus(vmObj, expectedStatus, VM_ACTION_TIMEOUT)
 
     return status
 
@@ -1300,7 +1299,11 @@ def importVm(positive, vm, export_storagedomain, import_storagedomain,
     sd = data_st.StorageDomain(name=import_storagedomain)
     cl = data_st.Cluster(name=cluster)
 
-    status = VM_API.syncAction(vmObj, "import_vm", positive, storage_domain=sd, cluster=cl)
+    actionName = 'import'
+    if not hasattr(vmObj, actionName):
+        actionName = 'import_vm'
+
+    status = VM_API.syncAction(vmObj, actionName, positive, storage_domain=sd, cluster=cl)
     #TODO: replac sleep with true diagnostic
     time.sleep(30)
     if status and positive:

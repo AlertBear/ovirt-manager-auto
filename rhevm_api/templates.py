@@ -389,7 +389,11 @@ def importTemplate(positive, template, export_storagedomain,
 
     actionParams = dict(storage_domain=sd, cluster=cl)
 
-    status = util.syncAction(templObj, "import", positive, **actionParams)
+    actionName = 'import'
+    if not hasattr(templObj, actionName):
+        actionName = 'import_template'
+
+    status = util.syncAction(templObj, actionName, positive, **actionParams)
     time.sleep(30)
 
     return status
