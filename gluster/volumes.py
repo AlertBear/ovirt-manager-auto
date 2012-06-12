@@ -75,7 +75,7 @@ def _prepareVolume(**kwargs):
     stripe_count = kwargs.pop('stripe_count', None)
     if stripe_count:
         vol.set_stripe_count(stripe_count)
-        
+
     access_protocols = kwargs.pop('access_protocols', None)
     if access_protocols:
         volAP = AccessProtocols()
@@ -87,10 +87,7 @@ def _prepareVolume(**kwargs):
     if access_control_list:
         volACL = AccessControlList()
         for acl in access_control_list:
-            netmask = acl.get('netmask', '')
-            gateway = acl.get('gateway', '')
-            address = acl.get('address', '')
-            volACL.add_ip(IP(address=address, netmask=netmask, gateway=gateway))
+            volACL.add_ip(acl)
         vol.set_access_control_list(volACL)
 
     options = kwargs.pop('options', None)
@@ -105,7 +102,7 @@ def _prepareVolume(**kwargs):
 
     bricks = kwargs.pop('bricks', None)
     if bricks:
-        volBricks =  _prepareBricks(bricks)
+        volBricks = _prepareBricks(bricks)
         vol.set_bricks(volBricks)
 
     return vol
@@ -118,8 +115,8 @@ def _prepareBricks(bricks):
         host = brick.get('server', '')
         server_id = hostUtil.find(host).id
         brick_dir = brick.get('brick_dir', '')
-        volBricks.add_brick(GlusterBrick(server_id=server_id, brick_dir=brick_dir))
-    print volBricks
+        volBricks.add_brick(GlusterBrick(server_id=server_id,
+                                         brick_dir=brick_dir))
 
     return volBricks
 
@@ -137,7 +134,7 @@ def addClusterVolume(positive, cluster, **kwargs):
         * stripe_count - stripe_count
         * access_protocols - comma separated access protocols
         * access_control_list - list of dictinaries of access controls ips,
-            example: [{'netmask': ..., 'gateway': ...., 'address': ...}, {...}]
+            example: ['192.168.*.*','10.4.10.*']
         * options - list of dictinaries of options,
             example: [{'type': ..., 'name': ...., 'value': ...}, {...}]
         * bricks - list of dictinaries of bricks,
@@ -150,15 +147,16 @@ def addClusterVolume(positive, cluster, **kwargs):
         bricks=[{'server':'','brick_dir':''},],
         options=[{'name':'','type':'','value':''},]
     </params_pattern>
-    
+
     Return: status (True if data center was added properly, False otherwise)
     '''
 
     clObj = clUtil.find(cluster)
-    clVolumes = util.getElemFromLink(clObj, link_name='glustervolumes', get_href=True)
+    clVolumes = util.getElemFromLink(clObj, link_name='glustervolumes',
+                                     get_href=True)
     vol = _prepareVolume(**kwargs)
     vol, status = util.create(vol, positive, collection=clVolumes)
-  
+
     return status
 
 
