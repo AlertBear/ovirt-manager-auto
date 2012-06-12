@@ -908,19 +908,17 @@ def toggleServiceOnHost(positive, host, user, password, service, action, force="
                      (START, STOP, RESTART, RELOAD, STATUS)
          * force - indicates force action ("false" by default)
         Return: a boolean result of the action,
-                if action is "status" then the status output is returned
+                if action is "status" then True is returned if
+                service is running, false otherwise
     """
     result = False
-    action_enum = eServiceAction.parse(action.upper())
     machine = Machine(host, user, password).util("linux")
     if machine is not None:
         if action == "status":
-            status = machine.getServiceStatus(service)
-            msg = "status of service \"{0}\" is: {1}"
-            logger.info(msg.format(service, status))
-            return True
+            return machine.isServiceRunning(service)
 
         force = force.lower() == "true"
+        action_enum = eServiceAction.parse(action.upper())
         machine.enableServiceSupport()
         result = machine.service.toggleService(service, action_enum, force)
 
