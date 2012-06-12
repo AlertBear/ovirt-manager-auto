@@ -3074,11 +3074,11 @@ def generateMemberSpec(wrt, element):
             else:
                 item2 = simplebase
         else:
-            element1 = ElementDict.get(name)
-            if element1:
-                item2 = "'%s'" % element1.getType()
-            else:
-                item2 = "'%s'" % (child.getType(), )
+           # element1 = ElementDict.get(name)
+           # if element1:
+              #  item2 = "'%s'" % element1.getType()
+            #else:
+            item2 = "'%s'" % (child.getType(), )
         if child.getMaxOccurs() > 1:
             item3 = 1
         else:

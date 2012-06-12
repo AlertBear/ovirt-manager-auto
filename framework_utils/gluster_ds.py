@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 #
-# Generated Wed Jun  6 14:33:08 2012 by generateDS.py version 2.7a.
+# Generated Tue Jun 12 16:21:50 2012 by generateDS.py version 2.7a.
 #
 
 import sys
@@ -368,7 +368,7 @@ def _cast(typ, value):
 class KeyValuePair(GeneratedsSuper):
     member_data_items_ = {
         'key': MemberSpec_('key', 'xs:string', 0),
-        'value': MemberSpec_('value', 'Value', 0),
+        'value': MemberSpec_('value', 'xs:string', 0),
         }
     subclass = None
     superclass = None
@@ -522,7 +522,7 @@ class LinkCapabilities(GeneratedsSuper):
 
 class DetailedLinks(GeneratedsSuper):
     member_data_items_ = {
-        'link': MemberSpec_('link', 'Link', 1),
+        'link': MemberSpec_('link', 'DetailedLink', 1),
         }
     subclass = None
     superclass = None
@@ -695,10 +695,10 @@ class Link(GeneratedsSuper):
 
 class ApiSummary(GeneratedsSuper):
     member_data_items_ = {
-        'vms': MemberSpec_('vms', 'VMs', 0),
-        'hosts': MemberSpec_('hosts', 'Hosts', 0),
-        'users': MemberSpec_('users', 'Users', 0),
-        'storage_domains': MemberSpec_('storage_domains', 'StorageDomains', 0),
+        'vms': MemberSpec_('vms', 'vms', 0),
+        'hosts': MemberSpec_('hosts', 'hosts', 0),
+        'users': MemberSpec_('users', 'users', 0),
+        'storage_domains': MemberSpec_('storage_domains', 'storage_domains', 0),
         }
     subclass = None
     superclass = None
@@ -1231,7 +1231,7 @@ class IscsiDetails(GeneratedsSuper):
 
 class Actions(GeneratedsSuper):
     member_data_items_ = {
-        'link': MemberSpec_('link', 'Link', 1),
+        'link': MemberSpec_('link', 'link', 1),
         }
     subclass = None
     superclass = None
@@ -1622,7 +1622,7 @@ class Value(GeneratedsSuper):
 class Values(GeneratedsSuper):
     member_data_items_ = {
         'type': MemberSpec_('type', 'ValueType', 0),
-        'value': MemberSpec_('value', 'Value', 1),
+        'value': MemberSpec_('value', 'value', 1),
         }
     subclass = None
     superclass = None
@@ -1940,7 +1940,7 @@ class CPU(GeneratedsSuper):
 
 class CPUs(GeneratedsSuper):
     member_data_items_ = {
-        'cpu': MemberSpec_('cpu', 'CPU', 1),
+        'cpu': MemberSpec_('cpu', 'cpu', 1),
         }
     subclass = None
     superclass = None
@@ -2321,40 +2321,40 @@ class VersionCaps(Version):
         'current': MemberSpec_('current', 'xs:boolean', 0),
         'features': MemberSpec_('features', 'Features', 0),
         'cpus': MemberSpec_('cpus', 'CPUs', 0),
-        'power_managers': MemberSpec_('power_managers', 'PowerManagers', 0),
-        'fence_types': MemberSpec_('fence_types', 'FenceTypes', 0),
-        'storage_types': MemberSpec_('storage_types', 'StorageTypes', 0),
-        'storage_domain_types': MemberSpec_('storage_domain_types', 'StorageDomainTypes', 0),
-        'vm_types': MemberSpec_('vm_types', 'VmTypes', 0),
-        'boot_devices': MemberSpec_('boot_devices', 'BootDevices', 0),
-        'display_types': MemberSpec_('display_types', 'DisplayTypes', 0),
-        'nic_interfaces': MemberSpec_('nic_interfaces', 'NicInterfaces', 0),
-        'os_types': MemberSpec_('os_types', 'OsTypes', 0),
-        'disk_formats': MemberSpec_('disk_formats', 'DiskFormats', 0),
-        'disk_interfaces': MemberSpec_('disk_interfaces', 'DiskInterfaces', 0),
-        'vm_affinities': MemberSpec_('vm_affinities', 'VmAffinities', 0),
+        'power_managers': MemberSpec_('power_managers', 'power_managers', 0),
+        'fence_types': MemberSpec_('fence_types', 'fence_types', 0),
+        'storage_types': MemberSpec_('storage_types', 'storage_types', 0),
+        'storage_domain_types': MemberSpec_('storage_domain_types', 'storage_domain_types', 0),
+        'vm_types': MemberSpec_('vm_types', 'vm_types', 0),
+        'boot_devices': MemberSpec_('boot_devices', 'boot_devices', 0),
+        'display_types': MemberSpec_('display_types', 'display_types', 0),
+        'nic_interfaces': MemberSpec_('nic_interfaces', 'nic_interfaces', 0),
+        'os_types': MemberSpec_('os_types', 'os_types', 0),
+        'disk_formats': MemberSpec_('disk_formats', 'disk_formats', 0),
+        'disk_interfaces': MemberSpec_('disk_interfaces', 'disk_interfaces', 0),
+        'vm_affinities': MemberSpec_('vm_affinities', 'vm_affinities', 0),
         'custom_properties': MemberSpec_('custom_properties', 'CustomProperties', 0),
-        'boot_protocols': MemberSpec_('boot_protocols', 'BootProtocols', 0),
-        'error_handling': MemberSpec_('error_handling', 'ErrorHandlingOptions', 0),
-        'storage_formats': MemberSpec_('storage_formats', 'StorageFormats', 0),
-        'creation_states': MemberSpec_('creation_states', 'CreationStates', 0),
-        'power_management_states': MemberSpec_('power_management_states', 'PowerManagementStates', 0),
-        'host_states': MemberSpec_('host_states', 'HostStates', 0),
-        'host_non_operational_details': MemberSpec_('host_non_operational_details', 'HostNonOperationalDetails', 0),
-        'network_states': MemberSpec_('network_states', 'NetworkStates', 0),
-        'storage_domain_states': MemberSpec_('storage_domain_states', 'StorageDomainStates', 0),
-        'template_states': MemberSpec_('template_states', 'TemplateStates', 0),
-        'vm_states': MemberSpec_('vm_states', 'VmStates', 0),
-        'vm_pause_details': MemberSpec_('vm_pause_details', 'VmPauseDetails', 0),
-        'disk_states': MemberSpec_('disk_states', 'DiskStates', 0),
-        'host_nic_states': MemberSpec_('host_nic_states', 'HostNICStates', 0),
-        'data_center_states': MemberSpec_('data_center_states', 'DataCenterStates', 0),
-        'vm_device_types': MemberSpec_('vm_device_types', 'VmDeviceTypes', 0),
-        'gluster_volume_types': MemberSpec_('gluster_volume_types', 'GlusterVolumeTypes', 0),
-        'transport_types': MemberSpec_('transport_types', 'TransportTypes', 0),
-        'access_protocols': MemberSpec_('access_protocols', 'AccessProtocols', 0),
-        'gluster_volume_states': MemberSpec_('gluster_volume_states', 'GlusterStates', 0),
-        'brick_states': MemberSpec_('brick_states', 'GlusterStates', 0),
+        'boot_protocols': MemberSpec_('boot_protocols', 'boot_protocols', 0),
+        'error_handling': MemberSpec_('error_handling', 'error_handling', 0),
+        'storage_formats': MemberSpec_('storage_formats', 'storage_formats', 0),
+        'creation_states': MemberSpec_('creation_states', 'creation_states', 0),
+        'power_management_states': MemberSpec_('power_management_states', 'power_management_states', 0),
+        'host_states': MemberSpec_('host_states', 'host_states', 0),
+        'host_non_operational_details': MemberSpec_('host_non_operational_details', 'host_non_operational_details', 0),
+        'network_states': MemberSpec_('network_states', 'network_states', 0),
+        'storage_domain_states': MemberSpec_('storage_domain_states', 'storage_domain_states', 0),
+        'template_states': MemberSpec_('template_states', 'template_states', 0),
+        'vm_states': MemberSpec_('vm_states', 'vm_states', 0),
+        'vm_pause_details': MemberSpec_('vm_pause_details', 'vm_pause_details', 0),
+        'disk_states': MemberSpec_('disk_states', 'disk_states', 0),
+        'host_nic_states': MemberSpec_('host_nic_states', 'host_nic_states', 0),
+        'data_center_states': MemberSpec_('data_center_states', 'data_center_states', 0),
+        'vm_device_types': MemberSpec_('vm_device_types', 'vm_device_types', 0),
+        'gluster_volume_types': MemberSpec_('gluster_volume_types', 'gluster_volume_types', 0),
+        'transport_types': MemberSpec_('transport_types', 'transport_types', 0),
+        'access_protocols': MemberSpec_('access_protocols', 'access_protocols', 0),
+        'gluster_volume_states': MemberSpec_('gluster_volume_states', 'gluster_volume_states', 0),
+        'brick_states': MemberSpec_('brick_states', 'brick_states', 0),
         }
     subclass = None
     superclass = Version
@@ -3008,7 +3008,7 @@ class VersionCaps(Version):
 
 class Capabilities(GeneratedsSuper):
     member_data_items_ = {
-        'version': MemberSpec_('version', 'Version', 1),
+        'version': MemberSpec_('version', 'VersionCaps', 1),
         'permits': MemberSpec_('permits', 'Permits', 0),
         'scheduling_policies': MemberSpec_('scheduling_policies', 'SchedulingPolicies', 0),
         }
@@ -3200,7 +3200,7 @@ class SchedulingPolicies(GeneratedsSuper):
 
 class Features(GeneratedsSuper):
     member_data_items_ = {
-        'transparent_hugepages': MemberSpec_('transparent_hugepages', 'TransparentHugePages', 0),
+        'transparent_hugepages': MemberSpec_('transparent_hugepages', 'transparent_hugepages', 0),
         }
     subclass = None
     superclass = None
@@ -4367,7 +4367,7 @@ class BaseResource(GeneratedsSuper):
         'description': MemberSpec_('description', 'xs:string', 0),
         'actions': MemberSpec_('actions', 'Actions', 0),
         'creation_status': MemberSpec_('creation_status', 'Status', 0),
-        'link': MemberSpec_('link', 'Link', 1),
+        'link': MemberSpec_('link', 'link', 1),
         }
     subclass = None
     superclass = None
@@ -4826,7 +4826,7 @@ class DataCenter(BaseResource):
         'storage_format': MemberSpec_('storage_format', 'xs:string', 0),
         'version': MemberSpec_('version', 'Version', 0),
         'supported_versions': MemberSpec_('supported_versions', 'SupportedVersions', 0),
-        'status': MemberSpec_('status', 'Status', 0),
+        'status': MemberSpec_('status', 'status', 0),
         }
     subclass = None
     superclass = BaseResource
@@ -4961,7 +4961,7 @@ class DataCenter(BaseResource):
 
 class DataCenters(BaseResources):
     member_data_items_ = {
-        'data_center': MemberSpec_('data_center', 'DataCenter', 1),
+        'data_center': MemberSpec_('data_center', 'data_center', 1),
         }
     subclass = None
     superclass = BaseResources
@@ -5197,7 +5197,7 @@ class MemoryPolicy(GeneratedsSuper):
     member_data_items_ = {
         'guaranteed': MemberSpec_('guaranteed', 'xs:long', 0),
         'overcommit': MemberSpec_('overcommit', 'MemoryOverCommit', 0),
-        'transparent_hugepages': MemberSpec_('transparent_hugepages', 'TransparentHugePages', 0),
+        'transparent_hugepages': MemberSpec_('transparent_hugepages', 'transparent_hugepages', 0),
         }
     subclass = None
     superclass = None
@@ -5491,19 +5491,17 @@ class SchedulingPolicy(GeneratedsSuper):
 
 class Cluster(BaseResource):
     member_data_items_ = {
-        'cpu': MemberSpec_('cpu', 'CPU', 0),
-        'data_center': MemberSpec_('data_center', 'DataCenter', 0),
+        'cpu': MemberSpec_('cpu', 'cpu', 0),
+        'data_center': MemberSpec_('data_center', 'data_center', 0),
         'memory_policy': MemberSpec_('memory_policy', 'MemoryPolicy', 0),
         'scheduling_policy': MemberSpec_('scheduling_policy', 'SchedulingPolicy', 0),
         'version': MemberSpec_('version', 'Version', 0),
         'supported_versions': MemberSpec_('supported_versions', 'SupportedVersions', 0),
-        'error_handling': MemberSpec_('error_handling', 'ErrorHandlingOptions', 0),
-        'virt_service': MemberSpec_('virt_service', 'xs:boolean', 0),
-        'gluster_service': MemberSpec_('gluster_service', 'xs:boolean', 0),
+        'error_handling': MemberSpec_('error_handling', 'ErrorHandling', 0),
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, cpu=None, data_center=None, memory_policy=None, scheduling_policy=None, version=None, supported_versions=None, error_handling=None, virt_service=None, gluster_service=None):
+    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, cpu=None, data_center=None, memory_policy=None, scheduling_policy=None, version=None, supported_versions=None, error_handling=None):
         super(Cluster, self).__init__(href, id, name, description, actions, creation_status, link, )
         self.cpu = cpu
         self.data_center = data_center
@@ -5512,8 +5510,6 @@ class Cluster(BaseResource):
         self.version = version
         self.supported_versions = supported_versions
         self.error_handling = error_handling
-        self.virt_service = virt_service
-        self.gluster_service = gluster_service
     def factory(*args_, **kwargs_):
         if Cluster.subclass:
             return Cluster.subclass(*args_, **kwargs_)
@@ -5534,10 +5530,6 @@ class Cluster(BaseResource):
     def set_supported_versions(self, supported_versions): self.supported_versions = supported_versions
     def get_error_handling(self): return self.error_handling
     def set_error_handling(self, error_handling): self.error_handling = error_handling
-    def get_virt_service(self): return self.virt_service
-    def set_virt_service(self, virt_service): self.virt_service = virt_service
-    def get_gluster_service(self): return self.gluster_service
-    def set_gluster_service(self, gluster_service): self.gluster_service = gluster_service
     def export(self, outfile, level, namespace_='', name_='Cluster', namespacedef_=''):
         showIndent(outfile, level)
         outfile.write('<%s%s%s' % (namespace_, name_, namespacedef_ and ' ' + namespacedef_ or '', ))
@@ -5568,12 +5560,6 @@ class Cluster(BaseResource):
             self.supported_versions.export(outfile, level, namespace_, name_='supported_versions')
         if self.error_handling is not None:
             self.error_handling.export(outfile, level, namespace_, name_='error_handling')
-        if self.virt_service is not None:
-            showIndent(outfile, level)
-            outfile.write('<%svirt_service>%s</%svirt_service>\n' % (namespace_, self.gds_format_boolean(self.gds_str_lower(str(self.virt_service)), input_name='virt_service'), namespace_))
-        if self.gluster_service is not None:
-            showIndent(outfile, level)
-            outfile.write('<%sgluster_service>%s</%sgluster_service>\n' % (namespace_, self.gds_format_boolean(self.gds_str_lower(str(self.gluster_service)), input_name='gluster_service'), namespace_))
     def hasContent_(self):
         if (
             self.cpu is not None or
@@ -5583,8 +5569,6 @@ class Cluster(BaseResource):
             self.version is not None or
             self.supported_versions is not None or
             self.error_handling is not None or
-            self.virt_service is not None or
-            self.gluster_service is not None or
             super(Cluster, self).hasContent_()
             ):
             return True
@@ -5641,12 +5625,6 @@ class Cluster(BaseResource):
             self.error_handling.exportLiteral(outfile, level, name_='error_handling')
             showIndent(outfile, level)
             outfile.write('),\n')
-        if self.virt_service is not None:
-            showIndent(outfile, level)
-            outfile.write('virt_service=%s,\n' % self.virt_service)
-        if self.gluster_service is not None:
-            showIndent(outfile, level)
-            outfile.write('gluster_service=%s,\n' % self.gluster_service)
     def build(self, node):
         self.buildAttributes(node, node.attrib, [])
         for child in node:
@@ -5684,33 +5662,13 @@ class Cluster(BaseResource):
             obj_ = ErrorHandling.factory()
             obj_.build(child_)
             self.set_error_handling(obj_)
-        elif nodeName_ == 'virt_service':
-            sval_ = child_.text
-            if sval_ in ('true', '1'):
-                ival_ = True
-            elif sval_ in ('false', '0'):
-                ival_ = False
-            else:
-                raise_parse_error(child_, 'requires boolean')
-            ival_ = self.gds_validate_boolean(ival_, node, 'virt_service')
-            self.virt_service = ival_
-        elif nodeName_ == 'gluster_service':
-            sval_ = child_.text
-            if sval_ in ('true', '1'):
-                ival_ = True
-            elif sval_ in ('false', '0'):
-                ival_ = False
-            else:
-                raise_parse_error(child_, 'requires boolean')
-            ival_ = self.gds_validate_boolean(ival_, node, 'gluster_service')
-            self.gluster_service = ival_
         super(Cluster, self).buildChildren(child_, node, nodeName_, True)
 # end class Cluster
 
 
 class Clusters(BaseResources):
     member_data_items_ = {
-        'cluster': MemberSpec_('cluster', 'Cluster', 1),
+        'cluster': MemberSpec_('cluster', 'cluster', 1),
         }
     subclass = None
     superclass = BaseResources
@@ -5801,7 +5759,7 @@ class PowerManagement(GeneratedsSuper):
         'username': MemberSpec_('username', 'xs:string', 0),
         'password': MemberSpec_('password', 'xs:string', 0),
         'options': MemberSpec_('options', 'Options', 0),
-        'status': MemberSpec_('status', 'Status', 0),
+        'status': MemberSpec_('status', 'status', 0),
         }
     subclass = None
     superclass = None
@@ -6037,7 +5995,7 @@ class PowerManagementStates(GeneratedsSuper):
 
 class PowerManagers(GeneratedsSuper):
     member_data_items_ = {
-        'power_management': MemberSpec_('power_management', 'PowerManagement', 1),
+        'power_management': MemberSpec_('power_management', 'power_management', 1),
         }
     subclass = None
     superclass = None
@@ -6264,21 +6222,21 @@ class TransparentHugePages(GeneratedsSuper):
 class Host(BaseResource):
     member_data_items_ = {
         'address': MemberSpec_('address', 'xs:string', 0),
-        'status': MemberSpec_('status', 'Status', 0),
+        'status': MemberSpec_('status', 'status', 0),
         'cluster': MemberSpec_('cluster', 'Cluster', 0),
         'port': MemberSpec_('port', 'xs:unsignedShort', 0),
         'type_': MemberSpec_('type_', 'xs:string', 0),
         'storage_manager': MemberSpec_('storage_manager', 'StorageManager', 0),
         'version': MemberSpec_('version', 'Version', 0),
-        'power_management': MemberSpec_('power_management', 'PowerManagement', 0),
-        'ksm': MemberSpec_('ksm', 'KSM', 0),
-        'transparent_hugepages': MemberSpec_('transparent_hugepages', 'TransparentHugePages', 0),
+        'power_management': MemberSpec_('power_management', 'power_management', 0),
+        'ksm': MemberSpec_('ksm', 'ksm', 0),
+        'transparent_hugepages': MemberSpec_('transparent_hugepages', 'transparent_hugepages', 0),
         'iscsi': MemberSpec_('iscsi', 'IscsiDetails', 0),
         'root_password': MemberSpec_('root_password', 'xs:string', 0),
         'statistics': MemberSpec_('statistics', 'Statistics', 0),
-        'cpu': MemberSpec_('cpu', 'CPU', 0),
+        'cpu': MemberSpec_('cpu', 'cpu', 0),
         'memory': MemberSpec_('memory', 'xs:long', 0),
-        'summary': MemberSpec_('summary', 'ApiSummary', 0),
+        'summary': MemberSpec_('summary', 'VmSummary', 0),
         'override_iptables': MemberSpec_('override_iptables', 'xs:boolean', 0),
         'reboot_after_installation': MemberSpec_('reboot_after_installation', 'xs:boolean', 0),
         }
@@ -6976,7 +6934,7 @@ class VmSummary(GeneratedsSuper):
 
 class Hosts(BaseResources):
     member_data_items_ = {
-        'host': MemberSpec_('host', 'Host', 1),
+        'host': MemberSpec_('host', 'host', 1),
         }
     subclass = None
     superclass = BaseResources
@@ -7369,7 +7327,7 @@ class Role(BaseResource):
 
 class Roles(BaseResources):
     member_data_items_ = {
-        'role': MemberSpec_('role', 'Role', 1),
+        'role': MemberSpec_('role', 'role', 1),
         }
     subclass = None
     superclass = BaseResources
@@ -7454,7 +7412,7 @@ class Roles(BaseResources):
 
 class User(BaseResource):
     member_data_items_ = {
-        'domain': MemberSpec_('domain', 'Domain', 0),
+        'domain': MemberSpec_('domain', 'domain', 0),
         'department': MemberSpec_('department', 'xs:string', 0),
         'logged_in': MemberSpec_('logged_in', 'xs:boolean', 0),
         'last_name': MemberSpec_('last_name', 'xs:string', 0),
@@ -7462,7 +7420,7 @@ class User(BaseResource):
         'password': MemberSpec_('password', 'xs:string', 0),
         'email': MemberSpec_('email', 'xs:string', 0),
         'roles': MemberSpec_('roles', 'Roles', 0),
-        'groups': MemberSpec_('groups', 'Groups', 0),
+        'groups': MemberSpec_('groups', 'groups', 0),
         }
     subclass = None
     superclass = BaseResource
@@ -7658,7 +7616,7 @@ class User(BaseResource):
 
 class Users(BaseResources):
     member_data_items_ = {
-        'user': MemberSpec_('user', 'User', 1),
+        'user': MemberSpec_('user', 'user', 1),
         }
     subclass = None
     superclass = BaseResources
@@ -7743,7 +7701,7 @@ class Users(BaseResources):
 
 class Group(BaseResource):
     member_data_items_ = {
-        'domain': MemberSpec_('domain', 'Domain', 0),
+        'domain': MemberSpec_('domain', 'domain', 0),
         'roles': MemberSpec_('roles', 'Roles', 0),
         }
     subclass = None
@@ -7834,7 +7792,7 @@ class Group(BaseResource):
 
 class Groups(BaseResources):
     member_data_items_ = {
-        'group': MemberSpec_('group', 'Group', 1),
+        'group': MemberSpec_('group', 'group', 1),
         }
     subclass = None
     superclass = BaseResources
@@ -7922,13 +7880,13 @@ class Permission(BaseResource):
         'role': MemberSpec_('role', 'Role', 0),
         'user': MemberSpec_('user', 'User', 0),
         'group': MemberSpec_('group', 'Group', 0),
-        'data_center': MemberSpec_('data_center', 'DataCenter', 0),
-        'cluster': MemberSpec_('cluster', 'Cluster', 0),
-        'host': MemberSpec_('host', 'Host', 0),
-        'storage_domain': MemberSpec_('storage_domain', 'StorageDomain', 0),
-        'vm': MemberSpec_('vm', 'VM', 0),
-        'vmpool': MemberSpec_('vmpool', 'VmPool', 0),
-        'template': MemberSpec_('template', 'Template', 0),
+        'data_center': MemberSpec_('data_center', 'data_center', 0),
+        'cluster': MemberSpec_('cluster', 'cluster', 0),
+        'host': MemberSpec_('host', 'host', 0),
+        'storage_domain': MemberSpec_('storage_domain', 'storage_domain', 0),
+        'vm': MemberSpec_('vm', 'vm', 0),
+        'vmpool': MemberSpec_('vmpool', 'vmpool', 0),
+        'template': MemberSpec_('template', 'template', 0),
         }
     subclass = None
     superclass = BaseResource
@@ -8147,7 +8105,7 @@ class Permission(BaseResource):
 
 class Permissions(BaseResources):
     member_data_items_ = {
-        'permission': MemberSpec_('permission', 'Permission', 1),
+        'permission': MemberSpec_('permission', 'permission', 1),
         }
     subclass = None
     superclass = BaseResources
@@ -8306,7 +8264,7 @@ class Domain(BaseResource):
 
 class Domains(BaseResources):
     member_data_items_ = {
-        'domain': MemberSpec_('domain', 'Domain', 1),
+        'domain': MemberSpec_('domain', 'domain', 1),
         }
     subclass = None
     superclass = BaseResources
@@ -8394,13 +8352,13 @@ class Event(BaseResource):
         'code': MemberSpec_('code', 'xs:int', 0),
         'severity': MemberSpec_('severity', 'xs:string', 0),
         'time': MemberSpec_('time', 'xs:dateTime', 0),
-        'user': MemberSpec_('user', 'User', 0),
-        'vm': MemberSpec_('vm', 'VM', 0),
-        'storage_domain': MemberSpec_('storage_domain', 'StorageDomain', 0),
-        'host': MemberSpec_('host', 'Host', 0),
-        'template': MemberSpec_('template', 'Template', 0),
-        'cluster': MemberSpec_('cluster', 'Cluster', 0),
-        'data_center': MemberSpec_('data_center', 'DataCenter', 0),
+        'user': MemberSpec_('user', 'user', 0),
+        'vm': MemberSpec_('vm', 'vm', 0),
+        'storage_domain': MemberSpec_('storage_domain', 'storage_domain', 0),
+        'host': MemberSpec_('host', 'host', 0),
+        'template': MemberSpec_('template', 'template', 0),
+        'cluster': MemberSpec_('cluster', 'cluster', 0),
+        'data_center': MemberSpec_('data_center', 'data_center', 0),
         }
     subclass = None
     superclass = BaseResource
@@ -8617,7 +8575,7 @@ class Event(BaseResource):
 
 class Events(BaseResources):
     member_data_items_ = {
-        'event': MemberSpec_('event', 'Event', 1),
+        'event': MemberSpec_('event', 'event', 1),
         }
     subclass = None
     superclass = BaseResources
@@ -8703,7 +8661,7 @@ class Events(BaseResources):
 class File(BaseResource):
     member_data_items_ = {
         'type_': MemberSpec_('type_', 'xs:string', 0),
-        'storage_domain': MemberSpec_('storage_domain', 'StorageDomain', 0),
+        'storage_domain': MemberSpec_('storage_domain', 'storage_domain', 0),
         }
     subclass = None
     superclass = BaseResource
@@ -8791,7 +8749,7 @@ class File(BaseResource):
 
 class Files(BaseResources):
     member_data_items_ = {
-        'file': MemberSpec_('file', 'File', 1),
+        'file': MemberSpec_('file', 'file', 1),
         }
     subclass = None
     superclass = BaseResources
@@ -8974,7 +8932,7 @@ class IP(GeneratedsSuper):
 
 class IPs(BaseResources):
     member_data_items_ = {
-        'ip': MemberSpec_('ip', 'IP', 1),
+        'ip': MemberSpec_('ip', 'ip', 1),
         }
     subclass = None
     superclass = BaseResources
@@ -9198,15 +9156,15 @@ class VLAN(GeneratedsSuper):
 
 class Network(BaseResource):
     member_data_items_ = {
-        'data_center': MemberSpec_('data_center', 'DataCenter', 0),
-        'cluster': MemberSpec_('cluster', 'Cluster', 0),
-        'ip': MemberSpec_('ip', 'IP', 0),
-        'vlan': MemberSpec_('vlan', 'VLAN', 0),
+        'data_center': MemberSpec_('data_center', 'data_center', 0),
+        'cluster': MemberSpec_('cluster', 'cluster', 0),
+        'ip': MemberSpec_('ip', 'ip', 0),
+        'vlan': MemberSpec_('vlan', 'vlan', 0),
         'stp': MemberSpec_('stp', 'xs:boolean', 0),
-        'status': MemberSpec_('status', 'Status', 0),
+        'status': MemberSpec_('status', 'status', 0),
         'display': MemberSpec_('display', 'xs:boolean', 0),
         'mtu': MemberSpec_('mtu', 'xs:int', 0),
-        'usages': MemberSpec_('usages', 'Usages', 0),
+        'usages': MemberSpec_('usages', 'usages', 0),
         'required': MemberSpec_('required', 'xs:boolean', 0),
         }
     subclass = None
@@ -9517,7 +9475,7 @@ class NetworkStates(GeneratedsSuper):
 
 class Networks(BaseResources):
     member_data_items_ = {
-        'network': MemberSpec_('network', 'Network', 1),
+        'network': MemberSpec_('network', 'network', 1),
         }
     subclass = None
     superclass = BaseResources
@@ -9864,7 +9822,7 @@ class VolumeGroup(GeneratedsSuper):
     member_data_items_ = {
         'id': MemberSpec_('id', 'xs:string', 0),
         'name': MemberSpec_('name', 'xs:string', 0),
-        'logical_unit': MemberSpec_('logical_unit', 'LogicalUnit', 1),
+        'logical_unit': MemberSpec_('logical_unit', 'logical_unit', 1),
         }
     subclass = None
     superclass = None
@@ -9974,25 +9932,19 @@ class Storage(BaseResource):
         'path': MemberSpec_('path', 'xs:string', 0),
         'mount_options': MemberSpec_('mount_options', 'xs:string', 0),
         'vfs_type': MemberSpec_('vfs_type', 'xs:string', 0),
-        'nfs_version': MemberSpec_('nfs_version', 'xs:unsignedShort', 0),
-        'nfs_timeo': MemberSpec_('nfs_timeo', 'xs:unsignedShort', 0),
-        'nfs_retrans': MemberSpec_('nfs_retrans', 'xs:unsignedShort', 0),
-        'logical_unit': MemberSpec_('logical_unit', 'LogicalUnit', 1),
-        'volume_group': MemberSpec_('volume_group', 'VolumeGroup', 0),
-        'host': MemberSpec_('host', 'Host', 0),
+        'logical_unit': MemberSpec_('logical_unit', 'logical_unit', 1),
+        'volume_group': MemberSpec_('volume_group', 'volume_group', 0),
+        'host': MemberSpec_('host', 'host', 0),
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, type_=None, address=None, path=None, mount_options=None, vfs_type=None, nfs_version=None, nfs_timeo=None, nfs_retrans=None, logical_unit=None, volume_group=None, host=None):
+    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, type_=None, address=None, path=None, mount_options=None, vfs_type=None, logical_unit=None, volume_group=None, host=None):
         super(Storage, self).__init__(href, id, name, description, actions, creation_status, link, )
         self.type_ = type_
         self.address = address
         self.path = path
         self.mount_options = mount_options
         self.vfs_type = vfs_type
-        self.nfs_version = nfs_version
-        self.nfs_timeo = nfs_timeo
-        self.nfs_retrans = nfs_retrans
         if logical_unit is None:
             self.logical_unit = []
         else:
@@ -10015,12 +9967,6 @@ class Storage(BaseResource):
     def set_mount_options(self, mount_options): self.mount_options = mount_options
     def get_vfs_type(self): return self.vfs_type
     def set_vfs_type(self, vfs_type): self.vfs_type = vfs_type
-    def get_nfs_version(self): return self.nfs_version
-    def set_nfs_version(self, nfs_version): self.nfs_version = nfs_version
-    def get_nfs_timeo(self): return self.nfs_timeo
-    def set_nfs_timeo(self, nfs_timeo): self.nfs_timeo = nfs_timeo
-    def get_nfs_retrans(self): return self.nfs_retrans
-    def set_nfs_retrans(self, nfs_retrans): self.nfs_retrans = nfs_retrans
     def get_logical_unit(self): return self.logical_unit
     def set_logical_unit(self, logical_unit): self.logical_unit = logical_unit
     def add_logical_unit(self, value): self.logical_unit.append(value)
@@ -10060,15 +10006,6 @@ class Storage(BaseResource):
         if self.vfs_type is not None:
             showIndent(outfile, level)
             outfile.write('<%svfs_type>%s</%svfs_type>\n' % (namespace_, self.gds_format_string(quote_xml(self.vfs_type).encode(ExternalEncoding), input_name='vfs_type'), namespace_))
-        if self.nfs_version is not None:
-            showIndent(outfile, level)
-            outfile.write('<%snfs_version>%s</%snfs_version>\n' % (namespace_, self.gds_format_integer(self.nfs_version, input_name='nfs_version'), namespace_))
-        if self.nfs_timeo is not None:
-            showIndent(outfile, level)
-            outfile.write('<%snfs_timeo>%s</%snfs_timeo>\n' % (namespace_, self.gds_format_integer(self.nfs_timeo, input_name='nfs_timeo'), namespace_))
-        if self.nfs_retrans is not None:
-            showIndent(outfile, level)
-            outfile.write('<%snfs_retrans>%s</%snfs_retrans>\n' % (namespace_, self.gds_format_integer(self.nfs_retrans, input_name='nfs_retrans'), namespace_))
         for logical_unit_ in self.logical_unit:
             logical_unit_.export(outfile, level, namespace_, name_='logical_unit')
         if self.volume_group is not None:
@@ -10082,9 +10019,6 @@ class Storage(BaseResource):
             self.path is not None or
             self.mount_options is not None or
             self.vfs_type is not None or
-            self.nfs_version is not None or
-            self.nfs_timeo is not None or
-            self.nfs_retrans is not None or
             self.logical_unit or
             self.volume_group is not None or
             self.host is not None or
@@ -10117,15 +10051,6 @@ class Storage(BaseResource):
         if self.vfs_type is not None:
             showIndent(outfile, level)
             outfile.write('vfs_type=%s,\n' % quote_python(self.vfs_type).encode(ExternalEncoding))
-        if self.nfs_version is not None:
-            showIndent(outfile, level)
-            outfile.write('nfs_version=%d,\n' % self.nfs_version)
-        if self.nfs_timeo is not None:
-            showIndent(outfile, level)
-            outfile.write('nfs_timeo=%d,\n' % self.nfs_timeo)
-        if self.nfs_retrans is not None:
-            showIndent(outfile, level)
-            outfile.write('nfs_retrans=%d,\n' % self.nfs_retrans)
         showIndent(outfile, level)
         outfile.write('logical_unit=[\n')
         level += 1
@@ -10178,30 +10103,6 @@ class Storage(BaseResource):
             vfs_type_ = child_.text
             vfs_type_ = self.gds_validate_string(vfs_type_, node, 'vfs_type')
             self.vfs_type = vfs_type_
-        elif nodeName_ == 'nfs_version':
-            sval_ = child_.text
-            try:
-                ival_ = int(sval_)
-            except (TypeError, ValueError), exp:
-                raise_parse_error(child_, 'requires integer: %s' % exp)
-            ival_ = self.gds_validate_integer(ival_, node, 'nfs_version')
-            self.nfs_version = ival_
-        elif nodeName_ == 'nfs_timeo':
-            sval_ = child_.text
-            try:
-                ival_ = int(sval_)
-            except (TypeError, ValueError), exp:
-                raise_parse_error(child_, 'requires integer: %s' % exp)
-            ival_ = self.gds_validate_integer(ival_, node, 'nfs_timeo')
-            self.nfs_timeo = ival_
-        elif nodeName_ == 'nfs_retrans':
-            sval_ = child_.text
-            try:
-                ival_ = int(sval_)
-            except (TypeError, ValueError), exp:
-                raise_parse_error(child_, 'requires integer: %s' % exp)
-            ival_ = self.gds_validate_integer(ival_, node, 'nfs_retrans')
-            self.nfs_retrans = ival_
         elif nodeName_ == 'logical_unit':
             obj_ = LogicalUnit.factory()
             obj_.build(child_)
@@ -10220,12 +10121,12 @@ class Storage(BaseResource):
 
 class StorageDomain(BaseResource):
     member_data_items_ = {
-        'data_center': MemberSpec_('data_center', 'DataCenter', 0),
+        'data_center': MemberSpec_('data_center', 'data_center', 0),
         'type_': MemberSpec_('type_', 'xs:string', 0),
-        'status': MemberSpec_('status', 'Status', 0),
+        'status': MemberSpec_('status', 'status', 0),
         'master': MemberSpec_('master', 'xs:boolean', 0),
-        'storage': MemberSpec_('storage', 'Storage', 0),
-        'host': MemberSpec_('host', 'Host', 0),
+        'storage': MemberSpec_('storage', 'storage', 0),
+        'host': MemberSpec_('host', 'host', 0),
         'format': MemberSpec_('format', 'xs:boolean', 0),
         'destroy': MemberSpec_('destroy', 'xs:boolean', 0),
         'available': MemberSpec_('available', 'xs:long', 0),
@@ -10573,7 +10474,7 @@ class StorageDomainStates(GeneratedsSuper):
 
 class StorageDomains(BaseResources):
     member_data_items_ = {
-        'storage_domain': MemberSpec_('storage_domain', 'StorageDomain', 1),
+        'storage_domain': MemberSpec_('storage_domain', 'storage_domain', 1),
         }
     subclass = None
     superclass = BaseResources
@@ -10658,22 +10559,22 @@ class StorageDomains(BaseResources):
 
 class Template(BaseResource):
     member_data_items_ = {
-        'vm': MemberSpec_('vm', 'VM', 0),
+        'vm': MemberSpec_('vm', 'vm', 0),
         'type_': MemberSpec_('type_', 'xs:string', 0),
-        'status': MemberSpec_('status', 'Status', 0),
+        'status': MemberSpec_('status', 'status', 0),
         'memory': MemberSpec_('memory', 'xs:long', 0),
         'cpu': MemberSpec_('cpu', 'CPU', 0),
         'os': MemberSpec_('os', 'OperatingSystem', 0),
-        'cluster': MemberSpec_('cluster', 'Cluster', 0),
-        'storage_domain': MemberSpec_('storage_domain', 'StorageDomain', 0),
+        'cluster': MemberSpec_('cluster', 'cluster', 0),
+        'storage_domain': MemberSpec_('storage_domain', 'storage_domain', 0),
         'creation_time': MemberSpec_('creation_time', 'xs:dateTime', 0),
         'origin': MemberSpec_('origin', 'xs:string', 0),
         'high_availability': MemberSpec_('high_availability', 'HighAvailability', 0),
         'display': MemberSpec_('display', 'Display', 0),
         'stateless': MemberSpec_('stateless', 'xs:boolean', 0),
         'timezone': MemberSpec_('timezone', 'xs:string', 0),
-        'domain': MemberSpec_('domain', 'Domain', 0),
-        'usb': MemberSpec_('usb', 'Usb', 0),
+        'domain': MemberSpec_('domain', 'domain', 0),
+        'usb': MemberSpec_('usb', 'usb', 0),
         }
     subclass = None
     superclass = BaseResource
@@ -10986,7 +10887,7 @@ class Template(BaseResource):
 
 class Templates(BaseResources):
     member_data_items_ = {
-        'template': MemberSpec_('template', 'Template', 1),
+        'template': MemberSpec_('template', 'template', 1),
         }
     subclass = None
     superclass = BaseResources
@@ -11606,7 +11507,7 @@ class Display(GeneratedsSuper):
 
 class Ticket(GeneratedsSuper):
     member_data_items_ = {
-        'value': MemberSpec_('value', 'Value', 0),
+        'value': MemberSpec_('value', 'xs:string', 0),
         'expiry': MemberSpec_('expiry', 'xs:unsignedInt', 0),
         }
     subclass = None
@@ -11951,7 +11852,7 @@ class Payloads(GeneratedsSuper):
 class Payload(GeneratedsSuper):
     member_data_items_ = {
         'type': MemberSpec_('type', 'xs:string', 0),
-        'file': MemberSpec_('file', 'File', 0),
+        'file': MemberSpec_('file', 'PayloadFile', 0),
         }
     subclass = None
     superclass = None
@@ -12110,7 +12011,7 @@ class PayloadFile(GeneratedsSuper):
 
 class VmDeviceTypes(GeneratedsSuper):
     member_data_items_ = {
-        'vm_device_types': MemberSpec_('vm_device_types', 'VmDeviceTypes', 1),
+        'vm_device_types': MemberSpec_('vm_device_types', 'xs:string', 1),
         }
     subclass = None
     superclass = None
@@ -12272,7 +12173,7 @@ class VmPlacementPolicy(GeneratedsSuper):
 
 class GuestInfo(GeneratedsSuper):
     member_data_items_ = {
-        'ips': MemberSpec_('ips', 'IPs', 0),
+        'ips': MemberSpec_('ips', 'ips', 0),
         }
     subclass = None
     superclass = None
@@ -12342,22 +12243,22 @@ class GuestInfo(GeneratedsSuper):
 class VM(BaseResource):
     member_data_items_ = {
         'type_': MemberSpec_('type_', 'xs:string', 0),
-        'status': MemberSpec_('status', 'Status', 0),
+        'status': MemberSpec_('status', 'status', 0),
         'memory': MemberSpec_('memory', 'xs:long', 0),
         'cpu': MemberSpec_('cpu', 'CPU', 0),
         'os': MemberSpec_('os', 'OperatingSystem', 0),
         'high_availability': MemberSpec_('high_availability', 'HighAvailability', 0),
         'display': MemberSpec_('display', 'Display', 0),
-        'host': MemberSpec_('host', 'Host', 0),
-        'cluster': MemberSpec_('cluster', 'Cluster', 0),
-        'template': MemberSpec_('template', 'Template', 0),
-        'storage_domain': MemberSpec_('storage_domain', 'StorageDomain', 0),
+        'host': MemberSpec_('host', 'host', 0),
+        'cluster': MemberSpec_('cluster', 'cluster', 0),
+        'template': MemberSpec_('template', 'template', 0),
+        'storage_domain': MemberSpec_('storage_domain', 'storage_domain', 0),
         'start_time': MemberSpec_('start_time', 'xs:dateTime', 0),
         'creation_time': MemberSpec_('creation_time', 'xs:dateTime', 0),
         'origin': MemberSpec_('origin', 'xs:string', 0),
         'stateless': MemberSpec_('stateless', 'xs:boolean', 0),
         'timezone': MemberSpec_('timezone', 'xs:string', 0),
-        'domain': MemberSpec_('domain', 'Domain', 0),
+        'domain': MemberSpec_('domain', 'domain', 0),
         'custom_properties': MemberSpec_('custom_properties', 'CustomProperties', 0),
         'payloads': MemberSpec_('payloads', 'Payloads', 0),
         'statistics': MemberSpec_('statistics', 'Statistics', 0),
@@ -12368,11 +12269,11 @@ class VM(BaseResource):
         'placement_policy': MemberSpec_('placement_policy', 'VmPlacementPolicy', 0),
         'memory_policy': MemberSpec_('memory_policy', 'MemoryPolicy', 0),
         'guest_info': MemberSpec_('guest_info', 'GuestInfo', 0),
-        'quota': MemberSpec_('quota', 'Quota', 0),
-        'usb': MemberSpec_('usb', 'Usb', 0),
-        'vmpool': MemberSpec_('vmpool', 'VmPool', 0),
-        'cdroms': MemberSpec_('cdroms', 'CdRoms', 0),
-        'floppies': MemberSpec_('floppies', 'Floppies', 0),
+        'quota': MemberSpec_('quota', 'quota', 0),
+        'usb': MemberSpec_('usb', 'usb', 0),
+        'vmpool': MemberSpec_('vmpool', 'vmpool', 0),
+        'cdroms': MemberSpec_('cdroms', 'cdroms', 0),
+        'floppies': MemberSpec_('floppies', 'floppies', 0),
         }
     subclass = None
     superclass = BaseResource
@@ -12949,7 +12850,7 @@ class VM(BaseResource):
 
 class VMs(BaseResources):
     member_data_items_ = {
-        'vm': MemberSpec_('vm', 'VM', 1),
+        'vm': MemberSpec_('vm', 'vm', 1),
         }
     subclass = None
     superclass = BaseResources
@@ -13278,8 +13179,8 @@ class VmPauseDetails(GeneratedsSuper):
 class VmPool(BaseResource):
     member_data_items_ = {
         'size': MemberSpec_('size', 'xs:int', 0),
-        'cluster': MemberSpec_('cluster', 'Cluster', 0),
-        'template': MemberSpec_('template', 'Template', 0),
+        'cluster': MemberSpec_('cluster', 'cluster', 0),
+        'template': MemberSpec_('template', 'template', 0),
         'prestarted_vms': MemberSpec_('prestarted_vms', 'xs:int', 0),
         }
     subclass = None
@@ -13406,7 +13307,7 @@ class VmPool(BaseResource):
 
 class VmPools(BaseResources):
     member_data_items_ = {
-        'vmpool': MemberSpec_('vmpool', 'VmPool', 1),
+        'vmpool': MemberSpec_('vmpool', 'vmpool', 1),
         }
     subclass = None
     superclass = BaseResources
@@ -13491,8 +13392,8 @@ class VmPools(BaseResources):
 
 class BaseDevice(BaseResource):
     member_data_items_ = {
-        'vm': MemberSpec_('vm', 'VM', 0),
-        'template': MemberSpec_('template', 'Template', 0),
+        'vm': MemberSpec_('vm', 'vm', 0),
+        'template': MemberSpec_('template', 'template', 0),
         }
     subclass = None
     superclass = BaseResource
@@ -13663,7 +13564,7 @@ class BaseDevices(BaseResources):
 
 class CdRom(BaseDevice):
     member_data_items_ = {
-        'file': MemberSpec_('file', 'File', 0),
+        'file': MemberSpec_('file', 'file', 0),
         }
     subclass = None
     superclass = BaseDevice
@@ -13737,7 +13638,7 @@ class CdRom(BaseDevice):
 
 class CdRoms(BaseDevices):
     member_data_items_ = {
-        'cdrom': MemberSpec_('cdrom', 'CdRom', 1),
+        'cdrom': MemberSpec_('cdrom', 'cdrom', 1),
         }
     subclass = None
     superclass = BaseDevices
@@ -13822,7 +13723,7 @@ class CdRoms(BaseDevices):
 
 class Floppy(BaseDevice):
     member_data_items_ = {
-        'file': MemberSpec_('file', 'File', 0),
+        'file': MemberSpec_('file', 'file', 0),
         }
     subclass = None
     superclass = BaseDevice
@@ -13896,7 +13797,7 @@ class Floppy(BaseDevice):
 
 class Floppies(BaseDevices):
     member_data_items_ = {
-        'floppy': MemberSpec_('floppy', 'Floppy', 1),
+        'floppy': MemberSpec_('floppy', 'floppy', 1),
         }
     subclass = None
     superclass = BaseDevices
@@ -13982,26 +13883,23 @@ class Floppies(BaseDevices):
 class Disk(BaseDevice):
     member_data_items_ = {
         'image_id': MemberSpec_('image_id', 'xs:string', 0),
-        'storage_domains': MemberSpec_('storage_domains', 'StorageDomains', 0),
+        'storage_domains': MemberSpec_('storage_domains', 'storage_domains', 0),
         'size': MemberSpec_('size', 'xs:long', 0),
         'type_': MemberSpec_('type_', 'xs:string', 0),
-        'status': MemberSpec_('status', 'Status', 0),
+        'status': MemberSpec_('status', 'status', 0),
         'interface': MemberSpec_('interface', 'xs:string', 0),
         'format': MemberSpec_('format', 'xs:string', 0),
         'sparse': MemberSpec_('sparse', 'xs:boolean', 0),
         'bootable': MemberSpec_('bootable', 'xs:boolean', 0),
-        'shareable': MemberSpec_('shareable', 'xs:boolean', 0),
-        'allow_snapshot': MemberSpec_('allow_snapshot', 'xs:boolean', 0),
         'wipe_after_delete': MemberSpec_('wipe_after_delete', 'xs:boolean', 0),
         'propagate_errors': MemberSpec_('propagate_errors', 'xs:boolean', 0),
         'statistics': MemberSpec_('statistics', 'Statistics', 0),
         'active': MemberSpec_('active', 'xs:boolean', 0),
-        'quota': MemberSpec_('quota', 'Quota', 0),
-        'lunStorage': MemberSpec_('lunStorage', 'Storage', 0),
+        'quota': MemberSpec_('quota', 'quota', 0),
         }
     subclass = None
     superclass = BaseDevice
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, vm=None, template=None, image_id=None, storage_domains=None, size=None, type_=None, status=None, interface=None, format=None, sparse=None, bootable=None, shareable=None, allow_snapshot=None, wipe_after_delete=None, propagate_errors=None, statistics=None, active=None, quota=None, lunStorage=None):
+    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, vm=None, template=None, image_id=None, storage_domains=None, size=None, type_=None, status=None, interface=None, format=None, sparse=None, bootable=None, wipe_after_delete=None, propagate_errors=None, statistics=None, active=None, quota=None):
         super(Disk, self).__init__(href, id, name, description, actions, creation_status, link, vm, template, )
         self.image_id = image_id
         self.storage_domains = storage_domains
@@ -14012,14 +13910,11 @@ class Disk(BaseDevice):
         self.format = format
         self.sparse = sparse
         self.bootable = bootable
-        self.shareable = shareable
-        self.allow_snapshot = allow_snapshot
         self.wipe_after_delete = wipe_after_delete
         self.propagate_errors = propagate_errors
         self.statistics = statistics
         self.active = active
         self.quota = quota
-        self.lunStorage = lunStorage
     def factory(*args_, **kwargs_):
         if Disk.subclass:
             return Disk.subclass(*args_, **kwargs_)
@@ -14044,10 +13939,6 @@ class Disk(BaseDevice):
     def set_sparse(self, sparse): self.sparse = sparse
     def get_bootable(self): return self.bootable
     def set_bootable(self, bootable): self.bootable = bootable
-    def get_shareable(self): return self.shareable
-    def set_shareable(self, shareable): self.shareable = shareable
-    def get_allow_snapshot(self): return self.allow_snapshot
-    def set_allow_snapshot(self, allow_snapshot): self.allow_snapshot = allow_snapshot
     def get_wipe_after_delete(self): return self.wipe_after_delete
     def set_wipe_after_delete(self, wipe_after_delete): self.wipe_after_delete = wipe_after_delete
     def get_propagate_errors(self): return self.propagate_errors
@@ -14058,8 +13949,6 @@ class Disk(BaseDevice):
     def set_active(self, active): self.active = active
     def get_quota(self): return self.quota
     def set_quota(self, quota): self.quota = quota
-    def get_lunStorage(self): return self.lunStorage
-    def set_lunStorage(self, lunStorage): self.lunStorage = lunStorage
     def export(self, outfile, level, namespace_='', name_='Disk', namespacedef_=''):
         showIndent(outfile, level)
         outfile.write('<%s%s%s' % (namespace_, name_, namespacedef_ and ' ' + namespacedef_ or '', ))
@@ -14101,12 +13990,6 @@ class Disk(BaseDevice):
         if self.bootable is not None:
             showIndent(outfile, level)
             outfile.write('<%sbootable>%s</%sbootable>\n' % (namespace_, self.gds_format_boolean(self.gds_str_lower(str(self.bootable)), input_name='bootable'), namespace_))
-        if self.shareable is not None:
-            showIndent(outfile, level)
-            outfile.write('<%sshareable>%s</%sshareable>\n' % (namespace_, self.gds_format_boolean(self.gds_str_lower(str(self.shareable)), input_name='shareable'), namespace_))
-        if self.allow_snapshot is not None:
-            showIndent(outfile, level)
-            outfile.write('<%sallow_snapshot>%s</%sallow_snapshot>\n' % (namespace_, self.gds_format_boolean(self.gds_str_lower(str(self.allow_snapshot)), input_name='allow_snapshot'), namespace_))
         if self.wipe_after_delete is not None:
             showIndent(outfile, level)
             outfile.write('<%swipe_after_delete>%s</%swipe_after_delete>\n' % (namespace_, self.gds_format_boolean(self.gds_str_lower(str(self.wipe_after_delete)), input_name='wipe_after_delete'), namespace_))
@@ -14120,8 +14003,6 @@ class Disk(BaseDevice):
             outfile.write('<%sactive>%s</%sactive>\n' % (namespace_, self.gds_format_boolean(self.gds_str_lower(str(self.active)), input_name='active'), namespace_))
         if self.quota is not None:
             self.quota.export(outfile, level, namespace_, name_='quota')
-        if self.lunStorage is not None:
-            self.lunStorage.export(outfile, level, namespace_, name_='lunStorage')
     def hasContent_(self):
         if (
             self.image_id is not None or
@@ -14133,14 +14014,11 @@ class Disk(BaseDevice):
             self.format is not None or
             self.sparse is not None or
             self.bootable is not None or
-            self.shareable is not None or
-            self.allow_snapshot is not None or
             self.wipe_after_delete is not None or
             self.propagate_errors is not None or
             self.statistics is not None or
             self.active is not None or
             self.quota is not None or
-            self.lunStorage is not None or
             super(Disk, self).hasContent_()
             ):
             return True
@@ -14188,12 +14066,6 @@ class Disk(BaseDevice):
         if self.bootable is not None:
             showIndent(outfile, level)
             outfile.write('bootable=%s,\n' % self.bootable)
-        if self.shareable is not None:
-            showIndent(outfile, level)
-            outfile.write('shareable=%s,\n' % self.shareable)
-        if self.allow_snapshot is not None:
-            showIndent(outfile, level)
-            outfile.write('allow_snapshot=%s,\n' % self.allow_snapshot)
         if self.wipe_after_delete is not None:
             showIndent(outfile, level)
             outfile.write('wipe_after_delete=%s,\n' % self.wipe_after_delete)
@@ -14213,12 +14085,6 @@ class Disk(BaseDevice):
             showIndent(outfile, level)
             outfile.write('quota=model_.quota(\n')
             self.quota.exportLiteral(outfile, level)
-            showIndent(outfile, level)
-            outfile.write('),\n')
-        if self.lunStorage is not None:
-            showIndent(outfile, level)
-            outfile.write('lunStorage=model_.Storage(\n')
-            self.lunStorage.exportLiteral(outfile, level, name_='lunStorage')
             showIndent(outfile, level)
             outfile.write('),\n')
     def build(self, node):
@@ -14281,26 +14147,6 @@ class Disk(BaseDevice):
                 raise_parse_error(child_, 'requires boolean')
             ival_ = self.gds_validate_boolean(ival_, node, 'bootable')
             self.bootable = ival_
-        elif nodeName_ == 'shareable':
-            sval_ = child_.text
-            if sval_ in ('true', '1'):
-                ival_ = True
-            elif sval_ in ('false', '0'):
-                ival_ = False
-            else:
-                raise_parse_error(child_, 'requires boolean')
-            ival_ = self.gds_validate_boolean(ival_, node, 'shareable')
-            self.shareable = ival_
-        elif nodeName_ == 'allow_snapshot':
-            sval_ = child_.text
-            if sval_ in ('true', '1'):
-                ival_ = True
-            elif sval_ in ('false', '0'):
-                ival_ = False
-            else:
-                raise_parse_error(child_, 'requires boolean')
-            ival_ = self.gds_validate_boolean(ival_, node, 'allow_snapshot')
-            self.allow_snapshot = ival_
         elif nodeName_ == 'wipe_after_delete':
             sval_ = child_.text
             if sval_ in ('true', '1'):
@@ -14339,17 +14185,13 @@ class Disk(BaseDevice):
             obj_ = Quota.factory()
             obj_.build(child_)
             self.set_quota(obj_)
-        elif nodeName_ == 'lunStorage':
-            obj_ = Storage.factory()
-            obj_.build(child_)
-            self.set_lunStorage(obj_)
         super(Disk, self).buildChildren(child_, node, nodeName_, True)
 # end class Disk
 
 
 class Disks(BaseDevices):
     member_data_items_ = {
-        'disk': MemberSpec_('disk', 'Disk', 1),
+        'disk': MemberSpec_('disk', 'disk', 1),
         'clone': MemberSpec_('clone', 'xs:boolean', 0),
         }
     subclass = None
@@ -14533,9 +14375,9 @@ class DiskStates(GeneratedsSuper):
 
 class NIC(BaseDevice):
     member_data_items_ = {
-        'network': MemberSpec_('network', 'Network', 0),
+        'network': MemberSpec_('network', 'network', 0),
         'interface': MemberSpec_('interface', 'xs:string', 0),
-        'mac': MemberSpec_('mac', 'MAC', 0),
+        'mac': MemberSpec_('mac', 'mac', 0),
         'statistics': MemberSpec_('statistics', 'Statistics', 0),
         'active': MemberSpec_('active', 'xs:boolean', 0),
         }
@@ -14677,7 +14519,7 @@ class NIC(BaseDevice):
 
 class Nics(BaseDevices):
     member_data_items_ = {
-        'nic': MemberSpec_('nic', 'NIC', 1),
+        'nic': MemberSpec_('nic', 'nic', 1),
         }
     subclass = None
     superclass = BaseDevices
@@ -14762,7 +14604,7 @@ class Nics(BaseDevices):
 
 class Snapshot(VM):
     member_data_items_ = {
-        'vm': MemberSpec_('vm', 'VM', 0),
+        'vm': MemberSpec_('vm', 'vm', 0),
         'date': MemberSpec_('date', 'xs:dateTime', 0),
         'snapshot_status': MemberSpec_('snapshot_status', 'xs:string', 0),
         }
@@ -14867,7 +14709,7 @@ class Snapshot(VM):
 
 class Snapshots(BaseResources):
     member_data_items_ = {
-        'snapshot': MemberSpec_('snapshot', 'Snapshot', 1),
+        'snapshot': MemberSpec_('snapshot', 'snapshot', 1),
         }
     subclass = None
     superclass = BaseResources
@@ -14952,17 +14794,17 @@ class Snapshots(BaseResources):
 
 class HostNIC(BaseResource):
     member_data_items_ = {
-        'host': MemberSpec_('host', 'Host', 0),
-        'network': MemberSpec_('network', 'Network', 0),
-        'mac': MemberSpec_('mac', 'MAC', 0),
-        'ip': MemberSpec_('ip', 'IP', 0),
-        'vlan': MemberSpec_('vlan', 'VLAN', 0),
-        'bonding': MemberSpec_('bonding', 'Bonding', 0),
+        'host': MemberSpec_('host', 'host', 0),
+        'network': MemberSpec_('network', 'network', 0),
+        'mac': MemberSpec_('mac', 'mac', 0),
+        'ip': MemberSpec_('ip', 'ip', 0),
+        'vlan': MemberSpec_('vlan', 'vlan', 0),
+        'bonding': MemberSpec_('bonding', 'bonding', 0),
         'boot_protocol': MemberSpec_('boot_protocol', 'xs:string', 0),
         'statistics': MemberSpec_('statistics', 'Statistics', 0),
         'check_connectivity': MemberSpec_('check_connectivity', 'xs:boolean', 0),
         'speed': MemberSpec_('speed', 'xs:long', 0),
-        'status': MemberSpec_('status', 'Status', 0),
+        'status': MemberSpec_('status', 'status', 0),
         'mtu': MemberSpec_('mtu', 'xs:int', 0),
         'bridged': MemberSpec_('bridged', 'xs:boolean', 0),
         }
@@ -15240,7 +15082,7 @@ class HostNIC(BaseResource):
 
 class HostNics(BaseResources):
     member_data_items_ = {
-        'host_nic': MemberSpec_('host_nic', 'HostNIC', 1),
+        'host_nic': MemberSpec_('host_nic', 'host_nic', 1),
         }
     subclass = None
     superclass = BaseResources
@@ -15403,7 +15245,7 @@ class HostNICStates(GeneratedsSuper):
 
 class Slaves(GeneratedsSuper):
     member_data_items_ = {
-        'host_nic': MemberSpec_('host_nic', 'HostNIC', 1),
+        'host_nic': MemberSpec_('host_nic', 'host_nic', 1),
         }
     subclass = None
     superclass = None
@@ -15483,8 +15325,8 @@ class Slaves(GeneratedsSuper):
 
 class Bonding(GeneratedsSuper):
     member_data_items_ = {
-        'options': MemberSpec_('options', 'Options', 0),
-        'slaves': MemberSpec_('slaves', 'Slaves', 0),
+        'options': MemberSpec_('options', 'options', 0),
+        'slaves': MemberSpec_('slaves', 'slaves', 0),
         }
     subclass = None
     superclass = None
@@ -15569,7 +15411,7 @@ class Bonding(GeneratedsSuper):
 
 class HostStorage(BaseResources):
     member_data_items_ = {
-        'storage': MemberSpec_('storage', 'Storage', 1),
+        'storage': MemberSpec_('storage', 'storage', 1),
         }
     subclass = None
     superclass = BaseResources
@@ -15654,7 +15496,7 @@ class HostStorage(BaseResources):
 
 class TagParent(GeneratedsSuper):
     member_data_items_ = {
-        'tag': MemberSpec_('tag', 'Tag', 0),
+        'tag': MemberSpec_('tag', 'tag', 0),
         }
     subclass = None
     superclass = None
@@ -15723,10 +15565,10 @@ class TagParent(GeneratedsSuper):
 
 class Tag(BaseResource):
     member_data_items_ = {
-        'host': MemberSpec_('host', 'Host', 0),
-        'vm': MemberSpec_('vm', 'VM', 0),
-        'user': MemberSpec_('user', 'User', 0),
-        'group': MemberSpec_('group', 'Group', 0),
+        'host': MemberSpec_('host', 'host', 0),
+        'vm': MemberSpec_('vm', 'vm', 0),
+        'user': MemberSpec_('user', 'user', 0),
+        'group': MemberSpec_('group', 'group', 0),
         'parent': MemberSpec_('parent', 'TagParent', 0),
         }
     subclass = None
@@ -15866,7 +15708,7 @@ class Tag(BaseResource):
 
 class Tags(BaseResources):
     member_data_items_ = {
-        'tag': MemberSpec_('tag', 'Tag', 1),
+        'tag': MemberSpec_('tag', 'tag', 1),
         }
     subclass = None
     superclass = BaseResources
@@ -15952,13 +15794,11 @@ class Tags(BaseResources):
 class Usb(GeneratedsSuper):
     member_data_items_ = {
         'enabled': MemberSpec_('enabled', 'xs:boolean', 0),
-        'type_': MemberSpec_('type_', 'xs:string', 0),
         }
     subclass = None
     superclass = None
-    def __init__(self, enabled=None, type_=None):
+    def __init__(self, enabled=None):
         self.enabled = enabled
-        self.type_ = type_
     def factory(*args_, **kwargs_):
         if Usb.subclass:
             return Usb.subclass(*args_, **kwargs_)
@@ -15967,8 +15807,6 @@ class Usb(GeneratedsSuper):
     factory = staticmethod(factory)
     def get_enabled(self): return self.enabled
     def set_enabled(self, enabled): self.enabled = enabled
-    def get_type(self): return self.type_
-    def set_type(self, type_): self.type_ = type_
     def export(self, outfile, level, namespace_='', name_='Usb', namespacedef_=''):
         showIndent(outfile, level)
         outfile.write('<%s%s%s' % (namespace_, name_, namespacedef_ and ' ' + namespacedef_ or '', ))
@@ -15987,13 +15825,9 @@ class Usb(GeneratedsSuper):
         if self.enabled is not None:
             showIndent(outfile, level)
             outfile.write('<%senabled>%s</%senabled>\n' % (namespace_, self.gds_format_boolean(self.gds_str_lower(str(self.enabled)), input_name='enabled'), namespace_))
-        if self.type_ is not None:
-            showIndent(outfile, level)
-            outfile.write('<%stype>%s</%stype>\n' % (namespace_, self.gds_format_string(quote_xml(self.type_).encode(ExternalEncoding), input_name='type'), namespace_))
     def hasContent_(self):
         if (
-            self.enabled is not None or
-            self.type_ is not None
+            self.enabled is not None
             ):
             return True
         else:
@@ -16009,9 +15843,6 @@ class Usb(GeneratedsSuper):
         if self.enabled is not None:
             showIndent(outfile, level)
             outfile.write('enabled=%s,\n' % self.enabled)
-        if self.type_ is not None:
-            showIndent(outfile, level)
-            outfile.write('type_=%s,\n' % quote_python(self.type_).encode(ExternalEncoding))
     def build(self, node):
         self.buildAttributes(node, node.attrib, [])
         for child in node:
@@ -16030,19 +15861,15 @@ class Usb(GeneratedsSuper):
                 raise_parse_error(child_, 'requires boolean')
             ival_ = self.gds_validate_boolean(ival_, node, 'enabled')
             self.enabled = ival_
-        elif nodeName_ == 'type':
-            type_ = child_.text
-            type_ = self.gds_validate_string(type_, node, 'type')
-            self.type_ = type_
 # end class Usb
 
 
 class Quota(BaseResource):
     member_data_items_ = {
-        'data_center': MemberSpec_('data_center', 'DataCenter', 0),
-        'vms': MemberSpec_('vms', 'VMs', 0),
-        'disks': MemberSpec_('disks', 'Disks', 0),
-        'users': MemberSpec_('users', 'Users', 0),
+        'data_center': MemberSpec_('data_center', 'data_center', 0),
+        'vms': MemberSpec_('vms', 'vms', 0),
+        'disks': MemberSpec_('disks', 'disks', 0),
+        'users': MemberSpec_('users', 'users', 0),
         }
     subclass = None
     superclass = BaseResource
@@ -16164,7 +15991,7 @@ class Quota(BaseResource):
 
 class Quotas(BaseResources):
     member_data_items_ = {
-        'quota': MemberSpec_('quota', 'Quota', 1),
+        'quota': MemberSpec_('quota', 'quota', 1),
         }
     subclass = None
     superclass = BaseResources
@@ -16249,7 +16076,7 @@ class Quotas(BaseResources):
 
 class Url(GeneratedsSuper):
     member_data_items_ = {
-        'parameters_set': MemberSpec_('parameters_set', 'ParametersSet', 1),
+        'parameters_set': MemberSpec_('parameters_set', 'parameters_set', 1),
         }
     subclass = None
     superclass = None
@@ -16330,7 +16157,7 @@ class Url(GeneratedsSuper):
 class Body(GeneratedsSuper):
     member_data_items_ = {
         'type_': MemberSpec_('type_', 'xs:string', 0),
-        'parameters_set': MemberSpec_('parameters_set', 'ParametersSet', 1),
+        'parameters_set': MemberSpec_('parameters_set', 'parameters_set', 1),
         }
     subclass = None
     superclass = None
@@ -16425,9 +16252,9 @@ class Body(GeneratedsSuper):
 class Request(GeneratedsSuper):
     member_data_items_ = {
         'http_method': MemberSpec_('http_method', ['HttpMethod', 'xs:string'], 0),
-        'headers': MemberSpec_('headers', 'Headers', 0),
-        'url': MemberSpec_('url', 'Url', 0),
-        'body': MemberSpec_('body', 'Body', 0),
+        'headers': MemberSpec_('headers', 'headers', 0),
+        'url': MemberSpec_('url', 'url', 0),
+        'body': MemberSpec_('body', 'body', 0),
         }
     subclass = None
     superclass = None
@@ -16616,8 +16443,8 @@ class Parameter(BaseResource):
         'required': MemberSpec_('required', 'xs:boolean', 0),
         'type': MemberSpec_('type', 'xs:string', 0),
         'context': MemberSpec_('context', 'xs:string', 0),
-        'value': MemberSpec_('value', 'Value', 0),
-        'parameters_set': MemberSpec_('parameters_set', 'ParametersSet', 0),
+        'value': MemberSpec_('value', 'xs:string', 0),
+        'parameters_set': MemberSpec_('parameters_set', 'parameters_set', 0),
         }
     subclass = None
     superclass = BaseResource
@@ -16752,7 +16579,7 @@ class Parameter(BaseResource):
 
 class Header(BaseResource):
     member_data_items_ = {
-        'value': MemberSpec_('value', 'Value', 0),
+        'value': MemberSpec_('value', 'xs:string', 0),
         'mandatory': MemberSpec_('mandatory', 'xs:boolean', 0),
         }
     subclass = None
@@ -16845,7 +16672,7 @@ class Header(BaseResource):
 
 class Headers(GeneratedsSuper):
     member_data_items_ = {
-        'header': MemberSpec_('header', 'Header', 1),
+        'header': MemberSpec_('header', 'header', 1),
         }
     subclass = None
     superclass = None
@@ -16925,7 +16752,7 @@ class Headers(GeneratedsSuper):
 
 class ParametersSet(GeneratedsSuper):
     member_data_items_ = {
-        'parameter': MemberSpec_('parameter', 'Parameter', 1),
+        'parameter': MemberSpec_('parameter', 'parameter', 1),
         }
     subclass = None
     superclass = None
@@ -17095,8 +16922,8 @@ class RSDL(GeneratedsSuper):
         'href': MemberSpec_('href', 'xs:string', 0),
         'rel': MemberSpec_('rel', 'xs:string', 0),
         'description': MemberSpec_('description', 'xs:string', 0),
-        'version': MemberSpec_('version', 'Version', 0),
-        'schema': MemberSpec_('schema', 'Schema', 0),
+        'version': MemberSpec_('version', 'version', 0),
+        'schema': MemberSpec_('schema', 'schema', 0),
         'links': MemberSpec_('links', 'DetailedLinks', 0),
         }
     subclass = None
@@ -17238,15 +17065,15 @@ class RSDL(GeneratedsSuper):
 
 class GlusterVolume(BaseResource):
     member_data_items_ = {
-        'cluster': MemberSpec_('cluster', 'Cluster', 0),
+        'cluster': MemberSpec_('cluster', 'cluster', 0),
         'volume_type': MemberSpec_('volume_type', 'xs:string', 0),
-        'transport_types': MemberSpec_('transport_types', 'TransportTypes', 0),
+        'transport_types': MemberSpec_('transport_types', 'transport_types', 0),
         'replica_count': MemberSpec_('replica_count', 'xs:unsignedShort', 0),
         'stripe_count': MemberSpec_('stripe_count', 'xs:unsignedShort', 0),
-        'bricks': MemberSpec_('bricks', 'GlusterBricks', 0),
-        'access_protocols': MemberSpec_('access_protocols', 'AccessProtocols', 0),
-        'access_control_list': MemberSpec_('access_control_list', 'AccessControlList', 0),
-        'options': MemberSpec_('options', 'Options', 0),
+        'bricks': MemberSpec_('bricks', 'bricks', 0),
+        'access_protocols': MemberSpec_('access_protocols', 'access_protocols', 0),
+        'access_control_list': MemberSpec_('access_control_list', 'access_control_list', 0),
+        'options': MemberSpec_('options', 'options', 0),
         'state': MemberSpec_('state', 'xs:string', 0),
         }
     subclass = None
@@ -17465,7 +17292,7 @@ class GlusterVolume(BaseResource):
 
 class AccessControlList(GeneratedsSuper):
     member_data_items_ = {
-        'ip': MemberSpec_('ip', 'IP', 1),
+        'ip': MemberSpec_('ip', 'xs:string', 1),
         }
     subclass = None
     superclass = None
@@ -17855,7 +17682,7 @@ class GlusterStates(GeneratedsSuper):
 
 class GlusterVolumes(BaseResources):
     member_data_items_ = {
-        'gluster_volume': MemberSpec_('gluster_volume', 'GlusterVolume', 1),
+        'gluster_volume': MemberSpec_('gluster_volume', 'gluster_volume', 1),
         }
     subclass = None
     superclass = BaseResources
@@ -18042,7 +17869,7 @@ class GlusterBrick(BaseResource):
 
 class GlusterBricks(BaseResources):
     member_data_items_ = {
-        'brick': MemberSpec_('brick', 'GlusterBrick', 1),
+        'brick': MemberSpec_('brick', 'brick', 1),
         }
     subclass = None
     superclass = BaseResources
@@ -18128,7 +17955,7 @@ class GlusterBricks(BaseResources):
 class ProductInfo(BaseResource):
     member_data_items_ = {
         'vendor': MemberSpec_('vendor', 'xs:string', 0),
-        'version': MemberSpec_('version', 'Version', 0),
+        'version': MemberSpec_('version', 'version', 0),
         }
     subclass = None
     superclass = BaseResource
@@ -18217,7 +18044,7 @@ class ProductInfo(BaseResource):
 
 class Statistics(BaseResources):
     member_data_items_ = {
-        'statistic': MemberSpec_('statistic', 'Statistic', 1),
+        'statistic': MemberSpec_('statistic', 'statistic', 1),
         }
     subclass = None
     superclass = BaseResources
@@ -18302,14 +18129,14 @@ class Statistics(BaseResources):
 
 class Statistic(BaseResource):
     member_data_items_ = {
-        'values': MemberSpec_('values', 'Values', 0),
+        'values': MemberSpec_('values', 'values', 0),
         'type_': MemberSpec_('type_', ['StatisticType', 'xs:string'], 0),
         'unit': MemberSpec_('unit', ['StatisticUnit', 'xs:string'], 0),
-        'disk': MemberSpec_('disk', 'Disk', 0),
-        'host': MemberSpec_('host', 'Host', 0),
-        'host_nic': MemberSpec_('host_nic', 'HostNIC', 0),
-        'nic': MemberSpec_('nic', 'NIC', 0),
-        'vm': MemberSpec_('vm', 'VM', 0),
+        'disk': MemberSpec_('disk', 'disk', 0),
+        'host': MemberSpec_('host', 'host', 0),
+        'host_nic': MemberSpec_('host_nic', 'host_nic', 0),
+        'nic': MemberSpec_('nic', 'nic', 0),
+        'vm': MemberSpec_('vm', 'vm', 0),
         }
     subclass = None
     superclass = BaseResource
@@ -18500,8 +18327,8 @@ class Statistic(BaseResource):
 
 class Creation(BaseResource):
     member_data_items_ = {
-        'status': MemberSpec_('status', 'Status', 0),
-        'fault': MemberSpec_('fault', 'Fault', 0),
+        'status': MemberSpec_('status', 'status', 0),
+        'fault': MemberSpec_('fault', 'fault', 0),
         }
     subclass = None
     superclass = BaseResource
@@ -18604,23 +18431,20 @@ class Action(BaseResource):
         'cluster': MemberSpec_('cluster', 'Cluster', 0),
         'discard_snapshots': MemberSpec_('discard_snapshots', 'xs:boolean', 0),
         'exclusive': MemberSpec_('exclusive', 'xs:boolean', 0),
-        'vm': MemberSpec_('vm', 'VM', 0),
-        'host_nics': MemberSpec_('host_nics', 'HostNics', 0),
+        'vm': MemberSpec_('vm', 'vm', 0),
+        'host_nics': MemberSpec_('host_nics', 'host_nics', 0),
         'check_connectivity': MemberSpec_('check_connectivity', 'xs:boolean', 0),
         'connectivity_timeout': MemberSpec_('connectivity_timeout', 'xs:int', 0),
         'pause': MemberSpec_('pause', 'xs:boolean', 0),
         'force': MemberSpec_('force', 'xs:boolean', 0),
-        'option': MemberSpec_('option', 'Option', 0),
-        'fix_layout': MemberSpec_('fix_layout', 'xs:boolean', 0),
-        'detach': MemberSpec_('detach', 'xs:boolean', 0),
-        'status': MemberSpec_('status', 'Status', 0),
-        'fault': MemberSpec_('fault', 'Fault', 0),
+        'status': MemberSpec_('status', 'status', 0),
+        'fault': MemberSpec_('fault', 'fault', 0),
         'iscsi_target': MemberSpec_('iscsi_target', 'xs:string', 1),
-        'power_management': MemberSpec_('power_management', 'PowerManagement', 0),
+        'power_management': MemberSpec_('power_management', 'power_management', 0),
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, async=None, grace_period=None, host=None, network=None, root_password=None, image=None, fence_type=None, ticket=None, iscsi=None, storage_domain=None, cluster=None, discard_snapshots=None, exclusive=None, vm=None, host_nics=None, check_connectivity=None, connectivity_timeout=None, pause=None, force=None, option=None, fix_layout=None, detach=None, status=None, fault=None, iscsi_target=None, power_management=None):
+    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, async=None, grace_period=None, host=None, network=None, root_password=None, image=None, fence_type=None, ticket=None, iscsi=None, storage_domain=None, cluster=None, discard_snapshots=None, exclusive=None, vm=None, host_nics=None, check_connectivity=None, connectivity_timeout=None, pause=None, force=None, status=None, fault=None, iscsi_target=None, power_management=None):
         super(Action, self).__init__(href, id, name, description, actions, creation_status, link, )
         self.async = async
         self.grace_period = grace_period
@@ -18641,9 +18465,6 @@ class Action(BaseResource):
         self.connectivity_timeout = connectivity_timeout
         self.pause = pause
         self.force = force
-        self.option = option
-        self.fix_layout = fix_layout
-        self.detach = detach
         self.status = status
         self.fault = fault
         if iscsi_target is None:
@@ -18695,12 +18516,6 @@ class Action(BaseResource):
     def set_pause(self, pause): self.pause = pause
     def get_force(self): return self.force
     def set_force(self, force): self.force = force
-    def get_option(self): return self.option
-    def set_option(self, option): self.option = option
-    def get_fix_layout(self): return self.fix_layout
-    def set_fix_layout(self, fix_layout): self.fix_layout = fix_layout
-    def get_detach(self): return self.detach
-    def set_detach(self, detach): self.detach = detach
     def get_status(self): return self.status
     def set_status(self, status): self.status = status
     def get_fault(self): return self.fault
@@ -18775,14 +18590,6 @@ class Action(BaseResource):
         if self.force is not None:
             showIndent(outfile, level)
             outfile.write('<%sforce>%s</%sforce>\n' % (namespace_, self.gds_format_boolean(self.gds_str_lower(str(self.force)), input_name='force'), namespace_))
-        if self.option is not None:
-            self.option.export(outfile, level, namespace_, name_='option')
-        if self.fix_layout is not None:
-            showIndent(outfile, level)
-            outfile.write('<%sfix_layout>%s</%sfix_layout>\n' % (namespace_, self.gds_format_boolean(self.gds_str_lower(str(self.fix_layout)), input_name='fix_layout'), namespace_))
-        if self.detach is not None:
-            showIndent(outfile, level)
-            outfile.write('<%sdetach>%s</%sdetach>\n' % (namespace_, self.gds_format_boolean(self.gds_str_lower(str(self.detach)), input_name='detach'), namespace_))
         if self.status is not None:
             self.status.export(outfile, level, namespace_, name_='status')
         if self.fault is not None:
@@ -18813,9 +18620,6 @@ class Action(BaseResource):
             self.connectivity_timeout is not None or
             self.pause is not None or
             self.force is not None or
-            self.option is not None or
-            self.fix_layout is not None or
-            self.detach is not None or
             self.status is not None or
             self.fault is not None or
             self.iscsi_target or
@@ -18918,18 +18722,6 @@ class Action(BaseResource):
         if self.force is not None:
             showIndent(outfile, level)
             outfile.write('force=%s,\n' % self.force)
-        if self.option is not None:
-            showIndent(outfile, level)
-            outfile.write('option=model_.Option(\n')
-            self.option.exportLiteral(outfile, level, name_='option')
-            showIndent(outfile, level)
-            outfile.write('),\n')
-        if self.fix_layout is not None:
-            showIndent(outfile, level)
-            outfile.write('fix_layout=%s,\n' % self.fix_layout)
-        if self.detach is not None:
-            showIndent(outfile, level)
-            outfile.write('detach=%s,\n' % self.detach)
         if self.status is not None:
             showIndent(outfile, level)
             outfile.write('status=model_.status(\n')
@@ -19082,30 +18874,6 @@ class Action(BaseResource):
                 raise_parse_error(child_, 'requires boolean')
             ival_ = self.gds_validate_boolean(ival_, node, 'force')
             self.force = ival_
-        elif nodeName_ == 'option':
-            obj_ = Option.factory()
-            obj_.build(child_)
-            self.set_option(obj_)
-        elif nodeName_ == 'fix_layout':
-            sval_ = child_.text
-            if sval_ in ('true', '1'):
-                ival_ = True
-            elif sval_ in ('false', '0'):
-                ival_ = False
-            else:
-                raise_parse_error(child_, 'requires boolean')
-            ival_ = self.gds_validate_boolean(ival_, node, 'fix_layout')
-            self.fix_layout = ival_
-        elif nodeName_ == 'detach':
-            sval_ = child_.text
-            if sval_ in ('true', '1'):
-                ival_ = True
-            elif sval_ in ('false', '0'):
-                ival_ = False
-            else:
-                raise_parse_error(child_, 'requires boolean')
-            ival_ = self.gds_validate_boolean(ival_, node, 'detach')
-            self.detach = ival_
         elif nodeName_ == 'status':
             obj_ = Status.factory()
             obj_.build(child_)
@@ -19187,9 +18955,9 @@ class SpecialObjects(BaseResource):
 
 class API(BaseResource):
     member_data_items_ = {
-        'special_objects': MemberSpec_('special_objects', 'SpecialObjects', 0),
-        'product_info': MemberSpec_('product_info', 'ProductInfo', 0),
-        'summary': MemberSpec_('summary', 'ApiSummary', 0),
+        'special_objects': MemberSpec_('special_objects', 'special_objects', 0),
+        'product_info': MemberSpec_('product_info', 'product_info', 0),
+        'summary': MemberSpec_('summary', 'summary', 0),
         }
     subclass = None
     superclass = BaseResource
@@ -19295,9 +19063,9 @@ class API(BaseResource):
 
 class DetailedLink(Link):
     member_data_items_ = {
-        'request': MemberSpec_('request', 'Request', 0),
-        'response': MemberSpec_('response', 'Response', 0),
-        'linkCapabilities': MemberSpec_('linkCapabilities', 'LinkCapabilities', 0),
+        'request': MemberSpec_('request', 'request', 0),
+        'response': MemberSpec_('response', 'response', 0),
+        'linkCapabilities': MemberSpec_('linkCapabilities', 'linkCapabilities', 0),
         }
     subclass = None
     superclass = Link
@@ -19775,7 +19543,6 @@ ClassesMapping = {
 	 'brick_states':GlusterStates,
 	 'file':PayloadFile,
 	 'data_center':DataCenter,
-	 'lunStorage':Storage,
 	 'host_states':HostStates,
 	 'linkCapabilities':LinkCapabilities,
 	 'storage_manager':StorageManager,
