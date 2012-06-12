@@ -317,9 +317,6 @@ class SdkUtil(APIUtil):
         except Exception:
             pass
 
-        if not validator.compareActionLink(entity.get_actions(), action, self.logger):
-            return False
-
         try:
             act =getattr(entity, action)(act)
         except RequestError as e:
