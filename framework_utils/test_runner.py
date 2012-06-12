@@ -119,7 +119,7 @@ class TestRunner(object):
         # replace settings params (single values)
         testParametersPlaceHolders = re.findall(r'{\w+}',parameters)
         for placeHolder in testParametersPlaceHolders:
-            if not re.match(r'%s' %(placeHolder),runTest):
+            if not re.match(r'%s' %(placeHolder), runTest):
                 try:
                     placeHolderVal = testConfSection[placeHolder.strip("{}")]
                 except KeyError:
@@ -128,7 +128,7 @@ class TestRunner(object):
 
                 if not isinstance(placeHolderVal,list):
                     parameters=parameters.replace(placeHolder,placeHolderVal)
-
+        
         # replace settings params (list values)
         testParametersArrPlaceHolders = re.findall(r'{\w+\[\d+\]}',parameters)
         for placeHolder in testParametersArrPlaceHolders:
@@ -422,6 +422,7 @@ class TestRunner(object):
 
     def _run_test_case(self, i, testCallable, testCase, testParametersStrOrg, valsToIterate, loopParamVals, modPath, funcName, testGroup):
         self.logger.debug("test_type: %s modPath: %s, funcName: %s", testCase['test_type'], modPath, funcName)
+        
         try:
             exec("from " + modPath + " import " + funcName)
         except Exception:
@@ -543,7 +544,7 @@ class TestRunner(object):
         reportStats['test_type'] = testCase['test_type']
         reportStats['status'] = "Pass" if testStatus else "Fail"
         self.lastTestStatus = testStatus
-
+       
         # set node name for test case parent
         if testGroup:
             reportStats['module_name'] = testGroup.capitalize()
@@ -865,6 +866,12 @@ class TestSuiteRunner:
                 test_cases = testRunner.load(testFilePath)
                 testRunner.run_test(test_cases)
 
+            elif testName.endswith('py'):
+                from framework_utils.python_runner import PythonRunner
+                testRunner = PythonRunner(groups, self.config, self.logger, testName,
+                            results_reporters, config_section, self.autoDevices)
+                testRunner.run_test()
+                
             elif testName.endswith('xml'):
                 if opts['in_parallel']:
                     testInd = 1
