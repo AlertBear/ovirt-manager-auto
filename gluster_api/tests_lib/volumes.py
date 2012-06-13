@@ -17,10 +17,14 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
+import re
+import time
+import threading
+import Queue
 from core_api.apis_utils import getDS
 from rhevm_api.utils.test_utils import get_api, split
-import re
 from core_api.validator import compareCollectionSize
+from core_api.apis_exceptions import EntityNotFound
 
 ELEMENT = 'gluster_volume'
 COLLECTION = 'glustervolumes'
@@ -198,7 +202,7 @@ def searchForClusterVolumes(positive, cluster, query_key, query_val, key_name):
 
     for clVol in clVolumes:
         volProperty = getattr(clVol, key_name)
-        if re.match(r'(.*)\*$',query_val):
+        if re.match(r'(.*)\*$', query_val):
             if re.match(r'^' + query_val, volProperty):
                 expected_count = expected_count + 1
         else:
@@ -215,19 +219,20 @@ def searchForClusterVolumes(positive, cluster, query_key, query_val, key_name):
 
 def removeClusterVolumesAsynch(positive, cluster, volume, queue):
     '''
-    Description: Remove cluster volume, using threading for removing of multiple objects
+    Description: Remove cluster volume, using threading
+                 for removing of multiple objects
     Parameters:
        * cluster -  name of the cluster
        * volumes - name of volume that should be removed
        * queue - queue of threads
     Return: status (True if volume was removed properly, False otherwise)
     '''
-    
+
     vol = None
     try:
         clObj = clUtil.find(cluster)
         clVolumes = util.getElemFromLink(clObj, get_href=True)
-        vol  = util.find(volume, collection=clVolumes)
+        vol = util.find(volume, collection=clVolumes)
     except EntityNotFound:
         queue.put(False)
         return False
@@ -236,7 +241,7 @@ def removeClusterVolumesAsynch(positive, cluster, volume, queue):
     time.sleep(30)
 
     queue.put(status)
-    
+
 
 def removeClusterVolumes(positive, cluster, volumes):
     '''
@@ -244,7 +249,8 @@ def removeClusterVolumes(positive, cluster, volumes):
      Parameters:
         * cluster -  name of the cluster
         * volumes - name of volumes that should be removed separated by comma
-     Return: status (True if all volumes were removed properly, False otherwise)
+     Return status:
+        True if all volumes were removed properly, False otherwise
      '''
 
     volumeList = split(volumes)
@@ -253,7 +259,8 @@ def removeClusterVolumes(positive, cluster, volumes):
     threadQueue = Queue.Queue()
     for vol in volumeList:
         thread = threading.Thread(target=removeClusterVolumesAsynch,
-            name="Remove Volume " + vol, args=(positive, cluster, vol, threadQueue))
+                                  name="Remove Volume %s" % vol,
+                                  args=(positive, cluster, vol, threadQueue))
         thread.start()
         thread.join()
 
@@ -295,7 +302,7 @@ def startVolume(positive, cluster, volume):
     Parameters:
        * cluster - name of cluster
        * volume - name of volume
-      
+
     Return: status (True if volume was started properly, False otherwise)
     '''
 
@@ -356,7 +363,7 @@ def setVolumeOption(positive, cluster, volume, opt_name, opt_value):
     option = Option(name=opt_name, value=opt_value)
     return runVolAction(positive, cluster, volume, 'setOption', None,
                                                         option=option)
-                                                        
+
 
 def resetVolumeOption(positive, cluster, volume, opt_name):
     '''
@@ -391,9 +398,42 @@ def addBrickToVolume(positive, cluster, volume, bricks):
     '''
 
     vol = getClusterVolume(cluster, volume)
-    volBricksColl = util.getElemFromLink(vol, link_name='bricks', get_href=True)
+    volBricksColl = util.getElemFromLink(vol, link_name='bricks',
+                                         get_href=True)
     volBricks = _prepareBricks(bricks)
-   
-    volBricks, status = brickUtil.create(volBricks, positive, collection=volBricksColl)
+
+    volBricks, status = brickUtil.create(volBricks, positive,
+                                         collection=volBricksColl)
 
     return status
+
+
+def checkVolumeParams(positive, cluster, volume, **kwargs):
+    '''
+    Description: Add brick to volume
+    Author: imeerovi
+    Parameters:
+    * volume - volume name
+    * key=value
+    Returns: True if actual value is equal to value of key
+            False in case that values are not equal
+    '''
+    vol = getClusterVolume(cluster, volume)
+
+    ERROR = "%s of %s has wrong value, expected: %s, actual: %s."
+    status = True
+
+    try:
+        # Check bricks if requested:
+        if 'access_control_list' in kwargs:
+            expectedValue = kwargs.pop('access_control_list')
+            actualValue = vol.get_access_control_list().get_ip()
+            if expectedValue != actualValue:
+                status = False
+                util.logger.error(ERROR % ("ACL parameter",
+                          vol.get_name(), expectedValue, actualValue))
+
+    except AttributeError as e:
+        util.logger.error("checkVolumeParams: %s", str(e))
+        return not positive
+    return status == positive

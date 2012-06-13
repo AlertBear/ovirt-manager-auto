@@ -1044,3 +1044,46 @@ def resetMapperEntityNamesToIpAddress(entity='.+', entityName='.+', expTime=None
         expTime = oldExpTime
     lookingForIpAdressByEntityName.func_defaults = (ipVar, nameVar, expTime, cache)
     return True
+
+
+def removeFileOnHost(positive, ip, filename, user='root',
+                     password='qum5net', osType='linux'):
+    '''
+    Description: remov file on remote host
+    Author: imeerovi
+    Parameters:
+    * ip - name/ip of host
+    * user - username
+    * password - password
+    * filename - file to erase
+    * osType - type os OS on remote machine (linux, windows) [linux]
+    Return: True remove operation sucseeded
+            False in other case.
+    '''
+    machine = Machine(ip, user, password).util(osType)
+    if machine == None:
+        return False
+    return machine.removeFile(filename)
+
+
+def removeDirOnHost(positive, ip, dirname, user='root',
+                     password='qum5net', osType='linux'):
+    """
+    Description: Removes file on remote machine
+    Author: imeerovi
+    Parameters:
+     * ip - ip of remote machine
+     * user - username
+     * password - password
+     * direname - name of directory that will be removed
+     * osType - type os OS on remote machine (linux, windows) [linux]
+     Return: True remove operation sucseeded
+            False in other case.
+    """
+    machine = Machine(ip, user, password).util(osType)
+    if machine == None:
+        return False
+    if osType == 'linux':
+        return machine.removeFile(dirname)
+    elif osType == 'windows':
+        return machine.removeDir(dirname)

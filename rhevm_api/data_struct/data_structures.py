@@ -5501,7 +5501,7 @@ class Cluster(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, cpu=None, data_center=None, memory_policy=None, scheduling_policy=None, version=None, supported_versions=None, error_handling=None):
+    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, cpu=None, data_center=None, memory_policy=None, scheduling_policy=None, version=None, supported_versions=None, error_handling=None, virt_service=None, gluster_service=None):
         super(Cluster, self).__init__(href, id, name, description, actions, creation_status, link, )
         self.cpu = cpu
         self.data_center = data_center
@@ -5510,6 +5510,8 @@ class Cluster(BaseResource):
         self.version = version
         self.supported_versions = supported_versions
         self.error_handling = error_handling
+        self.virt_service = virt_service
+        self.gluster_service = gluster_service
     def factory(*args_, **kwargs_):
         if Cluster.subclass:
             return Cluster.subclass(*args_, **kwargs_)
@@ -5530,6 +5532,10 @@ class Cluster(BaseResource):
     def set_supported_versions(self, supported_versions): self.supported_versions = supported_versions
     def get_error_handling(self): return self.error_handling
     def set_error_handling(self, error_handling): self.error_handling = error_handling
+    def get_virt_service(self): return self.virt_service
+    def set_virt_service(self, virt_service): self.virt_service = virt_service
+    def get_gluster_service(self): return self.gluster_service
+    def set_gluster_service(self, gluster_service): self.gluster_service = gluster_service
     def export(self, outfile, level, namespace_='', name_='Cluster', namespacedef_=''):
         showIndent(outfile, level)
         outfile.write('<%s%s%s' % (namespace_, name_, namespacedef_ and ' ' + namespacedef_ or '', ))
@@ -5560,6 +5566,12 @@ class Cluster(BaseResource):
             self.supported_versions.export(outfile, level, namespace_, name_='supported_versions')
         if self.error_handling is not None:
             self.error_handling.export(outfile, level, namespace_, name_='error_handling')
+        if self.virt_service is not None:
+            showIndent(outfile, level)
+            outfile.write('<%svirt_service>%s</%svirt_service>\n' % (namespace_, self.gds_format_boolean(self.gds_str_lower(str(self.virt_service)), input_name='virt_service'), namespace_))
+        if self.gluster_service is not None:
+            showIndent(outfile, level)
+            outfile.write('<%sgluster_service>%s</%sgluster_service>\n' % (namespace_, self.gds_format_boolean(self.gds_str_lower(str(self.gluster_service)), input_name='gluster_service'), namespace_))
     def hasContent_(self):
         if (
             self.cpu is not None or
@@ -5569,6 +5581,8 @@ class Cluster(BaseResource):
             self.version is not None or
             self.supported_versions is not None or
             self.error_handling is not None or
+            self.virt_service is not None or
+            self.gluster_service is not None or
             super(Cluster, self).hasContent_()
             ):
             return True
@@ -5625,6 +5639,12 @@ class Cluster(BaseResource):
             self.error_handling.exportLiteral(outfile, level, name_='error_handling')
             showIndent(outfile, level)
             outfile.write('),\n')
+        if self.virt_service is not None:
+            showIndent(outfile, level)
+            outfile.write('virt_service=%s,\n' % self.virt_service)
+        if self.gluster_service is not None:
+            showIndent(outfile, level)
+            outfile.write('gluster_service=%s,\n' % self.gluster_service)
     def build(self, node):
         self.buildAttributes(node, node.attrib, [])
         for child in node:
@@ -5662,6 +5682,26 @@ class Cluster(BaseResource):
             obj_ = ErrorHandling.factory()
             obj_.build(child_)
             self.set_error_handling(obj_)
+        elif nodeName_ == 'virt_service':
+            sval_ = child_.text
+            if sval_ in ('true', '1'):
+                ival_ = True
+            elif sval_ in ('false', '0'):
+                ival_ = False
+            else:
+                raise_parse_error(child_, 'requires boolean')
+            ival_ = self.gds_validate_boolean(ival_, node, 'virt_service')
+            self.virt_service = ival_
+        elif nodeName_ == 'gluster_service':
+            sval_ = child_.text
+            if sval_ in ('true', '1'):
+                ival_ = True
+            elif sval_ in ('false', '0'):
+                ival_ = False
+            else:
+                raise_parse_error(child_, 'requires boolean')
+            ival_ = self.gds_validate_boolean(ival_, node, 'gluster_service')
+            self.gluster_service = ival_
         super(Cluster, self).buildChildren(child_, node, nodeName_, True)
 # end class Cluster
 
@@ -13954,8 +13994,7 @@ class Disk(BaseDevice):
         'propagate_errors': MemberSpec_('propagate_errors', 'xs:boolean', 0),
         'statistics': MemberSpec_('statistics', 'Statistics', 0),
         'active': MemberSpec_('active', 'xs:boolean', 0),
-        'quota': MemberSpec_('quota', 'Quota', 0),
-        'lunStorage': MemberSpec_('lunStorage', 'Storage', 0),
+        'quota': MemberSpec_('quota', 'quota', 0),
         }
     subclass = None
     superclass = BaseDevice
@@ -18571,10 +18610,8 @@ class Action(BaseResource):
         'option': MemberSpec_('option', 'Option', 0),
         'fix_layout': MemberSpec_('fix_layout', 'xs:boolean', 0),
         'detach': MemberSpec_('detach', 'xs:boolean', 0),
-        'status': MemberSpec_('status', 'Status', 0),
-        'fault': MemberSpec_('fault', 'Fault', 0),
-        'iscsi_target': MemberSpec_('iscsi_target', 'xs:string', 1),
-        'power_management': MemberSpec_('power_management', 'PowerManagement', 0),
+        'status': MemberSpec_('status', 'status', 0),
+        'fault': MemberSpec_('fault', 'fault', 0),
         }
     subclass = None
     superclass = BaseResource

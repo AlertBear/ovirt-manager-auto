@@ -445,8 +445,9 @@ def attachHostToCluster(positive, host, cluster):
 
 
 def checkClusterParams(positive, cluster, thrhld_low=None, thrhld_high=None,
-                       duration=None, scheduling_policy=None, mem_ovrcmt_prc=None,
-                       mem_trnspt_hp=None):
+                       duration=None, scheduling_policy=None,
+                       mem_ovrcmt_prc=None, mem_trnspt_hp=None,
+                       gluster_support=None, virt_support=None):
 
     cl = util.find(cluster)
 
@@ -458,17 +459,20 @@ def checkClusterParams(positive, cluster, thrhld_low=None, thrhld_high=None,
         if max(thrhld_low, thrhld_high, duration, scheduling_policy) \
                 is not None:
             clspth = cl.get_scheduling_policy().get_thresholds()
-            if (None is not thrhld_low) and (clspth.get_low() != int(thrhld_low)):
+            if (None is not thrhld_low) and \
+               (clspth.get_low() != int(thrhld_low)):
                 status = False
                 util.logger.error(ERROR % ("Thresholds low",
                     cl.get_name(), thrhld_low, clspth.get_low()))
 
-            if (None is not thrhld_low) and  (clspth.get_high() != int(thrhld_high)):
+            if (None is not thrhld_low) and \
+                (clspth.get_high() != int(thrhld_high)):
                 status = False
                 util.logger.error(ERROR % ("Thresholds high",
                     cl.get_name(), thrhld_high, clspth.get_high()))
 
-            if (None is not duration) and (clspth.get_duration() !=  int(duration)):
+            if (None is not duration) and \
+                (clspth.get_duration() != int(duration)):
                 status = False
                 util.logger.error(ERROR % ("Duration",
                     cl.get_name(), duration, clspth.get_duration()))
@@ -478,16 +482,34 @@ def checkClusterParams(positive, cluster, thrhld_low=None, thrhld_high=None,
             (cl.get_scheduling_policy().get_policy() != scheduling_policy):
                 status = False
                 util.logger.error(ERROR % ("Scheduling policy",
-                    cl.get_name(), scheduling_policy, cl.get_scheduling_policy().get_policy()))
+                    cl.get_name(), scheduling_policy,
+                    cl.get_scheduling_policy().get_policy()))
 
         # Check the memory policy if requested:
         if (None is not mem_ovrcmt_prc) \
-                    and (cl.get_memory_policy().get_overcommit().get_percent() \
+                    and (cl.get_memory_policy().get_overcommit().get_percent()\
                     != int(mem_ovrcmt_prc)):
             status = False
             util.logger.error(ERROR % ("Memory overcommit percent",
                 cl.get_name(), mem_ovrcmt_prc,
                 cl.get_memory_policy().get_overcommit().get_percent()))
+
+        # Check gluster support policy if requested:
+        if (None is not gluster_support)\
+                    and (cl.get_gluster_service() != gluster_support):
+            status = False
+            util.logger.error(ERROR % ("Gluster support",
+                cl.get_name(), gluster_support,
+                cl.get_gluster_service()))
+
+        # Check virt support policy if requested:
+        if (None is not virt_support)\
+                    and (cl.get_virt_service() != virt_support):
+            status = False
+            util.logger.error(ERROR % ("Virt support",
+                cl.get_name(), virt_support,
+                cl.get_virt_service()))
+
     except AttributeError as e:
         util.logger.error("checkClusterParams: %s" % str(e))
         return not positive
