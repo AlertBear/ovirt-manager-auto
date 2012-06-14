@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
-from framework_utils.test_runner import TestSuiteRunner
-from framework_utils.settings import populateOptsFromArgv, CmdLineError
+from test_handler.test_suite_runner import TestSuiteRunner
+from test_handler.settings import populateOptsFromArgv, CmdLineError
 from sys import argv, exit, stderr
 import traceback
 from socket import error as SocketError

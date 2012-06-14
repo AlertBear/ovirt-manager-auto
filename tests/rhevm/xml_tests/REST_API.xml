@@ -1,0 +1,3991 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- vim: set ts=3 sw=3 expandtab: -->
+<?xml-stylesheet type="text/xsl" href="table.xslt"?>
+
+<input>
+<test_case>
+   <test_name>Create default data center</test_name>
+   <test_type></test_type>
+   <test_action>addDataCenter</test_action>
+   <parameters>name='DefaultRest', storage_type='e{storage_type_nfs}', version='{compatibility_version}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Create cluster with default parameters</test_name>
+   <test_action>addCluster</test_action>
+   <parameters>name='RestCluster1', cpu='{cpu_name}', data_center='DefaultRest', version='{compatibility_version}', on_error='migrate'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create host</test_name>
+   <test_action>addHost</test_action>
+   <parameters>name='{vds[0]}', root_password='{vds_password[0]}', cluster='RestCluster1', wait=False, vdcPort='{port}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create second host for migration tests</test_name>
+   <test_action>addHost</test_action>
+   <parameters>name='{vds[1]}', root_password='{vds_password[1]}', cluster='RestCluster1', wait=False</parameters>
+   <positive>TRUE</positive>
+   <run>if(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Check events - host added (if using only one host)</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='RestCluster1 type=809', query='Hosts.name={vds[0]} and type=42', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>if(not 1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Check events - host added (if using two hosts)</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='RestCluster1 type=809', query='Hosts.name={vds[1]} and type=42', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>if(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Check whether 'host type' property is present</test_name>
+   <test_type>rest</test_type>
+   <test_action>xpathHosts</test_action>
+   <parameters>'hosts', xpath='count(/hosts/host[name="{vds[0]}"]/type/text())'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check whether member of /domains collection returns correct domains ID</test_name>
+   <test_type>rest</test_type>
+   <test_action>checkDomainsId</test_action>
+   <parameters/>
+   <positive>NONE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check whether there is a 'custom_properties/custom_property' tag is in 3.1 capabilities</test_name>
+   <test_type>rest</test_type>
+   <test_action>xpathVms</test_action>
+   <parameters>'capabilities', xpath='count(/capabilities/version[@major=3 and @minor=1]/custom_properties/custom_property)'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check whether all 'custom_properties/custom_property' have regexp and name nodes</test_name>
+   <test_type>rest</test_type>
+   <test_action>xpathVms</test_action>
+   <parameters>'capabilities', xpath='count(/capabilities/version/custom_properties/custom_property[not(@regexp) or not(@name)])', rslt_eval='0==result'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- ////////////////////////// DATACENTERS /////////////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<test_case>
+   <test_name>Create NFS data center</test_name>
+   <test_action>addDataCenter</test_action>
+   <parameters>name='RestDataCenter1', storage_type='e{storage_type_nfs}', version='3.0'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create temporary iSCSI data center</test_name>
+   <test_action>addDataCenter</test_action>
+   <parameters>name='RestDataCenter2', storage_type='e{storage_type_iscsi}', version='{compatibility_version}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create data center with spaces in name</test_name>
+   <test_action>addDataCenter</test_action>
+   <parameters>name='No Data Center', storage_type='e{storage_type_iscsi}', version='{compatibility_version}'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create data center with existing name</test_name>
+   <test_action>addDataCenter</test_action>
+   <parameters>name='RestDataCenter2', storage_type='e{storage_type_iscsi}', version='{compatibility_version}'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update data center name and description</test_name>
+   <test_action>updateDataCenter</test_action>
+   <parameters>datacenter='RestDataCenter1', name='RestDataCenterUpdated'', description='Data Center Description'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update data center type</test_name>
+   <test_action>updateDataCenter</test_action>
+   <parameters>datacenter='RestDataCenter2', storage_type='e{storage_type_nfs}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove temporary data center</test_name>
+   <test_action>removeDataCenter</test_action>
+   <parameters>datacenter='RestDataCenter2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create iSCSI data center with name of removed one</test_name>
+   <test_action>addDataCenter</test_action>
+   <parameters>name='RestDataCenter2', storage_type='e{storage_type_iscsi}', version='{compatibility_version}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Search for data centers</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForDataCenter</test_action>
+   <parameters>query_key='type', query_val='e{storage_type_nfs}', key_name='storage_type'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - data center created</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='RestDataCenter1 type=950', query='type=950', expected_count=2</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - data center updated</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='RestDataCenter1 type=950', query='type=952', expected_count=2</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - data center removed</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='RestDataCenter1 type=950', query='type=954', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- ///////////////////////////// CLUSTERS /////////////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<test_case>
+   <test_name>Create cluster with name of existing one</test_name>
+   <test_action>addCluster</test_action>
+   <parameters>name='RestCluster1', cpu='{cpu_name}', data_center='DefaultRest'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create cluster with specific version</test_name>
+   <test_action>addCluster</test_action>
+   <parameters>name='RestCluster4', cpu='{cpu_name}', version='{compatibility_version}', data_center='DefaultRest'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create temporary cluster with specific data center</test_name>
+   <test_action>addCluster</test_action>
+   <parameters>name='RestCluster3', cpu='{cpu_name}', data_center='RestDataCenterUpdated', on_error='do_not_migrate'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Search for clusters</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForCluster</test_action>
+   <parameters>query_key='name', query_val='RestCluster*', key_name='name'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update cluster</test_name>
+   <test_action>updateCluster</test_action>
+   <parameters>cluster='RestCluster3', name='RestCluster3Upd', cpu='{cpu_name}', description='Cluster Description', on_error='migrate_highly_available'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update cluster data center</test_name>
+   <test_action>updateCluster</test_action>
+   <parameters>cluster='RestCluster3Upd', data_center='DefaultRest''</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove temporary cluster</test_name>
+   <test_action>removeCluster</test_action>
+   <parameters>cluster='RestCluster3Upd'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create cluster for iSCSI storage</test_name>
+   <test_action>addCluster</test_action>
+   <parameters>name='RestCluster3', cpu='{cpu_name}', data_center='RestDataCenter2', version='{compatibility_version}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - cluster created</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='RestCluster1 type=809', query='type=809', expected_count=3</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - cluster updated</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='RestCluster1 type=809', query='type=811', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - cluster removed</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='RestCluster1 type=809', query='type=813', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create cluster with specific memory overcommit</test_name>
+   <test_action>addCluster</test_action>
+   <parameters>name='RestCluster5', cpu='{cpu_name}', data_center='DefaultRest', version='{compatibility_version}', mem_ovrcmt_prc='75'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <test_description>mem_overcommit</test_description>
+</test_case>
+<test_case>
+   <test_name>Create cluster with scheduling policy power_saving</test_name>
+   <test_action>addCluster</test_action>
+   <parameters>name='RestCluster6', cpu='{cpu_name}', data_center='DefaultRest', version='{compatibility_version}', scheduling_policy='e{scheduling_policy_power_saving}', thrhld_low='20', thrhld_high='60', duration='180'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <test_description>sched_pol</test_description>
+</test_case>
+<test_case>
+   <test_name>Create cluster with scheduling policy evenly_distributed</test_name>
+   <test_action>addCluster</test_action>
+   <parameters>name='RestCluster7', cpu='{cpu_name}', data_center='DefaultRest', version='{compatibility_version}', scheduling_policy='e{scheduling_policy_evenly_distributed}', thrhld_high='60', duration='180'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <test_description>sched_pol</test_description>
+</test_case>
+<test_case>
+   <test_name>Check cluster memory overcommit</test_name>
+   <test_type>rest</test_type>
+   <test_action>checkClusterParams</test_action>
+   <parameters>cluster='RestCluster5', mem_ovrcmt_prc='75'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <test_description>mem_overcommit</test_description>
+</test_case>
+<test_case>
+   <test_name>Check cluster with scheduling policy power_saving</test_name>
+   <test_type>rest</test_type>
+   <test_action>checkClusterParams</test_action>
+   <parameters>cluster='RestCluster6', scheduling_policy='e{scheduling_policy_power_saving}', thrhld_low='20', thrhld_high='60', duration='180'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <test_description>sched_pol</test_description>
+</test_case>
+<test_case>
+   <test_name>Check cluster with scheduling policy evenly_distributed</test_name>
+   <test_type>rest</test_type>
+   <test_action>checkClusterParams</test_action>
+   <parameters>cluster='RestCluster7', scheduling_policy='e{scheduling_policy_evenly_distributed}', thrhld_high='60', duration='180'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <test_description>sched_pol</test_description>
+</test_case>
+<test_case>
+   <test_name>Update cluster with specific memory overcommit</test_name>
+   <test_action>updateCluster</test_action>
+   <parameters>cluster='RestCluster5', cpu='{cpu_name}', data_center='DefaultRest', mem_ovrcmt_prc='76'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <test_description>mem_overcommit</test_description>
+</test_case>
+<test_case>
+   <test_name>Update cluster with specific thresholds relevant to power_saving</test_name>
+   <test_action>updateCluster</test_action>
+   <parameters>cluster='RestCluster6', cpu='{cpu_name}', data_center='DefaultRest', thrhld_low='21', thrhld_high='61', duration='240', scheduling_policy='e{scheduling_policy_power_saving}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <test_description>sched_pol</test_description>
+</test_case>
+<test_case>
+   <test_name>Update cluster with specific thresholds relevant to evenly_ditributed</test_name>
+   <test_action>updateCluster</test_action>
+   <parameters>cluster='RestCluster7', cpu='{cpu_name}', data_center='DefaultRest', thrhld_high='61', duration='240', scheduling_policy='e{scheduling_policy_evenly_distributed}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <test_description>sched_pol</test_description>
+</test_case>
+<test_case>
+   <test_name>Check cluster memory overcommit again after cluster update</test_name>
+   <test_type>rest</test_type>
+   <test_action>checkClusterParams</test_action>
+   <parameters>cluster='RestCluster5', mem_ovrcmt_prc='76'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <test_description>mem_overcommit</test_description>
+</test_case>
+<test_case>
+   <test_name>Check cluster scheduling policy on cluster with power_saving policy</test_name>
+   <test_type>rest</test_type>
+   <test_action>checkClusterParams</test_action>
+   <parameters>cluster='RestCluster6', thrhld_low='21', thrhld_high='61', duration='240', scheduling_policy='e{scheduling_policy_power_saving}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <test_description>sched_pol</test_description>
+</test_case>
+<test_case>
+   <test_name>Check cluster scheduling policy on cluster with evenly_distributed policy</test_name>
+   <test_type>rest</test_type>
+   <test_action>checkClusterParams</test_action>
+   <parameters>cluster='RestCluster7', thrhld_high='61', duration='240', scheduling_policy='e{scheduling_policy_evenly_distributed}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <test_description>sched_pol</test_description>
+</test_case>
+<test_case>
+   <test_name>Update cluster with specific scheduling policy</test_name>
+   <test_action>updateCluster</test_action>
+   <parameters>cluster='RestCluster7', scheduling_policy='e{scheduling_policy_power_saving}', thrhld_low='20'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <test_description>sched_pol</test_description>
+</test_case>
+<test_case>
+   <test_name>Check whether cluster scheduling policy changed</test_name>
+   <test_type>rest</test_type>
+   <test_action>checkClusterParams</test_action>
+   <parameters>cluster='RestCluster7', thrhld_low='20', thrhld_high='61', duration='240', scheduling_policy='e{scheduling_policy_power_saving}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <test_description>sched_pol</test_description>
+</test_case>
+<test_case>
+   <test_name>Update cluster with threshold/low &gt; threshold/high</test_name>
+   <test_action>updateCluster</test_action>
+   <parameters>cluster='RestCluster7', scheduling_policy='e{scheduling_policy_power_saving}', thrhld_low='60', thrhld_high='20'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+   <test_description>sched_pol</test_description>
+</test_case>
+<test_case>
+   <test_name>Check for 3.1 cluster capabilities - if it contains 'transparent_hugepages' tag</test_name>
+   <test_type>rest</test_type>
+   <test_action>xpathClusters</test_action>
+   <parameters>'capabilities', xpath='count(/capabilities/version[@major=3 and @minor=1]/features/transparent_hugepages)'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check whether 'Everyone' group exists</test_name>
+   <test_action>groupExists</test_action>
+   <parameters>group_name='Everyone'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Try to delete 'Everyone' group</test_name>
+   <test_action>deleteGroup</test_action>
+   <parameters>group_name='Everyone'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- ////////////////////////// HOSTS ///////////////////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<test_case>
+   <test_name>Check host power management tag whether pm is disabled on fist host</test_name>
+   <test_type>rest</test_type>
+   <test_action>xpathHosts</test_action>
+   <parameters>'hosts', xpath='count(/hosts/host[name="{vds[0]}"]/power_management/enabled[text()="false"])'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check host power management tag</test_name>
+   <test_type>rest</test_type>
+   <test_action>xpathHosts</test_action>
+   <parameters>'hosts', xpath='count(/hosts/host[name="{vds[0]}"]/power_management/options[not(node())])'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until single host is up</test_name>
+   <test_type>rest</test_type>
+   <test_action>waitForHostsStates</test_action>
+   <parameters>names='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(not 1&lt;len('[vds]'.split(',')))</run>
+   <vital>TRUE</vital>
+</test_case>
+<test_case>
+   <test_name>Wait until both hosts are up</test_name>
+   <test_type>rest</test_type>
+   <test_action>waitForHostsStates</test_action>
+   <parameters>names='{vds[0]}, {vds[1]}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(1&lt;len('[vds]'.split(',')))</run>
+   <vital>TRUE</vital>
+</test_case>
+<test_case>
+   <test_name>Activate active host</test_name>
+   <test_type>rest</test_type>
+   <test_action>activateHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update host name</test_name>
+   <test_action>updateHost</test_action>
+   <parameters>host='{vds[0]}', name='myresttest'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update host name back</test_name>
+   <test_action>updateHost</test_action>
+   <parameters>host='myresttest', name='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add power management</test_name>
+   <test_action>updateHost</test_action>
+   <parameters>host='{vds[0]}', pm='true', pm_type='bladecenter', pm_address='10.35.35.35', pm_username='user', pm_password='password', pm_slot='1', pm_secure='false'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <test_description>pwr_mngmt</test_description>
+</test_case>
+<test_case>
+   <test_name>Update power management type</test_name>
+   <test_action>updateHost</test_action>
+   <parameters>host='{vds[0]}', pm='true', pm_type='rsa'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <test_description>pwr_mngmt</test_description>
+</test_case>
+<test_case>
+   <test_name>Update power management to invalid type</test_name>
+   <test_action>updateHost</test_action>
+   <parameters>host='{vds[0]}', pm='true', pm_type='to_type'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+   <test_description>pwr_mngmt</test_description>
+</test_case>
+<test_case>
+   <test_name>Remove power management from host</test_name>
+   <test_action>updateHost</test_action>
+   <parameters>host='{vds[0]}', pm='false', pm_type='rsa'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <test_description>pwr_mngmt</test_description>
+</test_case>
+<test_case>
+   <test_name>Update IP of active host</test_name>
+   <test_action>updateHost</test_action>
+   <parameters>host='{vds[0]}', address='10.1.1.1'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Set active host to maintenance for reinstallation</test_name>
+   <test_type>rest</test_type>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Reinstall host</test_name>
+   <test_type>rest</test_type>
+   <test_action>installHost</test_action>
+   <parameters>host='{vds[0]}', root_password='{vds_password[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <vital>TRUE</vital>
+</test_case>
+<test_case>
+   <test_name>Set host to maintenance after reinstallation</test_name>
+   <test_type>rest</test_type>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Activate inactive host</test_name>
+   <test_type>rest</test_type>
+   <test_action>activateHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Reinstall active host</test_name>
+   <test_type>rest</test_type>
+   <test_action>installHost</test_action>
+   <parameters>host='{vds[0]}', root_password='{vds_password[0]}'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create host with wrong IP address</test_name>
+   <test_action>addHost</test_action>
+   <parameters>name='{vds[0]}', address='10.1.1.256', root_password='{vds_password[0]}'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create host with empty root password</test_name>
+   <test_action>addHost</test_action>
+   <parameters>name='nohost', address='10.2.2.2'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove active host</test_name>
+   <test_action>removeHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Search for host</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForHost</test_action>
+   <parameters>query_key='name', query_val='{vds[0]}', key_name='name'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - host switched to maintenance</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=600', expected_count=2</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - host up</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=13', expected_count=3</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - count of 'host installing' is nonzero</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=509', expected_count=0</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - host installed</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=504', expected_count=2</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - host installing error</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='RestCluster1 type=809', query='type=511', expected_count=0</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - host state was set to up</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=13', expected_count=3</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - host removed</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=44', expected_count=0</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - host updated</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=43', expected_count=5</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- //////////////////////////// NETWORK ///////////////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<test_case>
+   <test_name>Create network with default parameters</test_name>
+   <test_type>rest</test_type>
+   <test_action>addNetwork</test_action>
+   <parameters>name='testrest1', data_center='DefaultRest'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create network with existing name</test_name>
+   <test_type>rest</test_type>
+   <test_action>addNetwork</test_action>
+   <parameters>name='testrest1', data_center='DefaultRest'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create network with static IP address</test_name>
+   <test_type>rest</test_type>
+   <test_action>addNetwork</test_action>
+   <parameters>name='testrest2', data_center='DefaultRest', address='1.1.1.10', netmask='255.255.0.0', gateway='10.10.10.10'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update network name and description</test_name>
+   <test_type>rest</test_type>
+   <test_action>updateNetwork</test_action>
+   <parameters>network='testrest2', name='testrest3', description='Test Desciption'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove network with updated name</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeNetwork</test_action>
+   <parameters>network='testrest3'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add network to cluster</test_name>
+   <test_type>rest</test_type>
+   <test_action>addNetworkToCluster</test_action>
+   <parameters>network='testrest1', cluster='RestCluster1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Attach second host NIC to network</test_name>
+   <test_type>rest</test_type>
+   <test_action>attachHostNic</test_action>
+   <parameters>host='{vds[0]}', nic='{host_nics[1]}', network='testrest1'</parameters>
+   <positive>TRUE</positive>
+   <run>if(1&lt;len('[host_nics]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Remove network from cluster</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeNetworkFromCluster</test_action>
+   <parameters>network='testrest1', cluster='RestCluster1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Detach second host NIC from network</test_name>
+   <test_type>rest</test_type>
+   <test_action>detachHostNic</test_action>
+   <parameters>host='{vds[0]}', nic='{host_nics[1]}', network='testrest1'</parameters>
+   <positive>TRUE</positive>
+   <run>if(1&lt;len('[host_nics]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Remove network</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeNetwork</test_action>
+   <parameters>network='testrest1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Save host network configuration</test_name>
+   <test_type>rest</test_type>
+   <test_action>commitNetConfig</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- /////////////////////// POWER MANAGEMENT ///////////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<test_case>
+   <test_name>Set host to maintenance before power management operations</test_name>
+   <test_type>rest</test_type>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add power management to host</test_name>
+   <test_action>updateHost</test_action>
+   <parameters>host='{vds[0]}', pm='true', pm_type='alom', pm_address='10.10.10.10', pm_username='qa', pm_password='111', pm_port='4444', pm_secure='true'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <test_description>pwr_mngmt</test_description>
+</test_case>
+<test_case>
+   <test_name>Disable power management</test_name>
+   <test_action>updateHost</test_action>
+   <parameters>host='{vds[0]}', pm='false', pm_type='alom', pm_address=' ', pm_username=' ', pm_password=' ', pm_port=' ', pm_secure='false'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <test_description>pwr_mngmt</test_description>
+</test_case>
+<test_case>
+   <test_name>Activate host after pm operations</test_name>
+   <test_type>rest</test_type>
+   <test_action>activateHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Retrieve host statistics</test_name>
+   <test_type>rest</test_type>
+   <test_action>checkHostStatistics</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check if host has 'transparent_hugepages/enabled' tag</test_name>
+   <test_type>rest</test_type>
+   <test_action>xpathHosts</test_action>
+   <parameters>'hosts', xpath='count(/hosts/host/transparent_hugepages/enabled)'</parameters>
+   <positive>TRUE</positive>
+   <run>if('{compatibility_version}'.startswith('3.'))</run>
+</test_case>
+<test_case>
+   <test_name>Check if host has 'ksm/enabled' tag</test_name>
+   <test_type>rest</test_type>
+   <test_action>xpathHosts</test_action>
+   <parameters>'hosts', xpath='count(/hosts/host/ksm/enabled)'</parameters>
+   <positive>TRUE</positive>
+   <run>if('{compatibility_version}'.startswith('3.'))</run>
+</test_case>
+<test_case>
+   <test_name>Check if host has 'iSCSI initiator' tag</test_name>
+   <test_type>rest</test_type>
+   <test_action>checkHostSubelementPresence</test_action>
+   <parameters>host='{vds[0]}', element_path='iscsi.initiator'</parameters>
+   <positive>TRUE</positive>
+   <run>if('{compatibility_version}'.startswith('3.'))</run>
+</test_case>
+<test_case>
+   <test_name>Check events - network added</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='RestCluster1 type=809', query='DefaultRest type=942', expected_count=2</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - host set to maintenance</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=600', expected_count=4</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- ////////////////////////// LOCAL STORAGE ///////////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<test_case>
+   <test_name>Set host to maintenance to use cluster with local storage</test_name>
+   <test_type>rest</test_type>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>if('{compatibility_version}'.startswith('3.'))</run>
+</test_case>
+<test_case>
+   <test_name>Create local storage data center</test_name>
+   <test_action>addDataCenter</test_action>
+   <parameters>name='RestDataCenter_LOCAL', storage_type='e{storage_type_local}', version='{compatibility_version}'</parameters>
+   <positive>TRUE</positive>
+   <run>if('{compatibility_version}'.startswith('3.'))</run>
+</test_case>
+<test_case>
+   <test_name>Create cluster for local storage</test_name>
+   <test_action>addCluster</test_action>
+   <parameters>name='RestCluster_LOCAL', cpu='{cpu_name}', data_center='RestDataCenter_LOCAL', version='{compatibility_version}'</parameters>
+   <positive>TRUE</positive>
+   <run>if('{compatibility_version}'.startswith('3.'))</run>
+</test_case>
+<test_case>
+   <test_name>Update host to use cluster with local storage</test_name>
+   <test_action>updateHost</test_action>
+   <parameters>host='{vds[0]}', cluster='RestCluster_LOCAL'</parameters>
+   <positive>TRUE</positive>
+   <run>if('{compatibility_version}'.startswith('3.'))</run>
+</test_case>
+<test_case>
+   <test_name>Activate host with local storage cluster</test_name>
+   <test_type>rest</test_type>
+   <test_action>activateHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>if('{compatibility_version}'.startswith('3.'))</run>
+</test_case>
+<test_case>
+   <test_name>Create local data storage domain</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='RestDataDomain_LOCAL', type='e{storage_dom_type_data}', storage_type='e{storage_type_local}', host='{vds[0]}', path='{local_domain_path}'</parameters>
+   <positive>TRUE</positive>
+   <run>if('{compatibility_version}'.startswith('3.'))</run>
+</test_case>
+<test_case>
+   <test_name>Remove cluster that is used by a host</test_name>
+   <test_action>removeCluster</test_action>
+   <parameters>cluster='RestCluster_LOCAL'</parameters>
+   <positive>FALSE</positive>
+   <run>if('{compatibility_version}'.startswith('3.'))</run>
+</test_case>
+<test_case>
+   <test_name>Remove datacenter with active storages</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeDataCenter</test_action>
+   <parameters>datacenter='RestDataCenter_LOCAL'</parameters>
+   <positive>FALSE</positive>
+   <run>if('{compatibility_version}'.startswith('3.'))</run>
+</test_case>
+<test_case>
+   <test_name>Create VM with default parameters in local storage</test_name>
+   <test_type></test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='restvm_LOCAL', description='Test VM LOCAL', cluster='RestCluster_LOCAL'</parameters>
+   <positive>TRUE</positive>
+   <run>if('{compatibility_version}'.startswith('3.'))</run>
+</test_case>
+<test_case>
+   <test_name>Add cow virtio data disk to VM on local storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='restvm_LOCAL', size=2147483648, storagedomain='RestDataDomain_LOCAL', type='e{disk_type_data}', format='e{format_cow}', interface='e{interface_virtio}'</parameters>
+   <positive>TRUE</positive>
+   <run>if('{compatibility_version}'.startswith('3.'))</run>
+</test_case>
+<test_case>
+   <test_name>Start VM that uses local storage</test_name>
+   <test_type>rest</test_type>
+   <test_action>startVm</test_action>
+   <parameters>vm='restvm_LOCAL'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Set host to maintenance with running VMs</test_name>
+   <test_type>rest</test_type>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait for SPM election complete - before suspending vm on local storages</test_name>
+   <test_type>rest</test_type>
+   <test_action>waitForSPM</test_action>
+   <parameters>datacenter='RestDataCenter_LOCAL', timeout=120, sleep=5</parameters>
+   <positive>NONE</positive>
+   <run>if(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Suspend VM that uses local storage</test_name>
+   <test_type>rest</test_type>
+   <test_action>suspendVm</test_action>
+   <parameters>vm='restvm_LOCAL'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Stop suspended VM that uses local storage</test_name>
+   <test_type>rest</test_type>
+   <test_action>stopVm</test_action>
+   <parameters>vm='restvm_LOCAL'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Start stopped VM that uses local storage</test_name>
+   <test_type>rest</test_type>
+   <test_action>startVm</test_action>
+   <parameters>vm='restvm_LOCAL'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Stop running VM that uses local storage</test_name>
+   <test_type>rest</test_type>
+   <test_action>stopVm</test_action>
+   <parameters>vm='restvm_LOCAL'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove VM that uses local storage</test_name>
+   <test_type></test_type>
+   <test_action>removeVm</test_action>
+   <parameters>vm='restvm_LOCAL'</parameters>
+   <positive>TRUE</positive>
+   <run>if('{compatibility_version}'.startswith('3.'))</run>
+</test_case>
+<test_case>
+   <test_name>Deactivate local storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>deactivateStorageDomain</test_action>
+   <parameters>datacenter='RestDataCenter_LOCAL', storagedomain='RestDataDomain_LOCAL'</parameters>
+   <positive>TRUE</positive>
+   <run>if('{compatibility_version}'.startswith('3.'))</run>
+</test_case>
+<test_case>
+   <test_name>Remove local data center</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeDataCenters</test_action>
+   <parameters>datacenters='RestDataCenter_LOCAL'</parameters>
+   <positive>TRUE</positive>
+   <run>if('{compatibility_version}'.startswith('3.'))</run>
+</test_case>
+<!-- /////////////////// CHANGE HOST CLUSTER BACK (ISCSI)////////////////// -->
+<test_case>
+   <test_name>Set host to maintenance to change cluster back to use iSCSI storage</test_name>
+   <test_type>rest</test_type>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update host cluster</test_name>
+   <test_action>updateHost</test_action>
+   <parameters>host='{vds[0]}', cluster='RestCluster3'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Activate host with new cluster</test_name>
+   <test_type>rest</test_type>
+   <test_action>activateHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove cluster with local storage</test_name>
+   <test_action>removeCluster</test_action>
+   <parameters>cluster='RestCluster_LOCAL'</parameters>
+   <positive>TRUE</positive>
+   <run>if('{compatibility_version}'.startswith('3.'))</run>
+</test_case>
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- ///////////////////////// ISCSI ////////////////////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<test_case>
+   <test_name>iSCSI discover</test_name>
+   <test_type>rest</test_type>
+   <test_action>iscsiDiscover</test_action>
+   <parameters>host='{vds[0]}', address='{lun_address}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>iSCSI login</test_name>
+   <test_type>rest</test_type>
+   <test_action>iscsiLogin</test_action>
+   <parameters>host='{vds[0]}', address='{lun_address}', target='{lun_target}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check storage/name in host collection</test_name>
+   <test_type>rest</test_type>
+   <test_action>xpathLinksHosts</test_action>
+   <parameters>entity='{vds[0]}', link_name='storage', xpath='count(/host_storage/storage/type[text()="iscsi"])'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain iSCSI</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='ISCSIDataDomainRest', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun}', lun_address='{lun_address}', lun_target='{lun_target}', lun_port=3260</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Attach iSCSI storage domain to data center</test_name>
+   <test_type>rest</test_type>
+   <test_action>attachStorageDomain</test_action>
+   <parameters>datacenter='RestDataCenter2', storagedomain='ISCSIDataDomainRest'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Deactivate iSCSI storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>deactivateStorageDomain</test_action>
+   <parameters>datacenter='RestDataCenter2', storagedomain='ISCSIDataDomainRest'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove iSCSI data center</test_name>
+   <test_action>removeDataCenter</test_action>
+   <parameters>datacenter='RestDataCenter2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove iSCSI storage domain</test_name>
+   <test_action>removeStorageDomain</test_action>
+   <parameters>storagedomain=''ISCSIDataDomainRest', host='{vds[0]}', format='true'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- ////////////////////// CHANGE HOST CLUSTER BACK (NFS) //////////////// -->
+<test_case>
+   <test_name>Set host to maintenance to update cluster back to use NFS storage</test_name>
+   <test_type>rest</test_type>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update host cluster back to use NFS storage</test_name>
+   <test_action>updateHost</test_action>
+   <parameters>host='{vds[0]}', cluster='RestCluster1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Activate host with cluster updated back to NFS storage</test_name>
+   <test_type>rest</test_type>
+   <test_action>activateHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- //////////////////////////// NFS STORAGE ///////////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<test_case>
+   <test_name>Create NFS data storage domain</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='DataDomainRest', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Attach NFS data storage domain to data center</test_name>
+   <test_type>rest</test_type>
+   <test_action>attachStorageDomain</test_action>
+   <parameters>datacenter='DefaultRest', storagedomain='DataDomainRest'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check whether there is files collection in data storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>xpathStoragedomains</test_action>
+   <parameters>'storagedomains', xpath='count(/storage_domains/storage_domain[name="DataDomainRest" and link[@rel="files"]])'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - data SD activated</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='DataDomainRest type=956', query='DataDomainRest type=966', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - data SD attached</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='DataDomainRest type=956', query='DataDomainRest type=962', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Detach active NFS storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>detachStorageDomain</test_action>
+   <parameters>datacenter='DefaultRest', storagedomain='DataDomainRest'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Activate active NFS storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>activateStorageDomain</test_action>
+   <parameters>datacenter='DefaultRest', storagedomain='DataDomainRest'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update storage domain name</test_name>
+   <test_action>updateStorageDomain</test_action>
+   <parameters>storagedomain='DataDomainRest', name='DataDomainRestUpd'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update NFS data storage domain type to export</test_name>
+   <test_action>updateStorageDomain</test_action>
+   <parameters>storagedomain='DataDomainRestUpd', type='e{storage_dom_type_export}'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update NFS data storage domain storage type to iSCSI</test_name>
+   <test_action>updateStorageDomain</test_action>
+   <parameters>storagedomain='DataDomainRestUpd', storage_type='e{storage_type_iscsi}'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - SD updated</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='DataDomainRest type=956', query='type=958', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- /////////////////////// ISO STORAGE ////////////////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<test_case>
+   <test_name>Create storage domain with spaces in name</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='ISO Domain', type='e{storage_dom_type_iso}', storage_type='e{storage_type_nfs}', address='{tests_iso_domain_address}', host='{vds[0]}', path='{tests_iso_domain_path}'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create ISO storage domain NFS</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='ISODomainRest', type='e{storage_dom_type_iso}', storage_type='e{storage_type_nfs}', address='{tests_iso_domain_address}', host='{vds[0]}', path='{tests_iso_domain_path}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Attach ISO storage domain to data center</test_name>
+   <test_type>rest</test_type>
+   <test_action>attachStorageDomain</test_action>
+   <parameters>datacenter='DefaultRest', storagedomain='ISODomainRest'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - ISO SD attached</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='ISODomainRest type=956', query='ISODomainRest type=962', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Activate ISO storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>activateStorageDomain</test_action>
+   <parameters>datacenter='DefaultRest', storagedomain='ISODomainRest'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - ISO SD activated</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='ISODomainRest type=956', query='ISODomainRest type=966', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- //////////////////// REMOVE ISO STORAGE ////////////////////////////// -->
+<test_case>
+   <test_name>Deactivate ISO storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>deactivateStorageDomain</test_action>
+   <parameters>datacenter='DefaultRest', storagedomain='ISODomainRest'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - ISO SD deactivated</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='ISODomainRest type=956', query='ISODomainRest type=968', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove attached ISO storage domain</test_name>
+   <test_action>removeStorageDomain</test_action>
+   <parameters>storagedomain='ISODomainRest', host='{vds[0]}', format='false'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Detach inactive ISO storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>detachStorageDomain</test_action>
+   <parameters>datacenter='DefaultRest', storagedomain='ISODomainRest'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - ISO SD detached</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='ISODomainRest type=956', query='ISODomainRest type=964', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove detached ISO storage domain</test_name>
+   <test_action>removeStorageDomain</test_action>
+   <parameters>storagedomain='ISODomainRest', host='{vds[0]}', format='false'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - ISO SD removed</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='ISODomainRest type=956', query='ISODomainRest type=960', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- /////////////////// IMPORT PREVIOUSLY DELETED STORAGE //////////////// -->
+<test_case>
+   <test_name>Import ISO storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>importStorageDomain</test_action>
+   <parameters>type='e{storage_dom_type_iso}', storage_type='e{storage_type_nfs}', address='{tests_iso_domain_address}', host='{vds[0]}', path='{tests_iso_domain_path}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - ISO SD added (by importing)</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='DataDomainRest type=966', query='ISODomainRest type=956', expected_count=2</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove ISO storage domain from storage</test_name>
+   <test_action>removeStorageDomain</test_action>
+   <parameters>storagedomain='ISODomainRest', host='{vds[0]}', format='true'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - ISO SD removed (after importing)</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='ISODomainRest type=956', query='ISODomainRest type=960', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- ///////////////////////// EXPORT STORAGE ///////////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<test_case>
+   <test_name>Create export storage domain NFS</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='ExportDomainRest', type='e{storage_dom_type_export}', storage_type='e{storage_type_nfs}', address='{export_domain_address}', host='{vds[0]}', path='{export_domain_path}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - export SD added</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='DataDomainRest type=966', query='ExportDomainRest type=956', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Attach export storage domain to data center</test_name>
+   <test_type>rest</test_type>
+   <test_action>attachStorageDomain</test_action>
+   <parameters>datacenter='DefaultRest', storagedomain='ExportDomainRest'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - export SD attached</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='ExportDomainRest type=956', query='ExportDomainRest type=962', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Activate export storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>activateStorageDomain</test_action>
+   <parameters>datacenter='DefaultRest', storagedomain='ExportDomainRest'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - export SD activated</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='ExportDomainRest type=956', query='ExportDomainRest type=966', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- ///////////////////////// SECOND NFS STORAGE ///////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<test_case>
+   <test_name>Create second NFS data storage domain</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='DataDomainRest2', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[1]}', host='{vds[0]}', path='{data_domain_path[1]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Attach second data storage domain to data center</test_name>
+   <test_type>rest</test_type>
+   <test_action>attachStorageDomain</test_action>
+   <parameters>datacenter='DefaultRest', storagedomain='DataDomainRest2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Activate second NFS storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>activateStorageDomain</test_action>
+   <parameters>datacenter='DefaultRest', storagedomain='DataDomainRest2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Search for second NFS storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForStorageDomain</test_action>
+   <parameters>query_key='name', query_val='Data*', key_name='name'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- ///////////////// NEGATIVE VM MIGRATION BETWEEN CLUSTERS////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<test_case>
+   <test_name>Create VM for negative migration tests</test_name>
+   <test_type></test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='restvm0', description='Test VM', cluster='RestCluster1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Set second host to maintenance to update cluster</test_name>
+   <test_description>neg_migr_explicit</test_description>
+   <test_type>rest</test_type>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[1]}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Update second host cluster</test_name>
+   <test_description>neg_migr_explicit</test_description>
+   <test_action>updateHost</test_action>
+   <parameters>host='{vds[1]}', cluster='RestCluster4'</parameters>
+   <positive>TRUE</positive>
+   <run>if(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Activate second host with new cluster</test_name>
+   <test_description>neg_migr_explicit</test_description>
+   <test_type>rest</test_type>
+   <test_action>activateHost</test_action>
+   <parameters>host='{vds[1]}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Wait for SPM election complete before negative migration tests</test_name>
+   <test_description>neg_migr_explicit</test_description>
+   <test_type>rest</test_type>
+   <test_action>waitForSPM</test_action>
+   <parameters>datacenter='DefaultRest', timeout=60, sleep=5</parameters>
+   <positive>NONE</positive>
+   <run>if(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Add system disk to VM to test negative migrations</test_name>
+   <test_type>rest</test_type>
+   <test_action>addDiskToVm</test_action>
+   <test_description>neg_migr_explicit</test_description>
+   <parameters>vm='restvm0', size=2147483648, type='e{disk_type_system}', format='e{format_raw}', interface='e{interface_ide}', sparse='true', storagedomain='DataDomainRestUpd'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Start VM to test negative migrations</test_name>
+   <test_description>neg_migr_explicit</test_description>
+   <test_type>rest</test_type>
+   <test_action>startVm</test_action>
+   <parameters>vm='restvm0'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Migrate VM to different cluster</test_name>
+   <test_description>neg_migr_explicit</test_description>
+   <test_type>rest</test_type>
+   <test_action>migrateVm</test_action>
+   <parameters>vm='restvm0', host='{vds[1]}'</parameters>
+   <positive>FALSE</positive>
+   <run>If(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Set second host to maintenance to update cluster back</test_name>
+   <test_description>neg_migr_explicit</test_description>
+   <test_type>rest</test_type>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[1]}'</parameters>
+   <positive>TRUE</positive>
+   <run>If(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Update second host cluster back</test_name>
+   <test_description>neg_migr_explicit</test_description>
+   <test_action>updateHost</test_action>
+   <parameters>host='{vds[1]}', cluster='RestCluster1'</parameters>
+   <positive>TRUE</positive>
+   <run>If(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Activate second host with cluster updated back</test_name>
+   <test_description>neg_migr_explicit</test_description>
+   <test_type>rest</test_type>
+   <test_action>activateHost</test_action>
+   <parameters>host='{vds[1]}'</parameters>
+   <positive>TRUE</positive>
+   <run>If(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Check whether VM has CD attached</test_name>
+   <test_type>rest</test_type>
+   <test_action>checkVmHasCdromAttached</test_action>
+   <parameters>vmName='restvm0'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Stop VM after negative migrations</test_name>
+   <test_type>rest</test_type>
+   <test_action>stopVm</test_action>
+   <parameters>vm='restvm0'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove disks from VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeDisks</test_action>
+   <parameters>vm='restvm0', num_of_disks='1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- /////////////////////// CREATING VMS ///////////////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<test_case>
+   <test_name>Create VM with existing name</test_name>
+   <test_type></test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='restvm0', cluster='RestCluster1'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM with wrong memory size</test_name>
+   <test_type></test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='novm', memory=214748, cluster='RestCluster1'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM with wrong number of monitors</test_name>
+   <test_type></test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='novm', display_monitors=36, cluster='RestCluster1'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create highly available server VM</test_name>
+   <test_type></test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='restvm_server', description='Test VM Server', cluster='RestCluster1', type='e{vm_type_server}', highly_available='true'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create stateless VM</test_name>
+   <test_type></test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='restvm_stateless', cluster='RestCluster1', stateless='true'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM with custom properties</test_name>
+   <test_type></test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='restvm_custom_prop', description='Test VM', cluster='RestCluster1', custom_properties='sndbuf=111'</parameters>
+   <positive>TRUE</positive>
+   <run>if('{compatibility_version}'.startswith('3.'))</run>
+</test_case>
+<test_case>
+   <test_name>Create VM with guaranteed memory size</test_name>
+   <test_type></test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='restvm_guaranteed_mem', description='Test VM', cluster='RestCluster1', memory_guaranteed=268435456</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM with disks</test_name>
+   <test_type>rest</test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='restvm_disks', cluster='RestCluster1', disk_type='e{disk_type_data}', size='2147483648', format='e{format_cow}', interface='e{interface_virtio}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM with OS parameters</test_name>
+   <test_type></test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='restvm_os_params', description='VM with custom OS test paramters', cluster='RestCluster1', kernel='/kernel-path', initrd='/initrd-path', cmdline='rd_NO_LUKS rd_NO_MD'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM with RHEL6x64 OS type</test_name>
+   <test_type></test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='restvm_os_rhel', description='VM with custom OS type', cluster='RestCluster1', os_type='e{rhel6x64}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM with Windows XP OS type</test_name>
+   <test_type></test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='restvm_os_xp', description='VM with custom OS type', cluster='RestCluster1', os_type='e{windowsxp}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM with custom boot sequence order</test_name>
+   <test_type></test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='restvm_bootorder', description='VM with custom boot sequence order', cluster='RestCluster1', os_type='e{rhel6x64}', boot='network hd'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check whether there is proper boot sequence order - check if network is first</test_name>
+   <test_type>rest</test_type>
+   <test_action>xpathVms</test_action>
+   <parameters>'vms', xpath='count(/vms/vm[./name="restvm_bootorder"]/os/boot[position()=1 and @dev="network"])'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check whether there is proper boot sequence order - check if HD is 2nd</test_name>
+   <test_type>rest</test_type>
+   <test_action>xpathVms</test_action>
+   <parameters>'vms', xpath='count(/vms/vm[./name="restvm_bootorder"]/os/boot[position()=2 and @dev="hd"])'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM with disks specifying storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='restvm_disks_sd', cluster='RestCluster1', storagedomain='DataDomainRestUpd', disk_type='e{disk_type_data}', size='2147483648', format='e{format_cow}', interface='e{interface_virtio}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM with specific domain name</test_name>
+   <test_type>rest</test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='restvm_domain', description='Domain Name VM', cluster='RestCluster1', domainName='{user_domain}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- /////////////////////////// UPDATE VM //////////////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<test_case>
+   <test_name>Update VM OS type from RHEL to XP</test_name>
+   <test_type></test_type>
+   <test_action>updateVm</test_action>
+   <parameters>vm='restvm_os_rhel', os_type='e{windowsxp}', name='restvm_os_win'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update VM OS type from XP to RHEL</test_name>
+   <test_type></test_type>
+   <test_action>updateVm</test_action>
+   <parameters>vm='restvm_os_xp', os_type='e{rhel6x64}', name='restvm_os_rhel'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update VM OS parameters</test_name>
+   <test_type></test_type>
+   <test_action>updateVm</test_action>
+   <parameters>vm='restvm_os_params', kernel='/kernel-new-path', initrd='/initrd-new-path', cmdline='rd_NO_LUKS'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update VM name</test_name>
+   <test_type></test_type>
+   <test_action>updateVm</test_action>
+   <parameters>vm='restvm0', name='restvm_update'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update VM affinity to 'migratable with host'</test_name>
+   <test_type></test_type>
+   <test_action>updateVm</test_action>
+   <parameters>vm='restvm_update', placement_affinity='e{vm_affinity_migratable}', placement_host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update VM affinity to 'user migratable with host'</test_name>
+   <test_type></test_type>
+   <test_action>updateVm</test_action>
+   <parameters>vm='restvm_update', placement_affinity='e{vm_affinity_user_migratable}', placement_host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update VM affinity to 'pinned with host'</test_name>
+   <test_type></test_type>
+   <test_action>updateVm</test_action>
+   <parameters>vm='restvm_update', placement_affinity='e{vm_affinity_pinned}', placement_host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update VM affinity to 'migratable to any host'</test_name>
+   <test_type></test_type>
+   <test_action>updateVm</test_action>
+   <parameters>vm='restvm_update', placement_affinity='e{vm_affinity_migratable}', placement_host='e{placement_host_any_host_in_cluster}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update VM affinity to 'user migratable to any host'</test_name>
+   <test_type></test_type>
+   <test_action>updateVm</test_action>
+   <parameters>vm='restvm_update', placement_affinity='e{vm_affinity_user_migratable}', placement_host='e{placement_host_any_host_in_cluster}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update VM description</test_name>
+   <test_type></test_type>
+   <test_action>updateVm</test_action>
+   <parameters>vm='restvm_update', description='Test VM Update'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update VM cluster</test_name>
+   <test_type></test_type>
+   <test_action>updateVm</test_action>
+   <parameters>vm='restvm_update', cluster='RestCluster4'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update VM cluster back</test_name>
+   <test_type></test_type>
+   <test_action>updateVm</test_action>
+   <parameters>vm='restvm_update', cluster='RestCluster1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update VM memory size</test_name>
+   <test_type></test_type>
+   <test_action>updateVm</test_action>
+   <parameters>vm='restvm_update', memory=2147483648</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update VM guaranteed memory size</test_name>
+   <test_type></test_type>
+   <test_action>updateVm</test_action>
+   <parameters>vm='restvm_update', memory_guaranteed=536870912</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update VM number of CPU sockets</test_name>
+   <test_type></test_type>
+   <test_action>updateVm</test_action>
+   <parameters>vm='restvm_update', cpu_socket=2</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update VM number of CPU cores</test_name>
+   <test_type></test_type>
+   <test_action>updateVm</test_action>
+   <parameters>vm='restvm_update', cpu_cores=2</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update VM display type to SPICE</test_name>
+   <test_type>rest</test_type>
+   <test_action>updateVm</test_action>
+   <parameters>vm='restvm_update', display_type='e{display_type_spice}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update VM number of monitors</test_name>
+   <test_type></test_type>
+   <test_action>updateVm</test_action>
+   <parameters>vm='restvm_update', display_monitors=2</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update VM number of monitors back to 1</test_name>
+   <test_type></test_type>
+   <test_action>updateVm</test_action>
+   <parameters>vm='restvm_update', display_monitors=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- //////////////////////// NEGATIVE  VM UPDATES ////////////////////////// -->
+<test_case>
+   <test_name>Update VM name to existing name</test_name>
+   <test_type></test_type>
+   <test_action>updateVm</test_action>
+   <parameters>vm='restvm_update', name='restvm_domain'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update VM to use wrong (too small) memory size</test_name>
+   <test_type></test_type>
+   <test_action>updateVm</test_action>
+   <parameters>vm='restvm_update', memory=214748</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update VM to use wrong number of CPU sockets (too many)</test_name>
+   <test_type></test_type>
+   <test_action>updateVm</test_action>
+   <parameters>vm='restvm_update', cpu_socket=35</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<!-- ////////////////////////// LOCKED VM ///////////////////////////////// -->
+<test_case>
+   <test_name>Create VM to be locked</test_name>
+   <test_type></test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='restvm_locked', description='Vm to be locked in the database', cluster='RestCluster1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Lock VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>updateVmStatusInDatabase</test_action>
+   <parameters>vmName='restvm_locked', status=15, vdc='{vdc}', vdc_pass='{vdc_pass}', psql_username='{psql_user}', psql_db='{psql_db}'</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Force remove locked VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeLockedVm</test_action>
+   <parameters>vm='restvm_locked', vdc='{vdc}', vdc_pass='{vdc_pass}', psql_username='{psql_user}', psql_db='{psql_db}'</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+</test_case>
+<!-- ////////////////////////// CLEANUP /////////////////////////////////// -->
+<test_case>
+   <test_name>Delete non-existing VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeNonExistingObject</test_action>
+   <parameters>entity_type='datacenters', entity_id='non_existing_object_id'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove VMs after testing VM creation with various options</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeVms</test_action>
+   <parameters>vms='restvm_update restvm_server restvm_stateless restvm_guaranteed_mem restvm_disks restvm_os_params restvm_os_rhel restvm_os_win restvm_bootorder restvm_disks_sd'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove VMs that are created only in version 3.x</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeVms</test_action>
+   <parameters>vms='restvm_custom_prop'</parameters>
+   <positive>TRUE</positive>
+   <run>if('{compatibility_version}'.startswith('3.'))</run>
+</test_case>
+<!-- /////////////////////// VM EVENTS //////////////////////////////////// -->
+<test_case>
+   <test_name>Check events - VM created</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='restvm0 type=34', query='type=34', expected_count=12</parameters>
+   <positive>TRUE</positive>
+   <run>if('{compatibility_version}'.startswith('3.'))</run>
+</test_case>
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- ////////////////////////// ADDING NICS TO VMS///////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<test_case>
+   <test_name>Create VM to test adding NICs</test_name>
+   <test_type></test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='restvm_nic', cluster='RestCluster1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add NIC to VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>addNic</test_action>
+   <parameters>vm='restvm_nic', name='nic1', network='{mgmt_bridge}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add second NIC to VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>addNic</test_action>
+   <parameters>vm='restvm_nic', name='nic2', network='{mgmt_bridge}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add NIC to second VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>addNic</test_action>
+   <parameters>vm='restvm_domain', name='nic1', network='{mgmt_bridge}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - VM NICs added</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='restvm0 type=34', query='type=932', expected_count=3</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update NIC in VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>updateNic</test_action>
+   <parameters>vm='restvm_nic', nic='nic2', name='nic2_updated'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - VM NIC updated</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='restvm0 type=34', query='type=934', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove NIC from VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeNic</test_action>
+   <parameters>vm='restvm_nic', nic='nic2_updated'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - VM NIC removed</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='restvm0 type=34', query='type=930', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- ////////////////////////// DISKS ///////////////////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<test_case>
+   <test_name>Add cow virtio data disk to VM with specific domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='restvm_domain', size=2147483648, storagedomain='DataDomainRestUpd', type='e{disk_type_data}', format='e{format_cow}', interface='e{interface_virtio}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM to test adding multiple disks</test_name>
+   <test_type></test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='restvm_multiple_disks', cluster='RestCluster1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add cow virtio data disk to VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='restvm_multiple_disks', size=2147483648, storagedomain='DataDomainRestUpd', type='e{disk_type_data}', format='e{format_cow}', interface='e{interface_virtio}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add raw ide system disk to VM preallocated</test_name>
+   <test_type>rest</test_type>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='restvm_multiple_disks', size=2147483648, type='e{disk_type_system}', format='e{format_raw}', interface='e{interface_ide}', sparse='false'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add cow ide data disk to VM bootable</test_name>
+   <test_type>rest</test_type>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='restvm_multiple_disks', size=2147483648, type='e{disk_type_data}', format='e{format_cow}', interface='e{interface_ide}', bootable='true', wipe_after_deletion='true'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add cow virtio data disk to VM sparse</test_name>
+   <test_type>rest</test_type>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='restvm_multiple_disks', size=2147483648, type='e{disk_type_data}', format='e{format_cow}', interface='e{interface_virtio}', sparse='true'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add raw ide data disk to VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='restvm_multiple_disks', size=2147483648, type='e{disk_type_data}', format='e{format_raw}', interface='e{interface_ide}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add raw virtio data disk to VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='restvm_multiple_disks', size=2147483648, type='e{disk_type_data}', format='e{format_raw}', interface='e{interface_virtio}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - multiple 'disk adding operation initiated'</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='restvm0 type=34', query='type=78', expected_count=8</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - multiple 'disk added'</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='restvm0 type=34', query='type=97', expected_count=8</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove multiple disks from VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeDisks</test_action>
+   <parameters>vm='restvm_multiple_disks', num_of_disks='6'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- ////////////////////////// SNAPSHOTS ///////////////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<test_case>
+   <test_name>Create VM to test snapshots</test_name>
+   <test_type></test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='restvm_snapshots', cluster='RestCluster1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add disk to VM that tests snapshots</test_name>
+   <test_type>rest</test_type>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='restvm_snapshots', size=2147483648, storagedomain='DataDomainRestUpd', type='e{disk_type_system}', format='e{format_cow}', interface='e{interface_ide}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM snapshot1</test_name>
+   <test_type>rest</test_type>
+   <test_action>addSnapshot</test_action>
+   <parameters>vm='restvm_snapshots', description='snapshot1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM snapshot2</test_name>
+   <test_type>rest</test_type>
+   <test_action>addSnapshot</test_action>
+   <parameters>vm='restvm_snapshots', description='snapshot2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Restore VM snapshot</test_name>
+   <test_type>rest</test_type>
+   <test_action>restoreSnapshot</test_action>
+   <parameters>vm='restvm_snapshots', description='snapshot2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Export VM discard snapshots</test_name>
+   <test_type>rest</test_type>
+   <test_action>exportVm</test_action>
+   <parameters>vm='restvm_snapshots', storagedomain='ExportDomainRest', discard_snapshots='true'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove VM snapshot</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeSnapshot</test_action>
+   <parameters>vm='restvm_snapshots', description='snapshot1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - VM snapshot creation initiated</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='restvm0 type=34', query='type=45', expected_count=2</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - VM snapshot creation completed</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='restvm0 type=34', query='type=68', expected_count=2</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - restoring VM from snapshot started by user vdcadmin</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='restvm0 type=34', query='type=1190', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - VM restoring from snapshot completed</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='restvm0 type=34', query='type=100', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - VM snapshot deletion initiated</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='restvm0 type=34', query='type=342', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - VM snapshot deletion completed</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='restvm0 type=34', query='type=356', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<test_case>
+   <test_name>Run VM with specific domain once</test_name>
+   <test_type>rest</test_type>
+   <test_action>runVmOnce</test_action>
+   <parameters>vm='restvm_domain', domainName='{user_domain}', user_name='username', password='password'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Stop VM with specific domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>stopVm</test_action>
+   <parameters>vm='restvm_domain'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- /////////////////////////// TEMPLATES //////////////////////////////// -->
+<test_case>
+   <test_name>Create template from VM with specific domain name</test_name>
+   <test_type>rest</test_type>
+   <test_action>createTemplate</test_action>
+   <parameters>vm='restvm_domain', name='domain_template', cluster='RestCluster1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check whether there is template with specific domain name</test_name>
+   <test_type>rest</test_type>
+   <test_action>xpathTemplates</test_action>
+   <parameters>'templates', xpath='count(/templates/template[name="domain_template" and domain/name="{user_domain}"])'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add a template permission to a group</test_name>
+   <test_type>rest</test_type>
+   <test_action>addTemplatePermissionsToGroup</test_action>
+   <parameters>group='Everyone', template='domain_template'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove template with specific domain name</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeTemplate</test_action>
+   <parameters>template='domain_template'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- ////////////////////////// BASIC VM OPERATIONS /////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<test_case>
+   <test_name>Create VM to test basic operations</test_name>
+   <test_type></test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='restvm_basic_operations', cluster='RestCluster1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add disk to VM that tests basic operations</test_name>
+   <test_type>rest</test_type>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='restvm_basic_operations', size=2147483648, storagedomain='DataDomainRestUpd', type='e{disk_type_system}', format='e{format_cow}', interface='e{interface_ide}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Start new VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>startVm</test_action>
+   <parameters>vm='restvm_basic_operations'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Retrieve VM statistics</test_name>
+   <test_type>rest</test_type>
+   <test_action>checkVmStatistics</test_action>
+   <parameters>vm='restvm_basic_operations'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Suspend VM to test basic operations</test_name>
+   <test_type>rest</test_type>
+   <test_action>suspendVm</test_action>
+   <parameters>vm='restvm_basic_operations'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Stop suspended VM to test basic operations</test_name>
+   <test_type>rest</test_type>
+   <test_action>stopVm</test_action>
+   <parameters>vm='restvm_basic_operations'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Ticket stopped VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>ticketVm</test_action>
+   <parameters>vm='restvm_basic_operations', expiry='120'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Start stopped VM to test basic operations</test_name>
+   <test_type>rest</test_type>
+   <test_action>startVm</test_action>
+   <parameters>vm='restvm_basic_operations'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Ticket running VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>ticketVm</test_action>
+   <parameters>vm='restvm_basic_operations', expiry='120'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create template from started VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>createTemplate</test_action>
+   <parameters>vm='restvm_basic_operations', name='notempl'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Stop VM for basic operations</test_name>
+   <test_type>rest</test_type>
+   <test_action>stopVm</test_action>
+   <parameters>vm='restvm_basic_operations'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove VMs after testing disks, snapshots, basic operations, NICs and others</test_name>
+   <test_type></test_type>
+   <test_action>removeVms</test_action>
+   <parameters>vms='restvm_domain restvm_multiple_disks restvm_snapshots restvm_basic_operations restvm_nic'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<test_case>
+   <test_name>Set first host to maintenance so that active objects are migrated to second host</test_name>
+   <test_description>neg_migr_implicit</test_description>
+   <test_type>rest</test_type>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Wait for SPM election complete - waiting until objects from first host are migrated to second host</test_name>
+   <test_description>neg_migr_implicit</test_description>
+   <test_type>rest</test_type>
+   <test_action>waitForSPM</test_action>
+   <parameters>datacenter='DefaultRest', timeout=60, sleep=5</parameters>
+   <positive>NONE</positive>
+   <run>if(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Set the second host to maintenance, which is currently the only active host and has active objects</test_name>
+   <test_description>neg_migr_implicit</test_description>
+   <test_type>rest</test_type>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[1]}'</parameters>
+   <positive>FALSE</positive>
+   <run>if(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Activate first host</test_name>
+   <test_description>neg_migr_implicit</test_description>
+   <test_type>rest</test_type>
+   <test_action>activateHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Wait for SPM election complete</test_name>
+   <test_description>neg_migr_implicit</test_description>
+   <test_type>rest</test_type>
+   <test_action>waitForSPM</test_action>
+   <parameters>datacenter='DefaultRest', timeout=60, sleep=5</parameters>
+   <positive>NONE</positive>
+   <run>if(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<!-- //////////////////////// EXPORT IMPORT VM //////////////////////////// -->
+<test_case>
+   <test_name>Create VM to test export</test_name>
+   <test_type></test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='restvm_export', cluster='RestCluster1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add disk to VM that tests export</test_name>
+   <test_type>rest</test_type>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='restvm_export', size=2147483648, storagedomain='DataDomainRestUpd', type='e{disk_type_system}', format='e{format_cow}', interface='e{interface_virtio}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Export VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>exportVm</test_action>
+   <parameters>vm='restvm_export', storagedomain='ExportDomainRest'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Export VM override existed</test_name>
+   <test_type>rest</test_type>
+   <test_action>exportVm</test_action>
+   <parameters>vm='restvm_export', storagedomain='ExportDomainRest', exclusive='true'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove VM</test_name>
+   <test_type></test_type>
+   <test_action>removeVm</test_action>
+   <parameters>vm='restvm_export'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Import exported VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>importVm</test_action>
+   <parameters>vm='restvm_export', import_storagedomain='DataDomainRestUpd', export_storagedomain='ExportDomainRest', cluster='RestCluster1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Import exported VM which exists already</test_name>
+   <test_type>rest</test_type>
+   <test_action>importVm</test_action>
+   <parameters>vm='restvm_export', import_storagedomain='DataDomainRestUpd', export_storagedomain='ExportDomainRest', cluster='RestCluster1'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Move VM to another storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>moveVm</test_action>
+   <parameters>vm='restvm_export', storagedomain='DataDomainRest2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Move VM back</test_name>
+   <test_type>rest</test_type>
+   <test_action>moveVm</test_action>
+   <parameters>vm='restvm_export', storagedomain='DataDomainRestUpd'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- ///////////////////////// SPICE AND VNC ////////////////////////////// -->
+<test_case>
+   <test_name>Create VM with VNC display type</test_name>
+   <test_type></test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='restvm_vnc', display_type='e{display_type_vnc}', cluster='RestCluster1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM with spice display type</test_name>
+   <test_type></test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='restvm_spice', display_type='e{display_type_spice}', cluster='RestCluster1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add NIC to VNC VM to allow boot</test_name>
+   <test_type>rest</test_type>
+   <test_action>addNic</test_action>
+   <parameters>vm='restvm_vnc', name='nic1', network='{mgmt_bridge}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add NIC to spice VM to allow boot</test_name>
+   <test_type>rest</test_type>
+   <test_action>addNic</test_action>
+   <parameters>vm='restvm_spice', name='nic1', network='{mgmt_bridge}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Run the VNC VM once for checking the display tag</test_name>
+   <test_type>rest</test_type>
+   <test_action>runVmOnce</test_action>
+   <parameters>vm='restvm_vnc', pause='true', display_type='e{display_type_vnc}', boot_dev='network'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Run the spice VM once for checking the display tag</test_name>
+   <test_type>rest</test_type>
+   <test_action>runVmOnce</test_action>
+   <parameters>vm='restvm_spice', pause='true', display_type='e{display_type_spice}', boot_dev='network'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check whether there is some 'vms/vm/display/port' tag is in VNC VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>xpathVms</test_action>
+   <parameters>'vms', xpath='count(/vms/vm[./name="restvm_vnc"]/display/port)'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check whether there is some 'vms/vm/display/port' tag is in spice VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>xpathVms</test_action>
+   <parameters>'vms', xpath='count(/vms/vm[./name="restvm_spice"]/display/port)'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check whether there is some 'vms/vm/display/address' tag is in vnc VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>xpathVms</test_action>
+   <parameters>'vms', xpath='count(/vms/vm[./name="restvm_vnc"]/display/address)'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check whether there is some 'vms/vm/display/address' tag is in spice VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>xpathVms</test_action>
+   <parameters>'vms', xpath='count(/vms/vm[./name="restvm_spice"]/display/address)'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Stop VM with vnc display</test_name>
+   <test_type>rest</test_type>
+   <test_action>stopVm</test_action>
+   <parameters>vm='restvm_vnc'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Stop VM with spice display</test_name>
+   <test_type>rest</test_type>
+   <test_action>stopVm</test_action>
+   <parameters>vm='restvm_spice'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove VMs after testing export, spice, vnc and other</test_name>
+   <test_type></test_type>
+   <test_action>removeVms</test_action>
+   <parameters>vms='restvm_export restvm_spice restvm_vnc'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- ////////////////////////// ISO + VM ////////////////////////////////// -->
+<test_case>
+   <test_name>Import ISO storage domain for runvmonce</test_name>
+   <test_type>rest</test_type>
+   <test_action>importStorageDomain</test_action>
+   <parameters>type='e{storage_dom_type_iso}', storage_type='e{storage_type_nfs}', address='{shared_iso_domain_address}', host='{vds[0]}', path='{shared_iso_domain_path}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Attach ISO storage domain to data center for runvmonce</test_name>
+   <test_type>rest</test_type>
+   <test_action>attachStorageDomain</test_action>
+   <parameters>datacenter='DefaultRest', storagedomain='{shared_iso_domain_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Activate ISO storage domain for runvmonce</test_name>
+   <test_type>rest</test_type>
+   <test_action>activateStorageDomain</test_action>
+   <parameters>datacenter='DefaultRest', storagedomain='{shared_iso_domain_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Get ISO file in ISO storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>getStorageDomainFile</test_action>
+   <parameters>storagedomain='{shared_iso_domain_name}', file='{cdrom_image}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Get vfd file in ISO storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>getStorageDomainFile</test_action>
+   <parameters>storagedomain='{shared_iso_domain_name}', file='{floppy_image}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- ////////////////////////// RUN VM ONCE//////////////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<test_case>
+   <test_name>Create VM with default parameters for runvmonce</test_name>
+   <test_type></test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='restvm_run_once', cluster='RestCluster1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - VM created (for runonce)</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='{shared_iso_domain_name} type=966', query='restvm_run_once type=34', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add disk to VM that tests runonce</test_name>
+   <test_type>rest</test_type>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='restvm_run_once', size=2147483648, storagedomain='DataDomainRestUpd', type='e{disk_type_system}', format='e{format_cow}', interface='e{interface_ide}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Run VM once with boot from cdrom</test_name>
+   <test_type>rest</test_type>
+   <test_action>runVmOnce</test_action>
+   <parameters>vm='restvm_run_once', cdrom_image='{cdrom_image}', boot_dev='cdrom', pause='true'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Change CD while VM is running</test_name>
+   <test_type>rest</test_type>
+   <test_action>changeCDWhileRunning</test_action>
+   <parameters>vm_name='restvm_run_once', cdrom_image='{cdrom_image}'</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - VM CD changed</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='{shared_iso_domain_name} type=966', query='restvm_run_once type=38', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Stop VM for runvmonce to add NIC</test_name>
+   <test_type>rest</test_type>
+   <test_action>stopVm</test_action>
+   <parameters>vm='restvm_run_once'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add NIC to VM for runvmonce to boot from network</test_name>
+   <test_type>rest</test_type>
+   <test_action>addNic</test_action>
+   <parameters>vm='restvm_run_once', name='nic1', network='{mgmt_bridge}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Run VM once with boot from network</test_name>
+   <test_type>rest</test_type>
+   <test_action>runVmOnce</test_action>
+   <parameters>vm='restvm_run_once', boot_dev='network', pause='true'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Stop VM for runvmonce to boot from floppy</test_name>
+   <test_type>rest</test_type>
+   <test_action>stopVm</test_action>
+   <parameters>vm='restvm_run_once'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Run VM once with boot from network with floppy</test_name>
+   <test_type>rest</test_type>
+   <test_action>runVmOnce</test_action>
+   <parameters>vm='restvm_run_once', floppy_image='{floppy_image}', boot_dev='network', pause='true'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Stop VM for runvmonce</test_name>
+   <test_type>rest</test_type>
+   <test_action>stopVm</test_action>
+   <parameters>vm='restvm_run_once'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - VM started</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='restvm_run_once type=34', query='type=153', expected_count=3</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Deactivate ISO storage domain for runvmonce</test_name>
+   <test_type>rest</test_type>
+   <test_action>deactivateStorageDomain</test_action>
+   <parameters>datacenter='DefaultRest', storagedomain='{shared_iso_domain_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Detach inactive ISO storage domain for runvmonce</test_name>
+   <test_type>rest</test_type>
+   <test_action>detachStorageDomain</test_action>
+   <parameters>datacenter='DefaultRest', storagedomain='{shared_iso_domain_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove ISO storage domain for runvmonce</test_name>
+   <test_action>removeStorageDomain</test_action>
+   <parameters>storagedomain='{shared_iso_domain_name}', host='{vds[0]}', format='false'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- //////////////////////////// VM MIGRATION //////////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<test_case>
+   <test_name>Create VM to migrate</test_name>
+   <test_type></test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='restvm_migration', description='A nomadic VM', cluster='RestCluster1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add NIC to migration VM to allow boot</test_name>
+   <test_type>rest</test_type>
+   <test_action>addNic</test_action>
+   <parameters>vm='restvm_migration', name='nic1', network='{mgmt_bridge}'</parameters>
+   <positive>TRUE</positive>
+   <run>If(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Make the VM start on specific host</test_name>
+   <test_type></test_type>
+   <test_action>updateVm</test_action>
+   <parameters>vm='restvm_migration', placement_affinity='migratable', placement_host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Run migration VM once from network</test_name>
+   <test_type>rest</test_type>
+   <test_action>runVmOnce</test_action>
+   <parameters>vm='restvm_migration', boot_dev='network'</parameters>
+   <positive>TRUE</positive>
+   <run>If(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Wait for migration VM to start</test_name>
+   <test_type>rest</test_type>
+   <test_action>waitForVmsStates</test_action>
+   <parameters>names='restvm_migration',timeout=180, sleep=1</parameters>
+   <positive>TRUE</positive>
+   <run>If(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Migrate diskless VM to second host</test_name>
+   <test_type>rest</test_type>
+   <test_action>migrateVm</test_action>
+   <parameters>vm='restvm_migration', host='{vds[1]}'</parameters>
+   <positive>TRUE</positive>
+   <run>If(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Check events - vm_migration_start</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='restvm_migration type=34', query='restvm_migration type=62', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>If(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Check events - vm_migration_done</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='restvm_migration type=34', query='restvm_migration type=63', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>If(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Check events - no vm_migration_abort</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='restvm_migration type=34', query='restvm_migration type=64', expected_count=0</parameters>
+   <positive>TRUE</positive>
+   <run>If(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Check events - no vm_migration_failed</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='restvm_migration type=34', query='restvm_migration type=65', expected_count=0</parameters>
+   <positive>TRUE</positive>
+   <run>If(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Stop VM for migration to add disk</test_name>
+   <test_type>rest</test_type>
+   <test_action>stopVm</test_action>
+   <parameters>vm='restvm_migration'</parameters>
+   <positive>TRUE</positive>
+   <run>If(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Add raw ide system disk to VM not preallocated</test_name>
+   <test_type>rest</test_type>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='restvm_migration', size=2147483648, type='e{disk_type_system}', format='e{format_raw}', interface='e{interface_ide}', sparse='true', storagedomain='DataDomainRestUpd'</parameters>
+   <positive>TRUE</positive>
+   <run>if(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Start migration VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>startVm</test_action>
+   <parameters>vm='restvm_migration', wait_for_status='up'</parameters>
+   <positive>TRUE</positive>
+   <run>If(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Migrate VM with disk</test_name>
+   <test_type>rest</test_type>
+   <test_action>migrateVm</test_action>
+   <parameters>vm='restvm_migration'</parameters>
+   <positive>TRUE</positive>
+   <run>if(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Stop VM for migration</test_name>
+   <test_type>rest</test_type>
+   <test_action>stopVm</test_action>
+   <parameters>vm='restvm_migration'</parameters>
+   <positive>TRUE</positive>
+   <run>if(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Check events - vm_migration_start after the disk added to VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='restvm_migration type=97', query='restvm_migration type=62', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>if(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Check events - vm_migration_done after the disk added to VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='restvm_migration type=97', query='restvm_migration type=63', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>if(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Check events - no vm_migration_abort after the disk added to VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='restvm_migration type=97', query='restvm_migration type=64', expected_count=0</parameters>
+   <positive>TRUE</positive>
+   <run>if(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Check events - no vm_migration_failed after the disk added to VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='restvm_migration type=97', query='restvm_migration type=65', expected_count=0</parameters>
+   <positive>TRUE</positive>
+   <run>if(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- /////////////////////////// TEMPLATES //////////////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<test_case>
+   <test_name>Create VM to test templates</test_name>
+   <test_type></test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='restvm_templates', cluster='RestCluster1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add Disk To VM that tests template</test_name>
+   <test_type>rest</test_type>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='restvm_templates', size=2147483648, storagedomain='DataDomainRestUpd', type='e{disk_type_system}', format='e{format_cow}', interface='e{interface_ide}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create template with default parameters</test_name>
+   <test_type>rest</test_type>
+   <test_action>createTemplate</test_action>
+   <parameters>vm='restvm_templates', name='rest_templ1', cluster='RestCluster1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - template created</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='restvm_run_once type=34', query='rest_templ1 type=51', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add NIC to template</test_name>
+   <test_type>rest</test_type>
+   <test_action>addTemplateNic</test_action>
+   <parameters>template='rest_templ1', name='nic_templ', network='{mgmt_bridge}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update template NIC</test_name>
+   <test_type>rest</test_type>
+   <test_action>updateTemplateNic</test_action>
+   <parameters>template='rest_templ1', nic='nic_templ', name='nic_upd_templ'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove NIC from template</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeTemplateNic</test_action>
+   <parameters>template='rest_templ1', nic='nic_upd_templ'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM based on specific template</test_name>
+   <test_type></test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='restvm_templates2', template='rest_templ1', cluster='RestCluster1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - created VM from template</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='rest_templ1 type=51', query='restvm_templates2 type=53', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM from template specifying storage domain</test_name>
+   <test_type></test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='restvm_templates_sd', cluster='RestCluster1', template='rest_templ1', storagedomain='DataDomainRestUpd'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM from template with wrong storage domain</test_name>
+   <test_type></test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='novm_wrong_sd', cluster='RestCluster1', template='rest_templ1', storagedomain='DataDomainRest2'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create template specifying storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>createTemplate</test_action>
+   <parameters>vm='restvm_templates', name='templ_sd', cluster='RestCluster1', storagedomain='DataDomainRestUpd'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create template with wrong cluster</test_name>
+   <test_type>rest</test_type>
+   <test_action>createTemplate</test_action>
+   <parameters>vm='restvm_templates', name='templ_wrong_cluster', cluster='RestCluster3'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Clone VM from template</test_name>
+   <test_type>rest</test_type>
+   <test_action>cloneVmFromTemplate</test_action>
+   <parameters>name='restvm_templates_cloned', template='rest_templ1', cluster='RestCluster1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create template with name that already exists</test_name>
+   <test_type>rest</test_type>
+   <test_action>createTemplate</test_action>
+   <parameters>vm='restvm_templates', name='rest_templ1'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update template name to a name that already exists</test_name>
+   <test_type>rest</test_type>
+   <test_action>updateTemplate</test_action>
+   <parameters>template='rest_templ1', name='Blank'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update template name, description and CPU</test_name>
+   <test_type>rest</test_type>
+   <test_action>updateTemplate</test_action>
+   <parameters>template='rest_templ1', name='rest_templ3', description='Update template', cpu_socket='2', cpu_cores='2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - template updated</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='restvm_templates2 type=53', query='rest_templ3 type=49', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Search for templates</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForTemplate</test_action>
+   <parameters>query_key='name', query_val='rest_templ*', key_name='name'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create one more template</test_name>
+   <test_type>rest</test_type>
+   <test_action>createTemplate</test_action>
+   <parameters>vm='restvm_templates', name='rest_templ1', cluster='RestCluster1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Export template</test_name>
+   <test_type>rest</test_type>
+   <test_action>exportTemplate</test_action>
+   <parameters>template='rest_templ1', storagedomain='ExportDomainRest'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - template export start</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='restvm_templates2 type=53', query='rest_templ1 type=1164', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - template exported</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='restvm_templates2 type=53', query='rest_templ1 type=1156', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Export template - override previous export of this template</test_name>
+   <test_type>rest</test_type>
+   <test_action>exportTemplate</test_action>
+   <parameters>template='rest_templ1', storagedomain='ExportDomainRest', exclusive='true'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove template to be imported next</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeTemplate</test_action>
+   <parameters>template='rest_templ1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Import exported template</test_name>
+   <test_type>rest</test_type>
+   <test_action>importTemplate</test_action>
+   <parameters>template='rest_templ1', import_storagedomain='DataDomainRestUpd', export_storagedomain='ExportDomainRest', cluster='RestCluster1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- /////////////////////// TEMPLATE EVENTS ////////////////////////////// -->
+<test_case>
+   <test_name>Check events - template import start</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='restvm_templates2 type=53', query='rest_templ1 type=1163', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - template imported</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='restvm_templates2 type=53', query='rest_templ1 type=1158', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - template removal initiated</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='restvm_templates2 type=53', query='rest_templ1 type=50', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - template removed</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='restvm_templates2 type=53', query='rest_templ1 type=251', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- ///////////////////////////// POOLS ////////////////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<test_case>
+   <test_name>Create VM pool</test_name>
+   <test_type>rest</test_type>
+   <test_action>addVmPool</test_action>
+   <parameters>name='rest_testPool', size=2, template='rest_templ3', cluster='RestCluster1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add user role to VM pool</test_name>
+   <test_type>rest</test_type>
+   <test_action>addVmPoolPermissionToUser</test_action>
+   <parameters>user='{user}', vmpool='rest_testPool', role='UserRole'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update VM pool name, description and size</test_name>
+   <test_type>rest</test_type>
+   <test_action>updateVmPool</test_action>
+   <parameters>vmpool='rest_testPool', name='rest_testPoolUpd', description='Pool Description', size=3</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Search for pools VMs</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForVm</test_action>
+   <parameters>query_key='name', query_val='rest_testPool*', key_name='name'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Search for VM pools</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForVmPool</test_action>
+   <parameters>query_key='description', query_val='Pool*', key_name='description'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove VM pool with attached VMs</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeVmPool</test_action>
+   <parameters>vmpool=''rest_testPoolUpd'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Detach all VMs from pool</test_name>
+   <test_type>rest</test_type>
+   <test_action>detachVms</test_action>
+   <parameters>vmpool=''rest_testPoolUpd'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove VM pool</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeVmPool</test_action>
+   <parameters>vmpool=''rest_testPoolUpd'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - VM pool update</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='rest_testPool type=37', query='type=344', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - VM removed from VM pool</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='rest_testPool type=37', query='type=308', expected_count=3</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - VM pool removed</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='rest_testPool type=37', query='type=304', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- ////////////////////////////// TAGS ////////////////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<test_case>
+   <test_name>Create VM to test tags and user permissions</test_name>
+   <test_type></test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='restvm_tags_users', cluster='RestCluster1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create tag</test_name>
+   <test_action>addTag</test_action>
+   <parameters>name='TagRestTest_sentinel', description='Test Tag Description'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create second tag</test_name>
+   <test_action>addTag</test_action>
+   <parameters>name='TagRestTest2', description='Test Tag Description'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create third tag</test_name>
+   <test_action>addTag</test_action>
+   <parameters>name='TagRestTest3'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create fourth tag</test_name>
+   <test_action>addTag</test_action>
+   <parameters>name='TagRestTest_to_existing_name'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create fifth tag</test_name>
+   <test_action>addTag</test_action>
+   <parameters>name='TagRestTestExisting'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create subtag</test_name>
+   <test_action>addTag</test_action>
+   <parameters>name='SubTagRestTest', description='Test Tag Description', parent='TagRestTest2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create tag with existing name</test_name>
+   <test_action>addTag</test_action>
+   <parameters>name='SubTagRestTest', description='Test Tag Description'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update tag name and description</test_name>
+   <test_action>updateTag</test_action>
+   <parameters>tag='TagRestTest_sentinel', name='TagRestTestUpd', description='Test Tag Description Updates'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update tag parent to itself</test_name>
+   <test_action>updateTag</test_action>
+   <parameters>tag='TagRestTest2', parent='TagRestTest2'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update tag parent</test_name>
+   <test_action>updateTag</test_action>
+   <parameters>tag='TagRestTest3', parent='SubTagRestTest'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create tag loop</test_name>
+   <test_action>updateTag</test_action>
+   <parameters>tag='TagRestTest2', parent='TagRestTest3'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove TagRestTest2</test_name>
+   <test_action>removeTag</test_action>
+   <parameters>tag='TagRestTest2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Associate tag with VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>addTagToVm</test_action>
+   <parameters>tag='TagRestTestUpd', vm='restvm_tags_users'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Associate non-existing tag with VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>addTagToVm</test_action>
+   <parameters>tag='TagRestTest', vm='restvm_tags_users'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Search for VM by tag</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForVm</test_action>
+   <parameters>query_key='tag', query_val='TagRestTestUpd*', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Associate tag with host</test_name>
+   <test_type>rest</test_type>
+   <test_action>addTagToHost</test_action>
+   <parameters>tag='TagRestTestUpd', host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Search for host by tag</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForHost</test_action>
+   <parameters>query_key='tag', query_val='TagRestTestUpd*', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove tag from VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeTagFromVm</test_action>
+   <parameters>tag='TagRestTestUpd', vm='restvm_tags_users'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove tag from host</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeTagFromHost</test_action>
+   <parameters>tag='TagRestTestUpd', host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Update tag name to existing name</test_name>
+   <test_action>updateTag</test_action>
+   <parameters>tag='TagRestTest_to_existing_name', name='TagRestTestExisting'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check whether TagRestTestUpd is unique</test_name>
+   <test_type>rest</test_type>
+   <test_action>xpathTags</test_action>
+   <parameters>'tags', xpath='count(/tags/tag/name[text()="TagRestTestExisting"])', rslt_eval='1==result'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove TagRestTest_to_existing_name</test_name>
+   <test_action>removeTag</test_action>
+   <parameters>tag='TagRestTest_to_existing_name'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove TagRestTestExisting</test_name>
+   <test_action>removeTag</test_action>
+   <parameters>tag='TagRestTestExisting'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - tag added</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='TagRestTest_sentinel type=432', query='type=432', expected_count=5</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - tag updated</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='TagRestTest_sentinel type=432', query='type=430', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - tag moved</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='TagRestTest_sentinel type=432', query='type=555', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - tag attached to VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='TagRestTest_sentinel type=432', query='TagRestTestUpd type=440', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - tag attached to host</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='TagRestTest_sentinel type=432', query='TagRestTestUpd type=442', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - tag removed from VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='TagRestTest_sentinel type=432', query='TagRestTestUpd type=446', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - tag removed from host</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='TagRestTest_sentinel type=432', query='TagRestTestUpd type=444', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - tag and subtag removed</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='TagRestTest_sentinel type=432', query='type=434', expected_count=3</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- ///////////////////////////// USERS AND ROLES //////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<test_case>
+   <test_name>Create user</test_name>
+   <test_action>addUser</test_action>
+   <parameters>user_name='{new_user}', domain='{user_domain}', groups='{user_domain}/QA-All-Users/RDP-Group, {user_domain}/QA-All-Users/LocalAdmins-Group, {user_domain}/QA-All-Users/QA-MembersGroup', role='e{role_name_user_role}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add role to user</test_name>
+   <test_action>addRoleToUser</test_action>
+   <parameters>user='{new_user}', role='e{role_name_power_user_role}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create user with no roles</test_name>
+   <test_action>addUser</test_action>
+   <parameters>user_name='{no_roles_user}', domain='{user_domain}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create user with wrong domain</test_name>
+   <test_action>addUser</test_action>
+   <parameters>user_name='{wrong_domain_user}', domain='not.existing.domain.com'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create user that doesn't exist in domain</test_name>
+   <test_action>addUser</test_action>
+   <parameters>user_name='{not_existing_user}', domain='{user_domain}'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add tag to user</test_name>
+   <test_action>addTagToUser</test_action>
+   <parameters>user='{new_user}', tag='TagRestTestUpd'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check system summary</test_name>
+   <test_type>rest</test_type>
+   <test_action>checkSummary</test_action>
+   <parameters>domain='{user_domain}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check existing permissions</test_name>
+   <test_type>rest</test_type>
+   <test_action>checkSystemPermits</test_action>
+   <parameters/>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add role</test_name>
+   <test_type>rest</test_type>
+   <test_action>addRole</test_action>
+   <parameters>name='New_Role', administrative='true', permits='e{create_vm_permit} e{create_host_permit} e{manipulate_roles_permit} e{delete_cluster_permit}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add non-admin role</test_name>
+   <test_type>rest</test_type>
+   <test_action>addRole</test_action>
+   <parameters>name='NA_Role', administrative='false', permits='e{create_vm_permit} e{migrate_vm_permit} e{delete_vm_permit}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove non-admin role</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeRole</test_action>
+   <parameters>role='NA_Role'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add role of non-admin type with admin permits</test_name>
+   <test_type>rest</test_type>
+   <test_action>addRole</test_action>
+   <parameters>name='Bad_Role', administrative='false', permits='e{create_vm_permit} e{create_host_permit} e{manipulate_roles_permit} e{delete_cluster_permit}'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add permission to role</test_name>
+   <test_type>rest</test_type>
+   <test_action>addRolePermissions</test_action>
+   <parameters>role='New_Role', permit='e{create_storage_domain_permit}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove permission from role</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeRolePermissions</test_action>
+   <parameters>role='New_Role', permit='e{create_storage_domain_permit}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove role</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeRole</test_action>
+   <parameters>role='New_Role'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove system role</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeRole</test_action>
+   <parameters>role='HostAdmin'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add permission to system role</test_name>
+   <test_type>rest</test_type>
+   <test_action>addRolePermissions</test_action>
+   <parameters>role='HostAdmin', permit='e{create_storage_domain_permit}'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove permission from system role</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeRolePermissions</test_action>
+   <parameters>role='StorageAdmin', permit='e{create_storage_domain_permit}'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add VM permission to user</test_name>
+   <test_type>rest</test_type>
+   <test_action>addVMPermissionsToUser</test_action>
+   <parameters>user='{new_user}', vm='restvm_tags_users'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add host permission to user</test_name>
+   <test_type>rest</test_type>
+   <test_action>addHostPermissionsToUser</test_action>
+   <parameters>user='{new_user}', host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add storage permission to user</test_name>
+   <test_type>rest</test_type>
+   <test_action>addStoragePermissionsToUser</test_action>
+   <parameters>user='{new_user}', storage='DataDomainRestUpd'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add clusters permission to user</test_name>
+   <test_type>rest</test_type>
+   <test_action>addClusterPermissionsToUser</test_action>
+   <parameters>user='{new_user}', cluster='Default'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add clusters permission to group</test_name>
+   <test_type>rest</test_type>
+   <test_action>addClusterPermissionsToGroup</test_action>
+   <parameters>group='Everyone', cluster='Default'</parameters>
+   <positive>TRUE</positive>
+   <run>no</run>
+</test_case>
+<test_case>
+   <test_name>Add template permission to user</test_name>
+   <test_type>rest</test_type>
+   <test_action>addPermissionsForTemplate</test_action>
+   <parameters>user='{new_user}', template='rest_templ3'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add template permission to group</test_name>
+   <test_type>rest</test_type>
+   <test_action>addPermissionsForTemplateToGroup</test_action>
+   <parameters>group='Everyone', template='rest_templ3'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add data center permission to user</test_name>
+   <test_type>rest</test_type>
+   <test_action>addPermissionsForDataCenter</test_action>
+   <parameters>user='{new_user}', data_center='DefaultRest'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check the system_version tag</test_name>
+   <test_type>rest</test_type>
+   <test_action>checkSystemVersionTag</test_action>
+   <parameters/>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check whether there is a definition of blank template object</test_name>
+   <test_type>rest</test_type>
+   <test_action>xpathGeneral</test_action>
+   <parameters>'api', xpath='count(/api/special_objects/link[@rel="templates/blank" and @href="/{entry_point}/templates/00000000-0000-0000-0000-000000000000"])'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check whether there is a definition of tag root object</test_name>
+   <test_type>rest</test_type>
+   <test_action>xpathGeneral</test_action>
+   <parameters>'api', xpath='count(/api/special_objects/link[@rel="tags/root" and @href="/{entry_point}/tags/00000000-0000-0000-0000-000000000000"])'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- /////////////////// CHECK EVENTS AND CLEANUP ///////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<test_case>
+   <test_name>Remove all permissions from user</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeAllPermissionsFromUser</test_action>
+   <parameters>user='{new_user}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove tag</test_name>
+   <test_action>removeTag</test_action>
+   <parameters>tag='TagRestTestUpd'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove user</test_name>
+   <test_action>removeUser</test_action>
+   <parameters>user='{new_user}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove user with no roles</test_name>
+   <test_action>removeUser</test_action>
+   <parameters>user='{no_roles_user}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check user properties in active directory</test_name>
+   <test_type>rest</test_type>
+   <test_action>verifyUser</test_action>
+   <parameters>domain='{user_domain}', user='vdcadmin', expected_username='vdcadmin@{user_domain}', expected_department='Quality Assurance'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Search for an user in active directory by name</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForUserInAD</test_action>
+   <parameters>query_key='name', query_val='vdcadmin', key_name='name', domain='{user_domain}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Search for an user in active directory by upn</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForUserInAD</test_action>
+   <parameters>query_key='usrname', query_val='vdcadmin@*', key_name='user_name', domain='{user_domain}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - tag attached to user</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='{new_user} type=149', query='TagRestTestUpd type=436', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - role added</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='{new_user} type=149', query='New_Role type=864', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - action group attached to role</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='{new_user} type=149', query='CREATE_STORAGE_DOMAIN type=860', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - action group detached from role</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='{new_user} type=149', query='CREATE_STORAGE_DOMAIN type=862', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - permissions granted</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='{new_user} type=149', query='{new_user} type=850', expected_count=7</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - permissions removed from user</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='{new_user} type=149', query='{new_user} type=852', expected_count=6</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove all remaining VMs</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeVms</test_action>
+   <parameters>vms='restvm_templates restvm_templates2 restvm_templates_cloned restvm_templates_sd restvm_migration restvm_run_once restvm_tags_users rest_testPool-1 rest_testPool-2 rest_testPoolUpd-1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Sleep</test_name>
+   <test_type>rest</test_type>
+   <test_action>sleep</test_action>
+   <parameters>seconds=10</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - VM remove initiated</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='{new_user} type=852', query='type=36', expected_count=10</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - VM removed</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='{new_user} type=852', query='type=113', expected_count=10</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove all remaining templates</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeTemplates</test_action>
+   <parameters>templates='rest_templ1 rest_templ3 templ_sd'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- ////////////////// REMOVE AND IMPORT STORAGE ///////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<test_case>
+   <test_name>Deactivate export storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>deactivateStorageDomain</test_action>
+   <parameters>datacenter='DefaultRest', storagedomain='ExportDomainRest'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Detach active storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>detachStorageDomain</test_action>
+   <parameters>datacenter='DefaultRest', storagedomain='ExportDomainRest'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove export storage domain</test_name>
+   <test_action>removeStorageDomain</test_action>
+   <parameters>storagedomain='ExportDomainRest', host='{vds[0]}', format='false'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Import previously removed storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>importStorageDomain</test_action>
+   <parameters>type='e{storage_dom_type_export}', storage_type='e{storage_type_nfs}', address='{export_domain_address}', host='{vds[0]}', path='{export_domain_path}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Attach imported storage domain to data center</test_name>
+   <test_type>rest</test_type>
+   <test_action>attachStorageDomain</test_action>
+   <parameters>datacenter='DefaultRest', storagedomain='ExportDomainRest'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - imported SD attached</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='ExportDomainRest type=956', query='ExportDomainRest type=962', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Activate imported storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>activateStorageDomain</test_action>
+   <parameters>datacenter='DefaultRest', storagedomain='ExportDomainRest'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check events - imported SD activated</test_name>
+   <test_type>rest</test_type>
+   <test_action>searchForRecentEvent</test_action>
+   <parameters>win_start_query='ExportDomainRest type=956', query='ExportDomainRest type=966', expected_count=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Deactivate imported storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>deactivateStorageDomain</test_action>
+   <parameters>datacenter='DefaultRest', storagedomain='ExportDomainRest'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Detach imported active storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>detachStorageDomain</test_action>
+   <parameters>datacenter='DefaultRest', storagedomain='ExportDomainRest'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove imported storage domain</test_name>
+   <test_action>removeStorageDomain</test_action>
+   <parameters>storagedomain='ExportDomainRest', host='{vds[0]}', format='true'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- //////////////////////// MAIN CLEANUP //////////////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<test_case>
+   <test_name>Deactivate non-master storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>deactivateStorageDomain</test_action>
+   <parameters>datacenter='DefaultRest', storagedomain='DataDomainRest2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Deactivate master storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>deactivateStorageDomain</test_action>
+   <parameters>datacenter='DefaultRest', storagedomain='DataDomainRestUpd'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove all remaining data centers</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeDataCenters</test_action>
+   <parameters>datacenters='RestDataCenterUpdated, DefaultRest'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove master storage domain</test_name>
+   <test_action>removeStorageDomain</test_action>
+   <parameters>storagedomain='DataDomainRestUpd', host='{vds[0]}', format='true'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove non-master storage domain</test_name>
+   <test_action>removeStorageDomain</test_action>
+   <parameters>storagedomain='DataDomainRest2', host='{vds[0]}', format='true'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Set active first host to maintenance</test_name>
+   <test_type>rest</test_type>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove first host</test_name>
+   <test_action>removeHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Set active second host to maintenance</test_name>
+   <test_type>rest</test_type>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[1]}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Remove second host</test_name>
+   <test_action>removeHost</test_action>
+   <parameters>host='{vds[1]}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+<test_case>
+   <test_name>Remove all remaining clusters</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeClusters</test_action>
+   <parameters>clusters='RestCluster1, RestCluster4, RestCluster3, RestCluster5, RestCluster6, RestCluster7'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check xsd schema validations</test_name>
+   <test_type>rest</test_type>
+   <test_action>checkResponsesAreXsdValid</test_action>
+   <parameters/>
+   <positive>NONE</positive>
+   <run>yes</run>
+</test_case>
+</input>
