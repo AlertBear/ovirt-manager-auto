@@ -541,7 +541,7 @@ class TestRunner(object):
                 reportStats['group_desc'] = self.groupDescription
         else:
             if opts['has_sub_tests'] == "yes":
-                reportStats['module_name'] = opts['actions'][testCase['test_action']].split('.')[1].capitalize()
+                reportStats['module_name'] = opts['actions'][testCase['test_action']].split('.')[-2].capitalize()
             else:
                 reportStats['module_name'] = None
 
