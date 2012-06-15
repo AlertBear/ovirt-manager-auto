@@ -25,6 +25,7 @@ from core_api.validator import compareCollectionSize
 from rhevm_api.tests_lib.networks import getClusterNetwork
 from utilities.jobs import Job, JobsSet
 from rhevm_api.utils.xpath_utils import XPathMatch
+from test_handler.settings import opts
 
 CREATE_TEMPLATE_TIMEOUT = 900
 ELEMENT = 'template'
@@ -390,7 +391,7 @@ def importTemplate(positive, template, export_storagedomain,
     actionParams = dict(storage_domain=sd, cluster=cl)
 
     actionName = 'import'
-    if not hasattr(templObj, actionName):
+    if opts['engine'] == 'sdk':
         actionName = 'import_template'
 
     status = util.syncAction(templObj, actionName, positive, **actionParams)

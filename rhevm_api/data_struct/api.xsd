@@ -158,6 +158,8 @@
       <xs:element name="exclusive" type="xs:boolean" minOccurs="0"/>
       <!-- For VM start -->
       <xs:element ref="vm" minOccurs="0" maxOccurs="1"/>
+      <!-- For import template -->
+      <xs:element ref="template" minOccurs="0" maxOccurs="1"/>
       <!-- For Setup Networks -->
       <xs:element ref="host_nics" minOccurs="0" maxOccurs="1"/>
       <xs:element name="check_connectivity" type="xs:boolean" minOccurs="0"/>
@@ -166,12 +168,16 @@
       <xs:element name="pause" type="xs:boolean" minOccurs="0" maxOccurs="1"/>
       <!-- should migration be forced if VM is pinned to host? -->
       <xs:element name="force" type="xs:boolean" minOccurs="0"/>
-	  <!-- For gluster volume set/reset option action -->
+      <!-- For gluster volume set/reset option action -->
       <xs:element name="option" type="Option" minOccurs="0"/>
-	  <!-- In gluster volume rebalance action, should only fix-layout be performed -->
+      <!-- In gluster volume rebalance action, should only fix-layout be performed -->
       <xs:element name="fix_layout" type="xs:boolean" minOccurs="0"/>
+      <!-- In gluster brick replace action, the new brick that will replace current one -->
+      <xs:element name="brick" type="GlusterBrick" minOccurs="0"/>
       <!-- detach Disk from VM (as opposed to deleting it) -->
       <xs:element name="detach" type="xs:boolean" minOccurs="0"/>
+      <!-- import Vm/Template as new entity -->
+      <xs:element name="clone" type="xs:boolean" minOccurs="0" maxOccurs="1"/>
       <!-- ... etc., explicitly enumerate all the parameter types -->
     </xs:sequence>
   </xs:group>
@@ -396,12 +402,24 @@
     </xs:attribute>
   </xs:complexType>
 
+  <xs:complexType name="VCpuPin">
+    <xs:attribute name="vcpu" type="xs:int" use="required"/>
+    <xs:attribute name="cpu_set" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="CpuTune">
+    <xs:sequence>
+      <xs:element name="vcpu_pin" type="VCpuPin" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
   <xs:complexType name="CPU">
     <xs:sequence>
       <xs:element name="topology" type="CpuTopology" minOccurs="0" maxOccurs="1"/>
       <xs:element name="level" type="xs:int" minOccurs="0"/>
       <xs:element name="name" type="xs:string" minOccurs="0" maxOccurs="1"/>
-      <xs:element name="speed" type="xs:decimal" minOccurs="0" maxOccurs="1"/>      
+      <xs:element name="speed" type="xs:decimal" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="cpu_tune" type="CpuTune" minOccurs="0" maxOccurs="1"/>
     </xs:sequence>
     <xs:attribute name="id" type="xs:string"/>
   </xs:complexType>
@@ -899,6 +917,7 @@
   <xs:complexType name="MemoryPolicy">
     <xs:sequence>
       <xs:element name="guaranteed" type="xs:long" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="ballooning" type="xs:boolean" minOccurs="0"/>
       <xs:element name="overcommit" type="MemoryOverCommit" minOccurs="0" maxOccurs="1">
         <xs:annotation>
           <xs:appinfo>
@@ -1545,6 +1564,10 @@
       <xs:element name="portal" type="xs:string" minOccurs="0"/>
       <xs:element name="size" type="xs:long" minOccurs="0"/>
       <xs:element name="paths" type="xs:int" minOccurs="0"/>
+      <xs:element name="partitioned" type="xs:boolean" minOccurs="0"/>
+      <xs:element name="volume_group_id" type="xs:string" minOccurs="0"/>
+      <xs:element name="storage_domain_id" type="xs:string" minOccurs="0"/>
+      <xs:element name="disk_id" type="xs:string" minOccurs="0"/>
     </xs:sequence>
   </xs:group>
 
@@ -2084,8 +2107,9 @@
         <xs:sequence>
           <xs:element name="image_id" type="xs:string" minOccurs="0" maxOccurs="1"/>
           <xs:element ref="storage_domains" minOccurs="0" maxOccurs="1"/>
-          <xs:element name="size" type="xs:long" minOccurs="0"/>
-          <xs:element name="type" type="xs:string" minOccurs="0"/>
+          <xs:element name="size" type="xs:long" minOccurs="0"/> <!-- Deprecated, replaced by 'provisioned_size' -->
+          <xs:element name="provisioned_size" type="xs:long" minOccurs="0"/>
+          <xs:element name="actual_size" type="xs:long" minOccurs="0"/>
           <xs:element ref="status" minOccurs="0" maxOccurs="1"/>
           <xs:element name="interface" type="xs:string" minOccurs="0"/>
           <xs:element name="format" type="xs:string" minOccurs="0"/>
@@ -2135,6 +2159,14 @@
     </xs:sequence>  
   </xs:complexType>
 
+  <xs:element name="port_mirroring" type="PortMirroring"/>
+
+  <xs:complexType name="PortMirroring">
+    <xs:sequence>
+      <xs:element ref="networks" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+  </xs:complexType>
+
   <xs:complexType name="NIC">
     <xs:complexContent>
       <xs:extension base="BaseDevice">
@@ -2144,6 +2176,7 @@
           <xs:element ref="mac" minOccurs="0"/>
           <xs:element name="statistics" type="Statistics" minOccurs="0" maxOccurs="1"/>
           <xs:element name="active" type="xs:boolean" minOccurs="0"/>
+          <xs:element ref="port_mirroring" minOccurs="0" maxOccurs="1"/>
         </xs:sequence>
       </xs:extension>
     </xs:complexContent>
@@ -2188,12 +2221,14 @@
     <xs:complexContent>
       <xs:extension base="BaseResources">
         <xs:sequence>
-          <xs:annotation>
-            <xs:appinfo>
+          <xs:element ref="snapshot" minOccurs="0" maxOccurs="unbounded">
+            <xs:annotation>
+              <xs:appinfo>
                 <jaxb:property name="Snapshots"/>
-            </xs:appinfo>
-          </xs:annotation>
-          <xs:element ref="snapshot" minOccurs="0" maxOccurs="unbounded"/>
+              </xs:appinfo>
+            </xs:annotation>
+          </xs:element>
+          <xs:element name="collapse_snapshots" type="xs:boolean" minOccurs="0" maxOccurs="1"/>
         </xs:sequence>
       </xs:extension>
     </xs:complexContent>
@@ -2637,6 +2672,7 @@
     <xs:complexContent>
       <xs:extension base="BaseResource">
         <xs:sequence>
+          <xs:element ref="gluster_volume" minOccurs="0" maxOccurs="1"/>
           <xs:element name="server_id" type="xs:string" minOccurs="0" maxOccurs="1"/>
           <xs:element name="brick_dir" type="xs:string" minOccurs="0" maxOccurs="1"/>
           <xs:element name="state" type="xs:string" minOccurs="0" maxOccurs="1"/>
@@ -2647,17 +2683,16 @@
 
   <xs:element name="bricks" type="GlusterBricks"/>
   <xs:complexType name="GlusterBricks">
-    <xs:complexContent>
-      <xs:extension base="BaseResources">
-        <xs:sequence>
-          <xs:annotation>
-            <xs:appinfo>
-                <jaxb:property name="GlusterBricks"/>
-            </xs:appinfo>
-          </xs:annotation>
-          <xs:element ref="brick" minOccurs="0" maxOccurs="unbounded"/>
-        </xs:sequence>
-      </xs:extension>
-    </xs:complexContent>
+   <xs:sequence>
+      <xs:element name="replica_count" type="xs:unsignedShort" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="stripe_count" type="xs:unsignedShort" minOccurs="0" maxOccurs="1"/>
+      <xs:element ref="brick" minOccurs="0" maxOccurs="unbounded">
+        <xs:annotation>
+          <xs:appinfo>
+              <jaxb:property name="GlusterBricks"/>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
   </xs:complexType>
 </xs:schema>

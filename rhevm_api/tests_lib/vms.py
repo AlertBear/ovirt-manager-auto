@@ -30,6 +30,7 @@ from utilities.jobs import Job, JobsSet
 from Queue import Queue
 from threading import Thread
 from rhevm_api.utils.xpath_utils import XPathMatch
+from test_handler.settings import opts
 
 GBYTE = 1024*1024*1024
 ELEMENTS = os.path.join(os.path.dirname(__file__), '../../conf/elements.conf')
@@ -1300,7 +1301,7 @@ def importVm(positive, vm, export_storagedomain, import_storagedomain,
     cl = data_st.Cluster(name=cluster)
 
     actionName = 'import'
-    if not hasattr(vmObj, actionName):
+    if opts['engine'] == 'sdk':
         actionName = 'import_vm'
 
     status = VM_API.syncAction(vmObj, actionName, positive, storage_domain=sd, cluster=cl)
