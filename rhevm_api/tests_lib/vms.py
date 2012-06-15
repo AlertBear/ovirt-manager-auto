@@ -616,7 +616,7 @@ def addDisk(positive, vm, size, wait=True, storagedomain=None,
     disks = DISKS_API.getElemFromLink(vmObj, get_href=True)
     disk, status = DISKS_API.create(disk, positive, collection=disks)
     if status and positive and wait:
-        return VM_API.waitForElemStatus(vmObj, "DOWN", timeout)
+        return DISKS_API.waitForElemStatus(disk, "OK", timeout)
     return status
 
 
