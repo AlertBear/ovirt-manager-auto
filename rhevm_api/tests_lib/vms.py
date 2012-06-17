@@ -1187,7 +1187,8 @@ def migrateVm(positive, vm, host=None, wait=True):
         wait=%s, positive=%s' % (str(wait), positive))
         return True
 
-    VM_API.waitForElemStatus(vmObj, 'powering_up', 300)
+    if not VM_API.waitForElemStatus(vmObj, 'powering_up', 300):
+        return False
 
     # Check whether we tried to migrate vm to different cluster
     # in this case we return False, since this action shouldn't be allowed.
