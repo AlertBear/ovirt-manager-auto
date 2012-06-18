@@ -9,7 +9,8 @@ from sys import argv, exit, exc_info
 import logging
 
 from configobj import ConfigObj
-from test_handler.reports import initializeLogger, DefaultResultsReporter, JUnitResultsReporter
+from test_handler.reports import initializeLogger, DefaultResultsReporter,\
+                                 JUnitResultsReporter
 from core_api.http import check_connection
 from test_handler.settings import opts, populateOptsFromArgv, readTestRunOpts
 from socket import error as SocketError
@@ -35,7 +36,8 @@ class TestSuiteRunner:
         initializeLogger()
         self.logger = logging.getLogger(__name__)
 
-        self.autoDevices = self.config['RUN'].get('auto_devices','no') == "yes"
+        self.autoDevices = self.config['RUN'].get('auto_devices',
+                                                  'no') == "yes"
         self.type = self.config['RUN']['engine']
 
         self.actionsConf = ConfigObj(ACTIONS_PATH)
@@ -43,14 +45,15 @@ class TestSuiteRunner:
 
     def _build_actions_map(self, section, key):
         '''
-        Description: build hash of possible actions, key - action name, value - action function
+        Description: build hash of possible actions,
+                     key - action name, value - action function
         Author: edolinin
         Parameters:
            * section - section name, passed automatically from 'walk' command
            * key - action key name, passed automatically from 'walk' command
         Return: none
         '''
-     
+
         opts['actions'][key] = section[key]
 
     def _initialize_run(self):
@@ -67,7 +70,8 @@ class TestSuiteRunner:
             logging.disable(logging.INFO)
             logging.disable(logging.WARN)
 
-        self.logger.info('Running with the following command lines arguments: {0}'.format(argv[1:]))
+        self.logger.info('Running with the following command\
+                          lines arguments: {0}'.format(argv[1:]))
 
     def _getTestFullPath(self, filename):
         '''
@@ -80,7 +84,8 @@ class TestSuiteRunner:
         for root, dirs, names in os.walk(confRoot):
             if filename in names:
                 return os.path.join(root, filename)
-        MSG = "Test %s not found in and it's subdirs %s." % (filename, confRoot)
+        MSG = "Test %s not found in and it's subdirs %s." % (filename,
+                                                             confRoot)
         self.logger.exception(MSG)
         raise CannotRunTests, MSG
 
@@ -93,10 +98,12 @@ class TestSuiteRunner:
         '''
 
         self._initialize_run()
-        default_reporter = DefaultResultsReporter(self.config['RUN']['tests_file'],
-                opts['engine'], opts['results'])
-        junit_reporter= JUnitResultsReporter(self.config['RUN']['tests_file'],
-                opts['engine'], opts['junit_results'])
+        default_reporter = DefaultResultsReporter(\
+                                self.config['RUN']['tests_file'],
+                                opts['engine'], opts['results'])
+        junit_reporter = JUnitResultsReporter(\
+                                self.config['RUN']['tests_file'],
+                                opts['engine'], opts['junit_results'])
 
         results_reporters = default_reporter, junit_reporter
 
@@ -130,16 +137,18 @@ class TestSuiteRunner:
             config_section = CONFIG_PARAMS
             testRunner = None
             if testName.endswith('ods'):
-                testRunner = OdsRunner(lines, groups, self.config, self.logger, testName,
-                            results_reporters, config_section, self.autoDevices)
+                testRunner = OdsRunner(lines, groups, self.config, self.logger,
+                                       testName, results_reporters,
+                                       config_section, self.autoDevices)
                 test_cases = testRunner.load(testFilePath)
                 testRunner.run_test(test_cases)
 
             elif testName.endswith('py'):
-                testRunner = PythonRunner(groups, self.config, self.logger, testName,
-                            results_reporters, config_section, self.autoDevices)
+                testRunner = PythonRunner(groups, self.config, self.logger,
+                                          testFilePath, results_reporters,
+                                          config_section, self.autoDevices)
                 testRunner.run_test()
-                
+
             elif testName.endswith('xml'):
                 if opts['in_parallel']:
                     testInd = 1
@@ -147,20 +156,26 @@ class TestSuiteRunner:
                     while test in opts['in_parallel']:
                         config = self.config
                         if opts['parallel_configs']:
-                            config = ConfigObj(opts['parallel_configs'].pop(0)) # get relevant config file
+                            # get relevant config file
+                            config = ConfigObj(opts['parallel_configs'].pop(0))
                             threadName = "{0}-{1}".format(testName, testInd)
 
                         if opts['parallel_sections']:
                             config_section = opts['parallel_sections'].pop(0)
                             threadName = "{0}-{1}".format(testName, testInd)
 
-                        testRunner = XmlRunner(lines, groups, config, self.logger, testName,
-                                    results_reporters, config_section, self.autoDevices)
+                        testRunner = XmlRunner(lines, groups, config,
+                                               self.logger, testName,
+                                               results_reporters,
+                                               config_section,
+                                               self.autoDevices)
                         opts['in_parallel'].remove(test)
                         opts['tests'].remove(test)
 
                         test_cases = testRunner.load(testFilePath)
-                        thread = threading.Thread(target=testRunner.run_test, name=threadName, args=(test_cases,))
+                        thread = threading.Thread(target=testRunner.run_test,
+                                                  name=threadName,
+                                                  args=(test_cases,))
                         thread.start()
                         threads.append(thread)
 
@@ -171,14 +186,17 @@ class TestSuiteRunner:
                         for thr in threads:
                             thr.join()
                 else:
-                    testRunner = XmlRunner(lines, groups, self.config, self.logger, testName,
-                                results_reporters, config_section, self.autoDevices)
+                    testRunner = XmlRunner(lines, groups, self.config,
+                                           self.logger, testName,
+                                           results_reporters, config_section,
+                                           self.autoDevices)
                     test_cases = testRunner.load(testFilePath)
                     testRunner.run_test(test_cases)
         except SocketError:
             raise
         except Exception as ex:
-            MSG = "Can't run tests from input file '{0}' because of {1.__class__.__name__}: {1}".format(testName, ex)
+            MSG = "Can't run tests from input file '{0}'\
+                   because of {1.__class__.__name__}: {1}".format(testName, ex)
             self.logger.exception(MSG)
             raise CannotRunTests, MSG, exc_info()[2]
 
@@ -186,7 +204,8 @@ class TestSuiteRunner:
 if __name__ == "__main__":
     '''
     Main function - reads args and runs the tests
-    This part should be a replacement for run.py when TestRunner module is ready
+    This part should be a replacement for run.py
+    when TestRunner module is ready
     '''
 
     try:
@@ -200,4 +219,3 @@ if __name__ == "__main__":
         suiteRunner.run_suite()
     except KeyboardInterrupt:
         pass
-

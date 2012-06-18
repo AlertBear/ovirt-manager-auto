@@ -29,6 +29,7 @@ from core_api.validator import compareCollectionSize
 from rhevm_api.utils.test_utils import get_api, split
 from utilities.utils import readConfFile
 
+
 ELEMENT = 'data_center'
 COLLECTION = 'datacenters'
 util = get_api(ELEMENT, COLLECTION)
@@ -39,7 +40,7 @@ Version = getDS('Version')
 ELEMENTS = os.path.join(os.path.dirname(__file__), '../../conf/elements.conf')
 ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
 
-DATA_CENTER_INIT_TIMEOUT=180
+DATA_CENTER_INIT_TIMEOUT = 180
 
 
 def addDataCenter(positive, **kwargs):
@@ -53,12 +54,12 @@ def addDataCenter(positive, **kwargs):
      '''
 
     majorV, minorV = kwargs.pop('version').split(".")
-    dcVersion = Version(major=majorV, minor = minorV)
+    dcVersion = Version(major=majorV, minor=minorV)
 
-    dc = DataCenter(version = dcVersion, **kwargs)
+    dc = DataCenter(version=dcVersion, **kwargs)
 
     dc, status = util.create(dc, positive)
-  
+
     return status
 
 
@@ -84,7 +85,7 @@ def updateDataCenter(positive, datacenter, **kwargs):
 
     if 'version' in kwargs:
         majorV, minorV = kwargs.pop('version').split(".")
-        dcVersion = Version(major=majorV, minor = minorV)
+        dcVersion = Version(major=majorV, minor=minorV)
         dcUpd.set_verion(dcVersion)
 
     dcUpd, status = util.update(dc, dcUpd, positive)
@@ -121,7 +122,7 @@ def searchForDataCenter(positive, query_key, query_val, key_name):
 
     for dc in datacenters:
         dcProperty = getattr(dc, key_name)
-        if re.match(r'(.*)\*$',query_val):
+        if re.match(r'(.*)\*$', query_val):
             if re.match(r'^' + query_val, dcProperty):
                 expected_count = expected_count + 1
         else:
@@ -137,7 +138,8 @@ def searchForDataCenter(positive, query_key, query_val, key_name):
 
 def removeDataCenterAsynch(positive, datacenter, queue):
     '''
-     Description: Remove existed data center, using threading for removing of multiple objects
+     Description: Remove existed data center, using threading for removing
+     of multiple objects
      Parameters:
         * datacenter - name of a data center that should removed
         * queue - queue of threads
@@ -150,18 +152,21 @@ def removeDataCenterAsynch(positive, datacenter, queue):
         queue.put(False)
         return False
 
-    status = util.delete(dc,positive)
+    status = util.delete(dc, positive)
     time.sleep(30)
 
     queue.put(status)
-    
+
 
 def removeDataCenters(positive, datacenters):
     '''
      Description: Remove several data centers, using threading
      Parameters:
-        * datacenters - name of data centers that should removed separated by comma
-     Return: status (True if all data centers were removed properly, False otherwise)
+        * datacenters - name of data centers that should removed
+                        separated by comma
+     Return: status:
+          True if all data centers were removed properly
+          False otherwise
      '''
 
     datacentersList = split(datacenters)
@@ -182,6 +187,7 @@ def removeDataCenters(positive, datacenters):
 
     return status
 
+
 def waitForDataCenterState(name, state=ENUMS['data_center_state_up'],
                            timeout=DATA_CENTER_INIT_TIMEOUT, sleep=10):
     """
@@ -195,4 +201,3 @@ def waitForDataCenterState(name, state=ENUMS['data_center_state_up'],
     query = 'name=%s and status=%s' % (name, state)
 
     return util.waitForQuery(query, timeout=timeout, sleep=sleep)
-

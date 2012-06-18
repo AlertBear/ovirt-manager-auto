@@ -17,15 +17,16 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-from core_api.apis_utils import getDS
-from rhevm_api.utils.test_utils import get_api, split
 import re
-from core_api.validator import compareCollectionSize
+import time
 from Queue import Queue
 from threading import Thread
+
+from core_api.apis_utils import getDS
+from rhevm_api.utils.test_utils import get_api, split
+from core_api.validator import compareCollectionSize
 from core_api.apis_exceptions import EntityNotFound
-import time
-from rhevm_api.tests_lib.hosts import activateHost, deactivateHost
+from rhevm_api.tests_lib.hosts import activateHost, deactivateHost, updateHost
 from rhevm_api.utils.xpath_utils import XPathMatch
 
 ELEMENT = 'cluster'
@@ -228,16 +229,18 @@ def removeClusterAsynch(positive, tasksQ, resultsQ):
 
 def waitForClustersGone(positive, clusters, timeout=30, samplingPeriod=5):
     '''
-    Wait for clusters to disappear from the setup. This function will block up to `timeout`
-    seconds, sampling the clusters list every `samplingPeriod` seconds,
-    until no cluster specified by names in `clusters` exists.
+    Wait for clusters to disappear from the setup. This function will block up
+    to `timeout` seconds, sampling the clusters list every
+    `samplingPeriod` seconds, until no cluster specified by
+    names in `clusters` exists.
 
     Parameters:
-        * clusters - comma (and no space) separated string of cluster names to wait for.
-        * timeout - Time in seconds for the clusters to disapear.
+        * clusters - comma (and no space) separated string of cluster names
+                     to wait for.
+        * timeout - Time in seconds for the clusters to disappear.
         * samplingPeriod - Time in seconds for sampling the cluster list.
     '''
-    
+
     clsList = split(clusters)
     t_start = time.time()
     while time.time() - t_start < timeout and 0 < timeout:
@@ -248,7 +251,7 @@ def waitForClustersGone(positive, clusters, timeout=30, samplingPeriod=5):
             if clName in clsList:
                 remainingCls.append(clName)
 
-        if len(remainingCls)>0:
+        if len(remainingCls) > 0:
             util.logger.info("Waiting for %d clusters to disappear.",
                                                 len(remainingCls))
             time.sleep(samplingPeriod)
@@ -257,19 +260,20 @@ def waitForClustersGone(positive, clusters, timeout=30, samplingPeriod=5):
             return positive
 
     remainingClsNames = [cl for cl in remainingCls]
-    util.logger.error("Clusters %s didn't disappear until timeout." % remainingClsNames)
+    util.logger.error("Clusters %s didn't disappear until timeout.",
+                      remainingClsNames)
     return not positive
-
 
 
 def removeClusters(positive, clusters):
     '''
-    Removes the clusters specified by `clusters` commas separated list of cluster names.
-    Author: jhenner 
+    Removes the clusters specified by `clusters` commas separated list of
+    cluster names.
+    Author: jhenner
     Parameters:
         * clusters - Comma (no space) separated list of cluster names.
     '''
-    
+
     tasksQ = Queue()
     resultsQ = Queue()
     threads = set()
@@ -284,7 +288,7 @@ def removeClusters(positive, clusters):
 
     for cl in clsList:
         tasksQ.put(cl)
-    tasksQ.join() # block until all tasks are done
+    tasksQ.join()  # block until all tasks are done
     util.logger.info(threads)
     for t in threads:
         t.join()
@@ -293,9 +297,10 @@ def removeClusters(positive, clusters):
     while not resultsQ.empty():
         cl, removalOK = resultsQ.get()
         if removalOK:
-            util.logger.info("Cluster '%s' deleted asynchronously." % cl)
+            util.logger.info("Cluster '%s' deleted asynchronously.", cl)
         else:
-            util.logger.error("Failed to asynchronously remove cluster '%s'." % cl)
+            util.logger.error("Failed to asynchronously remove cluster '%s'.",
+                               cl)
             status = False
 
     return status and waitForClustersGone(positive, clusters)
@@ -309,7 +314,9 @@ def searchForCluster(positive, query_key, query_val, key_name):
        * query_key - name of property to search for
        * query_val - value of the property to search for
        * key_name - name of the property in object equivalent to query_key
-    Return: status (True if expected number is equal to found by search, False otherwise)
+    Return: status:
+       True if expected number is equal to found by search.
+       False otherwise
     '''
 
     expected_count = 0
@@ -317,7 +324,7 @@ def searchForCluster(positive, query_key, query_val, key_name):
 
     for cl in clusters:
         clProperty = getattr(cl, key_name)
-        if re.match(r'(.*)\*$',query_val):
+        if re.match(r'(.*)\*$', query_val):
             if re.match(r'^' + query_val, clProperty):
                 expected_count = expected_count + 1
         else:
@@ -352,8 +359,9 @@ def connectClusterToDataCenter(positive, cluster, datacenter):
     """
     Function connects cluster to dataCenter
     If cluster already connected to datacenter, it will just return true
-    If cluster's "datacenter" field is empty, it will be updated with datacenter
-    else, function will return False, since cluster's datacenter field cannot be updated, if not empty
+    If cluster's "datacenter" field is empty, it will be updated with
+    datacenter else, function will return False, since cluster's
+    datacenter field cannot be updated, if not empty
         cluster    = cluster name
         datacenter = data center name
     """

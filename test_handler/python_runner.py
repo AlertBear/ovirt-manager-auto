@@ -34,14 +34,14 @@ class TestGroup(object):
     def run(self):
         for case in self.test_cases:
             case.run()
-            
+
 
 class TestCase(object):
     '''
     Defines test case properties and methods
     '''
 
-    def __init__(self, positive=None, vital=None, test_type=None, report='yes', \
+    def __init__(self, positive=None, vital=None, test_type=None, report='yes',
         group=None, tcms_test_case=None, description=None, fetch_output=''):
         self._positive = positive
         self._vital = vital
@@ -69,7 +69,6 @@ class TestCase(object):
     @description.setter
     def description(self, value):
         self._description = value
-
 
     @property
     def action(self):
@@ -162,8 +161,25 @@ class TestCase(object):
 class PythonRunner(TestRunner):
     '''
     Implements methods for test runs from python script
+    usage example:
+    from test_handler.python_runner import TestCase
+
+
+    def addCluster():
+        test = TestCase()
+        test.name = 'Add Cluster'
+        test.action = 'addCluster'
+        test.positive = True
+        name = test.config['PARAMETERS'].get('cluster_name')
+        version = test.config['PARAMETERS'].get('compatibility_version')
+        test.params = "name='{0}', version='{1}', cluster='Test',\
+                       wait=False".format(name, version)
+        test.run()
+
+        test.logger.info(test.status)
+        test.logger.info(test.output)
     '''
-   
+
     def __init__(self, groups, *args):
         '''
         Parameters:
@@ -173,7 +189,6 @@ class PythonRunner(TestRunner):
         self.groups = groups
         global runner
         runner = self
-        
 
     def get(self):
         '''
@@ -181,13 +196,11 @@ class PythonRunner(TestRunner):
         '''
         return self
 
-
     def run_test(self):
         '''
         Runs python tests script
         '''
-        execfile(self.inputFile)
-        
+        execfile(self.inputFile, locals())
 
     def get_property_val(self, testCase, keyName, reportName):
         '''
@@ -196,7 +209,6 @@ class PythonRunner(TestRunner):
         proertyVal = getattr(testCase, keyName)
         self.logger.info("{0}:\t{1}".format(reportName, proertyVal))
         return str(proertyVal)
-    
 
     def run_test_case(self, test_case):
         '''
@@ -211,7 +223,7 @@ class PythonRunner(TestRunner):
 
         testCase['test_action'] = \
             self.get_property_val(test_case, 'action', 'Test action')
-        
+
         testCase['test_parameters'] = \
             self.get_property_val(test_case, 'params', 'Test parameters')
 
@@ -230,12 +242,13 @@ class PythonRunner(TestRunner):
             self.get_property_val(test_case, 'vital', 'Vital test')
 
         group = test_case.group
-        
+
         if group and group.tcms_test_case:
             testCase['tcms_test_case'] = group.tcms_test_case
         else:
             testCase['tcms_test_case'] = \
-                self.get_property_val(test_case, 'tcms_test_case', 'Tcms test case')
+                self.get_property_val(test_case, 'tcms_test_case',
+                                  '   Tcms test case')
 
         testCase['test_description'] = \
             self.get_property_val(test_case, 'description', 'Test description')
@@ -245,4 +258,5 @@ class PythonRunner(TestRunner):
 
         testCase['test_run'] = 'yes'
 
-        return super(PythonRunner, self)._run_test_loop(testCase, group, 'yes', 0, False)
+        return super(PythonRunner, self)._run_test_loop(testCase, group,
+                                                         'yes', 0, False)
