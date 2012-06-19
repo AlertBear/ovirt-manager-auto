@@ -17,15 +17,18 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-from core_api.apis_utils import getDS
-from rhevm_api.utils.test_utils import get_api, split
-import time
+import os
 import re
+import time
+
+from core_api.apis_utils import getDS
 from core_api.validator import compareCollectionSize
-from rhevm_api.tests_lib.networks import getClusterNetwork
-from utilities.jobs import Job, JobsSet
+from rhevm_api.utils.test_utils import get_api, split
 from rhevm_api.utils.xpath_utils import XPathMatch
+from rhevm_api.tests_lib.networks import getClusterNetwork
 from test_handler.settings import opts
+from utilities.jobs import Job, JobsSet
+from utilities.utils import readConfFile
 
 CREATE_TEMPLATE_TIMEOUT = 900
 ELEMENT = 'template'
@@ -43,6 +46,9 @@ CpuTopology = getDS('CpuTopology')
 StorageDomain = getDS('StorageDomain')
 VM = getDS('VM')
 NIC = getDS('NIC')
+
+ELEMENTS = os.path.join(os.path.dirname(__file__), '../../conf/elements.conf')
+ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
 
 xpathMatch = XPathMatch(util)
 
@@ -398,3 +404,23 @@ def importTemplate(positive, template, export_storagedomain,
     time.sleep(30)
 
     return status
+
+
+def waitForTemplatesStates(names, state=ENUMS['template_state_ok'],
+                           timeout=CREATE_TEMPLATE_TIMEOUT, sleep=10):
+    """
+    Wait until all templates are in state given by 'states' argument
+    Parameters:
+        * names - Comma separated list of templates' names
+        * states - Desired state for all given templates
+    Author: jlibosva
+    """
+    names = split(names)
+
+    [util.find(template) for template in names]
+
+    query = ' and '.join(['name=%s and status=%s' % (template, state) for
+                    template in names])
+
+    return util.waitForQuery(query, timeout=timeout, sleep=sleep)
+
