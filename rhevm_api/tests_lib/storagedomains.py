@@ -81,7 +81,11 @@ def _prepareStorageDomainObject(positive, **kwargs):
         sd.set_storage(Storage(type_=storage_type, path=kwargs.pop('path', None)))
     elif storage_type == ENUMS['storage_type_nfs']:
         sd.set_storage(Storage(type_=storage_type, path=kwargs.pop('path', None),
-                            address=kwargs.pop('address', None)))
+                            address=kwargs.pop('address', None),
+                            nfs_version=kwargs.pop('nfs_version', None),
+                            nfs_retrans=kwargs.pop('nfs_retrans', None),
+                            nfs_timeo=kwargs.pop('nfs_timeo', None),
+                            mount_options=kwargs.pop('mount_options', None)))
     elif storage_type == ENUMS['storage_type_iscsi']:
         lun = kwargs.pop('lun', None)
         lun_address = getIpAddressByHostName(kwargs.pop('lun_address', None))
@@ -128,6 +132,10 @@ def addStorageDomain(positive, iscsi_storage_format=None, wait=True, **kwargs):
        * lun_address - lun address (for ISCSI)
        * lun_target - lun target name (for ISCSI)
        * lun_port - lun port (for ISCSI)
+       * nfs_version - version of NFS protocol
+       * nfs_retrans - the number of times the NFS client retries a request
+       * nfs_timeo - time before client retries NFS request
+       * mount_options - custom mount options
        * wait - if True, wait for the action to complete
     Return: status (True if storage domain was added properly,
                     False otherwise)
@@ -988,4 +996,25 @@ def checkIfStorageDomainExist(positive, storagedomain):
     storagedomains = util.get(absLink=False)
     sdObj = filter(lambda sdObj: sdObj.get_name() == storagedomain, storagedomains)
     return (len(sdObj) == 1) == positive
+
+
+def checkStorageDomainParameters(positive, storagedomain, **kwargs):
+    """
+    Description: Checks whether given xpath is True
+    Parameters:
+        * storagedomain - domain's name
+    Author: jlibosva
+    Return: True if all keys and values matches given storage domain attributes
+            False if any attribute is missing or if the attribute's value differs
+    """
+    domainObj = util.find(storagedomain)
+
+    for attr in kwargs:
+        if not hasattr(domainObj.storage, attr) or \
+           getattr(domainObj.storage, attr) != kwargs[attr]:
+            util.logger.debug("Attribute \"%s\" doesn't match with storage domain \
+\"%s\"", attr, storagedomain)
+            return not positive
+
+    return positive
 
