@@ -17,14 +17,17 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-from core_api.apis_utils import getDS
-from rhevm_api.utils.test_utils import get_api, split
-import re
-from core_api.validator import compareCollectionSize
-import threading
+import os
 import Queue
-from core_api.apis_exceptions import EntityNotFound
+import re
+import threading
 import time
+
+from core_api.apis_exceptions import EntityNotFound
+from core_api.apis_utils import getDS
+from core_api.validator import compareCollectionSize
+from rhevm_api.utils.test_utils import get_api, split
+from utilities.utils import readConfFile
 
 ELEMENT = 'data_center'
 COLLECTION = 'datacenters'
@@ -32,6 +35,11 @@ util = get_api(ELEMENT, COLLECTION)
 
 DataCenter = getDS('DataCenter')
 Version = getDS('Version')
+
+ELEMENTS = os.path.join(os.path.dirname(__file__), '../../conf/elements.conf')
+ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
+
+DATA_CENTER_INIT_TIMEOUT=180
 
 
 def addDataCenter(positive, **kwargs):
@@ -174,5 +182,17 @@ def removeDataCenters(positive, datacenters):
 
     return status
 
+def waitForDataCenterState(name, state=ENUMS['data_center_state_up'],
+                           timeout=DATA_CENTER_INIT_TIMEOUT, sleep=10):
+    """
+    Wait until given datacenter is in desired state
+    Parameters:
+        * name - Data center's name
+        * state - Desired state for given data centers
+    Author: jlibosva
+    """
+    util.find(name)
+    query = 'name=%s and status=%s' % (name, state)
 
+    return util.waitForQuery(query, timeout=timeout, sleep=sleep)
 
