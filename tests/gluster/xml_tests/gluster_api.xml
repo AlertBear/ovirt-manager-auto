@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- vim: set ts=3 sw=3 expandtab: -->
+<?xml-stylesheet type="text/xsl" href="table.xslt"?>
+
+<input>
+<test_case>
+	<test_name>Create Cluster</test_name>
+   <test_action>addCluster</test_action>
+        <parameters>name='{cluster_name}', version='{compatibility_version}'</parameters>
+        <positive>TRUE</positive>
+        <run>YES</run>
+        <report>YES</report>
+        <fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Remove cluster</test_name>
+	<test_action>removeCluster</test_action>
+        <parameters>cluster='{cluster_name}'</parameters>
+        <positive>TRUE</positive>
+        <run>YES</run>
+        <report>YES</report>
+        <fetch_output/> 
+</test_case>
+<test_case>
+	<test_name>Create Cluster with default values of gluster_support and virt_support</test_name>
+   <test_action>addCluster</test_action>
+        <parameters>name='{cluster_name}',version='{compatibility_version}'</parameters>
+        <positive>TRUE</positive>
+        <run>YES</run>
+        <report>YES</report>
+        <fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Check Gluster and Virt support values</test_name>
+   <test_action>checkClusterParams</test_action>
+        <parameters>cluster='{cluster_name}'</parameters>
+        <positive>TRUE</positive>
+        <run>YES</run>
+        <report>YES</report>
+        <fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Remove cluster</test_name>
+	<test_action>removeCluster</test_action>
+        <parameters>cluster='{cluster_name}'</parameters>
+        <positive>TRUE</positive>
+        <run>YES</run>
+        <report>NO</report>
+        <fetch_output/> 
+</test_case>
+<test_case>
+	<test_name>Create Cluster</test_name>
+   <test_action>addCluster</test_action>
+        <parameters>name='{cluster_name}',gluster_support={gluster_support},virt_support={virt_support},version='{compatibility_version}'</parameters>
+        <positive>TRUE</positive>
+        <run>YES</run>
+        <report>NO</report>
+        <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Add Hosts</test_name>
+   <test_action>addHost</test_action>
+         <parameters>name='{vds}',root_password='{vds_password}',cluster='{cluster_name}'</parameters>
+         <positive>TRUE</positive>
+         <run>loop({vds},{vds_password})</run>
+         <report>YES</report>
+         <fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Add Volume with wrong volume type (parsing test for API)</test_name>
+   <test_action>addClusterVolume</test_action>
+      	<parameters> cluster='{cluster_name}',name='{volume_name}',volume_type='{wrong_type}',transport_types='{transport_types}',replica_count={replica_count},stripe_count={stripe_count},access_protocols='{access_protocols}',access_control_list={access_control_list},bricks={bricks},options={options}</parameters>
+        <positive>FALSE</positive>
+        <run>YES</run>
+        <report>YES</report>
+        <fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Add Volume</test_name>
+   <test_action>addClusterVolume</test_action>
+      	<parameters>cluster='{cluster_name}',name='{volume_name}',volume_type='{volume_type}',transport_types='{transport_types}',replica_count={replica_count},stripe_count={stripe_count},access_protocols='{access_protocols}',access_control_list={access_control_list},bricks={bricks},options={options}</parameters>
+        <positive>TRUE</positive>
+        <run>YES</run>
+        <report>YES</report>
+        <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Check Volume Parameters</test_name>
+   <test_action>checkVolumeParams</test_action>
+      	<parameters>cluster='{cluster_name}',volume='{volume_name}', access_control_list={access_control_list}</parameters>
+        <positive>TRUE</positive>
+        <run>YES</run>
+        <report>YES</report>
+        <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Remove Volume</test_name>
+   <test_action>removeClusterVolume</test_action>
+         <parameters>cluster='{cluster_name}',volume='{volume_name}'</parameters>
+         <positive>TRUE</positive>
+         <run>YES</run>
+         <report>YES</report>
+         <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Remove Brick Directory</test_name>
+   <test_action>removeDirOnHost</test_action>
+         <parameters>ip='{vds}', dirname='{brick_dir_base_name}'</parameters>
+         <positive>TRUE</positive>
+         <run>loop({vds})</run>
+         <report>loop({vds})</report>
+         <fetch_output/>
+</test_case>
+<test_case>
+<test_name>START_GROUP: Cleanup</test_name>
+<test_action/>
+        <parameters>n/a2</parameters>
+        <positive>NONE</positive>
+        <run>YES</run>
+        <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Remove Volume</test_name>
+   <test_action>removeClusterVolume</test_action>
+         <parameters>cluster='{cluster_name}',volume='{volume_name}'</parameters>
+         <positive>TRUE</positive>
+         <run>YES</run>
+         <report>NO</report>
+         <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Remove Brick Directory</test_name>
+   <test_action>removeDirOnHost</test_action>
+         <parameters>ip='{vds}', dirname='{brick_dir_base_name}'</parameters>
+         <positive>TRUE</positive>
+         <run>loop({vds})</run>
+         <report>YES</report>
+         <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>START_GROUP: Cleanup Hosts</test_name>
+   <test_action/>
+        <parameters>n/a2</parameters>
+        <positive>NONE</positive>
+        <run>loop({vds})</run>
+        <fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Deactivate Host</test_name>
+   <test_action>deactivateHost</test_action>
+        <parameters>host='{vds}'</parameters>
+        <positive>TRUE</positive>
+        <run>YES</run>
+        <report>NO</report>
+        <fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Remove Host</test_name>
+   <test_action>removeHost</test_action>
+        <parameters>host='{vds}'</parameters>
+        <positive>TRUE</positive>
+        <run>YES</run>
+        <report>NO</report>
+        <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: Cleanup Hosts</test_name>
+   <test_action/>
+        <parameters/>
+        <positive>NONE</positive>
+        <run/>
+        <fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Remove cluster</test_name>
+	<test_action>removeCluster</test_action>
+        <parameters>cluster='{cluster_name}'</parameters>
+        <positive>TRUE</positive>
+        <run>YES</run>
+        <report>NO</report>
+        <fetch_output/> 
+</test_case>
+<test_case>
+<test_name>END_GROUP: Cleanup</test_name>
+   <test_action/>
+        <parameters/>
+        <positive>NONE</positive>
+        <run/>
+        <fetch_output/>
+</test_case>
+</input>
