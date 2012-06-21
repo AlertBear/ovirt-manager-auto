@@ -1018,3 +1018,18 @@ def checkStorageDomainParameters(positive, storagedomain, **kwargs):
 
     return positive
 
+
+def checkStorageFormatVersion(positive, storagedomain, version):
+    """
+    Description: Checks storage format version on given storage domain
+    Parameters:
+        * storagedomain - domain's name
+        * version - expected version (e.g. "v2")
+    Return: True if versions are the same and positive is True
+            False if versions are not the same and positive is True
+    """
+    domainObj = util.find(storagedomain)
+
+    return (domainObj.storage_format == version) == positive
+
+
