@@ -86,7 +86,7 @@ def updateDataCenter(positive, datacenter, **kwargs):
     if 'version' in kwargs:
         majorV, minorV = kwargs.pop('version').split(".")
         dcVersion = Version(major=majorV, minor=minorV)
-        dcUpd.set_verion(dcVersion)
+        dcUpd.set_version(dcVersion)
 
     dcUpd, status = util.update(dc, dcUpd, positive)
 
