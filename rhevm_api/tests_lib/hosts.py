@@ -1255,17 +1255,19 @@ def setSPMPriority(positive, hostName, spmPriority):
                           hostName, attribute)
         return False
 
-    util.logger.info("setSPMPriority - SPM Value of host is set to %s is %s",
-                     hostName, spmPriority)
-
     # Update host
-    util.logger.info("Updating Host %s", hostName)
+    util.logger.info("Updating Host %s priority to %s", hostName, spmPriority)
     updateStat = updateHost(positive=positive, host=hostName,
                             storage_manager_priority=spmPriority)
     if not updateStat:
         return False
 
-    return hostObj.get_storage_manager().get_priority() == int(spmPriority)
+    hostObj = util.find(hostName)
+    new_priority = hostObj.get_storage_manager().get_priority()
+    util.logger.info("setSPMPriority - SPM Value of host %s is set to %s",
+                     hostName, new_priority)
+
+    return  new_priority == int(spmPriority)
 
 
 def setSPMStatus(positive, hostName, spmStatus):
