@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from test_handler.test_runner import TestRunner
+from configobj import ConfigObj
+import threading
+import traceback
+
+from test_handler.test_runner import TestRunner, opts, TestCase
 from odf.opendocument import load
 from odf.table import Table,TableRow,TableCell
 from odf.text import P
@@ -165,7 +169,7 @@ class OdsRunner(TestRunner):
         Return: testGroup, runGroup, saveGroupRows
         '''
 
-        testCase = {}
+        testCase = TestCase()
 
         cells = row.getElementsByType(TableCell)
 

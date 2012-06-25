@@ -28,7 +28,7 @@ from sys import stderr
 from lockfile import FileLock
 from abc import ABCMeta, abstractmethod
 import datetime
-from dateutil import tz 
+from dateutil import tz
 
 
 COLORS = {

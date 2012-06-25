@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from test_handler.test_runner import TestRunner, opts
+from test_handler.test_runner import TestRunner, opts, TestCase
 from lxml import etree
 import re
 
@@ -124,7 +124,7 @@ class XmlRunner(TestRunner):
         Return: testGroup, runGroup, saveGroupRows
         '''
 
-        testCase = {}
+        testCase = TestCase()
 
         testName = self._get_node_val(xmlTestCase, 'test_name', "Test name")
         testCase['test_name'] = self._parse_parameters(testName)

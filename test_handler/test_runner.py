@@ -21,9 +21,59 @@ TESTS_LOG_SEPARATOR =  '\n%s\n' % ('=' * 80)
 FORKFOR_MAX_THREADS = 20
 NO_TB_EXCEPTIONS = (EntityNotFound,)
 _LOOP_INDEX = '#loop_index'
-ACTIONS_PATH = "conf/actions.conf"
-ELEMENTS_PATH = "conf/elements.conf"
+fetch_path = lambda x: os.path.abspath(\
+        os.path.join(os.path.dirname(__file__), '..', x))
+ACTIONS_PATH = fetch_path("conf/actions.conf")
+ELEMENTS_PATH = fetch_path("conf/elements.conf")
 CONFIG_PARAMS = 'PARAMETERS'
+
+
+class _TestElm(dict):
+
+    def __init__(self):
+        super(_TestElm, self).__init__()
+        self.name = None
+        self.vital = False
+        self.tcms_test_case = None
+        self.description = None
+        self.run = 'yes'
+
+    def __getattribute__(self, key):
+        try:
+            return super(_TestElm, self).__getattribute__(key)
+        except AttributeError as ex:
+            try:
+                return self[key]
+            except KeyError:
+                raise ex
+
+    def __setattr__(self, key, val):
+        self[key] = val
+
+
+class TestGroup(_TestElm):
+    '''
+    Defines test group properties and methods
+    '''
+
+    def __init__(self):
+        super(TestGroup, self).__init__()
+        self.test_cases = []
+
+
+class TestCase(_TestElm):
+    '''
+    Defines test case properties and methods
+    '''
+
+    def __init__(self):
+        super(TestCase, self).__init__()
+        self.positive = None
+        self.test_type = opts['engine']
+        self.report = 'yes'
+        self.group = None
+#        self.fetch_output = None
+        self.fetch_output = ''
 
 
 class TestRunner(object):
@@ -51,7 +101,7 @@ class TestRunner(object):
         self.testGroupRerun = '' # name of looped group
         self.groupTcmsTestCase = None
         self.lastTestStatus = None
-      
+
         confDataCenterType = config[config_section].get('data_center_type', 'none').lower()
         if confDataCenterType != 'none' and confDataCenterType in config.sections:
             self.testConfSection.merge(config[confDataCenterType])
@@ -116,7 +166,7 @@ class TestRunner(object):
 
                 if not isinstance(placeHolderVal,list):
                     parameters=parameters.replace(placeHolder,placeHolderVal)
-        
+
         # replace settings params (list values)
         testParametersArrPlaceHolders = re.findall(r'{\w+\[\d+\]}',parameters)
         for placeHolder in testParametersArrPlaceHolders:
@@ -185,7 +235,7 @@ class TestRunner(object):
                 actionParams = match.group(1).split(',')
 
                 # action module path
-                ifActionDict = {    
+                ifActionDict = {
                                 'test_action':  actionParams[0],
                                 }
                 funcPackage, funcName = self.resolveFuncPath(ifActionDict, opts)
@@ -223,7 +273,7 @@ class TestRunner(object):
             match = re.match("loop\((.*)\)", runValState, re.I)
             if  match:
                 runVal = match.group(1)
-        
+
         if runGroup and not re.match('\d+', runGroup) and re.match('yes', runVal.lower()):
             runVal = runGroup
 
@@ -337,7 +387,7 @@ class TestRunner(object):
         except KeyError:
             self.logger.error("Action is not implemented yet '{0}'".format(testCase['test_action']))
             return None, None
-       
+
         modPath = '.'.join(test_action[:-1])
         funcName = test_action[-1]
         return modPath, funcName
@@ -410,7 +460,7 @@ class TestRunner(object):
 
     def _run_test_case(self, i, testCallable, testCase, testParametersStrOrg, valsToIterate, loopParamVals, modPath, funcName, testGroup):
         self.logger.debug("test_type: %s modPath: %s, funcName: %s", testCase['test_type'], modPath, funcName)
-        
+
         try:
             exec("from " + modPath + " import " + funcName)
         except Exception:
@@ -418,7 +468,7 @@ class TestRunner(object):
             self.logger.error("Can't import action {0}\n{1}".format(funcName, \
                                                     TESTS_LOG_SEPARATOR))
             return
-     
+
         testStatus = True
         reportStats = {}
         startTime = datetime.now(tzutc())
@@ -449,7 +499,7 @@ class TestRunner(object):
 
         # prepare dictionary of fetched output 'from' and 'to' keys
         fetchOutputTransl = {}
-        if testCase['fetch_output_to'] != "":
+        if testCase['fetch_output_to']:
             testCase['fetch_output_to'] = self._parse_parameters(testCase['fetch_output_to'])
             #split fetch_output_to by whitespaces
             fromToList = re.split('\W*,\W*', testCase['fetch_output_to'])
@@ -533,7 +583,7 @@ class TestRunner(object):
         reportStats['test_type'] = testCase['test_type']
         reportStats['status'] = "Pass" if testStatus else "Fail"
         self.lastTestStatus = testStatus
-       
+
         # set node name for test case parent
         if testGroup:
             reportStats['module_name'] = testGroup.capitalize()
