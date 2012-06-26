@@ -21,6 +21,7 @@ import re
 import time
 import threading
 import Queue
+
 from core_api.apis_utils import getDS
 from rhevm_api.utils.test_utils import get_api, split
 from core_api.validator import compareCollectionSize
@@ -406,6 +407,75 @@ def addBrickToVolume(positive, cluster, volume, bricks):
                                          collection=volBricksColl)
 
     return status
+
+
+def _getVolumeBricks(cluster, volume, bricks):
+    '''
+    Description: get brick
+    Author: imeerovi
+    Parameters:
+        * cluster - cluster name
+        * volume - volume name
+        * bricks - list of dictionaries of bricks,
+            example: [{'server': ..., 'brick_dir': ....}, {...}]
+    Parameters string example:
+    <params_pattern>
+        cluster='',volume='',bricks=[{'server':'','brick_dir':''},]
+    </params_pattern>
+
+    Return: list with bricks for volume.
+            EntityNotFound exception will be raised if
+            no matching bricks were found
+    '''
+    bricksObjs = []
+
+    vol = getClusterVolume(cluster, volume)
+    volBricks = util.getElemFromLink(vol, link_name='bricks', attr='brick',
+                                     get_href=False)
+
+    for brick in bricks:
+        # in case of EntityNotFound exception from util/hostUtil.find
+        # exception will be not caught and passed to higher levels
+        hostObj = hostUtil.find(brick['server'])
+        brick_tmp = util.find(val=brick['brick_dir'],
+                        attribute='brick_dir', absLink=False,
+                        collection=volBricks, server_id=hostObj.id)
+        bricksObjs.append(brick_tmp)
+
+    if not bricksObjs:
+            raise EntityNotFound("Volume %s doesn't contains these bricks: %s"\
+                                 % (volume, bricks))
+    return bricksObjs
+
+
+def removeBrickFromVolume(positive, cluster, volume, bricks, force=True):
+    '''
+    Description: remove bricks from volume
+    Author: imeerovi
+    Parameters:
+        * cluster - cluster name
+        * volume - volume name
+        * bricks - list of dictionaries of bricks,
+            example: [{'server': ..., 'brick_dir': ....}, {...}]
+        * force - force removal even if removal of previous brick failed
+    Parameters string example:
+    <params_pattern>
+        cluster='',volume='',bricks=[{'server':'','brick_dir':''},]
+    </params_pattern>
+
+    Return: status (True if all bricks were removed properly, False otherwise)
+    '''
+    rc = True
+    bricks = _getVolumeBricks(cluster, volume, bricks)
+
+    for brick in bricks:
+        rc = util.delete(brick, positive)
+        if force:
+            continue
+        if not rc:
+            return rc
+
+    return rc
 
 
 def checkVolumeParams(positive, cluster, volume, **kwargs):
