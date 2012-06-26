@@ -267,8 +267,8 @@ class RestUtil(APIUtil):
 
         return True
 
-
-    def find(self, val, attribute='name', absLink=True, collection=None):
+    def find(self, val, attribute='name', absLink=True, collection=None,
+             **kwargs):
         '''
         Description: find entity by name
         Author: edolinin
@@ -276,6 +276,7 @@ class RestUtil(APIUtil):
            * val - name of entity to look for
            * attribute - attribute name for searching
            * absLink - absolute link or just a  suffix
+           * **kwargs - additional search attribute=val pairs
         Return: found entity or exception EntityNotFound
         '''
 
@@ -285,14 +286,23 @@ class RestUtil(APIUtil):
 
         if not collection:
             collection = self.get(href, listOnly=True)
-            
-        try:
-            results = filter(lambda r: getattr(r, attribute) == val, collection)[0]
-        except Exception:
-            raise EntityNotFound("Entity %s not found on url '%s'." % (val, href))
 
-        return results
+        if not collection:
+            raise EntityNotFound("Empty collection %s" % href)
 
+        results = filter(lambda r: getattr(r, attribute) == val,
+                         collection)
+
+        for key in kwargs:
+            results = filter(lambda r: getattr(r, key) == kwargs[key], results)
+
+        if not results:
+            raise EntityNotFound("Entity %s not found on url '%s'." %\
+                                     (val, href))
+        if len(results) > 1:
+            raise EntityNotFound("More than one Entities found for %s\
+                                  on url '%s'." % (val, href))
+        return results[0]
 
     def query(self, constraint, expected_status=[200, 201], href=None, event_id=None):
         '''
