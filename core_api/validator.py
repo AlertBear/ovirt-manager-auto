@@ -22,6 +22,7 @@ import sys
 from core_api.apis_utils import data_st as ds
 import re
 
+ATTR_IGNORE_LIST =  ['href', 'link', 'rel']
 
 def dump_entity(ds, root_name):
     '''
@@ -33,6 +34,79 @@ def dump_entity(ds, root_name):
     ds.export(mystdout, 0, name_=root_name)
     sys.stdout = old_stdout
     return mystdout.getvalue()
+
+
+def getObjAttributes(obj, origObj, attrList=[]):
+    '''
+    Get object attribures recursively from all superclasses
+    '''
+
+    if obj.superclass:
+        # merge element's and its superclass dict items
+        origObj.member_data_items_.update(obj.superclass.member_data_items_)
+        attrList = origObj.member_data_items_.keys()
+        return getObjAttributes(obj.superclass, obj, attrList)
+    else:
+        return attrList
+    
+
+def cli_entity(elm, node_name, level=0):
+    '''
+    Dump DS element to cli format
+    '''
+
+    dumped_ent = ''
+    
+    ignore = ['status', 'supported_versions', 'valueOf_']
+    
+    elmClass = elm.__class__.__name__       
+    elmInstance = getattr(ds, elmClass)()
+
+    attrList = getObjAttributes(elmInstance, elmInstance)
+
+    for attr in attrList:
+        if attr in ATTR_IGNORE_LIST+ignore:
+            continue
+            
+        try:
+            attrVal = getAttibuteValue(elm, attr)
+        except AttributeError:
+            continue
+
+        attrType = elmInstance.member_data_items_[attr].get_data_type()
+        attrContainer = elmInstance.member_data_items_[attr].get_container()
+
+        if attrVal is not None and attrVal !=[]:
+            if attr.startswith('type'):
+                attr = attr.rstrip('_')
+                
+            nodeName = "{0}".format(attr)
+            if level > 0:
+                nodeName = "{0}-{1}".format(node_name, attr)
+
+            if attrType.startswith('xs:'):
+                if attrContainer and isinstance(attrVal, list):
+                    attrVal = attrVal[0]
+
+                if re.search('boolean', attrType):
+                    attrVal = str(attrVal).lower()
+
+                if re.search('string', attrType):
+                    attrVal = "'%s'" % attrVal
+
+                dumped_ent += " --{0} {1}".format(nodeName, attrVal)
+                if level>0 and attr=='id':
+                    break
+                
+            else:
+                nextLevel = level + 1
+                if isinstance(attrVal, list):
+                    for i in range(0,len(attrVal)):
+                        dumped_ent += cli_entity(attrVal[i], nodeName, nextLevel)
+                else:
+                    dumped_ent += cli_entity(attrVal, nodeName, nextLevel)
+        
+    return dumped_ent
 
 
 def compareResponseCode(resp, expected, logger):
@@ -86,6 +160,18 @@ def getAttibuteValue(elm, attrName):
         
     return getattr(elm, 'get_' + attrName)()
 
+
+def getClassName(elmClass):
+
+    if elmClass == 'ClusterNetwork':
+        elmClass = 'Network'
+    elif elmClass == 'VMCdRom':
+        elmClass = 'CdRom'
+    elif elmClass == 'RolePermits':
+        elmClass = 'Permits'
+
+    return elmClass
+
     
 def compareElements(expElm, actElm, logger, root):
     '''
@@ -98,7 +184,7 @@ def compareElements(expElm, actElm, logger, root):
     * root - name of the root node
     Returns: True is elements are equal, False otherwise
     '''
-    ignore = ['href', 'status', 'rel', 'role', 'active', 'total']
+    ignore = ATTR_IGNORE_LIST + ['status', 'role', 'active', 'total', 'required']
     equal = True
 
     if not actElm:
@@ -106,20 +192,10 @@ def compareElements(expElm, actElm, logger, root):
         return True
 
     elmClass = expElm.__class__.__name__
-    if elmClass == 'ClusterNetwork':
-        elmClass = 'Network'
-    elif elmClass == 'VMCdRom':
-        elmClass = 'CdRom'
-    elif elmClass == 'RolePermits':
-        elmClass = 'Permits'
-   
+    elmClass = getClassName(elmClass)
     elmInstance = getattr(ds, elmClass)()
 
-    if elmInstance.superclass:
-        # merge element's and its superclass dict items
-        elmInstance.member_data_items_.update(elmInstance.superclass.member_data_items_)
-    
-    attrList = elmInstance.member_data_items_.keys()
+    attrList = getObjAttributes(elmInstance, elmInstance)
    
     for attr in attrList:
         if attr in ignore:

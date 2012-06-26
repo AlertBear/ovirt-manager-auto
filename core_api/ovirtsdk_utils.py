@@ -202,20 +202,20 @@ class SdkUtil(APIUtil):
            * positive - if positive or negative verification should be done
         Return: status (True if DELETE test succeeded, False otherwise)
         '''
-        response = None
+
         try:
             self.logger.debug("DELETE entity: {0}".format(entity.get_id()))
             if body:
-                response = entity.delete(body)
+                entity.delete(body)
             else:
-                response = entity.delete()
+                entity.delete()
         except RequestError as e:
             if positive:
                 errorMsg = "Failed to delete an element, status: {0},reason: {1}, details: {2}"
                 self.logger.error(errorMsg.format(e.status, e.reason, e.detail))
-                return None, False
+                return False
       
-        return response, True
+        return True
 
 
     def query(self, constraint, exp_status=None, href=None, event_id=None):

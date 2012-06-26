@@ -83,6 +83,9 @@ def updateDataCenter(positive, datacenter, **kwargs):
     if 'description' in kwargs:
         dcUpd.set_description(kwargs.pop('description'))
 
+    if 'storage_type' in kwargs:
+        dcUpd.set_storage_type(kwargs.pop('storage_type'))
+
     if 'version' in kwargs:
         majorV, minorV = kwargs.pop('version').split(".")
         dcVersion = Version(major=majorV, minor=minorV)

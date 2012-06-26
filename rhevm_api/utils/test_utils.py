@@ -20,6 +20,7 @@
 
 from core_api.rest_utils import RestUtil
 from core_api.ovirtsdk_utils import SdkUtil
+from core_api.ovirtcli_utils import CliUtil
 import test_handler.settings as settings
 from utilities.utils import readConfFile
 import logging
@@ -64,6 +65,8 @@ def get_api(element, collection):
         api = RestUtil(element, collection)
     if engine == 'sdk':
         api = SdkUtil(element, collection)
+    if engine == 'cli':
+        api = CliUtil(element, collection)
 
     return api
 
