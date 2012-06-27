@@ -6,7 +6,7 @@
 <test_case>
 	<test_name>Create Cluster</test_name>
 	<test_action>addCluster</test_action>
-	<parameters>name='{cluster_name}', version='{compatibility_version}'</parameters>
+	<parameters>name='{cluster_name}',  version='{compatibility_version}'</parameters>
 	<positive>TRUE</positive>
 	<run>YES</run>
 	<report>YES</report>
@@ -24,7 +24,7 @@
 <test_case>
 	<test_name>Create Cluster with default values of gluster_support and virt_support</test_name>
 	<test_action>addCluster</test_action>
-	<parameters>name='{cluster_name}',version='{compatibility_version}'</parameters>
+	<parameters>name='{cluster_name}', version='{compatibility_version}'</parameters>
 	<positive>TRUE</positive>
 	<run>YES</run>
 	<report>YES</report>
@@ -51,7 +51,7 @@
 <test_case>
 	<test_name>Create Cluster</test_name>
 	<test_action>addCluster</test_action>
-	<parameters>name='{cluster_name}',gluster_support={gluster_support},virt_support={virt_support},version='{compatibility_version}'</parameters>
+	<parameters>name='{cluster_name}', gluster_support={gluster_support}, virt_support={virt_support}, version='{compatibility_version}'</parameters>
 	<positive>TRUE</positive>
 	<run>YES</run>
 	<report>NO</report>
@@ -60,23 +60,23 @@
 <test_case>
 	<test_name>Add Hosts</test_name>
 	<test_action>addHost</test_action>
-	<parameters>name='{vds}',root_password='{vds_password}',cluster='{cluster_name}'</parameters>
+	<parameters>name='{vds}', root_password='{vds_password}', cluster='{cluster_name}'</parameters>
 	<positive>TRUE</positive>
-	<run>loop({vds},{vds_password})</run>
+	<run>loop({vds}, {vds_password})</run>
 	<report>YES</report>
 	<fetch_output/>
 </test_case>
 <test_case>
 	<test_name>Add Volume with wrong volume type (parsing test for API)</test_name>
 	<test_action>addClusterVolume</test_action>
-	<parameters> cluster='{cluster_name}',name='{volume_name}',volume_type='{wrong_type}',transport_types='{transport_types}',replica_count={replica_count},stripe_count={stripe_count},access_protocols='{access_protocols}',access_control_list={access_control_list},bricks={bricks},options={options}</parameters>
+	<parameters> cluster='{cluster_name}', name='{volume_name}', volume_type='{wrong_type}', transport_types='{transport_types}', replica_count={replica_count[0]}, stripe_count={stripe_count[0]}, access_protocols='{access_protocols}', access_control_list={access_control_list}, bricks={bricks}, options={options}</parameters>
 	<positive>FALSE</positive>
 	<run>YES</run>
 	<report>YES</report>
 	<fetch_output/>
 </test_case>
 <test_case>
-	<test_name>START_GROUP: Volume tests</test_name>
+	<test_name>START_GROUP: Distribute Volume tests</test_name>
 	<test_action/>
 	<parameters>n/a2</parameters>
 	<positive>TRUE</positive>
@@ -86,16 +86,16 @@
 <test_case>
 	<test_name>Add Volume</test_name>
 	<test_action>addClusterVolume</test_action>
-	<parameters>cluster='{cluster_name}',name='{volume_name}',volume_type='{volume_type}',transport_types='{transport_types}',replica_count={replica_count},stripe_count={stripe_count},access_protocols='{access_protocols}',access_control_list={access_control_list},bricks={bricks},options={options}</parameters>
+	<parameters>cluster='{cluster_name}', name='{volume_name}', volume_type='{volume_type[0]}', transport_types='{transport_types}', replica_count={replica_count[0]}, stripe_count={stripe_count[0]}, access_protocols='{access_protocols}', access_control_list={access_control_list}, bricks={bricks}, options={options}</parameters>
 	<positive>TRUE</positive>
-	<run>loop({volume_type},{replica_count},{stripe_count})</run>
+	<run>YES</run>
 	<report>YES</report>
 	<fetch_output/>
 </test_case>
 <test_case>
 	<test_name>Check Volume Parameters</test_name>
 	<test_action>checkVolumeParams</test_action>
-	<parameters>cluster='{cluster_name}',volume='{volume_name}', access_control_list={access_control_list}</parameters>
+	<parameters>cluster='{cluster_name}', volume='{volume_name}',  access_control_list={access_control_list}</parameters>
 	<positive>TRUE</positive>
 	<run>YES</run>
 	<report>YES</report>
@@ -104,17 +104,25 @@
 <test_case>
 	<test_name>Start Volume</test_name>
 	<test_action>startVolume</test_action>
-	<parameters>cluster='{cluster_name}',volume='{volume_name}'</parameters>
+	<parameters>cluster='{cluster_name}', volume='{volume_name}'</parameters>
 	<positive>TRUE</positive>
 	<run>YES</run>
 	<report>YES</report>
 	<fetch_output/>
 </test_case>
-<!---->
+<test_case>
+	<test_name>Mount test</test_name>
+	<test_action>glusterVolumeMountDDTest</test_action>
+	<parameters>volumeIP='{volume_ip}', volumeExportDir='{volume_export_dir}', host='{mount_host[0]}', mountPoint='{mount_point}', volumeType='{mount_volume_type}', user='{mount_host[1]}', password='{mount_host[2]}'</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
 <test_case>
 	<test_name>Remove Brick</test_name>
 	<test_action>removeBrickFromVolume</test_action>
-	<parameters>cluster='{cluster_name}',volume='{volume_name}',bricks={bricks}</parameters>
+	<parameters>cluster='{cluster_name}', volume='{volume_name}', bricks={game_bricks}</parameters>
 	<positive>TRUE</positive>
 	<run>YES</run>
 	<report>YES</report>
@@ -123,8 +131,53 @@
 <test_case>
 	<test_name>Add Brick</test_name>
 	<test_action>addBrickToVolume</test_action>
-	<parameters>cluster='{cluster_name}',volume='{volume_name}',bricks={bricks}</parameters>
+	<parameters>cluster='{cluster_name}', volume='{volume_name}', bricks={game_bricks}</parameters>
 	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Deactivate Host</test_name>
+	<test_action>deactivateHost</test_action>
+	<parameters>host='{vds[0]}'</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Remove Host</test_name>
+	<test_action>removeHost</test_action>
+	<parameters>host='{vds[0]}'</parameters>
+	<positive>FALSE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Activate Host</test_name>
+	<test_action>activateHost</test_action>
+	<parameters>host='{vds[0]}'</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Add Second Volume</test_name>
+	<test_action>addClusterVolume</test_action>
+	<parameters>cluster='{cluster_name}', name='{sec_volume}', volume_type='{volume_type[0]}', transport_types='{transport_types}', replica_count={replica_count[0]}, stripe_count={stripe_count[0]}, access_protocols='{access_protocols}', access_control_list={access_control_list}, bricks={sec_vol_bricks}, options={options}</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Add brick from first volume to second volume</test_name>
+	<test_action>addBrickToVolume</test_action>
+	<parameters>cluster='{cluster_name}', volume='{sec_volume}', bricks={game_bricks}</parameters>
+	<positive>FALSE</positive>
 	<run>YES</run>
 	<report>YES</report>
 	<fetch_output/>
@@ -132,7 +185,7 @@
 <test_case>
 	<test_name>Stop Volume</test_name>
 	<test_action>stopVolume</test_action>
-	<parameters>cluster='{cluster_name}',volume='{volume_name}'</parameters>
+	<parameters>cluster='{cluster_name}', volume='{volume_name}'</parameters>
 	<positive>TRUE</positive>
 	<run>YES</run>
 	<report>YES</report>
@@ -141,7 +194,16 @@
 <test_case>
 	<test_name>Remove Volume</test_name>
 	<test_action>removeClusterVolume</test_action>
-	<parameters>cluster='{cluster_name}',volume='{volume_name}'</parameters>
+	<parameters>cluster='{cluster_name}', volume='{volume_name}'</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Remove Volume</test_name>
+	<test_action>removeClusterVolume</test_action>
+	<parameters>cluster='{cluster_name}', volume='{sec_volume}'</parameters>
 	<positive>TRUE</positive>
 	<run>YES</run>
 	<report>YES</report>
@@ -158,7 +220,7 @@
 <test_case>
 	<test_name>Remove Brick Directory</test_name>
 	<test_action>removeDirOnHost</test_action>
-	<parameters>ip='{vds}', dirname='{brick_dir_base_name}'</parameters>
+	<parameters>ip='{vds}',  dirname='{brick_dir_base_name}'</parameters>
 	<positive>TRUE</positive>
 	<run>loop({vds})</run>
 	<report>YES</report>
@@ -173,15 +235,465 @@
 	<fetch_output/>
 </test_case>
 <test_case>
-	<test_name>END_GROUP: Volume tests</test_name>
+	<test_name>END_GROUP: Distribute Volume tests</test_name>
 	<test_action/>
 	<parameters>n/a2</parameters>
 	<positive>NONE</positive>
 	<run>YES</run>
 	<fetch_output/>
 </test_case>
-<!---->
-<!---->
+<test_case>
+	<test_name>START_GROUP: Replicate Volume tests</test_name>
+	<test_action/>
+	<parameters>n/a2</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Add Volume</test_name>
+	<test_action>addClusterVolume</test_action>
+	<parameters>cluster='{cluster_name}', name='{volume_name}', volume_type='{volume_type[1]}', transport_types='{transport_types}', replica_count={replica_count[1]}, stripe_count={stripe_count[1]}, access_protocols='{access_protocols}', access_control_list={access_control_list}, bricks={bricks}, options={options}</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Check Volume Parameters</test_name>
+	<test_action>checkVolumeParams</test_action>
+	<parameters>cluster='{cluster_name}', volume='{volume_name}',  access_control_list={access_control_list}</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Start Volume</test_name>
+	<test_action>startVolume</test_action>
+	<parameters>cluster='{cluster_name}', volume='{volume_name}'</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Mount test</test_name>
+	<test_action>glusterVolumeMountDDTest</test_action>
+	<parameters>volumeIP='{volume_ip}', volumeExportDir='{volume_export_dir}', host='{mount_host[0]}', mountPoint='{mount_point}', volumeType='{mount_volume_type}', user='{mount_host[1]}', password='{mount_host[2]}'</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Remove Brick</test_name>
+	<test_action>removeBrickFromVolume</test_action>
+	<parameters>cluster='{cluster_name}', volume='{volume_name}', bricks={game_bricks}</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Add Brick</test_name>
+	<test_action>addBrickToVolume</test_action>
+	<parameters>cluster='{cluster_name}', volume='{volume_name}', bricks={game_bricks}</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Stop Volume</test_name>
+	<test_action>stopVolume</test_action>
+	<parameters>cluster='{cluster_name}', volume='{volume_name}'</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Remove Volume</test_name>
+	<test_action>removeClusterVolume</test_action>
+	<parameters>cluster='{cluster_name}', volume='{volume_name}'</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>START_GROUP: Remove Bricks</test_name>
+	<test_action/>
+	<parameters>n/a2</parameters>
+	<positive>NONE</positive>
+	<run>loop({vds})</run>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Remove Brick Directory</test_name>
+	<test_action>removeDirOnHost</test_action>
+	<parameters>ip='{vds}',  dirname='{brick_dir_base_name}'</parameters>
+	<positive>TRUE</positive>
+	<run>loop({vds})</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>END_GROUP: Remove Bricks</test_name>
+	<test_action/>
+	<parameters>n/a2</parameters>
+	<positive>NONE</positive>
+	<run>YES</run>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>END_GROUP: Replicate Volume tests</test_name>
+	<test_action/>
+	<parameters>n/a2</parameters>
+	<positive>NONE</positive>
+	<run>YES</run>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>START_GROUP: Stripe Volume tests</test_name>
+	<test_action/>
+	<parameters>n/a2</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Add Volume</test_name>
+	<test_action>addClusterVolume</test_action>
+	<parameters>cluster='{cluster_name}', name='{volume_name}', volume_type='{volume_type[2]}', transport_types='{transport_types}', replica_count={replica_count[2]}, stripe_count={stripe_count[2]}, access_protocols='{access_protocols}', access_control_list={access_control_list}, bricks={bricks}, options={options}</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Check Volume Parameters</test_name>
+	<test_action>checkVolumeParams</test_action>
+	<parameters>cluster='{cluster_name}', volume='{volume_name}',  access_control_list={access_control_list}</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Start Volume</test_name>
+	<test_action>startVolume</test_action>
+	<parameters>cluster='{cluster_name}', volume='{volume_name}'</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Mount test</test_name>
+	<test_action>glusterVolumeMountDDTest</test_action>
+	<parameters>volumeIP='{volume_ip}', volumeExportDir='{volume_export_dir}', host='{mount_host[0]}', mountPoint='{mount_point}', volumeType='{mount_volume_type}', user='{mount_host[1]}', password='{mount_host[2]}'</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Remove Brick</test_name>
+	<test_action>removeBrickFromVolume</test_action>
+	<parameters>cluster='{cluster_name}', volume='{volume_name}', bricks={game_bricks}</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Add Brick</test_name>
+	<test_action>addBrickToVolume</test_action>
+	<parameters>cluster='{cluster_name}', volume='{volume_name}', bricks={game_bricks}</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Stop Volume</test_name>
+	<test_action>stopVolume</test_action>
+	<parameters>cluster='{cluster_name}', volume='{volume_name}'</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Remove Volume</test_name>
+	<test_action>removeClusterVolume</test_action>
+	<parameters>cluster='{cluster_name}', volume='{volume_name}'</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>START_GROUP: Remove Bricks</test_name>
+	<test_action/>
+	<parameters>n/a2</parameters>
+	<positive>NONE</positive>
+	<run>loop({vds})</run>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Remove Brick Directory</test_name>
+	<test_action>removeDirOnHost</test_action>
+	<parameters>ip='{vds}',  dirname='{brick_dir_base_name}'</parameters>
+	<positive>TRUE</positive>
+	<run>loop({vds})</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>END_GROUP: Remove Bricks</test_name>
+	<test_action/>
+	<parameters>n/a2</parameters>
+	<positive>NONE</positive>
+	<run>YES</run>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>END_GROUP: Stripe Volume tests</test_name>
+	<test_action/>
+	<parameters>n/a2</parameters>
+	<positive>NONE</positive>
+	<run>YES</run>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>START_GROUP: Destributed Replicate Volume tests</test_name>
+	<test_action/>
+	<parameters>n/a2</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Add Volume</test_name>
+	<test_action>addClusterVolume</test_action>
+	<parameters>cluster='{cluster_name}', name='{volume_name}', volume_type='{volume_type[3]}', transport_types='{transport_types}', replica_count={replica_count[3]}, stripe_count={stripe_count[3]}, access_protocols='{access_protocols}', access_control_list={access_control_list}, bricks={bricks}, options={options}</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Check Volume Parameters</test_name>
+	<test_action>checkVolumeParams</test_action>
+	<parameters>cluster='{cluster_name}', volume='{volume_name}',  access_control_list={access_control_list}</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Start Volume</test_name>
+	<test_action>startVolume</test_action>
+	<parameters>cluster='{cluster_name}', volume='{volume_name}'</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Mount test</test_name>
+	<test_action>glusterVolumeMountDDTest</test_action>
+	<parameters>volumeIP='{volume_ip}', volumeExportDir='{volume_export_dir}', host='{mount_host[0]}', mountPoint='{mount_point}', volumeType='{mount_volume_type}', user='{mount_host[1]}', password='{mount_host[2]}'</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Remove Brick</test_name>
+	<test_action>removeBrickFromVolume</test_action>
+	<parameters>cluster='{cluster_name}', volume='{volume_name}', bricks={game_bricks}</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Add Brick</test_name>
+	<test_action>addBrickToVolume</test_action>
+	<parameters>cluster='{cluster_name}', volume='{volume_name}', bricks={game_bricks}</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Stop Volume</test_name>
+	<test_action>stopVolume</test_action>
+	<parameters>cluster='{cluster_name}', volume='{volume_name}'</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Remove Volume</test_name>
+	<test_action>removeClusterVolume</test_action>
+	<parameters>cluster='{cluster_name}', volume='{volume_name}'</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>START_GROUP: Remove Bricks</test_name>
+	<test_action/>
+	<parameters>n/a2</parameters>
+	<positive>NONE</positive>
+	<run>loop({vds})</run>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Remove Brick Directory</test_name>
+	<test_action>removeDirOnHost</test_action>
+	<parameters>ip='{vds}',  dirname='{brick_dir_base_name}'</parameters>
+	<positive>TRUE</positive>
+	<run>loop({vds})</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>END_GROUP: Remove Bricks</test_name>
+	<test_action/>
+	<parameters>n/a2</parameters>
+	<positive>NONE</positive>
+	<run>YES</run>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>END_GROUP: Destributed Replicate Volume tests</test_name>
+	<test_action/>
+	<parameters>n/a2</parameters>
+	<positive>NONE</positive>
+	<run>YES</run>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>START_GROUP: Destributed Stripe Volume tests</test_name>
+	<test_action/>
+	<parameters>n/a2</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Add Volume</test_name>
+	<test_action>addClusterVolume</test_action>
+	<parameters>cluster='{cluster_name}', name='{volume_name}', volume_type='{volume_type[4]}', transport_types='{transport_types}', replica_count={replica_count[4]}, stripe_count={stripe_count[4]}, access_protocols='{access_protocols}', access_control_list={access_control_list}, bricks={bricks}, options={options}</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Check Volume Parameters</test_name>
+	<test_action>checkVolumeParams</test_action>
+	<parameters>cluster='{cluster_name}', volume='{volume_name}',  access_control_list={access_control_list}</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Start Volume</test_name>
+	<test_action>startVolume</test_action>
+	<parameters>cluster='{cluster_name}', volume='{volume_name}'</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Mount test</test_name>
+	<test_action>glusterVolumeMountDDTest</test_action>
+	<parameters>volumeIP='{volume_ip}', volumeExportDir='{volume_export_dir}', host='{mount_host[0]}', mountPoint='{mount_point}', volumeType='{mount_volume_type}', user='{mount_host[1]}', password='{mount_host[2]}'</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Remove Brick</test_name>
+	<test_action>removeBrickFromVolume</test_action>
+	<parameters>cluster='{cluster_name}', volume='{volume_name}', bricks={game_bricks}</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Add Brick</test_name>
+	<test_action>addBrickToVolume</test_action>
+	<parameters>cluster='{cluster_name}', volume='{volume_name}', bricks={game_bricks}</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Stop Volume</test_name>
+	<test_action>stopVolume</test_action>
+	<parameters>cluster='{cluster_name}', volume='{volume_name}'</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Remove Volume</test_name>
+	<test_action>removeClusterVolume</test_action>
+	<parameters>cluster='{cluster_name}', volume='{volume_name}'</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>START_GROUP: Remove Bricks</test_name>
+	<test_action/>
+	<parameters>n/a2</parameters>
+	<positive>NONE</positive>
+	<run>loop({vds})</run>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>Remove Brick Directory</test_name>
+	<test_action>removeDirOnHost</test_action>
+	<parameters>ip='{vds}',  dirname='{brick_dir_base_name}'</parameters>
+	<positive>TRUE</positive>
+	<run>loop({vds})</run>
+	<report>YES</report>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>END_GROUP: Remove Bricks</test_name>
+	<test_action/>
+	<parameters>n/a2</parameters>
+	<positive>NONE</positive>
+	<run>YES</run>
+	<fetch_output/>
+</test_case>
+<test_case>
+	<test_name>END_GROUP: Destributed Stripe Volume tests</test_name>
+	<test_action/>
+	<parameters>n/a2</parameters>
+	<positive>NONE</positive>
+	<run>YES</run>
+	<fetch_output/>
+</test_case>
 <test_case>
 	<test_name>START_GROUP: Cleanup</test_name>
 	<test_action/>
@@ -193,7 +705,7 @@
 <test_case>
 	<test_name>Remove Volume</test_name>
 	<test_action>removeClusterVolume</test_action>
-	<parameters>cluster='{cluster_name}',volume='{volume_name}'</parameters>
+	<parameters>cluster='{cluster_name}', volume='{volume_name}'</parameters>
 	<positive>TRUE</positive>
 	<run>YES</run>
 	<report>NO</report>
@@ -202,7 +714,7 @@
 <test_case>
 	<test_name>Remove Brick Directory</test_name>
 	<test_action>removeDirOnHost</test_action>
-	<parameters>ip='{vds}', dirname='{brick_dir_base_name}'</parameters>
+	<parameters>ip='{vds}',  dirname='{brick_dir_base_name}'</parameters>
 	<positive>TRUE</positive>
 	<run>loop({vds})</run>
 	<report>YES</report>
@@ -259,5 +771,4 @@
 	<run/>
 	<fetch_output/>
 </test_case>
-<!---->
 </input>

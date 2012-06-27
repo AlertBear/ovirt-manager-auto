@@ -25,7 +25,9 @@ import Queue
 from core_api.apis_utils import getDS
 from rhevm_api.utils.test_utils import get_api, split
 from core_api.validator import compareCollectionSize
-from core_api.apis_exceptions import EntityNotFound
+from core_api.apis_exceptions import EntityNotFound, CannotRunTests
+from utilities.machine import Machine
+
 
 ELEMENT = 'gluster_volume'
 COLLECTION = 'glustervolumes'
@@ -405,8 +407,7 @@ def addBrickToVolume(positive, cluster, volume, bricks):
     volBricks = _prepareBricks(bricks)
 
     volBricks, status = bricksUtil.create(volBricks, positive,
-                        collection=volBricksColl, coll_elm_name = 'brick')
-
+                        collection=volBricksColl, coll_elm_name='brick')
     return status
 
 
@@ -508,3 +509,66 @@ def checkVolumeParams(positive, cluster, volume, **kwargs):
         util.logger.error("checkVolumeParams: %s", str(e))
         return not positive
     return status == positive
+
+
+def glusterVolumeMountDDTest(positive, volumeIP, volumeExportDir, host,
+                mountPoint, volumeType, user='root', password='qum5net',
+                osType='linux', ddParams='if=/dev/zero bs=1024 count=1024',
+                mountOpts=''):
+    '''
+    Description: mount test for gluster volume on remote host
+    Author: imeerovi
+    Parameters:
+    * volumeIP - volume virtual ip
+                 (for now ip of brick host)
+    * volumeExportDir - volume export directory
+                 (for now directory of brick)
+    * host - host ip/name
+    * mountPoint - mount point on host
+    * volumeType (nfs/glusterfs)
+    * user - username [root]
+    * password - password [qum5net]
+    * osType - only 'linux' supported
+    Returns: True if volume mounted OK
+            False in other cases
+    '''
+    fileName = 'test_file'
+
+    machine = Machine(host, user, password).util(osType)
+    if machine == None:
+        return False
+
+    mountCmd = ['mount', '-t', volumeType, '%s:%s' % (volumeIP,
+                    volumeExportDir), mountPoint]
+    mountCmd.extend(mountOpts.split())
+
+    mkdirCmd = ['mkdir', '-p', mountPoint]
+
+    ddCmd = ['dd', 'of=%s/%s' % (mountPoint, fileName)]
+    ddCmd.extend(ddParams.split())
+
+    try:
+        for cmd in [mkdirCmd, mountCmd, ddCmd]:
+            rc, out = machine.runCmd(cmd)
+            if not rc:
+                util.logger.debug(out)
+                raise CannotRunTests("Command:\n%s\n failed to run on\
+ host: %s" % (' '.join(cmd), host))
+
+    finally:
+        rc = machine.removeFile("%s/%s" % (mountPoint, fileName))
+        if not rc:
+            raise CannotRunTests("Failed to remove %s/%s on host %s" %\
+                              (mountPoint, fileName, host))
+
+        umountCmd = ['umount', mountPoint]
+        rmdirCmd = ['/bin/rm', '-rf', mountPoint]
+
+        for cmd in [umountCmd, rmdirCmd]:
+            rc, out = machine.runCmd(cmd)
+            if not rc:
+                util.logger.debug(out)
+                util.logger.debug("Command:\n%s\n failed to run on host: %s" %\
+                                  (' '.join(cmd), host))
+
+    return rc == positive
