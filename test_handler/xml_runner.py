@@ -177,4 +177,8 @@ class XmlRunner(TestRunner):
 
         testCase['test_description'] = self._get_node_val(xmlTestCase, 'test_description', "Test Description")
 
+        testCase['id'] = self._get_node_val(xmlTestCase, 'id', "Test id", None)
+
+        testCase['bz'] = self._get_node_val(xmlTestCase, 'bz', "Test BZ", None)
+
         return super(XmlRunner, self)._run_test_loop(testCase, testGroup, runGroup, startIter, saveGroupRows)

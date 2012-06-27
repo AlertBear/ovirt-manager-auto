@@ -228,6 +228,12 @@ class OdsRunner(TestRunner):
 
         testCase['test_description'] = self._get_cell_val(cells, self.headers['test_description'], "Test Description") if self.headers.has_key('test_description') else ""
 
+        testCase['id'] = self._get_cell_val(cells, self.headers['id'], "Test Id") \
+            if self.headers.has_key('id') else None
+
+        testCase['bz'] = self._get_cell_val(cells, self.headers['bz'], "Test BZ") \
+            if self.headers.has_key('bz') else None
+
         return super(OdsRunner, self)._run_test_loop(testCase, testGroup, runGroup, startIter, saveGroupRows)
 
 

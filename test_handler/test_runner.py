@@ -69,6 +69,8 @@ class TestCase(_TestElm):
     def __init__(self):
         super(TestCase, self).__init__()
         self.positive = None
+        self.id = None
+        self.bz = None
         self.test_type = opts['engine']
         self.report = 'yes'
         self.group = None
@@ -574,6 +576,10 @@ class TestRunner(object):
         testParametersReport = re.sub("self.output\['\w+'\]", self._fetch_output_replacement, testParametersReport)
 
         reportStats['iter_num'] = iteration
+        if testCase['id']:
+            reportStats['id'] = testCase['id']
+        if testCase['bz']:
+            reportStats['bz'] = testCase['bz']
         reportStats['test_name'] = testCase['test_name']
         reportStats['test_description'] = testCase['test_description']
         reportStats['start_time'] = startTime

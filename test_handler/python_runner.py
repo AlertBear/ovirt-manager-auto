@@ -146,6 +146,12 @@ class PythonRunner(TestRunner):
         testCase['fetch_output_to'] = \
             self.get_property_val(test_case, 'fetch_output', 'Fetch output')
 
+        testCase['id'] = \
+            self.get_property_val(test_case, 'id', 'Test Id')
+
+        testCase['bz'] = \
+            self.get_property_val(test_case, 'bz', 'Test BZ')
+
         testCase['test_run'] = 'yes'
 
         return super(PythonRunner, self)._run_test_loop(testCase, group,
