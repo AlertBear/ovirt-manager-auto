@@ -16,21 +16,23 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-import os.path
-import time
 import logging
-from core_api.apis_utils import data_st, TimeoutingSampler
-from rhevm_api.utils.test_utils import get_api, split
-from utilities.utils import readConfFile
-import re
-from core_api.validator import compareCollectionSize
-from core_api.apis_exceptions import APITimeout, EntityNotFound
-from rhevm_api.tests_lib.networks import getClusterNetwork
-from utilities.jobs import Job, JobsSet
+import os.path
 from Queue import Queue
-from threading import Thread
+import re
+import time
+
+from core_api.apis_exceptions import APITimeout, EntityNotFound
+from core_api.apis_utils import data_st, TimeoutingSampler
+from core_api.validator import compareCollectionSize
+from rhevm_api.utils.test_utils import get_api, split, \
+            cobblerAddNewSystem, cobblerSetLinuxHostName
 from rhevm_api.utils.xpath_utils import XPathMatch
+from rhevm_api.tests_lib.networks import getClusterNetwork
 from test_handler.settings import opts
+from threading import Thread
+from utilities.jobs import Job, JobsSet
+from utilities.utils import readConfFile
 
 GBYTE = 1024*1024*1024
 ELEMENTS = os.path.join(os.path.dirname(__file__), '../../conf/elements.conf')
@@ -1451,3 +1453,46 @@ def checkVmStatistics(positive, vm):
          status = False
 
     return status
+
+
+def getVmMacAddress(positive, vm, nic='nic1'):
+    '''Function return mac address of vm with specific nic'''
+    try:
+        nicObj = getVmNic(vm, nic)
+    except EntityNotFound:
+        return False, {'macAddress': None}
+    return True, {'macAddress': str(nicObj.mac.address)}
+
+
+def unattendedInstallation(positive, vm, cobblerAddress, cobblerUser,
+                           cobblerPasswd, image, floppyImage=None,
+                           nic='nic1', hostname=None):
+    '''
+    Description: install VM with answer file:
+    unattended floppy disk for windows.
+    via PXE for rhel.
+    Author: Tomer
+    Parameters:
+       * vm - VM with clean bootable hard disk.
+       * image- cdrom image for windows or profile for rhel.
+       * floppyImage- answer file for windows.
+       * nic- nic name to find out mac address- relevant for rhel only.
+    Return: status (True if VM started to insall OS, False otherwise).
+    '''
+    boot_dev = 'cdrom'
+    if re.search('rhel', image, re.I):
+        status, mac = getVmMacAddress(positive, vm, nic=nic)
+        if not cobblerAddNewSystem(cobblerAddress, cobblerUser, cobblerPasswd,
+                                   mac=mac['macAddress'], osName=image):
+            return False
+
+        if hostname:
+            if not cobblerSetLinuxHostName(cobblerAddress, cobblerUser, cobblerPasswd,
+                                           name=mac['macAddress'], hostname=hostname):
+                return False
+
+        boot_dev = 'hd,network'
+        image = None
+    return runVmOnce(positive, vm, cdrom_image=image, floppy_image=floppyImage,
+                     boot_dev=boot_dev)
+
