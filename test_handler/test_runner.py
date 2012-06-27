@@ -13,7 +13,8 @@ import code
 from configobj import ConfigObj
 from core_api.apis_exceptions import EntityNotFound, EngineTypeError
 from socket import error as SocketError
-from test_handler.settings import opts
+from test_handler.settings import opts, plmanager
+from test_handler.plmanagement.interfaces.tests_listener import SkipTest
 
 EXC_BANNER_WIDTH = 68
 EXC_BANNER_CHAR = '-'
@@ -76,6 +77,15 @@ class TestCase(_TestElm):
         self.group = None
 #        self.fetch_output = None
         self.fetch_output = ''
+
+
+class TestSuite(_TestElm):
+    """
+    Defines test suite properties and methods
+    """
+    def __init__(self):
+        super(TestSuite, self).__init__()
+        self.tcms_plan_id = None
 
 
 class TestRunner(object):
@@ -456,8 +466,12 @@ class TestRunner(object):
             if testCase['test_positive'] and testCase['test_positive'].lower()!='none':
                 testParametersStr = "{0}, {1}".format(testCase['test_positive'].capitalize(), testCase['test_parameters'])
 
-            for i in range(startIter, iterNum):
-                self._run_test_case(i, funcName, testCase, testParametersStr, valsToIterate, loopParamVals, modPath, funcName, testGroup)
+            try:
+                plmanager.test_skippers.should_be_test_case_skipped(testCase)
+                for i in range(startIter, iterNum):
+                    self._run_test_case(i, funcName, testCase, testParametersStr, valsToIterate, loopParamVals, modPath, funcName, testGroup)
+            except SkipTest:
+                plmanager.test_cases.test_case_skipped(testCase)
         return testGroup, runGroup, saveGroupRows
 
     def _run_test_case(self, i, testCallable, testCase, testParametersStrOrg, valsToIterate, loopParamVals, modPath, funcName, testGroup):
@@ -525,6 +539,7 @@ class TestRunner(object):
 
         # Run the test, catching the exceptions makes the test fail, but the
         # scenario continues.
+        plmanager.test_cases.pre_test_case(testCase)
         try:
             if opts['compile']:
                 funcVars = ()
@@ -548,6 +563,7 @@ class TestRunner(object):
         except Exception as e:
             testStatus = False
             self.log_traceback(e, testCase['test_name'])
+        plmanager.test_cases.post_test_case(testCase)
 
 
         if opts['compile']:

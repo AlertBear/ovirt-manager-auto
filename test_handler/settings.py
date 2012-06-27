@@ -27,9 +27,11 @@ from configobj import ConfigObj
 import os
 import re
 from time import strftime
+from test_handler.plmanagement.manager import PluginManager
 
 opts = {}
 """ A options global for all REST tests. """
+plmanager = PluginManager()
 
 
 class CmdLineError(ValueError):
@@ -93,7 +95,13 @@ def populateOptsFromArgv(argv):
                                 default=[],
                                 help='modify the option in config',
                                 dest='redefs')
+
+    plmanager.configurables.add_options(parser)
+
     args = parser.parse_args(argv[1:])
+
+    plmanager.configure.im_func.func_defaults = (args, \
+            plmanager.configure.im_func.func_defaults[1])
 
     if args.groups:
         args.groups = args.groups.split(',')
@@ -180,6 +188,9 @@ def readTestRunOpts(path, redefs):
     config = ConfigObj(path)
     rewriteConfig(config, redefs)
 
+    plmanager.configure.im_func.func_defaults = \
+            (plmanager.configure.im_func.func_defaults[0], config)
+
     # Populate opts from the RUN section.
     runSection = config['RUN']
 
@@ -197,12 +208,12 @@ def readTestRunOpts(path, redefs):
 
     opts['engine'] = runSection['engine']
     opts['data_struct_mod'] = runSection['data_struct_mod']
-    
+
     try:
         __import__(opts['data_struct_mod'])
     except ImportError as exc:
         raise ImportError("Can't import 'data_struct_mod': {0}".format(exc))
-    
+
     opts['api_xsd'] = runSection['api_xsd']
 
     if not opts['log']:
