@@ -33,6 +33,7 @@ util = get_api(ELEMENT, COLLECTION)
 clUtil = get_api('cluster', 'clusters')
 hostUtil = get_api('host', 'hosts')
 brickUtil = get_api('brick', 'bricks')
+bricksUtil = get_api('bricks', 'bricks')
 
 GlusterVolume = getDS('GlusterVolume')
 TransportTypes = getDS('TransportTypes')
@@ -403,8 +404,8 @@ def addBrickToVolume(positive, cluster, volume, bricks):
                                          get_href=True)
     volBricks = _prepareBricks(bricks)
 
-    volBricks, status = brickUtil.create(volBricks, positive,
-                                         collection=volBricksColl)
+    volBricks, status = bricksUtil.create(volBricks, positive,
+                        collection=volBricksColl, coll_elm_name = 'brick')
 
     return status
 

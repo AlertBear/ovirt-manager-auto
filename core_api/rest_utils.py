@@ -120,7 +120,8 @@ class RestUtil(APIUtil):
 
     def create(self, entity, positive,
                 expected_pos_status=[200, 201, 202], expected_neg_status=[500, 400],
-                expectedEntity=None, incrementBy=1, async=False, collection=None):
+                expectedEntity=None, incrementBy=1, async=False, collection=None,
+                coll_elm_name = None):
         '''
         Description: implements POST method and verify the response
         Author: edolinin
@@ -132,6 +133,9 @@ class RestUtil(APIUtil):
            * expectedEntity - if there are some expected entity different from sent
            * incrementBy - increment by number of elements
            * async -sycnh or asynch request
+           * collection - explicitely defined collection where to add an entity
+           * coll_elm_name - name of collection element if it's different
+           from self.element_name
         Return: POST response (None on parse error.),
                 status (True if POST test succeeded, False otherwise.)
         '''
@@ -140,7 +144,10 @@ class RestUtil(APIUtil):
         if not href:
             href = self.links[self.collection_name]
 
-        collection = self.get(href, listOnly=True)
+        if not coll_elm_name:
+            coll_elm_name = self.element_name
+
+        collection = self.get(href, listOnly=True, elm=coll_elm_name)
         entity = validator.dump_entity(entity, self.element_name)
         initialCollectionSize = len(collection)
 
@@ -150,7 +157,7 @@ class RestUtil(APIUtil):
         with self.log_response_time():
             ret = http.POST(self.opts, href, entity, MEDIA_TYPE)
        
-        collection = self.get(href, listOnly=True)
+        collection = self.get(href, listOnly=True, elm=coll_elm_name)
 
         self.validateResponseViaXSD(href, ret)
         self.logger.debug("Response body for CREATE request is: %s " % ret['body'])
