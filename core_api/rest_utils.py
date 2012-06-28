@@ -146,8 +146,10 @@ class RestUtil(APIUtil):
 
         self.logger.debug("CREATE request content is --  url:%(uri)s body:%(body)s " \
                             % {'uri': href, 'body': entity })
-        ret = http.POST(self.opts, href, entity, MEDIA_TYPE)
 
+        with self.log_response_time():
+            ret = http.POST(self.opts, href, entity, MEDIA_TYPE)
+       
         collection = self.get(href, listOnly=True)
 
         self.validateResponseViaXSD(href, ret)
@@ -206,7 +208,10 @@ class RestUtil(APIUtil):
 
         self.logger.debug("PUT request content is --  url:%(uri)s body:%(body)s " \
                                     % {'uri': origEntity.href, 'body': entity })
-        ret = http.PUT(self.opts, origEntity.href, entity, MEDIA_TYPE)
+
+        with self.log_response_time():
+            ret = http.PUT(self.opts, origEntity.href, entity, MEDIA_TYPE)
+        
         self.logger.debug("Response body for PUT request is: %s " % ret['body'])
 
         self.validateResponseViaXSD(origEntity.href, ret)
@@ -249,11 +254,14 @@ class RestUtil(APIUtil):
             body = validator.dump_entity(body, element_name)
             self.logger.debug("DELETE request content is --  url:%(uri)s body:%(body)s " \
                                                         % {'uri': entity.href, 'body': body })
-            ret = http.DELETE(self.opts, entity.href, body, MEDIA_TYPE)
+
+            with self.log_response_time():
+                ret = http.DELETE(self.opts, entity.href, body, MEDIA_TYPE)
         else:
             self.logger.debug("DELETE request content is --  url:%(uri)s" \
                                                             % {'uri': entity.href})
-            ret = http.DELETE(self.opts, entity.href)
+            with self.log_response_time():
+                ret = http.DELETE(self.opts, entity.href)
 
         self.logger.debug("Response body for DELETE request is: %s " % ret['body'])
         self.validateResponseViaXSD(entity.href, ret)
@@ -266,6 +274,7 @@ class RestUtil(APIUtil):
                 return False
 
         return True
+    
 
     def find(self, val, attribute='name', absLink=True, collection=None,
              **kwargs):
@@ -304,6 +313,7 @@ class RestUtil(APIUtil):
                                   on url '%s'." % (val, href))
         return results[0]
 
+
     def query(self, constraint, expected_status=[200, 201], href=None, event_id=None):
         '''
         Description: run search query
@@ -321,7 +331,10 @@ class RestUtil(APIUtil):
             qhref = templ.sub({"query": constraint, "event_id": event_id})
 
         self.logger.debug("SEARCH request content is --  url:%(uri)s" % {'uri': qhref})
-        ret = http.GET(self.opts, qhref, MEDIA_TYPE)
+
+        with self.log_response_time():
+            ret = http.GET(self.opts, qhref, MEDIA_TYPE)
+        
         self.logger.debug("Response body for QUERY request is: %s " % ret['body'])
 
         self.validateResponseViaXSD(href, ret)
@@ -360,11 +373,13 @@ class RestUtil(APIUtil):
 
             self.logger.debug("Action request content is --  url:%(uri)s body:%(body)s " \
                             % {'uri': actionHref, 'body': actionBody })
-            ret = http.POST(self.opts,
+
+            with self.log_response_time():
+                ret = http.POST(self.opts,
                             actionHref,
                             actionBody,
                             MEDIA_TYPE)
-  
+            
             self.logger.debug("Response body for action request is: %s " % ret['body'])
             resp_action = None
             try:

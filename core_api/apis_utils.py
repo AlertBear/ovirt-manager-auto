@@ -19,12 +19,14 @@
 
 import sys
 import time
-from core_api.apis_exceptions import APITimeout, APICommandError, EntityNotFound
 from time import strftime
-import test_handler.settings as settings
 import abc
 import logging
+from contextlib import contextmanager
 from rhevm_api.data_struct.data_structures import GracePeriod, Action
+from core_api.apis_exceptions import APITimeout, APICommandError, EntityNotFound
+import test_handler.settings as settings
+
 
 XSD_PATH = settings.opts.get('api_xsd', 'conf/api.xsd')
 DS_PATH = settings.opts.get('data_struct_mod', 'rhevm_api.data_struct.data_structures')
@@ -170,6 +172,19 @@ class APIUtil(object):
         except APITimeout:
             self.logger.error(TIMEOUT_MSG_TMPL)
             return False
+
+
+    @contextmanager
+    def log_response_time(self):
+        '''
+        Context manager to log request response time
+        '''
+        try:
+            st = time.clock()
+            yield
+        finally:
+            responseTime = time.clock() - st
+            self.logger.debug("Request response time: %0.3f" % (responseTime))
 
 
 class TimeoutingSampler(object):
