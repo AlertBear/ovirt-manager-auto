@@ -18,11 +18,6 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-from core_api.rest_utils import RestUtil
-from core_api.ovirtsdk_utils import SdkUtil
-from core_api.ovirtcli_utils import CliUtil
-import test_handler.settings as settings
-from utilities.utils import readConfFile
 import logging
 import time
 import re
@@ -31,6 +26,15 @@ from contextlib import contextmanager
 from traceback import format_exc
 import os
 import shlex
+import shutil
+import string
+from functools import wraps
+from core_api.rest_utils import RestUtil
+from core_api.ovirtsdk_utils import SdkUtil
+from core_api.ovirtcli_utils import CliUtil
+import test_handler.settings as settings
+from core_api.validator import compareCollectionSize
+from utilities.utils import readConfFile
 from utilities.utils import readConfFile, calculateTemplateUuid,\
 convertMacToIp, pingToVms, getIpAddressByHostName, createDirTree
 from utilities.machine import Machine, eServiceAction
@@ -41,9 +45,6 @@ from utilities.tools import updateGuestTools, isToolsInstalledOnGuest, \
     installToolsFromDir, verifyToolsFilesExist
 #from upgradeSetup.prepSetup import Rhevm
 from rhevm_api.utils.threads import CreateThread, ThreadSafeDict
-import shutil
-import string
-from functools import wraps
 
 logger = logging.getLogger('test_utils')
 
@@ -1090,3 +1091,45 @@ def removeDirOnHost(positive, ip, dirname, user='root',
         return machine.removeFile(dirname)
     elif osType == 'windows':
         return machine.removeDir(dirname)
+
+
+def searchForObj(util, query_key, query_val, key_name,
+                        max=-1, case_sensitive=True):
+    '''
+    Description: search for an object by desired property
+    Parameters:
+       * query_key - name of property to search for
+       * query_val - value of the property to search for
+       * key_name - property in the object equivalent to query_key
+       * max - maximum number of objects to return
+       * case_sensitive - case sensitive or not
+    Return: status (True if expected number of objects equal to
+                    found by search, False otherwise)
+    '''
+
+    expected_count = 0
+    objs = util.get(absLink=False)
+
+    pattern = query_val
+
+    if not case_sensitive:
+        pattern = "(?i)%s" % pattern
+
+    if re.match(r'(.*)\*$', query_val):
+        pattern = r'^%s' % pattern
+
+    for obj in objs:
+        objProperty = getattr(obj, key_name)
+
+        if re.match(pattern, objProperty):
+            expected_count += 1
+
+    if max>0:
+        expected_count = min(expected_count, max)
+
+    contsraint = "{0}={1}".format(query_key, query_val)
+    query_objs = util.query(contsraint, max=max,
+                    case_sensitive=str(case_sensitive).lower())
+    status = compareCollectionSize(query_objs, expected_count, util.logger)
+
+    return status

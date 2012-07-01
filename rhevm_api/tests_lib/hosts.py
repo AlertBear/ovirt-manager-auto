@@ -31,6 +31,7 @@ from utilities.utils import getIpAddressByHostName, getHostName, readConfFile
 from core_api.validator import compareCollectionSize
 from rhevm_api.tests_lib.networks import getClusterNetwork
 from rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
+from rhevm_api.utils.test_utils import searchForObj
 
 ELEMENT = 'host'
 COLLECTION = 'hosts'
@@ -1020,36 +1021,19 @@ def sendSNRequest(positive, host_name, host_nics=None, auto_nics=None, **options
     return util.syncCollectionAction(host_obj.link['nics'].href + '/setupnetworks',
                                      etree.tostring(root), positive)
 
-def searchForHost(positive, query_key, query_val, key_name=None, expected_count=None):
+def searchForHost(positive, query_key, query_val, key_name, **kwargs):
     '''
     Description: search for a host by desired property
     Author: edolinin
     Parameters:
        * query_key - name of property to search for
        * query_val - value of the property to search for
-       * key_name - name of the property in host object equivalent to query_key,
-        required if expected_count is not set
+       * key_name - name of the property in host object equivalent to query_key
     Return: status (True if expected number of hosts equal to found by search,
     False otherwise)
     '''
-    if not expected_count:
-        expected_count = 0
-        hosts = util.get(absLink=False)
-
-        for host in hosts:
-            hostProperty = getattr(host, key_name)
-            if re.match(r'(.*)\*$',query_val):
-                if re.match(r'^' + query_val, hostProperty):
-                    expected_count = expected_count + 1
-            else:
-                if hostProperty == query_val:
-                    expected_count = expected_count + 1
-
-    contsraint = "{0}={1}".format(query_key, query_val)
-    query_hosts = util.query(contsraint)
-    status = compareCollectionSize(query_hosts, expected_count, util.logger)
-
-    return status
+    
+    return searchForObj(util, query_key, query_val, key_name, **kwargs)
 
 
 def rebootHost(positive,host,username,password):

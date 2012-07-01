@@ -24,6 +24,7 @@ from rhevm_api.data_struct.data_structures import *
 from rhevm_api.data_struct.data_structures import ClassesMapping
 from core_api.rest_utils import RestUtil
 from core_api import validator
+from utilities.utils import createCommandLineOptionFromDict
 
 cliInit = False
 
@@ -266,7 +267,8 @@ class CliUtil(RestUtil):
         return True
 
 
-    def query(self, constraint, exp_status=None, href=None, event_id=None):
+    def query(self, constraint, exp_status=None, href=None, event_id=None,
+                                                                **params):
         '''
         Description: run search query
         Author: edolinin
@@ -276,11 +278,10 @@ class CliUtil(RestUtil):
         '''
     
         if event_id is not None:
-            queryCmd = 'list {0} --query "{1}" --from {2}'.\
-                format(self.collection_name, constraint, event_id)
-        else:
-            queryCmd = 'list {0} --query "{1}"'.format(self.collection_name,
-                                                                constraint)
+            params['from'] = event_id
+
+        queryCmd = 'list {0} --query "{1}" {2}'.format(self.collection_name,
+                constraint, " ".join(createCommandLineOptionFromDict(params)))
 
         self.logger.debug("SEARCH cli command is: %s" % queryCmd)
 

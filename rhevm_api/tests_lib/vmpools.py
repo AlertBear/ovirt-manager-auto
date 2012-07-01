@@ -25,6 +25,7 @@ from vms import detachVm, startVm, stopVm, removeVms
 import time
 import re
 from utilities.jobs import Job, JobsSet
+from rhevm_api.utils.test_utils import searchForObj
 
 ELEMENT = 'vmpool'
 COLLECTION = 'vmpools'
@@ -247,7 +248,7 @@ def removeVmPool(positive, vmpool):
     return status
 
 
-def searchForVmPool(positive, query_key, query_val, key_name):
+def searchForVmPool(positive, query_key, query_val, key_name, **kwargs):
     '''
     Description: search for a data center by desired property
     Parameters:
@@ -258,22 +259,5 @@ def searchForVmPool(positive, query_key, query_val, key_name):
                     found by search, False otherwise)
     '''
 
-    expected_count = 0
-    pools = util.get(absLink=False)
-
-    for pool in pools:
-        poolProperty = getattr(pool, key_name)
-        if re.match(r'(.*)\*$',query_val) and poolProperty:
-            if re.match(r'^' + query_val, poolProperty):
-                expected_count = expected_count + 1
-        else:
-            if poolProperty == query_val:
-                expected_count = expected_count + 1
-
-    contsraint = "{0}={1}".format(query_key, query_val)
-    query_pools = util.query(contsraint)
-    status = compareCollectionSize(query_pools, expected_count, util.logger)
-
-    return status
-
+    return searchForObj(util, query_key, query_val, key_name, **kwargs)
 

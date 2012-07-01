@@ -17,17 +17,16 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-import re
 import time
 from Queue import Queue
 from threading import Thread
 
 from core_api.apis_utils import getDS
 from rhevm_api.utils.test_utils import get_api, split
-from core_api.validator import compareCollectionSize
 from core_api.apis_exceptions import EntityNotFound
 from rhevm_api.tests_lib.hosts import activateHost, deactivateHost, updateHost
 from rhevm_api.utils.xpath_utils import XPathMatch
+from rhevm_api.utils.test_utils import searchForObj
 
 ELEMENT = 'cluster'
 COLLECTION = 'clusters'
@@ -306,7 +305,7 @@ def removeClusters(positive, clusters):
     return status and waitForClustersGone(positive, clusters)
 
 
-def searchForCluster(positive, query_key, query_val, key_name):
+def searchForCluster(positive, query_key, query_val, key_name, **kwargs):
     '''
     Description: search for clusters by desired property
     Author: edolinin
@@ -319,23 +318,7 @@ def searchForCluster(positive, query_key, query_val, key_name):
        False otherwise
     '''
 
-    expected_count = 0
-    clusters = util.get(absLink=False)
-
-    for cl in clusters:
-        clProperty = getattr(cl, key_name)
-        if re.match(r'(.*)\*$', query_val):
-            if re.match(r'^' + query_val, clProperty):
-                expected_count = expected_count + 1
-        else:
-            if clProperty == query_val:
-                expected_count = expected_count + 1
-
-    contsraint = "{0}={1}".format(query_key, query_val)
-    query_cls = util.query(contsraint)
-    status = compareCollectionSize(query_cls, expected_count, util.logger)
-
-    return status
+    return searchForObj(util, query_key, query_val, key_name, **kwargs)
 
 
 def isHostAttachedToCluster(positive, host, cluster):

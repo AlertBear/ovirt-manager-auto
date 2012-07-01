@@ -22,13 +22,13 @@ import re
 import time
 
 from core_api.apis_utils import getDS
-from core_api.validator import compareCollectionSize
 from rhevm_api.utils.test_utils import get_api, split
 from rhevm_api.utils.xpath_utils import XPathMatch
 from rhevm_api.tests_lib.networks import getClusterNetwork
 from test_handler.settings import opts
 from utilities.jobs import Job, JobsSet
 from utilities.utils import readConfFile
+from rhevm_api.utils.test_utils import searchForObj
 
 CREATE_TEMPLATE_TIMEOUT = 900
 ELEMENT = 'template'
@@ -202,7 +202,7 @@ def removeTemplates(positive, templates):
     return status
 
 
-def searchForTemplate(positive, query_key, query_val, key_name):
+def searchForTemplate(positive, query_key, query_val, key_name, **kwargs):
     '''
     Description: search for a data center by desired property
     Parameters:
@@ -213,23 +213,7 @@ def searchForTemplate(positive, query_key, query_val, key_name):
                     found by search, False otherwise)
     '''
 
-    expected_count = 0
-    templates = util.get(absLink=False)
-
-    for templ in templates:
-        tProperty = getattr(templ, key_name)
-        if re.match(r'(.*)\*$',query_val):
-            if re.match(r'^' + query_val, tProperty):
-                expected_count = expected_count + 1
-        else:
-            if tProperty == query_val:
-                expected_count = expected_count + 1
-
-    contsraint = "{0}={1}".format(query_key, query_val)
-    query_templs = util.query(contsraint)
-    status = compareCollectionSize(query_templs, expected_count, util.logger)
-
-    return status
+    return searchForObj(util, query_key, query_val, key_name, **kwargs)
 
 
 def addTemplateNic(positive, template, name, network='rhevm',interface=None):

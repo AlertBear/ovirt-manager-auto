@@ -24,7 +24,6 @@ import time
 
 from core_api.apis_exceptions import APITimeout, EntityNotFound
 from core_api.apis_utils import data_st, TimeoutingSampler
-from core_api.validator import compareCollectionSize
 from rhevm_api.utils.test_utils import get_api, split, \
             cobblerAddNewSystem, cobblerSetLinuxHostName
 from rhevm_api.utils.xpath_utils import XPathMatch
@@ -33,6 +32,7 @@ from test_handler.settings import opts
 from threading import Thread
 from utilities.jobs import Job, JobsSet
 from utilities.utils import readConfFile
+from rhevm_api.utils.test_utils import searchForObj
 
 GBYTE = 1024*1024*1024
 ELEMENTS = os.path.join(os.path.dirname(__file__), '../../conf/elements.conf')
@@ -521,7 +521,7 @@ def stopVms(vms, wait='true'):
     return all(resultsList)
 
 
-def searchForVm(positive, query_key, query_val, key_name=None, expected_count=None):
+def searchForVm(positive, query_key, query_val, key_name, **kwargs):
     '''
     Description: search for a data center by desired property
     Parameters:
@@ -531,24 +531,8 @@ def searchForVm(positive, query_key, query_val, key_name=None, expected_count=No
     Return: status (True if expected number of data centers equal to
                     found by search, False otherwise)
     '''
-    if not expected_count:
-        expected_count = 0
-        vms = VM_API.get(absLink=False)
 
-        for vm in vms:
-            vmProperty = getattr(vm, key_name)
-            if re.match(r'(.*)\*$',query_val):
-                if re.match(r'^' + query_val, vmProperty):
-                    expected_count = expected_count + 1
-            else:
-                if vmProperty == query_val:
-                    expected_count = expected_count + 1
-
-    contsraint = "{0}={1}".format(query_key, query_val)
-    query_vms = VM_API.query(contsraint)
-    status = compareCollectionSize(query_vms, expected_count, VM_API.logger)
-
-    return status
+    return searchForObj(VM_API, query_key, query_val, key_name, **kwargs)
 
 
 def detachVm(positive, vm):

@@ -218,7 +218,8 @@ class SdkUtil(APIUtil):
         return True
 
 
-    def query(self, constraint, exp_status=None, href=None, event_id=None):
+    def query(self, constraint, exp_status=None, href=None, event_id=None,
+                                                                **params):
         '''
         Description: run search query
         Author: edolinin
@@ -231,14 +232,15 @@ class SdkUtil(APIUtil):
             collection = self.collection_name
             
         search = None
-        self.logger.debug("SEARCH content is --  collection:%(col)s query:%(q)s event id:%(id)s" \
-            % {'col': self.collection_name, 'q': constraint, 'id': event_id})
         collection = self.__getCollection(collection)
         
         if event_id is not None:
-            search = collection.list(constraint, from_event_id=event_id)
-        else:
-            search = collection.list(constraint)
+            params['from_event_id'] = event_id
+
+        MSG = "SEARCH content is -- collection:%(col)s query:%(q)s params :%(params)s"
+        self.logger.debug(MSG % {'col': self.collection_name, \
+                        'q': constraint, 'params': params})
+        search = collection.list(constraint, **params)
             
         self.logger.debug("Response for QUERY request is: %s " % search)
 

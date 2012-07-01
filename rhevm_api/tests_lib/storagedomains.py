@@ -35,6 +35,7 @@ from rhevm_api.utils.test_utils import validateElementStatus, get_api
 from utilities.utils import getIpAddressByHostName
 from core_api.apis_utils import getDS
 from rhevm_api.utils.xpath_utils import XPathMatch
+from rhevm_api.utils.test_utils import searchForObj
 
 ELEMENTS = os.path.join(os.path.dirname(__file__), '../../conf/elements.conf')
 ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
@@ -189,7 +190,7 @@ def extendStorageDomain(positive, storagedomain, host, **kwargs):
     return status
 
 
-def searchForStorageDomain(positive, query_key, query_val, key_name):
+def searchForStorageDomain(positive, query_key, query_val, key_name, **kwargs):
     '''
     Description: search for storage domains by desired property
     Author: edolinin
@@ -200,23 +201,7 @@ def searchForStorageDomain(positive, query_key, query_val, key_name):
     Return: status (True if expected number is equal to found by search, False otherwise)
     '''
 
-    expected_count = 0
-    sds = util.get(absLink=False)
-
-    for sd in sds:
-        sdProperty = getattr(sd, key_name)
-        if re.match(r'(.*)\*$',query_val):
-            if re.match(r'^' + query_val, sdProperty):
-                expected_count = expected_count + 1
-        else:
-            if sdProperty == query_val:
-                expected_count = expected_count + 1
-
-    contsraint = "{0}={1}".format(query_key, query_val)
-    query_sds = util.query(contsraint)
-    status = compareCollectionSize(query_sds, expected_count, util.logger)
-
-    return status
+    return searchForObj(util, query_key, query_val, key_name, **kwargs)
 
 
 def getDCStorages(datacenter, get_href=True):

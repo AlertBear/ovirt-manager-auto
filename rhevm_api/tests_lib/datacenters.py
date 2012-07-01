@@ -19,15 +19,13 @@
 
 import os
 import Queue
-import re
 import threading
 import time
-
 from core_api.apis_exceptions import EntityNotFound
 from core_api.apis_utils import getDS
-from core_api.validator import compareCollectionSize
 from rhevm_api.utils.test_utils import get_api, split
 from utilities.utils import readConfFile
+from rhevm_api.utils.test_utils import searchForObj
 
 
 ELEMENT = 'data_center'
@@ -109,7 +107,7 @@ def removeDataCenter(positive, datacenter):
     return util.delete(dc, positive)
 
 
-def searchForDataCenter(positive, query_key, query_val, key_name):
+def searchForDataCenter(positive, query_key, query_val, key_name, **kwargs):
     '''
     Description: search for a data center by desired property
     Parameters:
@@ -120,23 +118,7 @@ def searchForDataCenter(positive, query_key, query_val, key_name):
                     found by search, False otherwise)
     '''
 
-    expected_count = 0
-    datacenters = util.get(absLink=False)
-
-    for dc in datacenters:
-        dcProperty = getattr(dc, key_name)
-        if re.match(r'(.*)\*$', query_val):
-            if re.match(r'^' + query_val, dcProperty):
-                expected_count = expected_count + 1
-        else:
-            if dcProperty == query_val:
-                expected_count = expected_count + 1
-
-    contsraint = "{0}={1}".format(query_key, query_val)
-    query_dcs = util.query(contsraint)
-    status = compareCollectionSize(query_dcs, expected_count, util.logger)
-
-    return status
+    return searchForObj(util, query_key, query_val, key_name, **kwargs)
 
 
 def removeDataCenterAsynch(positive, datacenter, queue):

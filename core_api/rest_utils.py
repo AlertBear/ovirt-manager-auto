@@ -321,7 +321,8 @@ class RestUtil(APIUtil):
         return results[0]
 
 
-    def query(self, constraint, expected_status=[200, 201], href=None, event_id=None):
+    def query(self, constraint, expected_status=[200, 201], href=None,
+            event_id=None, **params):
         '''
         Description: run search query
         Author: edolinin
@@ -332,6 +333,14 @@ class RestUtil(APIUtil):
         '''
         if not href:
             href = self.links[self.collection_name + '/search']
+
+        beforeSearch, afterSearch = href.split('?')
+        searchParams = [beforeSearch]
+        for p, val in params.iteritems():
+            searchParams.append("{0}={1}".format(p, val))
+
+        href = "{0}?{1}".format(";".join(searchParams), afterSearch)
+
         templ = template_parser.URITemplate(href)
         qhref = templ.sub({"query": constraint})
         if event_id:
