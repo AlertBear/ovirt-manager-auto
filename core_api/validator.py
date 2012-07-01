@@ -47,7 +47,7 @@ def getObjAttributes(obj, origObj, attrList=[]):
         attrList = origObj.member_data_items_.keys()
         return getObjAttributes(obj.superclass, obj, attrList)
     else:
-        return attrList
+        return origObj.member_data_items_.keys()
     
 
 def cli_entity(elm, node_name, level=0):
@@ -196,7 +196,7 @@ def compareElements(expElm, actElm, logger, root):
     elmInstance = getattr(ds, elmClass)()
 
     attrList = getObjAttributes(elmInstance, elmInstance)
-   
+
     for attr in attrList:
         if attr in ignore:
             continue
@@ -238,6 +238,13 @@ def compareElements(expElm, actElm, logger, root):
             else:
                 nodeName = "{0}->{1}".format(root, attr)
                 if isinstance(attrExpVal, list):
+                    try:
+                        attrExpVal.sort(key=lambda x: x.name)
+                        attrActVal.sort(key=lambda x: x.name)
+                    except AttributeError:
+                        logger.warn("Can't sort {0} objects list by name".\
+                                    format(elmClass))
+
                     for i in range(0,len(attrExpVal)):
                         if i > len(attrActVal)-1:
                             MSG = "Attribute '{0}' with index {1} doesn't exist in actual results"
