@@ -14,7 +14,7 @@ from contextlib import contextmanager
 from configobj import ConfigObj
 from core_api.apis_exceptions import EntityNotFound, EngineTypeError, VitalTestFailed
 from socket import error as SocketError
-from test_handler.settings import opts, plmanager
+from test_handler.settings import opts, initPlmanager
 from test_handler.plmanagement.interfaces.tests_listener import SkipTest
 
 EXC_BANNER_WIDTH = 68
@@ -30,6 +30,7 @@ ELEMENTS_PATH = fetch_path("conf/elements.conf")
 CONFIG_PARAMS = 'PARAMETERS'
 REST_CONNECTION = 'REST_CONNECTION'
 
+plmanager = initPlmanager()
 
 class _TestElm(dict):
 
@@ -497,7 +498,8 @@ class TestRunner(object):
                 plmanager.test_skippers.should_be_test_case_skipped(testCase)
                 for i in range(startIter, iterNum):
                     self._run_test_case(i, funcName, testCase, testParametersStr, valsToIterate, loopParamVals, modPath, funcName, testGroup)
-            except SkipTest:
+            except SkipTest as ex:
+                self.logger.warn("Test was skipped: %s", ex)
                 plmanager.test_cases.test_case_skipped(testCase)
         return testGroup, runGroup, saveGroupRows
 

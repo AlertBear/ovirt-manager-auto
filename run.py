@@ -9,12 +9,15 @@ paths.insert(0, project_path)
 sys.path = paths
 
 from test_handler.test_suite_runner import TestSuiteRunner
-from test_handler.settings import populateOptsFromArgv, CmdLineError, plmanager
+from test_handler.settings import populateOptsFromArgv, CmdLineError, \
+        initPlmanager
 from sys import argv, exit, stderr
 import traceback
 from socket import error as SocketError
 
+
 try:
+    plmanager = initPlmanager()
     redefs = populateOptsFromArgv(argv)
     suiteRunner = TestSuiteRunner(redefs)
     plmanager.configure()
@@ -35,5 +38,6 @@ except Exception as exc:
     print >>stderr, "Exitting with failure."
     exit(2)
 finally:
-    plmanager.application_liteners.on_application_exit()
+    if plmanager is not None:
+        plmanager.application_liteners.on_application_exit()
 

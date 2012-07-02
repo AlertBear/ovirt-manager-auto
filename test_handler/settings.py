@@ -32,7 +32,7 @@ from test_handler.plmanagement.manager import PluginManager
 
 opts = {}
 """ A options global for all REST tests. """
-plmanager = PluginManager()
+plmanager = None
 
 
 class CmdLineError(ValueError):
@@ -40,6 +40,13 @@ class CmdLineError(ValueError):
     Raised when there was something wrong with the command line arg.
     '''
     pass
+
+
+def initPlmanager():
+    global plmanager
+    if plmanager is None:
+        plmanager = PluginManager()
+    return plmanager
 
 
 def populateOptsFromArgv(argv):
@@ -196,7 +203,7 @@ def readTestRunOpts(path, redefs):
 
     # Populate opts from the RUN section.
     runSection = config['RUN']
-   
+
     opts['test_file_name'] = []
     opts['tests'] = runSection.as_list('tests_file')
     for ind, test in enumerate(opts['tests']):
