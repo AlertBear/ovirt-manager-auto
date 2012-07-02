@@ -1,7 +1,12 @@
 #!/usr/bin/python
 
-#import logging
-#logging.basicConfig(level=logging.DEBUG)
+import os
+import sys
+
+project_path = os.path.abspath(os.path.dirname(__file__))
+paths = list(set([os.path.abspath(x) for x in sys.path]) - set((project_path,)))
+paths.insert(0, project_path)
+sys.path = paths
 
 from test_handler.test_suite_runner import TestSuiteRunner
 from test_handler.settings import populateOptsFromArgv, CmdLineError, plmanager
