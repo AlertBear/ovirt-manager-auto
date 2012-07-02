@@ -34,6 +34,19 @@ xpathMatch = XPathMatch(util)
 VM = getDS('VM')
 
 
+def getSystemVersion():
+    '''
+    Description: Gets the version of current system
+    Author: jlibosva
+    Return: Tuple containing version (major, minor)
+    '''
+    system_version = util.get(href='', absLink=False).get_product_info().get_version()
+    system_major = system_version.get_major()
+    system_minor = system_version.get_minor()
+
+    return system_major, system_minor
+
+
 def checkSystemVersionTag(positive):
     '''
     Checks whether there are attributes named:

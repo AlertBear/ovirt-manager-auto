@@ -17,25 +17,25 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 import os
-from utilities.utils import readConfFile
-from core_api.apis_exceptions import EntityNotFound
-from core_api.validator import compareCollectionSize
 import time
 import re
-import utilities.machine as hostUtil
+
+from core_api.apis_exceptions import EntityNotFound
+from core_api.apis_utils import getDS
+from core_api.validator import compareCollectionSize
+from rhevm_api.tests_lib.clusters import addCluster, removeCluster, \
+                         isHostAttachedToCluster, attachHostToCluster, \
+                         connectClusterToDataCenter
 from rhevm_api.tests_lib.datacenters import addDataCenter,removeDataCenter
 from rhevm_api.tests_lib.hosts import deactivateHost, removeHost, getHostCompatibilityVersion
-from rhevm_api.tests_lib.clusters import addCluster, removeCluster
 from rhevm_api.tests_lib.hosts import addHost,waitForHostsStates,getHost
-from rhevm_api.tests_lib.clusters import isHostAttachedToCluster,attachHostToCluster,connectClusterToDataCenter
-#from rhevm_api.storage_api import getVmsInfo,getImagesList,getVolumeInfo
 from rhevm_api.tests_lib.vms import removeVms, stopVms
 from rhevm_api.tests_lib.templates import removeTemplates
-from rhevm_api.utils.test_utils import validateElementStatus, get_api
-from utilities.utils import getIpAddressByHostName
-from core_api.apis_utils import getDS
+from rhevm_api.utils.storage_api import getVmsInfo, getImagesList, getVolumeInfo
+from rhevm_api.utils.test_utils import validateElementStatus, get_api, searchForObj, getImageAndVolumeID
 from rhevm_api.utils.xpath_utils import XPathMatch
-from rhevm_api.utils.test_utils import searchForObj
+import utilities.machine as hostUtil
+from utilities.utils import getIpAddressByHostName, readConfFile
 
 ELEMENTS = os.path.join(os.path.dirname(__file__), '../../conf/elements.conf')
 ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
@@ -909,10 +909,12 @@ def getTemplateImageId(positive, vdsName, username, passwd, dataCenter, storageD
     return False
 
 
-def checkTemplateOnHost(positive, vdsName, username, passwd, dataCenter, storageDomain, template, fake, noImages):
-    '''
-    Description: check template on host get template disk entrence, which is not exposed to REST.
-    Author: istein
+def checkTemplateOnHost(positive, vdsName, username, passwd, dataCenter,
+                        storageDomain, template, fake, noImages):
+    """
+    Description: Checks first volume on given storage domain of specified
+                 template
+    Author: istein, jlibosva
     Parameters:
        * vdsName - host name
        * username - user name
@@ -920,39 +922,45 @@ def checkTemplateOnHost(positive, vdsName, username, passwd, dataCenter, storage
        * dataCenter - data center name
        * storageDomain - name of the storage domain
        * template - template name
-       * fake - If template is expected to be fake set it to True, otherwise to False
-       * noImage - set True, in case no image is expected to be in the storage domain
-    Return: True if volume Lagality is as expected \ No image is expected, and it is not exist,
-            False otherwise)
-    '''
+       * fake - If template is expected to be fake set it to True, otherwise
+                to False
+       * noImage - set True, in case no image is expected to be in the storage
+                   domain
+    Return: True if volume Lagality is as expected \ No image is expected and
+               it doesn't exist
+            False otherwise
+    """
+    domain = util.find(storageDomain)
+    templates = util.getElemFromLink(domain, 'templates', attr='template')
+    dc = dcUtil.find(dataCenter)
 
-    # Get template's volume Id
-    templObj = templUtil.find(template)
-    volumeObj = util.getElemFromLink(templObj, 'disks', attr='disk', get_href=True)
-    numOfDisks = len(volumeObj)
-    if numOfDisks != 1:
-        util.logger.error("Template %s is expected to have a single disk %s" % template)
-	return False
-    volumeId = volumeObj[0].get_id()
+    try:
+        templateObj = [t for t in templates if t.get_name() == template][0]
+    except IndexError:
+        util.logger.error("Template %s was not found on storage domain %s" %
+                          (template, storageDomain))
+        return not positive
 
-    # Get Image Id
-    imageId = getTemplateImageId(positive, vdsName, username, passwd, dataCenter, storageDomain)
+    template_id = templateObj.get_id()
+    dc_id = dc.get_id()
+    domain_id = domain.get_id()
+
+    image_id, volume_id = getImageAndVolumeID(vdsName, username, passwd,
+                                              dc_id, domain_id,
+                                              template_id, 0)
+
     if noImages == 'true':
-        if imageId != False:
+        if image_id is not None:
             util.logger.error("There are image(-s) on domain %s!" % storageDomain)
             return False
         return True
-    else:
-        if imageId == False:
-            util.logger.error("There are no images on domain %s" % storageDomain)
-            return False
+    elif image_id is None:
+        util.logger.error("There are no images on domain %s" % storageDomain)
+        return False
 
     # Get volume Info
-    dcObj = dcUtil.find(dataCenter)
-    dcId = dcObj.get_id()
-    storDomObj = util.find(storageDomain)
-    storDomId = storDomObj.get_id()
-    volInfo = getVolumeInfo(vdsName, username, passwd, dcId, storDomId, imageId, volumeId)
+    volInfo = getVolumeInfo(vdsName, username, passwd, dc_id, domain_id,
+                            image_id, volume_id)
 
     if not volInfo:
         msg = "failed to get volume info; DC {0}, SD{1}, Image {2}, Volume {3}"
@@ -961,9 +969,10 @@ def checkTemplateOnHost(positive, vdsName, username, passwd, dataCenter, storage
 
     # Check volume info legality field
     legality = volInfo['legality']
-    if (fake == 'true' and legality != 'FAKE') or (fake == 'false' and legality != 'LEGAL'):
+    if (fake == 'true' and legality != 'FAKE') or \
+           (fake == 'false' and legality != 'LEGAL'):
         util.logger.error("Template legality is wrong: %s" % legality)
-	return False
+        return False
     return True
 
 

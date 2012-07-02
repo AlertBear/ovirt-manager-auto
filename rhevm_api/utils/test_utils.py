@@ -18,16 +18,18 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-import logging
-import time
-import re
-import random
 from contextlib import contextmanager
+import logging
+from lxml import etree
+import random
+import re
+import time
 from traceback import format_exc
 import os
 import shlex
 import shutil
 import string
+
 from functools import wraps
 from core_api.rest_utils import RestUtil
 from core_api.ovirtsdk_utils import SdkUtil
@@ -37,7 +39,7 @@ from core_api.validator import compareCollectionSize
 from utilities.utils import readConfFile
 from utilities.utils import readConfFile, calculateTemplateUuid,\
 convertMacToIp, pingToVms, getIpAddressByHostName, createDirTree
-from utilities.machine import Machine, eServiceAction
+from utilities.machine import Machine, eServiceAction, LINUX
 from utilities.cobblerApi import Cobbler
 from core_api.apis_exceptions import APITimeout, EntityNotFound
 from utilities.tools import updateGuestTools, isToolsInstalledOnGuest, \
@@ -1133,3 +1135,48 @@ def searchForObj(util, query_key, query_val, key_name,
     status = compareCollectionSize(query_objs, expected_count, util.logger)
 
     return status
+
+
+def getImageAndVolumeID(vds, vds_username, vds_password, spool_id, domain_id,
+                        object_id, idx):
+    """
+    Description: Searches for volumes and images on storage domain
+    Parameters:
+        * vds - host that has mounted storage domain below
+        * vds_username - username of root on vds
+        * vds_password - password for root account on vds
+        * spool_id - storage pool ID containing storage domain below
+        * domain_id - storage domain ID that has template or vm on it
+        * object_id - id of template/vm
+        * idx - index of disk
+    Author: jlibosva
+    Return: Tuple (volume_id, image_id) if found, (None, None) otherwise
+    """
+    path_to_ovf = '/rhev/data-center/%s/%s/master/vms/%s/%s.ovf' % \
+                  (spool_id, domain_id, object_id, object_id)
+
+    logger.debug("Checking file %s on host %s", path_to_ovf, vds)
+
+    namespace_dict = {
+        'ovf' : "http://schemas.dmtf.org/ovf/envelope/1/",
+        'xsi' : "http://www.w3.org/2001/XMLSchema-instance"
+    }
+
+    host = Machine(vds, vds_username, vds_password).util(LINUX)
+    with host.ssh as ssession:
+        ovf_hnd = ssession.getFileHandler().open(path_to_ovf)
+        root_elem = etree.parse(ovf_hnd).getroot()
+        ovf_hnd.close()
+
+    disks_elements = root_elem.xpath('Section[@xsi:type="ovf:DiskSection_Type"]/Disk',
+                                 namespaces=namespace_dict)
+
+
+    attrib = '{' + namespace_dict['ovf'] + '}fileRef'
+    try:
+        image_and_volume = disks_elements[idx].attrib[attrib].split('/', 1)
+    except IndexError:
+        return (None, None)
+
+    return tuple(image_and_volume)
+
