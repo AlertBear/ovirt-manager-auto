@@ -1480,3 +1480,21 @@ def unattendedInstallation(positive, vm, cobblerAddress, cobblerUser,
     return runVmOnce(positive, vm, cdrom_image=image, floppy_image=floppyImage,
                      boot_dev=boot_dev)
 
+
+def waitUntilQuery(vm, query, timeout=VM_IMAGE_OPT_TIMEOUT,
+                   sleep=VM_SAMPLING_PERIOD):
+    """
+    Description: Waits until object given by query above VM is found
+    Parameters:
+        * vm - name of vm
+        * query - query above given VM
+        * timeout - how long should wait
+        * sleep - polling interval
+    Author: jlibosva
+    Return: True if VM was found in given timeout interval, false otherwise
+    """
+    query = ' and '.join(["name=%s" % vm, query]) if query else "name=%s" % vm
+
+    return VM_API.waitForQuery(query, timeout=timeout, sleep=sleep)
+
+
