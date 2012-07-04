@@ -26,7 +26,8 @@ import os
 DEF_TIMEOUT = 900 # default timeout
 DEF_SLEEP = 10 # default sleep
 XSD_FILE = os.path.join(os.path.dirname(__file__), '..', XSD_PATH)
-MEDIA_TYPE = 'application/xml'
+
+restInit = None
 
 
 class RestUtil(APIUtil):
@@ -40,9 +41,17 @@ class RestUtil(APIUtil):
     def __init__(self, element, collection):
 
         super(RestUtil, self).__init__(element, collection)
-        
-        self.links = http.HEAD_for_links(self.opts)
-        self.initiated = True
+
+        global restInit
+
+        if not restInit:
+            self.api = http.HTTPProxy(self.opts)
+            self.api.connect()
+            restInit = self.api
+        else:
+            self.api = restInit
+
+        self.links = self.api.HEAD_for_links()
 
         # load xsd schema file
         if self.xsd is None:
@@ -93,7 +102,7 @@ class RestUtil(APIUtil):
             elm=self.element_name
 
         self.logger.debug("GET request content is --  url:%(uri)s " % {'uri': href })
-        ret = http.GET(self.opts, href, MEDIA_TYPE)
+        ret = self.api.GET(href)
 
         self.validateResponseViaXSD(href, ret)
         validator.compareResponseCode(ret, [200, 201], self.logger)
@@ -155,7 +164,7 @@ class RestUtil(APIUtil):
                             % {'uri': href, 'body': entity })
 
         with self.log_response_time():
-            ret = http.POST(self.opts, href, entity, MEDIA_TYPE)
+            ret = self.api.POST(href, entity)
        
         collection = self.get(href, listOnly=True, elm=coll_elm_name)
 
@@ -217,7 +226,7 @@ class RestUtil(APIUtil):
                                     % {'uri': origEntity.href, 'body': entity })
 
         with self.log_response_time():
-            ret = http.PUT(self.opts, origEntity.href, entity, MEDIA_TYPE)
+            ret = self.api.PUT(origEntity.href, entity)
         
         self.logger.debug("Response body for PUT request is: %s " % ret['body'])
 
@@ -263,12 +272,12 @@ class RestUtil(APIUtil):
                                                         % {'uri': entity.href, 'body': body })
 
             with self.log_response_time():
-                ret = http.DELETE(self.opts, entity.href, body, MEDIA_TYPE)
+                ret = self.api.DELETE(entity.href, body)
         else:
             self.logger.debug("DELETE request content is --  url:%(uri)s" \
                                                             % {'uri': entity.href})
             with self.log_response_time():
-                ret = http.DELETE(self.opts, entity.href)
+                ret = self.api.DELETE(entity.href)
 
         self.logger.debug("Response body for DELETE request is: %s " % ret['body'])
         self.validateResponseViaXSD(entity.href, ret)
@@ -349,7 +358,7 @@ class RestUtil(APIUtil):
         self.logger.debug("SEARCH request content is --  url:%(uri)s" % {'uri': qhref})
 
         with self.log_response_time():
-            ret = http.GET(self.opts, qhref, MEDIA_TYPE)
+            ret = self.api.GET(qhref)
         
         self.logger.debug("Response body for QUERY request is: %s " % ret['body'])
 
@@ -391,10 +400,7 @@ class RestUtil(APIUtil):
                             % {'uri': actionHref, 'body': actionBody })
 
             with self.log_response_time():
-                ret = http.POST(self.opts,
-                            actionHref,
-                            actionBody,
-                            MEDIA_TYPE)
+                ret = self.api.POST(actionHref, actionBody)
             
             self.logger.debug("Response body for action request is: %s " % ret['body'])
             resp_action = None

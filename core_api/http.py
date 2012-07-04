@@ -21,150 +21,196 @@ import httplib
 import base64
 from core_api.apis_exceptions import APIException
 from socket import error as SocketError
-from httplib import BadStatusLine
 
 import logging
-logger = logging.getLogger('main')
-
-def open_connection(opts):
-    if opts['scheme'] == 'https':
-        cnx = httplib.HTTPSConnection(opts['host'], opts['port'])
-    else:
-        cnx = httplib.HTTPConnection(opts['host'], opts['port'])
-
-    return cnx
+logger=logging.getLogger('http')
 
 
-def check_connection(opts):
-    cnx = open_connection(opts)
-    # try the established connection
-    try:
-        cnx.request('HEAD', opts['uri'], headers = basic_headers(opts))
-    except Exception:
-        logging.error("Connection problem for " + opts['uri'])
-        raise SocketError
-    finally:
-        cnx.close()
+class HTTPProxy():
+    '''
+    Establish connection with rest api and run rest methods
+    '''
+
+    def __init__(self, opts):
+        self.opts = opts
+        self.cookie = None
+        self.type = opts['media_type']
+        self.connections_pool = []
+
+        self.default_conn = self.add_connection()
 
 
-def basic_auth(opts):
-    credentials = base64.encodestring('%s@%s:%s' % (opts['user'], opts['user_domain'], opts['password']))[:-1]
-    return "Basic %s" % credentials
+    def __del__(self):
+        '''
+        Close the http connections
+        '''
+        for conn in self.connections_pool:
+            conn.close()
 
 
-def basic_headers(opts):
-    headers = {}
-    if None not in (opts['user'], opts['user_domain'], opts['password']):
-        headers['Authorization'] = basic_auth(opts)
-    return headers
+    def add_connection(self):
+        '''
+        Create a connection and pull it to the pool
+        '''
+        if self.opts['scheme'] == 'https':
+            conn = httplib.HTTPSConnection(self.opts['host'], self.opts['port'])
+        else:
+            conn = httplib.HTTPConnection(self.opts['host'], self.opts['port'])
+
+        self.connections_pool.append(conn)
+        
+        return conn
 
 
-def parse_link(s, links):
-    url = s[s.find('<')+1:s.find('>')]
-    s = s[s.find(';')+1:]
-    rel = s[s.find('rel=')+4:]
-    if rel.find(';') != -1:
-        rel = rel[:s.find(';')]
-    links[rel] = url
-    return links
+    def connect(self, conn=None):
+        '''
+        Run the HEAD request for connection establishing
+        and set cookie if available
+        Parameters:
+        * conn - connection to work with (if not provided - default is used)
+        '''
+        
+        if not conn:
+            conn = self.default_conn
+
+        response = self.__do_request("HEAD", self.opts['uri'],
+                        get_header='Set-Cookie', conn=conn)
+        self.cookie = response['Set-Cookie']
 
 
-def HEAD_for_links(opts):
+    def __do_request(self, method, url, body=None, get_header=None, conn=None):
+        '''
+        Run HTTP request
+        Parameters:
+        * method - request method
+        * url - request url
+        * body - request body
+        * get_header - name of the header to return with the response
+        * conn - connection to work with (if not provided - default is used)
+        '''
 
-    if opts.get('standalone', True):
-        return
+        if not conn:
+            conn = self.default_conn
+            
+        try:
+            headers = self.basic_headers()
+            
+            if type:
+                headers['Accept'] = self.type
+                
+                if body:
+                    headers['Content-type'] = self.type
+
+            # run http request
+            conn.request(method, url, body, headers = headers)
+            # get response
+            resp = conn.getresponse()
+            
+            ret = { 'status' : resp.status, 'body' : resp.read() }
+
+            if resp.status >= 400:
+                ret['reason'] = resp.reason
+
+            if get_header:
+                ret[get_header] = resp.getheader(get_header)
     
-    cnx = open_connection(opts)
-    try:
-        cnx.request('HEAD', opts['uri'], headers = basic_headers(opts))
-        links = {}
-        response = cnx.getresponse()
-        if not 200 == response.status:
-            MSG = "Bad HTTP response status: {0.status} {0.reason}"
-            raise APIException(MSG.format(response))
-        for s in response.getheader('Link').split(','):
-            parse_link(s, links)
+            return ret
+
+        except httplib.CannotSendRequest:
+            add_conn = self.add_connection()
+            self.connect(add_conn)
+            
+            return self.__do_request(method, url, body=body,
+                        get_header=get_header, conn=add_conn)
+        
+        except SocketError:
+            logger.exception("Socket connection problem for " + url)
+            raise
+            
+
+    def GET(self, url):
+        '''
+        GET HTTP request
+        '''
+        return self.__do_request("GET", url)
+
+
+    def POST(self, url, body):
+        '''
+        POST HTTP request
+        '''
+        return self.__do_request("POST", url, body)
+
+
+    def PUT(self, url, body):
+        '''
+        PUT HTTP request
+        '''
+        return self.__do_request("PUT", url, body)
+
+
+    def DELETE(self, url, body=None):
+        '''
+        DELETE HTTP request
+        '''
+        return self.__do_request("DELETE", url, body)
+
+
+    def basic_auth(self):
+        '''
+        Build authentication header
+        '''
+        credentials = base64.encodestring('%s@%s:%s' \
+                %  (self.opts['user'],
+                    self.opts['user_domain'],
+                    self.opts['password']))[:-1]
+        return "Basic %s" % credentials
+
+
+    def basic_headers(self):
+        '''
+        Build request headers
+        '''
+        headers = {}
+        if self.opts['user'] and self.opts['password']:
+            headers['Authorization'] = self.basic_auth()
+            if self.cookie:
+                headers['Cookie'] = self.cookie
+            headers.update(self.opts['headers'])
+
+        return headers
+    
+
+    def __parse_link(self, s, links):
+        '''
+        Build links matrix
+        Parameters:
+        * s - link from response header
+        * links - links dictionary
+        '''
+        url = s[s.find('<')+1:s.find('>')]
+        s = s[s.find(';')+1:]
+        rel = s[s.find('rel=')+4:]
+        if rel.find(';') != -1:
+            rel = rel[:s.find(';')]
+        links[rel] = url
         return links
-    except (SocketError, BadStatusLine):
-        logger.error("Connection problem for " + opts['uri'])
-        raise SocketError
-    finally:
-        cnx.close()
-        
-
-def GET(opts, uri, type = None):
-    cnx = open_connection(opts)
-    try:
-        headers = basic_headers(opts)
-        if not type is None:
-            headers['Accept'] = type
-        cnx.request('GET', uri, headers = headers)
-        ret = { 'status' : 0, 'body' : None }
-        resp = cnx.getresponse()
-        ret['status'] = resp.status
-        ret['body'] = resp.read()
-        return ret
-    except SocketError:
-        logger.exception("Socket connection problem for " + opts['uri'])
-        raise
-    finally:
-        cnx.close()
-        
-
-def POST(opts, uri, body = None, type = None):
-    cnx = open_connection(opts)
-    try:
-        headers = basic_headers(opts)
-        if not type is None:
-            headers['Content-type'] = type
-            headers['Accept'] = type
-        cnx.request('POST', uri, body, headers = headers)
-        ret = { 'status' : 0, 'body' : None }
-        resp = cnx.getresponse()
-        ret['status'] = resp.status
-        ret['body'] = resp.read()
-        return ret
-    except SocketError:
-        logger.exception("Socket connection problem for " + opts['uri'])
-        raise
-    finally:
-        cnx.close()
 
 
-def PUT(opts, uri, body, type = None):
-    cnx = open_connection(opts)
-    try:
-        headers = basic_headers(opts)
-        if not type is None:
-            headers['Content-type'] = type
-            headers['Accept'] = type
-        cnx.request('PUT', uri, body, headers = headers)
-        ret = { 'status' : 0, 'body' : None }
-        resp = cnx.getresponse()
-        ret['status'] = resp.status
-        ret['body'] = resp.read()
-        return ret
-    except SocketError:
-        logger.exception("Socket connection problem for " + opts['uri'])
-        raise
-    finally:
-        cnx.close()
-        
+    def HEAD_for_links(self):
+        '''
+        Build links matrix from HEAD request
+        '''
 
-def DELETE(opts, uri, body = None, type = None):
-    cnx = open_connection(opts)
-    try:
-        headers = basic_headers(opts)
-        if not type is None:
-            headers['Content-type'] = type
-        cnx.request('DELETE', uri, body, headers)
-        ret = { 'status' : 0, 'body' : None }
-        resp = cnx.getresponse()
-        ret['status'] = resp.status
-        ret['body'] = resp.read()
-        return ret
-    except SocketError:
-        logger.exception("Socket connection problem for " + opts['uri'])
-        raise
-    finally:
-        cnx.close()
+        if self.opts.get('standalone', True):
+            return
+
+        response = self.__do_request("HEAD", self.opts['uri'], get_header='link')
+        links = {}
+        if not response['status'] == 200:
+            MSG = "Bad HTTP response status: {0}, {1}"
+            raise APIException(MSG.format(response['status'], response['reason']))
+        for s in response['link'].split(','):
+            self.__parse_link(s, links)
+        return links
+            

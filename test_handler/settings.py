@@ -191,9 +191,11 @@ def readTestRunOpts(path, redefs):
     plmanager.configure.im_func.func_defaults = \
             (plmanager.configure.im_func.func_defaults[0], config)
 
+    opts['headers'] = config.get('HTTP_HEADERS', {})
+
     # Populate opts from the RUN section.
     runSection = config['RUN']
-
+   
     opts['test_file_name'] = []
     opts['tests'] = runSection.as_list('tests_file')
     for ind, test in enumerate(opts['tests']):
@@ -208,6 +210,7 @@ def readTestRunOpts(path, redefs):
 
     opts['engine'] = runSection['engine']
     opts['data_struct_mod'] = runSection['data_struct_mod']
+    opts['media_type'] = runSection['media_type']
 
     try:
         __import__(opts['data_struct_mod'])

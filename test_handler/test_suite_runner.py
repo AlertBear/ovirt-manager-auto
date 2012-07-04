@@ -11,7 +11,7 @@ import logging
 from configobj import ConfigObj
 from test_handler.reports import initializeLogger, DefaultResultsReporter,\
                                  JUnitResultsReporter
-from core_api.http import check_connection
+from core_api.http import HTTPProxy
 from test_handler.settings import opts, populateOptsFromArgv, readTestRunOpts
 from socket import error as SocketError
 from test_handler.python_runner import PythonRunner
@@ -31,7 +31,8 @@ class TestSuiteRunner:
 
         self.config = readTestRunOpts(opts['conf'], redefs)
         if not opts['standalone']:
-            check_connection(opts)  # check connection to vdc rhevm-api
+            conn = HTTPProxy(opts)
+            conn.connect()
 
         initializeLogger()
         self.logger = logging.getLogger(__name__)
