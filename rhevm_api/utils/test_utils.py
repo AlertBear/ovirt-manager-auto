@@ -31,9 +31,6 @@ import shutil
 import string
 
 from functools import wraps
-from core_api.rest_utils import RestUtil
-from core_api.ovirtsdk_utils import SdkUtil
-from core_api.ovirtcli_utils import CliUtil
 import test_handler.settings as settings
 from core_api.validator import compareCollectionSize
 from utilities.utils import readConfFile
@@ -65,10 +62,13 @@ def get_api(element, collection):
 
     engine = settings.opts.get('engine', 'rest')
     if engine == 'rest':
+        from core_api.rest_utils import RestUtil
         api = RestUtil(element, collection)
     if engine == 'sdk':
+        from core_api.ovirtsdk_utils import SdkUtil
         api = SdkUtil(element, collection)
     if engine == 'cli':
+        from core_api.ovirtcli_utils import CliUtil
         api = CliUtil(element, collection)
 
     return api

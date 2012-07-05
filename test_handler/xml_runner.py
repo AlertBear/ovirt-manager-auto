@@ -5,6 +5,7 @@ from test_handler.test_runner import TestRunner, opts, TestCase
 from lxml import etree
 import re
 
+
 class XmlRunner(TestRunner):
     '''
     Implements methods for test runs from xml files
@@ -21,20 +22,20 @@ class XmlRunner(TestRunner):
         self.groups = groups
         self.lines = lines
 
-
-    @staticmethod
-    def load(testFile):
+    def load(self, testFile):
         '''
         Description: load xml file
-        Author: edolinin
+        Author: edolinin, atal
         Parameters:
            * testFile - path to xml file
-        Return: loaded file instance
+        Return: loaded file instance after include all XMLs
         '''
 
-        return etree.parse(testFile)
+        tree = etree.parse(testFile)
+        tree.xinclude()
+        return tree.getiterator(tag='test_case')
 
-    def _get_node_val(self, testCase, nodeName, nodeReportAs = None, defaultVal = ''):
+    def _get_node_val(self, testCase, nodeName, nodeReportAs=None, defaultVal=''):
         '''
         Description: fetch values of test case xml nodes
         Author: edolinin
@@ -56,7 +57,7 @@ class XmlRunner(TestRunner):
             testGroup, runGroup, saveGroupRows = \
                 self._run_test_loop(rerunCase, self.testGroupRerun, self.testGroupLoopVal, saveGroupRows, iter)
 
-    def run_test(self, input):
+    def run_test(self, tree):
         '''
         Description: run rows from specific sheet of ods file
         Author: edolinin
@@ -64,8 +65,8 @@ class XmlRunner(TestRunner):
            * sheet - reference to a sheet that should be run
         Return: none
         '''
-
-        testCases = input.findall('test_case')
+        # convert ElementDepthFirstIterator object to a list
+        testCases = map(lambda a: a, tree)
 
         testGroup = ''
         runGroup = 'yes'
