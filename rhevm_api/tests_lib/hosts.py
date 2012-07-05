@@ -1015,7 +1015,7 @@ def sendSNRequest(positive, host_name, host_nics=None, auto_nics=None, **options
     return util.syncCollectionAction(host_obj.link['nics'].href + '/setupnetworks',
                                      etree.tostring(root), positive)
 
-def searchForHost(positive, query_key, query_val, key_name, **kwargs):
+def searchForHost(positive, query_key, query_val, key_name=None, **kwargs):
     '''
     Description: search for a host by desired property
     Author: edolinin

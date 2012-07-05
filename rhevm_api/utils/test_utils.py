@@ -1096,7 +1096,8 @@ def removeDirOnHost(positive, ip, dirname, user='root',
 
 
 def searchForObj(util, query_key, query_val, key_name,
-                        max=-1, case_sensitive=True):
+                        max=-1, case_sensitive=True,
+                        expected_count=None):
     '''
     Description: search for an object by desired property
     Parameters:
@@ -1108,26 +1109,26 @@ def searchForObj(util, query_key, query_val, key_name,
     Return: status (True if expected number of objects equal to
                     found by search, False otherwise)
     '''
+    if expected_count is None:
+        expected_count = 0
+        objs = util.get(absLink=False)
 
-    expected_count = 0
-    objs = util.get(absLink=False)
+        pattern = query_val
 
-    pattern = query_val
+        if not case_sensitive:
+            pattern = "(?i)%s" % pattern
 
-    if not case_sensitive:
-        pattern = "(?i)%s" % pattern
+        if re.match(r'(.*)\*$', query_val):
+            pattern = r'^%s' % pattern
 
-    if re.match(r'(.*)\*$', query_val):
-        pattern = r'^%s' % pattern
+        for obj in objs:
+            objProperty = getattr(obj, key_name)
 
-    for obj in objs:
-        objProperty = getattr(obj, key_name)
+            if re.match(pattern, objProperty):
+                expected_count += 1
 
-        if re.match(pattern, objProperty):
-            expected_count += 1
-
-    if max>0:
-        expected_count = min(expected_count, max)
+        if max>0:
+            expected_count = min(expected_count, max)
 
     contsraint = "{0}={1}".format(query_key, query_val)
     query_objs = util.query(contsraint, max=max,

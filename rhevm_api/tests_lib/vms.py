@@ -521,7 +521,7 @@ def stopVms(vms, wait='true'):
     return all(resultsList)
 
 
-def searchForVm(positive, query_key, query_val, key_name, **kwargs):
+def searchForVm(positive, query_key, query_val, key_name=None, **kwargs):
     '''
     Description: search for a data center by desired property
     Parameters:
