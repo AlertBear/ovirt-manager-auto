@@ -18,7 +18,7 @@ from test_handler.python_runner import PythonRunner
 from test_handler.xml_runner import XmlRunner
 from test_handler.ods_runner import OdsRunner
 from test_handler.test_runner import CONFIG_PARAMS, ACTIONS_PATH
-from core_api.apis_exceptions import CannotRunTests
+from core_api.apis_exceptions import CannotRunTests, VitalTestFailed
 
 
 class TestSuiteRunner:
@@ -193,7 +193,7 @@ class TestSuiteRunner:
                                            self.autoDevices)
                     test_cases = testRunner.load(testFilePath)
                     testRunner.run_test(test_cases)
-        except SocketError:
+        except (SocketError, VitalTestFailed):
             raise
         except Exception as ex:
             MSG = "Can't run tests from input file '{0}'\

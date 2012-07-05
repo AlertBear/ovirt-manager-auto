@@ -11,7 +11,7 @@ from dateutil.tz import tzutc
 import code
 
 from configobj import ConfigObj
-from core_api.apis_exceptions import EntityNotFound, EngineTypeError
+from core_api.apis_exceptions import EntityNotFound, EngineTypeError, VitalTestFailed
 from socket import error as SocketError
 from test_handler.settings import opts, plmanager
 from test_handler.plmanagement.interfaces.tests_listener import SkipTest
@@ -633,6 +633,5 @@ class TestRunner(object):
                          iteration, TESTS_LOG_SEPARATOR)
 
         if testCase['test_vital'].lower() == "true" and not testStatus:
-            self.logger.error("Vital test failed: '" + testCase['test_name'] + "', can't run any further test. Exiting...")
-            os._exit(1)
+            raise VitalTestFailed(testCase['test_name'])
 
