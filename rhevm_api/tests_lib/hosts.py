@@ -386,22 +386,16 @@ def waitForHostsStates(positive, names, states='up'):
         * states - A state of the hosts to wait for.
     Author: jhenner
     '''
-    query_hosts = ''
     names = split(names)
-    host_count = 0
     for host in names:
-        host_count +=1
         util.find(host)
-        if host_count == 1:
-            query_hosts += "name={0} and status={1}".format(host, states)
-        else:
-            query_hosts += " or name={0} and status={1}".format(host, states)
-  
-    try:
-        util.waitForQuery(query_hosts, timeout=1000)
-    except APITimeout as e:
-        logger.error(e)
-        return False
+        query_host = "name={0} and status={1}".format(host, states)
+       
+        try:
+            util.waitForQuery(query_host, timeout=1000)
+        except APITimeout as e:
+            logger.error(e)
+            return False
     return True
 
 
