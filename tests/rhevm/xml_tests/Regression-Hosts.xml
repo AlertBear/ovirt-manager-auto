@@ -1,0 +1,473 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- vim: set ts=3 sw=3 expandtab: -->
+<?xml-stylesheet type="text/xsl" href="table.xslt"?>
+<input>
+  <!-- ////////////////////////// SETUP /////////////////////////////// -->
+  <test_case>
+    <id>ba3dd1b0-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Create default data center</test_name>
+    <test_action>addDataCenter</test_action>
+    <parameters>name='DefaultRest', storage_type='e{storage_type_nfs}', version='{compatibility_version}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <test_description/>
+  </test_case>
+  <test_case>
+    <id>ba3dd534-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Create cluster with default parameters</test_name>
+    <test_action>addCluster</test_action>
+    <parameters>name='RestCluster1', cpu='{cpu_name}', data_center='DefaultRest', version='{compatibility_version}', on_error='migrate'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3dd750-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Create host</test_name>
+    <test_action>addHost</test_action>
+    <parameters>name='{vds[0]}', root_password='{vds_password[0]}', cluster='RestCluster1', wait=False, vdcPort='{port}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3dd94e-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Check host power management tag whether pm is disabled on fist host</test_name>
+    <test_action>xpathHosts</test_action>
+    <parameters>'hosts', xpath='count(/hosts/host[name="{vds[0]}"]/power_management/enabled[text()="false"])'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3ddb42-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Check host power management tag</test_name>
+    <test_action>xpathHosts</test_action>
+    <parameters>'hosts', xpath='count(/hosts/host[name="{vds[0]}"]/power_management/options[not(node())])'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3ddd36-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Wait until single host is up</test_name>
+    <test_action>waitForHostsStates</test_action>
+    <parameters>names='{vds[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <vital>TRUE</vital>
+  </test_case>
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <!-- ////////////////////////// HOSTS ///////////////////////////////////// -->
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <test_case>
+    <id>ba3ddf2a-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Activate active host</test_name>
+    <test_action>activateHost</test_action>
+    <parameters>host='{vds[0]}'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3de11e-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Update host name</test_name>
+    <test_action>updateHost</test_action>
+    <parameters>host='{vds[0]}', name='myresttest'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3de308-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Update host name back</test_name>
+    <test_action>updateHost</test_action>
+    <parameters>host='myresttest', name='{vds[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3de4f2-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Add power management</test_name>
+    <test_action>updateHost</test_action>
+    <parameters>host='{vds[0]}', pm='true', pm_type='bladecenter', pm_address='10.35.35.35', pm_username='user', pm_password='password', pm_slot='1', pm_secure='false'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <test_description>pwr_mngmt</test_description>
+  </test_case>
+  <test_case>
+    <id>ba3de6dc-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Update power management type</test_name>
+    <test_action>updateHost</test_action>
+    <parameters>host='{vds[0]}', pm='true', pm_type='rsa'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <test_description>pwr_mngmt</test_description>
+  </test_case>
+  <test_case>
+    <id>ba3de8d0-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Update power management to invalid type</test_name>
+    <test_action>updateHost</test_action>
+    <parameters>host='{vds[0]}', pm='true', pm_type='to_type'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+    <test_description>pwr_mngmt</test_description>
+  </test_case>
+  <test_case>
+    <id>ba3deaba-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Remove power management from host</test_name>
+    <test_action>updateHost</test_action>
+    <parameters>host='{vds[0]}', pm='false', pm_type='rsa'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <test_description>pwr_mngmt</test_description>
+  </test_case>
+  <test_case>
+    <id>ba3deca4-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Update IP of active host</test_name>
+    <test_action>updateHost</test_action>
+    <parameters>host='{vds[0]}', address='10.1.1.1'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3dee8e-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Set active host to maintenance for reinstallation</test_name>
+    <test_action>deactivateHost</test_action>
+    <parameters>host='{vds[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3df0c8-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Reinstall host</test_name>
+    <test_action>installHost</test_action>
+    <parameters>host='{vds[0]}', root_password='{vds_password[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <vital>TRUE</vital>
+  </test_case>
+  <test_case>
+    <id>ba3df2c6-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Set host to maintenance after reinstallation</test_name>
+    <test_action>deactivateHost</test_action>
+    <parameters>host='{vds[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3df4b0-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Activate inactive host</test_name>
+    <test_action>activateHost</test_action>
+    <parameters>host='{vds[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3df69a-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Reinstall active host</test_name>
+    <test_action>installHost</test_action>
+    <parameters>host='{vds[0]}', root_password='{vds_password[0]}'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3df884-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Create host with wrong IP address</test_name>
+    <test_action>addHost</test_action>
+    <parameters>name='{vds[0]}', address='10.1.1.256', root_password='{vds_password[0]}'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3dfa78-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Create host with empty root password</test_name>
+    <test_action>addHost</test_action>
+    <parameters>name='nohost', address='10.2.2.2'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3dfc62-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Remove active host</test_name>
+    <test_action>removeHost</test_action>
+    <parameters>host='{vds[0]}'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3dfe4c-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Search for host</test_name>
+    <test_action>searchForHost</test_action>
+    <parameters>query_key='name', query_val='{vds[0]}', key_name='name'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3e0036-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Check events - host switched to maintenance</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=600', expected_count=2</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3e0220-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Check events - host up</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=13', expected_count=3</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3e040a-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Check events - count of 'host installing' is nonzero</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=509', expected_count=0</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3e05f4-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Check events - host installed</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=504', expected_count=2</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3e07de-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Check events - host installing error</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='RestCluster1 type=809', query='type=511', expected_count=0</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3e09c8-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Check events - host state was set to up</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=13', expected_count=3</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3e0bb2-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Check events - host removed</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=44', expected_count=0</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3e0d9c-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Check events - host updated</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=43', expected_count=5</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <!-- //////////////////////////// NETWORK ///////////////////////////////// -->
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <test_case>
+    <id>ba3e0f90-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Create network with default parameters</test_name>
+    <test_action>addNetwork</test_action>
+    <parameters>name='testrest1', data_center='DefaultRest'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3e117a-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Create network with existing name</test_name>
+    <test_action>addNetwork</test_action>
+    <parameters>name='testrest1', data_center='DefaultRest'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3e1396-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Create network with static IP address</test_name>
+    <test_action>addNetwork</test_action>
+    <parameters>name='testrest2', data_center='DefaultRest', address='1.1.1.10', netmask='255.255.0.0', gateway='10.10.10.10'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3e15d0-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Update network name and description</test_name>
+    <test_action>updateNetwork</test_action>
+    <parameters>network='testrest2', name='testrest3', description='Test Desciption'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3e18a0-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Remove network with updated name</test_name>
+    <test_action>removeNetwork</test_action>
+    <parameters>network='testrest3'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3e1abc-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Add network to cluster</test_name>
+    <test_action>addNetworkToCluster</test_action>
+    <parameters>network='testrest1', cluster='RestCluster1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3e1cce-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Attach second host NIC to network</test_name>
+    <test_action>attachHostNic</test_action>
+    <parameters>host='{vds[0]}', nic='{host_nics[1]}', network='testrest1'</parameters>
+    <positive>TRUE</positive>
+    <run>if(1&lt;len('[host_nics]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>ba3e1ef4-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Remove network from cluster</test_name>
+    <test_action>removeNetworkFromCluster</test_action>
+    <parameters>network='testrest1', cluster='RestCluster1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3e20de-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Detach second host NIC from network</test_name>
+    <test_action>detachHostNic</test_action>
+    <parameters>host='{vds[0]}', nic='{host_nics[1]}', network='testrest1'</parameters>
+    <positive>TRUE</positive>
+    <run>if(1&lt;len('[host_nics]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>ba3e22c8-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Remove network</test_name>
+    <test_action>removeNetwork</test_action>
+    <parameters>network='testrest1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3e24c6-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Save host network configuration</test_name>
+    <test_action>commitNetConfig</test_action>
+    <parameters>host='{vds[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <!-- /////////////////////// POWER MANAGEMENT ///////////////////////////// -->
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <test_case>
+    <id>ba3e26ba-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Set host to maintenance before power management operations</test_name>
+    <test_action>deactivateHost</test_action>
+    <parameters>host='{vds[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3e28a4-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Add power management to host</test_name>
+    <test_action>updateHost</test_action>
+    <parameters>host='{vds[0]}', pm='true', pm_type='alom', pm_address='10.10.10.10', pm_username='qa', pm_password='111', pm_port='4444', pm_secure='true'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <test_description>pwr_mngmt</test_description>
+  </test_case>
+  <test_case>
+    <id>ba3e2a8e-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Disable power management</test_name>
+    <test_action>updateHost</test_action>
+    <parameters>host='{vds[0]}', pm='false', pm_type='alom', pm_address=' ', pm_username=' ', pm_password=' ', pm_port=' ', pm_secure='false'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <test_description>pwr_mngmt</test_description>
+  </test_case>
+  <test_case>
+    <id>ba3e2c78-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Activate host after pm operations</test_name>
+    <test_action>activateHost</test_action>
+    <parameters>host='{vds[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3e2e62-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Retrieve host statistics</test_name>
+    <test_action>checkHostStatistics</test_action>
+    <parameters>host='{vds[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3e304c-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Check if host has 'transparent_hugepages/enabled' tag</test_name>
+    <test_action>xpathHosts</test_action>
+    <parameters>'hosts', xpath='count(/hosts/host/transparent_hugepages/enabled)'</parameters>
+    <positive>TRUE</positive>
+    <run>if('{compatibility_version}'.startswith('3.'))</run>
+  </test_case>
+  <test_case>
+    <id>ba3e322c-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Check if host has 'ksm/enabled' tag</test_name>
+    <test_action>xpathHosts</test_action>
+    <parameters>'hosts', xpath='count(/hosts/host/ksm/enabled)'</parameters>
+    <positive>TRUE</positive>
+    <run>if('{compatibility_version}'.startswith('3.'))</run>
+  </test_case>
+  <test_case>
+    <id>ba3e3420-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Check if host has 'iSCSI initiator' tag</test_name>
+    <test_action>checkHostSubelementPresence</test_action>
+    <parameters>host='{vds[0]}', element_path='iscsi.initiator'</parameters>
+    <positive>TRUE</positive>
+    <run>if('{compatibility_version}'.startswith('3.'))</run>
+  </test_case>
+  <test_case>
+    <id>ba3e3600-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Check events - network added</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='RestCluster1 type=809', query='DefaultRest type=942', expected_count=2</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3e37ea-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Check events - host set to maintenance</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=600', expected_count=3</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <!-- ////////////////////////// TEARDOWN /////////////////////////////// -->
+  <test_case>
+    <id>ba3e39d4-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Set active first host to maintenance</test_name>
+    <test_action>deactivateHost</test_action>
+    <parameters>host='{vds[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3e3bbe-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Remove first host</test_name>
+    <test_action>removeHost</test_action>
+    <parameters>host='{vds[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3e3dda-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Remove cluster</test_name>
+    <test_action>removeCluster</test_action>
+    <parameters>cluster='RestCluster1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>ba3e3fd8-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Remove temporary data center</test_name>
+    <test_action>removeDataCenter</test_action>
+    <parameters>datacenter='DefaultRest'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+</input>
