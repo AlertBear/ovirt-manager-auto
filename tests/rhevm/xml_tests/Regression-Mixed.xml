@@ -1,0 +1,1165 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- vim: set ts=3 sw=3 expandtab: -->
+<?xml-stylesheet type="text/xsl" href="table.xslt"?>
+<input>
+  <!-- ////////////////////////// SETUP /////////////////////////////// -->
+  <test_case>
+    <id>d759b7dc-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Create default data center</test_name>
+    <test_action>addDataCenter</test_action>
+    <parameters>name='DefaultRest', storage_type='e{storage_type_nfs}', version='{compatibility_version}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <test_description/>
+  </test_case>
+  <test_case>
+    <id>d759bb60-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Create cluster with default parameters</test_name>
+    <test_action>addCluster</test_action>
+    <parameters>name='RestCluster1', cpu='{cpu_name}', data_center='DefaultRest', version='{compatibility_version}', on_error='migrate'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d759bd7c-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Create host</test_name>
+    <test_action>addHost</test_action>
+    <parameters>name='{vds[0]}', root_password='{vds_password[0]}', cluster='RestCluster1', wait=False, vdcPort='{port}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d759bf84-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check events - host added (if using only one host)</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='RestCluster1 type=809', query='Hosts.name={vds[0]} and type=42', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>if(not 1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>d759c178-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check whether 'host type' property is present</test_name>
+    <test_action>xpathHosts</test_action>
+    <parameters>'hosts', xpath='count(/hosts/host[name="{vds[0]}"]/type/text())'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d759c36c-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check whether member of /domains collection returns correct domains ID</test_name>
+    <test_action>checkDomainsId</test_action>
+    <parameters/>
+    <positive>NONE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d759c56a-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check whether there is a 'custom_properties/custom_property' tag is in 3.1 capabilities</test_name>
+    <test_action>xpathVms</test_action>
+    <parameters>'capabilities', xpath='count(/capabilities/version[@major=3 and @minor=1]/custom_properties/custom_property)'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d759c75e-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check whether all 'custom_properties/custom_property' have regexp and name nodes</test_name>
+    <test_action>xpathVms</test_action>
+    <parameters>'capabilities', xpath='count(/capabilities/version/custom_properties/custom_property[not(@regexp) or not(@name)])', rslt_eval='0==result'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <!-- ////////////////////////// DATACENTERS /////////////////////////////// -->
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <test_case>
+    <id>d759c95c-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Create NFS data center</test_name>
+    <test_action>addDataCenter</test_action>
+    <parameters>name='RestDataCenter1', storage_type='e{storage_type_nfs}', version='3.0'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d759cb50-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Create temporary iSCSI data center</test_name>
+    <test_action>addDataCenter</test_action>
+    <parameters>name='RestDataCenter2', storage_type='e{storage_type_iscsi}', version='{compatibility_version}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d759cd44-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Create data center with spaces in name</test_name>
+    <test_action>addDataCenter</test_action>
+    <parameters>name='No Data Center', storage_type='e{storage_type_iscsi}', version='{compatibility_version}'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d759cf38-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Create data center with existing name</test_name>
+    <test_action>addDataCenter</test_action>
+    <parameters>name='RestDataCenter2', storage_type='e{storage_type_iscsi}', version='{compatibility_version}'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d759d122-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Update data center name and description</test_name>
+    <test_action>updateDataCenter</test_action>
+    <parameters>datacenter='RestDataCenter1', name='RestDataCenterUpdated'', description='Data Center Description'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d759d32a-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Update data center type</test_name>
+    <test_action>updateDataCenter</test_action>
+    <parameters>datacenter='RestDataCenter2', storage_type='e{storage_type_nfs}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d759d56e-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Remove temporary data center</test_name>
+    <test_action>removeDataCenter</test_action>
+    <parameters>datacenter='RestDataCenter2'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d759d780-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Search for data centers</test_name>
+    <test_action>searchForDataCenter</test_action>
+    <parameters>query_key='type', query_val='e{storage_type_nfs}', key_name='storage_type'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d759d974-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check events - data center created</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='RestDataCenter1 type=950', query='type=950', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d759db7c-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check events - data center updated</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='RestDataCenter1 type=950', query='type=952', expected_count=2</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d759dd66-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check events - data center removed</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='RestDataCenter1 type=950', query='type=954', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <!-- ///////////////////////////// CLUSTERS /////////////////////////////// -->
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <test_case>
+    <id>d759df64-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Create cluster with name of existing one</test_name>
+    <test_action>addCluster</test_action>
+    <parameters>name='RestCluster1', cpu='{cpu_name}', data_center='DefaultRest'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d759e158-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Create cluster with specific version</test_name>
+    <test_action>addCluster</test_action>
+    <parameters>name='RestCluster4', cpu='{cpu_name}', version='{compatibility_version}', data_center='DefaultRest'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d759e342-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Create temporary cluster with specific data center</test_name>
+    <test_action>addCluster</test_action>
+    <parameters>name='RestCluster3', cpu='{cpu_name}', data_center='RestDataCenterUpdated', on_error='do_not_migrate'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d759e536-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Search for clusters</test_name>
+    <test_action>searchForCluster</test_action>
+    <parameters>query_key='name', query_val='RestCluster*', key_name='name'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d759e536-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Search for clusters - case insensitive</test_name>
+    <test_action>searchForCluster</test_action>
+    <parameters>query_key='name', query_val='restcluster*', key_name='name', case_sensitive=False</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d759e536-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Search for clusters - max limit</test_name>
+    <test_action>searchForCluster</test_action>
+    <parameters>query_key='name', query_val='RestCluster*', key_name='name', max=2</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d759e536-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Search for clusters - max limit and case insensitive</test_name>
+    <test_action>searchForCluster</test_action>
+    <parameters>query_key='name', query_val='RestCluster*', key_name='name', case_sensitive=False, max=3</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d759e720-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Update cluster</test_name>
+    <test_action>updateCluster</test_action>
+    <parameters>cluster='RestCluster3', name='RestCluster3Upd', cpu='{cpu_name}', description='Cluster Description', on_error='migrate_highly_available'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d759e90a-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Update cluster data center</test_name>
+    <test_action>updateCluster</test_action>
+    <parameters>cluster='RestCluster3Upd', data_center='DefaultRest''</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d759eafe-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Remove temporary cluster</test_name>
+    <test_action>removeCluster</test_action>
+    <parameters>cluster='RestCluster3Upd'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d759ece8-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check events - cluster created</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='RestCluster1 type=809', query='type=809', expected_count=2</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d759eedc-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check events - cluster updated</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='RestCluster1 type=809', query='type=811', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d759f0c6-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check events - cluster removed</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='RestCluster1 type=809', query='type=813', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d759f2b0-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Create cluster with specific memory overcommit</test_name>
+    <test_action>addCluster</test_action>
+    <parameters>name='RestCluster5', cpu='{cpu_name}', data_center='DefaultRest', version='{compatibility_version}', mem_ovrcmt_prc='75'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <test_description>mem_overcommit</test_description>
+  </test_case>
+  <test_case>
+    <id>d759f4a4-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Create cluster with scheduling policy power_saving</test_name>
+    <test_action>addCluster</test_action>
+    <parameters>name='RestCluster6', cpu='{cpu_name}', data_center='DefaultRest', version='{compatibility_version}', scheduling_policy='e{scheduling_policy_power_saving}', thrhld_low='20', thrhld_high='60', duration='180'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <test_description>sched_pol</test_description>
+  </test_case>
+  <test_case>
+    <id>d759f68e-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Create cluster with scheduling policy evenly_distributed</test_name>
+    <test_action>addCluster</test_action>
+    <parameters>name='RestCluster7', cpu='{cpu_name}', data_center='DefaultRest', version='{compatibility_version}', scheduling_policy='e{scheduling_policy_evenly_distributed}', thrhld_high='60', duration='180'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <test_description>sched_pol</test_description>
+  </test_case>
+  <test_case>
+    <id>d759f878-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check cluster memory overcommit</test_name>
+    <test_action>checkClusterParams</test_action>
+    <parameters>cluster='RestCluster5', mem_ovrcmt_prc='75'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <test_description>mem_overcommit</test_description>
+  </test_case>
+  <test_case>
+    <id>d759fa6c-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check cluster with scheduling policy power_saving</test_name>
+    <test_action>checkClusterParams</test_action>
+    <parameters>cluster='RestCluster6', scheduling_policy='e{scheduling_policy_power_saving}', thrhld_low='20', thrhld_high='60', duration='180'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <test_description>sched_pol</test_description>
+  </test_case>
+  <test_case>
+    <id>d759fc92-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check cluster with scheduling policy evenly_distributed</test_name>
+    <test_action>checkClusterParams</test_action>
+    <parameters>cluster='RestCluster7', scheduling_policy='e{scheduling_policy_evenly_distributed}', thrhld_high='60', duration='180'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <test_description>sched_pol</test_description>
+  </test_case>
+  <test_case>
+    <id>d759fe9a-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Update cluster with specific memory overcommit</test_name>
+    <test_action>updateCluster</test_action>
+    <parameters>cluster='RestCluster5', cpu='{cpu_name}', data_center='DefaultRest', mem_ovrcmt_prc='76'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <test_description>mem_overcommit</test_description>
+  </test_case>
+  <test_case>
+    <id>d75a0084-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Update cluster with specific thresholds relevant to power_saving</test_name>
+    <test_action>updateCluster</test_action>
+    <parameters>cluster='RestCluster6', cpu='{cpu_name}', data_center='DefaultRest', thrhld_low='21', thrhld_high='61', duration='240', scheduling_policy='e{scheduling_policy_power_saving}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <test_description>sched_pol</test_description>
+  </test_case>
+  <test_case>
+    <id>d75a0278-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Update cluster with specific thresholds relevant to evenly_ditributed</test_name>
+    <test_action>updateCluster</test_action>
+    <parameters>cluster='RestCluster7', cpu='{cpu_name}', data_center='DefaultRest', thrhld_high='61', duration='240', scheduling_policy='e{scheduling_policy_evenly_distributed}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <test_description>sched_pol</test_description>
+  </test_case>
+  <test_case>
+    <id>d75a0462-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check cluster memory overcommit again after cluster update</test_name>
+    <test_action>checkClusterParams</test_action>
+    <parameters>cluster='RestCluster5', mem_ovrcmt_prc='76'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <test_description>mem_overcommit</test_description>
+  </test_case>
+  <test_case>
+    <id>d75a064c-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check cluster scheduling policy on cluster with power_saving policy</test_name>
+    <test_action>checkClusterParams</test_action>
+    <parameters>cluster='RestCluster6', thrhld_low='21', thrhld_high='61', duration='240', scheduling_policy='e{scheduling_policy_power_saving}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <test_description>sched_pol</test_description>
+  </test_case>
+  <test_case>
+    <id>d75a0840-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check cluster scheduling policy on cluster with evenly_distributed policy</test_name>
+    <test_action>checkClusterParams</test_action>
+    <parameters>cluster='RestCluster7', thrhld_high='61', duration='240', scheduling_policy='e{scheduling_policy_evenly_distributed}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <test_description>sched_pol</test_description>
+  </test_case>
+  <test_case>
+    <id>d75a0a2a-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Update cluster with specific scheduling policy</test_name>
+    <test_action>updateCluster</test_action>
+    <parameters>cluster='RestCluster7', scheduling_policy='e{scheduling_policy_power_saving}', thrhld_low='20'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <test_description>sched_pol</test_description>
+  </test_case>
+  <test_case>
+    <id>d75a0c14-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check whether cluster scheduling policy changed</test_name>
+    <test_action>checkClusterParams</test_action>
+    <parameters>cluster='RestCluster7', thrhld_low='20', thrhld_high='61', duration='240', scheduling_policy='e{scheduling_policy_power_saving}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <test_description>sched_pol</test_description>
+  </test_case>
+  <test_case>
+    <id>d75a0dfe-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Update cluster with threshold/low &gt; threshold/high</test_name>
+    <test_action>updateCluster</test_action>
+    <parameters>cluster='RestCluster7', scheduling_policy='e{scheduling_policy_power_saving}', thrhld_low='60', thrhld_high='20'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+    <test_description>sched_pol</test_description>
+  </test_case>
+  <test_case>
+    <id>d75a0fe8-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check for 3.1 cluster capabilities - if it contains 'transparent_hugepages' tag</test_name>
+    <test_action>xpathClusters</test_action>
+    <parameters>'capabilities', xpath='count(/capabilities/version[@major=3 and @minor=1]/features/transparent_hugepages)'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a11d2-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check whether 'Everyone' group exists</test_name>
+    <test_action>groupExists</test_action>
+    <parameters>group_name='Everyone'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a13bc-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Try to delete 'Everyone' group</test_name>
+    <test_action>deleteGroup</test_action>
+    <parameters>group_name='Everyone'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a15a6-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Wait until single host is up</test_name>
+    <test_action>waitForHostsStates</test_action>
+    <parameters>names='{vds[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <vital>TRUE</vital>
+  </test_case>
+  <!-- /////////////////////// TEST SCENARIO //////////////////////////////// -->
+  <test_case>
+    <id>d75a179a-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Create NFS data storage domain</test_name>
+    <test_action>addStorageDomain</test_action>
+    <parameters>name='DataDomainRest', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a1984-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Attach NFS data storage domain to data center</test_name>
+    <test_action>attachStorageDomain</test_action>
+    <parameters>datacenter='DefaultRest', storagedomain='DataDomainRest'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a1b6e-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Update storage domain name</test_name>
+    <test_action>updateStorageDomain</test_action>
+    <parameters>storagedomain='DataDomainRest', name='DataDomainRestUpd'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a1d58-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Create VM to test templates</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='restvm_templates', cluster='RestCluster1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a1f42-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Add Disk To VM that tests template</test_name>
+    <test_action>addDiskToVm</test_action>
+    <parameters>vm='restvm_templates', size=2147483648, storagedomain='DataDomainRestUpd', type='e{disk_type_system}', format='e{format_cow}', interface='e{interface_ide}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a212c-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Create template with default parameters</test_name>
+    <test_action>createTemplate</test_action>
+    <parameters>vm='restvm_templates', name='rest_templ3', cluster='RestCluster1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a235c-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Create VM to test tags and user permissions</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='restvm_tags_users', cluster='RestCluster1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a2564-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Create user</test_name>
+    <test_action>addUser</test_action>
+    <parameters>user_name='{new_user}', domain='{user_domain}', groups='{user_domain}/QA-All-Users/RDP-Group, {user_domain}/QA-All-Users/LocalAdmins-Group, {user_domain}/QA-All-Users/QA-MembersGroup', role='e{role_name_user_role}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a2758-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Add data center permission to user</test_name>
+    <test_action>addPermissionsForDataCenter</test_action>
+    <parameters>user='{new_user}', data_center='DefaultRest'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a2942-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Remove all permissions from user</test_name>
+    <test_action>removeAllPermissionsFromUser</test_action>
+    <parameters>user='{new_user}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a2b22-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Create tag</test_name>
+    <test_action>addTag</test_action>
+    <parameters>name='TagRestTest_sentinel', description='Test Tag Description'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a2d16-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Create second tag</test_name>
+    <test_action>addTag</test_action>
+    <parameters>name='TagRestTest2', description='Test Tag Description'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a2f00-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Create third tag</test_name>
+    <test_action>addTag</test_action>
+    <parameters>name='TagRestTest3'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a30ea-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Create fourth tag</test_name>
+    <test_action>addTag</test_action>
+    <parameters>name='TagRestTest_to_existing_name'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a32ca-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Create fifth tag</test_name>
+    <test_action>addTag</test_action>
+    <parameters>name='TagRestTestExisting'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a34be-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Create subtag</test_name>
+    <test_action>addTag</test_action>
+    <parameters>name='SubTagRestTest', description='Test Tag Description', parent='TagRestTest2'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a36a8-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Create tag with existing name</test_name>
+    <test_action>addTag</test_action>
+    <parameters>name='SubTagRestTest', description='Test Tag Description'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a3892-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Update tag name and description</test_name>
+    <test_action>updateTag</test_action>
+    <parameters>tag='TagRestTest_sentinel', name='TagRestTestUpd', description='Test Tag Description Updates'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a3a7c-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Update tag parent to itself</test_name>
+    <test_action>updateTag</test_action>
+    <parameters>tag='TagRestTest2', parent='TagRestTest2'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a3c70-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Update tag parent</test_name>
+    <test_action>updateTag</test_action>
+    <parameters>tag='TagRestTest3', parent='SubTagRestTest'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a3e5a-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Create tag loop</test_name>
+    <test_action>updateTag</test_action>
+    <parameters>tag='TagRestTest2', parent='TagRestTest3'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a4044-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Remove TagRestTest2</test_name>
+    <test_action>removeTag</test_action>
+    <parameters>tag='TagRestTest2'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a4224-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Associate tag with VM</test_name>
+    <test_action>addTagToVm</test_action>
+    <parameters>tag='TagRestTestUpd', vm='restvm_tags_users'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a440e-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Associate non-existing tag with VM</test_name>
+    <test_action>addTagToVm</test_action>
+    <parameters>tag='TagRestTest', vm='restvm_tags_users'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a45f8-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Search for VM by tag</test_name>
+    <test_action>searchForVm</test_action>
+    <parameters>query_key='tag', query_val='TagRestTestUpd*', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a47ec-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Associate tag with host</test_name>
+    <test_action>addTagToHost</test_action>
+    <parameters>tag='TagRestTestUpd', host='{vds[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a49cc-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Search for host by tag</test_name>
+    <test_action>searchForHost</test_action>
+    <parameters>query_key='tag', query_val='TagRestTestUpd*', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a4c06-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Remove tag from VM</test_name>
+    <test_action>removeTagFromVm</test_action>
+    <parameters>tag='TagRestTestUpd', vm='restvm_tags_users'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a4dfa-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Remove tag from host</test_name>
+    <test_action>removeTagFromHost</test_action>
+    <parameters>tag='TagRestTestUpd', host='{vds[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a4fe4-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Update tag name to existing name</test_name>
+    <test_action>updateTag</test_action>
+    <parameters>tag='TagRestTest_to_existing_name', name='TagRestTestExisting'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a51ce-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check whether TagRestTestUpd is unique</test_name>
+    <test_action>xpathTags</test_action>
+    <parameters>'tags', xpath='count(/tags/tag/name[text()="TagRestTestExisting"])', rslt_eval='1==result'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a53b8-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Remove TagRestTest_to_existing_name</test_name>
+    <test_action>removeTag</test_action>
+    <parameters>tag='TagRestTest_to_existing_name'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a55ac-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Remove TagRestTestExisting</test_name>
+    <test_action>removeTag</test_action>
+    <parameters>tag='TagRestTestExisting'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a5796-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check events - tag added</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='TagRestTest_sentinel type=432', query='type=432', expected_count=5</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a5980-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check events - tag updated</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='TagRestTest_sentinel type=432', query='type=430', expected_count=3</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a5b6a-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check events - tag moved</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='TagRestTest_sentinel type=432', query='type=555', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a5d54-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check events - tag attached to VM</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='TagRestTest_sentinel type=432', query='TagRestTestUpd type=440', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a5f3e-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check events - tag attached to host</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='TagRestTest_sentinel type=432', query='TagRestTestUpd type=442', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a6128-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check events - tag removed from VM</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='TagRestTest_sentinel type=432', query='TagRestTestUpd type=446', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a6312-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check events - tag removed from host</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='TagRestTest_sentinel type=432', query='TagRestTestUpd type=444', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a64fc-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check events - tag and subtag removed</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='TagRestTest_sentinel type=432', query='type=434', expected_count=3</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <!-- ///////////////////////////// USERS AND ROLES //////////////////////// -->
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <test_case>
+    <id>d75a66f0-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Add role to user</test_name>
+    <test_action>addRoleToUser</test_action>
+    <parameters>user='{new_user}', role='e{role_name_power_user_role}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a68da-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Create user with no roles</test_name>
+    <test_action>addUser</test_action>
+    <parameters>user_name='{no_roles_user}', domain='{user_domain}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a6ac4-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Create user with wrong domain</test_name>
+    <test_action>addUser</test_action>
+    <parameters>user_name='{wrong_domain_user}', domain='not.existing.domain.com'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a6cae-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Create user that doesn't exist in domain</test_name>
+    <test_action>addUser</test_action>
+    <parameters>user_name='{not_existing_user}', domain='{user_domain}'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a6e98-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Add tag to user</test_name>
+    <test_action>addTagToUser</test_action>
+    <parameters>user='{new_user}', tag='TagRestTestUpd'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a7082-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check system summary</test_name>
+    <test_action>checkSummary</test_action>
+    <parameters>domain='{user_domain}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a733e-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check existing permissions</test_name>
+    <test_action>checkSystemPermits</test_action>
+    <parameters/>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a7532-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Add role</test_name>
+    <test_action>addRole</test_action>
+    <parameters>name='New_Role', administrative='true', permits='e{create_vm_permit} e{create_host_permit} e{manipulate_roles_permit} e{delete_cluster_permit}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a7726-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Add non-admin role</test_name>
+    <test_action>addRole</test_action>
+    <parameters>name='NA_Role', administrative='false', permits='e{create_vm_permit} e{migrate_vm_permit} e{delete_vm_permit}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a791a-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Remove non-admin role</test_name>
+    <test_action>removeRole</test_action>
+    <parameters>role='NA_Role'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a7b04-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Add role of non-admin type with admin permits</test_name>
+    <test_action>addRole</test_action>
+    <parameters>name='Bad_Role', administrative='false', permits='e{create_vm_permit} e{create_host_permit} e{manipulate_roles_permit} e{delete_cluster_permit}'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a7cee-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Add permission to role</test_name>
+    <test_action>addRolePermissions</test_action>
+    <parameters>role='New_Role', permit='e{create_storage_domain_permit}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a7f0a-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Remove permission from role</test_name>
+    <test_action>removeRolePermissions</test_action>
+    <parameters>role='New_Role', permit='e{create_storage_domain_permit}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a80fe-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Remove role</test_name>
+    <test_action>removeRole</test_action>
+    <parameters>role='New_Role'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a82de-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Remove system role</test_name>
+    <test_action>removeRole</test_action>
+    <parameters>role='HostAdmin'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a84c8-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Add permission to system role</test_name>
+    <test_action>addRolePermissions</test_action>
+    <parameters>role='HostAdmin', permit='e{create_storage_domain_permit}'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a86a8-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Remove permission from system role</test_name>
+    <test_action>removeRolePermissions</test_action>
+    <parameters>role='StorageAdmin', permit='e{create_storage_domain_permit}'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a8892-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Add VM permission to user</test_name>
+    <test_action>addVMPermissionsToUser</test_action>
+    <parameters>user='{new_user}', vm='restvm_tags_users'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a8a7c-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Add host permission to user</test_name>
+    <test_action>addHostPermissionsToUser</test_action>
+    <parameters>user='{new_user}', host='{vds[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a8c66-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Add storage permission to user</test_name>
+    <test_action>addStoragePermissionsToUser</test_action>
+    <parameters>user='{new_user}', storage='DataDomainRestUpd'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a8e50-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Add clusters permission to user</test_name>
+    <test_action>addClusterPermissionsToUser</test_action>
+    <parameters>user='{new_user}', cluster='Default'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a9030-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Add clusters permission to group</test_name>
+    <test_action>addClusterPermissionsToGroup</test_action>
+    <parameters>group='Everyone', cluster='Default'</parameters>
+    <positive>TRUE</positive>
+    <run>no</run>
+  </test_case>
+  <test_case>
+    <id>d75a921a-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Add template permission to user</test_name>
+    <test_action>addPermissionsForTemplate</test_action>
+    <parameters>user='{new_user}', template='rest_templ3'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a93fa-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Add template permission to group</test_name>
+    <test_action>addPermissionsForTemplateToGroup</test_action>
+    <parameters>group='Everyone', template='rest_templ3'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a95e4-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check the system_version tag</test_name>
+    <test_action>checkSystemVersionTag</test_action>
+    <parameters/>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a97c4-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check whether there is a definition of blank template object</test_name>
+    <test_action>xpathGeneral</test_action>
+    <parameters>'api', xpath='count(/api/special_objects/link[@rel="templates/blank" and @href="/{entry_point}/templates/00000000-0000-0000-0000-000000000000"])'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a9a26-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check whether there is a definition of tag root object</test_name>
+    <test_action>xpathGeneral</test_action>
+    <parameters>'api', xpath='count(/api/special_objects/link[@rel="tags/root" and @href="/{entry_point}/tags/00000000-0000-0000-0000-000000000000"])'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a9c1a-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Remove tag</test_name>
+    <test_action>removeTag</test_action>
+    <parameters>tag='TagRestTestUpd'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a9e04-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Remove user</test_name>
+    <test_action>removeUser</test_action>
+    <parameters>user='{new_user}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75aa02a-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Remove user with no roles</test_name>
+    <test_action>removeUser</test_action>
+    <parameters>user='{no_roles_user}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <!-- /////////////////// CHECK EVENTS ///////////////////////// -->
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <test_case>
+    <id>d75aa250-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check user properties in active directory</test_name>
+    <test_action>verifyUser</test_action>
+    <parameters>domain='{user_domain}', user='vdcadmin', expected_username='vdcadmin@{user_domain}', expected_department='Quality Assurance'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75aa476-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Search for an user in active directory by name</test_name>
+    <test_action>searchForUserInAD</test_action>
+    <parameters>query_key='name', query_val='vdcadmin', key_name='name', domain='{user_domain}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75aa660-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Search for an user in active directory by upn</test_name>
+    <test_action>searchForUserInAD</test_action>
+    <parameters>query_key='usrname', query_val='vdcadmin@*', key_name='user_name', domain='{user_domain}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75aa84a-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check events - tag attached to user</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='{new_user} type=149', query='TagRestTestUpd type=436', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75aaa34-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check events - role added</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='{new_user} type=149', query='New_Role type=864', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75aac14-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check events - action group attached to role</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='{new_user} type=149', query='CREATE_STORAGE_DOMAIN type=860', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75aadfe-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check events - action group detached from role</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='{new_user} type=149', query='CREATE_STORAGE_DOMAIN type=862', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75aafe8-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check events - permissions granted</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='{new_user} type=149', query='{new_user} type=850', expected_count=7</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75ab1c8-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check events - permissions removed from user</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='{new_user} type=149', query='{new_user} type=852', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75ab3da-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Check xsd schema validations</test_name>
+    <test_action>checkResponsesAreXsdValid</test_action>
+    <parameters/>
+    <positive>NONE</positive>
+    <run>yes</run>
+  </test_case>
+  <!-- ////////////////////////// TEARDOWN /////////////////////////////// -->
+  <test_case>
+    <id>cb8bf834-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Remove VMs</test_name>
+    <test_action>removeVms</test_action>
+    <parameters>vms='restvm_tags_users restvm_templates'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+   <test_name>Remove all remaining templates</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeTemplates</test_action>
+   <parameters>templates='rest_templ3'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+  <test_case>
+    <id>d75ab5ce-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Deactivate master storage domain</test_name>
+    <test_action>deactivateStorageDomain</test_action>
+    <parameters>datacenter='DefaultRest', storagedomain='DataDomainRestUpd'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75ab7b8-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Remove default datacenter</test_name>
+    <test_action>removeDataCenter</test_action>
+    <parameters>datacenter='DefaultRest'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d498c-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Remove second data center</test_name>
+    <test_action>removeDataCenter</test_action>
+    <parameters>datacenter='RestDataCenterUpdated'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75ab998-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Remove master storage domain</test_name>
+    <test_action>removeStorageDomain</test_action>
+    <parameters>storagedomain='DataDomainRestUpd', host='{vds[0]}', format='true'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75abb82-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Set active host to maintenance</test_name>
+    <test_action>deactivateHost</test_action>
+    <parameters>host='{vds[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75abd62-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Remove host</test_name>
+    <test_action>removeHost</test_action>
+    <parameters>host='{vds[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75abf74-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Remove clusters</test_name>
+    <test_action>removeClusters</test_action>
+    <parameters>clusters='RestCluster1 RestCluster4 RestCluster5 RestCluster6 RestCluster7'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+</input>
