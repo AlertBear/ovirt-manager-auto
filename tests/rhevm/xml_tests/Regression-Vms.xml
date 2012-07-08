@@ -1,0 +1,2095 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- vim: set ts=3 sw=3 expandtab: -->
+<?xml-stylesheet type="text/xsl" href="table.xslt"?>
+<input>
+  <!-- ////////////////////////// SETUP /////////////////////////////// -->
+  <test_case>
+    <id>cb8b6752-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create default data center</test_name>
+    <test_action>addDataCenter</test_action>
+    <parameters>name='DefaultRest', storage_type='e{storage_type_nfs}', version='{compatibility_version}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <test_description/>
+  </test_case>
+  <test_case>
+    <id>cb8b6aea-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create cluster with default parameters</test_name>
+    <test_action>addCluster</test_action>
+    <parameters>name='RestCluster1', cpu='{cpu_name}', data_center='DefaultRest', version='{compatibility_version}', on_error='migrate'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8b6cfc-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create host</test_name>
+    <test_action>addHost</test_action>
+    <parameters>name='{vds[0]}', root_password='{vds_password[0]}', cluster='RestCluster1', wait=False, vdcPort='{port}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8b6ef0-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create second host for migration tests</test_name>
+    <test_action>addHost</test_action>
+    <parameters>name='{vds[1]}', root_password='{vds_password[1]}', cluster='RestCluster1', wait=False</parameters>
+    <positive>TRUE</positive>
+    <run>if(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8b70e4-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - host added (if using two hosts)</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='RestCluster1 type=809', query='Hosts.name={vds[1]} and type=42', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>if(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8b72ec-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create iSCSI data center</test_name>
+    <test_action>addDataCenter</test_action>
+    <parameters>name='RestDataCenter2', storage_type='e{storage_type_iscsi}', version='{compatibility_version}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8b74e0-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create cluster with specific version</test_name>
+    <test_action>addCluster</test_action>
+    <parameters>name='RestCluster4', cpu='{cpu_name}', version='{compatibility_version}', data_center='DefaultRest'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8b76d4-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create cluster for iSCSI storage</test_name>
+    <test_action>addCluster</test_action>
+    <parameters>name='RestCluster3', cpu='{cpu_name}', data_center='RestDataCenter2', version='{compatibility_version}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8b78be-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Wait until both hosts are up</test_name>
+    <test_action>waitForHostsStates</test_action>
+    <parameters>names='{vds[0]}, {vds[1]}'</parameters>
+    <positive>TRUE</positive>
+    <run>if(1&lt;len('[vds]'.split(',')))</run>
+    <vital>TRUE</vital>
+  </test_case>
+  <test_case>
+    <id>cb8b7a9e-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create NFS data storage domain</test_name>
+    <test_action>addStorageDomain</test_action>
+    <parameters>name='DataDomainRest', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8b7c88-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Attach NFS data storage domain to data center</test_name>
+    <test_action>attachStorageDomain</test_action>
+    <parameters>datacenter='DefaultRest', storagedomain='DataDomainRest'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8b7e68-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create export storage domain NFS</test_name>
+    <test_action>addStorageDomain</test_action>
+    <parameters>name='ExportDomainRest', type='e{storage_dom_type_export}', storage_type='e{storage_type_nfs}', address='{export_domain_address}', host='{vds[0]}', path='{export_domain_path}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8b8052-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Attach export storage domain to data center</test_name>
+    <test_action>attachStorageDomain</test_action>
+    <parameters>datacenter='DefaultRest', storagedomain='ExportDomainRest'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8b82aa-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Activate export storage domain</test_name>
+    <test_action>activateStorageDomain</test_action>
+    <parameters>datacenter='DefaultRest', storagedomain='ExportDomainRest'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8b849e-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create second NFS data storage domain</test_name>
+    <test_action>addStorageDomain</test_action>
+    <parameters>name='DataDomainRest2', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[1]}', host='{vds[0]}', path='{data_domain_path[1]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8b867e-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Attach second data storage domain to data center</test_name>
+    <test_action>attachStorageDomain</test_action>
+    <parameters>datacenter='DefaultRest', storagedomain='DataDomainRest2'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8b8868-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Activate second NFS storage domain</test_name>
+    <test_action>activateStorageDomain</test_action>
+    <parameters>datacenter='DefaultRest', storagedomain='DataDomainRest2'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <!-- ///////////////// NEGATIVE VM MIGRATION BETWEEN CLUSTERS////////////// -->
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <test_case>
+    <id>cb8b8a5c-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create VM for negative migration tests</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='restvm0', description='Test VM', cluster='RestCluster1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8b8c3c-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Set second host to maintenance to update cluster</test_name>
+    <test_description>neg_migr_explicit</test_description>
+    <test_action>deactivateHost</test_action>
+    <parameters>host='{vds[1]}'</parameters>
+    <positive>TRUE</positive>
+    <run>if(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8b8e26-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Update second host cluster</test_name>
+    <test_description>neg_migr_explicit</test_description>
+    <test_action>updateHost</test_action>
+    <parameters>host='{vds[1]}', cluster='RestCluster4'</parameters>
+    <positive>TRUE</positive>
+    <run>if(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8b9010-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Activate second host with new cluster</test_name>
+    <test_description>neg_migr_explicit</test_description>
+    <test_action>activateHost</test_action>
+    <parameters>host='{vds[1]}'</parameters>
+    <positive>TRUE</positive>
+    <run>if(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8b91f0-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Wait for SPM election complete before negative migration tests</test_name>
+    <test_description>neg_migr_explicit</test_description>
+    <test_action>waitForSPM</test_action>
+    <parameters>datacenter='DefaultRest', timeout=60, sleep=5</parameters>
+    <positive>NONE</positive>
+    <run>if(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8b93da-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Add system disk to VM to test negative migrations</test_name>
+    <test_action>addDiskToVm</test_action>
+    <test_description>neg_migr_explicit</test_description>
+    <parameters>vm='restvm0', size=2147483648, type='e{disk_type_system}', format='e{format_raw}', interface='e{interface_ide}', sparse='true', storagedomain='DataDomainRest'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8b95ba-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Start VM to test negative migrations</test_name>
+    <test_description>neg_migr_explicit</test_description>
+    <test_action>startVm</test_action>
+    <parameters>vm='restvm0'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8b97a4-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Migrate VM to different cluster</test_name>
+    <test_description>neg_migr_explicit</test_description>
+    <test_action>migrateVm</test_action>
+    <parameters>vm='restvm0', host='{vds[1]}'</parameters>
+    <positive>FALSE</positive>
+    <run>If(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8b998e-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Set second host to maintenance to update cluster back</test_name>
+    <test_description>neg_migr_explicit</test_description>
+    <test_action>deactivateHost</test_action>
+    <parameters>host='{vds[1]}'</parameters>
+    <positive>TRUE</positive>
+    <run>If(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8b9b6e-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Update second host cluster back</test_name>
+    <test_description>neg_migr_explicit</test_description>
+    <test_action>updateHost</test_action>
+    <parameters>host='{vds[1]}', cluster='RestCluster1'</parameters>
+    <positive>TRUE</positive>
+    <run>If(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8b9d58-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Activate second host with cluster updated back</test_name>
+    <test_description>neg_migr_explicit</test_description>
+    <test_action>activateHost</test_action>
+    <parameters>host='{vds[1]}'</parameters>
+    <positive>TRUE</positive>
+    <run>If(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8b9f42-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check whether VM has CD attached</test_name>
+    <test_action>checkVmHasCdromAttached</test_action>
+    <parameters>vmName='restvm0'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8ba12c-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Stop VM after negative migrations</test_name>
+    <test_action>stopVm</test_action>
+    <parameters>vm='restvm0'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8ba316-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Remove disks from VM</test_name>
+    <test_action>removeDisks</test_action>
+    <parameters>vm='restvm0', num_of_disks='1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <!-- /////////////////////// CREATING VMS ///////////////////////////////// -->
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <test_case>
+    <id>cb8ba50a-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create VM with existing name</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='restvm0', cluster='RestCluster1'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8ba6ea-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create VM with wrong memory size</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='novm', memory=214748, cluster='RestCluster1'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8ba9a6-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create VM with wrong number of monitors</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='novm', display_monitors=36, cluster='RestCluster1'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8baba4-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create highly available server VM</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='restvm_server', description='Test VM Server', cluster='RestCluster1', type='e{vm_type_server}', highly_available='true'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8bad98-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create stateless VM</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='restvm_stateless', cluster='RestCluster1', stateless='true'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8baf82-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create VM with custom properties</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='restvm_custom_prop', description='Test VM', cluster='RestCluster1', custom_properties='sndbuf=111'</parameters>
+    <positive>TRUE</positive>
+    <run>if('{compatibility_version}'.startswith('3.'))</run>
+  </test_case>
+  <test_case>
+    <id>cb8bb16c-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create VM with guaranteed memory size</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='restvm_guaranteed_mem', description='Test VM', cluster='RestCluster1', memory_guaranteed=268435456</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8bb360-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create VM with disks</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='restvm_disks', cluster='RestCluster1', disk_type='e{disk_type_data}', size='2147483648', format='e{format_cow}', interface='e{interface_virtio}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8bb54a-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create VM with OS parameters</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='restvm_os_params', description='VM with custom OS test paramters', cluster='RestCluster1', kernel='/kernel-path', initrd='/initrd-path', cmdline='rd_NO_LUKS rd_NO_MD'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8bb734-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create VM with RHEL6x64 OS type</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='restvm_os_rhel', description='VM with custom OS type', cluster='RestCluster1', os_type='e{rhel6x64}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8bb91e-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create VM with Windows XP OS type</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='restvm_os_xp', description='VM with custom OS type', cluster='RestCluster1', os_type='e{windowsxp}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8bbb08-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create VM with custom boot sequence order</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='restvm_bootorder', description='VM with custom boot sequence order', cluster='RestCluster1', os_type='e{rhel6x64}', boot='network hd'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8bbce8-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check whether there is proper boot sequence order - check if network is first</test_name>
+    <test_action>xpathVms</test_action>
+    <parameters>'vms', xpath='count(/vms/vm[./name="restvm_bootorder"]/os/boot[position()=1 and @dev="network"])'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8bbed2-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check whether there is proper boot sequence order - check if HD is 2nd</test_name>
+    <test_action>xpathVms</test_action>
+    <parameters>'vms', xpath='count(/vms/vm[./name="restvm_bootorder"]/os/boot[position()=2 and @dev="hd"])'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8bc0bc-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create VM with disks specifying storage domain</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='restvm_disks_sd', cluster='RestCluster1', storagedomain='DataDomainRest', disk_type='e{disk_type_data}', size='2147483648', format='e{format_cow}', interface='e{interface_virtio}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8bc29c-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create VM with specific domain name</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='restvm_domain', description='Domain Name VM', cluster='RestCluster1', domainName='{user_domain}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <!-- /////////////////////////// UPDATE VM //////////////////////////////// -->
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <test_case>
+    <id>cb8bc490-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Update VM OS type from RHEL to XP</test_name>
+    <test_action>updateVm</test_action>
+    <parameters>vm='restvm_os_rhel', os_type='e{windowsxp}', name='restvm_os_win'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8bc67a-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Update VM OS type from XP to RHEL</test_name>
+    <test_action>updateVm</test_action>
+    <parameters>vm='restvm_os_xp', os_type='e{rhel6x64}', name='restvm_os_rhel'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8bc85a-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Update VM OS parameters</test_name>
+    <test_action>updateVm</test_action>
+    <parameters>vm='restvm_os_params', kernel='/kernel-new-path', initrd='/initrd-new-path', cmdline='rd_NO_LUKS'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8bca3a-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Update VM name</test_name>
+    <test_action>updateVm</test_action>
+    <parameters>vm='restvm0', name='restvm_update'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8bcc24-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Update VM affinity to 'migratable with host'</test_name>
+    <test_action>updateVm</test_action>
+    <parameters>vm='restvm_update', placement_affinity='e{vm_affinity_migratable}', placement_host='{vds[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8bce04-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Update VM affinity to 'user migratable with host'</test_name>
+    <test_action>updateVm</test_action>
+    <parameters>vm='restvm_update', placement_affinity='e{vm_affinity_user_migratable}', placement_host='{vds[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8bd02a-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Update VM affinity to 'pinned with host'</test_name>
+    <test_action>updateVm</test_action>
+    <parameters>vm='restvm_update', placement_affinity='e{vm_affinity_pinned}', placement_host='{vds[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8bd214-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Update VM affinity to 'migratable to any host'</test_name>
+    <test_action>updateVm</test_action>
+    <parameters>vm='restvm_update', placement_affinity='e{vm_affinity_migratable}', placement_host='e{placement_host_any_host_in_cluster}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8bd3fe-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Update VM affinity to 'user migratable to any host'</test_name>
+    <test_action>updateVm</test_action>
+    <parameters>vm='restvm_update', placement_affinity='e{vm_affinity_user_migratable}', placement_host='e{placement_host_any_host_in_cluster}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8bd5de-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Update VM description</test_name>
+    <test_action>updateVm</test_action>
+    <parameters>vm='restvm_update', description='Test VM Update'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8bd7c8-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Update VM cluster</test_name>
+    <test_action>updateVm</test_action>
+    <parameters>vm='restvm_update', cluster='RestCluster4'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8bd9a8-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Update VM cluster back</test_name>
+    <test_action>updateVm</test_action>
+    <parameters>vm='restvm_update', cluster='RestCluster1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8bdb88-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Update VM memory size</test_name>
+    <test_action>updateVm</test_action>
+    <parameters>vm='restvm_update', memory=2147483648</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8bdd72-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Update VM guaranteed memory size</test_name>
+    <test_action>updateVm</test_action>
+    <parameters>vm='restvm_update', memory_guaranteed=536870912</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8bdf52-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Update VM number of CPU sockets</test_name>
+    <test_action>updateVm</test_action>
+    <parameters>vm='restvm_update', cpu_socket=2</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8be132-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Update VM number of CPU cores</test_name>
+    <test_action>updateVm</test_action>
+    <parameters>vm='restvm_update', cpu_cores=2</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8be31c-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Update VM display type to SPICE</test_name>
+    <test_action>updateVm</test_action>
+    <parameters>vm='restvm_update', display_type='e{display_type_spice}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8be4fc-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Update VM number of monitors</test_name>
+    <test_action>updateVm</test_action>
+    <parameters>vm='restvm_update', display_monitors=2</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8be6e6-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Update VM number of monitors back to 1</test_name>
+    <test_action>updateVm</test_action>
+    <parameters>vm='restvm_update', display_monitors=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <!-- //////////////////////// NEGATIVE  VM UPDATES ////////////////////////// -->
+  <test_case>
+    <id>cb8be8c6-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Update VM name to existing name</test_name>
+    <test_action>updateVm</test_action>
+    <parameters>vm='restvm_update', name='restvm_domain'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8beab0-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Update VM to use wrong (too small) memory size</test_name>
+    <test_action>updateVm</test_action>
+    <parameters>vm='restvm_update', memory=214748</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8bec90-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Update VM to use wrong number of CPU sockets (too many)</test_name>
+    <test_action>updateVm</test_action>
+    <parameters>vm='restvm_update', cpu_socket=35</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <!-- ////////////////////////// LOCKED VM ///////////////////////////////// -->
+  <test_case>
+    <id>cb8bee7a-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create VM to be locked</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='restvm_locked', description='Vm to be locked in the database', cluster='RestCluster1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8bf05a-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Lock VM</test_name>
+    <test_action>updateVmStatusInDatabase</test_action>
+    <parameters>vmName='restvm_locked', status=15, vdc='{vdc}', vdc_pass='{vdc_pass}', psql_username='{psql_user}', psql_db='{psql_db}'</parameters>
+    <positive>NONE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8bf23a-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Force remove locked VM</test_name>
+    <test_action>removeLockedVm</test_action>
+    <parameters>vm='restvm_locked', vdc='{vdc}', vdc_pass='{vdc_pass}', psql_username='{psql_user}', psql_db='{psql_db}'</parameters>
+    <positive>NONE</positive>
+    <run>yes</run>
+  </test_case>
+  <!-- ////////////////////////// CLEANUP /////////////////////////////////// -->
+  <test_case>
+    <id>cb8bf60e-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Remove VMs after testing VM creation with various options</test_name>
+    <test_action>removeVms</test_action>
+    <parameters>vms='restvm_update restvm_server restvm_stateless restvm_guaranteed_mem restvm_disks restvm_os_params restvm_os_rhel restvm_os_win restvm_bootorder restvm_disks_sd'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8bf834-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Remove VMs that are created only in version 3.x</test_name>
+    <test_action>removeVms</test_action>
+    <parameters>vms='restvm_custom_prop'</parameters>
+    <positive>TRUE</positive>
+    <run>if('{compatibility_version}'.startswith('3.'))</run>
+  </test_case>
+  <!-- /////////////////////// VM EVENTS //////////////////////////////////// -->
+  <test_case>
+    <id>cb8bfa28-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - VM created</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='restvm0 type=34', query='type=34', expected_count=12</parameters>
+    <positive>TRUE</positive>
+    <run>if('{compatibility_version}'.startswith('3.'))</run>
+  </test_case>
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <!-- ////////////////////////// ADDING NICS TO VMS///////////////////////// -->
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <test_case>
+    <id>cb8bfc1c-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create VM to test adding NICs</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='restvm_nic', cluster='RestCluster1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8bfdfc-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Add NIC to VM</test_name>
+    <test_action>addNic</test_action>
+    <parameters>vm='restvm_nic', name='nic1', network='{mgmt_bridge}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8bffdc-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Add second NIC to VM</test_name>
+    <test_action>addNic</test_action>
+    <parameters>vm='restvm_nic', name='nic2', network='{mgmt_bridge}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c01c6-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Add NIC to second VM</test_name>
+    <test_action>addNic</test_action>
+    <parameters>vm='restvm_domain', name='nic1', network='{mgmt_bridge}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c03a6-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - VM NICs added</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='restvm0 type=34', query='type=932', expected_count=3</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c0586-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Update NIC in VM</test_name>
+    <test_action>updateNic</test_action>
+    <parameters>vm='restvm_nic', nic='nic2', name='nic2_updated'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c0770-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - VM NIC updated</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='restvm0 type=34', query='type=934', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c0950-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Remove NIC from VM</test_name>
+    <test_action>removeNic</test_action>
+    <parameters>vm='restvm_nic', nic='nic2_updated'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c0b3a-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - VM NIC removed</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='restvm0 type=34', query='type=930', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <!-- ////////////////////////// DISKS ///////////////////////////////////// -->
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <test_case>
+    <id>cb8c0d24-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Add cow virtio data disk to VM with specific domain</test_name>
+    <test_action>addDiskToVm</test_action>
+    <parameters>vm='restvm_domain', size=2147483648, storagedomain='DataDomainRest', type='e{disk_type_data}', format='e{format_cow}', interface='e{interface_virtio}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c0f0e-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create VM to test adding multiple disks</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='restvm_multiple_disks', cluster='RestCluster1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c10ee-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Add cow virtio data disk to VM</test_name>
+    <test_action>addDiskToVm</test_action>
+    <parameters>vm='restvm_multiple_disks', size=2147483648, storagedomain='DataDomainRest', type='e{disk_type_data}', format='e{format_cow}', interface='e{interface_virtio}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c12ce-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Add raw ide system disk to VM preallocated</test_name>
+    <test_action>addDiskToVm</test_action>
+    <parameters>vm='restvm_multiple_disks', size=2147483648, type='e{disk_type_system}', format='e{format_raw}', interface='e{interface_ide}', sparse='false'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c14ae-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Add cow ide data disk to VM bootable</test_name>
+    <test_action>addDiskToVm</test_action>
+    <parameters>vm='restvm_multiple_disks', size=2147483648, type='e{disk_type_data}', format='e{format_cow}', interface='e{interface_ide}', bootable='true', wipe_after_deletion='true'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c168e-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Add cow virtio data disk to VM sparse</test_name>
+    <test_action>addDiskToVm</test_action>
+    <parameters>vm='restvm_multiple_disks', size=2147483648, type='e{disk_type_data}', format='e{format_cow}', interface='e{interface_virtio}', sparse='true'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c1878-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Add raw ide data disk to VM</test_name>
+    <test_action>addDiskToVm</test_action>
+    <parameters>vm='restvm_multiple_disks', size=2147483648, type='e{disk_type_data}', format='e{format_raw}', interface='e{interface_ide}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c1a58-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Add raw virtio data disk to VM</test_name>
+    <test_action>addDiskToVm</test_action>
+    <parameters>vm='restvm_multiple_disks', size=2147483648, type='e{disk_type_data}', format='e{format_raw}', interface='e{interface_virtio}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c1c42-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - multiple 'disk adding operation initiated'</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='restvm0 type=34', query='type=78', expected_count=8</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c1e90-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - multiple 'disk added'</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='restvm0 type=34', query='type=97', expected_count=8</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c208e-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Remove multiple disks from VM</test_name>
+    <test_action>removeDisks</test_action>
+    <parameters>vm='restvm_multiple_disks', num_of_disks='6'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <!-- ////////////////////////// SNAPSHOTS ///////////////////////////////// -->
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <test_case>
+    <id>cb8c2282-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create VM to test snapshots</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='restvm_snapshots', cluster='RestCluster1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c248a-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Add disk to VM that tests snapshots</test_name>
+    <test_action>addDiskToVm</test_action>
+    <parameters>vm='restvm_snapshots', size=2147483648, storagedomain='DataDomainRest', type='e{disk_type_system}', format='e{format_cow}', interface='e{interface_ide}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c2674-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create VM snapshot1</test_name>
+    <test_action>addSnapshot</test_action>
+    <parameters>vm='restvm_snapshots', description='snapshot1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c285e-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create VM snapshot2</test_name>
+    <test_action>addSnapshot</test_action>
+    <parameters>vm='restvm_snapshots', description='snapshot2'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c2a48-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Restore VM snapshot</test_name>
+    <test_action>restoreSnapshot</test_action>
+    <parameters>vm='restvm_snapshots', description='snapshot2'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c2c28-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Export VM discard snapshots</test_name>
+    <test_action>exportVm</test_action>
+    <parameters>vm='restvm_snapshots', storagedomain='ExportDomainRest', discard_snapshots='true'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c2e08-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Remove VM snapshot</test_name>
+    <test_action>removeSnapshot</test_action>
+    <parameters>vm='restvm_snapshots', description='snapshot1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c3010-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - VM snapshot creation initiated</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='restvm0 type=34', query='type=45', expected_count=2</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c3204-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - VM snapshot creation completed</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='restvm0 type=34', query='type=68', expected_count=2</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c33ee-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - restoring VM from snapshot started by user vdcadmin</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='restvm0 type=34', query='type=1190', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c35ce-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - VM restoring from snapshot completed</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='restvm0 type=34', query='type=100', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c37b8-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - VM snapshot deletion initiated</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='restvm0 type=34', query='type=342', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c3998-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - VM snapshot deletion completed</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='restvm0 type=34', query='type=356', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <test_case>
+    <id>cb8c3b82-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Run VM with specific domain once</test_name>
+    <test_action>runVmOnce</test_action>
+    <parameters>vm='restvm_domain', domainName='{user_domain}', user_name='username', password='password'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c3d6c-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Stop VM with specific domain</test_name>
+    <test_action>stopVm</test_action>
+    <parameters>vm='restvm_domain'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <!-- /////////////////////////// TEMPLATES //////////////////////////////// -->
+  <test_case>
+    <id>cb8c3f56-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create template from VM with specific domain name</test_name>
+    <test_action>createTemplate</test_action>
+    <parameters>vm='restvm_domain', name='domain_template', cluster='RestCluster1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c4140-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check whether there is template with specific domain name</test_name>
+    <test_action>xpathTemplates</test_action>
+    <parameters>'templates', xpath='count(/templates/template[name="domain_template" and domain/name="{user_domain}"])'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c4320-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Add a template permission to a group</test_name>
+    <test_action>addTemplatePermissionsToGroup</test_action>
+    <parameters>group='Everyone', template='domain_template'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c4550-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Remove template with specific domain name</test_name>
+    <test_action>removeTemplate</test_action>
+    <parameters>template='domain_template'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <!-- ////////////////////////// BASIC VM OPERATIONS /////////////////////// -->
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <test_case>
+    <id>cb8c474e-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create VM to test basic operations</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='restvm_basic_operations', cluster='RestCluster1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c4938-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Add disk to VM that tests basic operations</test_name>
+    <test_action>addDiskToVm</test_action>
+    <parameters>vm='restvm_basic_operations', size=2147483648, storagedomain='DataDomainRest', type='e{disk_type_system}', format='e{format_cow}', interface='e{interface_ide}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c4b4a-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Start new VM</test_name>
+    <test_action>startVm</test_action>
+    <parameters>vm='restvm_basic_operations'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c4d34-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Retrieve VM statistics</test_name>
+    <test_action>checkVmStatistics</test_action>
+    <parameters>vm='restvm_basic_operations'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c4f28-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Suspend VM to test basic operations</test_name>
+    <test_action>suspendVm</test_action>
+    <parameters>vm='restvm_basic_operations'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c5112-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Stop suspended VM to test basic operations</test_name>
+    <test_action>stopVm</test_action>
+    <parameters>vm='restvm_basic_operations'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c52f2-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Ticket stopped VM</test_name>
+    <test_action>ticketVm</test_action>
+    <parameters>vm='restvm_basic_operations', expiry='120'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c54dc-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Start stopped VM to test basic operations</test_name>
+    <test_action>startVm</test_action>
+    <parameters>vm='restvm_basic_operations'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c56c6-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Ticket running VM</test_name>
+    <test_action>ticketVm</test_action>
+    <parameters>vm='restvm_basic_operations', expiry='120'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c58b0-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create template from started VM</test_name>
+    <test_action>createTemplate</test_action>
+    <parameters>vm='restvm_basic_operations', name='notempl'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c5a90-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Stop VM for basic operations</test_name>
+    <test_action>stopVm</test_action>
+    <parameters>vm='restvm_basic_operations'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c5c7a-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Remove VMs after testing disks, snapshots, basic operations, NICs and others</test_name>
+    <test_action>removeVms</test_action>
+    <parameters>vms='restvm_domain restvm_multiple_disks restvm_snapshots restvm_basic_operations restvm_nic'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <test_case>
+    <id>cb8c5e64-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Set first host to maintenance so that active objects are migrated to second host</test_name>
+    <test_description>neg_migr_implicit</test_description>
+    <test_action>deactivateHost</test_action>
+    <parameters>host='{vds[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>if(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8c604e-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Wait for SPM election complete - waiting until objects from first host are migrated to second host</test_name>
+    <test_description>neg_migr_implicit</test_description>
+    <test_action>waitForSPM</test_action>
+    <parameters>datacenter='DefaultRest', timeout=60, sleep=5</parameters>
+    <positive>NONE</positive>
+    <run>if(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8c6238-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Set the second host to maintenance, which is currently the only active host and has active objects</test_name>
+    <test_description>neg_migr_implicit</test_description>
+    <test_action>deactivateHost</test_action>
+    <parameters>host='{vds[1]}'</parameters>
+    <positive>FALSE</positive>
+    <run>if(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8c644a-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Activate first host</test_name>
+    <test_description>neg_migr_implicit</test_description>
+    <test_action>activateHost</test_action>
+    <parameters>host='{vds[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>if(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8c6634-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Activate second (inactive) host</test_name>
+    <test_action>activateHost</test_action>
+    <parameters>host='{vds[1]}'</parameters>
+    <positive>FALSE</positive>
+    <run>if(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8c681e-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Wait for SPM election complete</test_name>
+    <test_description>neg_migr_implicit</test_description>
+    <test_action>waitForSPM</test_action>
+    <parameters>datacenter='DefaultRest', timeout=60, sleep=5</parameters>
+    <positive>NONE</positive>
+    <run>if(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <!-- //////////////////////// EXPORT IMPORT VM //////////////////////////// -->
+  <test_case>
+    <id>cb8c6a12-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create VM to test export</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='restvm_export', cluster='RestCluster1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c6c2e-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Add disk to VM that tests export</test_name>
+    <test_action>addDiskToVm</test_action>
+    <parameters>vm='restvm_export', size=2147483648, storagedomain='DataDomainRest', type='e{disk_type_system}', format='e{format_cow}', interface='e{interface_virtio}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c6e22-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Export VM</test_name>
+    <test_action>exportVm</test_action>
+    <parameters>vm='restvm_export', storagedomain='ExportDomainRest'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c700c-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Export VM override existed</test_name>
+    <test_action>exportVm</test_action>
+    <parameters>vm='restvm_export', storagedomain='ExportDomainRest', exclusive='true'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c71f6-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Remove VM</test_name>
+    <test_action>removeVm</test_action>
+    <parameters>vm='restvm_export'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c73d6-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Import exported VM</test_name>
+    <test_action>importVm</test_action>
+    <parameters>vm='restvm_export', import_storagedomain='DataDomainRest', export_storagedomain='ExportDomainRest', cluster='RestCluster1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c75c0-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Import exported VM which exists already</test_name>
+    <test_action>importVm</test_action>
+    <parameters>vm='restvm_export', import_storagedomain='DataDomainRest', export_storagedomain='ExportDomainRest', cluster='RestCluster1'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c77a0-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Move VM to another storage domain</test_name>
+    <test_action>moveVm</test_action>
+    <parameters>vm='restvm_export', storagedomain='DataDomainRest2'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c798a-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Move VM back</test_name>
+    <test_action>moveVm</test_action>
+    <parameters>vm='restvm_export', storagedomain='DataDomainRest'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <!-- ///////////////////////// SPICE AND VNC ////////////////////////////// -->
+  <test_case>
+    <id>cb8c7b6a-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create VM with VNC display type</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='restvm_vnc', display_type='e{display_type_vnc}', cluster='RestCluster1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c7d54-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create VM with spice display type</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='restvm_spice', display_type='e{display_type_spice}', cluster='RestCluster1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c7f70-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Add NIC to VNC VM to allow boot</test_name>
+    <test_action>addNic</test_action>
+    <parameters>vm='restvm_vnc', name='nic1', network='{mgmt_bridge}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c8150-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Add NIC to spice VM to allow boot</test_name>
+    <test_action>addNic</test_action>
+    <parameters>vm='restvm_spice', name='nic1', network='{mgmt_bridge}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c833a-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Run the VNC VM once for checking the display tag</test_name>
+    <test_action>runVmOnce</test_action>
+    <parameters>vm='restvm_vnc', pause='true', display_type='e{display_type_vnc}', boot_dev='network'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c851a-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Run the spice VM once for checking the display tag</test_name>
+    <test_action>runVmOnce</test_action>
+    <parameters>vm='restvm_spice', pause='true', display_type='e{display_type_spice}', boot_dev='network'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c86fa-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check whether there is some 'vms/vm/display/port' tag is in VNC VM</test_name>
+    <test_action>xpathVms</test_action>
+    <parameters>'vms', xpath='count(/vms/vm[./name="restvm_vnc"]/display/port)'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c88e4-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check whether there is some 'vms/vm/display/port' tag is in spice VM</test_name>
+    <test_action>xpathVms</test_action>
+    <parameters>'vms', xpath='count(/vms/vm[./name="restvm_spice"]/display/port)'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c8ace-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check whether there is some 'vms/vm/display/address' tag is in vnc VM</test_name>
+    <test_action>xpathVms</test_action>
+    <parameters>'vms', xpath='count(/vms/vm[./name="restvm_vnc"]/display/address)'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c8cae-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check whether there is some 'vms/vm/display/address' tag is in spice VM</test_name>
+    <test_action>xpathVms</test_action>
+    <parameters>'vms', xpath='count(/vms/vm[./name="restvm_spice"]/display/address)'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c8e8e-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Stop VM with vnc display</test_name>
+    <test_action>stopVm</test_action>
+    <parameters>vm='restvm_vnc'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c9078-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Stop VM with spice display</test_name>
+    <test_action>stopVm</test_action>
+    <parameters>vm='restvm_spice'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c9262-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Remove VMs after testing export, spice, vnc and other</test_name>
+    <test_action>removeVms</test_action>
+    <parameters>vms='restvm_export restvm_spice restvm_vnc'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <!-- ////////////////////////// ISO + VM ////////////////////////////////// -->
+  <test_case>
+    <id>cb8c9492-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Import ISO storage domain for runvmonce</test_name>
+    <test_action>importStorageDomain</test_action>
+    <parameters>type='e{storage_dom_type_iso}', storage_type='e{storage_type_nfs}', address='{shared_iso_domain_address}', host='{vds[0]}', path='{shared_iso_domain_path}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c967c-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Attach ISO storage domain to data center for runvmonce</test_name>
+    <test_action>attachStorageDomain</test_action>
+    <parameters>datacenter='DefaultRest', storagedomain='{shared_iso_domain_name}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c988e-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Activate ISO storage domain for runvmonce</test_name>
+    <test_action>activateStorageDomain</test_action>
+    <parameters>datacenter='DefaultRest', storagedomain='{shared_iso_domain_name}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c9ac8-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Get ISO file in ISO storage domain</test_name>
+    <test_action>getStorageDomainFile</test_action>
+    <parameters>storagedomain='{shared_iso_domain_name}', file='{cdrom_image}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8c9cd0-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Get vfd file in ISO storage domain</test_name>
+    <test_action>getStorageDomainFile</test_action>
+    <parameters>storagedomain='{shared_iso_domain_name}', file='{floppy_image}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <!-- ////////////////////////// RUN VM ONCE//////////////////////////////// -->
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <test_case>
+    <id>cb8c9f0a-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create VM with default parameters for runvmonce</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='restvm_run_once', cluster='RestCluster1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8ca0f4-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - VM created (for runonce)</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='{shared_iso_domain_name} type=966', query='restvm_run_once type=34', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8ca2de-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Add disk to VM that tests runonce</test_name>
+    <test_action>addDiskToVm</test_action>
+    <parameters>vm='restvm_run_once', size=2147483648, storagedomain='DataDomainRest', type='e{disk_type_system}', format='e{format_cow}', interface='e{interface_ide}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8ca4be-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Run VM once with boot from cdrom</test_name>
+    <test_action>runVmOnce</test_action>
+    <parameters>vm='restvm_run_once', cdrom_image='{cdrom_image}', boot_dev='cdrom', pause='true'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8ca69e-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Change CD while VM is running</test_name>
+    <test_action>changeCDWhileRunning</test_action>
+    <parameters>vm_name='restvm_run_once', cdrom_image='{cdrom_image}'</parameters>
+    <positive>NONE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8ca888-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - VM CD changed</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='{shared_iso_domain_name} type=966', query='restvm_run_once type=38', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8caa68-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Stop VM for runvmonce to add NIC</test_name>
+    <test_action>stopVm</test_action>
+    <parameters>vm='restvm_run_once'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8cac52-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Add NIC to VM for runvmonce to boot from network</test_name>
+    <test_action>addNic</test_action>
+    <parameters>vm='restvm_run_once', name='nic1', network='{mgmt_bridge}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8cae32-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Run VM once with boot from network</test_name>
+    <test_action>runVmOnce</test_action>
+    <parameters>vm='restvm_run_once', boot_dev='network', pause='true'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8cb01c-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Stop VM for runvmonce to boot from floppy</test_name>
+    <test_action>stopVm</test_action>
+    <parameters>vm='restvm_run_once'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8cb1fc-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Run VM once with boot from network with floppy</test_name>
+    <test_action>runVmOnce</test_action>
+    <parameters>vm='restvm_run_once', floppy_image='{floppy_image}', boot_dev='network', pause='true'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8cb40e-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Stop VM for runvmonce</test_name>
+    <test_action>stopVm</test_action>
+    <parameters>vm='restvm_run_once'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8cb5f8-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - VM started</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='restvm_run_once type=34', query='type=153', expected_count=3</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8cb7d8-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Deactivate ISO storage domain for runvmonce</test_name>
+    <test_action>deactivateStorageDomain</test_action>
+    <parameters>datacenter='DefaultRest', storagedomain='{shared_iso_domain_name}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8cba3a-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Detach inactive ISO storage domain for runvmonce</test_name>
+    <test_action>detachStorageDomain</test_action>
+    <parameters>datacenter='DefaultRest', storagedomain='{shared_iso_domain_name}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8cbc42-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Remove ISO storage domain for runvmonce</test_name>
+    <test_action>removeStorageDomain</test_action>
+    <parameters>storagedomain='{shared_iso_domain_name}', host='{vds[0]}', format='false'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <!-- //////////////////////////// VM MIGRATION //////////////////////////// -->
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <test_case>
+    <id>cb8cbe40-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create VM to migrate</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='restvm_migration', description='A nomadic VM', cluster='RestCluster1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8cc02a-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Add NIC to migration VM to allow boot</test_name>
+    <test_action>addNic</test_action>
+    <parameters>vm='restvm_migration', name='nic1', network='{mgmt_bridge}'</parameters>
+    <positive>TRUE</positive>
+    <run>If(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8cc20a-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Make the VM start on specific host</test_name>
+    <test_action>updateVm</test_action>
+    <parameters>vm='restvm_migration', placement_affinity='migratable', placement_host='{vds[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8cc3f4-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Run migration VM once from network</test_name>
+    <test_action>runVmOnce</test_action>
+    <parameters>vm='restvm_migration', boot_dev='network'</parameters>
+    <positive>TRUE</positive>
+    <run>If(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8cc5de-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Wait for migration VM to start</test_name>
+    <test_action>waitForVmsStates</test_action>
+    <parameters>names='restvm_migration',timeout=180, sleep=1</parameters>
+    <positive>TRUE</positive>
+    <run>If(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8cc7be-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Migrate diskless VM to second host</test_name>
+    <test_action>migrateVm</test_action>
+    <parameters>vm='restvm_migration', host='{vds[1]}'</parameters>
+    <positive>TRUE</positive>
+    <run>If(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8cc99e-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - vm_migration_start</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='restvm_migration type=34', query='restvm_migration type=62', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>If(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8ccb7e-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - vm_migration_done</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='restvm_migration type=34', query='restvm_migration type=63', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>If(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8ccda4-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - no vm_migration_abort</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='restvm_migration type=34', query='restvm_migration type=64', expected_count=0</parameters>
+    <positive>TRUE</positive>
+    <run>If(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8ccf8e-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - no vm_migration_failed</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='restvm_migration type=34', query='restvm_migration type=65', expected_count=0</parameters>
+    <positive>TRUE</positive>
+    <run>If(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8cd16e-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Stop VM for migration to add disk</test_name>
+    <test_action>stopVm</test_action>
+    <parameters>vm='restvm_migration'</parameters>
+    <positive>TRUE</positive>
+    <run>If(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8cd34e-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Add raw ide system disk to VM not preallocated</test_name>
+    <test_action>addDiskToVm</test_action>
+    <parameters>vm='restvm_migration', size=2147483648, type='e{disk_type_system}', format='e{format_raw}', interface='e{interface_ide}', sparse='true', storagedomain='DataDomainRest'</parameters>
+    <positive>TRUE</positive>
+    <run>if(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8cd538-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Start migration VM</test_name>
+    <test_action>startVm</test_action>
+    <parameters>vm='restvm_migration', wait_for_status='up'</parameters>
+    <positive>TRUE</positive>
+    <run>If(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8cd722-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Migrate VM with disk</test_name>
+    <test_action>migrateVm</test_action>
+    <parameters>vm='restvm_migration'</parameters>
+    <positive>TRUE</positive>
+    <run>if(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8cd902-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Stop VM for migration</test_name>
+    <test_action>stopVm</test_action>
+    <parameters>vm='restvm_migration'</parameters>
+    <positive>TRUE</positive>
+    <run>if(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8cdae2-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - vm_migration_start after the disk added to VM</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='restvm_migration type=97', query='restvm_migration type=62', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>if(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8cdcc2-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - vm_migration_done after the disk added to VM</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='restvm_migration type=97', query='restvm_migration type=63', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>if(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8cdea2-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - no vm_migration_abort after the disk added to VM</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='restvm_migration type=97', query='restvm_migration type=64', expected_count=0</parameters>
+    <positive>TRUE</positive>
+    <run>if(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8ce082-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - no vm_migration_failed after the disk added to VM</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='restvm_migration type=97', query='restvm_migration type=65', expected_count=0</parameters>
+    <positive>TRUE</positive>
+    <run>if(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <!-- /////////////////////////// TEMPLATES //////////////////////////////// -->
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <test_case>
+    <id>cb8ce2bc-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create VM to test templates</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='restvm_templates', cluster='RestCluster1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8ce4b0-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Add Disk To VM that tests template</test_name>
+    <test_action>addDiskToVm</test_action>
+    <parameters>vm='restvm_templates', size=2147483648, storagedomain='DataDomainRest', type='e{disk_type_system}', format='e{format_cow}', interface='e{interface_ide}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8ce6b8-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create template with default parameters</test_name>
+    <test_action>createTemplate</test_action>
+    <parameters>vm='restvm_templates', name='rest_templ1', cluster='RestCluster1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8ce8a2-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - template created</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='restvm_run_once type=34', query='rest_templ1 type=51', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8cea8c-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Add NIC to template</test_name>
+    <test_action>addTemplateNic</test_action>
+    <parameters>template='rest_templ1', name='nic_templ', network='{mgmt_bridge}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8cec6c-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Update template NIC</test_name>
+    <test_action>updateTemplateNic</test_action>
+    <parameters>template='rest_templ1', nic='nic_templ', name='nic_upd_templ'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <bz>830511</bz>
+  </test_case>
+  <test_case>
+    <id>cb8cee56-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Remove NIC from template</test_name>
+    <test_action>removeTemplateNic</test_action>
+    <parameters>template='rest_templ1', nic='nic_upd_templ'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <bz>830511</bz>
+  </test_case>
+  <test_case>
+    <id>cb8cf036-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create VM based on specific template</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='restvm_templates2', template='rest_templ1', cluster='RestCluster1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8cf216-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - created VM from template</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='rest_templ1 type=51', query='restvm_templates2 type=53', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8cf400-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create VM from template specifying storage domain</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='restvm_templates_sd', cluster='RestCluster1', template='rest_templ1', storagedomain='DataDomainRest'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8cf5ea-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create VM from template with wrong storage domain</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='novm_wrong_sd', cluster='RestCluster1', template='rest_templ1', storagedomain='DataDomainRest2'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8cf7ca-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create template specifying storage domain</test_name>
+    <test_action>createTemplate</test_action>
+    <parameters>vm='restvm_templates', name='templ_sd', cluster='RestCluster1', storagedomain='DataDomainRest'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8cf9aa-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create template with wrong cluster</test_name>
+    <test_action>createTemplate</test_action>
+    <parameters>vm='restvm_templates', name='templ_wrong_cluster', cluster='RestCluster3'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8cfb8a-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Clone VM from template</test_name>
+    <test_action>cloneVmFromTemplate</test_action>
+    <parameters>name='restvm_templates_cloned', template='rest_templ1', cluster='RestCluster1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <bz>822239</bz>
+  </test_case>
+  <test_case>
+    <id>cb8cfd6a-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create template with name that already exists</test_name>
+    <test_action>createTemplate</test_action>
+    <parameters>vm='restvm_templates', name='rest_templ1'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8cff54-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Update template name to a name that already exists</test_name>
+    <test_action>updateTemplate</test_action>
+    <parameters>template='rest_templ1', name='Blank'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d0166-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Update template name, description and CPU</test_name>
+    <test_action>updateTemplate</test_action>
+    <parameters>template='rest_templ1', name='rest_templ3', description='Update template', cpu_socket='2', cpu_cores='2'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d0346-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - template updated</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='restvm_templates2 type=53', query='rest_templ3 type=49', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d0526-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Search for templates</test_name>
+    <test_action>searchForTemplate</test_action>
+    <parameters>query_key='name', query_val='rest_templ*', key_name='name'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d0710-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create one more template</test_name>
+    <test_action>createTemplate</test_action>
+    <parameters>vm='restvm_templates', name='rest_templ1', cluster='RestCluster1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d0936-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Export template</test_name>
+    <test_action>exportTemplate</test_action>
+    <parameters>template='rest_templ1', storagedomain='ExportDomainRest'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d0b2a-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - template export start</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='restvm_templates2 type=53', query='rest_templ1 type=1164', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d0d0a-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - template exported</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='restvm_templates2 type=53', query='rest_templ1 type=1156', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d0ef4-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Export template - override previous export of this template</test_name>
+    <test_action>exportTemplate</test_action>
+    <parameters>template='rest_templ1', storagedomain='ExportDomainRest', exclusive='true'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d10d4-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Remove template to be imported next</test_name>
+    <test_action>removeTemplate</test_action>
+    <parameters>template='rest_templ1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d12be-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Import exported template</test_name>
+    <test_action>importTemplate</test_action>
+    <parameters>template='rest_templ1', import_storagedomain='DataDomainRest', export_storagedomain='ExportDomainRest', cluster='RestCluster1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <!-- /////////////////////// TEMPLATE EVENTS ////////////////////////////// -->
+  <test_case>
+    <id>cb8d14a8-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - template import start</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='restvm_templates2 type=53', query='rest_templ1 type=1163', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d1688-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - template imported</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='restvm_templates2 type=53', query='rest_templ1 type=1158', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d1872-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - template removal initiated</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='restvm_templates2 type=53', query='rest_templ1 type=50', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d1a70-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - template removed</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='restvm_templates2 type=53', query='rest_templ1 type=251', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <!-- ///////////////////////////// POOLS ////////////////////////////////// -->
+  <!-- ////////////////////////////////////////////////////////////////////// -->
+  <test_case>
+    <id>cb8d1c6e-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Create VM pool</test_name>
+    <test_action>addVmPool</test_action>
+    <parameters>name='rest_testPool', size=2, template='rest_templ3', cluster='RestCluster1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d1e58-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Add user role to VM pool</test_name>
+    <test_action>addVmPoolPermissionToUser</test_action>
+    <parameters>user='{user}', vmpool='rest_testPool', role='UserRole'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d2060-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Update VM pool name, description and size</test_name>
+    <test_action>updateVmPool</test_action>
+    <parameters>vmpool='rest_testPool', name='rest_testPoolUpd', description='Pool Description', size=3</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d227c-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Search for pools VMs</test_name>
+    <test_action>searchForVm</test_action>
+    <parameters>query_key='name', query_val='rest_testPool*', key_name='name'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d2484-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Search for VM pools</test_name>
+    <test_action>searchForVmPool</test_action>
+    <parameters>query_key='description', query_val='Pool*', key_name='description'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d26aa-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Remove VM pool with attached VMs</test_name>
+    <test_action>removeVmPool</test_action>
+    <parameters>vmpool=''rest_testPoolUpd'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d2894-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Detach all VMs from pool</test_name>
+    <test_action>detachVms</test_action>
+    <parameters>vmpool=''rest_testPoolUpd'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d2a74-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Remove VM pool</test_name>
+    <test_action>removeVmPool</test_action>
+    <parameters>vmpool=''rest_testPoolUpd'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d2c54-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - VM pool update</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='rest_testPool type=37', query='type=344', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d2e34-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - VM removed from VM pool</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='rest_testPool type=37', query='type=308', expected_count=3</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d30b4-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - VM pool removed</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='rest_testPool type=37', query='type=304', expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <!-- ////////////////////////// TEARDOWN /////////////////////////////// -->
+  <test_case>
+    <id>cb8d32a8-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Remove all remaining VMs</test_name>
+    <test_action>removeVms</test_action>
+    <parameters>vms='restvm_templates restvm_templates2 restvm_templates_cloned restvm_templates_sd restvm_migration restvm_run_once rest_testPool-1 rest_testPool-2 rest_testPoolUpd-1'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d3492-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Sleep</test_name>
+    <test_action>sleep</test_action>
+    <parameters>seconds=10</parameters>
+    <positive>NONE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d36a4-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - VM remove initiated</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='rest_testPool type=36', query='type=36', expected_count=9</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d388e-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - VM removed</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='rest_testPool type=36', query='type=113', expected_count=9</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d3a78-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Remove all remaining templates</test_name>
+    <test_action>removeTemplates</test_action>
+    <parameters>templates='rest_templ1 rest_templ3 templ_sd'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d3c58-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Deactivate export storage domain</test_name>
+    <test_action>deactivateStorageDomain</test_action>
+    <parameters>datacenter='DefaultRest', storagedomain='ExportDomainRest'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d3e38-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Detach active storage domain</test_name>
+    <test_action>detachStorageDomain</test_action>
+    <parameters>datacenter='DefaultRest', storagedomain='ExportDomainRest'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d4018-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Remove export storage domain</test_name>
+    <test_action>removeStorageDomain</test_action>
+    <parameters>storagedomain='ExportDomainRest', host='{vds[0]}', format='false'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d41f8-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Deactivate non-master storage domain</test_name>
+    <test_action>deactivateStorageDomain</test_action>
+    <parameters>datacenter='DefaultRest', storagedomain='DataDomainRest2'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d43e2-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Deactivate master storage domain</test_name>
+    <test_action>deactivateStorageDomain</test_action>
+    <parameters>datacenter='DefaultRest', storagedomain='DataDomainRest'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d45c2-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Remove all remaining data centers</test_name>
+    <test_action>removeDataCenters</test_action>
+    <parameters>datacenters='DefaultRest RestDataCenter2'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d47ac-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Remove master storage domain</test_name>
+    <test_action>removeStorageDomain</test_action>
+    <parameters>storagedomain='DataDomainRest', host='{vds[0]}', format='true'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d498c-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Remove non-master storage domain</test_name>
+    <test_action>removeStorageDomain</test_action>
+    <parameters>storagedomain='DataDomainRest2', host='{vds[0]}', format='true'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d4b76-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Set active first host to maintenance</test_name>
+    <test_action>deactivateHost</test_action>
+    <parameters>host='{vds[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d4d92-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Remove first host</test_name>
+    <test_action>removeHost</test_action>
+    <parameters>host='{vds[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d4fc2-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Set active second host to maintenance</test_name>
+    <test_action>deactivateHost</test_action>
+    <parameters>host='{vds[1]}'</parameters>
+    <positive>TRUE</positive>
+    <run>if(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8d51f2-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Remove second host</test_name>
+    <test_action>removeHost</test_action>
+    <parameters>host='{vds[1]}'</parameters>
+    <positive>TRUE</positive>
+    <run>if(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <test_case>
+    <id>cb8d53dc-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Remove all remaining clusters</test_name>
+    <test_action>removeClusters</test_action>
+    <parameters>clusters='RestCluster1, RestCluster3, RestCluster4'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+</input>
