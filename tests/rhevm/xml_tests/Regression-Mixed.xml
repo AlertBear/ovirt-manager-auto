@@ -330,6 +330,24 @@
     <test_description>mem_overcommit</test_description>
   </test_case>
   <test_case>
+    <id>ad2d33e0-c8f6-11e1-a294-0024d7421ca4</id>
+    <test_name>Update cluster with high thresholds out of range</test_name>
+    <test_action>updateCluster</test_action>
+    <parameters>cluster='RestCluster6', cpu='{cpu_name}', data_center='DefaultRest', thrhld_low='21', thrhld_high='110', duration='240', scheduling_policy='e{scheduling_policy_power_saving}'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+    <test_description>sched_pol</test_description>
+  </test_case>
+  <test_case>
+    <id>ad2d38a4-c8f6-11e1-a294-0024d7421ca4</id>
+    <test_name>Update cluster with low thresholds out of range</test_name>
+    <test_action>updateCluster</test_action>
+    <parameters>cluster='RestCluster6', cpu='{cpu_name}', data_center='DefaultRest', thrhld_low='-1', thrhld_high='60', duration='240', scheduling_policy='e{scheduling_policy_power_saving}'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+    <test_description>sched_pol</test_description>
+  </test_case>
+  <test_case>
     <id>d75a0084-c695-11e1-a578-f0def10e0ce8</id>
     <test_name>Update cluster with specific thresholds relevant to power_saving</test_name>
     <test_action>updateCluster</test_action>
@@ -1099,13 +1117,14 @@
     <run>yes</run>
   </test_case>
   <test_case>
-   <test_name>Remove all remaining templates</test_name>
-   <test_type>rest</test_type>
-   <test_action>removeTemplates</test_action>
-   <parameters>templates='rest_templ3'</parameters>
-   <positive>TRUE</positive>
-   <run>yes</run>
-</test_case>
+    <id>ad2d8da4-c8f6-11e1-a294-0024d7421ca4</id>
+    <test_name>Remove all remaining templates</test_name>
+    <test_type>rest</test_type>
+    <test_action>removeTemplates</test_action>
+    <parameters>templates='rest_templ3'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
   <test_case>
     <id>d75ab5ce-c695-11e1-a578-f0def10e0ce8</id>
     <test_name>Deactivate master storage domain</test_name>
