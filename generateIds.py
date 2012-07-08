@@ -70,7 +70,7 @@ def buildXml(inputFilePath, outputFilePath):
     rootElement = testCasesTree.getroot()
     for elm in list(rootElement):
         if not isinstance(elm, _Comment):
-            if not elm.get('id', None):
+            if not elm.findall('id'):
                 idElm = Element('id')
                 idElm.text = generateId()
                 elm.insert(0, idElm)
