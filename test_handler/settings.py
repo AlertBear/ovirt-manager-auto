@@ -233,9 +233,9 @@ def readTestRunOpts(path, redefs):
     opts['debug'] = runSection['debug'] == "yes"
 
     # Populate opts from the REST section.
-    restSection = config['PARAMETERS']
+    restSection = config['REST_CONNECTION']
     opts['scheme'] = restSection['scheme']
-    opts['host'] = restSection['vdc']
+    opts['host'] = restSection['host']
     opts['port'] = restSection['port']
     opts['entry_point'] = restSection['entry_point']
     opts['user'] = restSection['user']
