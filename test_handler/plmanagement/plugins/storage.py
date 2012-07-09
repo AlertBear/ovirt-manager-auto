@@ -194,7 +194,7 @@ class StorageUtils:
                                         }
         if not self.host_group:
             self.host_group = createHostGroupName(getFromMainConfSection(config,
-                'vdc', asList=False))
+                'host', mainSection='REST_CONNECTION', asList=False))
 
 
     def storageSetup(self):
