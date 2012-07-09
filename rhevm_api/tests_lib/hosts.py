@@ -23,7 +23,7 @@ import os
 import time
 from lxml import etree
 from utilities import machine
-from core_api.apis_utils import TimeoutingSampler
+from core_api.apis_utils import TimeoutingSampler, data_st
 from core_api.apis_exceptions import APITimeout, EntityNotFound
 import utilities.ssh_session as ssh_session
 import re
@@ -32,30 +32,30 @@ from core_api.validator import compareCollectionSize
 from rhevm_api.tests_lib.networks import getClusterNetwork
 from rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
 from rhevm_api.utils.test_utils import searchForObj
+from test_handler import settings
 
 ELEMENT = 'host'
 COLLECTION = 'hosts'
-util = get_api(ELEMENT, COLLECTION)
-clUtil = get_api('cluster', 'clusters')
-dcUtil = get_api('data_center', 'datacenters')
-tagUtil = get_api('tag', 'tags')
+HOST_API = get_api(ELEMENT, COLLECTION)
+CL_API = get_api('cluster', 'clusters')
+DC_API = get_api('data_center', 'datacenters')
+TAG_API = get_api('tag', 'tags')
 
-xpathMatch = XPathMatch(util)
-xpathHostsLinks = XPathLinks(util)
+xpathMatch = XPathMatch(HOST_API)
+xpathHostsLinks = XPathLinks(HOST_API)
 
 Host = getDS('Host')
 Options = getDS('Options')
 Option = getDS('Option')
-IP = getDS('IP')
 PowerManagement = getDS('PowerManagement')
 Tag = getDS('Tag')
 StorageManager = getDS('StorageManager')
 
 SED = '/bin/sed'
 SERVICE = '/sbin/service'
-ELEMENTS=os.path.join(os.path.dirname(__file__), '../../conf/elements.conf')
+ELEMENTS = os.path.join(os.path.dirname(__file__), '../../conf/elements.conf')
 ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
-KSM_STATUSFILE='/sys/kernel/mm/ksm/run'
+KSM_STATUSFILE = '/sys/kernel/mm/ksm/run'
 
 
 def isKSMRunning(positive, host, host_user, host_passwd):
@@ -72,7 +72,7 @@ def isKSMRunning(positive, host, host_user, host_passwd):
     host_obj = machine.Machine(host, host_user, host_passwd).util('linux')
     output = host_obj.runCmd(['cat', KSM_STATUSFILE])
     if not output[0]:
-        logger.error("Can't read '/sys/kernel/mm/ksm/run' on %s", host)
+        HOST_API.logger.error("Can't read '/sys/kernel/mm/ksm/run' on %s", host)
         return False
     # check if there's a 1 or a 0 in the file
     match_obj = re.search('([01])[\n\r]*$', output[1])
@@ -94,10 +94,10 @@ def calcVMNum(positive, host, vm_mem, cluster):
     stats = getStat(host, ELEMENT, COLLECTION, ['memory.total', 'memory.used'])
     total_mem = stats['memory.total']
     base_mem_usage = stats['memory.used']
-    cluster_obj = clUtil.find(cluster)
+    cluster_obj = CL_API.find(cluster)
     overcommit_rate = float(cluster_obj.get_memory_policy().get_overcommit().get_percent()) / 100
     if not (total_mem and overcommit_rate):
-        util.logger.error("Error while getting stats.")
+        HOST_API.logger.error("Error while getting stats.")
         return False
     vm_num = int(((total_mem - base_mem_usage) * overcommit_rate) / vm_mem) + 1
     return True, {'vm_num': vm_num}
@@ -124,7 +124,7 @@ def calcKSMThreshold(host, host_user, host_passwd, vm_mem):
     host_obj = machine.Machine(host, host_user, host_passwd).util('linux')
     ksmtuned_output = host_obj.runCmd(['cat', '/etc/ksmtuned.conf'])
     if ksmtuned_output[0] is False:
-        logger.error("Can't read '/etc/ksmtuned.conf'")
+        HOST_API.logger.error("Can't read '/etc/ksmtuned.conf'")
         return False
     match_obj = re.search('[^#]*\W*KSM_THRES_COEF=([0-9]+)', ksmtuned_output[1])
     if match_obj is not None:
@@ -133,10 +133,10 @@ def calcKSMThreshold(host, host_user, host_passwd, vm_mem):
         ksm_thres_coeff = 20
     match_obj = re.search('[^#]*\W*KSM_THRES_CONST=([0-9]+)', ksmtuned_output[1])
     if match_obj is not None:
-        ksm_thres_const = int(match_obj.group(1)) * 1024**2
+        ksm_thres_const = int(match_obj.group(1)) * 1024 ** 2
     else:
-        ksm_thres_const = 2048 * 1024**2
-    ksm_byte_threshold = total_mem - max(ksm_thres_coeff/100 * total_mem,
+        ksm_thres_const = 2048 * 1024 ** 2
+    ksm_byte_threshold = total_mem - max(ksm_thres_coeff / 100 * total_mem,
                                          ksm_thres_const)
     ksm_threshold_num = int((ksm_byte_threshold - base_mem_usage) / vm_mem) + 1
     return ksm_threshold_num
@@ -163,24 +163,24 @@ def measureKSMThreshold(positive, poolname, vm_total, host, host_user,
     Return: True if the calculated and measured VM number equals,
     False on error or otherwise
     '''
-    
+
     calc_threshold = calcKSMThreshold(host, host_user, host_passwd, vm_mem)
     if not calc_threshold:
-        util.logger.error("Can't calculate the expected threshold")
+        HOST_API.logger.error("Can't calculate the expected threshold")
         return False
-    logger.info("Expected threshold calculated to be %d", calc_threshold)
+    HOST_API.logger.info("Expected threshold calculated to be %d", calc_threshold)
     if isKSMRunning(True, host, host_user, host_passwd):
-        util.logger.error('KSM is running at the start of the test')
+        HOST_API.logger.error('KSM is running at the start of the test')
         return False
     status = True
     vm_decimal_places = len(str(vm_total))
     for vm_index in range(vm_total):
         vm_name = "%s-%s" % (poolname,
                              str(vm_index + 1).zfill(vm_decimal_places))
-        util.logger.debug('Starting VM: %s', vm_name)
+        HOST_API.logger.debug('Starting VM: %s', vm_name)
         if not startVm(True, vm_name, wait_for_status=None):
-            logger.error('Failed to start VM: %s', vm_name)
-        util.logger.debug("Waiting for the guest %s to get IP address", vm_name)
+            HOST_API.logger.error('Failed to start VM: %s', vm_name)
+        HOST_API.logger.debug("Waiting for the guest %s to get IP address", vm_name)
         xpath_cmd = '0=count(/vms/vm[(./status/state="%s" or \
                      ./status/state="%s") and not(./guest_info/ips/ip)])' % (
                      ENUMS['vm_state_up'], ENUMS['vm_state_powering_up'])
@@ -192,17 +192,17 @@ def measureKSMThreshold(positive, poolname, vm_total, host, host_user,
                        protocol=protocol, clientVMs=clientVMs, extra=extra,
                        stopLG=False)
         # time for stats to refresh in the REST API
-        util.logger.debug("Checking if KSM is running on the host")
+        HOST_API.logger.debug("Checking if KSM is running on the host")
         if isKSMRunning(True, host, host_user, host_passwd):
             started_count = vm_index + 1
-            logger.info("KSM threshold found at %d guests", started_count)
+            HOST_API.logger.info("KSM threshold found at %d guests", started_count)
             break
     if calc_threshold == started_count:
-        util.logger.info("Calculated and real threshold equals")
+        HOST_API.logger.info("Calculated and real threshold equals")
     else:
         status = False
-        util.logger.error("Calculated and real threshold differs")
-    logger.debug("Stopping the previously started VMs")
+        HOST_API.logger.error("Calculated and real threshold differs")
+    HOST_API.logger.debug("Stopping the previously started VMs")
     for vm_index in range(started_count):
         vm_name = "%s-%s" % (poolname,
                         str(vm_index + 1).zfill(vm_decimal_places))
@@ -237,11 +237,11 @@ def verifyKSMThreshold(positive, poolname, vm_total, host, host_user,
     time.sleep(10)
     calc_threshold = calcKSMThreshold(host, host_user, host_passwd, vm_mem)
     if not calc_threshold:
-        logger.error("Can't calculate the expected threshold")
+        HOST_API.logger.error("Can't calculate the expected threshold")
         return False
-    logger.info("Expected threshold calculated to be %d", calc_threshold)
+    HOST_API.logger.info("Expected threshold calculated to be %d", calc_threshold)
     if isKSMRunning(True, host, host_user, host_passwd):
-        logger.error('KSM is running at the start of the test')
+        HOST_API.logger.error('KSM is running at the start of the test')
         return False
     status = True
     vm_decimal_places = len(str(vm_total))
@@ -250,11 +250,11 @@ def verifyKSMThreshold(positive, poolname, vm_total, host, host_user,
         vm_name = "%s-%s" % (poolname,
                              str(vm_index + 1).zfill(vm_decimal_places))
         vm_list.append(vm_name)
-    logger.debug('Starting VMs')
+    HOST_API.logger.debug('Starting VMs')
     if not startVms(','.join(vm_list)):
-        logger.error('Failed to start VMs')
+        HOST_API.logger.error('Failed to start VMs')
         return False
-    logger.debug("Waiting for the guests to get IP addresses")
+    HOST_API.logger.debug("Waiting for the guests to get IP addresses")
     xpath_cmd = '0=count(/vms/vm[(./status/state="%s" or \
                     ./status/state="%s") and not(./guest_info/ips/ip)])' % (
                     ENUMS['vm_state_up'], ENUMS['vm_state_powering_up'])
@@ -267,15 +267,15 @@ def verifyKSMThreshold(positive, poolname, vm_total, host, host_user,
                         protocol=protocol, clientVMs=clientVMs, extra=extra,
                         stopLG=False)
         # time for stats to refresh in the REST API
-    logger.debug("Checking if KSM is running on the host")
+    HOST_API.logger.debug("Checking if KSM is running on the host")
     if isKSMRunning(True, host, host_user, host_passwd):
-        logger.info("Calculated threshold triggered KSM")
+        HOST_API.logger.info("Calculated threshold triggered KSM")
     else:
         status = False
-        logger.error("Calculated threshold not triggered KSM")
-    logger.debug("Stopping the previously started VMs")
+        HOST_API.logger.error("Calculated threshold not triggered KSM")
+    HOST_API.logger.debug("Stopping the previously started VMs")
     if not stopVms(','.join(vm_list)):
-        logger.error('Failed to stop VMs')
+        HOST_API.logger.error('Failed to stop VMs')
         return False
     return status
 
@@ -288,16 +288,16 @@ def isHostSaturated(host, max_cpu=95, max_mem=95):
       * host - name of a host
     Return: status (True if the host is saturated, False otherwise)
     '''
-    hostObj = util.find(host)
+    hostObj = HOST_API.find(host)
     stats = getStat(host, ELEMENT, COLLECTION, ["memory.used", "memory.total",
                      "cpu.current.system", "cpu.current.user"])
     cpu_sum = stats["cpu.current.system"] + stats["cpu.current.user"]
     mem_percent = stats["memory.used"] / float(stats["memory.total"]) * 100.0
     if cpu_sum > max_cpu or mem_percent > max_mem:
         if cpu_sum > max_cpu:
-            util.logger.info("Host %s reached the CPU saturation point", host)
+            HOST_API.logger.info("Host %s reached the CPU saturation point", host)
         else:
-            util.logger.info("Host %s reached the memory saturation point", host)
+            HOST_API.logger.info("Host %s reached the memory saturation point", host)
         return True
     return False
 
@@ -322,17 +322,17 @@ def saturateHost(positive, poolname, vm_total, host, host_user,
     Return: False on error, True otherwise
     '''
     if isHostSaturated(host):
-        util.logger.error('Host is already saturated at the start of the test')
+        HOST_API.logger.error('Host is already saturated at the start of the test')
         return False
     status = True
     vm_decimal_places = len(str(vm_total))
     for vm_index in range(vm_total):
         vm_name = "%s-%s" % (poolname,
                         str(vm_index + 1).zfill(vm_decimal_places))
-        util.logger.debug('Starting VM: %s', vm_name)
+        HOST_API.logger.debug('Starting VM: %s', vm_name)
         if not startVm(True, vm_name, wait_for_status=None):
-            util.logger.error('Failed to start VM: %s', vm_name)
-        util.logger.debug("Waiting for the guest %s to get IP address", vm_name)
+            HOST_API.logger.error('Failed to start VM: %s', vm_name)
+        HOST_API.logger.debug("Waiting for the guest %s to get IP address", vm_name)
         xpath_cmd = '0=count(/vms/vm[(./status/state="%s" or \
                      ./status/state="%s") and not(./guest_info/ips/ip)])' % (
                      ENUMS['vm_state_up'], ENUMS['vm_state_powering_up'])
@@ -344,12 +344,12 @@ def saturateHost(positive, poolname, vm_total, host, host_user,
                        clientVMs=clientVMs, extra=extra, stopLG=False)
         # time for stats to refresh in the REST API
         time.sleep(10)
-        util.logger.debug("Checking for host saturation")
+        HOST_API.logger.debug("Checking for host saturation")
         if isHostSaturated(host):
             started_count = vm_index + 1
-            logger.info("Saturation point found at %d guests", started_count)
+            HOST_API.logger.info("Saturation point found at %d guests", started_count)
             break
-    util.logger.debug("Stopping the previously started VMs")
+    HOST_API.logger.debug("Stopping the previously started VMs")
     for vm_index in range(started_count):
         vm_name = "%s-%s" % (poolname,
                         str(vm_index + 1).zfill(vm_decimal_places))
@@ -369,7 +369,7 @@ def waitForOvirtAppearance(positive, host, attempts=10, interval=3):
     '''
     while attempts:
         try:
-            util.find(host)
+            HOST_API.find(host)
             return True
         except EntityNotFound:
             attempts -= 1
@@ -388,13 +388,13 @@ def waitForHostsStates(positive, names, states='up'):
     '''
     names = split(names)
     for host in names:
-        util.find(host)
+        HOST_API.find(host)
         query_host = "name={0} and status={1}".format(host, states)
-       
+
         try:
-            util.waitForQuery(query_host, timeout=1000)
+            HOST_API.waitForQuery(query_host, timeout=1000)
         except APITimeout as e:
-            logger.error(e)
+            HOST_API.logger.error(e)
             return False
     return True
 
@@ -423,26 +423,26 @@ def addHost(positive, name, wait=True, vdcPort=None, **kwargs):
     else:
         host_address = kwargs.pop('address')
 
-    hostCl = clUtil.find(kwargs.pop('cluster', 'Default'))
+    hostCl = CL_API.find(kwargs.pop('cluster', 'Default'))
 
-    osType ='rhel'
+    osType = 'rhel'
     root_password = kwargs.get('root_password')
     if root_password and positive:
         hostObj = machine.Machine(host_address, 'root', root_password).util('linux')
         hostObj.isConnective(attempt=5, interval=5, remoteCmd=False)
         osType = hostObj.getOsInfo()
         if not osType:
-            logger.error("Can't get host %s os info" % name)
+            HOST_API.logger.error("Can't get host %s os info" % name)
             return False
 
     if osType.lower().find('hypervisor') == -1:
         host = Host(name=name, cluster=hostCl, address=host_address, **kwargs)
-        host, status = util.create(host, positive)
+        host, status = HOST_API.create(host, positive)
 
         if not wait:
             return status and positive
         if hasattr(host, 'href'):
-            return status and util.waitForElemStatus(host, "up", 800)
+            return status and HOST_API.waitForElemStatus(host, "up", 800)
         else:
             return status and not positive
 
@@ -452,6 +452,7 @@ def addHost(positive, name, wait=True, vdcPort=None, **kwargs):
     if not installOvirtHost(positive, name, 'root', root_password, settings.opts['host'], vdcPort):
         return False
 
+    cluster = kwargs.pop('cluster', 'Default')
     return approveHost(positive, name, cluster)
 
 
@@ -475,7 +476,7 @@ def updateHost(positive, host, **kwargs):
     Return: status (True if host was updated properly, False otherwise)
     '''
 
-    hostObj = util.find(host)
+    hostObj = HOST_API.find(host)
     hostUpd = Host()
 
     if 'name' in kwargs:
@@ -486,9 +487,9 @@ def updateHost(positive, host, **kwargs):
         hostUpd.set_root_password(kwargs.pop('root_password'))
 
     if 'cluster' in kwargs:
-        cl = clUtil.find(kwargs.pop('cluster', 'Default'))
+        cl = CL_API.find(kwargs.pop('cluster', 'Default'))
         hostUpd.set_cluster(cl)
-    
+
     if 'storage_manager_priority' or 'storage_manager' in kwargs:
         value = kwargs.pop('storage_manager', hostObj.storage_manager.valueOf_)
         priority_ = kwargs.pop('storage_manager_priority', hostObj.storage_manager.priority)
@@ -502,7 +503,7 @@ def updateHost(positive, host, **kwargs):
         pm_port = kwargs.get('pm_port')
         pm_slot = kwargs.get('pm_slot')
         pm_secure = kwargs.get('pm_secure')
-        
+
         pmOptions = None
 
         if pm_port or pm_secure:
@@ -522,13 +523,13 @@ def updateHost(positive, host, **kwargs):
             options=pmOptions)
 
         hostUpd.set_power_management(hostPm)
-        
-    hostObj, status = util.update(hostObj, hostUpd, positive)
+
+    hostObj, status = HOST_API.update(hostObj, hostUpd, positive)
 
     return status
 
 
-def removeHost(positive,host):
+def removeHost(positive, host):
     '''
     Description: remove existed host
     Author: edolinin
@@ -537,8 +538,8 @@ def removeHost(positive,host):
     Return: status (True if host was removed properly, False otherwise)
     '''
 
-    hostObj = util.find(host)
-    return util.delete(hostObj, positive)
+    hostObj = HOST_API.find(host)
+    return HOST_API.delete(hostObj, positive)
 
 
 def activateHost(positive, host, wait=True):
@@ -549,11 +550,11 @@ def activateHost(positive, host, wait=True):
        * host - name of a host to be activated
     Return: status (True if host was activated properly, False otherwise)
     '''
-    hostObj = util.find(host)
-    status = util.syncAction(hostObj, "activate", positive)
+    hostObj = HOST_API.find(host)
+    status = HOST_API.syncAction(hostObj, "activate", positive)
 
     if status and wait and positive:
-        testHostStatus = util.waitForElemStatus(hostObj, "up", 200)
+        testHostStatus = HOST_API.waitForElemStatus(hostObj, "up", 200)
     else:
         testHostStatus = True
 
@@ -571,17 +572,17 @@ def deactivateHost(positive, host, expected_status=ENUMS['host_state_maintenance
                     False otherwise)
     '''
 
-    hostObj = util.find(host)
-    if not util.syncAction(hostObj, "deactivate", positive):
+    hostObj = HOST_API.find(host)
+    if not HOST_API.syncAction(hostObj, "deactivate", positive):
         return False
 
     # If state got changed, it may be transitional state so we may want to wait
     # for the final one. If it didn't, we certainly may return immediately.
     hostState = hostObj.get_status().get_state()
-    getHostStateAgain = util.find(host).get_status().get_state()
+    getHostStateAgain = HOST_API.find(host).get_status().get_state()
     state_changed = hostState != getHostStateAgain
     if state_changed:
-        testHostStatus = util.waitForElemStatus(hostObj, expected_status, 180)
+        testHostStatus = HOST_API.waitForElemStatus(hostObj, expected_status, 180)
         return testHostStatus and positive
     else:
         return not positive
@@ -598,14 +599,14 @@ def installHost(positive, host, root_password, override_iptables='false'):
     Return: status (True if host was installed properly, False otherwise)
     '''
 
-    hostObj = util.find(host)
-    status = util.syncAction(hostObj, "install", positive,
+    hostObj = HOST_API.find(host)
+    status = HOST_API.syncAction(hostObj, "install", positive,
                              root_password=root_password,
                              override_iptables=override_iptables.lower())
     if not status:
         return False
 
-    return util.waitForElemStatus(hostObj, "up", 800)
+    return HOST_API.waitForElemStatus(hostObj, "up", 800)
 
 
 def approveHost(positive, host, cluster='Default'):
@@ -618,15 +619,12 @@ def approveHost(positive, host, cluster='Default'):
     Return: status (True if host was approved properly, False otherwise)
     '''
 
-    hostObj = None
-    kwargs = {}
+    hostObj = HOST_API.find(host)
+    clusterObj = HOST_API.find(cluster)
 
-    hostObj = util.find(host)
-    clusterObj = util.find(cluster)
-
-    kwargs = { 'cluster': clusterObj}
-    status = util.syncAction(hostObj, "approve", positive, **kwargs)
-    testHostStatus = util.waitForRestElemStatus(hostObj, "up", 120)
+    kwargs = {'cluster': clusterObj}
+    status = HOST_API.syncAction(hostObj, "approve", positive, **kwargs)
+    testHostStatus = HOST_API.waitForElemStatus(hostObj, "up", 120)
 
     return status and testHostStatus
 
@@ -650,11 +648,11 @@ def installOvirtHost(positive, host, user_name, password, vdc, port=443, timeout
 
     vdcHostName = getHostName(vdc)
     if not vdcHostName:
-        util.logger.error("Can't get hostname from %s" % vdc)
+        HOST_API.logger.error("Can't get hostname from %s" % vdc)
 
     hostObj = machine.Machine(host, user_name, password).util('linux')
     if not hostObj.isConnective():
-        util.logger.error("No connectivity to the host %s" % host)
+        HOST_API.logger.error("No connectivity to the host %s" % host)
         return False
     commands = []
     commands.append([SED, '-i', "'s/vdc_host_name=.*/vdc_host_name=" + vdcHostName + "/'", "/etc/vdsm-reg/vdsm-reg.conf", '--copy'])
@@ -662,18 +660,18 @@ def installOvirtHost(positive, host, user_name, password, vdc, port=443, timeout
     commands.append([SED, '-i', "'s/vdc_host_port=.*/vdc_host_port=" + str(port) + "/'", "/etc/vdsm-reg/vdsm-reg.conf", '--copy'])
     commands.append([SERVICE, 'vdsm-reg', "restart"])
     for command in commands:
-        res,out = hostObj.runCmd(command)
+        res, out = hostObj.runCmd(command)
         if not res:
-            util.logger.error("command %s" % " ".join(command))
-            util.logger.error(str(out))
+            HOST_API.logger.error("command %s" % " ".join(command))
+            HOST_API.logger.error(str(out))
             return False
 
     if not waitForOvirtAppearance(positive, host, attempts=20, interval=3):
-        util.logger.error("Host %s doesn't appear!" % host)
+        HOST_API.logger.error("Host %s doesn't appear!" % host)
         return False
 
-    if not waitForHostsStates(positive, host, states='pending_approval', timeout=timeout):
-        util.logger.error("Host %s isn't in PENDING_APPROVAL state" % host)
+    if not waitForHostsStates(positive, host, states='pending_approval'):
+        HOST_API.logger.error("Host %s isn't in PENDING_APPROVAL state" % host)
         return False
 
     return True
@@ -688,8 +686,8 @@ def commitNetConfig(positive, host):
     Return: status (True if host network configuration was saved properly, False otherwise)
     '''
 
-    hostObj = util.find(host)
-    return util.syncAction(hostObj, "commitnetconfig", positive)
+    hostObj = HOST_API.find(host)
+    return HOST_API.syncAction(hostObj, "commitnetconfig", positive)
 
 
 def fenceHost(positive, host, fence_type):
@@ -702,8 +700,8 @@ def fenceHost(positive, host, fence_type):
     Return: status (True if host was fenced properly, False otherwise)
     '''
 
-    hostObj = util.find(host)
-    status = util.syncAction(hostObj, "fence", positive,
+    hostObj = HOST_API.find(host)
+    status = HOST_API.syncAction(hostObj, "fence", positive,
                              fence_type=fence_type.upper())
 
     # if test type is negative, we don't have to wait for element status,
@@ -712,16 +710,16 @@ def fenceHost(positive, host, fence_type):
         return True
     testHostStatus = True
     if fence_type == "restart" or fence_type == "start":
-        testHostStatus = util.waitForRestElemStatus(hostObj, "up", 500)
+        testHostStatus = HOST_API.waitForElemStatus(hostObj, "up", 500)
     if fence_type == "stop":
-        testHostStatus = util.waitForRestElemStatus(hostObj, "down", 300)
+        testHostStatus = HOST_API.waitForElemStatus(hostObj, "down", 300)
     return (testHostStatus and status) == positive
 
 
 def getHostNic(host, nic):
 
-    hostObj = util.find(host)
-    return util.getElemFromElemColl(hostObj, nic, 'nics', 'host_nic')
+    hostObj = HOST_API.find(host)
+    return HOST_API.getElemFromElemColl(hostObj, nic, 'nics', 'host_nic')
 
 
 def attachHostNic(positive, host, nic, network):
@@ -735,13 +733,13 @@ def attachHostNic(positive, host, nic, network):
     Return: status (True if nic was attached properly to host, False otherwise)
     '''
 
-    hostObj = util.find(host)
-    cluster = clUtil.find(hostObj.cluster.id, 'id').get_name()
-   
+    hostObj = HOST_API.find(host)
+    cluster = CL_API.find(hostObj.cluster.id, 'id').get_name()
+
     hostNic = getHostNic(host, nic)
     clusterNet = getClusterNetwork(cluster, network)
-   
-    status = util.syncAction(hostNic, "attach", positive, network=clusterNet)
+
+    status = HOST_API.syncAction(hostNic, "attach", positive, network=clusterNet)
 
     return status
 
@@ -762,8 +760,7 @@ def attachMultiNicsToHost(positive, host, nic, networks):
     return True
 
 
-def updateHostNic(positive, host, nic, network=None, boot_protocol=None,
-                  ip=None, netmask=None, bondOptions=None):
+def updateHostNic(positive, host, nic, **kwargs):
     '''
     Description: update nic of host
     Author: atal
@@ -772,36 +769,48 @@ def updateHostNic(positive, host, nic, network=None, boot_protocol=None,
        * nic - nic name that should be updated
        * network - network name
        * boot_protocol - new boot protocol. could be 'dhcp', 'static' or 'none'
-       * ip - new static ip only if boot protocol is static
+       * address - new static ip only if boot protocol is static
        * netmask - new netmask but same as ip.
        * bondOptions - new bonding option.
     Return: status (True if nic was updated properly, False otherwise)
     '''
 
-    hostObj = util.find(host)
-    cluster = clUtil.find(hostObj.cluster.id, 'id').get_name()
-    
+    hostObj = HOST_API.find(host)
+    cluster = CL_API.find(hostObj.cluster.id, 'id').get_name()
+
     nicObj = getHostNic(host, nic)
 
-    if network:
-        net = getClusterNetwork(cluster, network)
+    if 'network' in kwargs:
+        net = getClusterNetwork(cluster, kwargs.get('network'))
         nicObj.set_network(net)
-    if boot_protocol:
-        nicObj.set_boot_protocol(boot_protocol)
-    if ip or netmask:
-        nicObj.set_ip(IP(address=ip, netmask=netmask))
-   
-    # Build up bonding options if needed
+    if 'boot_protocol'in kwargs:
+        nicObj.set_boot_protocol(kwargs.get('boot_protocol'))
+
+    # TODO: check if supporting Gateway as well
+    address = kwargs.get('address')
+    netmask = kwargs.get('netmask')
+    if (address or netmask) is not None:
+        ip = {}
+        if address is not None:
+            ip['address'] = address
+        if netmask is not None:
+            ip['netmask'] = netmask
+        nicObj.set_ip(data_st.IP(**ip))
+
+    # FIXME: fix the bonding setup for new framework
     bondOpts = ""
-    if bondOptions:
+    bondOptions = kwargs.get('bondOptions')
+    if bondOptions is not None:
         for option in bondOptions.split(';'):
             optName, optValue = option.split('_')
             # Simple creation of option tag. multiple tags for multiple options
-            bondOpts = bondOpts + "<option value='"+optValue.strip()+"' name='"+optName.strip()+"'/>\n"
+            bondOpts = bondOpts + "<option value='" + optValue.strip() + \
+            "' name='" + optName.strip() + "'/>\n"
             # Adding bonding tag only if needed.
             nicObj.bonding.options = bondOpts
 
-    nic,status = util.update(hostObj.link['nics'].href,nicObj.href, nicObj, [201,200,202], positive)
+    nic, status = HOST_API.update(hostObj.link['nics'].href, nicObj.href,
+                              nicObj, [201, 200, 202], positive)
 
     return status
 
@@ -816,19 +825,19 @@ def detachHostNic(positive, host, nic, network):
        * network - network name to be used
     Return: status (True if nic was detach properly from host, False otherwise)
     '''
-    hostObj = util.find(host)
-    clusterObj = clUtil.find(hostObj.cluster.id, 'id')
+    hostObj = HOST_API.find(host)
+    clusterObj = CL_API.find(hostObj.cluster.id, 'id')
     nicObj = getHostNic(host, nic)
 
     # Try to get the network object by his dataCenter id
     # to avoid duplicate network names
-    netObjs = util.get(absLink=False)
+    netObjs = HOST_API.get(absLink=False)
     for netObj in netObjs:
         if re.match(netObj.get_name(), network, re.I) and \
         re.match(netObj.get_data_center().get_id(), clusterObj.get_data_center().get_id()):
             nicObj.set_network(netObj)
             break
-    return util.syncAction(nicObj, "detach", positive, network=nicObj.get_network())
+    return HOST_API.syncAction(nicObj, "detach", positive, network=nicObj.get_network())
 
 
 def detachMultiVlansFromBond(positive, host, nic, networks):
@@ -841,16 +850,17 @@ def detachMultiVlansFromBond(positive, host, nic, networks):
         * networks - networks name list'
     return True/False
     '''
-    regex = re.compile('\w(\d+)',re.I)
+    regex = re.compile('\w(\d+)', re.I)
     for net in networks:
         match = regex.search(net)
         if not match:
             return False
-        if not detachHostNic(positive,host,nic+'.'+match.group(1),net):
+        if not detachHostNic(positive, host, nic + '.' + match.group(1), net):
             return False
     return True
 
 
+# FIXME: fix for new fraemwork
 def addBond(positive, host, name, slaves, network, bondOptions=None):
     '''
     Description: add bond to a host
@@ -865,9 +875,8 @@ def addBond(positive, host, name, slaves, network, bondOptions=None):
     Return: status (True if bond was attached properly to host, False otherwise)
     '''
 
-    # find host under hosts link
-    hostObj = util.find(links['hosts'], host)
-    clusterObj = util.findById(links['clusters'], hostObj.cluster.id)
+    hostObj = HOST_API.find(host)
+    clusterObj = CL_API.find(hostObj.cluster.id, 'id')
 
     # Create host_nic collection
     hostNic = fmt.HostNIC()
@@ -917,6 +926,7 @@ def addBond(positive, host, name, slaves, network, bondOptions=None):
     return status
 
 
+#FIXME: fix for new fraemwork
 def genSNNic(nic_name, network_name, by_id=False, boot_proto='none', **ip):
     '''
     generate a host_nic element of types regular or vlaned
@@ -945,6 +955,7 @@ def genSNNic(nic_name, network_name, by_id=False, boot_proto='none', **ip):
     return True, {'host_nic': nic_obj.dump()}
 
 
+# FIXME: fix for new fraemwork
 def genSNBond(nic_name, network_name, by_id=False, slaves=None, **options):
     '''
     generate a host_nic element of type bond.
@@ -980,6 +991,7 @@ def genSNBond(nic_name, network_name, by_id=False, slaves=None, **options):
     return True, {'host_nic': nic_obj.dump()}
 
 
+# FIXME: fix for new fraemwork
 def sendSNRequest(positive, host_name, host_nics=None, auto_nics=None, **options):
     '''
     send a POST request for <action> after attaching all host_nic
@@ -994,13 +1006,15 @@ def sendSNRequest(positive, host_name, host_nics=None, auto_nics=None, **options
     host_nics = host_nics or []
     auto_nics = auto_nics or []
 
-    host_obj = util.find(links['hosts'], host_name)
+    host_obj = HOST_API.find(host_name)
+
+    # FIXME: check if this is correct for new framework
     root = etree.Element('action')
     nics = etree.SubElement(root, 'host_nics')
 
     for auto_nic in auto_nics:
         try:
-            host_nic = util.find(host_obj.link['nics'].href, auto_nic)
+            host_nic = getHostNic(host_name, auto_nic)
         except EntityNotFound:
             continue
         host_nics.append(host_nic.dump())
@@ -1012,8 +1026,10 @@ def sendSNRequest(positive, host_name, host_nics=None, auto_nics=None, **options
     for key, val in options.iteritems():
         etree.SubElement(root, key).text = val
 
+    # FIXME: add this function to core. support collection action
     return util.syncCollectionAction(host_obj.link['nics'].href + '/setupnetworks',
                                      etree.tostring(root), positive)
+
 
 def searchForHost(positive, query_key, query_val, key_name=None, **kwargs):
     '''
@@ -1026,11 +1042,11 @@ def searchForHost(positive, query_key, query_val, key_name=None, **kwargs):
     Return: status (True if expected number of hosts equal to found by search,
     False otherwise)
     '''
-    
-    return searchForObj(util, query_key, query_val, key_name, **kwargs)
+
+    return searchForObj(HOST_API, query_key, query_val, key_name, **kwargs)
 
 
-def rebootHost(positive,host,username,password):
+def rebootHost(positive, host, username, password):
     '''
     Description: rebooting host via ssh session
     Author: edolinin
@@ -1040,10 +1056,10 @@ def rebootHost(positive,host,username,password):
        * password - password for ssh session
     Return: status (True if host was rebooted properly, False otherwise)
     '''
-    hostObj = util.find(host)
+    hostObj = HOST_API.find(host)
     ssh = ssh_session.ssh_session(username, host, password)
     ssh.ssh("reboot")
-    return util.waitForRestElemStatus(hostObj, "non_responsive", 180)
+    return HOST_API.waitForElemStatus(hostObj, "non_responsive", 180)
 
 
 def runDelayedControlService(positive, host, host_user, host_passwd, service,
@@ -1067,7 +1083,7 @@ def runDelayedControlService(positive, host, host_user, host_passwd, service,
     output = host_obj.runCmd(cmd.split(), bg=('/tmp/delayed-stdout',
                                                  '/tmp/delayed-stderr'))
     if not output[0]:
-        util.logger.error("Sending delayed service control command failed. Output: %s",
+        HOST_API.logger.error("Sending delayed service control command failed. Output: %s",
                      output[1])
     return output[0] == positive
 
@@ -1088,9 +1104,9 @@ def checkDelayedControlService(positive, host, host_user, host_passwd):
     host_obj = machine.Machine(host, host_user, host_passwd).util('linux')
     output = host_obj.runCmd(cmd.split())
     if not output[0]:
-        util.logger.error("Failed to check for service control command result.")
+        HOST_API.logger.error("Failed to check for service control command result.")
     if int(output[1]) != 0:
-        util.logger.error("Last service control command failed.")
+        HOST_API.logger.error("Last service control command failed.")
     return output[0] == positive
 
 
@@ -1104,10 +1120,10 @@ def addTagToHost(positive, host, tag):
     Return: status (True if tag was added properly, False otherwise)
     '''
 
-    hostObj = util.find(host)
+    hostObj = HOST_API.find(host)
     tagObj = Tag(name=tag)
-    hostTags = util.getElemFromLink(hostObj, link_name='tags', attr='tag', get_href=True)
-    tagObj, status = tagUtil.create(tagObj, positive, collection=hostTags)
+    hostTags = HOST_API.getElemFromLink(hostObj, link_name='tags', attr='tag', get_href=True)
+    tagObj, status = TAG_API.create(tagObj, positive, collection=hostTags)
     return status
 
 
@@ -1121,13 +1137,14 @@ def removeTagFromHost(positive, host, tag):
     Return: status (True if tag was removed properly, False otherwise)
     '''
 
-    hostObj = util.find(host)
-    tagObj = util.getElemFromElemColl(hostObj, tag, 'tags', 'tag')
+    hostObj = HOST_API.find(host)
+    tagObj = HOST_API.getElemFromElemColl(hostObj, tag, 'tags', 'tag')
     if tagObj:
-        return util.delete(tagObj, positive)
+        return HOST_API.delete(tagObj, positive)
     else:
-        util.logger.error("Tag {0} is not found at host {1}".format(tag, host))
+        HOST_API.logger.error("Tag {0} is not found at host {1}".format(tag, host))
         return False
+
 
 def checkHostStatistics(positive, host):
     '''
@@ -1138,7 +1155,7 @@ def checkHostStatistics(positive, host):
     Return: status (True if all statistics were a success, False otherwise)
     '''
 
-    hostObj = util.find(host)
+    hostObj = HOST_API.find(host)
     expectedStatistics = ['memory.total', 'memory.used', 'memory.free',
             'memory.buffers', 'memory.cached', 'swap.total', 'swap.free',
             'swap.used', 'swap.cached', 'ksm.cpu.current', 'cpu.current.user',
@@ -1146,24 +1163,24 @@ def checkHostStatistics(positive, host):
 
     numOfExpStat = len(expectedStatistics)
     status = True
-    statistics = util.getElemFromLink(hostObj, link_name='statistics', attr='statistic')
+    statistics = HOST_API.getElemFromLink(hostObj, link_name='statistics', attr='statistic')
 
     for stat in statistics:
-        datum =  str(stat.get_values().get_value()[0].get_datum())
+        datum = str(stat.get_values().get_value()[0].get_datum())
         if not re.match('(\d+\.\d+)|(\d+)', datum):
-            util.logger.error('Wrong value for ' + stat.get_name() + ': ' + datum)
+            HOST_API.logger.error('Wrong value for ' + stat.get_name() + ': ' + datum)
             status = False
         else:
-            util.logger.info('Correct value for ' + stat.get_name() + ': ' + datum)
+            HOST_API.logger.info('Correct value for ' + stat.get_name() + ': ' + datum)
 
         if stat.get_name() in expectedStatistics:
             expectedStatistics.remove(stat.get_name())
 
     if len(expectedStatistics) == 0:
-         util.logger.info('All ' + str(numOfExpStat) + ' statistics appear')
+        HOST_API.logger.info('All ' + str(numOfExpStat) + ' statistics appear')
     else:
-         util.logger.error('The following statistics are missing: ' + str(expectedStatistics))
-         status = False
+        HOST_API.logger.error('The following statistics are missing: ' + str(expectedStatistics))
+        status = False
 
     return status
 
@@ -1176,16 +1193,16 @@ def checkHostSpmStatus(positive, hostName):
                    2) True when host is not SPM and positive equal to False ,otherwise return False
     '''
     attribute = 'storage_manager'
-    hostObj = util.find(hostName)
+    hostObj = HOST_API.find(hostName)
 
     if not hasattr(hostObj, attribute):
-        util.logger.error("Element host" + hostName + " doesn't have attribute " + attribute)
+        HOST_API.logger.error("Element host" + hostName + " doesn't have attribute " + attribute)
         return False
 
     spmStatus = hostObj.get_storage_manager().valueOf_
-    util.logger.info("checkHostSpmStatus - SPM Status of host " + hostName + \
+    HOST_API.logger.info("checkHostSpmStatus - SPM Status of host " + hostName + \
                     " is: " + spmStatus)
-                    
+
     return (spmStatus == 'true') == positive
 
 
@@ -1201,15 +1218,15 @@ def checkSPMPriority(positive, hostName, expectedPriority):
     '''
 
     attribute = 'storage_manager'
-    hostObj = util.find(hostName)
+    hostObj = HOST_API.find(hostName)
 
     if not hasattr(hostObj, attribute):
-        util.logger.error("Element host %s doesn't have attribute %s",
+        HOST_API.logger.error("Element host %s doesn't have attribute %s",
                            hostName, attribute)
         return False
 
     spmPriority = hostObj.get_storage_manager().get_priority()
-    util.logger.info("checkSPMPriority - SPM Value of host %s is %s",
+    HOST_API.logger.info("checkSPMPriority - SPM Value of host %s is %s",
                      hostName, spmPriority)
     return (str(spmPriority) == expectedPriority)
 
@@ -1226,23 +1243,23 @@ def setSPMPriority(positive, hostName, spmPriority):
     '''
 
     attribute = 'storage_manager'
-    hostObj = util.find(hostName)
+    hostObj = HOST_API.find(hostName)
 
     if not hasattr(hostObj, attribute):
-        util.logger.error("Element host %s doesn't have attribute %s",
+        HOST_API.logger.error("Element host %s doesn't have attribute %s",
                           hostName, attribute)
         return False
 
     # Update host
-    util.logger.info("Updating Host %s priority to %s", hostName, spmPriority)
+    HOST_API.logger.info("Updating Host %s priority to %s", hostName, spmPriority)
     updateStat = updateHost(positive=positive, host=hostName,
                             storage_manager_priority=spmPriority)
     if not updateStat:
         return False
 
-    hostObj = util.find(hostName)
+    hostObj = HOST_API.find(hostName)
     new_priority = hostObj.get_storage_manager().get_priority()
-    util.logger.info("setSPMPriority - SPM Value of host %s is set to %s",
+    HOST_API.logger.info("setSPMPriority - SPM Value of host %s is set to %s",
                      hostName, new_priority)
 
     return  new_priority == int(spmPriority)
@@ -1260,18 +1277,18 @@ def setSPMStatus(positive, hostName, spmStatus):
     '''
 
     attribute = 'storage_manager'
-    hostObj = util.find(hostName)
+    hostObj = HOST_API.find(hostName)
 
     if not hasattr(hostObj, attribute):
-        util.logger.error("Element host %s doesn't have attribute %s",
+        HOST_API.logger.error("Element host %s doesn't have attribute %s",
                           hostName, attribute)
         return False
 
-    util.logger.info("setSPMStatus - SPM Value of host is set to %s is %s",
+    HOST_API.logger.info("setSPMStatus - SPM Value of host is set to %s is %s",
                      hostName, spmStatus)
 
     # Update host
-    util.logger.info("Updating Host %s", hostName)
+    HOST_API.logger.info("Updating Host %s", hostName)
     updateStat = updateHost(positive=positive, host=hostName,
                             storage_manager=spmStatus)
     if not updateStat:
@@ -1286,17 +1303,17 @@ def checkHostSubelementPresence(positive, host, element_path):
     return: True if the host has the tags in path, False otherwise.
     '''
 
-    hostObj = util.find(host)
+    hostObj = HOST_API.find(host)
     actual_tag = hostObj
     path = []
     for subelem_name in element_path.split('.'):
         if not hasattr(actual_tag, subelem_name):
             msg = "Element host %s doesn't have any subelement '%s' at path '%s'."
-            util.logger.error(msg % (host, subelem_name, '.'.join(path)))
+            HOST_API.logger.error(msg % (host, subelem_name, '.'.join(path)))
             return False
         path += (subelem_name,)
         actual_tag = getattr(actual_tag, subelem_name)
-    util.logger.info("checkHostAttribute - tag %s in host %s has value '%s'"
+    HOST_API.logger.info("checkHostAttribute - tag %s in host %s has value '%s'"
         % ('.'.join(path), host, actual_tag))
     return True
 
@@ -1311,10 +1328,10 @@ def getHost(positive, dataCenter='Default', spm=True, hostName=None):
                    first HSM found will be returned.
     return: True and located host name in case of success, otherwise false and None
     '''
-  
+
     try:
-        clusters = clUtil.get(absLink=False)
-        dataCenterObj = dcUtil.find(dataCenter)
+        clusters = CL_API.get(absLink=False)
+        dataCenterObj = DC_API.find(dataCenter)
     except EntityNotFound:
         return False, {'hostName': None}
 
@@ -1347,12 +1364,13 @@ def waitForSPM(datacenter, timeout, sleep):
     sampler = TimeoutingSampler(timeout, sleep,
                                 getHost, True, datacenter, True)
     sampler.timeout_exc_args = \
-            "Timeout when waiting for SPM to appear in DC %s."  % datacenter,
+            "Timeout when waiting for SPM to appear in DC %s." % datacenter,
     for s in sampler:
         if s[0]:
             return True
- 
 
+
+# FIXME: update func with new fraemwork
 def getHostNicAttr(positive, host, nic, attr):
     '''
     get host's nic attribute value
@@ -1364,20 +1382,21 @@ def getHostNicAttr(positive, host, nic, attr):
     return: True if the function succeeded, otherwise False
     '''
     try:
-        hostObj = util.find(links['hosts'], host)
-        nicObj = util.find(hostObj.link['nics'].href, nic)
+        nicObj = getHostNic(host, nic)
     except EntityNotFound:
-        return False, {'attrValue':None}
+        return False, {'attrValue': None}
 
     for tag in attr.split('.'):
         try:
             nicObj = getattr(nicObj, tag)
         except AttributeError as err:
-            logger.error(str(err))
-            return False, {'attrValue':None}
+            HOST_API.logger.error(str(err))
+            return False, {'attrValue': None}
 
     return True, {'attrValue': nicObj}
 
+
+# FIXME: update func with new fraemwork
 def countHostNics(positive, host):
     '''
     Count the number of a Host network interfaces
@@ -1386,9 +1405,9 @@ def countHostNics(positive, host):
        * host - name of a host
     return: True and counter if the function succeeded, otherwise False and None
     '''
-    hostObj = util.find(links['hosts'],host)
+    hostObj = util.find(links['hosts'], host)
     nics = util.get(hostObj.link['nics'].href)
-    return True, {'nicsNumber':len(nics)}
+    return True, {'nicsNumber': len(nics)}
 
 
 def validateHostExist(positive, host):
@@ -1401,7 +1420,7 @@ def validateHostExist(positive, host):
         1) When positive equals True and given host exists in the setup - return true,otherwise return false
         2) When positive equals False and given host does not exists in the setup  - return true,otherwise return false
     '''
-    hosts = util.get(absLink=False)
+    hosts = HOST_API.get(absLink=False)
     hosts = filter(lambda x: x.get_name().lower() == host.lower(), hosts)
     return bool(hosts) == positive
 
@@ -1416,22 +1435,22 @@ def getHostCompatibilityVersion(positive, host):
     '''
 
     try:
-        hostObj = util.find(host)
+        hostObj = HOST_API.find(host)
     except EntityNotFound:
-        return False, {'hostCompatibilityVersion' : None}
+        return False, {'hostCompatibilityVersion': None}
 
     clId = hostObj.get_cluster().get_id()
     try:
-        clObj = clUtil.find(clId, 'id')
+        clObj = CL_API.find(clId, 'id')
     except EntityNotFound:
-        return False, {'hostCompatibilityVersion' : None}
-    
+        return False, {'hostCompatibilityVersion': None}
+
     cluster = clObj.get_name()
     status, clCompVer = getClusterCompatibilityVersion(positive, cluster)
     if not status:
-        return False, {'hostCompatibilityVersion' : None}
+        return False, {'hostCompatibilityVersion': None}
     hostCompatibilityVersion = clCompVer['clusterCompatibilityVersion']
-    return True, {'hostCompatibilityVersion' : hostCompatibilityVersion}
+    return True, {'hostCompatibilityVersion': hostCompatibilityVersion}
 
 
 def waitForHostNicState(positive, host, nic, state, interval=1, attempts=1):
@@ -1454,6 +1473,7 @@ def waitForHostNicState(positive, host, nic, state, interval=1, attempts=1):
         time.sleep(interval)
         attempts -= 1
     return False
+
 
 def ifdownNic(positive, host, root_password, nic, wait=True):
     '''
@@ -1524,7 +1544,7 @@ def getOsInfo(positive, host, root_password=''):
     '''
     hostObj = machine.Machine(host, 'root', root_password).util('linux')
     if not hostObj.isAlive():
-        logger.error("No connectivity to the host %s" % host)
+        HOST_API.logger.error("No connectivity to the host %s" % host)
         return False, {'osName': None}
     osName = hostObj.getOsInfo()
     if not osName:
@@ -1542,10 +1562,10 @@ def reinstallOvirt(positive, host, image='rhev-hypervisor.iso'):
         * image - ovirt iso under /usr/share/rhev-hypervisor/
     Return: True if success, False otherwise
     '''
-    hostObj = util.find(host)
-    status = util.syncAction(hostObj, "install", positive, image=image)
+    hostObj = HOST_API.find(host)
+    status = HOST_API.syncAction(hostObj, "install", positive, image=image)
 
-    testHostStatus = util.waitForRestElemStatus(hostObj, "up", 800)
+    testHostStatus = HOST_API.waitForElemStatus(hostObj, "up", 800)
     return status and testHostStatus
 
 
@@ -1558,10 +1578,10 @@ def getClusterCompatibilityVersion(positive, cluster):
     Return: True and compatibilty version or False and None
     '''
     try:
-        clusterObj = clUtil.find(cluster)
-    except Exception as err:
-        util.logger.error(err)
-        return False, {'clusterCompatibilityVersion' : None}
+        clusterObj = CL_API.find(cluster)
+    except EntityNotFound as err:
+        HOST_API.logger.error(err)
+        return False, {'clusterCompatibilityVersion': None}
     clVersion = '{0}.{1}'.format(clusterObj.get_version().get_major(),
                                 clusterObj.get_version().get_minor())
-    return True, {'clusterCompatibilityVersion' : clVersion}
+    return True, {'clusterCompatibilityVersion': clVersion}

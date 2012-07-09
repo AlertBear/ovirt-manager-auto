@@ -17,8 +17,6 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-import logging
-
 from core_api.apis_utils import data_st
 from rhevm_api.utils.test_utils import get_api
 from core_api.apis_exceptions import EntityNotFound
@@ -28,8 +26,6 @@ COLLECTION = 'networks'
 NET_API = get_api(ELEMENT, COLLECTION)
 DC_API = get_api('data_center', 'datacenters')
 CL_API = get_api('cluster', 'clusters')
-
-logger = logging.getLogger(__package__ + __name__)
 
 
 def _prepareNetworkObject(**kwargs):
