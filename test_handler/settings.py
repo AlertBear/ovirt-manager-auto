@@ -27,6 +27,7 @@ from configobj import ConfigObj
 import os
 import re
 from time import strftime
+import socket
 from test_handler.plmanagement.manager import PluginManager
 
 opts = {}
@@ -236,6 +237,9 @@ def readTestRunOpts(path, redefs):
     restSection = config['REST_CONNECTION']
     opts['scheme'] = restSection['scheme']
     opts['host'] = restSection['host']
+    if opts['host'] == 'localhost':
+        opts['host'] = socket.gethostname()
+
     opts['port'] = restSection['port']
     opts['entry_point'] = restSection['entry_point']
     opts['user'] = restSection['user']
