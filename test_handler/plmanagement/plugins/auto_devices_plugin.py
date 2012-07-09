@@ -30,7 +30,6 @@ class AutoDevices(Component):
         self.conf = conf
         self.clean = conf['RUN'].get(AD_CLEANUP, 'yes').lower()
         self.enabled = conf['RUN'].get(AD_ENABLED, 'no').lower()
-        logger.info("here -> clean: %s, enabled: %s", self.clean, self.enabled)
 
     def add_options(self, parser):
         pass
