@@ -249,3 +249,9 @@ class ComponentManager(object):
         with the given class will not be available.
         """
         return True
+
+
+def get_logger(name):
+    return logging.getLogger(logger.name + '.' + name)
+
+
