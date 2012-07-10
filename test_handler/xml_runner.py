@@ -182,4 +182,7 @@ class XmlRunner(TestRunner):
 
         testCase['bz'] = self._get_node_val(xmlTestCase, 'bz', "Test BZ", None)
 
+        testCase['conf'] = self._get_node_val(xmlTestCase, 'conf',
+                                "Change Global Conf Values", None)
+
         return super(XmlRunner, self)._run_test_loop(testCase, testGroup, runGroup, startIter, saveGroupRows)

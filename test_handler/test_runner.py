@@ -9,6 +9,7 @@ import re
 from datetime import datetime
 from dateutil.tz import tzutc
 import code
+from contextlib import contextmanager
 
 from configobj import ConfigObj
 from core_api.apis_exceptions import EntityNotFound, EngineTypeError, VitalTestFailed
@@ -121,6 +122,29 @@ class TestRunner(object):
         if config_section != CONFIG_PARAMS:
             self.testConfSection = config[config_section]
             self.testConfSection.merge(config[CONFIG_PARAMS])
+
+
+    @contextmanager
+    def change_config(self, configs):
+        '''
+        Context manager to change global config values per test case
+        Parameters:
+        * configs - comma separated string of param names-values pairs
+        '''
+        try:
+            save_opts = {} # save current values
+            if configs:
+                dictConf = eval('dict(%s)' % configs)
+                for k in dictConf:
+                    save_opts[k] = opts[k]
+                # set new conf values
+                opts.update(dictConf)
+            yield
+        except KeyError as e:
+            self.logger.error("Can't find configuration parameter %s " % e )
+            yield
+        finally: # reset previous values
+            opts.update(save_opts)
 
 
     def log_traceback(self, exc, test=None):
@@ -540,29 +564,30 @@ class TestRunner(object):
         # Run the test, catching the exceptions makes the test fail, but the
         # scenario continues.
         plmanager.test_cases.pre_test_case(testCase)
-        try:
-            if opts['compile']:
-                funcVars = ()
-                # get names of function arguments
-                exec('funcVars = %s.func_code.co_varnames' % funcName)
-                sentVars = re.findall(r'(\w+)=', testParametersStrOrg)
-                for x in sentVars:
-                    if x not in funcVars:
-                        raise TypeError("Wrong arguments passed to function: '%s'" % x)
-                code.compile_command(cmd) # compile the command
-            else:
-                exec(cmd)
-        except NO_TB_EXCEPTIONS as e:
-            testStatus = False
-            self.logger.error(e)
-        except SocketError:
-            raise
-        except EngineTypeError as e:
-            self.logger.error("{0}\n{1}".format(e, TESTS_LOG_SEPARATOR))
-            return
-        except Exception as e:
-            testStatus = False
-            self.log_traceback(e, testCase['test_name'])
+        with self.change_config(testCase['conf']):
+            try:
+                if opts['compile']:
+                    funcVars = ()
+                    # get names of function arguments
+                    exec('funcVars = %s.func_code.co_varnames' % funcName)
+                    sentVars = re.findall(r'(\w+)=', testParametersStrOrg)
+                    for x in sentVars:
+                        if x not in funcVars:
+                            raise TypeError("Wrong arguments passed to function: '%s'" % x)
+                    code.compile_command(cmd) # compile the command
+                else:
+                    exec(cmd)
+            except NO_TB_EXCEPTIONS as e:
+                testStatus = False
+                self.logger.error(e)
+            except SocketError:
+                raise
+            except EngineTypeError as e:
+                self.logger.error("{0}\n{1}".format(e, TESTS_LOG_SEPARATOR))
+                return
+            except Exception as e:
+                testStatus = False
+                self.log_traceback(e, testCase['test_name'])
         plmanager.test_cases.post_test_case(testCase)
 
 

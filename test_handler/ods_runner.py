@@ -234,6 +234,9 @@ class OdsRunner(TestRunner):
         testCase['bz'] = self._get_cell_val(cells, self.headers['bz'], "Test BZ") \
             if self.headers.has_key('bz') else None
 
+        testCase['conf'] = self._get_cell_val(cells, self.headers['conf'], \
+            "Change Global Conf Values") if self.headers.has_key('conf') else None
+
         return super(OdsRunner, self)._run_test_loop(testCase, testGroup, runGroup, startIter, saveGroupRows)
 
 

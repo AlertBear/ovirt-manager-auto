@@ -154,5 +154,8 @@ class PythonRunner(TestRunner):
 
         testCase['test_run'] = 'yes'
 
+        testCase['conf'] = \
+            self.get_property_val(test_case, 'conf', 'Change Global Conf Values')
+
         return super(PythonRunner, self)._run_test_loop(testCase, group,
                                                          'yes', 0, False)
