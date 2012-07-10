@@ -117,7 +117,7 @@ class RestUtil(APIUtil):
             parsedResp = parse(ret['body'])
         except etree.XMLSyntaxError:
             self.logger.error("Cant parse xml response")
-            return False
+            return None
 
         if hasattr(parsedResp, elm):
             return getattr(parsedResp, elm)

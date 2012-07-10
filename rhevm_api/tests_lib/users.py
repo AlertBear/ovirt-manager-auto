@@ -53,27 +53,25 @@ def addUser(positive, **kwargs):
     userDomain = Domain(name=domain)
     userName = user_name + "@" + domain
 
-    userGroups = Groups()
-    if 'groups' in kwargs:
-        for group in split(kwargs.pop('groups')):
-            userGroup = Group(name=group.strip())
-            userGroups.add_group(userGroup)
-
     userRoles = Roles()
     if 'role' in kwargs:
         for role in split(kwargs.pop('role')):
             userRole = Role(name=role.strip())
             userRoles.add_role(userRole)
 
-    user = User(domain=userDomain, user_name=userName,
-                groups=userGroups, roles=userRoles)
-
+    user = User(domain=userDomain, user_name=userName, roles=userRoles)
     user, status = util.create(user, positive)
-    
- #   if role and not xpathUsersLinks(positive, entity = user_name,
-   # link_name='roles', xpath='count(/roles/role[name="{0}"])'.format(role)):
-    #    logger.error("Role '{0}' is not assigned to created user".format(role))
-      #  return False
+
+    user = util.find(user_name)
+    userExistedRoles = map(lambda x: x.name, \
+        rlUtil.getElemFromLink(user, get_href=False))
+    userSuppliedRoles = map(lambda x: x.name, userRoles.get_role())
+    missedRoles = list(set(userSuppliedRoles) - set(userExistedRoles))
+
+    if missedRoles:
+        util.logger.error("The following user roles are missing: {0}".\
+                                                    format(missedRoles))
+        status = not positive 
 
     return status
 

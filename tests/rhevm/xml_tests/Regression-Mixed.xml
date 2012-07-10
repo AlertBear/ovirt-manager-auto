@@ -513,9 +513,10 @@
     <id>d75a2564-c695-11e1-a578-f0def10e0ce8</id>
     <test_name>Create user</test_name>
     <test_action>addUser</test_action>
-    <parameters>user_name='{new_user}', domain='{user_domain}', groups='{user_domain}/QA-All-Users/RDP-Group, {user_domain}/QA-All-Users/LocalAdmins-Group, {user_domain}/QA-All-Users/QA-MembersGroup', role='e{role_name_user_role}'</parameters>
+    <parameters>user_name='{new_user}', domain='{user_domain}', role='e{role_name_user_role}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <bz>811985</bz>
   </test_case>
   <test_case>
     <id>d75a2758-c695-11e1-a578-f0def10e0ce8</id>
