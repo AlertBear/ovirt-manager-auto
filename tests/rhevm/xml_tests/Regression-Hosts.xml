@@ -313,21 +313,22 @@
     <run>yes</run>
   </test_case>
   <test_case>
-   <test_name>Get host's free NIC</test_name>
-   <test_type>rest</test_type>
-   <test_action>getFreeInterface</test_action>
-   <parameters>host='{vds[0]}'</parameters>
-   <positive>TRUE</positive>
-   <run>yes</run>
-   <fetch_output>freeNic-&gt;freeNic</fetch_output>
-</test_case>
+    <id>97ac2dfc-cb6a-11e1-afed-0024d7421ca4</id>
+    <test_name>Get host's free NIC</test_name>
+    <test_type>rest</test_type>
+    <test_action>getFreeInterface</test_action>
+    <parameters>host='{vds[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <fetch_output>freeNic-&gt;freeNic</fetch_output>
+  </test_case>
   <test_case>
     <id>ba3e1cce-c695-11e1-bc9c-f0def10e0ce8</id>
     <test_name>Attach second host NIC to network</test_name>
     <test_action>attachHostNic</test_action>
     <parameters>host='{vds[0]}', nic=%freeNic%, network='testrest1'</parameters>
-   <positive>TRUE</positive>
-   <run>if(1&lt;len('[host_nics]'.split(',')))</run>
+    <positive>TRUE</positive>
+    <run>if(1&lt;len('[host_nics]'.split(',')))</run>
   </test_case>
   <test_case>
     <id>ba3e1ef4-c695-11e1-bc9c-f0def10e0ce8</id>
@@ -342,8 +343,8 @@
     <test_name>Detach second host NIC from network</test_name>
     <test_action>detachHostNic</test_action>
     <parameters>host='{vds[0]}', nic=%freeNic%, network='testrest1'</parameters>
-   <positive>TRUE</positive>
-   <run>if(1&lt;len('[host_nics]'.split(',')))</run>
+    <positive>TRUE</positive>
+    <run>if(1&lt;len('[host_nics]'.split(',')))</run>
   </test_case>
   <test_case>
     <id>ba3e22c8-c695-11e1-bc9c-f0def10e0ce8</id>
