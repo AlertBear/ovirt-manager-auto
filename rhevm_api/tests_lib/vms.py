@@ -306,7 +306,7 @@ def removeVmAsynch(positive, tasksQ, resultsQ, stopVm=False):
     finally:
         resultsQ.put((vm, status))
         tasksQ.task_done()
-        
+
 
 def removeVms(positive, vms, stop='false'):
     '''
@@ -367,7 +367,7 @@ def waitForVmsGone(positive, vms, timeout=60, samplingPeriod=10):
             logger.info("All %d VMs are gone.", len(vmsList))
             return positive
         time.sleep(samplingPeriod)
-        
+
     remainingVmsNames = [vm.name for vm in foundVms]
     logger.error("VMs %s didn't disappear until timeout." % remainingVmsNames)
     return not positive
@@ -446,7 +446,7 @@ def startVm(positive, vm, wait_for_status=ENUMS['vm_state_powering_up']):
 
     return VM_API.waitForQuery(query, timeout=VM_ACTION_TIMEOUT, sleep=10)
 
-    
+
 def startVms(vms, wait_for_status=ENUMS['vm_state_powering_up']):
     '''
     Start several vms simultaneously. Only action response is checked, no
@@ -517,7 +517,7 @@ def stopVms(vms, wait='true'):
         query =query.format(vm.get_name())
         querySt = VM_API.waitForQuery(query, timeout=VM_ACTION_TIMEOUT, sleep=DEF_SLEEP)
         resultsList.append(querySt)
-       
+
     return all(resultsList)
 
 
@@ -690,7 +690,7 @@ def _prepareNicObj(**kwargs):
     mac_address = kwargs.pop('mac_address', None)
     if mac_address:
         nic.set_mac(data_st.MAC(address=mac_address))
-        
+
     network = kwargs.pop('network', None)
     if network:
         cl = kwargs.pop('cluster', None)
@@ -728,7 +728,7 @@ def addNic(positive, vm, **kwargs):
 
     vmObj = VM_API.find(vm)
     expectedStatus = vmObj.get_status().get_state()
-    
+
     cluster = vmObj.cluster.id
     kwargs['cluster'] = cluster
     nic = _prepareNicObj(**kwargs)
@@ -781,10 +781,10 @@ def updateNic(positive, vm, nic, **kwargs):
     vmObj = VM_API.find(vm)
     cluster = vmObj.cluster.id
     kwargs['cluster'] = cluster
-    
+
     nicNew = _prepareNicObj(**kwargs)
     nic = getVmNic(vm, nic)
-   
+
     nic, status = NIC_API.update(nic, nicNew, positive)
     return status
 
@@ -844,7 +844,7 @@ def _getVmSnapshot(vm, snap):
     vmObj = VM_API.find(vm)
     return SNAPSHOT_API.getElemFromElemColl(vmObj, snap, 'snapshots',
                         'snapshot', prop='description')
-    
+
 
 def addSnapshot(positive, vm, description, wait=True):
     '''
@@ -928,7 +928,7 @@ def removeSnapshot(positive, vm, description, timeout=VM_REMOVE_SNAPSHOT_TIMEOUT
     '''
 
     snapshot = _getVmSnapshot(vm, description)
-    
+
     if not SNAPSHOT_API.delete(snapshot, positive):
         return False
 
@@ -994,7 +994,7 @@ def runVmOnce(positive, vm, pause=None, display_type=None, stateless=None,
     vm_for_action = data_st.VM()
     if display_type:
         vm_for_action.set_display(data_st.Display(type_=display_type))
-        
+
     if None is not stateless:
         vm_for_action.set_stateless(stateless)
 
@@ -1036,7 +1036,7 @@ def runVmOnce(positive, vm, pause=None, display_type=None, stateless=None,
 
         if None is not user_name:
             domain.set_user(data_st.User(user_name=user_name, password=password))
-            
+
         vm_for_action.set_domain(domain)
 
     # default value True
@@ -1076,10 +1076,10 @@ def suspendVm(positive, vm, wait=True):
     Return: status (True if vm suspended and test is positive, False otherwise)
     '''
     vmObj = VM_API.find(vm)
-    
+
     if not VM_API.waitForElemStatus(vmObj, 'up', VM_ACTION_TIMEOUT):
         return False
-            
+
     async = 'false'
     if not wait:
         async = 'true'
@@ -1213,7 +1213,7 @@ def addTagToVm(positive, vm, tag):
        * tag - tag name
     Return: status (True if tag was added properly, False otherwise)
     '''
-    
+
     vmObj = VM_API.find(vm)
     vmTags = VM_API.getElemFromLink(vmObj, link_name='tags', attr='tag', get_href=True)
 
@@ -1254,7 +1254,7 @@ def exportVm(positive, vm, storagedomain, exclusive='false',
     '''
     vmObj = VM_API.find(vm)
     sd = data_st.StorageDomain(name=storagedomain)
-    
+
     expectedStatus = vmObj.status.state
 
     actionParams = dict(storage_domain=sd, exclusive=exclusive,
@@ -1266,15 +1266,16 @@ def exportVm(positive, vm, storagedomain, exclusive='false',
 
 
 def importVm(positive, vm, export_storagedomain, import_storagedomain,
-             cluster):
+             cluster, name=None):
     '''
     Description: import vm
     Author: edolinin
     Parameters:
        * vm - vm to import
-       * datacenter - name of data center
+       * cluster - name of cluster
        * export_storagedomain -storage domain where to export vm from
        * import_storagedomain -storage domain where to import vm to
+       * name - new name of imported VM
     Return: status (True if vm was imported properly, False otherwise)
     '''
     expStorDomObj = STORAGE_DOMAIN_API.find(export_storagedomain)
@@ -1287,11 +1288,25 @@ def importVm(positive, vm, export_storagedomain, import_storagedomain,
     sd = data_st.StorageDomain(name=import_storagedomain)
     cl = data_st.Cluster(name=cluster)
 
+    actionParams = {
+        'storage_domain' : sd,
+        'cluster' : cl
+    }
+
     actionName = 'import'
     if opts['engine'] == 'sdk':
         actionName = 'import_vm'
 
-    status = VM_API.syncAction(vmObj, actionName, positive, storage_domain=sd, cluster=cl)
+    if name is not None:
+        newVm = data_st.VM()
+        newVm.name = name
+        newVm.snapshots = data_st.Snapshots()
+        newVm.snapshots.collapse_snapshots = True
+        actionParams['clone'] = True
+        actionParams['vm'] = newVm
+
+    status = VM_API.syncAction(vmObj, actionName, positive, **actionParams)
+
     #TODO: replac sleep with true diagnostic
     time.sleep(30)
     if status and positive:
@@ -1312,7 +1327,7 @@ def moveVm(positive, vm, storagedomain, wait=True):
     expectedStatus = vmObj.status.state
     storageDomainId = STORAGE_DOMAIN_API.find(storagedomain).id
     sd = data_st.StorageDomain(id=storageDomainId)
-    
+
     async = 'false'
     if not wait:
         async = 'true'
@@ -1347,7 +1362,7 @@ def changeCDWhileRunning(vm_name, cdrom_image):
     newCdrom = cdroms[0]
     newCdrom.set_file(data_st.File(id=cdrom_image))
     cdroms[0].set_href(cdroms[0].href + "?current")
-    
+
     cdrom, status = CDROM_API.update(cdroms[0], newCdrom, True)
 
     return status
@@ -1371,7 +1386,7 @@ def cloneVmFromTemplate(positive, name, template, cluster, timeout=VM_IMAGE_OPT_
 
     templObj = TEMPLATE_API.find(template)
     vm.set_template(templObj)
-   
+
     clusterObj = CLUSTER_API.find(cluster)
     vm.set_cluster(clusterObj)
 

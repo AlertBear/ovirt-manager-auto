@@ -99,7 +99,7 @@ def _prepareTemplateObject(**kwargs):
         templ.set_storage_domain(StorageDomain(id=sd.get_id()))
 
     return templ
-    
+
 
 def createTemplate(positive, wait=True, timeout=CREATE_TEMPLATE_TIMEOUT, **kwargs):
     '''
@@ -167,7 +167,7 @@ def removeTemplate(positive, template, wait=True, sleepTime=10, timeout=60):
     '''
     templObj = util.find(template)
     status = util.delete(templObj, positive)
-    
+
     if status and positive and wait:
         handleTimeout = 0
         while handleTimeout <= timeout:
@@ -240,7 +240,7 @@ def addTemplateNic(positive, template, name, network='rhevm',interface=None):
 
 
 def getTemplatesNics(template):
-    
+
     templObj = util.find(template)
     return util.getElemFromLink(templObj, link_name='nics', attr='nic', get_href=True)
 
@@ -351,24 +351,25 @@ def exportTemplate(positive, template, storagedomain, exclusive='false'):
     '''
 
     templObj = util.find(template)
- 
+
     sd = StorageDomain(name=storagedomain)
     actionParams = dict(storage_domain=sd, exclusive=exclusive)
-    
+
     return util.syncAction(templObj, "export", positive, **actionParams)
 
 
 
 def importTemplate(positive, template, export_storagedomain,
-                            import_storagedomain, cluster):
+                   import_storagedomain, cluster, name=None):
     '''
     Description: import template
     Author: edolinin
     Parameters:
        * template - name of template that should be imported
-       * datacenter - data center to use
+       * cluster - cluster to use
        * export_storagedomain - storage domain where to export the template from
        * import_storagedomain - storage domain where to import the template to
+       * name - new name of template
     Return: status (True if template was imported properly, False otherwise)
     '''
 
@@ -383,6 +384,11 @@ def importTemplate(positive, template, export_storagedomain,
     actionName = 'import'
     if opts['engine'] == 'sdk':
         actionName = 'import_template'
+
+    if name is not None:
+        actionParams['clone'] = True
+        newTemplate = Template(name=name)
+        actionParams['template'] = newTemplate
 
     status = util.syncAction(templObj, actionName, positive, **actionParams)
     time.sleep(30)
