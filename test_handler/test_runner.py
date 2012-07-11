@@ -28,6 +28,7 @@ fetch_path = lambda x: os.path.abspath(\
 ACTIONS_PATH = fetch_path("conf/actions.conf")
 ELEMENTS_PATH = fetch_path("conf/elements.conf")
 CONFIG_PARAMS = 'PARAMETERS'
+REST_CONNECTION = 'REST_CONNECTION'
 
 
 class _TestElm(dict):
@@ -114,6 +115,8 @@ class TestRunner(object):
         self.testGroupRerun = '' # name of looped group
         self.groupTcmsTestCase = None
         self.lastTestStatus = None
+
+        self.testConfSection.merge(config[REST_CONNECTION])
 
         confDataCenterType = config[config_section].get('data_center_type', 'none').lower()
         if confDataCenterType != 'none' and confDataCenterType in config.sections:

@@ -62,6 +62,9 @@ def addUser(positive, **kwargs):
     user = User(domain=userDomain, user_name=userName, roles=userRoles)
     user, status = util.create(user, positive)
 
+    if not status or not positive:
+        return status
+
     user = util.find(user_name)
     userExistedRoles = map(lambda x: x.name, \
         rlUtil.getElemFromLink(user, get_href=False))
