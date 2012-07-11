@@ -722,6 +722,43 @@ def getHostNic(host, nic):
     return HOST_API.getElemFromElemColl(hostObj, nic, 'nics', 'host_nic')
 
 
+def getHostNics(host):
+
+    hostObj = HOST_API.find(host)
+    return HOST_API.getElemFromLink(hostObj, 'nics', 'host_nic', get_href=False)
+
+
+def hostNicsNetworksMapper(host):
+    '''
+    Description: creates mapping between host's NICs and networks
+    Author: pdufek
+    Parameters:
+        * host - the name of the host
+    Returns: dictionary (key: NIC name, value: assigned network)
+    '''
+    nic_objs = getHostNics(host)
+    nics_to_networks = {}
+
+    for nic in nic_objs:
+        nics_to_networks[nic.name] = getattr(nic, 'network', None)
+
+    return nics_to_networks
+
+
+def getFreeInterface(positive, host):
+    '''
+    Description: get host's free interface (not assigned to any network)
+    Author: pdufek
+    Parameters:
+        * host - the name of the host
+    Returns: NIC name or EntityNotFound exception
+    '''
+    for nic, network in hostNicsNetworksMapper(host).iteritems():
+        if network is None:
+            return True, {'freeNic': nic}
+    return False, {'freeNic': None}
+
+
 def attachHostNic(positive, host, nic, network):
     '''
     Description: attach network interface card to host
