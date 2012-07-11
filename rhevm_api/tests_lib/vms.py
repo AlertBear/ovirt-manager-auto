@@ -40,6 +40,7 @@ ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
 DEFAULT_CLUSTER = 'Default'
 NAME_ATTR = 'name'
 ID_ATTR = 'id'
+DEF_SLEEP = 10
 VM_ACTION_TIMEOUT = 180
 VM_REMOVE_SNAPSHOT_TIMEOUT = 300
 VM_IMAGE_OPT_TIMEOUT = 300
@@ -514,7 +515,7 @@ def stopVms(vms, wait='true'):
     resultsList = []
     query = 'name={0} and status=down'
     for vmObj in vmObjectsList:
-        query =query.format(vm.get_name())
+        query =query.format(vmObj.get_name())
         querySt = VM_API.waitForQuery(query, timeout=VM_ACTION_TIMEOUT, sleep=DEF_SLEEP)
         resultsList.append(querySt)
 
