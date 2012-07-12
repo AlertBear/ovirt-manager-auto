@@ -1092,7 +1092,7 @@
     <test_name>Activate second (inactive) host</test_name>
     <test_action>activateHost</test_action>
     <parameters>host='{vds[1]}'</parameters>
-    <positive>FALSE</positive>
+    <positive>TRUE</positive>
     <run>if(1&lt;len('[vds]'.split(',')))</run>
   </test_case>
   <test_case>
@@ -1682,7 +1682,7 @@
     <id>cb8cf216-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Check events - created VM from template</test_name>
     <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='rest_templ1 type=51', query='restvm_templates2 type=53', expected_count=1</parameters>
+    <parameters>win_start_query='restvm_templates_sd type=51', query='restvm_templates2 type=53', expected_count=1</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
   </test_case>
