@@ -23,6 +23,9 @@ from core_api.apis_utils import data_st as ds
 import re
 
 ATTR_IGNORE_LIST =  ['href', 'link', 'rel']
+VALS_IGNORE_DICT = { 
+                    'usage': ['VM'],
+                    }
 
 def dump_entity(ds, root_name):
     '''
@@ -220,9 +223,13 @@ def compareElements(expElm, actElm, logger, root):
                 continue
 
             if attrType.startswith('xs:'):
-                if attrContainer and isinstance(attrExpVal, list) \
-                    and not isinstance(attrActVal, list) :
-                    attrExpVal = attrExpVal[0]
+                if attrContainer and isinstance(attrExpVal, list):
+                    if not isinstance(attrActVal, list):
+                        attrExpVal = attrExpVal[0]
+                    else:
+                        if attr in VALS_IGNORE_DICT:
+                            attrActVal = list(set(attrActVal) -
+                                    set(VALS_IGNORE_DICT[attr]))
 
                 if re.search('boolean', attrType):
                     attrExpVal = str(attrExpVal).lower()
