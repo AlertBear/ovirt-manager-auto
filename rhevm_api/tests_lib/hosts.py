@@ -28,7 +28,8 @@ from core_api.apis_exceptions import APITimeout, EntityNotFound
 import utilities.ssh_session as ssh_session
 import re
 from utilities.utils import getIpAddressByHostName, getHostName, readConfFile
-from core_api.validator import compareCollectionSize
+# TODO: remove both compareCollectionSize, dump_entity is not needed
+from core_api.validator import compareCollectionSize, dump_entity
 from rhevm_api.tests_lib.networks import getClusterNetwork
 from rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
 from rhevm_api.utils.test_utils import searchForObj
@@ -40,6 +41,7 @@ HOST_API = get_api(ELEMENT, COLLECTION)
 CL_API = get_api('cluster', 'clusters')
 DC_API = get_api('data_center', 'datacenters')
 TAG_API = get_api('tag', 'tags')
+HOST_NICS_API = get_api('host_nic', 'host_nics')
 
 xpathMatch = XPathMatch(HOST_API)
 xpathHostsLinks = XPathLinks(HOST_API)
@@ -643,7 +645,7 @@ def installOvirtHost(positive, host, user_name, password, vdc, port=443, timeout
        * waitTime - wait between iteration [sec]
     Return: status (True if host was installed properly, False otherwise)
     '''
-    if validateElementStatus(positive, 'host', host, 'PENDING_APPROVAL'):
+    if waitForHostsStates(positive, host, 'PENDING_APPROVAL'):
         return True
 
     vdcHostName = getHostName(vdc)
@@ -716,16 +718,85 @@ def fenceHost(positive, host, fence_type):
     return (testHostStatus and status) == positive
 
 
+def _prepareHostNicObject(**kwargs):
+    '''
+    preparing Host Nic object
+    Author: atal
+    return: Host Nic data structure object
+    '''
+    # TODO: check why can't only create new hostnic incase of update
+    add = True
+    if 'nic' in kwargs:
+        nic_obj = kwargs.get('nic')
+        add = False
+    else:
+        nic_obj = data_st.HostNIC()
+
+    host = kwargs.pop('host')
+
+    if 'name' in kwargs:
+        nic_obj.set_name(kwargs.get('name'))
+
+    if 'network' in kwargs:
+        host_obj = HOST_API.find(host)
+        cluster = CL_API.find(host_obj.cluster.id, 'id').get_name()
+        nic_obj.set_network(getClusterNetwork(cluster, kwargs.get('network')))
+
+    if 'boot_protocol'in kwargs:
+        nic_obj.set_boot_protocol(kwargs.get('boot_protocol'))
+
+    address = kwargs.get('address')
+    netmask = kwargs.get('netmask')
+    gateway = kwargs.get('gateway')
+    if (address or netmask or gateway) is not None:
+        ip_obj = data_st.IP() if add else nic_obj.get_ip()
+        if 'address' in kwargs:
+            ip_obj.set_address(kwargs.get('address'))
+        if 'netmask' in kwargs:
+            ip_obj.set_netmask(kwargs.get('netmask'))
+        if 'gateway' in kwargs:
+            ip_obj.set_gateway(kwargs.get('gateway'))
+        nic_obj.set_ip(ip_obj)
+
+    slave_list = kwargs.get('slaves')
+    mode = kwargs.get('mode')
+    miimon = kwargs.get('miimon')
+
+    # TODO: need to test bond
+    if (slave_list or mode or miimon) is not None:
+        bond_obj = data_st.Bonding()
+        if slave_list is not None:
+            slaves = data_st.Slaves()
+            for nic in slave_list.split(','):
+                slaves.add_host_nic(getHostNic(host, nic.strip()))
+
+            bond_obj.set_slaves(data_st.Slaves(slaves))
+
+        options = data_st.Options()
+        if mode is not None:
+            options.add_option(data_st.Option(name='mode', value=mode))
+
+        if miimon is not None:
+            options.add_option(data_st.Option(name='miimon', value=miimon))
+
+        nic_obj.set_bonding(bond_obj.set_options(options))
+
+    if 'check_connectivity' in kwargs:
+        nic_obj.set_check_connectivity(kwargs.get('check_connectivity'))
+
+    return nic_obj
+
+
 def getHostNic(host, nic):
 
-    hostObj = HOST_API.find(host)
-    return HOST_API.getElemFromElemColl(hostObj, nic, 'nics', 'host_nic')
+    host_obj = HOST_API.find(host)
+    return HOST_API.getElemFromElemColl(host_obj, nic, 'nics', 'host_nic')
 
 
 def getHostNics(host):
 
-    hostObj = HOST_API.find(host)
-    return HOST_API.getElemFromLink(hostObj, 'nics', 'host_nic', get_href=False)
+    host_obj = HOST_API.find(host)
+    return HOST_API.getElemFromLink(host_obj, 'nics', 'host_nic', get_href=False)
 
 
 def hostNicsNetworksMapper(host):
@@ -745,6 +816,7 @@ def hostNicsNetworksMapper(host):
     return nics_to_networks
 
 
+# FIXME: remove "positive" if not in use!
 def getFreeInterface(positive, host):
     '''
     Description: get host's free interface (not assigned to any network)
@@ -764,9 +836,9 @@ def attachHostNic(positive, host, nic, network):
     Description: attach network interface card to host
     Author: edolinin
     Parameters:
-       * host - name of a host to attach nic to
-       * nic - nic name to be attached
-       * network - network name to be used
+        * host - name of a host to attach nic to
+        * nic - nic name to be attached
+        * network - network name
     Return: status (True if nic was attached properly to host, False otherwise)
     '''
 
@@ -802,78 +874,40 @@ def updateHostNic(positive, host, nic, **kwargs):
     Description: update nic of host
     Author: atal
     Parameters:
-       * host - host where nic should be updated
-       * nic - nic name that should be updated
-       * network - network name
-       * boot_protocol - new boot protocol. could be 'dhcp', 'static' or 'none'
-       * address - new static ip only if boot protocol is static
-       * netmask - new netmask but same as ip.
-       * bondOptions - new bonding option.
+        * host - host where nic should be updated
+        * nic - nic name that should be updated
+        * network - network name
+        * boot_protocol - static, none or dhcp
+        * address - ip address incase of static protocol
+        * netmask - netmask incase of static protocol
+        * gateway - gateway address incase of static protocol
+        * slaves - bonding slaves list as a string with commas
+        * mode - bonding mode (int), added as option
+        * miimon - another int for bonding options
+        * check_connectivity - boolean and working only for management int.
     Return: status (True if nic was updated properly, False otherwise)
     '''
 
-    hostObj = HOST_API.find(host)
-    cluster = CL_API.find(hostObj.cluster.id, 'id').get_name()
-
-    nicObj = getHostNic(host, nic)
-
-    if 'network' in kwargs:
-        net = getClusterNetwork(cluster, kwargs.get('network'))
-        nicObj.set_network(net)
-    if 'boot_protocol'in kwargs:
-        nicObj.set_boot_protocol(kwargs.get('boot_protocol'))
-
-    # TODO: check if supporting Gateway as well
-    address = kwargs.get('address')
-    netmask = kwargs.get('netmask')
-    if (address or netmask) is not None:
-        ip = {}
-        if address is not None:
-            ip['address'] = address
-        if netmask is not None:
-            ip['netmask'] = netmask
-        nicObj.set_ip(data_st.IP(**ip))
-
-    # FIXME: fix the bonding setup for new framework
-    bondOpts = ""
-    bondOptions = kwargs.get('bondOptions')
-    if bondOptions is not None:
-        for option in bondOptions.split(';'):
-            optName, optValue = option.split('_')
-            # Simple creation of option tag. multiple tags for multiple options
-            bondOpts = bondOpts + "<option value='" + optValue.strip() + \
-            "' name='" + optName.strip() + "'/>\n"
-            # Adding bonding tag only if needed.
-            nicObj.bonding.options = bondOpts
-
-    nic, status = HOST_API.update(hostObj.link['nics'].href, nicObj.href,
-                              nicObj, [201, 200, 202], positive)
+    nic_obj = getHostNic(host, nic)
+    kwargs.update([('host', host), ('nic', nic_obj)])
+    nic_new = _prepareHostNicObject(**kwargs)
+    nic, status = HOST_NICS_API.update(nic_obj, nic_new, positive)
 
     return status
 
 
-def detachHostNic(positive, host, nic, network):
+# FIXME: network param is deprecated.
+def detachHostNic(positive, host, nic, network=None):
     '''
     Description: detach network interface card from host
     Author: edolinin
     Parameters:
        * host - name of a host to attach nic to
        * nic - nic name to be detached
-       * network - network name to be used
     Return: status (True if nic was detach properly from host, False otherwise)
     '''
-    hostObj = HOST_API.find(host)
-    clusterObj = CL_API.find(hostObj.cluster.id, 'id')
     nicObj = getHostNic(host, nic)
 
-    # Try to get the network object by his dataCenter id
-    # to avoid duplicate network names
-    netObjs = HOST_API.get(absLink=False)
-    for netObj in netObjs:
-        if re.match(netObj.get_name(), network, re.I) and \
-        re.match(netObj.get_data_center().get_id(), clusterObj.get_data_center().get_id()):
-            nicObj.set_network(netObj)
-            break
     return HOST_API.syncAction(nicObj, "detach", positive, network=nicObj.get_network())
 
 
@@ -898,67 +932,30 @@ def detachMultiVlansFromBond(positive, host, nic, networks):
 
 
 # FIXME: fix for new fraemwork
-def addBond(positive, host, name, slaves, network, bondOptions=None):
+def addBond(positive, host, name, **kwargs):
     '''
     Description: add bond to a host
     Author: edolinin (maintain by atal)
     Parameters:
-       * host - name of a host to attach bond to
-       * name - bond name
-       * slaves - list of bond slaves separated by comma
-       * network - bond network name
-       * bondOptions - Bonding options. format: "mode_1;miimon_50,....."
+        * name - bond name
+        * network - network name
+        * boot_protocol - static, none or dhcp
+        * address - ip address incase of static protocol
+        * netmask - netmask incase of static protocol
+        * gateway - gateway address incase of static protocol
+        * slaves - bonding slaves list as a string with commas
+        * mode - bonding mode (int), added as option
+        * miimon - another int for bonding options
+        * check_connectivity - boolean and working only for management int.
          supported modes are: 1,2,4,5. using underscore due to XML syntax limitations
     Return: status (True if bond was attached properly to host, False otherwise)
     '''
+    kwargs.update([('host', host), ('name', name)])
 
-    hostObj = HOST_API.find(host)
-    clusterObj = CL_API.find(hostObj.cluster.id, 'id')
+    nic_obj = _prepareHostNicObject(**kwargs)
+    host_nics = getHostNics(host)
 
-    # Create host_nic collection
-    hostNic = fmt.HostNIC()
-    hostNic.name = name
-
-    # Create Bonding Nic Collection
-    bondNic = fmt.BondNic()
-
-    # Build up bonding options if needed
-    bondOpts = ""
-    if bondOptions:
-        for option in bondOptions.split(';'):
-            optName, optValue = option.split('_')
-            # Simple creation of option tag. multiple tags for multiple options
-            bondOpts = bondOpts + "<option value='"+optValue.strip()+"' name='"+optName.strip()+"'/>\n"
-            # Adding bonding tag only if needed.
-            bondNic.options = bondOpts
-
-    # Create network collection
-    nicNetwork = fmt.Network()
-    nicNetwork.id = util.find(clusterObj.link['networks'].href, network).id
-
-    # Adding network to host_nic
-    hostNic.network = nicNetwork
-
-    # Create multiple salves under bonded interface
-    nicSlaves = ""
-    for slave in slaves.split(","):
-        slaveNic = util.find(hostObj.link['nics'].href, slave)
-        # Simple creation of multiple slaves
-        nicSlaves = nicSlaves + "<host_nic id='" + slaveNic.id + "'/>\n"
-    # Adding slaves to main host_nic
-    bondNic.slaves = nicSlaves.strip()
-    # Adding bond nic to main host_nic
-    hostNic.bonding = bondNic
-
-    # incrementNum: the following lines checks if we create vlan over bond
-    # or regular bond interface
-    # if vlan than the number of nic's will be incremented by 2
-    # else incremented by 1
-    incrementNum = 1
-    if hasattr(util.find(clusterObj.link['networks'].href, network), 'vlan'):
-        incrementNum = 2
-
-    bond,status = util.create(hostObj.link['nics'].href, hostNic, positive, incrementBy=incrementNum)
+    res, status = HOST_API.create(nic_obj, positive, collection=host_nics)
 
     return status
 
@@ -1407,8 +1404,7 @@ def waitForSPM(datacenter, timeout, sleep):
             return True
 
 
-# FIXME: update func with new fraemwork
-def getHostNicAttr(positive, host, nic, attr):
+def getHostNicAttr(host, nic, attr):
     '''
     get host's nic attribute value
     Author: atal
@@ -1419,22 +1415,21 @@ def getHostNicAttr(positive, host, nic, attr):
     return: True if the function succeeded, otherwise False
     '''
     try:
-        nicObj = getHostNic(host, nic)
+        nic_obj = getHostNic(host, nic)
     except EntityNotFound:
         return False, {'attrValue': None}
 
     for tag in attr.split('.'):
         try:
-            nicObj = getattr(nicObj, tag)
+            nic_obj = getattr(nic_obj, tag)
         except AttributeError as err:
             HOST_API.logger.error(str(err))
             return False, {'attrValue': None}
 
-    return True, {'attrValue': nicObj}
+    return True, {'attrValue': nic_obj}
 
 
-# FIXME: update func with new fraemwork
-def countHostNics(positive, host):
+def countHostNics(host):
     '''
     Count the number of a Host network interfaces
     Author: atal
@@ -1442,11 +1437,11 @@ def countHostNics(positive, host):
        * host - name of a host
     return: True and counter if the function succeeded, otherwise False and None
     '''
-    hostObj = util.find(links['hosts'], host)
-    nics = util.get(hostObj.link['nics'].href)
+    nics = getHostNics(host)
     return True, {'nicsNumber': len(nics)}
 
 
+# FIXME: remove this function - not being used at all, even not in actions.conf
 def validateHostExist(positive, host):
     '''
     Description: Validate host if exists in the setup
@@ -1490,7 +1485,7 @@ def getHostCompatibilityVersion(positive, host):
     return True, {'hostCompatibilityVersion': hostCompatibilityVersion}
 
 
-def waitForHostNicState(positive, host, nic, state, interval=1, attempts=1):
+def waitForHostNicState(host, nic, state, interval=1, attempts=1):
     '''
     Waiting for Host's nic state
     Author: atal
@@ -1504,7 +1499,7 @@ def waitForHostNicState(positive, host, nic, state, interval=1, attempts=1):
     '''
     regex = re.compile(state, re.I)
     while attempts:
-        res, out = getHostNicAttr(positive, host, nic, 'status.state')
+        res, out = getHostNicAttr(host, nic, 'status.state')
         if res and regex.match(out['attrValue']):
             return True
         time.sleep(interval)
@@ -1512,7 +1507,7 @@ def waitForHostNicState(positive, host, nic, state, interval=1, attempts=1):
     return False
 
 
-def ifdownNic(positive, host, root_password, nic, wait=True):
+def ifdownNic(host, root_password, nic, wait=True):
     '''
     Turning remote machine interface down
     Author: atal
@@ -1524,15 +1519,15 @@ def ifdownNic(positive, host, root_password, nic, wait=True):
     return True/False
     '''
     # must always run as a root in order to run ifdown
-    hostObj = machine.Machine(getIpAddressByHostName(host), 'root', root_password).util('linux')
-    if not hostObj.ifdown(nic):
+    host_obj = machine.Machine(getIpAddressByHostName(host), 'root', root_password).util('linux')
+    if not host_obj.ifdown(nic):
         return False
     if wait:
-        return waitForHostNicState(positive, host, nic, 'down', interval=5, attempts=10)
+        return waitForHostNicState(host, nic, 'down', interval=5, attempts=10)
     return True
 
 
-def ifupNic(positive, host, root_password, nic, wait=True):
+def ifupNic(host, root_password, nic, wait=True):
     '''
     Turning remote machine interface up
     Author: atal
@@ -1544,15 +1539,15 @@ def ifupNic(positive, host, root_password, nic, wait=True):
     return True/False
     '''
     # must always run as a root in order to run ifup
-    hostObj = machine.Machine(getIpAddressByHostName(host), 'root', root_password).util('linux')
-    if not hostObj.ifup(nic):
+    host_obj = machine.Machine(getIpAddressByHostName(host), 'root', root_password).util('linux')
+    if not host_obj.ifup(nic):
         return False
     if wait:
-        return waitForHostNicState(positive, host, nic, 'up', interval=5, attempts=10)
+        return waitForHostNicState(host, nic, 'up', interval=5, attempts=10)
     return True
 
 
-def checkIfNicStateIs(positive, host, user, password, nic, state):
+def checkIfNicStateIs(host, user, password, nic, state):
     '''
     Check if given nic state same as given state
     Author: atal
@@ -1563,14 +1558,14 @@ def checkIfNicStateIs(positive, host, user, password, nic, state):
         * state - state user like to check (up|down)
     return True/False
     '''
-    hostObj = machine.Machine(getIpAddressByHostName(host), user, password).util('linux')
+    host_obj = machine.Machine(getIpAddressByHostName(host), user, password).util('linux')
     regex = re.compile(state, re.I)
-    if regex.match(hostObj.getNicState(nic)) is not None:
+    if regex.match(host_obj.getNicState(nic)) is not None:
         return True
     return False
 
 
-def getOsInfo(positive, host, root_password=''):
+def getOsInfo(host, root_password=''):
     '''
     Description: get OS info wrapper.
     Author: atal
@@ -1579,11 +1574,11 @@ def getOsInfo(positive, host, root_password=''):
        * root_password - password of root user (required, can be empty only for negative tests)
     Return: True with OS info string if succeeded, False and None otherwise
     '''
-    hostObj = machine.Machine(host, 'root', root_password).util('linux')
-    if not hostObj.isAlive():
+    host_obj = machine.Machine(host, 'root', root_password).util('linux')
+    if not host_obj.isAlive():
         HOST_API.logger.error("No connectivity to the host %s" % host)
         return False, {'osName': None}
-    osName = hostObj.getOsInfo()
+    osName = host_obj.getOsInfo()
     if not osName:
         return False, {'osName': None}
 
@@ -1599,10 +1594,10 @@ def reinstallOvirt(positive, host, image='rhev-hypervisor.iso'):
         * image - ovirt iso under /usr/share/rhev-hypervisor/
     Return: True if success, False otherwise
     '''
-    hostObj = HOST_API.find(host)
-    status = HOST_API.syncAction(hostObj, "install", positive, image=image)
+    host_obj = HOST_API.find(host)
+    status = HOST_API.syncAction(host_obj, "install", positive, image=image)
 
-    testHostStatus = HOST_API.waitForElemStatus(hostObj, "up", 800)
+    testHostStatus = HOST_API.waitForElemStatus(host_obj, "up", 800)
     return status and testHostStatus
 
 
