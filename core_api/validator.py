@@ -228,8 +228,9 @@ def compareElements(expElm, actElm, logger, root):
                         attrExpVal = attrExpVal[0]
                     else:
                         if attr in VALS_IGNORE_DICT:
-                            attrActVal = list(set(attrActVal) -
-                                    set(VALS_IGNORE_DICT[attr]))
+                            ignoreVals = filter(lambda x: x not in attrExpVal \
+                                 and x in VALS_IGNORE_DICT[attr], attrActVal)
+                            attrActVal = list(set(attrActVal) - set(ignoreVals))
 
                 if re.search('boolean', attrType):
                     attrExpVal = str(attrExpVal).lower()
