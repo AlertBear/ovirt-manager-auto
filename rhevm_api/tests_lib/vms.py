@@ -64,6 +64,10 @@ logger = logging.getLogger(__package__ + __name__)
 xpathMatch = XPathMatch(VM_API)
 
 
+class DiskNotFound(Exception):
+    pass
+
+
 def _prepareVmObject(**kwargs):
 
     add = kwargs.pop('add', False)
@@ -563,6 +567,45 @@ def _getVmDisks(vm):
     disks = VM_API.getElemFromLink(vmObj, link_name='disks', attr='disk',
                                     get_href=False)
     return disks
+
+
+def _getVmDiskById(vm, diskId):
+    """
+    Description: Searches for vm's disk by id
+    Author: jlibosva
+    Parameters"
+        * vm - Name of vm we want disk from
+        * diskId - disk's id
+    Return: Disk object
+    """
+    disks = _getVmDisks(vm)
+    found = [disk for disk in disks if disk.get_id() == diskId]
+    if not found:
+        raise DiskNotFound("Disk with id %s was not found in vm's %s disk \
+collection" % (diskName, vm))
+
+    return found[0]
+
+
+def _getVmFirstDiskByName(vm, diskName, idx=0):
+    """
+    Description: Searches for vm's disk by name
+                 Name is not unique!
+    Author: jlibosva
+    Parameters"
+        * vm - Name of vm we want disk from
+        * diskId - disk's id
+        * idx - index of found disk to return
+    Return: Disk object
+    """
+    """
+    """
+    disks = _getVmDisks(vm)
+    found = [disk for disk in disks if disk.get_name() == diskName]
+    if not found:
+        raise DiskNotFound("Disk %s was not found in vm's %s disk collection" %
+                           (diskName, vm))
+    return found[idx]
 
 
 def addDisk(positive, vm, size, wait=True, storagedomain=None,
@@ -1567,4 +1610,95 @@ def waitUntilQuery(vm, query, timeout=VM_IMAGE_OPT_TIMEOUT,
 
     return VM_API.waitForQuery(query, timeout=timeout, sleep=sleep)
 
+
+def activateVmDisk(positive, vm, diskAlias=None, diskId=None, wait=True):
+    """
+    Description: Activates vm's disk
+    Author: jlibosva
+    Parameters:
+        * vm - name of vm which disk belongs to
+        * diskAlias - name of the disk
+        * diskId - disk's id
+        * wait - boolean whether wait till disk is ok
+    Return: True if ok, False if something went wrong (or good
+            in case positive is False)
+    """
+    return changeVmDiskState(positive, vm, 'activate', diskAlias, diskId,
+                             wait)
+
+
+def deactivateVmDisk(positive, vm, diskAlias=None, diskId=None, wait=True):
+    """
+    Description: Deactivates vm's disk
+    Author: jlibosva
+    Parameters:
+        * vm - name of vm which disk belongs to
+        * diskAlias - name of the disk
+        * diskId - disk's id
+        * wait - boolean whether wait till disk is ok
+    Return: True if ok, False if something went wrong (or good
+            in case positive is False)
+    """
+    return changeVmDiskState(positive, vm, 'deactivate', diskAlias, diskId,
+                             wait)
+
+
+def changeVmDiskState(positive, vm, action, diskAlias, diskId, wait):
+    """
+    Description: Change vm's disk active state
+    Author: jlibosva
+    Parameters:
+        * vm - name of vm which disk belongs to
+        * action - activate or deactivate
+        * diskAlias - name of the disk
+        * diskId - disk's id
+        * wait - boolean whether wait till disk is ok
+    Return: True if ok, False if something went wrong (or good
+            in case positive is False)
+    """
+    if diskAlias is None and diskId is None:
+        logger.error("Disk must be specified either by alias or ID")
+        return False
+
+    disk = _getVmDiskById(vm, diskId) if diskId is not None else \
+           _getVmFirstDiskByName(vm, diskAlias)
+
+    status = DISKS_API.syncAction(disk, action, positive)
+    if status and wait:
+        return DISKS_API.waitForElemStatus(disk, 'ok', 300)
+    return status
+
+
+def waitForVmDiskStatus(vm, active, diskAlias=None, diskId=None,
+                        timeout=VM_ACTION_TIMEOUT, sleep=DEF_SLEEP):
+    """
+    Description: Waits for desired status of disk within VM (active,
+                 deactivated)
+    Author: jlibosva
+    Parameters:
+        * vm - name of vm which disk belongs to
+        * active - boolean True if active, False if deactivated
+        * diskAlias - name of the disk
+        * diskId - disk's id
+        * timeout - timeout
+        * sleep - polling interval
+    Return: True if desired state was reached, False on timeout
+    """
+    if diskAlias is None and diskId is None:
+        logger.error("Disk must be specified either by alias or ID")
+        return False
+
+    getFunc, diskDesc = (_getVmDiskById, diskId) if diskId is not None else \
+           (_getVmFirstDiskByName, diskAlias)
+
+    disk = getFunc(vm, diskDesc)
+    cur_state = disk.get_active()
+
+    t_start = time.time()
+    while time.time() - t_start < timeout and cur_state != active:
+        time.sleep(sleep)
+        disk = getFunc(vm, diskDesc)
+        cur_state = disk.get_active()
+
+    return cur_state == active
 
