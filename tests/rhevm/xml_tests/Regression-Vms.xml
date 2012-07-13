@@ -1679,18 +1679,18 @@
     <run>yes</run>
   </test_case>
   <test_case>
-    <id>cb8cf216-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - created VM from template</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='restvm_templates_sd type=51', query='restvm_templates2 type=53', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
     <id>cb8cf400-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Create VM from template specifying storage domain</test_name>
     <test_action>addVm</test_action>
     <parameters>name='restvm_templates_sd', cluster='RestCluster1', template='rest_templ1', storagedomain='DataDomainRest'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8cf216-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Check events - created VM from template</test_name>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='rest_templ1 type=51', query='restvm_templates2 type=53', expected_count=1</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
   </test_case>
