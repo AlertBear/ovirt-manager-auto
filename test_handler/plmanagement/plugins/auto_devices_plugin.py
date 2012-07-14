@@ -1,10 +1,8 @@
-import logging
-from test_handler.plmanagement import logger as root_logger
-from test_handler.plmanagement import Component, implements
+from test_handler.plmanagement import Component, implements, get_logger
 from test_handler.plmanagement.interfaces.resources_listener import IResourcesListener
 from test_handler.plmanagement.interfaces.application import IConfigurable
 
-logger = logging.getLogger(root_logger.name+'.auto_devices')
+logger = get_logger('auto_devices')
 
 AD_ENABLED = 'auto_devices'
 AD_CLEANUP = 'auto_devices_cleanup'

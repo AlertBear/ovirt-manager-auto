@@ -2,18 +2,17 @@
 import sys
 import re
 import select
-import logging
 import time
 from threading import Thread
 from subprocess import Popen, PIPE, list2cmdline
 from utilities.sshConnection import SSHSession
 from utilities.machine import Machine, LINUX
 
-from test_handler.plmanagement import Component, implements, logger as root_logger
+from test_handler.plmanagement import Component, implements, get_logger
 from test_handler.plmanagement.interfaces.application import IConfigurable, IApplicationListener
 
 
-logger = logging.getLogger(root_logger.name+'.mac_to_ip_conv')
+logger = get_logger('mac_to_ip_conv')
 
 
 PARAMETERS = 'PARAMETERS'
@@ -271,8 +270,8 @@ class MacToIpConverter(Component):
             return
 
         self.catcher = DHCPLeasesCatcher()
-        self.vds = conf[PARAMETERS][VDS].replace(',', ' ').split()
-        self.vds_passwd = conf[PARAMETERS][VDS_PASSWORD].replace(',', ' ').split()
+        self.vds = conf[PARAMETERS].as_list(VDS)
+        self.vds_passwd = conf[PARAMETERS].as_list(VDS_PASSWORD)
         mac_conf = conf.get(MAC_TO_IP_CONV, {})
         self.timeout = mac_conf.get('timeout', 10)
         self.attempts = mac_conf.get('attempts', 60)

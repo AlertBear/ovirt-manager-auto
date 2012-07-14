@@ -1,12 +1,10 @@
 
-import logging
-from test_handler.plmanagement import logger as root_logger
-from test_handler.plmanagement import Component, implements
+from test_handler.plmanagement import Component, implements, get_logger
 from test_handler.plmanagement.interfaces.application import IConfigurable
 
 from utilities.machine import Machine, LINUX
 
-logger = logging.getLogger(root_logger.name+'.host_nic_resolution')
+logger = get_logger('host_nic_resolution')
 
 SECTION_NAME = 'HOST_NICS_RESOLUTION'
 PARAMETERS = 'PARAMETERS'
@@ -30,8 +28,8 @@ class AutoHostNicsResolution(Component):
         if not self.is_enabled(params, conf):
             return
 
-        vds = conf[PARAMETERS][VDS].replace(',', ' ').split()
-        vds_passwd = conf[PARAMETERS][VDS_PASSWORD].replace(',', ' ').split()
+        vds = conf[PARAMETERS].as_list(VDS)
+        vds_passwd = conf[PARAMETERS].as_list(VDS_PASSWORD)
 
         # FIXME: what if there will be two hosts host1: em[0-9], host2: eth[0-9]
         nics = set()

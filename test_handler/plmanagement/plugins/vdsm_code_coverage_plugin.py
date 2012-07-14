@@ -113,8 +113,8 @@ class VDSMCodeCoverage(Component):
             return
         self.res_dir = params.vdsm_code_coverage
 
-        vds = conf[PARAMETERS][VDS].replace(',', ' ').split()
-        vds_passwd = conf[PARAMETERS][VDS_PASSWORD].replace(',', ' ').split()
+        vds = conf[PARAMETERS].as_list(VDS)
+        vds_passwd = conf[PARAMETERS].as_list(VDS_PASSWORD)
 
         for name, passwd in  zip(vds, vds_passwd):
             self.machines[name] = Machine(name, 'root', passwd).util(LINUX)

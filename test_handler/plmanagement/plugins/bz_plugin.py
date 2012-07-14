@@ -1,14 +1,12 @@
 
 import re
-import logging
-from test_handler.plmanagement import logger as root_logger
-from test_handler.plmanagement import Component, implements
+from test_handler.plmanagement import Component, implements, get_logger
 from test_handler.plmanagement.interfaces.application import IConfigurable, IApplicationListener
 from test_handler.plmanagement.interfaces.tests_listener import ITestCaseHandler, ITestGroupHandler, ITestSkipper, SkipTest
 
 from utilities.machine import Machine, LINUX
 
-logger = logging.getLogger(root_logger.name+'.bugzilla')
+logger = get_logger('bugzilla')
 
 REST = 'REST_CONNECTION'
 PARAMETERS = 'PARAMETERS'

@@ -1,14 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import logging
-from test_handler.plmanagement import logger as root_logger
-from test_handler.plmanagement import Component, implements
+from test_handler.plmanagement import Component, implements, get_logger
 from test_handler.plmanagement.interfaces.application import IConfigurable
 from test_handler.plmanagement.interfaces.tests_listener import ITestCaseHandler
 
 
-logger = logging.getLogger(root_logger.name+'.vital_disable')
+logger = get_logger('vital_disable')
 
 
 class NoVitalError(Exception):
@@ -21,7 +19,7 @@ class VitalDisable(Component):
     """
     implements(IConfigurable, ITestCaseHandler)
     name = "Vital_Disable"
-  
+
     def __init__(self):
         super(VitalDisable, self).__init__()
 
