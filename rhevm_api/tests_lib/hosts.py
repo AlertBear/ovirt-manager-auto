@@ -631,6 +631,7 @@ def approveHost(positive, host, cluster='Default'):
     return status and testHostStatus
 
 
+# FIXME: need to rewrite this def because new ovirt approval has been changed
 def installOvirtHost(positive, host, user_name, password, vdc, port=443, timeout=60):
     '''
     Description: installation of ovirt host
@@ -770,16 +771,18 @@ def _prepareHostNicObject(**kwargs):
             for nic in slave_list.split(','):
                 slaves.add_host_nic(getHostNic(host, nic.strip()))
 
-            bond_obj.set_slaves(data_st.Slaves(slaves))
+            bond_obj.set_slaves(slaves)
 
-        options = data_st.Options()
-        if mode is not None:
-            options.add_option(data_st.Option(name='mode', value=mode))
+        if (mode or miimon) is not None:
+            options = data_st.Options()
+            if mode is not None:
+                options.add_option(data_st.Option(name='mode', value=mode))
 
-        if miimon is not None:
-            options.add_option(data_st.Option(name='miimon', value=miimon))
+            if miimon is not None:
+                options.add_option(data_st.Option(name='miimon', value=miimon))
+            bond_obj.set_options(options)
 
-        nic_obj.set_bonding(bond_obj.set_options(options))
+        nic_obj.set_bonding(bond_obj)
 
     if 'check_connectivity' in kwargs:
         nic_obj.set_check_connectivity(kwargs.get('check_connectivity'))
@@ -796,6 +799,12 @@ def getHostNic(host, nic):
 def getHostNics(host):
 
     host_obj = HOST_API.find(host)
+    return HOST_API.getElemFromLink(host_obj, 'nics', 'host_nic', get_href=True)
+
+
+def getHostNicsList(host):
+
+    host_obj = HOST_API.find(host)
     return HOST_API.getElemFromLink(host_obj, 'nics', 'host_nic', get_href=False)
 
 
@@ -807,7 +816,7 @@ def hostNicsNetworksMapper(host):
         * host - the name of the host
     Returns: dictionary (key: NIC name, value: assigned network)
     '''
-    nic_objs = getHostNics(host)
+    nic_objs = getHostNicsList(host)
     nics_to_networks = {}
 
     for nic in nic_objs:
@@ -842,13 +851,13 @@ def attachHostNic(positive, host, nic, network):
     Return: status (True if nic was attached properly to host, False otherwise)
     '''
 
-    hostObj = HOST_API.find(host)
-    cluster = CL_API.find(hostObj.cluster.id, 'id').get_name()
+    host_obj = HOST_API.find(host)
+    cluster = CL_API.find(host_obj.cluster.id, 'id').get_name()
 
-    hostNic = getHostNic(host, nic)
-    clusterNet = getClusterNetwork(cluster, network)
+    host_nic = getHostNic(host, nic)
+    cl_net = getClusterNetwork(cluster, network)
 
-    status = HOST_API.syncAction(hostNic, "attach", positive, network=clusterNet)
+    status = HOST_API.syncAction(host_nic, "attach", positive, network=cl_net)
 
     return status
 
@@ -954,8 +963,7 @@ def addBond(positive, host, name, **kwargs):
 
     nic_obj = _prepareHostNicObject(**kwargs)
     host_nics = getHostNics(host)
-
-    res, status = HOST_API.create(nic_obj, positive, collection=host_nics)
+    res, status = HOST_NICS_API.create(nic_obj, positive, collection=host_nics)
 
     return status
 
@@ -1437,7 +1445,7 @@ def countHostNics(host):
        * host - name of a host
     return: True and counter if the function succeeded, otherwise False and None
     '''
-    nics = getHostNics(host)
+    nics = getHostNicsList(host)
     return True, {'nicsNumber': len(nics)}
 
 
