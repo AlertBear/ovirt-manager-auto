@@ -34,7 +34,7 @@ from utilities.jobs import Job, JobsSet
 from utilities.utils import readConfFile
 from rhevm_api.utils.test_utils import searchForObj
 
-GBYTE = 1024*1024*1024
+GBYTE = 1024 * 1024 * 1024
 ELEMENTS = os.path.join(os.path.dirname(__file__), '../../conf/elements.conf')
 ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
 DEFAULT_CLUSTER = 'Default'
@@ -159,6 +159,7 @@ def _prepareVmObject(**kwargs):
     vm.set_domain(data_st.Domain(name=kwargs.pop('domainName', None)))
     return vm
 
+
 def _createCustomPropertiesFromArg(prop_arg):
     cps = data_st.CustomProperties()
     props = prop_arg.split(';')
@@ -168,7 +169,7 @@ def _createCustomPropertiesFromArg(prop_arg):
         except ValueError:
             E = "Custom Properties should be in form " \
                 "'name1=value1;name2=value2'. Got '%s' instead."
-            raise Exception(E % arg)
+            raise Exception(E % prop_arg)
         cps.add_custom_property(data_st.CustomProperty(name=name, value=value))
     return cps
 
@@ -214,6 +215,7 @@ def addVm(positive, **kwargs):
     vmObj, status = VM_API.create(vmObj, positive)
     return status
 
+
 def updateVm(positive, vm, **kwargs):
     '''
     Description: update existed vm
@@ -250,6 +252,7 @@ def updateVm(positive, vm, **kwargs):
     vmNewObj = _prepareVmObject(**kwargs)
     vmNewObj, status = VM_API.update(vmObj, vmNewObj, positive)
     return status
+
 
 def removeVm(positive, vm, **kwargs):
     '''
@@ -361,7 +364,7 @@ def waitForVmsGone(positive, vms, timeout=60, samplingPeriod=10):
     '''
     t_start = time.time()
     vmsList = split(vms)
-    QUERY = ' or '.join([ 'name="%s"' % vm for vm in vmsList ])
+    QUERY = ' or '.join(['name="%s"' % vm for vm in vmsList])
     while time.time() - t_start < timeout and 0 < timeout:
         foundVms = VM_API.query(QUERY)
         if not len(foundVms):
@@ -387,10 +390,9 @@ def waitForVmsStates(positive, names, states='up', *args, **kwargs):
     for vm in names:
         VM_API.find(vm)
 
-    query = ' and '.join([ 'name="%s" and status=%s' % (vm, states) for vm in names ])
+    query = ' and '.join(['name="%s" and status=%s' % (vm, states) for vm in names])
 
     return VM_API.waitForQuery(query, timeout=VM_ACTION_TIMEOUT, sleep=10)
-
 
 
 def changeVMStatus(positive, vm, action, expectedStatus, async='true'):
@@ -412,6 +414,7 @@ def changeVMStatus(positive, vm, action, expectedStatus, async='true'):
     if status and positive and not asyncMode:
         return VM_API.waitForElemStatus(vmObj, expectedStatus, VM_ACTION_TIMEOUT)
     return status
+
 
 def startVm(positive, vm, wait_for_status=ENUMS['vm_state_powering_up']):
     '''
@@ -476,6 +479,7 @@ def startVms(vms, wait_for_status=ENUMS['vm_state_powering_up']):
             logger.info('Starting vm %s succeed.', job.args[1])
     return status
 
+
 def stopVm(positive, vm, async='false'):
     '''
     Description: stop vm
@@ -486,6 +490,7 @@ def stopVm(positive, vm, async='false'):
     Return: status (True if vm was stopped properly, False otherwise)
     '''
     return changeVMStatus(positive, vm, 'stop', 'DOWN', async)
+
 
 def stopVms(vms, wait='true'):
     '''
@@ -515,7 +520,7 @@ def stopVms(vms, wait='true'):
     resultsList = []
     query = 'name={0} and status=down'
     for vmObj in vmObjectsList:
-        query =query.format(vmObj.get_name())
+        query = query.format(vmObj.get_name())
         querySt = VM_API.waitForQuery(query, timeout=VM_ACTION_TIMEOUT, sleep=DEF_SLEEP)
         resultsList.append(querySt)
 
@@ -677,39 +682,39 @@ def checkVmHasCdromAttached(positive, vmName):
 
 def _prepareNicObj(**kwargs):
 
+    nic_obj = data_st.NIC()
 
-    nic = data_st.NIC()
+    if 'name' in kwargs:
+        nic_obj.set_name(kwargs.get('name'))
 
-    name = kwargs.pop('name', None)
-    if name:
-        nic.set_name(name)
+    if 'interface' in kwargs:
+        nic_obj.set_interface(kwargs.get('interface'))
 
-    interface = kwargs.pop('interface', None)
-    if interface:
-        nic.set_interface(interface)
+    if 'mac_address' in kwargs:
+        nic_obj.set_mac(data_st.MAC(address=kwargs.get('mac_address')))
 
-    mac_address = kwargs.pop('mac_address', None)
-    if mac_address:
-        nic.set_mac(data_st.MAC(address=mac_address))
+    if 'network' in kwargs:
+        cluster = kwargs.get('cluster')
+        cl_obj = CLUSTER_API.find(cluster, 'id')
+        cl_net = getClusterNetwork(cl_obj.name, kwargs.get('network'))
+        nic_obj.set_network(cl_net)
 
-    network = kwargs.pop('network', None)
-    if network:
-        cl = kwargs.pop('cluster', None)
-        cl = CLUSTER_API.find(cl, 'id')
-        clNet = getClusterNetwork(cl.name, network)
-        nic.set_network(clNet)
+    if 'active' in kwargs:
+        nic_obj.set_active(kwargs.get('active'))
 
-    return nic
+    return nic_obj
+
 
 def getVmNics(vm):
 
-    vmObj = VM_API.find(vm)
-    return VM_API.getElemFromLink(vmObj, link_name='nics', attr='vm_nic', get_href=True)
+    vm_obj = VM_API.find(vm)
+    return VM_API.getElemFromLink(vm_obj, link_name='nics', attr='vm_nic', get_href=True)
+
 
 def getVmNic(vm, nic):
 
-    vmObj = VM_API.find(vm)
-    return VM_API.getElemFromElemColl(vmObj, nic, 'nics', 'nic')
+    vm_obj = VM_API.find(vm)
+    return VM_API.getElemFromElemColl(vm_obj, nic, 'nics', 'nic')
 
 
 def addNic(positive, vm, **kwargs):
@@ -723,22 +728,39 @@ def addNic(positive, vm, **kwargs):
        * interface - nic type. available types: virtio, rtl8139 and e1000
                      (for 2.2 also rtl8139_virtio)
        * mac_address - nic mac address
+       * active - Boolean attribute which present nic hostplug state
     Return: status (True if nic was added properly, False otherwise)
     '''
-    # TODO: Check whether there still is the type PV available.
 
-    vmObj = VM_API.find(vm)
-    expectedStatus = vmObj.get_status().get_state()
+    vm_obj = VM_API.find(vm)
+    expectedStatus = vm_obj.get_status().get_state()
 
-    cluster = vmObj.cluster.id
-    kwargs['cluster'] = cluster
-    nic = _prepareNicObj(**kwargs)
-    vmNics = getVmNics(vm)
+    kwargs.update([('cluster', vm_obj.cluster.id)])
 
-    nic, status = NIC_API.create(nic, positive, collection=vmNics)
+    nic_obj = _prepareNicObj(**kwargs)
+    nics_coll = getVmNics(vm)
+
+    res, status = NIC_API.create(nic_obj, positive, collection=nics_coll)
+
+    # TODO: remove wait section. func need to be atomic. wait can be done
+    # externally!
     if positive and status:
-        return VM_API.waitForElemStatus(vmObj, expectedStatus, VM_ACTION_TIMEOUT)
+        return VM_API.waitForElemStatus(vm_obj, expectedStatus, VM_ACTION_TIMEOUT)
     return status
+
+
+def isVmNicActive(vm, nic):
+    '''
+    Description: Check if VM NIC is active
+    Author: atal
+    Parameters:
+        * vm - vm name
+        * nic - nic name
+    return: True if nic is active, False otherwise.
+    '''
+    nic_obj = getVmNic(vm, nic)
+
+    return nic_obj.get_active() == True
 
 
 def addVmNics(positive, vm, namePrefix, networks):
@@ -759,7 +781,7 @@ def addVmNics(positive, vm, namePrefix, networks):
             return False, {'vmNics': None}
         name = namePrefix + str(match.group(1))
         vm_nics.append(name)
-        if not addNic(positive, vm, name, net):
+        if not addNic(positive, vm, name=name, network=net):
             return False, {'vmNics': None}
     return True, {'vmNics': vm_nics}
 
@@ -776,17 +798,17 @@ def updateNic(positive, vm, nic, **kwargs):
        * interface - nic type. available types: virtio, rtl8139 and e1000
                      (for 2.2 also rtl8139_virio)
        * mac_address - nic mac address
+       * active - Boolean attribute which present nic hostplug state
     Return: status (True if nic was updated properly, False otherwise)
     '''
 
-    vmObj = VM_API.find(vm)
-    cluster = vmObj.cluster.id
-    kwargs['cluster'] = cluster
+    vm_obj = VM_API.find(vm)
+    kwargs.update([('cluster', vm_obj.cluster.id)])
 
-    nicNew = _prepareNicObj(**kwargs)
-    nic = getVmNic(vm, nic)
+    nic_new = _prepareNicObj(**kwargs)
+    nic_obj = getVmNic(vm, nic)
 
-    nic, status = NIC_API.update(nic, nicNew, positive)
+    nic, status = NIC_API.update(nic_obj, nic_new, positive)
     return status
 
 
@@ -799,15 +821,47 @@ def removeNic(positive, vm, nic):
        * nic - nic name that should be removed
     Return: status (True if nic was removed properly, False otherwise)
     '''
-    vmObj = VM_API.find(vm)
-    nic = getVmNic(vm, nic)
+    vm_obj = VM_API.find(vm)
+    nic_obj = getVmNic(vm, nic)
 
-    expectedStatus = vmObj.get_status().get_state()
+    expectedStatus = vm_obj.get_status().get_state()
 
-    status = VM_API.delete(nic, positive)
+    status = VM_API.delete(nic_obj, positive)
+
+    # TODO: remove wait section. func need to be atomic. wait can be done
+    # externally!
     if positive and status:
-        return VM_API.waitForElemStatus(vmObj, expectedStatus, VM_ACTION_TIMEOUT)
+        return VM_API.waitForElemStatus(vm_obj, expectedStatus, VM_ACTION_TIMEOUT)
     return status
+
+
+def hotPlugNic(positive, vm, nic):
+    '''
+    Description: implement hotPlug nic.
+    Author: atal
+    Parameters:
+        * vm - vm name
+        * nic - nic name to plug.
+    Return: True in case of succeed, False otherwise
+    '''
+    nic_obj = getVmNic(vm, nic)
+
+    return VM_API.syncAction(nic_obj, "activate", positive)
+
+
+def hotUnplugNic(positive, vm, nic):
+    '''
+    Description: implement hotUnplug nic.
+    Author: atal
+    Parameters:
+        * vm - vm name
+        * nic - nic name to plug.
+    Return: True in case of succeed, False otherwise
+    '''
+    nic_obj = getVmNic(vm, nic)
+
+    return VM_API.syncAction(nic_obj, "deactivate", positive)
+
 
 def removeLockedVm(vm, vdc, vdc_pass, psql_username='postgres', psql_db='rhevm'):
     '''
@@ -939,7 +993,7 @@ def removeSnapshot(positive, vm, description, timeout=VM_REMOVE_SNAPSHOT_TIMEOUT
     if positive:
         # Wait until snapshot disappears.
         try:
-            for ret in TimeoutingSampler(timeout, 5,  _getVmSnapshot, *args):
+            for ret in TimeoutingSampler(timeout, 5, _getVmSnapshot, *args):
                 if not ret:
                     logger.info('Snapshot %s disappeared.',
                                 snapshot.description)
@@ -955,7 +1009,7 @@ def removeSnapshot(positive, vm, description, timeout=VM_REMOVE_SNAPSHOT_TIMEOUT
         # Check whether snapshot didn't disappear.
         logger.info('Checking whether url %s exists.', snapshot.href)
         try:
-            for ret in TimeoutingSampler(timeout, 5,  _getVmSnapshot, *args):
+            for ret in TimeoutingSampler(timeout, 5, _getVmSnapshot, *args):
                 if not ret:
                     logger.info('Snapshot %s disappeared.',
                                 snapshot.description)
@@ -1032,8 +1086,8 @@ def runVmOnce(positive, vm, pause=None, display_type=None, stateless=None,
         domain = data_st.Domain()
 
         if password is None:
-                logger.error('You have to specify password with username')
-                return False
+            logger.error('You have to specify password with username')
+            return False
 
         if None is not user_name:
             domain.set_user(data_st.User(user_name=user_name, password=password))
@@ -1290,8 +1344,8 @@ def importVm(positive, vm, export_storagedomain, import_storagedomain,
     cl = data_st.Cluster(name=cluster)
 
     actionParams = {
-        'storage_domain' : sd,
-        'cluster' : cl
+        'storage_domain': sd,
+        'cluster': cl
     }
 
     actionName = 'import'
@@ -1436,7 +1490,7 @@ def checkVmStatistics(positive, vm):
     statistics = VM_API.getElemFromLink(vmObj, link_name='statistics', attr='statistic')
 
     for stat in statistics:
-        datum =  str(stat.get_values().get_value()[0].get_datum())
+        datum = str(stat.get_values().get_value()[0].get_datum())
         if not re.match('(\d+\.\d+)|(\d+)', datum):
             logger.error('Wrong value for ' + stat.get_name() + ': ' + datum)
             status = False
@@ -1447,10 +1501,10 @@ def checkVmStatistics(positive, vm):
             expectedStatistics.remove(stat.get_name())
 
     if len(expectedStatistics) == 0:
-         logger.info('All ' + str(numOfExpStat) + ' statistics appear')
+        logger.info('All ' + str(numOfExpStat) + ' statistics appear')
     else:
-         logger.error('The following statistics are missing: ' + str(expectedStatistics))
-         status = False
+        logger.error('The following statistics are missing: ' + str(expectedStatistics))
+        status = False
 
     return status
 
