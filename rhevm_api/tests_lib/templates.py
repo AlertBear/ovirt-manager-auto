@@ -21,7 +21,8 @@ import os
 import re
 import time
 
-from core_api.apis_utils import getDS
+from core_api.apis_exceptions import EntityNotFound
+from core_api.apis_utils import getDS, data_st
 from rhevm_api.utils.test_utils import get_api, split
 from rhevm_api.utils.xpath_utils import XPathMatch
 from rhevm_api.tests_lib.networks import getClusterNetwork
@@ -33,11 +34,11 @@ from rhevm_api.utils.test_utils import searchForObj
 CREATE_TEMPLATE_TIMEOUT = 900
 ELEMENT = 'template'
 COLLECTION = 'templates'
-util = get_api(ELEMENT, COLLECTION)
-sdUtil = get_api('storage_domain', 'storagedomains')
-clUtil = get_api('cluster', 'clusters')
-vmUtil = get_api('vm', 'vms')
-nicUtil = get_api('nic', 'nics')
+TEMPLATE_API = get_api(ELEMENT, COLLECTION)
+SD_API = get_api('storage_domain', 'storagedomains')
+CL_API = get_api('cluster', 'clusters')
+VM_API = get_api('vm', 'vms')
+NIC_API = get_api('nic', 'nics')
 
 Template = getDS('Template')
 Cluster = getDS('Cluster')
@@ -45,12 +46,11 @@ CPU = getDS('CPU')
 CpuTopology = getDS('CpuTopology')
 StorageDomain = getDS('StorageDomain')
 VM = getDS('VM')
-NIC = getDS('NIC')
 
 ELEMENTS = os.path.join(os.path.dirname(__file__), '../../conf/elements.conf')
 ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
 
-xpathMatch = XPathMatch(util)
+xpathMatch = XPathMatch(TEMPLATE_API)
 
 
 def _prepareTemplateObject(**kwargs):
@@ -75,7 +75,7 @@ def _prepareTemplateObject(**kwargs):
 
     cluster = kwargs.pop('cluster', None)
     if cluster:
-        cl = clUtil.find(cluster)
+        cl = CL_API.find(cluster)
         templ.set_cluster(Cluster(id=cl.id))
 
     cpu_socket = kwargs.pop('cpu_socket', None)
@@ -86,16 +86,16 @@ def _prepareTemplateObject(**kwargs):
 
     vm = kwargs.pop('vm', None)
     if vm:
-        vmObj = vmUtil.find(vm)
+        vmObj = VM_API.find(vm)
         templ.set_vm(VM(id=vmObj.get_id()))
 
     boot = kwargs.pop('boot', None)
     if boot:
-        templ.set_os(Boot(dev=boot))
+        templ.set_os(data_st.Boot(dev=boot))
 
     storagedomain = kwargs.pop('storagedomain', None)
     if storagedomain:
-        sd = sdUtil.find(storagedomain)
+        sd = SD_API.find(storagedomain)
         templ.set_storage_domain(StorageDomain(id=sd.get_id()))
 
     return templ
@@ -121,9 +121,9 @@ def createTemplate(positive, wait=True, timeout=CREATE_TEMPLATE_TIMEOUT, **kwarg
     '''
 
     templ = _prepareTemplateObject(**kwargs)
-    templ, status = util.create(templ, positive)
+    templ, status = TEMPLATE_API.create(templ, positive)
     if wait and status and positive:
-        status = util.waitForElemStatus(templ, 'OK', timeout)
+        status = TEMPLATE_API.waitForElemStatus(templ, 'OK', timeout)
 
     return status
 
@@ -145,10 +145,11 @@ def updateTemplate(positive, template, **kwargs):
     Return: status (True if template was updated properly, False otherwise)
     '''
 
-    templObj = util.find(template)
+    templObj = TEMPLATE_API.find(template)
     templNew = _prepareTemplateObject(**kwargs)
-    templObj, status = util.update(templObj, templNew, positive)
+    templObj, status = TEMPLATE_API.update(templObj, templNew, positive)
 
+    # FIXME: check if polling instead of sleep
     time.sleep(40)
 
     return status
@@ -165,8 +166,8 @@ def removeTemplate(positive, template, wait=True, sleepTime=10, timeout=60):
        * timeout - maximun waiting time
     Return: status (True if template was removed properly, False otherwise)
     '''
-    templObj = util.find(template)
-    status = util.delete(templObj, positive)
+    templObj = TEMPLATE_API.find(template)
+    status = TEMPLATE_API.delete(templObj, positive)
 
     if status and positive and wait:
         handleTimeout = 0
@@ -198,7 +199,7 @@ def removeTemplates(positive, templates):
     for job in jobs:
         status = status and job.result
         if not job.result:
-            util.logger.error('Removing template %s failed', job.args[1])
+            TEMPLATE_API.logger.error('Removing template %s failed', job.args[1])
     return status
 
 
@@ -213,10 +214,46 @@ def searchForTemplate(positive, query_key, query_val, key_name, **kwargs):
                     found by search, False otherwise)
     '''
 
-    return searchForObj(util, query_key, query_val, key_name, **kwargs)
+    return searchForObj(TEMPLATE_API, query_key, query_val, key_name, **kwargs)
 
 
-def addTemplateNic(positive, template, name, network='rhevm',interface=None):
+def _prepareNicObj(**kwargs):
+
+    nic_obj = data_st.NIC()
+
+    if 'name' in kwargs:
+        nic_obj.set_name(kwargs.get('name'))
+
+    if 'interface' in kwargs:
+        nic_obj.set_interface(kwargs.get('interface'))
+
+    if 'network' in kwargs:
+        cluster = kwargs.get('cluster')
+        cl_obj = CL_API.find(cluster, 'id')
+        print cl_obj.name
+        print kwargs.get('network')
+        cl_net = getClusterNetwork(cl_obj.name, kwargs.get('network'))
+        nic_obj.set_network(cl_net)
+
+    if 'active' in kwargs:
+        nic_obj.set_active(kwargs.get('active'))
+
+    return nic_obj
+
+
+def getTemplatesNics(template):
+
+    templ_obj = TEMPLATE_API.find(template)
+    return TEMPLATE_API.getElemFromLink(templ_obj, link_name='nics', attr='nic', get_href=True)
+
+
+def getTemplatesNic(template, nic):
+
+    templ_obj = TEMPLATE_API.find(template)
+    return TEMPLATE_API.getElemFromElemColl(templ_obj, nic, 'nics', 'nic')
+
+
+def addTemplateNic(positive, template, **kwargs):
     '''
     Description: add nic to template
     Author: atal
@@ -224,34 +261,23 @@ def addTemplateNic(positive, template, name, network='rhevm',interface=None):
        * template - name of template that we add the nic to
        * name - name of nic
        * network - network that nic depends on
-       * interface - nic type. available types: virtio, rtl8139 and e1000 (for 2.2 also rtl8139_virtio)
+       * interface - nic type. available types: virtio, rtl8139 and e1000
+                     (for 2.2 also rtl8139_virtio)
+       * active - Boolean attribute which present nic hostplug state
     Return: status (True if nic was added properly, False otherwise)
     '''
-    templObj = util.find(template)
-    nic = NIC(name=name, interface=interface)
-    cluster = clUtil.find(templObj.cluster.id, 'id')
-    clusterNet = getClusterNetwork(cluster.name, network)
-    nic.set_network(clusterNet)
+    templ_obj = TEMPLATE_API.find(template)
+    kwargs.update([('cluster', templ_obj.cluster.id)])
 
-    templateNics = getTemplatesNics(template)
-    nic, status = nicUtil.create(nic, positive, collection=templateNics)
+    nic_obj = _prepareNicObj(**kwargs)
+    nics_coll = getTemplatesNics(template)
+
+    res, status = NIC_API.create(nic_obj, positive, collection=nics_coll)
 
     return  status
 
 
-def getTemplatesNics(template):
-
-    templObj = util.find(template)
-    return util.getElemFromLink(templObj, link_name='nics', attr='nic', get_href=True)
-
-
-def getTemplatesNic(template, nic):
-
-    templObj = util.find(template)
-    return util.getElemFromElemColl(templObj, nic, 'nics', 'nic')
-
-
-def updateTemplateNic(positive, template, nic, name=None, network=None, interface=None):
+def updateTemplateNic(positive, template, nic, **kwargs):
     '''
     Description: update an existing nic
     Author: atal
@@ -260,22 +286,18 @@ def updateTemplateNic(positive, template, nic, name=None, network=None, interfac
        * nic - nic name that should be updated
        * name - new nic name
        * network - network that nic depends on
-       * interface - nic type. available types: virtio, rtl8139 and e1000 (for 2.2 also rtl8139_virtio)
+       * interface - nic type. available types: virtio, rtl8139 and e1000
+                    (for 2.2 also rtl8139_virtio)
+       * active - Boolean attribute which present nic hostplug state
     Return: status (True if nic was updated properly, False otherwise)
     '''
-    templObj = util.find(template)
-    nicObj = getTemplatesNic(template, nic)
+    templ_obj = TEMPLATE_API.find(template)
+    kwargs.update([('cluster', templ_obj.cluster.id)])
 
-    nicNew = NIC()
-    if name:
-        nicNew.set_name(name)
-    if interface:
-        nicNew.set_interface(interface)
-    if network:
-        clusterNet = getClusterNetwork(templObj.get_cluster().get_name())
-        nicNew.set_network(clusterNet)
+    nic_obj = getTemplatesNic(template, nic)
+    nic_new = _prepareNicObj(**kwargs)
 
-    nic, status = util.update(nicObj, nicNew, positive)
+    res, status = NIC_API.update(nic_obj, nic_new, positive)
 
     return status
 
@@ -289,8 +311,9 @@ def removeTemplateNic(positive, template, nic):
        * nic - nic name that should be removed
     Return: status (True if nic was removed properly, False otherwise)
     '''
-    nicObj = getTemplatesNic(template, nic)
-    return util.delete(nicObj,positive)
+    nic_obj = getTemplatesNic(template, nic)
+
+    return NIC_API.delete(nic_obj, positive)
 
 
 def removeTemplateFromExportDomain(positive, template, datacenter, export_storagedomain):
@@ -303,9 +326,9 @@ def removeTemplateFromExportDomain(positive, template, datacenter, export_storag
        * export_storagedomain - storage domain where to remove vm from
     Return: status (True if template was removed properly, False otherwise)
     '''
-    expStorDomObj = sdUtil.find(export_storagedomain)
-    templObj = util.getElemFromElemColl(expStorDomObj, template)
-    status = util.delete(templObj, positive)
+    expStorDomObj = SD_API.find(export_storagedomain)
+    templObj = TEMPLATE_API.getElemFromElemColl(expStorDomObj, template)
+    status = TEMPLATE_API.delete(templObj, positive)
     time.sleep(30)
     return status
 
@@ -318,7 +341,7 @@ def validateTemplate(positive, template):
        * template - template name
     Return: status (True if template exist, False otherwise)
     '''
-    templates = util.get(absLink=False)
+    templates = TEMPLATE_API.get(absLink=False)
     templates = filter(lambda x: x.name.lower() == template.lower(), templates)
     return bool(templates) == positive
 
@@ -332,10 +355,10 @@ def getTemplateId(positive, template):
     Return: True and template id or False and None
     '''
     try:
-        templObj = util.find(template)
+        templObj = TEMPLATE_API.find(template)
     except EntityNotFound:
-        return False, {'templateId' : None}
-    return True, {'templateId' : templObj.get_id()}
+        return False, {'templateId': None}
+    return True, {'templateId': templObj.get_id()}
 
 
 def exportTemplate(positive, template, storagedomain, exclusive='false'):
@@ -350,13 +373,12 @@ def exportTemplate(positive, template, storagedomain, exclusive='false'):
     Return: status (True if template was exported properly, False otherwise)
     '''
 
-    templObj = util.find(template)
+    templObj = TEMPLATE_API.find(template)
 
     sd = StorageDomain(name=storagedomain)
     actionParams = dict(storage_domain=sd, exclusive=exclusive)
 
-    return util.syncAction(templObj, "export", positive, **actionParams)
-
+    return TEMPLATE_API.syncAction(templObj, "export", positive, **actionParams)
 
 
 def importTemplate(positive, template, export_storagedomain,
@@ -373,8 +395,8 @@ def importTemplate(positive, template, export_storagedomain,
     Return: status (True if template was imported properly, False otherwise)
     '''
 
-    expStorDomObj = sdUtil.find(export_storagedomain)
-    templObj = util.getElemFromElemColl(expStorDomObj, template)
+    expStorDomObj = SD_API.find(export_storagedomain)
+    templObj = TEMPLATE_API.getElemFromElemColl(expStorDomObj, template)
 
     sd = StorageDomain(name=import_storagedomain)
     cl = Cluster(name=cluster)
@@ -390,7 +412,7 @@ def importTemplate(positive, template, export_storagedomain,
         newTemplate = Template(name=name)
         actionParams['template'] = newTemplate
 
-    status = util.syncAction(templObj, actionName, positive, **actionParams)
+    status = TEMPLATE_API.syncAction(templObj, actionName, positive, **actionParams)
     time.sleep(30)
 
     return status
@@ -407,10 +429,10 @@ def waitForTemplatesStates(names, state=ENUMS['template_state_ok'],
     """
     names = split(names)
 
-    [util.find(template) for template in names]
+    # FIXME: list is assigned to nothing. remove if not in use
+    [TEMPLATE_API.find(template) for template in names]
 
     query = ' and '.join(['name=%s and status=%s' % (template, state) for
                     template in names])
 
-    return util.waitForQuery(query, timeout=timeout, sleep=sleep)
-
+    return TEMPLATE_API.waitForQuery(query, timeout=timeout, sleep=sleep)
