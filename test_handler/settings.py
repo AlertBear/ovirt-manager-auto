@@ -174,7 +174,7 @@ def redef(section, confspacePath, key, value):
         section = section.get(sectionName, None)
         if section is None:
             raise CmdLineError, 'Section %s not found in the config.' % section
-    section[key] = value
+    section[key] = value.split(",") if value.find(",")!=-1 else value
 
 
 def readTestRunOpts(path, redefs):

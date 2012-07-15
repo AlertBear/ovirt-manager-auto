@@ -1687,6 +1687,14 @@
     <run>yes</run>
   </test_case>
   <test_case>
+    <id>2577a804-cf27-11e1-a74d-0024d7421ca4</id>
+    <test_name>Sleep - wait for vm creation event</test_name>
+    <test_action>sleep</test_action>
+    <parameters>seconds=10</parameters>
+    <positive>NONE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
     <id>cb8cf216-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Check events - created VM from template</test_name>
     <test_action>searchForRecentEvent</test_action>
@@ -1979,6 +1987,7 @@
     <parameters>win_start_query='rest_testPool type=36', query='type=113', expected_count=9</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <bz>836944</bz>
   </test_case>
   <test_case>
     <id>cb8d3a78-c695-11e1-bca8-f0def10e0ce8</id>
