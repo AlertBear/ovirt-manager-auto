@@ -869,7 +869,7 @@ def removeNic(positive, vm, nic):
 
     expectedStatus = vm_obj.get_status().get_state()
 
-    status = VM_API.delete(nic_obj, positive)
+    status = NIC_API.delete(nic_obj, positive)
 
     # TODO: remove wait section. func need to be atomic. wait can be done
     # externally!
@@ -889,7 +889,7 @@ def hotPlugNic(positive, vm, nic):
     '''
     nic_obj = getVmNic(vm, nic)
 
-    return VM_API.syncAction(nic_obj, "activate", positive)
+    return NIC_API.syncAction(nic_obj, "activate", positive)
 
 
 def hotUnplugNic(positive, vm, nic):
@@ -903,7 +903,7 @@ def hotUnplugNic(positive, vm, nic):
     '''
     nic_obj = getVmNic(vm, nic)
 
-    return VM_API.syncAction(nic_obj, "deactivate", positive)
+    return NIC_API.syncAction(nic_obj, "deactivate", positive)
 
 
 def removeLockedVm(vm, vdc, vdc_pass, psql_username='postgres', psql_db='rhevm'):
