@@ -1,5 +1,6 @@
 
 import re
+import copy
 from test_handler.plmanagement import Component, implements, get_logger
 from test_handler.plmanagement.interfaces.application import IConfigurable, IApplicationListener
 from test_handler.plmanagement.interfaces.tests_listener import ITestCaseHandler, ITestGroupHandler, ITestSkipper, SkipTest
@@ -32,6 +33,28 @@ class FetchVersionError(BugzillaPluginError):
     pass
 
 
+class Version(object):
+    def __init__(self, ver):
+        self.ver = [int(x) for x in ver.split('.')]
+
+    def __cmp__(self, ver):
+        for a, b in zip(self.ver, ver.ver):
+            d = a - b
+            if d != 0:
+                return d
+        return len(self.ver) - len(ver.ver)
+
+    def __str__(self):
+        return '.'.join([str(x) for x in self.ver])
+
+    def __contains__(self, ver):
+        for a, b in zip(self.ver, ver.ver):
+            d = a - b
+            if d != 0:
+                return False
+        return True
+
+
 class Bugzilla(Component):
     """
     Plugin provides access to bugzilla site.
@@ -46,12 +69,13 @@ class Bugzilla(Component):
         self.bugzilla = None
         self.version = None
         self.build_id = None # where should I get it
+        self.cache = {}
 
     @classmethod
     def add_options(cls, parser):
         group = parser.add_argument_group(cls.name, description=cls.__doc__)
         group.add_argument('--with-bz', action='store_true', \
-                dest='bz_enabled', help="enable plugin")
+                dest='bz_enabled', help="eniable plugin")
         group.add_argument('--bz-user', action="store", dest='bz_user', \
                 help="username for bugzilla")
         group.add_argument('--bz-pass', action="store", dest='bz_pass', \
@@ -93,13 +117,19 @@ class Bugzilla(Component):
         """
         Returns BZ record
         """
-        q = {'bug_id': bz_id}
-        bug = self.bugzilla.query(q)
-        if not bug:
-            raise BugNotFound(bz_id)
-        bug = bug[0]
+        bz_id = str(bz_id)
+        if bz_id not in self.cache:
+            q = {'bug_id': bz_id}
+            bug = self.bugzilla.query(q)
+            if not bug:
+                raise BugNotFound(bz_id)
+            bug = bug[0]
+            self.cache[bz_id] = bug
+        else:
+            bug = self.cache[bz_id]
         msg = "BUG<%s> info: %s" % (bz_id, dict((x, getattr(bug, x)) for x in \
-                ('version', 'build_id', 'bug_status', 'product', 'short_desc')))
+                ('version', 'build_id', 'bug_status', 'product', 'short_desc') \
+                if hasattr(bug, x)))
         logger.info(msg)
         return bug
 
@@ -125,12 +155,20 @@ class Bugzilla(Component):
 
             if self.version is None:
                 from rhevm_api.tests_lib.general import getSystemVersion
-                self.version = "%d.%d" % getSystemVersion()
+                self.version = Version("%d.%d" % getSystemVersion())
 #                continue # probably the newest version
-            if self.version not in bz.version:
-                # this bz_id is related to different version,
-                # no reason to skip it
-                continue
+            if bz.version:
+                version = copy.copy(bz.version)
+                if not isinstance(version, list):
+                    version = [version]
+                for v in version:
+                    v = Version(v)
+                    if v in self.version:
+                        break
+                else:
+                    # this bz_id is related to different version,
+                    # no reason to skip it
+                    continue
 # FIXME: consider build_id as well
 #            if bz.build_id and bz.build_id != self.build_id:
 #                # this bz_id is related to different build,
@@ -143,22 +181,30 @@ class Bugzilla(Component):
                 raise SkipTest(bz)
 
     def should_be_test_case_skipped(self, test_case):
-        self._should_be_skipped(test_case)
+        pass
+        #self._should_be_skipped(test_case)
 
     def should_be_test_group_skipped(self, test_group):
-        self._should_be_skipped(test_group)
+        pass
+        #self._should_be_skipped(test_group)
 
     def pre_test_case(self, t):
         pass
 
     def post_test_case(self, t):
-        pass
+        try:
+            self._should_be_skipped(t)
+        except SkipTest:
+            t.status = t.TEST_STATUS_SKIPPED
 
     def pre_test_group(self, g):
         pass
 
     def post_test_group(self, g):
-        pass
+        try:
+            self._should_be_skipped(g)
+        except SkipTest:
+            g.status = g.TEST_STATUS_SKIPPED
 
     def test_group_skipped(self, g):
         pass

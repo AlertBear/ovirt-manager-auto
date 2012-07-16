@@ -33,6 +33,9 @@ REST_CONNECTION = 'REST_CONNECTION'
 plmanager = initPlmanager()
 
 class _TestElm(dict):
+    TEST_STATUS_PASSED = 'Pass'
+    TEST_STATUS_FAILED = 'Fail'
+    TEST_STATUS_SKIPPED = 'Skipped'
 
     def __init__(self):
         super(_TestElm, self).__init__()
@@ -584,6 +587,7 @@ class TestRunner(object):
                     exec(cmd)
             except NO_TB_EXCEPTIONS as e:
                 testStatus = False
+                testCase.status = testCase.TEST_STATUS_FAILED
                 self.logger.error(e)
             except SocketError:
                 raise
@@ -592,7 +596,11 @@ class TestRunner(object):
                 return
             except Exception as e:
                 testStatus = False
+                testCase.status = testCase.TEST_STATUS_FAILED
                 self.log_traceback(e, testCase['test_name'])
+        if not hasattr(testCase, 'status'):
+            testCase.status = testCase.TEST_STATUS_PASSED if testStatus \
+                    else testCase.TEST_STATUS_FAILED
         plmanager.test_cases.post_test_case(testCase)
 
 
@@ -633,7 +641,7 @@ class TestRunner(object):
         reportStats['tcms_test_case'] = testCase['tcms_test_case']
         reportStats['test_parameters'] = testParametersReport
         reportStats['test_type'] = testCase['test_type']
-        reportStats['status'] = "Pass" if testStatus else "Fail"
+        reportStats['status'] = testCase.status
         self.lastTestStatus = testStatus
 
         # set node name for test case parent
