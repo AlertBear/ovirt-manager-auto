@@ -157,18 +157,20 @@ class Bugzilla(Component):
                 from rhevm_api.tests_lib.general import getSystemVersion
                 self.version = Version("%d.%d" % getSystemVersion())
 #                continue # probably the newest version
-            if bz.version:
+            if getattr(bz, 'version', None):
                 version = copy.copy(bz.version)
                 if not isinstance(version, list):
                     version = [version]
+                version = [x for x in version if x != 'unspecified']
                 for v in version:
                     v = Version(v)
                     if v in self.version:
                         break
                 else:
-                    # this bz_id is related to different version,
-                    # no reason to skip it
-                    continue
+                    if version:
+                        # this bz_id is related to different version,
+                        # no reason to skip it
+                        continue
 # FIXME: consider build_id as well
 #            if bz.build_id and bz.build_id != self.build_id:
 #                # this bz_id is related to different build,
