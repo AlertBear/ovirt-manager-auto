@@ -59,15 +59,6 @@ def populateOptsFromArgv(argv):
     Return: None
     '''
 
-    junit_results_default = os.path.join(os.path.dirname(__file__),
-                                         "../results/junit_results.xml")
-
-    results_default = os.path.join(os.path.dirname(__file__),
-                                   "../results/results.xml")
-
-    results_default =  os.path.normpath(results_default)
-    junit_results_default =  os.path.normpath(junit_results_default)
-
 
     parser = argparse.ArgumentParser(
         prog=argv[0],
@@ -80,14 +71,6 @@ def populateOptsFromArgv(argv):
     parser.add_argument('--log', '-log',
                                 default = None,
                                 help='path to the log files')
-    parser.add_argument('--junitResultsFile', '-junit', metavar='JUNIT_XML_FILE',
-                                default=junit_results_default,
-                                help='path to the junit results file (%(default)s)',
-                                dest='junit_results')
-    parser.add_argument('--resultXmlFile', '-res', metavar='RESULTS_XML_FILE',
-                                default=results_default,
-                                help='path to the results file (%(default)s)',
-                                dest='results')
     parser.add_argument('--lines', '-lines',
                                 help='which lines from the test file should be executed')
     parser.add_argument('--groups', '-groups',

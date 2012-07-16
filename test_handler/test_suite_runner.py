@@ -99,25 +99,17 @@ class TestSuiteRunner:
         '''
 
         self._initialize_run()
-        default_reporter = DefaultResultsReporter(\
-                                self.config['RUN']['tests_file'],
-                                opts['engine'], opts['results'])
-        junit_reporter = JUnitResultsReporter(\
-                                self.config['RUN']['tests_file'],
-                                opts['engine'], opts['junit_results'])
 
-        results_reporters = default_reporter, junit_reporter
 
         for test in opts['tests']:
-            self.run_suite_test(test, results_reporters)
+            self.run_suite_test(test)
 
-    def run_suite_test(self, test, results_reporters):
+    def run_suite_test(self, test):
         '''
         Description: run tests suite
         Author: edolinin
         Parameters:
           test - The name of test.
-          results_reporters
         '''
         try:
             threads = []
@@ -139,14 +131,14 @@ class TestSuiteRunner:
             testRunner = None
             if testName.endswith('ods'):
                 testRunner = OdsRunner(lines, groups, self.config, self.logger,
-                                       testName, results_reporters,
+                                       testName,
                                        config_section, self.autoDevices)
                 test_cases = testRunner.load(testFilePath)
                 testRunner.run_test(test_cases)
 
             elif testName.endswith('py'):
                 testRunner = PythonRunner(groups, self.config, self.logger,
-                                          testFilePath, results_reporters,
+                                          testFilePath,
                                           config_section, self.autoDevices)
                 testRunner.run_test()
 
@@ -167,7 +159,6 @@ class TestSuiteRunner:
 
                         testRunner = XmlRunner(lines, groups, config,
                                                self.logger, testName,
-                                               results_reporters,
                                                config_section,
                                                self.autoDevices)
                         opts['in_parallel'].remove(test)
@@ -189,7 +180,7 @@ class TestSuiteRunner:
                 else:
                     testRunner = XmlRunner(lines, groups, self.config,
                                            self.logger, testName,
-                                           results_reporters, config_section,
+                                           config_section,
                                            self.autoDevices)
                     test_cases = testRunner.load(testFilePath)
                     testRunner.run_test(test_cases)

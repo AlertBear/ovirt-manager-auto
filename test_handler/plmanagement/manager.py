@@ -18,7 +18,7 @@ class PluginManager(core.ComponentManager, core.Component):
     application_liteners = core.ExtensionPoint(application.IApplicationListener)
     #producers = core.ExtensionPoint(input_reader.IInputProducer)
     configurables = core.ExtensionPoint(application.IConfigurable)
-    formatters = core.ExtensionPoint(report_formatter.IResultsFormatter)
+    results_collector = core.ExtensionPoint(report_formatter.IResultsCollector)
     test_cases = core.ExtensionPoint(tests_listener.ITestCaseHandler)
     test_groups = core.ExtensionPoint(tests_listener.ITestGroupHandler)
     test_suites = core.ExtensionPoint(tests_listener.ITestSuiteHandler)

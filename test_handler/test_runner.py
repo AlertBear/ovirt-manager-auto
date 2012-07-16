@@ -32,7 +32,32 @@ REST_CONNECTION = 'REST_CONNECTION'
 
 plmanager = initPlmanager()
 
-class _TestElm(dict):
+
+class _DictLikeObject(dict):
+
+    def __init__(self, *args, **kwargs):
+        super(_DictLikeObject, self).__init__(*args, **kwargs)
+
+    def __getattribute__(self, key):
+        try:
+            return super(_DictLikeObject, self).__getattribute__(key)
+        except AttributeError as ex:
+            try:
+                return self[key]
+            except KeyError:
+                raise ex
+
+    def __setattr__(self, key, val):
+        self[key] = val
+
+
+class TestResult(_DictLikeObject):
+
+    def __init__(self):
+        super(TestResult, self).__init__()
+
+
+class _TestElm(_DictLikeObject):
     TEST_STATUS_PASSED = 'Pass'
     TEST_STATUS_FAILED = 'Fail'
     TEST_STATUS_SKIPPED = 'Skipped'
@@ -44,18 +69,6 @@ class _TestElm(dict):
         self.tcms_test_case = None
         self.description = None
         self.run = 'yes'
-
-    def __getattribute__(self, key):
-        try:
-            return super(_TestElm, self).__getattribute__(key)
-        except AttributeError as ex:
-            try:
-                return self[key]
-            except KeyError:
-                raise ex
-
-    def __setattr__(self, key, val):
-        self[key] = val
 
 
 class TestGroup(_TestElm):
@@ -98,10 +111,7 @@ class TestRunner(object):
     '''
     Implements general methods for test runs
     '''
-    def __init__(self, config, logger, input, results_reporters, config_section, auto_devices):
-        self.results_reporters = results_reporters
-        for rr in results_reporters:
-            rr.init_report(','.join(opts['test_file_name']), opts['log'])
+    def __init__(self, config, logger, input, config_section, auto_devices):
 
         self.config = config
         self.logger = logger
@@ -451,6 +461,8 @@ class TestRunner(object):
 
         if  testCase['test_name']:
             modPath, funcName = self.resolveFuncPath(testCase, opts)
+            testCase['modPath'] = modPath
+            testCase['funcName'] = funcName
             if not funcName:
                 return testGroup, runGroup, saveGroupRows
             iterNum = 1 + startIter # number of iterations for test case
@@ -518,7 +530,7 @@ class TestRunner(object):
             return
 
         testStatus = True
-        reportStats = {}
+        reportStats = TestResult()
         startTime = datetime.now(tzutc())
 
         testParametersStr = testParametersStrOrg.replace(_LOOP_INDEX, str(i))
@@ -658,9 +670,7 @@ class TestRunner(object):
         if testCase['test_positive']:
             reportStats['test_positive'] = testCase['test_positive']
 
-        if str(testCase['test_report']).lower() != "no":
-            for rr in self.results_reporters:
-                rr.add_test_report(modPath, funcName, **reportStats)
+        plmanager.results_collector.add_test_result(reportStats, testCase)
 
         severity = "info"
         if not testStatus:

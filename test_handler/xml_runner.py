@@ -16,7 +16,6 @@ class XmlRunner(TestRunner):
            * groups - groups that should be run or None for all
            * lines - lines that should be run or None for all
         '''
-
         super(XmlRunner, self).__init__(*args)
 
         self.groups = groups
