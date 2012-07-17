@@ -9,9 +9,12 @@ from utilities.machine import Machine, LINUX
 
 logger = get_logger('bugzilla')
 
+RUN = 'RUN'
 REST = 'REST_CONNECTION'
 PARAMETERS = 'PARAMETERS'
 BZ_OPTION = 'BUGZILLA'
+ENGINE = 'engine'
+
 DEFAULT_URL = 'https://bugzilla.redhat.com/xmlrpc.cgi'
 DEFAULT_USER = 'bugzilla-qe-tlv@redhat.com'
 DEFAULT_PASSWD = '2kNeViSUVO'
@@ -19,6 +22,19 @@ DEFAULT_PASSWD = '2kNeViSUVO'
 
 RHEVM_RPM = 'rhevm'
 OVIRT_RPM = 'ovirt-engine'
+
+INFO_TAGS = ('version', 'build_id', 'bug_status', 'product', 'short_desc', \
+        'component')
+
+CLI = 'cli'
+SDK = 'sdk'
+
+
+def expect_list(bug, item_name):
+    item = copy.copy(getattr(bug, item_name))
+    if not isinstance(item, (list, tuple, set)):
+        item = [item]
+    return item
 
 
 class BugzillaPluginError(Exception):
@@ -101,6 +117,7 @@ class Bugzilla(Component):
         #        conf[PARAMETERS]['vdc_root_password']).util(LINUX)
 
         self.build_id = None # where should I get it
+        self.comp = conf[RUN][ENGINE].lower()
 
 
     def is_state(self, bz_id, *states):
@@ -128,8 +145,7 @@ class Bugzilla(Component):
         else:
             bug = self.cache[bz_id]
         msg = "BUG<%s> info: %s" % (bz_id, dict((x, getattr(bug, x)) for x in \
-                ('version', 'build_id', 'bug_status', 'product', 'short_desc') \
-                if hasattr(bug, x)))
+                INFO_TAGS if hasattr(bug, x)))
         logger.info(msg)
         return bug
 
@@ -143,6 +159,47 @@ class Bugzilla(Component):
     def on_plugins_loaded(self):
         pass
 
+    def __check_version(self, bug):
+        """Skip?"""
+        if self.version is None:
+            from rhevm_api.tests_lib.general import getSystemVersion
+            self.version = Version("%d.%d" % getSystemVersion())
+        if getattr(bug, 'version', None):
+            version = expect_list(bug, 'version')
+            version = [x for x in version if x != 'unspecified']
+            for v in version:
+                v = Version(v)
+                if v in self.version:
+                    break
+            else:
+                if version:
+                    # this bz_id is related to different version,
+                    # no reason to skip it
+                    return False
+        return True
+
+    def __check_component(self, bug):
+        """Skip?"""
+        comp = getattr(bug, 'component', None)
+        if comp:
+            comp_list = expect_list(bug, 'component')
+            if comp_list:
+                comp = comp_list.pop()
+                m = re.match('^ovirt-engine-(?P<comp>.+)$', comp, re.I)
+                if m:
+                    comp = m.group('comp').lower()
+                    if comp == SDK and comp == self.comp:
+                        return True
+                    elif self.comp == CLI and comp in (SDK, CLI):
+                        return True
+                    elif comp not in (CLI, SDK):
+                        return True
+        # It is not component related to our engines
+        return False
+
+    def __is_open(self, bug):
+        return bug.bug_status not in self.const_list
+
     def _should_be_skipped(self, test):
         if not getattr(test, 'bz', False):
             return
@@ -153,33 +210,11 @@ class Bugzilla(Component):
                 logger.error("failed to get BZ<%s> info: %s", bz_id, ex)
                 continue
 
-            if self.version is None:
-                from rhevm_api.tests_lib.general import getSystemVersion
-                self.version = Version("%d.%d" % getSystemVersion())
-#                continue # probably the newest version
-            if getattr(bz, 'version', None):
-                version = copy.copy(bz.version)
-                if not isinstance(version, list):
-                    version = [version]
-                version = [x for x in version if x != 'unspecified']
-                for v in version:
-                    v = Version(v)
-                    if v in self.version:
-                        break
-                else:
-                    if version:
-                        # this bz_id is related to different version,
-                        # no reason to skip it
-                        continue
-# FIXME: consider build_id as well
-#            if bz.build_id and bz.build_id != self.build_id:
-#                # this bz_id is related to different build,
-#                # no reason to skip it
-#                continue
-            if bz.bug_status not in self.const_list:
-                # this bz_id is related to same version and build,
-                # or build is now unknown, and also it is not closed,
-                # so we can skip it
+            if self.__check_version(bz) and \
+                    self.__check_component(bz) and \
+                    self.__is_open(bz):
+                # this bz_id is related to same version component,
+                # and also it is not closed so we should skip it
                 raise SkipTest(bz)
 
     def should_be_test_case_skipped(self, test_case):
