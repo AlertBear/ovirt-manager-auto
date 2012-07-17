@@ -993,6 +993,7 @@
     <parameters>vm='restvm_basic_operations'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <bz>837003</bz>
   </test_case>
   <test_case>
     <id>cb8c5112-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1077,6 +1078,7 @@
     <parameters>host='{vds[1]}'</parameters>
     <positive>FALSE</positive>
     <run>if(1&lt;len('[vds]'.split(',')))</run>
+    <bz>756044</bz>
   </test_case>
   <test_case>
     <id>cb8c644a-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1504,6 +1506,7 @@
     <parameters>vm='restvm_migration', host='{vds[1]}'</parameters>
     <positive>TRUE</positive>
     <run>If(1&lt;len('[vds]'.split(',')))</run>
+    <bz>756044</bz>
   </test_case>
   <test_case>
     <id>cb8cc99e-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1512,6 +1515,7 @@
     <parameters>win_start_query='restvm_migration type=34', query='restvm_migration type=62', expected_count=1</parameters>
     <positive>TRUE</positive>
     <run>If(1&lt;len('[vds]'.split(',')))</run>
+    <bz>756044</bz>
   </test_case>
   <test_case>
     <id>cb8ccb7e-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1520,6 +1524,7 @@
     <parameters>win_start_query='restvm_migration type=34', query='restvm_migration type=63', expected_count=1</parameters>
     <positive>TRUE</positive>
     <run>If(1&lt;len('[vds]'.split(',')))</run>
+    <bz>756044</bz>
   </test_case>
   <test_case>
     <id>cb8ccda4-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1568,6 +1573,7 @@
     <parameters>vm='restvm_migration'</parameters>
     <positive>TRUE</positive>
     <run>if(1&lt;len('[vds]'.split(',')))</run>
+    <bz>756044</bz>
   </test_case>
   <test_case>
     <id>cb8cd902-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1977,6 +1983,7 @@
     <parameters>win_start_query='rest_testPool type=36', query='type=36', expected_count=9</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <bz>836944</bz>
   </test_case>
   <test_case>
     <id>cb8d388e-c695-11e1-bca8-f0def10e0ce8</id>
@@ -2082,6 +2089,7 @@
     <parameters>host='{vds[1]}'</parameters>
     <positive>TRUE</positive>
     <run>if(1&lt;len('[vds]'.split(',')))</run>
+    <bz>756044</bz>
   </test_case>
   <test_case>
     <id>cb8d51f2-c695-11e1-bca8-f0def10e0ce8</id>
@@ -2090,6 +2098,7 @@
     <parameters>host='{vds[1]}'</parameters>
     <positive>TRUE</positive>
     <run>if(1&lt;len('[vds]'.split(',')))</run>
+    <bz>756044</bz>
   </test_case>
   <test_case>
     <id>cb8d53dc-c695-11e1-bca8-f0def10e0ce8</id>
@@ -2098,5 +2107,6 @@
     <parameters>clusters='RestCluster1, RestCluster3, RestCluster4'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <bz>756044</bz>
   </test_case>
 </input>
