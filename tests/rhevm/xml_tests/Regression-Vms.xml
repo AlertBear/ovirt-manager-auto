@@ -1659,7 +1659,6 @@
     <parameters>template='rest_templ1', nic='nic_templ', name='nic_upd_templ'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
-    <bz>830511</bz>
   </test_case>
   <test_case>
     <id>cb8cee56-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1668,7 +1667,6 @@
     <parameters>template='rest_templ1', nic='nic_upd_templ'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
-    <bz>830511</bz>
   </test_case>
   <test_case>
     <id>cb8cf036-c695-11e1-bca8-f0def10e0ce8</id>
