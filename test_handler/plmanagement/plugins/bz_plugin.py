@@ -193,20 +193,22 @@ class Bugzilla(Component):
     def pre_test_case(self, t):
         pass
 
-    def post_test_case(self, t):
+    def __set_status(self, elm):
         try:
-            self._should_be_skipped(t)
+            self._should_be_skipped(elm)
         except SkipTest:
-            t.status = t.TEST_STATUS_SKIPPED
+            st = getattr(elm, 'status', elm.TEST_STATUS_FAILED)
+            if st == elm.TEST_STATUS_FAILED:
+                elm.status = elm.TEST_STATUS_SKIPPED
+
+    def post_test_case(self, t):
+        self.__set_status(t)
 
     def pre_test_group(self, g):
         pass
 
     def post_test_group(self, g):
-        try:
-            self._should_be_skipped(g)
-        except SkipTest:
-            g.status = g.TEST_STATUS_SKIPPED
+        self.__set_status(g)
 
     def test_group_skipped(self, g):
         pass
