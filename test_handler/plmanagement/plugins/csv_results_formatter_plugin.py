@@ -46,6 +46,7 @@ class CSVFormatter(Component):
         self.csv = None
         self.format_str = '%.3f'
         self.measurements = []
+        self.order = None
 
     @classmethod
     def add_options(cls, parser):
