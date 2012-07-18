@@ -28,6 +28,7 @@ from traceback import format_exc
 import os
 import shlex
 import shutil
+from socket import gethostname
 import string
 
 from functools import wraps
@@ -793,7 +794,7 @@ def shutdownHost(positive, ip, user, password, osType):
     except Exception as err:
         logger.error(str(err))
         return False
-    
+
 
 def convertOsNameToOsTypeElement(positive, osName):
     '''
@@ -811,7 +812,7 @@ def convertOsNameToOsTypeElement(positive, osName):
         return True, {'osTypeElement': newOsName}
     else:
         return False, {'osTypeElement': None}
-    
+
 
 def cobblerAddNewSystem(cobblerAddress, cobblerUser, cobblerPasswd, mac, osName):
     '''Create new system with specific MAC address
@@ -853,7 +854,7 @@ def cobblerSetLinuxHostName(cobblerAddress, cobblerUser, cobblerPasswd, name, ho
     except Exception as err:
         logger.error(str(err))
         return False
-    
+
 
 def getImageByOsType(positive, osType, slim = False):
     '''
@@ -877,7 +878,7 @@ def getImageByOsType(positive, osType, slim = False):
         return True, {'osBoot' : supportedOs['profile'],'floppy' : None}
     elif re.search('win', osType, re.I):
         return True, {'osBoot' : supportedOs['cdrom_image'], 'floppy' : supportedOs['floppy_image']}
-    
+
 
 def getOsParamsByOsType(positive, osType):
     '''
@@ -1220,3 +1221,13 @@ def setPersistentNetwork(host, user, password, eths):
         rc, out = vm_obj.runCmd(cmd)
         logger.debug('Final persistent configurations %s: %s' % (eth, out))
     return True
+
+
+def getLocalhostHostname():
+    """
+    Description: Gets the hostname of localhost machine
+    Author: jlibosva
+    Return: True and hostname
+    """
+    return True, { 'hostname' : gethostname() }
+
