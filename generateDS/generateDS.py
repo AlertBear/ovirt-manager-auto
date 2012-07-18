@@ -74,6 +74,9 @@ Options:
 
 Usage example:
 python generateDS.py -f  -o /tmp/data_structures.py --member-specs=dict ../conf/api.xsd
+
+to redefine default namespace to empty (for OpenStack):
+python generateDS.py -f  -o /tmp/data_structures.py --member-specs=dict -a '' api.xsd
 """
 
 
@@ -118,8 +121,9 @@ import StringIO
 import textwrap
 
 # Default logger configuration
-## logging.basicConfig(level=logging.DEBUG,
-##                     format='%(asctime)s %(levelname)s %(message)s')
+logging.basicConfig(level=logging.DEBUG,
+    format='%(asctime)s %(levelname)s %(message)s',
+    filemode='w', filename='generateDS.log')
 
 ## import warnings
 ## warnings.warn('importing IPShellEmbed', UserWarning)
@@ -1059,7 +1063,7 @@ class XschemaHandler(handler.ContentHandler):
         keys = [ x for x, v in attrs.items() if v == schemaUri ]
         if not keys:
             return None
-        keys = [ x[6:] for x in keys if x.startswith('xmlns:') ]
+        keys = [ x[6:] for x in keys if x.startswith('xmlns') ]
         if not keys:
             return None
         return keys[0]
