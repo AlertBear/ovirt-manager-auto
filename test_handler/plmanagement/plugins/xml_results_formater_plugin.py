@@ -59,7 +59,7 @@ class XMLFormatter(Component):
 
         # Write the remaining fields.
         written = set(['start_time', 'end_time', 'module_name', 'group_desc'])
-        for key in kwargs.viewkeys() - written:
+        for key in set(kwargs.keys()) - written:
             element = Element(key)
             element.text = kwargs[key]
             module.append(element)

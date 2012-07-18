@@ -100,7 +100,7 @@ class XUnit(Component):
         traits = E.traits()
         testcase.append(traits)
         remainder = set(['start_time', 'end_time', 'test_name', 'status'])
-        for k in kwargs.viewkeys() - remainder:
+        for k in set(kwargs.keys()) - remainder:
             traits.append(E.trait(name=str(k), value=str(kwargs[k])))
         traits.append(E.trait(name='real_classname',
                               value=real_classname))
