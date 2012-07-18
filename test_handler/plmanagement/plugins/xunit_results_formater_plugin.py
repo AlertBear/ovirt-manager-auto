@@ -106,6 +106,7 @@ class XUnit(Component):
                               value=real_classname))
         traits.append(E.trait(name='start_time',
                               value=start_time))
+        self.generate_report()
 
     def __update_testsuite_attrs(self):
         tsa = self.testsuite.attrib
@@ -117,6 +118,9 @@ class XUnit(Component):
 
     def generate_report(self):
         if self.tree is not None:
+            folder = os.path.dirname(self.path)
+            if not os.path.exists(folder):
+                os.makedirs(folder)
             self.tree.write(self.path, encoding="utf-8",
                             pretty_print=True, xml_declaration=True)
 
