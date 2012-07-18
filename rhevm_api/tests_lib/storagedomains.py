@@ -81,12 +81,20 @@ def _prepareStorageDomainObject(positive, **kwargs):
     if storage_type == ENUMS['storage_type_local']:
         sd.set_storage(Storage(type_=storage_type, path=kwargs.pop('path', None)))
     elif storage_type == ENUMS['storage_type_nfs']:
+        storage_format = kwargs.pop('storage_format', None)
+        if storage_format is None:
+            status, hostCompVer = getHostCompatibilityVersion(positive, host)
+            if hostCompVer['hostCompatibilityVersion'] == '2.2' or hostCompVer['hostCompatibilityVersion'] == '3.0':
+                storage_format = ENUMS['storage_format_version_v1']
+            elif hostCompVer['hostCompatibilityVersion'] == '3.1':
+                storage_format = ENUMS['storage_format_version_v3']
         sd.set_storage(Storage(type_=storage_type, path=kwargs.pop('path', None),
                             address=kwargs.pop('address', None),
                             nfs_version=kwargs.pop('nfs_version', None),
                             nfs_retrans=kwargs.pop('nfs_retrans', None),
                             nfs_timeo=kwargs.pop('nfs_timeo', None),
                             mount_options=kwargs.pop('mount_options', None)))
+        sd.set_storage_format(storage_format)
     elif storage_type == ENUMS['storage_type_iscsi']:
         lun = kwargs.pop('lun', None)
         lun_address = getIpAddressByHostName(kwargs.pop('lun_address', None))
@@ -95,7 +103,7 @@ def _prepareStorageDomainObject(positive, **kwargs):
         logical_unit = LogicalUnit(id=lun, address=lun_address,
                         target=lun_target, port=lun_port)
         sd.set_storage(Storage(type_=storage_type, logical_unit=[logical_unit]))
-        
+
         if type and type.lower() == 'data':
             if 'iscsi_storage_format' in kwargs:
                 sd.set_storage_format(kwargs.pop('iscsi_storage_format'))
@@ -113,7 +121,7 @@ def _prepareStorageDomainObject(positive, **kwargs):
     elif storage_type == ENUMS['storage_type_fcp']:
         logical_unit = LogicalUnit(id=kwargs.pop('lun', None))
         sd.set_storage(Storage(logical_unit=logical_unit))
-  
+
     return sd
 
 
@@ -157,7 +165,7 @@ def updateStorageDomain(positive, storagedomain, **kwargs):
        * type - storage domain type (DATA,EXPORT,etc.)
        * storage_type - storage type (NFS,ISCSI,FCP,LOCAL)
        * host - storage domain host
-    Return: status (True if storage domain was updated properly, 
+    Return: status (True if storage domain was updated properly,
                     False otherwise)
     '''
     storDomObj = util.find(storagedomain)
@@ -185,7 +193,7 @@ def extendStorageDomain(positive, storagedomain, host, **kwargs):
     storDomObj = util.find(storagedomain)
     # just check for host existence
     hostUtil.find(host)
-    
+
     storDomNew = _prepareStorageDomainObject(positive, **kwargs)
     sd,status = util.update(storDomObj, storDomNew, positive)
 
@@ -267,7 +275,7 @@ def activateStorageDomain(positive, datacenter, storagedomain, wait=True):
     Return: status (True if storage domain was activated properly,
                     False otherwise)
     '''
-    
+
     storDomObj = getDCStorage(datacenter, storagedomain)
 
     if positive and validateElementStatus(positive, 'storagedomain', COLLECTION,
@@ -294,7 +302,7 @@ def deactivateStorageDomain(positive, datacenter, storagedomain, wait=True):
     Return: status (True if storage domain was deactivated properly,
                     False otherwise)
     '''
-    
+
     storDomObj = getDCStorage(datacenter, storagedomain)
 
     async = 'false' if wait else 'true'
@@ -366,7 +374,7 @@ def removeStorageDomain(positive, storagedomain, host, format='false'):
     Return: status (True if storage domain was removed properly, False otherwise)
     '''
     format_bool = format.lower() == "true"
-    
+
     storDomObj = util.find(storagedomain)
     hostObj = hostUtil.find(host)
 
@@ -395,7 +403,7 @@ def importStorageDomain(positive, type, storage_type, address, path, host):
        * host - host to use
     Return: status (True if storage domain was imported properly, False otherwise)
     '''
-   
+
     sdStorage = Storage(type_=storage_type, address=address, path=path)
     h = Host(name=host)
 
@@ -428,7 +436,7 @@ def removeStorageDomains(positive, storagedomains, host, format='true'):
                 else:
                     deactivateStatus = deactivateStorageDomain(positive,
                                             dc.get_name(),sd.get_name())
-                    detachStatus = detachStorageDomain(positive, 
+                    detachStatus = detachStorageDomain(positive,
                                     dc.get_name(),sd.get_name())
                     if not detachStatus:
                         status = False
@@ -442,7 +450,7 @@ def removeStorageDomains(positive, storagedomains, host, format='true'):
     return status
 
 
-def waitForStorageDomainStatus(positive, dataCenterName, storageDomainName, 
+def waitForStorageDomainStatus(positive, dataCenterName, storageDomainName,
                                expectedStatus, timeOut=900, sleepTime=10):
     '''
      Description: Wait till the storage domain gets the desired status or till timeout
@@ -473,7 +481,7 @@ def isStorageDomainMaster(positive, dataCenterName, storageDomainName):
         storageDomainName = The name or ip address of storage domain
     return values : Boolean value (True/False ) True in case storage domain is a master,otherwise False
     '''
-    
+
     storDomObj = getDCStorage(dataCenterName, storageDomainName)
     attribute='master'
     if not hasattr(storDomObj, attribute):
@@ -488,9 +496,9 @@ def isStorageDomainMaster(positive, dataCenterName, storageDomainName):
         return isMaster
     else:
         return not isMaster
-    
 
-def createDatacenter(positive, hosts, cpuName, username, password, datacenter, 
+
+def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
                      storage_type, cluster, version, dataStorageDomains='', address='',
                      lun_address='', lun_target='', luns='', lun_port='',
                      sdNameSuffix='_data_domain'):
@@ -528,7 +536,7 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
         lunAddrArr = lun_address.split(',')
     if lun_target:
         lunTgtArr = lun_target.split(',')
-    
+
     #Add dataCenter
     try:
         dcUtil.find(datacenter)
@@ -592,7 +600,7 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
     util.logger.info('Create data storage domains')
     sdNamePref = datacenter + sdNameSuffix
     domainType = ENUMS['storage_dom_type_data']
-    
+
     for index, storagePath in enumerate(storageArr):
         sdName = sdNamePref + str(index)
         addStorageDomainLogMassageTemplate = "Add {0} storage domain parameters: positive=%s, name=%s, type=%s, storage_type=%s, host=%s {1}.." % (positive, sdName, domainType, storage_type, host)
@@ -635,7 +643,7 @@ def cleanDataCenter(positive,datacenter,formatIsoStorage='false'):
        * datacenter - data center name
        * formatIsoStorage - Determine if ISO storage domain will be formatted or not (true/false).
     '''
-    
+
     status = True
     vmList = []
     templList = []
@@ -673,7 +681,7 @@ def cleanDataCenter(positive,datacenter,formatIsoStorage='false'):
 
     util.logger.info("Find all non master storage domains")
     sdObjList = getDCStorages(datacenter)
-    
+
     nonMasterSdObjects = filter(lambda sdObj: sdObj.get_master() == 'false', sdObjList)
 
     util.logger.info("Find Master Domain")
@@ -704,7 +712,7 @@ def cleanDataCenter(positive,datacenter,formatIsoStorage='false'):
                 status = False
     else:
         util.logger.info("Error in master storage domain search")
-                
+
     util.logger.info("Remove data center")
     if not removeDataCenter(positive, datacenter):
         util.logger.error("Remove data center %s failed" % datacenter)
@@ -770,9 +778,9 @@ def execOnNonMasterDomains(positive, datacenter, operation, type):
     '''
 
     status = True
-    
+
     sdObjList = getDCStorages(datacenter)
-    
+
     # Find the Non-master & type storage domains.
     if type == 'all':
         sdObjects = filter(lambda sdObj: sdObj.get_master() == 'false', sdObjList)
@@ -809,7 +817,7 @@ def findMasterStorageDomain(positive,datacenter):
        * datacenter - datacenter name
     Return: master domain storage domain if found, empty string ' ' otherwise)
     '''
-    
+
     sdObjList = getDCStorages(datacenter)
 
     # Find the master DATA storage domain.
@@ -849,7 +857,7 @@ def getStorageDomainFile(positive, storagedomain, file):
 
     storDomObj = util.find(storagedomain)
     fileObj = fileUtil.getElemFromElemColl(storDomObj, file, 'files', 'file')
-    
+
     if fileObj:
         return positive
     else:
