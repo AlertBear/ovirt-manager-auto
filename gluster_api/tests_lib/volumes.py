@@ -25,9 +25,10 @@ import Queue
 from core_api.apis_utils import getDS
 from rhevm_api.utils.test_utils import get_api, split
 from core_api.validator import compareCollectionSize
+from core_api import validator
 from core_api.apis_exceptions import EntityNotFound, CannotRunTests
 from utilities.machine import Machine
-
+from rhevm_api.tests_lib.hosts import deactivateHost, removeHost
 
 ELEMENT = 'gluster_volume'
 COLLECTION = 'glustervolumes'
@@ -56,7 +57,6 @@ def _prepareVolume(**kwargs):
     '''
 
     vol = GlusterVolume()
-
     name = kwargs.pop('name')
     if name:
         vol.set_name(name)
@@ -295,7 +295,7 @@ def runVolAction(positive, cluster, volume, action, wait_for_status, **opts):
         return True
 
     query = "name={0} and status={1}".format(volume, wait_for_status.lower())
-    clVols = getClusterVolumes(cluster, True)
+    clVols = '%s?search={query}' % getClusterVolumes(cluster, True)
     return util.waitForQuery(query, href=clVols,
             timeout=VOL_ACTION_TIMEOUT, sleep=10)
 
@@ -407,7 +407,8 @@ def addBrickToVolume(positive, cluster, volume, bricks):
     volBricks = _prepareBricks(bricks)
 
     volBricks, status = bricksUtil.create(volBricks, positive,
-                        collection=volBricksColl, coll_elm_name='brick')
+                        collection=volBricksColl, coll_elm_name='brick',
+                        incrementBy=len(bricks))
     return status
 
 
@@ -467,17 +468,32 @@ def removeBrickFromVolume(positive, cluster, volume, bricks, force=True):
 
     Return: status (True if all bricks were removed properly, False otherwise)
     '''
-    rc = True
     bricks = _getVolumeBricks(cluster, volume, bricks)
+    vol = getClusterVolume(cluster, volume)
 
-    for brick in bricks:
-        rc = util.delete(brick, positive)
-        if force:
-            continue
-        if not rc:
-            return rc
+    index = None
+    for i, link in enumerate(vol.link):
+        if link.rel == "bricks":
+            index = i
+            break
+    else:
+        return False
 
-    return rc
+    if vol.volume_type in ('REPLICATE', 'DISTRIBUTED_REPLICATE',
+                           'DISTRIBUTED_STRIPE'):
+        delBricks = GlusterBricks()
+        delBricks.set_replica_count((vol.replica_count -1) \
+                                    if vol.volume_type == 'REPLICATE' \
+                                    else vol.replica_count)
+        delBricks.set_brick(bricks)
+        return util.delete(vol.link[index], positive, body=delBricks,
+                         element_name='bricks')
+    else:
+        for brick in bricks:
+            status = util.delete(brick, positive)
+            if not force and not status:
+                return False
+        return status
 
 
 def checkVolumeParams(positive, cluster, volume, **kwargs):
@@ -509,6 +525,25 @@ def checkVolumeParams(positive, cluster, volume, **kwargs):
         util.logger.error("checkVolumeParams: %s", str(e))
         return not positive
     return status == positive
+
+
+def removeGlusterHost(positive, host):
+    '''
+    Description: removes host
+                 (including putting it into maintenance state before)
+    Parameters:
+    * host - host name
+    Returns: True (success) / False (failure)
+    '''
+    hostObj = hostUtil.find(host)
+    if not deactivateHost(positive, host):
+        util.logger.error("Host deactivation failed: %s." % hostObj.name)
+        return False
+    if not removeHost(positive, host):
+        util.logger.error("Host removal failed: %s." % hostObj.name)
+        return False
+
+    return True
 
 
 def glusterVolumeMountDDTest(positive, volumeIP, volumeExportDir, host,
@@ -554,7 +589,9 @@ def glusterVolumeMountDDTest(positive, volumeIP, volumeExportDir, host,
                 util.logger.debug(out)
                 raise CannotRunTests("Command:\n%s\n failed to run on\
  host: %s" % (' '.join(cmd), host))
-
+            else:
+                util.logger.debug('Command: \'%s\' successfully done on'
+                                  ' host: %s' % (' '.join(cmd), host))
     finally:
         rc = machine.removeFile("%s/%s" % (mountPoint, fileName))
         if not rc:
