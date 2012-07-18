@@ -22,7 +22,6 @@ import time
 from time import strftime
 import abc
 import logging
-from contextlib import contextmanager
 from rhevm_api.data_struct.data_structures import GracePeriod, Action
 from core_api.apis_exceptions import APITimeout, APICommandError, EntityNotFound
 import test_handler.settings as settings
@@ -52,7 +51,7 @@ class APIUtil(object):
         self.opts = settings.opts
         self.element_name = element
         self.collection_name = collection
-     
+
     @abc.abstractmethod
     def create(self, entity, positive, **kwargs):
         return
@@ -92,7 +91,7 @@ class APIUtil(object):
     @property
     def logger(self):
         return logging.getLogger(self.collection_name)
-    
+
 
     def makeAction(self, async, expiry, **params):
         '''
@@ -112,7 +111,7 @@ class APIUtil(object):
         for p in params:
             setattr(action, p, params[p])
         return action
-    
+
 
     def getElemFromElemColl(self, elm, name_val, collection_name=None,
                                     elm_name=None, prop='name'):
@@ -130,7 +129,7 @@ class APIUtil(object):
 
         if not elm_name:
             elm_name = self.element_name
-            
+
         # get element's collection from element link
         objs = self.getElemFromLink(elm, collection_name, attr=elm_name)
         # get element by name
@@ -172,19 +171,6 @@ class APIUtil(object):
         except APITimeout:
             self.logger.error(TIMEOUT_MSG_TMPL)
             return False
-
-
-    @contextmanager
-    def log_response_time(self):
-        '''
-        Context manager to log request response time
-        '''
-        try:
-            st = time.clock()
-            yield
-        finally:
-            responseTime = time.clock() - st
-            self.logger.debug("Request response time: %0.3f" % (responseTime))
 
 
 class TimeoutingSampler(object):
@@ -291,7 +277,7 @@ class TestRunnerWrapper():
         opts['parallel_run'] = True if opts['in_parallel'] else False
         opts['standalone'] = kwargs.get('standalone', False)
         opts['api_xsd'] = kwargs.get('api_xsd', '')
-      
+
         self.logger = logging.getLogger(__name__)
         print "Log file is initialized at {0}".format(opts['log'])
 
