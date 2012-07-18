@@ -106,8 +106,10 @@ def _prepareStorageDomainObject(positive, **kwargs):
                     return False
                 if hostCompVer['hostCompatibilityVersion'] == '2.2':
                     sd.set_storage_format(ENUMS['storage_format_version_v1'])
+                elif hostCompVer['hostCompatibilityVersion'] == '3.0':
+                    sd.storage_format = ENUMS['storage_format_version_v2']
                 else:
-                    sd.set_storage_format(ENUMS['storage_format_version_v2'])
+                    sd.storage_format = ENUMS['storage_format_version_v3']
     elif storage_type == ENUMS['storage_type_fcp']:
         logical_unit = LogicalUnit(id=kwargs.pop('lun', None))
         sd.set_storage(Storage(logical_unit=logical_unit))
