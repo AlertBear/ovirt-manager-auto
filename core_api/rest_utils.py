@@ -385,58 +385,52 @@ class RestUtil(APIUtil):
         Return: status (True if Action test succeeded, False otherwise)
         '''
 
-        actions = entity.actions
-        if validator.compareActionLink(actions, action, self.logger):
+        def getActionHref(actions, action):
+            results = filter(lambda x: x.get_rel()==action, actions.get_link())
+            return results[0].get_href()
 
-            def getActionHref(actions, action):
-                results = filter(lambda x: x.get_rel()==action, actions.get_link())
-                return results[0].get_href()
-
-            actionHref = getActionHref(entity.actions, action)
-            actionBody = validator.dump_entity(self.makeAction(async, 10, **params),
+        actionHref = getActionHref(entity.actions, action)
+        actionBody = validator.dump_entity(self.makeAction(async, 10, **params),
                                     'action')
 
-            self.logger.debug("Action request content is --  url:%(uri)s body:%(body)s " \
-                            % {'uri': actionHref, 'body': actionBody })
+        self.logger.debug("Action request content is --  url:%(uri)s body:%(body)s " \
+                                     % {'uri': actionHref, 'body': actionBody })
 
-            with self.log_response_time():
-                ret = self.api.POST(actionHref, actionBody)
+        with self.log_response_time():
+            ret = self.api.POST(actionHref, actionBody)
             
-            self.logger.debug("Response body for action request is: %s " % ret['body'])
-            resp_action = None
-            try:
-                resp_action = parse(ret['body'])
-                self.validateResponseViaXSD(actionHref, ret)
-            except etree.XMLSyntaxError:
-                 self.logger.error("Cant parse xml response")
-                 return False
+        self.logger.debug("Response body for action request is: %s " % ret['body'])
+        resp_action = None
+        try:
+            resp_action = parse(ret['body'])
+            self.validateResponseViaXSD(actionHref, ret)
+        except etree.XMLSyntaxError:
+            self.logger.error("Cant parse xml response")
+            return False
 
-            if positive and not async:
-                if not validator.compareResponseCode(ret, positive_sync_stat, self.logger):
-                    return False
-                if resp_action and not validator.compareActionStatus(resp_action.status.state,
+        if positive and not async:
+            if not validator.compareResponseCode(ret, positive_sync_stat, self.logger):
+                return False
+            if resp_action and not validator.compareActionStatus(resp_action.status.state,
                                                                     ["complete"],
                                                                     self.logger):
-                    return False
-            elif positive and async:
-                if not validator.compareResponseCode(ret, positive_async_stat, self.logger):
-                    return False
-                if resp_action and not validator.compareActionStatus(resp_action.status.state,
+                return False
+        elif positive and async:
+            if not validator.compareResponseCode(ret, positive_async_stat, self.logger):
+                return False
+            if resp_action and not validator.compareActionStatus(resp_action.status.state,
                                                                     ["pending", "complete"],
                                                                     self.logger):
-                    return False
-            else:
-                if not validator.compareResponseCode(ret, negative_stat, self.logger):
-                    return False
-                if resp_action and not validator.compareActionStatus(resp_action.status.state,
+                return False
+        else:
+            if not validator.compareResponseCode(ret, negative_stat, self.logger):
+                return False
+            if resp_action and not validator.compareActionStatus(resp_action.status.state,
                                                                     ["failed"],
                                                                     self.logger):
-                    return False
+                return False
 
-            return True
-
-        else:
-            return False
+        return validator.compareActionLink(entity.actions, action, self.logger)
 
 
     def getElemFromLink(self, elm, link_name=None, attr=None, get_href=False):
