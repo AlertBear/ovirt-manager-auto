@@ -65,9 +65,13 @@ class XMLFormatter(Component):
             module.append(element)
 
         self.root.append(module)
+        self.generate_report()
 
     def generate_report(self):
         if self.tree is not None:
+            folder = os.path.dirname(self.path)
+            if not os.path.exists(folder):
+                os.makedirs(folder)
             self.tree.write(self.path, encoding="utf-8",
                             pretty_print=True, xml_declaration=True)
 

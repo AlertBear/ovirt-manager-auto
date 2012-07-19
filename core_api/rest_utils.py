@@ -389,7 +389,11 @@ class RestUtil(APIUtil):
             results = filter(lambda x: x.get_rel()==action, actions.get_link())
             return results[0].get_href()
 
-        actionHref = getActionHref(entity.actions, action)
+        try:
+            actionHref = getActionHref(entity.actions, action)
+        except AttributeError:
+            actionHref = "{0}/{1}".format(entity.href, action)
+           
         actionBody = validator.dump_entity(self.makeAction(async, 10, **params),
                                     'action')
 

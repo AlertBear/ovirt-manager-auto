@@ -28,6 +28,7 @@ from traceback import format_exc
 import os
 import shlex
 import shutil
+from socket import gethostname
 import string
 
 from functools import wraps
@@ -793,7 +794,7 @@ def shutdownHost(positive, ip, user, password, osType):
     except Exception as err:
         logger.error(str(err))
         return False
-    
+
 
 def convertOsNameToOsTypeElement(positive, osName):
     '''
@@ -811,7 +812,7 @@ def convertOsNameToOsTypeElement(positive, osName):
         return True, {'osTypeElement': newOsName}
     else:
         return False, {'osTypeElement': None}
-    
+
 
 def cobblerAddNewSystem(cobblerAddress, cobblerUser, cobblerPasswd, mac, osName):
     '''Create new system with specific MAC address
@@ -853,7 +854,7 @@ def cobblerSetLinuxHostName(cobblerAddress, cobblerUser, cobblerPasswd, name, ho
     except Exception as err:
         logger.error(str(err))
         return False
-    
+
 
 def getImageByOsType(positive, osType, slim = False):
     '''
@@ -877,7 +878,7 @@ def getImageByOsType(positive, osType, slim = False):
         return True, {'osBoot' : supportedOs['profile'],'floppy' : None}
     elif re.search('win', osType, re.I):
         return True, {'osBoot' : supportedOs['cdrom_image'], 'floppy' : supportedOs['floppy_image']}
-    
+
 
 def getOsParamsByOsType(positive, osType):
     '''
@@ -1180,4 +1181,53 @@ def getImageAndVolumeID(vds, vds_username, vds_password, spool_id, domain_id,
         return (None, None)
 
     return tuple(image_and_volume)
+
+
+def setPersistentNetwork(host, user, password, eths):
+    '''
+    Ensure that Network configurations are persistent
+    Author: jvorcak, atal
+    Parameters:
+       * host - remote machine ip address or fqdn
+       * user - username for accessing vm
+       * password - password for accessing vm
+       * eths - names of the ifcfg-eth? files separated by semicoln to be
+                configured e.g. 'ifcfg-eth0;ifcfg-eth1'
+    Return: (True if command executed successfuly, False otherwise)
+    '''
+    vm_obj = Machine(host, user, password).util('linux')
+    if not vm_obj.isAlive():
+        return False
+
+    cmd = ["cat", "/dev/null", ">",
+            "/etc/udev/rules.d/70-persistent-net.rules"]
+    rc, out = vm_obj.runCmd(cmd)
+    if not rc:
+        logger.error("Failed to erase persisten network rule. message: %s" % out)
+        return False
+    for eth in eths.split(';'):
+        cmd = ["sed", "/HWADDR/d",
+            "/etc/sysconfig/network-scripts/%s" % eth, ">", "tmp", ";",
+            "mv", "tmp", "/etc/sysconfig/network-scripts/%s" % eth, "-f"]
+
+        rc, out = vm_obj.runCmd(cmd)
+        if not rc:
+            logger.error("Failed to remove HWADDR from %s" % eth)
+            return False
+
+        # adding interface configurations to log in order to trac the
+        # persistent process
+        cmd = ['cat', "/etc/sysconfig/network-scripts/%s" % eth]
+        rc, out = vm_obj.runCmd(cmd)
+        logger.debug('Final persistent configurations %s: %s' % (eth, out))
+    return True
+
+
+def getLocalhostHostname():
+    """
+    Description: Gets the hostname of localhost machine
+    Author: jlibosva
+    Return: True and hostname
+    """
+    return True, { 'hostname' : gethostname() }
 

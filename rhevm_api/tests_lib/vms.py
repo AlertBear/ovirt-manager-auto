@@ -737,13 +737,17 @@ def _prepareNicObj(**kwargs):
         nic_obj.set_mac(data_st.MAC(address=kwargs.get('mac_address')))
 
     if 'network' in kwargs:
-        cluster = kwargs.get('cluster')
-        cl_obj = CLUSTER_API.find(cluster, 'id')
-        cl_net = getClusterNetwork(cl_obj.name, kwargs.get('network'))
-        nic_obj.set_network(cl_net)
+        nic_obj.set_network(data_st.Network(name=kwargs.get('network')))
 
     if 'active' in kwargs:
         nic_obj.set_active(kwargs.get('active'))
+
+    if 'port_mirroring' in kwargs:
+        networks_obj = data_st.Networks()
+        networks = kwargs.get('port_mirroring').split(',')
+        for network in networks:
+            networks_obj.add_network(data_st.Network(name=network))
+        nic_obj.set_port_mirroring(data_st.PortMirroring(networks=networks_obj))
 
     return nic_obj
 
@@ -772,13 +776,13 @@ def addNic(positive, vm, **kwargs):
                      (for 2.2 also rtl8139_virtio)
        * mac_address - nic mac address
        * active - Boolean attribute which present nic hostplug state
+       * port_mirroring - string of networks separated by comma and include
+         which we'd like to listen to
     Return: status (True if nic was added properly, False otherwise)
     '''
 
     vm_obj = VM_API.find(vm)
     expectedStatus = vm_obj.get_status().get_state()
-
-    kwargs.update([('cluster', vm_obj.cluster.id)])
 
     nic_obj = _prepareNicObj(**kwargs)
     nics_coll = getVmNics(vm)
@@ -842,11 +846,10 @@ def updateNic(positive, vm, nic, **kwargs):
                      (for 2.2 also rtl8139_virio)
        * mac_address - nic mac address
        * active - Boolean attribute which present nic hostplug state
+       * port_mirroring - string of networks separated by comma and include
+         which we'd like to listen to
     Return: status (True if nic was updated properly, False otherwise)
     '''
-
-    vm_obj = VM_API.find(vm)
-    kwargs.update([('cluster', vm_obj.cluster.id)])
 
     nic_new = _prepareNicObj(**kwargs)
     nic_obj = getVmNic(vm, nic)

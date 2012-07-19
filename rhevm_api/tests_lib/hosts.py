@@ -725,7 +725,7 @@ def _prepareHostNicObject(**kwargs):
     Author: atal
     return: Host Nic data structure object
     '''
-    # TODO: check why can't only create new hostnic incase of update
+
     add = True
     if 'nic' in kwargs:
         nic_obj = kwargs.get('nic')
@@ -733,15 +733,11 @@ def _prepareHostNicObject(**kwargs):
     else:
         nic_obj = data_st.HostNIC()
 
-    host = kwargs.pop('host')
-
     if 'name' in kwargs:
         nic_obj.set_name(kwargs.get('name'))
 
     if 'network' in kwargs:
-        host_obj = HOST_API.find(host)
-        cluster = CL_API.find(host_obj.cluster.id, 'id').get_name()
-        nic_obj.set_network(getClusterNetwork(cluster, kwargs.get('network')))
+        nic_obj.set_network(data_st.Network(name=kwargs.get('network')))
 
     if 'boot_protocol'in kwargs:
         nic_obj.set_boot_protocol(kwargs.get('boot_protocol'))
@@ -763,13 +759,12 @@ def _prepareHostNicObject(**kwargs):
     mode = kwargs.get('mode')
     miimon = kwargs.get('miimon')
 
-    # TODO: need to test bond
     if (slave_list or mode or miimon) is not None:
         bond_obj = data_st.Bonding()
         if slave_list is not None:
             slaves = data_st.Slaves()
             for nic in slave_list.split(','):
-                slaves.add_host_nic(getHostNic(host, nic.strip()))
+                slaves.add_host_nic(data_st.HostNIC(name=nic.strip()))
 
             bond_obj.set_slaves(slaves)
 
@@ -857,9 +852,7 @@ def attachHostNic(positive, host, nic, network):
     host_nic = getHostNic(host, nic)
     cl_net = getClusterNetwork(cluster, network)
 
-    status = HOST_API.syncAction(host_nic, "attach", positive, network=cl_net)
-
-    return status
+    return HOST_API.syncAction(host_nic, "attach", positive, network=cl_net)
 
 
 def attachMultiNicsToHost(positive, host, nic, networks):
@@ -898,7 +891,7 @@ def updateHostNic(positive, host, nic, **kwargs):
     '''
 
     nic_obj = getHostNic(host, nic)
-    kwargs.update([('host', host), ('nic', nic_obj)])
+    kwargs.update([('nic', nic_obj)])
     nic_new = _prepareHostNicObject(**kwargs)
     nic, status = HOST_NICS_API.update(nic_obj, nic_new, positive)
 
@@ -940,7 +933,6 @@ def detachMultiVlansFromBond(positive, host, nic, networks):
     return True
 
 
-# FIXME: fix for new fraemwork
 def addBond(positive, host, name, **kwargs):
     '''
     Description: add bond to a host
@@ -959,7 +951,7 @@ def addBond(positive, host, name, **kwargs):
          supported modes are: 1,2,4,5. using underscore due to XML syntax limitations
     Return: status (True if bond was attached properly to host, False otherwise)
     '''
-    kwargs.update([('host', host), ('name', name)])
+    kwargs.update([('name', name)])
 
     nic_obj = _prepareHostNicObject(**kwargs)
     host_nics = getHostNics(host)
@@ -968,109 +960,73 @@ def addBond(positive, host, name, **kwargs):
     return status
 
 
-#FIXME: fix for new fraemwork
-def genSNNic(nic_name, network_name, by_id=False, boot_proto='none', **ip):
+def genSNNic(nic, **kwargs):
     '''
     generate a host_nic element of types regular or vlaned
     Author: atal
     params:
-        * nic_name = name of the physical nic
-        * by_id = attach <network> by ID or NAME
-        * boot_proto = boot protocol. dhcp, static or none
-        * ip = a dictionary for configuring ip.
-          {address: '', netmask: '', gateway: ''}
+        * host - host where nic should be updated
+        * nic - nic name that should be updated
+        * network - network name
+        * boot_protocol - static, none or dhcp
+        * address - ip address incase of static protocol
+        * netmask - netmask incase of static protocol
+        * gateway - gateway address incase of static protocol
     return True, dict with host nic element.
     '''
-    nic_obj = fmt.HostNIC()
-    nic_obj.name = nic_name
+    kwargs.update([('name', nic)])
+    nic_obj = _prepareHostNicObject(**kwargs)
 
-    nic_obj.network = fmt.Network()
-    # TODO: handle by_id condition
-    nic_obj.network.name = network_name
-
-    nic_obj.boot_protocol = boot_proto
-    if boot_proto.lower() == 'static':
-        nic_obj.ip = fmt.IP()
-        for k, v in ip.iteritems():
-            setattr(nic_obj.ip, k, v)
-
-    return True, {'host_nic': nic_obj.dump()}
+    return True, {'host_nic': nic_obj}
 
 
-# FIXME: fix for new fraemwork
-def genSNBond(nic_name, network_name, by_id=False, slaves=None, **options):
+def genSNBond(name, **kwargs):
     '''
     generate a host_nic element of type bond.
     Author: atal
     params:
-        * nic_name - name of the physical nic
-        * network_name - name of the network
-        * by_id - attach <network> by ID or NAME
-        * slaves - a list of slaves. ['eth1', 'eth2'].
-        * options - dictionary of Bonding options. mode=1, miimon=150 etc'
+        * name - bond name
+        * network - network name
+        * boot_protocol - static, none or dhcp
+        * address - ip address incase of static protocol
+        * netmask - netmask incase of static protocol
+        * gateway - gateway address incase of static protocol
+        * slaves - bonding slaves list as a string with commas
+        * mode - bonding mode (int), added as option
+        * miimon - another int for bonding options
+        * check_connectivity - boolean and working only for management int.
+         supported modes are: 1,2,4,5. using underscore due to XML syntax limitations
     return True, dict with host nic element.
     '''
-    slaves = slaves or []
-    nic_obj = fmt.HostNIC()
-    nic_obj.name = nic_name
+    kwargs.update([('name', name)])
+    nic_obj = _prepareHostNicObject(**kwargs)
 
-    nic_obj.network = fmt.Network()
-    # TODO: handle by_id condition
-    nic_obj.network.name = network_name
-
-    nic_obj.bonding = fmt.BondNic()
-    nic_obj.bonding.slaves = ''
-    for slave in slaves:
-        sl = fmt.HostNIC()
-        # TODO: handle by_id
-        sl.name = slave
-        nic_obj.bonding.slaves += sl.dump()
-
-    nic_obj.bonding.options = ''
-    for name, value in options.iteritems():
-        nic_obj.bonding.options += '<option name="%s" value="%s" />' % (name, value)
-
-    return True, {'host_nic': nic_obj.dump()}
+    return True, {'host_nic': nic_obj}
 
 
-# FIXME: fix for new fraemwork
-def sendSNRequest(positive, host_name, host_nics=None, auto_nics=None, **options):
+def sendSNRequest(positive, host, nics=None, auto_nics=None, **kwargs):
     '''
     send a POST request for <action> after attaching all host_nic
     Author: atal
     params:
-        * host_name - a name of the host
-        * host_nics - list of 'host_nic' values returned by genSN... functions.
+        * host - a name of the host
+        * nics - list of 'host_nic' values returned by genSN... functions.
         * auto_nics - a list of nics to collect automatically from the element.
-        * options - a dictionary of supported options:
-            checkConnectivity=boolean, connectivityTimeout=int, force=boolean
+        * kwargs - a dictionary of supported options:
+            check_connectivity=boolean, connectivity_timeout=int, force=boolean
     '''
-    host_nics = host_nics or []
+    nics = nics or []
     auto_nics = auto_nics or []
 
-    host_obj = HOST_API.find(host_name)
+    nics_obj = data_st.HostNics()
 
-    # FIXME: check if this is correct for new framework
-    root = etree.Element('action')
-    nics = etree.SubElement(root, 'host_nics')
+    for nic in nics:
+        nics_obj.add_host_nic(nic)
 
-    for auto_nic in auto_nics:
-        try:
-            host_nic = getHostNic(host_name, auto_nic)
-        except EntityNotFound:
-            continue
-        host_nics.append(host_nic.dump())
+    for nic in auto_nics:
+        nics_obj.add_host_nic(getHostNic(host, nic))
 
-    for nic in host_nics:
-        nic_obj = etree.XML(nic)
-        nics.append(nic_obj)
-
-    for key, val in options.iteritems():
-        etree.SubElement(root, key).text = val
-
-    # FIXME: add this function to core. support collection action
-    return util.syncCollectionAction(host_obj.link['nics'].href + '/setupnetworks',
-                                     etree.tostring(root), positive)
+    return HOST_NICS_API.syncAction(nics_obj, "setupnetworks", positive, **kwargs)
 
 
 def searchForHost(positive, query_key, query_val, key_name=None, **kwargs):

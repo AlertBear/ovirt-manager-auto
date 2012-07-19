@@ -28,13 +28,22 @@ INFO_TAGS = ('version', 'build_id', 'bug_status', 'product', 'short_desc', \
 
 CLI = 'cli'
 SDK = 'sdk'
+REST = 'rest'
 
 
-def expect_list(bug, item_name):
-    item = copy.copy(getattr(bug, item_name))
+def expect_list(bug, item_name, default=None):
+    item = copy.copy(getattr(bug, item_name, default))
     if not isinstance(item, (list, tuple, set)):
         item = [item]
     return item
+
+
+def transform_ovirt_comp(comp):
+    m = re.match('^ovirt-engine-(?P<comp>.+)$', comp, re.I)
+    m = m.group('comp').lower()
+    if m == 'restapi':
+        m = REST
+    return m
 
 
 class BugzillaPluginError(Exception):
@@ -119,7 +128,6 @@ class Bugzilla(Component):
         self.build_id = None # where should I get it
         self.comp = conf[RUN][ENGINE].lower()
 
-
     def is_state(self, bz_id, *states):
         """
         Returns True/False accordingly
@@ -178,24 +186,25 @@ class Bugzilla(Component):
                     return False
         return True
 
-    def __check_component(self, bug):
-        """Skip?"""
-        comp = getattr(bug, 'component', None)
-        if comp:
-            comp_list = expect_list(bug, 'component')
-            if comp_list:
-                comp = comp_list.pop()
-                m = re.match('^ovirt-engine-(?P<comp>.+)$', comp, re.I)
-                if m:
-                    comp = m.group('comp').lower()
-                    if comp == SDK and comp == self.comp:
-                        return True
-                    elif self.comp == CLI and comp in (SDK, CLI):
-                        return True
-                    elif comp not in (CLI, SDK):
-                        return True
-        # It is not component related to our engines
-        return False
+    def __deal_with_comp_and_version(self, bug):
+        comp = expect_list(bug, 'component', '')
+        if comp and comp[0]:
+            comp = comp.pop()
+        else:
+            comp = ''
+        if 'ovirt-engine' in comp:
+            comp = transform_ovirt_comp(comp)
+            if comp in (SDK, CLI) and self.comp == REST:
+                return False
+            if comp == SDK and self.comp in (SDK, CLI):
+                return self.__check_version(bug)
+            if comp == CLI and self.comp == comp:
+                return self.__check_version(bug)
+            if comp == CLI and self.comp in (SDK, REST):
+                return False
+            return self.__check_version(bug)
+        # different component, why not to skip it
+        return True
 
     def __is_open(self, bug):
         return bug.bug_status not in self.const_list
@@ -210,11 +219,7 @@ class Bugzilla(Component):
                 logger.error("failed to get BZ<%s> info: %s", bz_id, ex)
                 continue
 
-            if self.__check_version(bz) and \
-                    self.__check_component(bz) and \
-                    self.__is_open(bz):
-                # this bz_id is related to same version component,
-                # and also it is not closed so we should skip it
+            if self.__is_open(bz) and self.__deal_with_comp_and_version(bz):
                 raise SkipTest(bz)
 
     def should_be_test_case_skipped(self, test_case):
