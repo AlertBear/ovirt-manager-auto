@@ -1018,13 +1018,13 @@ def sendSNRequest(positive, host, nics=None, auto_nics=None, **kwargs):
     nics = nics or []
     auto_nics = auto_nics or []
 
-    nics_obj = data_st.Nics()
+    nics_obj = data_st.HostNics()
 
     for nic in nics:
-        nics_obj.add_nic(nic)
+        nics_obj.add_host_nic(nic)
 
     for nic in auto_nics:
-        nics_obj.add_nic(getHostNic(host, nic))
+        nics_obj.add_host_nic(getHostNic(host, nic))
 
     return HOST_NICS_API.syncAction(nics_obj, "setupnetworks", positive, **kwargs)
 
