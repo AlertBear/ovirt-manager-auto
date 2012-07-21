@@ -27,7 +27,7 @@ class XMLFormatter(Component):
 
     @classmethod
     def add_options(cls, parser):
-        out = os.path.expanduser("~/results/%s" % cls.default_file_name)
+        out = os.path.abspath("results/%s" % cls.default_file_name)
         parser.add_argument('--rf-xml', '--res', action="store", dest='rf_xml', \
                 help=cls.__doc__, const=out, default=out, nargs='?')
 
