@@ -1223,11 +1223,16 @@ def setPersistentNetwork(host, user, password, eths):
     return True
 
 
-def getLocalhostHostname():
+def getSetupHostname(vdc):
     """
-    Description: Gets the hostname of localhost machine
+    Description: Gets the hostname of setup based on vdc, if vdc is not
+                 running on localhost then vdc parameter is returned
     Author: jlibosva
-    Return: True and hostname
+    Parameters: vdc - vdc hostname or IP
+    Return: True and hostname of setup
     """
-    return True, { 'hostname' : gethostname() }
+    is_local = vdc == "localhost" or vdc == "127.0.0.1"
+    hostname = gethostname() if is_local else vdc
+
+    return True, { 'hostname' : hostname }
 
