@@ -134,6 +134,7 @@
 	<parameters>cluster='{cluster_name}', volume='{volume_name}', bricks={game_bricks}</parameters>
 	<positive>TRUE</positive>
 	<run>YES</run>
+	<bz>812214</bz>
 	<report>YES</report>
 	<fetch_output/>
 </test_case>
