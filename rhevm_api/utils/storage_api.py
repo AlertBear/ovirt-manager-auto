@@ -21,7 +21,7 @@ def setupIptables(source, userName, password, dest, command, chain, \
                                  protocol, persistently, *ports)
 
 
-def blockOutgoingConnection(source, userName, password, dest):
+def blockOutgoingConnection(source, userName, password, dest, port=None):
     '''
     Description: Blocks outgoing connection to an address
     Parameters:
@@ -29,13 +29,18 @@ def blockOutgoingConnection(source, userName, password, dest):
       * userName - username on the source machine
       * password - password on the source machine
       * dest - ip or fqdn of the machine to which to prevent traffic
+      * port - outgoing port we wanna block
     Return: True if commands succeeds, false otherwise.
     '''
-    return setupIptables(source, userName, password, dest, \
-                         '--append', 'OUTPUT', 'DROP')
+    if port is None:
+         return setupIptables(source, userName, password, dest, '--append',
+                       'OUTPUT', 'DROP')
+    else:
+         return setupIptables(source, userName, password, dest, '--append',
+                              'OUTPUT', 'DROP', 'all', False, port)
 
 
-def unblockOutgoingConnection(source, userName, password, dest):
+def unblockOutgoingConnection(source, userName, password, dest, port=None):
     '''
     Description: Unblocks outgoing connection to an address
     Parameters:
@@ -43,11 +48,15 @@ def unblockOutgoingConnection(source, userName, password, dest):
       * userName - username on the source machine
       * password - password on the source machine
       * dest - ip or fqdn of the machine to which to remove traffic block
+      * port - outgoing port we wanna unblock
     Return: True if commands succeeds, false otherwise.
     '''
-    return setupIptables(source, userName, password, dest, \
-                         '--delete', 'OUTPUT', 'DROP')
-
+    if port is None:
+        return setupIptables(source, userName, password, dest, '--delete',
+                             'OUTPUT', 'DROP')
+    else:
+        return setupIptables(source, userName, password, dest,'--delete',
+                             'OUTPUT', 'DROP', 'all', False, port)
 
 def blockIncomingConnection(source, userName, password, dest):
     """Warpper for blocking incoming connection from any server to host."""
@@ -165,7 +174,7 @@ def sendTargets(initiator, user, password, portal, targetName, login=True):
          * portal - portal number
          * targetName - SCSI target name
          * login - login to target (True by default)
-        Return: True iff send targets discovery successful, 
+        Return: True if send targets discovery successful,
                 False otherwise
     """
     hostObj = hostUtil.Machine(initiator, user, password).util('linux')
@@ -184,7 +193,7 @@ def logoutTargets(initiator, user, password):
          * initiator - IP address or name of SCSI initiator host
          * user - user name
          * password - user password
-        Return: True iff logout targets successful, 
+        Return: True if logout targets successful,
                 False otherwise
     """
     hostObj = hostUtil.Machine(initiator, user, password).util('linux')
@@ -256,7 +265,7 @@ def generateSDMetadataCorruption(vds_name, username, passwd, sd_name, \
                                  md_tag_bad_value=st_util.CORRUPTION_STRING, \
                                  bs=st_util.BS, count=st_util.COUNT):
     """
-        Generate metadata corruption on storage domain. 
+        Generate metadata corruption on storage domain.
         Author: mbenenso
         Parameters:
          * vds_name - VDS name
@@ -269,7 +278,7 @@ def generateSDMetadataCorruption(vds_name, username, passwd, sd_name, \
          * bs - block size (1024 by default)
          * count - number of blocks (1 by default)
         Return: True and dictionary with storage domain object with all \
-                relevant info on success, raise exception otherwise 
+                relevant info on success, raise exception otherwise
         Throws: ValueError, st_util.SDMetadataError
     """
     sd_obj = None
@@ -300,11 +309,11 @@ def generateSDMetadataCorruption(vds_name, username, passwd, sd_name, \
 
 def restoreSDOriginalMetadata(sd_obj):
     """
-        Restore the original metadata of storage domain. 
+        Restore the original metadata of storage domain.
         Author: mbenenso
         Parameters:
-         * sd_obj - an instance of a sub-class of st_util.SD class  
-        Return: True iff the metadata successfully restored,
+         * sd_obj - an instance of a sub-class of st_util.SD class
+        Return: True if the metadata successfully restored,
                 False otherwise
     """
     return sd_obj.restoreMetadata()
@@ -326,7 +335,7 @@ def getVolumeInfo(vds_name, user, passwd, dc_uuid, sd_uuid, image_uuid, volume_u
     """
     vds_obj = VdsLinuxMachine(vds_name, user, passwd).vdsObj
     args = [sd_uuid, dc_uuid, image_uuid, volume_uuid]
-    status, vol_info = vds_obj.getVolumeInfo(args)   # status 0 implies True 
+    status, vol_info = vds_obj.getVolumeInfo(args)   # status 0 implies True
 
     if not status:
         return vol_info
@@ -381,7 +390,7 @@ def spmStart(positive, vds_name, user, passwd, sp_uuid, prev_id=-1, prev_lver=-1
          * scsi_fencing - scsi fencing (False by default)
          * max_host_id - max host id (0 by default)
          * version - version (2 by default)
-        Return: True iff SPM started successfully on host,
+        Return: True if SPM started successfully on host,
                 False otherwise
     """
     vds_obj = VdsLinuxMachine(vds_name, user, passwd).vdsObj
