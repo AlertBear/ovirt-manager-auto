@@ -675,6 +675,8 @@ def removeDisk(positive, vm, disk, wait=True):
         logger.debug('Waiting for disk to be removed.')
         while diskExist:
             disks = _getVmDisks(vm)
+            if disks is None:
+                return False
             disks = filter(lambda x: x.name.lower() == disk.lower(), disks)
             diskExist = bool(disks)
             if VM_IMAGE_OPT_TIMEOUT < time.time() - startTime:
