@@ -393,11 +393,9 @@ def waitForHostsStates(positive, names, states='up'):
         HOST_API.find(host)
         query_host = "name={0} and status={1}".format(host, states)
 
-        try:
-            HOST_API.waitForQuery(query_host, timeout=1000)
-        except APITimeout as e:
-            HOST_API.logger.error(e)
+        if not HOST_API.waitForQuery(query_host, timeout=1000):
             return False
+
     return True
 
 
