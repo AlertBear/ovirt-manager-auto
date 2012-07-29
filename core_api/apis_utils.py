@@ -26,8 +26,8 @@ from rhevm_api.data_struct.data_structures import GracePeriod, Action
 from core_api.apis_exceptions import APITimeout, APICommandError, EntityNotFound
 import test_handler.settings as settings
 
-
-XSD_PATH = settings.opts.get('api_xsd', 'conf/api.xsd')
+# TODO: move default values to conf spec
+XSD_PATH = settings.opts.get('api_xsd', 'rhevm_api/data_struct/api.xsd')
 DS_PATH = settings.opts.get('data_struct_mod', 'rhevm_api.data_struct.data_structures')
 __import__(DS_PATH)
 data_st = sys.modules[DS_PATH]

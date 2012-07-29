@@ -992,7 +992,6 @@ def restoreSnapshot(positive, vm, description):
     expectedStatus = vmObj.status.state
 
     status = SNAPSHOT_API.syncAction(snapshot, "restore", positive)
-    time.sleep(60)
     if status and positive:
         return VM_API.waitForElemStatus(vmObj, expectedStatus, VM_ACTION_TIMEOUT)
 
