@@ -99,7 +99,7 @@ class CSVFormatter(Component):
                 if self.measurements:
                     if len(self.measurements) != 1:
                         logger.warn("Got more measure_time records, "\
-                                "then expected: %", self.measurements)
+                                "then expected: %s", self.measurements)
                     measure = self.format_str % self.measurements.pop()
                 items.append(measure)
             elif i == I_TEST_STATUS:
