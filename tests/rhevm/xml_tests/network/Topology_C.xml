@@ -1,0 +1,1169 @@
+<input>
+<test_case>
+   <test_name>START_GROUP: Topology_C_30</test_name>
+   <test_action/>
+   <parameters>n/a1</parameters>
+   <positive>NONE</positive>
+   <run>if('topology-c-30' in '[run_topologies]')</run>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description>validate entire supported bonding modes 1 2 4 5</test_description>
+</test_case>
+<test_case>
+   <test_name>Convert OS name to OS type element </test_name>
+   <test_action>convertOsNameToOsTypeElement</test_action>
+   <parameters>osName='{vm_os}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output>osTypeElement-&gt;osTypeElement</fetch_output>
+   <report>NO</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Get boot OS</test_name>
+   <test_action>getImageByOsType</test_action>
+   <parameters>osType=%osTypeElement%,slim=True</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output>osBoot-&gt;osBoot,floppy->floppy</fetch_output>
+   <report>NO</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Create sw2 network</test_name>
+   <test_action>addNetwork</test_action>
+   <parameters>name='{networks[1]}',data_center='{datacenter}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Attach sw2 to Cluster</test_name>
+   <test_action>addNetworkToCluster</test_action>
+   <parameters>network='{networks[1]}', cluster='{cluster}',required='true'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Add sw2 to Hosts as bond0 with eth2 and eth3 and mode=1</test_name>
+   <test_action>addBond</test_action>
+   <parameters>host='{vds}', name='{bond[0]}',slaves='[bond_nics]',network='{networks[1]}',mode='1'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Create VMs from template</test_name>
+   <test_action>addVm</test_action>
+   <parameters>name='{vm_name}',cluster='{cluster}',template='{template_name}',display_type='e{display_type_vnc}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Change VMs network from management to sw2</test_name>
+   <test_action>updateNic</test_action>
+   <parameters>vm='{vm_name}',nic='nic1',network='{networks[1]}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Start VMs</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='{vm_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check Linux VMs connectivity through bond mode 1</test_name>
+   <test_action>checkVMConnectivity</test_action>
+   <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=60,interval=8,user='{vm_linux_user}',password='{vm_linux_password}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('RHEL',%osTypeElement%));loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check Windows VMs connectivity through bond mode 1</test_name>
+   <test_action>checkVMConnectivity</test_action>
+   <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=60,interval=5,user='{vm_win_user}',password='{vm_win_password}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('Win',%osTypeElement%));loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Shutdown VMs</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='{vm_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Move Host1 to Maintenance</test_name>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Wait for SPM</test_name>
+   <test_action>waitForSPM</test_action>
+   <parameters>datacenter='{datacenter}',timeout=900,sleep=5</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Move Host2 to Maintenance</test_name>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[1]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Edit Bond interface to mode 2</test_name>
+   <test_action>updateHostNic</test_action>
+   <parameters>host='{vds}',nic='{bond[0]}',mode='2'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Save Network Configuration</test_name>
+   <test_action>commitNetConfig</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Move hosts up</test_name>
+   <test_action>activateHost</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Wait for SPM</test_name>
+   <test_action>waitForSPM</test_action>
+   <parameters>datacenter='{datacenter}',timeout=900,sleep=5</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Start VMs</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='{vm_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check Linux VMs connectivity through bond mode 2</test_name>
+   <test_action>checkVMConnectivity</test_action>
+   <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=60,interval=8,user='{vm_linux_user}',password='{vm_linux_password}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('RHEL',%osTypeElement%));loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check Windows VMs connectivity through bond mode 2</test_name>
+   <test_action>checkVMConnectivity</test_action>
+   <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=60,interval=5,user='{vm_win_user}',password='{vm_win_password}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('Win',%osTypeElement%));loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Shutdown VMs</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='{vm_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Move Host1 to Maintenance</test_name>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Wait for SPM</test_name>
+   <test_action>waitForSPM</test_action>
+   <parameters>datacenter='{datacenter}',timeout=900,sleep=5</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Move Host2 to Maintenance</test_name>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[1]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Edit Bond interface to mode 4</test_name>
+   <test_action>updateHostNic</test_action>
+   <parameters>host='{vds}',nic='{bond[0]}',mode='4'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Save Network Configuration</test_name>
+   <test_action>commitNetConfig</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Move host up</test_name>
+   <test_action>activateHost</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Wait for SPM</test_name>
+   <test_action>waitForSPM</test_action>
+   <parameters>datacenter='{datacenter}',timeout=900,sleep=5</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Start VMs</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='{vm_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check Linux VMs connectivity through bond mode 4</test_name>
+   <test_action>checkVMConnectivity</test_action>
+   <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=60,interval=8,user='{vm_linux_user}',password='{vm_linux_password}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('RHEL',%osTypeElement%));loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check Windows VMs connectivity through bond mode 4</test_name>
+   <test_action>checkVMConnectivity</test_action>
+   <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=60,interval=5,user='{vm_win_user}',password='{vm_win_password}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('Win',%osTypeElement%));loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Shutdown VMs</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='{vm_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Move Host1 to Maintenance</test_name>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Wait for SPM</test_name>
+   <test_action>waitForSPM</test_action>
+   <parameters>datacenter='{datacenter}',timeout=900,sleep=5</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Move Host2 to Maintenance</test_name>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[1]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Edit Bond interface to mode 5</test_name>
+   <test_action>updateHostNic</test_action>
+   <parameters>host='{vds}',nic='{bond[0]}',mode='5'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Save Network Configuration</test_name>
+   <test_action>commitNetConfig</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Move hosts up</test_name>
+   <test_action>activateHost</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Wait for SPM</test_name>
+   <test_action>waitForSPM</test_action>
+   <parameters>datacenter='{datacenter}',timeout=900,sleep=5</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Start VMs</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='{vm_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check Linux VMs connectivity through bond mode 5</test_name>
+   <test_action>checkVMConnectivity</test_action>
+   <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=60,interval=8,user='{vm_linux_user}',password='{vm_linux_password}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('RHEL',%osTypeElement%));loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check Windows VMs connectivity through bond mode 5</test_name>
+   <test_action>checkVMConnectivity</test_action>
+   <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=60,interval=5,user='{vm_win_user}',password='{vm_win_password}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('Win',%osTypeElement%));loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Shutdown VMs</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='{vm_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Remove VMs</test_name>
+   <test_action>removeVm</test_action>
+   <parameters>vm='{vm_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Detach sw2 from cluster</test_name>
+   <test_action>removeNetworkFromCluster</test_action>
+   <parameters>network='{networks[1]}', cluster='{cluster}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Remove Bond sw2 interface from hosts</test_name>
+   <test_action>detachHostNic</test_action>
+   <parameters>host='{vds}', nic='{bond[0]}', network='{networks[1]}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Save Network Configuration</test_name>
+   <test_action>commitNetConfig</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Remove sw2 from DataCenter</test_name>
+   <test_action>removeNetwork</test_action>
+   <parameters>network='{networks[1]}',data_center='{datacenter}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: Topology_C_30</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<!-- ======================================================================================================== -->
+<test_case>
+   <test_name>START_GROUP: Topology_C_31</test_name>
+   <test_action/>
+   <parameters>n/a1</parameters>
+   <positive>NONE</positive>
+   <run>if('topology-c-31' in '[run_topologies]')</run>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description>SetupNetworks: validate entire supported bonding modes 1 2 4 5</test_description>
+</test_case>
+<test_case>
+   <test_name>Convert OS name to OS type element </test_name>
+   <test_action>convertOsNameToOsTypeElement</test_action>
+   <parameters>osName='{vm_os}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output>osTypeElement-&gt;osTypeElement</fetch_output>
+   <report>NO</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Get boot OS</test_name>
+   <test_action>getImageByOsType</test_action>
+   <parameters>osType=%osTypeElement%,slim=True</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output>osBoot-&gt;osBoot,floppy->floppy</fetch_output>
+   <report>NO</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Create sw2 network</test_name>
+   <test_action>addNetwork</test_action>
+   <parameters>name='{networks[1]}',data_center='{datacenter}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Attach sw2 to Cluster</test_name>
+   <test_action>addNetworkToCluster</test_action>
+   <parameters>network='{networks[1]}', cluster='{cluster}',required='true'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+  <test_name>generate sw2 bond mode 1 to Hosts eth2 and eth3</test_name>
+  <test_action>genSNBond</test_action>
+  <parameters>name='{bond[0]}', network='{networks[1]}', slaves='[bond_nics]', mode=1</parameters>
+  <positive>NONE</positive>
+  <run>YES</run>
+  <fetch_output>host_nic->sw2_bond1_nic</fetch_output>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+   <test_name>Add sw2 Bond mode 1 to Hosts eth2 and eth3</test_name>
+   <test_action>sendSNRequest</test_action>
+   <parameters>host='{vds}',nics=[%sw2_bond1_nic%], auto_nics=['{nics[0]}'],check_connectivity='true', connectivity_timeout='60', force='false'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Send automatic MGMT interface and SW1 network</test_description>
+</test_case>
+<test_case>
+   <test_name>Create VMs from template</test_name>
+   <test_action>addVm</test_action>
+   <parameters>name='{vm_name}',cluster='{cluster}',template='{template_name}',display_type='e{display_type_vnc}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Change VMs network from management to sw2</test_name>
+   <test_action>updateNic</test_action>
+   <parameters>vm='{vm_name}',nic='nic1',network='{networks[1]}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Start VMs</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='{vm_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check Linux VMs connectivity through bond mode 1</test_name>
+   <test_action>checkVMConnectivity</test_action>
+   <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=60,interval=8,user='{vm_linux_user}',password='{vm_linux_password}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('RHEL',%osTypeElement%));loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check Windows VMs connectivity through bond mode 1</test_name>
+   <test_action>checkVMConnectivity</test_action>
+   <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=60,interval=5,user='{vm_win_user}',password='{vm_win_password}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('Win',%osTypeElement%));loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Shutdown VMs</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='{vm_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Move Host1 to Maintenance</test_name>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Wait for SPM</test_name>
+   <test_action>waitForSPM</test_action>
+   <parameters>datacenter='{datacenter}',timeout=900,sleep=5</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Move Host2 to Maintenance</test_name>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[1]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+  <test_name>generate new sw2 bond mode 2</test_name>
+  <test_action>genSNBond</test_action>
+  <parameters>name='{bond[0]}',network='{networks[1]}',slaves='[bond_nics]',mode=2</parameters>
+  <positive>NONE</positive>
+  <run>YES</run>
+  <fetch_output>host_nic->sw2_bond2_nic</fetch_output>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+   <test_name>Edit sw2 Bond0 mode 2 on Hosts eth2 and eth3</test_name>
+   <test_action>sendSNRequest</test_action>
+   <parameters>host='{vds}',nics=[%sw2_bond2_nic%], auto_nics=['{nics[0]}'],check_connectivity='true',connectivity_timeout='60', force='false'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Send automatic MGMT interface and edit SW2 bond network</test_description>
+</test_case>
+<test_case>
+   <test_name>Save Network Configuration</test_name>
+   <test_action>commitNetConfig</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Move hosts up</test_name>
+   <test_action>activateHost</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Wait for SPM</test_name>
+   <test_action>waitForSPM</test_action>
+   <parameters>datacenter='{datacenter}',timeout=900,sleep=5</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Start VMs</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='{vm_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check Linux VMs connectivity through bond mode 2</test_name>
+   <test_action>checkVMConnectivity</test_action>
+   <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=60,interval=8,user='{vm_linux_user}',password='{vm_linux_password}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('RHEL',%osTypeElement%));loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check Windows VMs connectivity through bond mode 2</test_name>
+   <test_action>checkVMConnectivity</test_action>
+   <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=60,interval=5,user='{vm_win_user}',password='{vm_win_password}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('Win',%osTypeElement%));loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Shutdown VMs</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='{vm_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Move Host1 to Maintenance</test_name>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Wait for SPM</test_name>
+   <test_action>waitForSPM</test_action>
+   <parameters>datacenter='{datacenter}',timeout=900,sleep=5</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Move Host2 to Maintenance</test_name>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[1]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+  <test_name>generate new sw2 bond with mode 4</test_name>
+  <test_action>genSNBond</test_action>
+  <parameters>name='{bond[0]}', network='{networks[1]}', slaves='[bond_nics]'', mode=4</parameters>
+  <positive>NONE</positive>
+  <run>YES</run>
+  <fetch_output>host_nic->sw2_bond4_nic</fetch_output>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+   <test_name>Edit sw2 Bond mode 4 on Hosts eth2 and eth3</test_name>
+   <test_action>sendSNRequest</test_action>
+   <parameters>host='{vds}',nics=[%sw2_bond4_nic%], auto_nics=['{nics[0]}'],check_connectivity='true', connectivity_timeout='60', force='false'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Send automatic MGMT interface and edit SW2 bond network</test_description>
+</test_case>
+<test_case>
+   <test_name>Save Network Configuration</test_name>
+   <test_action>commitNetConfig</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Move hosts up</test_name>
+   <test_action>activateHost</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Wait for SPM</test_name>
+   <test_action>waitForSPM</test_action>
+   <parameters>datacenter='{datacenter}',timeout=900,sleep=5</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Start VMs</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='{vm_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check Linux VMs connectivity through bond mode 4</test_name>
+   <test_action>checkVMConnectivity</test_action>
+   <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=60,interval=8,user='{vm_linux_user}',password='{vm_linux_password}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('RHEL',%osTypeElement%));loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check Windows VMs connectivity through bond mode 4</test_name>
+   <test_action>checkVMConnectivity</test_action>
+   <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=60,interval=5,user='{vm_win_user}',password='{vm_win_password}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('Win',%osTypeElement%));loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Shutdown VMs</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='{vm_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Move Host1 to Maintenance</test_name>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Wait for SPM</test_name>
+   <test_action>waitForSPM</test_action>
+   <parameters>datacenter='{datacenter}',timeout=900,sleep=5</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Move Host2 to Maintenance</test_name>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[1]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+  <test_name>generate new sw2 bond mode 5</test_name>
+  <test_action>genSNBond</test_action>
+  <parameters>name='{bond[0]}',network='{networks[1]}',slaves='[bond_nics]',mode=5</parameters>
+  <positive>NONE</positive>
+  <run>YES</run>
+  <fetch_output>host_nic->sw2_bond5_nic</fetch_output>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+   <test_name>edit sw2 Bond0 mode 5 on Hosts eth2 and eth3</test_name>
+   <test_action>sendSNRequest</test_action>
+   <parameters>host='{vds}',nics=[%sw2_bond5_nic%],auto_nics=['{nics[0]}'],check_connectivity='true', connectivity_timeout='60', force='false'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Send automatic MGMT interface and edit SW2 bond network</test_description>
+</test_case>
+<test_case>
+   <test_name>Save Network Configuration</test_name>
+   <test_action>commitNetConfig</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Move hosts up</test_name>
+   <test_action>activateHost</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Wait for SPM</test_name>
+   <test_action>waitForSPM</test_action>
+   <parameters>datacenter='{datacenter}',timeout=900,sleep=5</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Start VMs</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='{vm_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check Linux VMs connectivity through bond mode 5</test_name>
+   <test_action>checkVMConnectivity</test_action>
+   <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=60,interval=8,user='{vm_linux_user}',password='{vm_linux_password}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('RHEL',%osTypeElement%));loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check Windows VMs connectivity through bond mode 5</test_name>
+   <test_action>checkVMConnectivity</test_action>
+   <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=60,interval=5,user='{vm_win_user}',password='{vm_win_password}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('Win',%osTypeElement%));loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Shutdown VMs</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='{vm_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Remove VMs</test_name>
+   <test_action>removeVm</test_action>
+   <parameters>vm='{vm_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Detach sw2 from cluster</test_name>
+   <test_action>removeNetworkFromCluster</test_action>
+   <parameters>network='{networks[1]}', cluster='{cluster}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Remove Bond interface from hosts</test_name>
+   <test_action>sendSNRequest</test_action>
+   <parameters>host='{vds}',auto_nics=['{nics[0]}'],check_connectivity='true', connectivity_timeout='60', force='false'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Send automatic MGMT interface.</test_description>
+</test_case>
+<test_case>
+   <test_name>Save Network Configuration</test_name>
+   <test_action>commitNetConfig</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Remove sw2 from DataCenter</test_name>
+   <test_action>removeNetwork</test_action>
+   <parameters>network='{networks[1]}',data_center='{datacenter}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: Topology_C_31</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+</input>
