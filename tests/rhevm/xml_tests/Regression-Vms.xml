@@ -1980,7 +1980,7 @@
     <id>cb8d36a4-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Check events - VM remove initiated</test_name>
     <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='rest_testPool type=36', query='type=36', expected_count=9</parameters>
+    <parameters>win_start_query='rest_testPool type=36', query='type=36', expected_count=7</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
     <bz>836944</bz>
