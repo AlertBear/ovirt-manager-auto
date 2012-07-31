@@ -57,6 +57,9 @@ def addDataCenter(positive, **kwargs):
     dc = DataCenter(version=dcVersion, **kwargs)
 
     dc, status = util.create(dc, positive)
+    if positive:
+        supported_versions_valid = checkSupportedVersions(kwargs.pop('name'))
+        status = status and supported_versions_valid
 
     return status
 
@@ -186,3 +189,26 @@ def waitForDataCenterState(name, state=ENUMS['data_center_state_up'],
     query = 'name=%s and status=%s' % (name, state)
 
     return util.waitForQuery(query, timeout=timeout, sleep=sleep)
+
+
+def checkSupportedVersions(name):
+    """
+    Checks if the data center's supported versions are valid.
+    Parameters:
+        *name - Data Center's name to check
+
+    Return: status: (True if the supported versions are valid, False otherwise)
+    """
+    datacenter = util.find(name)
+    dcVersion = datacenter.get_version()
+    dcSupportedVersions = datacenter.get_supported_versions().get_version()
+    for version in dcSupportedVersions:
+        if dcVersion.get_major() > version.get_major() or (
+                dcVersion.get_major() == version.get_major() and
+                dcVersion.get_minor() > version.get_minor()):
+            util.logger.error('Invalid supported versions in ' \
+                              'data center {0}'.format(name))
+            return False
+    util.logger.info('Validated supported versions of' \
+                     ' data center {0}'.format(name))
+    return True

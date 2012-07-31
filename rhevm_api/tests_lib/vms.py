@@ -21,6 +21,7 @@ import os.path
 from Queue import Queue
 import re
 import time
+from copy import deepcopy
 
 from core_api.apis_exceptions import APITimeout, EntityNotFound
 from core_api.apis_utils import data_st, TimeoutingSampler
@@ -32,7 +33,9 @@ from test_handler.settings import opts
 from threading import Thread
 from utilities.jobs import Job, JobsSet
 from utilities.utils import readConfFile
-from rhevm_api.utils.test_utils import searchForObj
+from utilities.machine import Machine
+from rhevm_api.utils.test_utils import searchForObj, getImageByOsType, \
+    convertMacToIpAddress, checkHostConnectivity
 
 GBYTE = 1024 * 1024 * 1024
 ELEMENTS = os.path.join(os.path.dirname(__file__), '../../conf/elements.conf')
@@ -48,6 +51,7 @@ VM_SAMPLING_PERIOD = 3
 BLANK_TEMPLATE = '00000000-0000-0000-0000-000000000000'
 ADD_DISK_KWARGS = ['size', 'type', 'interface', 'format', 'bootable',
                    'sparse', 'wipe_after_deletion', 'propagate_errors']
+VM_WAIT_FOR_IP_TIMEOUT = 600
 
 VM_API = get_api('vm', 'vms')
 CLUSTER_API = get_api('cluster', 'clusters')
@@ -59,6 +63,7 @@ NIC_API = get_api('nic', 'nics')
 SNAPSHOT_API = get_api('snapshot', 'snapshots')
 TAG_API = get_api('tag', 'tags')
 CDROM_API = get_api('cdrom', 'cdroms')
+NETWORK_API = get_api('network', 'networks')
 
 logger = logging.getLogger(__package__ + __name__)
 xpathMatch = XPathMatch(VM_API)
@@ -450,7 +455,7 @@ def startVm(positive, vm, wait_for_status=ENUMS['vm_state_powering_up']):
         return True
 
     query = "name={0} and status={1} or name={0} and status=up".format(vm,
-                                    wait_for_status.lower().replace('_',''))
+                                    wait_for_status.lower().replace('_', ''))
 
     return VM_API.waitForQuery(query, timeout=VM_ACTION_TIMEOUT, sleep=10)
 
@@ -675,6 +680,8 @@ def removeDisk(positive, vm, disk, wait=True):
         logger.debug('Waiting for disk to be removed.')
         while diskExist:
             disks = _getVmDisks(vm)
+            if disks is None:
+                return False
             disks = filter(lambda x: x.name.lower() == disk.lower(), disks)
             diskExist = bool(disks)
             if VM_IMAGE_OPT_TIMEOUT < time.time() - startTime:
@@ -703,6 +710,23 @@ def removeDisks(positive, vm, num_of_disks, wait=True):
             disk = disks.pop()
             rc = rc and removeDisk(positive, vm, disk.name, wait)
     return rc
+
+
+def waitForDisksStat(vm, stat='OK', timeout=VM_IMAGE_OPT_TIMEOUT):
+    '''
+    Wait for VM disks status
+    Author: atal
+    Parameters:
+        * vm - vm name
+        * stat = status we are waiting for
+        * timeout - waiting period.
+    Return True if all events passed, otherwize False
+    '''
+    status = True
+    disks = _getVmDisks(vm)
+    for disk in disks:
+        status = DISKS_API.waitForElemStatus(disk, stat, timeout)
+    return status
 
 
 def checkVmHasCdromAttached(positive, vmName):
@@ -990,7 +1014,6 @@ def restoreSnapshot(positive, vm, description):
     expectedStatus = vmObj.status.state
 
     status = SNAPSHOT_API.syncAction(snapshot, "restore", positive)
-    time.sleep(60)
     if status and positive:
         return VM_API.waitForElemStatus(vmObj, expectedStatus, VM_ACTION_TIMEOUT)
 
@@ -1114,12 +1137,12 @@ def runVmOnce(positive, vm, pause=None, display_type=None, stateless=None,
         vm_for_action.set_floppies(floppies)
 
     if None is not boot_dev:
-        boot_dev_seq = data_st.Boot()
+        os = data_st.OperatingSystem()
+#        boot_dev_seq = data_st.Boot()
         for dev in boot_dev.split(","):
-            boot_dev_seq.set_dev(dev)
-            os = data_st.OperatingSystem()
-            os.add_boot(boot_dev_seq)
-            vm_for_action.set_os(os)
+#            boot_dev_seq.set_dev(dev)
+            os.add_boot(data_st.Boot(dev=dev))
+        vm_for_action.set_os(os)
 
     if None is not host:
         raise NotImplementedError(
@@ -1555,6 +1578,115 @@ def checkVmStatistics(positive, vm):
     return status
 
 
+def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicType=None,
+        mac_address=None, storageDomainName=None, size=None, diskType=ENUMS['disk_type_data'],
+        volumeType='true', volumeFormat=ENUMS['format_cow'],
+        diskInterface=ENUMS['interface_ide'], bootable='true',
+        wipe_after_deletion='false', start='false', template='Blank',
+        templateUuid=None, type=ENUMS['vm_type_desktop'],
+        os_type='UNASSIGNED', memory=1073741824, cpu_socket=1, cpu_cores=1,
+        display_type=ENUMS['display_type_spice'], installation=False, slim=False,
+        user=None, password=None, attempt=60, interval=60,
+        cobblerAddress=None, cobblerUser=None, cobblerPasswd=None, async=False,
+        hostname=None, network='rhevm', useAgent=False):
+    '''
+    The function createStartVm adding new vm with nic,disk and started new created vm.
+        vmName = VM name
+        vmDescription = Decription of VM
+        cluster = cluster name
+        nic = nic name
+        storageDomainName = storage doamin name
+        size = size of disk (in bytes)
+        diskType = disk type (SYSTEM,DATA)
+        volumeType = true its mean sparse (thin provision) ,false - preallocated.
+        volumeFormat = format type (COW)
+        diskInterface = disk interface (VIRTIO or IDE ...)
+        bootable = True when disk bootable otherwise False
+        wipe_after_deletion = Can be true or false
+        type - vm type (SERVER or DESKTOP)
+        start = in case of true the function start vm
+        template = name of already created template or Blank (start from scratch)
+        display_type - type of vm display (VNC or SPICE)
+        installation - true for install os and check connectivity in the end
+        slim - true for slim os(relevant to installation)
+        user - user to connect to vm after installation
+        password - password to connect to vm after installation
+        attempt- attempts to connect after installation
+        inerval - interval between attempts
+        useAgent - Set to 'true', if desired to read the ip from VM (agent exist on VM)
+    return values : Boolean value (True/False ) True in case of success otherwise False
+    '''
+    ip = False
+    if not addVm(positive, name=vmName, description=vmDescription, cluster=cluster,
+            template=template, templateUuid=templateUuid, os_type=ENUMS[os_type.lower()],
+            type=type, memory=memory, cpu_socket=cpu_socket,
+            cpu_cores=cpu_cores, display_type=display_type, async=async):
+        return False
+
+    if nic:
+        if not addNic(positive, vm=vmName, name=nic, interface=nicType,
+                      mac_address=mac_address, network=network):
+            return False
+
+    if template == 'Blank' and storageDomainName and templateUuid == None:
+        if not addDisk(positive, vm=vmName, size=size, storagedomain=storageDomainName, type=diskType, sparse=volumeType,
+                            interface=diskInterface, format=volumeFormat, bootable=bootable, wipe_after_deletion=wipe_after_deletion):
+            return False
+
+    if installation == True:
+        (status, res) = getImageByOsType(positive, os_type, slim)
+        if not status:
+            return False
+
+        if not unattendedInstallation(positive, vmName,
+                            cobblerAddress, cobblerUser, cobblerPasswd,
+                            image=res['osBoot'], floppyImage=res['floppy'],
+                            nic=nic, hostname=hostname):
+            return False
+
+        if useAgent:
+            try:
+                ipByAgent = getGuestIpByAgent(vmName, timeout=VM_WAIT_FOR_IP_TIMEOUT)
+            except APITimeout as err:
+                logger.error(err)
+                ipByAgent = False
+
+            if ipByAgent and ipByAgent.values()[0]:
+                # ipByAgent.values()[0] since there is a single nic here
+                ip = ipByAgent.values()[0]
+        return checkVMConnectivity(positive, vmName, os_type, attempt=attempt, interval=interval, nic=nic, user=user , password=password, ip=ip)
+
+    else:
+        if (start.lower() == 'true'):
+            if not startVm(positive, vmName):
+                return False
+
+        return True
+
+
+#TODO: replace with generic "async create requests" mechanism
+def createVms(positive, amount=2, **kwargs):
+    """
+    Create and start (if specified) multiple VMs.
+    NOTE: this is a temporary solution for create multiple
+        VMs request, should be replaced in the near future.
+    Author: mbenenso
+    Parameters:
+       * amount - amount of VMs to create
+       * **kwargs - exact set of parameters as for @createVM function
+    Return: list of createVm results for each VM
+    """
+    targetsList = ['createVm'] * amount
+    paramsList = []
+    for i in xrange(amount):
+        currParams = deepcopy(kwargs)
+        currParams['positive'] = positive
+        currParams['vmName'] += "_%s" % i
+        currParams["async"] = True
+        paramsList.append(currParams)
+    return runParallel(targetsList, paramsList)
+
+
 def getVmMacAddress(positive, vm, nic='nic1'):
     '''Function return mac address of vm with specific nic'''
     try:
@@ -1660,7 +1792,7 @@ def changeVmDiskState(positive, vm, action, diskAlias, diskId, wait):
             in case positive is False)
     """
     if diskAlias is None and diskId is None:
-        logger.error("Disk must be specified either by alias or ID")
+        VM_API.logger.error("Disk must be specified either by alias or ID")
         return False
 
     disk = _getVmDiskById(vm, diskId) if diskId is not None else \
@@ -1688,7 +1820,7 @@ def waitForVmDiskStatus(vm, active, diskAlias=None, diskId=None,
     Return: True if desired state was reached, False on timeout
     """
     if diskAlias is None and diskId is None:
-        logger.error("Disk must be specified either by alias or ID")
+        VM_API.logger.error("Disk must be specified either by alias or ID")
         return False
 
     getFunc, diskDesc = (_getVmDiskById, diskId) if diskId is not None else \
@@ -1705,3 +1837,202 @@ def waitForVmDiskStatus(vm, active, diskAlias=None, diskId=None,
 
     return cur_state == active
 
+
+def checkVMConnectivity(positive, vm, osType, attempt=1, interval=1,
+                        nic='nic1', user=None, password=None, ip=False):
+    '''
+    Description: check VM Connectivity
+    Author: tomer
+    Editor: atal
+    Parameters:
+       * vm - vm name
+       * osType - os type element rhel/windows.
+       * attempt - number of attempts to connect .
+       * interval - interval between attempts
+       * ip - if supplied, check VM connectivity by this IP.
+    Return: status (True if succeed to connect to VM, False otherwise).
+    '''
+    if re.search('rhel', osType, re.I):
+        osType = 'linux'
+    elif re.search('win', osType, re.I):
+        osType = 'windows'
+    else:
+        VM_API.logger.error('Wrong value for osType: Should be rhel or windows ')
+        return False
+
+    if not ip:
+        status, mac = getVmMacAddress(positive, vm, nic=nic)
+        if not status:
+            return False
+        status, vlan = getVmNicVlanId(vm, nic)
+        status, ip = convertMacToIpAddress(positive, mac=mac['macAddress'],
+                                           vlan=vlan['vlan_id'])
+        if not status:
+            return False
+        ip = ip['ip']
+    status, res = checkHostConnectivity(positive, ip,
+                                       user=user, password=password,
+                                       osType=osType, attempt=attempt,
+                                       interval=interval)
+    VM_API.logger.info('VM: %s TYPE: %s, IP: %s, VLAN: %s, NIC: %s \
+                Connectivity Status: %s' % (vm, osType, ip, vlan, nic, status))
+    return status
+
+
+def checkMultiVMsConnectivity(positive, vms, osType, attempt=1, interval=1,
+                              nic='nic1', user=None, password=None):
+    '''
+    Description: check Multi VMs Connectivity
+    Author: Tomer
+    Editor: atal
+    Parameters:
+       * vms - string of VMs seperate by comma or space.
+       * osType - os type element rhel/windows.
+       * attempt - number of attempts to connect .
+       * interval - interval between attempts
+    Return: status (True if al vm succeed, False otherwise).
+    '''
+    status = True
+    for vm in split(vms):
+        if not checkVMConnectivity(positive, vm, osType, attempt,
+                                   interval, nic, user, password):
+            VM_API.logger.error('Missing connectivity with %s, nic %s' % (vm, nic))
+            status = False
+    return status
+
+
+def checkVmMultiNicsConnectivity(positive, vm, osType, nics, attempt=1,
+                                 interval=1, user=None, password=None):
+    '''
+    checking VM multiple nics connectivity
+    Author: atal
+    Parameters:
+        * vm - vm name
+        * osType - OS type name
+        * nics - a list of VM nics nam (a name like "nic162"
+                                        represent vlan 162)
+        * attampt/insterval - a retry params
+        * user - remote host user login
+        * password - remote host password login
+    return True/False
+    '''
+    status = True
+    for nic in nics:
+        if not checkVMConnectivity(positive, vm, osType, attempt,
+                                   interval, nic, user, password):
+            VM_API.logger.error('No connection to %s on %s' % (vm, nic))
+            status = False
+    return status
+
+
+def addMultiNicsToVM(positive, vm, nicTypes, network, nicPrefix='vmNic'):
+    '''
+    Adding multiple Nics to vm with different randome type.
+    Author: atal
+    Parameters:
+        * vm - vm name
+        * nicTypes - straing, contains different nic types separated by ','
+                     (exp: 'e1000,virtio')
+        * nicPrefix - prefix for the nic name.
+    Return: status (True if vm was moved properly, False otherwise)
+    '''
+    for idx, item in enumerate(nicTypes.split(',')):
+        status = addNic(positive, vm=vm, name=nicPrefix + str(idx),
+                        network=network, interface=item.strip())
+    return status
+
+
+def getVmNicAttr(vm, nic, attr):
+    '''
+    get host's nic attribute value
+    Author: atal
+    Parameters:
+       * host - name of a host
+       * nic - name of nic we'd like to check
+       * attr - attribute of nic we would like to recive.
+                attr can dive deeper as a string with DOTS ('.').
+    return: True if the function succeeded, otherwise False
+    '''
+    try:
+        nic_obj = getVmNic(vm, nic)
+    except EntityNotFound:
+        return False, {'attrValue': None}
+
+    for tag in attr.split('.'):
+        try:
+            nic_obj = getattr(nic_obj, tag)
+        except AttributeError as err:
+            VM_API.logger.error(str(err))
+            return False, {'attrValue': None}
+    return True, {'attrValue': nic_obj}
+
+
+def addIfcfgFile(positive, vm, user, password, nic='nic1', nic_name='eth1',
+                 onboot='yes', bootProto='dhcp', nic_ip='',
+                 nic_netmask='255.255.255.0', nic_gateway=''):
+    '''
+    Only for Linux VM
+    Adding network ifcfg file to support new added nic
+    Author: atal
+        * vm - vm name
+        * user/password - vm credentials
+        * nic - connectint through VM nic (exp 'nic1')
+        * nic_name - new network name (ifcfg-<nic>)
+        * vlan - vlan id in case phisical nic connected to network switch
+        * onboot/bootProto/nic_ip/nic_netmask/nic_gateway -
+          Regular initscripts parameters
+    return: True if the function succeeded, otherwise False
+    '''
+    status, mac = getVmMacAddress(positive, vm, nic=nic)
+    if not status:
+        return False
+    res, vlan = getVmNicVlanId(vm, nic)
+    status, ip = convertMacToIpAddress(positive, mac=mac['macAddress'],
+                                       vlan=vlan['vlan_id'])
+    if not status:
+        return False
+
+    vm = Machine(ip['ip'], user, password).util('linux')
+    status = vm.addNicConfFile(nic_name, onboot, bootProto, nic_ip,
+                               nic_netmask, nic_gateway)
+    VM_API.logger.info('Adding nic: %s to VM: %s Status: %s' % (nic_name, vm, status))
+    return status
+
+
+def getVmHost(vm):
+    '''
+    Explore which host is running the VM
+    Author: atal
+    parameter:
+        * vm - vm name
+    return - tuple (True, hostname in dict or False, None)
+    '''
+    try:
+        vm_obj = VM_API.find(vm)
+        host_obj = HOST_API.find(vm_obj.host.id, 'id')
+    except EntityNotFound:
+        return False, {'vmHoster': None}
+    return True, {'vmHoster': host_obj.get_name()}
+
+
+def getVmNicVlanId(vm, nic='nic1'):
+    '''
+    Get nic vlan id if configured
+    Author: atal
+    Parameters:
+        * vm - vm name
+        * nic - nic name
+    Return: tuple (True and {'vlan_id': id} in case of success
+                   False and {'vlan_id': 0} otherwise)
+    '''
+    try:
+        nic_obj = getVmNic(vm, nic)
+        net_obj = NETWORK_API.find(nic_obj.network.id, 'id')
+    except EntityNotFound:
+        return False, {'vlan_id': 0}
+
+    try:
+        return True, {'vlan_id': int(net_obj.vlan.id)}
+    except AttributeError:
+        VM_API.logger.warning('%s network doesnt contain vlan id.' % net_obj.get_name())
+    return False, {'vlan_id': 0}

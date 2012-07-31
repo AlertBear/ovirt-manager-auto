@@ -52,7 +52,7 @@ class CSVFormatter(Component):
     def add_options(cls, parser):
         out = os.path.abspath("results/%s" % cls.default_file_name)
         parser.add_argument('--rf-csv', action="store", dest='rf_csv', \
-                help=cls.__doc__, const=out, default=out, nargs='?')
+                help=cls.__doc__, const=out, default=None, nargs='?')
 
     def configure(self, params, config):
         if not self.is_enabled(params, config):
@@ -78,7 +78,16 @@ class CSVFormatter(Component):
         items = []
         for i in self.order:
             if i == I_ID:
-                items.append(getattr(kwargs, 'id', None))
+                id_item = ''
+                t_id = getattr(kwargs, 'id', None)
+                t_it = getattr(kwargs, 'iter_num', None)
+                if t_id is not None:
+                    id_item += str(t_id)
+                if t_it is not None:
+                    if id_item:
+                        id_item += ':'
+                    id_item += str(t_it)
+                items.append(id_item)
             elif i == I_MODULE_NAME:
                 items.append(getattr(kwargs, 'module_name', None))
             elif i == I_TEST_NAME:
@@ -90,14 +99,13 @@ class CSVFormatter(Component):
                 if self.measurements:
                     if len(self.measurements) != 1:
                         logger.warn("Got more measure_time records, "\
-                                "then expected: %", self.measurements)
+                                "then expected: %s", self.measurements)
                     measure = self.format_str % self.measurements.pop()
                 items.append(measure)
             elif i == I_TEST_STATUS:
                 items.append(getattr(kwargs, 'status', None))
             elif i == I_DEBUG_INFO:
-                #items.append(getattr(test_case, 'log', None))
-                pass
+                items.append(getattr(test_case, 'log', None))
         self.csv.writerow(items)
 
     def pre_test_case(self, t):

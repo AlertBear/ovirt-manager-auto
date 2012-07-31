@@ -34,7 +34,6 @@ import string
 from functools import wraps
 import test_handler.settings as settings
 from core_api.validator import compareCollectionSize
-from utilities.utils import readConfFile
 from utilities.utils import readConfFile, calculateTemplateUuid,\
 convertMacToIp, pingToVms, getIpAddressByHostName, createDirTree
 from utilities.machine import Machine, eServiceAction, LINUX
@@ -1183,43 +1182,51 @@ def getImageAndVolumeID(vds, vds_username, vds_password, spool_id, domain_id,
     return tuple(image_and_volume)
 
 
-def setPersistentNetwork(host, user, password, eths):
+def setPersistentNetwork(host, password):
     '''
     Ensure that Network configurations are persistent
-    Author: jvorcak, atal
+    Author: atal
     Parameters:
        * host - remote machine ip address or fqdn
-       * user - username for accessing vm
-       * password - password for accessing vm
-       * eths - names of the ifcfg-eth? files separated by semicoln to be
-                configured e.g. 'ifcfg-eth0;ifcfg-eth1'
+       * password - password for root user
     Return: (True if command executed successfuly, False otherwise)
     '''
-    vm_obj = Machine(host, user, password).util('linux')
-    if not vm_obj.isAlive():
-        return False
+    vm_obj = Machine(host, 'root', password).util('linux')
 
-    cmd = ["cat", "/dev/null", ">",
-            "/etc/udev/rules.d/70-persistent-net.rules"]
+    persistent_rule = "/etc/udev/rules.d/70-persistent-net.rules"
+    cmd = ["cat", "/dev/null", ">", persistent_rule]
     rc, out = vm_obj.runCmd(cmd)
+    logger.debug('Running command %s : result %s' % (cmd, rc))
     if not rc:
-        logger.error("Failed to erase persisten network rule. message: %s" % out)
+        logger.error('Failed to erase %s. %s' % (persistent_rule, out))
         return False
-    for eth in eths.split(';'):
-        cmd = ["sed", "/HWADDR/d",
-            "/etc/sysconfig/network-scripts/%s" % eth, ">", "tmp", ";",
-            "mv", "tmp", "/etc/sysconfig/network-scripts/%s" % eth, "-f"]
 
+    nics = set()
+    rc, out = vm_obj.runCmd(['ls', '-la', '/sys/class/net', '|', \
+                             'grep', "'pci'", '|', \
+                             'grep', '-o', "'[^/]*$'"])
+    out = out.strip()
+    if not rc or not out:
+        logger.error('PCI interfaces do not exist in %s' % host)
+        return False
+    nics |= set(out.splitlines())
+
+    for nic in nics:
+        nic = 'ifcfg-%s' % nic
+        ifcfg_tmp = os.path.join('/tmp', nic)
+        ifcfg_path = os.path.join('/etc/sysconfig/network-scripts', nic)
+
+        cmd = ["sed", "/HWADDR/d", ifcfg_path, ">", ifcfg_tmp, ";", "mv",
+               ifcfg_tmp, ifcfg_path, "-f"]
+        logger.debug('Running command %s' % cmd)
         rc, out = vm_obj.runCmd(cmd)
         if not rc:
-            logger.error("Failed to remove HWADDR from %s" % eth)
+            logger.error("Failed to remove HWADDR. %s" % out)
             return False
 
-        # adding interface configurations to log in order to trac the
-        # persistent process
-        cmd = ['cat', "/etc/sysconfig/network-scripts/%s" % eth]
-        rc, out = vm_obj.runCmd(cmd)
-        logger.debug('Final persistent configurations %s: %s' % (eth, out))
+        rc, out = vm_obj.runCmd(['cat', ifcfg_path])
+        logger.debug('%s Final configurations: \n%s' % (nic, out))
+
     return True
 
 

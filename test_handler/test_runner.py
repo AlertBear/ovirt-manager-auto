@@ -673,7 +673,7 @@ class TestRunner(object):
         plmanager.results_collector.add_test_result(reportStats, testCase)
 
         severity = "info"
-        if not testStatus:
+        if testCase.status == 'Fail':
             severity = "error"
         getattr(self.logger, severity)("Test status for test '%s': %s" %(testCase['test_name'], reportStats['status']))
 

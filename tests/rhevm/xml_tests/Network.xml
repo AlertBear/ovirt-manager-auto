@@ -1,0 +1,389 @@
+<input xmlns:xi="http://www.w3.org/2001/XInclude">
+<!-- <xi:include href='network/testme.xml'/>  -->
+<test_case>
+  <test_name>START_GROUP:PrepareSetup</test_name>
+  <test_action/>
+  <parameters/>
+  <positive>NONE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report/>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Create Data Center NFS</test_name>
+  <test_action>addDataCenter</test_action>
+  <parameters>name='{datacenter}',storage_type='e{storage_type_nfs}',version='{compatibility_version}'</parameters>
+  <positive>TRUE</positive>
+  <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>TRUE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Create Data Center ISCSI</test_name>
+  <test_action>addDataCenter</test_action>
+  <parameters>name='{datacenter}',storage_type='e{storage_type_iscsi}',version='{compatibility_version}'</parameters>
+  <positive>TRUE</positive>
+  <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>TRUE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Create Cluster</test_name>
+  <test_action>addCluster</test_action>
+  <parameters>name='{cluster}',cpu='{cpu_name}',data_center='{datacenter}',version='{compatibility_version}'</parameters>
+  <positive>TRUE</positive>
+  <run>YES</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>TRUE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Adding Host</test_name>
+  <test_action>addHost</test_action>
+  <parameters>name='{vds[0]}',root_password='{vds_password[0]}',cluster='{cluster}',vdcPort='{port}'</parameters>
+  <positive>TRUE</positive>
+  <run>YES</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>TRUE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>iSCSI Discover</test_name>
+  <test_action>iscsiDiscover</test_action>
+  <parameters>host='{vds[0]}',address='{lun_address}'</parameters>
+  <positive>TRUE</positive>
+  <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>TRUE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>iSCSI Login</test_name>
+  <test_action>iscsiLogin</test_action>
+  <parameters>host='{vds[0]}',address='{lun_address}',target='{lun_target}'</parameters>
+  <positive>TRUE</positive>
+  <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>TRUE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+ <test_name>Create Data Storage Domain iSCSI</test_name>
+ <test_action>addStorageDomain</test_action>
+ <parameters>name='{storage}',type='e{storage_dom_type_data}',storage_type='e{storage_type_iscsi}',host='{vds[0]}',lun='{lun}',lun_address='{lun_address}',lun_target='{lun_target}',lun_port=3260</parameters>
+ <positive>TRUE</positive>
+ <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+ <fetch_output/>
+ <report>YES</report>
+ <vital>TRUE</vital>
+ <test_description/>
+</test_case>
+<test_case>
+  <test_name>Create Data Storage Domain NFS</test_name>
+  <test_action>addStorageDomain</test_action>
+  <parameters>name='{storage}',type='e{storage_dom_type_data}',storage_type='e{storage_type_nfs}',address='{data_domain_address}',host='{vds[0]}',path='{data_domain_path}'</parameters>
+  <positive>TRUE</positive>
+  <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>TRUE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Attach Data Storage Domain to Data Center</test_name>
+  <test_action>attachStorageDomain</test_action>
+  <parameters>datacenter='{datacenter}',storagedomain='{storage}'</parameters>
+  <positive>TRUE</positive>
+  <run>YES</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>TRUE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>END_GROUP:PrepareSetup</test_name>
+  <test_action/>
+  <parameters/>
+  <positive>NONE</positive>
+  <run/>
+  <fetch_output/>
+  <report/>
+  <vital/>
+  <test_description/>
+</test_case>
+<!-- ======================================================================================================== -->
+<xi:include href="network/Sanity.xml" />
+<!-- ======================================================================================================== -->
+<test_case>
+   <test_name>START_GROUP: PrepareTopologies</test_name>
+   <test_action/>
+   <parameters>n/a1</parameters>
+   <positive>NONE</positive>
+   <!-- <run>if(re.search('topology', '[run_topologies]'))</run> -->
+   <run>no</run>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description>Add Host, VM and template in order to feet next tests requirments</test_description>
+</test_case>
+<test_case>
+   <test_name>Convert Os name to Os type element </test_name>
+   <test_action>convertOsNameToOsTypeElement</test_action>
+   <parameters>osName='{vm_os}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output>osTypeElement-&gt;osTypeElement</fetch_output>
+   <report>NO</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Get boot Os</test_name>
+   <test_action>getImageByOsType</test_action>
+   <parameters>osType=%osTypeElement%,slim=True</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output>osBoot-&gt;osBoot,floppy->floppy</fetch_output>
+   <report>NO</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+  <test_name>Import shared ISO domain</test_name>
+  <test_action>importStorageDomain</test_action>
+  <parameters>type='e{storage_dom_type_iso}',storage_type='e{storage_type_nfs}',address='{shared_iso_domain_address}',host='{vds[0]}',path='{shared_iso_domain_path}'</parameters>
+  <positive>TRUE</positive>
+  <run>if(re.search('Win',%osTypeElement%))</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>TRUE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Attach shared ISO Domain to Data Center</test_name>
+  <test_action>attachStorageDomain</test_action>
+  <parameters>datacenter='{datacenter}',storagedomain='{shared_iso_domain_name}'</parameters>
+  <positive>TRUE</positive>
+  <run>if(re.search('Win',%osTypeElement%))</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>TRUE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Activate ISO Storage Domain</test_name>
+  <test_action>activateStorageDomain</test_action>
+  <parameters>datacenter='{datacenter}',storagedomain='{shared_iso_domain_name}'</parameters>
+  <positive>TRUE</positive>
+  <run>if(re.search('Win',%osTypeElement%))</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>TRUE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+   <test_name>Adding second Host</test_name>
+   <test_action>addHost</test_action>
+   <parameters>name='{vds[1]}',root_password='{vds_password[0]}',cluster='{cluster}',vdcPort='{port}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <!-- <vital>TRUE</vital> -->
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Wait for SPM</test_name>
+   <test_action>waitForSPM</test_action>
+   <parameters>datacenter='{datacenter}',timeout=900,sleep=5</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Create Windows VM</test_name>
+   <test_action>createVm</test_action>
+   <parameters>vmName='{vm_name[0]}',vmDescription='{vm_name[0]}',cluster='{cluster}',nic='nic1',nicType='e{nic_type_virtio}',storageDomainName='{storage}',size=21474836480,diskType='e{disk_type_system}',display_type='e{display_type_vnc}',cobblerAddress='{cobbler_address}',cobblerUser='{cobbler_user}',cobblerPasswd='{cobbler_passwd}',network='{mgmt_bridge}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('Win',%osTypeElement%))</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Install Windows Vm With Unattended</test_name>
+   <test_action>unattendedInstallation</test_action>
+   <parameters>vm='{vm_name[0]}',image=%osBoot%,floppyImage=%floppy%,cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('Win',%osTypeElement%))</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check Windows VM connectivity</test_name>
+   <test_action>checkVMConnectivity</test_action>
+   <parameters>vm='{vm_name[0]}',osType=%osTypeElement%,attempt=300,interval=5,user='{vm_win_user}',password='{vm_win_password}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('Win',%osTypeElement%))</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Create Linux Vms</test_name>
+   <test_action>createVm</test_action>
+   <parameters>vmName='{vm_name[0]}',vmDescription='linux vm',cluster='{cluster}',nic='nic1',nicType='e{nic_type_virtio}',storageDomainName='{storage}',size=21474836480,diskType='e{disk_type_system}',display_type='e{display_type_vnc}',cobblerAddress='{cobbler_address}',cobblerUser='{cobbler_user}',cobblerPasswd='{cobbler_passwd}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('RHEL',%osTypeElement%))</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Install Linux Vms With Unattended</test_name>
+   <test_action>unattendedInstallation</test_action>
+   <parameters>vm='{vm_name[0]}',image=%osBoot%,floppyImage=%floppy%,cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('RHEL',%osTypeElement%))</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check Linux Vms connectivity</test_name>
+   <test_action>checkVMConnectivity</test_action>
+   <parameters>vm='{vm_name[0]}',osType=%osTypeElement%,attempt=300,interval=2,user='{vm_linux_user}',password='{vm_linux_password}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('RHEL',%osTypeElement%))</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Get MAC address</test_name>
+   <test_action>getVmMacAddress</test_action>
+   <parameters>vm='{vm_name[0]}',nic='nic1'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('RHEL',%osTypeElement%))</run>
+   <fetch_output>macAddress-&gt;macAddress</fetch_output>
+   <report>NO</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Get IP address</test_name>
+   <test_action>convertMacToIpAddress</test_action>
+   <parameters>mac=%macAddress%</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('RHEL',%osTypeElement%))</run>
+   <fetch_output>ip-&gt;ipAddress</fetch_output>
+   <report>NO</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Set Persistent Network on linux VM</test_name>
+   <test_action>setPersistentNetwork</test_action>
+   <parameters>host=%ipAddress%, password='{vm_linux_password}'</parameters>
+   <positive>NONE</positive>
+   <run>if(re.search('RHEL',%osTypeElement%))</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Stop VM</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='{vm_name[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Create template</test_name>
+   <test_action>createTemplate</test_action>
+   <parameters>vm='{vm_name[0]}',name='{template_name}',cluster='{cluster}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Remove VM</test_name>
+   <test_action>removeVm</test_action>
+   <parameters>vm='{vm_name[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Wait for SPM</test_name>
+   <test_action>waitForSPM</test_action>
+   <parameters>datacenter='{datacenter}',timeout=900,sleep=5</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Cobbler remove Macs</test_name>
+   <test_action>cobblerRemoveSystem</test_action>
+   <parameters>cobblerAddress='{cobbler_address}',cobblerUser='{cobbler_user}',cobblerPasswd='{cobbler_passwd}',mac=%macAddress%</parameters>
+   <positive>NONE</positive>
+   <run>if(re.search('RHEL',%osTypeElement%))</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: PrepareTopologies</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<!-- ======================================================================================================== -->
+<xi:include href="network/Topology_A.xml" />
+<!-- ======================================================================================================== -->
+<xi:include href="network/Topology_B.xml" />
+<!-- ======================================================================================================== -->
+<xi:include href="network/Cleanup.xml" />
+<!-- ======================================================================================================== -->
+</input>

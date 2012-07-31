@@ -1,0 +1,233 @@
+<input>
+<test_case>
+   <test_name>START_GROUP: Topology_A</test_name>
+   <test_action/>
+   <parameters>n/a1</parameters>
+   <positive>NONE</positive>
+   <run>if('topology-a' in '[run_topologies]')</run>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description>Validate all supported VM nic interfaces are working virtio e1000 and rtl8139</test_description>
+</test_case>
+<test_case>
+   <test_name>Convert OS name to OS type element </test_name>
+   <test_action>convertOsNameToOsTypeElement</test_action>
+   <parameters>osName='{vm_os}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output>osTypeElement-&gt;osTypeElement</fetch_output>
+   <report>NO</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Get boot OS</test_name>
+   <test_action>getImageByOsType</test_action>
+   <parameters>osType=%osTypeElement%,slim=True</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output>osBoot-&gt;osBoot,floppy->floppy</fetch_output>
+   <report>NO</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Create VMs from template</test_name>
+   <test_action>addVm</test_action>
+   <parameters>name='{vm_name}',cluster='{cluster}',template='{template_name}',display_type='e{display_type_vnc}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Wait for disks status</test_name>
+   <test_action>waitForDisksStat</test_action>
+   <parameters>vm='{vm_name}'</parameters>
+   <positive>NONE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Start VMs</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='{vm_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check Linux VMs connectivity using virtio driver</test_name>
+   <test_action>checkVMConnectivity</test_action>
+   <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=60,interval=3,user='{vm_linux_user}',password='{vm_linux_password}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('RHEL',%osTypeElement%));loop({vm_name})</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check Windows VMs connectivity using virtio driver</test_name>
+   <test_action>checkVMConnectivity</test_action>
+   <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=60,interval=3,user='{vm_win_user}',password='{vm_win_password}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('Win',%osTypeElement%));loop({vm_name})</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Shutdown VMs</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='{vm_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+  <test_name>Update VMs nic network to rtl8139</test_name>
+  <test_action>updateNic</test_action>
+  <parameters>vm='{vm_name}',nic='nic1', interface='e{nic_type_rtl8139}'</parameters>
+  <positive>TRUE</positive>
+  <run>loop({vm_name})</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+   <test_name>Start VMs</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='{vm_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check Linux VMS connectivity using rtl8139 driver</test_name>
+   <test_action>checkVMConnectivity</test_action>
+   <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=60,interval=3,user='{vm_linux_user}',password='{vm_linux_password}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('RHEL',%osTypeElement%));loop({vm_name})</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check Windows VMs connectivity using rtl8139 driver</test_name>
+   <test_action>checkVMConnectivity</test_action>
+   <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=60,interval=3,user='{vm_win_user}',password='{vm_win_password}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('Win',%osTypeElement%));loop({vm_name})</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Shutdown VMs</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='{vm_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+  <test_name>Update VMs nic network to e1000</test_name>
+  <test_action>updateNic</test_action>
+  <parameters>vm='{vm_name}',nic='nic1', interface='e{nic_type_e1000}'</parameters>
+  <positive>TRUE</positive>
+  <run>loop({vm_name})</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+   <test_name>Start VMs</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='{vm_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check Linux VMs connectivity using e1000 driver</test_name>
+   <test_action>checkVMConnectivity</test_action>
+   <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=60,interval=3,user='{vm_linux_user}',password='{vm_linux_password}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('RHEL',%osTypeElement%));loop({vm_name})</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check Windows VMs connectivity using e1000 driver</test_name>
+   <test_action>checkVMConnectivity</test_action>
+   <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=60,interval=3,user='{vm_win_user}',password='{vm_win_password}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('Win',%osTypeElement%));loop({vm_name})</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Shutdown VMs</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='{vm_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Remove VMs</test_name>
+   <test_action>removeVm</test_action>
+   <parameters>vm='{vm_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: Topology_A</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+</input>
