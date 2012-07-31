@@ -24,12 +24,14 @@ class APIException(Exception):
     '''
     pass
 
+
 class EntityNotFound(APIException):
     '''
-    Raised when a RHEVM REST framework entity like a Host, DataCenter or Storage
-    domain, etc, couldn't be found.
+    Raised when a RHEVM REST framework entity like a Host, DataCenter or
+    Storage domain, etc, couldn't be found.
     '''
     pass
+
 
 class APITimeout(APIException):
     '''
@@ -37,11 +39,13 @@ class APITimeout(APIException):
     '''
     pass
 
+
 class EngineTypeError(APIException):
     '''
     Raised when action doesn't support provided api engine
     '''
     pass
+
 
 class APICommandError(Exception):
     '''
@@ -52,7 +56,5 @@ class APICommandError(Exception):
         self.error = error
 
     def __str__(self):
-        return "Error while running command '{0}': {1}".format(self.cmd, self.error)
-
-
-
+        return "Error while running command '{0}': {1}".format(self.cmd,
+                                                               self.error)

@@ -1,11 +1,17 @@
 
 import re
 import copy
-from art.test_handler.plmanagement import Component, implements, get_logger, PluginError
-from art.test_handler.plmanagement.interfaces.application import IConfigurable, IApplicationListener
-from art.test_handler.plmanagement.interfaces.tests_listener import ITestCaseHandler, ITestGroupHandler, ITestSkipper
-from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.exceptions import SkipTest
+from art.test_handler.plmanagement import Component, implements, get_logger,\
+     PluginError
+from art.test_handler.plmanagement.interfaces.application import\
+     IConfigurable, IApplicationListener
+from art.test_handler.plmanagement.interfaces.tests_listener import\
+     ITestCaseHandler, ITestGroupHandler, ITestSkipper
+from art.test_handler.plmanagement.interfaces.packaging import IPackaging
+from art.test_handler.plmanagement.interfaces.config_validator import\
+              IConfigValidation
+
 
 from utilities.machine import Machine, LINUX
 
@@ -20,7 +26,7 @@ ENGINE = 'engine'
 DEFAULT_URL = 'https://bugzilla.redhat.com/xmlrpc.cgi'
 DEFAULT_USER = 'bugzilla-qe-tlv@redhat.com'
 DEFAULT_PASSWD = '2kNeViSUVO'
-
+DEFAULT_STATE = False
 
 RHEVM_RPM = 'rhevm'
 OVIRT_RPM = 'ovirt-engine'
@@ -86,7 +92,9 @@ class Bugzilla(Component):
     """
     Plugin provides access to bugzilla site.
     """
-    implements(IConfigurable, IApplicationListener, ITestCaseHandler, ITestGroupHandler, ITestSkipper, IPackaging)
+    implements(IConfigurable, IApplicationListener, ITestCaseHandler,
+               ITestGroupHandler, ITestSkipper, IConfigValidation, IPackaging)
+
     name = "Bugzilla"
     enabled = True
     depends_on = []
@@ -95,7 +103,7 @@ class Bugzilla(Component):
         super(Bugzilla, self).__init__()
         self.bugzilla = None
         self.version = None
-        self.build_id = None # where should I get it
+        self.build_id = None  # where should I get it
         self.cache = {}
 
     @classmethod
@@ -113,21 +121,22 @@ class Bugzilla(Component):
     def configure(self, params, conf):
         if not self.is_enabled(params, conf):
             return
-        bz_cfg = conf.get(BZ_OPTION, {})
+        bz_cfg = conf.get(BZ_OPTION)
         import bugzilla
-        self.user = params.bz_user or bz_cfg.get('user', DEFAULT_USER)
-        self.passwd = params.bz_pass or bz_cfg.get('password', DEFAULT_PASSWD)
+        self.user = params.bz_user or bz_cfg.get('user')
+        self.passwd = params.bz_pass or bz_cfg.get('password')
         self.bugzilla = bugzilla.RHBugzilla(url=params.bz_host\
-                or bz_cfg.get('url', DEFAULT_URL))
+                or bz_cfg.get('url'))
         self.bugzilla.login(self.user, self.passwd)
 
         self.const_list = bz_cfg.get('constant_list', "Closed,ON_QA, Verified")
-        self.const_list = set(self.const_list.upper().replace(',', ' ').split())
+        self.const_list = set(self.const_list.upper().replace(',', ' ').\
+                              split())
 
         #self.machine = Machine(conf[PARAMETERS]['vdc'], 'root', \
         #        conf[PARAMETERS]['vdc_root_password']).util(LINUX)
 
-        self.build_id = None # where should I get it
+        self.build_id = None  # where should I get it
         self.comp = conf[RUN][ENGINE].lower()
 
     def is_state(self, bz_id, *states):
@@ -260,7 +269,7 @@ class Bugzilla(Component):
 
     @classmethod
     def is_enabled(cls, params, conf):
-        conf_en = conf.get(BZ_OPTION, {}).get('enabled', 'false').lower() == 'true'
+        conf_en = conf[BZ_OPTION]['enabled']
         return params.bz_enabled or conf_en
 
     @classmethod
@@ -276,4 +285,10 @@ class Bugzilla(Component):
         params['requires'] = ['python-bugzilla', 'art-utilities']
         params['py_modules'] = ['art.test_handler.plmanagement.plugins.bz_plugin']
 
-
+    def config_spec(self, spec, val_funcs):
+        section_spec = spec.get(BZ_OPTION, {})
+        section_spec['user'] = "string(default='%s')" % DEFAULT_USER
+        section_spec['password'] = "string(default='%s')" % DEFAULT_PASSWD
+        section_spec['enabled'] = 'boolean(default=%s)' % DEFAULT_STATE
+        section_spec['url'] = "is_url_alive(default='%s')" % DEFAULT_URL
+        spec[BZ_OPTION] = section_spec

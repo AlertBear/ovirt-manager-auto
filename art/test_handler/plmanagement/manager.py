@@ -7,7 +7,7 @@ import art.test_handler.plmanagement as core
 from art.test_handler.plmanagement import logger
 from art.test_handler.plmanagement import implements
 from interfaces import input_reader, application, report_formatter, \
-        tests_listener, time_measurement
+        tests_listener, time_measurement, config_validator
 
 DEFAULT_PATH = os.path.join(os.path.dirname(__file__), 'plugins')
 
@@ -24,6 +24,7 @@ class PluginManager(core.ComponentManager, core.Component):
     test_suites = core.ExtensionPoint(tests_listener.ITestSuiteHandler)
     test_skippers = core.ExtensionPoint(tests_listener.ITestSkipper)
     time_measurement = core.ExtensionPoint(time_measurement.ITimeMeasurement)
+    conf_validators = core.ExtensionPoint(config_validator.IConfigValidation)
 
     def __init__(self):
         core.ComponentManager.__init__(self)

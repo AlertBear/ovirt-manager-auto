@@ -2,6 +2,10 @@
 
 import os
 import sys
+import logging
+from sys import argv, exit, stderr
+import traceback
+from socket import error as SocketError
 
 project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 paths = list(set([os.path.abspath(x) for x in sys.path]) - set((project_path,)))
@@ -12,21 +16,18 @@ from art.test_handler.test_runner import TestRunner
 from art.test_handler.settings import populateOptsFromArgv, CmdLineError, \
         initPlmanager, opts, readTestRunOpts
 from art.test_handler.plmanagement import PluginError
-from sys import argv, exit, stderr
-import traceback
-from socket import error as SocketError
 from art.test_handler.reports import initializeLogger
-
-
-#import logging
-#logging.basicConfig(level=logging.DEBUG)
+from art.test_handler.settings import ReturnCode as RC
+from art.test_handler.handler_lib.configs import ValidationError
 
 
 try:
     plmanager = initPlmanager()
     redefs = populateOptsFromArgv(argv)
-    config = readTestRunOpts(opts['conf'], redefs)
     initializeLogger()
+    logger = logging.getLogger(__name__)
+    logger.info("Log file name: %s" % opts['log'])
+    config = readTestRunOpts(opts['conf'], redefs)
     test_iden = config['RUN']['tests_file']
     suitable_parser = None
     for parser in plmanager.test_parsers:
@@ -43,19 +44,30 @@ try:
     runner.run()
 except KeyboardInterrupt:
     pass
+except IOError as e:
+    print >>stderr, e
+    print >>stderr, "Exiting with IO failure."
+    exit(RC.IO)
 except SocketError as ex:
     traceback.print_exc(file=stderr)
-    print >>stderr, "Exitting with failure."
-    exit(2)
-except (CmdLineError, PluginError) as e:
+    print >>stderr, "Exiting with Connection failure."
+    exit(RC.Connection)
+except CmdLineError as e:
     print >>stderr, e
-    print >>stderr, "Exitting with failure."
-    exit(2)
+    print >>stderr, "Exiting with Command line failure."
+    exit(RC.CommandLine)
+except ValidationError as e:
+    print >>stderr, e
+    print >>stderr, "Exiting with Configuration Validation failure."
+    exit(RC.Validation)
+except PluginError as e:
+    print >>stderr, e
+    print >>stderr, "Exiting with failure."
+    exit(RC.Plugin)
 except Exception as exc:
     traceback.print_exc(file=stderr)
-    print >>stderr, "Exitting with failure."
-    exit(2)
+    print >>stderr, "Exiting with failure."
+    exit(RC.General)
 finally:
     if plmanager is not None:
         plmanager.application_liteners.on_application_exit()
-
