@@ -34,7 +34,7 @@ from art.core_api.validator import compareCollectionSize, dump_entity
 from art.rhevm_api.tests_lib.low_level.networks import getClusterNetwork
 from art.rhevm_api.tests_lib.low_level.vms import startVm, stopVm, stopVms, startVms
 from art.rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
-from art.rhevm_api.utils.test_utils import searchForObj
+from art.rhevm_api.utils.test_utils import searchForObj, runMachineCommand
 from art.test_handler import settings
 from art.core_api import is_action
 from art.rhevm_api.utils.guest import runLoadOnGuests, runLoadOnGuest
@@ -1331,6 +1331,31 @@ def setSPMPriority(positive, hostName, spmPriority):
 
 
 @is_action()
+def setSPMPriorityInDB(positive, hostName, spm_priority, ip, user, password):
+    '''
+    Description: set SPM priority for host in DB
+    Author: pdufek
+    Parameters:
+    * hostName - the name of the host
+    * spm_priority - SPM priority to be set for host
+    * ip - IP of the machine where DB resides
+    * user - username for remote access
+    * password - password for remote access
+    Returns: True (successfully set) / False (failure)
+    '''
+    cmd = 'psql engine postgres -c \"UPDATE vds_static SET ' \
+          'vds_spm_priority=\'%s\' WHERE vds_name=\'%s\';\"' \
+          % (spm_priority, hostName)
+    status = runMachineCommand(bool(True), ip=ip, user=user, password=password,
+                               cmd=cmd)
+    if not status[0]:
+        log_fce = HOST_API.logger.error if (positive is not None) and positive \
+                                        else HOST_API.logger.info
+        log_fce('Command \'%s\' failed: %s' % (cmd, status[1]['out']))
+    return status[0] == positive
+
+
+@is_action()
 def setSPMStatus(positive, hostName, spmStatus):
     '''
     Description: set SPM status on host
@@ -1361,6 +1386,161 @@ def setSPMStatus(positive, hostName, spmStatus):
         return False
 
     return hostObj.get_storage_manager().get_valueOf_() == spmStatus
+
+
+@is_action()
+def checkHostsForSPM(positive, hosts, expected_spm_host):
+    '''
+    Description: checks whether SPM is expected host or not
+    Author: pdufek
+    Parameters:
+    * hosts - the list of hosts to be searched through
+    * expected_spm_host - host which should be SPM
+    Returns: True (success - SPM is expected host) / False (failure)
+    '''
+    for host in hosts.split(','):
+        if checkHostSpmStatus(bool(True), host):
+            return (host == expected_spm_host) == positive
+
+
+@is_action()
+def checkSPMPresence(positive, hosts):
+    '''
+    Description: checks whether SPM is set within the set of hosts
+    Author: pdufek
+    Parameters:
+    * hosts - the list of hosts to be searched through
+    Returns: True (success - SPM is present on any host from list)
+             False (failure - SPM not present)
+    '''
+    for host in hosts.split(','):
+        if checkHostSpmStatus(bool(True), host):
+            return positive
+    else:
+        return not(positive)
+
+
+@is_action()
+def checkSPMElectionRandomness(positive, hosts, attempt_number=5, spm_priority='1'):
+    '''
+    Description: checks whether SPM host is being chosen randomly when hosts
+                 have the same SPM priority
+    Author: pdufek
+    Parameters:
+    * hosts - the list of hosts to be gone through
+    * attempt_number - the number of runs to check election randomness
+    * spm_priority - SPM priority to be set to all hosts for this test
+    Returns: True (success - SPM host is being chosen randomly)
+             False (failure)
+    '''
+    hosts_pairs = {}
+    for host in hosts.split(','):
+        setSPMPriority(bool(True), host, spm_priority)
+    deactivateHosts(bool(True), hosts)
+
+    hosts = sorted(hosts.split(','))
+    for host in hosts:
+        running_hosts = hosts[:]
+        running_hosts.remove(host)
+        activation_order = running_hosts[:]
+        activation_order.insert(0, host)
+        running_hosts = tuple(running_hosts)
+
+        for i in xrange(attempt_number):
+            for h in activation_order:
+                activateHost(bool(True), h)
+            time.sleep(45) # waiting due to SPM contending
+            deactivateHost(bool(True), host)
+            time.sleep(45)
+            try:
+                spm = _getSPMHostname(running_hosts)
+            except EntityNotFound, e:
+                HOST_API.logger.error(e.message)
+                return False
+            if running_hosts not in hosts_pairs:
+                hosts_pairs[running_hosts] = [spm]
+            else:
+                hosts_pairs[running_hosts].append(spm)
+            deactivateHosts(bool(True), ','.join(running_hosts))
+
+    status = True
+    for spms in hosts_pairs.keys():
+        if not len(set(spms)) > 1:
+            logger.warning("SPM randomness test failed, but due to the nature" \
+                           "of this test, there's a small chance of that" \
+                           "happening at every run")
+            status = False
+
+    return status == positive
+
+
+def _getSPMHostname(hosts):
+    '''
+    Description: get SPM host from the list of hosts
+    Author: pdufek
+    Parameters:
+    * hosts - the list of hosts to be searched through
+    Returns: hostName (success) / raises EntityNotFound exception
+    '''
+    for host in hosts:
+        if checkHostSpmStatus(bool(True), host):
+            return host
+    else:
+        raise EntityNotFound('SPM not found among these hosts: %s' \
+                             % (str(hosts),))
+
+
+@is_action()
+def deactivateHosts(positive, hosts):
+    '''
+    Description: deactivates the set of hosts. If host deactivation is not
+                 successful, waits 30 seconds before the second attempt
+                 - due to possible contending for SPM
+    Author: pdufek
+    Parameters:
+    * hosts - hosts to be deactivated
+    Returns: True (success) / False (failure)
+    '''
+    for host in hosts.split(','):
+        status = deactivateHost(bool(True), host)
+        if not status:
+            time.sleep(30)
+            status2 = deactivateHost(bool(True), host)
+            return status2 == positive
+    return True == positive
+
+
+@is_action()
+def reactivateHost(positive, host):
+    '''
+    Description: reactivates host (puts it to 'Maintenance' state first,
+                 then to 'UP' state)
+    Author: pdufek
+    Parameters:
+    * host - the name of the host to be reactivated
+    Returns: True (success) / False (failure)
+    '''
+    status = deactivateHost(bool(True), host)
+    if status:
+        status = activateHost(bool(True), host)
+    return status == positive
+
+
+@is_action()
+def getSPMHost(hosts):
+    '''
+    Description: get SPM host from the list of hosts
+    Author: pdufek
+    Parameters:
+    * hosts - the list of hosts to be searched through
+    Returns: hostName (success) / raises EntityNotFound exception
+    '''
+    for host in hosts:
+        if checkHostSpmStatus(bool(True), host):
+            return host
+    else:
+        raise EntityNotFound('SPM not found among these hosts: %s' \
+                             % (str(hosts),))
 
 
 @is_action()
