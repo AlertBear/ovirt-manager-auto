@@ -23,16 +23,26 @@ and preparing the environment for the tests.
 """
 
 import argparse
-from configobj import ConfigObj
+import socket
 import os
 import re
 from time import strftime
-import socket
+from shutil import copyfile
+from configobj import ConfigObj
+
 from art.test_handler.plmanagement.manager import PluginManager
+from art.test_handler.handler_lib.configs import ParamsValidator
+
 
 opts = {}
 """ A options global for all REST tests. """
 plmanager = None
+RC_RANGE = [2, 8]
+
+
+class ReturnCode:
+    General, IO, Connection, CommandLine, Validation, Plugin =\
+                                   range(RC_RANGE[0], RC_RANGE[1])
 
 
 class CmdLineError(ValueError):
@@ -59,7 +69,7 @@ def populateOptsFromArgv(argv):
     Return: None
     '''
 
-
+    opts['art_base_path'] = os.path.dirname(argv[0])
     parser = argparse.ArgumentParser(
         prog=argv[0],
         description='Execute the test specified by config file.'
@@ -69,11 +79,18 @@ def populateOptsFromArgv(argv):
                                 default='/var/tmp',
                                 help='path to the log directory (%(default)s)')
     parser.add_argument('--log', '-log',
-                                default='/tmp/FIXME.log', # this will be fixed by patch XXX
+    # log file will be generated when test_handler.reports.initializeLogger()
+    # will be called in test suite runner
+                                default=None,
                                 help='path to the log files')
     parser.add_argument('--configFile', '-conf', required=True,
                                 help='path to the config file',
                                 dest='conf')
+    parser.add_argument('--SpecFile', '-spec',
+                                default=os.sep.join([opts['art_base_path'],
+                                                     'conf/specs/main.spec']),
+                                help='path to the main conf spec file',
+                                dest='confSpec')
     parser.add_argument('--standalone', '-standalone', action='store_true',
                                 help='run without rhevm dependencies')
     parser.add_argument('-D',   metavar='OPTION', action='append',
@@ -112,14 +129,14 @@ def rewriteConfig(config, redefs):
 
 def redef(section, confspacePath, key, value):
     '''
-    Set `value` to field specified by `key` on the `confspacePath` in the dict-like
-    structure rooted in `section`.
+    Set `value` to field specified by `key` on the `confspacePath`
+    in the dict-like structure rooted in `section`.
     '''
     for sectionName in confspacePath:
         section = section.get(sectionName, None)
         if section is None:
             raise CmdLineError, 'Section %s not found in the config.' % section
-    section[key] = value.split(",") if value.find(",")!=-1 else value
+    section[key] = value.split(",") if value.find(",") != -1 else value
 
 
 def readTestRunOpts(path, redefs):
@@ -138,7 +155,15 @@ def readTestRunOpts(path, redefs):
     if not os.path.exists(path):
         raise IOError("Configuration file doesn't exist: %s" % path)
 
-    config = ConfigObj(path)
+    #preparing working copy of conf file
+    confFileCopyName = "%s.orig" % path
+    copyfile(path, confFileCopyName)
+
+    ParamsValidator(confFile=confFileCopyName,
+                        confSpecFile=opts['confSpec'],
+                        basePath=opts['art_base_path'])
+
+    config = ConfigObj(confFileCopyName)
     rewriteConfig(config, redefs)
 
     plmanager.configure.im_func.func_defaults = \
@@ -194,8 +219,8 @@ def readTestRunOpts(path, redefs):
     opts['user_domain'] = restSection['user_domain']
     opts['password'] = restSection['password']
     opts['urisuffix'] = ''
-    opts['uri'] = '%(scheme)s://%(host)s:%(port)s/%(entry_point)s%(urisuffix)s/' \
-            % opts
+    opts['uri'] = '%(scheme)s://%(host)s:%(port)s/%(entry_point)'\
+                      's%(urisuffix)s/' % opts
 
     return config
 
@@ -227,4 +252,3 @@ def buildTestsFilesMatrix(config, testsList):
 
         if testSection.has_key('groups'):
             opts[test]['groups'] = testSection.as_list('groups')
-

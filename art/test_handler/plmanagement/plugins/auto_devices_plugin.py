@@ -28,7 +28,6 @@ class AutoDevices(Component):
         logger.info("Configuring storages plugin.")
         self.conf = conf
         self.clean = conf['RUN'].get(AD_CLEANUP, 'yes').lower()
-        self.enabled = conf['RUN'].get(AD_ENABLED, 'no').lower()
 
     def add_options(self, parser):
         pass
@@ -53,7 +52,7 @@ class AutoDevices(Component):
     def is_enabled(cls, params, conf):
         #logger.info("auto_devices: %s", cls.enabled)
         if conf is not None:
-            return conf['RUN'].get(AD_ENABLED, 'no').lower() == 'yes'
+            return conf['RUN'].as_bool(AD_ENABLED)
         return True
 
     @classmethod
