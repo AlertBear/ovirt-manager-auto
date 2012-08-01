@@ -258,6 +258,26 @@ class StorageUtils:
             nfsPath = processConfList(self.nfs_devices[target])
             setConfValueByKeyPath(self.config, target, nfsPath, '_path')
 
+        # ISO domain
+        for target in filterNonEmptyDicts(self.iso_devices):
+            targetData = self.storages['iso'][target]
+
+            nfsAddress = processConfList([targetData['ip']] * targetData['total'])
+            setConfValueByKeyPath(self.config, target, nfsAddress, '_address')
+
+            nfsPath = processConfList(self.iso_devices[target])
+            setConfValueByKeyPath(self.config, target, nfsPath, '_path')
+
+        # Export domain
+        for target in filterNonEmptyDicts(self.export_devices):
+            targetData = self.storages['export'][target]
+
+            nfsAddress = processConfList([targetData['ip']] * targetData['total'])
+            setConfValueByKeyPath(self.config, target, nfsAddress, '_address')
+
+            nfsPath = processConfList(self.export_devices[target])
+            setConfValueByKeyPath(self.config, target, nfsPath, '_path')
+
         # ISCSI domain
         for target in filterNonEmptyDicts(self.iscsi_devices):
             targetData = self.storages['iscsi'][target]
