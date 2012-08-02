@@ -401,3 +401,32 @@ def addNetworksVlans(positive, prefix, vlans, data_center):
         if not addNetwork(positive, name=net_name, data_center=data_center, vlan_id=vlan):
             return False, {'nets': None}
     return True, {'nets': nics}
+
+
+def isNetworkRequired(network, cluster):
+    '''
+    Description: Check if Network is required
+    Author: atal
+    Parameters:
+        * network - logical network name
+        * cluster = cluster name
+    return: True if network is required, False otherwise.
+    '''
+    net_obj = getClusterNetwork(cluster, network)
+
+    return net_obj.get_required()
+
+
+def isVMNetwork(network, cluster):
+    '''
+    Description: Check if Network is VM network
+    Author: atal
+    Parameters:
+        * network - logical network name
+        * cluster = cluster name
+    return: True if network is VM network, False otherwise.
+    '''
+    net_obj = getClusterNetwork(cluster, network)
+    usages = net_obj.get_usages()
+    # FIXME: 817798
+    return 'VM' in usages.usage
