@@ -174,7 +174,7 @@ def updateStorageDomain(positive, storagedomain, **kwargs):
     return status
 
 
-def extendStorageDomain(positive, storagedomain, host, **kwargs):
+def extendStorageDomain(positive, storagedomain, **kwargs):
     '''
     Description: extend existing iscsi/fcp storage domain
     Author: edolinin
@@ -191,8 +191,6 @@ def extendStorageDomain(positive, storagedomain, host, **kwargs):
                     False otherwise)
     '''
     storDomObj = util.find(storagedomain)
-    # just check for host existence
-    hostUtil.find(host)
 
     storDomNew = _prepareStorageDomainObject(positive, **kwargs)
     sd,status = util.update(storDomObj, storDomNew, positive)
@@ -431,7 +429,7 @@ def removeStorageDomains(positive, storagedomains, host, format='true'):
         for sd in sds:
             if sd.get_name() in sdList:
                 #   if hasattr(sd, "master"):
-                if sd.get_master() == 'true':
+                if sd.get_master():
                         continue
                 else:
                     deactivateStatus = deactivateStorageDomain(positive,
@@ -490,8 +488,8 @@ def isStorageDomainMaster(positive, dataCenterName, storageDomainName):
         return False
 
     util.logger.info("isStorageDomainMaster - Master status of Storage Domain " + \
-                    storageDomainName  + " is: " + storDomObj.master.upper())
-    isMaster = storDomObj.get_master().lower() == 'true'
+                    storageDomainName  + " is: " + str(storDomObj.master))
+    isMaster = storDomObj.get_master()
     if positive:
         return isMaster
     else:
@@ -628,7 +626,7 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
             return False
         storDomObj = util.find(links['storagedomains'],sd)
         # Non master storage domains, require activation
-        if storDomObj.master == 'false':
+        if not storDomObj.master:
             if not activateStorageDomain(positive=positive, datacenter=datacenter, storagedomain=sd):
                 util.logger.error("Activate storage domain %s failed", sd)
                 return False
@@ -680,9 +678,9 @@ def cleanDataCenter(positive,datacenter,formatIsoStorage='false'):
             return False
 
     util.logger.info("Find all non master storage domains")
-    sdObjList = getDCStorages(datacenter)
+    sdObjList = getDCStorages(datacenter, False)
 
-    nonMasterSdObjects = filter(lambda sdObj: sdObj.get_master() == 'false', sdObjList)
+    nonMasterSdObjects = filter(lambda sdObj: not sdObj.get_master(), sdObjList)
 
     util.logger.info("Find Master Domain")
     st, masterDomain = findMasterStorageDomain(positive, datacenter)
@@ -779,14 +777,14 @@ def execOnNonMasterDomains(positive, datacenter, operation, type):
 
     status = True
 
-    sdObjList = getDCStorages(datacenter)
+    sdObjList = getDCStorages(datacenter, False)
 
     # Find the Non-master & type storage domains.
     if type == 'all':
-        sdObjects = filter(lambda sdObj: sdObj.get_master() == 'false', sdObjList)
+        sdObjects = filter(lambda sdObj: not sdObj.get_master(), sdObjList)
     else:
         sdObjects = filter(lambda sdObj: sdObj.get_type() == type and \
-                                sdObj.get_master() == 'false', sdObjList)
+                                not sdObj.get_master(), sdObjList)
 
     dispatch_map = {
         'activate' : activateStorageDomain,
@@ -818,11 +816,11 @@ def findMasterStorageDomain(positive,datacenter):
     Return: master domain storage domain if found, empty string ' ' otherwise)
     '''
 
-    sdObjList = getDCStorages(datacenter)
+    sdObjList = getDCStorages(datacenter, False)
 
     # Find the master DATA storage domain.
     masterResult = filter(lambda sdObj: sdObj.get_type() == \
-        ENUMS['storage_dom_type_data'] and sdObj.get_master() == 'true', sdObjList)
+        ENUMS['storage_dom_type_data'] and sdObj.get_master(), sdObjList)
     masterCount = len(masterResult)
     if masterCount == 1:
         return True, {'masterDomain' : masterResult[0].get_name()}
