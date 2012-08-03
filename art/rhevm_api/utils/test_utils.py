@@ -451,6 +451,7 @@ def runMachineCommand(positive, ip=None, user=None, password=None, type='linux',
 def cleanupData(path):
     if path and os.path.exists(path):
         shutil.rmtree(path, ignore_errors=True)
+    return True
 
 @lookingForIpAdressByEntityName("vms", "ip", "vmName")
 def copyDataToVm(ip, user, password, osType, src, dest):

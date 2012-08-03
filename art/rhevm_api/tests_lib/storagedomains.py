@@ -694,7 +694,9 @@ def cleanDataCenter(positive,datacenter,formatIsoStorage='false'):
     util.logger.info("Deactivate & detach non master storage domains")
     if nonMasterSdObjects:
         for sd in nonMasterSdObjects:
-            if validateElementStatus(positive, 'storagedomain', sd.get_name(), 'active', datacenter):
+            if validateElementStatus(positive, 'storagedomain',
+                                     'storagedomains', sd.get_name(), 'active',
+                                     datacenter):
                 deactivateStatus = deactivateStorageDomain(positive,datacenter, sd.get_name())
                 if not deactivateStatus:
                     util.logger.error("Deactivate storage domain %s Failed" % sd.get_name())
@@ -708,8 +710,10 @@ def cleanDataCenter(positive,datacenter,formatIsoStorage='false'):
 
     util.logger.info("Deactivate master storage domain")
     if masterSd:
-        if validateElementStatus(positive, 'storagedomain', masterSd, 'active', datacenter):
-            deactivateStatus = deactivateStorageDomain(positive, datacenter, masterSd)
+        if validateElementStatus(positive, 'storagedomain', 'storagedomains',
+                                 masterSd, 'active', datacenter):
+            deactivateStatus = deactivateStorageDomain(positive, datacenter,
+                                                       masterSd)
             if not deactivateStatus:
                 util.logger.error("Deactivate master storage domain %s Failed" % masterSd)
                 status = False
@@ -731,9 +735,9 @@ def cleanDataCenter(positive,datacenter,formatIsoStorage='false'):
         sd_attached = False
         # If storage domain is still attached to any dataCenter skip to next one
         for dc in dcUtil.get(absLink=False):
-            sdObjList = util.getElemFromLink(dc, get_href=True)
+            sdObjList = util.getElemFromLink(dc, get_href=False)
             for storageDomain in sdObjList:
-                if storageDomain.get_name() == sd.get_name():
+                if storageDomain == sd.get_name():
                     sd_attached = True
 
         if not sd_attached:
