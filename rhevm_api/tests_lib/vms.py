@@ -1529,7 +1529,7 @@ def cloneVmFromTemplate(positive, name, template, cluster, timeout=VM_IMAGE_OPT_
 
             diskArray.add_disk(disk)
         vm.set_disks(diskArray)
-        expectedVm = vm
+        expectedVm = deepcopy(vm)
         expectedVm.set_template(data_st.Template(id=BLANK_TEMPLATE))
 
     vm, status = VM_API.create(vm, positive, expectedEntity=expectedVm)
@@ -1645,16 +1645,12 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
             return False
 
         if useAgent:
-            try:
-                ipByAgent = getGuestIpByAgent(vmName, timeout=VM_WAIT_FOR_IP_TIMEOUT)
-            except APITimeout as err:
-                logger.error(err)
-                ipByAgent = False
+            ip = waitForIP(vmName)
 
-            if ipByAgent and ipByAgent.values()[0]:
-                # ipByAgent.values()[0] since there is a single nic here
-                ip = ipByAgent.values()[0]
-        return checkVMConnectivity(positive, vmName, os_type, attempt=attempt, interval=interval, nic=nic, user=user , password=password, ip=ip)
+        return checkVMConnectivity(positive, vmName, os_type,
+                                   attempt=attempt, interval=interval,
+                                   nic=nic, user=user , password=password,
+                                   ip=ip)
 
     else:
         if (start.lower() == 'true'):
@@ -1662,6 +1658,26 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
                 return False
 
         return True
+
+
+def waitForIP(vm, timeout=600, sleep=DEF_SLEEP):
+    '''
+    Description: Waits until agent starts reporting IP address
+    Author: jlibosva
+    Parameters:
+       * vm - name of the virtual machine
+       * timeout - how long to wait
+       * sleep - polling interval
+    Return: First IP occurence or False if no ip has been found
+    '''
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        time.sleep(sleep)
+        guest_info = VM_API.find(vm).get_guest_info()
+        if guest_info is not None:
+            return guest_info.get_ips().get_ip()[0].get_address()
+
+    return False
 
 
 #TODO: replace with generic "async create requests" mechanism
@@ -1852,6 +1868,7 @@ def checkVMConnectivity(positive, vm, osType, attempt=1, interval=1,
        * ip - if supplied, check VM connectivity by this IP.
     Return: status (True if succeed to connect to VM, False otherwise).
     '''
+    vlan = None
     if re.search('rhel', osType, re.I):
         osType = 'linux'
     elif re.search('win', osType, re.I):
@@ -2036,3 +2053,31 @@ def getVmNicVlanId(vm, nic='nic1'):
     except AttributeError:
         VM_API.logger.warning('%s network doesnt contain vlan id.' % net_obj.get_name())
     return False, {'vlan_id': 0}
+
+
+def validateVmDisks(positive, vm, sparse, format):
+    '''
+    Description - validate vm disks characteristics (for identical disks)
+    TBD - add support for mixed disks
+    Author: lustalov
+        * vm - vm name
+        * sparse - disk allocation type (true/false)
+        * format - disk format (COW/RAW)
+    Return: status (True/False)
+    '''
+    vmObj = VM_API.find(vm)
+    disks = VM_API.getElemFromLink(vmObj, link_name='disks', attr='disk',
+                                   get_href=False)
+
+    for disk in disks:
+        if disk.get_sparse() != sparse:
+            logger.error("VM disk %s allocation type %s is not as expected: %s"
+                        % (disk.id, str(disk.get_sparse()), str(sparse)))
+            return not positive
+        if disk.get_format().lower() != format.lower():
+            logger.error("VM disk %s format %s is not as expected: %s" %
+                         (disk.id, disk.format, format))
+            return not positive
+    return positive
+
+

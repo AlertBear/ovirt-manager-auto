@@ -186,8 +186,10 @@ class RestUtil(APIUtil):
                 self.logger.info("New entity was added")
                 actlEntity = validator.dump_entity(parse(ret['body']),
                                                     self.element_name)
-                expEntity = entity if not expectedEntity else expectedEntity
 
+                expEntity = entity if not expectedEntity\
+                            else validator.dump_entity(expectedEntity,
+                                                       self.element_name)
                 if not validator.compareElements(parse(expEntity),
                 parse(actlEntity), self.logger, self.element_name):
                     return None, False
@@ -393,7 +395,7 @@ class RestUtil(APIUtil):
             actionHref = getActionHref(entity.actions, action)
         except AttributeError:
             actionHref = "{0}/{1}".format(entity.href, action)
-           
+
         actionBody = validator.dump_entity(self.makeAction(async, 10, **params),
                                     'action')
 
