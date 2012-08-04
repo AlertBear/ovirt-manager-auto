@@ -182,7 +182,7 @@ class StorageUtils:
                                         'ip': getIpAddressByHostName(iscsiStorage),
                                         'total': int(confSubSection.get('iscsi_devices', '0')),
                                         'capacity': confSubSection.get('devices_capacity', '0'),
-                                        'is_netapp': False,
+                                        'is_specific': False,
                                         }
 
             localDevices = confSubSection.get('local_devices', None)
@@ -314,7 +314,7 @@ class StorageUtils:
                                             device)
 
         for storageSection in self.storages['iscsi']:
-            lunId = 'serial' if self.storages['iscsi'][storageSection]['is_netapp'] else 'uuid'
+            lunId = 'serial' if self.storages['iscsi'][storageSection]['is_specific'] else 'uuid'
             if storageSection in self.iscsi_devices.keys():
                 for device in self.iscsi_devices[storageSection]:
                     self.__remove_iscsi_device(self.storages['iscsi'][storageSection]['ip'],
@@ -373,7 +373,7 @@ class StorageUtils:
         storageMngr = smngr.StorageManagerWrapper(storageServerIp, 'ISCSI').manager
         lunId, targetName = storageMngr.createLun(lunName, capacity)
 
-        storageServer['is_netapp'] = re.match('netapp', storageMngr.__class__.__name__, re.I)
+        storageServer['is_specific'] = re.match('netapp|xtreamio', storageMngr.__class__.__name__, re.I)
         isLinux = re.match('linux', storageMngr.__class__.__name__, re.I)
         initiators = serversData.values() if not isLinux else serversData.keys()
 
@@ -384,7 +384,7 @@ class StorageUtils:
                     storageMngr.unmapInitiator(hg, initiator)
         storageMngr.mapLun(lunId, lunName, *initiators)
 
-        if storageServer['is_netapp']:
+        if storageServer['is_specific']:
             lunInfo = storageMngr.getLun(lunId, serversData.iterkeys().next())
         else:
             lunInfo = storageMngr.getLun(lunId)
