@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from test_handler.test_runner import TestRunner, TestSuite, TestCase, \
-                                                    opts, plmanager
+from test_handler.test_runner import TestRunner, opts, TestCase
 from lxml import etree
 import re
 
@@ -21,7 +20,6 @@ class XmlRunner(TestRunner):
 
         self.groups = groups
         self.lines = lines
-        self.test_suite = None
 
     def load(self, testFile):
         '''
@@ -34,9 +32,6 @@ class XmlRunner(TestRunner):
 
         tree = etree.parse(testFile)
         tree.xinclude()
-        root_node = tree.getroot()
-        self.test_suite = TestSuite(root_node.attrib['tcms_plan_id'])
-        plmanager.test_suites.pre_test_suite(self.test_suite)
         return tree.getiterator(tag='test_case')
 
     def _get_node_val(self, testCase, nodeName, nodeReportAs=None, defaultVal=''):
@@ -66,7 +61,7 @@ class XmlRunner(TestRunner):
         Description: run rows from specific sheet of ods file
         Author: edolinin
         Parameters:
-           * tree - reference to an xml tree that should be run
+           * sheet - reference to a sheet that should be run
         Return: none
         '''
         # convert ElementDepthFirstIterator object to a list
@@ -93,9 +88,6 @@ class XmlRunner(TestRunner):
             testGroup, runGroup, saveGroupRows = self._run_test_loop(testCase, testGroup, runGroup, saveGroupRows, self.startIter)
         if self.rerunCases:
             testGroup, runGroup, saveGroupRows = self._rerun_loop_cases(testGroup, runGroup, saveGroupRows)
-
-        plmanager.test_suites.post_test_suite(self.test_suite)
-
 
     def _rerun_loop_cases(self, testGroup, runGroup, saveGroupRows):
         '''

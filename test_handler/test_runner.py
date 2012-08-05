@@ -102,9 +102,9 @@ class TestSuite(_TestElm):
     """
     Defines test suite properties and methods
     """
-    def __init__(self, tcms_plan_id=None):
+    def __init__(self):
         super(TestSuite, self).__init__()
-        self.tcms_plan_id = tcms_plan_id
+        self.tcms_plan_id = None
 
 
 class TestRunner(object):
@@ -613,11 +613,6 @@ class TestRunner(object):
         if not hasattr(testCase, 'status'):
             testCase.status = testCase.TEST_STATUS_PASSED if testStatus \
                     else testCase.TEST_STATUS_FAILED
-
-        testCase['iteration'] = iteration
-        module_name = \
-            opts['actions'][testCase['test_action']].split('.')[-2].capitalize()
-        testCase['group'] = testGroup if testGroup else module_name
         plmanager.test_cases.post_test_case(testCase)
 
 
@@ -646,7 +641,7 @@ class TestRunner(object):
         # replace fetched outputs with their values for reporting
         testParametersReport = re.sub("self.output\['\w+'\]", self._fetch_output_replacement, testParametersReport)
 
-        reportStats['iter_num'] = testCase['iteration']
+        reportStats['iter_num'] = iteration
         if testCase['id']:
             reportStats['id'] = testCase['id']
         if testCase['bz']:
@@ -667,9 +662,10 @@ class TestRunner(object):
             if self.groupDescription:
                 reportStats['group_desc'] = self.groupDescription
         else:
-            reportStats['module_name'] = None
             if opts['has_sub_tests'] == "yes":
-                reportStats['module_name'] = module_name
+                reportStats['module_name'] = opts['actions'][testCase['test_action']].split('.')[-2].capitalize()
+            else:
+                reportStats['module_name'] = None
 
         if testCase['test_positive']:
             reportStats['test_positive'] = testCase['test_positive']

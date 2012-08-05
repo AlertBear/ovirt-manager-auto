@@ -207,6 +207,8 @@ class TcmsAgent(object):
 
         # Store TCMS url as a member for deserialization needs
         self.tcmsUrl = agentParams.get('tcms_url', '')
+        # Store url of ATOM's report page to link a TestRun later
+        self.atomTestLink = agentParams.get('atom_test_link')
 
         # Send (or not) an email regarding TestRun result at the end of the test
         self.sendMail = utils.parseStringToBoolean(agentParams['send_result_email'])
@@ -561,7 +563,6 @@ class TcmsAgent(object):
             Return: a list with string representation of the ID of newly crated
                     TestCaseRun on success, an empty list otherwise
         """
-
         if utils.valid(status, caseId):
             query = self._toDictionary("'run': " + self.testRunId + ", " + \
                                 "'case': " + caseId + ", " + \
@@ -589,6 +590,7 @@ class TcmsAgent(object):
             * product_category - the tested module of the product
             * header_names - the names of the headers for ATOM reports
             * test_plan_id - an ID of the TCMS TestPlan for the test
+            * test_report_id - an ID of the test in the ATOM db (optional)
             Return: True if agent's initialization succeeded, False otherwise
         """
         if not self.connected:
@@ -597,7 +599,7 @@ class TcmsAgent(object):
             self.logger.warning("agent has been initialized already")
             return True
         else:
-            self.logger.debug("test parameters received from TCMS agent %s" % kwargs)
+            self.logger.debug("test parameters received from ATOM agent %s" % kwargs)
             if not utils.validDict(kwargs, 'test_report_id'):
                 self.logger.error("wrong initial parameters for test")
             else:
@@ -643,6 +645,13 @@ class TcmsAgent(object):
             # The list will hold results of all TestCaseRuns to determine
             # the whole TestRun status at the end of test.
             self._runs[self.planId] = (self.testRunId, [])
+
+            if self.test_report_id:
+                # Attach to the created TestRun a link to the test report in ATOM
+                linkToReport = self.atomTestLink + str(self.test_report_id)
+                self._update(eTcmsEntity.TestRun, self.testRunId,
+                            self._toDictionary(self._toStringWithOptions("notes", linkToReport)))
+
             return True
 
         self.logger.error("failed to create new TestRun, TestPlan '{0}'".format(self.planId))
@@ -973,7 +982,7 @@ class TcmsAgent(object):
         if self.atomicTest:
             caseRunId = self.createTestCaseRun(testCaseId[0],
                                                 str(self.__getCaseRunStatus(params['iter_status'])),
-                                                notes=notes)
+                                                notes)
         else:
             # Store step info of the current case in the steps cache
             caseRunId = self.caseStepsCache.add(status=self._translateIterationStatus(params['iter_status']),
@@ -1187,7 +1196,8 @@ def main():
                 product_version='4.6',
                 product_category='API',
                 header_names='testName:sub_test,caseName:info,testType:str,params:text',
-                test_plan_id='3173',)
+                test_plan_id='3173',
+                test_report_id='1997')
 
     agent.iterationInfo(sub_test_name='Datacenters',
                         test_case_name='Create NFS Data Center',
