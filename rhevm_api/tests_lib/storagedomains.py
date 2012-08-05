@@ -522,6 +522,8 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
     storageDomainList = []
     if dataStorageDomains:
         storageArr = dataStorageDomains.split(',')
+    if address:
+        address_arr = address.split(',')
     if luns:
         storageArr = luns.split(',')
     if hosts:
@@ -540,7 +542,8 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
         dcUtil.find(datacenter)
     except EntityNotFound:
         util.logger.info("Create an empty %s Storage Pool %s" %  (storage_type, datacenter))
-        if not addDataCenter(positive, datacenter, storage_type, version, datacenter):
+        if not addDataCenter(positive, name=datacenter,
+                             storage_type=storage_type, version=version):
             util.logger.error('Creating an empty Storage Pool %s failed' % datacenter)
             return False
 
@@ -562,7 +565,7 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
             util.logger.info("Add host %s" % host)
             ipAddress = getIpAddressByHostName(host)
             if not addHost(positive=positive, name=host, address=ipAddress,
-            root_password=passwordArr[index], port='54321', cluster=cluster, wait=False):
+            root_password=passwordArr[index], port=54321, cluster=cluster, wait=False):
                 util.logger.error("Add host %s failed" % host)
                 return False
 
@@ -602,10 +605,13 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
     for index, storagePath in enumerate(storageArr):
         sdName = sdNamePref + str(index)
         addStorageDomainLogMassageTemplate = "Add {0} storage domain parameters: positive=%s, name=%s, type=%s, storage_type=%s, host=%s {1}.." % (positive, sdName, domainType, storage_type, host)
-        logger.info("Create storage domain %s from storage %s" % (sdName, storagePath))
+        util.logger.info("Create storage domain %s from storage %s" % (sdName, storagePath))
         if storage_type == ENUMS['storage_type_nfs']:
-            util.logger.info(addStorageDomainLogMassageTemplate.format(ENUMS['storage_type_nfs'], "path=%s, address=%s" % (storagePath, address)))
-            status = addStorageDomain(positive=positive, name=sdName, type=domainType, storage_type=storage_type, path=storagePath, address=address, host=host)
+            util.logger.info(addStorageDomainLogMassageTemplate.format(ENUMS['storage_type_nfs'],
+                             "path=%s, address=%s" % (storagePath, address_arr[index])))
+            status = addStorageDomain(positive=positive, name=sdName,
+                                      type=domainType, storage_type=storage_type, path=storagePath,
+                                      address=address_arr[index], host=host)
         elif storage_type == ENUMS['storage_type_iscsi']:
             util.logger.info(addStorageDomainLogMassageTemplate.format(ENUMS['storage_type_iscsi'], "lun=%s, lun_address=%s, lun_target=%s, lun_port=%s" % (storagePath, lunAddrArr[index], lunTgtArr[index], lun_port)))
             status = addStorageDomain(positive=positive, name=sdName, type=domainType, storage_type=storage_type, host=host, lun=storagePath, lun_address=lunAddrArr[index], lun_target=lunTgtArr[index], lun_port=lun_port)
@@ -624,9 +630,9 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
         if not attachStorageDomain(positive=positive, datacenter=datacenter, storagedomain=sd):
             logger.error("Attach storage domain %s to data center %s failed" % (sd, datacenter))
             return False
-        storDomObj = util.find(links['storagedomains'],sd)
+        storDomObj = util.find(sd)
         # Non master storage domains, require activation
-        if not storDomObj.master:
+        if not storDomObj.get_master():
             if not activateStorageDomain(positive=positive, datacenter=datacenter, storagedomain=sd):
                 util.logger.error("Activate storage domain %s failed", sd)
                 return False
