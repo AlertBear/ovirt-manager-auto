@@ -401,7 +401,11 @@ def waitForHostsStates(positive, names, states='up', timeout=HOST_STATE_TIMEOUT)
     '''
     names = split(names)
     for host in names:
-        HOST_API.find(host)
+        try:
+            HOST_API.find(host)
+        except EntityNotFound:
+            HOST_API.logger.warn("Host %s hasn't been found in system", host)
+            return False
         query_host = "name={0} and status={1}".format(host, states)
 
         if not HOST_API.waitForQuery(query_host, timeout=timeout):
@@ -410,8 +414,28 @@ def waitForHostsStates(positive, names, states='up', timeout=HOST_STATE_TIMEOUT)
     return True
 
 
+def _check_hypervisor(positive, host, cluster):
+    """
+    Description: Checks if host is already in setup waiting for approval
+    Author: jlibosva
+    Parameters:
+        * host - host to check
+        * cluster - eventually which cluster we want host to put in
+    Return: positive if host has been approved, False otherwise
+    """
+    try:
+        host = HOST_API.find(host)
+    except EntityNotFound:
+        return False
+
+    if host.get_status() == \
+        ENUMS['search_host_state_pending_approval'] and positive:
+        return approveHost(True, host, cluster)
+    return False
+
+
 @is_action()
-def addHost(positive, name, wait=True, vdcPort=None, **kwargs):
+def addHost(positive, name, wait=True, vdcPort=None, rhel_like=True, **kwargs):
     '''
     Description: add new host
     Author: edolinin, jhenner
@@ -424,10 +448,18 @@ def addHost(positive, name, wait=True, vdcPort=None, **kwargs):
        * wait - True if test should wait until timeout or the host state to be "UP".
        * vdcPort - vdc port (default = port parameter, located at settings.conf)
        * override_iptables - override iptables. gets true/false strings.
+       * rhel_like - for hypervisors only - True will install hypervisor as it
+                                            does with rhel
+                                          - False will install hypervisor using
+                                            vdsm-reg on hypervisor
     Return: True if host     added and test is    positive,
             True if host not added and test isn't positive,
             False otherwise.
     '''
+    cluster = kwargs.pop('cluster', 'Default')
+
+    if _check_hypervisor(positive, name, cluster):
+        return True
 
     address = kwargs.get('address')
     if not address:
@@ -435,7 +467,6 @@ def addHost(positive, name, wait=True, vdcPort=None, **kwargs):
     else:
         host_address = kwargs.pop('address')
 
-    cluster = kwargs.pop('cluster', 'Default')
     hostCl = CL_API.find(cluster)
 
     osType = 'rhel'
@@ -448,7 +479,7 @@ def addHost(positive, name, wait=True, vdcPort=None, **kwargs):
             HOST_API.logger.error("Can't get host %s os info" % name)
             return False
 
-    if osType.lower().find('hypervisor') == -1:
+    if osType.lower().find('hypervisor') == -1 or rhel_like:
         host = Host(name=name, cluster=hostCl, address=host_address, **kwargs)
         host, status = HOST_API.create(host, positive)
 
@@ -638,7 +669,7 @@ def approveHost(positive, host, cluster='Default'):
     '''
 
     hostObj = HOST_API.find(host)
-    clusterObj = HOST_API.find(cluster)
+    clusterObj = CL_API.find(cluster)
 
     kwargs = {'cluster': clusterObj}
     status = HOST_API.syncAction(hostObj, "approve", positive, **kwargs)
@@ -663,7 +694,8 @@ def installOvirtHost(positive, host, user_name, password, vdc, port=443, timeout
        * waitTime - wait between iteration [sec]
     Return: status (True if host was installed properly, False otherwise)
     '''
-    if waitForHostsStates(positive, host, 'PENDING_APPROVAL'):
+    if waitForHostsStates(positive, host,
+                          ENUMS['search_host_state_pending_approval']):
         return True
 
     vdcHostName = getHostName(vdc)
@@ -675,9 +707,17 @@ def installOvirtHost(positive, host, user_name, password, vdc, port=443, timeout
         HOST_API.logger.error("No connectivity to the host %s" % host)
         return False
     commands = []
-    commands.append([SED, '-i', "'s/vdc_host_name=.*/vdc_host_name=" + vdcHostName + "/'", "/etc/vdsm-reg/vdsm-reg.conf", '--copy'])
-    commands.append([SED, '-i', "'s/nc_host_name=.*/nc_host_name=" + vdc + "/'", "/etc/vdsm-reg/vdsm-reg.conf", '--copy'])
-    commands.append([SED, '-i', "'s/vdc_host_port=.*/vdc_host_port=" + str(port) + "/'", "/etc/vdsm-reg/vdsm-reg.conf", '--copy'])
+    commands.append([SED, '-i',
+                    "'s/vdc_host_name[[:space:]]*=.*/vdc_host_name = " +
+                    vdcHostName + "/'", "/etc/vdsm-reg/vdsm-reg.conf",
+                    '--copy'])
+    commands.append([SED, '-i',
+                     "'s/nc_host_name[[:space:]]*=.*/nc_host_name = " +
+                     vdc + "/'", "/etc/vdsm-reg/vdsm-reg.conf", '--copy'])
+    commands.append([SED, '-i',
+                     "'s/vdc_host_port[[:space:]]*=.*/vdc_host_port = " +
+                     str(port) + "/'", "/etc/vdsm-reg/vdsm-reg.conf",
+                     '--copy'])
     commands.append([SERVICE, 'vdsm-reg', "restart"])
     for command in commands:
         res, out = hostObj.runCmd(command)
@@ -690,7 +730,8 @@ def installOvirtHost(positive, host, user_name, password, vdc, port=443, timeout
         HOST_API.logger.error("Host %s doesn't appear!" % host)
         return False
 
-    if not waitForHostsStates(positive, host, states='pending_approval'):
+    if not waitForHostsStates(positive, host,
+                       states=ENUMS['search_host_state_pending_approval']):
         HOST_API.logger.error("Host %s isn't in PENDING_APPROVAL state" % host)
         return False
 
