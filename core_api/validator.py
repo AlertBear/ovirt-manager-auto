@@ -227,6 +227,8 @@ def compareElements(expElm, actElm, logger, root):
                     if not isinstance(attrActVal, list):
                         attrExpVal = attrExpVal[0]
                     else:
+                        attrExpVal.sort()
+                        attrActVal.sort()
                         if attr in VALS_IGNORE_DICT:
                             ignoreVals = filter(lambda x: x not in attrExpVal \
                                  and x in VALS_IGNORE_DICT[attr], attrActVal)

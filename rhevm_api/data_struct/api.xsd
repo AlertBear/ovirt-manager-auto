@@ -1062,6 +1062,15 @@
     </xs:sequence>
   </xs:complexType>
 
+  <xs:element name="certificate" type="Certificate"/>
+
+  <xs:complexType name="Certificate">
+    <xs:sequence>
+      <xs:element name="organization" type="xs:string" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="subject" type="xs:string" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+  </xs:complexType>
+
   <xs:element name="host" type="Host"/>
 
   <xs:element name="hosts" type="Hosts"/>
@@ -1071,6 +1080,7 @@
       <xs:extension base="BaseResource">
         <xs:sequence>
           <xs:element name="address" type="xs:string" minOccurs="0"/>
+          <xs:element ref="certificate" minOccurs="0" maxOccurs="1"/>
           <xs:element ref="status" minOccurs="0" maxOccurs="1"/>
           <xs:element name="cluster" type="Cluster" minOccurs="0"/>
           <!-- unsigned to avoid issues with port values greater than 32767,
@@ -1385,6 +1395,7 @@
           <xs:element name="code" type="xs:int" minOccurs="0" maxOccurs="1" />
           <xs:element name="severity" type="xs:string" minOccurs="0" maxOccurs="1" />
           <xs:element name="time" type="xs:dateTime" minOccurs="0" maxOccurs="1" />
+          <xs:element name="correlation_id" type="xs:string" minOccurs="0" maxOccurs="1" />
           <xs:element ref="user" minOccurs="0" />
           <xs:element ref="vm" minOccurs="0" />
           <xs:element ref="storage_domain" minOccurs="0" />
@@ -1573,7 +1584,7 @@
       <xs:element name="portal" type="xs:string" minOccurs="0"/>
       <xs:element name="size" type="xs:long" minOccurs="0"/>
       <xs:element name="paths" type="xs:int" minOccurs="0"/>
-      <xs:element name="partitioned" type="xs:boolean" minOccurs="0"/>
+      <xs:element name="status" type="xs:string" minOccurs="0"/>
       <xs:element name="volume_group_id" type="xs:string" minOccurs="0"/>
       <xs:element name="storage_domain_id" type="xs:string" minOccurs="0"/>
       <xs:element name="disk_id" type="xs:string" minOccurs="0"/>
@@ -1615,6 +1626,7 @@
         </xs:annotation>
       </xs:element>
       <xs:element ref="volume_group" minOccurs="0"/>
+      <xs:element name="override_luns" type="xs:boolean" minOccurs="0"/>
     </xs:sequence>
   </xs:group>
 
@@ -2127,7 +2139,6 @@
           <xs:element name="sparse" type="xs:boolean" minOccurs="0"/>
           <xs:element name="bootable" type="xs:boolean" minOccurs="0"/>
           <xs:element name="shareable" type="xs:boolean" minOccurs="0"/>
-          <xs:element name="allow_snapshot" type="xs:boolean" minOccurs="0"/>
           <xs:element name="wipe_after_delete" type="xs:boolean" minOccurs="0"/>
           <xs:element name="propagate_errors" type="xs:boolean" minOccurs="0"/>
           <xs:element name="statistics" type="Statistics" minOccurs="0" maxOccurs="1"/>

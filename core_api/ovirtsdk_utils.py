@@ -27,8 +27,10 @@ from core_api.apis_utils import APIUtil
 
 sdkInit = None
 
-DEF_TIMEOUT = 900 # default timeout
-DEF_SLEEP = 10 # default sleep
+# default timeout
+DEF_TIMEOUT = 900
+# default sleep
+DEF_SLEEP = 10
 
 
 class SdkUtil(APIUtil):
@@ -40,14 +42,13 @@ class SdkUtil(APIUtil):
         super(SdkUtil, self).__init__(element, collection)
 
         global sdkInit
-       
+
         if not sdkInit:
             user_with_domain = '{0}@{1}'.format(self.opts['user'], self.opts['user_domain'])
             self.api = sdkApi.API(self.opts['uri'], user_with_domain, self.opts['password'])
             sdkInit = self.api
         else:
             self.api = sdkInit
-
 
     def get(self, collection=None, **kwargs):
         '''
@@ -64,10 +65,10 @@ class SdkUtil(APIUtil):
         href = kwargs.pop('href', None)
         if href == '':
             return self.api
-            
+
         self.logger.debug("GET request content is --  collection:%(col)s " \
-                        % {'col': collection })
-      
+                        % {'col': collection})
+
         results = None
         try:
             results = self.__getCollection(collection).list()
@@ -76,10 +77,9 @@ class SdkUtil(APIUtil):
                                 format(collection, exc.message))
 
         return results
-    
 
     def create(self, entity, positive, expectedEntity=None, incrementBy=1,
-            async=False, collection=None):
+               async=False, collection=None):
         '''
         Description: creates a new element
         Author: edolinin
@@ -95,19 +95,19 @@ class SdkUtil(APIUtil):
 
         if not collection:
             collection = self.__getCollection(self.collection_name)
-           
+
         initialCollectionSize = len(collection.list())
 
         try:
             self.logger.debug("CREATE api content is --  collection:%(col)s element:%(elm)s " \
-            % {'col': self.collection_name, 'elm': validator.dump_entity(entity, self.element_name) })
+            % {'col': self.collection_name, 'elm': validator.dump_entity(entity, self.element_name)})
         except Exception:
             pass
 
         response = None
         try:
             response = collection.add(entity)
-             
+
             if not async:
                 if not self.opts['parallel_run'] and \
                     not validator.compareCollectionSize(collection.list(),
@@ -120,7 +120,7 @@ class SdkUtil(APIUtil):
             if not validator.compareElements(expEntity, response,
                                 self.logger, self.element_name):
                 return None, False
-             
+
         except RequestError as e:
             if positive:
                 errorMsg = "Failed to create a new element, status: {0},reason: {1}, details: {2}"
@@ -133,14 +133,12 @@ class SdkUtil(APIUtil):
                     return None, False
 
         return response, True
-    
 
     def __set_property(self, entity, property_name, property_value):
         '''
         Set property for sdk object
         '''
         getattr(entity, 'set_' + property_name)(property_value)
-
 
     def update(self, origEntity, newEntity, positive):
         '''
@@ -161,7 +159,6 @@ class SdkUtil(APIUtil):
             except AttributeError:
                 self.logger.warn("Attribute doesn't exist %s" % attr)
 
-
         dumpedEntity = None
         try:
             dumpedEntity = validator.dump_entity(newEntity, self.element_name)
@@ -173,9 +170,8 @@ class SdkUtil(APIUtil):
                 'col': self.collection_name,
                 'elm': dumpedEntity
             })
-            
-        try:
 
+        try:
             if positive:
                 response = origEntity.update()
                 self.logger.info(self.element_name + " was updated")
@@ -189,9 +185,8 @@ class SdkUtil(APIUtil):
                 errorMsg = "Failed to update an element, status: {0}, reason: {1}, details: {2}"
                 self.logger.error(errorMsg.format(e.status, e.reason, e))
                 return None, False
- 
-        return response, True
 
+        return response, True
 
     def delete(self, entity, positive, body=None, **kwargs):
         '''
@@ -214,12 +209,10 @@ class SdkUtil(APIUtil):
                 errorMsg = "Failed to delete an element, status: {0},reason: {1}, details: {2}"
                 self.logger.error(errorMsg.format(e.status, e.reason, e.detail))
                 return False
-      
+
         return True
 
-
-    def query(self, constraint, exp_status=None, href=None, event_id=None,
-                                                                **params):
+    def query(self, constraint, exp_status=None, href=None, event_id=None, **params):
         '''
         Description: run search query
         Author: edolinin
@@ -230,10 +223,10 @@ class SdkUtil(APIUtil):
         collection = href
         if not href:
             collection = self.collection_name
-            
+
         search = None
         collection = self.__getCollection(collection)
-        
+
         if event_id is not None:
             params['from_event_id'] = event_id
 
@@ -241,12 +234,10 @@ class SdkUtil(APIUtil):
         self.logger.debug(MSG % {'col': self.collection_name, \
                         'q': constraint, 'params': params})
         search = collection.list(constraint, **params)
-            
+
         self.logger.debug("Response for QUERY request is: %s " % search)
 
         return search
-
-
 
     def find(self, val, attribute='name', absLink=True, collection=None):
         '''
@@ -261,7 +252,7 @@ class SdkUtil(APIUtil):
 
         if not collection:
             collection = self.__getCollection(self.collection_name).list()
-  
+
         results = None
         try:
             if attribute == 'name':
@@ -273,31 +264,29 @@ class SdkUtil(APIUtil):
                                 % (val, self.collection_name))
 
         return results
-    
 
     def __getCollection(self, collection_name):
         '''
         Returns sdk collection object
         '''
         return getattr(self.api, collection_name)
-    
 
-    def getElemFromLink(self, elm, link_name=None, get_href=False, **kwargs):
+    def getElemFromLink(self, elm, link_name=None, attr=None, get_href=False):
         '''
         Description: get element's collection from specified link
         Parameters:
            * elm - element object
            * link_name - link name
+           * attr - unused param. used only in restapi
         Return: element obj or None if not found
         '''
         if not link_name:
             link_name = self.collection_name
-            
+
         if get_href:
             return getattr(elm, link_name)
         else:
             return getattr(elm, link_name).list()
-    
 
     def syncAction(self, entity, action, positive, async=False, **params):
         '''
@@ -320,7 +309,7 @@ class SdkUtil(APIUtil):
             pass
 
         try:
-            act =getattr(entity, action)(act)
+            act = getattr(entity, action)(act)
         except RequestError as e:
             if positive:
                 errorMsg = "Failed to run an action '{0}', status: {1},reason: {2}, details: {3}"
@@ -342,10 +331,9 @@ class SdkUtil(APIUtil):
                 return False
 
         return True
-    
 
     def waitForElemStatus(self, elm, status, timeout=DEF_TIMEOUT,
-                            ignoreFinalStates=False, collection=None):
+                          ignoreFinalStates=False, collection=None):
         '''
         Description: Wait till the sdk element (the Host, VM) gets the desired
         status or till timeout.
@@ -380,7 +368,7 @@ class SdkUtil(APIUtil):
                 format(validator.dump_entity(elm, self.element_name), status))
             except Exception:
                 pass
-            
+
             if not hasattr(elm, 'status'):
                 self.logger.error("Element %s doesn't have attribute status"\
                                 % (self.element_name))
