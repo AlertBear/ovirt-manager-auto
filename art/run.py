@@ -3,7 +3,7 @@
 import os
 import sys
 
-project_path = os.path.abspath(os.path.dirname(__file__))
+project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 paths = list(set([os.path.abspath(x) for x in sys.path]) - set((project_path,)))
 paths.insert(0, project_path)
 sys.path = paths
