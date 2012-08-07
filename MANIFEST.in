@@ -1,0 +1,6 @@
+include MANIFEST.in
+recursive-include art/tests *.conf *.xml
+include art/conf/*.conf
+include art/gluster_api/data_struct/api.xsd
+include art/rhevm_api/data_struct/api.xsd
+
