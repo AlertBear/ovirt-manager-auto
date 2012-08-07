@@ -1,6 +1,6 @@
-from test_handler.plmanagement import Component, implements, get_logger
-from test_handler.plmanagement.interfaces.application import IConfigurable
-from rhevm_api.utils.test_utils import get_api
+from art.test_handler.plmanagement import Component, implements, get_logger
+from art.test_handler.plmanagement.interfaces.application import IConfigurable
+from art.rhevm_api.utils.test_utils import get_api
 
 from utilities.machine import Machine, LINUX
 
