@@ -67,6 +67,13 @@ class ColoredFormatter(logging.Formatter):
             colours['$COL_RST'] = '\033[0m'
             if str(record.msg).startswith('Test name'):
                 colours['$COL_MSG'] = '\033[38;1m'
+        else:
+            colours['$COL_LVL'] = '\033[%dm' \
+                    % COLORS.get(record.levelname, 35)
+            colours['$COL_RST'] = '\033[0m'
+            if str(record.msg).startswith('Test name'):
+                colours['$COL_MSG'] = '\033[38m'
+
         self._fmt = colorize_fmt(FMT, colours)
         return logging.Formatter.format(self, record)
 
