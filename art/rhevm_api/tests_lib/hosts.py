@@ -31,6 +31,7 @@ from utilities.utils import getIpAddressByHostName, getHostName, readConfFile
 # TODO: remove both compareCollectionSize, dump_entity is not needed
 from art.core_api.validator import compareCollectionSize, dump_entity
 from art.rhevm_api.tests_lib.networks import getClusterNetwork
+from art.rhevm_api.tests_lib.vms import startVm, stopVm, stopVms, startVms
 from art.rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
 from art.rhevm_api.utils.test_utils import searchForObj
 from art.test_handler import settings

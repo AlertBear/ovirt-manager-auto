@@ -35,7 +35,8 @@ from utilities.jobs import Job, JobsSet
 from utilities.utils import readConfFile
 from utilities.machine import Machine
 from art.rhevm_api.utils.test_utils import searchForObj, getImageByOsType, \
-    convertMacToIpAddress, checkHostConnectivity
+    convertMacToIpAddress, checkHostConnectivity, updateVmStatusInDatabase
+from art.rhevm_api.utils.threads import runParallel
 
 GBYTE = 1024 * 1024 * 1024
 ELEMENTS = os.path.join(os.path.dirname(__file__), '../../conf/elements.conf')
@@ -587,7 +588,7 @@ def _getVmDiskById(vm, diskId):
     found = [disk for disk in disks if disk.get_id() == diskId]
     if not found:
         raise DiskNotFound("Disk with id %s was not found in vm's %s disk \
-collection" % (diskName, vm))
+collection" % (diskId, vm))
 
     return found[0]
 
