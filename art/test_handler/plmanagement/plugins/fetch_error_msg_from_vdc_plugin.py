@@ -2,6 +2,7 @@ import re
 from art.test_handler.plmanagement import Component, implements, get_logger
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.test_handler.plmanagement.interfaces.tests_listener import ITestCaseHandler, ITestSuiteHandler
+from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 
 from utilities.machine import Machine, LINUX
 
@@ -24,8 +25,8 @@ class ErrorFetcher(Component):
     """
     Plugin collects error messages from VDC machine for test_cases which fail.
     """
-    implements(IConfigurable, ITestCaseHandler, ITestSuiteHandler)
-    name = "Error fetcher"
+    implements(IConfigurable, ITestCaseHandler, ITestSuiteHandler, IPackaging)
+    name = "Errors fetcher"
 
     @classmethod
     def add_options(cls, parser):
@@ -90,4 +91,15 @@ class ErrorFetcher(Component):
     def post_test_suite(self, s):
         if self.ssh is not None:
             self.ssh.__exit__(None, None, None)
+
+    @classmethod
+    def fill_setup_params(cls, params):
+        params['name'] = cls.name.lower().replace(' ', '-')
+        params['version'] = '1.0'
+        params['author'] = 'Lukas Bednar'
+        params['author_email'] = 'lbednar@redhat.com'
+        params['description'] = 'Plugin for ART, which collects ERRORs messages from VDC log.'
+        params['long_description'] = cls.__doc__
+        params['requires'] = ['art-utilities']
+        params['py_modules'] = ['art.test_handler.plmanagement.plugins.fetch_error_msg_from_vdc_plugin']
 
