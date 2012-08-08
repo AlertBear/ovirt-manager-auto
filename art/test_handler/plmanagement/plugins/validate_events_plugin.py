@@ -57,7 +57,7 @@ class ValidateEvents(Component):
             return
 
         if t.test_positive:
-            exp_events_count = [1,2]
+            exp_events_count = [1,2,4]
         else:
             exp_events_count = 0
 
