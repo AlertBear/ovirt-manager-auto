@@ -85,8 +85,12 @@ def initializeLogger():
     bw_colours = {'$COL_LVL': '', '$COL_MSG': '', '$COL_RST': ''}
     bw_fmt = colorize_fmt(FMT, bw_colours)
 
-    logging.basicConfig(level=logLevel, filemode='w', format=bw_fmt,
+    if opts['log']:
+        logging.basicConfig(level=logLevel, filemode='w', format=bw_fmt,
                         filename=opts['log'])
+    else:
+        logging.basicConfig(level=logLevel, filemode='w', format=bw_fmt,
+                            filename=os.devnull)
 
     # Prepare handler and formatter for stderr outputs.
     sh = logging.StreamHandler()
