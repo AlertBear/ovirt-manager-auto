@@ -136,7 +136,10 @@ def compareCollectionSize(collection, expectedSize, logger):
 
     if collection is not None:
         try:
-            assert len(collection) == expectedSize
+            if isinstance(expectedSize, list):
+                assert len(collection) in expectedSize
+            else:
+                assert len(collection) == expectedSize
             logger.debug("Collection size is correct: %(exp)s " % {'exp': expectedSize })
             return True
         except AssertionError:

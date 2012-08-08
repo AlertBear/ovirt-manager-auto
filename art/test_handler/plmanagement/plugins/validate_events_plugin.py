@@ -11,6 +11,7 @@ from art.rhevm_api.utils.test_utils import get_api, searchForObj
 
 logger = get_logger('validate_events')
 CORRELATION_ID = 'Correlation-Id'
+EVENTS_OPTION = 'VALIDATE_EVENTS'
 
 class ValidateEvents(Component):
     """
@@ -30,7 +31,9 @@ class ValidateEvents(Component):
 
     @classmethod
     def is_enabled(cls, params, conf):
-        return conf.get('validate_events', False) or params.validate_events
+        conf_events = \
+            conf.get(EVENTS_OPTION, {}).get('enabled', 'false').lower()== 'true'
+        return conf_events or params.validate_events
 
 
     def configure(self, params, conf):
@@ -54,7 +57,7 @@ class ValidateEvents(Component):
             return
 
         if t.test_positive:
-            exp_events_count = 1
+            exp_events_count = [1,2]
         else:
             exp_events_count = 0
 
