@@ -48,7 +48,7 @@ from art.rhevm_api.utils.threads import CreateThread, ThreadSafeDict
 logger = logging.getLogger('test_utils')
 
 #The location of all supported elements
-elementsConf = "conf/elements.conf"
+elementsConf = os.path.join(os.path.dirname(__file__), "../../conf/elements.conf")
 #The name of section in the element configuration file
 elementConfSection = 'elements'
 #The location of all supported os
@@ -180,13 +180,13 @@ def validateElementStatus(positive, element, collection, elementName,
     return values : Boolean value (True/False ) True in case of succes otherwise False
     '''
     attribute = "state"
+    util = get_api(element, collection)
+
     try:
         supportedElements = readConfFile(elementsConf, elementConfSection)
     except Exception as err:
         util.logger.error(err)
         return False
-
-    util = get_api(element, collection)
 
     if element not in supportedElements:
         msg = "Unknown element {0}, supported elements are {1}"
@@ -698,6 +698,7 @@ def convertOsListToOsTypeDict(positive, osList):
     Return Value: Dictionary osName->osType and True if all params are valid, otherwise False,
     '''
     if not isinstance(osList, str):
+        # FIXME: what util shold be here?
         util.logger.error('VMs parameter error, Only string is accepted ')
         return False
 

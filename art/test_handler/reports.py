@@ -84,14 +84,16 @@ def initializeLogger():
     the messages going to tty through stderr to not cause mess in the files.
     Author: jhenner
     '''
-    logLevel = logging.DEBUG if opts['debug'] else logging.INFO
+
+    logLevel = logging.INFO
 
     # Prepare empty colours for the colour placeholders for messages going to
     # file.
     bw_colours = {'$COL_LVL': '', '$COL_MSG': '', '$COL_RST': ''}
     bw_fmt = colorize_fmt(FMT, bw_colours)
 
-    logging.basicConfig(level=logLevel, filemode='w', format=bw_fmt, filename=opts['log'])
+    logging.basicConfig(level=logLevel, filemode='w', format=bw_fmt,
+                        filename=opts['log'])
 
     # Prepare handler and formatter for stderr outputs.
     sh = logging.StreamHandler()

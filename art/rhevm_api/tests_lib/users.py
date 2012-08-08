@@ -190,7 +190,7 @@ def addGroup(positive, group_name):
        * group_name - name of domain group
     Return: status (True if group was created properly, False otherwise)
     '''
-    group.name = Group(name=group_name)
+    group = Group(name=group_name)
     group, status = groupUtil.create(group, positive)
 
     return status

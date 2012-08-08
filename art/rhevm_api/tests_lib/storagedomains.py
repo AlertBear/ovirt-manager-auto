@@ -34,7 +34,6 @@ from art.rhevm_api.tests_lib.templates import removeTemplates
 from art.rhevm_api.utils.storage_api import getVmsInfo, getImagesList, getVolumeInfo
 from art.rhevm_api.utils.test_utils import validateElementStatus, get_api, searchForObj, getImageAndVolumeID
 from art.rhevm_api.utils.xpath_utils import XPathMatch
-import utilities.machine as hostUtil
 from utilities.utils import getIpAddressByHostName, readConfFile
 
 ELEMENTS = os.path.join(os.path.dirname(__file__), '../../conf/elements.conf')
@@ -628,7 +627,7 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
     for sd in storageDomainList:
         util.logger.info("Attach storage domain %s to data center %s" % (sd, datacenter))
         if not attachStorageDomain(positive=positive, datacenter=datacenter, storagedomain=sd):
-            logger.error("Attach storage domain %s to data center %s failed" % (sd, datacenter))
+            util.logger.error("Attach storage domain %s to data center %s failed" % (sd, datacenter))
             return False
         storDomObj = util.find(sd)
         # Non master storage domains, require activation
@@ -978,7 +977,7 @@ def checkTemplateOnHost(positive, vdsName, username, passwd, dataCenter,
 
     if not volInfo:
         msg = "failed to get volume info; DC {0}, SD{1}, Image {2}, Volume {3}"
-        util.logger.error(msg.format(dcId, storDomId, imageId, volumeId))
+        util.logger.error(msg.format(dc_id, domain.get_id(), image_id, volume_id))
         return False
 
     # Check volume info legality field
