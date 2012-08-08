@@ -28,13 +28,16 @@ class TestSuiteRunner:
     def __init__(self, redefs):
         self.lines = opts.get('lines', None)
         self.groups = opts.get('groups', None)
+        initializeLogger()
 
         self.config = readTestRunOpts(opts['conf'], redefs)
         if not opts['standalone']:
             conn = HTTPProxy(opts)
             conn.connect()
 
-        initializeLogger()
+        if opts['debug']:
+            logging.getLogger().setLevel(logging.DEBUG)
+
         self.logger = logging.getLogger(__name__)
 
         self.autoDevices = self.config['RUN'].get('auto_devices',
