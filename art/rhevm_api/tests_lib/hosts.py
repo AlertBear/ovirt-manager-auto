@@ -424,7 +424,8 @@ def addHost(positive, name, wait=True, vdcPort=None, **kwargs):
     else:
         host_address = kwargs.pop('address')
 
-    hostCl = CL_API.find(kwargs.pop('cluster', 'Default'))
+    cluster = kwargs.pop('cluster', 'Default')
+    hostCl = CL_API.find(cluster)
 
     osType = 'rhel'
     root_password = kwargs.get('root_password')
@@ -453,7 +454,6 @@ def addHost(positive, name, wait=True, vdcPort=None, **kwargs):
     if not installOvirtHost(positive, name, 'root', root_password, settings.opts['host'], vdcPort):
         return False
 
-    cluster = kwargs.pop('cluster', 'Default')
     return approveHost(positive, name, cluster)
 
 
