@@ -29,6 +29,7 @@ from lockfile import FileLock
 from abc import ABCMeta, abstractmethod
 import datetime
 from dateutil import tz
+from time import strftime
 
 
 COLORS = {
@@ -92,12 +93,12 @@ def initializeLogger():
     bw_colours = {'$COL_LVL': '', '$COL_MSG': '', '$COL_RST': ''}
     bw_fmt = colorize_fmt(FMT, bw_colours)
 
-    if opts['log']:
-        logging.basicConfig(level=logLevel, filemode='w', format=bw_fmt,
+    if not opts['log']:
+        timestamp = strftime('%Y%m%d_%H%M%S')
+        opts['log'] = "%s/%sTests.log" % (opts['logdir'], timestamp)
+
+    logging.basicConfig(level=logLevel, filemode='w', format=bw_fmt,
                         filename=opts['log'])
-    else:
-        logging.basicConfig(level=logLevel, filemode='w', format=bw_fmt,
-                            filename=os.devnull)
 
     # Prepare handler and formatter for stderr outputs.
     sh = logging.StreamHandler()
