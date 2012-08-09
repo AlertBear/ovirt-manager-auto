@@ -106,7 +106,6 @@ def _prepareDiskObject(**kwargs):
                         sparse=kwargs.pop('sparse', None),
                         bootable=kwargs.pop('bootable', None),
                         shareable=kwargs.pop('shareable', None),
-                        allow_snapshot=kwargs.pop('allow_snapshot', None),
                         propagate_errors=kwargs.pop('propagate_errors', None),
                         wipe_after_delete=kwargs.pop('wipe_after_delete', None),
            )
