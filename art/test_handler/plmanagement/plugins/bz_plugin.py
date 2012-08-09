@@ -1,7 +1,7 @@
 
 import re
 import copy
-from art.test_handler.plmanagement import Component, implements, get_logger
+from art.test_handler.plmanagement import Component, implements, get_logger, PluginError
 from art.test_handler.plmanagement.interfaces.application import IConfigurable, IApplicationListener
 from art.test_handler.plmanagement.interfaces.tests_listener import ITestCaseHandler, ITestGroupHandler, ITestSkipper, SkipTest
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
@@ -47,7 +47,7 @@ def transform_ovirt_comp(comp):
     return m
 
 
-class BugzillaPluginError(Exception):
+class BugzillaPluginError(PluginError):
     pass
 
 

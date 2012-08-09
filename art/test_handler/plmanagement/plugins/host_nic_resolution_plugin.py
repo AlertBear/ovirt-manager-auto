@@ -1,5 +1,5 @@
 
-from art.test_handler.plmanagement import Component, implements, get_logger
+from art.test_handler.plmanagement import Component, implements, get_logger, PluginError
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 
@@ -14,7 +14,7 @@ VDS = 'vds'
 HOST_NICS = 'host_nics'
 
 
-class NicResolutionFailed(Exception):
+class NicResolutionFailed(PluginError):
     pass
 
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from art.test_handler.plmanagement import Component, implements, get_logger
+from art.test_handler.plmanagement import Component, implements, get_logger, PluginError
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.test_handler.plmanagement.interfaces.tests_listener import ITestCaseHandler
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
@@ -10,7 +10,7 @@ from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 logger = get_logger('vital_disable')
 
 
-class NoVitalError(Exception):
+class NoVitalError(PluginError):
     pass
 
 

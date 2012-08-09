@@ -1,7 +1,7 @@
 import os
 import sys
 import shutil
-from art.test_handler.plmanagement import Component, implements, get_logger
+from art.test_handler.plmanagement import Component, implements, get_logger, PluginError
 from art.test_handler.plmanagement.interfaces.application import IConfigurable, IApplicationListener
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 
@@ -25,7 +25,7 @@ VDSM_DEBUG_PLUGIN = 'vdsm-debug-plugin'
 PYTHON_COVERAGE = 'python-coverage'
 
 
-class VDSMCoverageError(Exception):
+class VDSMCoverageError(PluginError):
     pass
 
 
