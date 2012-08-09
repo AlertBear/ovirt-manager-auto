@@ -38,18 +38,20 @@ class RestUtil(APIUtil):
     '''
     Implements REST APIs methods
     '''
-    def __init__(self, element, collection):
+    def __init__(self, element, collection, **kwargs):
 
-        super(RestUtil, self).__init__(element, collection)
+        super(RestUtil, self).__init__(element, collection, **kwargs)
 
+        standalone = self.opts.get('standalone', False)
         global restInit
 
-        if not restInit:
+        if restInit and not standalone:
+            self.api = restInit
+        else:
             self.api = http.HTTPProxy(self.opts)
             self.api.connect()
-            restInit = self.api
-        else:
-            self.api = restInit
+            if not standalone:
+                restInit = self.api
 
         self.links = self.api.HEAD_for_links()
 
@@ -79,7 +81,8 @@ class RestUtil(APIUtil):
                                   'error: %s. body: %s' % (err, ret['body']))
 
 
-    def get(self, href=None, elm=None, absLink=True, listOnly=False, noParse=False):
+    def get(self, href=None, elm=None, absLink=True, listOnly=False,
+            noParse=False, validate=True):
         '''
         Description: implements GET method and verify the reponse (codes 200,201)
         Author: edolinin
@@ -104,7 +107,8 @@ class RestUtil(APIUtil):
         self.logger.debug("GET request content is --  url:%(uri)s " % {'uri': href })
         ret = self.api.GET(href)
 
-        self.validateResponseViaXSD(href, ret)
+        if validate:
+            self.validateResponseViaXSD(href, ret)
         validator.compareResponseCode(ret, [200, 201], self.logger)
 
         self.logger.debug("Response body for GET request is: %s " % ret['body'])

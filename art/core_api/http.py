@@ -160,10 +160,11 @@ class HTTPProxy():
         '''
         Build authentication header
         '''
-        credentials = base64.encodestring('%s@%s:%s' \
-                %  (self.opts['user'],
-                    self.opts['user_domain'],
-                    self.opts['password']))[:-1]
+        user = '%s' % self.opts['user']
+        if self.opts['user_domain']:
+            user += '@%s' % self.opts['user_domain']
+        credentials = base64.encodestring('%s:%s' \
+                %  (user, self.opts['password']))[:-1]
         return "Basic %s" % credentials
 
 
@@ -203,7 +204,7 @@ class HTTPProxy():
         '''
 
         if self.opts.get('standalone', True):
-            return
+            return {}
 
         response = self.__do_request("HEAD", self.opts['uri'], get_header='link')
         links = {}
