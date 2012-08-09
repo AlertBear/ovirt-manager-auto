@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from test_handler.test_runner import TestRunner, TestSuite, TestCase, \
-                                                    opts, plmanager
+from art.test_handler.test_runner import TestRunner, TestSuite, TestCase, \
+                                                    opts
+from art.test_handler.settings import initPlmanager
+
 from lxml import etree
 import re
+
+plmanager = initPlmanager()
 
 
 class XmlRunner(TestRunner):
