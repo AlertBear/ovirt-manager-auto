@@ -746,7 +746,6 @@
    <parameters>root_dir='{data_root_dir}', root_name_prefix='snap', dir_cnt='{data_dir_cnt}', file_cnt='{data_file_cnt}'</parameters>
    <positive>NONE</positive>
    <run>Loop(6)</run>
-   <run>YES</run>
    <report>YES</report>
    <fetch_output>data_path-&gt;data_path#loop_index</fetch_output>
 </test_case>

@@ -10,6 +10,10 @@ from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.test_handler.plmanagement.interfaces.report_formatter import IResultsFormatter
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 
+
+# TODO: same problem as tcms_plugin
+
+
 class XMLFormatter(Component):
     """
     Generates XML report; default: %(const)s
@@ -45,10 +49,12 @@ class XMLFormatter(Component):
 
     # FIXME: I hate this hardcoded names, get rid of them
     def add_test_result(self, kwargs, test_case):
+        if not kwargs._report:
+            return
         module = Element(kwargs['module_name']) \
                     if kwargs['module_name'] \
                     else Element('test')
-        if kwargs.has_key('group_desc'):
+        if 'group_desc' in kwargs:
             module.set('description', kwargs['group_desc'])
 
         # Convet times to machine-local timezone and write it.
@@ -62,8 +68,9 @@ class XMLFormatter(Component):
         written = set(['start_time', 'end_time', 'module_name', 'group_desc'])
         for key in set(kwargs.keys()) - written:
             element = Element(key)
+            data = str(kwargs[key])
             # FIXME: this should be handled on input
-            element.text = unicode(kwargs[key], errors='replace')
+            element.text = unicode(data, errors='replace')
             module.append(element)
 
         self.root.append(module)

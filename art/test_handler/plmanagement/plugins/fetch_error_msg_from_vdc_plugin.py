@@ -21,6 +21,11 @@ DEFAULT_LOG_PATH = '/var/log/ovirt-engine/engine.log'
 TEMP_FILE = '/tmp/tailed_engine_log.log'
 
 
+# TODO: Consider TestSuites in parallel.
+# TODO: Consider TestCases in parallel.
+# TODO: it is quite hard work with parallelism here (maybe not possible with this design)
+
+
 class ErrorFetcher(Component):
     """
     Plugin collects error messages from VDC machine for test_cases which fail.

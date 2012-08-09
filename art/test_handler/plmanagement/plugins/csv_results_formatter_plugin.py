@@ -3,7 +3,8 @@ import os
 import csv
 import time
 from contextlib import contextmanager
-from art.test_handler.plmanagement import Component, implements, get_logger
+from threading import Lock
+from art.test_handler.plmanagement import Component, implements, get_logger, ThreadScope
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.test_handler.plmanagement.interfaces.report_formatter import IResultsFormatter
 from art.test_handler.plmanagement.interfaces.tests_listener import ITestCaseHandler
@@ -33,6 +34,10 @@ DEFAULT_ORDER = ', '.join((
     ))
 
 
+# TODO: Order out reports for each test_suite, also maybe it would be nice to write them into separate file
+#       Also same problem as tcms_plugin
+
+
 class CSVFormatter(Component):
     """
     Generates CSV report; default: %(const)s
@@ -46,8 +51,9 @@ class CSVFormatter(Component):
         self.fh = None
         self.csv = None
         self.format_str = '%.3f'
-        self.measurements = []
+        self.th_scope = ThreadScope()
         self.order = None
+        self.lock = Lock()
 
     @classmethod
     def add_options(cls, parser):
@@ -97,23 +103,25 @@ class CSVFormatter(Component):
                 items.append(getattr(kwargs, 'start_time', None))
             elif i == I_REQ_ELAPSED_TIME:
                 measure = float('nan')
-                if self.measurements:
-                    if len(self.measurements) != 1:
+                if self.th_scope.measures:
+                    if len(self.th_scope.measures) != 1:
                         logger.warn("Got more measure_time records, "\
-                                "then expected: %s", self.measurements)
-                    measure = self.format_str % self.measurements.pop()
+                                "then expected: %s", self.th_scope.measures)
+                    measure = self.format_str % self.th_scope.measures.pop()
                 items.append(measure)
             elif i == I_TEST_STATUS:
                 items.append(getattr(kwargs, 'status', None))
             elif i in kwargs:
                 items.append(getattr(test_case, i, None))
-        self.csv.writerow(items)
+
+        with self.lock:
+            self.csv.writerow(items)
 
     def pre_test_case(self, t):
-        self.measurements = []
+        self.th_scope.measures = []
 
     def post_test_case(self, t):
-        pass
+        del self.th_scope.measures
 
     def test_case_skipped(self, t):
         pass
@@ -122,8 +130,8 @@ class CSVFormatter(Component):
         pass
 
     def on_stop_measure(self, t):
-        if self.measurements is not None:
-            self.measurements.append(t)
+        if self.th_scope.measures is not None:
+            self.th_scope.measures.append(t)
 
     @classmethod
     def is_enabled(cls, params, conf):

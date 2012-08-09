@@ -1,9 +1,6 @@
 from art.test_handler.plmanagement import Interface
 
 
-class SkipTest(Exception):
-    pass
-
 
 class ITestCaseHandler(Interface):
 
@@ -52,7 +49,7 @@ class ITestGroupHandler(Interface):
          * test_group - TestGroup instance
         """
 
-
+# Obsolete
 class ITestSuiteHandler(Interface):
 
     def pre_test_suite(self, test_suite):

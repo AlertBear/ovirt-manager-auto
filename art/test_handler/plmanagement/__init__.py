@@ -20,6 +20,8 @@ __all__ = ['Component', 'ExtensionPoint', 'implements', 'Interface',
            'TracError']
 
 import logging
+import threading
+
 logger = logging.getLogger('plmanagement')
 
 class PluginError(Exception):
@@ -260,10 +262,60 @@ class ComponentManager(object):
         enabled nor disabled explicitly. In both cases, the component
         with the given class will not be available.
         """
-        return True
+        if not isinstance(cls, type):
+            cls = cls.__class__
+        return self.enabled.get(cls, True)
+        #return True
 
 
 def get_logger(name):
     return logging.getLogger(logger.name + '.' + name)
 
+
+class ThreadScope(object):
+    """
+    Allocate for each thread its own value
+    """
+    def __init__(self):
+        super(ThreadScope, self).__init__()
+        self._val = {}
+
+    def __th_key(self):
+        th = threading.current_thread()
+        key = "%s-%s" % (th.ident, th.name)
+        return key
+
+    def __getattribute__(self, key):
+        try:
+            return super(ThreadScope, self).__getattribute__(key)
+        except AttributeError:
+            th = self.__th_key()
+            if th not in self._val:
+                return None
+            else:
+                try:
+                    return self._val[th].get(key)
+                except KeyError:
+                    raise AttributeError(key)
+
+    def __setattr__(self, key, val):
+        if key.startswith('_'):
+            super(ThreadScope, self).__setattr__(key, val)
+        else:
+            th = self.__th_key()
+            if th not in self._val:
+                self._val[th] = {}
+            self._val[th][key] = val
+
+    def __delattr__(self, key):
+        if key.startswith('_'):
+            super(ThreadScope, self).__delattr__(key)
+        else:
+            try:
+                th = self.__th_key()
+                del self._val[th][key]
+                if not self._val:
+                    del self._val[th]
+            except KeyError:
+                pass
 

@@ -39,3 +39,11 @@ class IConfigurable(Interface):
         """
         pass
 
+
+class ITestParser(Interface):
+    def is_able_to_run(self, test_identifier):
+        """"""
+
+    def next_test_object(self):
+        """"""
+

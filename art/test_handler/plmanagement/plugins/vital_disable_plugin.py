@@ -42,7 +42,7 @@ class VitalDisable(Component):
 
     def pre_test_case(self, t):
         try:
-            t.test_vital = "false"
+            t.test_vital = False
         except AttributeError:
             raise NoVitalError(t.test_name)
 

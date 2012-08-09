@@ -40,8 +40,7 @@ class ValidateEvents(Component):
 
         from art.rhevm_api.utils.test_utils import get_api
         self.event_api = get_api('event', 'events')
-        if self.is_enabled(params, conf):
-            logger.info("Plugin for event validations is enabled.")
+        logger.info("Plugin for event validations is enabled.")
 
 
     def pre_test_case(self, t):
@@ -60,7 +59,7 @@ class ValidateEvents(Component):
         if not corr_id:
             return
 
-        if t.test_positive:
+        if t.positive:
             exp_events_count = [1,2,4]
         else:
             exp_events_count = 0

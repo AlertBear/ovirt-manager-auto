@@ -13,6 +13,9 @@ from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 JUNIT_NOFRAMES_STYLESHEET = "junit-noframes.xsl"
 
 
+# TODO: same problem as tcms_plugin
+
+
 def total_seconds(td):
     ''' For Py2.7 compatibility. There is no function in Py2.6 computing this. '''
     return (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6) / 10.**6
@@ -69,13 +72,14 @@ class XUnit(Component):
                                                value=str(config['RUN']['tests_file'])))
 
     def add_test_result(self, kwargs, test_case):
+        if not kwargs._report:
+            return
         time_delta = kwargs['end_time'] - kwargs['start_time']
-        test_name = '{0}({1[test_parameters]})'.format(
+        test_name = '{0}({1[parameters]})'.format( # these_hardcoded names must be changed
                         test_case.test_action, kwargs)
-        test_classname = '%s.%s.%s' % (kwargs['test_type'],
-                                    kwargs['module_name'],
+        test_classname = '%s.%s' % (kwargs['module_name'],
                                     kwargs['test_name'].replace(".", ";"))
-        real_classname = '%s.%s' % (test_case.modPath, test_case.funcName)
+        real_classname = '%s.%s' % (test_case.mod_path, test_case.test_action)
         start_time = kwargs['start_time'].astimezone(tz.tzlocal())
         start_time = start_time.isoformat()
 
@@ -84,7 +88,7 @@ class XUnit(Component):
         testcase.attrib['classname']    = test_classname
         testcase.attrib['time']         = str(total_seconds(time_delta))
 
-        if kwargs['status'] == 'Fail':
+        if kwargs['status'] == test_case.TEST_STATUS_FAILED:
             self.failures += 1
             failure = E.failure('Sorry, no support for backtrace yet.')
             testcase.append(failure)

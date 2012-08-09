@@ -2,7 +2,7 @@
 import re
 import logging
 
-from art.test_handler.plmanagement import Component, implements
+from art.test_handler.plmanagement import Component, implements, ThreadScope
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.test_handler.plmanagement.interfaces.tests_listener import ITestCaseHandler
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
@@ -25,23 +25,27 @@ class LogCaptureHandler(logging.Handler):
     def __init__(self):
         #super(LogCaptureHandler, self).__init__(logging.DEBUG)
         logging.Handler.__init__(self, logging.DEBUG)
-        self.test_case = None
+        self.th_scope = ThreadScope()
 
     def set_test_case(self, t):
         try:
             self.acquire()
-            self.test_case = t
-            if self.test_case is not None:
-                setattr(self.test_case, ATTR_NAME, str())
+            if t is not None:
+                assert self.th_scope.tc is None, \
+                        "There is test_case left: %s" % self.th_scope.tc
+                setattr(t, ATTR_NAME, str())
+                self.th_scope.tc = t
+            else:
+                del self.th_scope.tc
         finally:
             self.release()
 
     def emit(self, rec):
-        if self.test_case is None:
+        if self.th_scope.tc is None:
             return
-        log = getattr(self.test_case, ATTR_NAME, str())
+        log = getattr(self.th_scope.tc, ATTR_NAME, str())
         log +=  self.format(rec) + '\n'
-        setattr(self.test_case, ATTR_NAME, log)
+        setattr(self.th_scope.tc, ATTR_NAME, log)
 
 
 class LogCapture(Component):

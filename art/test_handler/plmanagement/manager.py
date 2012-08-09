@@ -15,6 +15,7 @@ DEFAULT_PATH = os.path.join(os.path.dirname(__file__), 'plugins')
 # Note that application is Component as well as it's own ComponentManager.
 class PluginManager(core.ComponentManager, core.Component):
     implements(input_reader.IInputListener)
+    test_parsers = core.ExtensionPoint(application.ITestParser)
     application_liteners = core.ExtensionPoint(application.IApplicationListener)
     configurables = core.ExtensionPoint(application.IConfigurable)
     results_collector = core.ExtensionPoint(report_formatter.IResultsCollector)
@@ -51,7 +52,8 @@ class PluginManager(core.ComponentManager, core.Component):
     def is_component_enabled(self, cls):
         if self.configured and hasattr(cls, 'is_enabled'):
             # after configuration each of them can say if is ready to work
-            return cls.is_enabled(self.args, self.config)
+            return super(PluginManager, self).is_component_enabled(cls) and \
+                            cls.is_enabled(self.args, self.config)
         return super(PluginManager, self).is_component_enabled(cls)
 
     def configure(self, args=None, config=None):

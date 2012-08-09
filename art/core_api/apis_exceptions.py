@@ -55,17 +55,4 @@ class APICommandError(Exception):
         return "Error while running command '{0}': {1}".format(self.cmd, self.error)
 
 
-class CannotRunTests(Exception):
-    ''' Raised when some problem occured during running the test scenario. '''
 
-
-class VitalTestFailed(Exception):
-    '''
-    Raised when some vital test fails.
-    '''
-    def __init__(self, test_name):
-        self.test_name = test_name
-
-    def __str__(self):
-        MSG = "Test '{0}' failed, can't run any further test."
-        return MSG.format(self.test_name)

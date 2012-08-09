@@ -115,7 +115,7 @@
 <test_case>
    <test_name>Update data center name and description</test_name>
    <test_action>updateDataCenter</test_action>
-   <parameters>datacenter='RestDataCenter1', name='RestDataCenterUpdated'', description='Data Center Description'</parameters>
+   <parameters>datacenter='RestDataCenter1', name='RestDataCenterUpdated', description='Data Center Description'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
@@ -214,7 +214,7 @@
 <test_case>
    <test_name>Update cluster data center</test_name>
    <test_action>updateCluster</test_action>
-   <parameters>cluster='RestCluster3Upd', data_center='DefaultRest''</parameters>
+   <parameters>cluster='RestCluster3Upd', data_center='DefaultRest'</parameters>
    <positive>FALSE</positive>
    <run>yes</run>
 </test_case>
@@ -577,7 +577,7 @@
    <test_name>Check events - host switched to maintenance</test_name>
    <test_type>rest</test_type>
    <test_action>searchForRecentEvent</test_action>
-   <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=600', expected_count=2</parameters>
+   <parameters>win_start_query='RestCluster1 type=809', query='{vds[0]} type=600', expected_count=2</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
@@ -585,7 +585,7 @@
    <test_name>Check events - host up</test_name>
    <test_type>rest</test_type>
    <test_action>searchForRecentEvent</test_action>
-   <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=13', expected_count=3</parameters>
+   <parameters>win_start_query='RestCluster1 type=809', query='{vds[0]} type=13', expected_count=3</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
@@ -593,7 +593,7 @@
    <test_name>Check events - count of 'host installing' is nonzero</test_name>
    <test_type>rest</test_type>
    <test_action>searchForRecentEvent</test_action>
-   <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=509', expected_count=0</parameters>
+   <parameters>win_start_query='RestCluster1 type=809', query='{vds[0]} type=509', expected_count=0</parameters>
    <positive>FALSE</positive>
    <run>yes</run>
 </test_case>
@@ -601,7 +601,7 @@
    <test_name>Check events - host installed</test_name>
    <test_type>rest</test_type>
    <test_action>searchForRecentEvent</test_action>
-   <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=504', expected_count=2</parameters>
+   <parameters>win_start_query='RestCluster1 type=809', query='{vds[0]} type=504', expected_count=2</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
@@ -617,7 +617,7 @@
    <test_name>Check events - host state was set to up</test_name>
    <test_type>rest</test_type>
    <test_action>searchForRecentEvent</test_action>
-   <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=13', expected_count=3</parameters>
+   <parameters>win_start_query='RestCluster1 type=809', query='{vds[0]} type=13', expected_count=3</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
@@ -625,7 +625,7 @@
    <test_name>Check events - host removed</test_name>
    <test_type>rest</test_type>
    <test_action>searchForRecentEvent</test_action>
-   <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=44', expected_count=0</parameters>
+   <parameters>win_start_query='RestCluster1 type=809', query='{vds[0]} type=44', expected_count=0</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
@@ -633,7 +633,7 @@
    <test_name>Check events - host updated</test_name>
    <test_type>rest</test_type>
    <test_action>searchForRecentEvent</test_action>
-   <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=43', expected_count=5</parameters>
+   <parameters>win_start_query='RestCluster1 type=809', query='{vds[0]} type=43', expected_count=5</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
@@ -807,7 +807,7 @@
    <test_name>Check events - host set to maintenance</test_name>
    <test_type>rest</test_type>
    <test_action>searchForRecentEvent</test_action>
-   <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=600', expected_count=4</parameters>
+   <parameters>win_start_query='RestCluster1 type=809', query='{vds[0]} type=600', expected_count=4</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
@@ -1060,7 +1060,7 @@
 <test_case>
    <test_name>Remove iSCSI storage domain</test_name>
    <test_action>removeStorageDomain</test_action>
-   <parameters>storagedomain=''ISCSIDataDomainRest', host='{vds[0]}', format='true'</parameters>
+   <parameters>storagedomain='ISCSIDataDomainRest', host='{vds[0]}', format='true'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
@@ -3151,7 +3151,7 @@
    <test_name>Remove VM pool with attached VMs</test_name>
    <test_type>rest</test_type>
    <test_action>removeVmPool</test_action>
-   <parameters>vmpool=''rest_testPoolUpd'</parameters>
+   <parameters>vmpool='rest_testPoolUpd'</parameters>
    <positive>FALSE</positive>
    <run>yes</run>
 </test_case>
@@ -3159,7 +3159,7 @@
    <test_name>Detach all VMs from pool</test_name>
    <test_type>rest</test_type>
    <test_action>detachVms</test_action>
-   <parameters>vmpool=''rest_testPoolUpd'</parameters>
+   <parameters>vmpool='rest_testPoolUpd'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
@@ -3167,7 +3167,7 @@
    <test_name>Remove VM pool</test_name>
    <test_type>rest</test_type>
    <test_action>removeVmPool</test_action>
-   <parameters>vmpool=''rest_testPoolUpd'</parameters>
+   <parameters>vmpool='rest_testPoolUpd'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>

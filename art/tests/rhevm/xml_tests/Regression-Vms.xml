@@ -1771,7 +1771,7 @@
     <id>cb8d26aa-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Remove VM pool with attached VMs</test_name>
     <test_action>removeVmPool</test_action>
-    <parameters>vmpool=''rest_testPoolUpd'</parameters>
+    <parameters>vmpool='rest_testPoolUpd'</parameters>
     <positive>FALSE</positive>
     <run>yes</run>
   </test_case>
@@ -1779,7 +1779,7 @@
     <id>cb8d2894-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Detach all VMs from pool</test_name>
     <test_action>detachVms</test_action>
-    <parameters>vmpool=''rest_testPoolUpd'</parameters>
+    <parameters>vmpool='rest_testPoolUpd'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
   </test_case>
@@ -1787,7 +1787,7 @@
     <id>cb8d2a74-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Remove VM pool</test_name>
     <test_action>removeVmPool</test_action>
-    <parameters>vmpool=''rest_testPoolUpd'</parameters>
+    <parameters>vmpool='rest_testPoolUpd'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 526}</conf>
