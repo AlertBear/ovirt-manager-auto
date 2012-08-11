@@ -41,6 +41,7 @@ class ErrorFetcher(Component):
     def configure(self, params, conf):
         if not self.is_enabled(params, conf):
             return
+
         passwd = params.fe_vdc_pass or conf.get(CONF_SEC, {}).get(VDC_PASSWD)
         self.vdc = Machine(conf[PARAMETERS][VDC], 'root', passwd).util(LINUX)
         self.path_to_log = params.fe_path_to_log
@@ -49,7 +50,8 @@ class ErrorFetcher(Component):
     @classmethod
     def is_enabled(cls, params, conf):
         conf_en = conf.get(CONF_SEC, {}).get(ENABLED, 'false').lower() == 'true'
-        return params.error_fetcher or conf_en
+        conf_en = params.error_fetcher or conf_en
+        return conf_en
 
     def pre_test_case(self, t):
         cmd = ['tail', '-fn0', self.path_to_log]

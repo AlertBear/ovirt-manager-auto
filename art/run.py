@@ -11,6 +11,7 @@ sys.path = paths
 from art.test_handler.test_suite_runner import TestSuiteRunner
 from art.test_handler.settings import populateOptsFromArgv, CmdLineError, \
         initPlmanager
+from art.test_handler.plmanagement import PluginError
 from sys import argv, exit, stderr
 import traceback
 from socket import error as SocketError
@@ -29,7 +30,7 @@ except SocketError as ex:
     traceback.print_exc(file=stderr)
     print >>stderr, "Exitting with failure."
     exit(2)
-except CmdLineError as e:
+except (CmdLineError, PluginError) as e:
     print >>stderr, e
     print >>stderr, "Exitting with failure."
     exit(2)

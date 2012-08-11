@@ -22,6 +22,14 @@ __all__ = ['Component', 'ExtensionPoint', 'implements', 'Interface',
 import logging
 logger = logging.getLogger('plmanagement')
 
+class PluginError(Exception):
+    name = None
+
+    def __str__(self):
+        if self.name is not None:
+            return "%s: %s" % (self.name, super(PluginError, self).__str__())
+        return super(PluginError, self).__str__()
+
 def N_(string):
     """No-op translation marker, inlined here to avoid importing from
     `trac.util`.
@@ -67,7 +75,11 @@ class CallebleList(list):
             def caller(*args, **kwargs):
                 for ex in self:
                     func = getattr(ex, name)
-                    func(*args, **kwargs)
+                    try:
+                        func(*args, **kwargs)
+                    except PluginError as err:
+                        err.name = ex.name
+                        raise
             return caller
 
 

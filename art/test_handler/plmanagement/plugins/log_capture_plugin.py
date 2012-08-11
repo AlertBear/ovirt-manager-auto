@@ -13,26 +13,34 @@ LOGS = 'LOG_CAPTURE'
 
 enabled = 'enabled'
 fmt = 'fmt'
+logging_level = 'level'
+record_name = 'record_name'
+
+DEFAULT_LEVEL = 'debug'
+ATTR_NAME = 'captured_log'
 
 
 class LogCaptureHandler(logging.Handler):
     def __init__(self):
-        super(LogCaptureHandler, self).__init__(logging.DEBUG)
+        #super(LogCaptureHandler, self).__init__(logging.DEBUG)
+        logging.Handler.__init__(self, logging.DEBUG)
         self.test_case = None
 
     def set_test_case(self, t):
         try:
             self.acquire()
             self.test_case = t
+            if self.test_case is not None:
+                setattr(self.test_case, ATTR_NAME, str())
         finally:
             self.release()
 
     def emit(self, rec):
         if self.test_case is None:
             return
-        log = getattr(self.test_case, 'log', str())
+        log = getattr(self.test_case, ATTR_NAME, str())
         log +=  self.format(rec) + '\n'
-        self.test_case.log = log
+        setattr(self.test_case, ATTR_NAME, log)
 
 
 class LogCapture(Component):
@@ -56,8 +64,15 @@ class LogCapture(Component):
         if not self.is_enabled(params, conf):
             return
 
+        rec_name = conf.get(LOGS, {}).get(record_name, ATTR_NAME)
+        from art.test_handler.test_runner import TestResult
+        TestResult.EXTRA_TEST_CASE[ATTR_NAME] = rec_name
+
         fmt_ = conf.get(LOGS, {}).get(fmt, re.sub('[$][A-Z_]+', '', FMT))
+        level = conf.get(LOGS, {}).get(logging_level, DEFAULT_LEVEL).upper()
+        level = getattr(logging, level)
         self.log_handler = LogCaptureHandler()
+        self.log_handler.setLevel(level)
         self.log_handler.setFormatter(logging.Formatter(fmt_))
         root = logging.getLogger()
         root.addHandler(self.log_handler)

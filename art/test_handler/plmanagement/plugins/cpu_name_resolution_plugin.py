@@ -1,4 +1,4 @@
-from art.test_handler.plmanagement import Component, implements, get_logger
+from art.test_handler.plmanagement import Component, implements, get_logger, PluginError
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.rhevm_api.utils.test_utils import get_api
 
@@ -14,7 +14,7 @@ CPU_NAME = 'cpu_name'
 COMPATIBILITY_VERSION = 'compatibility_version'
 
 
-class CpuNameResolutionFailed(Exception):
+class CpuNameResolutionFailed(PluginError):
     pass
 
 

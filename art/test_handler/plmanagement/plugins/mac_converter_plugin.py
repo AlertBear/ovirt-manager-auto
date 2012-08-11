@@ -8,7 +8,7 @@ from subprocess import Popen, PIPE, list2cmdline
 from utilities.sshConnection import SSHSession
 from utilities.machine import Machine, LINUX
 
-from art.test_handler.plmanagement import Component, implements, get_logger
+from art.test_handler.plmanagement import Component, implements, get_logger, PluginError
 from art.test_handler.plmanagement.interfaces.application import IConfigurable, IApplicationListener
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 
@@ -22,7 +22,7 @@ VDS = 'vds'
 MAC_TO_IP_CONV = "MAC_TO_IP_CONV"
 
 
-class MacToIpConverterError(Exception):
+class MacToIpConverterError(PluginError):
     pass
 
 

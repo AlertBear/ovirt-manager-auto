@@ -35,9 +35,6 @@ plmanager = initPlmanager()
 
 class _DictLikeObject(dict):
 
-    def __init__(self, *args, **kwargs):
-        super(_DictLikeObject, self).__init__(*args, **kwargs)
-
     def __getattribute__(self, key):
         try:
             return super(_DictLikeObject, self).__getattribute__(key)
@@ -52,6 +49,8 @@ class _DictLikeObject(dict):
 
 
 class TestResult(_DictLikeObject):
+
+    EXTRA_TEST_CASE = {}
 
     def __init__(self):
         super(TestResult, self).__init__()
@@ -673,6 +672,9 @@ class TestRunner(object):
 
         if testCase['test_positive']:
             reportStats['test_positive'] = testCase['test_positive']
+
+        for key, val in TestResult.EXTRA_TEST_CASE.items():
+            reportStats[key] = getattr(testCase, val)
 
         plmanager.results_collector.add_test_result(reportStats, testCase)
 
