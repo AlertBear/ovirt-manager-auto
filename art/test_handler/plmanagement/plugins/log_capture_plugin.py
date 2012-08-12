@@ -6,6 +6,7 @@ from art.test_handler.plmanagement import Component, implements
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.test_handler.plmanagement.interfaces.tests_listener import ITestCaseHandler
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
+from art.test_handler.plmanagement.interfaces.report_formatter import IResultExtension
 from art.test_handler.reports import FMT
 
 
@@ -47,7 +48,7 @@ class LogCapture(Component):
     """
     Plugin captures logs and assigns them to related to test_case
     """
-    implements(IConfigurable, ITestCaseHandler, IPackaging)
+    implements(IConfigurable, ITestCaseHandler, IPackaging, IResultExtension)
     name = "Log Capture"
 
     def __init__(self):
@@ -64,9 +65,7 @@ class LogCapture(Component):
         if not self.is_enabled(params, conf):
             return
 
-        rec_name = conf.get(LOGS, {}).get(record_name, ATTR_NAME)
-        from art.test_handler.test_runner import TestResult
-        TestResult.EXTRA_TEST_CASE[ATTR_NAME] = rec_name
+        self.rec_name = conf.get(LOGS, {}).get(record_name, ATTR_NAME)
 
         fmt_ = conf.get(LOGS, {}).get(fmt, re.sub('[$][A-Z_]+', '', FMT))
         level = conf.get(LOGS, {}).get(logging_level, DEFAULT_LEVEL).upper()
@@ -76,6 +75,9 @@ class LogCapture(Component):
         self.log_handler.setFormatter(logging.Formatter(fmt_))
         root = logging.getLogger()
         root.addHandler(self.log_handler)
+
+    def pre_test_result_reported(self, res, t):
+        setattr(res, self.rec_name, getattr(t, ATTR_NAME, str()))
 
     def pre_test_case(self, t):
         self.log_handler.set_test_case(t)

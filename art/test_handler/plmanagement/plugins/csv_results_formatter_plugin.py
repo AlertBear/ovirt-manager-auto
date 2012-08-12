@@ -22,7 +22,7 @@ I_TEST_NAME = 'test_name'
 I_START_TIME = 'start_time'
 I_REQ_ELAPSED_TIME = 'req_elapsed_time'
 I_TEST_STATUS = 'test_status'
-I_DEBUG_INFO = 'debug_info'
+I_DEBUG_INFO = 'captured_log'
 
 
 DEFAULT_PRECISSION = '5'
@@ -105,9 +105,8 @@ class CSVFormatter(Component):
                 items.append(measure)
             elif i == I_TEST_STATUS:
                 items.append(getattr(kwargs, 'status', None))
-            # FIXME: this should be able to addapt according to EXTRA_TEST_CASE attribute as well
-            elif i == I_DEBUG_INFO:
-                items.append(getattr(test_case, 'captured_log', None))
+            elif i in kwargs:
+                items.append(getattr(test_case, i, None))
         self.csv.writerow(items)
 
     def pre_test_case(self, t):
