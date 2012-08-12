@@ -37,14 +37,6 @@
     <run>if(1&lt;len('[vds]'.split(',')))</run>
   </test_case>
   <test_case>
-    <id>cb8b70e4-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - host added (if using two hosts)</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='RestCluster1 type=809', query='Hosts.name={vds[1]} and type=42', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>if(1&lt;len('[vds]'.split(',')))</run>
-  </test_case>
-  <test_case>
     <id>cb8b72ec-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Create iSCSI data center</test_name>
     <test_action>addDataCenter</test_action>
@@ -151,6 +143,7 @@
     <parameters>name='restvm0', description='Test VM', cluster='RestCluster1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 401}</conf>
   </test_case>
   <test_case>
     <id>cb8b8c3c-c695-11e1-bca8-f0def10e0ce8</id>
@@ -169,6 +162,7 @@
     <parameters>host='{vds[1]}', cluster='RestCluster4'</parameters>
     <positive>TRUE</positive>
     <run>if(1&lt;len('[vds]'.split(',')))</run>
+    <conf>headers={'Correlation-Id': 402}</conf>
   </test_case>
   <test_case>
     <id>cb8b9010-c695-11e1-bca8-f0def10e0ce8</id>
@@ -196,6 +190,7 @@
     <parameters>vm='restvm0', size=2147483648, type='e{disk_type_system}', format='e{format_raw}', interface='e{interface_ide}', sparse='true', storagedomain='DataDomainRest'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 403}</conf>
   </test_case>
   <test_case>
     <id>cb8b95ba-c695-11e1-bca8-f0def10e0ce8</id>
@@ -205,6 +200,7 @@
     <parameters>vm='restvm0'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 404}</conf>
   </test_case>
   <test_case>
     <id>cb8b97a4-c695-11e1-bca8-f0def10e0ce8</id>
@@ -232,6 +228,7 @@
     <parameters>host='{vds[1]}', cluster='RestCluster1'</parameters>
     <positive>TRUE</positive>
     <run>If(1&lt;len('[vds]'.split(',')))</run>
+    <conf>headers={'Correlation-Id': 405}</conf>
   </test_case>
   <test_case>
     <id>cb8b9d58-c695-11e1-bca8-f0def10e0ce8</id>
@@ -257,6 +254,7 @@
     <parameters>vm='restvm0'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 406}</conf>
   </test_case>
   <test_case>
     <id>cb8ba316-c695-11e1-bca8-f0def10e0ce8</id>
@@ -300,6 +298,7 @@
     <parameters>name='restvm_server', description='Test VM Server', cluster='RestCluster1', type='e{vm_type_server}', highly_available='true'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 407}</conf>
   </test_case>
   <test_case>
     <id>cb8bad98-c695-11e1-bca8-f0def10e0ce8</id>
@@ -308,6 +307,7 @@
     <parameters>name='restvm_stateless', cluster='RestCluster1', stateless='true'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 408}</conf>
   </test_case>
   <test_case>
     <id>cb8baf82-c695-11e1-bca8-f0def10e0ce8</id>
@@ -316,6 +316,7 @@
     <parameters>name='restvm_custom_prop', description='Test VM', cluster='RestCluster1', custom_properties='sndbuf=111'</parameters>
     <positive>TRUE</positive>
     <run>if('{compatibility_version}'.startswith('3.'))</run>
+    <conf>headers={'Correlation-Id': 409}</conf>
   </test_case>
   <test_case>
     <id>cb8bb16c-c695-11e1-bca8-f0def10e0ce8</id>
@@ -324,6 +325,7 @@
     <parameters>name='restvm_guaranteed_mem', description='Test VM', cluster='RestCluster1', memory_guaranteed=268435456</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 410}</conf>
   </test_case>
   <test_case>
     <id>cb8bb360-c695-11e1-bca8-f0def10e0ce8</id>
@@ -332,6 +334,7 @@
     <parameters>name='restvm_disks', cluster='RestCluster1', disk_type='e{disk_type_data}', size='2147483648', format='e{format_cow}', interface='e{interface_virtio}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 411}</conf>
   </test_case>
   <test_case>
     <id>cb8bb54a-c695-11e1-bca8-f0def10e0ce8</id>
@@ -340,6 +343,7 @@
     <parameters>name='restvm_os_params', description='VM with custom OS test paramters', cluster='RestCluster1', kernel='/kernel-path', initrd='/initrd-path', cmdline='rd_NO_LUKS rd_NO_MD'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 412}</conf>
   </test_case>
   <test_case>
     <id>cb8bb734-c695-11e1-bca8-f0def10e0ce8</id>
@@ -348,6 +352,7 @@
     <parameters>name='restvm_os_rhel', description='VM with custom OS type', cluster='RestCluster1', os_type='e{rhel6x64}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 413}</conf>
   </test_case>
   <test_case>
     <id>cb8bb91e-c695-11e1-bca8-f0def10e0ce8</id>
@@ -356,6 +361,7 @@
     <parameters>name='restvm_os_xp', description='VM with custom OS type', cluster='RestCluster1', os_type='e{windowsxp}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 414}</conf>
   </test_case>
   <test_case>
     <id>cb8bbb08-c695-11e1-bca8-f0def10e0ce8</id>
@@ -364,6 +370,7 @@
     <parameters>name='restvm_bootorder', description='VM with custom boot sequence order', cluster='RestCluster1', os_type='e{rhel6x64}', boot='network hd'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 415}</conf>
   </test_case>
   <test_case>
     <id>cb8bbce8-c695-11e1-bca8-f0def10e0ce8</id>
@@ -388,6 +395,7 @@
     <parameters>name='restvm_disks_sd', cluster='RestCluster1', storagedomain='DataDomainRest', disk_type='e{disk_type_data}', size='2147483648', format='e{format_cow}', interface='e{interface_virtio}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 416}</conf>
   </test_case>
   <test_case>
     <id>cb8bc29c-c695-11e1-bca8-f0def10e0ce8</id>
@@ -396,6 +404,7 @@
     <parameters>name='restvm_domain', description='Domain Name VM', cluster='RestCluster1', domainName='{user_domain}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 417}</conf>
   </test_case>
   <!-- ////////////////////////////////////////////////////////////////////// -->
   <!-- /////////////////////////// UPDATE VM //////////////////////////////// -->
@@ -407,6 +416,7 @@
     <parameters>vm='restvm_os_rhel', os_type='e{windowsxp}', name='restvm_os_win'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 418}</conf>
   </test_case>
   <test_case>
     <id>cb8bc67a-c695-11e1-bca8-f0def10e0ce8</id>
@@ -415,6 +425,7 @@
     <parameters>vm='restvm_os_xp', os_type='e{rhel6x64}', name='restvm_os_rhel'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 419}</conf>
   </test_case>
   <test_case>
     <id>cb8bc85a-c695-11e1-bca8-f0def10e0ce8</id>
@@ -423,6 +434,7 @@
     <parameters>vm='restvm_os_params', kernel='/kernel-new-path', initrd='/initrd-new-path', cmdline='rd_NO_LUKS'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 420}</conf>
   </test_case>
   <test_case>
     <id>cb8bca3a-c695-11e1-bca8-f0def10e0ce8</id>
@@ -431,6 +443,7 @@
     <parameters>vm='restvm0', name='restvm_update'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 421}</conf>
   </test_case>
   <test_case>
     <id>cb8bcc24-c695-11e1-bca8-f0def10e0ce8</id>
@@ -439,6 +452,7 @@
     <parameters>vm='restvm_update', placement_affinity='e{vm_affinity_migratable}', placement_host='{vds[0]}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 422}</conf>
   </test_case>
   <test_case>
     <id>cb8bce04-c695-11e1-bca8-f0def10e0ce8</id>
@@ -447,6 +461,7 @@
     <parameters>vm='restvm_update', placement_affinity='e{vm_affinity_user_migratable}', placement_host='{vds[0]}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 423}</conf>
   </test_case>
   <test_case>
     <id>cb8bd02a-c695-11e1-bca8-f0def10e0ce8</id>
@@ -455,6 +470,7 @@
     <parameters>vm='restvm_update', placement_affinity='e{vm_affinity_pinned}', placement_host='{vds[0]}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 424}</conf>
   </test_case>
   <test_case>
     <id>cb8bd214-c695-11e1-bca8-f0def10e0ce8</id>
@@ -463,6 +479,7 @@
     <parameters>vm='restvm_update', placement_affinity='e{vm_affinity_migratable}', placement_host='e{placement_host_any_host_in_cluster}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 425}</conf>
   </test_case>
   <test_case>
     <id>cb8bd3fe-c695-11e1-bca8-f0def10e0ce8</id>
@@ -471,6 +488,7 @@
     <parameters>vm='restvm_update', placement_affinity='e{vm_affinity_user_migratable}', placement_host='e{placement_host_any_host_in_cluster}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 426}</conf>
   </test_case>
   <test_case>
     <id>cb8bd5de-c695-11e1-bca8-f0def10e0ce8</id>
@@ -479,6 +497,7 @@
     <parameters>vm='restvm_update', description='Test VM Update'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 427}</conf>
   </test_case>
   <test_case>
     <id>cb8bd7c8-c695-11e1-bca8-f0def10e0ce8</id>
@@ -487,6 +506,7 @@
     <parameters>vm='restvm_update', cluster='RestCluster4'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 428}</conf>
   </test_case>
   <test_case>
     <id>cb8bd9a8-c695-11e1-bca8-f0def10e0ce8</id>
@@ -495,6 +515,7 @@
     <parameters>vm='restvm_update', cluster='RestCluster1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 429}</conf>
   </test_case>
   <test_case>
     <id>cb8bdb88-c695-11e1-bca8-f0def10e0ce8</id>
@@ -503,6 +524,7 @@
     <parameters>vm='restvm_update', memory=2147483648</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 430}</conf>
   </test_case>
   <test_case>
     <id>cb8bdd72-c695-11e1-bca8-f0def10e0ce8</id>
@@ -511,6 +533,7 @@
     <parameters>vm='restvm_update', memory_guaranteed=536870912</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 431}</conf>
   </test_case>
   <test_case>
     <id>cb8bdf52-c695-11e1-bca8-f0def10e0ce8</id>
@@ -519,6 +542,7 @@
     <parameters>vm='restvm_update', cpu_socket=2</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 432}</conf>
   </test_case>
   <test_case>
     <id>cb8be132-c695-11e1-bca8-f0def10e0ce8</id>
@@ -527,6 +551,7 @@
     <parameters>vm='restvm_update', cpu_cores=2</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 433}</conf>
   </test_case>
   <test_case>
     <id>cb8be31c-c695-11e1-bca8-f0def10e0ce8</id>
@@ -535,6 +560,7 @@
     <parameters>vm='restvm_update', display_type='e{display_type_spice}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 434}</conf>
   </test_case>
   <test_case>
     <id>cb8be4fc-c695-11e1-bca8-f0def10e0ce8</id>
@@ -543,6 +569,7 @@
     <parameters>vm='restvm_update', display_monitors=2</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 435}</conf>
   </test_case>
   <test_case>
     <id>cb8be6e6-c695-11e1-bca8-f0def10e0ce8</id>
@@ -551,6 +578,7 @@
     <parameters>vm='restvm_update', display_monitors=1</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 436}</conf>
   </test_case>
   <!-- //////////////////////// NEGATIVE  VM UPDATES ////////////////////////// -->
   <test_case>
@@ -585,6 +613,7 @@
     <parameters>name='restvm_locked', description='Vm to be locked in the database', cluster='RestCluster1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 437}</conf>
   </test_case>
   <test_case>
     <id>cb8bf05a-c695-11e1-bca8-f0def10e0ce8</id>
@@ -619,15 +648,6 @@
     <positive>TRUE</positive>
     <run>if('{compatibility_version}'.startswith('3.'))</run>
   </test_case>
-  <!-- /////////////////////// VM EVENTS //////////////////////////////////// -->
-  <test_case>
-    <id>cb8bfa28-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - VM created</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='restvm0 type=34', query='type=34', expected_count=12</parameters>
-    <positive>TRUE</positive>
-    <run>if('{compatibility_version}'.startswith('3.'))</run>
-  </test_case>
   <!-- ////////////////////////////////////////////////////////////////////// -->
   <!-- ////////////////////////// ADDING NICS TO VMS///////////////////////// -->
   <!-- ////////////////////////////////////////////////////////////////////// -->
@@ -638,6 +658,7 @@
     <parameters>name='restvm_nic', cluster='RestCluster1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 438}</conf>
   </test_case>
   <test_case>
     <id>cb8bfdfc-c695-11e1-bca8-f0def10e0ce8</id>
@@ -646,6 +667,7 @@
     <parameters>vm='restvm_nic', name='nic1', network='{mgmt_bridge}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 439}</conf>
   </test_case>
   <test_case>
     <id>cb8bffdc-c695-11e1-bca8-f0def10e0ce8</id>
@@ -654,6 +676,7 @@
     <parameters>vm='restvm_nic', name='nic2', network='{mgmt_bridge}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 440}</conf>
   </test_case>
   <test_case>
     <id>cb8c01c6-c695-11e1-bca8-f0def10e0ce8</id>
@@ -662,14 +685,7 @@
     <parameters>vm='restvm_domain', name='nic1', network='{mgmt_bridge}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>cb8c03a6-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - VM NICs added</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='restvm0 type=34', query='type=932', expected_count=3</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
+    <conf>headers={'Correlation-Id': 441}</conf>
   </test_case>
   <test_case>
     <id>cb8c0586-c695-11e1-bca8-f0def10e0ce8</id>
@@ -678,14 +694,7 @@
     <parameters>vm='restvm_nic', nic='nic2', name='nic2_updated'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>cb8c0770-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - VM NIC updated</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='restvm0 type=34', query='type=934', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
+    <conf>headers={'Correlation-Id': 442}</conf>
   </test_case>
   <test_case>
     <id>cb8c0950-c695-11e1-bca8-f0def10e0ce8</id>
@@ -694,14 +703,7 @@
     <parameters>vm='restvm_nic', nic='nic2_updated'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>cb8c0b3a-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - VM NIC removed</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='restvm0 type=34', query='type=930', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
+    <conf>headers={'Correlation-Id': 443}</conf>
   </test_case>
   <!-- ////////////////////////////////////////////////////////////////////// -->
   <!-- ////////////////////////// DISKS ///////////////////////////////////// -->
@@ -713,6 +715,7 @@
     <parameters>vm='restvm_domain', size=2147483648, storagedomain='DataDomainRest', type='e{disk_type_data}', format='e{format_cow}', interface='e{interface_virtio}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 444}</conf>
   </test_case>
   <test_case>
     <id>cb8c0f0e-c695-11e1-bca8-f0def10e0ce8</id>
@@ -729,6 +732,7 @@
     <parameters>vm='restvm_multiple_disks', size=2147483648, storagedomain='DataDomainRest', type='e{disk_type_data}', format='e{format_cow}', interface='e{interface_virtio}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 445}</conf>
   </test_case>
   <test_case>
     <id>cb8c12ce-c695-11e1-bca8-f0def10e0ce8</id>
@@ -737,6 +741,7 @@
     <parameters>vm='restvm_multiple_disks', size=2147483648, type='e{disk_type_system}', format='e{format_raw}', interface='e{interface_ide}', sparse='false'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 446}</conf>
   </test_case>
   <test_case>
     <id>cb8c14ae-c695-11e1-bca8-f0def10e0ce8</id>
@@ -745,6 +750,7 @@
     <parameters>vm='restvm_multiple_disks', size=2147483648, type='e{disk_type_data}', format='e{format_cow}', interface='e{interface_ide}', bootable='true', wipe_after_deletion='true'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 447}</conf>
   </test_case>
   <test_case>
     <id>cb8c168e-c695-11e1-bca8-f0def10e0ce8</id>
@@ -753,6 +759,7 @@
     <parameters>vm='restvm_multiple_disks', size=2147483648, type='e{disk_type_data}', format='e{format_cow}', interface='e{interface_virtio}', sparse='true'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 448}</conf>
   </test_case>
   <test_case>
     <id>cb8c1878-c695-11e1-bca8-f0def10e0ce8</id>
@@ -761,6 +768,7 @@
     <parameters>vm='restvm_multiple_disks', size=2147483648, type='e{disk_type_data}', format='e{format_raw}', interface='e{interface_ide}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 449}</conf>
   </test_case>
   <test_case>
     <id>cb8c1a58-c695-11e1-bca8-f0def10e0ce8</id>
@@ -769,22 +777,7 @@
     <parameters>vm='restvm_multiple_disks', size=2147483648, type='e{disk_type_data}', format='e{format_raw}', interface='e{interface_virtio}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>cb8c1c42-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - multiple 'disk adding operation initiated'</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='restvm0 type=34', query='type=78', expected_count=8</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>cb8c1e90-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - multiple 'disk added'</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='restvm0 type=34', query='type=97', expected_count=8</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
+    <conf>headers={'Correlation-Id': 450}</conf>
   </test_case>
   <test_case>
     <id>cb8c208e-c695-11e1-bca8-f0def10e0ce8</id>
@@ -804,6 +797,7 @@
     <parameters>name='restvm_snapshots', cluster='RestCluster1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 451}</conf>
   </test_case>
   <test_case>
     <id>cb8c248a-c695-11e1-bca8-f0def10e0ce8</id>
@@ -812,6 +806,7 @@
     <parameters>vm='restvm_snapshots', size=2147483648, storagedomain='DataDomainRest', type='e{disk_type_system}', format='e{format_cow}', interface='e{interface_ide}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 452}</conf>
   </test_case>
   <test_case>
     <id>cb8c2674-c695-11e1-bca8-f0def10e0ce8</id>
@@ -820,6 +815,7 @@
     <parameters>vm='restvm_snapshots', description='snapshot1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 453}</conf>
   </test_case>
   <test_case>
     <id>cb8c285e-c695-11e1-bca8-f0def10e0ce8</id>
@@ -828,6 +824,7 @@
     <parameters>vm='restvm_snapshots', description='snapshot2'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 454}</conf>
   </test_case>
   <test_case>
     <id>cb8c2a48-c695-11e1-bca8-f0def10e0ce8</id>
@@ -836,6 +833,7 @@
     <parameters>vm='restvm_snapshots', description='snapshot2'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 455}</conf>
   </test_case>
   <test_case>
     <id>cb8c2c28-c695-11e1-bca8-f0def10e0ce8</id>
@@ -844,6 +842,7 @@
     <parameters>vm='restvm_snapshots', storagedomain='ExportDomainRest', discard_snapshots='true'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 456}</conf>
   </test_case>
   <test_case>
     <id>cb8c2e08-c695-11e1-bca8-f0def10e0ce8</id>
@@ -852,54 +851,7 @@
     <parameters>vm='restvm_snapshots', description='snapshot1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>cb8c3010-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - VM snapshot creation initiated</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='restvm0 type=34', query='type=45', expected_count=2</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>cb8c3204-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - VM snapshot creation completed</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='restvm0 type=34', query='type=68', expected_count=2</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>cb8c33ee-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - restoring VM from snapshot started by user vdcadmin</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='restvm0 type=34', query='type=1190', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>cb8c35ce-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - VM restoring from snapshot completed</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='restvm0 type=34', query='type=100', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>cb8c37b8-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - VM snapshot deletion initiated</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='restvm0 type=34', query='type=342', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>cb8c3998-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - VM snapshot deletion completed</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='restvm0 type=34', query='type=356', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
+    <conf>headers={'Correlation-Id': 457}</conf>
   </test_case>
   <!-- ////////////////////////////////////////////////////////////////////// -->
   <test_case>
@@ -909,6 +861,7 @@
     <parameters>vm='restvm_domain', domainName='{user_domain}', user_name='username', password='password'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 458}</conf>
   </test_case>
   <test_case>
     <id>cb8c3d6c-c695-11e1-bca8-f0def10e0ce8</id>
@@ -917,6 +870,7 @@
     <parameters>vm='restvm_domain'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 459}</conf>
   </test_case>
   <!-- /////////////////////////// TEMPLATES //////////////////////////////// -->
   <test_case>
@@ -926,6 +880,7 @@
     <parameters>vm='restvm_domain', name='domain_template', cluster='RestCluster1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 460}</conf>
   </test_case>
   <test_case>
     <id>cb8c4140-c695-11e1-bca8-f0def10e0ce8</id>
@@ -942,6 +897,7 @@
     <parameters>group='Everyone', template='domain_template'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 461}</conf>
   </test_case>
   <test_case>
     <id>cb8c4550-c695-11e1-bca8-f0def10e0ce8</id>
@@ -950,6 +906,7 @@
     <parameters>template='domain_template'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 462}</conf>
   </test_case>
   <!-- ////////////////////////////////////////////////////////////////////// -->
   <!-- ////////////////////////// BASIC VM OPERATIONS /////////////////////// -->
@@ -961,6 +918,7 @@
     <parameters>name='restvm_basic_operations', cluster='RestCluster1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 463}</conf>
   </test_case>
   <test_case>
     <id>cb8c4938-c695-11e1-bca8-f0def10e0ce8</id>
@@ -969,6 +927,7 @@
     <parameters>vm='restvm_basic_operations', size=2147483648, storagedomain='DataDomainRest', type='e{disk_type_system}', format='e{format_cow}', interface='e{interface_ide}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 464}</conf>
   </test_case>
   <test_case>
     <id>cb8c4b4a-c695-11e1-bca8-f0def10e0ce8</id>
@@ -977,6 +936,7 @@
     <parameters>vm='restvm_basic_operations'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 465}</conf>
   </test_case>
   <test_case>
     <id>cb8c4d34-c695-11e1-bca8-f0def10e0ce8</id>
@@ -994,6 +954,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <bz>837003</bz>
+    <conf>headers={'Correlation-Id': 466}</conf>
   </test_case>
   <test_case>
     <id>cb8c5112-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1002,6 +963,7 @@
     <parameters>vm='restvm_basic_operations'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 467}</conf>
   </test_case>
   <test_case>
     <id>cb8c52f2-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1018,6 +980,7 @@
     <parameters>vm='restvm_basic_operations'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 468}</conf>
   </test_case>
   <test_case>
     <id>cb8c56c6-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1042,6 +1005,7 @@
     <parameters>vm='restvm_basic_operations'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 470}</conf>
   </test_case>
   <test_case>
     <id>cb8c5c7a-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1114,6 +1078,7 @@
     <parameters>name='restvm_export', cluster='RestCluster1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 471}</conf>
   </test_case>
   <test_case>
     <id>cb8c6c2e-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1122,6 +1087,7 @@
     <parameters>vm='restvm_export', size=2147483648, storagedomain='DataDomainRest', type='e{disk_type_system}', format='e{format_cow}', interface='e{interface_virtio}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 472}</conf>
   </test_case>
   <test_case>
     <id>cb8c6e22-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1130,6 +1096,7 @@
     <parameters>vm='restvm_export', storagedomain='ExportDomainRest'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 473}</conf>
   </test_case>
   <test_case>
     <id>cb8c700c-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1138,6 +1105,7 @@
     <parameters>vm='restvm_export', storagedomain='ExportDomainRest', exclusive='true'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 474}</conf>
   </test_case>
   <test_case>
     <id>cb8c71f6-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1146,6 +1114,7 @@
     <parameters>vm='restvm_export'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 475}</conf>
   </test_case>
   <test_case>
     <id>cb8c73d6-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1154,6 +1123,7 @@
     <parameters>vm='restvm_export', import_storagedomain='DataDomainRest', export_storagedomain='ExportDomainRest', cluster='RestCluster1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 476}</conf>
   </test_case>
   <test_case>
     <id>cb8c75c0-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1170,6 +1140,7 @@
     <parameters>vm='restvm_export', storagedomain='DataDomainRest2'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 477}</conf>
   </test_case>
   <test_case>
     <id>cb8c798a-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1178,6 +1149,7 @@
     <parameters>vm='restvm_export', storagedomain='DataDomainRest'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 478}</conf>
   </test_case>
   <!-- ///////////////////////// SPICE AND VNC ////////////////////////////// -->
   <test_case>
@@ -1187,6 +1159,7 @@
     <parameters>name='restvm_vnc', display_type='e{display_type_vnc}', cluster='RestCluster1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 479}</conf>
   </test_case>
   <test_case>
     <id>cb8c7d54-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1195,6 +1168,7 @@
     <parameters>name='restvm_spice', display_type='e{display_type_spice}', cluster='RestCluster1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 480}</conf>
   </test_case>
   <test_case>
     <id>cb8c7f70-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1203,6 +1177,7 @@
     <parameters>vm='restvm_vnc', name='nic1', network='{mgmt_bridge}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 481}</conf>
   </test_case>
   <test_case>
     <id>cb8c8150-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1211,6 +1186,7 @@
     <parameters>vm='restvm_spice', name='nic1', network='{mgmt_bridge}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 482}</conf>
   </test_case>
   <test_case>
     <id>cb8c833a-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1219,6 +1195,7 @@
     <parameters>vm='restvm_vnc', pause='true', display_type='e{display_type_vnc}', boot_dev='network'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 483}</conf>
   </test_case>
   <test_case>
     <id>cb8c851a-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1227,6 +1204,7 @@
     <parameters>vm='restvm_spice', pause='true', display_type='e{display_type_spice}', boot_dev='network'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 484}</conf>
   </test_case>
   <test_case>
     <id>cb8c86fa-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1267,6 +1245,7 @@
     <parameters>vm='restvm_vnc'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 485}</conf>
   </test_case>
   <test_case>
     <id>cb8c9078-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1275,6 +1254,7 @@
     <parameters>vm='restvm_spice'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 486}</conf>
   </test_case>
   <test_case>
     <id>cb8c9262-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1292,6 +1272,7 @@
     <parameters>type='e{storage_dom_type_iso}', storage_type='e{storage_type_nfs}', address='{shared_iso_domain_address}', host='{vds[0]}', path='{shared_iso_domain_path}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 487}</conf>
   </test_case>
   <test_case>
     <id>cb8c967c-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1335,14 +1316,7 @@
     <parameters>name='restvm_run_once', cluster='RestCluster1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>cb8ca0f4-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - VM created (for runonce)</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='{shared_iso_domain_name} type=966', query='restvm_run_once type=34', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
+    <conf>headers={'Correlation-Id': 488}</conf>
   </test_case>
   <test_case>
     <id>cb8ca2de-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1351,6 +1325,7 @@
     <parameters>vm='restvm_run_once', size=2147483648, storagedomain='DataDomainRest', type='e{disk_type_system}', format='e{format_cow}', interface='e{interface_ide}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 489}</conf>
   </test_case>
   <test_case>
     <id>cb8ca4be-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1359,6 +1334,7 @@
     <parameters>vm='restvm_run_once', cdrom_image='{cdrom_image}', boot_dev='cdrom', pause='true'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 490}</conf>
   </test_case>
   <test_case>
     <id>cb8ca69e-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1369,20 +1345,13 @@
     <run>yes</run>
   </test_case>
   <test_case>
-    <id>cb8ca888-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - VM CD changed</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='{shared_iso_domain_name} type=966', query='restvm_run_once type=38', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
     <id>cb8caa68-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Stop VM for runvmonce to add NIC</test_name>
     <test_action>stopVm</test_action>
     <parameters>vm='restvm_run_once'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 491}</conf>
   </test_case>
   <test_case>
     <id>cb8cac52-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1391,6 +1360,7 @@
     <parameters>vm='restvm_run_once', name='nic1', network='{mgmt_bridge}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 492}</conf>
   </test_case>
   <test_case>
     <id>cb8cae32-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1399,6 +1369,7 @@
     <parameters>vm='restvm_run_once', boot_dev='network', pause='true'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 493}</conf>
   </test_case>
   <test_case>
     <id>cb8cb01c-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1407,6 +1378,7 @@
     <parameters>vm='restvm_run_once'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 494}</conf>
   </test_case>
   <test_case>
     <id>cb8cb1fc-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1415,6 +1387,7 @@
     <parameters>vm='restvm_run_once', floppy_image='{floppy_image}', boot_dev='network', pause='true'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 495}</conf>
   </test_case>
   <test_case>
     <id>cb8cb40e-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1423,14 +1396,7 @@
     <parameters>vm='restvm_run_once'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>cb8cb5f8-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - VM started</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='restvm_run_once type=34', query='type=153', expected_count=3</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
+    <conf>headers={'Correlation-Id': 496}</conf>
   </test_case>
   <test_case>
     <id>cb8cb7d8-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1466,6 +1432,7 @@
     <parameters>name='restvm_migration', description='A nomadic VM', cluster='RestCluster1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 497}</conf>
   </test_case>
   <test_case>
     <id>cb8cc02a-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1474,6 +1441,7 @@
     <parameters>vm='restvm_migration', name='nic1', network='{mgmt_bridge}'</parameters>
     <positive>TRUE</positive>
     <run>If(1&lt;len('[vds]'.split(',')))</run>
+    <conf>headers={'Correlation-Id': 498}</conf>
   </test_case>
   <test_case>
     <id>cb8cc20a-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1482,6 +1450,7 @@
     <parameters>vm='restvm_migration', placement_affinity='migratable', placement_host='{vds[0]}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 499}</conf>
   </test_case>
   <test_case>
     <id>cb8cc3f4-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1490,6 +1459,7 @@
     <parameters>vm='restvm_migration', boot_dev='network'</parameters>
     <positive>TRUE</positive>
     <run>If(1&lt;len('[vds]'.split(',')))</run>
+    <conf>headers={'Correlation-Id': 500}</conf>
   </test_case>
   <test_case>
     <id>cb8cc5de-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1507,40 +1477,7 @@
     <positive>TRUE</positive>
     <run>If(1&lt;len('[vds]'.split(',')))</run>
     <bz>756044</bz>
-  </test_case>
-  <test_case>
-    <id>cb8cc99e-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - vm_migration_start</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='restvm_migration type=34', query='restvm_migration type=62', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>If(1&lt;len('[vds]'.split(',')))</run>
-    <bz>756044</bz>
-  </test_case>
-  <test_case>
-    <id>cb8ccb7e-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - vm_migration_done</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='restvm_migration type=34', query='restvm_migration type=63', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>If(1&lt;len('[vds]'.split(',')))</run>
-    <bz>756044</bz>
-  </test_case>
-  <test_case>
-    <id>cb8ccda4-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - no vm_migration_abort</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='restvm_migration type=34', query='restvm_migration type=64', expected_count=0</parameters>
-    <positive>TRUE</positive>
-    <run>If(1&lt;len('[vds]'.split(',')))</run>
-  </test_case>
-  <test_case>
-    <id>cb8ccf8e-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - no vm_migration_failed</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='restvm_migration type=34', query='restvm_migration type=65', expected_count=0</parameters>
-    <positive>TRUE</positive>
-    <run>If(1&lt;len('[vds]'.split(',')))</run>
+    <conf>headers={'Correlation-Id': 501}</conf>
   </test_case>
   <test_case>
     <id>cb8cd16e-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1549,6 +1486,7 @@
     <parameters>vm='restvm_migration'</parameters>
     <positive>TRUE</positive>
     <run>If(1&lt;len('[vds]'.split(',')))</run>
+    <conf>headers={'Correlation-Id': 502}</conf>
   </test_case>
   <test_case>
     <id>cb8cd34e-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1557,6 +1495,7 @@
     <parameters>vm='restvm_migration', size=2147483648, type='e{disk_type_system}', format='e{format_raw}', interface='e{interface_ide}', sparse='true', storagedomain='DataDomainRest'</parameters>
     <positive>TRUE</positive>
     <run>if(1&lt;len('[vds]'.split(',')))</run>
+    <conf>headers={'Correlation-Id': 503}</conf>
   </test_case>
   <test_case>
     <id>cb8cd538-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1565,6 +1504,7 @@
     <parameters>vm='restvm_migration', wait_for_status='up'</parameters>
     <positive>TRUE</positive>
     <run>If(1&lt;len('[vds]'.split(',')))</run>
+    <conf>headers={'Correlation-Id': 504}</conf>
   </test_case>
   <test_case>
     <id>cb8cd722-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1573,6 +1513,7 @@
     <parameters>vm='restvm_migration'</parameters>
     <positive>TRUE</positive>
     <run>if(1&lt;len('[vds]'.split(',')))</run>
+    <conf>headers={'Correlation-Id': 505}</conf>
     <bz>756044</bz>
   </test_case>
   <test_case>
@@ -1582,38 +1523,7 @@
     <parameters>vm='restvm_migration'</parameters>
     <positive>TRUE</positive>
     <run>if(1&lt;len('[vds]'.split(',')))</run>
-  </test_case>
-  <test_case>
-    <id>cb8cdae2-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - vm_migration_start after the disk added to VM</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='restvm_migration type=97', query='restvm_migration type=62', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>if(1&lt;len('[vds]'.split(',')))</run>
-  </test_case>
-  <test_case>
-    <id>cb8cdcc2-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - vm_migration_done after the disk added to VM</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='restvm_migration type=97', query='restvm_migration type=63', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>if(1&lt;len('[vds]'.split(',')))</run>
-  </test_case>
-  <test_case>
-    <id>cb8cdea2-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - no vm_migration_abort after the disk added to VM</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='restvm_migration type=97', query='restvm_migration type=64', expected_count=0</parameters>
-    <positive>TRUE</positive>
-    <run>if(1&lt;len('[vds]'.split(',')))</run>
-  </test_case>
-  <test_case>
-    <id>cb8ce082-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - no vm_migration_failed after the disk added to VM</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='restvm_migration type=97', query='restvm_migration type=65', expected_count=0</parameters>
-    <positive>TRUE</positive>
-    <run>if(1&lt;len('[vds]'.split(',')))</run>
+    <conf>headers={'Correlation-Id': 506}</conf>
   </test_case>
   <!-- ////////////////////////////////////////////////////////////////////// -->
   <!-- /////////////////////////// TEMPLATES //////////////////////////////// -->
@@ -1625,6 +1535,7 @@
     <parameters>name='restvm_templates', cluster='RestCluster1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 507}</conf>
   </test_case>
   <test_case>
     <id>cb8ce4b0-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1633,6 +1544,7 @@
     <parameters>vm='restvm_templates', size=2147483648, storagedomain='DataDomainRest', type='e{disk_type_system}', format='e{format_cow}', interface='e{interface_ide}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 508}</conf>
   </test_case>
   <test_case>
     <id>cb8ce6b8-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1641,14 +1553,7 @@
     <parameters>vm='restvm_templates', name='rest_templ1', cluster='RestCluster1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>cb8ce8a2-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - template created</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='restvm_run_once type=34', query='rest_templ1 type=51', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
+    <conf>headers={'Correlation-Id': 509}</conf>
   </test_case>
   <test_case>
     <id>cb8cea8c-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1657,6 +1562,7 @@
     <parameters>template='rest_templ1', name='nic_templ', network='{mgmt_bridge}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 510}</conf>
   </test_case>
   <test_case>
     <id>cb8cec6c-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1665,6 +1571,7 @@
     <parameters>template='rest_templ1', nic='nic_templ', name='nic_upd_templ'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 511}</conf>
   </test_case>
   <test_case>
     <id>cb8cee56-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1673,6 +1580,7 @@
     <parameters>template='rest_templ1', nic='nic_upd_templ'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 512}</conf>
   </test_case>
   <test_case>
     <id>cb8cf036-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1681,6 +1589,7 @@
     <parameters>name='restvm_templates2', template='rest_templ1', cluster='RestCluster1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 513}</conf>
   </test_case>
   <test_case>
     <id>cb8cf400-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1689,6 +1598,7 @@
     <parameters>name='restvm_templates_sd', cluster='RestCluster1', template='rest_templ1', storagedomain='DataDomainRest'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 514}</conf>
   </test_case>
   <test_case>
     <id>2577a804-cf27-11e1-a74d-0024d7421ca4</id>
@@ -1696,14 +1606,6 @@
     <test_action>sleep</test_action>
     <parameters>seconds=10</parameters>
     <positive>NONE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>cb8cf216-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - created VM from template</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='rest_templ1 type=51', query='restvm_templates2 type=53', expected_count=1</parameters>
-    <positive>TRUE</positive>
     <run>yes</run>
   </test_case>
   <test_case>
@@ -1721,6 +1623,7 @@
     <parameters>vm='restvm_templates', name='templ_sd', cluster='RestCluster1', storagedomain='DataDomainRest'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 515}</conf>
   </test_case>
   <test_case>
     <id>cb8cf9aa-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1738,6 +1641,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <bz>822239</bz>
+    <conf>headers={'Correlation-Id': 516}</conf>
   </test_case>
   <test_case>
     <id>cb8cfd6a-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1762,14 +1666,7 @@
     <parameters>template='rest_templ1', name='rest_templ3', description='Update template', cpu_socket='2', cpu_cores='2'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>cb8d0346-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - template updated</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='restvm_templates2 type=53', query='rest_templ3 type=49', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
+    <conf>headers={'Correlation-Id': 517}</conf>
   </test_case>
   <test_case>
     <id>cb8d0526-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1786,6 +1683,7 @@
     <parameters>vm='restvm_templates', name='rest_templ1', cluster='RestCluster1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 518}</conf>
   </test_case>
   <test_case>
     <id>cb8d0936-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1794,22 +1692,7 @@
     <parameters>template='rest_templ1', storagedomain='ExportDomainRest'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>cb8d0b2a-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - template export start</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='restvm_templates2 type=53', query='rest_templ1 type=1164', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>cb8d0d0a-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - template exported</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='restvm_templates2 type=53', query='rest_templ1 type=1156', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
+    <conf>headers={'Correlation-Id': 519}</conf>
   </test_case>
   <test_case>
     <id>cb8d0ef4-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1818,6 +1701,7 @@
     <parameters>template='rest_templ1', storagedomain='ExportDomainRest', exclusive='true'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 520}</conf>
   </test_case>
   <test_case>
     <id>cb8d10d4-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1826,6 +1710,7 @@
     <parameters>template='rest_templ1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 521}</conf>
   </test_case>
   <test_case>
     <id>cb8d12be-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1834,39 +1719,7 @@
     <parameters>template='rest_templ1', import_storagedomain='DataDomainRest', export_storagedomain='ExportDomainRest', cluster='RestCluster1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
-  </test_case>
-  <!-- /////////////////////// TEMPLATE EVENTS ////////////////////////////// -->
-  <test_case>
-    <id>cb8d14a8-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - template import start</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='restvm_templates2 type=53', query='rest_templ1 type=1163', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>cb8d1688-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - template imported</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='restvm_templates2 type=53', query='rest_templ1 type=1158', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>cb8d1872-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - template removal initiated</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='restvm_templates2 type=53', query='rest_templ1 type=50', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>cb8d1a70-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - template removed</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='restvm_templates2 type=53', query='rest_templ1 type=251', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
+    <conf>headers={'Correlation-Id': 522}</conf>
   </test_case>
   <!-- ////////////////////////////////////////////////////////////////////// -->
   <!-- ///////////////////////////// POOLS ////////////////////////////////// -->
@@ -1878,6 +1731,7 @@
     <parameters>name='rest_testPool', size=2, template='rest_templ3', cluster='RestCluster1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 523}</conf>
   </test_case>
   <test_case>
     <id>cb8d1e58-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1886,6 +1740,7 @@
     <parameters>user='{user}', vmpool='rest_testPool', role='UserRole'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 524}</conf>
   </test_case>
   <test_case>
     <id>cb8d2060-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1894,6 +1749,7 @@
     <parameters>vmpool='rest_testPool', name='rest_testPoolUpd', description='Pool Description', size=3</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 525}</conf>
   </test_case>
   <test_case>
     <id>cb8d227c-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1934,30 +1790,7 @@
     <parameters>vmpool=''rest_testPoolUpd'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>cb8d2c54-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - VM pool update</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='rest_testPool type=37', query='type=344', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>cb8d2e34-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - VM removed from VM pool</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='rest_testPool type=37', query='type=308', expected_count=3</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>cb8d30b4-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - VM pool removed</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='rest_testPool type=37', query='type=304', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
+    <conf>headers={'Correlation-Id': 526}</conf>
   </test_case>
   <!-- ////////////////////////// TEARDOWN /////////////////////////////// -->
   <test_case>

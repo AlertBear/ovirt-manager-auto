@@ -71,6 +71,7 @@
     <parameters>host='{vds[0]}', name='myresttest'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 101}</conf>
   </test_case>
   <test_case>
     <id>ba3de308-c695-11e1-bc9c-f0def10e0ce8</id>
@@ -79,6 +80,7 @@
     <parameters>host='myresttest', name='{vds[0]}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 102}</conf>
   </test_case>
   <test_case>
     <id>ba3de4f2-c695-11e1-bc9c-f0def10e0ce8</id>
@@ -88,6 +90,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <test_description>pwr_mngmt</test_description>
+    <conf>headers={'Correlation-Id': 103}</conf>
   </test_case>
   <test_case>
     <id>ba3de6dc-c695-11e1-bc9c-f0def10e0ce8</id>
@@ -97,6 +100,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <test_description>pwr_mngmt</test_description>
+    <conf>headers={'Correlation-Id': 104}</conf>
   </test_case>
   <test_case>
     <id>ba3de8d0-c695-11e1-bc9c-f0def10e0ce8</id>
@@ -115,6 +119,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <test_description>pwr_mngmt</test_description>
+    <conf>headers={'Correlation-Id': 105}</conf>
   </test_case>
   <test_case>
     <id>ba3deca4-c695-11e1-bc9c-f0def10e0ce8</id>
@@ -140,6 +145,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <vital>TRUE</vital>
+    <conf>headers={'Correlation-Id': 107}</conf>
   </test_case>
   <test_case>
     <id>ba3df2c6-c695-11e1-bc9c-f0def10e0ce8</id>
@@ -156,6 +162,7 @@
     <parameters>host='{vds[0]}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 109}</conf>
   </test_case>
   <test_case>
     <id>ba3df69a-c695-11e1-bc9c-f0def10e0ce8</id>
@@ -197,70 +204,6 @@
     <positive>TRUE</positive>
     <run>yes</run>
   </test_case>
-  <test_case>
-    <id>ba3e0036-c695-11e1-bc9c-f0def10e0ce8</id>
-    <test_name>Check events - host switched to maintenance</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=600', expected_count=2</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>ba3e0220-c695-11e1-bc9c-f0def10e0ce8</id>
-    <test_name>Check events - host up</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=13', expected_count=3</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>ba3e040a-c695-11e1-bc9c-f0def10e0ce8</id>
-    <test_name>Check events - count of 'host installing' is nonzero</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=509', expected_count=0</parameters>
-    <positive>FALSE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>ba3e05f4-c695-11e1-bc9c-f0def10e0ce8</id>
-    <test_name>Check events - host installed</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=504', expected_count=2</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>ba3e07de-c695-11e1-bc9c-f0def10e0ce8</id>
-    <test_name>Check events - host installing error</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='RestCluster1 type=809', query='type=511', expected_count=0</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>ba3e09c8-c695-11e1-bc9c-f0def10e0ce8</id>
-    <test_name>Check events - host state was set to up</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=13', expected_count=3</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>ba3e0bb2-c695-11e1-bc9c-f0def10e0ce8</id>
-    <test_name>Check events - host removed</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=44', expected_count=0</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>ba3e0d9c-c695-11e1-bc9c-f0def10e0ce8</id>
-    <test_name>Check events - host updated</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=43', expected_count=5</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
   <!-- ////////////////////////////////////////////////////////////////////// -->
   <!-- //////////////////////////// NETWORK ///////////////////////////////// -->
   <!-- ////////////////////////////////////////////////////////////////////// -->
@@ -271,6 +214,7 @@
     <parameters>name='testrest1', data_center='DefaultRest'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 110}</conf>
   </test_case>
   <test_case>
     <id>ba3e117a-c695-11e1-bc9c-f0def10e0ce8</id>
@@ -287,6 +231,7 @@
     <parameters>name='testrest2', data_center='DefaultRest', address='1.1.1.10', netmask='255.255.0.0', gateway='10.10.10.10'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 111}</conf>
   </test_case>
   <test_case>
     <id>ba3e15d0-c695-11e1-bc9c-f0def10e0ce8</id>
@@ -303,6 +248,7 @@
     <parameters>network='testrest3'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 113}</conf>
   </test_case>
   <test_case>
     <id>ba3e1abc-c695-11e1-bc9c-f0def10e0ce8</id>
@@ -311,6 +257,7 @@
     <parameters>network='testrest1', cluster='RestCluster1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 114}</conf>
   </test_case>
   <test_case>
     <id>97ac2dfc-cb6a-11e1-afed-0024d7421ca4</id>
@@ -329,6 +276,7 @@
     <parameters>host='{vds[0]}', nic=%freeNic%, network='testrest1'</parameters>
     <positive>TRUE</positive>
     <run>if(1&lt;len('[host_nics]'.split(',')))</run>
+    <conf>headers={'Correlation-Id': 115}</conf>
   </test_case>
   <test_case>
     <id>ba3e1ef4-c695-11e1-bc9c-f0def10e0ce8</id>
@@ -337,6 +285,7 @@
     <parameters>network='testrest1', cluster='RestCluster1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 116}</conf>
   </test_case>
   <test_case>
     <id>ba3e20de-c695-11e1-bc9c-f0def10e0ce8</id>
@@ -345,6 +294,7 @@
     <parameters>host='{vds[0]}', nic=%freeNic%, network='testrest1'</parameters>
     <positive>TRUE</positive>
     <run>if(1&lt;len('[host_nics]'.split(',')))</run>
+    <conf>headers={'Correlation-Id': 117}</conf>
   </test_case>
   <test_case>
     <id>ba3e22c8-c695-11e1-bc9c-f0def10e0ce8</id>
@@ -353,6 +303,7 @@
     <parameters>network='testrest1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 118}</conf>
   </test_case>
   <test_case>
     <id>ba3e24c6-c695-11e1-bc9c-f0def10e0ce8</id>
@@ -381,6 +332,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <test_description>pwr_mngmt</test_description>
+    <conf>headers={'Correlation-Id': 120}</conf>
   </test_case>
   <test_case>
     <id>ba3e2a8e-c695-11e1-bc9c-f0def10e0ce8</id>
@@ -390,6 +342,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <test_description>pwr_mngmt</test_description>
+    <conf>headers={'Correlation-Id': 121}</conf>
   </test_case>
   <test_case>
     <id>ba3e2c78-c695-11e1-bc9c-f0def10e0ce8</id>
@@ -398,6 +351,7 @@
     <parameters>host='{vds[0]}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 122}</conf>
   </test_case>
   <test_case>
     <id>ba3e2e62-c695-11e1-bc9c-f0def10e0ce8</id>
@@ -430,22 +384,6 @@
     <parameters>host='{vds[0]}', element_path='iscsi.initiator'</parameters>
     <positive>TRUE</positive>
     <run>if('{compatibility_version}'.startswith('3.'))</run>
-  </test_case>
-  <test_case>
-    <id>ba3e3600-c695-11e1-bc9c-f0def10e0ce8</id>
-    <test_name>Check events - network added</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='RestCluster1 type=809', query='DefaultRest type=942', expected_count=2</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>ba3e37ea-c695-11e1-bc9c-f0def10e0ce8</id>
-    <test_name>Check events - host set to maintenance</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='RestCluster1 type=809', query=''{vds[0]} type=600', expected_count=3</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
   </test_case>
   <!-- ////////////////////////// TEARDOWN /////////////////////////////// -->
   <test_case>

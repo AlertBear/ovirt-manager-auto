@@ -29,6 +29,8 @@ class TestSuiteRunner:
         self.lines = opts.get('lines', None)
         self.groups = opts.get('groups', None)
         initializeLogger()
+        self.logger = logging.getLogger(__name__)
+        self.logger.info("Log file name: %s" % opts['log'])
 
         self.config = readTestRunOpts(opts['conf'], redefs)
         if not opts['standalone']:
@@ -37,8 +39,6 @@ class TestSuiteRunner:
 
         if opts['debug']:
             logging.getLogger().setLevel(logging.DEBUG)
-
-        self.logger = logging.getLogger(__name__)
 
         self.autoDevices = self.config['RUN'].get('auto_devices',
                                                   'no') == "yes"

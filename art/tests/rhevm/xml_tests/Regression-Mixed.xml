@@ -29,14 +29,6 @@
     <run>yes</run>
   </test_case>
   <test_case>
-    <id>d759bf84-c695-11e1-a578-f0def10e0ce8</id>
-    <test_name>Check events - host added (if using only one host)</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='RestCluster1 type=809', query='Hosts.name={vds[0]} and type=42', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>if(not 1&lt;len('[vds]'.split(',')))</run>
-  </test_case>
-  <test_case>
     <id>d759c178-c695-11e1-a578-f0def10e0ce8</id>
     <test_name>Check whether 'host type' property is present</test_name>
     <test_action>xpathHosts</test_action>
@@ -78,6 +70,7 @@
     <parameters>name='RestDataCenter1', storage_type='e{storage_type_nfs}', version='3.0'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 301}</conf>
   </test_case>
   <test_case>
     <id>d759cb50-c695-11e1-a578-f0def10e0ce8</id>
@@ -86,6 +79,7 @@
     <parameters>name='RestDataCenter2', storage_type='e{storage_type_iscsi}', version='{compatibility_version}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 302}</conf>
   </test_case>
   <test_case>
     <id>d759cd44-c695-11e1-a578-f0def10e0ce8</id>
@@ -110,6 +104,7 @@
     <parameters>datacenter='RestDataCenter1', name='RestDataCenterUpdated'', description='Data Center Description'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 303}</conf>
   </test_case>
   <test_case>
     <id>d759d32a-c695-11e1-a578-f0def10e0ce8</id>
@@ -118,6 +113,7 @@
     <parameters>datacenter='RestDataCenter2', storage_type='e{storage_type_nfs}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 304}</conf>
   </test_case>
   <test_case>
     <id>d759d56e-c695-11e1-a578-f0def10e0ce8</id>
@@ -126,36 +122,13 @@
     <parameters>datacenter='RestDataCenter2'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 305}</conf>
   </test_case>
   <test_case>
     <id>d759d780-c695-11e1-a578-f0def10e0ce8</id>
     <test_name>Search for data centers</test_name>
     <test_action>searchForDataCenter</test_action>
     <parameters>query_key='type', query_val='e{storage_type_nfs}', key_name='storage_type'</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>d759d974-c695-11e1-a578-f0def10e0ce8</id>
-    <test_name>Check events - data center created</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='RestDataCenter1 type=950', query='type=950', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>d759db7c-c695-11e1-a578-f0def10e0ce8</id>
-    <test_name>Check events - data center updated</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='RestDataCenter1 type=950', query='type=952', expected_count=2</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>d759dd66-c695-11e1-a578-f0def10e0ce8</id>
-    <test_name>Check events - data center removed</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='RestDataCenter1 type=950', query='type=954', expected_count=1</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
   </test_case>
@@ -177,6 +150,7 @@
     <parameters>name='RestCluster4', cpu='{cpu_name}', version='{compatibility_version}', data_center='DefaultRest'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 306}</conf>
   </test_case>
   <test_case>
     <id>d759e342-c695-11e1-a578-f0def10e0ce8</id>
@@ -185,6 +159,7 @@
     <parameters>name='RestCluster3', cpu='{cpu_name}', data_center='RestDataCenterUpdated', on_error='do_not_migrate'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 307}</conf>
   </test_case>
   <test_case>
     <id>d759e536-c695-11e1-a578-f0def10e0ce8</id>
@@ -225,6 +200,7 @@
     <parameters>cluster='RestCluster3', name='RestCluster3Upd', cpu='{cpu_name}', description='Cluster Description', on_error='migrate_highly_available'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 308}</conf>
   </test_case>
   <test_case>
     <id>d759e90a-c695-11e1-a578-f0def10e0ce8</id>
@@ -241,30 +217,7 @@
     <parameters>cluster='RestCluster3Upd'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>d759ece8-c695-11e1-a578-f0def10e0ce8</id>
-    <test_name>Check events - cluster created</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='RestCluster1 type=809', query='type=809', expected_count=2</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>d759eedc-c695-11e1-a578-f0def10e0ce8</id>
-    <test_name>Check events - cluster updated</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='RestCluster1 type=809', query='type=811', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>d759f0c6-c695-11e1-a578-f0def10e0ce8</id>
-    <test_name>Check events - cluster removed</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='RestCluster1 type=809', query='type=813', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
+    <conf>headers={'Correlation-Id': 309}</conf>
   </test_case>
   <test_case>
     <id>d759f2b0-c695-11e1-a578-f0def10e0ce8</id>
@@ -274,6 +227,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <test_description>mem_overcommit</test_description>
+    <conf>headers={'Correlation-Id': 310}</conf>
   </test_case>
   <test_case>
     <id>d759f4a4-c695-11e1-a578-f0def10e0ce8</id>
@@ -283,6 +237,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <test_description>sched_pol</test_description>
+    <conf>headers={'Correlation-Id': 311}</conf>
   </test_case>
   <test_case>
     <id>d759f68e-c695-11e1-a578-f0def10e0ce8</id>
@@ -292,6 +247,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <test_description>sched_pol</test_description>
+    <conf>headers={'Correlation-Id': 312}</conf>
   </test_case>
   <test_case>
     <id>d759f878-c695-11e1-a578-f0def10e0ce8</id>
@@ -328,6 +284,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <test_description>mem_overcommit</test_description>
+    <conf>headers={'Correlation-Id': 313}</conf>
   </test_case>
   <test_case>
     <id>ad2d33e0-c8f6-11e1-a294-0024d7421ca4</id>
@@ -355,6 +312,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <test_description>sched_pol</test_description>
+    <conf>headers={'Correlation-Id': 314}</conf>
   </test_case>
   <test_case>
     <id>d75a0278-c695-11e1-a578-f0def10e0ce8</id>
@@ -364,6 +322,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <test_description>sched_pol</test_description>
+    <conf>headers={'Correlation-Id': 315}</conf>
   </test_case>
   <test_case>
     <id>d75a0462-c695-11e1-a578-f0def10e0ce8</id>
@@ -400,6 +359,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <test_description>sched_pol</test_description>
+    <conf>headers={'Correlation-Id': 316}</conf>
   </test_case>
   <test_case>
     <id>d75a0c14-c695-11e1-a578-f0def10e0ce8</id>
@@ -460,6 +420,7 @@
     <parameters>name='DataDomainRest', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 317}</conf>
   </test_case>
   <test_case>
     <id>d75a1984-c695-11e1-a578-f0def10e0ce8</id>
@@ -468,6 +429,7 @@
     <parameters>datacenter='DefaultRest', storagedomain='DataDomainRest'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 318}</conf>
   </test_case>
   <test_case>
     <id>d75a1b6e-c695-11e1-a578-f0def10e0ce8</id>
@@ -476,6 +438,7 @@
     <parameters>storagedomain='DataDomainRest', name='DataDomainRestUpd'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 319}</conf>
   </test_case>
   <test_case>
     <id>d75a1d58-c695-11e1-a578-f0def10e0ce8</id>
@@ -484,6 +447,7 @@
     <parameters>name='restvm_templates', cluster='RestCluster1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 320}</conf>
   </test_case>
   <test_case>
     <id>d75a1f42-c695-11e1-a578-f0def10e0ce8</id>
@@ -492,6 +456,7 @@
     <parameters>vm='restvm_templates', size=2147483648, storagedomain='DataDomainRestUpd', type='e{disk_type_system}', format='e{format_cow}', interface='e{interface_ide}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 321}</conf>
   </test_case>
   <test_case>
     <id>d75a212c-c695-11e1-a578-f0def10e0ce8</id>
@@ -499,6 +464,7 @@
     <test_action>createTemplate</test_action>
     <parameters>vm='restvm_templates', name='rest_templ3', cluster='RestCluster1'</parameters>
     <positive>TRUE</positive>
+    <conf>headers={'Correlation-Id': 322}</conf>
     <run>yes</run>
   </test_case>
   <test_case>
@@ -508,6 +474,7 @@
     <parameters>name='restvm_tags_users', cluster='RestCluster1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 323}</conf>
   </test_case>
   <test_case>
     <id>d75a2564-c695-11e1-a578-f0def10e0ce8</id>
@@ -517,6 +484,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <bz>811985</bz>
+    <conf>headers={'Correlation-Id': 324}</conf>
   </test_case>
   <test_case>
     <id>d75a2758-c695-11e1-a578-f0def10e0ce8</id>
@@ -525,6 +493,7 @@
     <parameters>user='{new_user}', data_center='DefaultRest'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 325}</conf>
   </test_case>
   <test_case>
     <id>d75a2942-c695-11e1-a578-f0def10e0ce8</id>
@@ -533,6 +502,7 @@
     <parameters>user='{new_user}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 326}</conf>
   </test_case>
   <test_case>
     <id>d75a2b22-c695-11e1-a578-f0def10e0ce8</id>
@@ -541,6 +511,7 @@
     <parameters>name='TagRestTest_sentinel', description='Test Tag Description'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 327}</conf>
   </test_case>
   <test_case>
     <id>d75a2d16-c695-11e1-a578-f0def10e0ce8</id>
@@ -549,6 +520,7 @@
     <parameters>name='TagRestTest2', description='Test Tag Description'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 328}</conf>
   </test_case>
   <test_case>
     <id>d75a2f00-c695-11e1-a578-f0def10e0ce8</id>
@@ -557,6 +529,7 @@
     <parameters>name='TagRestTest3'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 329}</conf>
   </test_case>
   <test_case>
     <id>d75a30ea-c695-11e1-a578-f0def10e0ce8</id>
@@ -565,6 +538,7 @@
     <parameters>name='TagRestTest_to_existing_name'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 330}</conf>
   </test_case>
   <test_case>
     <id>d75a32ca-c695-11e1-a578-f0def10e0ce8</id>
@@ -573,6 +547,7 @@
     <parameters>name='TagRestTestExisting'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 331}</conf>
   </test_case>
   <test_case>
     <id>d75a34be-c695-11e1-a578-f0def10e0ce8</id>
@@ -581,6 +556,7 @@
     <parameters>name='SubTagRestTest', description='Test Tag Description', parent='TagRestTest2'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 332}</conf>
   </test_case>
   <test_case>
     <id>d75a36a8-c695-11e1-a578-f0def10e0ce8</id>
@@ -597,6 +573,7 @@
     <parameters>tag='TagRestTest_sentinel', name='TagRestTestUpd', description='Test Tag Description Updates'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 333}</conf>
   </test_case>
   <test_case>
     <id>d75a3a7c-c695-11e1-a578-f0def10e0ce8</id>
@@ -613,6 +590,7 @@
     <parameters>tag='TagRestTest3', parent='SubTagRestTest'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 334}</conf>
   </test_case>
   <test_case>
     <id>d75a3e5a-c695-11e1-a578-f0def10e0ce8</id>
@@ -629,6 +607,7 @@
     <parameters>tag='TagRestTest2'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 335}</conf>
   </test_case>
   <test_case>
     <id>d75a4224-c695-11e1-a578-f0def10e0ce8</id>
@@ -637,6 +616,7 @@
     <parameters>tag='TagRestTestUpd', vm='restvm_tags_users'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 336}</conf>
   </test_case>
   <test_case>
     <id>d75a440e-c695-11e1-a578-f0def10e0ce8</id>
@@ -661,6 +641,7 @@
     <parameters>tag='TagRestTestUpd', host='{vds[0]}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 337}</conf>
   </test_case>
   <test_case>
     <id>d75a49cc-c695-11e1-a578-f0def10e0ce8</id>
@@ -677,6 +658,7 @@
     <parameters>tag='TagRestTestUpd', vm='restvm_tags_users'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 338}</conf>
   </test_case>
   <test_case>
     <id>d75a4dfa-c695-11e1-a578-f0def10e0ce8</id>
@@ -685,6 +667,7 @@
     <parameters>tag='TagRestTestUpd', host='{vds[0]}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 339}</conf>
   </test_case>
   <test_case>
     <id>d75a4fe4-c695-11e1-a578-f0def10e0ce8</id>
@@ -709,6 +692,7 @@
     <parameters>tag='TagRestTest_to_existing_name'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 340}</conf>
   </test_case>
   <test_case>
     <id>d75a55ac-c695-11e1-a578-f0def10e0ce8</id>
@@ -717,70 +701,7 @@
     <parameters>tag='TagRestTestExisting'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>d75a5796-c695-11e1-a578-f0def10e0ce8</id>
-    <test_name>Check events - tag added</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='TagRestTest_sentinel type=432', query='type=432', expected_count=5</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>d75a5980-c695-11e1-a578-f0def10e0ce8</id>
-    <test_name>Check events - tag updated</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='TagRestTest_sentinel type=432', query='type=430', expected_count=3</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>d75a5b6a-c695-11e1-a578-f0def10e0ce8</id>
-    <test_name>Check events - tag moved</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='TagRestTest_sentinel type=432', query='type=555', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>d75a5d54-c695-11e1-a578-f0def10e0ce8</id>
-    <test_name>Check events - tag attached to VM</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='TagRestTest_sentinel type=432', query='TagRestTestUpd type=440', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>d75a5f3e-c695-11e1-a578-f0def10e0ce8</id>
-    <test_name>Check events - tag attached to host</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='TagRestTest_sentinel type=432', query='TagRestTestUpd type=442', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>d75a6128-c695-11e1-a578-f0def10e0ce8</id>
-    <test_name>Check events - tag removed from VM</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='TagRestTest_sentinel type=432', query='TagRestTestUpd type=446', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>d75a6312-c695-11e1-a578-f0def10e0ce8</id>
-    <test_name>Check events - tag removed from host</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='TagRestTest_sentinel type=432', query='TagRestTestUpd type=444', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>d75a64fc-c695-11e1-a578-f0def10e0ce8</id>
-    <test_name>Check events - tag and subtag removed</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='TagRestTest_sentinel type=432', query='type=434', expected_count=3</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
+    <conf>headers={'Correlation-Id': 341}</conf>
   </test_case>
   <!-- ////////////////////////////////////////////////////////////////////// -->
   <!-- ///////////////////////////// USERS AND ROLES //////////////////////// -->
@@ -792,6 +713,7 @@
     <parameters>user='{new_user}', role='e{role_name_power_user_role}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 342}</conf>
   </test_case>
   <test_case>
     <id>d75a68da-c695-11e1-a578-f0def10e0ce8</id>
@@ -800,6 +722,7 @@
     <parameters>user_name='{no_roles_user}', domain='{user_domain}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 343}</conf>
   </test_case>
   <test_case>
     <id>d75a6ac4-c695-11e1-a578-f0def10e0ce8</id>
@@ -824,6 +747,7 @@
     <parameters>user='{new_user}', tag='TagRestTestUpd'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 344}</conf>
   </test_case>
   <test_case>
     <id>d75a7082-c695-11e1-a578-f0def10e0ce8</id>
@@ -848,6 +772,7 @@
     <parameters>name='New_Role', administrative='true', permits='e{create_vm_permit} e{create_host_permit} e{manipulate_roles_permit} e{delete_cluster_permit}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 345}</conf>
   </test_case>
   <test_case>
     <id>d75a7726-c695-11e1-a578-f0def10e0ce8</id>
@@ -856,6 +781,7 @@
     <parameters>name='NA_Role', administrative='false', permits='e{create_vm_permit} e{migrate_vm_permit} e{delete_vm_permit}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 346}</conf>
   </test_case>
   <test_case>
     <id>d75a791a-c695-11e1-a578-f0def10e0ce8</id>
@@ -864,6 +790,7 @@
     <parameters>role='NA_Role'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 347}</conf>
   </test_case>
   <test_case>
     <id>d75a7b04-c695-11e1-a578-f0def10e0ce8</id>
@@ -880,6 +807,7 @@
     <parameters>role='New_Role', permit='e{create_storage_domain_permit}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 348}</conf>
   </test_case>
   <test_case>
     <id>d75a7f0a-c695-11e1-a578-f0def10e0ce8</id>
@@ -888,6 +816,7 @@
     <parameters>role='New_Role', permit='e{create_storage_domain_permit}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 349}</conf>
   </test_case>
   <test_case>
     <id>d75a80fe-c695-11e1-a578-f0def10e0ce8</id>
@@ -895,6 +824,7 @@
     <test_action>removeRole</test_action>
     <parameters>role='New_Role'</parameters>
     <positive>TRUE</positive>
+    <conf>headers={'Correlation-Id': 350}</conf>
     <run>yes</run>
   </test_case>
   <test_case>
@@ -928,6 +858,7 @@
     <parameters>user='{new_user}', vm='restvm_tags_users'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 351}</conf>
   </test_case>
   <test_case>
     <id>d75a8a7c-c695-11e1-a578-f0def10e0ce8</id>
@@ -936,6 +867,7 @@
     <parameters>user='{new_user}', host='{vds[0]}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 352}</conf>
   </test_case>
   <test_case>
     <id>d75a8c66-c695-11e1-a578-f0def10e0ce8</id>
@@ -944,6 +876,7 @@
     <parameters>user='{new_user}', storage='DataDomainRestUpd'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 353}</conf>
   </test_case>
   <test_case>
     <id>d75a8e50-c695-11e1-a578-f0def10e0ce8</id>
@@ -952,6 +885,7 @@
     <parameters>user='{new_user}', cluster='Default'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 354}</conf>
   </test_case>
   <test_case>
     <id>d75a9030-c695-11e1-a578-f0def10e0ce8</id>
@@ -960,6 +894,7 @@
     <parameters>group='Everyone', cluster='Default'</parameters>
     <positive>TRUE</positive>
     <run>no</run>
+    <conf>headers={'Correlation-Id': 355}</conf>
   </test_case>
   <test_case>
     <id>d75a921a-c695-11e1-a578-f0def10e0ce8</id>
@@ -968,6 +903,7 @@
     <parameters>user='{new_user}', template='rest_templ3'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 356}</conf>
   </test_case>
   <test_case>
     <id>d75a93fa-c695-11e1-a578-f0def10e0ce8</id>
@@ -976,6 +912,7 @@
     <parameters>group='Everyone', template='rest_templ3'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 357}</conf>
   </test_case>
   <test_case>
     <id>d75a95e4-c695-11e1-a578-f0def10e0ce8</id>
@@ -1008,6 +945,7 @@
     <parameters>tag='TagRestTestUpd'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 358}</conf>
   </test_case>
   <test_case>
     <id>d75a9e04-c695-11e1-a578-f0def10e0ce8</id>
@@ -1016,6 +954,7 @@
     <parameters>user='{new_user}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 359}</conf>
   </test_case>
   <test_case>
     <id>d75aa02a-c695-11e1-a578-f0def10e0ce8</id>
@@ -1024,10 +963,8 @@
     <parameters>user='{no_roles_user}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 360}</conf>
   </test_case>
-  <!-- ////////////////////////////////////////////////////////////////////// -->
-  <!-- /////////////////// CHECK EVENTS ///////////////////////// -->
-  <!-- ////////////////////////////////////////////////////////////////////// -->
   <test_case>
     <id>d75aa250-c695-11e1-a578-f0def10e0ce8</id>
     <test_name>Check user properties in active directory</test_name>
@@ -1049,54 +986,6 @@
     <test_name>Search for an user in active directory by upn</test_name>
     <test_action>searchForUserInAD</test_action>
     <parameters>query_key='usrname', query_val='vdcadmin@*', key_name='user_name', domain='{user_domain}'</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>d75aa84a-c695-11e1-a578-f0def10e0ce8</id>
-    <test_name>Check events - tag attached to user</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='{new_user} type=149', query='TagRestTestUpd type=436', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>d75aaa34-c695-11e1-a578-f0def10e0ce8</id>
-    <test_name>Check events - role added</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='{new_user} type=149', query='New_Role type=864', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>d75aac14-c695-11e1-a578-f0def10e0ce8</id>
-    <test_name>Check events - action group attached to role</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='{new_user} type=149', query='CREATE_STORAGE_DOMAIN type=860', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>d75aadfe-c695-11e1-a578-f0def10e0ce8</id>
-    <test_name>Check events - action group detached from role</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='{new_user} type=149', query='CREATE_STORAGE_DOMAIN type=862', expected_count=1</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>d75aafe8-c695-11e1-a578-f0def10e0ce8</id>
-    <test_name>Check events - permissions granted</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='{new_user} type=149', query='{new_user} type=850', expected_count=7</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>d75ab1c8-c695-11e1-a578-f0def10e0ce8</id>
-    <test_name>Check events - permissions removed from user</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='{new_user} type=149', query='{new_user} type=852', expected_count=1</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
   </test_case>

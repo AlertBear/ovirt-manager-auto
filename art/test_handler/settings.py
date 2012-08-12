@@ -210,10 +210,6 @@ def readTestRunOpts(path, redefs):
 
     opts['api_xsd'] = runSection['api_xsd']
 
-    if not opts['log']:
-        timestamp = strftime('%Y%m%d_%H%M%S')
-        opts['log'] = "%s/%sTests%s.log" % (opts['logdir'], opts['engine'], timestamp)
-
     reportSection = config['REPORT']
     opts['has_sub_tests'] = reportSection['has_sub_tests']
 
