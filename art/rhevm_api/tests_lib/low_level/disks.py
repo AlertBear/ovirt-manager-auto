@@ -98,20 +98,16 @@ def _prepareDiskObject(**kwargs):
     Author: jlibosva
     Return: Disk object
     """
-    # Change size to provisioned_size
-    disk = data_st.Disk(name=kwargs.pop('name', None),
-                        size=kwargs.pop('size', None),
-                        interface=kwargs.pop('interface', None),
-                        format=kwargs.pop('format', None),
-                        provisioned_size=kwargs.pop('provisioned_size', None),
-                        sparse=kwargs.pop('sparse', None),
-                        bootable=kwargs.pop('bootable', None),
-                        shareable=kwargs.pop('shareable', None),
-                        propagate_errors=kwargs.pop('propagate_errors', None),
-                        wipe_after_delete=kwargs.pop('wipe_after_delete', None),
-           )
-
     storage_domain_name = kwargs.pop('storagedomain', None)
+
+    # Tuple (lun_address, lun_target, lun_id, lun_port)
+    lun = (kwargs.pop('lun_address', None), kwargs.pop('lun_target', None),
+           kwargs.pop('lun_id', None), kwargs.pop('lun_port', 3260))
+    # Tuple (username, password)
+    lun_creds = (kwargs.pop('lun_username', None),
+                 kwargs.pop('lun_password', None))
+
+    disk = data_st.Disk(**kwargs)
 
     if storage_domain_name is not None:
         storage_domain =  STORAGE_DOMAIN_API.find(storage_domain_name,
@@ -119,6 +115,15 @@ def _prepareDiskObject(**kwargs):
         storage_domains = data_st.StorageDomains()
         storage_domains.add_storage_domain(storage_domain)
         disk.storage_domains = storage_domains
+
+    if not None in lun:
+        direct_lun = data_st.LogicalUnit(address=lun[0], target=lun[1],
+                                         id=lun[2], port=lun[3])
+        if not None in lun_creds:
+            direct_lun.set_username(lun_creds[0])
+            direct_lun.set_password(lun_creds[1])
+
+        disk.set_lunStorage(data_st.Storage(logical_unit=[direct_lun]))
 
     return disk
 
@@ -141,16 +146,19 @@ def addDisk(positive, **kwargs):
         * wipe_after_delete - True or False whether disk should wiped after
                               deletion
         * storagedomain - name of storage domain where disk will reside
+        * lun_address - iscsi server address for direct lun
+        * lun_target - iscsi target for direct lun
+        * lun_id - direct lun's id
     Author: jlibosva
     Return: True - if positive and successfully added or not positive and not
                    added successfully
             False - if positive but failed to add or not positive but added
     """
-    kwargs.update(add=True)
-    kwargs.update(name=kwargs.get('diskName', None))
+#    kwargs.update(add=True)
+    kwargs.update(name=kwargs.pop('diskName', None))
     disk = _prepareDiskObject(**kwargs)
     disk, status = DISKS_API.create(disk, positive)
-    return status, { 'diskId' : disk.get_id() }
+    return status, { 'diskId' : disk.get_id() if disk else None }
 
 
 @is_action()
