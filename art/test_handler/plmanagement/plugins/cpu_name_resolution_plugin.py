@@ -1,5 +1,7 @@
-from art.test_handler.plmanagement import Component, implements, get_logger, PluginError
+from art.test_handler.plmanagement import (Component, implements, get_logger,
+                                                                PluginError)
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
+from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.rhevm_api.utils.test_utils import get_api
 
 from utilities.machine import Machine, LINUX
@@ -23,7 +25,7 @@ class AutoCpuNameResolution(Component):
     Plugin adjusts config section for cpu_name attribute.
     It finds the maximum compatible cpu_name to use for the vds configured.
     """
-    implements(IConfigurable)
+    implements(IConfigurable, IPackaging)
     name = "Auto CPU name resolution"
 
     def configure(self, params, conf):
@@ -76,7 +78,7 @@ class AutoCpuNameResolution(Component):
                                 'grep', '-o', "'model_.*'"])
             out = out.strip()
             if not rc or not out:
-                logger.warning("Failed to get CPUs models from {0}".format(name))
+                logger.warning("Failed to get CPU models of {0}".format(name))
                 return
             host_cpu_models = out.split(',')
             host_model = max(host_cpu_models,
@@ -111,3 +113,16 @@ class AutoCpuNameResolution(Component):
         en = conf.get(SECTION_NAME, {}).get('enabled',
                                                     'false').lower() == 'true'
         return params.cpu_name_enabled or en
+
+    @classmethod
+    def fill_setup_params(cls, params):
+        params['name'] = cls.name.lower()
+        params['version'] = '1.0'
+        params['author'] = 'Gal Leibovici'
+        params['author_email'] = 'gleibovi@redhat.com'
+        params['description'] = 'Automatic CPU name resolution'
+        params['long_description'] = "Plugin for ART, " \
+                "which resolves compatible cpu_name of VDS machines."
+        params['requires'] = ['art-utilities']
+        params['py_modules'] = ['art.test_handler.plmanagement.plugins.'
+                                'cpu_name_resolution_plugin']
