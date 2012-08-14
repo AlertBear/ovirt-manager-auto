@@ -107,9 +107,9 @@ class RestUtil(APIUtil):
         self.logger.debug("GET request content is --  url:%(uri)s " % {'uri': href })
         ret = self.api.GET(href)
 
-        if validate:
+        if  validator.compareResponseCode(ret, [200, 201], self.logger) and\
+                                                                validate:
             self.validateResponseViaXSD(href, ret)
-        validator.compareResponseCode(ret, [200, 201], self.logger)
 
         self.logger.debug("Response body for GET request is: %s " % ret['body'])
 
@@ -172,7 +172,6 @@ class RestUtil(APIUtil):
 
         collection = self.get(href, listOnly=True, elm=coll_elm_name)
 
-        self.validateResponseViaXSD(href, ret)
         self.logger.debug("Response body for CREATE request is: %s " % ret['body'])
 
         if positive:
@@ -209,6 +208,7 @@ class RestUtil(APIUtil):
                                                     self.logger):
                 return None, False
 
+        self.validateResponseViaXSD(href, ret)
         return parse(ret['body']), True
 
 
@@ -236,8 +236,6 @@ class RestUtil(APIUtil):
 
         self.logger.debug("Response body for PUT request is: %s " % ret['body'])
 
-        self.validateResponseViaXSD(origEntity.href, ret)
-
         if positive:
             if not validator.compareResponseCode(ret, expected_pos_status, self.logger):
                 return None, False
@@ -252,6 +250,7 @@ class RestUtil(APIUtil):
             if not validator.compareResponseCode(ret, expected_neg_status, self.logger):
                 return None, False
 
+        self.validateResponseViaXSD(origEntity.href, ret)
         return parse(ret['body']), True
 
 
@@ -286,7 +285,6 @@ class RestUtil(APIUtil):
                 ret = self.api.DELETE(entity.href)
 
         self.logger.debug("Response body for DELETE request is: %s " % ret['body'])
-        self.validateResponseViaXSD(entity.href, ret)
 
         if positive:
             if not validator.compareResponseCode(ret, expected_pos_status, self.logger):
@@ -295,6 +293,7 @@ class RestUtil(APIUtil):
             if not validator.compareResponseCode(ret, expected_neg_status, self.logger):
                 return False
 
+        self.validateResponseViaXSD(entity.href, ret)
         return True
 
 
@@ -368,8 +367,8 @@ class RestUtil(APIUtil):
 
         self.logger.debug("Response body for QUERY request is: %s " % ret['body'])
 
-        self.validateResponseViaXSD(href, ret)
-        validator.compareResponseCode(ret, expected_status, self.logger)
+        if validator.compareResponseCode(ret, expected_status, self.logger):
+            self.validateResponseViaXSD(href, ret)
 
         return getattr(parse(ret['body']), self.element_name)
 
@@ -413,7 +412,6 @@ class RestUtil(APIUtil):
         resp_action = None
         try:
             resp_action = parse(ret['body'])
-            self.validateResponseViaXSD(actionHref, ret)
         except etree.XMLSyntaxError:
              self.logger.error("Cant parse xml response")
              return False
@@ -440,6 +438,7 @@ class RestUtil(APIUtil):
                                                                     self.logger):
                 return False
 
+        self.validateResponseViaXSD(actionHref, ret)
         return validator.compareActionLink(entity.actions, action, self.logger)
 
 
