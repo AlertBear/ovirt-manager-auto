@@ -2,7 +2,7 @@
 from art.test_handler.plmanagement.interfaces.application import IApplicationListener
 from art.test_handler.plmanagement import Component, ExtensionPoint, implements, get_logger
 from art.test_handler.plmanagement.interfaces.report_formatter import \
-        IResultsFormatter, IResultsCollector
+        IResultsFormatter, IResultsCollector, IResultExtension
 
 logger = get_logger('results_collector')
 
@@ -12,9 +12,13 @@ class ResultsCollector(Component):
     """
     implements(IResultsCollector, IApplicationListener)
     formatters = ExtensionPoint(IResultsFormatter)
+    extenders = ExtensionPoint(IResultExtension)
 
     def add_test_result(self, res, test_case):
         self.formatters.add_test_result(res, test_case)
+
+    def pre_test_result_reported(self, res, test_case):
+        self.extenders.pre_test_result_reported(res, test_case)
 
     def on_application_start(self):
         pass

@@ -48,7 +48,7 @@ class APIUtil(object):
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, element, collection, **kwargs):
-        self.opts = settings.opts
+        self.opts = kwargs['opts'] if 'opts' in kwargs else settings.opts
         self.element_name = element
         self.collection_name = collection
 
