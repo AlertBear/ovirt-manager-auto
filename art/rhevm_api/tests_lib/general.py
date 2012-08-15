@@ -249,3 +249,16 @@ def getProductName():
         return False, {'product_name': ''}
     return True, {'product_name': product_name}
 
+
+def checkProductName(positive, name):
+    '''
+    Checks whether the product's name is the same as name parameter.
+    Author: gleibovi
+    Return True if the name is the same as product_name, False if not or
+    failed to get product name.
+    '''
+    status, ret = getProductName()
+    if not status:
+        return status
+    product_name = ret['product_name']
+    return product_name == name if positive else product_name != name
