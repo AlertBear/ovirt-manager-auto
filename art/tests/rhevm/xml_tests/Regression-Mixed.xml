@@ -414,6 +414,13 @@
   </test_case>
   <!-- /////////////////////// TEST SCENARIO //////////////////////////////// -->
   <test_case>
+    <test_name>Check product name</test_name>
+    <test_action>checkProductName</test_action>
+    <parameters>name='{product_name}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
     <id>d75a179a-c695-11e1-a578-f0def10e0ce8</id>
     <test_name>Create NFS data storage domain</test_name>
     <test_action>addStorageDomain</test_action>
