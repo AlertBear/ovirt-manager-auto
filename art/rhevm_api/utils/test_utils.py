@@ -1244,3 +1244,25 @@ def getSetupHostname(vdc):
 
     return True, { 'hostname' : hostname }
 
+
+def runSQLQueryOnSetup(vdc, vdc_pass, query,
+                       psql_username='postgres', psql_db='engine'):
+    """
+    Runs a SQL query on the setup database.
+    Parameters:
+      * vdc - setup hostname or IP address
+      * vdc_pass - password of setup's root account
+      * query - the SQL query to run
+      * psql_username - username of postgres
+      * psql_db - the database to run the query on
+    Returns True and a list of the records in the query output on success
+            False and an empty list on failure
+    """
+    setup = Machine(vdc, 'root', vdc_pass).util('linux')
+    sep = '__RECORD_SEPARATOR__'
+    timeout = kwargs.get('timeout', 10)
+    cmd = ['psql', '-d', psql_db, '-U', psql_username, '-R', sep, '-t', '-A', '-c', query]
+    rc, out = setup.runCmd(cmd, timeout=timeout, conn_timeout=timeout)
+    if rc:
+        return False, []
+    return True, [a.strip().split('|') for a in out.strip().split(sep) if a.strip()]
