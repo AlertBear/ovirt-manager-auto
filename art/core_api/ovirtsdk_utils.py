@@ -32,6 +32,9 @@ DEF_TIMEOUT = 900
 # default sleep
 DEF_SLEEP = 10
 
+HEADERS = 'headers'
+CORRELATION_ID = 'Correlation-Id'
+
 
 class SdkUtil(APIUtil):
     '''
@@ -49,6 +52,11 @@ class SdkUtil(APIUtil):
             sdkInit = self.api
         else:
             self.api = sdkInit
+
+
+    def getCorrelationId(self):
+        return self.opts[HEADERS].get(CORRELATION_ID, None)
+
 
     def get(self, collection=None, **kwargs):
         '''
@@ -106,7 +114,8 @@ class SdkUtil(APIUtil):
 
         response = None
         try:
-            response = collection.add(entity)
+            response = collection.add(entity, correlation_id=\
+                                        self.getCorrelationId())
 
             if not async:
                 if not self.opts['parallel_run'] and \
@@ -173,7 +182,8 @@ class SdkUtil(APIUtil):
 
         try:
             if positive:
-                response = origEntity.update()
+                response = origEntity.update(correlation_id=\
+                                        self.getCorrelationId())
                 self.logger.info(self.element_name + " was updated")
 
                 if not validator.compareElements(newEntity, response,
@@ -201,9 +211,9 @@ class SdkUtil(APIUtil):
         try:
             self.logger.debug("DELETE entity: {0}".format(entity.get_id()))
             if body:
-                entity.delete(body)
+                entity.delete(body, correlation_id=self.getCorrelationId())
             else:
-                entity.delete()
+                entity.delete(correlation_id=self.getCorrelationId())
         except RequestError as e:
             if positive:
                 errorMsg = "Failed to delete an element, status: {0},reason: {1}, details: {2}"
@@ -309,7 +319,8 @@ class SdkUtil(APIUtil):
             pass
 
         try:
-            act = getattr(entity, action)(act)
+            act = getattr(entity, action)(act, correlation_id=\
+                                        self.getCorrelationId())
         except RequestError as e:
             if positive:
                 errorMsg = "Failed to run an action '{0}', status: {1},reason: {2}, details: {3}"

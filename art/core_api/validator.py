@@ -19,7 +19,7 @@
 
 from cStringIO import StringIO
 import sys
-from art.core_api.apis_utils import data_st as ds
+from art.core_api.apis_utils import data_st_validate as ds
 import re
 
 ATTR_IGNORE_LIST =  ['href', 'link', 'rel']
@@ -190,7 +190,8 @@ def compareElements(expElm, actElm, logger, root):
     * root - name of the root node
     Returns: True is elements are equal, False otherwise
     '''
-    ignore = ATTR_IGNORE_LIST + ['status', 'role', 'active', 'total', 'required']
+    ignore = ATTR_IGNORE_LIST + ['status', 'role', 'active', 'total',
+                                'required', 'permit']
     equal = True
 
     if not actElm:
