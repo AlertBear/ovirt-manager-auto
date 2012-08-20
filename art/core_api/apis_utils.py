@@ -29,8 +29,14 @@ import art.test_handler.settings as settings
 # TODO: move default values to conf spec
 XSD_PATH = settings.opts.get('api_xsd', 'rhevm_api/data_struct/api.xsd')
 DS_PATH = settings.opts.get('data_struct_mod', 'art.rhevm_api.data_struct.data_structures')
+DS_VALIDATE = DS_PATH
+if settings.opts['engine'] == 'sdk':
+    DS_PATH = 'ovirtsdk.xml.params'
+
 __import__(DS_PATH)
+__import__(DS_VALIDATE)
 data_st = sys.modules[DS_PATH]
+data_st_validate = sys.modules[DS_VALIDATE]
 parse = data_st.parseString
 
 DEF_TIMEOUT = 900 # default timeout

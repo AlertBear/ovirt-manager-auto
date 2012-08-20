@@ -48,7 +48,10 @@ poolUtil = get_api('vmpool', 'vmpools')
 domUtil = get_api('domain', 'domains')
 groupUtil = get_api('group', 'groups')
 permisUtil = get_api('permission', 'permissions')
-PERMITS = permitUtil.get(absLink=False).get_permits().get_permit()
+versionCaps = permitUtil.get(absLink=False)
+if isinstance(versionCaps, list):
+    versionCaps = versionCaps[0]
+PERMITS = versionCaps.get_permits().get_permit()
 
 
 def checkSystemPermits(positive):

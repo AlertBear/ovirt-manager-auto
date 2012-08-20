@@ -6,8 +6,6 @@ from art.test_handler.plmanagement import Component, implements, get_logger
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.test_handler.plmanagement.interfaces.tests_listener import ITestCaseHandler
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
-from art.rhevm_api.utils.test_utils import get_api, searchForObj
-
 
 logger = get_logger('validate_events')
 CORRELATION_ID = 'Correlation-Id'
@@ -37,6 +35,10 @@ class ValidateEvents(Component):
 
 
     def configure(self, params, conf):
+        if not self.is_enabled(params, conf):
+            return
+
+        from art.rhevm_api.utils.test_utils import get_api
         self.event_api = get_api('event', 'events')
         if self.is_enabled(params, conf):
             logger.info("Plugin for event validations is enabled.")
@@ -49,6 +51,8 @@ class ValidateEvents(Component):
 
         if not t.conf:
             return
+
+        from art.rhevm_api.utils.test_utils import searchForObj
 
         conf_val = re.sub(r'"|\'|\s', '', t.conf)
         corr_id = re.search(CORRELATION_ID + ':(\d+)', conf_val, re.I)

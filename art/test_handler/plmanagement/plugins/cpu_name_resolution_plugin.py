@@ -2,7 +2,6 @@ from art.test_handler.plmanagement import (Component, implements, get_logger,
                                                                 PluginError)
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
-from art.rhevm_api.utils.test_utils import get_api
 
 from utilities.machine import Machine, LINUX
 
@@ -32,6 +31,7 @@ class AutoCpuNameResolution(Component):
         if not self.is_enabled(params, conf):
             return
 
+        from art.rhevm_api.utils.test_utils import get_api
         #getting cpu information from API
         compatibility_version = conf[PARAMETERS][COMPATIBILITY_VERSION]
         compatibility_version = compatibility_version.split('.')

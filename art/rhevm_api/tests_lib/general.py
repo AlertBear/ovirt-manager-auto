@@ -21,13 +21,14 @@ from art.rhevm_api.utils.test_utils import get_api
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 
 util = get_api('', '')
-permitUtil = get_api('permit', 'capabilities')
 vmUtil = get_api('vm', 'vms')
 hostUtil = get_api('host', 'hosts')
 domUtil = get_api('domain', 'domains')
 userUtil = get_api('user', 'users')
 sdUtil = get_api('storage_domain', 'storagedomains')
 dcUtil = get_api('data_center', 'datacenters')
+permitUtil = get_api('permit', 'capabilities')
+versionCaps = permitUtil.get(absLink=False)
 
 xpathMatch = XPathMatch(util)
 
@@ -81,7 +82,9 @@ def checkSystemVersionTag(positive):
 
     # find the declared values for that.
     error_found = False
-    version_caps = permitUtil.get(absLink=False).get_version()
+    version_caps = versionCaps
+    if not isinstance(versionCaps, list):
+        version_caps = versionCaps.get_version()
     for version in version_caps:
         if version.get_current():
             major = version.get_major()
@@ -189,7 +192,7 @@ def checkSummary(positive, domain):
      dcs = dcUtil.get(absLink=False)
      for dc in dcs:
          dcStorages = util.getElemFromLink(dc, link_name='storagedomains',
-                                            attr='storage_domain', get_href=True)
+                                            attr='storage_domain', get_href=False)
          for dcSd in dcStorages:
             try:
                 if dcSd.status.state == 'active':
