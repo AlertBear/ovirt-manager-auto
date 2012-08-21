@@ -31,8 +31,8 @@ import re
 from utilities.utils import getIpAddressByHostName, getHostName, readConfFile
 # TODO: remove both compareCollectionSize, dump_entity is not needed
 from art.core_api.validator import compareCollectionSize, dump_entity
-from art.rhevm_api.tests_lib.networks import getClusterNetwork
-from art.rhevm_api.tests_lib.vms import startVm, stopVm, stopVms, startVms
+from art.rhevm_api.tests_lib.low_level.networks import getClusterNetwork
+from art.rhevm_api.tests_lib.low_level.vms import startVm, stopVm, stopVms, startVms
 from art.rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
 from art.rhevm_api.utils.test_utils import searchForObj
 from art.test_handler import settings
@@ -58,7 +58,7 @@ StorageManager = getDS('StorageManager')
 
 SED = '/bin/sed'
 SERVICE = '/sbin/service'
-ELEMENTS = os.path.join(os.path.dirname(__file__), '../../conf/elements.conf')
+ELEMENTS = os.path.join(os.path.dirname(__file__), '../../../conf/elements.conf')
 ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
 KSM_STATUSFILE = '/sys/kernel/mm/ksm/run'
 

@@ -25,7 +25,7 @@ from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api.apis_utils import getDS, data_st
 from art.rhevm_api.utils.test_utils import get_api, split
 from art.rhevm_api.utils.xpath_utils import XPathMatch
-from art.rhevm_api.tests_lib.networks import getClusterNetwork
+from art.rhevm_api.tests_lib.low_level.networks import getClusterNetwork
 from art.test_handler.settings import opts
 from utilities.jobs import Job, JobsSet
 from utilities.utils import readConfFile
@@ -47,7 +47,7 @@ CpuTopology = getDS('CpuTopology')
 StorageDomain = getDS('StorageDomain')
 VM = getDS('VM')
 
-ELEMENTS = os.path.join(os.path.dirname(__file__), '../../conf/elements.conf')
+ELEMENTS = os.path.join(os.path.dirname(__file__), '../../../conf/elements.conf')
 ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
 
 xpathMatch = XPathMatch(TEMPLATE_API)

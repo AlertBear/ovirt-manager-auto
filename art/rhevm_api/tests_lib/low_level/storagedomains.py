@@ -23,20 +23,22 @@ import re
 from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api.apis_utils import getDS
 from art.core_api.validator import compareCollectionSize
-from art.rhevm_api.tests_lib.clusters import addCluster, removeCluster, \
+from art.rhevm_api.tests_lib.low_level.clusters import addCluster, removeCluster, \
                          isHostAttachedToCluster, attachHostToCluster, \
                          connectClusterToDataCenter
-from art.rhevm_api.tests_lib.datacenters import addDataCenter,removeDataCenter
-from art.rhevm_api.tests_lib.hosts import deactivateHost, removeHost, getHostCompatibilityVersion
-from art.rhevm_api.tests_lib.hosts import addHost,waitForHostsStates,getHost
-from art.rhevm_api.tests_lib.vms import removeVms, stopVms
-from art.rhevm_api.tests_lib.templates import removeTemplates
+from art.rhevm_api.tests_lib.low_level.datacenters import addDataCenter,removeDataCenter
+from art.rhevm_api.tests_lib.low_level.hosts import deactivateHost, removeHost, \
+                                                    getHostCompatibilityVersion
+from art.rhevm_api.tests_lib.low_level.hosts import addHost, \
+                                    waitForHostsStates,getHost
+from art.rhevm_api.tests_lib.low_level.vms import removeVms, stopVms
+from art.rhevm_api.tests_lib.low_level.templates import removeTemplates
 from art.rhevm_api.utils.storage_api import getVmsInfo, getImagesList, getVolumeInfo
 from art.rhevm_api.utils.test_utils import validateElementStatus, get_api, searchForObj, getImageAndVolumeID
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from utilities.utils import getIpAddressByHostName, readConfFile
 
-ELEMENTS = os.path.join(os.path.dirname(__file__), '../../conf/elements.conf')
+ELEMENTS = os.path.join(os.path.dirname(__file__), '../../../conf/elements.conf')
 ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
 
 StorageDomain = getDS('StorageDomain')

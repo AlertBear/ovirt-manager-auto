@@ -28,7 +28,6 @@ from art.core_api.apis_utils import data_st, TimeoutingSampler
 from art.rhevm_api.utils.test_utils import get_api, split, \
             cobblerAddNewSystem, cobblerSetLinuxHostName
 from art.rhevm_api.utils.xpath_utils import XPathMatch
-from art.rhevm_api.tests_lib.networks import getClusterNetwork
 from art.test_handler.settings import opts
 from threading import Thread
 from utilities.jobs import Job, JobsSet
@@ -39,7 +38,7 @@ from art.rhevm_api.utils.test_utils import searchForObj, getImageByOsType, \
 from art.rhevm_api.utils.threads import runParallel
 
 GBYTE = 1024 * 1024 * 1024
-ELEMENTS = os.path.join(os.path.dirname(__file__), '../../conf/elements.conf')
+ELEMENTS = os.path.join(os.path.dirname(__file__), '../../../conf/elements.conf')
 ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
 DEFAULT_CLUSTER = 'Default'
 NAME_ATTR = 'name'

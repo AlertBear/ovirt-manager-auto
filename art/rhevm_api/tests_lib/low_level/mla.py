@@ -22,7 +22,7 @@ import os
 from utilities.utils import readConfFile
 from art.rhevm_api.utils.test_utils import get_api, split
 
-ELEMENTS=os.path.join(os.path.dirname(__file__), '../../conf/elements.conf')
+ELEMENTS=os.path.join(os.path.dirname(__file__), '../../../conf/elements.conf')
 ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
 CONF_PERMITS = readConfFile(ELEMENTS, 'RHEVM Permits')
 

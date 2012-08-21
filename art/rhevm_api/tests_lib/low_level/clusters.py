@@ -24,7 +24,8 @@ from threading import Thread
 from art.core_api.apis_utils import getDS
 from art.rhevm_api.utils.test_utils import get_api, split
 from art.core_api.apis_exceptions import EntityNotFound
-from art.rhevm_api.tests_lib.hosts import activateHost, deactivateHost, updateHost
+from art.rhevm_api.tests_lib.low_level.hosts import activateHost, \
+                                        deactivateHost, updateHost
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from art.rhevm_api.utils.test_utils import searchForObj
 

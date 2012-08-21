@@ -171,7 +171,7 @@ class Bugzilla(Component):
     def __check_version(self, bug):
         """Skip?"""
         if self.version is None:
-            from art.rhevm_api.tests_lib.general import getSystemVersion
+            from art.rhevm_api.tests_lib.low_level.general import getSystemVersion
             self.version = Version("%d.%d" % getSystemVersion())
         if getattr(bug, 'version', None):
             version = expect_list(bug, 'version')
