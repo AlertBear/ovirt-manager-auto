@@ -23,6 +23,7 @@ import os
 import time
 from lxml import etree
 from utilities import machine
+import utilities.postgresConnection as psql
 from art.core_api.apis_utils import TimeoutingSampler, data_st
 from art.core_api.apis_exceptions import APITimeout, EntityNotFound
 import utilities.ssh_session as ssh_session
@@ -43,6 +44,7 @@ CL_API = get_api('cluster', 'clusters')
 DC_API = get_api('data_center', 'datacenters')
 TAG_API = get_api('tag', 'tags')
 HOST_NICS_API = get_api('host_nic', 'host_nics')
+VM_API = get_api('vm', 'vms')
 
 xpathMatch = XPathMatch(HOST_API)
 xpathHostsLinks = XPathLinks(HOST_API)
@@ -1580,3 +1582,43 @@ def getClusterCompatibilityVersion(positive, cluster):
     clVersion = '{0}.{1}'.format(clusterObj.get_version().get_major(),
                                 clusterObj.get_version().get_minor())
     return True, {'clusterCompatibilityVersion': clVersion}
+
+
+def waitForHostPmOperation(positive, host, vdc='localhost', dbuser='postgres',
+                        dbname='engine'):
+    '''
+    Description: Wait for next PM operation availability
+    Author: lustalov
+    Parameters:
+        * host - vds host name
+        * vdc - vdc host name/IP
+        * dbuser - vdc database username
+        * dbname - vdc database name
+    Return: True if success, False otherwise
+    '''
+    timeToWait = 0
+    dbConn = psql.Postgresql(host=vdc, user=dbuser, dbname=dbname)
+    try:
+        dbConn.connect()
+        sql = "select option_value from vdc_options \
+            where option_name = 'FenceQuietTimeBetweenOperationsInSec';"
+        res = dbConn.query(sql)
+        waitSec = res[0][0]
+        events = ['USER_VDS_STOP', 'USER_VDS_START', 'USER_VDS_RESTART']
+        for event in events:
+            sql = "select get_seconds_to_wait_before_pm_operation('{0}','{1}',{2});".\
+                format(host, event, waitSec)
+            res = dbConn.query(sql)
+            timeSec = int(res[0][0])
+            if timeSec > timeToWait:
+                timeToWait = timeSec
+    except Exception as ex:
+        HOST_API.logger.error('Failed to get wait time before host %s \
+            PM operation: %s' % (host, ex))
+    finally:
+        dbConn.close()
+    if timeToWait > 0:
+        HOST_API.logger.info('Wait %d seconds until PM operation will be permitted.' % timeToWait)
+        time.sleep(timeToWait)
+    return True
+
