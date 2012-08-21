@@ -12,7 +12,6 @@ import art
 
 logger = logging.getLogger('core_api')
 
-RELATIVE_CACHE_PATH = os.path.join('conf', 'actions.conf')
 
 @contextmanager
 def measure_time(): # should be some appropiate params
@@ -135,7 +134,7 @@ class ActionSetType(type):
     Type of ActionsSet, it is responsible for ActionSet's registration.
     """
     SETS = {}
-    CACHE_PATH = os.path.join(os.path.dirname(art.__file__), RELATIVE_CACHE_PATH)
+    CACHE_PATH = 'actions.conf'
     CACHE = ConfigObj(infile=CACHE_PATH)
 
     def __new__(cls, name, bases, dct):

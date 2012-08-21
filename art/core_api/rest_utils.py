@@ -23,11 +23,11 @@ import time
 
 from art.core_api import http, template_parser, validator, measure_time
 from art.core_api.apis_exceptions import EntityNotFound
-from art.core_api.apis_utils import APIUtil, XSD_PATH, parse, data_st
+from art.core_api.apis_utils import APIUtil, parse, data_st
+from art.test_handler import settings
 
 DEF_TIMEOUT = 900 # default timeout
 DEF_SLEEP = 10 # default sleep
-XSD_FILE = os.path.join(os.path.dirname(__file__), '..', XSD_PATH)
 
 restInit = None
 
@@ -59,7 +59,7 @@ class RestUtil(APIUtil):
 
         # load xsd schema file
         if self.xsd is None:
-            xsd_schema = etree.parse(XSD_FILE)
+            xsd_schema = etree.parse(settings.opts.get('api_xsd'))
             self.xsd = etree.XMLSchema(xsd_schema)
 
 

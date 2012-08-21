@@ -26,10 +26,10 @@ from art.rhevm_api.utils.test_utils import get_api, split
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from utilities.utils import readConfFile
 from art.core_api import is_action
+from art.test_handler.settings import opts
 
 GBYTE = 1024**3
-ELEMENTS = os.path.join(os.path.dirname(__file__), '../../../conf/elements.conf')
-ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
+ENUMS = opts['elements_conf']['RHEVM Enums']
 DEFAULT_CLUSTER = 'Default'
 NAME_ATTR = 'name'
 ID_ATTR = 'id'

@@ -247,7 +247,8 @@ class TCMS(Component):
         params['description'] = 'TCMS plugin for ART'
         params['long_description'] = 'Provides connection to TCMS DB and '\
                 'reports there tests results.'
-        params['requires'] = ['python-kerberos', 'python-nitrate', 'art-utilities']
+        params['requires'] = ['python-kerberos', 'python-nitrate', \
+                'art-utilities', 'krb5-workstation']
         params['py_modules'] = ['art.test_handler.plmanagement.plugins.tcms_plugin', \
                 'art.test_handler.plmanagement.plugins.tcmsAgent', \
                 'art.test_handler.plmanagement.plugins.tcmsEntryWrapper', \

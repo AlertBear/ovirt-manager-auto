@@ -105,7 +105,7 @@ class AutoDevices(Component):
         params['description'] = 'Storage provisioning plugin for ART'
         params['long_description'] = 'Plugin for ART which provides '\
                 'Storage provisioning functionality.'
-        params['requires'] = ['art-utilities']
+        params['requires'] = ['art-storage-api']
         params['py_modules'] = ['art.test_handler.plmanagement.plugins.auto_devices_plugin',
                 'art.test_handler.plmanagement.plugins.storage']
 

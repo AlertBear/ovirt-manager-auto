@@ -23,9 +23,9 @@ import logging
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from utilities.utils import readConfFile
 from art.core_api import is_action
+from art.test_handler.settings import opts
 
-ELEMENTS = os.path.join(os.path.dirname(__file__), '../../../conf/elements.conf')
-ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
+ENUMS = opts['elements_conf']['RHEVM Enums']
 
 logger = logging.getLogger(__package__ + __name__)
 

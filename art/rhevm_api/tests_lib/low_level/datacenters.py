@@ -27,6 +27,7 @@ from art.rhevm_api.utils.test_utils import get_api, split
 from utilities.utils import readConfFile
 from art.rhevm_api.utils.test_utils import searchForObj
 from art.core_api import is_action
+from art.test_handler.settings import opts
 
 
 ELEMENT = 'data_center'
@@ -37,7 +38,7 @@ DataCenter = getDS('DataCenter')
 Version = getDS('Version')
 
 ELEMENTS = os.path.join(os.path.dirname(__file__), '../../../conf/elements.conf')
-ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
+ENUMS = opts['elements_conf']['RHEVM Enums']
 
 DATA_CENTER_INIT_TIMEOUT = 180
 

@@ -60,8 +60,7 @@ StorageManager = getDS('StorageManager')
 
 SED = '/bin/sed'
 SERVICE = '/sbin/service'
-ELEMENTS = os.path.join(os.path.dirname(__file__), '../../../conf/elements.conf')
-ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
+ENUMS = settings.opts['elements_conf']['RHEVM Enums']
 KSM_STATUSFILE = '/sys/kernel/mm/ksm/run'
 HOST_STATE_TIMEOUT=1000
 KSMTUNED_CONF = '/etc/ksmtuned.conf'

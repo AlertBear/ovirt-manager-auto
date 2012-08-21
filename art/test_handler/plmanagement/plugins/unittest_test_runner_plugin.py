@@ -7,16 +7,21 @@ import copy
 from art.test_handler.plmanagement import Component, implements, get_logger, PluginError
 from art.test_handler.plmanagement.interfaces.application import ITestParser, IConfigurable
 from art.test_handler.plmanagement.interfaces.report_formatter import IResultExtension
+from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.test_runner import TestCase, TestSuite, TestGroup, TestResult
 from art.test_handler.exceptions import SkipTest
 import art
+
+DEPS_INSTALLED = None
+
 try:
     from unittest import SkipTest as USkipTest
-except ImportError:
-    USkipTest = None
-from nose.suite import ContextSuite
-from nose.case import Test
-from unittest2 import SkipTest as USkipTest2
+    from nose.suite import ContextSuite
+    from nose.case import Test
+    from unittest2 import SkipTest as USkipTest2
+except ImportError as ex:
+    ContextSuite = Test = USkipTest = USkipTest2 = None
+    DEPS_INSTALLED = ex
 
 RUN_SEC = 'RUN'
 TESTS_FILE = 'tests_file'
@@ -118,7 +123,7 @@ class UnittestLoader(Component):
     """
     Plugin allows to test_runner be able to run unittest based tests
     """
-    implements(ITestParser, IResultExtension, IConfigurable)
+    implements(ITestParser, IResultExtension, IConfigurable, IPackaging)
     name = 'Unittest runner'
 
     def is_able_to_run(self, ti):
@@ -151,6 +156,10 @@ class UnittestLoader(Component):
     def configure(self, params, conf):
         if not self.is_enabled(params, conf):
             return
+
+        if DEPS_INSTALLED:
+            raise DEPS_INSTALLED
+
         # FIXME: why this is done in both matrix_runner and here ? it should be somewhere else.
         self.conf = conf
         self.conf[CONFIG_PARAMS].merge(self.conf[REST_CONNECTION])
@@ -189,4 +198,16 @@ class UnittestLoader(Component):
     @classmethod
     def is_enabled(cls, a, b):
         return True
+
+    @classmethod
+    def fill_setup_params(cls, params):
+        params['name'] = cls.name.lower().replace(' ', '-')
+        params['version'] = '1.0'
+        params['author'] = 'Lukas Bednar'
+        params['author_email'] = 'lbednar@redhat.com'
+        params['description'] = 'Unittest runner plugin for ART'
+        params['long_description'] = cls.__doc__
+        params['requires'] = ['python-nose']
+        params['pip_deps'] = ['unittest2']
+        params['py_modules'] = ['art.test_handler.plmanagement.plugins.unittest_test_runner_plugin']
 

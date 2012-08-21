@@ -25,9 +25,9 @@ from art.rhevm_api.tests_lib.low_level import networks as nets
 from art.core_api.apis_exceptions import EntityNotFound
 from utilities.utils import readConfFile
 from art.core_api import is_action
+from art.test_handler.settings import opts
 
-ELEMENTS = os.path.join(os.path.dirname(__file__), '../../../conf/elements.conf')
-ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
+ENUMS = opts['elements_conf']['RHEVM Enums']
 
 logger = logging.getLogger(__package__ + __name__)
 
@@ -40,7 +40,7 @@ def addMultipleVlanedNetworks(networks, data_center, **kwargs):
     Parameters:
         * networks - a list of vlaned networks with their vlan suffix
         * date_center - the DataCenter name
-        * kwargs - all arguments related to basic addNetwork 
+        * kwargs - all arguments related to basic addNetwork
     return True with new nics name list or False with empty list
     '''
 

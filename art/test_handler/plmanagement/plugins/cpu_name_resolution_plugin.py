@@ -142,7 +142,7 @@ class AutoCpuNameResolution(Component):
 
     @classmethod
     def fill_setup_params(cls, params):
-        params['name'] = cls.name.lower()
+        params['name'] = cls.name.lower().replace(' ', '-')
         params['version'] = '1.0'
         params['author'] = 'Gal Leibovici'
         params['author_email'] = 'gleibovi@redhat.com'

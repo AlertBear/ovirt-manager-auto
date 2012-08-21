@@ -3,9 +3,10 @@ import os
 
 from art.test_handler.plmanagement import Component, implements, get_logger, PluginError
 from art.test_handler.plmanagement.interfaces.application import ITestParser, IConfigurable
-#import art.test_handler.plmanagement.plugins.matrix_test_runner_plugin as rm
+from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 import matrix_test_runner_plugin as mr
 from lxml import etree
+from art.test_handler import find_test_file
 
 logger = get_logger('xml-test-parser')
 
@@ -59,12 +60,7 @@ ELMS_NAME_MAP = {
 class XMLTestFile(mr.TestFile):
 
     def __init__(self, path, lines):
-        path_to_test = os.path.abspath(path)
-        if not os.path.exists(path_to_test):
-            import art
-            path_to_test = os.path.join(os.path.dirname(art.__file__), path)
-            if not os.path.exists(path_to_test):
-                raise IOError("can not find test_file: %s" % path)
+        path_to_test = find_test_file(path)
         super(XMLTestFile, self).__init__(path_to_test)
         self.tree = etree.parse(os.path.abspath(self.path))
         self.tree.xinclude()
@@ -115,7 +111,7 @@ class XMLTestParser(Component):
     """
     Plugin allows to matrix_based runner to parse XML tests
     """
-    implements(mr.IMatrixBasedParser, IConfigurable)
+    implements(mr.IMatrixBasedParser, IConfigurable, IPackaging)
     name = 'XML test parser'
     enabled = True
 
@@ -146,3 +142,17 @@ class XMLTestParser(Component):
     @classmethod
     def is_enabled(cls, a, b):
         return True
+
+    @classmethod
+    def fill_setup_params(cls, params):
+        params['name'] = cls.name.lower().replace(' ', '-')
+        params['version'] = '1.0'
+        params['author'] = 'Lukas Bednar'
+        params['author_email'] = 'lbednar@redhat.com'
+        params['description'] = 'Test parser for matrix-based test runnner'
+        params['long_description'] = 'Plugin for ART. '\
+                                'Allows to matrix-based test runner run '\
+                                'tests written in XML format.'
+        params['requires'] = ['art-plugin-matrix-based-test-composer']
+        params['py_modules'] = ['art.test_handler.plmanagement.plugins.xml_test_parser_plugin']
+

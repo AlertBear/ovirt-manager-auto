@@ -30,6 +30,7 @@ from utilities.jobs import Job, JobsSet
 from utilities.utils import readConfFile
 from art.rhevm_api.utils.test_utils import searchForObj
 from art.core_api import is_action
+from art.test_handler.settings import opts
 
 CREATE_TEMPLATE_TIMEOUT = 900
 ELEMENT = 'template'
@@ -47,8 +48,7 @@ CpuTopology = getDS('CpuTopology')
 StorageDomain = getDS('StorageDomain')
 VM = getDS('VM')
 
-ELEMENTS = os.path.join(os.path.dirname(__file__), '../../../conf/elements.conf')
-ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
+ENUMS = opts['elements_conf']['RHEVM Enums']
 
 xpathMatch = is_action('xpathTemplates', id_name='xpathMatch')(XPathMatch(TEMPLATE_API))
 

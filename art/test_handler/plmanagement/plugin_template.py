@@ -14,12 +14,12 @@ logger = get_logger('<name_of_your_plugin>')
 
 
 # please select some suitable name for plugin class inherited from Component
-class <PluginClass>(Component):
+class PluginClass(Component):
     """
     <description of your plugin>
     """
     # here you have to specify which interfaces you want to implement
-    implements(IConfigurable, another_interfaces, ...)
+    implements(IConfigurable) # and another interfaces
     name = '<name_of_your_plugin>'
 
     # here we are implementing add_options from IConfigurable interface
@@ -41,5 +41,5 @@ class <PluginClass>(Component):
     # no interface_method will be executed (except add_options and configure)
     @classmethod
     def is_enabled(cls, params, conf):
-        return params.enable_my_pl
+        return False # here put your condition to enable your plugin
 

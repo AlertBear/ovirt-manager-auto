@@ -75,47 +75,20 @@ class GenerateDataStructures(Component):
         if not self.is_enabled(params, conf):
             return
 
-        xsd_path = self.__resolve_absolute_file_path(conf[RUN]['api_xsd'])
-        logger.debug("Path to api.xsd :" + xsd_path)
-        self.__download_xsd(xsd_path)
+        #for mod in conf[RUN]['data_struct_mod'].replace(',', ' ').split(' '):
+        #    self.__generate(mod)(conf)
+        self.__generate(conf[RUN]['data_struct_mod'])(conf)
 
-        ds_import_path = conf[RUN]['data_struct_mod']
-        ds_rel_path = re.sub("^art.", '',ds_import_path)
-        ds_rel_path = ds_rel_path.replace('.',  '/') + '.py'
-        ds_full_path = self.__resolve_absolute_file_path(ds_rel_path)
-        logger.debug("Path to data_structures:" + ds_full_path)
-        self.__generate_ds(xsd_path, ds_full_path)
-
-        __import__(ds_import_path, fromlist=[ds_import_path.rsplit('.', 1)])
-        logger.info("Data structures were sucessfully updated")
-
-    @classmethod
-    def __resolve_absolute_file_path(cls, file_path):
-        return os.path.join(os.path.dirname(art.__file__), file_path)
-
-
-    @classmethod
-    def __download_xsd(cls, file_path):
-        proxy = HTTPProxy(opts)
-        res = proxy.GET('/api?schema')
-        reason = res.get('reason', 'no_reason')
-        logger.debug("Fetch schema: code=%s, reason=%s", res['status'], reason)
-        if res['status'] > 300:
-            raise FailedToDonwloadSchema(reason)
-
-        with open(file_path, 'w') as fh:
-            fh.write(res['body'])
-
-    @classmethod
-    def __generate_ds(cls, xsd, ds_path):
-        cmd = ['python', GENERATE_DS_PATH, '-f', '-o', ds_path, \
-                '--member-specs=dict', xsd]
-
-        p = Popen(cmd, stdout=PIPE, stderr=PIPE)
-        out, err = p.communicate()
-        logger.debug("Generate DS: %s %s", out, err)
-        if p.returncode:
-            raise GenerateDSExecutionError(err)
+    def __generate(self, mod):
+        path = []
+        generate_method = None
+        for sub_mod in mod.split('.'):
+            path.append(sub_mod)
+            m = __import__('.'.join(path), fromlist=[sub_mod])
+            generate_method = getattr(m, 'generate_ds', None)
+            if generate_method:
+                return generate_method
+        raise Exception("can not find generate_ds method")
 
     @classmethod
     def is_enabled(cls, params, conf):
@@ -131,7 +104,7 @@ class GenerateDataStructures(Component):
         params['description'] = 'Generate DS plugin for ART'
         params['long_description'] = cls.__doc__
         params['pip_deps'] = ['generateDS']
-        params['py_modules'] = ['art.test_handler.plmanagement.plugins.bz_plugin']
+        params['py_modules'] = ['art.test_handler.plmanagement.plugins.generate_data_structs_plugin']
 
     def config_spec(self, spec, val_funcs):
         section_spec = spec.get(DS_GEN_OPTIONS, {})

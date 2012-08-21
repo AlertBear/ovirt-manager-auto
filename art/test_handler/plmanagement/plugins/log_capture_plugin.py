@@ -30,9 +30,12 @@ from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.test_handler.plmanagement.interfaces.tests_listener import ITestCaseHandler
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.plmanagement.interfaces.report_formatter import IResultExtension
-from art.test_handler.reports import FMT
 from art.test_handler.plmanagement.interfaces.config_validator import\
                                                     IConfigValidation
+try:
+    from art.test_handler.reports import FMT
+except ImportError:
+    FMT = "%(message)s"
 
 
 LOGS = 'LOG_CAPTURE'

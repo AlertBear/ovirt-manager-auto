@@ -31,6 +31,8 @@ from urlparse import urlsplit
 from configobj import ConfigObj, flatten_errors, get_extra_values,\
                       ConfigObjError
 from validate import Validator, ValidateError, VdtTypeError
+import art
+from art.test_handler import find_config_file
 
 
 # conf file parameters names
@@ -57,6 +59,7 @@ class ParamsValidator(object):
     def __init__(self, confFile, confSpecFile, funcsDict=None):
         self.valFuncsDict = {'domain_format': self.checkDomainFormat,
                             'path_exists': self.checkIfPathExists,
+                            'path_to_config': self.checkConfigFilePath,
                             'is_alive': self.checkHostIsAlive,
                             'is_url_alive': self.checkURLIfAlive,
                             'python_module': self.checkPythonModule,
@@ -66,9 +69,9 @@ class ParamsValidator(object):
         self._confSpecFile = confSpecFile
         self._extraParameters = None
         self._extra_values_keys = None
-        self._basePath = os.sep.join([sys.path[0], ART_DIR])
         self._globalConfSpec = []
         self._globalConfSpecFileName = "%s.spec" % confFile.rsplit('.', 1)[0]
+        self._basePath = os.path.dirname(art.__file__)
         #updating validation functions dictionary
         if funcsDict is not None:
                 self.valFuncsDict = funcsDict
@@ -198,16 +201,11 @@ class ParamsValidator(object):
                                    (self._confFile, confSpecFile))
 
     def validateConfigFile(self, confSpecFile):
+        confSpecFile = self.checkConfigFilePath(confSpecFile)
         self._validateHelper(confSpecFile)
         testConfSpecs = self._config[PARAMETERS][TEST_CONF_SPEC]
         for spec in testConfSpecs:
-            # case with absolute path
-            if spec.startswith(os.sep):
-                tmpVal = spec
-            # case with relative path
-            else:
-                tmpVal = os.sep.join([self._basePath, spec])
-
+            tmpVal = self.checkConfigFilePath(spec)
             self._validateHelper(tmpVal)
 
     def validatedPluginConfig(self):
@@ -255,7 +253,9 @@ class ParamsValidator(object):
                 raise ValidateError("Empty value")
             if not value.startswith(os.sep):
                 # case with relative path
-                path = os.sep.join([self._basePath, value])
+                path = os.path.join(os.getcwd(), value)
+                if not os.path.exists(path): # check working dir
+                    path = os.sep.join([self._basePath, value])
 
             if not os.path.exists(path):
                 raise ValidateError("File  %s doesn't exist" % value)
@@ -263,6 +263,16 @@ class ParamsValidator(object):
             raise VdtTypeError("%s is not string" % value)
 
         return path
+
+    def checkConfigFilePath(self, value):
+        if not value:
+            raise ValidateError("Empty value for config file")
+        try:
+            path = find_config_file(value)
+        except IOError as ex:
+            raise ValidateError(str(ex))
+        else:
+            return path
 
     def checkPythonModule(self, value):
         try:

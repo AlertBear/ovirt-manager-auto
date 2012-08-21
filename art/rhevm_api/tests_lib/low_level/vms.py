@@ -40,8 +40,7 @@ from art.rhevm_api.utils.threads import runParallel
 from art.core_api import is_action
 
 GBYTE = 1024 * 1024 * 1024
-ELEMENTS = os.path.join(os.path.dirname(__file__), '../../../conf/elements.conf')
-ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
+ENUMS = opts['elements_conf']['RHEVM Enums']
 DEFAULT_CLUSTER = 'Default'
 NAME_ATTR = 'name'
 ID_ATTR = 'id'

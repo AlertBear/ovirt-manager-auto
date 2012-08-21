@@ -30,6 +30,7 @@ from time import strftime
 from shutil import copyfile
 from configobj import ConfigObj
 
+import art
 from art.test_handler.plmanagement.manager import PluginManager
 from art.test_handler.handler_lib.configs import ParamsValidator
 
@@ -87,8 +88,7 @@ def populateOptsFromArgv(argv):
                                 help='path to the config file',
                                 dest='conf')
     parser.add_argument('--SpecFile', '-spec',
-                                default=os.sep.join([sys.path[0],
-                                                  'art/conf/specs/main.spec']),
+                                default='conf/specs/main.spec',
                                 help='path to the main conf spec file',
                                 dest='confSpec')
     parser.add_argument('--standalone', '-standalone', action='store_true',
@@ -172,6 +172,9 @@ def readTestRunOpts(path, redefs):
 
     # Populate opts from the RUN section.
     runSection = config['RUN']
+
+    opts['elements_conf'] = ConfigObj(runSection['elements_conf'], \
+            raise_errors=True)
 
     opts['test_file_name'] = []
     opts['tests'] = runSection.as_list('tests_file')

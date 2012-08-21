@@ -22,10 +22,10 @@ import os
 from utilities.utils import readConfFile
 from art.rhevm_api.utils.test_utils import get_api, split
 from art.core_api import is_action
+from art.test_handler.settings import opts
 
-ELEMENTS=os.path.join(os.path.dirname(__file__), '../../../conf/elements.conf')
-ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
-CONF_PERMITS = readConfFile(ELEMENTS, 'RHEVM Permits')
+ENUMS = opts['elements_conf']['RHEVM Enums']
+CONF_PERMITS = opts['elements_conf']['RHEVM Permits']
 
 Role = getDS('Role')
 Permits = getDS('Permits')

@@ -14,6 +14,7 @@ from art.test_handler.plmanagement.interfaces.report_formatter import IResultExt
 from art.test_handler.plmanagement.interfaces.tests_listener import ITestCaseHandler
 from art.test_handler.plmanagement.interfaces.tests_listener import ITestGroupHandler
 from art.test_handler.plmanagement.interfaces.config_validator import IConfigValidation
+from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.plmanagement import Interface
 from art.test_handler.test_runner import TestCase, TestGroup, TestSuite, TestResult
 from art.test_handler import exceptions as errors
@@ -50,10 +51,6 @@ TEST_TCMS_CASE_ID = 'tcms_test_case' # TODO: shouldn't be here
 TEST_TCMS_PLAN_ID = 'tcms_plan_id' # TODO: shouldn't be here
 TEST_TRAC_ID = 'trac' # TODO: shouldn't be here
 
-
-fetch_path = lambda x: os.path.abspath(\
-        os.path.join(os.path.dirname(__file__), '..', '..', '..', x))
-ELEMENTS_PATH = fetch_path("conf/elements.conf")
 
 START_GROUP = 'START_GROUP'
 END_GROUP = 'END_GROUP'
@@ -169,7 +166,7 @@ class TestFile(object):
 class TestComposer(object):
     logger = logging.getLogger()
 
-    def __init__(self, test_file, config, elements=None, groups=None):
+    def __init__(self, test_file, config, groups=None):
         self.tf = test_file
         #self.a = {}
         if MatrixBasedTestComposer.discover_actions:
@@ -177,10 +174,8 @@ class TestComposer(object):
         for module in config.get(MATRIX_TEST_RUNNER_SEC).as_list(TEST_MODULES):
             ActionSetType.load_module(module)
         self.a = ActionSetType.actions()
-        if elements is None:
-            elements = ConfigObj(infile=ELEMENTS_PATH)
-        self.e = elements[RHEVM_ENUMS]
-        self.e.merge(elements[RHEVM_PERMITS])
+        self.e = opts['elements_conf'][RHEVM_ENUMS]
+        self.e.merge(opts['elements_conf'][RHEVM_PERMITS])
         self.c = config[CONFIG_PARAMS]
         self.c.merge(config[REST_CONNECTION])
         self.c.merge(self.__get_data_center_config(config))
@@ -375,10 +370,10 @@ class TestComposer(object):
         return func
 
     @classmethod
-    def generate_suites(cls, test_file, config, elements=None, groups=None):
+    def generate_suites(cls, test_file, config, groups=None):
         suites = []
         for s_name, s_attr in test_file.get_suites():
-            tc = TestComposer(test_file, config, elements, groups)
+            tc = TestComposer(test_file, config, groups)
             s = MatrixTestSuite(s_name, tc)
             for attr in s_attr:
                 setattr(s, attr, s_attr[attr])
@@ -732,7 +727,7 @@ class MatrixBasedTestComposer(Component):
     Plugin allows to test_runner be able to run matrix_based tests
     """
     implements(ITestParser, IConfigurable, IResultExtension, ITestCaseHandler, \
-            IConfigValidation, ITestGroupHandler)
+            IPackaging, IConfigValidation, ITestGroupHandler)
     parsers = ExtensionPoint(IMatrixBasedParser)
     name = 'Matrix Based Test Composer'
     discover_actions = False
@@ -870,4 +865,16 @@ class MatrixBasedTestComposer(Component):
     @classmethod
     def is_enabled(cls, a, b):
         return True
+
+    @classmethod
+    def fill_setup_params(cls, params):
+        params['name'] = cls.name.lower().replace(' ', '-')
+        params['version'] = '1.0'
+        params['author'] = 'Lukas Bednar'
+        params['author_email'] = 'lbednar@redhat.com'
+        params['description'] = 'Matrix-based test runner plugin for ART'
+        params['long_description'] = 'Plugin for ART. '\
+                                'Allows to user run matrix based tests in ART framework.'
+        params['py_modules'] = ['art.test_handler.plmanagement.plugins.matrix_test_runner_plugin']
+
 

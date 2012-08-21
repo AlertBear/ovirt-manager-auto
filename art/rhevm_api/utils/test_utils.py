@@ -49,7 +49,6 @@ from art.core_api import is_action
 logger = logging.getLogger('test_utils')
 
 #The location of all supported elements
-elementsConf = os.path.join(os.path.dirname(__file__), "../../conf/elements.conf")
 #The name of section in the element configuration file
 elementConfSection = 'elements'
 #The location of all supported os
@@ -186,7 +185,7 @@ def validateElementStatus(positive, element, collection, elementName,
     util = get_api(element, collection)
 
     try:
-        supportedElements = readConfFile(elementsConf, elementConfSection)
+        supportedElements = settings.opts['elements_conf'][elementConfSection]
     except Exception as err:
         util.logger.error(err)
         return False
@@ -908,7 +907,7 @@ def getImageByOsType(positive, osType, slim = False):
             if ((osType != 'RHEL5') and (osType != 'RHEL6')):
                 osType = osType + '_SLIM'
     try:
-        supportedOs = readConfFile(elementsConf, osType)
+        supportedOs = settings.opts['elements_conf'][osType]
     except Exception as err:
         logger.error(err)
         return False, {'osBoot' : None,'floppy' : None}
@@ -931,7 +930,7 @@ def getOsParamsByOsType(positive, osType):
     False if not found and return None to all params
     '''
     try:
-        supportedOs = readConfFile(elementsConf, osType)
+        supportedOs = settings.opts['elements_conf'][osType]
     except Exception as err:
         logger.error(err)
         return False, {'name' : None, 'arch' : None, 'release' : None, 'type' : None}
@@ -1044,7 +1043,7 @@ def searchElement(positive, element, collection, keyName, searchValue):
     '''
     util = get_api(element, collection)
     try:
-        supportedElements = readConfFile(elementsConf, elementConfSection)
+        supportedElements = settings.opts['elements_conf'][elementConfSection]
     except Exception as err:
         util.logger.error(err)
         return False, None
