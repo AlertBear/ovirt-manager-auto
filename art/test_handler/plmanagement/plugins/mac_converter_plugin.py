@@ -266,10 +266,8 @@ class MacToIpConverter(Component):
                 dest='mac_ip_conv_enabled', help="enable plugin")
 
     def configure(self, params, conf):
-        if not params.mac_ip_conv_enabled:
-            # added option to enable mac_ip_converter from config_file
+        if not self.is_enabled(params, conf):
             return
-
         self.catcher = DHCPLeasesCatcher()
         self.vds = conf[PARAMETERS].as_list(VDS)
         self.vds_passwd = conf[PARAMETERS].as_list(VDS_PASSWORD)
@@ -317,7 +315,8 @@ class MacToIpConverter(Component):
 
     @classmethod
     def is_enabled(cls, params, conf):
-        return params.mac_ip_conv_enabled
+        enbl = conf.get(MAC_TO_IP_CONV, {}).get('enabled', "").lower() == 'true'
+        return params.mac_ip_conv_enabled or enbl
 
     @classmethod
     def fill_setup_params(cls, params):
