@@ -414,3 +414,22 @@ def spmStart(positive, vds_name, user, passwd, sp_uuid, prev_id=-1, prev_lver=-1
     res = vds_obj.startSpm(sp_uuid, prev_id, prev_lver, \
                           recovery_mode, scsi_fencing, max_host_id, version)
     return not positive ^ res
+
+
+def getVolumesList(vds_name, user, passwd, dc_uuid, sd_uuid, images):
+    """
+    Description: gets list of volumes on given domain
+    Author: jlibosva
+    Parameters:
+         * vds_name - IP address or name of VDS host
+         * user - user name
+         * password - user password
+         * dc_uuid - data center uuid
+         * sd_uuid - storage domain uuid
+         * images - list of images' uuid
+    Return: List of volumes id
+    """
+    vds = vds4.VDS(vds_name, account=(user, passwd))
+    return vds.getVolumesList(sd_uuid, dc_uuid, images)
+
+

@@ -1213,7 +1213,8 @@ def runVmOnce(positive, vm, pause=None, display_type=None, stateless=None,
         if positive and status:
             # in case status is False we shouldn't wait for rest element status
             return VM_API.waitForElemStatus(vm_obj,
-                   ENUMS['vm_state_powering_up'], VM_ACTION_TIMEOUT)
+                       ENUMS['vm_state_powering_up'] + " "
+                       + ENUMS['vm_state_up'], VM_ACTION_TIMEOUT)
     return status
 
 
@@ -1632,8 +1633,8 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
         os_type='UNASSIGNED', memory=1073741824, cpu_socket=1, cpu_cores=1,
         display_type=ENUMS['display_type_spice'], installation=False, slim=False,
         user=None, password=None, attempt=60, interval=60,
-        cobblerAddress=None, cobblerUser=None, cobblerPasswd=None, async=False,
-        hostname=None, network='rhevm', useAgent=False):
+        cobblerAddress=None, cobblerUser=None, cobblerPasswd=None, image=None,
+        async=False, hostname=None, network='rhevm', useAgent=False):
     '''
     The function createStartVm adding new vm with nic,disk and started new created vm.
         vmName = VM name
@@ -1658,6 +1659,10 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
         password - password to connect to vm after installation
         attempt- attempts to connect after installation
         inerval - interval between attempts
+        cobblerAddress - IP or hostname of cobbler server
+        cobblerUser - username for cobbler
+        cobblerPasswd - password for cobbler
+        image - profile in cobbler
         useAgent - Set to 'true', if desired to read the ip from VM (agent exist on VM)
     return values : Boolean value (True/False ) True in case of success otherwise False
     '''
@@ -1683,9 +1688,11 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
         if not status:
             return False
 
+        if image is None:
+            image = res['osBoot']
         if not unattendedInstallation(positive, vmName,
                             cobblerAddress, cobblerUser, cobblerPasswd,
-                            image=res['osBoot'], floppyImage=res['floppy'],
+                            image=image, floppyImage=res['floppy'],
                             nic=nic, hostname=hostname):
             return False
 
@@ -1721,7 +1728,9 @@ def waitForIP(vm, timeout=600, sleep=DEF_SLEEP):
         time.sleep(sleep)
         guest_info = VM_API.find(vm).get_guest_info()
         if guest_info is not None:
-            return guest_info.get_ips().get_ip()[0].get_address()
+            ip = guest_info.get_ips().get_ip()[0].get_address()
+            VM_API.logger.debug("Got IP: %s", ip)
+            return ip
 
     return False
 
@@ -2162,4 +2171,26 @@ def checkVmState(positive, vmName, state, host=None):
         return vmObj.host.id == hostObj.id and general_check
     else:
         return general_check
+
+
+@is_action()
+def removeVmFromExportDomain(positive, vm, datacenter,
+                             export_storagedomain):
+    '''
+    Description: removes a vm, from export domain
+    Author: istein
+    Parameters:
+       * vm - vm to import
+       * datacenter - name of data center
+       * export_storagedomain -storage domain where to export vm from
+    Return: status (True if vm was removed properly, False otherwise)
+    '''
+
+    expStorDomObj = STORAGE_DOMAIN_API.find(export_storagedomain)
+    vmObj = VM_API.getElemFromElemColl(expStorDomObj, vm)
+
+    status = VM_API.delete(vmObj, positive)
+    # replac sleep with true diagnostic
+    time.sleep(30)
+    return status
 

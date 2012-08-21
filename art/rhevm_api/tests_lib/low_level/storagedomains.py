@@ -33,8 +33,11 @@ from art.rhevm_api.tests_lib.low_level.hosts import addHost, \
                                     waitForHostsStates,getHost
 from art.rhevm_api.tests_lib.low_level.vms import removeVms, stopVms
 from art.rhevm_api.tests_lib.low_level.templates import removeTemplates
-from art.rhevm_api.utils.storage_api import getVmsInfo, getImagesList, getVolumeInfo
-from art.rhevm_api.utils.test_utils import validateElementStatus, get_api, searchForObj, getImageAndVolumeID
+from art.rhevm_api.utils.storage_api import getVmsInfo, getImagesList, \
+                                    getVolumeInfo, getVolumesList
+from art.rhevm_api.utils.test_utils import validateElementStatus, get_api, \
+                                    searchForObj, getImageAndVolumeID, \
+                                    getAllImages
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from utilities.utils import getIpAddressByHostName, readConfFile
 from art.core_api import is_action
@@ -1072,5 +1075,147 @@ def checkStorageFormatVersion(positive, storagedomain, version):
     domainObj = util.find(storagedomain)
 
     return (domainObj.storage_format == version) == positive
+
+
+@is_action()
+def checkVmVolume(positive, vdsName, username, passwd, dataCenter,
+                  storageDomain, vm, fake, noImages, exists=True):
+    """
+    Description: Checks first volume on given storage domain of specified
+                 VM
+    Author: jlibosva
+    Parameters:
+       * vdsName - host name
+       * username - user name
+       * passwd - user password
+       * dataCenter - data center name
+       * storageDomain - name of the storage domain
+       * vm - name of vm
+       * fake - If volume is expected to be fake set it to True, otherwise
+                to False
+       * noImage - set True, in case no image is expected to be in the storage
+                   domain
+    Return: True if volume Lagality is as expected \ No image is expected and
+               it doesn't exist
+            False otherwise
+    """
+    return checkVolume(positive, vdsName, username, passwd, dataCenter,
+                       storageDomain, vm, fake, noImages, exists)
+
+
+@is_action()
+def checkTemplateVolume(positive, vdsName, username, passwd, dataCenter,
+                        storageDomain, template, fake, noImages, exists=True):
+    """
+    Description: Checks first volume on given storage domain of specified
+                 template
+    Author: jlibosva
+    Parameters:
+       * vdsName - host name
+       * username - user name
+       * passwd - user password
+       * dataCenter - data center name
+       * storageDomain - name of the storage domain
+       * template - name of template
+       * fake - If volume is expected to be fake set it to True, otherwise
+                to False
+       * noImage - set True, in case no image is expected to be in the storage
+                   domain
+    Return: True if volume Lagality is as expected \ No image is expected and
+               it doesn't exist
+            False otherwise
+    """
+    return checkVolume(positive, vdsName, username, passwd, dataCenter,
+                       storageDomain, template, fake, noImages, exists,
+                       'templates')
+
+
+def getObjList(sd, coll):
+    """
+    Description: Returns list of objects specified by coll
+    Author: jlibosva
+    Parameters:
+        * sd - storage domain we want objects from
+        * coll - collection we want (vms or templates)
+    Return: list of objects (vms or templates)
+    """
+    attr = coll[:-1]
+    return util.getElemFromLink(sd, link_name=coll, attr=attr,
+                                    get_href=False)
+
+
+def checkVolume(positive, vdsName, username, passwd, dataCenter, storageDomain,
+                name, fake, noImages, exists, coll='vms'):
+    """
+    Description: Checks first volume on given storage domain of specified
+                 name
+    Author: istein, jlibosva
+    Parameters:
+       * vdsName - host name
+       * username - user name
+       * passwd - user password
+       * dataCenter - data center name
+       * storageDomain - name of the storage domain
+       * name - name of vm/template
+       * fake - If volume is expected to be fake set it to True, otherwise
+                to False
+       * noImage - set True, in case no image is expected to be in the storage
+                   domain
+       * isVm - if True, checks for vm, False checks template
+    Return: True if volume Lagality is as expected \ No image is expected and
+               it doesn't exist
+            False otherwise
+    """
+    domainObj = util.find(storageDomain)
+    dcObj = dcUtil.find(dataCenter)
+    objCollection = getObjList(domainObj, coll)
+
+    try:
+        Obj = [o for o in objCollection if o.name == name][0]
+    except IndexError:
+        if exists:
+            util.logger.error("%s was not found on storage domain %s" %
+                          (name, storageDomain))
+            return not positive
+        else:
+            return positive
+
+    obj_id = Obj.id
+    dc_id = dcObj.id
+    domain_id = domainObj.id
+
+    images = getAllImages(vdsName, username, passwd, dc_id, domain_id, obj_id)
+
+    if noImages:
+        if images is not []:
+            util.logger.error("There are image(-s) on domain %s!" % storageDomain)
+            return not positive
+        return positive
+    elif images is []:
+        util.logger.error("There are no images on domain %s" % storageDomain)
+        return not positive
+
+    image = images[0]
+    try:
+        volInfo = getVolumesList(vdsName, username, passwd, dc_id, domain_id,
+                                 [image])[0]
+    except IndexError:
+        util.logger.error("Can't find any volume of image DC %s, SD, Image",
+                          dataCenter, storageDomain, image)
+        return not positive
+
+    parentInfo = getVolumeInfo(vdsName, username, passwd, dc_id, domain_id,
+                               image, volInfo['parent'])
+
+    legality = parentInfo.get('legality', None)
+    if legality is None:
+        legality = volInfo['legality']
+
+    if (fake and legality != 'FAKE') or \
+           (not fake and legality != 'LEGAL'):
+        util.logger.error("Template/Vm legality is wrong: %s" % legality)
+        return not positive
+    return positive
+
 
 
