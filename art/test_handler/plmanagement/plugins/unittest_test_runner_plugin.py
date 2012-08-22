@@ -1,26 +1,31 @@
 
+import os
 import re
 import sys
+import copy
 
 from art.test_handler.plmanagement import Component, implements, get_logger, PluginError
 from art.test_handler.plmanagement.interfaces.application import ITestParser, IConfigurable
 from art.test_handler.plmanagement.interfaces.report_formatter import IResultExtension
 from art.test_handler.test_runner import TestCase, TestSuite, TestGroup, TestResult
 from art.test_handler.exceptions import SkipTest
-from functools import wraps
+import art
 try:
     from unittest import SkipTest as USkipTest
-    from nose.suite import ContextSuite
-    from nose.case import Test
 except ImportError:
-    USkipTest = SkipTest    # FIXME: I hate this!
-    ContextSuite = None
-    Test = None
+    USkipTest = None
+from nose.suite import ContextSuite
+from nose.case import Test
+from unittest2 import SkipTest as USkipTest2
 
 RUN_SEC = 'RUN'
 TESTS_FILE = 'tests_file'
+CONFIG_PARAMS = 'PARAMETERS'
+REST_CONNECTION = 'REST_CONNECTION'
 
 BZ_ID = 'bz'
+
+logger = get_logger("unittest_loader")
 
 def bz_decorator(*ids):
     """
@@ -33,6 +38,7 @@ def bz_decorator(*ids):
 
 
 class UTestCase(TestCase):
+    skip_exceptios = (USkipTest, USkipTest2)
     def __init__(self, t):
         super(UTestCase, self).__init__()
         self.mod_name, self.test_action = t.address()[1:]
@@ -50,9 +56,11 @@ class UTestCase(TestCase):
                 self.status = self.TEST_STATUS_PASSED
             except AssertionError as ex:
                 self.status = self.TEST_STATUS_FAILED
-            except USkipTest as ex:
+            except self.skip_exceptios as ex:
                 self.status = self.TEST_STATUS_SKIPPED
                 raise SkipTest(str(ex))
+            except Exception as ex:
+                self.status = self.TEST_STATUS_ERROR
             # TODO: solve another cases
             # TODO: add error info
         finally:
@@ -108,6 +116,10 @@ class UnittestLoader(Component):
             return False
         self.mod_path = m.group('mod_path')
         self.root_path = m.group('root_path')
+        if not os.path.exists(self.root_path):
+            self.root_path = os.path.join(os.path.dirname(art.__file__), self.root_path)
+            if not os.path.exists(self.root_path):
+                raise IOError(self.root_path)
         return True
 
     def next_test_object(self):
@@ -127,7 +139,13 @@ class UnittestLoader(Component):
     def configure(self, params, conf):
         if not self.is_enabled(params, conf):
             return
+        # FIXME: why this is done in both matrix_runner and here ? it should be somewhere else.
         self.conf = conf
+        self.conf[CONFIG_PARAMS].merge(self.conf[REST_CONNECTION])
+        dc_type_sec = conf[CONFIG_PARAMS].get('data_center_type','none').upper()
+        if dc_type_sec != 'NONE' and dc_type_sec in conf:
+            self.conf[CONFIG_PARAMS].merge(conf[dc_type_sec])
+
         TestResult.ATTRIBUTES['module_name'] = \
                 ('mod_name', None, None)
         TestResult.ATTRIBUTES['test_action'] = \
