@@ -216,9 +216,10 @@ class HTTPProxy():
 
         response = self.__do_request("HEAD", self.opts['uri'], get_header='link')
         links = {}
-        if not response['status'] == 200:
+        if response['status'] >= 300:
             MSG = "Bad HTTP response status: {0}, {1}"
-            raise APIException(MSG.format(response['status'], response['reason']))
+            raise APIException(MSG.format(response['status'],
+                                          response['reason']))
         for s in response['link'].split(','):
             self.__parse_link(s, links)
         return links
