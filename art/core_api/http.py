@@ -108,7 +108,7 @@ class HTTPProxy():
 
             ret = { 'status' : resp.status, 'body' : resp.read() }
 
-            if resp.status >= 400:
+            if resp.status >= 300:
                 ret['reason'] = resp.reason
 
             if get_header:
