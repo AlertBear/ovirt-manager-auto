@@ -77,13 +77,14 @@ class LogCapture(Component):
         root.addHandler(self.log_handler)
 
     def pre_test_result_reported(self, res, t):
+        self.log_handler.set_test_case(None)
         setattr(res, self.rec_name, getattr(t, ATTR_NAME, str()))
 
     def pre_test_case(self, t):
         self.log_handler.set_test_case(t)
 
     def post_test_case(self, t):
-        self.log_handler.set_test_case(None)
+        pass
 
     def test_case_skipped(self, t):
         pass
