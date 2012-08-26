@@ -28,7 +28,7 @@ from art.core_api.validator import compareCollectionSize
 from art.core_api import validator
 from art.core_api.apis_exceptions import EntityNotFound, CannotRunTests
 from utilities.machine import Machine
-from art.rhevm_api.tests_lib.hosts import deactivateHost, removeHost
+from art.rhevm_api.tests_lib.low_level.hosts import deactivateHost, removeHost
 
 ELEMENT = 'gluster_volume'
 COLLECTION = 'glustervolumes'

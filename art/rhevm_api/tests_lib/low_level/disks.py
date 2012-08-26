@@ -26,7 +26,7 @@ from art.rhevm_api.utils.xpath_utils import XPathMatch
 from utilities.utils import readConfFile
 
 GBYTE = 1024**3
-ELEMENTS = os.path.join(os.path.dirname(__file__), '../../conf/elements.conf')
+ELEMENTS = os.path.join(os.path.dirname(__file__), '../../../conf/elements.conf')
 ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
 DEFAULT_CLUSTER = 'Default'
 NAME_ATTR = 'name'

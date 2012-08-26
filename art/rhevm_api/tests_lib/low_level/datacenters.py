@@ -35,7 +35,7 @@ util = get_api(ELEMENT, COLLECTION)
 DataCenter = getDS('DataCenter')
 Version = getDS('Version')
 
-ELEMENTS = os.path.join(os.path.dirname(__file__), '../../conf/elements.conf')
+ELEMENTS = os.path.join(os.path.dirname(__file__), '../../../conf/elements.conf')
 ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
 
 DATA_CENTER_INIT_TIMEOUT = 180

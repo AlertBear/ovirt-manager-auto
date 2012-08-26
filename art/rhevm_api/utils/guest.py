@@ -1,6 +1,6 @@
 from art.rhevm_api.utils import load_agent
 from art.rhevm_api.utils.test_utils import lookingForIpAdressByEntityName, split
-from art.rhevm_api.tests_lib.vms import waitForIP
+from art.rhevm_api.tests_lib.low_level.vms import waitForIP
 from utilities.jobs import Job, JobsSet
 from utilities.utils import isValidIp
 from utilities.machine import Machine
