@@ -88,12 +88,10 @@ class UnittestLoader(Component):
     """
     implements(ITestParser, IResultExtension, IConfigurable)
     name = 'Unittest runner'
-    enabled = True
 
     def is_able_to_run(self, ti):
         m = re.match('unittest://((?P<root_path>[^:]+):)?(?P<mod_path>.+)', ti)
         if not m:
-            UnittestLoader.enabled = False
             return False
         self.mod_path = m.group('mod_path')
         self.root_path = m.group('root_path')
@@ -105,6 +103,7 @@ class UnittestLoader(Component):
                 sys.path.insert(0, self.root_path)
             from nose.loader import TestLoader
             mod = __import__(self.mod_path)
+            setattr(mod, 'ART_CONFIG', self.conf)
             loader = TestLoader()
             self.suites = [UTestSuite(x) for x in loader.loadTestsFromModule(mod)]
         try:
@@ -126,11 +125,9 @@ class UnittestLoader(Component):
         pass
 
     def pre_test_result_reported(self, res, tc):
-        print "safddf"
         res.module_name = tc.mod_name
 
     @classmethod
     def is_enabled(cls, a, b):
-        #return cls.enabled
         return True
 
