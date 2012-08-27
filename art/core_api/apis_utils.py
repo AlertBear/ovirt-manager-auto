@@ -30,7 +30,7 @@ import art.test_handler.settings as settings
 XSD_PATH = settings.opts.get('api_xsd', 'rhevm_api/data_struct/api.xsd')
 DS_PATH = settings.opts.get('data_struct_mod', 'art.rhevm_api.data_struct.data_structures')
 DS_VALIDATE = DS_PATH
-if settings.opts['engine'] == 'sdk':
+if settings.opts.get('engine', None) == 'sdk':
     DS_PATH = 'ovirtsdk.xml.params'
 
 __import__(DS_PATH)
@@ -261,7 +261,7 @@ class TestRunnerWrapper():
         the same as in settings.conf, if omitted - defaults are set
         '''
 
-        from framework_utils.settings import opts
+        from art.test_handler.settings import opts
         import logging
 
         opts['host'] = ip
@@ -272,9 +272,11 @@ class TestRunnerWrapper():
         opts['user'] = kwargs.get('user', 'vdcadmin')
         opts['user_domain'] = kwargs.get('user_domain', 'qa.lab.tlv.redhat.com')
         opts['password'] = kwargs.get('password', '123456')
-        opts['type'] = kwargs.get('type', 'rest')
+        opts['engine'] = kwargs.get('engine', 'rest')
         opts['debug'] = kwargs.get('debug', 'DEBUG')
-        opts['log'] = kwargs.get('log', "/var/tmp/%sTests%s.log" % (opts['type'], strftime('%Y%m%d_%H%M%S')))
+        opts['media_type'] = kwargs.get('media_type', 'application/xml')
+        opts['headers'] = kwargs.get('headers', '')
+        opts['log'] = kwargs.get('log', "/var/tmp/%sTests%s.log" % (opts['engine'], strftime('%Y%m%d_%H%M%S')))
         opts['urisuffix'] = ''
         opts['uri'] = '%(scheme)s://%(host)s:%(port)s/%(entry_point)s%(urisuffix)s/' \
             % opts
