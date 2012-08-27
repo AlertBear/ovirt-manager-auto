@@ -6,6 +6,7 @@ from copy import copy
 from configobj import ConfigObj
 from socket import error as SocketError
 from contextlib import contextmanager
+from argparse import Action
 
 from art.test_handler.plmanagement import Component, implements, ExtensionPoint, get_logger, PluginError
 from art.test_handler.plmanagement.interfaces.application import ITestParser, IConfigurable
@@ -41,6 +42,8 @@ TEST_FETCH_OUTPUT = 'fetch_output'
 TEST_BZ_ID = 'bz'
 TEST_VITAL = 'vital'
 TEST_CONF = 'conf'
+TEST_EXP_EVENTS = 'exp_events'
+TEST_EXPECTED_EXCEPTIONS = 'expected_exc'
 
 
 fetch_path = lambda x: os.path.abspath(\
@@ -58,7 +61,6 @@ CONFIG_PARAMS = 'PARAMETERS'
 REST_CONNECTION = 'REST_CONNECTION'
 
 
-
 def assign_attributes(te, elm):
     te.test_name = elm[TEST_NAME]
     #te.description = elm[TEST_DESCR]
@@ -71,15 +73,47 @@ def get_attr_as_bool(elm, name, default='yes'):
     return False
 
 
+class LinesAction(Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        line_range = re.compile('^((?P<s>[0-9]+)-)?(?P<e>[0-9]+)$')
+        values = values.replace(',', ' ').split()
+        lines = []
+        for val in values:
+            m = line_range.match(val)
+            if not m:
+                parser.error('%s: "%s" is not valid range' % (option_string, val))
+            try:
+                e = int(m.group('e'))
+                s = e
+                if m.group('s') is not None:
+                    s = int(m.group('s'))
+                lines.extend(range(s, e + 1)) # include the range end.
+            except TypeError:
+                parser.error('%s: "%s" is not valid range' % (option_string, val))
+        setattr(namespace, self.dest, lines)
+
+
+class GroupsAction(Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        setattr(namespace, self.dest, values.split(','))
+
+
 class DoNotRun(errors.SkipTest):
     pass
 
 
 class IMatrixBasedParser(Interface):
+    """
+    Interface for TestFile readers
+    """
     def is_able_to_run(self, test_identifier):
-        """"""
+        """
+        Return True when is able to read test
+        """
     def provide_test_file(self):
-        """"""
+        """
+        Return instance of TestFile, which provides test_elements
+        """
 
 
 class TestFile(object):
@@ -97,7 +131,7 @@ class TestFile(object):
 class TestComposer(object):
     logger = logging.getLogger()
 
-    def __init__(self, test_file, config, actions=None, elements=None):
+    def __init__(self, test_file, config, actions=None, elements=None, groups=None):
         self.tf = test_file
         if actions is None:
             actions = ConfigObj(infile=ACTIONS_PATH)['ACTIONS']
@@ -110,6 +144,7 @@ class TestComposer(object):
         self.c.merge(config[REST_CONNECTION])
         self.c.merge(self.__get_data_center_config(config))
         self.f = {}
+        self.groups = groups
 
     def __get_data_center_config(self, config):
         # FIXME: ugly hardcoded variable
@@ -119,7 +154,6 @@ class TestComposer(object):
         return {}
 
     def resolve_place_holders(self, value, local_scope=None):
-
         # replace all variables from local_scope
         if local_scope is not None:
             for key, val in local_scope.items():
@@ -190,14 +224,11 @@ class TestComposer(object):
 
         return value
 
-
-
     def group_starts(self, test_name):
         test_name = self.resolve_place_holders(test_name)
         m = re.match("^%s *: *(?P<name>.*)" % START_GROUP, test_name)
         if m:
             return m.group('name')
-
 
     def group_ends(self, test_name):
         test_name = self.resolve_place_holders(test_name)
@@ -294,10 +325,10 @@ class TestComposer(object):
         return mod_path, func_name
 
     @classmethod
-    def generate_suites(cls, test_file, config, actions=None, elements=None):
+    def generate_suites(cls, test_file, config, actions=None, elements=None, groups=None):
         suites = []
         for s_name, s_attr in test_file.get_suites():
-            tc = TestComposer(test_file, config, actions, elements)
+            tc = TestComposer(test_file, config, actions, elements, groups)
             s = MatrixTestSuite(s_name, tc)
             for attr in s_attr:
                 setattr(s, attr, s_attr[attr])
@@ -309,7 +340,7 @@ class MatrixTestCase(TestCase):
     def __init__(self, tc, elm):
         super(MatrixTestCase, self).__init__()
         self.tc = tc
-        self.excpexted_exc = ()
+        self.expected_exc = ()
         self.local_scope = {}
         self.conf = None
         for key, val in elm.items():
@@ -359,10 +390,6 @@ class MatrixTestCase(TestCase):
 
         if self.positive is not None:
             self.parameters = "%s, %s" % (self.positive, self.parameters)
-        #if self.positive is True:
-        #    self.parameters = "'true', %s" % self.parameters
-        #elif self.positive is False:
-        #    self.parameters = "'false', %s" % self.parameters
         logger.info(self.format_attr(TEST_POSITIVE))
 
         self.mod_path, self.test_action = self.tc.resolve_func_path(self.test_action)
@@ -381,7 +408,7 @@ class MatrixTestCase(TestCase):
             res = eval(cmd)
             #res = (True, {})
             self.status = self.TEST_STATUS_PASSED
-        except self.excpexted_exc as ex:
+        except self.expected_exc as ex:
             logger.info("Handled expected exception: %s", ex)
             self.status = self.TEST_STATUS_PASSED
         except NO_TB_EXCEPTIONS as ex:
@@ -483,7 +510,8 @@ class MatrixTestGroup(TestGroup):
                     elm[TEST_NAME] = group_name
                     te = MatrixTestGroup._create_elm(elm, it, self.tc, \
                             self.local_scope)
-                    #te.local_scope.update(self.local_scope)
+                    if self.tc.groups and group_name not in self.tc.groups:
+                        continue
                     yield te
                 else:# FIXME: add check for unexpected ending group
                     te = MatrixTestCase._create_elm(elm, self.tc)
@@ -502,7 +530,7 @@ class MatrixTestGroup(TestGroup):
                 elms.append(next_elm)
         except StopIteration as ex:
             raise errors.TestComposeError("missing end_group: '%s'" % name)
-        g = MatrixTestGroup(tc, elm, elms)# missing local_scope
+        g = MatrixTestGroup(tc, elm, elms)
         if local_scope is not None:
             g.local_scope.update(local_scope)
         assign_attributes(g, elm) #FIXME: seems to be redundant
@@ -566,6 +594,8 @@ class MatrixTestSuite(TestSuite):
         if group_name:
             elm[TEST_NAME] = group_name
             te = MatrixTestGroup._create_elm(elm, it, self.tc)
+            if self.tc.groups and group_name not in self.tc.groups:
+                return self.__compose_element(it)
             return te
         else:
             return MatrixTestCase._create_elm(elm, self.tc)
@@ -582,6 +612,7 @@ class MatrixBasedTestComposer(Component):
 
     def __init__(self):
         self.parser = None
+        self.groups = []
 
     def is_able_to_run(self, ti):
         suitable_parser = None
@@ -602,7 +633,8 @@ class MatrixBasedTestComposer(Component):
         if not hasattr(self, 'suites'):
             test_file = self.parser.provide_test_file()
             #tc = TestComposer(test_file, self.conf)
-            self.suites = [x for x in TestComposer.generate_suites(test_file, self.conf)]
+            self.suites = [x for x in TestComposer.generate_suites(test_file, \
+                    self.conf, groups=self.groups)]
         try:
             return self.suites.pop()
         except IndexError:
@@ -610,8 +642,8 @@ class MatrixBasedTestComposer(Component):
 
     def configure(self, params, conf):
         if self.parser is None:
-            MatrixBasedTestComposer.enabled = False
             return
+        self.groups = params.groups
         self.conf = conf
         TestResult.ATTRIBUTES['module_name'] = \
                 ('mod_name', None, None)
@@ -625,10 +657,18 @@ class MatrixBasedTestComposer(Component):
                 (TEST_ACTION, "Test action", None)
         TestResult.ATTRIBUTES[TEST_REPORT] = \
                 (TEST_REPORT, "Report test", None)
+        TestResult.ATTRIBUTES[TEST_EXP_EVENTS] = \
+                (TEST_EXP_EVENTS, "Number of expected events", None)
 
     @classmethod
     def add_options(cls, parser):
-        pass
+        group = parser.add_argument_group(cls.name, description=cls.__doc__)
+        group.add_argument('--lines', '-lines', help='which lines from the '\
+                'test file should be executed', action=LinesAction)
+        group.add_argument('--groups', '-groups', help='which groups from '\
+                'the test file should be executed', action=GroupsAction)
+        group.add_argument('--compile', '--dry-run', action='store_true', \
+                dest='compile', help='run suites without execution')
 
     def pre_test_result_reported(self, res, tc):
         if not tc.test_report:
