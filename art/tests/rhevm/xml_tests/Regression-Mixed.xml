@@ -101,7 +101,7 @@
     <id>d759d122-c695-11e1-a578-f0def10e0ce8</id>
     <test_name>Update data center name and description</test_name>
     <test_action>updateDataCenter</test_action>
-    <parameters>datacenter='RestDataCenter1', name='RestDataCenterUpdated'', description='Data Center Description'</parameters>
+    <parameters>datacenter='RestDataCenter1', name='RestDataCenterUpdated', description='Data Center Description'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 303}</conf>
@@ -206,7 +206,7 @@
     <id>d759e90a-c695-11e1-a578-f0def10e0ce8</id>
     <test_name>Update cluster data center</test_name>
     <test_action>updateCluster</test_action>
-    <parameters>cluster='RestCluster3Upd', data_center='DefaultRest''</parameters>
+    <parameters>cluster='RestCluster3Upd', data_center='DefaultRest'</parameters>
     <positive>FALSE</positive>
     <run>yes</run>
   </test_case>

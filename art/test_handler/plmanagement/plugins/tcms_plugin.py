@@ -16,6 +16,14 @@ PLAN_TYPE = 23
 
 logger = get_logger('tcms_agent')
 
+
+# TODO: It also should consider TestSuites in parallel, but here is problem:
+#       I am not able to know which test_case belongs to which test_suite.
+#       Solutions:
+#        * add pointer to its parent for each test_element
+#        * os.fork whole test_runner for each test_suite
+
+
 class TCMS(Component):
     """
     Plugin provides access to TCMS site.
@@ -88,7 +96,7 @@ class TCMS(Component):
         self.agent.iterationInfo(sub_test_name=test.group,
                             test_case_name=test.test_name,
                             info_line = '%s,%s,%s,%s' %(test.group,
-                                test.test_name, test.test_positive,
+                                test.test_name, test.positive,
                                 test.test_parameters),
                             iter_number=test.iteration,
                             iter_status=test.status,

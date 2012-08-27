@@ -66,17 +66,17 @@ def populateOptsFromArgv(argv):
     )
 
     parser.add_argument('--logdir', '-logdir',
-                                default = '/var/tmp',
+                                default='/var/tmp',
                                 help='path to the log directory (%(default)s)')
     parser.add_argument('--log', '-log',
-                                default = None,
+                                default='/tmp/FIXME.log', # this will be fixed by patch XXX
                                 help='path to the log files')
     parser.add_argument('--lines', '-lines',
                                 help='which lines from the test file should be executed')
     parser.add_argument('--groups', '-groups',
                                 help='which groups from the test file should be executed')
-    parser.add_argument('--compile', action='store_true',
-                                help='which lines from the test file should be executed')
+    parser.add_argument('--compile', '--dry-run', action='store_true', dest='compile',
+                                help='run suites without execution')
     parser.add_argument('--configFile', '-conf', required=True,
                                 help='path to the config file',
                                 dest='conf')

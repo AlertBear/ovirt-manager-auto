@@ -327,7 +327,7 @@
     <id>99fb1764-c695-11e1-ac4a-f0def10e0ce8</id>
     <test_name>Remove iSCSI storage domain</test_name>
     <test_action>removeStorageDomain</test_action>
-    <parameters>storagedomain=''ISCSIDataDomainRest', host='{vds[0]}', format='true'</parameters>
+    <parameters>storagedomain='ISCSIDataDomainRest', host='{vds[0]}', format='true'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 218}</conf>
