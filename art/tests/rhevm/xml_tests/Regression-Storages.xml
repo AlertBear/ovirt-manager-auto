@@ -146,6 +146,7 @@
     <positive>TRUE</positive>
     <run>if('{compatibility_version}'.startswith('3.'))</run>
     <conf>headers={'Correlation-Id': 203}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>99faf09a-c695-11e1-ac4a-f0def10e0ce8</id>
@@ -180,6 +181,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 205}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>99faf842-c695-11e1-ac4a-f0def10e0ce8</id>
@@ -216,6 +218,7 @@
     <positive>TRUE</positive>
     <run>if('{compatibility_version}'.startswith('3.'))</run>
     <conf>headers={'Correlation-Id': 209}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>99faffe0-c695-11e1-ac4a-f0def10e0ce8</id>
@@ -474,6 +477,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 224}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>99fb440a-c695-11e1-ac4a-f0def10e0ce8</id>
