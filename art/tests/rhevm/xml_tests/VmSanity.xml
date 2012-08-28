@@ -1136,7 +1136,6 @@
    <parameters>path=%data_path#loop_index%</parameters>
    <positive>NONE</positive>
    <run>Loop(6)</run>
-   <run>YES</run>
    <report>NO</report>
    <fetch_output/>
 </test_case>

@@ -71,12 +71,6 @@ def populateOptsFromArgv(argv):
     parser.add_argument('--log', '-log',
                                 default='/tmp/FIXME.log', # this will be fixed by patch XXX
                                 help='path to the log files')
-    parser.add_argument('--lines', '-lines',
-                                help='which lines from the test file should be executed')
-    parser.add_argument('--groups', '-groups',
-                                help='which groups from the test file should be executed')
-    parser.add_argument('--compile', '--dry-run', action='store_true', dest='compile',
-                                help='run suites without execution')
     parser.add_argument('--configFile', '-conf', required=True,
                                 help='path to the config file',
                                 dest='conf')
@@ -94,41 +88,9 @@ def populateOptsFromArgv(argv):
     plmanager.configure.im_func.func_defaults = (args, \
             plmanager.configure.im_func.func_defaults[1])
 
-    if args.groups:
-        args.groups = args.groups.split(',')
-    if args.lines:
-        args.lines = parseLines(args.lines)
 
     opts.update((k, v) for k, v in vars(args).iteritems() if k!='redefs')
     return args.redefs
-
-
-def parseLines(arg):
-    '''
-    Converts lines numbers from user format to list of rows
-    Author: edolinin, jhenner
-    Parameters:
-    * arg - value for lines numbers supplied by the user
-    Return: list of rows numbers that should be run
-    '''
-
-    lines = []
-    for part in arg.split(','):
-        m = re.match('^((\d+)-(\d+))|(\d+)$', part)
-        if m:
-            if m.group(1):
-                # We got some interval.
-                startRange = int(m.group(2))
-                endRange = int(m.group(3))
-            else:
-                # We got singleton number.
-                startRange  = endRange = int(m.group(4))
-            lines.extend(range(startRange, endRange + 1)) # include the range end.
-        else:
-            raise CmdLineError(
-                    "The '%s' bit of the lines to run is malformed." % part
-            )
-    return lines
 
 
 def rewriteConfig(config, redefs):
