@@ -464,6 +464,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 321}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>d75a212c-c695-11e1-a578-f0def10e0ce8</id>
@@ -472,6 +473,7 @@
     <parameters>vm='restvm_templates', name='rest_templ3', cluster='RestCluster1'</parameters>
     <positive>TRUE</positive>
     <conf>headers={'Correlation-Id': 322}</conf>
+    <exp_events>2</exp_events>
     <run>yes</run>
   </test_case>
   <test_case>
@@ -510,6 +512,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 326}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>d75a2b22-c695-11e1-a578-f0def10e0ce8</id>
@@ -598,6 +601,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 334}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>d75a3e5a-c695-11e1-a578-f0def10e0ce8</id>

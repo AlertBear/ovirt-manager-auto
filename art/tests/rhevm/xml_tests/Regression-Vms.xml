@@ -163,6 +163,7 @@
     <positive>TRUE</positive>
     <run>if(1&lt;len('[vds]'.split(',')))</run>
     <conf>headers={'Correlation-Id': 402}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8b9010-c695-11e1-bca8-f0def10e0ce8</id>
@@ -191,6 +192,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 403}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8b95ba-c695-11e1-bca8-f0def10e0ce8</id>
@@ -229,6 +231,7 @@
     <positive>TRUE</positive>
     <run>If(1&lt;len('[vds]'.split(',')))</run>
     <conf>headers={'Correlation-Id': 405}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8b9d58-c695-11e1-bca8-f0def10e0ce8</id>
@@ -507,6 +510,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 428}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8bd9a8-c695-11e1-bca8-f0def10e0ce8</id>
@@ -516,6 +520,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 429}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8bdb88-c695-11e1-bca8-f0def10e0ce8</id>
@@ -716,6 +721,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 444}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8c0f0e-c695-11e1-bca8-f0def10e0ce8</id>
@@ -733,6 +739,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 445}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8c12ce-c695-11e1-bca8-f0def10e0ce8</id>
@@ -742,6 +749,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 446}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8c14ae-c695-11e1-bca8-f0def10e0ce8</id>
@@ -751,6 +759,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 447}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8c168e-c695-11e1-bca8-f0def10e0ce8</id>
@@ -760,6 +769,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 448}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8c1878-c695-11e1-bca8-f0def10e0ce8</id>
@@ -769,6 +779,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 449}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8c1a58-c695-11e1-bca8-f0def10e0ce8</id>
@@ -778,6 +789,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 450}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8c208e-c695-11e1-bca8-f0def10e0ce8</id>
@@ -807,6 +819,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 452}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8c2674-c695-11e1-bca8-f0def10e0ce8</id>
@@ -816,6 +829,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 453}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8c285e-c695-11e1-bca8-f0def10e0ce8</id>
@@ -825,6 +839,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 454}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8c2a48-c695-11e1-bca8-f0def10e0ce8</id>
@@ -834,6 +849,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 455}</conf>
+    <exp_events>4</exp_events>
   </test_case>
   <test_case>
     <id>cb8c2c28-c695-11e1-bca8-f0def10e0ce8</id>
@@ -843,6 +859,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 456}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8c2e08-c695-11e1-bca8-f0def10e0ce8</id>
@@ -852,6 +869,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 457}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <!-- ////////////////////////////////////////////////////////////////////// -->
   <test_case>
@@ -881,6 +899,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 460}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8c4140-c695-11e1-bca8-f0def10e0ce8</id>
@@ -907,6 +926,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 462}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <!-- ////////////////////////////////////////////////////////////////////// -->
   <!-- ////////////////////////// BASIC VM OPERATIONS /////////////////////// -->
@@ -928,6 +948,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 464}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8c4b4a-c695-11e1-bca8-f0def10e0ce8</id>
@@ -981,6 +1002,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 468}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8c56c6-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1088,6 +1110,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 472}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8c6e22-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1097,6 +1120,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 473}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8c700c-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1106,6 +1130,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 474}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8c71f6-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1115,6 +1140,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 475}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8c73d6-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1124,6 +1150,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 476}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8c75c0-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1141,6 +1168,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 477}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8c798a-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1150,6 +1178,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 478}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <!-- ///////////////////////// SPICE AND VNC ////////////////////////////// -->
   <test_case>
@@ -1326,6 +1355,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 489}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8ca4be-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1496,6 +1526,7 @@
     <positive>TRUE</positive>
     <run>if(1&lt;len('[vds]'.split(',')))</run>
     <conf>headers={'Correlation-Id': 503}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8cd538-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1505,6 +1536,7 @@
     <positive>TRUE</positive>
     <run>If(1&lt;len('[vds]'.split(',')))</run>
     <conf>headers={'Correlation-Id': 504}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8cd722-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1545,6 +1577,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 508}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8ce6b8-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1554,6 +1587,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 509}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8cea8c-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1624,6 +1658,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 515}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8cf9aa-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1642,6 +1677,7 @@
     <run>yes</run>
     <bz>822239</bz>
     <conf>headers={'Correlation-Id': 516}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8cfd6a-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1684,6 +1720,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 518}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8d0936-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1693,6 +1730,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 519}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8d0ef4-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1702,6 +1740,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 520}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8d10d4-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1711,6 +1750,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 521}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8d12be-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1720,6 +1760,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 522}</conf>
+    <exp_events>2</exp_events>
   </test_case>
   <!-- ////////////////////////////////////////////////////////////////////// -->
   <!-- ///////////////////////////// POOLS ////////////////////////////////// -->
@@ -1800,6 +1841,8 @@
     <parameters>vms='restvm_templates restvm_templates2 restvm_templates_cloned restvm_templates_sd restvm_migration restvm_run_once rest_testPool-1 rest_testPool-2 rest_testPoolUpd-1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <conf>headers={'Correlation-Id': 526}</conf>
+    <exp_events>19</exp_events>
   </test_case>
   <test_case>
     <id>cb8d3492-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1808,24 +1851,6 @@
     <parameters>seconds=10</parameters>
     <positive>NONE</positive>
     <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>cb8d36a4-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - VM remove initiated</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='rest_testPoolUpd type=304', query='type=36', expected_count=9</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-    <bz>836944</bz>
-  </test_case>
-  <test_case>
-    <id>cb8d388e-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Check events - VM removed</test_name>
-    <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='rest_testPool type=36', query='type=113', expected_count=9</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-    <bz>836944</bz>
   </test_case>
   <test_case>
     <id>cb8d3a78-c695-11e1-bca8-f0def10e0ce8</id>
