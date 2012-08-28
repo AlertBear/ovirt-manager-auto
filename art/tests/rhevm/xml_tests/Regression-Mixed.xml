@@ -381,9 +381,9 @@
   </test_case>
   <test_case>
     <id>d75a0fe8-c695-11e1-a578-f0def10e0ce8</id>
-    <test_name>Check for 3.1 cluster capabilities - if it contains 'transparent_hugepages' tag</test_name>
+    <test_name>Check 3.1 capabilities - if it contains 'Transparent-Huge-Pages Memory Policy' feature</test_name>
     <test_action>xpathClusters</test_action>
-    <parameters>'capabilities', xpath='count(/capabilities/version[@major=3 and @minor=1]/features/transparent_hugepages)'</parameters>
+    <parameters>'capabilities', xpath='count(/capabilities/version[@major=3 and @minor=1]/features/feature/name[text()="Transparent-Huge-Pages Memory Policy"])'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
   </test_case>
