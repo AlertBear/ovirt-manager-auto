@@ -62,6 +62,11 @@ class AutoHostNicsResolution(Component):
 
     @classmethod
     def is_enabled(cls, params, conf):
+        try:
+            conf[PARAMETERS].as_list(VDS)
+        except KeyError:
+            return False
+
         en = conf.get(SECTION_NAME, {}).get('enabled', 'true').lower() == 'true'
         return params.host_nics_enabled or en
 
