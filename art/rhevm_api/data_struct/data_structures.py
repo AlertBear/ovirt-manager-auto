@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 #
-# Generated Sun Aug 19 09:06:57 2012 by generateDS.py version 2.7a.
+# Generated Tue Aug 28 16:09:21 2012 by generateDS.py version 2.7a.
 #
 
 import sys
@@ -2603,20 +2603,25 @@ class SchedulingPolicies(GeneratedsSuper):
 
 class Features(GeneratedsSuper):
     member_data_items_ = {
-        'transparent_hugepages': MemberSpec_('transparent_hugepages', 'transparent_hugepages', 0),
+        'feature': MemberSpec_('feature', 'feature', 1),
         }
     subclass = None
     superclass = None
-    def __init__(self, transparent_hugepages=None):
-        self.transparent_hugepages = transparent_hugepages
+    def __init__(self, feature=None):
+        if feature is None:
+            self.feature = []
+        else:
+            self.feature = feature
     def factory(*args_, **kwargs_):
         if Features.subclass:
             return Features.subclass(*args_, **kwargs_)
         else:
             return Features(*args_, **kwargs_)
     factory = staticmethod(factory)
-    def get_transparent_hugepages(self): return self.transparent_hugepages
-    def set_transparent_hugepages(self, transparent_hugepages): self.transparent_hugepages = transparent_hugepages
+    def get_feature(self): return self.feature
+    def set_feature(self, feature): self.feature = feature
+    def add_feature(self, value): self.feature.append(value)
+    def insert_feature(self, index, value): self.feature[index] = value
     def export(self, outfile, level, namespace_='', name_='Features', namespacedef_=''):
         showIndent(outfile, level)
         outfile.write('<%s%s%s' % (namespace_, name_, namespacedef_ and ' ' + namespacedef_ or '', ))
@@ -2632,11 +2637,11 @@ class Features(GeneratedsSuper):
     def exportAttributes(self, outfile, level, already_processed, namespace_='', name_='Features'):
         pass
     def exportChildren(self, outfile, level, namespace_='', name_='Features', fromsubclass_=False):
-        if self.transparent_hugepages is not None:
-            self.transparent_hugepages.export(outfile, level, namespace_, name_='transparent_hugepages')
+        for feature_ in self.feature:
+            feature_.export(outfile, level, namespace_, name_='feature')
     def hasContent_(self):
         if (
-            self.transparent_hugepages is not None
+            self.feature
             ):
             return True
         else:
@@ -2649,12 +2654,18 @@ class Features(GeneratedsSuper):
     def exportLiteralAttributes(self, outfile, level, already_processed, name_):
         pass
     def exportLiteralChildren(self, outfile, level, name_):
-        if self.transparent_hugepages is not None:
+        showIndent(outfile, level)
+        outfile.write('feature=[\n')
+        level += 1
+        for feature_ in self.feature:
             showIndent(outfile, level)
-            outfile.write('transparent_hugepages=model_.transparent_hugepages(\n')
-            self.transparent_hugepages.exportLiteral(outfile, level)
+            outfile.write('model_.feature(\n')
+            feature_.exportLiteral(outfile, level)
             showIndent(outfile, level)
             outfile.write('),\n')
+        level -= 1
+        showIndent(outfile, level)
+        outfile.write('],\n')
     def build(self, node):
         self.buildAttributes(node, node.attrib, [])
         for child in node:
@@ -2663,10 +2674,10 @@ class Features(GeneratedsSuper):
     def buildAttributes(self, node, attrs, already_processed):
         pass
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
-        if nodeName_ == 'transparent_hugepages':
-            obj_ = TransparentHugePages.factory()
+        if nodeName_ == 'feature':
+            obj_ = Feature.factory()
             obj_.build(child_)
-            self.set_transparent_hugepages(obj_)
+            self.feature.append(obj_)
 # end class Features
 
 
@@ -3762,24 +3773,102 @@ class StorageFormats(GeneratedsSuper):
 # end class StorageFormats
 
 
-class BaseResource(GeneratedsSuper):
+class ActionableResource(GeneratedsSuper):
+    member_data_items_ = {
+        'actions': MemberSpec_('actions', 'Actions', 0),
+        }
+    subclass = None
+    superclass = None
+    def __init__(self, actions=None, extensiontype_=None):
+        self.actions = actions
+        self.extensiontype_ = extensiontype_
+    def factory(*args_, **kwargs_):
+        if ActionableResource.subclass:
+            return ActionableResource.subclass(*args_, **kwargs_)
+        else:
+            return ActionableResource(*args_, **kwargs_)
+    factory = staticmethod(factory)
+    def get_actions(self): return self.actions
+    def set_actions(self, actions): self.actions = actions
+    def get_extensiontype_(self): return self.extensiontype_
+    def set_extensiontype_(self, extensiontype_): self.extensiontype_ = extensiontype_
+    def export(self, outfile, level, namespace_='', name_='ActionableResource', namespacedef_=''):
+        showIndent(outfile, level)
+        outfile.write('<%s%s%s' % (namespace_, name_, namespacedef_ and ' ' + namespacedef_ or '', ))
+        already_processed = []
+        self.exportAttributes(outfile, level, already_processed, namespace_, name_='ActionableResource')
+        if self.hasContent_():
+            outfile.write('>\n')
+            self.exportChildren(outfile, level + 1, namespace_, name_)
+            showIndent(outfile, level)
+            outfile.write('</%s%s>\n' % (namespace_, name_))
+        else:
+            outfile.write('/>\n')
+    def exportAttributes(self, outfile, level, already_processed, namespace_='', name_='ActionableResource'):
+        if self.extensiontype_ is not None and 'xsi:type' not in already_processed:
+            already_processed.append('xsi:type')
+            outfile.write(' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"')
+            outfile.write(' xsi:type="%s"' % self.extensiontype_)
+        pass
+    def exportChildren(self, outfile, level, namespace_='', name_='ActionableResource', fromsubclass_=False):
+        if self.actions is not None:
+            self.actions.export(outfile, level, namespace_, name_='actions')
+    def hasContent_(self):
+        if (
+            self.actions is not None
+            ):
+            return True
+        else:
+            return False
+    def exportLiteral(self, outfile, level, name_='ActionableResource'):
+        level += 1
+        self.exportLiteralAttributes(outfile, level, [], name_)
+        if self.hasContent_():
+            self.exportLiteralChildren(outfile, level, name_)
+    def exportLiteralAttributes(self, outfile, level, already_processed, name_):
+        pass
+    def exportLiteralChildren(self, outfile, level, name_):
+        if self.actions is not None:
+            showIndent(outfile, level)
+            outfile.write('actions=model_.Actions(\n')
+            self.actions.exportLiteral(outfile, level, name_='actions')
+            showIndent(outfile, level)
+            outfile.write('),\n')
+    def build(self, node):
+        self.buildAttributes(node, node.attrib, [])
+        for child in node:
+            nodeName_ = Tag_pattern_.match(child.tag).groups()[-1]
+            self.buildChildren(child, node, nodeName_)
+    def buildAttributes(self, node, attrs, already_processed):
+        value = find_attr_value_('xsi:type', node)
+        if value is not None and 'xsi:type' not in already_processed:
+            already_processed.append('xsi:type')
+            self.extensiontype_ = value
+    def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
+        if nodeName_ == 'actions':
+            obj_ = Actions.factory()
+            obj_.build(child_)
+            self.set_actions(obj_)
+# end class ActionableResource
+
+
+class BaseResource(ActionableResource):
     member_data_items_ = {
         'href': MemberSpec_('href', 'xs:string', 0),
         'id': MemberSpec_('id', 'xs:string', 0),
         'name': MemberSpec_('name', 'xs:string', 0),
         'description': MemberSpec_('description', 'xs:string', 0),
-        'actions': MemberSpec_('actions', 'Actions', 0),
         'creation_status': MemberSpec_('creation_status', 'Status', 0),
         'link': MemberSpec_('link', 'link', 1),
         }
     subclass = None
-    superclass = None
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, extensiontype_=None):
+    superclass = ActionableResource
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, extensiontype_=None):
+        super(BaseResource, self).__init__(actions, extensiontype_, )
         self.href = _cast(None, href)
         self.id = _cast(None, id)
         self.name = name
         self.description = description
-        self.actions = actions
         self.creation_status = creation_status
         if link is None:
             self.link = []
@@ -3796,8 +3885,6 @@ class BaseResource(GeneratedsSuper):
     def set_name(self, name): self.name = name
     def get_description(self): return self.description
     def set_description(self, description): self.description = description
-    def get_actions(self): return self.actions
-    def set_actions(self, actions): self.actions = actions
     def get_creation_status(self): return self.creation_status
     def set_creation_status(self, creation_status): self.creation_status = creation_status
     def get_link(self): return self.link
@@ -3823,6 +3910,7 @@ class BaseResource(GeneratedsSuper):
         else:
             outfile.write('/>\n')
     def exportAttributes(self, outfile, level, already_processed, namespace_='', name_='BaseResource'):
+        super(BaseResource, self).exportAttributes(outfile, level, already_processed, namespace_, name_='BaseResource')
         if self.href is not None and 'href' not in already_processed:
             already_processed.append('href')
             outfile.write(' href=%s' % (self.gds_format_string(quote_attrib(self.href).encode(ExternalEncoding), input_name='href'), ))
@@ -3834,14 +3922,13 @@ class BaseResource(GeneratedsSuper):
             outfile.write(' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"')
             outfile.write(' xsi:type="%s"' % self.extensiontype_)
     def exportChildren(self, outfile, level, namespace_='', name_='BaseResource', fromsubclass_=False):
+        super(BaseResource, self).exportChildren(outfile, level, namespace_, name_, True)
         if self.name is not None:
             showIndent(outfile, level)
             outfile.write('<%sname>%s</%sname>\n' % (namespace_, self.gds_format_string(quote_xml(self.name).encode(ExternalEncoding), input_name='name'), namespace_))
         if self.description is not None:
             showIndent(outfile, level)
             outfile.write('<%sdescription>%s</%sdescription>\n' % (namespace_, self.gds_format_string(quote_xml(self.description).encode(ExternalEncoding), input_name='description'), namespace_))
-        if self.actions is not None:
-            self.actions.export(outfile, level, namespace_, name_='actions')
         if self.creation_status is not None:
             self.creation_status.export(outfile, level, namespace_, name_='creation_status')
         for link_ in self.link:
@@ -3850,9 +3937,9 @@ class BaseResource(GeneratedsSuper):
         if (
             self.name is not None or
             self.description is not None or
-            self.actions is not None or
             self.creation_status is not None or
-            self.link
+            self.link or
+            super(BaseResource, self).hasContent_()
             ):
             return True
         else:
@@ -3871,19 +3958,15 @@ class BaseResource(GeneratedsSuper):
             already_processed.append('id')
             showIndent(outfile, level)
             outfile.write('id = "%s",\n' % (self.id,))
+        super(BaseResource, self).exportLiteralAttributes(outfile, level, already_processed, name_)
     def exportLiteralChildren(self, outfile, level, name_):
+        super(BaseResource, self).exportLiteralChildren(outfile, level, name_)
         if self.name is not None:
             showIndent(outfile, level)
             outfile.write('name=%s,\n' % quote_python(self.name).encode(ExternalEncoding))
         if self.description is not None:
             showIndent(outfile, level)
             outfile.write('description=%s,\n' % quote_python(self.description).encode(ExternalEncoding))
-        if self.actions is not None:
-            showIndent(outfile, level)
-            outfile.write('actions=model_.Actions(\n')
-            self.actions.exportLiteral(outfile, level, name_='actions')
-            showIndent(outfile, level)
-            outfile.write('),\n')
         if self.creation_status is not None:
             showIndent(outfile, level)
             outfile.write('creation_status=model_.Status(\n')
@@ -3920,6 +4003,7 @@ class BaseResource(GeneratedsSuper):
         if value is not None and 'xsi:type' not in already_processed:
             already_processed.append('xsi:type')
             self.extensiontype_ = value
+        super(BaseResource, self).buildAttributes(node, attrs, already_processed)
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         if nodeName_ == 'name':
             name_ = child_.text
@@ -3929,10 +4013,6 @@ class BaseResource(GeneratedsSuper):
             description_ = child_.text
             description_ = self.gds_validate_string(description_, node, 'description')
             self.description = description_
-        elif nodeName_ == 'actions':
-            obj_ = Actions.factory()
-            obj_.build(child_)
-            self.set_actions(obj_)
         elif nodeName_ == 'creation_status':
             obj_ = Status.factory()
             obj_.build(child_)
@@ -3942,17 +4022,19 @@ class BaseResource(GeneratedsSuper):
             obj_ = class_obj_.factory()
             obj_.build(child_)
             self.link.append(obj_)
+        super(BaseResource, self).buildChildren(child_, node, nodeName_, True)
 # end class BaseResource
 
 
-class BaseResources(GeneratedsSuper):
+class BaseResources(ActionableResource):
     member_data_items_ = {
         'total': MemberSpec_('total', 'xs:unsignedInt', 0),
         'active': MemberSpec_('active', 'xs:unsignedInt', 0),
         }
     subclass = None
-    superclass = None
-    def __init__(self, total=None, active=None, extensiontype_=None):
+    superclass = ActionableResource
+    def __init__(self, actions=None, total=None, active=None, extensiontype_=None):
+        super(BaseResources, self).__init__(actions, extensiontype_, )
         self.total = total
         self.active = active
         self.extensiontype_ = extensiontype_
@@ -3981,12 +4063,13 @@ class BaseResources(GeneratedsSuper):
         else:
             outfile.write('/>\n')
     def exportAttributes(self, outfile, level, already_processed, namespace_='', name_='BaseResources'):
+        super(BaseResources, self).exportAttributes(outfile, level, already_processed, namespace_, name_='BaseResources')
         if self.extensiontype_ is not None and 'xsi:type' not in already_processed:
             already_processed.append('xsi:type')
             outfile.write(' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"')
             outfile.write(' xsi:type="%s"' % self.extensiontype_)
-        pass
     def exportChildren(self, outfile, level, namespace_='', name_='BaseResources', fromsubclass_=False):
+        super(BaseResources, self).exportChildren(outfile, level, namespace_, name_, True)
         if self.total is not None:
             showIndent(outfile, level)
             outfile.write('<%stotal>%s</%stotal>\n' % (namespace_, self.gds_format_integer(self.total, input_name='total'), namespace_))
@@ -3996,7 +4079,8 @@ class BaseResources(GeneratedsSuper):
     def hasContent_(self):
         if (
             self.total is not None or
-            self.active is not None
+            self.active is not None or
+            super(BaseResources, self).hasContent_()
             ):
             return True
         else:
@@ -4007,8 +4091,9 @@ class BaseResources(GeneratedsSuper):
         if self.hasContent_():
             self.exportLiteralChildren(outfile, level, name_)
     def exportLiteralAttributes(self, outfile, level, already_processed, name_):
-        pass
+        super(BaseResources, self).exportLiteralAttributes(outfile, level, already_processed, name_)
     def exportLiteralChildren(self, outfile, level, name_):
+        super(BaseResources, self).exportLiteralChildren(outfile, level, name_)
         if self.total is not None:
             showIndent(outfile, level)
             outfile.write('total=%d,\n' % self.total)
@@ -4025,6 +4110,7 @@ class BaseResources(GeneratedsSuper):
         if value is not None and 'xsi:type' not in already_processed:
             already_processed.append('xsi:type')
             self.extensiontype_ = value
+        super(BaseResources, self).buildAttributes(node, attrs, already_processed)
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         if nodeName_ == 'total':
             sval_ = child_.text
@@ -4042,6 +4128,7 @@ class BaseResources(GeneratedsSuper):
                 raise_parse_error(child_, 'requires integer: %s' % exp)
             ival_ = self.gds_validate_integer(ival_, node, 'active')
             self.active = ival_
+        super(BaseResources, self).buildChildren(child_, node, nodeName_, True)
 # end class BaseResources
 
 
@@ -4233,8 +4320,8 @@ class DataCenter(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, storage_type=None, storage_format=None, version=None, supported_versions=None, status=None):
-        super(DataCenter, self).__init__(href, id, name, description, actions, creation_status, link, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, storage_type=None, storage_format=None, version=None, supported_versions=None, status=None):
+        super(DataCenter, self).__init__(actions, href, id, name, description, creation_status, link, )
         self.storage_type = storage_type
         self.storage_format = storage_format
         self.version = version
@@ -4368,8 +4455,8 @@ class DataCenters(BaseResources):
         }
     subclass = None
     superclass = BaseResources
-    def __init__(self, total=None, active=None, data_center=None):
-        super(DataCenters, self).__init__(total, active, )
+    def __init__(self, actions=None, total=None, active=None, data_center=None):
+        super(DataCenters, self).__init__(actions, total, active, )
         if data_center is None:
             self.data_center = []
         else:
@@ -4927,8 +5014,8 @@ class Cluster(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, cpu=None, data_center=None, memory_policy=None, scheduling_policy=None, version=None, supported_versions=None, error_handling=None, virt_service=None, gluster_service=None):
-        super(Cluster, self).__init__(href, id, name, description, actions, creation_status, link, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, cpu=None, data_center=None, memory_policy=None, scheduling_policy=None, version=None, supported_versions=None, error_handling=None, virt_service=None, gluster_service=None):
+        super(Cluster, self).__init__(actions, href, id, name, description, creation_status, link, )
         self.cpu = cpu
         self.data_center = data_center
         self.memory_policy = memory_policy
@@ -5138,8 +5225,8 @@ class Clusters(BaseResources):
         }
     subclass = None
     superclass = BaseResources
-    def __init__(self, total=None, active=None, cluster=None):
-        super(Clusters, self).__init__(total, active, )
+    def __init__(self, actions=None, total=None, active=None, cluster=None):
+        super(Clusters, self).__init__(actions, total, active, )
         if cluster is None:
             self.cluster = []
         else:
@@ -5791,8 +5878,8 @@ class Host(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, address=None, certificate=None, status=None, cluster=None, port=None, type_=None, storage_manager=None, version=None, power_management=None, ksm=None, transparent_hugepages=None, iscsi=None, root_password=None, statistics=None, cpu=None, memory=None, summary=None, override_iptables=None, reboot_after_installation=None):
-        super(Host, self).__init__(href, id, name, description, actions, creation_status, link, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, address=None, certificate=None, status=None, cluster=None, port=None, type_=None, storage_manager=None, version=None, power_management=None, ksm=None, transparent_hugepages=None, iscsi=None, root_password=None, statistics=None, cpu=None, memory=None, summary=None, override_iptables=None, reboot_after_installation=None):
+        super(Host, self).__init__(actions, href, id, name, description, creation_status, link, )
         self.address = address
         self.certificate = certificate
         self.status = status
@@ -6503,8 +6590,8 @@ class Hosts(BaseResources):
         }
     subclass = None
     superclass = BaseResources
-    def __init__(self, total=None, active=None, host=None):
-        super(Hosts, self).__init__(total, active, )
+    def __init__(self, actions=None, total=None, active=None, host=None):
+        super(Hosts, self).__init__(actions, total, active, )
         if host is None:
             self.host = []
         else:
@@ -6589,8 +6676,8 @@ class Permit(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, administrative=None, role=None):
-        super(Permit, self).__init__(href, id, name, description, actions, creation_status, link, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, administrative=None, role=None):
+        super(Permit, self).__init__(actions, href, id, name, description, creation_status, link, )
         self.administrative = administrative
         self.role = role
     def factory(*args_, **kwargs_):
@@ -6766,8 +6853,8 @@ class Role(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, mutable=None, administrative=None, user=None, permits=None):
-        super(Role, self).__init__(href, id, name, description, actions, creation_status, link, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, mutable=None, administrative=None, user=None, permits=None):
+        super(Role, self).__init__(actions, href, id, name, description, creation_status, link, )
         self.mutable = mutable
         self.administrative = administrative
         self.user = user
@@ -6896,8 +6983,8 @@ class Roles(BaseResources):
         }
     subclass = None
     superclass = BaseResources
-    def __init__(self, total=None, active=None, role=None):
-        super(Roles, self).__init__(total, active, )
+    def __init__(self, actions=None, total=None, active=None, role=None):
+        super(Roles, self).__init__(actions, total, active, )
         if role is None:
             self.role = []
         else:
@@ -6989,8 +7076,8 @@ class User(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, domain=None, department=None, logged_in=None, last_name=None, user_name=None, password=None, email=None, roles=None, groups=None):
-        super(User, self).__init__(href, id, name, description, actions, creation_status, link, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, domain=None, department=None, logged_in=None, last_name=None, user_name=None, password=None, email=None, roles=None, groups=None):
+        super(User, self).__init__(actions, href, id, name, description, creation_status, link, )
         self.domain = domain
         self.department = department
         self.logged_in = logged_in
@@ -7185,8 +7272,8 @@ class Users(BaseResources):
         }
     subclass = None
     superclass = BaseResources
-    def __init__(self, total=None, active=None, user=None):
-        super(Users, self).__init__(total, active, )
+    def __init__(self, actions=None, total=None, active=None, user=None):
+        super(Users, self).__init__(actions, total, active, )
         if user is None:
             self.user = []
         else:
@@ -7271,8 +7358,8 @@ class Group(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, domain=None, roles=None):
-        super(Group, self).__init__(href, id, name, description, actions, creation_status, link, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, domain=None, roles=None):
+        super(Group, self).__init__(actions, href, id, name, description, creation_status, link, )
         self.domain = domain
         self.roles = roles
     def factory(*args_, **kwargs_):
@@ -7361,8 +7448,8 @@ class Groups(BaseResources):
         }
     subclass = None
     superclass = BaseResources
-    def __init__(self, total=None, active=None, group=None):
-        super(Groups, self).__init__(total, active, )
+    def __init__(self, actions=None, total=None, active=None, group=None):
+        super(Groups, self).__init__(actions, total, active, )
         if group is None:
             self.group = []
         else:
@@ -7455,8 +7542,8 @@ class Permission(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, role=None, user=None, group=None, data_center=None, cluster=None, host=None, storage_domain=None, vm=None, vmpool=None, template=None):
-        super(Permission, self).__init__(href, id, name, description, actions, creation_status, link, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, role=None, user=None, group=None, data_center=None, cluster=None, host=None, storage_domain=None, vm=None, vmpool=None, template=None):
+        super(Permission, self).__init__(actions, href, id, name, description, creation_status, link, )
         self.role = role
         self.user = user
         self.group = group
@@ -7674,8 +7761,8 @@ class Permissions(BaseResources):
         }
     subclass = None
     superclass = BaseResources
-    def __init__(self, total=None, active=None, permission=None):
-        super(Permissions, self).__init__(total, active, )
+    def __init__(self, actions=None, total=None, active=None, permission=None):
+        super(Permissions, self).__init__(actions, total, active, )
         if permission is None:
             self.permission = []
         else:
@@ -7759,8 +7846,8 @@ class Domain(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, user=None):
-        super(Domain, self).__init__(href, id, name, description, actions, creation_status, link, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, user=None):
+        super(Domain, self).__init__(actions, href, id, name, description, creation_status, link, )
         self.user = user
     def factory(*args_, **kwargs_):
         if Domain.subclass:
@@ -7833,8 +7920,8 @@ class Domains(BaseResources):
         }
     subclass = None
     superclass = BaseResources
-    def __init__(self, total=None, active=None, domain=None):
-        super(Domains, self).__init__(total, active, )
+    def __init__(self, actions=None, total=None, active=None, domain=None):
+        super(Domains, self).__init__(actions, total, active, )
         if domain is None:
             self.domain = []
         else:
@@ -7928,8 +8015,8 @@ class Event(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, code=None, severity=None, time=None, correlation_id=None, user=None, vm=None, storage_domain=None, host=None, template=None, cluster=None, data_center=None):
-        super(Event, self).__init__(href, id, name, description, actions, creation_status, link, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, code=None, severity=None, time=None, correlation_id=None, user=None, vm=None, storage_domain=None, host=None, template=None, cluster=None, data_center=None):
+        super(Event, self).__init__(actions, href, id, name, description, creation_status, link, )
         self.code = code
         self.severity = severity
         self.time = time
@@ -8159,8 +8246,8 @@ class Events(BaseResources):
         }
     subclass = None
     superclass = BaseResources
-    def __init__(self, total=None, active=None, event=None):
-        super(Events, self).__init__(total, active, )
+    def __init__(self, actions=None, total=None, active=None, event=None):
+        super(Events, self).__init__(actions, total, active, )
         if event is None:
             self.event = []
         else:
@@ -8245,8 +8332,8 @@ class File(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, type_=None, storage_domain=None):
-        super(File, self).__init__(href, id, name, description, actions, creation_status, link, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, type_=None, storage_domain=None):
+        super(File, self).__init__(actions, href, id, name, description, creation_status, link, )
         self.type_ = type_
         self.storage_domain = storage_domain
     def factory(*args_, **kwargs_):
@@ -8333,8 +8420,8 @@ class Files(BaseResources):
         }
     subclass = None
     superclass = BaseResources
-    def __init__(self, total=None, active=None, file=None):
-        super(Files, self).__init__(total, active, )
+    def __init__(self, actions=None, total=None, active=None, file=None):
+        super(Files, self).__init__(actions, total, active, )
         if file is None:
             self.file = []
         else:
@@ -8516,8 +8603,8 @@ class IPs(BaseResources):
         }
     subclass = None
     superclass = BaseResources
-    def __init__(self, total=None, active=None, ip=None):
-        super(IPs, self).__init__(total, active, )
+    def __init__(self, actions=None, total=None, active=None, ip=None):
+        super(IPs, self).__init__(actions, total, active, )
         if ip is None:
             self.ip = []
         else:
@@ -8749,8 +8836,8 @@ class Network(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, data_center=None, cluster=None, ip=None, vlan=None, stp=None, status=None, display=None, mtu=None, usages=None, required=None):
-        super(Network, self).__init__(href, id, name, description, actions, creation_status, link, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, data_center=None, cluster=None, ip=None, vlan=None, stp=None, status=None, display=None, mtu=None, usages=None, required=None):
+        super(Network, self).__init__(actions, href, id, name, description, creation_status, link, )
         self.data_center = data_center
         self.cluster = cluster
         self.ip = ip
@@ -9059,8 +9146,8 @@ class Networks(BaseResources):
         }
     subclass = None
     superclass = BaseResources
-    def __init__(self, total=None, active=None, network=None):
-        super(Networks, self).__init__(total, active, )
+    def __init__(self, actions=None, total=None, active=None, network=None):
+        super(Networks, self).__init__(actions, total, active, )
         if network is None:
             self.network = []
         else:
@@ -9582,8 +9669,8 @@ class Storage(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, type_=None, address=None, path=None, mount_options=None, vfs_type=None, nfs_version=None, nfs_timeo=None, nfs_retrans=None, logical_unit=None, volume_group=None, override_luns=None, host=None):
-        super(Storage, self).__init__(href, id, name, description, actions, creation_status, link, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, type_=None, address=None, path=None, mount_options=None, vfs_type=None, nfs_version=None, nfs_timeo=None, nfs_retrans=None, logical_unit=None, volume_group=None, override_luns=None, host=None):
+        super(Storage, self).__init__(actions, href, id, name, description, creation_status, link, )
         self.type_ = type_
         self.address = address
         self.path = path
@@ -9854,8 +9941,8 @@ class StorageDomain(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, data_center=None, type_=None, status=None, master=None, storage=None, host=None, format=None, destroy=None, available=None, used=None, committed=None, storage_format=None):
-        super(StorageDomain, self).__init__(href, id, name, description, actions, creation_status, link, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, data_center=None, type_=None, status=None, master=None, storage=None, host=None, format=None, destroy=None, available=None, used=None, committed=None, storage_format=None):
+        super(StorageDomain, self).__init__(actions, href, id, name, description, creation_status, link, )
         self.data_center = data_center
         self.type_ = type_
         self.status = status
@@ -10196,8 +10283,8 @@ class StorageDomains(BaseResources):
         }
     subclass = None
     superclass = BaseResources
-    def __init__(self, total=None, active=None, storage_domain=None):
-        super(StorageDomains, self).__init__(total, active, )
+    def __init__(self, actions=None, total=None, active=None, storage_domain=None):
+        super(StorageDomains, self).__init__(actions, total, active, )
         if storage_domain is None:
             self.storage_domain = []
         else:
@@ -10296,8 +10383,8 @@ class Template(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, vm=None, type_=None, status=None, memory=None, cpu=None, os=None, cluster=None, storage_domain=None, creation_time=None, origin=None, high_availability=None, display=None, stateless=None, timezone=None, domain=None, usb=None):
-        super(Template, self).__init__(href, id, name, description, actions, creation_status, link, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, vm=None, type_=None, status=None, memory=None, cpu=None, os=None, cluster=None, storage_domain=None, creation_time=None, origin=None, high_availability=None, display=None, stateless=None, timezone=None, domain=None, usb=None):
+        super(Template, self).__init__(actions, href, id, name, description, creation_status, link, )
         self.vm = vm
         self.type_ = type_
         self.status = status
@@ -10609,8 +10696,8 @@ class Templates(BaseResources):
         }
     subclass = None
     superclass = BaseResources
-    def __init__(self, total=None, active=None, template=None):
-        super(Templates, self).__init__(total, active, )
+    def __init__(self, actions=None, total=None, active=None, template=None):
+        super(Templates, self).__init__(actions, total, active, )
         if template is None:
             self.template = []
         else:
@@ -11995,8 +12082,8 @@ class VM(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, type_=None, status=None, memory=None, cpu=None, os=None, high_availability=None, display=None, host=None, cluster=None, template=None, storage_domain=None, start_time=None, creation_time=None, origin=None, stateless=None, timezone=None, domain=None, custom_properties=None, payloads=None, statistics=None, disks=None, nics=None, tags=None, snapshots=None, placement_policy=None, memory_policy=None, guest_info=None, quota=None, usb=None, vmpool=None, cdroms=None, floppies=None, extensiontype_=None):
-        super(VM, self).__init__(href, id, name, description, actions, creation_status, link, extensiontype_, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, type_=None, status=None, memory=None, cpu=None, os=None, high_availability=None, display=None, host=None, cluster=None, template=None, storage_domain=None, start_time=None, creation_time=None, origin=None, stateless=None, timezone=None, domain=None, custom_properties=None, payloads=None, statistics=None, disks=None, nics=None, tags=None, snapshots=None, placement_policy=None, memory_policy=None, guest_info=None, quota=None, usb=None, vmpool=None, cdroms=None, floppies=None, extensiontype_=None):
+        super(VM, self).__init__(actions, href, id, name, description, creation_status, link, extensiontype_, )
         self.type_ = type_
         self.status = status
         self.memory = memory
@@ -12572,8 +12659,8 @@ class VMs(BaseResources):
         }
     subclass = None
     superclass = BaseResources
-    def __init__(self, total=None, active=None, vm=None):
-        super(VMs, self).__init__(total, active, )
+    def __init__(self, actions=None, total=None, active=None, vm=None):
+        super(VMs, self).__init__(actions, total, active, )
         if vm is None:
             self.vm = []
         else:
@@ -12658,8 +12745,8 @@ class PreviewVMs(BaseResources):
         }
     subclass = None
     superclass = BaseResources
-    def __init__(self, total=None, active=None, preview_vm=None):
-        super(PreviewVMs, self).__init__(total, active, )
+    def __init__(self, actions=None, total=None, active=None, preview_vm=None):
+        super(PreviewVMs, self).__init__(actions, total, active, )
         if preview_vm is None:
             self.preview_vm = []
         else:
@@ -12903,8 +12990,8 @@ class VmPool(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, size=None, cluster=None, template=None, prestarted_vms=None):
-        super(VmPool, self).__init__(href, id, name, description, actions, creation_status, link, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, size=None, cluster=None, template=None, prestarted_vms=None):
+        super(VmPool, self).__init__(actions, href, id, name, description, creation_status, link, )
         self.size = size
         self.cluster = cluster
         self.template = template
@@ -13029,8 +13116,8 @@ class VmPools(BaseResources):
         }
     subclass = None
     superclass = BaseResources
-    def __init__(self, total=None, active=None, vmpool=None):
-        super(VmPools, self).__init__(total, active, )
+    def __init__(self, actions=None, total=None, active=None, vmpool=None):
+        super(VmPools, self).__init__(actions, total, active, )
         if vmpool is None:
             self.vmpool = []
         else:
@@ -13115,8 +13202,8 @@ class BaseDevice(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, vm=None, template=None, extensiontype_=None):
-        super(BaseDevice, self).__init__(href, id, name, description, actions, creation_status, link, extensiontype_, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, vm=None, template=None, extensiontype_=None):
+        super(BaseDevice, self).__init__(actions, href, id, name, description, creation_status, link, extensiontype_, )
         self.vm = vm
         self.template = template
         self.extensiontype_ = extensiontype_
@@ -13216,8 +13303,8 @@ class BaseDevices(BaseResources):
         }
     subclass = None
     superclass = BaseResources
-    def __init__(self, total=None, active=None, extensiontype_=None):
-        super(BaseDevices, self).__init__(total, active, extensiontype_, )
+    def __init__(self, actions=None, total=None, active=None, extensiontype_=None):
+        super(BaseDevices, self).__init__(actions, total, active, extensiontype_, )
         self.extensiontype_ = extensiontype_
     def factory(*args_, **kwargs_):
         if BaseDevices.subclass:
@@ -13286,8 +13373,8 @@ class CdRom(BaseDevice):
         }
     subclass = None
     superclass = BaseDevice
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, vm=None, template=None, file=None):
-        super(CdRom, self).__init__(href, id, name, description, actions, creation_status, link, vm, template, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, vm=None, template=None, file=None):
+        super(CdRom, self).__init__(actions, href, id, name, description, creation_status, link, vm, template, )
         self.file = file
     def factory(*args_, **kwargs_):
         if CdRom.subclass:
@@ -13360,8 +13447,8 @@ class CdRoms(BaseDevices):
         }
     subclass = None
     superclass = BaseDevices
-    def __init__(self, total=None, active=None, cdrom=None):
-        super(CdRoms, self).__init__(total, active, )
+    def __init__(self, actions=None, total=None, active=None, cdrom=None):
+        super(CdRoms, self).__init__(actions, total, active, )
         if cdrom is None:
             self.cdrom = []
         else:
@@ -13445,8 +13532,8 @@ class Floppy(BaseDevice):
         }
     subclass = None
     superclass = BaseDevice
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, vm=None, template=None, file=None):
-        super(Floppy, self).__init__(href, id, name, description, actions, creation_status, link, vm, template, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, vm=None, template=None, file=None):
+        super(Floppy, self).__init__(actions, href, id, name, description, creation_status, link, vm, template, )
         self.file = file
     def factory(*args_, **kwargs_):
         if Floppy.subclass:
@@ -13519,8 +13606,8 @@ class Floppies(BaseDevices):
         }
     subclass = None
     superclass = BaseDevices
-    def __init__(self, total=None, active=None, floppy=None):
-        super(Floppies, self).__init__(total, active, )
+    def __init__(self, actions=None, total=None, active=None, floppy=None):
+        super(Floppies, self).__init__(actions, total, active, )
         if floppy is None:
             self.floppy = []
         else:
@@ -13620,8 +13707,8 @@ class Disk(BaseDevice):
         }
     subclass = None
     superclass = BaseDevice
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, vm=None, template=None, image_id=None, storage_domains=None, size=None, provisioned_size=None, actual_size=None, status=None, interface=None, format=None, sparse=None, bootable=None, shareable=None, wipe_after_delete=None, propagate_errors=None, statistics=None, active=None, quota=None, lunStorage=None):
-        super(Disk, self).__init__(href, id, name, description, actions, creation_status, link, vm, template, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, vm=None, template=None, image_id=None, storage_domains=None, size=None, provisioned_size=None, actual_size=None, status=None, interface=None, format=None, sparse=None, bootable=None, shareable=None, wipe_after_delete=None, propagate_errors=None, statistics=None, active=None, quota=None, lunStorage=None):
+        super(Disk, self).__init__(actions, href, id, name, description, creation_status, link, vm, template, )
         self.image_id = image_id
         self.storage_domains = storage_domains
         self.size = size
@@ -13975,8 +14062,8 @@ class Disks(BaseDevices):
         }
     subclass = None
     superclass = BaseDevices
-    def __init__(self, total=None, active=None, disk=None, clone=None):
-        super(Disks, self).__init__(total, active, )
+    def __init__(self, actions=None, total=None, active=None, disk=None, clone=None):
+        super(Disks, self).__init__(actions, total, active, )
         if disk is None:
             self.disk = []
         else:
@@ -14232,8 +14319,8 @@ class NIC(BaseDevice):
         }
     subclass = None
     superclass = BaseDevice
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, vm=None, template=None, network=None, interface=None, mac=None, statistics=None, active=None, port_mirroring=None):
-        super(NIC, self).__init__(href, id, name, description, actions, creation_status, link, vm, template, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, vm=None, template=None, network=None, interface=None, mac=None, statistics=None, active=None, port_mirroring=None):
+        super(NIC, self).__init__(actions, href, id, name, description, creation_status, link, vm, template, )
         self.network = network
         self.interface = interface
         self.mac = mac
@@ -14388,8 +14475,8 @@ class Nics(BaseDevices):
         }
     subclass = None
     superclass = BaseDevices
-    def __init__(self, total=None, active=None, nic=None):
-        super(Nics, self).__init__(total, active, )
+    def __init__(self, actions=None, total=None, active=None, nic=None):
+        super(Nics, self).__init__(actions, total, active, )
         if nic is None:
             self.nic = []
         else:
@@ -14475,8 +14562,8 @@ class Snapshot(VM):
         }
     subclass = None
     superclass = VM
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, type_=None, status=None, memory=None, cpu=None, os=None, high_availability=None, display=None, host=None, cluster=None, template=None, storage_domain=None, start_time=None, creation_time=None, origin=None, stateless=None, timezone=None, domain=None, custom_properties=None, payloads=None, statistics=None, disks=None, nics=None, tags=None, snapshots=None, placement_policy=None, memory_policy=None, guest_info=None, quota=None, usb=None, vmpool=None, cdroms=None, floppies=None, vm=None, date=None, snapshot_status=None):
-        super(Snapshot, self).__init__(href, id, name, description, actions, creation_status, link, type_, status, memory, cpu, os, high_availability, display, host, cluster, template, storage_domain, start_time, creation_time, origin, stateless, timezone, domain, custom_properties, payloads, statistics, disks, nics, tags, snapshots, placement_policy, memory_policy, guest_info, quota, usb, vmpool, cdroms, floppies, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, type_=None, status=None, memory=None, cpu=None, os=None, high_availability=None, display=None, host=None, cluster=None, template=None, storage_domain=None, start_time=None, creation_time=None, origin=None, stateless=None, timezone=None, domain=None, custom_properties=None, payloads=None, statistics=None, disks=None, nics=None, tags=None, snapshots=None, placement_policy=None, memory_policy=None, guest_info=None, quota=None, usb=None, vmpool=None, cdroms=None, floppies=None, vm=None, date=None, snapshot_status=None):
+        super(Snapshot, self).__init__(actions, href, id, name, description, creation_status, link, type_, status, memory, cpu, os, high_availability, display, host, cluster, template, storage_domain, start_time, creation_time, origin, stateless, timezone, domain, custom_properties, payloads, statistics, disks, nics, tags, snapshots, placement_policy, memory_policy, guest_info, quota, usb, vmpool, cdroms, floppies, )
         self.vm = vm
         self.date = date
         self.snapshot_status = snapshot_status
@@ -14579,8 +14666,8 @@ class Snapshots(BaseResources):
         }
     subclass = None
     superclass = BaseResources
-    def __init__(self, total=None, active=None, snapshot=None, collapse_snapshots=None):
-        super(Snapshots, self).__init__(total, active, )
+    def __init__(self, actions=None, total=None, active=None, snapshot=None, collapse_snapshots=None):
+        super(Snapshots, self).__init__(actions, total, active, )
         if snapshot is None:
             self.snapshot = []
         else:
@@ -14698,8 +14785,8 @@ class HostNIC(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, host=None, network=None, mac=None, ip=None, vlan=None, bonding=None, boot_protocol=None, statistics=None, check_connectivity=None, speed=None, status=None, mtu=None, bridged=None, custom_configuration=None, override_configuration=None):
-        super(HostNIC, self).__init__(href, id, name, description, actions, creation_status, link, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, host=None, network=None, mac=None, ip=None, vlan=None, bonding=None, boot_protocol=None, statistics=None, check_connectivity=None, speed=None, status=None, mtu=None, bridged=None, custom_configuration=None, override_configuration=None):
+        super(HostNIC, self).__init__(actions, href, id, name, description, creation_status, link, )
         self.host = host
         self.network = network
         self.mac = mac
@@ -15014,8 +15101,8 @@ class HostNics(BaseResources):
         }
     subclass = None
     superclass = BaseResources
-    def __init__(self, total=None, active=None, host_nic=None):
-        super(HostNics, self).__init__(total, active, )
+    def __init__(self, actions=None, total=None, active=None, host_nic=None):
+        super(HostNics, self).__init__(actions, total, active, )
         if host_nic is None:
             self.host_nic = []
         else:
@@ -15343,8 +15430,8 @@ class HostStorage(BaseResources):
         }
     subclass = None
     superclass = BaseResources
-    def __init__(self, total=None, active=None, storage=None):
-        super(HostStorage, self).__init__(total, active, )
+    def __init__(self, actions=None, total=None, active=None, storage=None):
+        super(HostStorage, self).__init__(actions, total, active, )
         if storage is None:
             self.storage = []
         else:
@@ -15501,8 +15588,8 @@ class Tag(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, host=None, vm=None, user=None, group=None, parent=None):
-        super(Tag, self).__init__(href, id, name, description, actions, creation_status, link, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, host=None, vm=None, user=None, group=None, parent=None):
+        super(Tag, self).__init__(actions, href, id, name, description, creation_status, link, )
         self.host = host
         self.vm = vm
         self.user = user
@@ -15640,8 +15727,8 @@ class Tags(BaseResources):
         }
     subclass = None
     superclass = BaseResources
-    def __init__(self, total=None, active=None, tag=None):
-        super(Tags, self).__init__(total, active, )
+    def __init__(self, actions=None, total=None, active=None, tag=None):
+        super(Tags, self).__init__(actions, total, active, )
         if tag is None:
             self.tag = []
         else:
@@ -15816,8 +15903,8 @@ class Quota(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, data_center=None, vms=None, disks=None, users=None):
-        super(Quota, self).__init__(href, id, name, description, actions, creation_status, link, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, data_center=None, vms=None, disks=None, users=None):
+        super(Quota, self).__init__(actions, href, id, name, description, creation_status, link, )
         self.data_center = data_center
         self.vms = vms
         self.disks = disks
@@ -15938,8 +16025,8 @@ class Quotas(BaseResources):
         }
     subclass = None
     superclass = BaseResources
-    def __init__(self, total=None, active=None, quota=None):
-        super(Quotas, self).__init__(total, active, )
+    def __init__(self, actions=None, total=None, active=None, quota=None):
+        super(Quotas, self).__init__(actions, total, active, )
         if quota is None:
             self.quota = []
         else:
@@ -16408,8 +16495,8 @@ class Parameter(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, required=None, type_=None, context=None, value=None, parameters_set=None):
-        super(Parameter, self).__init__(href, id, name, description, actions, creation_status, link, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, required=None, type_=None, context=None, value=None, parameters_set=None):
+        super(Parameter, self).__init__(actions, href, id, name, description, creation_status, link, )
         self.required = _cast(bool, required)
         self.type_ = _cast(None, type_)
         self.context = _cast(None, context)
@@ -16539,15 +16626,15 @@ class Parameter(BaseResource):
 
 class Header(BaseResource):
     member_data_items_ = {
+        'required': MemberSpec_('required', 'xs:boolean', 0),
         'value': MemberSpec_('value', 'xs:string', 0),
-        'mandatory': MemberSpec_('mandatory', 'xs:boolean', 0),
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, value=None, mandatory=None):
-        super(Header, self).__init__(href, id, name, description, actions, creation_status, link, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, required=None, value=None):
+        super(Header, self).__init__(actions, href, id, name, description, creation_status, link, )
+        self.required = _cast(bool, required)
         self.value = value
-        self.mandatory = mandatory
     def factory(*args_, **kwargs_):
         if Header.subclass:
             return Header.subclass(*args_, **kwargs_)
@@ -16556,8 +16643,8 @@ class Header(BaseResource):
     factory = staticmethod(factory)
     def get_value(self): return self.value
     def set_value(self, value): self.value = value
-    def get_mandatory(self): return self.mandatory
-    def set_mandatory(self, mandatory): self.mandatory = mandatory
+    def get_required(self): return self.required
+    def set_required(self, required): self.required = required
     def export(self, outfile, level, namespace_='', name_='Header', namespacedef_=''):
         showIndent(outfile, level)
         outfile.write('<%s%s%s' % (namespace_, name_, namespacedef_ and ' ' + namespacedef_ or '', ))
@@ -16572,18 +16659,17 @@ class Header(BaseResource):
             outfile.write('/>\n')
     def exportAttributes(self, outfile, level, already_processed, namespace_='', name_='Header'):
         super(Header, self).exportAttributes(outfile, level, already_processed, namespace_, name_='Header')
+        if self.required is not None and 'required' not in already_processed:
+            already_processed.append('required')
+            outfile.write(' required="%s"' % self.gds_format_boolean(self.gds_str_lower(str(self.required)), input_name='required'))
     def exportChildren(self, outfile, level, namespace_='', name_='Header', fromsubclass_=False):
         super(Header, self).exportChildren(outfile, level, namespace_, name_, True)
         if self.value is not None:
             showIndent(outfile, level)
             outfile.write('<%svalue>%s</%svalue>\n' % (namespace_, self.gds_format_string(quote_xml(self.value).encode(ExternalEncoding), input_name='value'), namespace_))
-        if self.mandatory is not None:
-            showIndent(outfile, level)
-            outfile.write('<%smandatory>%s</%smandatory>\n' % (namespace_, self.gds_format_boolean(self.gds_str_lower(str(self.mandatory)), input_name='mandatory'), namespace_))
     def hasContent_(self):
         if (
             self.value is not None or
-            self.mandatory is not None or
             super(Header, self).hasContent_()
             ):
             return True
@@ -16595,37 +16681,37 @@ class Header(BaseResource):
         if self.hasContent_():
             self.exportLiteralChildren(outfile, level, name_)
     def exportLiteralAttributes(self, outfile, level, already_processed, name_):
+        if self.required is not None and 'required' not in already_processed:
+            already_processed.append('required')
+            showIndent(outfile, level)
+            outfile.write('required = %s,\n' % (self.required,))
         super(Header, self).exportLiteralAttributes(outfile, level, already_processed, name_)
     def exportLiteralChildren(self, outfile, level, name_):
         super(Header, self).exportLiteralChildren(outfile, level, name_)
         if self.value is not None:
             showIndent(outfile, level)
             outfile.write('value=%s,\n' % quote_python(self.value).encode(ExternalEncoding))
-        if self.mandatory is not None:
-            showIndent(outfile, level)
-            outfile.write('mandatory=%s,\n' % self.mandatory)
     def build(self, node):
         self.buildAttributes(node, node.attrib, [])
         for child in node:
             nodeName_ = Tag_pattern_.match(child.tag).groups()[-1]
             self.buildChildren(child, node, nodeName_)
     def buildAttributes(self, node, attrs, already_processed):
+        value = find_attr_value_('required', node)
+        if value is not None and 'required' not in already_processed:
+            already_processed.append('required')
+            if value in ('true', '1'):
+                self.required = True
+            elif value in ('false', '0'):
+                self.required = False
+            else:
+                raise_parse_error(node, 'Bad boolean attribute')
         super(Header, self).buildAttributes(node, attrs, already_processed)
     def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
         if nodeName_ == 'value':
             value_ = child_.text
             value_ = self.gds_validate_string(value_, node, 'value')
             self.value = value_
-        elif nodeName_ == 'mandatory':
-            sval_ = child_.text
-            if sval_ in ('true', '1'):
-                ival_ = True
-            elif sval_ in ('false', '0'):
-                ival_ = False
-            else:
-                raise_parse_error(child_, 'requires boolean')
-            ival_ = self.gds_validate_boolean(ival_, node, 'mandatory')
-            self.mandatory = ival_
         super(Header, self).buildChildren(child_, node, nodeName_, True)
 # end class Header
 
@@ -17038,8 +17124,8 @@ class GlusterVolume(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, cluster=None, volume_type=None, transport_types=None, replica_count=None, stripe_count=None, bricks=None, access_protocols=None, access_control_list=None, options=None, state=None):
-        super(GlusterVolume, self).__init__(href, id, name, description, actions, creation_status, link, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, cluster=None, volume_type=None, transport_types=None, replica_count=None, stripe_count=None, bricks=None, access_protocols=None, access_control_list=None, options=None, state=None):
+        super(GlusterVolume, self).__init__(actions, href, id, name, description, creation_status, link, )
         self.cluster = cluster
         self.volume_type = volume_type
         self.transport_types = transport_types
@@ -17646,8 +17732,8 @@ class GlusterVolumes(BaseResources):
         }
     subclass = None
     superclass = BaseResources
-    def __init__(self, total=None, active=None, gluster_volume=None):
-        super(GlusterVolumes, self).__init__(total, active, )
+    def __init__(self, actions=None, total=None, active=None, gluster_volume=None):
+        super(GlusterVolumes, self).__init__(actions, total, active, )
         if gluster_volume is None:
             self.gluster_volume = []
         else:
@@ -17734,8 +17820,8 @@ class GlusterBrick(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, gluster_volume=None, server_id=None, brick_dir=None, state=None):
-        super(GlusterBrick, self).__init__(href, id, name, description, actions, creation_status, link, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, gluster_volume=None, server_id=None, brick_dir=None, state=None):
+        super(GlusterBrick, self).__init__(actions, href, id, name, description, creation_status, link, )
         self.gluster_volume = gluster_volume
         self.server_id = server_id
         self.brick_dir = brick_dir
@@ -17962,6 +18048,233 @@ class GlusterBricks(GeneratedsSuper):
 # end class GlusterBricks
 
 
+class Feature(BaseResource):
+    member_data_items_ = {
+        'transparent_hugepages': MemberSpec_('transparent_hugepages', 'transparent_hugepages', 0),
+        'gluster_volumes': MemberSpec_('gluster_volumes', 'gluster_volumes', 0),
+        'vm_device_types': MemberSpec_('vm_device_types', 'vm_device_types', 0),
+        'storage_types': MemberSpec_('storage_types', 'storage_types', 0),
+        'storage_domain': MemberSpec_('storage_domain', 'storage_domain', 0),
+        'nic': MemberSpec_('nic', 'nic', 0),
+        'api': MemberSpec_('api', 'api', 0),
+        'host': MemberSpec_('host', 'host', 0),
+        'url': MemberSpec_('url', 'url', 0),
+        'headers': MemberSpec_('headers', 'headers', 0),
+        }
+    subclass = None
+    superclass = BaseResource
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, transparent_hugepages=None, gluster_volumes=None, vm_device_types=None, storage_types=None, storage_domain=None, nic=None, api=None, host=None, url=None, headers=None):
+        super(Feature, self).__init__(actions, href, id, name, description, creation_status, link, )
+        self.transparent_hugepages = transparent_hugepages
+        self.gluster_volumes = gluster_volumes
+        self.vm_device_types = vm_device_types
+        self.storage_types = storage_types
+        self.storage_domain = storage_domain
+        self.nic = nic
+        self.api = api
+        self.host = host
+        self.url = url
+        self.headers = headers
+    def factory(*args_, **kwargs_):
+        if Feature.subclass:
+            return Feature.subclass(*args_, **kwargs_)
+        else:
+            return Feature(*args_, **kwargs_)
+    factory = staticmethod(factory)
+    def get_transparent_hugepages(self): return self.transparent_hugepages
+    def set_transparent_hugepages(self, transparent_hugepages): self.transparent_hugepages = transparent_hugepages
+    def get_gluster_volumes(self): return self.gluster_volumes
+    def set_gluster_volumes(self, gluster_volumes): self.gluster_volumes = gluster_volumes
+    def get_vm_device_types(self): return self.vm_device_types
+    def set_vm_device_types(self, vm_device_types): self.vm_device_types = vm_device_types
+    def get_storage_types(self): return self.storage_types
+    def set_storage_types(self, storage_types): self.storage_types = storage_types
+    def get_storage_domain(self): return self.storage_domain
+    def set_storage_domain(self, storage_domain): self.storage_domain = storage_domain
+    def get_nic(self): return self.nic
+    def set_nic(self, nic): self.nic = nic
+    def get_api(self): return self.api
+    def set_api(self, api): self.api = api
+    def get_host(self): return self.host
+    def set_host(self, host): self.host = host
+    def get_url(self): return self.url
+    def set_url(self, url): self.url = url
+    def get_headers(self): return self.headers
+    def set_headers(self, headers): self.headers = headers
+    def export(self, outfile, level, namespace_='', name_='Feature', namespacedef_=''):
+        showIndent(outfile, level)
+        outfile.write('<%s%s%s' % (namespace_, name_, namespacedef_ and ' ' + namespacedef_ or '', ))
+        already_processed = []
+        self.exportAttributes(outfile, level, already_processed, namespace_, name_='Feature')
+        if self.hasContent_():
+            outfile.write('>\n')
+            self.exportChildren(outfile, level + 1, namespace_, name_)
+            showIndent(outfile, level)
+            outfile.write('</%s%s>\n' % (namespace_, name_))
+        else:
+            outfile.write('/>\n')
+    def exportAttributes(self, outfile, level, already_processed, namespace_='', name_='Feature'):
+        super(Feature, self).exportAttributes(outfile, level, already_processed, namespace_, name_='Feature')
+    def exportChildren(self, outfile, level, namespace_='', name_='Feature', fromsubclass_=False):
+        super(Feature, self).exportChildren(outfile, level, namespace_, name_, True)
+        if self.transparent_hugepages is not None:
+            self.transparent_hugepages.export(outfile, level, namespace_, name_='transparent_hugepages')
+        if self.gluster_volumes is not None:
+            self.gluster_volumes.export(outfile, level, namespace_, name_='gluster_volumes')
+        if self.vm_device_types is not None:
+            self.vm_device_types.export(outfile, level, namespace_, name_='vm_device_types')
+        if self.storage_types is not None:
+            self.storage_types.export(outfile, level, namespace_, name_='storage_types')
+        if self.storage_domain is not None:
+            self.storage_domain.export(outfile, level, namespace_, name_='storage_domain')
+        if self.nic is not None:
+            self.nic.export(outfile, level, namespace_, name_='nic')
+        if self.api is not None:
+            self.api.export(outfile, level, namespace_, name_='api')
+        if self.host is not None:
+            self.host.export(outfile, level, namespace_, name_='host')
+        if self.url is not None:
+            self.url.export(outfile, level, namespace_, name_='url')
+        if self.headers is not None:
+            self.headers.export(outfile, level, namespace_, name_='headers')
+    def hasContent_(self):
+        if (
+            self.transparent_hugepages is not None or
+            self.gluster_volumes is not None or
+            self.vm_device_types is not None or
+            self.storage_types is not None or
+            self.storage_domain is not None or
+            self.nic is not None or
+            self.api is not None or
+            self.host is not None or
+            self.url is not None or
+            self.headers is not None or
+            super(Feature, self).hasContent_()
+            ):
+            return True
+        else:
+            return False
+    def exportLiteral(self, outfile, level, name_='Feature'):
+        level += 1
+        self.exportLiteralAttributes(outfile, level, [], name_)
+        if self.hasContent_():
+            self.exportLiteralChildren(outfile, level, name_)
+    def exportLiteralAttributes(self, outfile, level, already_processed, name_):
+        super(Feature, self).exportLiteralAttributes(outfile, level, already_processed, name_)
+    def exportLiteralChildren(self, outfile, level, name_):
+        super(Feature, self).exportLiteralChildren(outfile, level, name_)
+        if self.transparent_hugepages is not None:
+            showIndent(outfile, level)
+            outfile.write('transparent_hugepages=model_.transparent_hugepages(\n')
+            self.transparent_hugepages.exportLiteral(outfile, level)
+            showIndent(outfile, level)
+            outfile.write('),\n')
+        if self.gluster_volumes is not None:
+            showIndent(outfile, level)
+            outfile.write('gluster_volumes=model_.gluster_volumes(\n')
+            self.gluster_volumes.exportLiteral(outfile, level)
+            showIndent(outfile, level)
+            outfile.write('),\n')
+        if self.vm_device_types is not None:
+            showIndent(outfile, level)
+            outfile.write('vm_device_types=model_.vm_device_types(\n')
+            self.vm_device_types.exportLiteral(outfile, level)
+            showIndent(outfile, level)
+            outfile.write('),\n')
+        if self.storage_types is not None:
+            showIndent(outfile, level)
+            outfile.write('storage_types=model_.storage_types(\n')
+            self.storage_types.exportLiteral(outfile, level)
+            showIndent(outfile, level)
+            outfile.write('),\n')
+        if self.storage_domain is not None:
+            showIndent(outfile, level)
+            outfile.write('storage_domain=model_.storage_domain(\n')
+            self.storage_domain.exportLiteral(outfile, level)
+            showIndent(outfile, level)
+            outfile.write('),\n')
+        if self.nic is not None:
+            showIndent(outfile, level)
+            outfile.write('nic=model_.nic(\n')
+            self.nic.exportLiteral(outfile, level)
+            showIndent(outfile, level)
+            outfile.write('),\n')
+        if self.api is not None:
+            showIndent(outfile, level)
+            outfile.write('api=model_.api(\n')
+            self.api.exportLiteral(outfile, level)
+            showIndent(outfile, level)
+            outfile.write('),\n')
+        if self.host is not None:
+            showIndent(outfile, level)
+            outfile.write('host=model_.host(\n')
+            self.host.exportLiteral(outfile, level)
+            showIndent(outfile, level)
+            outfile.write('),\n')
+        if self.url is not None:
+            showIndent(outfile, level)
+            outfile.write('url=model_.url(\n')
+            self.url.exportLiteral(outfile, level)
+            showIndent(outfile, level)
+            outfile.write('),\n')
+        if self.headers is not None:
+            showIndent(outfile, level)
+            outfile.write('headers=model_.headers(\n')
+            self.headers.exportLiteral(outfile, level)
+            showIndent(outfile, level)
+            outfile.write('),\n')
+    def build(self, node):
+        self.buildAttributes(node, node.attrib, [])
+        for child in node:
+            nodeName_ = Tag_pattern_.match(child.tag).groups()[-1]
+            self.buildChildren(child, node, nodeName_)
+    def buildAttributes(self, node, attrs, already_processed):
+        super(Feature, self).buildAttributes(node, attrs, already_processed)
+    def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
+        if nodeName_ == 'transparent_hugepages':
+            obj_ = TransparentHugePages.factory()
+            obj_.build(child_)
+            self.set_transparent_hugepages(obj_)
+        elif nodeName_ == 'gluster_volumes':
+            obj_ = GlusterVolumes.factory()
+            obj_.build(child_)
+            self.set_gluster_volumes(obj_)
+        elif nodeName_ == 'vm_device_types':
+            obj_ = VmDeviceTypes.factory()
+            obj_.build(child_)
+            self.set_vm_device_types(obj_)
+        elif nodeName_ == 'storage_types':
+            obj_ = StorageTypes.factory()
+            obj_.build(child_)
+            self.set_storage_types(obj_)
+        elif nodeName_ == 'storage_domain':
+            obj_ = StorageDomain.factory()
+            obj_.build(child_)
+            self.set_storage_domain(obj_)
+        elif nodeName_ == 'nic':
+            obj_ = NIC.factory()
+            obj_.build(child_)
+            self.set_nic(obj_)
+        elif nodeName_ == 'api':
+            obj_ = API.factory()
+            obj_.build(child_)
+            self.set_api(obj_)
+        elif nodeName_ == 'host':
+            obj_ = Host.factory()
+            obj_.build(child_)
+            self.set_host(obj_)
+        elif nodeName_ == 'url':
+            obj_ = Url.factory()
+            obj_.build(child_)
+            self.set_url(obj_)
+        elif nodeName_ == 'headers':
+            obj_ = Headers.factory()
+            obj_.build(child_)
+            self.set_headers(obj_)
+        super(Feature, self).buildChildren(child_, node, nodeName_, True)
+# end class Feature
+
+
 class ProductInfo(BaseResource):
     member_data_items_ = {
         'vendor': MemberSpec_('vendor', 'xs:string', 0),
@@ -17969,8 +18282,8 @@ class ProductInfo(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, vendor=None, version=None):
-        super(ProductInfo, self).__init__(href, id, name, description, actions, creation_status, link, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, vendor=None, version=None):
+        super(ProductInfo, self).__init__(actions, href, id, name, description, creation_status, link, )
         self.vendor = vendor
         self.version = version
     def factory(*args_, **kwargs_):
@@ -18062,8 +18375,8 @@ class Version(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, major=None, full_version=None, build_=None, minor=None, revision=None, extensiontype_=None):
-        super(Version, self).__init__(href, id, name, description, actions, creation_status, link, extensiontype_, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, major=None, full_version=None, build_=None, minor=None, revision=None, extensiontype_=None):
+        super(Version, self).__init__(actions, href, id, name, description, creation_status, link, extensiontype_, )
         self.major = _cast(int, major)
         self.full_version = _cast(None, full_version)
         self.build_ = _cast(int, build_)
@@ -18214,8 +18527,8 @@ class Statistics(BaseResources):
         }
     subclass = None
     superclass = BaseResources
-    def __init__(self, total=None, active=None, statistic=None):
-        super(Statistics, self).__init__(total, active, )
+    def __init__(self, actions=None, total=None, active=None, statistic=None):
+        super(Statistics, self).__init__(actions, total, active, )
         if statistic is None:
             self.statistic = []
         else:
@@ -18306,8 +18619,8 @@ class Statistic(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, values=None, type_=None, unit=None, disk=None, host=None, host_nic=None, nic=None, vm=None):
-        super(Statistic, self).__init__(href, id, name, description, actions, creation_status, link, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, values=None, type_=None, unit=None, disk=None, host=None, host_nic=None, nic=None, vm=None):
+        super(Statistic, self).__init__(actions, href, id, name, description, creation_status, link, )
         self.values = values
         self.type_ = type_
         self.unit = unit
@@ -18498,8 +18811,8 @@ class Creation(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, status=None, fault=None):
-        super(Creation, self).__init__(href, id, name, description, actions, creation_status, link, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, status=None, fault=None):
+        super(Creation, self).__init__(actions, href, id, name, description, creation_status, link, )
         self.status = status
         self.fault = fault
     def factory(*args_, **kwargs_):
@@ -18616,8 +18929,8 @@ class Action(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, async=None, grace_period=None, host=None, network=None, root_password=None, image=None, fence_type=None, ticket=None, iscsi=None, storage_domain=None, cluster=None, discard_snapshots=None, exclusive=None, vm=None, template=None, host_nics=None, check_connectivity=None, connectivity_timeout=None, pause=None, force=None, option=None, fix_layout=None, brick=None, detach=None, clone=None, status=None, fault=None, iscsi_target=None, power_management=None):
-        super(Action, self).__init__(href, id, name, description, actions, creation_status, link, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, async=None, grace_period=None, host=None, network=None, root_password=None, image=None, fence_type=None, ticket=None, iscsi=None, storage_domain=None, cluster=None, discard_snapshots=None, exclusive=None, vm=None, template=None, host_nics=None, check_connectivity=None, connectivity_timeout=None, pause=None, force=None, option=None, fix_layout=None, brick=None, detach=None, clone=None, status=None, fault=None, iscsi_target=None, power_management=None):
+        super(Action, self).__init__(actions, href, id, name, description, creation_status, link, )
         self.async = async
         self.grace_period = grace_period
         self.host = host
@@ -19179,8 +19492,8 @@ class SpecialObjects(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None):
-        super(SpecialObjects, self).__init__(href, id, name, description, actions, creation_status, link, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None):
+        super(SpecialObjects, self).__init__(actions, href, id, name, description, creation_status, link, )
         pass
     def factory(*args_, **kwargs_):
         if SpecialObjects.subclass:
@@ -19242,8 +19555,8 @@ class API(BaseResource):
         }
     subclass = None
     superclass = BaseResource
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, special_objects=None, product_info=None, summary=None, time=None):
-        super(API, self).__init__(href, id, name, description, actions, creation_status, link, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, special_objects=None, product_info=None, summary=None, time=None):
+        super(API, self).__init__(actions, href, id, name, description, creation_status, link, )
         self.special_objects = special_objects
         self.product_info = product_info
         self.summary = summary
@@ -19500,6 +19813,7 @@ class VersionCaps(Version):
         'vm_device_types': MemberSpec_('vm_device_types', 'vm_device_types', 0),
         'permits': MemberSpec_('permits', 'permits', 0),
         'scheduling_policies': MemberSpec_('scheduling_policies', 'scheduling_policies', 0),
+        'usages': MemberSpec_('usages', 'usages', 0),
         'gluster_volume_types': MemberSpec_('gluster_volume_types', 'gluster_volume_types', 0),
         'transport_types': MemberSpec_('transport_types', 'transport_types', 0),
         'access_protocols': MemberSpec_('access_protocols', 'access_protocols', 0),
@@ -19508,8 +19822,8 @@ class VersionCaps(Version):
         }
     subclass = None
     superclass = Version
-    def __init__(self, href=None, id=None, name=None, description=None, actions=None, creation_status=None, link=None, major=None, full_version=None, build_=None, minor=None, revision=None, current=None, features=None, cpus=None, power_managers=None, fence_types=None, storage_types=None, storage_domain_types=None, vm_types=None, boot_devices=None, display_types=None, nic_interfaces=None, os_types=None, disk_formats=None, disk_interfaces=None, vm_affinities=None, custom_properties=None, boot_protocols=None, error_handling=None, storage_formats=None, creation_states=None, power_management_states=None, host_states=None, host_non_operational_details=None, network_states=None, storage_domain_states=None, template_states=None, vm_states=None, vm_pause_details=None, disk_states=None, host_nic_states=None, data_center_states=None, vm_device_types=None, permits=None, scheduling_policies=None, gluster_volume_types=None, transport_types=None, access_protocols=None, gluster_volume_states=None, brick_states=None):
-        super(VersionCaps, self).__init__(href, id, name, description, actions, creation_status, link, major, full_version, build_, minor, revision, )
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, major=None, full_version=None, build_=None, minor=None, revision=None, current=None, features=None, cpus=None, power_managers=None, fence_types=None, storage_types=None, storage_domain_types=None, vm_types=None, boot_devices=None, display_types=None, nic_interfaces=None, os_types=None, disk_formats=None, disk_interfaces=None, vm_affinities=None, custom_properties=None, boot_protocols=None, error_handling=None, storage_formats=None, creation_states=None, power_management_states=None, host_states=None, host_non_operational_details=None, network_states=None, storage_domain_states=None, template_states=None, vm_states=None, vm_pause_details=None, disk_states=None, host_nic_states=None, data_center_states=None, vm_device_types=None, permits=None, scheduling_policies=None, usages=None, gluster_volume_types=None, transport_types=None, access_protocols=None, gluster_volume_states=None, brick_states=None):
+        super(VersionCaps, self).__init__(actions, href, id, name, description, creation_status, link, major, full_version, build_, minor, revision, )
         self.current = current
         self.features = features
         self.cpus = cpus
@@ -19544,6 +19858,7 @@ class VersionCaps(Version):
         self.vm_device_types = vm_device_types
         self.permits = permits
         self.scheduling_policies = scheduling_policies
+        self.usages = usages
         self.gluster_volume_types = gluster_volume_types
         self.transport_types = transport_types
         self.access_protocols = access_protocols
@@ -19623,6 +19938,8 @@ class VersionCaps(Version):
     def set_permits(self, permits): self.permits = permits
     def get_scheduling_policies(self): return self.scheduling_policies
     def set_scheduling_policies(self, scheduling_policies): self.scheduling_policies = scheduling_policies
+    def get_usages(self): return self.usages
+    def set_usages(self, usages): self.usages = usages
     def get_gluster_volume_types(self): return self.gluster_volume_types
     def set_gluster_volume_types(self, gluster_volume_types): self.gluster_volume_types = gluster_volume_types
     def get_transport_types(self): return self.transport_types
@@ -19718,6 +20035,8 @@ class VersionCaps(Version):
             self.permits.export(outfile, level, namespace_, name_='permits')
         if self.scheduling_policies is not None:
             self.scheduling_policies.export(outfile, level, namespace_, name_='scheduling_policies')
+        if self.usages is not None:
+            self.usages.export(outfile, level, namespace_, name_='usages')
         if self.gluster_volume_types is not None:
             self.gluster_volume_types.export(outfile, level, namespace_, name_='gluster_volume_types')
         if self.transport_types is not None:
@@ -19764,6 +20083,7 @@ class VersionCaps(Version):
             self.vm_device_types is not None or
             self.permits is not None or
             self.scheduling_policies is not None or
+            self.usages is not None or
             self.gluster_volume_types is not None or
             self.transport_types is not None or
             self.access_protocols is not None or
@@ -19984,6 +20304,12 @@ class VersionCaps(Version):
             self.scheduling_policies.exportLiteral(outfile, level)
             showIndent(outfile, level)
             outfile.write('),\n')
+        if self.usages is not None:
+            showIndent(outfile, level)
+            outfile.write('usages=model_.usages(\n')
+            self.usages.exportLiteral(outfile, level)
+            showIndent(outfile, level)
+            outfile.write('),\n')
         if self.gluster_volume_types is not None:
             showIndent(outfile, level)
             outfile.write('gluster_volume_types=model_.gluster_volume_types(\n')
@@ -20164,6 +20490,10 @@ class VersionCaps(Version):
             obj_ = SchedulingPolicies.factory()
             obj_.build(child_)
             self.set_scheduling_policies(obj_)
+        elif nodeName_ == 'usages':
+            obj_ = Usages.factory()
+            obj_.build(child_)
+            self.set_usages(obj_)
         elif nodeName_ == 'gluster_volume_types':
             obj_ = GlusterVolumeTypes.factory()
             obj_.build(child_)
@@ -20270,6 +20600,7 @@ __all__ = [
     "AccessControlList",
     "AccessProtocols",
     "Action",
+    "ActionableResource",
     "Actions",
     "ApiSummary",
     "BaseDevice",
@@ -20314,6 +20645,7 @@ __all__ = [
     "Event",
     "Events",
     "Fault",
+    "Feature",
     "Features",
     "FenceTypes",
     "File",
@@ -20470,6 +20802,7 @@ ClassesMapping = {
 	 'permissions':Permissions,
 	 'access_protocols':AccessProtocols,
 	 'gluster_volume_states':GlusterStates,
+	 'links':DetailedLinks,
 	 'header':Header,
 	 'disks':Disks,
 	 'host_nic':HostNIC,
@@ -20517,7 +20850,7 @@ ClassesMapping = {
 	 'bonding':Bonding,
 	 'nic_interfaces':NicInterfaces,
 	 'permit':Permit,
-	 'domains':Domains,
+	 'action':Action,
 	 'os':OperatingSystem,
 	 'options':Options,
 	 'storage_domains':StorageDomains,
@@ -20580,7 +20913,7 @@ ClassesMapping = {
 	 'iscsi':IscsiDetails,
 	 'data_centers':DataCenters,
 	 'storage':Storage,
-	 'links':DetailedLinks,
+	 'feature':Feature,
 	 'disk_states':DiskStates,
 	 'role':Role,
 	 'display_types':DisplayTypes,
@@ -20594,7 +20927,7 @@ ClassesMapping = {
 	 'nic':NIC,
 	 'vlan':VLAN,
 	 'quota':Quota,
-	 'action':Action,
+	 'domains':Domains,
 	 'mac':MAC,
 	 'user':User,
 	 'memory_policy':MemoryPolicy,
