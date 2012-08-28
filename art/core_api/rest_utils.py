@@ -49,8 +49,8 @@ class RestUtil(APIUtil):
             self.api = restInit
         else:
             self.api = http.HTTPProxy(self.opts)
-            self.api.connect()
             if not standalone:
+                self.api.connect()
                 restInit = self.api
 
         self.links = self.api.HEAD_for_links()
