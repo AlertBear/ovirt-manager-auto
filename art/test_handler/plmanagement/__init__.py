@@ -133,6 +133,10 @@ class ComponentMeta(type):
             # Don't put abstract component classes in the registry
             return new_class
 
+        if [i for i in ComponentMeta._components if i.__name__ == name]:
+            # Do not put same components
+            return new_class
+
         ComponentMeta._components.append(new_class)
         registry = ComponentMeta._registry
         for cls in new_class.__mro__:
