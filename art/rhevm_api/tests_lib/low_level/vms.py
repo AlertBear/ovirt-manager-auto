@@ -1692,7 +1692,7 @@ def createVms(positive, amount=2, **kwargs):
        * **kwargs - exact set of parameters as for @createVM function
     Return: list of createVm results for each VM
     """
-    targetsList = ['createVm'] * amount
+    targetsList = [createVm] * amount
     paramsList = []
     for i in xrange(amount):
         currParams = deepcopy(kwargs)

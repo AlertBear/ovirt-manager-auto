@@ -12,6 +12,7 @@ from art.test_handler.plmanagement import Component, implements, ExtensionPoint,
 from art.test_handler.plmanagement.interfaces.application import ITestParser, IConfigurable
 from art.test_handler.plmanagement.interfaces.report_formatter import IResultExtension
 from art.test_handler.plmanagement.interfaces.tests_listener import ITestCaseHandler
+from art.test_handler.plmanagement.interfaces.config_validator import IConfigValidation
 from art.test_handler.plmanagement import Interface
 from art.test_handler.test_runner import TestCase, TestGroup, TestSuite, TestResult
 from art.test_handler import exceptions as errors
@@ -48,7 +49,6 @@ TEST_EXPECTED_EXCEPTIONS = 'expected_exc'
 
 fetch_path = lambda x: os.path.abspath(\
         os.path.join(os.path.dirname(__file__), '..', '..', '..', x))
-ACTIONS_PATH = fetch_path("conf/actions.conf")
 ELEMENTS_PATH = fetch_path("conf/elements.conf")
 
 START_GROUP = 'START_GROUP'
@@ -59,6 +59,12 @@ RHEVM_ENUMS = 'RHEVM Enums'
 RHEVM_PERMITS = 'RHEVM Permits'
 CONFIG_PARAMS = 'PARAMETERS'
 REST_CONNECTION = 'REST_CONNECTION'
+MATRIX_TEST_RUNNER_SEC = 'MATRIX_TEST_RUNNER'
+
+TEST_MODULES = 'test_modules'
+
+ACTIONS = 'ACTIONS'
+EXCEPTIONS = {}
 
 
 def assign_attributes(te, elm):
@@ -98,7 +104,30 @@ class GroupsAction(Action):
         setattr(namespace, self.dest, values.split(','))
 
 
+class TestExceptionType(type):
+    """
+    Customized type of exceptions which privides auto-discovery these
+    exceptions
+    """
+    def __new__(cls, name, bases, dct):
+        ex_cls = type.__new__(cls, name, bases, dct)
+        EXCEPTIONS[name] = ex_cls
+        return ex_cls
+
+
+class TestException(Exception):
+    """
+    Base class for exceptions used in negative test_cases, in order
+    to identify specific (expected) type of fail.
+    """
+    __metaclass__ = TestExceptionType
+
+
 class DoNotRun(errors.SkipTest):
+    pass
+
+
+class ActionConflict(PluginError):
     pass
 
 
@@ -131,11 +160,18 @@ class TestFile(object):
 class TestComposer(object):
     logger = logging.getLogger()
 
-    def __init__(self, test_file, config, actions=None, elements=None, groups=None):
+    def __init__(self, test_file, config, elements=None, groups=None):
         self.tf = test_file
-        if actions is None:
-            actions = ConfigObj(infile=ACTIONS_PATH)['ACTIONS']
-        self.a = actions
+        self.a = {}
+        for module in config.get(MATRIX_TEST_RUNNER_SEC).as_list(TEST_MODULES):
+            mod = __import__(module, fromlist=[ACTIONS])
+            if not hasattr(mod, ACTIONS):
+                continue
+            #self.a.update(getattr(mod, ACTIONS))
+            for key, val in getattr(mod, ACTIONS).items():
+                if key in self.a:
+                    raise ActionConflict("%s from %s" % (key, mod))
+                self.a[key] = val
         if elements is None:
             elements = ConfigObj(infile=ELEMENTS_PATH)
         self.e = elements[RHEVM_ENUMS]
@@ -325,10 +361,10 @@ class TestComposer(object):
         return mod_path, func_name
 
     @classmethod
-    def generate_suites(cls, test_file, config, actions=None, elements=None, groups=None):
+    def generate_suites(cls, test_file, config, elements=None, groups=None):
         suites = []
         for s_name, s_attr in test_file.get_suites():
-            tc = TestComposer(test_file, config, actions, elements, groups)
+            tc = TestComposer(test_file, config, elements, groups)
             s = MatrixTestSuite(s_name, tc)
             for attr in s_attr:
                 setattr(s, attr, s_attr[attr])
@@ -605,7 +641,7 @@ class MatrixBasedTestComposer(Component):
     """
     Plugin allows to test_runner be able to run matrix_based tests
     """
-    implements(ITestParser, IConfigurable, IResultExtension, ITestCaseHandler)
+    implements(ITestParser, IConfigurable, IResultExtension, ITestCaseHandler, IConfigValidation)
     parsers = ExtensionPoint(IMatrixBasedParser)
     name = 'Matrix Based Test Composer'
     enabled = True
@@ -697,6 +733,14 @@ class MatrixBasedTestComposer(Component):
 
     def test_case_skipped(self, tc):
         pass
+
+    def config_spec(self, spec, val_funcs):
+        section_spec = spec.get(MATRIX_TEST_RUNNER_SEC, {})
+        section_spec[TEST_MODULES] = "string_list("\
+                "default=list('art.rhevm_api',"\
+                "'art.gluster_api',"\
+                "'art.jasper_api'))"
+        spec[MATRIX_TEST_RUNNER_SEC] = section_spec
 
     @classmethod
     def is_enabled(cls, a, b):

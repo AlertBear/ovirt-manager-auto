@@ -197,6 +197,8 @@ class ParamsValidator(object):
     Extension of validation functions for validator module
     """
     def checkDomainFormat(self, value):
+        if value == 'internal':
+            return value
         try:
             getaddrinfo(value, None)
         except gaierror:
