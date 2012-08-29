@@ -26,6 +26,7 @@ import time
 import re
 from utilities.jobs import Job, JobsSet
 from art.rhevm_api.utils.test_utils import searchForObj
+from art.core_api import is_action
 
 ELEMENT = 'vmpool'
 COLLECTION = 'vmpools'
@@ -70,6 +71,7 @@ def _prepareVmPoolObject(**kwargs):
     return pool
 
 
+@is_action()
 def addVmPool(positive, **kwargs):
     '''
     Description: create vm pool
@@ -102,6 +104,7 @@ def addVmPool(positive, **kwargs):
     return status
 
 
+@is_action()
 def updateVmPool(positive, vmpool, **kwargs):
     '''
     Description: update vm pool
@@ -177,6 +180,7 @@ def _controlVMsInPool(positive, vmpool, action):
     return status
 
 
+@is_action()
 def startVmPool(positive, vmpool):
     '''
     Description: Wrapper for starting all VMs in a pool.
@@ -188,6 +192,7 @@ def startVmPool(positive, vmpool):
     return _controlVMsInPool(positive, vmpool, "start")
 
 
+@is_action()
 def stopVmPool(positive, vmpool):
     '''
     Description: Wrapper for stopping all VMs in a pool.
@@ -199,6 +204,7 @@ def stopVmPool(positive, vmpool):
     return _controlVMsInPool(positive, vmpool, "stop")
 
 
+@is_action()
 def detachVms(positive, vmpool):
     '''
     Description: Wrapper for detaching all VMs in a pool.
@@ -210,6 +216,7 @@ def detachVms(positive, vmpool):
     return _controlVMsInPool(positive, vmpool, "detach")
 
 
+@is_action()
 def removePooledVms(positive, name, vm_total, vm_to_remove=-1):
     '''
     Description: Remove the VMs that were in a pool
@@ -233,6 +240,7 @@ def removePooledVms(positive, name, vm_total, vm_to_remove=-1):
     return removeVms(True, vms)
 
 
+@is_action()
 def removeVmPool(positive, vmpool):
     '''
     Description: remove vm pool
@@ -248,6 +256,7 @@ def removeVmPool(positive, vmpool):
     return status
 
 
+@is_action()
 def searchForVmPool(positive, query_key, query_val, key_name, **kwargs):
     '''
     Description: search for a data center by desired property

@@ -21,6 +21,7 @@ from art.core_api.apis_utils import getDS
 import os
 from utilities.utils import readConfFile
 from art.rhevm_api.utils.test_utils import get_api, split
+from art.core_api import is_action
 
 ELEMENTS=os.path.join(os.path.dirname(__file__), '../../../conf/elements.conf')
 ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
@@ -54,6 +55,7 @@ if isinstance(versionCaps, list):
 PERMITS = versionCaps.get_permits().get_permit()
 
 
+@is_action()
 def checkSystemPermits(positive):
     '''
     Description: check existed system permissions
@@ -107,6 +109,7 @@ def _prepareRoleObject(**kwargs):
     return role
 
 
+@is_action()
 def addRole(positive, administrative="false", **kwargs):
     '''
     Description: add new role
@@ -123,6 +126,7 @@ def addRole(positive, administrative="false", **kwargs):
     return status
 
 
+@is_action()
 def updateRole(positive, role, **kwargs):
     '''
     Description: update existed role
@@ -140,6 +144,7 @@ def updateRole(positive, role, **kwargs):
     return status
 
 
+@is_action()
 def addRolePermissions(positive, role, permit):
     '''
     Description: add permission to role
@@ -160,6 +165,7 @@ def addRolePermissions(positive, role, permit):
     return status
 
 
+@is_action()
 def removeRolePermissions(positive, role, permit):
     '''
     Description: remove permission from role
@@ -175,6 +181,7 @@ def removeRolePermissions(positive, role, permit):
     return util.delete(permitObj, positive)
 
 
+@is_action()
 def removeRole(positive, role):
     '''
     Description: remove role
@@ -216,6 +223,7 @@ def addPermitsToGroup(positive, group, role, obj, attr):
     return status
 
 
+@is_action()
 def addVMPermissionsToUser(positive, user, vm, role=ENUMS['role_name_user_vm_manager']):
     '''
     Description: add vm permissios to user
@@ -231,6 +239,7 @@ def addVMPermissionsToUser(positive, user, vm, role=ENUMS['role_name_user_vm_man
     return addPermitsToUser(positive, user, role, vmObj, 'vm')
 
 
+@is_action()
 def addHostPermissionsToUser(positive, user, host, role="HostAdmin"):
     '''
     Description: add host permissios to user
@@ -246,6 +255,7 @@ def addHostPermissionsToUser(positive, user, host, role="HostAdmin"):
     return addPermitsToUser(positive, user, role, hostObj, 'host')
 
 
+@is_action()
 def addStoragePermissionsToUser(positive, user, storage, role="StorageAdmin"):
     '''
     Description: add storage domain permissios to user
@@ -261,6 +271,7 @@ def addStoragePermissionsToUser(positive, user, storage, role="StorageAdmin"):
     return addPermitsToUser(positive, user, role, sdObj, 'storage_domain')
 
 
+@is_action()
 def addClusterPermissionsToUser(positive, user, cluster, role="ClusterAdmin"):
     '''
     Description: add cluster permissios to user
@@ -276,6 +287,7 @@ def addClusterPermissionsToUser(positive, user, cluster, role="ClusterAdmin"):
     return addPermitsToUser(positive, user, role, clObj, 'cluster')
 
 
+@is_action()
 def addClusterPermissionsToGroup(positive, group, cluster, role="ClusterAdmin"):
     '''
     Description: add cluster permissios to group
@@ -305,6 +317,7 @@ def addUserPermitsForObj(positive, user, role, obj, group=False):
     return status
 
 
+@is_action()
 def addPermissionsForTemplate(positive, user, template, role="TemplateAdmin"):
     '''
     Description: add template permissios to user
@@ -320,6 +333,7 @@ def addPermissionsForTemplate(positive, user, template, role="TemplateAdmin"):
     return addUserPermitsForObj(positive, user, role, templObj)
 
 
+@is_action()
 def addTemplatePermissionsToGroup(positive, group, template, role="TemplateAdmin"):
     '''
     Description: add template permissions to group using template link
@@ -335,6 +349,7 @@ def addTemplatePermissionsToGroup(positive, group, template, role="TemplateAdmin
     return addUserPermitsForObj(positive, group, role, templObj, True)
 
 
+@is_action()
 def addPermissionsForTemplateToGroup(positive, group, template, role="TemplateAdmin"):
     '''
     Description: add template permissions to group using group link
@@ -349,6 +364,7 @@ def addPermissionsForTemplateToGroup(positive, group, template, role="TemplateAd
     return addPermitsToGroup(positive, group, role, templateObj, 'template')
 
 
+@is_action()
 def addPermissionsForDataCenter(positive, user, data_center, role="TemplateAdmin"):
     '''
     Description: add data centers permissios to user
@@ -364,6 +380,7 @@ def addPermissionsForDataCenter(positive, user, data_center, role="TemplateAdmin
     return addUserPermitsForObj(positive, user, role, dcObj)
 
 
+@is_action()
 def removeAllPermissionsFromUser(positive, user):
     '''
     Description: remove all permissions from user
@@ -384,6 +401,7 @@ def removeAllPermissionsFromUser(positive, user):
     return status
 
 
+@is_action()
 def addVmPoolPermissionToUser(positive, user, vmpool, role):
     '''
     Description: add permission to the user for specified vm pool object
@@ -399,6 +417,7 @@ def addVmPoolPermissionToUser(positive, user, vmpool, role):
     return addPermitsToUser(positive, user, role, poolObj, 'vmpool')
 
 
+@is_action()
 def checkDomainsId():
     '''
     Check whether domain resource in domains collection is displayed

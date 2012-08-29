@@ -19,6 +19,7 @@
 
 
 from art.core_api.rest_utils import RestUtil
+from art.core_api import is_action
 from art.test_handler.settings import opts
 from StringIO import StringIO
 from lxml import etree
@@ -30,6 +31,7 @@ import logging
 logger=logging.getLogger('rhevm_reports')
 
 reportsObj = None
+
 
 class ExecutiveReports():
     type = 'Executive'
@@ -212,6 +214,7 @@ def _runReport(path, report):
     logger.info('%s report saved in the file %s' % (report, res))
     return True if res else False
 
+@is_action()
 def reportActiveVmsByOs():
     '''
     The report contains comparative measurements number of running
@@ -221,6 +224,7 @@ def reportActiveVmsByOs():
     rep = ExecutiveReports()
     return _runReport(rep.type, rep.activeVmsByOs)
 
+@is_action()
 def reportClusterCapacityVsUsage():
     '''
     This report contains charts displaying hosts resources usage measurements
@@ -231,6 +235,7 @@ def reportClusterCapacityVsUsage():
     rep = ExecutiveReports()
     return _runReport(rep.type, rep.clusterCapacity)
 
+@is_action()
 def reportHostOsBreakDown():
     '''
     This report contains a table and a chart displaying the number of hosts
@@ -239,6 +244,7 @@ def reportHostOsBreakDown():
     rep = ExecutiveReports()
     return _runReport(rep.type, rep.hostsBreakDown)
 
+@is_action()
 def reportSummaryHostUsageResources():
     '''
     The report contains a scattered chart of CPU and memory usage data
@@ -247,6 +253,7 @@ def reportSummaryHostUsageResources():
     rep = ExecutiveReports()
     return _runReport(rep.type, rep.hostsSummary)
 
+@is_action()
 def reportHostsInventory():
     '''
     This report displays a list of all hosts of the selected data center
@@ -255,6 +262,7 @@ def reportHostsInventory():
     rep = InventoryReports()
     return _runReport(rep.type, rep.hosts)
 
+@is_action()
 def reportStorageDomain():
     '''
     This report displays daily used disk size versus available disk size data
@@ -263,6 +271,7 @@ def reportStorageDomain():
     rep = InventoryReports()
     return _runReport(rep.type, rep.storagDomains)
 
+@is_action()
 def reportVMInventory():
     '''
     This report displays a list of all virtual machines of the selected
@@ -271,6 +280,7 @@ def reportVMInventory():
     rep = InventoryReports()
     return _runReport(rep.type, rep.VMs)
 
+@is_action()
 def reportClusterQualityOfServiceHosts():
     '''
     This report contains a chart displaying the time hosts have performed
@@ -281,6 +291,7 @@ def reportClusterQualityOfServiceHosts():
     return _runReport('{0}/{1}'.format(rep.type, rep.subType),
                         rep.clusterQualityHosts)
 
+@is_action()
 def reportClusterUptime():
     '''
     This report contains chart displaying the weighted average uptime of hosts
@@ -291,6 +302,7 @@ def reportClusterUptime():
     return _runReport('{0}/{1}'.format(rep.type, rep.subType),
                         rep.clusterUptime)
 
+@is_action()
 def reportSingleHostUptime():
     '''
     This report contains one gauge displaying the weighted average uptime
@@ -300,6 +312,7 @@ def reportSingleHostUptime():
     return _runReport('{0}/{1}'.format(rep.type, rep.subType),
                         rep.singleHostUptime)
 
+@is_action()
 def reportTop10DowntimeHosts():
     '''
     This report contains a chart displaying the uptime, maintenance time
@@ -308,6 +321,7 @@ def reportTop10DowntimeHosts():
     rep = ServiceLevelHostReports()
     return _runReport('{0}/{1}'.format(rep.type, rep.subType), rep.top10Hosts)
 
+@is_action()
 def reportClusterQualityOfServiceVms():
     '''
     This report contains a chart displaying the time virtual machines
@@ -318,6 +332,7 @@ def reportClusterQualityOfServiceVms():
     return _runReport('{0}/{1}'.format(rep.type, rep.subType),
                         rep.clusterQualityVMs)
 
+@is_action()
 def reportVirtualServersUptime():
     '''
     This report contains one gauge displaying the weighted average uptime
@@ -328,6 +343,7 @@ def reportVirtualServersUptime():
     rep = ServiceLevelVMReports()
     return _runReport('{0}/{1}'.format(rep.type, rep.subType), rep.VMsUptime)
 
+@is_action()
 def report5leastUtilizedHosts():
     '''
     This report contains two charts displaying weighted average daily peak
@@ -338,6 +354,7 @@ def report5leastUtilizedHosts():
     return _runReport('{0}/{1}'.format(rep.type, rep.subType),
                         rep.least5utilized)
 
+@is_action()
 def report5mostUtilizedHosts():
     '''
     This report contains two charts displaying weighted average daily peak
@@ -348,6 +365,7 @@ def report5mostUtilizedHosts():
     return _runReport('{0}/{1}'.format(rep.type, rep.subType),
                         rep.most5utilized)
 
+@is_action()
 def reportMultipleHostsResourceUsage():
     '''
     This report contains charts displaying daily peak of CPU and memory usage
@@ -357,6 +375,7 @@ def reportMultipleHostsResourceUsage():
     return _runReport('{0}/{1}'.format(rep.type, rep.subType),
                         rep.multipleResource)
 
+@is_action()
 def reportSingleHostResources():
     '''
     This report contains charts displaying resources usage measurements
@@ -367,6 +386,7 @@ def reportSingleHostResources():
     return _runReport('{0}/{1}'.format(rep.type, rep.subType),
                         rep.singleResource)
 
+@is_action()
 def reportSingleHostResourceUsageDayOfWeek():
     '''
     This report contains charts displaying resources usage measurements
@@ -377,6 +397,7 @@ def reportSingleHostResourceUsageDayOfWeek():
     return _runReport('{0}/{1}'.format(rep.type, rep.subType),
                         rep.singleResourceDow)
 
+@is_action()
 def reportSingleHostResourceUsageHourOfDay():
     '''
     This report contains charts displaying resources usage measurements
@@ -387,6 +408,7 @@ def reportSingleHostResourceUsageHourOfDay():
     return _runReport('{0}/{1}'.format(rep.type, rep.subType),
                         rep.singleResourceHod)
 
+@is_action()
 def report5leastUtilizedVMs():
     '''
     This report contains charts displaying weighted average daily peak
@@ -397,6 +419,7 @@ def report5leastUtilizedVMs():
     return _runReport('{0}/{1}'.format(rep.type, rep.subType),
                         rep.least5utilized)
 
+@is_action()
 def report5mostUtilizedVMs():
     '''
     This report contains charts displaying weighted average daily peak
@@ -407,6 +430,7 @@ def report5mostUtilizedVMs():
     return _runReport('{0}/{1}'.format(rep.type, rep.subType),
                         rep.most5utilized)
 
+@is_action()
 def reportMultipleVMsResourceUsage():
     '''
     This report contains charts displaying weighted average daily peak
@@ -417,6 +441,7 @@ def reportMultipleVMsResourceUsage():
     return _runReport('{0}/{1}'.format(rep.type, rep.subType),
                         rep.multipleResource)
 
+@is_action()
 def reportSingleVMResourceUsageDayOfWeek():
     '''
     This report contains charts displaying resources usage measurements
@@ -427,6 +452,7 @@ def reportSingleVMResourceUsageDayOfWeek():
     return _runReport('{0}/{1}'.format(rep.type, rep.subType),
                         rep.singleResourceDow)
 
+@is_action()
 def reportSingleVMResourceUsageHourOfDay():
     '''
     This report contains charts displaying resources usage measurements
@@ -437,6 +463,7 @@ def reportSingleVMResourceUsageHourOfDay():
     return _runReport('{0}/{1}'.format(rep.type, rep.subType),
                         rep.singleResourceHod)
 
+@is_action()
 def reportSingleVMResources():
     '''
     This report contains charts displaying resources usage measurements

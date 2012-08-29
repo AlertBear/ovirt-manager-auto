@@ -26,6 +26,7 @@ from art.core_api.apis_utils import getDS
 from art.rhevm_api.utils.test_utils import get_api, split
 from utilities.utils import readConfFile
 from art.rhevm_api.utils.test_utils import searchForObj
+from art.core_api import is_action
 
 
 ELEMENT = 'data_center'
@@ -41,6 +42,7 @@ ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
 DATA_CENTER_INIT_TIMEOUT = 180
 
 
+@is_action()
 def addDataCenter(positive, **kwargs):
     '''
      Description: Add new data center
@@ -64,6 +66,7 @@ def addDataCenter(positive, **kwargs):
     return status
 
 
+@is_action()
 def updateDataCenter(positive, datacenter, **kwargs):
     '''
      Description: Update existed data center
@@ -97,6 +100,7 @@ def updateDataCenter(positive, datacenter, **kwargs):
     return status
 
 
+@is_action()
 def removeDataCenter(positive, datacenter):
     '''
      Description: Remove existed data center
@@ -110,6 +114,7 @@ def removeDataCenter(positive, datacenter):
     return util.delete(dc, positive)
 
 
+@is_action()
 def searchForDataCenter(positive, query_key, query_val, key_name, **kwargs):
     '''
     Description: search for a data center by desired property
@@ -146,6 +151,7 @@ def removeDataCenterAsynch(positive, datacenter, queue):
     queue.put(status)
 
 
+@is_action()
 def removeDataCenters(positive, datacenters):
     '''
      Description: Remove several data centers, using threading
@@ -176,6 +182,7 @@ def removeDataCenters(positive, datacenters):
     return status
 
 
+@is_action()
 def waitForDataCenterState(name, state=ENUMS['data_center_state_up'],
                            timeout=DATA_CENTER_INIT_TIMEOUT, sleep=10):
     """

@@ -19,6 +19,7 @@
 
 from art.rhevm_api.utils.test_utils import get_api
 from art.core_api.validator import compareCollectionSize
+from art.core_api import is_action
 
 ELEMENT = 'event'
 COLLECTION = 'events'
@@ -35,6 +36,7 @@ def _getMaxEventId(query):
     return max(int(event.get_id()) for event in events)
 
 
+@is_action()
 def searchForRecentEvent(positive, win_start_query, query, expected_count=1):
     """
     Checks the count of events specified by query, sentineled by win_start_query.
@@ -71,6 +73,7 @@ def searchForRecentEvent(positive, win_start_query, query, expected_count=1):
     return positive == status
 
 
+@is_action()
 def waitForEvent(query, start_id=None, win_start_query=None,
     timeout=DEF_TIMEOUT, sleep=DEF_SLEEP):
     '''

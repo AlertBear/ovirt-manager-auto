@@ -20,6 +20,7 @@
 from art.core_api.apis_utils import getDS
 from art.rhevm_api.utils.test_utils import get_api, split
 from art.core_api.validator import compareElements, compareCollectionSize
+from art.core_api import is_action
 
 ELEMENT = 'user'
 COLLECTION = 'users'
@@ -37,6 +38,7 @@ Roles = getDS('Roles')
 Role = getDS('Role')
 Tag = getDS('Tag')
 
+@is_action()
 def addUser(positive, **kwargs):
     '''
     Description: create new user
@@ -65,6 +67,7 @@ def addUser(positive, **kwargs):
     return status
 
 
+@is_action()
 def addRoleToUser(positive, user, role):
     '''
     Description: add role to user
@@ -80,6 +83,7 @@ def addRoleToUser(positive, user, role):
     return status
 
 
+@is_action()
 def removeUser(positive, user):
     '''
     Description: remove existed user
@@ -91,6 +95,7 @@ def removeUser(positive, user):
     return util.delete(userObj, positive)
 
 
+@is_action()
 def addTagToUser(positive, user, tag):
     '''
     Description: add tag to a user
@@ -108,6 +113,7 @@ def addTagToUser(positive, user, tag):
     return status
 
 
+@is_action('verifyUser')
 def verifyADUserProperties(positive, domain, user, expected_username=None,
                            expected_department=None):
     '''
@@ -128,6 +134,7 @@ def verifyADUserProperties(positive, domain, user, expected_username=None,
     return compareElements(userExpected, query_user, util.logger, ELEMENT)
 
 
+@is_action()
 def searchForUserInAD(positive, query_key, query_val, key_name, domain):
     '''
     Description: search for users by desired property in active directory
@@ -157,6 +164,7 @@ def searchForUserInAD(positive, query_key, query_val, key_name, domain):
     return compareCollectionSize(query_users, len(matches), util.logger)
 
 
+@is_action()
 def groupExists(positive, group_name):
     '''
     Description: checks whether groups exists or not
@@ -169,6 +177,7 @@ def groupExists(positive, group_name):
     return True
 
 
+@is_action()
 def addGroup(positive, group_name):
     '''
     Description: create new domain group
@@ -182,6 +191,7 @@ def addGroup(positive, group_name):
     return status
 
 
+@is_action()
 def deleteGroup(positive, group_name):
     '''
     Description: Delete group with the given name

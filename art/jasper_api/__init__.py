@@ -1,28 +1,9 @@
 
-ACTIONS = {
-        'reportActiveVmsByOs': 'art.jasper_api.tests_lib.reports.reportActiveVmsByOs',
-        'reportClusterCapacityVsUsage': 'art.jasper_api.tests_lib.reports.reportClusterCapacityVsUsage',
-        'reportHostOsBreakDown': 'art.jasper_api.tests_lib.reports.reportHostOsBreakDown',
-        'reportSummaryHostUsageResources': 'art.jasper_api.tests_lib.reports.reportSummaryHostUsageResources',
-        'reportHostsInventory': 'art.jasper_api.tests_lib.reports.reportHostsInventory',
-        'reportStorageDomain': 'art.jasper_api.tests_lib.reports.reportStorageDomain',
-        'reportVMInventory': 'art.jasper_api.tests_lib.reports.reportVMInventory',
-        'reportClusterQualityOfServiceHosts': 'art.jasper_api.tests_lib.reports.reportClusterQualityOfServiceHosts',
-        'reportClusterUptime': 'art.jasper_api.tests_lib.reports.reportClusterUptime',
-        'reportSingleHostUptime': 'art.jasper_api.tests_lib.reports.reportSingleHostUptime',
-        'reportTop10DowntimeHosts': 'art.jasper_api.tests_lib.reports.reportTop10DowntimeHosts',
-        'reportClusterQualityOfServiceVms': 'art.jasper_api.tests_lib.reports.reportClusterQualityOfServiceVms',
-        'reportVirtualServersUptime': 'art.jasper_api.tests_lib.reports.reportVirtualServersUptime',
-        'report5leastUtilizedHosts': 'art.jasper_api.tests_lib.reports.report5leastUtilizedHosts',
-        'report5mostUtilizedHosts': 'art.jasper_api.tests_lib.reports.report5mostUtilizedHosts',
-        'reportMultipleHostsResourceUsage': 'art.jasper_api.tests_lib.reports.reportMultipleHostsResourceUsage',
-        'reportSingleHostResources': 'art.jasper_api.tests_lib.reports.reportSingleHostResources',
-        'reportSingleHostResourceUsageDayOfWeek': 'art.jasper_api.tests_lib.reports.reportSingleHostResourceUsageDayOfWeek',
-        'reportSingleHostResourceUsageHourOfDay': 'art.jasper_api.tests_lib.reports.reportSingleHostResourceUsageHourOfDay',
-        'report5leastUtilizedVMs': 'art.jasper_api.tests_lib.reports.report5leastUtilizedVMs',
-        'report5mostUtilizedVMs': 'art.jasper_api.tests_lib.reports.report5mostUtilizedVMs',
-        'reportMultipleVMsResourceUsage': 'art.jasper_api.tests_lib.reports.reportMultipleVMsResourceUsage',
-        'reportSingleVMResourceUsageDayOfWeek': 'art.jasper_api.tests_lib.reports.reportSingleVMResourceUsageDayOfWeek',
-        'reportSingleVMResourceUsageHourOfDay': 'art.jasper_api.tests_lib.reports.reportSingleVMResourceUsageHourOfDay',
-        'reportSingleVMResources': 'art.jasper_api.tests_lib.reports.reportSingleVMResources',
-}
+from art.core_api import ActionSet
+
+class JasperActionSet(ActionSet):
+    MODULES = [
+            'art.jasper_api.tests_lib.reports',
+            ]
+
+

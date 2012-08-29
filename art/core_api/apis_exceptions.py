@@ -58,3 +58,8 @@ class APICommandError(Exception):
     def __str__(self):
         return "Error while running command '{0}': {1}".format(self.cmd,
                                                                self.error)
+
+class TestCaseError(APIException):
+    """
+    Raised when something goes wrong and test can not be completed.
+    """
