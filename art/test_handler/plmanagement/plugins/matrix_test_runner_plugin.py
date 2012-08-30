@@ -282,8 +282,8 @@ class TestComposer(object):
         regxs = {
                 'if': re.compile('(?P<not>not +)?if[(](?P<condition>.+)[)]', re.I),
                 'ifaction': re.compile('(?P<not>not +)?ifaction[(](?P<condition>.+)[)]', re.I),
-                'loop': re.compile('loop[(](?P<range>.+)[)]', re.I),
-                'fork': re.compile('forkfor[(](?P<range>.+)[)]', re.I),
+                'loop': re.compile('loop(_(?P<var>[a-z0-9_]+))?[(](?P<range>.+)[)]', re.I),
+                'fork': re.compile('forkfor(_(?P<var>[a-z0-9_]+))?[(](?P<range>.+)[)]', re.I),
                 }
         matches = {}
         for elm in run.split(';'):
@@ -313,6 +313,12 @@ class TestComposer(object):
             run_attr['ifaction'] = ifact
 
         def resolve_loop(stm):
+            loop = {}
+            if stm['var'] is None:
+                loop['var'] = _LOOP_INDEX
+            else:
+                loop['var'] = '#' + stm['var']
+
             m = re.match('((?P<s>[0-9]+) *- *)?(?P<e>[0-9]+)', stm['range'])
             if m:
                 try:
@@ -320,7 +326,8 @@ class TestComposer(object):
                     if m.group('s') is not None:
                         s = int(m.group('s'))
                     e = int(m.group('e'))
-                    return 'xrange(%s, %s)' % (s, e)
+                    loop['attrs'] = 'xrange(%s, %s)' % (s, e)
+                    return loop
                 except TypeError:
                     raise errors.WrongIterableParams(stm['range'])
 
@@ -332,7 +339,8 @@ class TestComposer(object):
                 attrs.append(m.group('holder'))
             if not attrs:
                 raise errors.WrongIterableParams(stm['range'])
-            return attrs
+            loop['attrs'] = attrs
+            return loop
 
         if 'loop' in matches:
             run_attr['loop'] = resolve_loop(matches['loop'])
@@ -578,8 +586,9 @@ class MatrixTestGroup(TestGroup):
 class MatrixLoopElm(MatrixTestGroup):
     def __init__(self, loop, test_elm):
         super(MatrixLoopElm, self).__init__(test_elm.tc, test_elm, [])
-        self.loop = loop
+        self.loop = loop['attrs']
         self.elm = test_elm
+        self.var = loop['var']
         #self.local_scope = copy(getattr(test_elm, 'local_scope', {}))
         #if self.local_scope is None:
         #    self.local_scope = {}
@@ -598,7 +607,7 @@ class MatrixLoopElm(MatrixTestGroup):
                 elm.local_scope = copy(self.local_scope)
                 elm.loop_index = loop_id
                 # expose vars to local_scope
-                elm.local_scope[_LOOP_INDEX] = str(loop_id)
+                elm.local_scope[self.var] = str(loop_id)
                 for key, val in vals.items():
                     elm.local_scope["{"+key+"}"] = val
                 yield elm
@@ -609,7 +618,7 @@ class MatrixLoopElm(MatrixTestGroup):
                 elm.local_scope = copy(self.local_scope)
                 elm.loop_index = ind
                 # expose loop_index to local_scope
-                elm.local_scope[_LOOP_INDEX] = str(ind)
+                elm.local_scope[self.var] = str(ind)
                 yield elm
 
 
@@ -644,7 +653,6 @@ class MatrixBasedTestComposer(Component):
     implements(ITestParser, IConfigurable, IResultExtension, ITestCaseHandler, IConfigValidation)
     parsers = ExtensionPoint(IMatrixBasedParser)
     name = 'Matrix Based Test Composer'
-    enabled = True
 
     def __init__(self):
         self.parser = None
@@ -744,6 +752,5 @@ class MatrixBasedTestComposer(Component):
 
     @classmethod
     def is_enabled(cls, a, b):
-        #return cls.enabled
         return True
 
