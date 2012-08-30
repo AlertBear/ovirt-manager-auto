@@ -28,7 +28,7 @@ try:
     logger = logging.getLogger(__name__)
     logger.info("Log file name: %s" % opts['log'])
     config = readTestRunOpts(opts['conf'], redefs)
-    if opts['debug']:
+    if config['RUN']['debug']:
         logging.getLogger().setLevel(logging.DEBUG)
     test_iden = config['RUN']['tests_file']
     suitable_parser = None
