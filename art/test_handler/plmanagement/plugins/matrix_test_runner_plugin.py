@@ -212,6 +212,7 @@ class TestComposer(object):
             try:
                 place_holder_val = self.c[place_holder.strip("{}")]
             except KeyError:
+                place_holder_val = place_holder
                 logger.warn("Parameter %s doesn't exist." % (place_holder))
                 #raise # it must be
 
@@ -722,6 +723,12 @@ class MatrixBasedTestComposer(Component):
                 (TEST_REPORT, "Report test", None)
         TestResult.ATTRIBUTES[TEST_EXP_EVENTS] = \
                 (TEST_EXP_EVENTS, "Number of expected events", None)
+
+        self.__register_objects()
+
+    def __register_objects(self):
+        from art.test_handler import tools
+        setattr(tools, 'TestException', TestException)
 
     @classmethod
     def add_options(cls, parser):
