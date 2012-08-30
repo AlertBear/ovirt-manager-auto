@@ -13,7 +13,7 @@
 <test_case>
   <test_name>Add all used networks to default datacenter</test_name>
   <test_action>addNetwork</test_action>
-  <parameters>name='{networks}',data_center='Default''</parameters>
+  <parameters>name='{networks}',data_center='Default'</parameters>
   <positive>TRUE</positive>
   <run>loop({networks})</run>
   <fetch_output/>
@@ -542,7 +542,7 @@
 <test_case>
    <test_name>Add all used networks to default datacenter</test_name>
    <test_action>addNetwork</test_action>
-   <parameters>name='{networks}',data_center='Default''</parameters>
+   <parameters>name='{networks}',data_center='Default'</parameters>
    <positive>TRUE</positive>
    <run>loop({networks})</run>
    <fetch_output/>
