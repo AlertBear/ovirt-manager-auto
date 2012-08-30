@@ -1,5 +1,4 @@
 <input xmlns:xi="http://www.w3.org/2001/XInclude">
-<!-- <xi:include href='network/testme.xml'/>  -->
 <test_case>
   <test_name>START_GROUP:PrepareSetup</test_name>
   <test_action/>
@@ -129,8 +128,7 @@
    <test_action/>
    <parameters>n/a1</parameters>
    <positive>NONE</positive>
-   <!-- <run>if(re.search('topology', '[run_topologies]'))</run> -->
-   <run>no</run>
+   <run>if(re.search('topology', '[run_topologies]'))</run>
    <fetch_output/>
    <report/>
    <vital/>
@@ -383,6 +381,16 @@
 <xi:include href="network/Topology_A.xml" />
 <!-- ======================================================================================================== -->
 <xi:include href="network/Topology_B.xml" />
+<!-- ======================================================================================================== -->
+<xi:include href="network/Topology_C.xml" />
+<!-- ======================================================================================================== -->
+<xi:include href="network/Topology_D.xml" />
+<!-- ======================================================================================================== -->
+<xi:include href="network/Topology_E.xml" />
+<!-- ======================================================================================================== -->
+<xi:include href="network/Topology_F.xml" />
+<!-- ======================================================================================================== -->
+<xi:include href="network/Topology_G.xml" />
 <!-- ======================================================================================================== -->
 <xi:include href="network/Cleanup.xml" />
 <!-- ======================================================================================================== -->
