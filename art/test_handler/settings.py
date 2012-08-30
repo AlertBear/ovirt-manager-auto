@@ -24,6 +24,7 @@ and preparing the environment for the tests.
 
 import argparse
 import socket
+import sys
 import os
 import re
 from time import strftime
@@ -87,8 +88,8 @@ def populateOptsFromArgv(argv):
                                 help='path to the config file',
                                 dest='conf')
     parser.add_argument('--SpecFile', '-spec',
-                                default=os.sep.join([opts['art_base_path'],
-                                                     'conf/specs/main.spec']),
+                                default=os.sep.join([sys.path[0],
+                                                  'art/conf/specs/main.spec']),
                                 help='path to the main conf spec file',
                                 dest='confSpec')
     parser.add_argument('--standalone', '-standalone', action='store_true',
@@ -160,8 +161,7 @@ def readTestRunOpts(path, redefs):
     copyfile(path, confFileCopyName)
 
     ParamsValidator(confFile=confFileCopyName,
-                        confSpecFile=opts['confSpec'],
-                        basePath=opts['art_base_path'])
+                        confSpecFile=opts['confSpec'])
 
     config = ConfigObj(confFileCopyName)
     rewriteConfig(config, redefs)
