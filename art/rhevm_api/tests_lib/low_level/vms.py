@@ -2081,3 +2081,22 @@ def validateVmDisks(positive, vm, sparse, format):
     return positive
 
 
+def checkVmState(positive, vmName, state, host=None):
+    '''
+    This method verifies whether vm is in the specified state on the specified
+    host
+    Parameters:
+       * vmName - name of the vm
+       * host - name of the host
+       * state - expected state
+    Return - True if vm is in the specified state on the specified host
+             False otherwise
+    '''
+    vmObj = VM_API.find(vmName)
+    general_check =  True if vmObj.get_status().get_state() == state else False
+    if host:
+        hostObj = HOST_API.find(host)
+        return vmObj.host.id == hostObj.id and general_check
+    else:
+        return general_check
+
