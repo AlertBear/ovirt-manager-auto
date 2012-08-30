@@ -288,7 +288,7 @@
 <test_case>
    <test_name>Check time elapsed from previous PM operation</test_name>
    <test_action>waitForHostPmOperation</test_action>
-   <parameters>host='{vds[0]}''</parameters>
+   <parameters>host='{vds[0]}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
@@ -366,7 +366,7 @@
 <test_case>
    <test_name>Check time elapsed from previous PM operation</test_name>
    <test_action>waitForHostPmOperation</test_action>
-   <parameters>host='{vds[0]}''</parameters>
+   <parameters>host='{vds[0]}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
@@ -471,7 +471,7 @@
 <test_case>
    <test_name>Check time elapsed from previous PM operation</test_name>
    <test_action>waitForHostPmOperation</test_action>
-   <parameters>host='{vds[0]}''</parameters>
+   <parameters>host='{vds[0]}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
