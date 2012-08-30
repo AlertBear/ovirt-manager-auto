@@ -212,6 +212,7 @@ class TestComposer(object):
             try:
                 place_holder_val = self.c[place_holder.strip("{}")]
             except KeyError:
+                place_holder_val = place_holder
                 logger.warn("Parameter %s doesn't exist." % (place_holder))
                 #raise # it must be
 
