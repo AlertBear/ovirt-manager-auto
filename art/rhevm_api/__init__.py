@@ -272,8 +272,8 @@ ACTIONS = {
         'waitForHostNicState': 'art.rhevm_api.tests_lib.low_level.hosts.waitForHostNicState',
         'checkIfStorageDomainExist': 'art.rhevm_api.tests_lib.low_level.storagedomains.checkIfStorageDomainExist',
         'waitForOvirtAppearance': 'art.rhevm_api.tests_lib.low_level.hosts.waitForOvirtAppearance',
-        'runLoadOnGuest': 'art.rhevm_api.tests_lib.low_level.vms.runLoadOnGuest',
-        'runLoadOnGuests': 'art.rhevm_api.tests_lib.low_level.vms.runLoadOnGuests',
+        'runLoadOnGuest': 'art.rhevm_api.utils.guest.runLoadOnGuest',
+        'runLoadOnGuests': 'art.rhevm_api.utils.guest.runLoadOnGuests',
         'removeNonExistingVm': 'art.rhevm_api.tests_lib.low_level.general.removeNonExistingVm',
         'addVmPoolPermissionToUser': 'art.rhevm_api.tests_lib.low_level.mla.addVmPoolPermissionToUser',
         'fetchXPath': 'art.rhevm_api.utils.test_utils.fetchXPath',
@@ -361,7 +361,7 @@ ACTIONS = {
         'getSetupHostname': 'art.rhevm_api.utils.test_utils.getSetupHostname',
         'isNetworkRequired': 'art.rhevm_api.tests_lib.low_level.networks.isNetworkRequired',
         'isVMNetwork': 'art.rhevm_api.tests_lib.low_level.networks.isVMNetwork',
-        'waitForHostPmOperation': 'art.rhevm_api.tests_lib.hosts.waitForHostPmOperation',
+        'waitForHostPmOperation': 'art.rhevm_api.tests_lib.low_level.hosts.waitForHostPmOperation',
         'forgeHistoryData': 'art.rhevm_api.utils.db_utils.forgeHistoryData',
 }
 

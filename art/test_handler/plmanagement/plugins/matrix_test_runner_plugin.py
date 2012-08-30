@@ -442,6 +442,8 @@ class MatrixTestCase(TestCase):
         self.mod_name = self.mod_path.split('.')[-1].capitalize()
         exec("from %s import %s" % (self.mod_path, self.test_action))
 
+        self.__resolve_exceptions()
+
         cmd = "%s(%s)" % (self.test_action, self.parameters)
         res = None
 
@@ -463,6 +465,10 @@ class MatrixTestCase(TestCase):
         except Exception as ex:
             self.status = self.TEST_STATUS_ERROR
             logger.error("Test Case execution failed", exc_info=True)
+        else:
+            if self.expected_exc:
+                logger.error("Expected %s but it passed witout exception", self.expected_exc)
+                self.status = self.TEST_STATUS_FAILED
 
         if res is None:
             return
@@ -521,6 +527,19 @@ class MatrixTestCase(TestCase):
         if not elm.run:
             elm.run = {'run': 'True'}
         return elm
+
+    def __resolve_exceptions(self):
+        excepts = []
+        for ex in self.expected_exc:
+            if '.' in ex:
+                mod, ex = ex.rsplit('.', 1)
+                exec("from %s import %s" % (mod, ex))
+                excepts.append(eval(ex))
+            elif ex in EXCEPTIONS:
+                excepts.append(EXCEPTIONS[ex])
+            else:
+                excepts.append(eval(ex))
+        self.expected_exc = tuple(excepts)
 
     @classmethod
     def _create_elm(cls, elm, tc):
