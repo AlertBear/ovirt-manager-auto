@@ -569,6 +569,7 @@
           <xs:element ref="vm_device_types" minOccurs="0"/>
           <xs:element ref="permits" minOccurs="0"/>
           <xs:element ref="scheduling_policies" minOccurs="0"/>
+          <xs:element ref="usages" minOccurs="0"/>
 
           <!-- Gluster related -->
           <xs:element ref="gluster_volume_types" minOccurs="0"/>
@@ -608,8 +609,29 @@
 
   <xs:complexType name="Features">
     <xs:sequence>
-      <xs:element ref="transparent_hugepages" minOccurs="0"/>
+      <xs:element ref="feature" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
+  </xs:complexType>
+
+<xs:element name="feature" type="Feature"/>
+
+  <xs:complexType name="Feature">
+    <xs:complexContent>
+      <xs:extension base="BaseResource">
+        <xs:sequence>
+          <xs:element ref="transparent_hugepages" minOccurs="0"/>
+          <xs:element ref="gluster_volumes" minOccurs="0"/>
+          <xs:element ref="vm_device_types" minOccurs="0"/>
+          <xs:element ref="storage_types" minOccurs="0"/>
+          <xs:element ref="storage_domain" minOccurs="0"/>
+          <xs:element ref="nic" minOccurs="0"/>
+          <xs:element ref="api" minOccurs="0"/>
+          <xs:element ref="host" minOccurs="0"/>
+          <xs:element ref="url" minOccurs="0"/>
+          <xs:element ref="headers" minOccurs="0"/>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
   </xs:complexType>
 
   <xs:element name="fence_types" type="FenceTypes"/>
@@ -810,33 +832,46 @@
 
   <!-- Common to all resources -->
 
-  <xs:complexType name="BaseResource">
+  <xs:complexType name="ActionableResource">
     <xs:sequence>
-      <xs:element name="name" type="xs:string" minOccurs="0"/>
-      <xs:element name="description" type="xs:string" minOccurs="0"/>
       <xs:element name="actions" type="Actions" minOccurs="0"/>
-      <xs:element name="creation_status" type="Status" minOccurs="0"/>      
-      <!-- also rel="creation_status" link for monitoring async creation -->
-      <!-- further link relation types may be defined by specific resources -->
-      <xs:element ref="link" minOccurs="0" maxOccurs="unbounded">
-        <xs:annotation>
-          <xs:appinfo>
-            <jaxb:property name="Links"/>
-          </xs:appinfo>
-        </xs:annotation>
-      </xs:element>
     </xs:sequence>
-    <xs:attribute name="href" type="xs:string"/>
-    <xs:attribute name="id" type="xs:string"/>
+  </xs:complexType>
+
+  <xs:complexType name="BaseResource">
+    <xs:complexContent>
+      <xs:extension base="ActionableResource">
+        <xs:sequence>
+          <xs:element name="name" type="xs:string" minOccurs="0"/>
+          <xs:element name="description" type="xs:string" minOccurs="0"/>
+          <xs:element name="creation_status" type="Status" minOccurs="0"/>
+          <!-- also rel="creation_status" link for monitoring async creation -->
+          <!-- further link relation types may be defined by specific resources -->
+          <xs:element ref="link" minOccurs="0" maxOccurs="unbounded">
+            <xs:annotation>
+              <xs:appinfo>
+                <jaxb:property name="Links"/>
+              </xs:appinfo>
+            </xs:annotation>
+          </xs:element>
+        </xs:sequence>
+        <xs:attribute name="href" type="xs:string"/>
+        <xs:attribute name="id" type="xs:string"/>
+      </xs:extension>
+    </xs:complexContent>
   </xs:complexType>
 
   <xs:complexType name="BaseResources">
-    <xs:sequence>
-      <xs:element name="total" type="xs:unsignedInt" minOccurs="0"/>
-      <xs:element name="active" type="xs:unsignedInt" minOccurs="0"/>
-    </xs:sequence>
+     <xs:complexContent>
+      <xs:extension base="ActionableResource">
+        <xs:sequence>
+          <xs:element name="total" type="xs:unsignedInt" minOccurs="0"/>
+          <xs:element name="active" type="xs:unsignedInt" minOccurs="0"/>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
   </xs:complexType>
-  
+
   <xs:complexType name="Option">
     <xs:attribute name="name" type="xs:string"/>
     <xs:attribute name="value" type="xs:string"/>
@@ -2525,8 +2560,14 @@
       <xs:extension base="BaseResource">
         <xs:sequence>
           <xs:element name="value" type="xs:string" minOccurs="1" maxOccurs="1"/>
-          <xs:element name="mandatory" type="xs:boolean" minOccurs="0"/>
         </xs:sequence>
+       <xs:attribute name="required" type="xs:boolean">
+        <xs:annotation>
+          <xs:appinfo>
+            <jaxb:property generateIsSetMethod="false"/>
+          </xs:appinfo>
+        </xs:annotation>
+       </xs:attribute>    
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>
