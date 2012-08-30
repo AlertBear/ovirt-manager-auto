@@ -33,7 +33,7 @@ Requirements:
 
 
 ################################################################################
-Sanity (groups):
+Sanity:
 ################################################################################
 Sanity_30: will execute sanity test which validate RHEVM 3.0 features
 (note that sanity 3.0 should pass on rhevm 3.1 as well)

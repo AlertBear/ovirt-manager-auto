@@ -165,7 +165,7 @@
   <test_description>Cluster &lt;= 3.0</test_description>
 </test_case>
 <test_case>
-  <test_name>Add Bond0 sw2 to Host1 </test_name>
+  <test_name>Add Bond0 sw2 to Host1</test_name>
   <test_action>addBond</test_action>
   <parameters>host='{vds[0]}',name='{bond[0]}', slaves='[bond_nics]',network='{networks[1]}'</parameters>
   <positive>TRUE</positive>
@@ -517,7 +517,7 @@
   <test_description/>
 </test_case>
 <test_case>
-  <test_name>END_GROUP:NetworkSanityViaLegacy</test_name>
+  <test_name>END_GROUP:NetworkSanity30</test_name>
   <test_action/>
   <parameters/>
   <positive>NONE</positive>
@@ -529,7 +529,7 @@
 </test_case>
 <!-- ======================================================================================================== -->
 <test_case>
-   <test_name>START_GROUP:NetworkSanity31k</test_name>
+   <test_name>START_GROUP:NetworkSanity31</test_name>
    <test_action/>
    <parameters>n/a1</parameters>
    <positive>NONE</positive>
@@ -1156,7 +1156,7 @@
   <test_description/>
 </test_case>
 <test_case>
-   <test_name>END_GROUP:NetworkSanityViaSetupNetwork</test_name>
+   <test_name>END_GROUP:NetworkSanity31</test_name>
    <test_action/>
    <parameters/>
    <positive>NONE</positive>
