@@ -723,6 +723,12 @@ class MatrixBasedTestComposer(Component):
         TestResult.ATTRIBUTES[TEST_EXP_EVENTS] = \
                 (TEST_EXP_EVENTS, "Number of expected events", None)
 
+        self.__register_objects()
+
+    def __register_objects(self):
+        from art.test_handler import tools
+        setattr(tools, 'TestException', TestException)
+
     @classmethod
     def add_options(cls, parser):
         group = parser.add_argument_group(cls.name, description=cls.__doc__)

@@ -7,6 +7,7 @@ from art.test_handler.plmanagement.interfaces.application import ITestParser, IC
 from art.test_handler.plmanagement.interfaces.report_formatter import IResultExtension
 from art.test_handler.test_runner import TestCase, TestSuite, TestGroup, TestResult
 from art.test_handler.exceptions import SkipTest
+from functools import wraps
 try:
     from unittest import SkipTest as USkipTest
     from nose.suite import ContextSuite
@@ -19,6 +20,18 @@ except ImportError:
 RUN_SEC = 'RUN'
 TESTS_FILE = 'tests_file'
 
+BZ_ID = 'bz'
+
+def bz_decorator(*ids):
+    """
+    Bugzilla decorator
+    """
+    def decorator(func):
+        setattr(func, BZ_ID, ','.join([str(i) for i in ids]))
+        return func
+    return decorator
+
+
 class UTestCase(TestCase):
     def __init__(self, t):
         super(UTestCase, self).__init__()
@@ -26,7 +39,7 @@ class UTestCase(TestCase):
         self.t = t
         self.f = getattr(t.test, t.test._testMethodName)
         self.test_name = self.f.__doc__
-        self.bz = getattr(self.f.im_func, 'bz_ids', None)
+        self.bz = getattr(self.f.im_func, BZ_ID, None)
         # TODO: set another atts
 
     def __call__(self):
@@ -119,6 +132,11 @@ class UnittestLoader(Component):
                 ('mod_name', None, None)
         TestResult.ATTRIBUTES['test_action'] = \
                 ('test_action', None, None)
+        self.__register_functions()
+
+    def __register_functions(self):
+        from art.test_handler import tools
+        setattr(tools, 'bz', bz_decorator)
 
     @classmethod
     def add_options(cls, parser):
