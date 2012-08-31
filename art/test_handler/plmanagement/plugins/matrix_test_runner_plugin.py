@@ -399,7 +399,7 @@ class MatrixTestCase(TestCase):
             mod, func = tc.resolve_func_path(run['ifaction']['action'])
             exec("from {0} import {1}".format(mod, func))
             params = run['ifaction']['params']
-            not_ = run['ifaction']['run']
+            not_ = run['ifaction']['not']
             cmd += " and (%s %s(%s))" % (not_, func, params)
         if 'if' in run:
             cmd += " and %s" % run['if']
