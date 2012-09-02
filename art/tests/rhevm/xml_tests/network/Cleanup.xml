@@ -26,7 +26,6 @@
 	<test_action>deactivateStorageDomain</test_action>
 	<parameters>datacenter='{datacenter}',storagedomain='{shared_iso_domain_name}'</parameters>
 	<run>if(re.search('topology', '[run_topologies]'))</run>
-	<run>YES</run>
 	<fetch_output/>
 	<report>NO</report>
 	<vital>FALSE</vital>
