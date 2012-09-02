@@ -743,6 +743,9 @@ def _prepareHostNicObject(**kwargs):
     if 'boot_protocol'in kwargs:
         nic_obj.set_boot_protocol(kwargs.get('boot_protocol'))
 
+    if 'override_configuration' in kwargs:
+        nic_obj.set_override_configuration(kwargs.get('override_configuration'))
+
     address = kwargs.get('address')
     netmask = kwargs.get('netmask')
     gateway = kwargs.get('gateway')
@@ -1028,6 +1031,19 @@ def sendSNRequest(positive, host, nics=None, auto_nics=None, **kwargs):
         nics_obj.add_host_nic(getHostNic(host, nic))
 
     return HOST_NICS_API.syncAction(nics_obj, "setupnetworks", positive, **kwargs)
+
+
+def isSyncNetwork(host, nic):
+    '''
+    Description: Validating if Network sync.
+    Author: atal
+    Parameters:
+        * host - host name
+        * nic - nic name
+    Return: return True if network sync else False
+    '''
+    nic_obj = getHostNic(host, nic)
+    return nic_obj.get_custom_configuration()
 
 
 def searchForHost(positive, query_key, query_val, key_name=None, **kwargs):

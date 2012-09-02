@@ -363,5 +363,6 @@ ACTIONS = {
         'isVMNetwork': 'art.rhevm_api.tests_lib.low_level.networks.isVMNetwork',
         'waitForHostPmOperation': 'art.rhevm_api.tests_lib.low_level.hosts.waitForHostPmOperation',
         'forgeHistoryData': 'art.rhevm_api.utils.db_utils.forgeHistoryData',
+        'isSyncNetwork': 'art.rhevm_api.tests_lib.low_level.hosts.isSyncNetwork',
 }
 
