@@ -23,6 +23,7 @@ A module containing the functions for validation of configuration
 import os
 import subprocess
 import logging
+import sys
 from copy import copy
 from socket import getaddrinfo, gaierror
 from urlparse import urlsplit
@@ -37,6 +38,7 @@ VALIDATE = 'validate'
 PARAMETERS = 'PARAMETERS'
 TEST_CONF_SPEC = 'test_conf_specs'
 FINE_PRINT_HEADER = "#" * 80
+ART_DIR = 'art'
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +52,7 @@ class ValidationError(Exception):
 
 class ParamsValidator(object):
 
-    def __init__(self, confFile, confSpecFile, funcsDict=None, basePath=''):
+    def __init__(self, confFile, confSpecFile, funcsDict=None):
         self.valFuncsDict = {'domain_format': self.checkDomainFormat,
                             'path_exists': self.checkIfPathExists,
                             'is_alive': self.checkHostIsAlive,
@@ -62,7 +64,7 @@ class ParamsValidator(object):
         self._confSpecFile = confSpecFile
         self._extraParameters = None
         self._extra_values_keys = None
-        self._basePath = basePath
+        self._basePath = os.sep.join([sys.path[0], ART_DIR])
         #updating validation functions dictionary
         if funcsDict is not None:
                 self.valFuncsDict = funcsDict
