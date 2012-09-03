@@ -734,6 +734,11 @@ def _prepareHostNicObject(**kwargs):
     else:
         nic_obj = data_st.HostNIC()
 
+    if 'vlan' in kwargs:
+        nic_obj.set_vlan(data_st.VLAN(id=kwargs.get('vlan')))
+        name = '{0}.{1}'.format(kwargs.get('name'), kwargs.get('vlan'))
+        kwargs.update([('name', name)])
+
     if 'name' in kwargs:
         nic_obj.set_name(kwargs.get('name'))
 
@@ -805,6 +810,12 @@ def getHostNicsList(host):
 
     host_obj = HOST_API.find(host)
     return HOST_API.getElemFromLink(host_obj, 'nics', 'host_nic', get_href=False)
+
+
+def getHostNicsAction(host):
+
+    host_obj = HOST_API.find(host)
+    return HOST_API.getElemFromLink(host_obj, 'nics', 'actions', get_href=False)
 
 
 def hostNicsNetworksMapper(host):
@@ -1023,6 +1034,7 @@ def sendSNRequest(positive, host, nics=None, auto_nics=None, **kwargs):
     auto_nics = auto_nics or []
 
     nics_obj = data_st.HostNics()
+    nics_obj.set_actions(getHostNicsAction(host))
 
     for nic in nics:
         nics_obj.add_host_nic(nic)
@@ -1030,7 +1042,7 @@ def sendSNRequest(positive, host, nics=None, auto_nics=None, **kwargs):
     for nic in auto_nics:
         nics_obj.add_host_nic(getHostNic(host, nic))
 
-    return HOST_NICS_API.syncAction(nics_obj, "setupnetworks", positive, **kwargs)
+    return HOST_NICS_API.syncAction(nics_obj, "setupnetworks", positive, host_nics=nics_obj, **kwargs)
 
 
 def isSyncNetwork(host, nic):

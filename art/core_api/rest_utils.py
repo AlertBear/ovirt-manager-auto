@@ -22,6 +22,7 @@ from art.core_api.apis_exceptions import EntityNotFound
 from lxml import etree
 from art.core_api.apis_utils import APIUtil, XSD_PATH, parse
 import os
+import re
 
 DEF_TIMEOUT = 900 # default timeout
 DEF_SLEEP = 10 # default sleep
@@ -394,10 +395,9 @@ class RestUtil(APIUtil):
             results = filter(lambda x: x.get_rel()==action, actions.get_link())
             return results[0].get_href()
 
-        try:
-            actionHref = getActionHref(entity.actions, action)
-        except AttributeError:
-            actionHref = "{0}/{1}".format(entity.href, action)
+        actionHref = getActionHref(entity.actions, action)
+        if re.search('^/api/.*', actionHref) is None:
+            actionHref = '{0}{1}'.format('/api', actionHref)
 
         actionBody = validator.dump_entity(self.makeAction(async, 10, **params),
                                     'action')
