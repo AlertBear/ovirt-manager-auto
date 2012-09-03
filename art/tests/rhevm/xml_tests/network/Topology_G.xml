@@ -1,3 +1,4 @@
+<input>
 <test_case>
    <test_name>START_GROUP: Topology_G</test_name>
    <test_action/>
@@ -328,3 +329,4 @@
    <vital/>
    <test_description/>
 </test_case>
+</input>
