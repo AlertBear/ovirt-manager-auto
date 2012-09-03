@@ -176,7 +176,7 @@
 <test_case>
    <test_name>Add NIC to VM to allow boot</test_name>
    <test_action>addNic</test_action>
-   <parameters>vm='rest_vm_rhel', name='nic1'</parameters>
+   <parameters>vm='rest_vm_rhel', name='nic1', network='rhevm'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
@@ -239,14 +239,14 @@
 <test_case>
    <test_name>Add NIC to VM to allow boot</test_name>
    <test_action>addNic</test_action>
-   <parameters>vm='restvm_high', name='nic1'</parameters>
+   <parameters>vm='restvm_high', name='nic1', network='rhevm'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Add NIC to VM to allow boot</test_name>
    <test_action>addNic</test_action>
-   <parameters>vm='restvm', name='nic1'</parameters>
+   <parameters>vm='restvm', name='nic1', network='rhevm'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
