@@ -28,7 +28,7 @@ from copy import copy
 from socket import getaddrinfo, gaierror
 from urlparse import urlsplit
 from configobj import ConfigObj, flatten_errors, get_extra_values,\
-                      DuplicateError
+                      ConfigObjError
 from validate import Validator, ValidateError, VdtTypeError
 
 
@@ -138,9 +138,9 @@ class ParamsValidator(object):
     def _validateHelper(self, confSpecFile, funcsDict=None):
         try:
             self._config = ConfigObj(self._confFile, configspec=confSpecFile)
-        except DuplicateError, msg:
-            raise ValidationError("Parsing of %s failed with '%s' error" %\
-                                  (self._confFile, msg))
+        except ConfigObjError, msg:
+            raise ValidationError("Parsing of %s failed"\
+                                  " with error:\n'%s'" % (self._confFile, msg))
 
         # in case that customized funcsDict for this
         # function run should be used
