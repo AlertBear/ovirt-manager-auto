@@ -98,6 +98,15 @@
     <run>yes</run>
   </test_case>
   <test_case>
+    <id>bb2e9c40-f4f7-11e1-8dab-0024d7421ca4</id>
+    <test_name>Create data center with wrong storage type</test_name>
+    <test_action>addDataCenter</test_action>
+    <parameters>name='DefaultRest', storage_type='aaa', version='{compatibility_version}'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+    <test_description/>
+  </test_case>
+  <test_case>
     <id>d759d122-c695-11e1-a578-f0def10e0ce8</id>
     <test_name>Update data center name and description</test_name>
     <test_action>updateDataCenter</test_action>
@@ -140,6 +149,14 @@
     <test_name>Create cluster with name of existing one</test_name>
     <test_action>addCluster</test_action>
     <parameters>name='RestCluster1', cpu='{cpu_name}', data_center='DefaultRest'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>bb2ea51e-f4f7-11e1-8dab-0024d7421ca4</id>
+    <test_name>Create cluster with wrong cpu name</test_name>
+    <test_action>addCluster</test_action>
+    <parameters>name='RestCluster1', cpu='aaa', data_center='DefaultRest'</parameters>
     <positive>FALSE</positive>
     <run>yes</run>
   </test_case>
@@ -228,6 +245,14 @@
     <run>yes</run>
     <test_description>mem_overcommit</test_description>
     <conf>headers={'Correlation-Id': 310}</conf>
+  </test_case>
+  <test_case>
+    <id>bb2eb0b8-f4f7-11e1-8dab-0024d7421ca4</id>
+    <test_name>Create cluster with wrong scheduling policy</test_name>
+    <test_action>addCluster</test_action>
+    <parameters>name='RestCluster6', cpu='{cpu_name}', data_center='DefaultRest', version='{compatibility_version}', scheduling_policy='aaa', thrhld_low='20', thrhld_high='60', duration='180'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
   </test_case>
   <test_case>
     <id>d759f4a4-c695-11e1-a578-f0def10e0ce8</id>
@@ -414,10 +439,19 @@
   </test_case>
   <!-- /////////////////////// TEST SCENARIO //////////////////////////////// -->
   <test_case>
+    <id>bb2ec3e6-f4f7-11e1-8dab-0024d7421ca4</id>
     <test_name>Check product name</test_name>
     <test_action>checkProductName</test_action>
     <parameters>name='{product_name}'</parameters>
     <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>d75a179a-c695-11e1-a578-f0def10e0ce8</id>
+    <test_name>Create storage domain with wrong type</test_name>
+    <test_action>addStorageDomain</test_action>
+    <parameters>name='DataDomainRest', type='aaa', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
+    <positive>FALSE</positive>
     <run>yes</run>
   </test_case>
   <test_case>
@@ -455,6 +489,22 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 320}</conf>
+  </test_case>
+  <test_case>
+    <id>bb2ecb7a-f4f7-11e1-8dab-0024d7421ca4</id>
+    <test_name>Add Disk with wrong format</test_name>
+    <test_action>addDiskToVm</test_action>
+    <parameters>vm='restvm_templates', size=2147483648, storagedomain='DataDomainRestUpd', type='e{disk_type_system}', format='aaa', interface='e{interface_ide}'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>bb2ed246-f4f7-11e1-8dab-0024d7421ca4</id>
+    <test_name>Add Disk with wrong interface</test_name>
+    <test_action>addDiskToVm</test_action>
+    <parameters>vm='restvm_templates', size=2147483648, storagedomain='DataDomainRestUpd', type='e{disk_type_system}', format='e{format_cow}', interface='aaa'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
   </test_case>
   <test_case>
     <id>d75a1f42-c695-11e1-a578-f0def10e0ce8</id>
