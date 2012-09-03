@@ -22,6 +22,7 @@ REST = 'REST_CONNECTION'
 PARAMETERS = 'PARAMETERS'
 BZ_OPTION = 'BUGZILLA'
 ENGINE = 'engine'
+PRODUCT = 'product'
 
 DEFAULT_URL = 'https://bugzilla.redhat.com/xmlrpc.cgi'
 DEFAULT_USER = 'bugzilla-qe-tlv@redhat.com'
@@ -37,6 +38,9 @@ INFO_TAGS = ('version', 'build_id', 'bug_status', 'product', 'short_desc', \
 CLI = 'cli'
 SDK = 'sdk'
 REST = 'rest'
+
+RHEVM_PRODUCT = 'Red Hat Enterprise Virtualization Manager'
+OVIRT_PRODUCT = 'oVirt'
 
 
 def expect_list(bug, item_name, default=None):
@@ -138,6 +142,7 @@ class Bugzilla(Component):
 
         self.build_id = None  # where should I get it
         self.comp = conf[RUN][ENGINE].lower()
+        self.product = bz_cfg[PRODUCT]
 
     def is_state(self, bz_id, *states):
         """
@@ -220,6 +225,20 @@ class Bugzilla(Component):
     def __is_open(self, bug):
         return bug.bug_status not in self.const_list
 
+
+    def __is_related_product(self, bug):
+        product = getattr(bug, 'product', '')
+        # there could be bug which is not related to RHEVM or oVirt
+        if product in (RHEVM_PRODUCT, OVIRT_PRODUCT):
+            # now it is sure that bug is related directly to up/down stream
+            if product != self.product:
+                msg = "BZ<%s> is related to different product: '%s' != '%s'"
+                logger.warn(msg, bug.id, self.product, product)
+                return False
+        return True
+
+
+
     def _should_be_skipped(self, test):
         if not getattr(test, 'bz', False):
             return
@@ -228,6 +247,9 @@ class Bugzilla(Component):
                 bz = self.bz(bz_id)
             except Exception as ex:
                 logger.error("failed to get BZ<%s> info: %s", bz_id, ex)
+                continue
+
+            if not self.__is_related_product(bz):
                 continue
 
             if self.__is_open(bz) and self.__deal_with_comp_and_version(bz):
@@ -291,4 +313,6 @@ class Bugzilla(Component):
         section_spec['password'] = "string(default='%s')" % DEFAULT_PASSWD
         section_spec['enabled'] = 'boolean(default=%s)' % DEFAULT_STATE
         section_spec['url'] = "is_url_alive(default='%s')" % DEFAULT_URL
+        section_spec[PRODUCT] = "option('%s', '%s', default='%s')" % \
+                (RHEVM_PRODUCT, OVIRT_PRODUCT, RHEVM_PRODUCT)
         spec[BZ_OPTION] = section_spec
