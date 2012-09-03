@@ -2,6 +2,7 @@
 from art.test_handler.plmanagement import Component, implements, get_logger, PluginError
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
+from art.test_handler.plmanagement.interfaces.config_validator import IConfigValidation
 
 from utilities.machine import Machine, LINUX
 
@@ -22,7 +23,7 @@ class AutoHostNicsResolution(Component):
     """
     Plugin adjusts config section for host_nics attribute.
     """
-    implements(IConfigurable, IPackaging)
+    implements(IConfigurable, IPackaging, IConfigValidation)
     name = "Auto-host nics resolution"
 
     def configure(self, params, conf):
@@ -62,7 +63,7 @@ class AutoHostNicsResolution(Component):
 
     @classmethod
     def is_enabled(cls, params, conf):
-        en = conf.get(SECTION_NAME, {}).get('enabled', 'true').lower() == 'true'
+        en = conf.get(SECTION_NAME).as_bool('enabled')
         return params.host_nics_enabled or en
 
     @classmethod
@@ -76,4 +77,10 @@ class AutoHostNicsResolution(Component):
                 'nics names resolution on VDS machines.'
         params['requires'] = ['art-utilities']
         params['py_modules'] = ['art.test_handler.plmanagement.plugins.host_nic_resolution_plugin']
+
+
+    def config_spec(self, spec, val_funcs):
+        section_spec = spec.get(SECTION_NAME, {})
+        section_spec['enabled'] = 'boolean(default=false)'
+        spec[SECTION_NAME] = section_spec
 
