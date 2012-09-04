@@ -374,8 +374,9 @@ class StorageUtils:
         lunId, targetName = storageMngr.createLun(lunName, capacity)
 
         storageServer['is_specific'] = re.match('netapp|xtreamio', storageMngr.__class__.__name__, re.I)
-        isLinux = re.match('linux', storageMngr.__class__.__name__, re.I)
-        initiators = serversData.values() if not isLinux else serversData.keys()
+        # linux TGT requires host IP instead of iqn for mapping
+        isTGT = re.match('TGT', storageMngr.__class__.__name__, re.I)
+        initiators = serversData.values() if not isTGT else serversData.keys()
 
         for initiator in initiators:
             hostGroups = storageMngr.getInitiatorHostGroups(initiator)
