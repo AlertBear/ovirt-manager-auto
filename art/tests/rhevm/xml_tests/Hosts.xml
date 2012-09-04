@@ -329,9 +329,9 @@
 </test_case>
 <test_case>
    <test_name>Wait for host to be rebooted</test_name>
-   <test_action>waitForXPath</test_action>
-   <parameters>link='hosts', xpath='count(/hosts/host[name="{vds[0]}" and status/state="e{host_state_reboot}"])', timeout=300, sleep=10</parameters>
-   <positive>NONE</positive>
+   <test_action>waitForHostsStates</test_action>
+   <parameters>names='{vds[0]}', states='e{host_state_reboot}'</parameters>
+   <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
@@ -393,8 +393,8 @@
 </test_case>
 <test_case>
    <test_name>Wait for GuestInfo</test_name>
-   <test_action>waitForXPath</test_action>
-   <parameters>link='vms', xpath='0=count(/vms/vm[name="rest_vm_rhel" and not(./guest_info/ips/ip)])', timeout=1200, sleep=10</parameters>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='rest_vm_rhel', timeout=1200, sleep=10</parameters>
    <positive>NONE</positive>
    <run>YES</run>
  </test_case>
@@ -442,8 +442,8 @@
 </test_case>
 <test_case>
    <test_name>Wait for GuestInfo</test_name>
-   <test_action>waitForXPath</test_action>
-   <parameters>link='vms', xpath='0=count(/vms/vm[name="template_vm" and not(./guest_info/ips/ip)])', timeout=1200, sleep=10</parameters>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='template_vm', timeout=1200, sleep=10</parameters>
    <positive>NONE</positive>
    <run>YES</run>
  </test_case>
