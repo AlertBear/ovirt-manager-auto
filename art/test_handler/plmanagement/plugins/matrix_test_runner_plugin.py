@@ -484,7 +484,7 @@ class MatrixTestCase(TestCase):
 
     def __fetch_output(self, results):
         self.fetch_output = self.tc.resolve_place_holders(self.fetch_output, self.local_scope)
-        fetch_output = self.fetch_output.split('->')
+        fetch_output = self.fetch_output.strip().split('->')
         res = results.get(fetch_output[0], None)
         self.tc.f[fetch_output[1]] = res
         logger.info("Fetch output: %s->%s : %s", fetch_output[0], fetch_output[1], res)
