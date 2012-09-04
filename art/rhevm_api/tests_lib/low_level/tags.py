@@ -20,6 +20,7 @@
 from art.rhevm_api.utils.test_utils import get_api
 from art.core_api.apis_utils import getDS
 from art.rhevm_api.utils.xpath_utils import XPathMatch
+from art.core_api import is_action
 
 ELEMENT = 'tag'
 COLLECTION = 'tags'
@@ -28,7 +29,7 @@ util = get_api(ELEMENT, COLLECTION)
 Tag = getDS('Tag')
 TagParent = getDS('TagParent')
 
-xpathMatch = XPathMatch(util)
+xpathMatch = is_action('xpathTags')(XPathMatch(util).__call__)
 
 
 def _prepareTagObject(**kwargs):
@@ -48,6 +49,7 @@ def _prepareTagObject(**kwargs):
     return tag
 
 
+@is_action()
 def addTag(positive, **kwargs):
     '''
     Description: create new tag
@@ -65,6 +67,7 @@ def addTag(positive, **kwargs):
     return status
 
 
+@is_action()
 def updateTag(positive, tag, **kwargs):
     '''
     Description: update existed tag
@@ -83,6 +86,7 @@ def updateTag(positive, tag, **kwargs):
     return status
 
 
+@is_action()
 def removeTag(positive, tag):
     '''
     Description: remove existed tag

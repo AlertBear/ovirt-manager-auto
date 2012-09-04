@@ -44,6 +44,7 @@ from utilities.tools import updateGuestTools, isToolsInstalledOnGuest, \
     installToolsFromDir, verifyToolsFilesExist
 #from upgradeSetup.prepSetup import Rhevm
 from art.rhevm_api.utils.threads import CreateThread, ThreadSafeDict
+from art.core_api import is_action
 
 logger = logging.getLogger('test_utils')
 
@@ -84,6 +85,7 @@ def split(s):
     return s.replace(',', ' ').split()
 
 
+@is_action()
 def sleep(seconds):
     """
         Suspend execution for the given number of seconds.
@@ -169,6 +171,7 @@ def lookingForIpAdressByEntityName(entity, ipVar="ip", nameVar="vmName", expTime
     return wrapper
 
 
+@is_action('validateEntityStatus')
 def validateElementStatus(positive, element, collection, elementName,
                                         expectedStatus, dcName=None):
     '''
@@ -234,6 +237,7 @@ def validateElementStatus(positive, element, collection, elementName,
     return result
 
 
+@is_action('randomString')
 def randomStringGeneration(length):
     """
     Description: Generates random strings of required length
@@ -249,6 +253,7 @@ def randomStringGeneration(length):
     return True, randomStrings
 
 
+@is_action()
 def startVdsmd(vds, password):
     '''
     Start vdsmd on the given host
@@ -261,6 +266,7 @@ def startVdsmd(vds, password):
     return machine.startService('vdsmd')
 
 
+@is_action()
 def stopVdsmd(vds, password):
     '''
     Stop vdsmd on the given host
@@ -273,6 +279,7 @@ def stopVdsmd(vds, password):
     return machine.stopService('vdsmd')
 
 
+@is_action()
 def updateVmStatusInDatabase(vmName, status, vdc, vdc_pass,
         psql_username='postgres', psql_db='rhevm'):
     '''
@@ -299,6 +306,7 @@ def updateVmStatusInDatabase(vmName, status, vdc, vdc_pass,
     return machine.runCmd(cmd)
 
 
+@is_action()
 def setSELinuxEnforce(address, password, enforce):
     '''
     Disables SELinux on the machine
@@ -314,6 +322,7 @@ def setSELinuxEnforce(address, password, enforce):
     return machine.setSELinuxEnforce(enforce)
 
 
+@is_action()
 def installRhevm(host_fqdn, root_pass, mac_range, override_iptables='yes',
                  http_port='8080', https_port='8443', auth_pass='123456',
                  db_pass='123456', org_name='redhat', dc_type='NFS',
@@ -353,6 +362,7 @@ def installRhevm(host_fqdn, root_pass, mac_range, override_iptables='yes',
     return rhevm.install(set_params, addRemoteAD=False, **kwargs)
 
 
+@is_action()
 def removeRhevm(host_fqdn, root_pass):
     '''
     Remove RHEMVM wrapper
@@ -371,6 +381,7 @@ def removeRhevm(host_fqdn, root_pass):
     return rhevm.remove()
 
 
+@is_action()
 def upgradeRhevm(host_fqdn, root_pass, rollback=True):
     '''
     Upgrade RHEMVM wrapper
@@ -414,6 +425,7 @@ def runMultiThreadTaskOnVMs(task, vmNamesList, paramsList):
     return results
 
 
+@is_action()
 def yum(address, password, package, action):
     """
     Description: wraper for yum functionality
@@ -429,6 +441,7 @@ def yum(address, password, package, action):
 
 
 @lookingForIpAdressByEntityName("vms", "ip", "vmName")
+@is_action()
 def runMachineCommand(positive, ip=None, user=None, password=None, type='linux', cmd='', **kwargs):
     '''
     wrapper for runCmd
@@ -448,12 +461,14 @@ def runMachineCommand(positive, ip=None, user=None, password=None, type='linux',
     return False, {'out': None}
 
 
+@is_action()
 def cleanupData(path):
     if path and os.path.exists(path):
         shutil.rmtree(path, ignore_errors=True)
     return True
 
 @lookingForIpAdressByEntityName("vms", "ip", "vmName")
+@is_action()
 def copyDataToVm(ip, user, password, osType, src, dest):
     '''
     Copy dirs/files to VM
@@ -475,6 +490,7 @@ def copyDataToVm(ip, user, password, osType, src, dest):
     return False
 
 @lookingForIpAdressByEntityName("vms", "ip", "vmName")
+@is_action()
 def verifyDataOnVm(ip, user, password, osType, dest, destToCompare):
     '''
     Description: Verify dirs/files on VM
@@ -504,6 +520,7 @@ def verifyDataOnVm(ip, user, password, osType, dest, destToCompare):
     return False
 
 
+@is_action()
 def rhevmConfig(positive, setup, user, passwd, dbuser, dbpasswd, dbname, \
                 jbossRestart, **kwargs):
     """
@@ -519,11 +536,13 @@ def rhevmConfig(positive, setup, user, passwd, dbuser, dbpasswd, dbname, \
     return False
 
 
+@is_action()
 def isToolsOnGuest(positive, ip, user, password, packs, toolsVersion, attempts=1):
     '''Wrapper for isToolsInstalledOnGuest'''
     return isToolsInstalledOnGuest( ip, user, password, toolsVersion,  packs, attempts)
 
 
+@is_action()
 def removeTools(positive, ip, user, password,toolsVersion,packs='desktop', attempts=1):
     ''''Wrapper for removeToolsFromGuest'''
     try:
@@ -537,6 +556,7 @@ def removeTools(positive, ip, user, password,toolsVersion,packs='desktop', attem
     return  True,{'packagesFound' : 'NONE'}
 
 
+@is_action()
 def waitForReboot(positive, ip, user, password, attempts):
     '''
     'Wrapper for waitForGuestReboot
@@ -544,6 +564,7 @@ def waitForReboot(positive, ip, user, password, attempts):
     return waitForGuestReboot(ip, user, password, attempts)
 
 
+@is_action()
 def installAPT(positive, server, ip, user, password, toolsVersion, clusterVersion, wait=True, attempts=0):
     '''
     wrapper for installAutoUpgraderCD
@@ -551,6 +572,7 @@ def installAPT(positive, server, ip, user, password, toolsVersion, clusterVersio
     return installAutoUpgraderCD(getIpAddressByHostName(server), ip, user, password, toolsVersion, buildName=clusterVersion, wait=wait, attempts=attempts)
 
 
+@is_action()
 def installGuestToolsFromDir(positive, ip, user, password, build, onlyExtract=False):
     '''
     wrapper for installToolsFromDir
@@ -558,6 +580,7 @@ def installGuestToolsFromDir(positive, ip, user, password, build, onlyExtract=Fa
     return installToolsFromDir(ip, user, password, build, onlyExtract)
 
 
+@is_action()
 def verifyGuestToolsFilesExist(ip, packs='desktop'):
     '''
     wrapper for verifyToolsFilesExist
@@ -565,6 +588,7 @@ def verifyGuestToolsFilesExist(ip, packs='desktop'):
     return verifyToolsFilesExist(ip, packs=packs)
 
 
+@is_action()
 def prepareDataForVm(root_dir='/tmp', root_name_prefix='', dir_cnt=1, file_cnt=1):
     '''
     Create local fs tree (directories&files)
@@ -605,6 +629,7 @@ def restoringRandomState(seed=None):
             random.setstate(randState)
 
 
+@is_action()
 def waitUntilPingable(IPs, timeout=180):
     startTime = time.time()
     while True:
@@ -623,6 +648,7 @@ def waitUntilPingable(IPs, timeout=180):
 
 
 @lookingForIpAdressByEntityName("vms", "ip", "vmName")
+@is_action()
 def runBenchmarkOnVm(positive, ip, user, password, netPath, benchmark, type, timeoutMin):
     '''
     Execute Phoronix benchmark on VM
@@ -651,11 +677,13 @@ def runBenchmarkOnVm(positive, ip, user, password, netPath, benchmark, type, tim
         return False
 
 
+@is_action()
 def updateTools(positive, server, ip, toolsVersion, clusterVersion, attempts=1):
     '''Wrapper for updateGuestTools'''
     return updateGuestTools(getIpAddressByHostName(server), ip, toolsVersion, clusterVersion, attempts)
 
 
+@is_action()
 def rebootMachine(positive, ip, user, password, osType):
     '''
     Desciption: wrapper function reboot host.
@@ -673,6 +701,7 @@ def rebootMachine(positive, ip, user, password, osType):
         return False
 
 
+@is_action()
 def convertStrToList(positive, string):
     '''
     Desciption: utils to convert string to list that seprated by commas.
@@ -690,6 +719,7 @@ def convertStrToList(positive, string):
     return True, {'list' : string.split(',')}
 
 
+@is_action()
 def convertOsListToOsTypeDict(positive, osList):
     '''
     Desciption:associate osType to os name.
@@ -719,6 +749,7 @@ def convertOsListToOsTypeDict(positive, osList):
     return True, {'osTypeDict':osTypeDict}
 
 
+@is_action()
 def reportParallelVMsConnectivity(positive, timeOut, dictResult, osList, index):
     '''
     Description: Parameters report to Atom DB for ParallelVMsConnectivity:
@@ -736,6 +767,7 @@ def reportParallelVMsConnectivity(positive, timeOut, dictResult, osList, index):
     return reportDB(positive, status, 'totalInstallTime', dictResult[osList[index]], 'os', osList[index])
 
 
+@is_action()
 def reportParallelGuestTools(positive, resultsAfterInstall, resultsAfterUninstall, resultsAfterAPT, resultsOldTools, resultsAptUpgrade, resultsManualUpgrade, osList, index):
     '''
     Description: Parameters report to Atom DB for GuestTools test:
@@ -754,6 +786,7 @@ def reportParallelGuestTools(positive, resultsAfterInstall, resultsAfterUninstal
     return reportDB(positive, status, 'os', osList[index],'missingTools',resultsAfterInstall[index],'packageFoundAferUninstall',resultsAfterUninstall[index][1]['packagesFound'],'missingToolsAfterAPT',resultsAfterAPT[index],'missingOldTools',resultsOldTools[index],'missingToolsAfterAptUpgrade',resultsAptUpgrade[index],'missingToolsAfterManualUpgrade',resultsManualUpgrade[index])
 
 
+@is_action()
 def calculateElapsedTime(positive, state='start', measureUnit='sec',startTime=1):
     '''
     Description: function calculate elapsed time, need to call to func twice: start time and end time.
@@ -780,6 +813,7 @@ def calculateElapsedTime(positive, state='start', measureUnit='sec',startTime=1)
         return False, {'calculateTime' : -1}
 
 
+@is_action()
 def shutdownHost(positive, ip, user, password, osType):
     '''
     Desciption: wrapper function shutdown host.
@@ -797,6 +831,7 @@ def shutdownHost(positive, ip, user, password, osType):
         return False
 
 
+@is_action()
 def convertOsNameToOsTypeElement(positive, osName):
     '''
     function convert Os Name from ATOM to OS Type Element compatible with Rest-Api
@@ -815,6 +850,7 @@ def convertOsNameToOsTypeElement(positive, osName):
         return False, {'osTypeElement': None}
 
 
+@is_action()
 def cobblerAddNewSystem(cobblerAddress, cobblerUser, cobblerPasswd, mac, osName):
     '''Create new system with specific MAC address
        mac = MAC address of system (it will be name of system)
@@ -829,6 +865,7 @@ def cobblerAddNewSystem(cobblerAddress, cobblerUser, cobblerPasswd, mac, osName)
         return False
 
 
+@is_action()
 def cobblerRemoveSystem(cobblerAddress, cobblerUser, cobblerPasswd, mac):
     '''
     Function removes item acorging name
@@ -857,6 +894,7 @@ def cobblerSetLinuxHostName(cobblerAddress, cobblerUser, cobblerPasswd, name, ho
         return False
 
 
+@is_action()
 def getImageByOsType(positive, osType, slim = False):
     '''
     Function get osTypeElement and return image from action.conf file.
@@ -881,6 +919,7 @@ def getImageByOsType(positive, osType, slim = False):
         return True, {'osBoot' : supportedOs['cdrom_image'], 'floppy' : supportedOs['floppy_image']}
 
 
+@is_action()
 def getOsParamsByOsType(positive, osType):
     '''
     Function get osTypeElement and return os params from element.conf file.
@@ -901,6 +940,7 @@ def getOsParamsByOsType(positive, osType):
     return True, {'osName' : supportedOs['name'], 'osArch' : supportedOs['arch'], 'osRelease' : supportedOs['release'], 'type' : supportedOs['type']}
 
 
+@is_action()
 def toggleServiceOnHost(positive, host, user, password, service, action, force="false"):
     """
         Toggle service on host with specified action.
@@ -953,6 +993,7 @@ def isServiceRunning(positive, host, user, password, service):
     return result == positive
 
 
+@is_action()
 def reportDB(positive, *args):
     '''
     Description: Parameters report to Atom DB:
@@ -973,6 +1014,7 @@ def reportDB(positive, *args):
         return False, dict
 
 
+@is_action()
 def calculateTemplateGuid(positive, storageDomainType, os, architecture, templateType, osRelease = None, driverType = None):
     """Wrapper for CalculateTemplateUuid"""
     uuid = calculateTemplateUuid(storageDomainType, os, architecture, templateType, osRelease, driverType)
@@ -981,6 +1023,7 @@ def calculateTemplateGuid(positive, storageDomainType, os, architecture, templat
     return False, {'uuid' : None}
 
 
+@is_action()
 def convertMacToIpAddress(positive, mac, subnetClassB = '10.35', vlan=0):
     """Wrapper for convertMacToIp"""
     ip = convertMacToIp(mac, subnetClassB, vlan)
@@ -990,6 +1033,7 @@ def convertMacToIpAddress(positive, mac, subnetClassB = '10.35', vlan=0):
     return False, {'ip' : None}
 
 
+@is_action()
 def searchElement(positive, element, collection, keyName, searchValue):
     '''
     The function searchElement search specific element by key name and value.
@@ -1015,6 +1059,7 @@ def searchElement(positive, element, collection, keyName, searchValue):
     return False, None
 
 
+@is_action()
 def checkHostConnectivity(positive, ip, user, password,osType, attempt=1, interval=1, remoteAgent=None):
     '''wrapper function check if windows server up and running
        indication to server up and running if wmi query return SystemArchitecture and elapsed time'''
@@ -1033,6 +1078,7 @@ def checkHostConnectivity(positive, ip, user, password,osType, attempt=1, interv
         return False, {'elapsedTime' : -1}
 
 
+@is_action()
 def resetMapperEntityNamesToIpAddress(entity='.+', entityName='.+', expTime=None):
     """
     Description: Removes all/specific record (entityName -> ip-address) from cache
@@ -1054,6 +1100,7 @@ def resetMapperEntityNamesToIpAddress(entity='.+', entityName='.+', expTime=None
     return True
 
 
+@is_action()
 def removeFileOnHost(positive, ip, filename, user='root',
                      password='qum5net', osType='linux'):
     '''
@@ -1074,6 +1121,7 @@ def removeFileOnHost(positive, ip, filename, user='root',
     return machine.removeFile(filename)
 
 
+@is_action()
 def removeDirOnHost(positive, ip, dirname, user='root',
                      password='qum5net', osType='linux'):
     """
@@ -1184,6 +1232,7 @@ def getImageAndVolumeID(vds, vds_username, vds_password, spool_id, domain_id,
     return tuple(image_and_volume)
 
 
+@is_action()
 def setPersistentNetwork(host, password):
     '''
     Ensure that Network configurations are persistent
@@ -1232,6 +1281,7 @@ def setPersistentNetwork(host, password):
     return True
 
 
+@is_action()
 def getSetupHostname(vdc):
     """
     Description: Gets the hostname of setup based on vdc, if vdc is not

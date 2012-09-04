@@ -19,6 +19,7 @@ from art.core_api.apis_utils import getDS
 from art.core_api import validator
 from art.rhevm_api.utils.test_utils import get_api
 from art.rhevm_api.utils.xpath_utils import XPathMatch
+from art.core_api import is_action
 
 util = get_api('', '')
 vmUtil = get_api('vm', 'vms')
@@ -30,7 +31,7 @@ dcUtil = get_api('data_center', 'datacenters')
 permitUtil = get_api('permit', 'capabilities')
 versionCaps = permitUtil.get(absLink=False)
 
-xpathMatch = XPathMatch(util)
+xpathMatch = is_action('xpathGeneral')(XPathMatch(util).__call__)
 
 VM = getDS('VM')
 
@@ -48,6 +49,7 @@ def getSystemVersion():
     return system_major, system_minor
 
 
+@is_action()
 def checkSystemVersionTag(positive):
     '''
     Checks whether there are attributes named:
@@ -124,6 +126,7 @@ def convToInt(num, attr):
     return True
 
 
+@is_action()
 def checkSummary(positive, domain):
      '''
      Description: validate system summary statistics values
@@ -206,6 +209,7 @@ def checkSummary(positive, domain):
      return status
 
 
+@is_action()
 def removeNonExistingVm(positive, entity_id='non_existing_object_id'):
     '''
     Description: Tries to remove non-existing object
@@ -218,6 +222,7 @@ def removeNonExistingVm(positive, entity_id='non_existing_object_id'):
     return vmUtil.delete(vm, False)
 
 
+@is_action()
 def checkResponsesAreXsdValid():
     '''
     Checks for validations errors found out by restutils
@@ -240,6 +245,7 @@ def checkResponsesAreXsdValid():
     return ret
 
 
+@is_action()
 def getProductName():
     '''
     Get product name
@@ -253,6 +259,7 @@ def getProductName():
     return True, {'product_name': product_name}
 
 
+@is_action()
 def checkProductName(positive, name):
     '''
     Checks whether the product's name is the same as name parameter.

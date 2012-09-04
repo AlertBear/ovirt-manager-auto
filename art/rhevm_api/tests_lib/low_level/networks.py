@@ -20,6 +20,7 @@
 from art.core_api.apis_utils import data_st
 from art.rhevm_api.utils.test_utils import get_api
 from art.core_api.apis_exceptions import EntityNotFound
+from art.core_api import is_action
 
 ELEMENT = 'network'
 COLLECTION = 'networks'
@@ -74,6 +75,7 @@ def _prepareNetworkObject(**kwargs):
     return net
 
 
+@is_action()
 def addNetwork(positive, **kwargs):
     '''
     Description: add network to a data center
@@ -98,6 +100,7 @@ def addNetwork(positive, **kwargs):
     return status
 
 
+@is_action()
 def updateNetwork(positive, network, **kwargs):
     '''
     Description: update existing network
@@ -126,6 +129,7 @@ def updateNetwork(positive, network, **kwargs):
     return status
 
 
+@is_action()
 def removeNetwork(positive, network, data_center=None):
     '''
     Description: remove existing network
@@ -165,6 +169,7 @@ def findNetwork(network, data_center=None):
         return NET_API.find(network)
 
 
+@is_action()
 def removeMultiNetworks(positive, networks):
     '''
     Remove Multiple networks from cluster
@@ -233,6 +238,7 @@ def findNetworkByCluster(network, cluster):
     raise EntityNotFound('%s network does not exists!' % network)
 
 
+@is_action()
 def addNetworkToCluster(positive, network, cluster, **kwargs):
     '''
     Description: attach network to cluster
@@ -257,6 +263,7 @@ def addNetworkToCluster(positive, network, cluster, **kwargs):
     return status
 
 
+@is_action()
 def updateClusterNetwork(positive, cluster, network, **kwargs):
     '''
     Description: update network to cluster
@@ -279,6 +286,7 @@ def updateClusterNetwork(positive, cluster, network, **kwargs):
     return status
 
 
+@is_action()
 def removeNetworkFromCluster(positive, network, cluster):
     '''
     Description: detach network from cluster
@@ -294,6 +302,7 @@ def removeNetworkFromCluster(positive, network, cluster):
     return NET_API.delete(net_obj, positive)
 
 
+@is_action()
 def addMultiNetworksToCluster(positive, networks, cluster):
     '''
     Adding multiple networks to cluster
@@ -309,6 +318,7 @@ def addMultiNetworksToCluster(positive, networks, cluster):
     return True
 
 
+@is_action()
 def removeMultiNetworksFromCluster(positive, networks, cluster):
     '''
     Remove multiple networks to cluster
@@ -325,6 +335,7 @@ def removeMultiNetworksFromCluster(positive, networks, cluster):
 
 
 # FIXME: need to check if this function is being used else just remove.
+@is_action()
 def getNetworkConfig(positive, cluster, network, datacenter=None, tag=None):
     '''
      Validate Datacenter/Cluster network configurations/existence.
@@ -374,6 +385,7 @@ def getNetworkConfig(positive, cluster, network, datacenter=None, tag=None):
 
 # FIXME: method is using only for checking status. need to change to a more
 # simple method
+@is_action()
 def validateNetwork(positive, cluster, network, tag, val):
     status, output = getNetworkConfig(positive, cluster, network, tag=tag)
     if not status:
@@ -384,6 +396,7 @@ def validateNetwork(positive, cluster, network, tag, val):
 
 
 # FIXME: change to use conf file for vlan networks name
+@is_action()
 def addNetworksVlans(positive, prefix, vlans, data_center):
     '''
     Adding multiple networks with vlan according to the given prefix and range
@@ -403,6 +416,7 @@ def addNetworksVlans(positive, prefix, vlans, data_center):
     return True, {'nets': nics}
 
 
+@is_action()
 def isNetworkRequired(network, cluster):
     '''
     Description: Check if Network is required
@@ -417,6 +431,7 @@ def isNetworkRequired(network, cluster):
     return net_obj.get_required()
 
 
+@is_action()
 def isVMNetwork(network, cluster):
     '''
     Description: Check if Network is VM network

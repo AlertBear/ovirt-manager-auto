@@ -36,6 +36,7 @@ from utilities.machine import Machine
 from art.rhevm_api.utils.test_utils import searchForObj, getImageByOsType, \
     convertMacToIpAddress, checkHostConnectivity, updateVmStatusInDatabase
 from art.rhevm_api.utils.threads import runParallel
+from art.core_api import is_action
 
 GBYTE = 1024 * 1024 * 1024
 ELEMENTS = os.path.join(os.path.dirname(__file__), '../../../conf/elements.conf')
@@ -66,7 +67,7 @@ CDROM_API = get_api('cdrom', 'cdroms')
 NETWORK_API = get_api('network', 'networks')
 
 logger = logging.getLogger(__package__ + __name__)
-xpathMatch = XPathMatch(VM_API)
+xpathMatch = is_action('xpathVms')(XPathMatch(VM_API).__call__)
 
 
 class DiskNotFound(Exception):
@@ -183,6 +184,7 @@ def _createCustomPropertiesFromArg(prop_arg):
     return cps
 
 
+@is_action()
 def addVm(positive, **kwargs):
     '''
     Description: add new vm
@@ -225,6 +227,7 @@ def addVm(positive, **kwargs):
     return status
 
 
+@is_action()
 def updateVm(positive, vm, **kwargs):
     '''
     Description: update existed vm
@@ -263,6 +266,7 @@ def updateVm(positive, vm, **kwargs):
     return status
 
 
+@is_action()
 def removeVm(positive, vm, **kwargs):
     '''
     Description: remove vm
@@ -321,6 +325,7 @@ def removeVmAsynch(positive, tasksQ, resultsQ, stopVm=False):
         tasksQ.task_done()
 
 
+@is_action()
 def removeVms(positive, vms, stop='false'):
     '''
     Removes the VMs specified by `vms` commas separated list of VM names.
@@ -386,6 +391,7 @@ def waitForVmsGone(positive, vms, timeout=60, samplingPeriod=10):
     return not positive
 
 
+@is_action()
 def waitForVmsStates(positive, names, states='up', *args, **kwargs):
     '''
     Wait until all of the vms identified by names exist and have the desired
@@ -425,6 +431,7 @@ def changeVMStatus(positive, vm, action, expectedStatus, async='true'):
     return status
 
 
+@is_action()
 def startVm(positive, vm, wait_for_status=ENUMS['vm_state_powering_up']):
     '''
     Description: start vm
@@ -460,6 +467,7 @@ def startVm(positive, vm, wait_for_status=ENUMS['vm_state_powering_up']):
     return VM_API.waitForQuery(query, timeout=VM_ACTION_TIMEOUT, sleep=10)
 
 
+@is_action()
 def startVms(vms, wait_for_status=ENUMS['vm_state_powering_up']):
     '''
     Start several vms simultaneously. Only action response is checked, no
@@ -489,6 +497,7 @@ def startVms(vms, wait_for_status=ENUMS['vm_state_powering_up']):
     return status
 
 
+@is_action()
 def stopVm(positive, vm, async='false'):
     '''
     Description: stop vm
@@ -501,6 +510,7 @@ def stopVm(positive, vm, async='false'):
     return changeVMStatus(positive, vm, 'stop', 'DOWN', async)
 
 
+@is_action()
 def stopVms(vms, wait='true'):
     '''
     Stop vms.
@@ -536,6 +546,7 @@ def stopVms(vms, wait='true'):
     return all(resultsList)
 
 
+@is_action()
 def searchForVm(positive, query_key, query_val, key_name=None, **kwargs):
     '''
     Description: search for a data center by desired property
@@ -550,6 +561,7 @@ def searchForVm(positive, query_key, query_val, key_name=None, **kwargs):
     return searchForObj(VM_API, query_key, query_val, key_name, **kwargs)
 
 
+@is_action()
 def detachVm(positive, vm):
     '''
     Description: run detach vm action
@@ -613,6 +625,7 @@ def _getVmFirstDiskByName(vm, diskName, idx=0):
     return found[idx]
 
 
+@is_action('addDiskToVm')
 def addDisk(positive, vm, size, wait=True, storagedomain=None,
             timeout=VM_IMAGE_OPT_TIMEOUT, **kwargs):
     '''
@@ -661,6 +674,7 @@ def addDisk(positive, vm, size, wait=True, storagedomain=None,
     return status
 
 
+@is_action()
 def removeDisk(positive, vm, disk, wait=True):
     '''
     Description: remove disk from vm
@@ -691,6 +705,7 @@ def removeDisk(positive, vm, disk, wait=True):
     return not diskExist
 
 
+@is_action()
 def removeDisks(positive, vm, num_of_disks, wait=True):
     '''
     Description: remove certain number of disks from vm
@@ -712,6 +727,7 @@ def removeDisks(positive, vm, num_of_disks, wait=True):
     return rc
 
 
+@is_action()
 def waitForDisksStat(vm, stat='OK', timeout=VM_IMAGE_OPT_TIMEOUT):
     '''
     Wait for VM disks status
@@ -729,6 +745,7 @@ def waitForDisksStat(vm, stat='OK', timeout=VM_IMAGE_OPT_TIMEOUT):
     return status
 
 
+@is_action()
 def checkVmHasCdromAttached(positive, vmName):
     '''
     Check whether vm has cdrom attached
@@ -776,6 +793,7 @@ def _prepareNicObj(**kwargs):
     return nic_obj
 
 
+@is_action()
 def getVmNics(vm):
 
     vm_obj = VM_API.find(vm)
@@ -788,6 +806,7 @@ def getVmNic(vm, nic):
     return VM_API.getElemFromElemColl(vm_obj, nic, 'nics', 'nic')
 
 
+@is_action()
 def addNic(positive, vm, **kwargs):
     '''
     Description: add nic to vm
@@ -820,6 +839,7 @@ def addNic(positive, vm, **kwargs):
     return status
 
 
+@is_action()
 def isVmNicActive(vm, nic):
     '''
     Description: Check if VM NIC is active
@@ -834,6 +854,7 @@ def isVmNicActive(vm, nic):
     return nic_obj.get_active() == True
 
 
+@is_action()
 def addVmNics(positive, vm, namePrefix, networks):
     '''
     Adding multipe nics with different network each one
@@ -857,6 +878,7 @@ def addVmNics(positive, vm, namePrefix, networks):
     return True, {'vmNics': vm_nics}
 
 
+@is_action()
 def updateNic(positive, vm, nic, **kwargs):
     '''
     Description: update nic of vm
@@ -882,6 +904,7 @@ def updateNic(positive, vm, nic, **kwargs):
     return status
 
 
+@is_action()
 def removeNic(positive, vm, nic):
     '''
     Description: remove nic from vm
@@ -905,6 +928,7 @@ def removeNic(positive, vm, nic):
     return status
 
 
+@is_action()
 def hotPlugNic(positive, vm, nic):
     '''
     Description: implement hotPlug nic.
@@ -919,6 +943,7 @@ def hotPlugNic(positive, vm, nic):
     return NIC_API.syncAction(nic_obj, "activate", positive)
 
 
+@is_action()
 def hotUnplugNic(positive, vm, nic):
     '''
     Description: implement hotUnplug nic.
@@ -933,6 +958,7 @@ def hotUnplugNic(positive, vm, nic):
     return NIC_API.syncAction(nic_obj, "deactivate", positive)
 
 
+@is_action()
 def removeLockedVm(vm, vdc, vdc_pass, psql_username='postgres', psql_db='rhevm'):
     '''
     Remove locked vm with flag force=true
@@ -971,6 +997,7 @@ def _getVmSnapshot(vm, snap):
                         'snapshot', prop='description')
 
 
+@is_action()
 def addSnapshot(positive, vm, description, wait=True):
     '''
     Description: add snapshot to vm
@@ -999,6 +1026,7 @@ def addSnapshot(positive, vm, description, wait=True):
     return status and snapshotStatus
 
 
+@is_action()
 def restoreSnapshot(positive, vm, description):
     '''
     Description: restore vm snapshot
@@ -1020,6 +1048,7 @@ def restoreSnapshot(positive, vm, description):
     return status
 
 
+@is_action()
 def validateSnapshot(positive, vm, snapshot):
     '''
     Description: Validate snapshot if exist
@@ -1032,6 +1061,7 @@ def validateSnapshot(positive, vm, snapshot):
     return _getVmSnapshot(vm, snapshot) is not None
 
 
+@is_action()
 def removeSnapshot(positive, vm, description, timeout=VM_REMOVE_SNAPSHOT_TIMEOUT):
     '''
     Description: remove vm snapshot
@@ -1093,6 +1123,7 @@ def removeSnapshot(positive, vm, description, timeout=VM_REMOVE_SNAPSHOT_TIMEOUT
             return True
 
 
+@is_action()
 def runVmOnce(positive, vm, pause=None, display_type=None, stateless=None,
         cdrom_image=None, floppy_image=None, boot_dev=None, host=None,
         domainName=None, user_name=None, password=None):
@@ -1186,6 +1217,7 @@ def runVmOnce(positive, vm, pause=None, display_type=None, stateless=None,
     return status
 
 
+@is_action()
 def suspendVm(positive, vm, wait=True):
     '''
     Suspend VM.
@@ -1214,6 +1246,7 @@ def suspendVm(positive, vm, wait=True):
         return VM_API.waitForElemStatus(vmObj, 'suspended', VM_ACTION_TIMEOUT)
 
 
+@is_action()
 def suspendVms(vms):
     '''
     Suspend several vms simultaneously. Only action response is checked, no
@@ -1243,6 +1276,7 @@ def suspendVms(vms):
     return status
 
 
+@is_action()
 def shutdownVm(positive, vm):
     '''
     Description: shutdown vm
@@ -1254,6 +1288,7 @@ def shutdownVm(positive, vm):
     return changeVMStatus(positive, vm, 'shutdown', 'down')
 
 
+@is_action()
 def migrateVm(positive, vm, host=None, wait=True):
     '''
     Migrate the VM.
@@ -1311,6 +1346,7 @@ def migrateVm(positive, vm, host=None, wait=True):
     return True
 
 
+@is_action()
 def ticketVm(positive, vm, expiry):
     '''
     Description: ticket vm
@@ -1328,6 +1364,7 @@ def ticketVm(positive, vm, expiry):
     return VM_API.syncAction(vmObj, "ticket", positive, ticket=ticket)
 
 
+@is_action()
 def addTagToVm(positive, vm, tag):
     '''
     Description: add tag to vm
@@ -1348,6 +1385,7 @@ def addTagToVm(positive, vm, tag):
     return status
 
 
+@is_action()
 def removeTagFromVm(positive, vm, tag):
     '''
     Description: remove tag from vm
@@ -1362,6 +1400,7 @@ def removeTagFromVm(positive, vm, tag):
     return VM_API.delete(tagObj, positive)
 
 
+@is_action()
 def exportVm(positive, vm, storagedomain, exclusive='false',
              discard_snapshots='false'):
     '''
@@ -1389,6 +1428,7 @@ def exportVm(positive, vm, storagedomain, exclusive='false',
     return status
 
 
+@is_action()
 def importVm(positive, vm, export_storagedomain, import_storagedomain,
              cluster, name=None):
     '''
@@ -1438,6 +1478,7 @@ def importVm(positive, vm, export_storagedomain, import_storagedomain,
     return status
 
 
+@is_action()
 def moveVm(positive, vm, storagedomain, wait=True):
     '''
     Description: move vm to another storage domain
@@ -1461,6 +1502,7 @@ def moveVm(positive, vm, storagedomain, wait=True):
     return status
 
 
+@is_action()
 def changeCDWhileRunning(vm_name, cdrom_image):
     '''
     Description: Change cdrom image while vm is running
@@ -1492,6 +1534,7 @@ def changeCDWhileRunning(vm_name, cdrom_image):
     return status
 
 
+@is_action()
 def cloneVmFromTemplate(positive, name, template, cluster, timeout=VM_IMAGE_OPT_TIMEOUT,
                         clone='true', vol_sparse=None, vol_format=None):
     '''
@@ -1539,6 +1582,7 @@ def cloneVmFromTemplate(positive, name, template, cluster, timeout=VM_IMAGE_OPT_
     return status
 
 
+@is_action()
 def checkVmStatistics(positive, vm):
     '''
     Description: check existence and format of vm statistics values
@@ -1578,6 +1622,7 @@ def checkVmStatistics(positive, vm):
     return status
 
 
+@is_action()
 def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicType=None,
         mac_address=None, storageDomainName=None, size=None, diskType=ENUMS['disk_type_data'],
         volumeType='true', volumeFormat=ENUMS['format_cow'],
@@ -1660,6 +1705,7 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
         return True
 
 
+@is_action()
 def waitForIP(vm, timeout=600, sleep=DEF_SLEEP):
     '''
     Description: Waits until agent starts reporting IP address
@@ -1681,6 +1727,7 @@ def waitForIP(vm, timeout=600, sleep=DEF_SLEEP):
 
 
 #TODO: replace with generic "async create requests" mechanism
+@is_action()
 def createVms(positive, amount=2, **kwargs):
     """
     Create and start (if specified) multiple VMs.
@@ -1703,6 +1750,7 @@ def createVms(positive, amount=2, **kwargs):
     return runParallel(targetsList, paramsList)
 
 
+@is_action()
 def getVmMacAddress(positive, vm, nic='nic1'):
     '''Function return mac address of vm with specific nic'''
     try:
@@ -1712,6 +1760,7 @@ def getVmMacAddress(positive, vm, nic='nic1'):
     return True, {'macAddress': str(nicObj.mac.address)}
 
 
+@is_action()
 def unattendedInstallation(positive, vm, cobblerAddress, cobblerUser,
                            cobblerPasswd, image, floppyImage=None,
                            nic='nic1', hostname=None):
@@ -1745,6 +1794,7 @@ def unattendedInstallation(positive, vm, cobblerAddress, cobblerUser,
                      boot_dev=boot_dev)
 
 
+@is_action('waitUntilVmQuery')
 def waitUntilQuery(vm, query, timeout=VM_IMAGE_OPT_TIMEOUT,
                    sleep=VM_SAMPLING_PERIOD):
     """
@@ -1762,6 +1812,7 @@ def waitUntilQuery(vm, query, timeout=VM_IMAGE_OPT_TIMEOUT,
     return VM_API.waitForQuery(query, timeout=timeout, sleep=sleep)
 
 
+@is_action()
 def activateVmDisk(positive, vm, diskAlias=None, diskId=None, wait=True):
     """
     Description: Activates vm's disk
@@ -1778,6 +1829,7 @@ def activateVmDisk(positive, vm, diskAlias=None, diskId=None, wait=True):
                              wait)
 
 
+@is_action()
 def deactivateVmDisk(positive, vm, diskAlias=None, diskId=None, wait=True):
     """
     Description: Deactivates vm's disk
@@ -1820,6 +1872,7 @@ def changeVmDiskState(positive, vm, action, diskAlias, diskId, wait):
     return status
 
 
+@is_action()
 def waitForVmDiskStatus(vm, active, diskAlias=None, diskId=None,
                         timeout=VM_ACTION_TIMEOUT, sleep=DEF_SLEEP):
     """
@@ -1854,6 +1907,7 @@ def waitForVmDiskStatus(vm, active, diskAlias=None, diskId=None,
     return cur_state == active
 
 
+@is_action()
 def checkVMConnectivity(positive, vm, osType, attempt=1, interval=1,
                         nic='nic1', user=None, password=None, ip=False):
     '''
@@ -1896,6 +1950,7 @@ def checkVMConnectivity(positive, vm, osType, attempt=1, interval=1,
     return status
 
 
+@is_action()
 def checkMultiVMsConnectivity(positive, vms, osType, attempt=1, interval=1,
                               nic='nic1', user=None, password=None):
     '''
@@ -1918,6 +1973,7 @@ def checkMultiVMsConnectivity(positive, vms, osType, attempt=1, interval=1,
     return status
 
 
+@is_action()
 def checkVmMultiNicsConnectivity(positive, vm, osType, nics, attempt=1,
                                  interval=1, user=None, password=None):
     '''
@@ -1942,6 +1998,7 @@ def checkVmMultiNicsConnectivity(positive, vm, osType, nics, attempt=1,
     return status
 
 
+@is_action()
 def addMultiNicsToVM(positive, vm, nicTypes, network, nicPrefix='vmNic'):
     '''
     Adding multiple Nics to vm with different randome type.
@@ -1959,6 +2016,7 @@ def addMultiNicsToVM(positive, vm, nicTypes, network, nicPrefix='vmNic'):
     return status
 
 
+@is_action()
 def getVmNicAttr(vm, nic, attr):
     '''
     get host's nic attribute value
@@ -1984,6 +2042,7 @@ def getVmNicAttr(vm, nic, attr):
     return True, {'attrValue': nic_obj}
 
 
+@is_action()
 def addIfcfgFile(positive, vm, user, password, nic='nic1', nic_name='eth1',
                  onboot='yes', bootProto='dhcp', nic_ip='',
                  nic_netmask='255.255.255.0', nic_gateway=''):
@@ -2016,6 +2075,7 @@ def addIfcfgFile(positive, vm, user, password, nic='nic1', nic_name='eth1',
     return status
 
 
+@is_action()
 def getVmHost(vm):
     '''
     Explore which host is running the VM
@@ -2032,6 +2092,7 @@ def getVmHost(vm):
     return True, {'vmHoster': host_obj.get_name()}
 
 
+@is_action()
 def getVmNicVlanId(vm, nic='nic1'):
     '''
     Get nic vlan id if configured
@@ -2055,6 +2116,7 @@ def getVmNicVlanId(vm, nic='nic1'):
     return False, {'vlan_id': 0}
 
 
+@is_action()
 def validateVmDisks(positive, vm, sparse, format):
     '''
     Description - validate vm disks characteristics (for identical disks)
@@ -2081,6 +2143,7 @@ def validateVmDisks(positive, vm, sparse, format):
     return positive
 
 
+@is_action()
 def checkVmState(positive, vmName, state, host=None):
     '''
     This method verifies whether vm is in the specified state on the specified

@@ -24,6 +24,7 @@ from art.core_api.apis_utils import data_st
 from art.rhevm_api.utils.test_utils import get_api, split
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from utilities.utils import readConfFile
+from art.core_api import is_action
 
 GBYTE = 1024**3
 ELEMENTS = os.path.join(os.path.dirname(__file__), '../../../conf/elements.conf')
@@ -45,7 +46,7 @@ TAG_API = get_api('tag', 'tags')
 CDROM_API = get_api('cdrom', 'cdroms')
 
 logger = logging.getLogger(__package__ + __name__)
-xpathMatch = XPathMatch(VM_API)
+xpathMatch = is_action('xpathMatch')(XPathMatch(VM_API).__call__)
 
 
 def getVmDisks(vmName, get_href=True):
@@ -122,6 +123,7 @@ def _prepareDiskObject(**kwargs):
     return disk
 
 
+@is_action()
 def addDisk(positive, **kwargs):
     """
     Description: Adds disk to setup
@@ -151,6 +153,7 @@ def addDisk(positive, **kwargs):
     return status, { 'diskId' : disk.get_id() }
 
 
+@is_action()
 def updateDisk(positive, diskName, **kwargs):
     """
     Description: Update already existing disk
@@ -178,6 +181,7 @@ def updateDisk(positive, diskName, **kwargs):
     return status
 
 
+@is_action()
 def deleteDisk(positive, diskName, async=True):
     """
     Description: Removes disk from system
@@ -194,6 +198,7 @@ def deleteDisk(positive, diskName, async=True):
     return status
 
 
+@is_action('attachDiskToVm')
 def attachDisk(positive, diskName, vmName, active=True):
     """
     Description: Attach disk to VM
@@ -213,6 +218,7 @@ def attachDisk(positive, diskName, vmName, active=True):
     return status
 
 
+@is_action('detachDiskFromVm')
 def detachDisk(positive, diskName, vmName, detach=True):
     """
     Description: Detach disk from VM
@@ -228,6 +234,7 @@ def detachDisk(positive, diskName, vmName, detach=True):
     return DISKS_API.delete(diskObj, positive, body=body, element_name='action')
 
 
+@is_action()
 def waitForDisksState(disksNames, status=ENUMS['disk_state_ok'], timeout=DEFAULT_DISK_TIMEOUT, sleep=10):
     """
     Description: Waits till all disks are in the given state
@@ -247,6 +254,7 @@ def waitForDisksState(disksNames, status=ENUMS['disk_state_ok'], timeout=DEFAULT
     return DISKS_API.waitForQuery(query, timeout=timeout, sleep=sleep)
 
 
+@is_action()
 def waitForDisksGone(positive, disksNames, timeout=DEFAULT_DISK_TIMEOUT,
                      sleep=10):
     """

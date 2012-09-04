@@ -26,9 +26,10 @@ from art.core_api.apis_utils import getDS
 from art.rhevm_api.utils.test_utils import get_api, split
 from art.core_api.validator import compareCollectionSize
 from art.core_api import validator
-from art.core_api.apis_exceptions import EntityNotFound, CannotRunTests
+from art.core_api.apis_exceptions import EntityNotFound, TestCaseError
 from utilities.machine import Machine
 from art.rhevm_api.tests_lib.low_level.hosts import deactivateHost, removeHost
+from art.core_api import is_action
 
 ELEMENT = 'gluster_volume'
 COLLECTION = 'glustervolumes'
@@ -129,6 +130,7 @@ def _prepareBricks(bricks):
     return volBricks
 
 
+@is_action()
 def addClusterVolume(positive, cluster, **kwargs):
     '''
     Description: Add new cluster volume
@@ -175,6 +177,7 @@ def getClusterVolume(cluster, volume):
     return util.find(volume, absLink=False, collection=clVolumes)
 
 
+@is_action()
 def removeClusterVolume(positive, cluster, volume):
     '''
     Description: Remove cluster volume
@@ -189,6 +192,7 @@ def removeClusterVolume(positive, cluster, volume):
     return util.delete(vol, positive)
 
 
+@is_action()
 def searchForClusterVolumes(positive, cluster, query_key, query_val, key_name):
     '''
     Description: search for a cluster volume by desired property
@@ -300,6 +304,7 @@ def runVolAction(positive, cluster, volume, action, wait_for_status, **opts):
             timeout=VOL_ACTION_TIMEOUT, sleep=10)
 
 
+@is_action()
 def startVolume(positive, cluster, volume):
     '''
     Description: start volume
@@ -313,6 +318,7 @@ def startVolume(positive, cluster, volume):
     return runVolAction(positive, cluster, volume, 'start', 'up')
 
 
+@is_action()
 def stopVolume(positive, cluster, volume):
     '''
     Description: stop volume
@@ -326,6 +332,7 @@ def stopVolume(positive, cluster, volume):
     return runVolAction(positive, cluster, volume, 'stop', 'down')
 
 
+@is_action()
 def rebalanceVolume(positive, cluster, volume):
     '''
     Description: rebalance volume
@@ -339,6 +346,7 @@ def rebalanceVolume(positive, cluster, volume):
     return runVolAction(positive, cluster, volume, 'rebalance', None)
 
 
+@is_action()
 def resetAllVolumeOptions(positive, cluster, volume):
     '''
     Description: start volume
@@ -352,6 +360,7 @@ def resetAllVolumeOptions(positive, cluster, volume):
     return runVolAction(positive, cluster, volume, 'resetAllOptions', None)
 
 
+@is_action()
 def setVolumeOption(positive, cluster, volume, opt_name, opt_value):
     '''
     Description: start volume
@@ -369,6 +378,7 @@ def setVolumeOption(positive, cluster, volume, opt_name, opt_value):
                                                         option=option)
 
 
+@is_action()
 def resetVolumeOption(positive, cluster, volume, opt_name):
     '''
     Description: start volume
@@ -385,6 +395,7 @@ def resetVolumeOption(positive, cluster, volume, opt_name):
                                                         option=option)
 
 
+@is_action()
 def addBrickToVolume(positive, cluster, volume, bricks):
     '''
     Description: Add brick to volume
@@ -451,6 +462,7 @@ def _getVolumeBricks(cluster, volume, bricks):
     return bricksObjs
 
 
+@is_action()
 def removeBrickFromVolume(positive, cluster, volume, bricks, force=True):
     '''
     Description: remove bricks from volume
@@ -496,6 +508,7 @@ def removeBrickFromVolume(positive, cluster, volume, bricks, force=True):
         return status
 
 
+@is_action()
 def checkVolumeParams(positive, cluster, volume, **kwargs):
     '''
     Description: Add brick to volume
@@ -527,6 +540,7 @@ def checkVolumeParams(positive, cluster, volume, **kwargs):
     return status == positive
 
 
+@is_action()
 def removeGlusterHost(positive, host):
     '''
     Description: removes host
@@ -546,6 +560,7 @@ def removeGlusterHost(positive, host):
     return True
 
 
+@is_action()
 def glusterVolumeMountDDTest(positive, volumeIP, volumeExportDir, host,
                 mountPoint, volumeType, user='root', password='qum5net',
                 osType='linux', ddParams='if=/dev/zero bs=1024 count=1024',
@@ -587,7 +602,7 @@ def glusterVolumeMountDDTest(positive, volumeIP, volumeExportDir, host,
             rc, out = machine.runCmd(cmd)
             if not rc:
                 util.logger.debug(out)
-                raise CannotRunTests("Command:\n%s\n failed to run on\
+                raise TestCaseError("Command:\n%s\n failed to run on\
  host: %s" % (' '.join(cmd), host))
             else:
                 util.logger.debug('Command: \'%s\' successfully done on'
@@ -595,7 +610,7 @@ def glusterVolumeMountDDTest(positive, volumeIP, volumeExportDir, host,
     finally:
         rc = machine.removeFile("%s/%s" % (mountPoint, fileName))
         if not rc:
-            raise CannotRunTests("Failed to remove %s/%s on host %s" %\
+            raise TestCaseError("Failed to remove %s/%s on host %s" %\
                               (mountPoint, fileName, host))
 
         umountCmd = ['umount', mountPoint]

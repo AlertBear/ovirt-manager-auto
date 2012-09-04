@@ -6,9 +6,11 @@ from utilities.utils import isValidIp
 from utilities.machine import Machine
 import time
 import logging
+from art.core_api import is_action
 
 logger = logging.getLogger('guest')
 
+@is_action()
 def runLoadOnGuests(positive, targetVMs, osType, username, password, loadType,
                    duration, port, load=None, allocationSize=None,
                    protocol=None, clientVMs=None, extra=None, groupAgent=None):
@@ -70,6 +72,7 @@ def runLoadOnGuests(positive, targetVMs, osType, username, password, loadType,
 
 
 @lookingForIpAdressByEntityName('vms', 'targetVM', 'targetVM')
+@is_action()
 def runLoadOnGuest(positive, targetVM, osType, username, password, loadType,
                    duration, port, load=None, allocationSize=None,
                    protocol=None, clientVMs=None, extra=None, stopLG=True):

@@ -37,6 +37,7 @@ from art.rhevm_api.utils.storage_api import getVmsInfo, getImagesList, getVolume
 from art.rhevm_api.utils.test_utils import validateElementStatus, get_api, searchForObj, getImageAndVolumeID
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from utilities.utils import getIpAddressByHostName, readConfFile
+from art.core_api import is_action
 
 ELEMENTS = os.path.join(os.path.dirname(__file__), '../../../conf/elements.conf')
 ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
@@ -57,7 +58,7 @@ vmUtil = get_api('vm', 'vms')
 clUtil = get_api('cluster', 'clusters')
 fileUtil = get_api('file', 'files')
 
-xpathMatch = XPathMatch(util)
+xpathMatch = is_action('xpathStoragedomains')(XPathMatch(util).__call__)
 
 
 def _prepareStorageDomainObject(positive, **kwargs):
@@ -126,6 +127,7 @@ def _prepareStorageDomainObject(positive, **kwargs):
     return sd
 
 
+@is_action()
 def addStorageDomain(positive, iscsi_storage_format=None, wait=True, **kwargs):
     '''
     Description: add new storage domain
@@ -157,6 +159,7 @@ def addStorageDomain(positive, iscsi_storage_format=None, wait=True, **kwargs):
     return status
 
 
+@is_action()
 def updateStorageDomain(positive, storagedomain, **kwargs):
     '''
     Description: update existed storage domain
@@ -175,6 +178,7 @@ def updateStorageDomain(positive, storagedomain, **kwargs):
     return status
 
 
+@is_action()
 def extendStorageDomain(positive, storagedomain, **kwargs):
     '''
     Description: extend existing iscsi/fcp storage domain
@@ -199,6 +203,7 @@ def extendStorageDomain(positive, storagedomain, **kwargs):
     return status
 
 
+@is_action()
 def searchForStorageDomain(positive, query_key, query_val, key_name, **kwargs):
     '''
     Description: search for storage domains by desired property
@@ -225,6 +230,7 @@ def getDCStorage(datacenter, storagedomain):
     return util.getElemFromElemColl(dcObj, storagedomain)
 
 
+@is_action()
 def attachStorageDomain(positive, datacenter, storagedomain, wait=True):
     '''
     Description: attach storage domain to data center
@@ -249,6 +255,7 @@ def attachStorageDomain(positive, datacenter, storagedomain, wait=True):
     return status
 
 
+@is_action()
 def detachStorageDomain(positive, datacenter, storagedomain):
     '''
     Description: detach storage domain from data center
@@ -263,6 +270,7 @@ def detachStorageDomain(positive, datacenter, storagedomain):
     return util.delete(storDomObj, positive)
 
 
+@is_action()
 def activateStorageDomain(positive, datacenter, storagedomain, wait=True):
     '''
     Description: activate storage domain
@@ -290,6 +298,7 @@ def activateStorageDomain(positive, datacenter, storagedomain, wait=True):
     return status
 
 
+@is_action()
 def deactivateStorageDomain(positive, datacenter, storagedomain, wait=True):
     '''
     Description: deactivate storage domain
@@ -312,6 +321,7 @@ def deactivateStorageDomain(positive, datacenter, storagedomain, wait=True):
     return status
 
 
+@is_action()
 def iscsiDiscover(positive, host, address):
     '''
     Description: run iscsi discovery
@@ -327,6 +337,7 @@ def iscsiDiscover(positive, host, address):
     return hostUtil.syncAction(hostObj, "iscsidiscover", positive, iscsi=iscsi)
 
 
+@is_action()
 def iscsiLogin(positive, host, address, target, username=None, password=None):
     '''
     Description: run iscsi login
@@ -345,6 +356,7 @@ def iscsiLogin(positive, host, address, target, username=None, password=None):
     return hostUtil.syncAction(hostObj, "iscsilogin", positive, iscsi=iscsi)
 
 
+@is_action()
 def teardownStorageDomain(positive, storagedomain, host):
     '''
     Description: tear down storage domain before removing
@@ -362,6 +374,7 @@ def teardownStorageDomain(positive, storagedomain, host):
     return util.syncAction(storDomObj.actions, "teardown", positive, host=sdHost)
 
 
+@is_action()
 def removeStorageDomain(positive, storagedomain, host, format='false'):
     '''
     Description: remove storage domain
@@ -390,6 +403,7 @@ def removeStorageDomain(positive, storagedomain, host, format='false'):
     return util.delete(storDomObj, positive, st)
 
 
+@is_action()
 def importStorageDomain(positive, type, storage_type, address, path, host):
     '''
     Description: import storage domain (similar to create function, but not providing name)
@@ -412,6 +426,7 @@ def importStorageDomain(positive, type, storage_type, address, path, host):
     return status
 
 
+@is_action()
 def removeStorageDomains(positive, storagedomains, host, format='true'):
     '''
     Description: remove storage domains
@@ -449,6 +464,7 @@ def removeStorageDomains(positive, storagedomains, host, format='true'):
     return status
 
 
+@is_action()
 def waitForStorageDomainStatus(positive, dataCenterName, storageDomainName,
                                expectedStatus, timeOut=900, sleepTime=10):
     '''
@@ -473,6 +489,7 @@ def waitForStorageDomainStatus(positive, dataCenterName, storageDomainName,
     return False
 
 
+@is_action()
 def isStorageDomainMaster(positive, dataCenterName, storageDomainName):
     '''
     The function isStorageDomainMaster checking if storage domain is a master
@@ -497,6 +514,7 @@ def isStorageDomainMaster(positive, dataCenterName, storageDomainName):
         return not isMaster
 
 
+@is_action()
 def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
                      storage_type, cluster, version, dataStorageDomains='', address='',
                      lun_address='', lun_target='', luns='', lun_port='',
@@ -640,6 +658,7 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
     return True
 
 
+@is_action()
 def cleanDataCenter(positive,datacenter,formatIsoStorage='false'):
     '''
     Description: Remove all elements in data center: dataCenter, storage domains, hosts & cluster.
@@ -775,6 +794,7 @@ def cleanDataCenter(positive,datacenter,formatIsoStorage='false'):
     return status
 
 
+@is_action()
 def execOnNonMasterDomains(positive, datacenter, operation, type):
     '''
     Description: Run operation on all storage domains that match type in datacenter.
@@ -818,6 +838,7 @@ def execOnNonMasterDomains(positive, datacenter, operation, type):
     return status
 
 
+@is_action()
 def findMasterStorageDomain(positive,datacenter):
     '''
     Description: find the master storage domain.
@@ -839,6 +860,7 @@ def findMasterStorageDomain(positive,datacenter):
     return False, {'masterDomain' : ' '}
 
 
+@is_action()
 def getStorageDomainFiles(positive, storagedomain, files_count):
     '''
      Description: fetch files in iso storage domain and compare to expected
@@ -854,6 +876,7 @@ def getStorageDomainFiles(positive, storagedomain, files_count):
     return compareCollectionSize(storFiles, files_count, util.logger)
 
 
+@is_action()
 def getStorageDomainFile(positive, storagedomain, file):
     '''
      Description: fetch file in iso storage domain by name
@@ -873,6 +896,7 @@ def getStorageDomainFile(positive, storagedomain, file):
         return not positive
 
 
+@is_action()
 def getTemplateImageId(positive, vdsName, username, passwd, dataCenter, storageDomain):
     '''
     Description: get template disk entrence, which is not exposed to REST.
@@ -928,6 +952,7 @@ def getTemplateImageId(positive, vdsName, username, passwd, dataCenter, storageD
     return False
 
 
+@is_action()
 def checkTemplateOnHost(positive, vdsName, username, passwd, dataCenter,
                         storageDomain, template, fake, noImages):
     """
@@ -995,6 +1020,7 @@ def checkTemplateOnHost(positive, vdsName, username, passwd, dataCenter,
     return True
 
 
+@is_action()
 def checkIfStorageDomainExist(positive, storagedomain):
     '''
     Description: Check if storagedomain exist.
@@ -1011,6 +1037,7 @@ def checkIfStorageDomainExist(positive, storagedomain):
     return (len(sdObj) == 1) == positive
 
 
+@is_action()
 def checkStorageDomainParameters(positive, storagedomain, **kwargs):
     """
     Description: Checks whether given xpath is True
@@ -1032,6 +1059,7 @@ def checkStorageDomainParameters(positive, storagedomain, **kwargs):
     return positive
 
 
+@is_action()
 def checkStorageFormatVersion(positive, storagedomain, version):
     """
     Description: Checks storage format version on given storage domain

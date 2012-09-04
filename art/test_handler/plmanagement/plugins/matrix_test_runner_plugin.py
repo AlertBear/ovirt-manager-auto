@@ -17,6 +17,7 @@ from art.test_handler.plmanagement import Interface
 from art.test_handler.test_runner import TestCase, TestGroup, TestSuite, TestResult
 from art.test_handler import exceptions as errors
 from art.core_api.apis_exceptions import EntityNotFound, EngineTypeError
+from art.core_api import ActionSetType
 from art.test_handler.settings import opts
 
 # TODO: solve <conf> element
@@ -162,16 +163,10 @@ class TestComposer(object):
 
     def __init__(self, test_file, config, elements=None, groups=None):
         self.tf = test_file
-        self.a = {}
+        #self.a = {}
         for module in config.get(MATRIX_TEST_RUNNER_SEC).as_list(TEST_MODULES):
-            mod = __import__(module, fromlist=[ACTIONS])
-            if not hasattr(mod, ACTIONS):
-                continue
-            #self.a.update(getattr(mod, ACTIONS))
-            for key, val in getattr(mod, ACTIONS).items():
-                if key in self.a:
-                    raise ActionConflict("%s from %s" % (key, mod))
-                self.a[key] = val
+            ActionSetType.load_module(module)
+        self.a = ActionSetType.actions()
         if elements is None:
             elements = ConfigObj(infile=ELEMENTS_PATH)
         self.e = elements[RHEVM_ENUMS]
@@ -360,14 +355,17 @@ class TestComposer(object):
         from {modPath} import {funcName}
         '''
         try:
-            test_action = self.a[func_name].rsplit(".")
+            func = self.a[func_name]
         except KeyError:
-            logger.error("Action is not implemented yet '{0}'".format(func_name))
-            raise errors.CanNotResolveActionPath(func_name)
+            if func_name.count('.') != 0:
+                mod_path, func_name = func_name.rsplit(".", 1)
+                exec("from {0} import {1}".format(mod_path, func_name))
+                func = eval(func_name)
+            else:
+                logger.error("Action is not implemented yet '{0}'".format(func_name))
+                raise errors.CanNotResolveActionPath(func_name)
 
-        mod_path = '.'.join(test_action[:-1])
-        func_name = test_action[-1]
-        return mod_path, func_name
+        return func_name, func
 
     @classmethod
     def generate_suites(cls, test_file, config, elements=None, groups=None):
@@ -395,20 +393,21 @@ class MatrixTestCase(TestCase):
     @classmethod
     def _run(cls, run, tc):
         cmd = '%s' % run.get('run', 'True')
+        scope = {'fetch_output': tc.f}
         if 'ifaction' in run:
-            mod, func = tc.resolve_func_path(run['ifaction']['action'])
-            exec("from {0} import {1}".format(mod, func))
+            name, func = tc.resolve_func_path(run['ifaction']['action'])
+            #exec("from {0} import {1}".format(mod, func))
             params = run['ifaction']['params']
             not_ = run['ifaction']['not']
-            cmd += " and (%s %s(%s))" % (not_, func, params)
+            cmd += " and (%s %s(%s))" % (not_, name, params)
+            scope[name] = func
         if 'if' in run:
             cmd += " and %s" % run['if']
 
         # Expose fetch_output into local namespace
-        fetch_output = tc.f
         try:
             logger.debug("compossed <run> expression: %s", cmd)
-            res = eval(cmd)
+            res = eval(cmd, scope)
             #res = True
         except Exception as ex:
             logger.warn("<run> expression failed: '%s' -> %s", cmd, ex)
@@ -437,22 +436,23 @@ class MatrixTestCase(TestCase):
             self.parameters = "%s, %s" % (self.positive, self.parameters)
         logger.info(self.format_attr(TEST_POSITIVE))
 
-        self.mod_path, self.test_action = self.tc.resolve_func_path(self.test_action)
+        self.mod_path = "module_path_was_lost" # FIXME: by auto_discovering
+        self.test_action, func = self.tc.resolve_func_path(self.test_action)
         logger.info(self.format_attr(TEST_ACTION))
         logger.info(self.format_attr(TEST_PARAMS))
         self.mod_name = self.mod_path.split('.')[-1].capitalize()
-        exec("from %s import %s" % (self.mod_path, self.test_action))
+        #exec("from %s import %s" % (self.mod_path, self.test_action))
 
         self.__resolve_exceptions()
 
         cmd = "%s(%s)" % (self.test_action, self.parameters)
         res = None
 
-        # Expose fetch_output into local_scope
-        fetch_output = self.tc.f
+        scope = {'fetch_output': self.tc.f,
+                self.test_action: func}
         try:
             logger.info("Running command: %s", cmd)
-            res = eval(cmd)
+            res = eval(cmd, scope)
             #res = (True, {})
             self.status = self.TEST_STATUS_PASSED
         except self.expected_exc as ex:

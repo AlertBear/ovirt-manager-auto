@@ -25,6 +25,7 @@ from datetime import datetime, timedelta, date
 from dateutil import tz
 import re
 from logging import getLogger
+from art.core_api import is_action
 
 logger = getLogger('db_utils')
 
@@ -166,7 +167,7 @@ class HistoryDB(object):
         if type == DAILY:
             return date.today()
         return datetime.now(tz.tzlocal())
-            
+
     def __getTimestamp(self, type, startTime, cnt):
         if type == SAMPLES:
             start = startTime - timedelta(minutes=cnt)
@@ -221,6 +222,7 @@ class HistoryDB(object):
         return True
 
 
+@is_action()
 def forgeHistoryData(entity, name, type, properties, values, interval):
     '''
     Insert fake data to DB table

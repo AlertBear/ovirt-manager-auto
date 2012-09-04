@@ -30,6 +30,7 @@ from art.test_handler.settings import opts
 from utilities.jobs import Job, JobsSet
 from utilities.utils import readConfFile
 from art.rhevm_api.utils.test_utils import searchForObj
+from art.core_api import is_action
 
 CREATE_TEMPLATE_TIMEOUT = 900
 ELEMENT = 'template'
@@ -50,7 +51,7 @@ VM = getDS('VM')
 ELEMENTS = os.path.join(os.path.dirname(__file__), '../../../conf/elements.conf')
 ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
 
-xpathMatch = XPathMatch(TEMPLATE_API)
+xpathMatch = is_action('xpathTemplates')(XPathMatch(TEMPLATE_API).__call__)
 
 
 def _prepareTemplateObject(**kwargs):
@@ -101,6 +102,7 @@ def _prepareTemplateObject(**kwargs):
     return templ
 
 
+@is_action()
 def createTemplate(positive, wait=True, timeout=CREATE_TEMPLATE_TIMEOUT, **kwargs):
     '''
     Description: add new template
@@ -128,6 +130,7 @@ def createTemplate(positive, wait=True, timeout=CREATE_TEMPLATE_TIMEOUT, **kwarg
     return status
 
 
+@is_action()
 def updateTemplate(positive, template, **kwargs):
     '''
     Description: update existed template
@@ -155,6 +158,7 @@ def updateTemplate(positive, template, **kwargs):
     return status
 
 
+@is_action()
 def removeTemplate(positive, template, wait=True, sleepTime=10, timeout=60):
     '''
     Description: remove existed template
@@ -187,6 +191,7 @@ def removeTemplate(positive, template, wait=True, sleepTime=10, timeout=60):
     return False
 
 
+@is_action()
 def removeTemplates(positive, templates):
     # TODO: Doc
     jobs = [Job(target=removeTemplate, args=(True, tmpl)) for tmpl in split(templates)]
@@ -203,6 +208,7 @@ def removeTemplates(positive, templates):
     return status
 
 
+@is_action()
 def searchForTemplate(positive, query_key, query_val, key_name, **kwargs):
     '''
     Description: search for a data center by desired property
@@ -253,6 +259,7 @@ def getTemplatesNic(template, nic):
     return TEMPLATE_API.getElemFromElemColl(templ_obj, nic, 'nics', 'nic')
 
 
+@is_action()
 def addTemplateNic(positive, template, **kwargs):
     '''
     Description: add nic to template
@@ -277,6 +284,7 @@ def addTemplateNic(positive, template, **kwargs):
     return  status
 
 
+@is_action()
 def updateTemplateNic(positive, template, nic, **kwargs):
     '''
     Description: update an existing nic
@@ -302,6 +310,7 @@ def updateTemplateNic(positive, template, nic, **kwargs):
     return status
 
 
+@is_action()
 def removeTemplateNic(positive, template, nic):
     '''
     Description: remove nic from template
@@ -316,6 +325,7 @@ def removeTemplateNic(positive, template, nic):
     return NIC_API.delete(nic_obj, positive)
 
 
+@is_action()
 def removeTemplateFromExportDomain(positive, template, datacenter, export_storagedomain):
     '''
     Description: removes a template from export domain
@@ -333,6 +343,7 @@ def removeTemplateFromExportDomain(positive, template, datacenter, export_storag
     return status
 
 
+@is_action()
 def validateTemplate(positive, template):
     '''
     Description: Validate template if exist
@@ -346,6 +357,7 @@ def validateTemplate(positive, template):
     return bool(templates) == positive
 
 
+@is_action()
 def getTemplateId(positive, template):
     '''
     Description: Get template id
@@ -361,6 +373,7 @@ def getTemplateId(positive, template):
     return True, {'templateId': templObj.get_id()}
 
 
+@is_action()
 def exportTemplate(positive, template, storagedomain, exclusive='false'):
     '''
     Description: export template
@@ -381,6 +394,7 @@ def exportTemplate(positive, template, storagedomain, exclusive='false'):
     return TEMPLATE_API.syncAction(templObj, "export", positive, **actionParams)
 
 
+@is_action()
 def importTemplate(positive, template, export_storagedomain,
                    import_storagedomain, cluster, name=None):
     '''
@@ -418,6 +432,7 @@ def importTemplate(positive, template, export_storagedomain,
     return status
 
 
+@is_action()
 def waitForTemplatesStates(names, state=ENUMS['template_state_ok'],
                            timeout=CREATE_TEMPLATE_TIMEOUT, sleep=10):
     """

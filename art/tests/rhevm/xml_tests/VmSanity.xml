@@ -1137,7 +1137,6 @@
    <positive>NONE</positive>
    <run>Loop(6)</run>
    <report>NO</report>
-   <fetch_output/>
 </test_case>
 <test_case>
    <test_name>Remove VM</test_name>
