@@ -17,7 +17,7 @@ host = is_alive()
 port = integer()
 user = string()
 password = string()
-entry_point = string()
+entry_point = string(default='api')
 user_domain = domain_format()
 
 

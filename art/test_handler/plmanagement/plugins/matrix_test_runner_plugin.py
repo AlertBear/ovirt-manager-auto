@@ -17,7 +17,7 @@ from art.test_handler.plmanagement import Interface
 from art.test_handler.test_runner import TestCase, TestGroup, TestSuite, TestResult
 from art.test_handler import exceptions as errors
 from art.core_api.apis_exceptions import EntityNotFound, EngineTypeError
-from art.core_api import ActionSetType
+from art.core_api import ActionSetType, TestAction
 from art.test_handler.settings import opts
 
 # TODO: solve <conf> element
@@ -361,11 +361,12 @@ class TestComposer(object):
                 mod_path, func_name = func_name.rsplit(".", 1)
                 exec("from {0} import {1}".format(mod_path, func_name))
                 func = eval(func_name)
+                func = TestAction(func, func_name, mod_path)
             else:
                 logger.error("Action is not implemented yet '{0}'".format(func_name))
                 raise errors.CanNotResolveActionPath(func_name)
 
-        return func_name, func
+        return func
 
     @classmethod
     def generate_suites(cls, test_file, config, elements=None, groups=None):
@@ -395,12 +396,12 @@ class MatrixTestCase(TestCase):
         cmd = '%s' % run.get('run', 'True')
         scope = {'fetch_output': tc.f}
         if 'ifaction' in run:
-            name, func = tc.resolve_func_path(run['ifaction']['action'])
+            func = tc.resolve_func_path(run['ifaction']['action'])
             #exec("from {0} import {1}".format(mod, func))
             params = run['ifaction']['params']
             not_ = run['ifaction']['not']
-            cmd += " and (%s %s(%s))" % (not_, name, params)
-            scope[name] = func
+            cmd += " and (%s %s(%s))" % (not_, func.name, params)
+            scope[func.name] = func
         if 'if' in run:
             cmd += " and %s" % run['if']
 
@@ -436,8 +437,9 @@ class MatrixTestCase(TestCase):
             self.parameters = "%s, %s" % (self.positive, self.parameters)
         logger.info(self.format_attr(TEST_POSITIVE))
 
-        self.mod_path = "module_path_was_lost" # FIXME: by auto_discovering
-        self.test_action, func = self.tc.resolve_func_path(self.test_action)
+        func = self.tc.resolve_func_path(self.test_action)
+        self.test_action = func.name
+        self.mod_path = func.module
         logger.info(self.format_attr(TEST_ACTION))
         logger.info(self.format_attr(TEST_PARAMS))
         self.mod_name = self.mod_path.split('.')[-1].capitalize()
@@ -484,7 +486,7 @@ class MatrixTestCase(TestCase):
 
     def __fetch_output(self, results):
         self.fetch_output = self.tc.resolve_place_holders(self.fetch_output, self.local_scope)
-        fetch_output = self.fetch_output.split('->')
+        fetch_output = self.fetch_output.strip().split('->')
         res = results.get(fetch_output[0], None)
         self.tc.f[fetch_output[1]] = res
         logger.info("Fetch output: %s->%s : %s", fetch_output[0], fetch_output[1], res)
