@@ -181,9 +181,15 @@ class ParamsValidator(object):
     def validateConfigFile(self, confSpecFile):
         self._validateHelper(confSpecFile)
         testConfSpecs = self._config[PARAMETERS][TEST_CONF_SPEC]
-
         for spec in testConfSpecs:
-            self._validateHelper(spec)
+            # case with absolute path
+            if spec.startswith(os.sep):
+                tmpVal = spec
+            # case with relative path
+            else:
+                tmpVal = os.sep.join([self._basePath, spec])
+
+            self._validateHelper(tmpVal)
 
     def validatedPluginConfig(self):
         from art.test_handler.settings import initPlmanager
