@@ -222,6 +222,8 @@ class ParamsValidator(object):
 
     def checkIfPathExists(self, value):
         try:
+            if not value:
+                raise ValidateError("Empty value")
             # case with absolute path
             if value.startswith(os.sep):
                 tmpVal = value
@@ -239,6 +241,10 @@ class ParamsValidator(object):
     def checkPythonModule(self, value):
         try:
             __import__(value)
+        except ValueError:
+            raise ValidateError("Empty value")
+        except TypeError:
+            raise ValidateError("Incorrect type of value: '%s'" % value)
         except ImportError:
             raise ValidateError("%s is not Python module" % value)
 
