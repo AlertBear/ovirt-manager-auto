@@ -45,6 +45,16 @@ def is_action(alias=None):
     return decorator
 
 
+class TestAction(object):
+    def __init__(self, func, name, module):
+        self.func = func
+        self.name = name
+        self.module = module
+
+    def __call__(self, *args, **kwargs):
+        return self.func(*args, **kwargs)
+
+
 class ActionSetType(type):
     SETS = {}
     def __new__(cls, name, bases, dct):
@@ -95,7 +105,7 @@ class ActionSetType(type):
                 if alias in val.ACTIONS:
                     raise ActionColision("%s: %s <-> %s" % \
                             (alias, func, val.ACTIONS[alias]))
-                val.ACTIONS[alias] = func
+                val.ACTIONS[alias] = TestAction(func, alias, mod)
                 break
         else:
             msg = "Can not find ActionSet for '%s' from %s" % (alias, mod)
