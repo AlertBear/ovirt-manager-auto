@@ -28,8 +28,8 @@ from utilities.utils import createCommandLineOptionFromDict
 
 cliInit = False
 
-DEF_TIMEOUT = 900 # default timeout
-DEF_SLEEP = 10 # default sleep
+DEF_TIMEOUT = 900  # default timeout
+DEF_SLEEP = 10  # default sleep
 CLI_PROMPT = '[oVirt shell (connected)]'
 CLI_TIMEOUT = 30
 
@@ -43,16 +43,18 @@ class CliUtil(RestUtil):
     def __init__(self, element, collection):
         super(CliUtil, self).__init__(element, collection)
         # no _ in cli
-        self.element_name = self.element_name.replace('_','')
+        # TODO: to change to generic converter
+        self.element_name = self.element_name.replace('_', '')
 
         global cliInit
 
         if not cliInit:
             user_with_domain = '{0}@{1}'.format(self.opts['user'],\
                                         self.opts['user_domain'])
-            cli_connect = 'ovirt-shell -c -l "{0}" -u "{1}" -p "{2}"'.\
-                format(self.opts['uri'], user_with_domain, self.opts['password'])
-
+            cli_connect = '"{0}" -c -l "{1}" -u "{2}" -p "{3}" "{4}"'.\
+                format(self.opts['cli_tool'], self.opts['uri'],
+                       user_with_domain, self.opts['password'],
+                       self.opts['cli_optional_params'])
             try:
                 self.logger.debug('Connect: %s' % cli_connect)
                 self.cli = pe.spawn(cli_connect, timeout=CLI_TIMEOUT)
@@ -65,13 +67,11 @@ class CliUtil(RestUtil):
         else:
             self.cli = cliInit
 
-
     def __del__(self):
         '''
         Close the cli connection
         '''
         self.cli.close()
-
 
     def getCollection(self, href):
 
@@ -79,7 +79,6 @@ class CliUtil(RestUtil):
             href = self.links[self.collection_name]
 
         return self.get(href, listOnly=True)
-
 
     def create(self, entity, positive, expectedEntity=None, incrementBy=1,
             async=False, collection=None):
@@ -89,7 +88,8 @@ class CliUtil(RestUtil):
         Parameters:
            * entity - entity for post body
            * positive - if positive or negative verification should be done
-           * expectedEntity - if there are some expected entity different from sent
+           * expectedEntity - if there are some expected entity different
+             from sent
            * incrementBy - increment by number of elements
            * async -sycnh or asynch request
         Return: POST response (None on parse error.),
@@ -104,18 +104,17 @@ class CliUtil(RestUtil):
             ownerId, ownerName, entityName = \
                             self._getHrefData(collection)
 
-            if ownerId and ownerName: # adding to some element collection
+            if ownerId and ownerName:  # adding to some element collection
                 createCmd = "create {0} --{1}-identifier '{2}' {3}".format(\
-                                                            self.element_name,
-                                                            ownerId.rstrip('s'),
-                                                            entityName,
-                                                            addEntity)
+                                                           self.element_name,
+                                                           ownerId.rstrip('s'),
+                                                           entityName,
+                                                           addEntity)
 
         self.logger.debug("CREATE cli command is: %s" % createCmd)
 
         collHref = collection
         collection = self.getCollection(collHref)
-        initialCollectionSize = len(collection)
 
         response = None
         try:
@@ -129,11 +128,6 @@ class CliUtil(RestUtil):
                 response = self.find(entity.name,
                             collection=collection, absLink=False)
 
-            if not async and not validator.compareCollectionSize(collection,
-                                        initialCollectionSize + incrementBy,
-                                        self.logger):
-                    return None, False
-
             self.logger.info("New entity was added successfully")
             expEntity = entity if not expectedEntity else expectedEntity
 
@@ -146,14 +140,8 @@ class CliUtil(RestUtil):
                 errorMsg = "Failed to create a new element, details: {0}"
                 self.logger.error(errorMsg.format(e))
                 return None, False
-            else:
-                if not validator.compareCollectionSize(collection,
-                                            initialCollectionSize,
-                                            self.logger):
-                    return None, False
 
         return response, True
-
 
     def update(self, origEntity, newEntity, positive):
         '''
@@ -213,7 +201,6 @@ class CliUtil(RestUtil):
 
         return response, True
 
-
     def _getHrefData(self, href):
 
         entityHrefData = href.split('/')
@@ -222,7 +209,6 @@ class CliUtil(RestUtil):
         actionEntityName = entityHrefData[-2].rstrip('s')
 
         return (actionOwnerId, actionOwnerName, actionEntityName)
-
 
     def delete(self, entity, positive, body=None, **kwargs):
         '''
@@ -260,12 +246,12 @@ class CliUtil(RestUtil):
                 return False
 
         except pe.TIMEOUT:
-            self.logger.info("Entity '%s' was deleted successfully" % entity.id)
+            self.logger.info("Entity '%s' was deleted successfully",
+                             entity.id)
         except pe.ExceptionPexpect as e:
             self.logger.error('Pexpect Error: %s ' % e.value)
 
         return True
-
 
     def query(self, constraint, exp_status=None, href=None, event_id=None,
                                                                 **params):
@@ -299,7 +285,6 @@ class CliUtil(RestUtil):
         self.logger.debug("Response for QUERY request is: %s " % results)
 
         return results
-
 
     def syncAction(self, entity, action, positive, async=False, **params):
         '''
