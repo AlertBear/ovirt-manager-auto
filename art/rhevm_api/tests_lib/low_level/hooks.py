@@ -22,10 +22,12 @@ import tempfile
 import logging
 from art.rhevm_api.utils.test_utils import get_api
 from utilities.machine import Machine
+from art.core_api import is_action
 
 logger = logging.getLogger(__package__ + __name__)
 
 
+@is_action()
 def checkForFileExistenceAndContent(ip, password, filename, content=None,
     user='root'):
     '''
@@ -61,6 +63,7 @@ def checkForFileExistenceAndContent(ip, password, filename, content=None,
 
     return True
 
+@is_action()
 def checkForFileExistenceAndContentOnVm(vmName, password, filename,
     content=None, user='root'):
     '''
