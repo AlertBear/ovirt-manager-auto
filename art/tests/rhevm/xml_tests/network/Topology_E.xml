@@ -4,7 +4,7 @@
    <test_action/>
    <parameters>n/a1</parameters>
    <positive>NONE</positive>
-   <run>if('topology-e' in '[run_topologies]')</run>
+   <run>if('topology-e-30' in '[run_topologies]')</run>
    <fetch_output/>
    <report/>
    <vital/>
@@ -352,7 +352,7 @@
    <test_description/>
 </test_case>
 <test_case>
-  <test_name>END_GROUP: Topology_E</test_name>
+  <test_name>END_GROUP: Topology_E_30</test_name>
   <test_action/>
   <parameters/>
   <positive>NONE</positive>
@@ -364,11 +364,11 @@
 </test_case>
 <!-- ======================================================================================================== -->
 <test_case>
-   <test_name>START_GROUP: Topology_E_SN</test_name>
+   <test_name>START_GROUP: Topology_E_31</test_name>
    <test_action/>
    <parameters>n/a1</parameters>
    <positive>NONE</positive>
-   <run>if('topology-e-sn' in '[run_topologies]')</run>
+   <run>if('topology-e-31' in '[run_topologies]')</run>
    <fetch_output/>
    <report/>
    <vital/>
@@ -738,7 +738,7 @@
   <test_description/>
 </test_case>
 <test_case>
-  <test_name>END_GROUP: Topology_E_SN</test_name>
+  <test_name>END_GROUP: Topology_E_31</test_name>
   <test_action/>
   <parameters/>
   <positive>NONE</positive>
