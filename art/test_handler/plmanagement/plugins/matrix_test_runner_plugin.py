@@ -68,6 +68,11 @@ ACTIONS = 'ACTIONS'
 EXCEPTIONS = {}
 
 
+GLOBAL_SCOPE = {
+        're': re,
+        }
+
+
 def assign_attributes(te, elm):
     te.test_name = elm[TEST_NAME]
     #te.description = elm[TEST_DESCR]
@@ -290,7 +295,6 @@ class TestComposer(object):
                     del regxs[name]
                     break
 
-
         run_attr = {}
         if 'if' in matches:
             cmd = ''
@@ -390,11 +394,11 @@ class MatrixTestCase(TestCase):
         for key, val in elm.items():
             self[key] = val
 
-
     @classmethod
     def _run(cls, run, tc):
         cmd = '%s' % run.get('run', 'True')
-        scope = {'fetch_output': tc.f}
+        scope = copy(GLOBAL_SCOPE)
+        scope['fetch_output'] = tc.f
         if 'ifaction' in run:
             func = tc.resolve_func_path(run['ifaction']['action'])
             #exec("from {0} import {1}".format(mod, func))
@@ -450,8 +454,9 @@ class MatrixTestCase(TestCase):
         cmd = "%s(%s)" % (self.test_action, self.parameters)
         res = None
 
-        scope = {'fetch_output': self.tc.f,
-                self.test_action: func}
+        scope = copy(GLOBAL_SCOPE)
+        scope['fetch_output'] = self.tc.f
+        scope[self.test_action] = func
         try:
             logger.info("Running command: %s", cmd)
             res = eval(cmd, scope)
