@@ -157,7 +157,7 @@ def readTestRunOpts(path, redefs):
         raise IOError("Configuration file doesn't exist: %s" % path)
 
     #preparing working copy of conf file
-    confFileCopyName = "%s.orig" % path
+    confFileCopyName = "%s.valid" % path
     copyfile(path, confFileCopyName)
 
     ParamsValidator(confFile=confFileCopyName,
