@@ -62,6 +62,7 @@ SERVICE = '/sbin/service'
 ELEMENTS = os.path.join(os.path.dirname(__file__), '../../../conf/elements.conf')
 ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
 KSM_STATUSFILE = '/sys/kernel/mm/ksm/run'
+HOST_STATE_TIMEOUT=1000
 
 
 @is_action()
@@ -391,7 +392,7 @@ def waitForOvirtAppearance(positive, host, attempts=10, interval=3):
 
 
 @is_action()
-def waitForHostsStates(positive, names, states='up'):
+def waitForHostsStates(positive, names, states='up', timeout=HOST_STATE_TIMEOUT):
     '''
     Wait until all of the hosts identified by names exist and have the desired
     status.
@@ -405,7 +406,7 @@ def waitForHostsStates(positive, names, states='up'):
         HOST_API.find(host)
         query_host = "name={0} and status={1}".format(host, states)
 
-        if not HOST_API.waitForQuery(query_host, timeout=1000):
+        if not HOST_API.waitForQuery(query_host, timeout=timeout):
             return False
 
     return True
