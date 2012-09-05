@@ -674,7 +674,7 @@
 <test_case>
    <test_name>Create new Bridgeless network sw3</test_name>
    <test_action>addNetwork</test_action>
-   <parameters>name='sw3',data_center='{datacenter}', usages=' '</parameters>
+   <parameters>name='sw3',data_center='{datacenter}', usages=''</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -707,7 +707,7 @@
 <test_case>
    <test_name>generate sw3 network element</test_name>
    <test_action>genSNNic</test_action>
-   <parameters>nic='eth1', network='sw3'</parameters>
+   <parameters>nic='{nics[1]}', network='sw3'</parameters>
    <positive>NONE</positive>
    <run>YES</run>
    <fetch_output>host_nic->sw3_nic</fetch_output>
@@ -718,7 +718,7 @@
 <test_case>
    <test_name>send SN</test_name>
    <test_action>sendSNRequest</test_action>
-   <parameters>host='{vds[0]}', nics=[%sw3_nic%], auto_nics=['eth0'],check_connectivity='true', connectivity_timeout='60', force='false'</parameters>
+   <parameters>host='{vds[0]}', nics=[%sw3_nic%], auto_nics=['{nics[0]}'],check_connectivity='true', connectivity_timeout=60, force='false'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output></fetch_output>
@@ -773,7 +773,7 @@
 <test_case>
    <test_name>generate sw1 network element</test_name>
    <test_action>genSNNic</test_action>
-   <parameters>nic='{vlan_nic}', network='{networks[0]}', address='1.1.1.1', netmask='255.255.255.0'</parameters>
+   <parameters>nic='{vlan_nic}', network='{networks[0]}', address='1.1.1.1', netmask='255.255.255.0', vlan='{vlan_id[0]}'</parameters>
    <positive>NONE</positive>
    <run>YES</run>
    <fetch_output>host_nic->sw1_nic</fetch_output>
@@ -795,7 +795,7 @@
 <test_case>
    <test_name>send SN</test_name>
    <test_action>sendSNRequest</test_action>
-   <parameters>host='{vds[0]}',nics=[%sw1_nic%, %sw2_bond_nic%],auto_nics=['eth0'],check_connectivity='true',connectivity_timeout='60', force='false'</parameters>
+   <parameters>host='{vds[0]}',nics=[%sw1_nic%, %sw2_bond_nic%],auto_nics=['{nics[0]}','{vlan_nic}'],check_connectivity='true',connectivity_timeout=60, force='false'</parameters>
    <positive>TRUE</positive>
    <run>if(%nicCounter%&gt;=4)</run>
    <fetch_output></fetch_output>
@@ -806,7 +806,7 @@
 <test_case>
    <test_name>send SN</test_name>
    <test_action>sendSNRequest</test_action>
-   <parameters>host='{vds[0]}',nics=[%sw1_nic%],auto_nics=['eth0'],check_connectivity='true',connectivity_timeout='60', force='false'</parameters>
+   <parameters>host='{vds[0]}',nics=[%sw1_nic%],auto_nics=['{nics[0]}','{vlan_nic}'],check_connectivity='true',connectivity_timeout=60, force='false'</parameters>
    <positive>TRUE</positive>
    <run>if(%nicCounter%&lt;4)</run>
    <fetch_output></fetch_output>
@@ -1103,7 +1103,7 @@
 <test_case>
    <test_name>send SN</test_name>
    <test_action>sendSNRequest</test_action>
-   <parameters>host_name='{vds[0]}', auto_nics=['eth0'],check_connectivity='true', connectivity_timeout='60', force='false'</parameters>
+   <parameters>host='{vds[0]}', auto_nics=['{nics[0]}'],check_connectivity='true', connectivity_timeout=60, force='false'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output></fetch_output>
