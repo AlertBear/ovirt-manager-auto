@@ -215,7 +215,7 @@ class TestRunner(object):
         test_case.start_time = datetime.now(tzutc())
         try:
             self.plmanager.test_cases.pre_test_case(test_case)
-            self.plmanager.test_groups.should_be_test_case_skipped(test_case)
+            self.plmanager.test_skippers.should_be_test_case_skipped(test_case)
             test_case()
         except SkipTest as s:
             test_case.status = test_case.TEST_STATUS_SKIPPED
@@ -241,7 +241,7 @@ class TestRunner(object):
         try:
             # TODO: consider to have Result for group
             self.plmanager.test_groups.pre_test_group(test_group)
-            self.plmanager.test_groups.should_be_test_group_skipped(test_group)
+            self.plmanager.test_skippers.should_be_test_group_skipped(test_group)
             if test_group.workers == 1:
                 for test_elm in test_group:
                     self._run_test_elm(test_elm)

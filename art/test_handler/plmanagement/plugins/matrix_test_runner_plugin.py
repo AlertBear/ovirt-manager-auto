@@ -12,6 +12,7 @@ from art.test_handler.plmanagement import Component, implements, ExtensionPoint,
 from art.test_handler.plmanagement.interfaces.application import ITestParser, IConfigurable
 from art.test_handler.plmanagement.interfaces.report_formatter import IResultExtension
 from art.test_handler.plmanagement.interfaces.tests_listener import ITestCaseHandler
+from art.test_handler.plmanagement.interfaces.tests_listener import ITestGroupHandler
 from art.test_handler.plmanagement.interfaces.config_validator import IConfigValidation
 from art.test_handler.plmanagement import Interface
 from art.test_handler.test_runner import TestCase, TestGroup, TestSuite, TestResult
@@ -387,6 +388,7 @@ class TestComposer(object):
 class MatrixTestCase(TestCase):
     def __init__(self, tc, elm):
         super(MatrixTestCase, self).__init__()
+        self.parent = None
         self.tc = tc
         self.expected_exc = ()
         self.local_scope = {}
@@ -421,6 +423,14 @@ class MatrixTestCase(TestCase):
             if not res:
                 raise DoNotRun("<run> expression evalued as False: %s" % cmd)
 
+    def _group_name(self):
+        a = self
+        while a.parent is not None:
+            if a.parent.__class__.__name__ == MatrixTestGroup.__name__:
+                return a.parent.test_name
+            a = a.parent
+        return None
+
     def __call__(self):
         if self.conf:
             with self.change_config(self.conf):
@@ -443,11 +453,12 @@ class MatrixTestCase(TestCase):
 
         func = self.tc.resolve_func_path(self.test_action)
         self.test_action = func.name
-        self.mod_path = func.module
         logger.info(self.format_attr(TEST_ACTION))
         logger.info(self.format_attr(TEST_PARAMS))
-        self.mod_name = self.mod_path.split('.')[-1].capitalize()
-        #exec("from %s import %s" % (self.mod_path, self.test_action))
+        self.mod_name = self._group_name()
+        if not self.mod_name:
+            self.mod_name = func.module.split('.')[-1]
+        self.mod_name = self.mod_name.capitalize()
 
         self.__resolve_exceptions()
 
@@ -559,6 +570,7 @@ class MatrixTestCase(TestCase):
 class MatrixTestGroup(TestGroup):
     def __init__(self, tc, elm, elms):
         super(MatrixTestGroup, self).__init__()
+        self.parent = None
         self.elm = elm
         self.tc = tc
         self.elms = elms
@@ -583,11 +595,11 @@ class MatrixTestGroup(TestGroup):
                             self.local_scope)
                     if self.tc.groups and group_name not in self.tc.groups:
                         continue
-                    yield te
                 else:# FIXME: add check for unexpected ending group
                     te = MatrixTestCase._create_elm(elm, self.tc)
                     te.local_scope.update(self.local_scope)
-                    yield te
+                te.parent = self
+                yield te
 
     @classmethod
     def _create_elm(cls, elm, it, tc, local_scope=None):
@@ -609,6 +621,9 @@ class MatrixTestGroup(TestGroup):
         g = MatrixTestCase._resolve_run_attr(run, g)
         return g
 
+    def __str__(self):
+        return "GROUP: %s" % self.test_name
+
 
 class MatrixLoopElm(MatrixTestGroup):
     def __init__(self, loop, test_elm):
@@ -623,6 +638,7 @@ class MatrixLoopElm(MatrixTestGroup):
             self.local_scope = {}
         else:
             self.local_scope = copy(test_elm.local_scope)
+        test_elm.parent = self
 
     def __iter__(self):
         MatrixTestCase._run(self.run, self.tc)
@@ -647,6 +663,9 @@ class MatrixLoopElm(MatrixTestGroup):
                 # expose loop_index to local_scope
                 elm.local_scope[self.var] = str(ind)
                 yield elm
+
+    def __str__(self):
+        return "LOOP: %s" % self.loop
 
 
 class MatrixTestSuite(TestSuite):
@@ -677,7 +696,8 @@ class MatrixBasedTestComposer(Component):
     """
     Plugin allows to test_runner be able to run matrix_based tests
     """
-    implements(ITestParser, IConfigurable, IResultExtension, ITestCaseHandler, IConfigValidation)
+    implements(ITestParser, IConfigurable, IResultExtension, ITestCaseHandler, \
+            IConfigValidation, ITestGroupHandler)
     parsers = ExtensionPoint(IMatrixBasedParser)
     name = 'Matrix Based Test Composer'
 
@@ -756,6 +776,18 @@ class MatrixBasedTestComposer(Component):
 
         logger.info(TEST_CASES_SEPARATOR)
 
+    def pre_test_group(self, tg):
+        if isinstance(tg, MatrixTestSuite):
+            return
+        logger.info(TEST_CASES_SEPARATOR)
+        logger.info("Starting %s", tg)
+
+    def post_test_group(self, tg):
+        if isinstance(tg, MatrixTestSuite):
+            return
+        logger.info("Finishing %s", tg)
+        logger.info(TEST_CASES_SEPARATOR)
+
     def pre_test_case(self, tc):
         logger.info(TEST_CASES_SEPARATOR)
 
@@ -771,6 +803,9 @@ class MatrixBasedTestComposer(Component):
         else:
             st_msg = logger.error
         st_msg(tc.format_attr('status'))
+
+    def test_group_skipped(self, tg):
+        pass
 
     def test_case_skipped(self, tc):
         pass
