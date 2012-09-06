@@ -26,6 +26,7 @@ from dateutil import tz
 import re
 from logging import getLogger
 from art.core_api import is_action
+from configobj import ConfigObj
 
 logger = getLogger('db_utils')
 
@@ -75,11 +76,13 @@ class HistoryDB(object):
     DATETIME_COL = 'history_datetime'
 
     def __init__(self):
-        host = settings.opts.get('host', 'localhost')
-        user = settings.opts.get('history_db_user', 'postgres')
-        passw = settings.opts.get('history_db_passw', None)
-        dbname = settings.opts.get('history_db_name', HISTORY_DB_NAME)
-        self._dbConn = Postgresql(host=host, user=user, password=passw,
+        conf = ConfigObj(settings.opts.get('conf'))
+        host = conf.get('REST_CONNECTION', {}).get('host', 'localhost')
+        params = conf.get('PARAMETERS', {})
+        user = params.get('history_db_user', 'postgres')
+        passw = params.get('history_db_passw', None)
+        dbname = params.get('history_db_name', HISTORY_DB_NAME)
+        self._dbConn = Postgresql(host=host, user=user, passwd=passw,
                              dbname=dbname)
 
     def __enter__(self):
