@@ -1,10 +1,10 @@
 <input>
 <test_case>
-  <test_name>START_GROUP: Topology_F</test_name>
+  <test_name>START_GROUP: Topology_F_30</test_name>
   <test_action/>
   <parameters>n/a1</parameters>
   <positive>NONE</positive>
-  <run>if('topology-f' in '[run_topologies]')</run>
+  <run>if('topology-f-30' in '[run_topologies]')</run>
   <fetch_output/>
   <report/>
   <vital/>
@@ -308,7 +308,7 @@
    <test_description/>
 </test_case>
 <test_case>
-   <test_name>END_GROUP: Topology_F</test_name>
+   <test_name>END_GROUP: Topology_F_30</test_name>
    <test_action/>
    <parameters/>
    <positive>NONE</positive>
