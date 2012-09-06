@@ -136,7 +136,7 @@ def redef(section, confspacePath, key, value):
     for sectionName in confspacePath:
         section = section.get(sectionName, None)
         if section is None:
-            raise CmdLineError, 'Section %s not found in the config.' % section
+            raise CmdLineError, 'Section %s not found in the config.' % sectionName
     section[key] = value.split(",") if value.find(",") != -1 else value
 
 
@@ -157,7 +157,7 @@ def readTestRunOpts(path, redefs):
         raise IOError("Configuration file doesn't exist: %s" % path)
 
     #preparing working copy of conf file
-    confFileCopyName = "%s.orig" % path
+    confFileCopyName = "%s.valid" % path
     copyfile(path, confFileCopyName)
 
     ParamsValidator(confFile=confFileCopyName,
