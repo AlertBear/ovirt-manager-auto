@@ -138,7 +138,7 @@ class StorageUtils:
 
         vdsSection = MAIN_SECTION
         if self.data_center_type == 'iscsi' or self.data_center_type == 'local':
-            vdsSection = self.data_center_type
+            vdsSection = self.data_center_type.upper()
 
         vdsServers = map(lambda x: getIpAddressByHostName(x),
                         getFromMainConfSection(config, 'vds', vdsSection))

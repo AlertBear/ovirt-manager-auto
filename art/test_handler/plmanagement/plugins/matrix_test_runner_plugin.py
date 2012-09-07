@@ -184,8 +184,8 @@ class TestComposer(object):
 
     def __get_data_center_config(self, config):
         # FIXME: ugly hardcoded variable
-        dc_type_sec = config[CONFIG_PARAMS].get('data_center_type', 'none').lower()
-        if dc_type_sec != 'none' and dc_type_sec in config:
+        dc_type_sec = config[CONFIG_PARAMS].get('data_center_type', 'none').upper()
+        if dc_type_sec != 'NONE' and dc_type_sec in config:
             return config[dc_type_sec]
         return {}
 
