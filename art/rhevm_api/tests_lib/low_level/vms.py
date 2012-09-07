@@ -1107,7 +1107,11 @@ def addSnapshot(positive, vm, description, wait=True):
 
     time.sleep(30)
 
-    snapshot = _getVmSnapshot(vm, description)
+    try:
+        snapshot = _getVmSnapshot(vm, description)
+    except EntityNotFound:
+        return False == positive
+
     snapshotStatus = True
     if status and positive and wait:
         snapshotStatus = SNAPSHOT_API.waitForElemStatus(snapshot, 'ok',

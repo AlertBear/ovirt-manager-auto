@@ -490,7 +490,7 @@ def copyDataToVm(ip, user, password, osType, src, dest):
 
 @lookingForIpAdressByEntityName("vms", "ip", "vmName")
 @is_action()
-def verifyDataOnVm(ip, user, password, osType, dest, destToCompare):
+def verifyDataOnVm(positive, ip, user, password, osType, dest, destToCompare):
     '''
     Description: Verify dirs/files on VM
     Parameters:
@@ -509,14 +509,14 @@ def verifyDataOnVm(ip, user, password, osType, dest, destToCompare):
         srcLocal = "{0}/{1}".format(dest, os.path.basename(destToCompare))
         if not machine.copyFrom(srcLocal, dest, 300):
             logger.error("copy data from %s" % ip)
-            return False
+            return False == positive
         logger.info("compare: %s to %s" % (srcLocal, destToCompare))
         res = machine.compareDirs(srcLocal, destToCompare)
         cleanupData(srcLocal)
-        return res
+        return res == positive
     except Exception as err:
         logger.error("verify data on %s: %s" % (ip, err))
-    return False
+    return False == positive
 
 
 @is_action()

@@ -1310,6 +1310,34 @@ def checkHostSpmStatus(positive, hostName):
 
 
 @is_action()
+def returnSPMHost(hosts):
+    '''
+    Description: get SPM host from the list of hosts
+    Author: pdufek
+    Parameters:
+    * hosts - the list of hosts to be searched through
+    '''
+    for host in hosts.split(','):
+        if checkHostSpmStatus('true', host):
+            return True, {'spmHost': host}
+    return False, {'spmHost': None}
+
+
+@is_action()
+def getAnyNonSPMHost(hosts):
+    '''
+    Description: get any not SPM host from the list of hosts
+    Author: pdufek
+    Parameters:
+    * hosts - the list of hosts to be searched through
+    '''
+    for host in hosts.split(','):
+        if not checkHostSpmStatus('true', host):
+            return True, {'hsmHost': host}
+    return False, {'hsmHost': None}
+
+
+@is_action()
 def checkSPMPriority(positive, hostName, expectedPriority):
     '''
     Description: check SPM priority of host

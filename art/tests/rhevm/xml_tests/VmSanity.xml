@@ -868,7 +868,7 @@
    <test_name>Validate data on VM</test_name>
    <test_action>verifyDataOnVm</test_action>
    <parameters>ip=%ip%, user='{vm_linux_user}', password='{vm_linux_password}', osType='linux', dest='{dest_dir}', destToCompare=%data_path#loop_index%</parameters>
-   <positive>NONE</positive>
+   <positive>TRUE</positive>
    <run>Loop(2)</run>
    <report/>
    <fetch_output/>
@@ -912,7 +912,7 @@
    <test_name>Validate data on VM</test_name>
    <test_action>verifyDataOnVm</test_action>
    <parameters>ip=%ip%, user='{vm_linux_user}', password='{vm_linux_password}', osType='linux', dest='{dest_dir}', destToCompare=%data_path#loop_index%</parameters>
-   <positive>NONE</positive>
+   <positive>TRUE</positive>
    <run>Loop(2)</run>
    <report/>
    <fetch_output/>
@@ -1036,7 +1036,7 @@
    <test_name>Validate data on VM</test_name>
    <test_action>verifyDataOnVm</test_action>
    <parameters>ip=%ip%, user='{vm_linux_user}', password='{vm_linux_password}', osType='linux', dest='{dest_dir}', destToCompare=%data_path#loop_index%</parameters>
-   <positive>NONE</positive>
+   <positive>TRUE</positive>
    <run>Loop(5)</run>
    <report/>
    <fetch_output/>
@@ -1107,7 +1107,7 @@
    <test_name>Validate data on VM</test_name>
    <test_action>verifyDataOnVm</test_action>
    <parameters>ip=%ip%, user='{vm_linux_user}', password='{vm_linux_password}', osType='linux', dest='{dest_dir}', destToCompare=%data_path#loop_index%</parameters>
-   <positive>NONE</positive>
+   <positive>TRUE</positive>
    <run>Loop(6)</run>
    <report/>
    <fetch_output/>
