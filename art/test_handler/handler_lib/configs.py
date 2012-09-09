@@ -125,7 +125,8 @@ class ParamsValidator(object):
             if val not in newExtraValuesKeys:
                 candidate.append((val,))
                 # updating
-                tmpExtraVal.remove(((), val))
+                if ((), val) in tmpExtraVal:
+                    tmpExtraVal.remove(((), val))
 
         #looking for all partially validated sections in newExtraParameters
         for sect, val in newExtraParameters:

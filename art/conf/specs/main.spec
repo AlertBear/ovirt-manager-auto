@@ -8,6 +8,7 @@ data_struct_mod = python_module()
 api_xsd = path_exists()
 debug = boolean(default=True)
 auto_devices = boolean(default=False)
+auto_devices_cleanup = boolean(default=True)
 media_type = option('application/xml', default='application/xml')
 
 

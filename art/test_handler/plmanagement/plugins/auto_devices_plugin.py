@@ -2,15 +2,20 @@ from art.test_handler.plmanagement import Component, implements, get_logger
 from art.test_handler.plmanagement.interfaces.resources_listener import IResourcesListener
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
+from art.test_handler.plmanagement.interfaces.config_validator import\
+                                                    IConfigValidation
 
 logger = get_logger('auto_devices')
 
 AD_ENABLED = 'auto_devices'
 AD_CLEANUP = 'auto_devices_cleanup'
+DEFAULT_STATE = False
+STR_SECTION = 'STORAGE'
+RUN_SECTION = 'RUN'
 
 
 class AutoDevices(Component):
-    implements(IResourcesListener, IConfigurable, IPackaging)
+    implements(IResourcesListener, IConfigurable, IPackaging, IConfigValidation)
 
     """
     Plugin provides storage allocation tool.
@@ -27,7 +32,7 @@ class AutoDevices(Component):
     def configure(self, params, conf):
         logger.info("Configuring storages plugin.")
         self.conf = conf
-        self.clean = conf['RUN'].get(AD_CLEANUP, 'yes').lower()
+        self.clean = conf.get(RUN_SECTION).as_bool(AD_CLEANUP)
 
     def add_options(self, parser):
         pass
@@ -44,16 +49,13 @@ class AutoDevices(Component):
 
     def on_storages_cleanup_request(self):
         logger.info("Cleaning storages.")
-        if self.su is not None and self.clean == 'yes':
+        if self.su is not None and self.clean:
             self.su.storageCleanup()
             self.su = None
 
     @classmethod
     def is_enabled(cls, params, conf):
-        #logger.info("auto_devices: %s", cls.enabled)
-        if conf is not None:
-            return conf['RUN'].as_bool(AD_ENABLED)
-        return True
+        return conf.get(RUN_SECTION).as_bool(AD_ENABLED)
 
     @classmethod
     def fill_setup_params(cls, params):
@@ -67,4 +69,9 @@ class AutoDevices(Component):
         params['requires'] = ['art-utilities']
         params['py_modules'] = ['art.test_handler.plmanagement.plugins.auto_devices_plugin',
                 'art.test_handler.plmanagement.plugins.storage']
+
+    def config_spec(self, spec, val_funcs):
+        section_spec = spec.get(STR_SECTION, {})
+        section_spec['host_group'] = "string(default=None)"
+        spec[STR_SECTION] = section_spec
 

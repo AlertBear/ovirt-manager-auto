@@ -5,9 +5,14 @@ from art.test_handler.plmanagement import Component, implements, get_logger, Plu
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.test_handler.plmanagement.interfaces.tests_listener import ITestCaseHandler
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
+from art.test_handler.plmanagement.interfaces.config_validator import\
+                                                    IConfigValidation
 
 
 logger = get_logger('vital_disable')
+SECTION_NAME = 'VITAL_DISABLE'
+DEFAULT_STATE = False
+ENABLED = 'enabled'
 
 
 class NoVitalError(PluginError):
@@ -18,7 +23,7 @@ class VitalDisable(Component):
     """
     Plugin provides option to disable vital tests.
     """
-    implements(IConfigurable, ITestCaseHandler, IPackaging)
+    implements(IConfigurable, ITestCaseHandler, IPackaging, IConfigValidation)
     name = "Vital_Disable"
 
     def __init__(self):
@@ -32,7 +37,8 @@ class VitalDisable(Component):
 
     @classmethod
     def is_enabled(cls, params, conf):
-        return conf.get('vital_disabled', False) or params.vital_disabled
+        conf_en = conf.get(SECTION_NAME).as_bool(ENABLED)
+        return params.vital_disabled or conf_en
 
 
     def configure(self, params, conf):
@@ -58,4 +64,10 @@ class VitalDisable(Component):
         params['author_email'] = 'edolinin@redhat.com'
         params['description'] = cls.__doc__.strip().replace('\n', ' ')
         params['py_modules'] = ['art.test_handler.plmanagement.plugins.vital_disable_plugin']
+
+
+    def config_spec(self, spec, val_funcs):
+        section_spec = spec.get(SECTION_NAME, {})
+        section_spec[ENABLED] = 'boolean(default=%s)' % DEFAULT_STATE
+        spec[SECTION_NAME] = section_spec
 

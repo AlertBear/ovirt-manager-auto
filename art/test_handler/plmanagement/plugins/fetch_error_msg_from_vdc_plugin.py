@@ -3,6 +3,8 @@ from art.test_handler.plmanagement import Component, implements, get_logger
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.test_handler.plmanagement.interfaces.tests_listener import ITestCaseHandler, ITestSuiteHandler
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
+from art.test_handler.plmanagement.interfaces.config_validator import\
+                                                    IConfigValidation
 
 from utilities.machine import Machine, LINUX
 
@@ -19,6 +21,7 @@ VDC_PASSWD = 'vdc_root_password'
 
 DEFAULT_LOG_PATH = '/var/log/ovirt-engine/engine.log'
 TEMP_FILE = '/tmp/tailed_engine_log.log'
+DEFAULT_STATE = False
 
 
 # TODO: Consider TestSuites in parallel.
@@ -30,7 +33,8 @@ class ErrorFetcher(Component):
     """
     Plugin collects error messages from VDC machine for test_cases which fail.
     """
-    implements(IConfigurable, ITestCaseHandler, ITestSuiteHandler, IPackaging)
+    implements(IConfigurable, ITestCaseHandler, ITestSuiteHandler, IPackaging, \
+                                                            IConfigValidation)
     name = "Errors fetcher"
 
     @classmethod
@@ -47,16 +51,15 @@ class ErrorFetcher(Component):
         if not self.is_enabled(params, conf):
             return
 
-        passwd = params.fe_vdc_pass or conf.get(CONF_SEC, {}).get(VDC_PASSWD)
+        passwd = params.fe_vdc_pass or conf.get(CONF_SEC).get(VDC_PASSWD)
         self.vdc = Machine(conf[PARAMETERS][VDC], 'root', passwd).util(LINUX)
         self.path_to_log = params.fe_path_to_log
-        self.path_to_log = self.path_to_log or conf.get(CONF_SEC, {}).get(LOG_PATH, DEFAULT_LOG_PATH)
+        self.path_to_log = self.path_to_log or conf.get(CONF_SEC).get(LOG_PATH)
 
     @classmethod
     def is_enabled(cls, params, conf):
-        conf_en = conf.get(CONF_SEC, {}).get(ENABLED, 'false').lower() == 'true'
-        conf_en = params.error_fetcher or conf_en
-        return conf_en
+        conf_en = conf.get(CONF_SEC).as_bool(ENABLED)
+        return params.error_fetcher or conf_en
 
     def pre_test_case(self, t):
         cmd = ['tail', '-fn0', self.path_to_log]
@@ -109,4 +112,12 @@ class ErrorFetcher(Component):
         params['long_description'] = cls.__doc__
         params['requires'] = ['art-utilities']
         params['py_modules'] = ['art.test_handler.plmanagement.plugins.fetch_error_msg_from_vdc_plugin']
+
+
+    def config_spec(self, spec, val_funcs):
+        section_spec = spec.get(CONF_SEC, {})
+        section_spec[ENABLED] = 'boolean(default=%s)' % DEFAULT_STATE
+        section_spec[LOG_PATH] = "string(default='%s')" % DEFAULT_LOG_PATH
+        section_spec[VDC_PASSWD] = "string(default=None)"
+        spec[CONF_SEC] = section_spec
 

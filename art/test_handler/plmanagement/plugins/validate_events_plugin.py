@@ -6,16 +6,20 @@ from art.test_handler.plmanagement import Component, implements, get_logger
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.test_handler.plmanagement.interfaces.tests_listener import ITestCaseHandler
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
+from art.test_handler.plmanagement.interfaces.config_validator import\
+                                                    IConfigValidation
 
 logger = get_logger('validate_events')
 CORRELATION_ID = 'Correlation-Id'
 EVENTS_OPTION = 'VALIDATE_EVENTS'
+DEFAULT_STATE = False
+ENABLED = 'enabled'
 
 class ValidateEvents(Component):
     """
     Plugin provides validation of events by correlation id.
     """
-    implements(IConfigurable, ITestCaseHandler, IPackaging)
+    implements(IConfigurable, ITestCaseHandler, IPackaging, IConfigValidation)
     name = "Validate_Events"
 
     def __init__(self):
@@ -29,9 +33,8 @@ class ValidateEvents(Component):
 
     @classmethod
     def is_enabled(cls, params, conf):
-        conf_events = \
-            conf.get(EVENTS_OPTION, {}).get('enabled', 'false').lower()== 'true'
-        return conf_events or params.validate_events
+        conf_en = conf.get(EVENTS_OPTION).as_bool(ENABLED)
+        return params.validate_events or conf_en
 
 
     def configure(self, params, conf):
@@ -77,4 +80,10 @@ class ValidateEvents(Component):
         params['author_email'] = 'edolinin@redhat.com'
         params['description'] = cls.__doc__.strip().replace('\n', ' ')
         params['py_modules'] = ['art.test_handler.plmanagement.plugins.validate_events_plugin']
+
+
+    def config_spec(self, spec, val_funcs):
+        section_spec = spec.get(EVENTS_OPTION, {})
+        section_spec[ENABLED] = 'boolean(default=%s)' % DEFAULT_STATE
+        spec[EVENTS_OPTION] = section_spec
 

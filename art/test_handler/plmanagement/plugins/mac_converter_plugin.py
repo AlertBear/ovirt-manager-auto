@@ -11,6 +11,8 @@ from utilities.machine import Machine, LINUX
 from art.test_handler.plmanagement import Component, implements, get_logger, PluginError
 from art.test_handler.plmanagement.interfaces.application import IConfigurable, IApplicationListener
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
+from art.test_handler.plmanagement.interfaces.config_validator import\
+                                                    IConfigValidation
 
 
 logger = get_logger('mac_to_ip_conv')
@@ -20,7 +22,14 @@ PARAMETERS = 'PARAMETERS'
 VDS_PASSWORD = 'vds_password'
 VDS = 'vds'
 MAC_TO_IP_CONV = "MAC_TO_IP_CONV"
-
+DEFAULT_STATE = False
+ENABLED = 'enabled'
+TIMEOUT = 'timeout'
+ATTEMPTS = 'attempts'
+WAIT_INT = 'wait_interval'
+DEFAULT_TIMEOUT = 10
+DEFAULT_ATTEMPTS =  60
+DEFAULT_WAIT = 1
 
 class MacToIpConverterError(PluginError):
     pass
@@ -250,7 +259,7 @@ class MacToIpConverter(Component):
     Plugin provides way to collect DHCP leases which are going through VDS.
     It allows to you collect MAC: IPs pairs, which could be used for
     """
-    implements(IConfigurable, IApplicationListener, IPackaging)
+    implements(IConfigurable, IApplicationListener, IPackaging, IConfigValidation)
     name = "Mac to IP converter"
     enabled = True
     depends_on = []
@@ -271,10 +280,10 @@ class MacToIpConverter(Component):
         self.catcher = DHCPLeasesCatcher()
         self.vds = conf[PARAMETERS].as_list(VDS)
         self.vds_passwd = conf[PARAMETERS].as_list(VDS_PASSWORD)
-        mac_conf = conf.get(MAC_TO_IP_CONV, {})
-        self.timeout = mac_conf.get('timeout', 10)
-        self.attempts = mac_conf.get('attempts', 60)
-        self.wait_interval = mac_conf.get('wait_interval', 1)
+        mac_conf = conf.get(MAC_TO_IP_CONV)
+        self.timeout = mac_conf.get(TIMEOUT)
+        self.attempts = mac_conf.get(ATTEMPTS)
+        self.wait_interval = mac_conf.get(WAIT_INT)
 
     def get_ip(self, mac, subnet_class_b, vlan):
         mac = unify_mac_format(mac)
@@ -315,8 +324,9 @@ class MacToIpConverter(Component):
 
     @classmethod
     def is_enabled(cls, params, conf):
-        enbl = conf.get(MAC_TO_IP_CONV, {}).get('enabled', "").lower() == 'true'
-        return params.mac_ip_conv_enabled or enbl
+        conf_en = conf.get(MAC_TO_IP_CONV).as_bool(ENABLED)
+        return params.mac_ip_conv_enabled or conf_en
+
 
     @classmethod
     def fill_setup_params(cls, params):
@@ -328,4 +338,14 @@ class MacToIpConverter(Component):
         params['long_description'] = cls.__doc__.strip().replace('\n', ' ')
         params['requires'] = ['art-utilities']
         params['py_modules'] = ['art.test_handler.plmanagement.plugins.mac_converter_plugin']
+
+
+    def config_spec(self, spec, val_funcs):
+        section_spec = spec.get(MAC_TO_IP_CONV, {})
+        section_spec[ENABLED] = 'boolean(default=%s)' % DEFAULT_STATE
+        section_spec[TIMEOUT] = 'integer(default=%s)' % DEFAULT_TIMEOUT
+        section_spec[ATTEMPTS] = 'integer(default=%s)' % DEFAULT_ATTEMPTS
+        section_spec[WAIT_INT] = 'integer(default=%s)' % DEFAULT_WAIT
+        spec[MAC_TO_IP_CONV] = section_spec
+
 

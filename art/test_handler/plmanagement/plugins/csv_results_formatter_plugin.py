@@ -10,10 +10,14 @@ from art.test_handler.plmanagement.interfaces.report_formatter import IResultsFo
 from art.test_handler.plmanagement.interfaces.tests_listener import ITestCaseHandler
 from art.test_handler.plmanagement.interfaces.time_measurement import ITimeMeasurement
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
+from art.test_handler.plmanagement.interfaces.config_validator import\
+                                                    IConfigValidation
 
 
 logger = get_logger('csv-formatter')
 CSV = 'CSV_FORMATER'
+DEFAULT_STATE = False
+ENABLED = 'enabled'
 precision = 'precision'
 order = 'order'
 
@@ -27,11 +31,9 @@ I_DEBUG_INFO = 'captured_log'
 
 
 DEFAULT_PRECISSION = '5'
-DEFAULT_ORDER = ', '.join((
-    I_ID, I_MODULE_NAME, I_START_TIME, \
+DEFAULT_ORDER = I_ID, I_MODULE_NAME, I_START_TIME, \
             I_REQ_ELAPSED_TIME, I_TEST_STATUS, \
             I_DEBUG_INFO
-    ))
 
 
 # TODO: Order out reports for each test_suite, also maybe it would be nice to write them into separate file
@@ -42,7 +44,8 @@ class CSVFormatter(Component):
     """
     Generates CSV report; default: %(const)s
     """
-    implements(IResultsFormatter, IConfigurable, ITimeMeasurement, ITestCaseHandler, IPackaging)
+    implements(IResultsFormatter, IConfigurable, ITimeMeasurement,\
+                ITestCaseHandler, IPackaging, IConfigValidation)
     name = 'CSV'
     default_file_name = "results.csv"
 
@@ -65,17 +68,14 @@ class CSVFormatter(Component):
         if not self.is_enabled(params, config):
             return
 
-        self.format_str = '%%.%sf' % \
-                config.get(CSV, {}).get(precision, DEFAULT_PRECISSION)
+        self.format_str = '%%.%sf' % config.get(CSV).get(precision)
         folder = os.path.dirname(params.rf_csv)
         if not os.path.exists(folder):
             os.makedirs(folder)
         self.fh = open(params.rf_csv, 'w')
         self.csv = csv.writer(self.fh)
-        try:
-            self.order = config[CSV].as_list(order)
-        except KeyError:
-            self.order = DEFAULT_ORDER.replace(',', ' ').split()
+        self.order = config[CSV].as_list(order)
+
 
     def generate_report(self):
         if self.fh is not None:
@@ -135,7 +135,8 @@ class CSVFormatter(Component):
 
     @classmethod
     def is_enabled(cls, params, conf):
-        return params.rf_csv is not None
+        conf_en = conf.get(CSV).as_bool(ENABLED)
+        return params.rf_csv or conf_en
 
     @classmethod
     def fill_setup_params(cls, params):
@@ -147,5 +148,15 @@ class CSVFormatter(Component):
         params['long_description'] = 'Plugin for ART which allows to you '\
                 'generete results in CSV format.'
         params['py_modules'] = ['art.test_handler.plmanagement.plugins.csv_results_formatter_plugin']
+
+
+    def config_spec(self, spec, val_funcs):
+        section_spec = spec.get(CSV, {})
+        section_spec[ENABLED] = 'boolean(default=%s)' % DEFAULT_STATE
+        section_spec[precision] = 'string(default=%s)' % DEFAULT_PRECISSION
+        section_spec[order] = 'string_list(default=list%(order)s)' %  \
+                                            {'order': DEFAULT_ORDER}
+        spec[CSV] = section_spec
+
 
 

@@ -4,6 +4,8 @@ import shutil
 from art.test_handler.plmanagement import Component, implements, get_logger, PluginError
 from art.test_handler.plmanagement.interfaces.application import IConfigurable, IApplicationListener
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
+from art.test_handler.plmanagement.interfaces.config_validator import\
+                                                    IConfigValidation
 
 from utilities.machine import Machine, LINUX
 
@@ -24,6 +26,9 @@ DEBUG_CLIENT = 'debugPluginClient.py'
 VDSM_DEBUG_PLUGIN = 'vdsm-debug-plugin'
 PYTHON_COVERAGE = 'python-coverage'
 
+DEFAULT_STATE = False
+ENABLED = 'enabled'
+
 
 class VDSMCoverageError(PluginError):
     pass
@@ -33,7 +38,7 @@ class VDSMCodeCoverage(Component):
     """
     Plugin enables vdsm_code_coverage functionality on hosts and fetch results.
     """
-    implements(IConfigurable, IApplicationListener, IPackaging)
+    implements(IConfigurable, IApplicationListener, IPackaging, IConfigValidation)
     name = 'VDSM code coverage'
 
     def __init__(self):
@@ -145,7 +150,8 @@ class VDSMCodeCoverage(Component):
 
     @classmethod
     def is_enabled(cls, params, conf):
-        return params.vdsm_code_coverage is not None
+        conf_en = conf.get(COVERAGE_SECTION).as_bool(ENABLED)
+        return params.vdsm_code_coverage or conf_en
 
     @classmethod
     def fill_setup_params(cls, params):
@@ -157,4 +163,14 @@ class VDSMCodeCoverage(Component):
         params['long_description'] = cls.__doc__.strip().replace('\n', ' ')
         params['requires'] = [ 'art-utilities' ]
         params['py_modules'] = ['art.test_handler.plmanagement.plugins.vdsm_code_coverage_plugin']
+
+
+    def config_spec(self, spec, val_funcs):
+        section_spec = spec.get(COVERAGE_SECTION, {})
+        section_spec[ENABLED] = 'boolean(default=%s)' % DEFAULT_STATE
+        section_spec[VDSM_REPO] = 'string(default=None)'
+        section_spec[VDSM_SERVER_PATH] = 'string(default=None)'
+        section_spec[VDSM_TESTS] = 'string(default=None)'
+        section_spec[RUTH] = 'string(default=None)'
+        spec[COVERAGE_SECTION] = section_spec
 
