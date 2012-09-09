@@ -840,7 +840,7 @@ def addNic(positive, vm, **kwargs):
 
 
 @is_action()
-def isVmNicActive(vm, nic):
+def isVmNicActive(positive, vm, nic):
     '''
     Description: Check if VM NIC is active
     Author: atal
@@ -849,9 +849,10 @@ def isVmNicActive(vm, nic):
         * nic - nic name
     return: True if nic is active, False otherwise.
     '''
+    positive = positive.lower() and 'true'
     nic_obj = getVmNic(vm, nic)
 
-    return nic_obj.get_active() == True
+    return nic_obj.get_active() == positive
 
 
 @is_action()
