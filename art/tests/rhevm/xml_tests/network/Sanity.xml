@@ -939,7 +939,7 @@
    <test_name>Check that nic is active by default</test_name>
    <test_action>isVmNicActive</test_action>
    <parameters>vm='{vm_name[0]}',nic='nic1'</parameters>
-   <positive>NONE</positive>
+   <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
    <report>YES</report>
