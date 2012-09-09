@@ -849,7 +849,6 @@ def isVmNicActive(positive, vm, nic):
         * nic - nic name
     return: True if nic is active, False otherwise.
     '''
-    positive = positive.lower() and 'true'
     nic_obj = getVmNic(vm, nic)
 
     return nic_obj.get_active() == positive
