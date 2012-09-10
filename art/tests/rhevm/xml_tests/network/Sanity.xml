@@ -5,6 +5,7 @@
   <parameters>n/a1</parameters>
   <positive>NONE</positive>
   <run>if('sanity-30' in '[run_topologies]')</run>
+  <tcms_test_case>98982</tcms_test_case>
   <fetch_output/>
   <report/>
   <vital/>
@@ -927,7 +928,7 @@
 <test_case>
    <test_name>Add ACTIVE management network to VM</test_name>
    <test_action>addNic</test_action>
-   <parameters>vm='{vm_name[0]}',name='nic1', network='{mgmt_bridge}'</parameters>
+   <parameters>vm='{vm_name[0]}',name='nic1',network='{mgmt_bridge}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -936,7 +937,7 @@
    <test_description/>
 </test_case>
 <test_case>
-   <test_name>Check that nic is active by default</test_name>
+   <test_name>Check that nic1 is active by default</test_name>
    <test_action>isVmNicActive</test_action>
    <parameters>vm='{vm_name[0]}',nic='nic1'</parameters>
    <positive>TRUE</positive>
@@ -949,8 +950,63 @@
 <test_case>
    <test_name>Add INACTIVETED sw1 network to VM</test_name>
    <test_action>addNic</test_action>
-   <parameters>vm='{vm_name[0]}',name='nic2',network='{networks[0]}', active='false'</parameters>
+   <parameters>vm='{vm_name[0]}',name='nic2',network='{networks[0]}',active='false'</parameters>
    <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check that nic2 is INACTIVE</test_name>
+   <test_action>isVmNicActive</test_action>
+   <parameters>vm='{vm_name[0]}',nic='nic2'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Activating nic2 via HotPlug</test_name>
+   <test_action>hotPlugNic</test_action>
+   <parameters>vm='{vm_name[0]}',nic='nic2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check that nic2 is ACTIVE (After HotPlug)</test_name>
+   <test_action>isVmNicActive</test_action>
+   <parameters>vm='{vm_name[0]}',nic='nic2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Deactivating nic2 via HotPlug</test_name>
+   <test_action>hotUnplugNic</test_action>
+   <parameters>vm='{vm_name[0]}',nic='nic2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check that nic2 is INACTIVE (After HotPlug)</test_name>
+   <test_action>isVmNicActive</test_action>
+   <parameters>vm='{vm_name[0]}',nic='nic2'</parameters>
+   <positive>FALSE</positive>
    <run>yes</run>
    <fetch_output/>
    <report>YES</report>
@@ -972,7 +1028,7 @@
    <test_name>Validate default active value is true</test_name>
    <test_action>isVmNicActive</test_action>
    <parameters>vm='{vm_name[0]}',nic='nic3'</parameters>
-   <positive>NONE</positive>
+   <positive>TRUE</positive>
    <run>if(%nicCounter%&gt;=4)</run>
    <fetch_output/>
    <report>YES</report>
