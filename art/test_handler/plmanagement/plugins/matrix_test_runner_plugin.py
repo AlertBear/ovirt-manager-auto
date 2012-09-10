@@ -47,6 +47,7 @@ TEST_VITAL = 'vital'
 TEST_CONF = 'conf'
 TEST_EXP_EVENTS = 'exp_events'
 TEST_EXPECTED_EXCEPTIONS = 'expected_exc'
+TEST_TCMS_CASE_ID = 'tcms_test_case'
 
 
 fetch_path = lambda x: os.path.abspath(\
@@ -423,13 +424,28 @@ class MatrixTestCase(TestCase):
             if not res:
                 raise DoNotRun("<run> expression evalued as False: %s" % cmd)
 
-    def _group_name(self):
+    @property
+    def group_name(self):
         a = self
         while a.parent is not None:
             if a.parent.__class__.__name__ == MatrixTestGroup.__name__:
                 return a.parent.test_name
             a = a.parent
         return None
+
+    @property
+    def tcms_test_case(self):
+        tcms = None
+        a = self
+        while tcms is not None and a is not None:
+            if a.__class__.__name__ == MatrixTestGroup.__name__:
+                tcms = getattr(a, TEST_TCMS_CASE_ID, None)
+            a = a.parent
+        return tcms
+
+    @tcms_test_case.setter
+    def tcms_test_case(self, val):
+        self['tcms_test_case'] = int(val)
 
     def __call__(self):
         if self.conf:
@@ -455,7 +471,7 @@ class MatrixTestCase(TestCase):
         self.test_action = func.name
         logger.info(self.format_attr(TEST_ACTION))
         logger.info(self.format_attr(TEST_PARAMS))
-        self.mod_name = self._group_name()
+        self.mod_name = self.group_name
         if not self.mod_name:
             self.mod_name = func.module.split('.')[-1]
         self.mod_name = self.mod_name.capitalize()

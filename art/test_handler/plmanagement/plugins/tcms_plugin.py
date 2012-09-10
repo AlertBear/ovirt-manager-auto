@@ -103,14 +103,14 @@ class TCMS(Component):
         if not self.agent or not test.tcms_test_case:
             return
 
-        self.agent.iterationInfo(sub_test_name=test.group,
+        self.agent.iterationInfo(sub_test_name=test.group_name,
                             test_case_name=test.test_name,
-                            info_line = '%s,%s,%s,%s' %(test.group,
+                            info_line = '%s,%s,%s,%s' %(test.group_name,
                                 test.test_name, test.positive,
-                                test.test_parameters),
-                            iter_number=test.iteration,
+                                test.parameters),
+                            iter_number=test.serial,
                             iter_status=test.status,
-                            bz_info=test.bz,
+                            bz_info=getattr(test, 'bz', None),
                             test_case_id=test.tcms_test_case)
 
     @classmethod

@@ -27,6 +27,7 @@ TEST_VITAL_TAG = 'vital'
 TEST_CONF_TAG = 'conf'
 TEST_EXP_EVENTS_TAG = 'exp_events'
 TEST_EXPECT_TAG = 'expect'
+TCMS_TEST_CASE_TAG = 'tcms_test_case'
 
 ROOT_SUITE = 'root_suite'
 
@@ -47,6 +48,7 @@ ELMS_NAME_MAP = {
             TEST_VITAL_TAG: mr.TEST_VITAL,
             TEST_EXP_EVENTS_TAG: mr.TEST_EXP_EVENTS,
             TEST_EXPECT_TAG: mr.TEST_EXPECTED_EXCEPTIONS,
+            TCMS_TEST_CASE_TAG: mr.TEST_TCMS_CASE_ID,
         }
 
 
@@ -91,6 +93,8 @@ class XMLTestFile(mr.TestFile):
             elm[mr.TEST_EXP_EVENTS] = int(elm.get(mr.TEST_EXP_EVENTS, 1))
             elm[mr.TEST_EXPECTED_EXCEPTIONS] = \
                     tuple(elm.get(mr.TEST_EXPECTED_EXCEPTIONS, '').replace(',', ' ').split())
+            if mr.TEST_TCMS_CASE_ID in elm:
+                elm[mr.TEST_TCMS_CASE_ID] = int(elm[mr.TEST_TCMS_CASE_ID])
             yield elm
         raise StopIteration()
 
