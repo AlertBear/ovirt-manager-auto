@@ -69,12 +69,17 @@ class SdkUtil(APIUtil):
         Return: parsed GET response
         '''
 
+        href = kwargs.pop('href', None)
+        if href is not None:
+            if href == '':
+                return self.api
+            else:
+                # TODO - remove this work-around when solving problem of
+                # same returned objects in all engines
+                return href
+
         if not collection:
             collection = self.collection_name
-
-        href = kwargs.pop('href', None)
-        if href == '':
-            return self.api
 
         self.logger.debug("GET request content is --  collection:%(col)s " \
                         % {'col': collection})
