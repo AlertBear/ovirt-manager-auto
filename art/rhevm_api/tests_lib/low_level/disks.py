@@ -49,7 +49,7 @@ logger = logging.getLogger(__package__ + __name__)
 xpathMatch = is_action('xpathMatch')(XPathMatch(VM_API).__call__)
 
 
-def getVmDisks(vmName, get_href=True):
+def getObjDisks(name, get_href=True, is_template=False):
     """
     Description: Returns given vm's disks collection
     Parameters:
@@ -61,8 +61,9 @@ def getVmDisks(vmName, get_href=True):
     Author: jlibosva
     Return: href link to disks or list of disks
     """
-    vmObj = VM_API.find(vmName)
-    return DISKS_API.getElemFromLink(vmObj, get_href=get_href)
+    api = TEMPLATE_API if is_template else VM_API
+    obj = api.find(name)
+    return DISKS_API.getElemFromLink(obj, get_href=get_href)
 
 
 def getVmDisk(vmName, diskName):
@@ -220,7 +221,7 @@ def attachDisk(positive, diskName, vmName, active=True):
     diskObj = DISKS_API.find(diskName)
     diskObj.active = active
 
-    vmDisks = getVmDisks(vmName)
+    vmDisks = getObjDisks(vmName)
     diskObj, status = DISKS_API.create(diskObj, positive, collection=vmDisks)
 
     return status
@@ -286,4 +287,17 @@ def waitForDisksGone(positive, disksNames, timeout=DEFAULT_DISK_TIMEOUT,
     logger.error("Remaining disks: %s" % [disk.name for disk in found])
     return not positive
 
+
+@is_action()
+def compareDisksCount(name, expected_count, is_template=False):
+    """
+    Description: Compares counts of disks attached to given VM/template
+    Author: jlibosva
+    Parameters:
+        * name - name of object you want disks from
+        * expected_count - expected count of attached disks
+    Return: expected_count == count_of_disks(name)
+    """
+    disks = getObjDisks(name, is_template=is_template, get_href=False)
+    return len(disks) == expected_count
 

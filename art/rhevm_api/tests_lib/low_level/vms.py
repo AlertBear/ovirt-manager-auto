@@ -1707,15 +1707,18 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
             return False
 
     if installation == True:
-        (status, res) = getImageByOsType(positive, os_type, slim)
-        if not status:
-            return False
-
+        floppy = None
         if image is None:
+            (status, res) = getImageByOsType(positive, os_type, slim)
+            if not status:
+                return False
+
             image = res['osBoot']
+            floppy = res['floppy']
+
         if not unattendedInstallation(positive, vmName,
                             cobblerAddress, cobblerUser, cobblerPasswd,
-                            image=image, floppyImage=res['floppy'],
+                            image=image, floppyImage=floppy,
                             nic=nic, hostname=hostname):
             return False
 
