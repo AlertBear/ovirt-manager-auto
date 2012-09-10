@@ -126,6 +126,12 @@ def _prepareStorageDomainObject(positive, **kwargs):
     elif storage_type == ENUMS['storage_type_fcp']:
         logical_unit = LogicalUnit(id=kwargs.pop('lun', None))
         sd.set_storage(Storage(logical_unit=logical_unit))
+    elif storage_type == ENUMS['storage_type_posixfs']:
+        sd.set_storage(Storage(type_=storage_type, path=kwargs.pop('path', None),
+                               address=kwargs.pop('address', None),
+                               vfs_type=kwargs.pop('vfs_type', None)))
+        storage_format = ENUMS['storage_format_version_v3']
+        sd.set_storage_format(storage_format)
 
     return sd
 
