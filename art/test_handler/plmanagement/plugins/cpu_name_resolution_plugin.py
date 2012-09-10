@@ -2,6 +2,8 @@ from art.test_handler.plmanagement import (Component, implements, get_logger,
                                                                 PluginError)
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
+from art.test_handler.plmanagement.interfaces.config_validator import\
+                                                    IConfigValidation
 
 from utilities.machine import Machine, LINUX
 
@@ -13,6 +15,8 @@ VDS_PASSWORD = 'vds_password'
 VDS = 'vds'
 CPU_NAME = 'cpu_name'
 COMPATIBILITY_VERSION = 'compatibility_version'
+DEFAULT_STATE = False
+ENABLED = 'enabled'
 
 
 class CpuNameResolutionFailed(PluginError):
@@ -24,7 +28,7 @@ class AutoCpuNameResolution(Component):
     Plugin adjusts config section for cpu_name attribute.
     It finds the maximum compatible cpu_name to use for the vds configured.
     """
-    implements(IConfigurable, IPackaging)
+    implements(IConfigurable, IPackaging, IConfigValidation)
     name = "Auto CPU name resolution"
 
     def configure(self, params, conf):
@@ -110,9 +114,8 @@ class AutoCpuNameResolution(Component):
 
     @classmethod
     def is_enabled(cls, params, conf):
-        en = conf.get(SECTION_NAME, {}).get('enabled',
-                                                    'false').lower() == 'true'
-        return params.cpu_name_enabled or en
+        conf_en = conf.get(SECTION_NAME).as_bool(ENABLED)
+        return params.cpu_name_enabled or conf_en
 
     @classmethod
     def fill_setup_params(cls, params):
@@ -126,3 +129,8 @@ class AutoCpuNameResolution(Component):
         params['requires'] = ['art-utilities']
         params['py_modules'] = ['art.test_handler.plmanagement.plugins.'
                                 'cpu_name_resolution_plugin']
+
+    def config_spec(self, spec, val_funcs):
+        section_spec = spec.get(SECTION_NAME, {})
+        section_spec[ENABLED] = 'boolean(default=%s)' % DEFAULT_STATE
+        spec[SECTION_NAME] = section_spec

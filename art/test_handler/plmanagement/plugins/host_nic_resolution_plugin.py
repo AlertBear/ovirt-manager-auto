@@ -13,7 +13,7 @@ PARAMETERS = 'PARAMETERS'
 VDS_PASSWORD = 'vds_password'
 VDS = 'vds'
 HOST_NICS = 'host_nics'
-
+ENABLED = 'enabled'
 
 class NicResolutionFailed(PluginError):
     pass
@@ -63,7 +63,7 @@ class AutoHostNicsResolution(Component):
 
     @classmethod
     def is_enabled(cls, params, conf):
-        en = conf.get(SECTION_NAME).as_bool('enabled')
+        en = conf.get(SECTION_NAME).as_bool(ENABLED)
         return params.host_nics_enabled or en
 
     @classmethod
@@ -81,6 +81,6 @@ class AutoHostNicsResolution(Component):
 
     def config_spec(self, spec, val_funcs):
         section_spec = spec.get(SECTION_NAME, {})
-        section_spec['enabled'] = 'boolean(default=false)'
+        section_spec[ENABLED] = 'boolean(default=false)'
         spec[SECTION_NAME] = section_spec
 
