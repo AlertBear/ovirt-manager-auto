@@ -460,6 +460,9 @@ class MatrixTestCase(TestCase):
             self.mod_name = func.module.split('.')[-1]
         self.mod_name = self.mod_name.capitalize()
 
+        # FIXME: this is related to xunit_results_plugin, wchich should be rewrited in order to follow general design as xml_results_plugin does. please remove this line when xunit_plugin will be rewritten.
+        self.mod_path = self.mod_name # THIS ONE!
+
         self.__resolve_exceptions()
 
         cmd = "%s(%s)" % (self.test_action, self.parameters)
