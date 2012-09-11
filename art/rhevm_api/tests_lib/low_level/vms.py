@@ -398,14 +398,37 @@ def waitForVmsStates(positive, names, states='up', *args, **kwargs):
     status.
     Parameters:
         * names - A comma separated names of the hosts with status to wait for.
-        * states - A state of the hosts to wait for.
+        * states - A state of the vms to wait for.
     Author: jhenner
+    Return True if all events passed, otherwise False
     '''
     names = split(names)
     for vm in names:
         VM_API.find(vm)
 
-    query = ' and '.join(['name="%s" and status=%s' % (vm, states) for vm in names])
+    for vm in names:
+        if not waitForVMState(vm, states):
+            return False
+    return True
+
+
+@is_action()
+def waitForVMState(vm, state='up'):
+    '''
+    Wait until vm has the desired status
+    Author: atal
+    Parameters:
+        * vm - name of vm
+        * wait_for_status - vm status should wait for (default is "powering_up")
+          List of available statuses/states of VM:
+          [unassigned, up, down, powering_up, powering_down,
+          paused, migrating_from, migrating_to, unknown,
+          not_responding, wait_for_launch, reboot_in_progress,
+          saving_state, restoring_state, suspended,
+          image_illegal, image_locked]
+    Return True if event passed, otherwise False
+    '''
+    query = "name={0} and status={1}".format(vm, state.lower().replace('_', ''))
 
     return VM_API.waitForQuery(query, timeout=VM_ACTION_TIMEOUT, sleep=10)
 
