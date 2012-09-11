@@ -17,6 +17,7 @@ CPU_NAME = 'cpu_name'
 COMPATIBILITY_VERSION = 'compatibility_version'
 DEFAULT_STATE = False
 ENABLED = 'enabled'
+DC_TYPE = 'data_center_type'
 
 
 class CpuNameResolutionFailed(PluginError):
@@ -71,8 +72,13 @@ class AutoCpuNameResolution(Component):
 
 
         #processing the hosts, looking for compatible cpu
-        vds_list = conf[PARAMETERS].as_list(VDS)
-        vds_passwd_list = conf[PARAMETERS].as_list(VDS_PASSWORD)
+        vds_section = PARAMETERS
+        dc_val = conf[PARAMETERS][DC_TYPE]
+        if dc_val != 'none':
+            vds_section = dc_val.upper()
+
+        vds_list = conf[vds_section].as_list(VDS)
+        vds_passwd_list = conf[vds_section].as_list(VDS_PASSWORD)
 
         selected_cpu = None
         for name, passwd in  zip(vds_list, vds_passwd_list):

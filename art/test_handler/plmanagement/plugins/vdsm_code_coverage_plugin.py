@@ -21,6 +21,7 @@ PARAMETERS = 'PARAMETERS'
 VDS_PASSWORD = 'vds_password'
 VDS = 'vds'
 VDSM_SERVER_PATH = 'vdsm_root_path'
+DC_TYPE = 'data_center_type'
 
 DEBUG_CLIENT = 'debugPluginClient.py'
 VDSM_DEBUG_PLUGIN = 'vdsm-debug-plugin'
@@ -119,8 +120,13 @@ class VDSMCodeCoverage(Component):
             return
         self.res_dir = params.vdsm_code_coverage
 
-        vds = conf[PARAMETERS].as_list(VDS)
-        vds_passwd = conf[PARAMETERS].as_list(VDS_PASSWORD)
+        vds_section = PARAMETERS
+        dc_val = conf[PARAMETERS][DC_TYPE]
+        if dc_val != 'none':
+            vds_section = dc_val.upper()
+
+        vds = conf[vds_section].as_list(VDS)
+        vds_passwd = conf[vds_section].as_list(VDS_PASSWORD)
 
         for name, passwd in  zip(vds, vds_passwd):
             self.machines[name] = Machine(name, 'root', passwd).util(LINUX)

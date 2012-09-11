@@ -15,6 +15,7 @@ local_domain_path = string(default='/home/rest_test_domain')
 product_name = string(default='Red Hat Enterprise Virtualization')
 vds_password = force_list(default=None)
 vds = force_list(default=None)
+data_center_type= option('nfs', 'iscsi', 'none', default='none')
 
 #users
 no_roles_user = string(default='larisa')

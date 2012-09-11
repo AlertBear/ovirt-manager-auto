@@ -14,6 +14,7 @@ VDS_PASSWORD = 'vds_password'
 VDS = 'vds'
 HOST_NICS = 'host_nics'
 ENABLED = 'enabled'
+DC_TYPE = 'data_center_type'
 
 class NicResolutionFailed(PluginError):
     pass
@@ -30,8 +31,14 @@ class AutoHostNicsResolution(Component):
         if not self.is_enabled(params, conf):
             return
 
-        vds = conf[PARAMETERS].as_list(VDS)
-        vds_passwd = conf[PARAMETERS].as_list(VDS_PASSWORD)
+        vds_section = PARAMETERS
+        dc_val = conf[PARAMETERS][DC_TYPE]
+        if dc_val != 'none':
+            vds_section = dc_val.upper()
+
+        vds = conf[vds_section].as_list(VDS)
+        vds_passwd = conf[vds_section].as_list(VDS_PASSWORD)
+
 
         # FIXME: what if there will be two hosts host1: em[0-9], host2: eth[0-9]
         nics = set()

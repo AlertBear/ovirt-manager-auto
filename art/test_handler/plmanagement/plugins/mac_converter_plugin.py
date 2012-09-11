@@ -21,6 +21,7 @@ logger = get_logger('mac_to_ip_conv')
 PARAMETERS = 'PARAMETERS'
 VDS_PASSWORD = 'vds_password'
 VDS = 'vds'
+DC_TYPE = 'data_center_type'
 MAC_TO_IP_CONV = "MAC_TO_IP_CONV"
 DEFAULT_STATE = False
 ENABLED = 'enabled'
@@ -278,8 +279,13 @@ class MacToIpConverter(Component):
         if not self.is_enabled(params, conf):
             return
         self.catcher = DHCPLeasesCatcher()
-        self.vds = conf[PARAMETERS].as_list(VDS)
-        self.vds_passwd = conf[PARAMETERS].as_list(VDS_PASSWORD)
+        vds_section = PARAMETERS
+        dc_val = conf[PARAMETERS][DC_TYPE]
+        if dc_val != 'none':
+            vds_section = dc_val.upper()
+
+        self.vds = conf[vds_section].as_list(VDS)
+        self.vds_passwd = conf[vds_section].as_list(VDS_PASSWORD)
         mac_conf = conf.get(MAC_TO_IP_CONV)
         self.timeout = mac_conf.get(TIMEOUT)
         self.attempts = mac_conf.get(ATTEMPTS)
