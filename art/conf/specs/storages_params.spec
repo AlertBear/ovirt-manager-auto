@@ -19,8 +19,6 @@ vds = force_list(default=None)
 vds_password = force_list(default=None)
 data_domain_address = force_list(default=None)
 data_domain_path = force_list(default=None)
-export_domain_address = force_list(default=None)
-export_domain_path = force_list(default=None)
 
 [ISCSI]
 vds = force_list(default=None)
@@ -28,6 +26,4 @@ vds_password = force_list(default=None)
 lun = force_list(default=None)
 lun_target = force_list(default=None)
 lun_address = force_list(default=None)
-export_domain_address = force_list(default=None)
-export_domain_path = force_list(default=None)
 
