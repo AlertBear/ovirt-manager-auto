@@ -27,7 +27,7 @@
    <parameters>osType=%osTypeElement%,slim=True</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
-   <fetch_output>osBoot-&gt;osBoot,floppy->floppy</fetch_output>
+   <fetch_output>osBoot-&gt;osBoot,floppy-&gt;floppy</fetch_output>
    <report>NO</report>
    <vital>TRUE</vital>
    <test_description/>
@@ -75,6 +75,17 @@
    <report>YES</report>
    <vital>FALSE</vital>
    <test_description/>
+</test_case>
+<test_case>
+   <test_name>Wait until VMs status is DOWN</test_name>
+   <test_action>waitForVMState</test_action>
+   <parameters>vm='{vm_name}',state='down'</parameters>
+   <positive>NONE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Unable to update VM while status is not Down</test_description>
 </test_case>
 <test_case>
    <test_name>Change VMs network from management to sw2</test_name>
@@ -290,7 +301,7 @@
    <test_action>updateHostNic</test_action>
    <parameters>host='{vds}',nic='{bond[0]}',mode='4'</parameters>
    <positive>TRUE</positive>
-   <run>yes</run>
+   <run>loop({vds})</run>
    <fetch_output/>
    <report>YES</report>
    <vital>FALSE</vital>
@@ -301,7 +312,7 @@
    <test_action>commitNetConfig</test_action>
    <parameters>host='{vds}'</parameters>
    <positive>TRUE</positive>
-   <run>yes</run>
+   <run>loop({vds})</run>
    <fetch_output/>
    <report>YES</report>
    <vital>FALSE</vital>
@@ -312,7 +323,7 @@
    <test_action>activateHost</test_action>
    <parameters>host='{vds}'</parameters>
    <positive>TRUE</positive>
-   <run>yes</run>
+   <run>loop({vds})</run>
    <fetch_output/>
    <report>YES</report>
    <vital>FALSE</vital>
@@ -334,7 +345,7 @@
    <test_action>startVm</test_action>
    <parameters>vm='{vm_name}'</parameters>
    <positive>TRUE</positive>
-   <run>yes</run>
+   <run>loop({vm_name})</run>
    <fetch_output/>
    <report>YES</report>
    <vital>FALSE</vital>
@@ -367,7 +378,7 @@
    <test_action>stopVm</test_action>
    <parameters>vm='{vm_name}'</parameters>
    <positive>TRUE</positive>
-   <run>yes</run>
+   <run>loop({vm_name})</run>
    <fetch_output/>
    <report>YES</report>
    <vital>FALSE</vital>
@@ -589,7 +600,7 @@
    <parameters>osType=%osTypeElement%,slim=True</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
-   <fetch_output>osBoot-&gt;osBoot,floppy->floppy</fetch_output>
+   <fetch_output>osBoot-&gt;osBoot,floppy-&gt;floppy</fetch_output>
    <report>NO</report>
    <vital>TRUE</vital>
    <test_description/>
@@ -896,7 +907,7 @@
    <test_action>commitNetConfig</test_action>
    <parameters>host='{vds}'</parameters>
    <positive>TRUE</positive>
-   <run>yes</run>
+   <run>loop({vds})</run>
    <fetch_output/>
    <report>YES</report>
    <vital>FALSE</vital>
@@ -907,7 +918,7 @@
    <test_action>activateHost</test_action>
    <parameters>host='{vds}'</parameters>
    <positive>TRUE</positive>
-   <run>yes</run>
+   <run>loop({vds})</run>
    <fetch_output/>
    <report>YES</report>
    <vital>FALSE</vital>
@@ -929,7 +940,7 @@
    <test_action>startVm</test_action>
    <parameters>vm='{vm_name}'</parameters>
    <positive>TRUE</positive>
-   <run>yes</run>
+   <run>loop({vm_name})</run>
    <fetch_output/>
    <report>YES</report>
    <vital>FALSE</vital>
@@ -962,7 +973,7 @@
    <test_action>stopVm</test_action>
    <parameters>vm='{vm_name}'</parameters>
    <positive>TRUE</positive>
-   <run>yes</run>
+   <run>loop({vm_name})</run>
    <fetch_output/>
    <report>YES</report>
    <vital>FALSE</vital>

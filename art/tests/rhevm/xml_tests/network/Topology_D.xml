@@ -27,7 +27,7 @@
    <parameters>osType=%osTypeElement%,slim=True</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
-   <fetch_output>osBoot-&gt;osBoot,floppy->floppy</fetch_output>
+   <fetch_output>osBoot-&gt;osBoot,floppy-&gt;floppy</fetch_output>
    <report>NO</report>
    <vital>TRUE</vital>
    <test_description/>
