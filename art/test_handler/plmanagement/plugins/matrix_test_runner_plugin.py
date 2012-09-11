@@ -21,14 +21,13 @@ from art.core_api.apis_exceptions import EntityNotFound, EngineTypeError
 from art.core_api import ActionSetType, TestAction
 from art.test_handler.settings import opts
 
-# TODO: solve <conf> element
 
 TEST_CASES_SEPARATOR = '\n' + '=' * 80
 
 
 logger = get_logger('matrix-test-composer')
 
-NO_TB_EXCEPTIONS = (EntityNotFound,EngineTypeError)
+NO_TB_EXCEPTIONS = (EntityNotFound,)
 RUN_SEC = 'RUN'
 
 TEST_CASE = 'test_case'
@@ -498,8 +497,10 @@ class MatrixTestCase(TestCase):
         except NO_TB_EXCEPTIONS as ex:
             self.status = self.TEST_STATUS_FAILED
             logger.error(ex)
-        except SocketError:
+        except SocketError, SkipTest:
             raise
+        except TestExceptionType as ex:
+            raise SkipTest(str(ex))
         except Exception as ex:
             self.status = self.TEST_STATUS_ERROR
             logger.error("Test Case execution failed", exc_info=True)

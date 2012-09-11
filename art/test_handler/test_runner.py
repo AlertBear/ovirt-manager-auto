@@ -250,7 +250,7 @@ class TestRunner(object):
             else:
                 assert False, 'number of workers must be positive not %s' % test_group.workers
         except SkipTest as s:
-            pass
+            raise SkipTest("FIXME: I don't know what should I do here: %s" % s)
             # TODO: what will we do here?, maybe we should go over whole
             # content and mark everythig as Skipped.
         finally:
