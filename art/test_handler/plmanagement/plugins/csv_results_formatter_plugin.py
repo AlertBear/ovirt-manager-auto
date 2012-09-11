@@ -153,7 +153,7 @@ class CSVFormatter(Component):
     def config_spec(self, spec, val_funcs):
         section_spec = spec.get(CSV, {})
         section_spec[ENABLED] = 'boolean(default=%s)' % DEFAULT_STATE
-        section_spec[precision] = 'string(default=%s)' % DEFAULT_PRECISSION
+        section_spec[precision] = 'integer(default=%s)' % DEFAULT_PRECISSION
         section_spec[order] = 'string_list(default=list%(order)s)' %  \
                                             {'order': DEFAULT_ORDER}
         spec[CSV] = section_spec

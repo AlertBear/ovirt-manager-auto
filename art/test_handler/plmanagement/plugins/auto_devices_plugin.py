@@ -21,7 +21,6 @@ class AutoDevices(Component):
     Plugin provides storage allocation tool.
     """
     name = "Auto Devices"
-    enabled = 'no'
 
     def __init__(self):
         super(AutoDevices, self).__init__()
