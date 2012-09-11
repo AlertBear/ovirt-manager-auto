@@ -776,6 +776,7 @@ class MatrixBasedTestComposer(Component):
             res._report = False
             return
         res.module_name = tc.mod_name
+        res.iter_num = "%03d" % res.iter_num
         # here should be added some code which will take care about [REPORT] section
 
         logger.info(TEST_CASES_SEPARATOR)

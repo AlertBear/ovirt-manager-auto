@@ -132,6 +132,8 @@ class UnittestLoader(Component):
                 ('mod_name', None, None)
         TestResult.ATTRIBUTES['test_action'] = \
                 ('test_action', None, None)
+        TestResult.ATTRIBUTES['iter_num'] = \
+                ('serial', None, None)
         self.__register_functions()
 
     def __register_functions(self):
@@ -144,6 +146,7 @@ class UnittestLoader(Component):
 
     def pre_test_result_reported(self, res, tc):
         res.module_name = tc.mod_name
+        res.iter_num = "%03d" % res.iter_num
 
     @classmethod
     def is_enabled(cls, a, b):

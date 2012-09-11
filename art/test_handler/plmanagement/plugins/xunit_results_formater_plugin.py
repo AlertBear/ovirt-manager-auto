@@ -108,7 +108,7 @@ class XUnit(Component):
         for k in set(kwargs.keys()) - remainder:
             key = unicode(str(k), errors='replace')
             val = unicode(str(kwargs[k]), errors='replace')
-            traits.append(E.trait(key, val))
+            traits.append(E.trait(name=key, value=val))
         traits.append(E.trait(name='real_classname',
                               value=real_classname))
         traits.append(E.trait(name='start_time',
