@@ -117,6 +117,12 @@ class CSVFormatter(Component):
         with self.lock:
             self.csv.writerow(items)
 
+    def add_group_result(self, res, tg):
+        pass
+
+    def add_suite_result(self, res, ts):
+        pass
+
     def pre_test_case(self, t):
         self.th_scope.measures = []
 

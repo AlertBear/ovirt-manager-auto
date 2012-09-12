@@ -69,8 +69,13 @@ class _DictLikeObject(dict):
 #class _DictLikeObject(object):
 #    pass
 
+class Result(_DictLikeObject):
+    # TODO: need to do results more general.
+    def __init__(self):
+        super(Result, self).__init__()
+        self._report = True
 
-class TestResult(_DictLikeObject):
+class TestResult(Result):
     # result.attr_name: (test_elm.name, 'nice_name', 'default_value')
     ATTRIBUTES = {
             'id': ('id', 'Test ID', 'NaN'),
@@ -80,10 +85,6 @@ class TestResult(_DictLikeObject):
             'end_time': ('end_time', 'End Time', None),
             'status': ('status', 'Status', None),
             }
-
-    def __init__(self):
-        super(TestResult, self).__init__()
-        self._report = True
 
     @classmethod
     def result_from_test_case(cls, test_case):
@@ -108,6 +109,14 @@ class TestResult(_DictLikeObject):
         if val is None:
             val = attr[2]
         return "%s: %s" % (res, val)
+
+
+class SuiteResult(Result):
+    pass
+
+
+class GroupResult(Result):
+    pass
 
 
 class _TestElm(_DictLikeObject):
@@ -244,10 +253,7 @@ class TestRunner(object):
         finally:
             test_case.end_time = datetime.now(tzutc())
             self.plmanager.test_cases.post_test_case(test_case)
-        result = TestResult.result_from_test_case(test_case)
-        result.status = test_case.status
-        self.plmanager.results_collector.pre_test_result_reported(result, test_case)
-        self.plmanager.results_collector.add_test_result(result, test_case)
+        self.plmanager.results_collector.add_test_result(test_case)
         if test_case.vital and test_case.status != test_case.TEST_STATUS_PASSED:
             raise VitalTestFailed(test_case.test_name)
 
@@ -256,7 +262,6 @@ class TestRunner(object):
                 "test_elm must be TestGroup, not %s" % type(test_group)
         test_group.start_time = datetime.now(tzutc())
         try:
-            # TODO: consider to have Result for group
             self.plmanager.test_groups.pre_test_group(test_group)
             self.plmanager.test_skippers.should_be_test_group_skipped(test_group)
             if test_group.workers == 1:
@@ -285,7 +290,9 @@ class TestRunner(object):
         finally:
             test_group.end_time = datetime.now(tzutc())
             self.plmanager.test_groups.post_test_group(test_group)
-        # TODO: need to think out how to report group_result
+
+        self.plmanager.results_collector.add_test_result(test_group)
+
         if test_group.vital:
             if test_group.failed != 0 or \
                     test_group.skipped != 0 or \

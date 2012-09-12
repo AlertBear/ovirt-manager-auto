@@ -175,6 +175,12 @@ class UnittestLoader(Component):
     def pre_suite_result_reported(self, res, ts):
         pass
 
+    def pre_group_result_reported(self, res, tg):
+        pass
+
+    def pre_suite_result_reported(self, res, ts):
+        pass
+
     @classmethod
     def is_enabled(cls, a, b):
         return True

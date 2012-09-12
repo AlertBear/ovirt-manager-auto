@@ -87,6 +87,12 @@ class LogCapture(Component):
         self.log_handler.set_test_case(None)
         setattr(res, self.rec_name, getattr(t, ATTR_NAME, str()))
 
+    def pre_group_result_reported(self, res, g):
+        pass
+
+    def pre_suite_result_reported(self, res, s):
+        pass
+
     def pre_test_case(self, t):
         self.log_handler.set_test_case(t)
 

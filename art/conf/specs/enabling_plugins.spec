@@ -18,3 +18,6 @@ enabled = boolean(default=True)
 
 [GENERATE_DS]
 enabled = boolean(default=True)
+
+[LOGSTASH]
+enabled = boolean(default=True)

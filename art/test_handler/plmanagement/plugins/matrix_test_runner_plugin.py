@@ -811,6 +811,12 @@ class MatrixBasedTestComposer(Component):
 
         logger.info(TEST_CASES_SEPARATOR)
 
+    def pre_group_result_reported(self, res, tg):
+        pass
+
+    def pre_suite_result_reported(self, res, ts):
+        pass
+
     def pre_test_group(self, tg):
         if isinstance(tg, MatrixTestSuite):
             return
@@ -832,7 +838,7 @@ class MatrixBasedTestComposer(Component):
             if tc.status == tc.TEST_STATUS_SKIPPED and isinstance(tc.exc, DoNotRun):
                 tc.test_report = False
                 tc.status = tc.TEST_STATUS_PASSED
-                logger.info("Test case '%s' will not executed: %s", tc.test_name, tc.exc)
+                logger.info("Test case '%s' will be not executed: %s", tc.test_name, tc.exc)
         elif tc.status == tc.TEST_STATUS_UNDEFINED:
             st_msg = logger.warn
         else:

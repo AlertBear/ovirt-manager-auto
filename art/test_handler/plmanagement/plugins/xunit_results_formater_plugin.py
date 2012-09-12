@@ -115,6 +115,12 @@ class XUnit(Component):
                               value=start_time))
         self.generate_report()
 
+    def add_group_result(self, res, tg):
+        pass
+
+    def add_suite_result(self, res, ts):
+        pass
+
     def __update_testsuite_attrs(self):
         tsa = self.testsuite.attrib
         tsa['failures'] = str(self.failures)
