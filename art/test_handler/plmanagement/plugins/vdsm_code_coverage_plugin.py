@@ -121,9 +121,9 @@ class VDSMCodeCoverage(Component):
         self.res_dir = params.vdsm_code_coverage
 
         vds_section = PARAMETERS
-        dc_val = conf[PARAMETERS][DC_TYPE]
-        if dc_val != 'none':
-            vds_section = dc_val.upper()
+        dc_val = conf[PARAMETERS][DC_TYPE].upper()
+        if dc_val != 'NONE' and dc_val in conf:
+            vds_section = dc_val
 
         vds = conf[vds_section].as_list(VDS)
         vds_passwd = conf[vds_section].as_list(VDS_PASSWORD)

@@ -73,9 +73,9 @@ class AutoCpuNameResolution(Component):
 
         #processing the hosts, looking for compatible cpu
         vds_section = PARAMETERS
-        dc_val = conf[PARAMETERS][DC_TYPE]
-        if dc_val != 'none':
-            vds_section = dc_val.upper()
+        dc_val = conf[PARAMETERS][DC_TYPE].upper()
+        if dc_val != 'NONE' and dc_val in conf:
+            vds_section = dc_val
 
         vds_list = conf[vds_section].as_list(VDS)
         vds_passwd_list = conf[vds_section].as_list(VDS_PASSWORD)
