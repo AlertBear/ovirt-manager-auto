@@ -110,8 +110,8 @@ def _prepareStorageDomainObject(positive, **kwargs):
         sd.set_storage(Storage(type_=storage_type, logical_unit=[logical_unit]))
 
         if type and type.lower() == 'data':
-            if 'iscsi_storage_format' in kwargs:
-                sd.set_storage_format(kwargs.pop('iscsi_storage_format'))
+            if 'storage_format' in kwargs:
+                sd.set_storage_format(kwargs.pop('storage_format'))
             elif host:
                 status, hostCompVer = getHostCompatibilityVersion(positive, host)
                 if not status:
@@ -131,7 +131,7 @@ def _prepareStorageDomainObject(positive, **kwargs):
 
 
 @is_action()
-def addStorageDomain(positive, iscsi_storage_format=None, wait=True, **kwargs):
+def addStorageDomain(positive, wait=True, **kwargs):
     '''
     Description: add new storage domain
     Author: edolinin
