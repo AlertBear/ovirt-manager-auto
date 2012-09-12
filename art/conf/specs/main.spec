@@ -15,7 +15,7 @@ media_type = option('application/xml', default='application/xml')
 [REST_CONNECTION]
 scheme = option('http', 'https', default='http')
 host = is_alive()
-port = integer()
+port = integer(default=80)
 user = string()
 password = string()
 entry_point = string(default='api')

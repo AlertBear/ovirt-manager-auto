@@ -71,6 +71,5 @@ class AutoDevices(Component):
 
     def config_spec(self, spec, val_funcs):
         section_spec = spec.get(STR_SECTION, {})
-        section_spec['host_group'] = "string(default=None)"
         spec[STR_SECTION] = section_spec
 

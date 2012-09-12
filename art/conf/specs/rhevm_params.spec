@@ -5,7 +5,7 @@ Prefer = string(default='persistent-auth')
 # general
 cdrom_image = string(default='en_windows_7_enterprise_x64_dvd_x15-70749.iso')
 floppy_image = string(default='win2k3.vfd')
-cpu_name = string(default='Intel Nehalem Family')
+cpu_name = option('Intel Nehalem Family', 'Intel Xeon w/o XD/NX', 'Intel Xeon', 'Intel Conroe Family', 'Intel Penryn Family', 'AMD Opteron G1 w/o NX', 'AMD Opteron G1', 'AMD Opteron G2', 'AMD Opteron G3', default='Intel Nehalem Family')
 shared_iso_domain_path = string(default='/volumes/base/shared_iso_domain')
 shared_iso_domain_address = string(default='wolf.qa.lab.tlv.redhat.com')
 vds_ovirt_port = integer(default='8443')
@@ -28,5 +28,3 @@ tests_iso_domain_path = force_list(default=None)
 tests_iso_domain_address = force_list(default=None)
 export_domain_address = force_list(default=None)
 export_domain_path = force_list(default=None)
-
-
