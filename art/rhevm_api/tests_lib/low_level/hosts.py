@@ -1063,18 +1063,16 @@ def sendSNRequest(positive, host, nics=None, auto_nics=None, **kwargs):
     nics = nics or []
     auto_nics = auto_nics or []
 
-    nics_obj = data_st.HostNics()
-    nics_obj.set_actions(getHostNicsAction(host))
-
-    for nic in nics:
-        nics_obj.add_host_nic(nic)
+    nics_obj = HOST_API.get(href=getHostNics(host))
 
     for nic in auto_nics:
-        nics_obj.add_host_nic(getHostNic(host, nic))
+        nics.append(getHostNic(host, nic))
+
+    nics_obj.set_host_nic(nics)
 
     return HOST_NICS_API.syncAction(nics_obj, "setupnetworks", positive, host_nics=nics_obj, **kwargs)
 
-
+@is_action()
 def isSyncNetwork(host, nic):
     '''
     Description: Validating if Network sync.
