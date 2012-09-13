@@ -1,10 +1,6 @@
 [PARAMETERS]
 # vm_os used in exportImport test. Options: Any supported os image name.
 vm_os = string(default='Red Hat Enterprise Linux 6.x x64')
-vm_windows_user = string(default='Administrator')
-vm_windows_password = string(default='123456')
-vm_linux_user = string(default='root')
-vm_linux_password = string(default='qum5net')
 display_type = option('spice', 'vnc', 'rdesktop', default='spice')
 
 # cobbler configuration
