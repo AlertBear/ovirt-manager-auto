@@ -137,7 +137,8 @@ class StorageUtils:
                          }
 
         vdsSection = MAIN_SECTION
-        if self.data_center_type == 'iscsi' or self.data_center_type == 'local':
+        if self.data_center_type == 'iscsi' or \
+           self.data_center_type == 'localfs':
             vdsSection = self.data_center_type.upper()
 
         vdsServers = map(lambda x: getIpAddressByHostName(x),
@@ -218,7 +219,8 @@ class StorageUtils:
                         for i in range(0, sectionParams['total'])
                     ]
 
-        if self.data_center_type == 'local' or self.data_center_type == 'none':
+        if self.data_center_type == 'localfs' or \
+           self.data_center_type == 'none':
             for storageSection, sectionParams in self.storages['local'].items():
                 self.local_devices[storageSection] = [
                     self.__create_local_device(sectionParams['ip'], sectionParams['password'], path)
