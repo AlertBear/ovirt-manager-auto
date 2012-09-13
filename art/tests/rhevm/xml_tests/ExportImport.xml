@@ -252,7 +252,7 @@
 <test_case>
    <test_name>checkVmVolume after VMs export '{data_center_type}'</test_name>
    <test_action>checkVmVolume</test_action>
-   <parameters>vdsName='{vds}', username='root', passwd='{vds_password}', dataCenter='{data_center_type}StorageTest', storageDomain='ImpExp_{data_center_type}', vm='{data_center_type}TemplVm', fake=True, noImages=False</parameters>
+   <parameters>vdsName='{vds[0]}', username='root', passwd='{vds_password[0]}', dataCenter='{data_center_type}StorageTest', storageDomain='ImpExp_{data_center_type}', vm='{data_center_type}TemplVm', fake=True, noImages=False</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -268,7 +268,7 @@
 <test_case>
    <test_name>checkVmVolume after VMs removal from export domain '{data_center_type}'</test_name>
    <test_action>checkVmVolume</test_action>
-   <parameters>vdsName='{vds}', username='root', passwd='{vds_password}', dataCenter='{data_center_type}StorageTest', storageDomain='ImpExp_{data_center_type}', vm='{data_center_type}TemplVm',fake=True, noImages=True, exists=False</parameters>
+   <parameters>vdsName='{vds[0]}', username='root', passwd='{vds_password[0]}', dataCenter='{data_center_type}StorageTest', storageDomain='ImpExp_{data_center_type}', vm='{data_center_type}TemplVm',fake=True, noImages=True, exists=False</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -284,7 +284,7 @@
 <test_case>
    <test_name>checkVmVolume after the second VM export '{data_center_type}'</test_name>
    <test_action>checkVmVolume</test_action>
-   <parameters>vdsName='{vds}', username='root', passwd='{vds_password}', dataCenter='{data_center_type}StorageTest', storageDomain='ImpExp_{data_center_type}', vm='{data_center_type}TemplVm', fake=True, noImages=False</parameters>
+   <parameters>vdsName='{vds[0]}', username='root', passwd='{vds_password[0]}', dataCenter='{data_center_type}StorageTest', storageDomain='ImpExp_{data_center_type}', vm='{data_center_type}TemplVm', fake=True, noImages=False</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -300,7 +300,7 @@
 <test_case>
    <test_name>checkTemplateVolume after template export '{data_center_type}'</test_name>
    <test_action>checkTemplateVolume</test_action>
-   <parameters>vdsName='{vds}', username='root', passwd='{vds_password}', dataCenter='{data_center_type}StorageTest', storageDomain='ImpExp_{data_center_type}',template='{data_center_type}TestTempl', fake=False, noImages=False</parameters>
+   <parameters>vdsName='{vds[0]}', username='root', passwd='{vds_password[0]}', dataCenter='{data_center_type}StorageTest', storageDomain='ImpExp_{data_center_type}',template='{data_center_type}TestTempl', fake=False, noImages=False</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
