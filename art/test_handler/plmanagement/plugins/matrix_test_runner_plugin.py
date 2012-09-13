@@ -497,10 +497,10 @@ class MatrixTestCase(TestCase):
         except NO_TB_EXCEPTIONS as ex:
             self.status = self.TEST_STATUS_FAILED
             logger.error(ex)
-        except SocketError, SkipTest:
+        except SocketError, errors.SkipTest:
             raise
-        except TestExceptionType as ex:
-            raise SkipTest(str(ex))
+        except EngineTypeError as ex:
+            raise errors.SkipTest(str(ex))
         except Exception as ex:
             self.status = self.TEST_STATUS_ERROR
             logger.error("Test Case execution failed", exc_info=True)
