@@ -28,3 +28,8 @@ tests_iso_domain_path = force_list(default=None)
 tests_iso_domain_address = force_list(default=None)
 export_domain_address = force_list(default=None)
 export_domain_path = force_list(default=None)
+
+vm_windows_user = string(default='Administrator')
+vm_windows_password = string(default='123456')
+vm_linux_user = string(default='root')
+vm_linux_password = string(default='qum5net')
