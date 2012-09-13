@@ -91,6 +91,15 @@
    <vital>TRUE</vital>
 </test_case>
 <test_case>
+   <test_name>create data domain local</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='{data_center_type}StorageTest_data_domain_#loop_index',type='e{storage_dom_type_data}',storage_type='e{storage_type_local}',host='{vds[0]}',path='{local_domain_path}'</parameters>
+   <positive>TRUE</positive>
+   <run>if('{data_center_type}'=='e{storage_type_local}');loop({local_domain_path})</run>
+   <fetch_output/>
+   <vital>TRUE</vital>
+</test_case>
+<test_case>
    <test_name>Create iso domain for '{data_center_type}'</test_name>
    <test_action>addStorageDomain</test_action>
    <parameters>name='{data_center_type}StorageTest_ISO',type='e{storage_dom_type_iso}',storage_type='e{storage_type_nfs}',address='{tests_iso_domain_address}',host='{vds[0]}',path='{tests_iso_domain_path}'</parameters>
@@ -170,6 +179,14 @@
    <parameters>element='storagedomain', collection='storagedomains', elementName='{data_center_type}StorageTest_data_domain_#loop_index', expectedStatus='e{storage_domain_state_active}', dcName='{data_center_type}StorageTest'</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_nfs}');loop({data_domain_path})</run>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Validate storage data local</test_name>
+   <test_action>validateEntityStatus</test_action>
+   <parameters>element='storagedomain', collection='storagedomains', elementName='{data_center_type}StorageTest_data_domain_#loop_index', expectedStatus='e{storage_domain_state_active}', dcName='{data_center_type}StorageTest'</parameters>
+   <positive>TRUE</positive>
+   <run>if('{data_center_type}'=='e{storage_type_local}');loop({local_domain_path})</run>
    <fetch_output/>
 </test_case>
 <test_case>
@@ -303,6 +320,15 @@
    <parameters>name='{data_center_type}StorageTest_data_domain_#loop_index',type='e{storage_dom_type_data}',storage_type='e{storage_type_nfs}',address='{data_domain_address}',host='{vds[0]}',path='{data_domain_path}'</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_nfs}');loop({data_domain_path},{data_domain_address})</run>
+   <fetch_output/>
+   <vital>TRUE</vital>
+</test_case>
+<test_case>
+   <test_name>create data domain LOCAL</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='{data_center_type}StorageTest_data_domain_#loop_index',type='e{storage_dom_type_data}',storage_type='e{storage_type_local}',path='{local_domain_path}',host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>if('{data_center_type}'=='e{storage_type_local}');loop({local_domain_path})</run>
    <fetch_output/>
    <vital>TRUE</vital>
 </test_case>
@@ -504,7 +530,7 @@
    <test_action/>
    <parameters>n/a2</parameters>
    <positive>NONE</positive>
-   <run>if(('{data_center_type}' == 'e{storage_type_nfs}' and 1&lt;len('[data_domain_path]'.split(','))) or ('{data_center_type}' == 'e{storage_type_iscsi}' and 1&lt;len('[lun]'.split(','))) or ('{data_center_type}' == 'e{storage_type_fcp}' and 1&lt;len('[lun]'.split(','))))</run>
+   <run>if(('{data_center_type}' == 'e{storage_type_nfs}' and 1&lt;len('[data_domain_path]'.split(','))) or ('{data_center_type}' == 'e{storage_type_iscsi}' and 1&lt;len('[lun]'.split(','))) or ('{data_center_type}' == 'e{storage_type_fcp}' and 1&lt;len('[lun]'.split(','))) or ('{data_center_type}' == 'e{storage_type_local}' and 1&lt;len('[local_domain_path]'.split(','))))</run>
    <fetch_output/>
 </test_case>
 <test_case>
@@ -547,6 +573,15 @@
    <parameters>name='{data_center_type}StorageTest_data_domain_#loop_index',type='e{storage_dom_type_data}',storage_type='e{storage_type_nfs}',address='{data_domain_address}',host='{vds[0]}',path='{data_domain_path}'</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_nfs}');loop({data_domain_path},{data_domain_address})</run>
+   <fetch_output/>
+   <vital>TRUE</vital>
+</test_case>
+<test_case>
+   <test_name>create data domain LOCAL</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='{data_center_type}StorageTest_data_domain_#loop_index',type='e{storage_dom_type_data}',storage_type='e{storage_type_local}',host='{vds[0]}',path='{local_domain_path}'</parameters>
+   <positive>TRUE</positive>
+   <run>if('{data_center_type}'=='e{storage_type_local}');loop({local_domain_path})</run>
    <fetch_output/>
    <vital>TRUE</vital>
 </test_case>
