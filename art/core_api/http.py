@@ -116,7 +116,7 @@ class HTTPProxy():
 
             return ret
 
-        except httplib.CannotSendRequest:
+        except (httplib.CannotSendRequest, httplib.BadStatusLine):
             add_conn = self.add_connection()
             self.connect(add_conn)
 
