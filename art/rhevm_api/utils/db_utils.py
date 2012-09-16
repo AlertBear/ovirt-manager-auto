@@ -77,8 +77,8 @@ class HistoryDB(object):
 
     def __init__(self):
         conf = ConfigObj(settings.opts.get('conf'))
-        host = conf.get('REST_CONNECTION', {}).get('host', 'localhost')
-        params = conf.get('PARAMETERS', {})
+        host = conf.get('REST_CONNECTION').get('host')
+        params = conf.get('PARAMETERS')
         user = params.get('history_db_user', 'postgres')
         passw = params.get('history_db_passw', None)
         dbname = params.get('history_db_name', HISTORY_DB_NAME)

@@ -27,10 +27,10 @@ from art.core_api.apis_exceptions import APITimeout, APICommandError, EntityNotF
 import art.test_handler.settings as settings
 
 # TODO: move default values to conf spec
-XSD_PATH = settings.opts.get('api_xsd', 'rhevm_api/data_struct/api.xsd')
-DS_PATH = settings.opts.get('data_struct_mod', 'art.rhevm_api.data_struct.data_structures')
+XSD_PATH = settings.opts.get('api_xsd')
+DS_PATH = settings.opts.get('data_struct_mod')
 DS_VALIDATE = DS_PATH
-if settings.opts.get('engine', None) == 'sdk':
+if settings.opts.get('engine') == 'sdk':
     DS_PATH = 'ovirtsdk.xml.params'
 
 __import__(DS_PATH)

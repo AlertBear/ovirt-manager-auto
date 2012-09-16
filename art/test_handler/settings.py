@@ -181,10 +181,10 @@ def readTestRunOpts(path, redefs):
 
     buildTestsFilesMatrix(config, opts['test_file_name'])
 
-    opts['in_parallel'] = runSection.get('in_parallel', [])
+    opts['in_parallel'] = runSection.get('in_parallel')
     opts['parallel_run'] = True if opts['in_parallel'] else False
-    opts['parallel_configs'] = runSection.get('parallel_configs', [])
-    opts['parallel_sections'] = runSection.get('parallel_sections', [])
+    opts['parallel_configs'] = runSection.get('parallel_configs')
+    opts['parallel_sections'] = runSection.get('parallel_sections')
 
     opts['engine'] = runSection['engine']
     opts['data_struct_mod'] = runSection['data_struct_mod']
@@ -200,7 +200,7 @@ def readTestRunOpts(path, redefs):
     reportSection = config['REPORT']
     opts['has_sub_tests'] = reportSection['has_sub_tests']
 
-    opts['add_report_nodes'] = reportSection.get('add_report_nodes', 'no')
+    opts['add_report_nodes'] = reportSection.get('add_report_nodes')
 
     opts['iteration'] = 0
 

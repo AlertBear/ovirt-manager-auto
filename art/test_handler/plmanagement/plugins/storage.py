@@ -127,7 +127,7 @@ class StorageUtils:
         self.logger = logging.getLogger('storage')
         self.host_group = self.storageConf.get('host_group')
         self.data_center_type = str(getFromMainConfSection(config,
-                                'data_center_type', asList=False)).lower()
+                                'data_center_type', asList=False))
 
         self.storages = {'nfs':     {},
                          'iscsi':   {},

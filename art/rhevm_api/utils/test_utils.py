@@ -61,7 +61,7 @@ def get_api(element, collection):
     Fetch proper API instance based on engine type
     '''
 
-    engine = settings.opts.get('engine', 'rest')
+    engine = settings.opts.get('engine')
     if engine == 'rest':
         from art.core_api.rest_utils import RestUtil
         api = RestUtil(element, collection)
