@@ -231,7 +231,7 @@ def removePooledVms(positive, name, vm_total, vm_to_remove=-1):
     vm_decimal_places = len(str(vm_total))
     vmlist = []
     for i in range(vm_total):
-        vm_number = str(i + 1).zfill(vm_decimal_places)
+        vm_number = str(i + 1)
         vmlist.append("%s-%s" % (name, vm_number))
     if vm_to_remove == -1:
         vms = ",".join(vmlist)
