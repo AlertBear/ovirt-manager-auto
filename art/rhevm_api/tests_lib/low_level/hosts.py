@@ -865,7 +865,8 @@ def getFreeInterface(positive, host):
     '''
     for nic, network in hostNicsNetworksMapper(host).iteritems():
         if network is None:
-            return True, {'freeNic': nic}
+            if not any(hostNic for hostNic in hostNicsNetworksMapper(host).keys() if re.search('%s\.\d' % (nic), hostNic)):
+                return True, {'freeNic': nic}
     return False, {'freeNic': None}
 
 
