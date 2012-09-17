@@ -24,3 +24,7 @@ lun = force_list(default=None)
 lun_target = force_list(default=None)
 lun_address = force_list(default=None)
 
+[LOCALFS]
+vds = force_list(default=None)
+vds_password = force_list(default=None)
+local_domain_path = force_list(default=None)
