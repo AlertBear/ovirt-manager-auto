@@ -48,7 +48,7 @@ HOST_NICS_API = get_api('host_nic', 'host_nics')
 VM_API = get_api('vm', 'vms')
 
 xpathMatch = is_action('xpathHosts')(XPathMatch(HOST_API).__call__)
-xpathHostsLinks = is_action('xpathHostsLinks')(XPathLinks(HOST_API).__call__)
+xpathHostsLinks = is_action('xpathLinksHosts')(XPathLinks(HOST_API).__call__)
 
 Host = getDS('Host')
 Options = getDS('Options')
