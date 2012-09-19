@@ -24,17 +24,18 @@ import time
 from copy import deepcopy
 
 from art.core_api.apis_exceptions import APITimeout, EntityNotFound
-from art.core_api.apis_utils import data_st, TimeoutingSampler
+from art.core_api.apis_utils import data_st, TimeoutingSampler, getDS
 from art.rhevm_api.utils.test_utils import get_api, split, \
             cobblerAddNewSystem, cobblerSetLinuxHostName
-from art.rhevm_api.utils.xpath_utils import XPathMatch
+from art.rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
 from art.test_handler.settings import opts
 from threading import Thread
 from utilities.jobs import Job, JobsSet
 from utilities.utils import readConfFile
 from utilities.machine import Machine
 from art.rhevm_api.utils.test_utils import searchForObj, getImageByOsType, \
-    convertMacToIpAddress, checkHostConnectivity, updateVmStatusInDatabase
+    convertMacToIpAddress, checkHostConnectivity, updateVmStatusInDatabase, \
+    runMachineCommand
 from art.rhevm_api.utils.threads import runParallel
 from art.core_api import is_action
 
@@ -66,9 +67,11 @@ SNAPSHOT_API = get_api('snapshot', 'snapshots')
 TAG_API = get_api('tag', 'tags')
 CDROM_API = get_api('cdrom', 'cdroms')
 NETWORK_API = get_api('network', 'networks')
+Snapshots = getDS('Snapshots')
 
 logger = logging.getLogger(__package__ + __name__)
 xpathMatch = is_action('xpathVms', id_name='xpathMatch')(XPathMatch(VM_API))
+xpathVmsLinks = is_action('xpathVmsLinks', id_name='xpathVmsLinks')(XPathLinks(VM_API))
 
 
 class DiskNotFound(Exception):
@@ -78,10 +81,24 @@ class DiskNotFound(Exception):
 def _prepareVmObject(**kwargs):
 
     add = kwargs.pop('add', False)
-
     vm = data_st.VM(name=kwargs.pop('name', None),
-                    description=kwargs.pop('description', None),
-                    memory=kwargs.pop('memory', GBYTE if add else None))
+                    description=kwargs.pop('description', None))
+
+    # snapshot
+    snapshot_name = kwargs.pop('snapshot', None)
+    if snapshot_name:
+        add = False
+        vms = VM_API.get(absLink=False)
+        for vmachine in vms:
+            try:
+                snObj = _getVmSnapshot(vmachine.name, snapshot_name)
+            except EntityNotFound:
+                pass
+            else:
+                snapshots = Snapshots()
+                snapshots.add_snapshot(snObj)
+                vm.set_snapshots(snapshots)
+                break
 
     #cluster
     cluster_name = kwargs.pop('cluster', DEFAULT_CLUSTER if add else None)
@@ -93,6 +110,9 @@ def _prepareVmObject(**kwargs):
     if cluster_name:
         cluster = CLUSTER_API.find(cluster_name, search_by)
         vm.set_cluster(cluster)
+
+    # memory
+    vm.memory=kwargs.pop('memory', GBYTE if add else None)
 
     # cpu topology
     cpu_socket = kwargs.pop('cpu_socket', 1 if add else None)
@@ -2245,3 +2265,27 @@ def removeVmFromExportDomain(positive, vm, datacenter,
     time.sleep(30)
     return status
 
+
+@is_action()
+def lockVm(positive, vm_name, ip, user, password, unlock=False):
+    '''
+    Description: locks VM in DB
+    Author: pdufek
+    Parameters:
+    * vm_name - the name of the VM
+    * ip - IP of the machine where DB resides
+    * user - username for remote access
+    * password - password for remote access
+    * unlock - unlock VM instead of lock
+    Returns: True (successfully set) / False (failure)
+    '''
+    cmd = 'psql engine postgres -c \"UPDATE vm_dynamic SET status=%d WHERE '\
+          'vm_guid=(SELECT vm_guid FROM vm_static WHERE vm_name=\'%s\');\"' \
+          % (0 if (unlock is not None) and unlock else 15, vm_name)
+    status = runMachineCommand(positive, ip=ip, user=user, password=password,
+                               cmd=cmd)
+    if not status[0]:
+        log_fce = VM_API.logger.error if (positive is not None) and positive \
+                                        else VM_API.logger.info
+        log_fce('Command \'%s\' failed: %s' % (cmd, status[1]['out']))
+    return status[0] == positive
