@@ -792,7 +792,7 @@ def _prepareHostNicObject(**kwargs):
         bond_obj = data_st.Bonding()
         if slave_list is not None:
             slaves = data_st.Slaves()
-            for nic in slave_list.split(','):
+            for nic in slave_list:
                 slaves.add_host_nic(data_st.HostNIC(name=nic.strip()))
 
             bond_obj.set_slaves(slaves)
