@@ -4,6 +4,10 @@
 <input>
   <!-- ////////////////////////// SETUP /////////////////////////////// -->
   <test_case>
+    <test_name>START_GROUP: Setup</test_name>
+    <run>yes</run>
+  </test_case>
+  <test_case>
     <id>d759b7dc-c695-11e1-a578-f0def10e0ce8</id>
     <test_name>Create default data center</test_name>
     <test_action>addDataCenter</test_action>
@@ -60,9 +64,16 @@
     <positive>TRUE</positive>
     <run>yes</run>
   </test_case>
+  <test_case>
+    <test_name>END_GROUP: Setup</test_name>
+  </test_case>
   <!-- ////////////////////////////////////////////////////////////////////// -->
   <!-- ////////////////////////// DATACENTERS /////////////////////////////// -->
   <!-- ////////////////////////////////////////////////////////////////////// -->
+  <test_case>
+    <test_name>START_GROUP: Data_Centers</test_name>
+    <run>yes</run>
+  </test_case>
   <test_case>
     <id>d759c95c-c695-11e1-a578-f0def10e0ce8</id>
     <test_name>Create NFS data center</test_name>
@@ -141,9 +152,16 @@
     <positive>TRUE</positive>
     <run>yes</run>
   </test_case>
+  <test_case>
+    <test_name>END_GROUP: Data_Centers</test_name>
+  </test_case>
   <!-- ////////////////////////////////////////////////////////////////////// -->
   <!-- ///////////////////////////// CLUSTERS /////////////////////////////// -->
   <!-- ////////////////////////////////////////////////////////////////////// -->
+  <test_case>
+    <test_name>START_GROUP: Clusters</test_name>
+    <run>yes</run>
+  </test_case>
   <test_case>
     <id>d759df64-c695-11e1-a578-f0def10e0ce8</id>
     <test_name>Create cluster with name of existing one</test_name>
@@ -437,7 +455,14 @@
     <run>yes</run>
     <vital>TRUE</vital>
   </test_case>
+  <test_case>
+    <test_name>END_GROUP: Clusters</test_name>
+  </test_case>
   <!-- /////////////////////// TEST SCENARIO //////////////////////////////// -->
+  <test_case>
+    <test_name>START_GROUP: Mixed_Scenario</test_name>
+    <run>yes</run>
+  </test_case>
   <test_case>
     <id>bb2ec3e6-f4f7-11e1-8dab-0024d7421ca4</id>
     <test_name>Check product name</test_name>
@@ -764,9 +789,16 @@
     <run>yes</run>
     <conf>headers={'Correlation-Id': 341}</conf>
   </test_case>
+  <test_case>
+    <test_name>END_GROUP: Mixed_Scenario</test_name>
+  </test_case>
   <!-- ////////////////////////////////////////////////////////////////////// -->
   <!-- ///////////////////////////// USERS AND ROLES //////////////////////// -->
   <!-- ////////////////////////////////////////////////////////////////////// -->
+  <test_case>
+    <test_name>START_GROUP: User_Roles</test_name>
+    <run>yes</run>
+  </test_case>
   <test_case>
     <id>d75a66f0-c695-11e1-a578-f0def10e0ce8</id>
     <test_name>Add role to user</test_name>
@@ -1058,7 +1090,14 @@
     <positive>NONE</positive>
     <run>yes</run>
   </test_case>
+  <test_case>
+    <test_name>END_GROUP: User_Roles</test_name>
+  </test_case>
   <!-- ////////////////////////// TEARDOWN /////////////////////////////// -->
+  <test_case>
+    <test_name>START_GROUP: Teardown</test_name>
+    <run>yes</run>
+  </test_case>
   <test_case>
     <id>cb8bf834-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Remove VMs</test_name>
@@ -1130,6 +1169,10 @@
     <test_action>removeClusters</test_action>
     <parameters>clusters='RestCluster1 RestCluster4 RestCluster5 RestCluster6 RestCluster7'</parameters>
     <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <test_name>END_GROUP: Teardown</test_name>
     <run>yes</run>
   </test_case>
 </input>
