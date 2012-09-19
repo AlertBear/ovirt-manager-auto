@@ -56,7 +56,7 @@ class AutoHostNicsResolution(Component):
             raise NicResolutionFailed("no nics found")
 
         par = conf.get(PARAMETERS, {})
-        par[HOST_NICS] = ','.join(sorted(nics))
+        par[HOST_NICS] = sorted(nics)
         conf[PARAMETERS] = par
         logger.info("updated config %s.%s = %s", \
                 PARAMETERS, HOST_NICS, par[HOST_NICS])

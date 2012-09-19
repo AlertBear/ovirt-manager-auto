@@ -16,6 +16,7 @@ product_name = string(default='Red Hat Enterprise Virtualization')
 vds_password = force_list(default=None)
 vds = force_list(default=None)
 data_center_type= option('nfs', 'iscsi', 'localfs', 'none', default='none')
+host_nics = force_list(default=None)
 
 #users
 no_roles_user = string(default='larisa')
