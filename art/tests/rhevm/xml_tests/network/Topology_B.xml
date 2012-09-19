@@ -57,7 +57,7 @@
 <test_case>
    <test_name>add sw1 to host eth1</test_name>
    <test_action>attachHostNic</test_action>
-   <parameters>host='{vds}',nic='{vlan_nic}',network='{networks[0]}'</parameters>
+   <parameters>host='{vds}',nic='{host_nics[1]}',network='{networks[0]}'</parameters>
    <positive>TRUE</positive>
    <run>loop({vds})</run>
    <fetch_output/>
@@ -167,7 +167,7 @@
 <test_case>
    <test_name>Remove sw1 from hosts</test_name>
    <test_action>detachHostNic</test_action>
-   <parameters>host='{vds}', nic='{vlan_nic}.{vlan_id[0]}', network='{networks[0]}'</parameters>
+   <parameters>host='{vds}', nic='{host_nics[1]}.{vlan_id[0]}', network='{networks[0]}'</parameters>
    <positive>TRUE</positive>
    <run>loop({vds})</run>
    <fetch_output/>
@@ -187,7 +187,7 @@
    <test_description/>
 </test_case>
 <test_case>
-   <test_name>Remove sw1from DataCenter</test_name>
+   <test_name>Remove sw1 from DataCenter</test_name>
    <test_action>removeNetwork</test_action>
    <parameters>network='{networks[0]}',data_center='{datacenter}'</parameters>
    <positive>TRUE</positive>
@@ -267,7 +267,7 @@
 <test_case>
    <test_name>generate sw1 vlan network element</test_name>
    <test_action>genSNNic</test_action>
-   <parameters>nic='{vlan_nic}', network='{networks[0]}'</parameters>
+   <parameters>nic='{host_nics[1]}', network='{networks[0]}', vlan='{vlan_id[0]}'</parameters>
    <positive>NONE</positive>
    <run>YES</run>
    <fetch_output>host_nic->sw1_nic</fetch_output>
@@ -278,7 +278,7 @@
 <test_case>
    <test_name>Add VLAN to Hosts</test_name>
    <test_action>sendSNRequest</test_action>
-   <parameters>host='{vds}',nics=[%sw1_nic%],auto_nics=['{nics[0]}'],check_connectivity='true', connectivity_timeout='60', force='false'</parameters>
+   <parameters>host='{vds}',nics=[%sw1_nic%],auto_nics=['{host_nics[0]}', '{host_nics[1]}'],check_connectivity='true', connectivity_timeout=60, force='false'</parameters>
    <positive>TRUE</positive>
    <run>loop({vds})</run>
    <fetch_output/>
@@ -388,7 +388,7 @@
 <test_case>
    <test_name>Remove VLAN sw1 from hosts</test_name>
    <test_action>sendSNRequest</test_action>
-   <parameters>host='{vds}',auto_nics=['{nics[0]}'],check_connectivity='true', connectivity_timeout='60', force='false'</parameters>
+   <parameters>host='{vds}',auto_nics=['{host_nics[0]}'],check_connectivity='true', connectivity_timeout=60, force='false'</parameters>
    <positive>TRUE</positive>
    <run>loop({vds})</run>
    <fetch_output/>

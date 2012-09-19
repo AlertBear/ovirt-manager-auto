@@ -57,7 +57,7 @@
 <test_case>
    <test_name>Add sw1 to Hosts</test_name>
    <test_action>attachHostNic</test_action>
-   <parameters>host='{vds}', nic='{nics[1]}', network='{networks[0]}'</parameters>
+   <parameters>host='{vds}', nic='{host_nics[1]}', network='{networks[0]}'</parameters>
    <positive>TRUE</positive>
    <run>loop({vds})</run>
    <fetch_output/>
@@ -145,7 +145,7 @@
 <test_case>
    <test_name>Turn DOWN eth1</test_name>
    <test_action>ifdownNic</test_action>
-   <parameters>host=%hostName%,root_password='{vm_linux_password}',nic='{nics[1]}'</parameters>
+   <parameters>host=%hostName%,root_password='{vm_linux_password}',nic='{host_nics[1]}'</parameters>
    <positive>NONE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -211,7 +211,7 @@
 <test_case>
    <test_name>Turn UP eth1</test_name>
    <test_action>ifupNic</test_action>
-   <parameters>host=%hostName%,root_password='{vm_linux_password}',nic='{nics[1]}',wait=False</parameters>
+   <parameters>host=%hostName%,root_password='{vm_linux_password}',nic='{host_nics[1]}',wait=False</parameters>
    <positive>NONE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -233,7 +233,7 @@
 <test_case>
    <test_name>Check that eth1 is UP</test_name>
    <test_action>waitForHostNicState</test_action>
-   <parameters>host=%hostName%,nic='{nics[1]}',state='up',interval=5, attempts=10</parameters>
+   <parameters>host=%hostName%,nic='{host_nics[1]}',state='up',interval=5, attempts=10</parameters>
    <positive>NONE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -277,7 +277,7 @@
 <test_case>
    <test_name>Remove sw1 from hosts</test_name>
    <test_action>detachHostNic</test_action>
-   <parameters>host='{vds}', nic='{nics[1]}', network='{networks[0]}'</parameters>
+   <parameters>host='{vds}', nic='{host_nics[1]}', network='{networks[0]}'</parameters>
    <positive>TRUE</positive>
    <run>loop({vds})</run>
    <fetch_output/>

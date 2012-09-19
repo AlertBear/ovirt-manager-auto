@@ -79,7 +79,7 @@
 <test_case>
    <test_name>Add sw2 to host as Bond0 with eth2 and eth3 mode 1</test_name>
    <test_action>addBond</test_action>
-   <parameters>host='{vds}', name='{bond[0]}',slaves='[bond_nics]',network='{networks[1]}',bondOptions='mode_1'</parameters>
+   <parameters>host='{vds}', name='{bond[0]}',slaves=['{host_nics[2]}','{host_nics[3]}'],network='{networks[1]}',bondOptions='mode_1'</parameters>
    <positive>TRUE</positive>
    <run>loop({vds})</run>
    <fetch_output/>

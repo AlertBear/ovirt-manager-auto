@@ -68,7 +68,7 @@
 <test_case>
   <test_name>Add sw1 to Hosts</test_name>
   <test_action>attachHostNic</test_action>
-  <parameters>host='{vds}', nic='{vlan_nic}', network='{networks[0]}'</parameters>
+  <parameters>host='{vds}', nic='{host_nics[1]}', network='{networks[0]}'</parameters>
   <positive>TRUE</positive>
   <run>loop({vds})</run>
   <fetch_output/>
@@ -79,7 +79,7 @@
 <test_case>
   <test_name>Add sw2 Bond mode=1 to Hosts eth2 and eth3</test_name>
   <test_action>addBond</test_action>
-  <parameters>host='{vds}', name='{bond[0]}',slaves='[bond_nics]',network='{networks[1]}',bondOptions='mode_1'</parameters>
+  <parameters>host='{vds}', name='{bond[0]}',slaves=['{host_nics[2]}','{host_nics[3]}'],network='{networks[1]}',bondOptions='mode_1'</parameters>
   <positive>TRUE</positive>
   <run>loop({vds})</run>
   <fetch_output/>
@@ -266,7 +266,7 @@
 <test_case>
    <test_name>Remove sw1 from hosts</test_name>
    <test_action>detachHostNic</test_action>
-   <parameters>host='{vds}', nic='{vlan_nic}.{vlan_id[0]}', network='{networks[0]}'</parameters>
+   <parameters>host='{vds}', nic='{host_nics[1]}.{vlan_id[0]}', network='{networks[0]}'</parameters>
    <positive>TRUE</positive>
    <run>loop({vds})</run>
    <fetch_output/>
