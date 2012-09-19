@@ -560,9 +560,9 @@ def stopVms(vms, wait='true'):
         return True
 
     resultsList = []
-    query = 'name={0} and status=down'
+    query_fmt = 'name={0} and status=down'
     for vmObj in vmObjectsList:
-        query = query.format(vmObj.get_name())
+        query = query_fmt.format(vmObj.get_name())
         querySt = VM_API.waitForQuery(query, timeout=VM_ACTION_TIMEOUT, sleep=DEF_SLEEP)
         resultsList.append(querySt)
 
