@@ -1068,9 +1068,10 @@ def sendSNRequest(positive, host, nics=None, auto_nics=None, **kwargs):
     for nic in auto_nics:
         nics.append(getHostNic(host, nic))
 
-    nics_obj.set_host_nic(nics)
+    return HOST_NICS_API.syncAction(nics_obj, "setupnetworks", positive,
+                                    host_nics=data_st.HostNics(host_nic=nics),
+                                    **kwargs)
 
-    return HOST_NICS_API.syncAction(nics_obj, "setupnetworks", positive, host_nics=nics_obj, **kwargs)
 
 @is_action()
 def isSyncNetwork(host, nic):
