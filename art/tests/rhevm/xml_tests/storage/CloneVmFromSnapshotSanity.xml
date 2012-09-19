@@ -1,0 +1,883 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- vim: set ts=3 sw=3 expandtab: -->
+<?xml-stylesheet type="text/xsl" href="table.xslt"?>
+<input>
+<test_case>
+   <test_name>START_GROUP: SETUP</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>none</positive>
+   <run>yes</run>
+   <report/>
+</test_case>
+<test_case>
+   <test_name>Create data center</test_name>
+   <test_type></test_type>
+   <test_action>addDataCenter</test_action>
+   <parameters>name='clone_dc', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Create cluster</test_name>
+   <test_action>addCluster</test_action>
+   <parameters>name='clone_cluster', cpu='{cpu_name}', data_center='clone_dc', version='{compatibility_version}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create hosts</test_name>
+   <test_type>rest</test_type>
+   <test_action>addHost</test_action>
+   <parameters>name='{vds}', root_password='{vds_password}', cluster='clone_cluster', wait=True</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds},{vds_password})</run>
+</test_case>
+<test_case>
+   <test_name>Create NFS data storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='data_sd', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+</test_case>
+<test_case>
+   <test_name>iSCSI discover</test_name>
+   <test_action>iscsiDiscover</test_action>
+   <parameters>host='{vds[0]}', address='{lun_address[0]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>iSCSI login</test_name>
+   <test_action>iscsiLogin</test_action>
+   <parameters>host='{vds[0]}', address='{lun_address[0]}', target='{lun_target[0]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create iSCSI data storage domain</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='data_sd', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun[0]}', lun_address='{lun_address[0]}', lun_target='{lun_target[0]}', lun_port=3260</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create FCP data storage domain</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='data_sd', type='e{storage_dom_type_data}', storage_type='e{storage_type_fcp}', host='{vds[0]}', lun='{lun[0]}', lun_port=3260</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Attach data storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>attachStorageDomain</test_action>
+   <parameters>storagedomain='data_sd', datacenter='clone_dc'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create the second NFS data storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='data_sd2', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[1]}', host='{vds[0]}', path='{data_domain_path[1]}'</parameters>
+   <positive>TRUE</positive>
+   <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+</test_case>
+<test_case>
+   <test_name>iSCSI discover</test_name>
+   <test_action>iscsiDiscover</test_action>
+   <parameters>host='{vds[0]}', address='{lun_address[1]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>iSCSI login</test_name>
+   <test_action>iscsiLogin</test_action>
+   <parameters>host='{vds[0]}', address='{lun_address[1]}', target='{lun_target[1]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create the second iSCSI data storage domain</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='data_sd2', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun[1]}', lun_address='{lun_address[1]}', lun_target='{lun_target[1]}', lun_port=3260</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create the second FCP data storage domain</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='data_sd2', type='e{storage_dom_type_data}', storage_type='e{storage_type_fcp}', host='{vds[0]}', lun='{lun[1]}', lun_port=3260</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Attach the second data storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>attachStorageDomain</test_action>
+   <parameters>storagedomain='data_sd2', datacenter='clone_dc'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Activate the second data storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>activateStorageDomain</test_action>
+   <parameters>storagedomain='data_sd2', datacenter='clone_dc'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM for testing VM cloning</test_name>
+   <test_type>rest</test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='vm_for_snapshot', cluster='clone_cluster', description='for creating snapshot'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add virtio COW disk</test_name>
+   <test_type>rest</test_type>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='vm_for_snapshot', size=6442450944, wait='True', storagedomain='data_sd', type='e{disk_type_data}', interface='e{interface_ide}', format='e{format_cow}', sparse='true'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add virtio nic</test_name>
+   <test_type>rest</test_type>
+   <test_action>addNic</test_action>
+   <parameters>vm='vm_for_snapshot', name='nic1', network='{mgmt_bridge}', interface='e{nic_type_virtio}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create snapshot from VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>addSnapshot</test_action>
+   <parameters>vm='vm_for_snapshot', description='vm_snapshot1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: SETUP</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>none</positive>
+   <run>yes</run>
+   <report/>
+</test_case>
+<test_case>
+   <test_name>START_GROUP: TC_134130</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>Create VM from snapshot</test_name>
+   <test_type>rest</test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='vm_from_snapshot', wait=False, cluster='clone_cluster', snapshot='vm_snapshot1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check that cloned VM is locked</test_name>
+   <test_type>rest</test_type>
+   <test_action>checkVmState</test_action>
+   <parameters>vmName='vm_from_snapshot', state='image_locked'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check that cloned VM has inherited the correct description</test_name>
+   <test_type>rest</test_type>
+   <test_action>xpathVms</test_action>
+   <parameters>'vms', xpath='count(/vms/vm[./name="vm_from_snapshot" and ./description="for creating snapshot"])'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until VM is unlocked</test_name>
+   <test_type>rest</test_type>
+   <test_action>waitForVMState</test_action>
+   <parameters>vm='vm_from_snapshot', state='down'</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: TC_134130</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>START_GROUP: TC_134131</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>Create VM on another storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='vm_on_sd2', cluster='clone_cluster', snapshot='vm_snapshot1', storagedomain='data_sd2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until VM is unlocked</test_name>
+   <test_type>rest</test_type>
+   <test_action>waitForVMState</test_action>
+   <parameters>vm='vm_on_sd2', state='down'</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeVm</test_action>
+   <parameters>vm='vm_on_sd2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: TC_134131</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>START_GROUP: TC_134132</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>Start VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>startVm</test_action>
+   <parameters>vm='vm_for_snapshot', wait_for_status='up'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM from snapshot while original VM is Up</test_name>
+   <test_type>rest</test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='vm_from_snapshot2', cluster='clone_cluster', snapshot='vm_snapshot1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until VM is unlocked</test_name>
+   <test_type>rest</test_type>
+   <test_action>waitForVMState</test_action>
+   <parameters>vm='vm_from_snapshot2', state='down'</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeVm</test_action>
+   <parameters>vm='vm_from_snapshot2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Stop VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>stopVm</test_action>
+   <parameters>vm='vm_for_snapshot'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Lock VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>lockVm</test_action>
+   <parameters>vm_name='vm_for_snapshot', ip='{host}', user='root', password='{password}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM from snapshot while original VM is Locked</test_name>
+   <test_type>rest</test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='vm_from_snapshot3', cluster='clone_cluster', snapshot='vm_snapshot1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Unlock VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>lockVm</test_action>
+   <parameters>vm_name='vm_for_snapshot', ip='{host}', user='root', password='{password}', unlock=True</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until VM is unlocked</test_name>
+   <test_type>rest</test_type>
+   <test_action>waitForVMState</test_action>
+   <parameters>vm='vm_from_snapshot3', state='down'</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+</test_case><test_case>
+   <test_name>Remove VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeVm</test_action>
+   <parameters>vm='vm_from_snapshot3'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: TC_134132</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>START_GROUP: TC_137688</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>Create VM with the duplicated name</test_name>
+   <test_type>rest</test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='vm_from_snapshot', cluster='clone_cluster', snapshot='vm_snapshot1'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM with the illegal name</test_name>
+   <test_type>rest</test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='vm_from_snapshot*', cluster='clone_cluster', snapshot='vm_snapshot1'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: TC_137688</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>START_GROUP: TC_166174</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>Create VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='vm_with_two_nics', cluster='clone_cluster'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add virtio COW disk</test_name>
+   <test_type>rest</test_type>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='vm_with_two_nics', size=6442450944, wait='True', storagedomain='data_sd', type='e{disk_type_data}', interface='e{interface_ide}', format='e{format_cow}', sparse='true'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add virtio nic</test_name>
+   <test_type>rest</test_type>
+   <test_action>addNic</test_action>
+   <parameters>vm='vm_with_two_nics', name='nic1', network='{mgmt_bridge}', interface='e{nic_type_virtio}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add virtio nic</test_name>
+   <test_type>rest</test_type>
+   <test_action>addNic</test_action>
+   <parameters>vm='vm_with_two_nics', name='nic2', network='{mgmt_bridge}', interface='e{nic_type_virtio}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create snapshot</test_name>
+   <test_type>rest</test_type>
+   <test_action>addSnapshot</test_action>
+   <parameters>vm='vm_with_two_nics', description='two_nics_snapshot'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM from snapshot</test_name>
+   <test_type>rest</test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='vm_cloned_with_two_nics', cluster='clone_cluster', snapshot='two_nics_snapshot'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check that cloned VM has two nics</test_name>
+   <test_type>rest</test_type>
+   <test_action>xpathVmsLinks</test_action>
+   <parameters>entity='vm_cloned_with_two_nics', link_name='nics', xpath='count(/nics/nic)', rslt_eval='2==result'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until VM is unlocked</test_name>
+   <test_type>rest</test_type>
+   <test_action>waitForVMState</test_action>
+   <parameters>vm='vm_cloned_with_two_nics', state='down'</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove VMs with two nics</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeVms</test_action>
+   <parameters>vms='vm_cloned_with_two_nics, vm_with_two_nics'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: TC_166174</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>START_GROUP: TC_166175</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>Create VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='vm_with_two_disks', cluster='clone_cluster'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add virtio COW disk</test_name>
+   <test_type>rest</test_type>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='vm_with_two_disks', size=6442450944, wait='True', storagedomain='data_sd', type='e{disk_type_data}', interface='e{interface_ide}', format='e{format_cow}', sparse='true'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add virtio COW disk</test_name>
+   <test_type>rest</test_type>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='vm_with_two_disks', size=6442450944, wait='True', storagedomain='data_sd', type='e{disk_type_data}', interface='e{interface_ide}', format='e{format_cow}', sparse='true'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add virtio nic</test_name>
+   <test_type>rest</test_type>
+   <test_action>addNic</test_action>
+   <parameters>vm='vm_with_two_disks', name='nic1', network='{mgmt_bridge}', interface='e{nic_type_virtio}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create snapshot</test_name>
+   <test_type>rest</test_type>
+   <test_action>addSnapshot</test_action>
+   <parameters>vm='vm_with_two_disks', description='two_disks_snapshot'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM from snapshot</test_name>
+   <test_type>rest</test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='vm_cloned_with_two_disks', cluster='clone_cluster', snapshot='two_disks_snapshot'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check that cloned VM has two disks</test_name>
+   <test_type>rest</test_type>
+   <test_action>xpathVmsLinks</test_action>
+   <parameters>entity='vm_cloned_with_two_disks', link_name='disks', xpath='count(/disks/disk)', rslt_eval='2==result'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until VM is unlocked</test_name>
+   <test_type>rest</test_type>
+   <test_action>waitForVMState</test_action>
+   <parameters>vm='vm_cloned_with_two_disks', state='down'</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove VMs with two disks</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeVms</test_action>
+   <parameters>vms='vm_cloned_with_two_disks, vm_with_two_disks'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: TC_166175</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>START_GROUP: TC_166179</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>Create desktop VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='vm_desktop', cluster='clone_cluster', type='desktop'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add virtio COW disk</test_name>
+   <test_type>rest</test_type>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='vm_desktop', size=6442450944, wait='True', storagedomain='data_sd', type='e{disk_type_data}', interface='e{interface_ide}', format='e{format_cow}', sparse='true'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add virtio nic</test_name>
+   <test_type>rest</test_type>
+   <test_action>addNic</test_action>
+   <parameters>vm='vm_desktop', name='nic1', network='{mgmt_bridge}', interface='e{nic_type_virtio}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create snapshot from desktop VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>addSnapshot</test_action>
+   <parameters>vm='vm_desktop', description='desktop1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM from desktop snapshot</test_name>
+   <test_type>rest</test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='vm_from_desktop', cluster='clone_cluster', snapshot='desktop1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check that cloned VM has the right type - desktop</test_name>
+   <test_type>rest</test_type>
+   <test_action>xpathVms</test_action>
+   <parameters>'vms', xpath='count(/vms/vm[./name="vm_from_desktop" and ./type="desktop"])'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until VM is unlocked</test_name>
+   <test_type>rest</test_type>
+   <test_action>waitForVMState</test_action>
+   <parameters>vm='vm_from_desktop', state='down'</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove desktop VMs</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeVms</test_action>
+   <parameters>vms='vm_desktop, vm_from_desktop'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create server VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='vm_server', cluster='clone_cluster', type='server'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add virtio COW disk</test_name>
+   <test_type>rest</test_type>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='vm_server', size=6442450944, wait='True', storagedomain='data_sd', type='e{disk_type_data}', interface='e{interface_ide}', format='e{format_cow}', sparse='true'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add virtio nic</test_name>
+   <test_type>rest</test_type>
+   <test_action>addNic</test_action>
+   <parameters>vm='vm_server', name='nic1', network='{mgmt_bridge}', interface='e{nic_type_virtio}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create snapshot from server VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>addSnapshot</test_action>
+   <parameters>vm='vm_server', description='server1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM from server snapshot</test_name>
+   <test_type>rest</test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='vm_from_server', cluster='clone_cluster', snapshot='server1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check that cloned VM has the right type - server</test_name>
+   <test_type>rest</test_type>
+   <test_action>xpathVms</test_action>
+   <parameters>'vms', xpath='count(/vms/vm[./name="vm_from_server" and ./type="server"])'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until VM is unlocked</test_name>
+   <test_type>rest</test_type>
+   <test_action>waitForVMState</test_action>
+   <parameters>vm='vm_from_server', state='down'</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove server VMs</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeVms</test_action>
+   <parameters>vms='vm_server, vm_from_server'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: TC_166179</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>START_GROUP: TC_166182</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>Create VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='vm_two_disks', cluster='clone_cluster'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add disk to VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='vm_two_disks', size=6442450944, wait='True', storagedomain='data_sd', type='e{disk_type_data}', interface='e{interface_ide}', format='e{format_cow}', sparse='true'</parameters>
+    <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add the second disk to VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='vm_two_disks', size=6442450944, wait='True', storagedomain='data_sd', type='e{disk_type_data}', interface='e{interface_ide}', format='e{format_cow}', sparse='true'</parameters>
+    <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Add virtio nic</test_name>
+   <test_type>rest</test_type>
+   <test_action>addNic</test_action>
+   <parameters>vm='vm_two_disks', name='nic1', network='{mgmt_bridge}', interface='e{nic_type_virtio}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create snapshot from VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>addSnapshot</test_action>
+   <parameters>vm='vm_two_disks', description='two_disks_snapshot'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove disk from VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeDisks</test_action>
+   <parameters>vm='vm_two_disks', num_of_disks=1</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM from snapshot with 2 disks</test_name>
+   <test_type>rest</test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='vm_with_two_disks', cluster='clone_cluster', snapshot='two_disks_snapshot'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until VM is unlocked</test_name>
+   <test_type>rest</test_type>
+   <test_action>waitForVMState</test_action>
+   <parameters>vm='vm_with_two_disks', state='down'</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove VMs</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeVms</test_action>
+   <parameters>vms='vm_two_disks, vm_with_two_disks'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: TC_166182</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>START_GROUP: CLEANUP</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>none</positive>
+   <run>yes</run>
+   <report/>
+</test_case>
+<test_case>
+   <test_name>Remove remaining VMs</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeVms</test_action>
+   <parameters>vms='vm_from_snapshot, vm_for_snapshot'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Deactivate storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>deactivateStorageDomain</test_action>
+   <parameters>datacenter='clone_dc', storagedomain='data_sd2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Detach storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>detachStorageDomain</test_action>
+   <parameters>datacenter='clone_dc', storagedomain='data_sd2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeStorageDomain</test_action>
+   <parameters>storagedomain='data_sd2', host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Deactivate storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>deactivateStorageDomain</test_action>
+   <parameters>datacenter='clone_dc', storagedomain='data_sd'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove data center</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeDataCenters</test_action>
+   <parameters>datacenters='clone_dc'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeStorageDomain</test_action>
+   <parameters>storagedomain='data_sd', host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Set host to maintenance</test_name>
+   <test_type>rest</test_type>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds})</run>
+</test_case>
+<test_case>
+   <test_name>Remove host</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeHost</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds})</run>
+</test_case>
+<test_case>
+   <test_name>Remove cluster</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeClusters</test_action>
+   <parameters>clusters='clone_cluster'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: CLEANUP</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+</input>
