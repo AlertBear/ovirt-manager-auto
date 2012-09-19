@@ -217,8 +217,7 @@ class TestComposer(object):
                 logger.warn("Parameter %s doesn't exist." % (place_holder))
                 #raise # it must be
 
-            if not isinstance(place_holder_val, list):
-                value = value.replace(place_holder, str(place_holder_val))
+            value = value.replace(place_holder, str(place_holder_val))
 
         # replace settings params (list values)
         vals = re.findall(r'{\w+\[\d+\]}', value)
