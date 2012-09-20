@@ -289,7 +289,7 @@ class MacToIpConverter(Component):
         mac_conf = conf.get(MAC_TO_IP_CONV)
         self.timeout = mac_conf.as_int(TIMEOUT)
         self.attempts = mac_conf.as_int(ATTEMPTS)
-        self.wait_interval = mac_conf.get(WAIT_INT)
+        self.wait_interval = mac_conf.as_float(WAIT_INT)
 
     def get_ip(self, mac, subnet_class_b, vlan):
         mac = unify_mac_format(mac)
