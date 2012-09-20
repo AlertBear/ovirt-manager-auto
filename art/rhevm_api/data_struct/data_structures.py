@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 #
-# Generated Tue Aug 28 16:09:21 2012 by generateDS.py version 2.7a.
+# Generated Thu Sep 20 15:40:21 2012 by generateDS.py version 2.7a.
 #
 
 import sys
@@ -13690,6 +13690,7 @@ class Disk(BaseDevice):
         'image_id': MemberSpec_('image_id', 'xs:string', 0),
         'storage_domains': MemberSpec_('storage_domains', 'storage_domains', 0),
         'size': MemberSpec_('size', 'xs:long', 0),
+        'type_': MemberSpec_('type_', 'xs:string', 0),
         'provisioned_size': MemberSpec_('provisioned_size', 'xs:long', 0),
         'actual_size': MemberSpec_('actual_size', 'xs:long', 0),
         'status': MemberSpec_('status', 'status', 0),
@@ -13707,11 +13708,12 @@ class Disk(BaseDevice):
         }
     subclass = None
     superclass = BaseDevice
-    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, vm=None, template=None, image_id=None, storage_domains=None, size=None, provisioned_size=None, actual_size=None, status=None, interface=None, format=None, sparse=None, bootable=None, shareable=None, wipe_after_delete=None, propagate_errors=None, statistics=None, active=None, quota=None, lunStorage=None):
+    def __init__(self, actions=None, href=None, id=None, name=None, description=None, creation_status=None, link=None, vm=None, template=None, image_id=None, storage_domains=None, size=None, type_=None, provisioned_size=None, actual_size=None, status=None, interface=None, format=None, sparse=None, bootable=None, shareable=None, wipe_after_delete=None, propagate_errors=None, statistics=None, active=None, quota=None, lunStorage=None):
         super(Disk, self).__init__(actions, href, id, name, description, creation_status, link, vm, template, )
         self.image_id = image_id
         self.storage_domains = storage_domains
         self.size = size
+        self.type_ = type_
         self.provisioned_size = provisioned_size
         self.actual_size = actual_size
         self.status = status
@@ -13738,6 +13740,8 @@ class Disk(BaseDevice):
     def set_storage_domains(self, storage_domains): self.storage_domains = storage_domains
     def get_size(self): return self.size
     def set_size(self, size): self.size = size
+    def get_type(self): return self.type_
+    def set_type(self, type_): self.type_ = type_
     def get_provisioned_size(self): return self.provisioned_size
     def set_provisioned_size(self, provisioned_size): self.provisioned_size = provisioned_size
     def get_actual_size(self): return self.actual_size
@@ -13790,6 +13794,9 @@ class Disk(BaseDevice):
         if self.size is not None:
             showIndent(outfile, level)
             outfile.write('<%ssize>%s</%ssize>\n' % (namespace_, self.gds_format_integer(self.size, input_name='size'), namespace_))
+        if self.type_ is not None:
+            showIndent(outfile, level)
+            outfile.write('<%stype>%s</%stype>\n' % (namespace_, self.gds_format_string(quote_xml(self.type_).encode(ExternalEncoding), input_name='type'), namespace_))
         if self.provisioned_size is not None:
             showIndent(outfile, level)
             outfile.write('<%sprovisioned_size>%s</%sprovisioned_size>\n' % (namespace_, self.gds_format_integer(self.provisioned_size, input_name='provisioned_size'), namespace_))
@@ -13833,6 +13840,7 @@ class Disk(BaseDevice):
             self.image_id is not None or
             self.storage_domains is not None or
             self.size is not None or
+            self.type_ is not None or
             self.provisioned_size is not None or
             self.actual_size is not None or
             self.status is not None or
@@ -13873,6 +13881,9 @@ class Disk(BaseDevice):
         if self.size is not None:
             showIndent(outfile, level)
             outfile.write('size=%d,\n' % self.size)
+        if self.type_ is not None:
+            showIndent(outfile, level)
+            outfile.write('type_=%s,\n' % quote_python(self.type_).encode(ExternalEncoding))
         if self.provisioned_size is not None:
             showIndent(outfile, level)
             outfile.write('provisioned_size=%d,\n' % self.provisioned_size)
@@ -13951,6 +13962,10 @@ class Disk(BaseDevice):
                 raise_parse_error(child_, 'requires integer: %s' % exp)
             ival_ = self.gds_validate_integer(ival_, node, 'size')
             self.size = ival_
+        elif nodeName_ == 'type':
+            type_ = child_.text
+            type_ = self.gds_validate_string(type_, node, 'type')
+            self.type_ = type_
         elif nodeName_ == 'provisioned_size':
             sval_ = child_.text
             try:
