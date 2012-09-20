@@ -513,7 +513,7 @@ class MatrixTestCase(TestCase):
         if not isinstance(res, tuple):
             res = (res, {})
 
-        if self.positive is not None and not res[0]:
+        if not res[0]:
             self.status = self.TEST_STATUS_FAILED
 
         if self.fetch_output:
