@@ -1,0 +1,2308 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- vim: set ts=3 sw=3 expandtab: -->
+<?xml-stylesheet type="text/xsl" href="table.xslt"?>
+
+<input>
+<test_case>
+   <test_name>Set proper PGPASSFILE</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip='{vdc}', user='root', password='{vdc_password}', cmd="echo \"export PGPASSFILE=/etc/ovirt-engine/.pgpass\" >> ~/.bashrc"</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Set InstallVds to false</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip='{vdc}', user='root', password='{vdc_password}', cmd="psql engine postgres -c \"UPDATE vdc_options SET option_value='false' WHERE option_name='InstallVds';\""</parameters>
+   <positive>true</positive>
+   <run>if(not {install_hosts})</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Stop engine</test_name>
+   <test_action>toggleServiceOnHost</test_action>
+   <parameters>host='{vdc}', user='root', password='{vdc_password}', service='ovirt-engine', action='stop'</parameters>
+   <positive>true</positive>
+   <run>no</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Start engine</test_name>
+   <test_action>toggleServiceOnHost</test_action>
+   <parameters>host='{vdc}', user='root', password='{vdc_password}', service='ovirt-engine', action='start'</parameters>
+   <positive>true</positive>
+   <run>no</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Sleep a bit</test_name>
+   <test_action>sleep</test_action>
+   <parameters>seconds=60</parameters>
+   <positive>none</positive>
+   <run>no</run>
+   <report>no</report>
+</test_case>
+<test_case>
+   <test_name>START_GROUP:Sanlock</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>none</positive>
+   <run>yes</run>
+   <report/>
+</test_case>
+<test_case>
+   <test_name>Create data center</test_name>
+   <test_action>addDataCenter</test_action>
+   <parameters>name='storage_sanity_31_dc', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create cluster</test_name>
+   <test_action>addCluster</test_action>
+   <parameters>name='storage_sanity_31_cluster', cpu='{cpu_name}', data_center='storage_sanity_31_dc', version='{compatibility_version}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Adding host</test_name>
+   <test_action>addHost</test_action>
+   <parameters>name='{vds}', root_password='{vds_password}', cluster='storage_sanity_31_cluster', wait='true'</parameters>
+   <positive>true</positive>
+   <run>loop({vds},{vds_password})</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain NFS</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='master_sd', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>iSCSI discover</test_name>
+   <test_action>iscsiDiscover</test_action>
+   <parameters>host='{vds[0]}', address='{lun_address[0]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>iSCSI login</test_name>
+   <test_action>iscsiLogin</test_action>
+   <parameters>host='{vds[0]}', address='{lun_address[0]}', target='{lun_target[0]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain iSCSI</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='master_sd', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun[0]}', lun_address='{lun_address[0]}', lun_target='{lun_target[0]}', lun_port=3260</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain FCP</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='master_sd', type='e{storage_dom_type_data}', storage_type='e{storage_type_fcp}', host='{vds[0]}', lun='{lun[0]}', lun_port=3260</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Attach data storage domain to data center</test_name>
+   <test_action>attachStorageDomain</test_action>
+   <parameters>datacenter='storage_sanity_31_dc', storagedomain='master_sd'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Wait for data center status up</test_name>
+   <test_action>waitForDataCenterState</test_action>
+   <parameters>name='storage_sanity_31_dc'</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM 1</test_name>
+   <test_action>addVm</test_action>
+   <parameters>name='vm_test1', description='a', cluster='storage_sanity_31_cluster', storagedomain='master_sd'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Add virtio cow disk</test_name>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='vm_test1', size=6442450944, wait='True', storagedomain='master_sd', type='e{disk_type_data}', interface='e{interface_virtio}', format='e{format_cow}', sparse='true'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Add virtio nic</test_name>
+   <test_action>addNic</test_action>
+   <parameters>vm='vm_test1', name='nic1', network='{mgmt_bridge}', interface='e{nic_type_virtio}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Install RHEL</test_name>
+   <test_action>unattendedInstallation</test_action>
+   <parameters>vm='vm_test1', nic='nic1', image='{cobbler_profile}', cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM 2</test_name>
+   <test_action>addVm</test_action>
+   <parameters>name='vm_test2', description='a', cluster='storage_sanity_31_cluster', storagedomain='master_sd'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Add virtio cow disk</test_name>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='vm_test2', size=6442450944, wait='True', storagedomain='master_sd', type='e{disk_type_data}', interface='e{interface_virtio}', format='e{format_cow}', sparse='true'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Add virtio nic</test_name>
+   <test_action>addNic</test_action>
+   <parameters>vm='vm_test2', name='nic1', network='{mgmt_bridge}', interface='e{nic_type_virtio}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Install RHEL</test_name>
+   <test_action>unattendedInstallation</test_action>
+   <parameters>vm='vm_test2', nic='nic1', image='{cobbler_profile}', cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait till installation starts</test_name>
+   <test_action>sleep</test_action>
+   <parameters>seconds=120</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Get mac address</test_name>
+   <test_action>getVmMacAddress</test_action>
+   <parameters>vm='vm_test1', nic='nic1'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>no</report>
+   <fetch_output>macAddress-&gt;macAddress</fetch_output>
+</test_case>
+<test_case>
+   <test_name>Remove system from Cobbler</test_name>
+   <test_action>cobblerRemoveSystem</test_action>
+   <parameters>cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}', mac=%macAddress%</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Get mac address</test_name>
+   <test_action>getVmMacAddress</test_action>
+   <parameters>vm='vm_test2', nic='nic1'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>no</report>
+   <fetch_output>macAddress-&gt;macAddress</fetch_output>
+</test_case>
+<test_case>
+   <test_name>Remove system from Cobbler</test_name>
+   <test_action>cobblerRemoveSystem</test_action>
+   <parameters>cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}', mac=%macAddress%</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Wait for GuestInfo IP address</test_name>
+   <test_action>waitUntilVmQuery</test_action>
+   <parameters>vm='vm_test1', query='ip!=""', timeout=600</parameters>
+   <positive>NONE</positive>
+   <run>YES</run>
+</test_case>
+<test_case>
+   <test_name>Wait for GuestInfo IP address</test_name>
+   <test_action>waitUntilVmQuery</test_action>
+   <parameters>vm='vm_test2', query='ip!=""', timeout=600</parameters>
+   <positive>NONE</positive>
+   <run>YES</run>
+</test_case>
+<test_case>
+   <test_name>Check sanlock daemon</test_name>
+   <test_action>toggleServiceOnHost</test_action>
+   <parameters>host='{vds}', user='{vds_admin}', password='{vds_password}', service='sanlock', action='status'</parameters>
+   <positive>true</positive>
+   <run>loop({vds},{vds_admin},{vds_password})</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Wait some time</test_name>
+   <test_action>sleep</test_action>
+   <parameters>seconds=300</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Stop VM</test_name>
+   <test_action>stopVms</test_action>
+   <parameters>vms='vm_test1, vm_test2'</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait till vm is down</test_name>
+   <test_action>waitForVmsStates</test_action>
+   <parameters>names='vm_test1', timeout=120, states='e{vm_state_down}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Wait till vm is down</test_name>
+   <test_action>waitForVmsStates</test_action>
+   <parameters>names='vm_test2', timeout=120, states='e{vm_state_down}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Run VM</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='vm_test1'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Run VM</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='vm_test2'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Wait for GuestInfo IP address</test_name>
+   <test_action>waitUntilVmQuery</test_action>
+   <parameters>vm='vm_test1', query='ip!=""', timeout=600</parameters>
+   <positive>NONE</positive>
+   <run>YES</run>
+</test_case>
+<test_case>
+   <test_name>Wait for GuestInfo IP address</test_name>
+   <test_action>waitUntilVmQuery</test_action>
+   <parameters>vm='vm_test2', query='ip!=""', timeout=600</parameters>
+   <positive>NONE</positive>
+   <run>YES</run>
+</test_case>
+<test_case>
+   <test_name>Stop VM</test_name>
+   <test_action>stopVms</test_action>
+   <parameters>vms='vm_test1, vm_test2'</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove VM 1</test_name>
+   <test_action>removeVm</test_action>
+   <parameters>vm='vm_test1'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove VM 2</test_name>
+   <test_action>removeVm</test_action>
+   <parameters>vm='vm_test2'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Deactivate master data domain</test_name>
+   <test_action>deactivateStorageDomain</test_action>
+   <parameters>datacenter='storage_sanity_31_dc', storagedomain='master_sd'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove data centers</test_name>
+   <test_action>removeDataCenter</test_action>
+   <parameters>datacenter='storage_sanity_31_dc'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove master storage domain</test_name>
+   <test_action>removeStorageDomain</test_action>
+   <parameters>storagedomain='master_sd', host='{vds[0]}', format='true'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Maintenace hosts</test_name>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>true</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove inactive hosts</test_name>
+   <test_action>removeHost</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>true</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove clusters</test_name>
+   <test_action>removeCluster</test_action>
+   <parameters>cluster='storage_sanity_31_cluster'</parameters>
+   <positive>true</positive>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>END_GROUP:Sanlock</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>none</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+</test_case>
+<test_case>
+   <test_name>Set InstallVds to false</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip='{vdc}', user='root', password='{vdc_password}', cmd="psql engine postgres -c \"UPDATE vdc_options SET option_value='false' WHERE option_name='InstallVds';\""</parameters>
+   <positive>true</positive>
+   <run>if({install_hosts})</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Activate auto-recovery</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip='{vdc}', user='root', password='{vdc_password}', cmd="psql engine postgres -c \"UPDATE vdc_options SET option_value='{\\\"storage domains\\\":\\\"true\\\", \\\"hosts\\\":\\\"true\\\"}' WHERE option_name='AutoRecoveryAllowedTypes';\""</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Stop engine</test_name>
+   <test_action>toggleServiceOnHost</test_action>
+   <parameters>host='{vdc}', user='root', password='{vdc_password}', service='ovirt-engine', action='stop'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Start engine</test_name>
+   <test_action>toggleServiceOnHost</test_action>
+   <parameters>host='{vdc}', user='root', password='{vdc_password}', service='ovirt-engine', action='start'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Sleep a bit</test_name>
+   <test_action>sleep</test_action>
+   <parameters>seconds=120</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+   <report>no</report>
+</test_case>
+<test_case>
+   <test_name>WORKAROUND FOR BZ#842257</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip='{vds}', user='root', password='{vds_password}', cmd="dmsetup remove_all"</parameters>
+   <positive>true</positive>
+   <run>loop({vds},{vds_password})</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>START_GROUP:Auto-recoveryNon-responsiveHost</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>none</positive>
+   <run>if(len('[vds]'.split(','))&gt;1)</run>
+   <report/>
+</test_case>
+<test_case>
+   <test_name>Get setup hostname</test_name>
+   <test_action>getSetupHostname</test_action>
+   <parameters>vdc='{vdc}'</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+   <report>no</report>
+   <fetch_output>hostname->hostname</fetch_output>
+</test_case>
+<test_case>
+   <test_name>Create data center</test_name>
+   <test_action>addDataCenter</test_action>
+   <parameters>name='storage_sanity_31_dc', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create cluster</test_name>
+   <test_action>addCluster</test_action>
+   <parameters>name='storage_sanity_31_cluster', cpu='{cpu_name}', data_center='storage_sanity_31_dc', version='{compatibility_version}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Adding host</test_name>
+   <test_action>addHost</test_action>
+   <parameters>name='{vds}', root_password='{vds_password}', cluster='storage_sanity_31_cluster', wait='true'</parameters>
+   <positive>true</positive>
+   <run>loop({vds},{vds_password})</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain NFS</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='master_sd', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>iSCSI discover</test_name>
+   <test_action>iscsiDiscover</test_action>
+   <parameters>host='{vds[0]}', address='{lun_address[0]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>iSCSI login</test_name>
+   <test_action>iscsiLogin</test_action>
+   <parameters>host='{vds[0]}', address='{lun_address[0]}', target='{lun_target[0]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain iSCSI</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='master_sd', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun[0]}', lun_address='{lun_address[0]}', lun_target='{lun_target[0]}', lun_port=3260</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain FCP</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='master_sd', type='e{storage_dom_type_data}', storage_type='e{storage_type_fcp}', host='{vds[0]}', lun='{lun[0]}', lun_port=3260</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Attach data storage domain to data center</test_name>
+   <test_action>attachStorageDomain</test_action>
+   <parameters>datacenter='storage_sanity_31_dc', storagedomain='master_sd'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Wait for data center status up</test_name>
+   <test_action>waitForDataCenterState</test_action>
+   <parameters>name='storage_sanity_31_dc'</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Block connection from rhevm to host on vdsm port</test_name>
+   <test_action>blockConnection</test_action>
+   <parameters>source=%hostname%, dest='{vds[0]}', userName='{vdc_admin}', password='{vdc_password}', port='54321'</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+   <report>yes</report>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Wait till host goes non-responsive</test_name>
+   <test_action>waitForHostsStates</test_action>
+   <!-- TODO: Change states to enum once names are unified -->
+   <parameters>names='{vds[0]}', states='nonresponsive'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Unblock outgoing connection from host to rhevm</test_name>
+   <test_action>unblockConnection</test_action>
+   <parameters>source=%hostname%, dest='{vds[0]}', userName='{vdc_admin}', password='{vdc_password}', port='54321'</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+   <report>yes</report>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Wait till host goes up</test_name>
+   <test_action>waitForHostsStates</test_action>
+   <parameters>names='{vds[0]}', states='e{host_state_up}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait for data center status up</test_name>
+   <test_action>waitForDataCenterState</test_action>
+   <parameters>name='storage_sanity_31_dc'</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Deactivate master data domain</test_name>
+   <test_action>deactivateStorageDomain</test_action>
+   <parameters>datacenter='storage_sanity_31_dc', storagedomain='master_sd'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove data centers</test_name>
+   <test_action>removeDataCenter</test_action>
+   <parameters>datacenter='storage_sanity_31_dc'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove master storage domain</test_name>
+   <test_action>removeStorageDomain</test_action>
+   <parameters>storagedomain='master_sd', host='{vds[0]}', format='true'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Maintenace hosts</test_name>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>true</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove inactive hosts</test_name>
+   <test_action>removeHost</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>true</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove clusters</test_name>
+   <test_action>removeCluster</test_action>
+   <parameters>cluster='storage_sanity_31_cluster'</parameters>
+   <positive>true</positive>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>END_GROUP:Auto-recoveryNon-responsiveHost</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>none</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+</test_case>
+<test_case>
+   <test_name>WORKAROUND FOR BZ#842257</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip='{vds}', user='root', password='{vds_password}', cmd="dmsetup remove_all"</parameters>
+   <positive>true</positive>
+   <run>loop({vds},{vds_password})</run>
+   <report>yes</report>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP:Auto-recoveryNon-operationalHost</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>none</positive>
+   <run>if(len('[vds]'.split(','))&gt;1)</run>
+   <report/>
+</test_case>
+<test_case>
+   <test_name>Create data center</test_name>
+   <test_action>addDataCenter</test_action>
+   <parameters>name='storage_sanity_31_dc', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create cluster</test_name>
+   <test_action>addCluster</test_action>
+   <parameters>name='storage_sanity_31_cluster', cpu='{cpu_name}', data_center='storage_sanity_31_dc', version='{compatibility_version}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Adding host</test_name>
+   <test_action>addHost</test_action>
+   <parameters>name='{vds}', root_password='{vds_password}', cluster='storage_sanity_31_cluster', wait='true'</parameters>
+   <positive>true</positive>
+   <run>loop({vds},{vds_password})</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain NFS</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='master_sd', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>iSCSI discover</test_name>
+   <test_action>iscsiDiscover</test_action>
+   <parameters>host='{vds[0]}', address='{lun_address[0]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>iSCSI login</test_name>
+   <test_action>iscsiLogin</test_action>
+   <parameters>host='{vds[0]}', address='{lun_address[0]}', target='{lun_target[0]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain iSCSI</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='master_sd', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun[0]}', lun_address='{lun_address[0]}', lun_target='{lun_target[0]}', lun_port=3260</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain FCP</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='master_sd', type='e{storage_dom_type_data}', storage_type='e{storage_type_fcp}', host='{vds[0]}', lun='{lun[0]}', lun_port=3260</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Attach data storage domain to data center</test_name>
+   <test_action>attachStorageDomain</test_action>
+   <parameters>datacenter='storage_sanity_31_dc', storagedomain='master_sd'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Wait for data center status up</test_name>
+   <test_action>waitForDataCenterState</test_action>
+   <parameters>name='storage_sanity_31_dc'</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Block outgoing connection from host to NFS storage domains</test_name>
+   <test_action>blockConnection</test_action>
+   <parameters>source='{vds[0]}', dest='{data_domain_address}', userName='{vds_admin[0]}', password='{vds_password[0]}'</parameters>
+   <positive>none</positive>
+   <run>if('{data_center_type}'=='e{storage_type_nfs}');loop({data_domain_address})</run>
+   <report>yes</report>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Block outgoing connection from host to iSCSI storage domains</test_name>
+   <test_action>blockConnection</test_action>
+   <parameters>source='{vds[0]}', dest='{lun_address[0]}', userName='{vds_admin[0]}', password='{vds_password[0]}'</parameters>
+   <positive>none</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}');loop({lun_address})</run>
+   <report>yes</report>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Wait till host goes non-operational</test_name>
+   <test_action>waitForHostsStates</test_action>
+   <!-- TODO: nonoperational change to reasonable constant -->
+   <parameters>names='{vds[0]}', states='nonoperational'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Unblock outgoing connection from host to NFS storage domains</test_name>
+   <test_action>unblockConnection</test_action>
+   <parameters>source='{vds[0]}', dest='{data_domain_address}', userName='{vds_admin[0]}', password='{vds_password[0]}'</parameters>
+   <positive>none</positive>
+   <run>if('{data_center_type}'=='e{storage_type_nfs}');loop({data_domain_address})</run>
+   <report>yes</report>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Unblock outgoing connection from host to iSCSI storage domains</test_name>
+   <test_action>unblockConnection</test_action>
+   <parameters>source='{vds[0]}', dest='{lun_address[0]}', userName='{vds_admin[0]}', password='{vds_password[0]}'</parameters>
+   <positive>none</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}');loop({lun_address})</run>
+   <report>yes</report>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Wait till host goes up</test_name>
+   <test_action>waitForHostsStates</test_action>
+   <parameters>names='{vds[0]}', states='e{host_state_up}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait till date-center comes up</test_name>
+   <test_action>waitForDataCenterState</test_action>
+   <parameters>name='storage_sanity_31_dc'</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Deactivate master data domain</test_name>
+   <test_action>deactivateStorageDomain</test_action>
+   <parameters>datacenter='storage_sanity_31_dc', storagedomain='master_sd'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove data centers</test_name>
+   <test_action>removeDataCenter</test_action>
+   <parameters>datacenter='storage_sanity_31_dc'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove master storage domain</test_name>
+   <test_action>removeStorageDomain</test_action>
+   <parameters>storagedomain='master_sd', host='{vds[0]}', format='true'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Maintenace hosts</test_name>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>true</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove inactive hosts</test_name>
+   <test_action>removeHost</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>true</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove clusters</test_name>
+   <test_action>removeCluster</test_action>
+   <parameters>cluster='storage_sanity_31_cluster'</parameters>
+   <positive>true</positive>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>END_GROUP:Auto-recoveryNon-operationalHost</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>none</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+</test_case>
+<test_case>
+   <test_name>WORKAROUND FOR BZ#842257</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip='{vds}', user='root', password='{vds_password}', cmd="dmsetup remove_all"</parameters>
+   <positive>true</positive>
+   <run>loop({vds},{vds_password})</run>
+   <report>yes</report>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP:Auto-recoveryStorageDomain</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>none</positive>
+   <run>if(len('[vds]'.split(','))&gt;1)</run>
+   <report/>
+</test_case>
+<test_case>
+   <test_name>Create data center</test_name>
+   <test_action>addDataCenter</test_action>
+   <parameters>name='storage_sanity_31_dc', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create cluster</test_name>
+   <test_action>addCluster</test_action>
+   <parameters>name='storage_sanity_31_cluster', cpu='{cpu_name}', data_center='storage_sanity_31_dc', version='{compatibility_version}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Adding host</test_name>
+   <test_action>addHost</test_action>
+   <parameters>name='{vds}', root_password='{vds_password}', cluster='storage_sanity_31_cluster', wait='true'</parameters>
+   <positive>true</positive>
+   <run>loop({vds},{vds_password})</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain NFS</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='master_sd', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>iSCSI discover</test_name>
+   <test_action>iscsiDiscover</test_action>
+   <parameters>host='{vds[0]}', address='{lun_address[0]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>iSCSI login</test_name>
+   <test_action>iscsiLogin</test_action>
+   <parameters>host='{vds[0]}', address='{lun_address[0]}', target='{lun_target[0]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain iSCSI</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='master_sd', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun[0]}', lun_address='{lun_address[0]}', lun_target='{lun_target[0]}', lun_port=3260</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain FCP</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='master_sd', type='e{storage_dom_type_data}', storage_type='e{storage_type_fcp}', host='{vds[0]}', lun='{lun[0]}', lun_port=3260</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Attach data storage domain to data center</test_name>
+   <test_action>attachStorageDomain</test_action>
+   <parameters>datacenter='storage_sanity_31_dc', storagedomain='master_sd'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Wait for data center status up</test_name>
+   <test_action>waitForDataCenterState</test_action>
+   <parameters>name='storage_sanity_31_dc'</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain NFS</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='sd1', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[1]}', host='{vds[0]}', path='{data_domain_path[1]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>iSCSI discover</test_name>
+   <test_action>iscsiDiscover</test_action>
+   <parameters>host='{vds[0]}', address='{lun_address[1]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>iSCSI login</test_name>
+   <test_action>iscsiLogin</test_action>
+   <parameters>host='{vds[0]}', address='{lun_address[1]}', target='{lun_target[1]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain iSCSI</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='sd1', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun[1]}', lun_address='{lun_address[1]}', lun_target='{lun_target[1]}', lun_port=3260</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain FCP</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='sd1', type='e{storage_dom_type_data}', storage_type='e{storage_type_fcp}', host='{vds[0]}', lun='{lun[1]}', lun_port=3260</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Attach data storage domain to data center</test_name>
+   <test_action>attachStorageDomain</test_action>
+   <parameters>datacenter='storage_sanity_31_dc', storagedomain='sd1'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Activate NFS storage domain</test_name>
+   <test_action>activateStorageDomain</test_action>
+   <parameters>datacenter='storage_sanity_31_dc', storagedomain='sd1'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Block outgoing connection from host to non-master NFS storage domains</test_name>
+   <test_action>blockConnection</test_action>
+   <parameters>source='{vds}', dest='{data_domain_address[1]}', userName='{vds_admin[0]}', password='{vds_password[0]}'</parameters>
+   <positive>none</positive>
+   <run>if('{data_center_type}'=='e{storage_type_nfs}');loop({vds})</run>
+   <report>yes</report>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Block outgoing connection from host to iSCSI storage domains</test_name>
+   <test_action>blockConnection</test_action>
+   <parameters>source='{vds}', dest='{lun_address[1]}', userName='{vds_admin[0]}', password='{vds_password[0]}'</parameters>
+   <positive>none</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}');loop({vds})</run>
+   <report>yes</report>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Wait for storage domain status</test_name>
+   <test_action>waitForStorageDomainStatus</test_action>
+   <!--  NOTE: Storage domain should go to inactive, but BZ#853710 -->
+   <parameters>dataCenterName='storage_sanity_31_dc', storageDomainName='sd1', expectedStatus='e{storage_domain_state_unknown}', timeOut=600, sleepTime=15</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Unblock outgoing connection from host to NFS storage domains</test_name>
+   <test_action>unblockConnection</test_action>
+   <parameters>source='{vds}', dest='{data_domain_address[1]}', userName='{vds_admin[0]}', password='{vds_password[0]}'</parameters>
+   <positive>none</positive>
+   <run>if('{data_center_type}'=='e{storage_type_nfs}');loop({vds})</run>
+   <report>yes</report>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Unblock outgoing connection from host to iSCSI storage domains</test_name>
+   <test_action>unblockConnection</test_action>
+   <parameters>source='{vds}', dest='{lun_address[1]}', userName='{vds_admin[0]}', password='{vds_password[0]}'</parameters>
+   <positive>none</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}');loop({vds})</run>
+   <report>yes</report>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Wait for storage domain status</test_name>
+   <test_action>waitForStorageDomainStatus</test_action>
+   <parameters>dataCenterName='storage_sanity_31_dc', storageDomainName='sd1', expectedStatus='e{storage_domain_state_active}', timeOut=600, sleepTime=15</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Wait for storage domain status</test_name>
+   <test_action>waitForStorageDomainStatus</test_action>
+   <parameters>dataCenterName='storage_sanity_31_dc', storageDomainName='master_sd', expectedStatus='e{storage_domain_state_active}', timeOut=600, sleepTime=15</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Wait for data center status up</test_name>
+   <test_action>waitForDataCenterState</test_action>
+   <parameters>name='storage_sanity_31_dc'</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Deactivate master data domain</test_name>
+   <test_action>deactivateStorageDomain</test_action>
+   <parameters>datacenter='storage_sanity_31_dc', storagedomain='sd1'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Deactivate master data domain</test_name>
+   <test_action>deactivateStorageDomain</test_action>
+   <parameters>datacenter='storage_sanity_31_dc', storagedomain='master_sd'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove data centers</test_name>
+   <test_action>removeDataCenter</test_action>
+   <parameters>datacenter='storage_sanity_31_dc'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove master storage domain</test_name>
+   <test_action>removeStorageDomain</test_action>
+   <parameters>storagedomain='sd1', host='{vds[0]}', format='true'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove master storage domain</test_name>
+   <test_action>removeStorageDomain</test_action>
+   <parameters>storagedomain='master_sd', host='{vds[0]}', format='true'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Maintenace hosts</test_name>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>true</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove inactive hosts</test_name>
+   <test_action>removeHost</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>true</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove clusters</test_name>
+   <test_action>removeCluster</test_action>
+   <parameters>cluster='storage_sanity_31_cluster'</parameters>
+   <positive>true</positive>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>END_GROUP:Auto-recoveryStorageDomain</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>none</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+</test_case>
+<test_case>
+   <test_name>WORKAROUND FOR BZ#842257</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip='{vds}', user='root', password='{vds_password}', cmd="dmsetup remove_all"</parameters>
+   <positive>true</positive>
+   <run>loop({vds},{vds_password})</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>START_GROUP:ImportMoreThanOnce</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>none</positive>
+   <run>yes</run>
+   <report/>
+</test_case>
+<test_case>
+   <test_name>Create data center</test_name>
+   <test_action>addDataCenter</test_action>
+   <parameters>name='storage_sanity_31_dc', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create cluster</test_name>
+   <test_action>addCluster</test_action>
+   <parameters>name='storage_sanity_31_cluster', cpu='{cpu_name}', data_center='storage_sanity_31_dc', version='{compatibility_version}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Adding host</test_name>
+   <test_action>addHost</test_action>
+   <parameters>name='{vds}', root_password='{vds_password}', cluster='storage_sanity_31_cluster', wait='true'</parameters>
+   <positive>true</positive>
+   <run>loop({vds},{vds_password})</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain NFS</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='master_sd', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>iSCSI discover</test_name>
+   <test_action>iscsiDiscover</test_action>
+   <parameters>host='{vds[0]}', address='{lun_address[0]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>iSCSI login</test_name>
+   <test_action>iscsiLogin</test_action>
+   <parameters>host='{vds[0]}', address='{lun_address[0]}', target='{lun_target[0]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain iSCSI</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='master_sd', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun[0]}', lun_address='{lun_address[0]}', lun_target='{lun_target[0]}', lun_port=3260</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain FCP</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='master_sd', type='e{storage_dom_type_data}', storage_type='e{storage_type_fcp}', host='{vds[0]}', lun='{lun[0]}', lun_port=3260</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Attach data storage domain to data center</test_name>
+   <test_action>attachStorageDomain</test_action>
+   <parameters>datacenter='storage_sanity_31_dc', storagedomain='master_sd'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create NFS export storage domain</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='{export_domain_name}', type='e{storage_dom_type_export}', storage_type='e{storage_type_nfs}', address='{export_domain_address}', host='{vds[0]}', path='{export_domain_path}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <vital>TRUE</vital>
+</test_case>
+<test_case>
+   <test_name>Wait for data center status up</test_name>
+   <test_action>waitForDataCenterState</test_action>
+   <parameters>name='storage_sanity_31_dc'</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Attach NFS export domain</test_name>
+   <test_action>attachStorageDomain</test_action>
+   <parameters>datacenter='storage_sanity_31_dc', storagedomain='{export_domain_name}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Activate NFS export domain</test_name>
+   <test_action>activateStorageDomain</test_action>
+   <parameters>datacenter='storage_sanity_31_dc', storagedomain='{export_domain_name}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create VM 1</test_name>
+   <test_action>addVm</test_action>
+   <parameters>name='vm_test', description='a', cluster='storage_sanity_31_cluster', storagedomain='master_sd'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Add virtio cow disk</test_name>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='vm_test', size=6442450944, wait='True', storagedomain='master_sd', type='e{disk_type_data}', interface='e{interface_virtio}', format='e{format_cow}', sparse='true', bootable='true'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Add virtio nic</test_name>
+   <test_action>addNic</test_action>
+   <parameters>vm='vm_test', name='nic1', network='{mgmt_bridge}', interface='e{nic_type_virtio}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Install RHEL</test_name>
+   <test_action>unattendedInstallation</test_action>
+   <parameters>vm='vm_test', nic='nic1', image='{cobbler_profile}', cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait till installation starts</test_name>
+   <test_action>sleep</test_action>
+   <parameters>seconds=120</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Get mac address</test_name>
+   <test_action>getVmMacAddress</test_action>
+   <parameters>vm='vm_test', nic='nic1'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>no</report>
+   <fetch_output>macAddress-&gt;macAddress</fetch_output>
+</test_case>
+<test_case>
+   <test_name>Remove system from Cobbler</test_name>
+   <test_action>cobblerRemoveSystem</test_action>
+   <parameters>cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}', mac=%macAddress%</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Wait for GuestInfo IP address</test_name>
+   <test_action>waitUntilVmQuery</test_action>
+   <parameters>vm='vm_test', query='ip!=""', timeout=600</parameters>
+   <positive>NONE</positive>
+   <run>YES</run>
+</test_case>
+<test_case>
+   <test_name>Get IP address of VM</test_name>
+   <test_action>convertMacToIpAddress</test_action>
+   <parameters>mac=%macAddress%</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output>ip-&gt;ipAddress</fetch_output>
+   <report>NO</report>
+   <vital>TRUE</vital>
+</test_case>
+<test_case>
+   <test_name>Remove udev rules and ifcfg</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip=%ipAddress%, user='{vm_linux_user}', password='{vm_linux_password}', cmd='rm -f /etc/sysconfig/network-scripts/ifcfg-eth0 /etc/udev/rules.d/70-persistent-net.rules'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Stop VM</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='vm_test'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create template from VM</test_name>
+   <test_action>createTemplate</test_action>
+   <parameters>vm='vm_test', name='temp_test', cluster='storage_sanity_31_cluster'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <vital>TRUE</vital>
+</test_case>
+<test_case>
+   <test_name>Export VM</test_name>
+   <test_action>exportVm</test_action>
+   <parameters>vm='vm_test', storagedomain='{export_domain_name}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Export template</test_name>
+   <test_action>exportTemplate</test_action>
+   <parameters>template='temp_test', storagedomain='{export_domain_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove VM</test_name>
+   <test_action>removeVm</test_action>
+   <parameters>vm='vm_test'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Remove template</test_name>
+   <test_action>removeTemplate</test_action>
+   <parameters>template='temp_test'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Import vm</test_name>
+   <test_action>importVm</test_action>
+   <parameters>vm='vm_test', import_storagedomain='master_sd', export_storagedomain='{export_domain_name}', cluster='storage_sanity_31_cluster'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+   <bz>853045</bz>
+</test_case>
+<test_case>
+   <test_name>Wait till vm is imported</test_name>
+   <test_action>waitForVmsStates</test_action>
+   <parameters>names='vm_test', timeout=7200, states='e{vm_state_down}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Import the same VM</test_name>
+   <test_action>importVm</test_action>
+   <parameters>vm='vm_test', import_storagedomain='master_sd', export_storagedomain='{export_domain_name}', cluster='storage_sanity_31_cluster', name='twin_brother'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+   <bz>853045</bz>
+</test_case>
+<test_case>
+   <test_name>Wait till vm is imported</test_name>
+   <test_action>waitForVmsStates</test_action>
+   <parameters>names='twin_brother', timeout=7200, states='e{vm_state_down}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Import template</test_name>
+   <test_action>importTemplate</test_action>
+   <parameters>template='temp_test', import_storagedomain='master_sd', export_storagedomain='{export_domain_name}', cluster='storage_sanity_31_cluster'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+   <bz>853045</bz>
+</test_case>
+<test_case>
+   <test_name>Wait till template is imported</test_name>
+   <test_action>waitForTemplatesStates</test_action>
+   <parameters>names='temp_test', timeout=7200</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Import the same template</test_name>
+   <test_action>importTemplate</test_action>
+   <parameters>template='temp_test', import_storagedomain='master_sd', export_storagedomain='{export_domain_name}', cluster='storage_sanity_31_cluster', name='twin_template'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+   <bz>853045</bz>
+</test_case>
+<test_case>
+   <test_name>Wait till template is imported</test_name>
+   <test_action>waitForTemplatesStates</test_action>
+   <parameters>names='twin_template', timeout=7200</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create VMs</test_name>
+   <test_action>addVm</test_action>
+   <parameters>name='from_first', description='a', cluster='storage_sanity_31_cluster', storagedomain='master_sd', template='temp_test'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create VMs</test_name>
+   <test_action>addVm</test_action>
+   <parameters>name='from_twin', description='a', cluster='storage_sanity_31_cluster', storagedomain='master_sd', template='twin_template'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Run VM</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='vm_test'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Run VM</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='twin_brother'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Run VM</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='from_first'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Run VM</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='from_twin'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Wait for GuestInfo IP address</test_name>
+   <test_action>waitUntilVmQuery</test_action>
+   <parameters>vm='vm_test', query='ip!=""', timeout=600</parameters>
+   <positive>NONE</positive>
+   <run>YES</run>
+</test_case>
+<test_case>
+   <test_name>Wait for GuestInfo IP address</test_name>
+   <test_action>waitUntilVmQuery</test_action>
+   <parameters>vm='twin_brother', query='ip!=""', timeout=600</parameters>
+   <positive>NONE</positive>
+   <run>YES</run>
+</test_case>
+<test_case>
+   <test_name>Wait for GuestInfo IP address</test_name>
+   <test_action>waitUntilVmQuery</test_action>
+   <parameters>vm='from_twin', query='ip!=""', timeout=600</parameters>
+   <positive>NONE</positive>
+   <run>YES</run>
+</test_case>
+<test_case>
+   <test_name>Wait for GuestInfo IP address</test_name>
+   <test_action>waitUntilVmQuery</test_action>
+   <parameters>vm='from_first', query='ip!=""', timeout=600</parameters>
+   <positive>NONE</positive>
+   <run>YES</run>
+</test_case>
+<test_case>
+   <test_name>Stop VM</test_name>
+   <test_action>stopVms</test_action>
+   <parameters>vms='vm_test, from_twin, from_first, twin_brother'</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+   <report>yes</report>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Remove VM</test_name>
+   <test_action>removeVms</test_action>
+   <parameters>vms='twin_brother,from_first,from_twin,vm_test'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove template</test_name>
+   <test_action>removeTemplate</test_action>
+   <parameters>template='twin_template'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove template</test_name>
+   <test_action>removeTemplate</test_action>
+   <parameters>template='temp_test'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Deactivate export domain</test_name>
+   <test_action>deactivateStorageDomain</test_action>
+   <parameters>datacenter='storage_sanity_31_dc', storagedomain='{export_domain_name}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Deactivate master data domain</test_name>
+   <test_action>deactivateStorageDomain</test_action>
+   <parameters>datacenter='storage_sanity_31_dc', storagedomain='master_sd'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove data centers</test_name>
+   <test_action>removeDataCenter</test_action>
+   <parameters>datacenter='storage_sanity_31_dc'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove export storage domain</test_name>
+   <test_action>removeStorageDomain</test_action>
+   <parameters>storagedomain='{export_domain_name}', host='{vds[0]}', format='true'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove master storage domain</test_name>
+   <test_action>removeStorageDomain</test_action>
+   <parameters>storagedomain='master_sd', host='{vds[0]}', format='true'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Maintenace hosts</test_name>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>true</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove inactive hosts</test_name>
+   <test_action>removeHost</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>true</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove clusters</test_name>
+   <test_action>removeCluster</test_action>
+   <parameters>cluster='storage_sanity_31_cluster'</parameters>
+   <positive>true</positive>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>END_GROUP:ImportMoreThanOnce</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>none</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+</test_case>
+<test_case>
+   <test_name>WORKAROUND FOR BZ#842257</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip='{vds}', user='root', password='{vds_password}', cmd="dmsetup remove_all"</parameters>
+   <positive>true</positive>
+   <run>loop({vds},{vds_password})</run>
+   <report>yes</report>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP:MultipleStorageDomains</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>none</positive>
+   <run/>
+   <report/>
+</test_case>
+<test_case>
+   <test_name>Create data center</test_name>
+   <test_action>addDataCenter</test_action>
+   <parameters>name='storage_sanity_31_dc', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create cluster</test_name>
+   <test_action>addCluster</test_action>
+   <parameters>name='storage_sanity_31_cluster', cpu='{cpu_name}', data_center='storage_sanity_31_dc', version='{compatibility_version}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Adding host</test_name>
+   <test_action>addHost</test_action>
+   <parameters>name='{vds[0]}', root_password='{vds_password[0]}', cluster='storage_sanity_31_cluster', wait='true'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain NFS</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='master_sd', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>iSCSI discover</test_name>
+   <test_action>iscsiDiscover</test_action>
+   <parameters>host='{vds[0]}', address='{lun_address[0]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>iSCSI login</test_name>
+   <test_action>iscsiLogin</test_action>
+   <parameters>host='{vds[0]}', address='{lun_address[0]}', target='{lun_target[0]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain iSCSI</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='master_sd', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun[0]}', lun_address='{lun_address[0]}', lun_target='{lun_target[0]}', lun_port=3260</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain FCP</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='master_sd', type='e{storage_dom_type_data}', storage_type='e{storage_type_fcp}', host='{vds[0]}', lun='{lun[0]}', lun_port=3260</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Attach data storage domain to data center</test_name>
+   <test_action>attachStorageDomain</test_action>
+   <parameters>datacenter='storage_sanity_31_dc', storagedomain='master_sd'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Wait for data center status up</test_name>
+   <test_action>waitForDataCenterState</test_action>
+   <parameters>name='storage_sanity_31_dc'</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM 1</test_name>
+   <test_action>addVm</test_action>
+   <parameters>name='vm_test', description='a', cluster='storage_sanity_31_cluster', storagedomain='master_sd'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Add virtio cow disk</test_name>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='vm_test', size=6442450944, wait='True', storagedomain='master_sd', type='e{disk_type_data}', interface='e{interface_virtio}', format='e{format_cow}', sparse='true', bootable='true'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Add virtio nic</test_name>
+   <test_action>addNic</test_action>
+   <parameters>vm='vm_test', name='nic1', network='{mgmt_bridge}', interface='e{nic_type_virtio}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Install RHEL</test_name>
+   <test_action>unattendedInstallation</test_action>
+   <parameters>vm='vm_test', nic='nic1', image='{cobbler_profile}', cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait till installation starts</test_name>
+   <test_action>sleep</test_action>
+   <parameters>seconds=120</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Get mac address</test_name>
+   <test_action>getVmMacAddress</test_action>
+   <parameters>vm='vm_test', nic='nic1'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>no</report>
+   <fetch_output>macAddress-&gt;macAddress</fetch_output>
+</test_case>
+<test_case>
+   <test_name>Remove system from Cobbler</test_name>
+   <test_action>cobblerRemoveSystem</test_action>
+   <parameters>cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}', mac=%macAddress%</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Wait for GuestInfo IP address</test_name>
+   <test_action>waitUntilVmQuery</test_action>
+   <parameters>vm='vm_test', query='ip!=""', timeout=600</parameters>
+   <positive>NONE</positive>
+   <run>YES</run>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain NFS</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='sd1', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[1]}', host='{vds[0]}', path='{data_domain_path[1]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>iSCSI discover</test_name>
+   <test_action>iscsiDiscover</test_action>
+   <parameters>host='{vds[0]}', address='{lun_address[1]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>iSCSI login</test_name>
+   <test_action>iscsiLogin</test_action>
+   <parameters>host='{vds[0]}', address='{lun_address[1]}', target='{lun_target[1]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain iSCSI</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='sd1', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun[1]}', lun_address='{lun_address[1]}', lun_target='{lun_target[1]}', lun_port=3260</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain FCP</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='sd1', type='e{storage_dom_type_data}', storage_type='e{storage_type_fcp}', host='{vds[0]}', lun='{lun[1]}', lun_port=3260</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain NFS</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='sd2', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[2]}', host='{vds[0]}', path='{data_domain_path[2]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>iSCSI discover</test_name>
+   <test_action>iscsiDiscover</test_action>
+   <parameters>host='{vds[0]}', address='{lun_address[2]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>iSCSI login</test_name>
+   <test_action>iscsiLogin</test_action>
+   <parameters>host='{vds[0]}', address='{lun_address[2]}', target='{lun_target[2]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain iSCSI</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='sd2', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun[2]}', lun_address='{lun_address[2]}', lun_target='{lun_target[2]}', lun_port=3260</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain FCP</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='sd2', type='e{storage_dom_type_data}', storage_type='e{storage_type_fcp}', host='{vds[0]}', lun='{lun[2]}', lun_port=3260</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Attach second domain</test_name>
+   <test_action>attachStorageDomain</test_action>
+   <parameters>datacenter='storage_sanity_31_dc', storagedomain='sd1'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Activate second domain</test_name>
+   <test_action>activateStorageDomain</test_action>
+   <parameters>datacenter='storage_sanity_31_dc', storagedomain='sd1'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Attach third domain</test_name>
+   <test_action>attachStorageDomain</test_action>
+   <parameters>datacenter='storage_sanity_31_dc', storagedomain='sd2'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Activate third domain</test_name>
+   <test_action>activateStorageDomain</test_action>
+   <parameters>datacenter='storage_sanity_31_dc', storagedomain='sd2'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Stop VM</test_name>
+   <test_action>shutdownVm</test_action>
+   <parameters>vm='vm_test'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Wait till vm is down</test_name>
+   <test_action>waitForVmsStates</test_action>
+   <parameters>names='vm_test', timeout=120, states='e{vm_state_down}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Add virtio cow disk</test_name>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='vm_test', size=1073741824, wait='True', storagedomain='sd1', type='e{disk_type_data}', interface='e{interface_virtio}', format='e{format_cow}', sparse='true'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Add virtio raw disk</test_name>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='vm_test', size=1073741824, wait='True', storagedomain='sd2', type='e{disk_type_data}', interface='e{interface_virtio}', format='e{format_raw}', sparse='false'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Add IDE cow disk</test_name>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='vm_test', size=1073741824, wait='True', storagedomain='sd2', type='e{disk_type_data}', interface='e{interface_ide}', format='e{format_cow}', sparse='true'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Add IDE raw disk</test_name>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='vm_test', size=1073741824, wait='True', storagedomain='sd1', type='e{disk_type_data}', interface='e{interface_ide}', format='e{format_raw}', sparse='false'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<!-- TODO: Change for disks status checking -->
+<test_case>
+   <test_name>Good night</test_name>
+   <test_action>sleep</test_action>
+   <parameters>seconds=10</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <report>false</report>
+</test_case>
+<test_case>
+   <test_name>Run VM</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='vm_test', wait_for_status='up'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+   <fetch_output/>
+</test_case>
+<!-- TODO: Test R/W on all disks -->
+<test_case>
+   <test_name>Wait for agent running</test_name>
+   <test_action>waitUntilVmQuery</test_action>
+   <parameters>vm='vm_test', query='ip!=""', timeout=600</parameters>
+   <positive>NONE</positive>
+   <run>YES</run>
+</test_case>
+<test_case>
+   <test_name>Stop VM</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='vm_test'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Wait till vm is down</test_name>
+   <test_action>waitForVmsStates</test_action>
+   <parameters>names='vm_test', timeout=120, states='e{vm_state_down}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove VM</test_name>
+   <test_action>removeVm</test_action>
+   <parameters>vm='vm_test'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Wait a bit till task disappears</test_name>
+   <test_action>sleep</test_action>
+   <parameters>seconds=20</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Deactivate first data domain</test_name>
+   <test_action>deactivateStorageDomain</test_action>
+   <parameters>datacenter='storage_sanity_31_dc', storagedomain='sd1'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Deactivate second data domain</test_name>
+   <test_action>deactivateStorageDomain</test_action>
+   <parameters>datacenter='storage_sanity_31_dc', storagedomain='sd2'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Deactivate master data domain</test_name>
+   <test_action>deactivateStorageDomain</test_action>
+   <parameters>datacenter='storage_sanity_31_dc', storagedomain='master_sd'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove data centers</test_name>
+   <test_action>removeDataCenter</test_action>
+   <parameters>datacenter='storage_sanity_31_dc'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove first storage domain</test_name>
+   <test_action>removeStorageDomain</test_action>
+   <parameters>storagedomain='sd1', host='{vds[0]}', format='true'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove second storage domain</test_name>
+   <test_action>removeStorageDomain</test_action>
+   <parameters>storagedomain='sd2', host='{vds[0]}', format='true'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove master storage domain</test_name>
+   <test_action>removeStorageDomain</test_action>
+   <parameters>storagedomain='master_sd', host='{vds[0]}', format='true'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Maintenace hosts</test_name>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove inactive hosts</test_name>
+   <test_action>removeHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove clusters</test_name>
+   <test_action>removeCluster</test_action>
+   <parameters>cluster='storage_sanity_31_cluster'</parameters>
+   <positive>true</positive>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>END_GROUP:MultipleStorageDomains</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>none</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+</test_case>
+<test_case>
+   <test_name>WORKAROUND FOR BZ#842257</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip='{vds}', user='root', password='{vds_password}', cmd="dmsetup remove_all"</parameters>
+   <positive>true</positive>
+   <run>loop({vds},{vds_password})</run>
+   <report>yes</report>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP:NFSOptions</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>none</positive>
+   <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+   <report/>
+</test_case>
+<test_case>
+   <test_name>Create data center</test_name>
+   <test_action>addDataCenter</test_action>
+   <parameters>name='storage_sanity_31_dc', storage_type='e{storage_type_nfs}', version='{compatibility_version}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create cluster</test_name>
+   <test_action>addCluster</test_action>
+   <parameters>name='storage_sanity_31_cluster', cpu='{cpu_name}', data_center='storage_sanity_31_dc', version='{compatibility_version}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Adding host</test_name>
+   <test_action>addHost</test_action>
+   <parameters>name='{vds}', root_password='{vds_password}', cluster='storage_sanity_31_cluster', wait='true'</parameters>
+   <positive>true</positive>
+   <run>loop({vds},{vds_password})</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain NFS</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='master_sd', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}', nfs_retrans=6, nfs_timeo=900</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Attach data storage domain to data center</test_name>
+   <test_action>attachStorageDomain</test_action>
+   <parameters>datacenter='storage_sanity_31_dc', storagedomain='master_sd'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Wait for data center status up</test_name>
+   <test_action>waitForDataCenterState</test_action>
+   <parameters>name='storage_sanity_31_dc'</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain NFS</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='nfs3', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[1]}', host='{vds[0]}', path='{data_domain_path[1]}', nfs_retrans=5, nfs_timeo=800, nfs_version=3</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Attach NFS v3</test_name>
+   <test_action>attachStorageDomain</test_action>
+   <parameters>datacenter='storage_sanity_31_dc', storagedomain='nfs3'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Activate NFS v3</test_name>
+   <test_action>activateStorageDomain</test_action>
+   <parameters>datacenter='storage_sanity_31_dc', storagedomain='nfs3'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Check for NFS settings on master</test_name>
+   <test_action>checkStorageDomainParameters</test_action>
+   <parameters>storagedomain="master_sd", nfs_retrans=6, nfs_timeo=900</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check for NFS settings on nfs3</test_name>
+   <test_action>checkStorageDomainParameters</test_action>
+   <parameters>storagedomain="nfs3", nfs_retrans=5, nfs_timeo=800, nfs_version=3</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Deactivate master data domain</test_name>
+   <test_action>deactivateStorageDomain</test_action>
+   <parameters>datacenter='storage_sanity_31_dc', storagedomain='nfs3'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Deactivate master data domain</test_name>
+   <test_action>deactivateStorageDomain</test_action>
+   <parameters>datacenter='storage_sanity_31_dc', storagedomain='master_sd'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove data centers</test_name>
+   <test_action>removeDataCenter</test_action>
+   <parameters>datacenter='storage_sanity_31_dc'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove master storage domain</test_name>
+   <test_action>removeStorageDomain</test_action>
+   <parameters>storagedomain='master_sd', host='{vds[0]}', format='true'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove nfs3 storage domain</test_name>
+   <test_action>removeStorageDomain</test_action>
+   <parameters>storagedomain='nfs3', host='{vds[0]}', format='true'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Maintenace hosts</test_name>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>true</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove inactive hosts</test_name>
+   <test_action>removeHost</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>true</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove clusters</test_name>
+   <test_action>removeCluster</test_action>
+   <parameters>cluster='storage_sanity_31_cluster'</parameters>
+   <positive>true</positive>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>END_GROUP:NFSOptions</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>none</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+</test_case>
+<test_case>
+   <test_name>WORKAROUND FOR BZ#842257</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip='{vds}', user='root', password='{vds_password}', cmd="dmsetup remove_all"</parameters>
+   <positive>true</positive>
+   <run>loop({vds},{vds_password})</run>
+   <report>yes</report>
+</test_case>
+</input>

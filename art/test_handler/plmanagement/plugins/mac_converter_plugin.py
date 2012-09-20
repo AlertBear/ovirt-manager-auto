@@ -287,8 +287,8 @@ class MacToIpConverter(Component):
         self.vds = conf[vds_section].as_list(VDS)
         self.vds_passwd = conf[vds_section].as_list(VDS_PASSWORD)
         mac_conf = conf.get(MAC_TO_IP_CONV)
-        self.timeout = mac_conf.get(TIMEOUT)
-        self.attempts = mac_conf.get(ATTEMPTS)
+        self.timeout = mac_conf.as_int(TIMEOUT)
+        self.attempts = mac_conf.as_int(ATTEMPTS)
         self.wait_interval = mac_conf.get(WAIT_INT)
 
     def get_ip(self, mac, subnet_class_b, vlan):

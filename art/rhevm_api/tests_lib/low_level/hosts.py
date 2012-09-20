@@ -37,6 +37,7 @@ from art.rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
 from art.rhevm_api.utils.test_utils import searchForObj
 from art.test_handler import settings
 from art.core_api import is_action
+from art.rhevm_api.utils.guest import runLoadOnGuests, runLoadOnGuest
 
 ELEMENT = 'host'
 COLLECTION = 'hosts'
@@ -63,6 +64,11 @@ ELEMENTS = os.path.join(os.path.dirname(__file__), '../../../conf/elements.conf'
 ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
 KSM_STATUSFILE = '/sys/kernel/mm/ksm/run'
 HOST_STATE_TIMEOUT=1000
+KSMTUNED_CONF = '/etc/ksmtuned.conf'
+MEGABYTE = 1024 ** 2
+KSM_THRES_CONST = 2048 * MEGABYTE
+KSM_THRES_COEFF = 20
+IP_PATTERN = '10.35.*'
 
 
 @is_action()
@@ -85,6 +91,10 @@ def isKSMRunning(positive, host, host_user, host_passwd):
     # check if there's a 1 or a 0 in the file
     match_obj = re.search('([01])[\n\r]*$', output[1])
     status = match_obj.group(1) == '1'
+    if status:
+        HOST_API.logger.info('KSM is running.')
+    else:
+        HOST_API.logger.info('KSM is not running.')
     return status == positive
 
 
@@ -132,20 +142,20 @@ def calcKSMThreshold(host, host_user, host_passwd, vm_mem):
     # let's find out the thresholds for KSM on the host and default to
     # the known defaults if there are no custom settings
     host_obj = machine.Machine(host, host_user, host_passwd).util('linux')
-    ksmtuned_output = host_obj.runCmd(['cat', '/etc/ksmtuned.conf'])
+    ksmtuned_output = host_obj.runCmd(['cat', KSMTUNED_CONF])
     if ksmtuned_output[0] is False:
-        HOST_API.logger.error("Can't read '/etc/ksmtuned.conf'")
+        HOST_API.logger.error("Can't read {0}".format(KSMTUNED_CONF))
         return False
     match_obj = re.search('[^#]*\W*KSM_THRES_COEF=([0-9]+)', ksmtuned_output[1])
     if match_obj is not None:
         ksm_thres_coeff = int(match_obj.group(1))
     else:
-        ksm_thres_coeff = 20
+        ksm_thres_coeff = KSM_THRES_COEFF
     match_obj = re.search('[^#]*\W*KSM_THRES_CONST=([0-9]+)', ksmtuned_output[1])
     if match_obj is not None:
-        ksm_thres_const = int(match_obj.group(1)) * 1024 ** 2
+        ksm_thres_const = int(match_obj.group(1)) * MEGABYTE
     else:
-        ksm_thres_const = 2048 * 1024 ** 2
+        ksm_thres_const = KSM_THRES_CONST
     ksm_byte_threshold = total_mem - max(ksm_thres_coeff / 100 * total_mem,
                                          ksm_thres_const)
     ksm_threshold_num = int((ksm_byte_threshold - base_mem_usage) / vm_mem) + 1
@@ -156,7 +166,7 @@ def calcKSMThreshold(host, host_user, host_passwd, vm_mem):
 def measureKSMThreshold(positive, poolname, vm_total, host, host_user,
                         host_passwd, guest_user, guest_passwd, vm_mem,
                         loadType, port, load=None, allocationSize=None,
-                        protocol=None, clientVMs=None, extra=None):
+                        protocol=None, clientVMs=None, extra=None, timeout=600):
     '''
     Description: starts VMs until the KSM daemon starts on the host.
     After the KSM is engaged, it shuts down all the started VMs.
@@ -184,18 +194,13 @@ def measureKSMThreshold(positive, poolname, vm_total, host, host_user,
         HOST_API.logger.error('KSM is running at the start of the test')
         return False
     status = True
-    vm_decimal_places = len(str(vm_total))
     for vm_index in range(vm_total):
-        vm_name = "%s-%s" % (poolname,
-                             str(vm_index + 1).zfill(vm_decimal_places))
+        vm_name = "%s-%s" % (poolname, str(vm_index + 1))
         HOST_API.logger.debug('Starting VM: %s', vm_name)
         if not startVm(True, vm_name, wait_for_status=None):
             HOST_API.logger.error('Failed to start VM: %s', vm_name)
-        HOST_API.logger.debug("Waiting for the guest %s to get IP address", vm_name)
-        xpath_cmd = '0=count(/vms/vm[(./status/state="%s" or \
-                     ./status/state="%s") and not(./guest_info/ips/ip)])' % (
-                     ENUMS['vm_state_up'], ENUMS['vm_state_powering_up'])
-        waitForXPath(link='vms', xpath=xpath_cmd, timeout=600, sleep=10)
+        query = "name={0} and status=up or name={0} and status=poweringup".format(vm_name)
+        VM_API.waitForQuery(query, timeout=timeout, sleep=10)
         runLoadOnGuest(True, targetVM=vm_name, osType='linux',
                        username=guest_user, password=guest_passwd,
                        loadType=loadType, duration=0, port=port, load=load,
@@ -204,19 +209,22 @@ def measureKSMThreshold(positive, poolname, vm_total, host, host_user,
                        stopLG=False)
         # time for stats to refresh in the REST API
         HOST_API.logger.debug("Checking if KSM is running on the host")
-        if isKSMRunning(True, host, host_user, host_passwd):
+        if checkKSMRun(host, host_user, host_passwd):
             started_count = vm_index + 1
             HOST_API.logger.info("KSM threshold found at %d guests", started_count)
             break
+        else:
+            HOST_API.logger.info("KSM is not running at %d guests", vm_index+1)
     if calc_threshold == started_count:
         HOST_API.logger.info("Calculated and real threshold equals")
+    elif abs(calc_threshold - started_count) <= 1:
+        HOST_API.logger.info("Difference between calculated and real threshold is 1.")
     else:
         status = False
         HOST_API.logger.error("Calculated and real threshold differs")
     HOST_API.logger.debug("Stopping the previously started VMs")
     for vm_index in range(started_count):
-        vm_name = "%s-%s" % (poolname,
-                        str(vm_index + 1).zfill(vm_decimal_places))
+        vm_name = "%s-%s" % (poolname, str(vm_index + 1))
         if not stopVm(True, vm_name):
             status = False
     return status
@@ -226,7 +234,7 @@ def measureKSMThreshold(positive, poolname, vm_total, host, host_user,
 def verifyKSMThreshold(positive, poolname, vm_total, host, host_user,
                        host_passwd, guest_user, guest_passwd, vm_mem,
                        loadType, port, load=None, allocationSize=None,
-                       protocol=None, clientVMs=None, extra=None):
+                       protocol=None, clientVMs=None, extra=None, timeout = 600):
     '''
     Description: starts all of the calculated VMs at once and check if
     it was enough to trigger the KSM routines. Shuts down the started
@@ -256,21 +264,16 @@ def verifyKSMThreshold(positive, poolname, vm_total, host, host_user,
         HOST_API.logger.error('KSM is running at the start of the test')
         return False
     status = True
-    vm_decimal_places = len(str(vm_total))
     vm_list = []
     for vm_index in range(calc_threshold):
-        vm_name = "%s-%s" % (poolname,
-                             str(vm_index + 1).zfill(vm_decimal_places))
+        vm_name = "%s-%s" % (poolname, str(vm_index + 1))
         vm_list.append(vm_name)
     HOST_API.logger.debug('Starting VMs')
     if not startVms(','.join(vm_list)):
         HOST_API.logger.error('Failed to start VMs')
         return False
-    HOST_API.logger.debug("Waiting for the guests to get IP addresses")
-    xpath_cmd = '0=count(/vms/vm[(./status/state="%s" or \
-                    ./status/state="%s") and not(./guest_info/ips/ip)])' % (
-                    ENUMS['vm_state_up'], ENUMS['vm_state_powering_up'])
-    waitForXPath(link='vms', xpath=xpath_cmd, timeout=600, sleep=10)
+    query = ' or '.join(['name={0} and status=up or name={0} and status=poweringup'.format(vm_name) for vm_name in vm_list])
+    VM_API.waitForQuery(query, timeout=timeout, sleep=10)
     for vm_name in vm_list:
         runLoadOnGuest(True, targetVM=vm_name, osType='linux',
                         username=guest_user, password=guest_passwd,
@@ -280,7 +283,7 @@ def verifyKSMThreshold(positive, poolname, vm_total, host, host_user,
                         stopLG=False)
         # time for stats to refresh in the REST API
     HOST_API.logger.debug("Checking if KSM is running on the host")
-    if isKSMRunning(True, host, host_user, host_passwd):
+    if checkKSMRun(host, host_user, host_passwd):
         HOST_API.logger.info("Calculated threshold triggered KSM")
     else:
         status = False
@@ -338,18 +341,14 @@ def saturateHost(positive, poolname, vm_total, host, host_user,
         HOST_API.logger.error('Host is already saturated at the start of the test')
         return False
     status = True
-    vm_decimal_places = len(str(vm_total))
     for vm_index in range(vm_total):
-        vm_name = "%s-%s" % (poolname,
-                        str(vm_index + 1).zfill(vm_decimal_places))
+        vm_name = "%s-%s" % (poolname, str(vm_index + 1))
         HOST_API.logger.debug('Starting VM: %s', vm_name)
         if not startVm(True, vm_name, wait_for_status=None):
             HOST_API.logger.error('Failed to start VM: %s', vm_name)
         HOST_API.logger.debug("Waiting for the guest %s to get IP address", vm_name)
-        xpath_cmd = '0=count(/vms/vm[(./status/state="%s" or \
-                     ./status/state="%s") and not(./guest_info/ips/ip)])' % (
-                     ENUMS['vm_state_up'], ENUMS['vm_state_powering_up'])
-        waitForXPath(link='vms', xpath=xpath_cmd, timeout=600, sleep=10)
+        query='name={0} and status=up and ip={1}'.format(vm_name, IP_PATTERN)
+        VM_API.waitForQuery(query, timeout=600, sleep=10)
         runLoadOnGuest(True, targetVM=vm_name, osType='linux',
                        username=guest_user, password=guest_passwd,
                        loadType=loadType, duration=0, port=port, load=load,
@@ -364,8 +363,7 @@ def saturateHost(positive, poolname, vm_total, host, host_user,
             break
     HOST_API.logger.debug("Stopping the previously started VMs")
     for vm_index in range(started_count):
-        vm_name = "%s-%s" % (poolname,
-                        str(vm_index + 1).zfill(vm_decimal_places))
+        vm_name = "%s-%s" % (poolname, str(vm_index + 1))
         stopVm(True, vm_name)
     return status, {"satnum": started_count}
 
@@ -1703,3 +1701,33 @@ def waitForHostPmOperation(positive, host, vdc='localhost', dbuser='postgres',
         time.sleep(timeToWait)
     return True
 
+@is_action()
+def checkKSMRun(host, host_user, host_passwd, timeout=150, sleep=1):
+    '''
+    Description: Samples KSM run file every few seconds, telling if
+    KSM is running or not
+    Author: ibegun
+    Parameters:
+      * host - name of the host
+      * host_user - user name for the host
+      * host_passwd - password for the user
+    Return: True if KSM is running, False otherwise
+    '''
+    starttime = time.time()
+    HOST_API.logger.info('Checking if KSM is running: checking every {0} seconds, for {1} seconds.'.format(str(sleep), str(timeout)))
+    host_obj = machine.Machine(host, host_user, host_passwd).util('linux')
+    while (time.time() - starttime < timeout):
+        output = host_obj.runCmd(['cat', KSM_STATUSFILE])
+        if not output[0]:
+            HOST_API.logger.error("Can't read '/sys/kernel/mm/ksm/run' on %s", host)
+            return False
+    # check if there's a 1 or a 0 in the file
+        match_obj = re.search('([01])[\n\r]*$', output[1])
+        status = match_obj.group(1) == '1'
+        if status:
+            HOST_API.logger.info('KSM is running.')
+            return True
+        else:
+            time.sleep(sleep)
+    HOST_API.logger.info('KSM is not running.')
+    return False
