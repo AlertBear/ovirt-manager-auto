@@ -853,15 +853,45 @@ def getDomainAddress(positive, storageDomain):
     Author: gickowic
     Parameters:
        * storageDomain - storage domain name
-    return: address of the storage domain, empty string if domain name not found
+    return: address of the storage domain, empty string if name not found
     '''
 
     # Get the storage domain object
     try:
         storageDomainObject = util.find(storageDomain)
-        return positive, {'address' : storageDomainObject.get_storage().get_address()}
+
+        # Check for iscsi storage domain
+        if storageDomainObject.get_storage().get_type() == 'iscsi':
+
+            # Return the address of the first LUN of the domain
+            return positive, {'address' : storageDomainObject.get_storage().\
+                               get_volume_group().get_logical_unit()[0].\
+                               get_address()}
+        return positive, {'address' : storageDomainObject.get_storage().\
+                           get_address()}
+
     except EntityNotFound:
         return not positive, {'address' : ''}
+
+@is_action()
+def findNonMasterStorageDomains(positive, datacenter):
+    '''
+    Description: find all non-master data storage domains
+    Author: gickowic
+    Parameters:
+        * datacenter - datacenter name
+    Return: List of non-master data storage domains, empty string if none found
+    '''
+
+    sdObjList = getDCStorages(datacenter, False)
+
+    #Filter out master domain and ISO/Export domains
+    nonMasterDomains = [sdObj.get_name() for sdObj in sdObjList if \
+                        sdObj.get_type() == ENUMS['storage_dom_type_data']\
+                        and not sdObj.get_master()]
+    if nonMasterDomains:
+        return positive, {'nonMasterDomains' : nonMasterDomains}
+    return not positive, {'nonMasterDomains' : ''}
 
 @is_action()
 def findMasterStorageDomain(positive,datacenter):
