@@ -840,6 +840,22 @@ def execOnNonMasterDomains(positive, datacenter, operation, type):
             util.logger.error("Function %s failed" % func)
     return status
 
+@is_action()
+def getDomainAddress(positive, storageDomain):
+    '''
+    Description: find the address of a storage domain
+    Author: gickowic
+    Parameters:
+       * storageDomain - storage domain name
+    return: address of the storage domain, empty string if domain name not found
+    '''
+
+    # Get the storage domain object
+    try:
+        storageDomainObject = util.find(storageDomain)
+        return positive, {'address' : storageDomainObject.get_storage().get_address()}
+    except EntityNotFound:
+        return not positive, {'address' : ''}
 
 @is_action()
 def findMasterStorageDomain(positive,datacenter):
