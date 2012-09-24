@@ -138,7 +138,8 @@ class ParamsValidator(object):
 
     def _validateHelper(self, confSpecFile, funcsDict=None):
         try:
-            self._config = ConfigObj(self._confFile, configspec=confSpecFile)
+            self._config = ConfigObj(self._confFile, configspec=confSpecFile,
+                                     raise_errors=True)
         except ConfigObjError, msg:
             raise ValidationError("Parsing of %s failed"\
                                   " with error:\n'%s'" % (self._confFile, msg))
