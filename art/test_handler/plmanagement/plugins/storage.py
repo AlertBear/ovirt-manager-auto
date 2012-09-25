@@ -32,6 +32,13 @@ FAIL_CREATE_MSG = 'Failed to create device of type {0}: {1}\n{2}'
 PASS_CREATE_MSG = 'Successfully created device of type {0}: {1}'
 
 MAIN_SECTION = 'PARAMETERS'
+DEVICES_TARGET_PATHS = {
+                        'nfs': '%s.%s' % (MAIN_SECTION, 'data_domain'),
+                        'export': '%s.%s' % (MAIN_SECTION, 'export_domain'),
+                        'iso': '%s.%s' % (MAIN_SECTION, 'tests_iso_domain'),
+                        'iscsi': '%s.%s' % (MAIN_SECTION, 'lun'),
+                        'local': '%s.%s' % (MAIN_SECTION, 'local_domain'),
+                        }
 
 def processConfList(confList):
     '''
@@ -153,49 +160,97 @@ class StorageUtils:
                 except:
                     self.logger.error("Failed to get iqn for host " + vds)
 
+        # keeping this loop for backward compatibility, devices still
+        # can be configured with sub-sections
         for subSection in self.storageConf.sections:
             confSubSection = self.storageConf[subSection]
+            self.getStorageConfData(confSubSection, vdsServers[0],
+                                    vdsPasswords[0], subSection)
 
-            nfsStorage = confSubSection.get('nfs_server', None)
-            if nfsStorage:
-                self.storages['nfs'][subSection] = {
-                                        'ip': getIpAddressByHostName(nfsStorage),
-                                        'total': int(confSubSection.get('nfs_devices', '0')),
-                                        }
+        # new style - no sub-sections, default paths are set
+        self.getStorageConfData(self.storageConf, vdsServers[0], vdsPasswords[0])
 
-            isoStorage = confSubSection.get('iso_server', None)
-            if isoStorage:
-                self.storages['iso'][subSection] = {
-                                        'ip': getIpAddressByHostName(isoStorage),
-                                        'total': int(confSubSection.get('iso_devices', '0')),
-                                        }
-
-            exportStorage = confSubSection.get('export_server', None)
-            if exportStorage:
-                self.storages['export'][subSection] = {
-                                        'ip': getIpAddressByHostName(exportStorage),
-                                        'total': int(confSubSection.get('export_devices', '0')),
-                                        }
-
-            iscsiStorage = confSubSection.get('iscsi_server', None)
-            if iscsiStorage:
-                self.storages['iscsi'][subSection] = {
-                                        'ip': getIpAddressByHostName(iscsiStorage),
-                                        'total': int(confSubSection.get('iscsi_devices', '0')),
-                                        'capacity': confSubSection.get('devices_capacity', '0'),
-                                        'is_specific': False,
-                                        }
-
-            localDevices = confSubSection.get('local_devices', None)
-            if localDevices:
-                self.storages['local'][subSection] = {
-                                        'ip': confSubSection.get('local_server', vdsServers[0]),
-                                        'password': confSubSection.get('password', vdsPasswords[0]),
-                                        'paths': confSubSection.as_list('local_devices'),
-                                        }
         if not self.host_group:
             self.host_group = createHostGroupName(getFromMainConfSection(config,
                 'host', mainSection='REST_CONNECTION', asList=False))
+
+
+    def getDeviceTargetPath(self, targetPath, type):
+        '''
+        Description: decide the path in conf file where to put the device,
+            target path has the following format: section_name.param_name
+        Author: edolinin
+        Parameters:
+           * targetPath - pre-defined path or None
+           * type - device type, possible values: nfs, iscsi, local, export, iso
+        Return: target path of a device in conf file
+        '''
+        if targetPath:
+            return targetPath
+
+        return DEVICES_TARGET_PATHS[type]
+
+
+    def getStorageConfData(self, confStorageSection, vds, vdsPassw, targetPath=None):
+        '''
+        Description: retrieve configuration data for allocation of storage devices
+        Author: edolinin
+        Parameters:
+            * confStorageSection - config section or sub-section
+            where to fetch the data
+            * vds - server ip for local devices creation
+            * vdsPassw - server password for local devices creation
+            * targetPath - pre-defined path where to put the device
+        Return: None
+        '''
+
+        nfsStorage = confStorageSection.get('nfs_server', None)
+        if nfsStorage:
+            targetDevPath = self.getDeviceTargetPath(targetPath, 'nfs')
+
+            self.storages['nfs'][targetDevPath] = {
+                'ip': getIpAddressByHostName(nfsStorage),
+                'total': int(confStorageSection.get('nfs_devices', '0')),
+            }
+
+        isoStorage = confStorageSection.get('iso_server', None)
+        if isoStorage:
+            targetDevPath = self.getDeviceTargetPath(targetPath, 'iso')
+
+            self.storages['iso'][targetDevPath] = {
+                'ip': getIpAddressByHostName(isoStorage),
+                'total': int(confStorageSection.get('iso_devices', '0')),
+            }
+
+        exportStorage = confStorageSection.get('export_server', None)
+        if exportStorage:
+            targetDevPath = self.getDeviceTargetPath(targetPath, 'export')
+
+            self.storages['export'][targetDevPath] = {
+                'ip': getIpAddressByHostName(exportStorage),
+                'total': int(confStorageSection.get('export_devices', '0')),
+            }
+
+        iscsiStorage = confStorageSection.get('iscsi_server', None)
+        if iscsiStorage:
+            targetDevPath = self.getDeviceTargetPath(targetPath, 'iscsi')
+
+            self.storages['iscsi'][targetDevPath] = {
+                'ip': getIpAddressByHostName(iscsiStorage),
+                'total': int(confStorageSection.get('iscsi_devices', '0')),
+                'capacity': confStorageSection.get('devices_capacity', '0'),
+                'is_specific': False,
+            }
+
+        localDevices = confStorageSection.get('local_devices', None)
+        if localDevices:
+            targetDevPath = self.getDeviceTargetPath(targetPath, 'local')
+
+            self.storages['local'][targetDevPath] = {
+                'ip': confStorageSection.get('local_server', vds),
+                'password': confStorageSection.get('password', vdsPassw),
+                'paths': confStorageSection.as_list('local_devices'),
+        }
 
 
     def storageSetup(self):
