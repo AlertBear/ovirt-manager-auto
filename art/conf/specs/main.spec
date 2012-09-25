@@ -14,7 +14,6 @@ in_parallel = force_list(default=list())
 parallel_configs = force_list(default=list())
 parallel_sections = force_list(default=list())
 
-
 [REST_CONNECTION]
 scheme = option('http', 'https', default='http')
 host = is_alive()
@@ -23,6 +22,12 @@ user = string()
 password = string()
 entry_point = string(default='api')
 user_domain = domain_format()
+
+[CLI_CONNECTION]
+tool = option('ovirt-shell', 'rhevm-shell', default='rhevm-shell')
+optional_params = string(default='')
+
+[SDK_CONNECTION]
 
 
 [PARAMETERS]
