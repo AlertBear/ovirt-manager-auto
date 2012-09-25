@@ -1729,6 +1729,7 @@
     <parameters>template='rest_templ1', storagedomain='ExportDomainRest'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <bz>860194</bz>
     <conf>headers={'Correlation-Id': 519}</conf>
     <exp_events>2</exp_events>
   </test_case>
@@ -1739,6 +1740,7 @@
     <parameters>template='rest_templ1', storagedomain='ExportDomainRest', exclusive='true'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <bz>860194</bz>
     <conf>headers={'Correlation-Id': 520}</conf>
     <exp_events>2</exp_events>
   </test_case>
