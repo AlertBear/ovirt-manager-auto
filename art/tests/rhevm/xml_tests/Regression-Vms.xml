@@ -617,7 +617,7 @@
     <test_action>addVm</test_action>
     <parameters>name='restvm_locked', description='Vm to be locked in the database', cluster='RestCluster1'</parameters>
     <positive>TRUE</positive>
-    <run>yes</run>
+    <run>no</run>
     <conf>headers={'Correlation-Id': 437}</conf>
   </test_case>
   <test_case>
@@ -626,7 +626,7 @@
     <test_action>updateVmStatusInDatabase</test_action>
     <parameters>vmName='restvm_locked', status=15, vdc='{vdc}', vdc_pass='{vdc_pass}', psql_username='{psql_user}', psql_db='{psql_db}'</parameters>
     <positive>NONE</positive>
-    <run>yes</run>
+    <run>no</run>
   </test_case>
   <test_case>
     <id>cb8bf23a-c695-11e1-bca8-f0def10e0ce8</id>
@@ -634,7 +634,7 @@
     <test_action>removeLockedVm</test_action>
     <parameters>vm='restvm_locked', vdc='{vdc}', vdc_pass='{vdc_pass}', psql_username='{psql_user}', psql_db='{psql_db}'</parameters>
     <positive>NONE</positive>
-    <run>yes</run>
+    <run>no</run>
   </test_case>
   <!-- ////////////////////////// CLEANUP /////////////////////////////////// -->
   <test_case>
