@@ -111,8 +111,6 @@ class SdkUtil(APIUtil):
         if not collection:
             collection = self.__getCollection(self.collection_name)
 
-        initialCollectionSize = len(collection.list())
-
         try:
             self.logger.debug("CREATE api content is --  collection:%(col)s element:%(elm)s " \
             % {'col': self.collection_name, 'elm': validator.dump_entity(entity, self.element_name)})
@@ -125,11 +123,7 @@ class SdkUtil(APIUtil):
                                         self.getCorrelationId())
 
             if not async:
-                if not self.opts['parallel_run'] and \
-                    not validator.compareCollectionSize(collection.list(),
-                                                        initialCollectionSize + incrementBy,
-                                                        self.logger):
-                    return None, False
+                self.find(response.id, 'id', collection=collection.list())
 
             self.logger.info("New entity was added successfully")
             expEntity = entity if not expectedEntity else expectedEntity
@@ -142,11 +136,6 @@ class SdkUtil(APIUtil):
                 errorMsg = "Failed to create a new element, status: {0},reason: {1}, details: {2}"
                 self.logger.error(errorMsg.format(e.status, e.reason, e.detail))
                 return None, False
-            else:
-                if not validator.compareCollectionSize(collection.list(),
-                                                    initialCollectionSize,
-                                                    self.logger):
-                    return None, False
 
         return response, True
 

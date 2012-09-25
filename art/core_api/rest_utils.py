@@ -163,7 +163,6 @@ class RestUtil(APIUtil):
 
         collection = self.get(href, listOnly=True, elm=coll_elm_name)
         entity = validator.dump_entity(entity, self.element_name)
-        initialCollectionSize = len(collection)
 
         self.logger.debug("CREATE request content is --  url:%(uri)s body:%(body)s " \
                             % {'uri': href, 'body': entity })
@@ -179,13 +178,6 @@ class RestUtil(APIUtil):
             if not validator.compareResponseCode(ret, expected_pos_status, self.logger):
                 return None, False
 
-            if not async:
-                if not self.opts['parallel_run'] and \
-                    not validator.compareCollectionSize(collection,
-                                                        initialCollectionSize + incrementBy,
-                                                        self.logger):
-                    return None, False
-
             if ret['body']:
                 self.logger.info("New entity was added")
                 actlEntity = validator.dump_entity(parse(ret['body']),
@@ -197,16 +189,16 @@ class RestUtil(APIUtil):
                 if not validator.compareElements(parse(expEntity),
                 parse(actlEntity), self.logger, self.element_name):
                     return None, False
+
+                if not async:
+                    self.find(parse(actlEntity).id, 'id',
+                    collection=collection, absLink=False)
+
             else:
                 return ret['body'], True
 
         else:
             if not validator.compareResponseCode(ret, expected_neg_status, self.logger):
-                return None, False
-
-            if not validator.compareCollectionSize(collection,
-                                                    initialCollectionSize,
-                                                    self.logger):
                 return None, False
 
         self.validateResponseViaXSD(href, ret)
