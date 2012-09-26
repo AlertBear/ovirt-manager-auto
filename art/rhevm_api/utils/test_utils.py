@@ -455,7 +455,7 @@ def runMachineCommand(positive, ip=None, user=None, password=None, type='linux',
         ecode, out = machine.runCmd(cmd, **kwargs)
         logger.debug('%s: runcmd : %s, result: %s, out: %s',\
                 machine.host, cmd, ecode, out)
-        return ecode, {'out': out}
+        return positive == ecode, {'out': out}
     except Exception as ex:
         logger.error("Failed to run command : %s : %s", cmd, ex)
     return False, {'out': None}
