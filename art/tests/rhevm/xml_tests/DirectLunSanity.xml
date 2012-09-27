@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- vim: set ts=3 sw=3 expandtab: -->
+<?xml-stylesheet type="text/xsl" href="table.xslt"?>
+<input>
+<test_case>
+   <test_name>START_GROUP: Setup</test_name>
+   <test_action/>
+   <parameters></parameters>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Create NFS data center</test_name>
+   <test_action>createDatacenter</test_action>
+   <parameters>hosts='[vds]', cpuName='{cpu_name}', username='root', password='[vds_password]', datacenter='{data_center_type}StorageTest', storage_type='e{storage_type_nfs}', cluster='{data_center_type}StorageTest', address='[data_domain_address]', dataStorageDomains='[data_domain_path]', version='{compatibility_version}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+   <vital>true</vital>
+</test_case>
+<test_case>
+   <test_name>Create iSCSI data center</test_name>
+   <test_action>createDatacenter</test_action>
+   <parameters>hosts='[vds]', cpuName='{cpu_name}', username='root', password='[vds_password]', datacenter='{data_center_type}StorageTest', storage_type='e{storage_type_iscsi}', cluster='{data_center_type}StorageTest', lun_address='[lun_address]', lun_target='[lun_target]', luns='[lun]', lun_port=3260, version='{compatibility_version}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <vital>true</vital>
+</test_case>
+<test_case>
+   <test_name>Create FCP data center</test_name>
+   <test_action>createDatacenter</test_action>
+   <parameters>hosts='[vds]', cpuName='{cpu_name}', username='root', password='[vds_password]', datacenter='{data_center_type}StorageTest', storage_type='e{storage_type_fcp}', cluster='{data_center_type}StorageTest', luns='[lun]', version='{compatibility_version}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
+   <vital>true</vital>
+</test_case>
+<test_case>
+   <test_name>Create VM with RHEL</test_name>
+   <test_action>createVm</test_action>
+   <parameters>vmName='{data_center_type}TestVm', vmDescription='{data_center_type}TestVM', cluster='{data_center_type}StorageTest', nic='{host_nics[0]}', nicType='e{nic_type_virtio}', storageDomainName='{data_center_type}StorageTest_data_domain0', size=21474836480, diskType='e{disk_type_system}', volumeFormat='e{format_cow}', diskInterface='e{interface_ide}', bootable='true', wipe_after_deletion='false', start='false', type='e{vm_type_server}', os_type="rhel6x64", memory=1073741824, cpu_socket=1, cpu_cores=1, display_type='e{display_type_spice}', installation=True, user='{vm_linux_user}', password='{vm_linux_password}', cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}', image="{cobbler_profile}", network='{mgmt_bridge}', useAgent={useAgent}</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <vital>true</vital>
+</test_case>
+<test_case>
+   <test_name>Stop VM</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Get mac address '{data_center_type}'</test_name>
+   <test_action>getVmMacAddress</test_action>
+   <parameters>vm='{data_center_type}TestVm',nic='{host_nics[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output>macAddress-&gt;macAddress{data_center_type}</fetch_output>
+   <vital>TRUE</vital>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: Setup</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP: import_disk</test_name>
+   <test_action/>
+   <parameters></parameters>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Direct LUN</test_name>
+   <test_action>addDisk</test_action>
+   <parameters>diskName="direct_lun", interface="e{interface_virtio}", format="e{format_cow}", lun_id='{direct_lun}', lun_address='{direct_lun_address}', lun_target='{direct_lun_target}', size=42</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: import_disk</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP: attach_lun_to_vm_in_down_state</test_name>
+   <test_action/>
+   <parameters></parameters>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>Attach disk to VM</test_name>
+   <test_action>attachDiskToVm</test_action>
+   <parameters>diskName='direct_lun', vmName='{data_center_type}TestVm'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: attach_lun_to_vm_in_down_state</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP: run_vm_with_direct_lun</test_name>
+   <test_action/>
+   <parameters></parameters>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>Start VM with direct lun</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <bz>855647</bz>
+</test_case>
+<test_case>
+   <test_name>Stop VM with direct lun</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <bz>855647</bz>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: run_vm_with_direct_lun</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP: create_a_template_from_a_vm_with_direct_lun</test_name>
+   <test_action/>
+   <parameters></parameters>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>Create template with direct LUN</test_name>
+   <test_action>createTemplate</test_action>
+   <parameters>vm='{data_center_type}TestVm', name='temp_direct', cluster='{data_center_type}StorageTest'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until template is created</test_name>
+   <test_action>waitForTemplatesStates</test_action>
+   <parameters>names='temp_direct'</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check that template has only one disk</test_name>
+   <test_action>compareDisksCount</test_action>
+   <parameters>name='temp_direct', expected_count=1, is_template=True</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: create_a_template_from_a_vm_with_direct_lun</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP: detach_a_direct_lun</test_name>
+   <test_action/>
+   <parameters></parameters>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>Detach LUN from VM</test_name>
+   <test_action>detachDiskFromVm</test_action>
+   <parameters>diskName='direct_lun', vmName='{data_center_type}TestVm'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: detach_a_direct_lun</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP: remove_direct_lun</test_name>
+   <test_action/>
+   <parameters></parameters>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>Remove direct LUN</test_name>
+   <test_action>deleteDisk</test_action>
+   <parameters>diskName='direct_lun'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <bz>854141</bz>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: remove_direct_lun</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP: direct_lun_and_disk_interface</test_name>
+   <test_action/>
+   <parameters></parameters>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>Direct LUN</test_name>
+   <test_action>addDisk</test_action>
+   <parameters>diskName="direct_lun_ide", interface="e{interface_ide}", format="e{format_cow}", lun_id='{direct_lun}', lun_address='{direct_lun_address}', lun_target='{direct_lun_target}', size=42</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <bz>854141</bz>
+</test_case>
+<test_case>
+   <test_name>Remove direct LUN</test_name>
+   <test_action>deleteDisk</test_action>
+   <parameters>diskName='direct_lun_ide'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <bz>854141</bz>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: direct_lun_and_disk_interface</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP: Cleanup</test_name>
+   <test_action/>
+   <parameters></parameters>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>Clean data center '{data_center_type}'</test_name>
+   <test_action>cleanDataCenter</test_action>
+   <parameters>datacenter='{data_center_type}StorageTest'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>CleanUp:Remove system from Cobbler '{data_center_type}'</test_name>
+   <test_action>cobblerRemoveSystem</test_action>
+   <parameters>cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}', mac=%macAddress{data_center_type}%</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: Cleanup</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+</test_case>
+
+</input>
