@@ -69,7 +69,7 @@ class ErrorFetcher(Component):
             logger.error("Failed to tail %s: %s", self.path_to_log, err)
 
     def post_test_case(self, t):
-        if self.pid is not None:
+        if getattr(self, 'pid', None) is not None:
             self.ssh.runCmd(['kill', '-15', str(self.pid)])
             self.pid = None
         else:
