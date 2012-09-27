@@ -931,7 +931,7 @@
    <test_action/>
    <parameters>N/A</parameters>
    <positive>NONE</positive>
-   <run>Loop(2-4)</run>
+   <run>Loop(2-5)</run>
    <report/>
    <fetch_output/>
 </test_case>
