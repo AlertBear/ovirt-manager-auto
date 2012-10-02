@@ -19,6 +19,8 @@
 
 import httplib
 import base64
+import re
+import cgi
 from art.core_api.apis_exceptions import APIException
 from socket import error as SocketError
 
@@ -106,7 +108,13 @@ class HTTPProxy():
             # get response
             resp = conn.getresponse()
 
-            ret = { 'status' : resp.status, 'body' : resp.read() }
+            charset = encoding_from_headers(resp) or 'utf-8'
+
+            resp_body = resp.read().decode(charset)
+            #Workaround lxml issue with unicode strings having declarations
+            resp_body = re.sub(r'^\s*<\?xml\s+.*?\?>', '', resp_body)
+
+            ret = { 'status' : resp.status, 'body' : resp_body }
 
             if resp.status >= 300:
                 ret['reason'] = resp.reason
@@ -215,3 +223,15 @@ class HTTPProxy():
             self.__parse_link(s, links)
         return links
 
+
+def encoding_from_headers(response):
+    content_type = response.getheader('Content-Type')
+
+    if not content_type:
+        return None
+
+    content_type, params = cgi.parse_header(content_type)
+    if 'charset' in params:
+        return params['charset'].strip("'\"")
+    else:
+        return None

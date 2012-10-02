@@ -68,9 +68,7 @@ class XMLFormatter(Component):
         written = set(['start_time', 'end_time', 'module_name', 'group_desc'])
         for key in set(kwargs.keys()) - written:
             element = Element(key)
-            data = str(kwargs[key])
-            # FIXME: this should be handled on input
-            element.text = unicode(data, errors='replace')
+            element.text = unicode(kwargs[key])
             module.append(element)
 
         self.root.append(module)

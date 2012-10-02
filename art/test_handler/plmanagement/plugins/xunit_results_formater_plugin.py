@@ -106,8 +106,8 @@ class XUnit(Component):
         testcase.append(traits)
         remainder = set(['start_time', 'end_time', 'test_name', 'status'])
         for k in set(kwargs.keys()) - remainder:
-            key = unicode(str(k), errors='replace')
-            val = unicode(str(kwargs[k]), errors='replace')
+            key = unicode(k, errors='replace')
+            val = unicode(kwargs[k])
             traits.append(E.trait(name=key, value=val))
         traits.append(E.trait(name='real_classname',
                               value=real_classname))
