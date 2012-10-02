@@ -223,7 +223,7 @@
 <test_case>
   <test_name>Get OS Info </test_name>
   <test_action>getOsInfo</test_action>
-  <parameters>host='{vds[0]}',root_password='{vds_password}'</parameters>
+  <parameters>host='{vds[0]}',root_password='{vds_password[0]}'</parameters>
   <positive>NONE</positive>
   <run>yes</run>
   <fetch_output>osName-&gt;osName</fetch_output>
@@ -873,7 +873,7 @@
 <test_case>
    <test_name>Get OS Info </test_name>
    <test_action>getOsInfo</test_action>
-   <parameters>host='{vds[0]}',root_password='{vds_password}'</parameters>
+   <parameters>host='{vds[0]}',root_password='{vds_password[0]}'</parameters>
    <positive>NONE</positive>
    <run>yes</run>
    <fetch_output>osName-&gt;osName</fetch_output>
