@@ -236,8 +236,6 @@ def _prepareNicObj(**kwargs):
     if 'network' in kwargs:
         cluster = kwargs.get('cluster')
         cl_obj = CL_API.find(cluster, 'id')
-        print cl_obj.name
-        print kwargs.get('network')
         cl_net = getClusterNetwork(cl_obj.name, kwargs.get('network'))
         nic_obj.set_network(cl_net)
 
