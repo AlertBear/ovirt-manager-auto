@@ -907,7 +907,10 @@ def getStorageDomainFile(positive, storagedomain, file):
      '''
 
     storDomObj = util.find(storagedomain)
-    fileObj = fileUtil.getElemFromElemColl(storDomObj, file, 'files', 'file')
+
+    fileObj = None
+    if storDomObj:
+        fileObj = fileUtil.getElemFromElemColl(storDomObj, file, 'files', 'file')
 
     if fileObj:
         return positive

@@ -66,12 +66,24 @@ class HistoryDB(object):
             HOURLY   : 'host_hourly_history',
             SAMPLES  : 'host_samples_history',
         },
+        'host_interface': {
+            'config' : 'host_interface_configuration',
+            DAILY    : 'host_interface_daily_history',
+            HOURLY   : 'host_interface_hourly_history',
+            SAMPLES  : 'host_interface_samples_history',
+        },
         'vm': {
             'config' : 'vm_configuration',
             DAILY    : 'vm_daily_history',
             HOURLY   : 'vm_hourly_history',
             SAMPLES  : 'vm_samples_history',
-        }
+        },
+        'vm_interface': {
+            'config' : 'vm_interface_configuration',
+            DAILY    : 'vm_interface_daily_history',
+            HOURLY   : 'vm_interface_hourly_history',
+            SAMPLES  : 'vm_interface_samples_history',
+        },
     }
     DATETIME_COL = 'history_datetime'
 
@@ -124,12 +136,25 @@ class HistoryDB(object):
         '''
         Get entity Id by name.
         '''
-        table = self.TABLES[entity]['config']
+        if re.match('^host', entity):
+            baseEntity = 'host'
+        elif re.match('^vm', entity):
+            baseEntity = 'vm'
+        table = self.TABLES[baseEntity]['config']
         sql = 'SELECT DISTINCT {0}_id FROM {1} WHERE {2}_name = \'{3}\' AND delete_date IS NULL'.format(
-            entity, table, entity, name)
+            baseEntity, table, baseEntity, name)
         out = self._dbConn.query(sql)
         if not out:
-            raise EntityIsNotFoundInDBError(entity, name, table)
+            raise EntityIsNotFoundInDBError(baseEntity, name, table)
+        entId = out[-1][0]
+        if entity == 'host' or entity == 'vm':
+            return entId
+        table = self.TABLES[entity]['config']
+        sql = 'SELECT DISTINCT {0}_id FROM {1} WHERE {2}_id = \'{3}\' AND delete_date IS NULL'.format(
+            entity, table, baseEntity, entId)
+        out = self._dbConn.query(sql)
+        if not out:
+            raise EntityIsNotFoundInDBError(entity, entId, table)
         return out[-1][0]
 
     def __calculateRecordsCount(self, interval, type):
@@ -208,12 +233,16 @@ class HistoryDB(object):
             recordCnt = self.__calculateRecordsCount(interval, type)
             startTime = self.__getStartTime(type)
             entityStatus = 1
-            props = [self.DATETIME_COL, '%s_id' % entity, '%s_status' % entity]
+            props = [self.DATETIME_COL, '%s_id' % entity]
+            if entity == 'host' or entity == 'vm':
+                props.append('%s_status' % entity)
             for prop in properties.split(','):
                 props.append(prop)
             for ind in range (0, recordCnt):
                 tstamp = self.__getTimestamp(type, startTime, ind)
-                vals = [tstamp, entityId, entityStatus]
+                vals = [tstamp, entityId]
+                if entity == 'host' or entity == 'vm':
+                    vals.append(entityStatus)
                 for val in values.split(','):
                     vals.append(int(val))
                 self.__insert(table, props, vals)
@@ -230,7 +259,7 @@ def forgeHistoryData(entity, name, type, properties, values, interval):
     '''
     Insert fake data to DB table
     Parameters:
-        - entity - type of entity(host, vm, storage_domain)
+        - entity - type of entity(host, vm, host_interface, vm_interface)
         - name - entity name
         - type - history type (hourly, daily, samples)
         - properties - property names (comma separated)
