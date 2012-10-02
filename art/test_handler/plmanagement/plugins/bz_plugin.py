@@ -291,7 +291,7 @@ class Bugzilla(Component):
 
     @classmethod
     def is_enabled(cls, params, conf):
-        conf_en = conf[BZ_OPTION]['enabled']
+        conf_en = conf[BZ_OPTION].as_bool('enabled')
         return params.bz_enabled or conf_en
 
     @classmethod
