@@ -71,7 +71,7 @@ TEST_CASES_SEPARATOR = '\n' + '=' * 80
 
 
 class UTestCase(TestCase):
-    skip_exceptios = (USkipTest, USkipTest2)
+    skip_exceptios = (USkipTest, USkipTest2, SkipTest)
     def __init__(self, t):
         super(UTestCase, self).__init__()
         self.mod_name, self.test_action = t.address()[1:]
@@ -85,18 +85,22 @@ class UTestCase(TestCase):
 
     def __call__(self):
         try:
+            logger.info("Running case: %s", self.test_name)
             self.t.test.setUp()
             try:
                 self.f()
+                logger.info("Test case succeed.")
                 self.status = self.TEST_STATUS_PASSED
             except AssertionError as ex:
                 logger.error("Test case failed: %s", ex)
                 self.exc = ex
                 self.status = self.TEST_STATUS_FAILED
             except self.skip_exceptios as ex:
+                logger.warning("Test case skipped: %s", ex)
                 self.status = self.TEST_STATUS_SKIPPED
                 raise SkipTest(str(ex))
             except Exception as ex:
+                logger.error("Test case error: %s", ex)
                 self.status = self.TEST_STATUS_ERROR
                 self.exc = ex
         finally:
@@ -114,6 +118,8 @@ class UTestGroup(TestGroup):
 
     def __iter__(self):
         try:
+            logger.info(TEST_CASES_SEPARATOR)
+            logger.info("Setting up whole module.")
             self.context.setUp()
             for c in self.context:
                 if isinstance(c, Test):
@@ -121,6 +127,8 @@ class UTestGroup(TestGroup):
                 elif None is c.context:
                     continue
                 else:
+                    logger.info(TEST_CASES_SEPARATOR)
+                    logger.info("Running test class: %s", c.context.__name__)
                     yield UTestGroup(c)
         finally:
             self.context.tearDown()
@@ -144,9 +152,13 @@ class UTestSuite(TestSuite):
                 elif None is c.context:
                     continue
                 else:
+                    logger.info(TEST_CASES_SEPARATOR)
+                    logger.info("Running module: %s", c.context.__name__)
                     yield UTestGroup(c)
         finally:
             self.context.tearDown()
+            logger.info("Whole module tore down.")
+            logger.info(TEST_CASES_SEPARATOR)
 
 #    def __str__(self):
 #        return "FIXME: I don't know what should be here."

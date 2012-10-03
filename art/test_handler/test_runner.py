@@ -246,6 +246,7 @@ class TestRunner(object):
             test_case()
         except SkipTest as s:
             test_case.status = test_case.TEST_STATUS_SKIPPED
+            logger.info("Known issue: %s" % s)
             test_case.exc = s
         except Exception as ex:
             test_case.status = test_case.TEST_STATUS_ERROR

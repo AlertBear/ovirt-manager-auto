@@ -56,11 +56,13 @@ def tearDownPackage():
         "VMs were not correctly removed"
 
     try:
-        ############################# STORAGE #####################################
+        ############################# STORAGE #################################
         if API.storagedomains.get(config.MAIN_STORAGE_NAME) is not None:
-            common.removeMasterStorage()
+            common.removeMasterStorage(storageName=config.MAIN_STORAGE_NAME,
+                                       datacenter=config.MAIN_DC_NAME,
+                                       host=config.MAIN_HOST_NAME)
 
-        ############################# HOST ########################################
+        ############################# HOST ####################################
         host = API.hosts.get(config.MAIN_HOST_NAME)
         if host is not None:
             LOGGER.info("Deactivating host")
@@ -71,11 +73,10 @@ def tearDownPackage():
             host.delete()
             assert common.updateObject(host) is None, "Failed to remove host"
 
-        ############################# CLUSTER #####################################
+        ############################# CLUSTER #################################
         common.removeCluster(config.MAIN_CLUSTER_NAME)
     except Exception as err:
-        LOGGER.error("while cleaing => %s" % str(err))
-        raise
+        LOGGER.warning("while cleaing => %s" % str(err))
 
 def setUpPackage():
     """ Create basic resources required by all tests.
