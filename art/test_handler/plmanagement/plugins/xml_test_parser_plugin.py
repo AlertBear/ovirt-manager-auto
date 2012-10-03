@@ -55,7 +55,13 @@ ELMS_NAME_MAP = {
 class XMLTestFile(mr.TestFile):
 
     def __init__(self, path, lines):
-        super(XMLTestFile, self).__init__(path)
+        path_to_test = os.path.abspath(path)
+        if not os.path.exists(path_to_test):
+            import art
+            path_to_test = os.path.join(os.path.dirname(art.__file__), path)
+            if not os.path.exists(path_to_test):
+                raise IOError("can not find test_file: %s" % path)
+        super(XMLTestFile, self).__init__(path_to_test)
         self.tree = etree.parse(os.path.abspath(self.path))
         self.tree.xinclude()
         self.lines = lines
@@ -112,16 +118,10 @@ class XMLTestParser(Component):
         self.lines = []
 
     def is_able_to_run(self, ti):
-        self.path_test = os.path.abspath(ti)
-        if not os.path.exists(self.path_test):
-            import art
-            self.path_test = os.path.join(os.path.dirname(art.__file__), ti)
-            if not os.path.exists(self.path_test):
-                return False
-        ext = os.path.splitext(ti)[1].lower()
-        if ext != '.xml':
+        if not ti.lower().endswith('.xml'):
             self.path_test = None
             return False
+        self.path_test = ti
         return True
 
     def provide_test_file(self):

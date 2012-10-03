@@ -348,7 +348,8 @@ class TestComposer(object):
             run_attr['forkfor'] = resolve_loop(matches['fork'])
 
         if not run_attr:
-            raise errors.WrongIterableParams(run)
+            run_attr['run'] = run
+#            raise errors.WrongIterableParams(run)
 
         return run_attr
 
