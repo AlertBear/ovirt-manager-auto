@@ -16,3 +16,5 @@ enabled = boolean(default=True)
 [BUGZILLA]
 enabled = boolean(default=True)
 
+[GENERATE_DS]
+enabled = boolean(default=True)

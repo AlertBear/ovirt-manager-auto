@@ -75,7 +75,7 @@ class CallebleList(list):
             return super(CallebleList, self).__getattribute__(name)
         except AttributeError:
             def caller(*args, **kwargs):
-                for ex in self:
+                for ex in sorted(self, cmp=self.__cmp):
                     func = getattr(ex, name)
                     try:
                         func(*args, **kwargs)
@@ -83,6 +83,9 @@ class CallebleList(list):
                         err.name = ex.name
                         raise
             return caller
+
+    def __cmp(self, a, b):
+        return getattr(a, 'priority', 0) - getattr(b, 'priority', 0)
 
 
 class ExtensionPoint(property):

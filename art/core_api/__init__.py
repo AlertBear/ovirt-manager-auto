@@ -61,13 +61,15 @@ class ActionSetType(type):
         if name in cls.SETS:
             new_cls = cls.SETS[name]
             new_cls.modules.add(dct['__module__'])
-        new_cls = type.__new__(cls, name, bases, dct)
+        else:
+            new_cls = type.__new__(cls, name, bases, dct)
+            if name != 'ActionSet':
+                # register user's actions set
+                new_cls.ACTIONS = dict()
+                new_cls.modules = set([new_cls.__module__])
+                cls.SETS[name] = new_cls
         if name != 'ActionSet':
-            # register user's actions set
-            new_cls.ACTIONS = dict()
-            new_cls.modules = set([new_cls.__module__])
-            cls.SETS[name] = new_cls
-            logger.info("Register %s for module %s", name, new_cls.__module__)
+            logger.info('Registering %s for %s modules', name, new_cls.modules)
         return new_cls
 
     @classmethod
@@ -108,6 +110,8 @@ class ActionSetType(type):
                 val.ACTIONS[alias] = TestAction(func, alias, mod)
                 break
         else:
+            for name, set_ in cls.SETS.items():
+                logger.info("%s collects actions from %s modules", name, set_.modules)
             msg = "Can not find ActionSet for '%s' from %s" % (alias, mod)
             raise OrphanAction(msg)
 
