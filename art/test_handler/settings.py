@@ -23,7 +23,6 @@ and preparing the environment for the tests.
 """
 
 import argparse
-import socket
 import sys
 import os
 import re
@@ -210,9 +209,6 @@ def readTestRunOpts(path, redefs):
     restSection = config['REST_CONNECTION']
     opts['scheme'] = restSection['scheme']
     opts['host'] = restSection['host']
-    if opts['host'] == 'localhost':
-        opts['host'] = socket.gethostname()
-
     opts['port'] = restSection['port']
     opts['entry_point'] = restSection['entry_point']
     opts['user'] = restSection['user']
