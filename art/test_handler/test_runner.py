@@ -34,6 +34,22 @@ def serial_generator(start=0, end=None, step=1):
 SERIAL = serial_generator()
 
 
+class TSInt(int):
+    """
+    Thread safe integer
+    """
+    def __init__(self, *args, **kw):
+        super(TSInt, self).__init__(*args, **kw)
+        self.__lock = threading.Lock()
+
+    def __enter__(self):
+        self.__lock.acquire()
+        return self
+
+    def __exit__(self, *args, **kw):
+        self.__lock.release()
+
+
 class _DictLikeObject(dict):
 
     def __getattribute__(self, key):
@@ -100,6 +116,7 @@ class _TestElm(_DictLikeObject):
     TEST_STATUS_SKIPPED = 'Skipped'
     TEST_STATUS_ERROR = 'Error'
     TEST_STATUS_UNDEFINED = 'Undefined'
+    # Undefined >=? Error > Fail > Pass > Skipped
 
     def __init__(self):
         super(_TestElm, self).__init__()
@@ -132,10 +149,10 @@ class TestGroup(_TestElm):
     def __init__(self):
         super(TestGroup, self).__init__()
         self.workers = 1
-        self.failed = 0
-        self.passed = 0
-        self.skipped = 0
-        self.unhandled = 0
+        self.failed = TSInt()
+        self.passed = TSInt()
+        self.skipped = TSInt()
+        self.error = TSInt()
 
     def __iter__(self):
         raise NotImplementedError()
@@ -245,6 +262,17 @@ class TestRunner(object):
             if test_group.workers == 1:
                 for test_elm in test_group:
                     self._run_test_elm(test_elm)
+                    if test_elm.status == _TestElm.TEST_STATUS_PASSED:
+                        with test_group.passed as c: c += 1
+                    elif test_elm.status == _TestElm.TEST_STATUS_FAILED:
+                        with test_group.failed as c: c += 1
+                    elif test_elm.status == _TestElm.TEST_STATUS_SKIPPED:
+                        with test_group.skipped as c: c += 1
+                    elif test_elm.status == _TestElm.TEST_STATUS_ERROR:
+                        with test_group.error as c: c += 1
+                    else:
+                        assert False, "status has to be defined for "\
+                                "each TestElement: %s" % test_elm.status
             elif test_group.workers > 1:
                 self.__run_test_group_in_parallel(test_group)
             else:
@@ -261,8 +289,14 @@ class TestRunner(object):
         if test_group.vital:
             if test_group.failed != 0 or \
                     test_group.skipped != 0 or \
-                    test_group.unhandled != 0:
+                    test_group.error != 0:
                 raise VitalTestFailed(test_group.test_name)
+        if test_group.error > 0:
+            self.test_group.status = _TestElm.TEST_STATUS_ERROR
+        elif test_group.failed > 0:
+            self.test_group.status = _TestElm.TEST_STATUS_FAILED
+        else:
+            test_group.status = _TestElm.TEST_STATUS_PASSED
 
     def __run_test_group_in_parallel(self, test_group):
         jobs = [Job(target=self._run_test_elm, args=(x,))

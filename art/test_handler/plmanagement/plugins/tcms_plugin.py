@@ -1,6 +1,7 @@
 
 from art.test_handler.plmanagement import Component, implements, get_logger
-from art.test_handler.plmanagement.interfaces.application import IConfigurable
+from art.test_handler.plmanagement.interfaces.application import \
+        IConfigurable, IApplicationListener
 from art.test_handler.plmanagement.interfaces.tests_listener import\
         ITestGroupHandler, ITestSuiteHandler, ITestCaseHandler
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
@@ -23,6 +24,10 @@ CATEGORY = 'category'
 SEND_MAIL = 'send_result_email'
 RUN_NAME_TEMPL = 'test_run_name_template'
 
+TCMS_DEC = 'tcms'
+TCMS_TEST_CASE = 'tcms_test_case'
+TCMS_PLAN_ID = 'tcms_plan_id'
+
 logger = get_logger('tcms_agent')
 
 
@@ -33,17 +38,27 @@ logger = get_logger('tcms_agent')
 #        * os.fork whole test_runner for each test_suite
 
 
+def tcms_decorator(plan_id, case_id):
+    """
+    TCMS decorator
+    """
+    def decorator(func):
+        setattr(func, TCMS_PLAN_ID, plan_id)
+        setattr(func, TCMS_TEST_CASE, case_id)
+        return func
+    return decorator
+
+
 class TCMS(Component):
     """
     Plugin provides access to TCMS site.
     """
-    implements(IConfigurable, ITestGroupHandler, ITestSuiteHandler, \
+    implements(IConfigurable, ITestGroupHandler, IApplicationListener, \
                     IPackaging, ITestCaseHandler, IConfigValidation)
     name = "TCMS"
 
     def __init__(self):
         super(TCMS, self).__init__()
-        self.agent = None
         self.plan_id = None
 
     @classmethod
@@ -58,8 +73,9 @@ class TCMS(Component):
         if not self.is_enabled(params, conf):
             return
         tcms_cfg = conf.get(TCMS_OPTION)
-        user = params.tcms_user or tcms_cfg[USER]
-        c = {'tcms_url': TCMS_URL,\
+
+        self.user = params.tcms_user or tcms_cfg[USER]
+        self.info = {'tcms_url': TCMS_URL,\
                 'placeholder_plan_type':  PLAN_TYPE,\
                 'keytab_files_location': tcms_cfg[KEYTAB_LOCATION], \
                 'redhat_email_extension': REALM, \
@@ -70,28 +86,26 @@ class TCMS(Component):
                 'default_sender': SENDER,
                 'header_names': HEADERS,}
 
-        from art.test_handler.plmanagement.plugins import tcmsAgent
-        self.agent = tcmsAgent.TcmsAgent(user, c)
         self.version = conf[PARAMETERS]['compatibility_version']
         self.category = tcms_cfg[CATEGORY]
+        self.results = {}
+        self.tcms_plans = []
+        self.__register_functions()
 
+    def __register_functions(self):
+        from art.test_handler import tools
+        setattr(tools, TCMS_DEC, tcms_decorator)
 
-    def pre_test_suite(self, suite):
-        if not getattr(suite, 'tcms_plan_id', None):
-            return
-        self.plan_id = suite.tcms_plan_id
-        self.agent.init(test_type='Functionality',
-                    test_name='REST_API',
-                    build_name='unspecified',
-                    product_name='RHEVM',
-                    product_version=self.version,
-                    header_names=HEADERS,
-                    product_category=self.category,
-                    test_plan_id=self.plan_id)
+    def pre_test_group(self, group):
+        tcms_plan = getattr(group, TCMS_PLAN_ID, None)
+        if tcms_plan:
+            self.tcms_plans.append(tcms_plan)
 
-    def post_test_suite(self, suite):
-        if self.agent:
-            self.agent.testEnd()
+    def post_test_group(self, group):
+        self.post_test_case(group)
+        tcms_plan = getattr(group, TCMS_PLAN_ID, None)
+        if tcms_plan and tcms_plan == self.tcms_plans[-1]:
+            self.tcms_plans.pop()
 
     def pre_test_case(self, g):
         pass
@@ -100,18 +114,65 @@ class TCMS(Component):
         pass
 
     def post_test_case(self, test):
-        if not self.agent or not test.tcms_test_case:
+        tcms_case = getattr(test, TCMS_TEST_CASE, None)
+        if not tcms_case:
             return
 
-        self.agent.iterationInfo(sub_test_name=test.group_name,
+        plan = getattr(test, TCMS_PLAN_ID, None)
+        if not plan and self.tcms_plans:
+            plan = self.tcms_plans[-1]
+
+        assert plan, "Missing tcms_plan for test_case %s" % tcms_case
+                        # NOTE: it shouldn't happen
+
+        res = self.results.get(plan, {})
+        res[tcms_case] = test
+        self.results[plan] = res
+
+    def on_application_exit(self):
+        if self.results:
+            self.__upload_results()
+
+    def __upload_results(self):
+        from art.test_handler.plmanagement.plugins import tcmsAgent
+        self.agent = tcmsAgent.TcmsAgent(self.user, self.info)
+
+        for plan, cases in self.results.items():
+            self.__upload_plan(plan, cases)
+
+        self.agent.testEnd()
+
+    def __upload_plan(self, plan, cases):
+        self.agent.init(test_type='Functionality',
+                    test_name='REST_API',
+                    build_name='unspecified',
+                    product_name='RHEVM',
+                    product_version=self.version,
+                    header_names=HEADERS,
+                    product_category=self.category,
+                    test_plan_id=str(plan))
+
+        for case, test in cases.items():
+            self.__fill_test_case(case, test)
+
+    def __fill_test_case(self, case, test):
+        if test.status == test.TEST_STATUS_SKIPPED:
+            return # TODO: don't know how to report skipped tests
+
+        self.agent.iterationInfo(sub_test_name=test.test_name,
                             test_case_name=test.test_name,
-                            info_line = '%s,%s,%s,%s' %(test.group_name,
-                                test.test_name, test.positive,
-                                test.parameters),
+                            info_line = str(test),
                             iter_number=test.serial,
                             iter_status=test.status,
                             bz_info=getattr(test, 'bz', None),
-                            test_case_id=test.tcms_test_case)
+                            test_case_id=str(case))
+
+
+    def on_application_start(self):
+        pass
+
+    def on_plugins_loaded(self):
+        pass
 
     @classmethod
     def is_enabled(cls, params, conf):

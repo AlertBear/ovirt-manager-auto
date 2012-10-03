@@ -28,6 +28,7 @@ TEST_CONF_TAG = 'conf'
 TEST_EXP_EVENTS_TAG = 'exp_events'
 TEST_EXPECT_TAG = 'expect'
 TCMS_TEST_CASE_TAG = 'tcms_test_case'
+TCMS_TEST_PLAN_TAG = 'tcms_plan_id'
 
 ROOT_SUITE = 'root_suite'
 
@@ -49,6 +50,7 @@ ELMS_NAME_MAP = {
             TEST_EXP_EVENTS_TAG: mr.TEST_EXP_EVENTS,
             TEST_EXPECT_TAG: mr.TEST_EXPECTED_EXCEPTIONS,
             TCMS_TEST_CASE_TAG: mr.TEST_TCMS_CASE_ID,
+            TCMS_TEST_PLAN_TAG: mr.TEST_TCMS_PLAN_ID,
         }
 
 
@@ -70,8 +72,8 @@ class XMLTestFile(mr.TestFile):
         return [
             ( ROOT_SUITE,
             {
-            'test_name': ROOT_SUITE,
-            'tcms_test_plan_id': self.tree.getroot().attrib.get('tcms_plan_id', None),
+            mr.TEST_NAME: ROOT_SUITE,
+            mr.TEST_TCMS_PLAN_ID: self.tree.getroot().attrib.get(mr.TEST_TCMS_PLAN_ID, None),
             'workers': 1,
             })
             ]
@@ -99,8 +101,10 @@ class XMLTestFile(mr.TestFile):
             elm[mr.TEST_EXP_EVENTS] = int(elm.get(mr.TEST_EXP_EVENTS, 1))
             elm[mr.TEST_EXPECTED_EXCEPTIONS] = \
                     tuple(elm.get(mr.TEST_EXPECTED_EXCEPTIONS, '').replace(',', ' ').split())
-            if mr.TEST_TCMS_CASE_ID in elm:
-                elm[mr.TEST_TCMS_CASE_ID] = int(elm[mr.TEST_TCMS_CASE_ID])
+            if TCMS_TEST_CASE_TAG in elm:
+                elm[mr.TEST_TCMS_CASE_ID] = int(elm[TCMS_TEST_CASE_TAG])
+            if TCMS_TEST_PLAN_TAG in elm:
+                elm[mr.TEST_TCMS_PLAN_ID] = int(elm[TCMS_TEST_PLAN_TAG])
             yield elm
         raise StopIteration()
 

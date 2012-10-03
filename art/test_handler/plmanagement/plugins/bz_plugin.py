@@ -42,6 +42,17 @@ REST = 'rest'
 RHEVM_PRODUCT = 'Red Hat Enterprise Virtualization Manager'
 OVIRT_PRODUCT = 'oVirt'
 
+BZ_ID = 'bz'
+
+def bz_decorator(*ids):
+    """
+    Bugzilla decorator
+    """
+    def decorator(func):
+        setattr(func, BZ_ID, ','.join([str(i) for i in ids]))
+        return func
+    return decorator
+
 
 def expect_list(bug, item_name, default=None):
     item = copy.copy(getattr(bug, item_name, default))
@@ -143,6 +154,11 @@ class Bugzilla(Component):
         self.build_id = None  # where should I get it
         self.comp = conf[RUN][ENGINE].lower()
         self.product = bz_cfg[PRODUCT]
+        self.__register_functions()
+
+    def __register_functions(self):
+        from art.test_handler import tools
+        setattr(tools, BZ_ID, bz_decorator)
 
     def is_state(self, bz_id, *states):
         """

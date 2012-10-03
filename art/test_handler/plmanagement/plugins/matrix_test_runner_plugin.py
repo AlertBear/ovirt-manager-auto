@@ -47,6 +47,7 @@ TEST_CONF = 'conf'
 TEST_EXP_EVENTS = 'exp_events'
 TEST_EXPECTED_EXCEPTIONS = 'expected_exc'
 TEST_TCMS_CASE_ID = 'tcms_test_case'
+TEST_TCMS_PLAN_ID = 'tcms_plan_id'
 
 
 fetch_path = lambda x: os.path.abspath(\
@@ -432,20 +433,6 @@ class MatrixTestCase(TestCase):
             a = a.parent
         return None
 
-    @property
-    def tcms_test_case(self):
-        tcms = None
-        a = self
-        while tcms is not None and a is not None:
-            if a.__class__.__name__ == MatrixTestGroup.__name__:
-                tcms = getattr(a, TEST_TCMS_CASE_ID, None)
-            a = a.parent
-        return tcms
-
-    @tcms_test_case.setter
-    def tcms_test_case(self, val):
-        self['tcms_test_case'] = int(val)
-
     def __call__(self):
         if self.conf:
             with self.change_config(self.conf):
@@ -475,7 +462,9 @@ class MatrixTestCase(TestCase):
             self.mod_name = func.module.split('.')[-1]
         self.mod_name = self.mod_name.capitalize()
 
-        # FIXME: this is related to xunit_results_plugin, wchich should be rewrited in order to follow general design as xml_results_plugin does. please remove this line when xunit_plugin will be rewritten.
+        # FIXME: this is related to xunit_results_plugin, wchich should
+        # be rewritten in order to follow general design as xml_results_plugin
+        # does. please remove this line when xunit_plugin will be rewritten.
         self.mod_path = self.mod_name # THIS ONE!
 
         self.__resolve_exceptions()
@@ -587,16 +576,27 @@ class MatrixTestCase(TestCase):
         run = tc.parse_run_attr(elm[TEST_RUN])
         return MatrixTestCase._resolve_run_attr(run, case)
 
+    def __str__(self):
+        res = self.group_name
+        if res is not None:
+            res += ": %s" % self.test_name
+        else:
+            res = self.test_name
+        res += ",%s,%s" % (self.positive, self.parameters)
+        return res
+
 
 class MatrixTestGroup(TestGroup):
     def __init__(self, tc, elm, elms):
         super(MatrixTestGroup, self).__init__()
         self.parent = None
-        self.elm = elm
+        #self.elm = elm
         self.tc = tc
         self.elms = elms
         self.conf = None
         self.local_scope = {}
+        for key, val in elm.items():
+            self[key] = val
 
     def __iter__(self):
         conf = self.conf
