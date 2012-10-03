@@ -107,10 +107,7 @@ def createHostGroupName(vdc):
     Create host group name from vdc hostname/IP
     '''
     try:
-        if vdc == 'localhost':
-            return runLocalCmd(['hostname'])[1].strip().split('.')[0]
-        else:
-            return getHostName(vdc) if re.search('^\d+\.\d+\.\d+\.\d+$', vdc) \
+        return getHostName(vdc) if re.search('^\d+\.\d+\.\d+\.\d+$', vdc) \
                 else vdc.split('.')[0]
     except Exception as e:
         raise CreateHostGroupNameException(e)

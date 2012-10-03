@@ -24,6 +24,7 @@ import os
 import subprocess
 import logging
 import sys
+import socket
 from copy import copy
 from socket import getaddrinfo, gaierror
 from urlparse import urlsplit
@@ -219,6 +220,9 @@ class ParamsValidator(object):
     def checkHostIsAlive(self, value):
         if subprocess.call("ping -c 5 %s > /dev/null" % value, shell=True):
             raise ValidateError("Host %s is not accessible" % value)
+
+        if value == 'localhost':
+            value = socket.gethostname()
 
         return value
 
