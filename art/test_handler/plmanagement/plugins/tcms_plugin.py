@@ -60,6 +60,8 @@ class TCMS(Component):
     def __init__(self):
         super(TCMS, self).__init__()
         self.plan_id = None
+        self.results = {}
+        self.tcms_plans = []
 
     @classmethod
     def add_options(cls, parser):
@@ -88,8 +90,6 @@ class TCMS(Component):
 
         self.version = conf[PARAMETERS]['compatibility_version']
         self.category = tcms_cfg[CATEGORY]
-        self.results = {}
-        self.tcms_plans = []
         self.__register_functions()
 
     def __register_functions(self):
