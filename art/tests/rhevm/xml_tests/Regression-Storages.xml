@@ -687,6 +687,14 @@
   </test_case>
   <test_case>
     <id>99fb7fec-c695-11e1-ac4a-f0def10e0ce8</id>
+    <test_name>Detach Non Master Domains</test_name>
+    <test_action>execOnNonMasterDomains</test_action>
+    <parameters>datacenter='DefaultRest', operation='detach', type='all'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>99fb7fec-c695-11e1-ac4a-f0def10e0ce8</id>
     <test_name>Deactivate master storage domain</test_name>
     <test_action>deactivateStorageDomain</test_action>
     <parameters>datacenter='DefaultRest', storagedomain='DataDomainRestUpd'</parameters>
