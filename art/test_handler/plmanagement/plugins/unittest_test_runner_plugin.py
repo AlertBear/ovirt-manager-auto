@@ -24,17 +24,12 @@ CONFIG_PARAMS = 'PARAMETERS'
 REST_CONNECTION = 'REST_CONNECTION'
 
 BZ_ID = 'bz'
+TCMS_PLAN_ID = 'tcms_plan_id'
+TCMS_TEST_CASE = 'tcms_test_case'
+
+TEST_CASES_SEPARATOR = '\n' + '=' * 80
 
 logger = get_logger("unittest_loader")
-
-def bz_decorator(*ids):
-    """
-    Bugzilla decorator
-    """
-    def decorator(func):
-        setattr(func, BZ_ID, ','.join([str(i) for i in ids]))
-        return func
-    return decorator
 
 
 class UTestCase(TestCase):
@@ -46,6 +41,8 @@ class UTestCase(TestCase):
         self.f = getattr(t.test, t.test._testMethodName)
         self.test_name = self.f.__doc__
         self.bz = getattr(self.f.im_func, BZ_ID, None)
+        self.tcms_plan_id = getattr(self.f.im_func, TCMS_PLAN_ID, None)
+        self.tcms_test_case = getattr(self.f.im_func, TCMS_TEST_CASE, None)
         # TODO: set another atts
 
     def __call__(self):
@@ -55,23 +52,27 @@ class UTestCase(TestCase):
                 self.f()
                 self.status = self.TEST_STATUS_PASSED
             except AssertionError as ex:
+                logger.error("Test case failed: %s", ex)
+                self.exc = ex
                 self.status = self.TEST_STATUS_FAILED
             except self.skip_exceptios as ex:
                 self.status = self.TEST_STATUS_SKIPPED
                 raise SkipTest(str(ex))
             except Exception as ex:
                 self.status = self.TEST_STATUS_ERROR
-            # TODO: solve another cases
-            # TODO: add error info
+                self.exc = ex
         finally:
             self.t.test.tearDown()
+
+    def __str__(self):
+        return "%s,%s" % (self.test_action, self.test_name)
 
 
 class UTestGroup(TestGroup):
     def __init__(self, c):
         super(UTestGroup, self).__init__()
         self.context = c
-        self.tcms_test_plan_id = getattr(c.context, 'tcms_test_plan_id', None)
+        self.tcms_plan_id = getattr(c.context, TCMS_PLAN_ID, None)
 
     def __iter__(self):
         try:
@@ -83,13 +84,16 @@ class UTestGroup(TestGroup):
                     yield UTestCase(c)
         finally:
             self.context.tearDown()
+
+#    def __str__(self):
+#        return "FIXME: I don't know what should be here."
 
 
 class UTestSuite(TestSuite):
     def __init__(self, context):
         super(UTestSuite, self).__init__()
         self.context = context
-        self.tcms_test_plan_id = getattr(context.context, 'tcms_test_plan_id', None)
+        self.tcms_plan_id = getattr(context.context, TCMS_PLAN_ID, None)
 
     def __iter__(self):
         try:
@@ -101,6 +105,9 @@ class UTestSuite(TestSuite):
                     yield UTestCase(c)
         finally:
             self.context.tearDown()
+
+#    def __str__(self):
+#        return "FIXME: I don't know what should be here."
 
 
 class UnittestLoader(Component):
@@ -152,11 +159,6 @@ class UnittestLoader(Component):
                 ('test_action', None, None)
         TestResult.ATTRIBUTES['iter_num'] = \
                 ('serial', None, None)
-        self.__register_functions()
-
-    def __register_functions(self):
-        from art.test_handler import tools
-        setattr(tools, 'bz', bz_decorator)
 
     @classmethod
     def add_options(cls, parser):
@@ -165,6 +167,13 @@ class UnittestLoader(Component):
     def pre_test_result_reported(self, res, tc):
         res.module_name = tc.mod_name
         res.iter_num = "%03d" % res.iter_num
+        logger.info(TEST_CASES_SEPARATOR)
+
+    def pre_group_result_reported(self, res, tg):
+        pass
+
+    def pre_suite_result_reported(self, res, ts):
+        pass
 
     @classmethod
     def is_enabled(cls, a, b):
