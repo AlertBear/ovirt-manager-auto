@@ -1,0 +1,344 @@
+<input>
+<test_case>
+  <test_name>START_GROUP:PrepareSetup</test_name>
+  <test_action/>
+  <parameters/>
+  <positive>NONE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report/>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Create Data Center NFS</test_name>
+  <test_action>addDataCenter</test_action>
+  <parameters>name='{datacenter}',storage_type='e{storage_type_nfs}',version='{compatibility_version}'</parameters>
+  <positive>TRUE</positive>
+  <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>TRUE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Create Data Center ISCSI</test_name>
+  <test_action>addDataCenter</test_action>
+  <parameters>name='{datacenter}',storage_type='e{storage_type_iscsi}',version='{compatibility_version}'</parameters>
+  <positive>TRUE</positive>
+  <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>TRUE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Create Cluster</test_name>
+  <test_action>addCluster</test_action>
+  <parameters>name='{cluster}',cpu='{cpu_name}',data_center='{datacenter}',version='{compatibility_version}'</parameters>
+  <positive>TRUE</positive>
+  <run>YES</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>TRUE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Adding Host</test_name>
+  <test_action>addHost</test_action>
+  <parameters>name='{vds[0]}',root_password='{vds_password[0]}',cluster='{cluster}',vdcPort='{port}'</parameters>
+  <positive>TRUE</positive>
+  <run>YES</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>TRUE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+   <test_name>Adding second Host</test_name>
+   <test_action>addHost</test_action>
+   <parameters>name='{vds[1]}',root_password='{vds_password[0]}',cluster='{cluster}',vdcPort='{port}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(not {sanity})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+  <test_name>Add Data Storage Domain NFS</test_name>
+  <test_action>addNFSDomain</test_action>
+  <parameters>host='{vds[0]}',storage='{storage}',data_center='{datacenter}',address='{data_domain_address[0]}',path='{data_domain_path[0]}',sd_type='e{storage_dom_type_data}'</parameters>
+  <positive>TRUE</positive>
+  <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>TRUE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+ <test_name>Add Data Storage Domain iSCSI</test_name>
+ <test_action>addISCSIDataDomain</test_action>
+ <parameters>host='{vds[0]}',storage='{storage}',data_center='{datacenter}',lun='{lun[0]}',lun_address='{lun_address[0]}',lun_target='{lun_target[0]}'</parameters>
+ <positive>NONE</positive>
+ <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+ <fetch_output/>
+ <report>YES</report>
+ <vital>TRUE</vital>
+ <test_description/>
+</test_case>
+<!-- ====================================================================== -->
+<test_case>
+   <test_name>START_GROUP: PrepareVMTemplate</test_name>
+   <test_action/>
+   <parameters>n/a1</parameters>
+   <positive>NONE</positive>
+   <run>if(not {sanity});if({vm_network})</run>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description>Prepare linux or windows VM and template</test_description>
+</test_case>
+<test_case>
+   <test_name>Convert Os name to Os type element </test_name>
+   <test_action>convertOsNameToOsTypeElement</test_action>
+   <parameters>osName='{vm_os}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output>osTypeElement-&gt;osTypeElement</fetch_output>
+   <report>NO</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Get Windows boot Os</test_name>
+   <test_action>getImageByOsType</test_action>
+   <parameters>osType=%osTypeElement%,slim=True</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('Win',%osTypeElement%))</run>
+   <fetch_output>osBoot-&gt;osBoot,floppy-&gt;floppy</fetch_output>
+   <report>NO</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Get RHEL boot Os</test_name>
+   <test_action>getImageByOsType</test_action>
+   <parameters>osType=%osTypeElement%,slim=True</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('RHEL',%osTypeElement%))</run>
+   <fetch_output>osBoot-&gt;osBoot</fetch_output>
+   <report>NO</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+  <test_name>Import shared ISO domain</test_name>
+  <test_action>importStorageDomain</test_action>
+  <parameters>type='e{storage_dom_type_iso}',storage_type='e{storage_type_nfs}',address='{shared_iso_domain_address}',host='{vds[0]}',path='{shared_iso_domain_path}'</parameters>
+  <positive>TRUE</positive>
+  <run>if(re.search('Win',%osTypeElement%))</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>TRUE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Attach shared ISO Domain to Data Center</test_name>
+  <test_action>attachStorageDomain</test_action>
+  <parameters>datacenter='{datacenter}',storagedomain='{shared_iso_domain_name}'</parameters>
+  <positive>TRUE</positive>
+  <run>if(re.search('Win',%osTypeElement%))</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>TRUE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Activate ISO Storage Domain</test_name>
+  <test_action>activateStorageDomain</test_action>
+  <parameters>datacenter='{datacenter}',storagedomain='{shared_iso_domain_name}'</parameters>
+  <positive>TRUE</positive>
+  <run>if(re.search('Win',%osTypeElement%))</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>TRUE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+   <test_name>Create Windows VM</test_name>
+   <test_action>createVm</test_action>
+   <parameters>vmName='{vm_name[0]}',vmDescription='{vm_name[0]}',cluster='{cluster}',nic='nic1',nicType='e{nic_type_virtio}',storageDomainName='{storage}',size=21474836480,diskType='e{disk_type_system}',display_type='e{display_type_vnc}',cobblerAddress='{cobbler_address}',cobblerUser='{cobbler_user}',cobblerPasswd='{cobbler_passwd}',network='{mgmt_bridge}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('Win',%osTypeElement%))</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Install Windows Vm With Unattended</test_name>
+   <test_action>unattendedInstallation</test_action>
+   <parameters>vm='{vm_name[0]}',image=%osBoot%,floppyImage=%floppy%,cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('Win',%osTypeElement%))</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check Windows VM connectivity</test_name>
+   <test_action>checkVMConnectivity</test_action>
+   <parameters>vm='{vm_name[0]}',osType=%osTypeElement%,attempt=300,interval=5,user='{vm_win_user}',password='{vm_win_password}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('Win',%osTypeElement%))</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Create Linux Vms</test_name>
+   <test_action>createVm</test_action>
+   <parameters>vmName='{vm_name[0]}',vmDescription='linux vm',cluster='{cluster}',nic='nic1',nicType='e{nic_type_virtio}',storageDomainName='{storage}',size=21474836480,diskType='e{disk_type_system}',display_type='e{display_type_vnc}',cobblerAddress='{cobbler_address}',cobblerUser='{cobbler_user}',cobblerPasswd='{cobbler_passwd}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('RHEL',%osTypeElement%))</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Install Linux Vms With Unattended</test_name>
+   <test_action>unattendedInstallation</test_action>
+   <parameters>vm='{vm_name[0]}',image=%osBoot%,cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('RHEL',%osTypeElement%))</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check Linux Vms connectivity</test_name>
+   <test_action>checkVMConnectivity</test_action>
+   <parameters>vm='{vm_name[0]}',osType=%osTypeElement%,attempt=300,interval=2,user='{vm_linux_user}',password='{vm_linux_password}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('RHEL',%osTypeElement%))</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Get MAC address</test_name>
+   <test_action>getVmMacAddress</test_action>
+   <parameters>vm='{vm_name[0]}',nic='nic1'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('RHEL',%osTypeElement%))</run>
+   <fetch_output>macAddress-&gt;macAddress</fetch_output>
+   <report>NO</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Get IP address</test_name>
+   <test_action>convertMacToIpAddress</test_action>
+   <parameters>mac=%macAddress%</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('RHEL',%osTypeElement%))</run>
+   <fetch_output>ip-&gt;ipAddress</fetch_output>
+   <report>NO</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Set Persistent Network on linux VM</test_name>
+   <test_action>setPersistentNetwork</test_action>
+   <parameters>host=%ipAddress%, password='{vm_linux_password}'</parameters>
+   <positive>NONE</positive>
+   <run>if(re.search('RHEL',%osTypeElement%))</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Stop VM</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='{vm_name[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Create template</test_name>
+   <test_action>createTemplate</test_action>
+   <parameters>vm='{vm_name[0]}',name='{template_name}',cluster='{cluster}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Remove VM</test_name>
+   <test_action>removeVm</test_action>
+   <parameters>vm='{vm_name[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Wait for SPM</test_name>
+   <test_action>waitForSPM</test_action>
+   <parameters>datacenter='{datacenter}',timeout=900,sleep=5</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>TRUE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Cobbler remove Macs</test_name>
+   <test_action>cobblerRemoveSystem</test_action>
+   <parameters>cobblerAddress='{cobbler_address}',cobblerUser='{cobbler_user}',cobblerPasswd='{cobbler_passwd}',mac=%macAddress%</parameters>
+   <positive>NONE</positive>
+   <run>if(re.search('RHEL',%osTypeElement%))</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: PrepareVMTemplate</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<test_case>
+  <test_name>END_GROUP:PrepareSetup</test_name>
+  <test_action/>
+  <parameters/>
+  <positive>NONE</positive>
+  <run/>
+  <fetch_output/>
+  <report/>
+  <vital/>
+  <test_description/>
+</test_case>
+</input>

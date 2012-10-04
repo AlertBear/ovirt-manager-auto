@@ -134,7 +134,7 @@
 <test_case>
   <test_name>Check Vms connectivity through vlan network</test_name>
   <test_action>checkVMConnectivity</test_action>
-  <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=60,interval=8,user='{vm_linux_user}',password='{vm_linux_password}',vlan='{vlan_id[0]}'</parameters>
+  <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=60,interval=8,user='{vm_linux_user}',password='{vm_linux_password}',nic='nic1'</parameters>
   <positive>TRUE</positive>
   <run>if(re.search('RHEL',%osTypeElement%));loop({vm_name})</run>
   <fetch_output/>
@@ -145,7 +145,7 @@
 <test_case>
   <test_name>Check Vms connectivity through vlan network</test_name>
   <test_action>checkVMConnectivity</test_action>
-  <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=60,interval=3,user='{vm_win_user}',password='{vm_win_password}',vlan='{vlan_id[0]}'</parameters>
+  <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=60,interval=3,user='{vm_win_user}',password='{vm_win_password}',nic='nic1'</parameters>
   <positive>TRUE</positive>
   <run>if(re.search('Win',%osTypeElement%));loop({vm_name})</run>
   <fetch_output/>
@@ -189,7 +189,7 @@
 <test_case>
    <test_name>Check Vms connectivity through vlan network after migration</test_name>
    <test_action>checkVMConnectivity</test_action>
-   <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=10,interval=1,user='{vm_linux_user}',password='{vm_linux_password}',vlan='{vlan_id[0]}'</parameters>
+   <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=10,interval=1,user='{vm_linux_user}',password='{vm_linux_password}',nic='nic1'</parameters>
    <positive>TRUE</positive>
    <run>if(re.search('RHEL',%osTypeElement%));loop({vm_name})</run>
    <fetch_output/>
@@ -200,7 +200,7 @@
 <test_case>
    <test_name>Check Vms connectivity through vlan network after migration</test_name>
    <test_action>checkVMConnectivity</test_action>
-   <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=10,interval=1,user='{vm_win_user}',password='{vm_win_password}',vlan='{vlan_id[0]}'</parameters>
+   <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=10,interval=1,user='{vm_win_user}',password='{vm_win_password}',nic='nic1'</parameters>
    <positive>TRUE</positive>
    <run>if(re.search('Win',%osTypeElement%));loop({vm_name})</run>
    <fetch_output/>
@@ -309,6 +309,282 @@
 </test_case>
 <test_case>
    <test_name>END_GROUP: Topology_F_30</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<!-- ======================================================================================================== -->
+<test_case>
+  <test_name>START_GROUP: Topology_F_31</test_name>
+  <test_action/>
+  <parameters>n/a1</parameters>
+  <positive>NONE</positive>
+  <run>if('topology-f-31' in '[run_topologies]')</run>
+  <fetch_output/>
+  <report/>
+  <vital/>
+  <test_description>Check VM connectivity over vlan and bond after migration</test_description>
+</test_case>
+<test_case>
+  <test_name>Convert Os name to Os type element </test_name>
+  <test_action>convertOsNameToOsTypeElement</test_action>
+  <parameters>osName='{vm_os}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output>osTypeElement-&gt;osTypeElement</fetch_output>
+  <report>NO</report>
+  <vital>TRUE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Get boot Os</test_name>
+  <test_action>getImageByOsType</test_action>
+  <parameters>osType=%osTypeElement%,slim=True</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output>osBoot-&gt;osBoot,floppy-&gt;floppy</fetch_output>
+  <report>NO</report>
+  <vital>TRUE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+<test_name>Create sw1 networks with VLAN</test_name>
+  <test_action>addNetwork</test_action>
+  <parameters>name='{networks[0]}',data_center='{datacenter}',vlan_id='{vlan_id[0]}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Create sw2 network for bond</test_name>
+  <test_action>addNetwork</test_action>
+  <parameters>name='{networks[1]}',data_center='{datacenter}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Attach sw1 and sw2 to Cluster</test_name>
+  <test_action>addNetworkToCluster</test_action>
+  <parameters>network='{networks}', cluster='{cluster}',required='true'</parameters>
+  <positive>TRUE</positive>
+  <run>loop({networks})</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+   <test_name>generate sw1 vlan network element</test_name>
+   <test_action>genSNNic</test_action>
+   <parameters>nic='{host_nics[1]}', network='{networks[0]}', vlan='{vlan_id[0]}'</parameters>
+   <positive>NONE</positive>
+   <run>YES</run>
+   <fetch_output>host_nic->sw1_nic</fetch_output>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+  <test_name>generate sw2 bond mode 1 to Hosts eth2 and eth3</test_name>
+  <test_action>genSNBond</test_action>
+  <parameters>name='{bond[0]}', network='{networks[1]}', slaves=['{host_nics[2]}','{host_nics[3]}'], mode=1</parameters>
+  <positive>NONE</positive>
+  <run>YES</run>
+  <fetch_output>host_nic->sw2_bond0_nic</fetch_output>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+   <test_name>Add VLAN to Hosts</test_name>
+   <test_action>sendSNRequest</test_action>
+   <parameters>host='{vds}',nics=[%sw1_nic%,%sw2_bond0_nic%],auto_nics=['{host_nics[0]}', '{host_nics[1]}'],check_connectivity='true', connectivity_timeout=60, force='false'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Send automatic MGMT interface, SW1 and SW2 networks</test_description>
+</test_case>
+<test_case>
+  <test_name>Create Vms from template</test_name>
+  <test_action>addVm</test_action>
+  <parameters>name='{vm_name}',cluster='{cluster}',template='{template_name}',display_type='e{display_type_vnc}'</parameters>
+  <positive>TRUE</positive>
+  <run>loop({vm_name})</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+   <test_name>Wait for disks status</test_name>
+   <test_action>waitForDisksStat</test_action>
+   <parameters>vm='{vm_name}'</parameters>
+   <positive>NONE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+  <test_name>Change VM network from management to sw1</test_name>
+  <test_action>updateNic</test_action>
+  <parameters>vm='{vm_name}',nic='nic1',network='{networks[0]}'</parameters>
+  <positive>TRUE</positive>
+  <run>loop({vm_name})</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Start Vms</test_name>
+  <test_action>startVm</test_action>
+  <parameters>vm='{vm_name}'</parameters>
+  <positive>TRUE</positive>
+  <run>loop({vm_name})</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Check Linux Vms connectivity through vlan network</test_name>
+  <test_action>checkVMConnectivity</test_action>
+  <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=60,interval=8,user='{vm_linux_user}',password='{vm_linux_password}',nic='nic1'</parameters>
+  <positive>TRUE</positive>
+  <run>if(re.search('RHEL',%osTypeElement%));loop({vm_name})</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Check Windows Vms connectivity through vlan network</test_name>
+  <test_action>checkVMConnectivity</test_action>
+  <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=60,interval=3,user='{vm_win_user}',password='{vm_win_password}',nic='nic1'</parameters>
+  <positive>TRUE</positive>
+  <run>if(re.search('Win',%osTypeElement%));loop({vm_name})</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+   <test_name>migrate VMs</test_name>
+   <test_action>migrateVm</test_action>
+   <parameters>vm='{vm_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check Vms connectivity through vlan network after migration</test_name>
+   <test_action>checkVMConnectivity</test_action>
+   <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=10,interval=1,user='{vm_linux_user}',password='{vm_linux_password}',nic='nic1'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('RHEL',%osTypeElement%));loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check Vms connectivity through vlan network after migration</test_name>
+   <test_action>checkVMConnectivity</test_action>
+   <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=10,interval=1,user='{vm_win_user}',password='{vm_win_password}',nic='nic1'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('Win',%osTypeElement%));loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Shutdown Vms</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='{vm_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Remove Vms</test_name>
+   <test_action>removeVm</test_action>
+   <parameters>vm='{vm_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Detach sw1 and sw2 from cluster</test_name>
+   <test_action>removeNetworkFromCluster</test_action>
+   <parameters>network='{networks}', cluster='{cluster}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({networks})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Remove sw1 and sw2 from hosts</test_name>
+   <test_action>sendSNRequest</test_action>
+   <parameters>host='{vds}',auto_nics=['{host_nics[0]}'],check_connectivity='true', connectivity_timeout=60, force='false'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Send automatic MGMT interface</test_description>
+</test_case>
+<test_case>
+   <test_name>Save Network Configuration</test_name>
+   <test_action>commitNetConfig</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Remove sw1 and sw2 from DataCenter</test_name>
+   <test_action>removeNetwork</test_action>
+   <parameters>network='{networks}',data_center='{datacenter}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({networks})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: Topology_F_31</test_name>
    <test_action/>
    <parameters/>
    <positive>NONE</positive>
