@@ -413,13 +413,13 @@ def waitForVmsStates(positive, names, states='up', *args, **kwargs):
 
 
 @is_action()
-def waitForVMState(vm, state='up'):
+def waitForVMState(vm, state='up', **kwargs):
     '''
     Wait until vm has the desired status
     Author: atal
     Parameters:
         * vm - name of vm
-        * wait_for_status - vm status should wait for (default is "powering_up")
+        * state - vm status should wait for (default is "powering_up")
           List of available statuses/states of VM:
           [unassigned, up, down, powering_up, powering_down,
           paused, migrating_from, migrating_to, unknown,
@@ -430,7 +430,7 @@ def waitForVMState(vm, state='up'):
     '''
     query = "name={0} and status={1}".format(vm, state.lower().replace('_', ''))
 
-    return VM_API.waitForQuery(query, timeout=VM_ACTION_TIMEOUT, sleep=10)
+    return VM_API.waitForQuery(query, **kwargs)
 
 
 def changeVMStatus(positive, vm, action, expectedStatus, async='true'):
