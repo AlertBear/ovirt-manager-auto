@@ -204,7 +204,7 @@
 <test_case>
    <test_name>Create shared disk</test_name>
    <test_action>addDisk</test_action>
-   <parameters>diskName='shared', provisioned_size=1073741824, size=1073741824, interface='e{interface_virtio}', format='e{format_raw}', storagedomain='master_sd', sparse='false', shareable=True</parameters>
+   <parameters>alias='shared', provisioned_size=1073741824, size=1073741824, interface='e{interface_virtio}', format='e{format_raw}', storagedomain='master_sd', sparse='false', shareable=True</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
@@ -248,7 +248,7 @@
 <test_case>
    <test_name>Attach disk to VM1</test_name>
    <test_action>attachDiskToVm</test_action>
-   <parameters>diskName='shared', vmName='vm_test1'</parameters>
+   <parameters>alias='shared', vmName='vm_test1'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <bz>854479</bz>
@@ -263,7 +263,7 @@
 <test_case>
    <test_name>Attach disk to VM2</test_name>
    <test_action>attachDiskToVm</test_action>
-   <parameters>diskName='shared', vmName='vm_test2'</parameters>
+   <parameters>alias='shared', vmName='vm_test2'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <bz>854479</bz>
@@ -307,14 +307,14 @@
 <test_case>
    <test_name>Detach disk from first VM</test_name>
    <test_action>detachDiskFromVm</test_action>
-   <parameters>diskName='shared', vmName='vm_test1'</parameters>
+   <parameters>alias='shared', vmName='vm_test1'</parameters>
    <positive>true</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Detach disk from second VM</test_name>
    <test_action>detachDiskFromVm</test_action>
-   <parameters>diskName='shared', vmName='vm_test2'</parameters>
+   <parameters>alias='shared', vmName='vm_test2'</parameters>
    <positive>true</positive>
    <run>yes</run>
 </test_case>
@@ -346,7 +346,7 @@
 <test_case>
    <test_name>Remove shared disk</test_name>
    <test_action>deleteDisk</test_action>
-   <parameters>diskName='shared'</parameters>
+   <parameters>alias='shared'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
@@ -1365,7 +1365,7 @@
 <test_case>
    <test_name>Create floating disk</test_name>
    <test_action>addDisk</test_action>
-   <parameters>diskName='floating', provisioned_size=1073741824, size=1073741824, interface='e{interface_virtio}', format='e{format_cow}', storagedomain='master_sd'</parameters>
+   <parameters>alias='floating', provisioned_size=1073741824, size=1073741824, interface='e{interface_virtio}', format='e{format_cow}', storagedomain='master_sd'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
@@ -1380,7 +1380,7 @@
 <test_case>
    <test_name>Attach disk to VM1</test_name>
    <test_action>attachDiskToVm</test_action>
-   <parameters>diskName='floating', vmName='vm_test1'</parameters>
+   <parameters>alias='floating', vmName='vm_test1'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <bz>854479</bz>
@@ -1396,7 +1396,7 @@
 <test_case>
    <test_name>Detach disk from first VM</test_name>
    <test_action>detachDiskFromVm</test_action>
-   <parameters>diskName='floating', vmName='vm_test1'</parameters>
+   <parameters>alias='floating', vmName='vm_test1'</parameters>
    <positive>true</positive>
    <run>yes</run>
 </test_case>
@@ -1410,7 +1410,7 @@
 <test_case>
    <test_name>Attach disk to VM2</test_name>
    <test_action>attachDiskToVm</test_action>
-   <parameters>diskName='floating', vmName='vm_test2'</parameters>
+   <parameters>alias='floating', vmName='vm_test2'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <bz>854479</bz>
@@ -1426,7 +1426,7 @@
 <test_case>
    <test_name>Detach disk from first VM</test_name>
    <test_action>detachDiskFromVm</test_action>
-   <parameters>diskName='floating', vmName='vm_test2'</parameters>
+   <parameters>alias='floating', vmName='vm_test2'</parameters>
    <positive>true</positive>
    <run>yes</run>
 </test_case>
@@ -1479,7 +1479,7 @@
 <test_case>
    <test_name>Remove floating disk</test_name>
    <test_action>deleteDisk</test_action>
-   <parameters>diskName="floating"</parameters>
+   <parameters>alias="floating"</parameters>
    <positive>true</positive>
    <run>yes</run>
    <report>yes</report>
@@ -1774,7 +1774,7 @@
 <test_case>
    <test_name>Create shared RAW disk</test_name>
    <test_action>addDisk</test_action>
-   <parameters>diskName='shared', provisioned_size=1073741824, size=1073741824, interface='e{interface_virtio}', format='e{format_raw}', storagedomain='master_sd', shareable=True, sparse=False</parameters>
+   <parameters>alias='shared', provisioned_size=1073741824, size=1073741824, interface='e{interface_virtio}', format='e{format_raw}', storagedomain='master_sd', shareable=True, sparse=False</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
@@ -1788,7 +1788,7 @@
 <test_case>
    <test_name>Attach disk to VM1</test_name>
    <test_action>attachDiskToVm</test_action>
-   <parameters>diskName='shared', vmName='vm_test1'</parameters>
+   <parameters>alias='shared', vmName='vm_test1'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <bz>854479</bz>
@@ -1803,7 +1803,7 @@
 <test_case>
    <test_name>Attach disk to VM2</test_name>
    <test_action>attachDiskToVm</test_action>
-   <parameters>diskName='shared', vmName='vm_test2'</parameters>
+   <parameters>alias='shared', vmName='vm_test2'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <bz>854479</bz>
@@ -1858,7 +1858,7 @@
 <test_case>
    <test_name>Remove shared disk</test_name>
    <test_action>deleteDisk</test_action>
-   <parameters>diskName="shared"</parameters>
+   <parameters>alias="shared"</parameters>
    <positive>true</positive>
    <run>yes</run>
    <report>yes</report>

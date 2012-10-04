@@ -67,24 +67,24 @@ def getObjDisks(name, get_href=True, is_template=False):
     return DISKS_API.getElemFromLink(obj, get_href=get_href)
 
 
-def getVmDisk(vmName, diskName):
+def getVmDisk(vmName, alias):
     """
     Description: Returns disk from VM's collection
     Parameters:
         * vmName - name of VM
-        * diskName - name of disk
+        * alias - name of disk
     Author: jlibosva
     Return: Disk from VM's collection
     """
     vmObj = VM_API.find(vmName)
-    return DISKS_API.getElemFromElemColl(vmObj, diskName)
+    return DISKS_API.getElemFromElemColl(vmObj, alias)
 
 
 def _prepareDiskObject(**kwargs):
     """
     Description: Prepare disk object according kwargs
     Parameters:
-        * diskName - name of the disk
+        * alias - name of the disk
         * provisioned_size - size of the disk
         * interface - IDE or virtio
         * format - raw or cow
@@ -108,6 +108,7 @@ def _prepareDiskObject(**kwargs):
     # Tuple (username, password)
     lun_creds = (kwargs.pop('lun_username', None),
                  kwargs.pop('lun_password', None))
+    type_ = kwargs.pop('type_', None)
 
     disk = data_st.Disk(**kwargs)
 
@@ -125,7 +126,8 @@ def _prepareDiskObject(**kwargs):
             direct_lun.set_username(lun_creds[0])
             direct_lun.set_password(lun_creds[1])
 
-        disk.set_lunStorage(data_st.Storage(logical_unit=[direct_lun]))
+        disk.set_lunStorage(data_st.Storage(logical_unit=[direct_lun],
+                                            type_=type_))
 
     return disk
 
@@ -135,7 +137,7 @@ def addDisk(positive, **kwargs):
     """
     Description: Adds disk to setup
     Parameters:
-        * diskName - name of the disk
+        * alias - name of the disk
         * provisioned_size - size of the disk
         * interface - IDE or virtio
         * format - raw or cow
@@ -157,7 +159,6 @@ def addDisk(positive, **kwargs):
             False - if positive but failed to add or not positive but added
     """
 #    kwargs.update(add=True)
-    kwargs.update(name=kwargs.pop('diskName', None))
     disk = _prepareDiskObject(**kwargs)
     disk, status = DISKS_API.create(disk, positive)
     return status, { 'diskId' : disk.get_id()
@@ -165,11 +166,11 @@ def addDisk(positive, **kwargs):
 
 
 @is_action()
-def updateDisk(positive, diskName, **kwargs):
+def updateDisk(positive, **kwargs):
     """
     Description: Update already existing disk
     Parameters:
-        * diskName - name of current disk
+        * alias - name of current disk
         * name - new name of the disk
         * provisioned_size - size of the disk
         * interface - IDE or virtio
@@ -186,23 +187,23 @@ def updateDisk(positive, diskName, **kwargs):
     Author: jlibosva
     Return: Status of the operation's result dependent on positive value
     """
-    diskObj = DISKS_API.find(diskName)
+    diskObj = DISKS_API.find(kwargs.pop('alias'))
     newDisk = _prepareDiskObject(**kwargs)
     newDisk, status = DISKS_API.update(diskObj, newDisk, positive)
     return status
 
 
 @is_action()
-def deleteDisk(positive, diskName, async=True):
+def deleteDisk(positive, alias, async=True):
     """
     Description: Removes disk from system
     Parameters:
-        * diskName - name of disk
+        * alias - name of disk
         * async - whether the task should be asynchronous
     Author: jlibosva
     Return: Status of the operation's result dependent on positive value
     """
-    diskObj = DISKS_API.find(diskName)
+    diskObj = DISKS_API.find(alias)
 
     # TODO: add async parameter to delete method once it's supported
     status = DISKS_API.delete(diskObj, positive)
@@ -210,17 +211,17 @@ def deleteDisk(positive, diskName, async=True):
 
 
 @is_action('attachDiskToVm')
-def attachDisk(positive, diskName, vmName, active=True):
+def attachDisk(positive, alias, vmName, active=True):
     """
     Description: Attach disk to VM
     Parameters:
-        * diskName - disk to attach
+        * alias - disk to attach
         * vmName - vm attaching disk to
         * active - if disk should be activated after attaching
     Author: jlibosva
     Return: Status of the operation dependent on positive value
     """
-    diskObj = DISKS_API.find(diskName)
+    diskObj = DISKS_API.find(alias)
     diskObj.active = active
 
     vmDisks = getObjDisks(vmName)
@@ -230,16 +231,16 @@ def attachDisk(positive, diskName, vmName, active=True):
 
 
 @is_action('detachDiskFromVm')
-def detachDisk(positive, diskName, vmName, detach=True):
+def detachDisk(positive, alias, vmName, detach=True):
     """
     Description: Detach disk from VM
     Parameters:
-        * diskName - disk to detach
+        * alias - disk to detach
         * vmName - vm from which disk will be detached
     Author: jlibosva
     Return: Status of the operation dependent on positive value
     """
-    diskObj = getVmDisk(vmName, diskName)
+    diskObj = getVmDisk(vmName, alias)
     body = data_st.Action(detach=detach)
 
     return DISKS_API.delete(diskObj, positive, body=body, element_name='action')
