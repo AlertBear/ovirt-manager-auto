@@ -59,7 +59,36 @@ class APICommandError(Exception):
         return "Error while running command '{0}': {1}".format(self.cmd,
                                                                self.error)
 
+
 class TestCaseError(APIException):
     """
     Raised when something goes wrong and test can not be completed.
     """
+
+
+class CLITimeout(APITimeout):
+    '''
+    Raised when some action timeouts.
+    '''
+    pass
+
+
+class CLIError(APICommandError):
+    '''
+    Raised when EOF reached with cli engine (connection lost)
+    '''
+    pass
+
+
+class UnsupportedCLIEngine(APIException):
+    '''
+    Raised when trying to use unsupported cli engine
+    '''
+    pass
+
+
+class CLICommandFailure(APIException):
+    '''
+    Raised when cli command returns error
+    '''
+    pass

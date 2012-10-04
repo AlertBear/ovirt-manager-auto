@@ -20,18 +20,243 @@
 import pexpect as pe
 import re
 from sys import exit
+from abc import ABCMeta, abstractmethod
+from time import strftime
 from art.rhevm_api.data_struct.data_structures import *
 from art.rhevm_api.data_struct.data_structures import ClassesMapping
 from art.core_api.rest_utils import RestUtil
+from art.core_api.apis_exceptions import CLIError, CLITimeout,\
+            CLICommandFailure, UnsupportedCLIEngine, EntityNotFound
 from art.core_api import validator
 from utilities.utils import createCommandLineOptionFromDict
 
 cliInit = False
 
-DEF_TIMEOUT = 900  # default timeout
-DEF_SLEEP = 10  # default sleep
-CLI_PROMPT = '[oVirt shell (connected)]'
-CLI_TIMEOUT = 30
+ILLEGAL_XML_CHARS = u'[\x00-\x08\x0b\x0c\x0e-\x1F\uD800-\uDFFF\uFFFE\uFFFF]'
+CONTROL_CHARS = u'[\n\r]'
+RHEVM_SHELL = 'rhevm-shell'
+
+QUERY_ID_RE = 'id(\s+):'
+
+
+class CliConnection(object):
+    __metaclass__ = ABCMeta
+
+    def __init__(self, command, prompt, timeout):
+        self._prompt = prompt
+        self.cliConnection = pe.spawn(command, timeout=timeout)
+        timestamp = strftime('%Y%m%d_%H%M%S')
+        self.cliLog = "/tmp/cli_log_%s.log" % timestamp
+        self.cliConnection.logfile = open(self.cliLog, 'w')
+        self._expectDict = {}
+        self._illegalXMLCharsRE = re.compile(ILLEGAL_XML_CHARS)
+        self._controlCharsRE = re.compile(CONTROL_CHARS)
+
+    @abstractmethod
+    def login(self, *args, **kwargs):
+        """
+        Virtual function that should be implemented by child class.
+        Reason: Login may differ between different CLI engines
+        """
+
+    @property
+    def expectDict(self):
+        return self._expectDict
+
+    @expectDict.setter
+    def expectDict(self, regexButtonDict):
+        if not hasattr(self, '_expectDict'):
+            self._expectDict = {}
+        self._expectDict.update(regexButtonDict)
+
+    @expectDict.deleter
+    def expectDict(self):
+        del(self._expectDict)
+
+    def sendCmd(self, cmd, timeout):
+        """
+        This method sends command
+        Input:
+        cmd - command
+        timeout - specific timeout in [sec] for this command run
+        Output: string with data from child process
+        """
+        if not timeout:
+            timeout = self.cliConnection.timeout
+
+        expectList = self. expectDict.keys()
+        expectList.insert(0, self._prompt)
+        output = []
+
+        self.cliConnection.sendline(cmd)
+        try:
+            i = self.cliConnection.expect(expectList, timeout)
+            while i != 0:
+                sendButton = self.expectDict[expectList[i]]
+                self.cliConnection.sendline(sendButton)
+                output.append(self.cliConnection.before)
+
+                # WA for trash in buffer (END issue)
+                try:
+                    i = self.cliConnection.expect(self._prompt,
+                                              timeout=0.001)
+                except pe.TIMEOUT:
+                    i = self.cliConnection.expect(expectList,
+                                              timeout)
+
+            output.append(self.cliConnection.before)
+        except pe.TIMEOUT as e:
+            raise CLITimeout(e)
+        except pe.EOF as e:
+            raise CLIError(cmd, e)
+
+        # flushing the buffer
+        self.cliConnection.expect([self._prompt, pe.TIMEOUT], timeout=0.1)
+        if type(self.cliConnection.before) == str:
+            output.append(self.cliConnection.before)
+
+        return "\n".join(output)
+
+    def commandRun(self, cmd, timeout=''):
+        """
+        Wrapper that runs command and returns validated output
+        Input:
+         - cmd - command to run
+         - timeout - timeout in [sec]. If timeout parameter is
+           not set default timeout used
+        """
+        return self.outputValidator(self.sendCmd(cmd, timeout))
+
+    @abstractmethod
+    def outputValidator(self, output):
+        """
+        Virtual function that should be implemented by child class.
+        Reason:  Output validation may differ between different CLI engines
+        """
+
+    def outputCleaner(self, output):
+        """
+        this method cleans output for special characters and align it to UTF8
+        """
+        if type(output) == list:
+            output = ' '.join(output)
+        output = self.escapeControlChars(output)
+        return self.escapeXMLIllegalChars(output)
+
+    def escapeControlChars(self, val, replacement=''):
+        return self._controlCharsRE.sub(replacement, val)
+
+    def escapeXMLIllegalChars(self, val, replacement=''):
+        return self._illegalXMLCharsRE.sub(replacement, val).decode('utf-8')
+
+
+class RhevmCli(CliConnection):
+    """
+    CLI connection implementation for rhevm-shell
+    """
+
+    def __init__(self, logger, uri, user, userDomain, password,
+                 secure, sslKeyFile, sslCertFile, sslCaFile, **kwargs):
+        """
+        Input:
+         - logger - logger reference
+         - uri, user, userDomain, password - REST API Parameters
+         - additional parameters to CLI could be passed via kwargs
+        """
+        # rhevm shell specific configs
+        self._rhevmOutputErrorKeys = ['error', 'status', 'reason', 'detail']
+        self._errorStatusMsgSearch = "error.*status.*reason.*detail.*"
+        self._errorParametersMsgSearch = "error:.*"
+        self._errorSyntaxMsgSearch = "\*\*\* Unknown syntax.*"
+        self._insiderSearch = "status.*reason.*detail.*"
+        self._EOL = '\r\n'
+        self._RHEVM_LOGIN_PROMPT = "Password:"
+        self._RHEVM_PROMPT = '\[RHEVM shell \(connected\)\]# '
+        self._RHEVM_DISCONNECTED_PROMPT = '\[RHEVM shell \(disconnected\)\]# '
+        self._RHEVM_TIMEOUT = 900
+        self._SPECIAL_CLI_PROMPT = {'\r\n:': ' ', '7m\(END\)': 'q'}
+
+        self.logger = logger
+        self.prepareConnectionCommand(uri, user, userDomain,
+            secure, sslKeyFile, sslCertFile, sslCaFile, additionalArgs=kwargs)
+        super(RhevmCli, self).__init__(self._connectionCommand,
+                            prompt=self._RHEVM_PROMPT,
+                            timeout=self._RHEVM_TIMEOUT)
+        self.logger.debug("CLI logfile: %s" % self.cliLog)
+        self.login(password)
+        # updating parent dictionary for cli work
+        self.expectDict = self._SPECIAL_CLI_PROMPT
+
+    def login(self, password):
+        self.expectDict = {self._RHEVM_LOGIN_PROMPT: password}
+        self.expectDict = {self._RHEVM_DISCONNECTED_PROMPT: "exit"}
+
+        expectList = self. expectDict.keys()
+        expectList.insert(0, self._prompt)
+        output = []
+
+        try:
+            i = self.cliConnection.expect(expectList)
+            while i != 0:
+                sendButton = self.expectDict[expectList[i]]
+                output.append(self.cliConnection.before)
+                self.cliConnection.sendline(sendButton)
+                i = self.cliConnection.expect(expectList)
+            output.append(self.cliConnection.before)
+        except pe.TIMEOUT as e:
+            self.logger.error('CLI Output %s', ' '.join(output))
+            raise CLITimeout(e)
+        except pe.EOF as e:
+            self.logger.error('CLI Output %s', ' '.join(output))
+            raise CLIError(self._connectionCommand, e)
+
+        del self.expectDict
+
+    def prepareConnectionCommand(self, uri, user, userDomain,
+                secure, sslKeyFile, sslCertFile, sslCaFile, additionalArgs):
+        cliConnect = []
+
+        userWithDomain = '{0}@{1}'.format(user, userDomain)
+
+        # mandatory data
+        cliConnect.append('{0} -c -l "{1}" -u "{2}"'.\
+                    format(RHEVM_SHELL, uri, userWithDomain))
+        # ssl stuff
+        if secure:
+            cliConnect.append('-K {0} -C {1} -A {2}'.\
+                    format(sslKeyFile, sslCertFile, sslCaFile))
+        else:
+            cliConnect.append('-I')
+        # optional params
+        for key in additionalArgs.keys():
+            cliConnect.append(str(additionalArgs[key]))
+
+        self._connectionCommand = ' '.join(cliConnect)
+        self.logger.debug('Connect: %s' % self._connectionCommand)
+
+    def outputValidator(self, output):
+        # looking for error - to change to more generic map style
+        errorStatusMsg = re.search(self._errorStatusMsgSearch, output,
+                                   flags=re.DOTALL)
+        errorParametersMsg = re.search(self._errorParametersMsgSearch,
+                                       output, flags=re.DOTALL)
+        errorSyntaxMsg = re.search(self._errorSyntaxMsgSearch,
+                                       output, flags=re.DOTALL)
+        if errorStatusMsg:
+            data = re.search(self._insiderSearch, errorStatusMsg.group(0),
+                             flags=re.DOTALL).group(0).split(self._EOL)
+            status = self.outputCleaner(data[0])
+            reason = self.outputCleaner(data[1])
+            detail = self.outputCleaner(data[2:])
+            raise CLICommandFailure('Command Failed:', status, reason, detail)
+        elif errorParametersMsg:
+            raise CLICommandFailure('Wrong parameters:',
+                            self.outputCleaner(errorParametersMsg.group(0)))
+        elif errorSyntaxMsg:
+            raise CLICommandFailure('Wrong syntax:',
+                            self.outputCleaner(errorSyntaxMsg.group(0)))
+
+        return self.outputCleaner(output)
 
 
 class CliUtil(RestUtil):
@@ -43,31 +268,29 @@ class CliUtil(RestUtil):
     def __init__(self, element, collection):
         super(CliUtil, self).__init__(element, collection)
         # no _ in cli
-        # TODO: to change to generic converter
-        self.element_name = self.element_name.replace('_', '')
+        self.cli_element_name = self.element_name.replace('_', '')
 
         global cliInit
 
         if not cliInit:
-            user_with_domain = '{0}@{1}'.format(self.opts['user'],\
-                                        self.opts['user_domain'])
-            if not self.opts['secure']:
-                cli_connect = '"{0}" -c -l "{1}" -u "{2}" -p "{3}" "{4}"'.\
-                    format(self.opts['cli_tool'], self.opts['uri'],
-                        user_with_domain, self.opts['password'],
-                        self.opts['cli_optional_params'])
-            else:
-                cli_connect = '"{0}" -c -l "{1}" -u "{2}" -p "{3}" {4} -K' \
-                              ' {5} -C {6} -A {7}'.\
-                    format(self.opts['cli_tool'], self.opts['uri'],
-                        user_with_domain, self.opts['password'],
-                        self.opts['cli_optional_params'],
-                        self.opts['ssl_key_file'], self.opts['ssl_cert_file'],
-                        self.opts['ssl_ca_file'])
             try:
-                self.logger.debug('Connect: %s' % cli_connect)
-                self.cli = pe.spawn(cli_connect, timeout=CLI_TIMEOUT)
-                self.cli.expect(CLI_PROMPT)
+                if self.opts['cli_tool'] == RHEVM_SHELL:
+                    self.cli = RhevmCli(self.logger,
+                            self.opts['uri'],
+                            self.opts['user'],
+                            self.opts['user_domain'],
+                            self.opts['password'],
+                            self.opts['secure'],
+                            # WA until conf spec implementation in ssl plugin
+                            sslKeyFile=self.opts.get('ssl_key_file', None),
+                            sslCertFile=self.opts.get('ssl_cert_file', None),
+                            sslCaFile=self.opts.get('ssl_ca_file', None),
+                            optionalParms=self.opts['cli_optional_params'],
+                            )
+                else:
+                    msg = 'Unsupported CLI engine: %s' % self.opts['cli_tool']
+                    raise UnsupportedCLIEngine(msg)
+
             except pe.ExceptionPexpect as e:
                 self.logger.error('Pexpect Connection Error: %s ' % e.value)
                 exit(2)
@@ -75,12 +298,6 @@ class CliUtil(RestUtil):
             cliInit = self.cli
         else:
             self.cli = cliInit
-
-    def __del__(self):
-        '''
-        Close the cli connection
-        '''
-        self.cli.close()
 
     def getCollection(self, href):
 
@@ -104,51 +321,56 @@ class CliUtil(RestUtil):
         Return: POST response (None on parse error.),
                 status (True if POST test succeeded, False otherwise.)
         '''
-        addEntity = validator.cli_entity(entity, self.element_name)
-
-        createCmd = 'create {0} {1}'.format(self.element_name,
-            validator.cli_entity(entity, self.element_name))
+        addEntity = validator.cliEntety(entity, self.element_name)
+        createCmd = 'add {0} {1}'.format(self.cli_element_name,
+            validator.cliEntety(entity, self.element_name))
 
         if collection:
             ownerId, ownerName, entityName = \
                             self._getHrefData(collection)
 
             if ownerId and ownerName:  # adding to some element collection
-                createCmd = "create {0} --{1}-identifier '{2}' {3}".format(\
-                                                           self.element_name,
-                                                           ownerId.rstrip('s'),
-                                                           entityName,
-                                                           addEntity)
-
-        self.logger.debug("CREATE cli command is: %s" % createCmd)
+                createCmd = "add {0} --{1}-identifier '{2}' {3}".format(\
+                                                        self.cli_element_name,
+                                                        ownerId.rstrip('s'),
+                                                        entityName,
+                                                        addEntity)
+        correlationId = self.getCorrelationId()
+        if correlationId:
+            createCmd = "%s --correlation_id %s" % (createCmd, correlationId)
 
         collHref = collection
         collection = self.getCollection(collHref)
 
         response = None
         try:
-            self.cli.sendline(createCmd)
-            self.cli.expect('id(\s+):')
-
+            self.logger.debug("CREATE cli command is: %s", createCmd)
+            out = self.cli.commandRun(createCmd)
+            self.logger.debug("CREATE cli command output: %s", out)
+        except CLICommandFailure as e:
+            errorMsg = "Failed to create a new element, details: {0}"
+            self.logger.error(errorMsg.format(e))
+            if positive:
+                return response, False
+        else:
             # refresh collection
             collection = self.getCollection(collHref)
 
             if entity.name:
                 response = self.find(entity.name,
-                            collection=collection, absLink=False)
+                        collection=collection, absLink=False)
+                self.logger.info("New entity was added successfully")
 
-            self.logger.info("New entity was added successfully")
             expEntity = entity if not expectedEntity else expectedEntity
 
-            if response and not validator.compareElements(expEntity,
-                  response, self.logger, self.element_name):
-                return None, False
-
-        except pe.ExceptionPexpect as e:
-            if positive and self.cli.buffer.find('error'):
-                errorMsg = "Failed to create a new element, details: {0}"
-                self.logger.error(errorMsg.format(e))
-                return None, False
+            if positive:
+                if response and not validator.compareElements(\
+                    expEntity, response, self.logger, self.element_name):
+                    return response, False
+            else:
+                if response and validator.compareElements(\
+                    expEntity, response, self.logger, self.element_name):
+                    return response, False
 
         return response, True
 
@@ -163,11 +385,11 @@ class CliUtil(RestUtil):
         Return: PUT response, True if PUT test succeeded, False otherwise
         '''
 
-        updateBody = validator.cli_entity(newEntity, self.element_name)
+        updateBody = validator.cliEntety(newEntity, self.element_name)
         defaultColl = True
         collHref, collection = None, None
 
-        updateCmd = 'update {0} {1} {2}'.format(self.element_name,
+        updateCmd = 'update {0} {1} {2}'.format(self.cli_element_name,
                                     origEntity.name, updateBody)
 
         ownerId, ownerName, entityName = \
@@ -183,30 +405,32 @@ class CliUtil(RestUtil):
                                         ownerId, entityName)
             defaultColl = False
 
+        correlationId = self.getCorrelationId()
+        if correlationId:
+            updateCmd = "%s --correlation_id %s" % (updateCmd, correlationId)
+
         self.logger.debug("UPDATE cli command is: %s" % updateCmd)
 
         response = None
         try:
+            out = self.cli.commandRun(updateCmd)
+            self.logger.debug("UPDATE cli command output: %s", out)
+            self.logger.info(self.element_name + " was updated")
+        except CLICommandFailure as e:
+            errorMsg = "Failed to update a new element, details: {0}"
+            self.logger.error(errorMsg.format(e))
             if positive:
-                self.cli.sendline(updateCmd)
-                self.cli.expect('id(\s+):')
-                self.logger.info(self.element_name + " was updated")
+                return response, False
+        else:
+            if collHref:
+                collection = self.get(collHref, listOnly=True)
 
-                if collHref:
-                    collection = self.get(collHref, listOnly=True)
+            response = self.find(origEntity.id, 'id', absLink=defaultColl,
+                                                    collection=collection)
 
-                response = self.find(origEntity.id, 'id', absLink=defaultColl,
-                                                        collection=collection)
-
-                if not validator.compareElements(newEntity, response,
-                                    self.logger, self.element_name):
-                    return None, False
-
-        except pe.ExceptionPexpect as e:
-            if positive:
-                errorMsg = "Failed to update an element, details: {0}"
-                self.logger.error(errorMsg.format(e))
-                return None, False
+            if positive and not validator.compareElements(newEntity, response,
+                                self.logger, self.element_name):
+                return response, False
 
         return response, True
 
@@ -231,34 +455,33 @@ class CliUtil(RestUtil):
 
         addBody = ''
         if body:
-            addBody = validator.cli_entity(body, self.element_name)
+            addBody = validator.cliEntety(body, self.element_name)
 
-        deleteCmd = 'delete {0} {1} {2}'.format(self.element_name,
+        deleteCmd = 'remove {0} {1} {2}'.format(self.cli_element_name,
                                             entity.name, addBody)
 
         ownerId, ownerName, entityName = \
                                 self._getHrefData(entity.href)
 
         if ownerId and ownerName and entityName:
-            deleteCmd = "delete {0} '{1}' --{2}-identifier '{3}' {4}".\
+            deleteCmd = "remove {0} '{1}' --{2}-identifier '{3}' {4}".\
                 format(entityName, entity.id, ownerName, ownerId, addBody)
+
+        correlationId = self.getCorrelationId()
+        if correlationId:
+            deleteCmd = "%s --correlation_id %s" % (deleteCmd, correlationId)
 
         self.logger.debug("DELETE cli command is: %s" % deleteCmd)
 
         try:
-            self.cli.sendline(deleteCmd)
-            # waiting for error because nothing is returned for success
-            self.cli.expect('error')
-            if positive:
-                errorMsg = "Failed to delete an element, details: {0}"
-                self.logger.error(errorMsg.format(self.cli))
-                return False
+            out = self.cli.commandRun(deleteCmd)
+            self.logger.debug("DELETE cli command output: %s", out)
 
-        except pe.TIMEOUT:
-            self.logger.info("Entity '%s' was deleted successfully",
-                             entity.id)
-        except pe.ExceptionPexpect as e:
-            self.logger.error('Pexpect Error: %s ' % e.value)
+        except CLICommandFailure as e:
+            errorMsg = "Failed to delete an element, details: {0}"
+            self.logger.error(errorMsg.format(e))
+            if positive:
+                return False
 
         return True
 
@@ -280,16 +503,20 @@ class CliUtil(RestUtil):
 
         self.logger.debug("SEARCH cli command is: %s" % queryCmd)
 
-        results = []
         try:
-            self.cli.sendline(queryCmd)
-            self.cli.expect(['id(\s+):', pe.EOF])
-            match = self.cli.match
-            results = match.groups()
-        except pe.TIMEOUT:
-            self.logger.warn("No match found for query: '%s' " % queryCmd)
-        except pe.ExceptionPexpect as e:
-            self.logger.error('Pexpect Error: %s ' % e.value)
+            result = self.cli.commandRun(queryCmd)
+            self.logger.debug("Query cli command output: %s", result)
+
+        except CLICommandFailure as e:
+            errorMsg = "Failed to perform query, details: {0}"
+            self.logger.error(errorMsg.format(e))
+            return []
+
+        data = re.findall(QUERY_ID_RE, result)
+        if data:
+            results = re.findall(QUERY_ID_RE, result)
+        else:
+            results = []
 
         self.logger.debug("Response for QUERY request is: %s " % results)
 
@@ -306,12 +533,11 @@ class CliUtil(RestUtil):
            * asynch - synch or asynch action
         Return: status (True if Action test succeeded, False otherwise)
         '''
-
         act = self.makeAction(async, 10, **params)
 
         actionCmd = "action {0} '{1}' {2} {3}".\
             format(self.element_name.replace('_', ''), entity.id, action,
-                                    validator.cli_entity(act, 'action'))
+                                    validator.cliEntety(act, 'action'))
 
         ownerId, ownerName, entityName = \
                             self._getHrefData(entity.href)
@@ -327,22 +553,12 @@ class CliUtil(RestUtil):
                                         ownerName, ownerId, addParams)
 
         self.logger.debug("ACTION cli command is: %s" % actionCmd)
+        res = self.cli.commandRun(actionCmd)
+        expectOut = 'status-state'
+        if action == 'iscsidiscover':
+            expectOut = 'iscsi_target'
 
-        try:
-            self.cli.sendline(actionCmd)
-            expectOut = 'status-state'
-            if action == 'iscsidiscover':
-                expectOut = 'iscsi_target'
-            self.cli.expect(expectOut, timeout=300)
-        except pe.ExceptionPexpect as e:
-            if positive:
-                errorMsg = "Failed to run an action, details: {0}"
-                self.logger.error(errorMsg.format(e))
-                return False
-
-            return True
-
-        actionStateMatch = re.match('.*: (\w+).*', self.cli.buffer)
+        actionStateMatch = re.match('.*: (\w+).*', res)
         if not actionStateMatch and positive:
             return False
 
@@ -351,7 +567,6 @@ class CliUtil(RestUtil):
             if not async:
                 return validator.compareActionStatus(actionState,
                                         ["complete"], self.logger)
-
             else:
                 return validator.compareActionStatus(actionState,
                             ["pending", "complete"], self.logger)

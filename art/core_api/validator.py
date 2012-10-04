@@ -64,23 +64,36 @@ def getObjAttributes(obj, origObj):
         return origObj.member_data_items_.keys()
 
 
-def cli_entity(elm, node_name, level=0):
-    '''
+def cliEntety(elm, node_name):
+    """
     Dump DS element to cli format
+    """
+    output = cli_entity(elm, node_name)
+    # reducing complexity of cli_entity by replacing
+    # of last ',' in collection to '"'
+    return output.replace(', ', '" ')
+
+
+def cli_entity(elm, node_name, level=0, collection=False, start=False,
+               end=False):
+    '''
+    Dump DS element to cli format, shouldn't be used directly
+    use cliEntety as wrapper for this function
     '''
 
     dumped_ent = ''
-
     ignore = ['status', 'supported_versions', 'valueOf_']
+
     elmClass = elm.__class__.__name__
     elmInstance = getattr(ds, elmClass)()
-
     attrList = getObjAttributes(elmInstance, elmInstance)
 
-    for attr in attrList:
-        if attr in ATTR_IGNORE_LIST + ignore:
-            continue
+    # cleaning from unneeded attributes
+    for attr in ATTR_IGNORE_LIST + ignore:
+        if attr in attrList:
+            attrList.remove(attr)
 
+    for attr in attrList:
         try:
             attrVal = getAttibuteValue(elm, attr)
         except AttributeError:
@@ -97,6 +110,7 @@ def cli_entity(elm, node_name, level=0):
             if level > 0:
                 nodeName = "{0}-{1}".format(node_name, attr)
 
+            # checking if recursion reached its stopping case
             if attrType.startswith('xs:'):
                 if attrContainer and isinstance(attrVal, list):
                     attrVal = attrVal[0]
@@ -104,21 +118,64 @@ def cli_entity(elm, node_name, level=0):
                 if re.search('boolean', attrType):
                     attrVal = str(attrVal).lower()
 
-                if re.search('string', attrType):
-                    attrVal = "'%s'" % attrVal
+                if re.search('int', attrType) or re.search('long', attrType)\
+                    or re.search('unsignedShort', attrType):
+                    attrVal = "%d" % attrVal
 
-                dumped_ent += " --{0} {1}".format(nodeName, attrVal)
+                if re.search('string', attrType):
+                    if collection:
+                        attrVal = "%s" % attrVal
+                    else:
+                        attrVal = "'%s'" % attrVal
+
+                # taking care of collection parsing
+                if collection:
+                    tmp = nodeName.rsplit('-', 2)
+                    base = '-'.join([tmp[0], tmp[1]])
+                    collectionData = '.'.join([tmp[1], tmp[2]])
+
+                    # collection with single element
+                    if start and end:
+                        nodeName = ' '.join([base, collectionData])
+                        dumped_ent += " --{0}={1}".format(nodeName, attrVal)
+
+                    # Middle of collection
+                    elif not start:
+                        nodeName = collectionData
+                        dumped_ent += "{0}={1},".format(nodeName, attrVal)
+
+                    # beginning of collection
+                    elif start:
+                        start = False
+                        nodeName = ''.join([base, ' "', collectionData])
+                        dumped_ent += " --{0}={1},".format(nodeName, attrVal)
+
+                else:
+                    dumped_ent += " --{0} {1}".format(nodeName, attrVal)
                 if level > 0 and attr == 'id':
                     break
 
             else:
                 nextLevel = level + 1
-                if isinstance(attrVal, list):
-                    for i in range(0, len(attrVal)):
-                        dumped_ent += cli_entity(attrVal[i], nodeName,
-                                                 nextLevel)
+                if not isinstance(attrVal, list):
+                    attrVal = [attrVal, ]
+                length = len(attrVal)
+                # collection ahead
+                if attrContainer:
+                    for i in range(length):
+                        if length == 1:
+                            dumped_ent += cli_entity(attrVal[i], nodeName,
+                              nextLevel, collection=True, start=True, end=True)
+                        elif i != 0:
+                            dumped_ent += cli_entity(attrVal[i], nodeName,
+                                        nextLevel, collection=True)
+                        elif i == 0:
+                            dumped_ent += cli_entity(attrVal[i], nodeName,
+                                        nextLevel, collection=True, start=True)
                 else:
-                    dumped_ent += cli_entity(attrVal, nodeName, nextLevel)
+                    for i in range(length):
+                        dumped_ent += cli_entity(attrVal[i], nodeName,
+                                             nextLevel)
 
     return dumped_ent
 

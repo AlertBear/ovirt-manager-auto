@@ -15,6 +15,7 @@ sys.path = paths
 # __package_exclude_end__
 from utilities.configs import ValidationError
 
+from art.core_api.apis_exceptions import APICommandError, APIException
 from art.test_handler.test_runner import TestRunner
 from art.test_handler.settings import populateOptsFromArgv, CmdLineError, \
         initPlmanager, opts, readTestRunOpts
@@ -79,6 +80,10 @@ def main():
         print >>stderr, e
         _print_error("Exiting with failure.", e)
         return RC.Plugin
+    except (APICommandError, APIException) as e:
+        print >>stderr, e
+        print >>stderr, "Exiting with API error."
+        exit(RC.API)
     except Exception as exc:
         traceback.print_exc(file=stderr)
         print >>stderr, "Exiting with failure."
@@ -91,4 +96,3 @@ def main():
 
 if __name__ == "__main__":
     exit(main())
-

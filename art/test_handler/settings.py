@@ -39,11 +39,11 @@ from art.test_handler import find_config_file
 opts = {}
 """ A options global for all REST tests. """
 plmanager = None
-RC_RANGE = [2, 8]
+RC_RANGE = [2, 9]
 
 
 class ReturnCode:
-    General, IO, Connection, CommandLine, Validation, Plugin =\
+    General, IO, Connection, CommandLine, Validation, Plugin, API =\
                                    range(RC_RANGE[0], RC_RANGE[1])
 
 

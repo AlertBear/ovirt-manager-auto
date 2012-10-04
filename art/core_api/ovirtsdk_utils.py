@@ -32,9 +32,6 @@ DEF_TIMEOUT = 900
 # default sleep
 DEF_SLEEP = 10
 
-HEADERS = 'headers'
-CORRELATION_ID = 'Correlation-Id'
-
 
 class SdkUtil(APIUtil):
     '''
@@ -59,11 +56,6 @@ class SdkUtil(APIUtil):
             sdkInit = self.api
         else:
             self.api = sdkInit
-
-
-    def getCorrelationId(self):
-        return self.opts[HEADERS].get(CORRELATION_ID, None)
-
 
     def get(self, collection=None, **kwargs):
         '''
