@@ -271,7 +271,12 @@ class Bugzilla(Component):
             self._should_be_skipped(elm)
         except SkipTest:
             st = getattr(elm, 'status', elm.TEST_STATUS_FAILED)
-            if st == elm.TEST_STATUS_FAILED:
+            if st in (elm.TEST_STATUS_FAILED, elm.TEST_STATUS_ERROR):
+                # NOTE: many test_cases running with sdk_engine ends with
+                # ERROR status instead of FAIL so it is needed to be able skip
+                # also these test_cases. I am not happy with that because
+                # status ERROR is dedicated for different purpose, but current
+                # design is not able to handle in better way.
                 elm.status = elm.TEST_STATUS_SKIPPED
 
     def post_test_case(self, t):
