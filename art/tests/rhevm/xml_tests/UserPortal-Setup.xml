@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- vim: set ts=3 sw=3 expandtab: -->
+<?xml-stylesheet type="text/xsl" href="table.xslt"?>
+<input>
+    <test_case>
+        <test_name>START_GROUP: Setup</test_name>
+        <test_action />
+        <parameters></parameters>
+        <positive>NONE</positive>
+        <run />
+        <fetch_output />
+    </test_case>
+    <test_case>
+        <test_name>Create Data Center NFS</test_name>
+        <test_action>addDataCenter</test_action>
+        <parameters>name='{data_center}',storage_type='e{storage_type_nfs}',version='{compatibility_version}'
+        </parameters>
+        <positive>TRUE</positive>
+        <run>YES</run>
+        <report>NO</report>
+        <fetch_output />
+    </test_case>
+    <test_case>
+        <test_name>Create Cluster</test_name>
+        <test_action>addCluster</test_action>
+        <parameters>name='{cluster}',cpu='{cpu_name}',data_center='{data_center}',version='{compatibility_version}'
+        </parameters>
+        <positive>TRUE</positive>
+        <run>YES</run>
+        <report>NO</report>
+        <fetch_output />
+    </test_case>
+    <test_case>
+        <test_name>Add Host</test_name>
+        <test_action>addHost</test_action>
+        <parameters>name='{vds}',root_password='{vds_password}',cluster='{cluster}'</parameters>
+        <positive>TRUE</positive>
+        <run>YES</run>
+        <report>NO</report>
+        <fetch_output />
+    </test_case>
+    <test_case>
+        <test_name>Create Data Storage Domain NFS</test_name>
+        <test_action>addStorageDomain</test_action>
+        <parameters>name='{data_domain}',type='e{storage_dom_type_data}',storage_type='e{storage_type_nfs}',
+            address='{data_domain_address}',host='{vds}',path='{data_domain_path}'
+        </parameters>
+        <positive>TRUE</positive>
+        <run>YES</run>
+        <report>NO</report>
+        <fetch_output />
+    </test_case>
+    <test_case>
+        <test_name>Attach Data Storage Domain NFS to Data Center</test_name>
+        <test_action>attachStorageDomain</test_action>
+        <parameters>datacenter='{data_center}',storagedomain='{data_domain}'</parameters>
+        <positive>TRUE</positive>
+        <run>YES</run>
+        <report>NO</report>
+        <fetch_output />
+    </test_case>
+    <test_case>
+        <test_name>Create Desktop VM with COW disk</test_name>
+        <test_action>createVm</test_action>
+        <parameters>vmName='{vm_name}{vm_desktop_suffix}', vmDescription='{vm_name} - {vm_desktop_suffix}',
+            cluster='{cluster}', storageDomainName='{data_domain}', size=1073741824,
+            diskType='e{disk_type_system}', volumeType='true', volumeFormat='cow',
+            diskInterface='e{interface_virtio}', bootable='true',
+            wipe_after_deletion='true', memory=1073741824,
+            cpu_socket='1', cpu_cores='2', display_type='SPICE',
+            type='e{vm_type_desktop}'
+        </parameters>
+        <positive>TRUE</positive>
+        <run>YES</run>
+        <report>YES</report>
+    </test_case>
+    <test_case>
+        <test_name>Add desktop VM permission UserVmManager to user</test_name>
+        <test_action>addVMPermissionsToUser</test_action>
+        <parameters>user='{user}', vm='{vm_name}{vm_desktop_suffix}'</parameters>
+        <positive>TRUE</positive>
+        <run>YES</run>
+    </test_case>
+    <test_case>
+        <test_name>Create Server VM with COW disk</test_name>
+        <test_action>createVm</test_action>
+        <parameters>vmName='{vm_name}{vm_server_suffix}', vmDescription='{vm_name} - {vm_server_suffix}',
+            cluster='{cluster}', storageDomainName='{data_domain}', size=1073741824,
+            diskType='e{disk_type_system}', volumeType='true',
+            volumeFormat='cow', diskInterface='e{interface_virtio}', bootable='true',
+            wipe_after_deletion='true', memory=1073741824, cpu_socket='1',
+            cpu_cores='2', display_type='SPICE', type='e{vm_type_server}'
+        </parameters>
+        <positive>TRUE</positive>
+        <run>YES</run>
+        <report>YES</report>
+    </test_case>
+    <test_case>
+        <test_name>Add server VM permission UserVmManager to user</test_name>
+        <test_action>addVMPermissionsToUser</test_action>
+        <parameters>user='{user}', vm='{vm_name}{vm_server_suffix}'</parameters>
+        <positive>TRUE</positive>
+        <run>YES</run>
+    </test_case>
+    <test_case>
+        <test_name>END_GROUP: Setup</test_name>
+        <test_action />
+        <parameters></parameters>
+        <positive>NONE</positive>
+        <run />
+        <fetch_output />
+    </test_case>
+    <test_case>
+        <test_name>START_GROUP: Cleanup</test_name>
+        <test_action />
+        <parameters></parameters>
+        <positive>NONE</positive>
+        <run />
+        <fetch_output />
+    </test_case>
+    <test_case>
+        <test_name>Clean Data Center</test_name>
+        <test_action>cleanDataCenter</test_action>
+        <parameters>datacenter='{data_center}'</parameters>
+        <positive>TRUE</positive>
+        <run>YES</run>
+        <report>NO</report>
+        <fetch_output />
+    </test_case>
+    <test_case>
+        <test_name>END_GROUP: Cleanup</test_name>
+        <test_action />
+        <parameters></parameters>
+        <positive>NONE</positive>
+        <run />
+        <fetch_output />
+    </test_case>
+</input>
