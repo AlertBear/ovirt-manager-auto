@@ -25,8 +25,6 @@ from copy import deepcopy
 
 from art.core_api.apis_exceptions import APITimeout, EntityNotFound
 from art.core_api.apis_utils import data_st, TimeoutingSampler, getDS
-from art.rhevm_api.utils.test_utils import get_api, split, \
-            cobblerAddNewSystem, cobblerSetLinuxHostName
 from art.rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
 from art.test_handler.settings import opts
 from threading import Thread
@@ -35,7 +33,8 @@ from utilities.utils import readConfFile
 from utilities.machine import Machine
 from art.rhevm_api.utils.test_utils import searchForObj, getImageByOsType, \
     convertMacToIpAddress, checkHostConnectivity, updateVmStatusInDatabase, \
-    runMachineCommand
+    runMachineCommand, get_api, split, cobblerAddNewSystem, \
+    cobblerSetLinuxHostName, getAllImages
 from art.rhevm_api.utils.threads import runParallel
 from art.core_api import is_action
 
@@ -56,6 +55,7 @@ ADD_DISK_KWARGS = ['size', 'type', 'interface', 'format', 'bootable',
 VM_WAIT_FOR_IP_TIMEOUT = 600
 
 VM_API = get_api('vm', 'vms')
+DC_API = get_api('data_center', 'datacenters')
 CLUSTER_API = get_api('cluster', 'clusters')
 TEMPLATE_API = get_api('template', 'templates')
 HOST_API = get_api('host', 'hosts')
@@ -185,8 +185,8 @@ def _prepareVmObject(**kwargs):
 
     # placement policy:
     # placement_affinity
-    affinity = kwargs.pop('placement_affinity', None)
-    ppolicy = data_st.VmPlacementPolicy(affinity)
+    ppolicy = data_st.VmPlacementPolicy(
+                affinity=kwargs.pop('placement_affinity', None))
     # placement_host
     phost = kwargs.pop('placement_host', None)
     if phost and phost == ENUMS['placement_host_any_host_in_cluster']:
@@ -194,7 +194,7 @@ def _prepareVmObject(**kwargs):
     elif phost:
         aff_host = HOST_API.find(phost)
         ppolicy.set_host(data_st.Host(id=aff_host.id))
-        vm.set_placement_policy(ppolicy)
+    vm.set_placement_policy(ppolicy)
 
     # storagedomain
     sd_name = kwargs.pop('storagedomain', None)
@@ -326,7 +326,7 @@ def updateVm(positive, vm, **kwargs):
        * initrd - initrd path
        * cmdline - kernel parameters
        * highly_available - set high-availability for vm ('true' or 'false')
-       * ha_priority - priority for high-availability (an integer in range
+       * availablity_priority - priority for high-availability (an integer in range
                        0-100 where 0 - Low, 50 - Medium, 100 - High priority)
        * custom_properties - custom properties set to the vm
        * stateless - if vm stateless or not
@@ -1231,6 +1231,24 @@ def removeSnapshot(positive, vm, description, timeout=VM_REMOVE_SNAPSHOT_TIMEOUT
 
 
 @is_action()
+def snapshotContainsDisks(vm, snapshot, expected_disk_count):
+    """
+    Description: Compares current amount of disks in snapshot collection
+                 with expected_disk_count
+    Parameters:
+        * vm - vm's name
+        * snapshot - snapshot's description
+        * expected_disk_count - expected count of disks in collection
+    Author: jlibosva
+    Return: True if expected count is the same as count in collection
+    """
+    snap_obj = _getVmSnapshot(vm, snapshot)
+    disks = DISKS_API.get(href='%s/disks' % (snap_obj.href), absLink=True)
+
+    return len(disks) == expected_disk_count
+
+
+@is_action()
 def runVmOnce(positive, vm, pause=None, display_type=None, stateless=None,
         cdrom_image=None, floppy_image=None, boot_dev=None, host=None,
         domainName=None, user_name=None, password=None):
@@ -1742,7 +1760,8 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
         user=None, password=None, attempt=60, interval=60,
         cobblerAddress=None, cobblerUser=None, cobblerPasswd=None, image=None,
         async=False, hostname=None, network='rhevm', useAgent=False,
-        placement_affinity=None, placement_host=None, vcpu_pinning=None):
+        placement_affinity=None, placement_host=None, vcpu_pinning=None,
+        highly_available=None, availablity_priority=None):
     '''
     The function createStartVm adding new vm with nic,disk and started new created vm.
         vmName = VM name
@@ -1783,7 +1802,8 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
             type=type, memory=memory, cpu_socket=cpu_socket,
             cpu_cores=cpu_cores, display_type=display_type, async=async,
             placement_affinity=placement_affinity, placement_host=placement_host,
-            vcpu_pinning=vcpu_pinning):
+            vcpu_pinning=vcpu_pinning, highly_available=highly_available,
+            availablity_priority=availablity_priority):
         return False
 
     if nic:
@@ -2364,6 +2384,7 @@ def waitForVmsDisks(vm, disks_status=ENUMS['disk_state_ok'], timeout=600,
 
     return False if disks_to_wait else True
 
+
 @is_action()
 def getVmPayloads(positive, vm, **kwargs):
     '''
@@ -2387,3 +2408,31 @@ def getVmPayloads(positive, vm, **kwargs):
         return False, {'property_object': None}
 
     return True, {'property_object': property_object}
+
+
+@is_action()
+def compareDisksCountOfVm(positive, vds, vds_username, vds_password, dc_name,
+                          storage_domain_name, vm_name, expected_count):
+    """
+    Description: Compare count of disks on vm specified by storage domain and
+                 datacenter according expected_count
+    Author: jlibosva
+    Parameters:
+        * positive - True if count should match
+        * vds - name of hosts we want to use
+        * vds_username - user which we will use for SSH session
+        * vds_password - password for vds_username user
+        * dc_name - name of DC that has attached storage storage_name
+        * storage_domain_name - name of storage that VM has disks on
+        * vm_name - name of vm
+        * expected_count - expected count of disks
+    Returns: positive == (count_of_disks(vm) == expected_count)
+    """
+    dc = DC_API.find(dc_name)
+    sd = STORAGE_DOMAIN_API.find(storage_domain_name)
+    vm = VM_API.find(vm_name)
+    images = getAllImages(vds, vds_username, vds_password, dc.id,
+                          sd.id, vm.id)
+
+    return positive == (len(images) == expected_count)
+

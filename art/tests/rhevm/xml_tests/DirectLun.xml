@@ -1,0 +1,1373 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- vim: set ts=3 sw=3 expandtab: -->
+<?xml-stylesheet type="text/xsl" href="table.xslt"?>
+<input tcms_plan_id="5426">
+<test_case>
+   <test_name>START_GROUP: Setup</test_name>
+   <test_action/>
+   <parameters></parameters>
+   <positive>None</positive>
+   <run/>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Create NFS data center</test_name>
+   <test_action>createDatacenter</test_action>
+   <parameters>hosts='[vds]', cpuName='{cpu_name}', username='root', password='[vds_password]', datacenter='{data_center_type}DirectLunTest', storage_type='e{storage_type_nfs}', cluster='{data_center_type}DirectLunTest', address='[data_domain_address]', dataStorageDomains='[data_domain_path]', version='{compatibility_version}'</parameters>
+   <positive>True</positive>
+   <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+   <vital>True</vital>
+</test_case>
+<test_case>
+   <test_name>Create iSCSI data center</test_name>
+   <test_action>createDatacenter</test_action>
+   <parameters>hosts='[vds]', cpuName='{cpu_name}', username='root', password='[vds_password]', datacenter='{data_center_type}DirectLunTest', storage_type='e{storage_type_iscsi}', cluster='{data_center_type}DirectLunTest', lun_address='[lun_address]', lun_target='[lun_target]', luns='[lun]', lun_port=3260, version='{compatibility_version}'</parameters>
+   <positive>True</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <vital>True</vital>
+</test_case>
+<test_case>
+   <test_name>Create FCP data center</test_name>
+   <test_action>createDatacenter</test_action>
+   <parameters>hosts='[vds]', cpuName='{cpu_name}', username='root', password='[vds_password]', datacenter='{data_center_type}DirectLunTest', storage_type='e{storage_type_fcp}', cluster='{data_center_type}DirectLunTest', luns='[lun]', version='{compatibility_version}'</parameters>
+   <positive>True</positive>
+   <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
+   <vital>True</vital>
+</test_case>
+<test_case>
+   <test_name>Create VM with RHEL</test_name>
+   <test_action>createVm</test_action>
+   <parameters>vmName='{data_center_type}TestVm', vmDescription='{data_center_type}TestVM', cluster='{data_center_type}DirectLunTest', nic='{host_nics[0]}', nicType='e{nic_type_virtio}', storageDomainName='{data_center_type}DirectLunTest_data_domain0', size=21474836480, diskType='e{disk_type_system}', volumeFormat='e{format_cow}', diskInterface='e{interface_virtio}', bootable='True', wipe_after_delete='False', start='False', type='e{vm_type_server}', os_type="rhel6x64", memory=1073741824, cpu_socket=1, cpu_cores=1, display_type='e{display_type_spice}', installation=True, user='{vm_linux_user}', password='{vm_linux_password}', cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}', image="{cobbler_profile}", network='{mgmt_bridge}', useAgent={useAgent}</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+   <vital>True</vital>
+</test_case>
+<test_case>
+   <test_name>Stop VM</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Get mac address '{data_center_type}'</test_name>
+   <test_action>getVmMacAddress</test_action>
+   <parameters>vm='{data_center_type}TestVm',nic='{host_nics[0]}'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+   <fetch_output>macAddress-&gt;macAddress{data_center_type}</fetch_output>
+   <vital>True</vital>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: Setup</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>None</positive>
+   <run/>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP: import_disk</test_name>
+   <test_action/>
+   <parameters></parameters>
+   <positive>None</positive>
+   <run/>
+   <fetch_output/>
+   <tcms_test_case>138744</tcms_test_case>
+</test_case>
+<test_case>
+   <test_name>Direct LUN</test_name>
+   <test_action>addDisk</test_action>
+   <parameters>alias="direct_lun#loop_index", interface="e{interface_virtio}", format="e{format_cow}", lun_id='{direct_lun}', lun_address='{direct_lun_address}', lun_target='{direct_lun_target}', type_='e{storage_type_iscsi}'</parameters>
+   <positive>True</positive>
+   <run>loop({direct_lun},{direct_lun_address},{direct_lun_target})</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: import_disk</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>None</positive>
+   <run/>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP: attach_lun_to_vm_in_down_state</test_name>
+   <test_action/>
+   <parameters></parameters>
+   <positive>None</positive>
+   <run/>
+   <tcms_test_case>138745</tcms_test_case>
+</test_case>
+<test_case>
+   <test_name>Attach disk to VM</test_name>
+   <test_action>attachDiskToVm</test_action>
+   <parameters>alias='direct_lun0', vmName='{data_center_type}TestVm'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: attach_lun_to_vm_in_down_state</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>None</positive>
+   <run/>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP: run_vm_with_direct_lun</test_name>
+   <tcms_test_case>138749</tcms_test_case>
+   <test_action/>
+   <parameters></parameters>
+   <positive>None</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>Start VM with direct lun</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait untill VM is operational</test_name>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+   <fetch_output>ip->vm_ip</fetch_output>
+</test_case>
+<test_case>
+   <test_name>Check that VM has two physical disks</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip=%vm_ip%, user='{vm_linux_user}', password='{vm_linux_password}', cmd='[ `ls /dev/sd* /dev/vd* | grep -v [0-9] | wc -l` -eq 2 ]'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: run_vm_with_direct_lun</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>None</positive>
+   <run/>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP: attach_the_lun_to_a_vm_in_up_state</test_name>
+   <tcms_test_case>138746</tcms_test_case>
+   <test_action/>
+   <parameters></parameters>
+   <positive>None</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>Attach disk to VM</test_name>
+   <test_action>attachDiskToVm</test_action>
+   <parameters>alias='direct_lun1', vmName='{data_center_type}TestVm'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check that VM has three physical disks</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip=%vm_ip%, user='{vm_linux_user}', password='{vm_linux_password}', cmd='[ `ls /dev/sd* /dev/vd* | grep -v [0-9] | wc -l` -eq 3 ]'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Detach LUN from VM</test_name>
+   <test_action>detachDiskFromVm</test_action>
+   <parameters>alias='direct_lun1', vmName='{data_center_type}TestVm'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check that VM has two physical disks</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip=%vm_ip%, user='{vm_linux_user}', password='{vm_linux_password}', cmd='[ `ls /dev/sd* /dev/vd* | grep -v [0-9] | wc -l` -eq 2 ]'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: attach_the_lun_to_a_vm_in_up_state</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>None</positive>
+   <run/>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP: suspend_a_direct_lun_vm</test_name>
+   <tcms_test_case>138753</tcms_test_case>
+   <test_action/>
+   <parameters></parameters>
+   <positive>None</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>Suspend VM with direct lun</test_name>
+   <test_action>suspendVm</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until VM is suspended</test_name>
+   <test_action>waitForVMState</test_action>
+   <parameters>vm='{data_center_type}TestVm', state='e{vm_state_suspended}'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Start VM with direct lun</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until VM is UP</test_name>
+   <test_action>waitForVMState</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check that VM has two physical disks</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip=%vm_ip%, user='{vm_linux_user}', password='{vm_linux_password}', cmd='[ `ls /dev/sd* /dev/vd* | grep -v [0-9] | wc -l` -eq 2 ]'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Stop VM with direct lun</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until VM is down</test_name>
+   <test_action>waitForVMState</test_action>
+   <parameters>vm='{data_center_type}TestVm', state='e{vm_state_down}'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: suspend_a_direct_lun_vm</test_name>
+   <test_action/>
+   <parameters></parameters>
+   <positive>None</positive>
+   <run/>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP: add_more_then_one_direct_lun_disks_for_same_vm</test_name>
+   <tcms_test_case>138755</tcms_test_case>
+   <test_action/>
+   <parameters></parameters>
+   <positive>None</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>Attach disk to VM</test_name>
+   <test_action>attachDiskToVm</test_action>
+   <parameters>alias='direct_lun1', vmName='{data_center_type}TestVm'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Start VM with direct lun</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait untill VM is operational</test_name>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+   <fetch_output>ip->vm_ip</fetch_output>
+</test_case>
+<test_case>
+   <test_name>Check that VM has two physical disks</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip=%vm_ip%, user='{vm_linux_user}', password='{vm_linux_password}', cmd='[ `ls /dev/sd* /dev/vd* | grep -v [0-9] | wc -l` -eq 3 ]'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Stop VM with direct lun</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until VM is down</test_name>
+   <test_action>waitForVMState</test_action>
+   <parameters>vm='{data_center_type}TestVm', state='e{vm_state_down}'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Detach LUN from VM</test_name>
+   <test_action>detachDiskFromVm</test_action>
+   <parameters>alias='direct_lun1', vmName='{data_center_type}TestVm'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: add_more_then_one_direct_lun_disks_for_same_vm</test_name>
+   <test_action/>
+   <parameters></parameters>
+   <positive>None</positive>
+</test_case>
+
+
+<test_case>
+   <test_name>START_GROUP: create_a_template_from_a_vm_with_direct_lun</test_name>
+   <tcms_test_case>138756</tcms_test_case>
+   <test_action/>
+   <parameters></parameters>
+   <positive>None</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>Create template with direct LUN</test_name>
+   <test_action>createTemplate</test_action>
+   <parameters>vm='{data_center_type}TestVm', name='temp_direct', cluster='{data_center_type}DirectLunTest'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until template is created</test_name>
+   <test_action>waitForTemplatesStates</test_action>
+   <parameters>names='temp_direct'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check that template has only one disk</test_name>
+   <test_action>compareDisksCount</test_action>
+   <parameters>name='temp_direct', expected_count=1, is_template=True</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove template</test_name>
+   <test_action>removeTemplate</test_action>
+   <parameters>template='temp_direct'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: create_a_template_from_a_vm_with_direct_lun</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>None</positive>
+   <run/>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP: run_vm_with_direct_lun_as_stateless</test_name>
+   <tcms_test_case>138757</tcms_test_case>
+   <test_action/>
+   <parameters></parameters>
+   <positive>None</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Start VM with direct lun</test_name>
+   <test_action>runVmOnce</test_action>
+   <parameters>vm='{data_center_type}TestVm', stateless=True</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait untill VM is operational</test_name>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+   <fetch_output>ip->vm_ip</fetch_output>
+</test_case>
+<test_case>
+   <test_name>Check that VM has two physical disks</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip=%vm_ip%, user='{vm_linux_user}', password='{vm_linux_password}', cmd='[ `ls /dev/sd* /dev/vd* | grep -v [0-9] | wc -l` -eq 2 ]'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Stop VM with direct lun</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: run_vm_with_direct_lun_as_stateless</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>None</positive>
+   <run/>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP: create_snapshot_for_vm_with_direct_lun</test_name>
+   <tcms_test_case>138758</tcms_test_case>
+   <test_action/>
+   <parameters></parameters>
+   <positive>None</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>Create snapshot on VM with direct lun</test_name>
+   <test_action>addSnapshot</test_action>
+   <parameters>vm='{data_center_type}TestVm', description="snapik"</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check that snapshot is on virtual disk only</test_name>
+   <test_action>snapshotContainsDisks</test_action>
+   <parameters>vm='{data_center_type}TestVm', snapshot='snapik', expected_disk_count=1</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: create_snapshot_for_vm_with_direct_lun</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>None</positive>
+   <run/>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP: HA_vm_with_direct_lun</test_name>
+   <tcms_test_case>138760</tcms_test_case>
+   <test_action/>
+   <parameters></parameters>
+   <positive>None</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>Prepare HA VM with RHEL</test_name>
+   <test_action>createVm</test_action>
+   <parameters>vmName='vm_test_ha', vmDescription='{data_center_type}TestVM', cluster='{data_center_type}DirectLunTest', nic='{host_nics[0]}', nicType='e{nic_type_virtio}', storageDomainName='{data_center_type}DirectLunTest_data_domain0', size=21474836480, diskType='e{disk_type_system}', volumeFormat='e{format_cow}', diskInterface='e{interface_virtio}', bootable='True', wipe_after_delete='False', start='False', type='e{vm_type_server}', os_type="rhel6x64", memory=1073741824, cpu_socket=1, cpu_cores=1, display_type='e{display_type_spice}', installation=True, user='{vm_linux_user}', password='{vm_linux_password}', cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}', image="{cobbler_profile}", network='{mgmt_bridge}', useAgent={useAgent}, highly_available=True, availablity_priority=100</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait untill HA VM is operable</test_name>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='vm_test_ha'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Stop VM</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='vm_test_ha'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until VM is down</test_name>
+   <test_action>waitForVMState</test_action>
+   <parameters>vm='vm_test_ha', state='e{vm_state_down}'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Attach disk to HA VM</test_name>
+   <test_action>attachDiskToVm</test_action>
+   <parameters>alias='direct_lun1', vmName='vm_test_ha'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Start HA VM with direct lun</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='vm_test_ha'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait untill VM is operational</test_name>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='vm_test_ha'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+   <fetch_output>ip->vm_ip</fetch_output>
+</test_case>
+<test_case>
+   <test_name>Check that VM has two physical disks</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip=%vm_ip%, user='{vm_linux_user}', password='{vm_linux_password}', cmd='[ `ls /dev/sd* /dev/vd* | grep -v [0-9] | wc -l` -eq 2 ]'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Get host of HA VM</test_name>
+   <test_action>getVmHost</test_action>
+   <parameters>vm='vm_test_ha'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+   <fetch_output>vmHoster->vm_hoster</fetch_output>
+</test_case>
+<test_case>
+   <test_name>Kill qemu process</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip=%vm_hoster%, user='{vm_linux_user}', password='{vm_linux_password}', cmd='kill -9 `pgrep qemu`'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Wait untill VM is operational</test_name>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='vm_test_ha'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+   <fetch_output>ip->vm_ip</fetch_output>
+</test_case>
+<test_case>
+   <test_name>Check that VM has two physical disks</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip=%vm_ip%, user='{vm_linux_user}', password='{vm_linux_password}', cmd='[ `ls /dev/sd* /dev/vd* | grep -v [0-9] | wc -l` -eq 2 ]'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Stop VM</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='vm_test_ha'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until VM is down</test_name>
+   <test_action>waitForVMState</test_action>
+   <parameters>vm='vm_test_ha', state='e{vm_state_down}'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: HA_vm_with_direct_lun</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>None</positive>
+   <run/>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP: non-migrate_vm_with_direct_lun</test_name>
+   <tcms_test_case>138761</tcms_test_case>
+   <test_action/>
+   <parameters></parameters>
+   <positive>None</positive>
+   <run>if(len('[vds]'.split(','))>1)</run>
+</test_case>
+<test_case>
+   <test_name>Pin VM to host</test_name>
+   <test_action>updateVm</test_action>
+   <parameters>vm='{data_center_type}TestVm', placement_affinity='pinned', placement_host='{vds[0]}'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Start VM with direct lun</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait untill VM is operational</test_name>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+   <fetch_output>ip->vm_ip</fetch_output>
+</test_case>
+<test_case>
+   <test_name>Migrate VM to another host</test_name>
+   <test_action>migrateVm</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>False</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until VM is Up again</test_name>
+   <test_action>waitForVMState</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait untill VM is operational</test_name>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+   <fetch_output>ip->vm_ip</fetch_output>
+</test_case>
+<test_case>
+   <test_name>Check that VM has two physical disks</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip=%vm_ip%, user='{vm_linux_user}', password='{vm_linux_password}', cmd='[ `ls /dev/sd* /dev/vd* | grep -v [0-9] | wc -l` -eq 2 ]'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Stop VM</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until VM is down</test_name>
+   <test_action>waitForVMState</test_action>
+   <parameters>vm='{data_center_type}TestVm', state='e{vm_state_down}'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: non-migrate_vm_with_direct_lun</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>None</positive>
+   <run/>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP: migrate_vm_with_direct_lun</test_name>
+   <tcms_test_case>138762</tcms_test_case>
+   <test_action/>
+   <parameters></parameters>
+   <positive>None</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>Set VM to be migratable</test_name>
+   <test_action>updateVm</test_action>
+   <parameters>vm='{data_center_type}TestVm', placement_affinity='migratable'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Start VM with direct lun</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait untill VM is operational</test_name>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+   <fetch_output>ip->vm_ip</fetch_output>
+</test_case>
+<test_case>
+   <test_name>Check that VM has two physical disks</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip=%vm_ip%, user='{vm_linux_user}', password='{vm_linux_password}', cmd='[ `ls /dev/sd* /dev/vd* | grep -v [0-9] | wc -l` -eq 2 ]'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Migrate VM to another host</test_name>
+   <test_action>migrateVm</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until VM is Up again</test_name>
+   <test_action>waitForVMState</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait untill VM is operational</test_name>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+   <fetch_output>ip->vm_ip</fetch_output>
+</test_case>
+<test_case>
+   <test_name>Check that VM has two physical disks</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip=%vm_ip%, user='{vm_linux_user}', password='{vm_linux_password}', cmd='[ `ls /dev/sd* /dev/vd* | grep -v [0-9] | wc -l` -eq 2 ]'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Stop VM</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until VM is down</test_name>
+   <test_action>waitForVMState</test_action>
+   <parameters>vm='{data_center_type}TestVm', state='e{vm_state_down}'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: migrate_vm_with_direct_lun</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>None</positive>
+   <run/>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP: remove_a_vm_with_a_direct_lun</test_name>
+   <tcms_test_case>138770</tcms_test_case>
+   <test_action/>
+   <parameters></parameters>
+   <positive>None</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>Remove VM</test_name>
+   <test_action>removeVm</test_action>
+   <parameters>vm='vm_test_ha'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check that direct LUN was removed as well</test_name>
+   <test_action>checkDiskExists</test_action>
+   <parameters>name='direct_lun1'</parameters>
+   <positive>False</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: remove_a_vm_with_a_direct_lun</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>None</positive>
+   <run/>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP: detach_a_direct_lun</test_name>
+   <tcms_test_case>138768</tcms_test_case>
+   <test_action/>
+   <parameters></parameters>
+   <positive>None</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>Detach LUN from VM</test_name>
+   <test_action>detachDiskFromVm</test_action>
+   <parameters>alias='direct_lun0', vmName='{data_center_type}TestVm'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: detach_a_direct_lun</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>None</positive>
+   <run/>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP: remove_direct_lun</test_name>
+   <tcms_test_case>138769</tcms_test_case>
+   <test_action/>
+   <parameters></parameters>
+   <positive>None</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>Remove direct LUN</test_name>
+   <test_action>deleteDisk</test_action>
+   <parameters>alias='direct_lun0'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: remove_direct_lun</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>None</positive>
+   <run/>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP: direct_lun_as_bootable_disk</test_name>
+   <tcms_test_case>138764</tcms_test_case>
+   <test_action/>
+   <parameters></parameters>
+   <positive>None</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>Create direct LUN</test_name>
+   <test_action>addDisk</test_action>
+   <parameters>alias="direct_lun1", interface="e{interface_virtio}", format="e{format_cow}", lun_id='{direct_lun[1]}', lun_address='{direct_lun_address[1]}', lun_target='{direct_lun_target[1]}', type_='e{storage_type_iscsi}', bootable=True</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM 1</test_name>
+   <test_action>addVm</test_action>
+   <parameters>name='vm_with_direct', description='a', cluster='{data_center_type}DirectLunTest'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Add virtio nic</test_name>
+   <test_action>addNic</test_action>
+   <parameters>vm='vm_with_direct', name='nic1', network='{mgmt_bridge}', interface='e{nic_type_virtio}'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Attach disk to VM</test_name>
+   <test_action>attachDiskToVm</test_action>
+   <parameters>alias='direct_lun1', vmName='vm_with_direct'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Install RHEL</test_name>
+   <test_action>unattendedInstallation</test_action>
+   <parameters>vm='vm_with_direct', nic='nic1', image='{cobbler_profile}', cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait untill VM is operable</test_name>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='vm_with_direct'</parameters>
+   <positive>None</positive>
+   <fetch_output>ip->vm_ip</fetch_output>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check that VM has only one disk</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip=%vm_ip%, user='{vm_linux_user}', password='{vm_linux_password}', cmd='[ `ls /dev/sd* /dev/vd* | grep -v [0-9] | wc -l` -eq 1 ]'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Stop VM</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='vm_with_direct'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove VM</test_name>
+   <test_action>removeVm</test_action>
+   <parameters>vm='vm_with_direct'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: direct_lun_as_bootable_disk</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>None</positive>
+   <run/>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP: shared_disk_from_direct_lun</test_name>
+   <tcms_test_case>138765</tcms_test_case>
+   <test_action/>
+   <parameters></parameters>
+   <positive>None</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>Create VM with RHEL</test_name>
+   <test_action>createVm</test_action>
+   <parameters>vmName='vm_test1', vmDescription='{data_center_type}TestVM', cluster='{data_center_type}DirectLunTest', nic='{host_nics[0]}', nicType='e{nic_type_virtio}', storageDomainName='{data_center_type}DirectLunTest_data_domain0', size=21474836480, diskType='e{disk_type_system}', volumeFormat='e{format_cow}', diskInterface='e{interface_virtio}', bootable='True', wipe_after_delete='False', start='False', type='e{vm_type_server}', os_type="rhel6x64", memory=1073741824, cpu_socket=1, cpu_cores=1, display_type='e{display_type_spice}', installation=True, user='{vm_linux_user}', password='{vm_linux_password}', cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}', image="{cobbler_profile}", network='{mgmt_bridge}', useAgent={useAgent}</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Start VM with direct lun</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Direct LUN</test_name>
+   <test_action>addDisk</test_action>
+   <parameters>alias="direct_lun_shareable", interface="e{interface_virtio}", format="e{format_cow}", lun_id='{direct_lun[1]}', lun_address='{direct_lun_address[1]}', lun_target='{direct_lun_target[1]}', type_='e{storage_type_iscsi}', shareable=True</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait untill VM is operable</test_name>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>None</positive>
+   <fetch_output>ip->TestVm_ip</fetch_output>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait untill VM is operable</test_name>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='vm_test1'</parameters>
+   <positive>None</positive>
+   <fetch_output>ip->vm_test1_ip</fetch_output>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Attach disk to VM</test_name>
+   <test_action>attachDiskToVm</test_action>
+   <parameters>alias='direct_lun_shareable', vmName='{data_center_type}TestVm'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Attach disk to VM</test_name>
+   <test_action>attachDiskToVm</test_action>
+   <parameters>alias='direct_lun_shareable', vmName='vm_test1'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check that VM has two physical disks</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip=%TestVm_ip%, user='{vm_linux_user}', password='{vm_linux_password}', cmd='[ `ls /dev/sd* /dev/vd* | grep -v [0-9] | wc -l` -eq 2 ]'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check that VM has two physical disks</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip=%vm_test1_ip%, user='{vm_linux_user}', password='{vm_linux_password}', cmd='[ `ls /dev/sd* /dev/vd* | grep -v [0-9] | wc -l` -eq 2 ]'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Detach LUN from VM</test_name>
+   <test_action>detachDiskFromVm</test_action>
+   <parameters>alias='direct_lun_shareable', vmName='{data_center_type}TestVm'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case><test_case>
+   <test_name>Detach LUN from VM</test_name>
+   <test_action>detachDiskFromVm</test_action>
+   <parameters>alias='direct_lun_shareable', vmName='vm_test1'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check that first VM has only one physical disks</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip=%TestVm_ip%, user='{vm_linux_user}', password='{vm_linux_password}', cmd='[ `ls /dev/sd* /dev/vd* | grep -v [0-9] | wc -l` -eq 1 ]'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check that second VM has only one physical disks</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip=%vm_test1_ip%, user='{vm_linux_user}', password='{vm_linux_password}', cmd='[ `ls /dev/sd* /dev/vd* | grep -v [0-9] | wc -l` -eq 1 ]'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Stop VM</test_name>
+   <test_action>stopVms</test_action>
+   <parameters>vms='vm_test1, {data_center_type}TestVm'</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove direct LUN</test_name>
+   <test_action>deleteDisk</test_action>
+   <parameters>alias='direct_lun_shareable'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: shared_disk_from_direct_lun</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>None</positive>
+   <run/>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP: direct_lun_and_disk_interface</test_name>
+   <tcms_test_case>138763</tcms_test_case>
+   <test_action/>
+   <parameters></parameters>
+   <positive>None</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>Direct LUN</test_name>
+   <test_action>addDisk</test_action>
+   <parameters>alias="direct_lun_ide", interface="e{interface_ide}", format="e{format_cow}", lun_id='{direct_lun[1]}', lun_address='{direct_lun_address[1]}', lun_target='{direct_lun_target[1]}', type_='e{storage_type_iscsi}'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Attach disk to VM</test_name>
+   <test_action>attachDiskToVm</test_action>
+   <parameters>alias='direct_lun_ide', vmName='vm_test1'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Start VM with direct lun</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='vm_test1'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait untill VM is operable</test_name>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='vm_test1'</parameters>
+   <positive>None</positive>
+   <fetch_output>ip->vm_test1_ip</fetch_output>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check that VM has two physical disks</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip=%vm_test1_ip%, user='{vm_linux_user}', password='{vm_linux_password}', cmd='[ `ls /dev/sd* /dev/vd* | grep -v [0-9] | wc -l` -eq 2 ]'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Stop VM</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='vm_test1'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: direct_lun_and_disk_interface</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>None</positive>
+   <run/>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP: export_a_vm_with_a_direct_lun</test_name>
+   <tcms_test_case>138771</tcms_test_case>
+   <test_action/>
+   <parameters></parameters>
+   <positive>None</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>Create NFS export storage domain</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='export_dom', type='e{storage_dom_type_export}', storage_type='e{storage_type_nfs}', address='{export_domain_address[0]}', host='{vds[0]}', path='{export_domain_path[0]}'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Attach export storage domain to data center</test_name>
+   <test_action>attachStorageDomain</test_action>
+   <parameters>datacenter='{data_center_type}DirectLunTest', storagedomain='export_dom'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Activate export storage domain '{data_center_type}'</test_name>
+   <test_action>activateStorageDomain</test_action>
+   <parameters>datacenter='{data_center_type}DirectLunTest', storagedomain='export_dom'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Export VM</test_name>
+   <test_action>exportVm</test_action>
+   <parameters>vm='vm_test1', storagedomain='export_dom'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <!-- WORKAROUND for BZ#829672 -->
+   <test_name>Check that exported vm has only one disk</test_name>
+   <test_action>compareDisksCountOfVm</test_action>
+   <parameters>vds='{vds[0]}', vds_username='root', vds_password='{vds_password[0]}', dc_name='{data_center_type}DirectLunTest', storage_domain_name='export_dom', vm_name='vm_test1', expected_count=1</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Detach LUN from VM</test_name>
+   <test_action>detachDiskFromVm</test_action>
+   <parameters>alias='direct_lun_ide', vmName='vm_test1'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove direct LUN</test_name>
+   <test_action>deleteDisk</test_action>
+   <parameters>alias='direct_lun_ide'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: export_a_vm_with_a_direct_lun</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>None</positive>
+   <run/>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP: wipe_after_delete_with_direct_lun</test_name>
+   <tcms_test_case>138772</tcms_test_case>
+   <test_action/>
+   <parameters></parameters>
+   <positive>None</positive>
+   <run>no</run> <!-- wipe after delete doesn't exist for direct lun -->
+</test_case>
+<test_case>
+   <test_name>Create direct LUN</test_name>
+   <test_action>addDisk</test_action>
+   <parameters>alias="direct_lun_wipe", interface="e{interface_virtio}", format="e{format_cow}", lun_id='{direct_lun[1]}', lun_address='{direct_lun_address[1]}', lun_target='{direct_lun_target[1]}', type_='e{storage_type_iscsi}', wipe_after_delete=True</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Attach disk to VM</test_name>
+   <test_action>attachDiskToVm</test_action>
+   <parameters>alias='direct_lun_wipe', vmName='vm_test1'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Start VM with direct lun</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='vm_test1'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait untill VM is operational</test_name>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='vm_test1'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+   <fetch_output>ip->vm_test1_ip</fetch_output>
+</test_case>
+<test_case>
+   <test_name>Check that VM has two physical disks</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip=%vm_test1_ip%, user='{vm_linux_user}', password='{vm_linux_password}', cmd='[ `ls /dev/sd* /dev/vd* | grep -v [0-9] | wc -l` -eq 2 ]'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Stop VM with direct lun</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='vm_test1'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Detach LUN from VM</test_name>
+   <test_action>detachDiskFromVm</test_action>
+   <parameters>alias='direct_lun_wipe', vmName='vm_test1'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove direct LUN</test_name>
+   <test_action>deleteDisk</test_action>
+   <parameters>alias='direct_lun_wipe'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check LUN</test_name>
+   <test_action>checkZerosOnDevice</test_action>
+   <parameters>lun_id='{direct_lun[1]}', host='{vds[0]}', username='root', password='{vds_password[0]}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: wipe_after_delete_with_direct_lun</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>None</positive>
+   <run/>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP: wipe_after_delete_as_defualt</test_name>
+   <tcms_test_case>138773</tcms_test_case>
+   <test_action/>
+   <parameters></parameters>
+   <positive>None</positive>
+   <run>no</run><!-- wipe after delete doesn't exist for direct lun -->
+</test_case>
+<test_case>
+   <test_name>Set Wipe after delete to be deafault</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip='{vdc}', user='root', password='{vdc_password}', cmd="psql engine postgres -c \"UPDATE vdc_options SET option_value='true' WHERE option_name='SANWipeAfterDelete';\""</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Restart ovirt-engine</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip='{vdc}', user='root', password='{vdc_password}', cmd="service ovirt-engine restart"</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait 120 seconds for ovirt to start</test_name>
+   <test_action>sleep</test_action>
+   <parameters>seconds=120</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create direct LUN</test_name>
+   <test_action>addDisk</test_action>
+   <parameters>alias="direct_lun_wipe", interface="e{interface_virtio}", format="e{format_cow}", lun_id='{direct_lun[1]}', lun_address='{direct_lun_address[1]}', lun_target='{direct_lun_target[1]}', type_='e{storage_type_iscsi}'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Attach disk to VM</test_name>
+   <test_action>attachDiskToVm</test_action>
+   <parameters>alias='direct_lun_wipe', vmName='vm_test1'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Start VM with direct lun</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='vm_test1'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait untill VM is operational</test_name>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='vm_test1'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+   <fetch_output>ip->vm_test1_ip</fetch_output>
+</test_case>
+<test_case>
+   <test_name>Check that VM has two physical disks</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip=%vm_test1_ip%, user='{vm_linux_user}', password='{vm_linux_password}', cmd='[ `ls /dev/sd* /dev/vd* | grep -v [0-9] | wc -l` -eq 2 ]'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Stop VM with direct lun</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='vm_test1'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Detach LUN from VM</test_name>
+   <test_action>detachDiskFromVm</test_action>
+   <parameters>alias='direct_lun_wipe', vmName='vm_test1'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove direct LUN</test_name>
+   <test_action>deleteDisk</test_action>
+   <parameters>alias='direct_lun_wipe'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check LUN</test_name>
+   <test_action>checkZerosOnDevice</test_action>
+   <parameters>lun_id='{direct_lun[1]}', host='{vds[0]}', username='root', password='{vds_password[0]}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Set Wipe after delete not to be deafault</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip='{vdc}', user='root', password='{vdc_password}', cmd="psql engine postgres -c \"UPDATE vdc_options SET option_value='false' WHERE option_name='SANWipeAfterDelete';\""</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Restart ovirt-engine</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip='{vdc}', user='root', password='{vdc_password}', cmd="service ovirt-engine restart"</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait 120 seconds for ovirt to start</test_name>
+   <test_action>sleep</test_action>
+   <parameters>seconds=120</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: wipe_after_delete_as_defualt</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>None</positive>
+   <run/>
+</test_case>
+
+<test_case>
+   <test_name>START_GROUP: Cleanup</test_name>
+   <test_action/>
+   <parameters></parameters>
+   <positive>None</positive>
+   <run/>
+</test_case>
+<test_case>
+   <test_name>Clean data center '{data_center_type}'</test_name>
+   <test_action>cleanDataCenter</test_action>
+   <parameters>datacenter='{data_center_type}DirectLunTest'</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>CleanUp:Remove system from Cobbler '{data_center_type}'</test_name>
+   <test_action>cobblerRemoveSystem</test_action>
+   <parameters>cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}', mac=%macAddress{data_center_type}%</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: Cleanup</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>None</positive>
+   <run/>
+</test_case>
+
+</input>

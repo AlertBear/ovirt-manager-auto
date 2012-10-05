@@ -2,22 +2,24 @@
 A collection of wrappers which allow the usage of general utils functions and storage API in the REST framework.
 """
 import logging
+import os
 
 import storageapi.storageManagerWrapper as sm
 import utilities.utils as utils
 import utilities.VDS4 as vds4
-import utilities.machine as hostUtil
+from utilities import machine
 import utilities.storage_utils as st_util
 from utilities.host_utils import VdsLinuxMachine
 from art.core_api import is_action
 
 log = logging.getLogger("storage_api")
 
+FILE_HANDLER_TIMEOUT = 15
 
 def setupIptables(source, userName, password, dest, command, chain, \
                   target, protocol='all', persistently=False, *ports):
     """Wrapper for utilities.machine.setupIptables() method."""
-    hostObj = hostUtil.Machine(source, userName, password).util('linux')
+    hostObj = machine.Machine(source, userName, password).util('linux')
     return hostObj.setupIptables(dest, command, chain, target, \
                                  protocol, persistently, *ports)
 
@@ -74,7 +76,7 @@ def unblockIncomingConnection(source, userName, password, dest):
 
 def flushIptables(host, userName, password, chain='', persistently=False):
     """Warpper for utilities.machine.flushIptables() method."""
-    hostObj = hostUtil.Machine(host, userName, password).util('linux')
+    hostObj = machine.Machine(host, userName, password).util('linux')
     return hostObj.flushIptables(chain, persistently)
 
 @is_action()
@@ -184,7 +186,7 @@ def sendTargets(initiator, user, password, portal, targetName, login=True):
         Return: True if send targets discovery successful,
                 False otherwise
     """
-    hostObj = hostUtil.Machine(initiator, user, password).util('linux')
+    hostObj = machine.Machine(initiator, user, password).util('linux')
     rc, targets = hostObj.sendTargetsDiscovery(portal)
     if rc and login:
         return hostObj.loginTarget(portal, targetName)
@@ -204,7 +206,7 @@ def logoutTargets(initiator, user, password):
         Return: True if logout targets successful,
                 False otherwise
     """
-    hostObj = hostUtil.Machine(initiator, user, password).util('linux')
+    hostObj = machine.Machine(initiator, user, password).util('linux')
     return hostObj.logoutTargets()
 
 
@@ -432,4 +434,38 @@ def getVolumesList(vds_name, user, passwd, dc_uuid, sd_uuid, images):
     vds = vds4.VDS(vds_name, account=(user, passwd))
     return vds.getVolumesList(sd_uuid, dc_uuid, images)
 
+
+@is_action()
+def checkZerosOnDevice(positive, lun_id, host, username, password,
+                       size=1024*1024, timeout=FILE_HANDLER_TIMEOUT):
+    """
+    Description: Check that lun contains zeros at the first and last 1MiB
+    Author: jlibosva
+    Parameters:
+        * positive - True - should contain zeros
+        * lun_id - ID of the LUN
+        * host - host which has connected the lun on itself
+        * size - size to check from the beginning and from the end
+        * timeout - timeout for ssh session
+    Return: True - if found bytes are zeros only and positive
+                 - if found bytes aren't zeros and not positive
+            False otherwise
+    """
+    dm_path = os.path.join("/dev/mapper", lun_id)
+    m = machine.Machine(host, username, password).util(machine.LINUX)
+    with m.ssh as ssh_con:
+        with ssh_con.getFileHandler(timeout) as fh:
+            if not fh.exists(dm_path):
+                log.error("LUN device with id %s doesn't exist in device mapper,"
+                          "please check that lun is connected to the host.",
+                          lun_id)
+                return False
+
+            file_ = fh.open(dm_path, 'rb')
+            beginning = file_.read(size)
+            size = len(beginning)
+            expected = size*'\0'
+            file_.seek(size, os.SEEK_END)
+            end = file_.read(size)
+    return (expected == beginning == end) == positive
 

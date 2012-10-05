@@ -20,6 +20,7 @@ import logging
 import os.path
 import time
 
+from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api.apis_utils import data_st
 from art.rhevm_api.data_struct.data_structures import Fault
 from art.rhevm_api.utils.test_utils import get_api, split
@@ -303,4 +304,20 @@ def compareDisksCount(name, expected_count, is_template=False):
     """
     disks = getObjDisks(name, is_template=is_template, get_href=False)
     return len(disks) == expected_count
+
+@is_action()
+def checkDiskExists(positive, name):
+    """
+    Description: Checks that disk is in system
+    Author: jlibosva
+    Parameters:
+        * positive - whether disk should exist or not
+        * name - name of the disk
+    Return: True if disk is found, False otherwise
+    """
+    try:
+        DISKS_API.find(name)
+    except EntityNotFound:
+        return not positive
+    return positive
 
