@@ -13,7 +13,8 @@ PARAMETERS = 'PARAMETERS'
 TCMS_URL='https://tcms.engineering.redhat.com/xmlrpc/'
 REALM = '@REDHAT.COM'
 SENDER = 'noreply@redhat.com'
-HEADERS = 'testName:sub_test,caseName:info,testType:str,params:text'
+#HEADERS = 'testName:sub_test,caseName:info,testType:str,params:text'
+HEADERS = 'test_case_details:text'
 KT_EXT = '.keytab'
 PLAN_TYPE = 23
 DEFAULT_STATE = False
@@ -161,7 +162,7 @@ class TCMS(Component):
 
         self.agent.iterationInfo(sub_test_name=test.test_name,
                             test_case_name=test.test_name,
-                            info_line = str(test),
+                            info_line = [str(test)],
                             iter_number=test.serial,
                             iter_status=test.status,
                             bz_info=getattr(test, 'bz', None),

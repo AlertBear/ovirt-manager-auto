@@ -485,6 +485,7 @@ class MatrixTestCase(TestCase):
             self.status = self.TEST_STATUS_PASSED
         except NO_TB_EXCEPTIONS as ex:
             self.status = self.TEST_STATUS_FAILED
+            self.exc = ex
             logger.error(ex)
         except SocketError, errors.SkipTest:
             raise
@@ -492,11 +493,14 @@ class MatrixTestCase(TestCase):
             raise errors.SkipTest(str(ex))
         except Exception as ex:
             self.status = self.TEST_STATUS_ERROR
+            self.exc = ex
             logger.error("Test Case execution failed", exc_info=True)
         else:
             if self.expected_exc:
-                logger.error("Expected %s but it passed witout exception", self.expected_exc)
+                msg = "Expected %s but it passed witout exception" % self.expected_exc
+                logger.error(msg)
                 self.status = self.TEST_STATUS_FAILED
+                self.exc = Exception(msg)
 
         if res is None:
             return
@@ -505,6 +509,7 @@ class MatrixTestCase(TestCase):
 
         if not res[0]:
             self.status = self.TEST_STATUS_FAILED
+            self.exc = Exception("Test returned False")
 
         if self.fetch_output:
             for fetch in self.fetch_output.split(','):
@@ -582,7 +587,12 @@ class MatrixTestCase(TestCase):
             res += ": %s" % self.test_name
         else:
             res = self.test_name
-        res += ",%s,%s" % (self.positive, self.parameters)
+        res += "; TestAction: %s" % self.test_action
+        if self.positive is not None:
+            res += "; Positive: %s" % self.positive
+        res += "; Parameters: %s" % self.parameters
+        if self.status != self.TEST_STATUS_PASSED:
+            res += "; Reason: %s" % self.exc
         return res
 
 
@@ -643,7 +653,10 @@ class MatrixTestGroup(TestGroup):
         return g
 
     def __str__(self):
-        return "GROUP: %s" % self.test_name
+        res = "GROUP: %s" % self.test_name
+        if self.description:
+            res += "; Description: %s" % self.description
+        return res
 
 
 class MatrixLoopElm(MatrixTestGroup):
