@@ -65,7 +65,7 @@ class UTestCase(TestCase):
             self.t.test.tearDown()
 
     def __str__(self):
-        return "%s,%s" % (self.test_action, self.test_name)
+        return "Test Action: %s; Test Name: %s" % (self.test_action, self.test_name)
 
 
 class UTestGroup(TestGroup):

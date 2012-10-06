@@ -13,7 +13,8 @@ PARAMETERS = 'PARAMETERS'
 TCMS_URL='https://tcms.engineering.redhat.com/xmlrpc/'
 REALM = '@REDHAT.COM'
 SENDER = 'noreply@redhat.com'
-HEADERS = 'testName:sub_test,caseName:info,testType:str,params:text'
+#HEADERS = 'testName:sub_test,caseName:info,testType:str,params:text'
+HEADERS = 'test_case_details:text'
 KT_EXT = '.keytab'
 PLAN_TYPE = 23
 DEFAULT_STATE = False
@@ -60,6 +61,8 @@ class TCMS(Component):
     def __init__(self):
         super(TCMS, self).__init__()
         self.plan_id = None
+        self.results = {}
+        self.tcms_plans = []
 
     @classmethod
     def add_options(cls, parser):
@@ -88,8 +91,6 @@ class TCMS(Component):
 
         self.version = conf[PARAMETERS]['compatibility_version']
         self.category = tcms_cfg[CATEGORY]
-        self.results = {}
-        self.tcms_plans = []
         self.__register_functions()
 
     def __register_functions(self):
@@ -161,7 +162,7 @@ class TCMS(Component):
 
         self.agent.iterationInfo(sub_test_name=test.test_name,
                             test_case_name=test.test_name,
-                            info_line = str(test),
+                            info_line = [str(test)],
                             iter_number=test.serial,
                             iter_status=test.status,
                             bz_info=getattr(test, 'bz', None),
