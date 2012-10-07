@@ -93,7 +93,7 @@
    <test_action/>
    <parameters>n/a1</parameters>
    <positive>NONE</positive>
-   <run>if(not {sanity});if({vm_network})</run>
+   <run>if(not {sanity} and {vm_network})</run>
    <fetch_output/>
    <report/>
    <vital/>

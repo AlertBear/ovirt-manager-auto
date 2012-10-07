@@ -26,7 +26,7 @@
 	<test_action>removeTemplate</test_action>
 	<parameters>template='{template_name}'</parameters>
 	<positive>TRUE</positive>
-	<run>if(re.search('topology', '[run_topologies]'))</run>
+	<run>if(not {sanity} and {vm_network})</run>
 	<fetch_output/>
 	<report>NO</report>
 	<vital>FALSE</vital>
