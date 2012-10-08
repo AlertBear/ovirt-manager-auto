@@ -1076,12 +1076,19 @@
    <run>yes</run>
 </test_case>
 <test_case>
-   <test_name>Deactivate master data domain</test_name>
+   <test_name>Deactivate non-master data domain</test_name>
    <test_action>deactivateStorageDomain</test_action>
    <parameters>datacenter='storage_sanity_31_dc', storagedomain='sd1'</parameters>
    <positive>true</positive>
    <run>yes</run>
    <report>yes</report>
+</test_case>
+<test_case>
+  <test_name>Detach Non Master Domains</test_name>
+  <test_action>execOnNonMasterDomains</test_action>
+  <parameters>datacenter='storage_sanity_31_dc', operation='detach', type='all'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Deactivate master data domain</test_name>
@@ -1100,7 +1107,7 @@
    <report>yes</report>
 </test_case>
 <test_case>
-   <test_name>Remove master storage domain</test_name>
+   <test_name>Remove non-master storage domain</test_name>
    <test_action>removeStorageDomain</test_action>
    <parameters>storagedomain='sd1', host='{vds[0]}', format='true'</parameters>
    <positive>true</positive>
@@ -1587,6 +1594,13 @@
    <report>yes</report>
 </test_case>
 <test_case>
+  <test_name>Detach Non Master Domains</test_name>
+  <test_action>execOnNonMasterDomains</test_action>
+  <parameters>datacenter='storage_sanity_31_dc', operation='detach', type='all'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+</test_case>
+<test_case>
    <test_name>Deactivate master data domain</test_name>
    <test_action>deactivateStorageDomain</test_action>
    <parameters>datacenter='storage_sanity_31_dc', storagedomain='master_sd'</parameters>
@@ -2047,6 +2061,13 @@
    <report>yes</report>
 </test_case>
 <test_case>
+  <test_name>Detach Non Master Domains</test_name>
+  <test_action>execOnNonMasterDomains</test_action>
+  <parameters>datacenter='storage_sanity_31_dc', operation='detach', type='all'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+</test_case>
+<test_case>
    <test_name>Deactivate master data domain</test_name>
    <test_action>deactivateStorageDomain</test_action>
    <parameters>datacenter='storage_sanity_31_dc', storagedomain='master_sd'</parameters>
@@ -2224,12 +2245,19 @@
    <run>yes</run>
 </test_case>
 <test_case>
-   <test_name>Deactivate master data domain</test_name>
+   <test_name>Deactivate non-master data domain</test_name>
    <test_action>deactivateStorageDomain</test_action>
    <parameters>datacenter='storage_sanity_31_dc', storagedomain='nfs3'</parameters>
    <positive>true</positive>
    <run>yes</run>
    <report>yes</report>
+</test_case>
+<test_case>
+  <test_name>Detach Non Master Domains</test_name>
+  <test_action>execOnNonMasterDomains</test_action>
+  <parameters>datacenter='storage_sanity_31_dc', operation='detach', type='all'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Deactivate master data domain</test_name>
