@@ -361,12 +361,55 @@
    <fetch_output/>
 </test_case>
 <test_case>
+   <test_name>Import the same template with different name</test_name>
+   <test_action>importTemplate</test_action>
+   <parameters>template='{data_center_type}TestTempl', import_storagedomain='{data_center_type}StorageTest_data_domain0', export_storagedomain='ImpExp_{data_center_type}', cluster='{data_center_type}StorageTest', name='{data_center_type}TestTempl2'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+   <bz>853045</bz>
+</test_case>
+<test_case>
+   <test_name>Wait till template is imported</test_name>
+   <test_action>waitForTemplatesStates</test_action>
+   <parameters>names='{data_center_type}TestTempl2', timeout=7200</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
    <test_name>Import already exported VM '{data_center_type}'</test_name>
    <test_action>importVm</test_action>
    <parameters>vm='{data_center_type}TemplVm',import_storagedomain='{data_center_type}StorageTest_data_domain0',export_storagedomain='ImpExp_{data_center_type}',cluster='{data_center_type}StorageTest'</parameters>
    <positive>FALSE</positive>
    <run>yes</run>
    <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Import exported VM '{data_center_type}' with different name</test_name>
+   <test_action>importVm</test_action>
+   <parameters>vm='{data_center_type}TemplVm', import_storagedomain='{data_center_type}StorageTest_data_domain0', export_storagedomain='ImpExp_{data_center_type}', cluster='{data_center_type}StorageTest', name='{data_center_type}Vm2'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+   <bz>864073</bz>
+</test_case>
+<test_case>
+   <test_name>Wait for imported VM</test_name>
+   <test_action>waitForVmsStates</test_action>
+   <parameters>names='{data_center_type}Vm2', timeout=7200, states='e{vm_state_down}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+   <bz>864073</bz>
+</test_case>
+<test_case>
+   <test_name>Start imported VM 2 '{data_center_type}'</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='{data_center_type}Vm2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <bz>864073</bz>
 </test_case>
 <test_case>
    <test_name>Start exported VM '{data_center_type}'</test_name>
@@ -393,6 +436,15 @@
    <fetch_output/>
 </test_case>
 <test_case>
+   <test_name>Stop running VM 2 to test force override option '{data_center_type}'</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='{data_center_type}Vm2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <bz>864073</bz>
+</test_case>
+<test_case>
    <test_name>Stop running VM to test force override option '{data_center_type}'</test_name>
    <test_action>stopVm</test_action>
    <parameters>vm='{data_center_type}TemplVm'</parameters>
@@ -417,6 +469,15 @@
    <fetch_output/>
 </test_case>
 <test_case>
+   <test_name>Remove VM 2 after exporting it with force override option '{data_center_type}'</test_name>
+   <test_action>removeVm</test_action>
+   <parameters>vm='{data_center_type}Vm2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <bz>864073</bz>
+</test_case>
+<test_case>
    <test_name>Remove VM after exporting it with force override option '{data_center_type}'</test_name>
    <test_action>removeVm</test_action>
    <parameters>vm='{data_center_type}TemplVm'</parameters>
@@ -431,6 +492,23 @@
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Import exported VM with force override option '{data_center_type}' and different name</test_name>
+   <test_action>importVm</test_action>
+   <parameters>vm='{data_center_type}TemplVm', import_storagedomain='{data_center_type}StorageTest_data_domain0', export_storagedomain='ImpExp_{data_center_type}', cluster='{data_center_type}StorageTest', name='{data_center_type}Vm2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Start imported VM with force override option '{data_center_type}' and different name</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='{data_center_type}Vm2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <bz>864073</bz>
 </test_case>
 <test_case>
    <test_name>Start exported VM with force override option '{data_center_type}'</test_name>
@@ -473,6 +551,22 @@
    <fetch_output/>
 </test_case>
 <test_case>
+   <test_name>Stop running VM 2 to test collapse snapshots option '{data_center_type}'</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='{data_center_type}Vm2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Remove VM 2 with collapse snapshots option '{data_center_type}'</test_name>
+   <test_action>removeVm</test_action>
+   <parameters>vm='{data_center_type}Vm2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+</test_case>
+<test_case>
    <test_name>Add 3G COW IDE data disk to VM to test collapse snapshots option '{data_center_type}'</test_name>
    <test_action>addDiskToVm</test_action>
    <parameters>vm='{data_center_type}TemplVm',size=3221225472,type='e{disk_type_data}',interface='e{interface_ide}',sparse='true',format='e{format_cow}'</parameters>
@@ -503,12 +597,27 @@
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
-   <bz>853045</bz>
+</test_case>
+<test_case>
+   <test_name>Import exported VM with collapse snapshots option '{data_center_type}' and different name</test_name>
+   <test_action>importVm</test_action>
+   <parameters>vm='{data_center_type}TemplVm', import_storagedomain='{data_center_type}StorageTest_data_domain0', export_storagedomain='ImpExp_{data_center_type}', cluster='{data_center_type}StorageTest', name='{data_center_type}Vm2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
 </test_case>
 <test_case>
    <test_name>Start exported VM with collapse snapshots option '{data_center_type}'</test_name>
    <test_action>startVm</test_action>
    <parameters>vm='{data_center_type}TemplVm'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Start exported VM 2 with collapse snapshots option '{data_center_type}'</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='{data_center_type}Vm2'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -538,9 +647,26 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Remove VMs '{data_center_type}' </test_name>
+   <test_name>Stop running VM 2 '{data_center_type}'</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='{data_center_type}Vm2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <vital>TRUE</vital>
+</test_case>
+<test_case>
+   <test_name>Remove VM '{data_center_type}' </test_name>
    <test_action>removeVm</test_action>
    <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Remove VM 2 '{data_center_type}' </test_name>
+   <test_action>removeVm</test_action>
+   <parameters>vm='{data_center_type}Vm2'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -549,6 +675,22 @@
    <test_name>Import exported VM '{data_center_type}'</test_name>
    <test_action>importVm</test_action>
    <parameters>vm='{data_center_type}TestVm',import_storagedomain='{data_center_type}StorageTest_data_domain0',export_storagedomain='ImpExp_{data_center_type}',cluster='{data_center_type}StorageTest'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Import exported VM '{data_center_type}' with different name</test_name>
+   <test_action>importVm</test_action>
+   <parameters>vm='{data_center_type}TestVm', import_storagedomain='{data_center_type}StorageTest_data_domain0', export_storagedomain='ImpExp_{data_center_type}', cluster='{data_center_type}StorageTest', name='{data_center_type}Vm2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Start imported VM 2 '{data_center_type}'</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='{data_center_type}Vm2'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
