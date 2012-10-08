@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- file describe content of rhevm-log-collector's DB report -->
+
+<directory name="/" >
+    <file name="sestatus" link="yes" />
+    <directory name="sos_commands" >
+        <directory name="selinux" >
+            <file name="sestatus" />
+        </directory>
+    </directory>
+    <directory name="sos_logs" />
+    <directory name="sos_reports" >
+        <file name="sosreport.html" />
+    </directory>
+    <directory name="var" >
+        <directory name="lib" >
+            <directory name="pgsql" >
+                <file name="pgstartup.log" />
+                <directory name="data" >
+                    <file name=".*[.]conf" limit="3" />
+                    <directory name="pg_log" />
+                </directory>
+            </directory>
+        </directory>
+    </directory>
+</directory>
+

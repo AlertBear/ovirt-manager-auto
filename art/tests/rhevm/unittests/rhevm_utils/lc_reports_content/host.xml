@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- file describe content of rhevm-log-collector's host report -->
+
+<directory name="/" >
+    <file name="date" link="yes" />
+    <file name="df" link="yes" />
+    <file name="dmidecode" link="yes" />
+    <file name="hostname" link="yes" />
+    <file name="ifconfig" link="yes" />
+    <file name="installed-rpms" link="yes" />
+    <file name="java" link="yes" />
+    <file name="ls(mod|of|pci)" link="yes" limit="3" />
+    <file name="mount" link="yes" />
+    <file name="netstat" link="yes" />
+    <file name="ps(tree)?" link="yes" limit="2" />
+    <file name="route" link="yes" />
+    <file name="sestatus" link="yes" />
+    <file name="uname" link="yes" />
+    <file name="uptime" link="yes" />
+    <file name="vgdisplay" link="yes" />
+    <directory name="etc">
+        <file name=".*[.]conf" limit="1-" />
+        <directory name="vdsm" />
+        <directory name="pki" />
+    </directory>
+    <directory name="lib" >
+        <directory name="modules">
+            <directory name="2[.]6[.].*" >
+                <file name="modules.dep" />
+            </directory>
+        </directory>
+    </directory>
+    <directory name="proc" >
+        <file name="buddyinfo" />
+        <file name="cmdline" />
+        <file name="cpuinfo" />
+        <file name="devices" />
+        <file name="dma" />
+        <file name="filesystems" />
+        <file name="interrupts" />
+        <file name="ioports" />
+        <file name="mdstat" />
+        <file name="meminfo" />
+        <file name="mounts" link="yes" />
+        <file name="partitions" />
+        <file name="slabinfo" />
+        <file name="stat" />
+        <file name="zoneinfo" />
+        <directory name="bus" />
+        <directory name="driver" />
+        <directory name="scsi" />
+        <directory name="self" />
+        <directory name="sys" />
+    </directory>
+    <directory name="root" >
+        <file name="anaconda-ks.cfg" />
+    </directory>
+    <directory name="sos_commands" />
+    <directory name="sos_logs" />
+    <directory name="sos_reports" >
+        <file name="sosreport.html" />
+    </directory>
+    <directory name="sys" />
+    <directory name="tmp" />
+    <directory name="var" />
+</directory>
+
