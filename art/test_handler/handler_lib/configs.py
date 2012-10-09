@@ -233,22 +233,20 @@ class ParamsValidator(object):
         return value
 
     def checkIfPathExists(self, value):
+        path = value
         try:
             if not value:
                 raise ValidateError("Empty value")
-            # case with absolute path
-            if value.startswith(os.sep):
-                tmpVal = value
-            # case with relative path
-            else:
-                tmpVal = os.sep.join([self._basePath, value])
+            if not value.startswith(os.sep):
+                # case with relative path
+                path = os.sep.join([self._basePath, value])
 
-            if not os.path.exists(tmpVal):
+            if not os.path.exists(path):
                 raise ValidateError("File  %s doesn't exist" % value)
         except TypeError:
             raise VdtTypeError("%s is not string" % value)
 
-        return value
+        return path
 
     def checkPythonModule(self, value):
         try:
