@@ -58,8 +58,9 @@ class GenerateDataStructures(Component):
         if not self.is_enabled(params, conf):
             return
 
-        ds = __import__(conf[RUN]['data_struct_mod'])
-        ds_path = re.match('^(?P<path>.+)[oc]?$', ds.__file__).group('path')
+        ds = conf[RUN]['data_struct_mod']
+        ds = __import__(ds, fromlist=[ds.rsplit('.', 1)])
+        ds_path = re.match('^(?P<path>.+?)[oc]?$', ds.__file__).group('path')
 
         xsd_path = conf[RUN]['api_xsd']
 
