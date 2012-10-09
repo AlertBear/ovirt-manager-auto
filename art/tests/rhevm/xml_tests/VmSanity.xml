@@ -849,7 +849,7 @@
 <test_case>
    <test_name>Delete the last(second) snapshot</test_name>
    <test_action>removeSnapshot</test_action>
-   <parameters>vm='{vm_name}_{data_center_type}_snap', description='snap1'</parameters>
+   <parameters>vm='{vm_name}_{data_center_type}_snap', description='snap1', timeout=600</parameters>
    <positive>TRUE</positive>
    <run>YES</run>
    <report>YES</report>
@@ -893,7 +893,7 @@
 <test_case>
    <test_name>Delete the first snapshot</test_name>
    <test_action>removeSnapshot</test_action>
-   <parameters>vm='{vm_name}_{data_center_type}_snap', description='snap0'</parameters>
+   <parameters>vm='{vm_name}_{data_center_type}_snap', description='snap0', timeout=600</parameters>
    <positive>TRUE</positive>
    <run>YES</run>
    <report>YES</report>
@@ -1017,7 +1017,7 @@
 <test_case>
    <test_name>Delete the oldest snapshot</test_name>
    <test_action>removeSnapshot</test_action>
-   <parameters>vm='{vm_name}_{data_center_type}_snap', description='snap2'</parameters>
+   <parameters>vm='{vm_name}_{data_center_type}_snap', description='snap2', timeout=600</parameters>
    <positive>TRUE</positive>
    <run>YES</run>
    <report>YES</report>
