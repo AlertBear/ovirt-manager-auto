@@ -22,10 +22,11 @@ import sys
 from art.core_api.apis_utils import data_st_validate as ds
 import re
 
-ATTR_IGNORE_LIST =  ['href', 'link', 'rel']
+ATTR_IGNORE_LIST = ['href', 'link', 'rel']
 VALS_IGNORE_DICT = {
                     'usage': ['VM'],
                     }
+
 
 def dump_entity(ds, root_name):
     '''
@@ -39,16 +40,14 @@ def dump_entity(ds, root_name):
     return mystdout.getvalue()
 
 
-def getObjAttributes(obj, origObj, attrList=[]):
+def getObjAttributes(obj, origObj):
     '''
-    Get object attribures recursively from all superclasses
+    Get object attributes recursively from all superclasses
     '''
-
     if obj.superclass:
         # merge element's and its superclass dict items
         origObj.member_data_items_.update(obj.superclass.member_data_items_)
-        attrList = origObj.member_data_items_.keys()
-        return getObjAttributes(obj.superclass, obj, attrList)
+        return getObjAttributes(obj.superclass, origObj)
     else:
         return origObj.member_data_items_.keys()
 
@@ -61,14 +60,13 @@ def cli_entity(elm, node_name, level=0):
     dumped_ent = ''
 
     ignore = ['status', 'supported_versions', 'valueOf_']
-
     elmClass = elm.__class__.__name__
     elmInstance = getattr(ds, elmClass)()
 
     attrList = getObjAttributes(elmInstance, elmInstance)
 
     for attr in attrList:
-        if attr in ATTR_IGNORE_LIST+ignore:
+        if attr in ATTR_IGNORE_LIST + ignore:
             continue
 
         try:
@@ -79,7 +77,7 @@ def cli_entity(elm, node_name, level=0):
         attrType = elmInstance.member_data_items_[attr].get_data_type()
         attrContainer = elmInstance.member_data_items_[attr].get_container()
 
-        if attrVal is not None and attrVal !=[]:
+        if attrVal is not None and attrVal != []:
             if attr.startswith('type'):
                 attr = attr.rstrip('_')
 
@@ -98,14 +96,15 @@ def cli_entity(elm, node_name, level=0):
                     attrVal = "'%s'" % attrVal
 
                 dumped_ent += " --{0} {1}".format(nodeName, attrVal)
-                if level>0 and attr=='id':
+                if level > 0 and attr == 'id':
                     break
 
             else:
                 nextLevel = level + 1
                 if isinstance(attrVal, list):
-                    for i in range(0,len(attrVal)):
-                        dumped_ent += cli_entity(attrVal[i], nodeName, nextLevel)
+                    for i in range(0, len(attrVal)):
+                        dumped_ent += cli_entity(attrVal[i], nodeName,
+                                                 nextLevel)
                 else:
                     dumped_ent += cli_entity(attrVal, nodeName, nextLevel)
 
@@ -115,20 +114,24 @@ def cli_entity(elm, node_name, level=0):
 def compareResponseCode(resp, expected, logger):
     try:
         assert resp['status'] in expected
-        logger.debug("Response code is valid: %(exp)s " % {'exp': expected })
+        logger.debug("Response code is valid: %(exp)s " % {'exp': expected})
         return True
     except AssertionError:
-        logger.error("Response code is not valid, expected is:  %(exp)s, actual is: %(act)s " % {'exp': expected , 'act': resp['status'] })
+        logger.error("Response code is not valid, expected is:"
+                     " %(exp)s, actual is: %(act)s " %\
+                     {'exp': expected, 'act': resp['status']})
         return False
 
 
 def compareActionStatus(status, expected, logger):
     try:
         assert status in expected
-        logger.debug("Action status is valid: %(exp)s " % {'exp': expected })
+        logger.debug("Action status is valid: %(exp)s " % {'exp': expected})
         return True
     except AssertionError:
-        logger.error("Action status is not valid, expected is: %(exp)s, actual is: %(act)s " % {'exp': expected , 'act': status})
+        logger.error("Action status is not valid, expected is:"
+                     " %(exp)s, actual is: %(act)s " %\
+                     {'exp': expected, 'act': status})
         return False
 
 
@@ -140,24 +143,29 @@ def compareCollectionSize(collection, expectedSize, logger):
                 assert len(collection) in expectedSize
             else:
                 assert len(collection) == expectedSize
-            logger.debug("Collection size is correct: %(exp)s " % {'exp': expectedSize })
+            logger.debug("Collection size is correct: %(exp)s " %\
+                         {'exp': expectedSize})
             return True
         except AssertionError:
-            logger.error("Collection size is wrong, expected is: %(exp)s, actual is: %(act)s " % {'exp': expectedSize , 'act': len(collection)})
+            logger.error("Collection size is wrong, expected is:"
+                         " %(exp)s, actual is: %(act)s " %\
+                         {'exp': expectedSize, 'act': len(collection)})
             return False
     else:
         logger.error("No collection found for size comparison.")
         return False
 
 
-def compareActionLink(actions, action,logger):
+def compareActionLink(actions, action, logger):
     try:
         actionsList = map(lambda x: x.get_rel(), actions.get_link())
         assert action in actionsList
         return True
     except AssertionError:
-        logger.error("Required action : '%s' doesn't exist in actions links: %s " % (action, actionsList))
+        logger.error("Required action : '%s' doesn't exist"
+                     " in actions links: %s " % (action, actionsList))
         return False
+
 
 def getAttibuteValue(elm, attrName):
 
@@ -195,7 +203,8 @@ def compareElements(expElm, actElm, logger, root):
     equal = True
 
     if not actElm:
-        logger.warn("Attribute '{0}' doesn't exist in actual results".format(root))
+        logger.warn("Attribute '{0}' doesn't exist"
+                    " in actual results".format(root))
         return True
 
     elmClass = expElm.__class__.__name__
@@ -236,19 +245,22 @@ def compareElements(expElm, actElm, logger, root):
                         if attr in VALS_IGNORE_DICT:
                             ignoreVals = filter(lambda x: x not in attrExpVal \
                                  and x in VALS_IGNORE_DICT[attr], attrActVal)
-                            attrActVal = list(set(attrActVal) - set(ignoreVals))
+                            attrActVal = list(set(attrActVal) -\
+                                              set(ignoreVals))
 
                 if re.search('boolean', attrType):
                     attrExpVal = str(attrExpVal).lower()
                     attrActVal = str(attrActVal).lower()
 
-                if str(attrExpVal)==str(attrActVal):
+                if str(attrExpVal) == str(attrActVal):
                     MSG = "Property '{0}->{1}' has correct value: {2}"
                     logger.info(MSG.format(root, attr, attrExpVal))
                 else:
                     equal = False
-                    MSG = "Property '{0}->{1}' has wrong value, expected: '{2}'; actual: '{3}'"
-                    logger.error(MSG.format(root, attr, attrExpVal, attrActVal))
+                    MSG = "Property '{0}->{1}' has wrong"
+                    " value, expected: '{2}'; actual: '{3}'"
+                    logger.error(MSG.format(root, attr, attrExpVal,
+                                            attrActVal))
             else:
                 nodeName = "{0}->{1}".format(root, attr)
                 if isinstance(attrExpVal, list):
@@ -259,21 +271,24 @@ def compareElements(expElm, actElm, logger, root):
                         logger.warn("Can't sort {0} objects list by name".\
                                     format(elmClass))
 
-                    for i in range(0,len(attrExpVal)):
-                        if i > len(attrActVal)-1:
-                            MSG = "Attribute '{0}' with index {1} doesn't exist in actual results"
+                    for i in range(0, len(attrExpVal)):
+                        if i > len(attrActVal) - 1:
+                            MSG = "Attribute '{0}' with index {1} doesn't"
+                            " exist in actual results"
                             logger.warn(MSG.format(nodeName, i))
                             continue
-                        if not compareElements(attrExpVal[i], attrActVal[i], logger, nodeName):
+                        if not compareElements(attrExpVal[i], attrActVal[i],
+                                               logger, nodeName):
                             equal = False
                 else:
-                    if not compareElements(attrExpVal, attrActVal, logger, nodeName):
+                    if not compareElements(attrExpVal, attrActVal, logger,
+                                           nodeName):
                         equal = False
 
     return equal
 
 
-def compareStrings(positive,strA=None,strB=None):
+def compareStrings(positive, strA=None, strB=None):
     """
     Compare two strings
     return value: True when strings are equal otherwise False
@@ -285,8 +300,8 @@ def compareStrings(positive,strA=None,strB=None):
 class XPathMatch(object):
     """
     This callable class can HTTP-GET the resource specified and perform a XPath
-    query on the resource got. Then the result of XPath query is evaluated using
-    eval(rslt_eval).
+    query on the resource got. Then the result of XPath query
+    is evaluated using eval(rslt_eval).
 
     Normally you actually won't need to set the positivity to any other
     value than 'TRUE', because all the logic can be done in rslt_eval.
@@ -296,15 +311,15 @@ class XPathMatch(object):
     xpathMatch = XPathMatch(host_utils, '/rhevm-api/hosts/')
     xpathMatch('TRUE', 'hosts', 'count(/hosts//ksm/enabled)',
                     rslt_eval='match == 1')
-    # Returns True iff exactly one tag matches.
+    # Returns True if exactly one tag matches.
 
-    returns: True iff the test positivity equals the evaluation result.
+    returns: True if the test positivity equals the evaluation result.
     """
 
     def __init__(self, logger, utils, links):
         """
-        A callable object that provides generic way to use XPath queries for all
-        facilities as Hosts, Clusters and so on.
+        A callable object that provides generic way to use XPath queries
+        for all facilities as Hosts, Clusters and so on.
 
         param utils: An instance of restutils to use.
         param href:  An URL to HTTP-GET the doc to perform XPath query on.
@@ -328,10 +343,12 @@ class XPathMatch(object):
             if 'api' == link:
                 matching_nodes = self.utils.getAndXpathEval('', xpath)
             else:
-                matching_nodes = self.utils.getAndXpathEval(self.links[link], xpath)
+                matching_nodes = self.utils.getAndXpathEval(self.links[link],
+                                                            xpath)
 
         boolean_positive = positive.lower() == 'true'
-        if boolean_positive != eval(rslt_eval, None, {'result' : matching_nodes}):
+        if boolean_positive != eval(rslt_eval, None,
+                                    {'result': matching_nodes}):
             E = "XPath '%s' result evaluated using '%s' not equal to %s."
             self.logger.error(E % (xpath, rslt_eval, boolean_positive))
             return False
@@ -342,23 +359,25 @@ class XPathMatch(object):
 
 class XPathLinks(XPathMatch):
     """
-    This class is used to verify XPath on reponses which are referenced as links in api
+    This class is used to verify XPath on reponses which are referenced
+    as links in api
 
     You have to specify entity_type  e.g. 'hosts' in constructor
     Author: jvorcak
     Usage:
         xpathHostsLinks = XPathLinks('hosts', logger, util, links)
-        xpathHostsLinks('TRUE', 'host_address', link_name='storage', xpath='count(/base)')
+        xpathHostsLinks('TRUE', 'host_address', link_name='storage',
+                        xpath='count(/base)')
     See @XPathMatch for more details
     """
-
 
     def __init__(self, entity_type, logger, utils, links):
         XPathMatch.__init__(self, logger, utils, links)
         self.entity_type = entity_type
 
-
-    def __call__(self, positive, entity, link_name, xpath, rslt_eval='0. < result'):
+    def __call__(self, positive, entity, link_name, xpath,
+                 rslt_eval='0. < result'):
         entityObj = self.utils.find(self.links[self.entity_type], entity)
-        return XPathMatch.__call__(self, positive, entityObj.link[link_name].href, xpath, rslt_eval)
-
+        return XPathMatch.__call__(self, positive,
+                                   entityObj.link[link_name].href, xpath,
+                                   rslt_eval)
