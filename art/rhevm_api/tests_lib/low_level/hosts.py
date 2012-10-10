@@ -1886,7 +1886,7 @@ def getClusterCompatibilityVersion(positive, cluster):
 
 @is_action()
 def waitForHostPmOperation(positive, host, vdc='localhost', dbuser='postgres',
-                        dbname='engine'):
+                        dbpassword='postgres', dbname='engine'):
     '''
     Description: Wait for next PM operation availability
     Author: lustalov
@@ -1898,7 +1898,8 @@ def waitForHostPmOperation(positive, host, vdc='localhost', dbuser='postgres',
     Return: True if success, False otherwise
     '''
     timeToWait = 0
-    dbConn = psql.Postgresql(host=vdc, user=dbuser, dbname=dbname)
+    returnVal = True
+    dbConn = psql.Postgresql(host=vdc, user=dbuser, password=dbpassword, dbname=dbname)
     try:
         dbConn.connect()
         sql = "select option_value from vdc_options \
@@ -1916,12 +1917,13 @@ def waitForHostPmOperation(positive, host, vdc='localhost', dbuser='postgres',
     except Exception as ex:
         HOST_API.logger.error('Failed to get wait time before host %s \
             PM operation: %s' % (host, ex))
+        returnVal = False
     finally:
         dbConn.close()
     if timeToWait > 0:
         HOST_API.logger.info('Wait %d seconds until PM operation will be permitted.' % timeToWait)
         time.sleep(timeToWait)
-    return True
+    return returnVal
 
 @is_action()
 def checkKSMRun(host, host_user, host_passwd, timeout=150, sleep=1):
