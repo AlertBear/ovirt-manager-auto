@@ -26,6 +26,7 @@ from art.core_api import is_action
 
 logger = logging.getLogger(__package__ + __name__)
 
+CHMOD = "/bin/chmod"
 
 @is_action()
 def checkForFileExistenceAndContent(ip, password, filename, content=None,
@@ -84,6 +85,71 @@ def checkForFileExistenceAndContentOnVm(vmName, password, filename,
                 rhev-agent is running")
         return False
 
-    ip = vm.guest_info.ips[0].address
+    try:
+        ip = vm.guest_info.get_ips().get_ip()[0].get_address()
+    except Exception as err:
+	logger.error("Cannot retrieve IP address from VM")
 
     return checkForFileExistenceAndContent(ip, password, filename, content, user)
+
+@is_action()
+def createOneLineShellScript(ip, password, scriptName, command, arguments, target, user='root', osType='linux'):
+    '''
+    This function creates a shell script with the given command and args.
+    Author: talayan
+    Parameters:
+       * ip - IP of the machine where the script should be injected.
+       * password - the users' password to connect to the machine
+       * scriptName - the name of the file to be created
+       * command - the command which the script file will hold
+       * arguments - the args for the command
+       * target - target directory to place the script on the destination machine
+       * user - username to access the destination machine
+       * osType - Type of the destination machine
+    '''
+    with open(scriptName, 'w+') as fd:
+        fd.write('''#!/bin/bash\n%s %s\n''' %(command,arguments) )
+
+    try:
+        host = Machine(ip, user, password).util(osType)
+        host.copyTo(scriptName, target, 300)
+    except IOError as err:
+        logger.error("Copy data to %s : %s" %  (ip, err) )
+    except Exception as err:
+	logger.error("Oops! something went wrong in connecting or copying data to %s" % (ip,err))
+
+    cmd = [CHMOD, "u+x", target+"/"+scriptName]
+    host.runCmd(cmd)
+
+    return True
+
+@is_action()
+def createPythonScriptToVerifyCustomHook(ip, password, scriptName, customHook, target, outputFile, user='root', osType='linux'):
+    '''
+    This function creates an ad-hoc python script which creates a file on host to test hook mechanism.
+    Author: talayan
+    Parameters:
+       * ip - IP of the machine where th script should be injected.
+       * password - the users' password to connect to the machine
+       * scriptName - the name of the file to be created
+       * customHook - the name of the custom hook that we are willing to test
+       * target - target directory to place the script on the destination machine
+       * outputFile - the name and path where the file to be created
+       * user - username to access the destination machine
+       * osType - Type of the destination machine
+    '''
+    with open(scriptName, 'w+') as fd:
+        fd.write('''#!/usr/bin/python\nimport os\nwith open("%s", 'w') as fo:\n\tfo.write(os.environ['%s'])\n'''\
+			% (outputFile,customHook) )
+    try:
+        host = Machine(ip, user, password).util(osType)
+        host.copyTo(scriptName, target, 300)
+    except IOError as err:
+        logger.error("Copy data to %s : %s" %  (ip, err) )
+    except Exception as err:
+	logger.error("Oops! something went wrong in connecting or copying data to %s" % (ip,err))
+
+    cmd = [CHMOD, "u+x", target+"/"+scriptName]
+    host.runCmd(cmd)
+
+    return True
