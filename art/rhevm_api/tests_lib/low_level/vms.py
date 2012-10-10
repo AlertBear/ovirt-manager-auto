@@ -45,8 +45,9 @@ DEFAULT_CLUSTER = 'Default'
 NAME_ATTR = 'name'
 ID_ATTR = 'id'
 DEF_SLEEP = 10
-VM_ACTION_TIMEOUT = 180
+VM_ACTION_TIMEOUT = 180 
 VM_REMOVE_SNAPSHOT_TIMEOUT = 300
+VM_DISK_CLONE_TIMEOUT = 720
 VM_IMAGE_OPT_TIMEOUT = 300
 VM_SAMPLING_PERIOD = 3
 BLANK_TEMPLATE = '00000000-0000-0000-0000-000000000000'
@@ -167,8 +168,15 @@ def _prepareVmObject(**kwargs):
 
     # domain name
     vm.set_domain(data_st.Domain(name=kwargs.pop('domainName', None)))
-    return vm
 
+    # disk_clone
+    disk_clone = kwargs.pop('disk_clone', None)
+    if disk_clone and disk_clone.lower() == 'true':
+        disk_array = data_st.Disks()
+        disk_array.set_clone(disk_clone)
+        vm.set_disks(disk_array)
+
+    return vm
 
 def _createCustomPropertiesFromArg(prop_arg):
     cps = data_st.CustomProperties()
@@ -185,7 +193,7 @@ def _createCustomPropertiesFromArg(prop_arg):
 
 
 @is_action()
-def addVm(positive, **kwargs):
+def addVm(positive, wait = True, **kwargs):
     '''
     Description: add new vm
     Parameters:
@@ -223,9 +231,16 @@ def addVm(positive, **kwargs):
     '''
     kwargs.update(add=True)
     vmObj = _prepareVmObject(**kwargs)
-    vmObj, status = VM_API.create(vmObj, positive)
-    return status
 
+    vmObj, status = VM_API.create(vmObj, positive)
+
+    disk_clone = kwargs.pop('disk_clone', None)
+    if status and wait and disk_clone and disk_clone.lower() == 'true':
+        status = VM_API.waitForElemStatus(vmObj, "DOWN", VM_DISK_CLONE_TIMEOUT)
+    else:
+        status = VM_API.waitForElemStatus(vmObj, "DOWN", VM_ACTION_TIMEOUT)
+
+    return status
 
 @is_action()
 def updateVm(positive, vm, **kwargs):
