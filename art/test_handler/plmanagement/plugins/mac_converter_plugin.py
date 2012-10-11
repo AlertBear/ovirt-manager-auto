@@ -101,7 +101,7 @@ class TCPDumpParser(object):
         self.st = self.S_UNKNOWN
 
     def __read_mac(self, line):
-        m = re.search('Client-Ethernet-Address (?P<mac>([0-9a-f]+[-:]){5}[0-9]+)', line, re.I)
+        m = re.search('Client-Ethernet-Address (?P<mac>([0-9a-f]+[-:]){5}[0-9a-f]+)', line, re.I)
         if m:
             with self.c:
                 mac = unify_mac_format(m.group('mac'))
