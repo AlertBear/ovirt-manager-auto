@@ -190,9 +190,11 @@ class TCMS(Component):
         params['description'] = 'TCMS plugin for ART'
         params['long_description'] = 'Provides connection to TCMS DB and '\
                 'reports there tests results.'
+        params['requires'] = ['python-kerberos', 'python-nitrate', 'art-utilities']
         params['py_modules'] = ['art.test_handler.plmanagement.plugins.tcms_plugin', \
                 'art.test_handler.plmanagement.plugins.tcmsAgent', \
-                'art.test_handler.plmanagement.plugins.tcmsEntryWrapper']
+                'art.test_handler.plmanagement.plugins.tcmsEntryWrapper', \
+                'art.test_handler.plmanagement.plugins.customNitrate']
 
 
     def config_spec(self, spec, val_funcs):
