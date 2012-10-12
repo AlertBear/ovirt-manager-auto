@@ -6,7 +6,7 @@ import argparse
 import art.test_handler.plmanagement as core
 from art.test_handler.plmanagement import logger
 from art.test_handler.plmanagement import implements
-from interfaces import input_reader, application, report_formatter, \
+from interfaces import application, report_formatter, \
         tests_listener, time_measurement, config_validator
 
 DEFAULT_PATH = os.path.join(os.path.dirname(__file__), 'plugins')
@@ -14,7 +14,6 @@ DEFAULT_PATH = os.path.join(os.path.dirname(__file__), 'plugins')
 
 # Note that application is Component as well as it's own ComponentManager.
 class PluginManager(core.ComponentManager, core.Component):
-    implements(input_reader.IInputListener)
     test_parsers = core.ExtensionPoint(application.ITestParser)
     application_liteners = core.ExtensionPoint(application.IApplicationListener)
     configurables = core.ExtensionPoint(application.IConfigurable)
