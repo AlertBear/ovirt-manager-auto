@@ -292,7 +292,7 @@
 <test_case>
    <test_name>Export template '{data_center_type}'</test_name>
    <test_action>exportTemplate</test_action>
-   <parameters>template='{data_center_type}TestTempl',storagedomain='ImpExp_{data_center_type}'</parameters>
+   <parameters>template='{data_center_type}TestTempl',storagedomain='ImpExp_{data_center_type}', wait=True</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>

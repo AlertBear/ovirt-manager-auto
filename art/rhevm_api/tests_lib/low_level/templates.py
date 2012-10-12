@@ -18,7 +18,6 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 import os
-import re
 import time
 
 from art.core_api.apis_exceptions import EntityNotFound
@@ -372,7 +371,8 @@ def getTemplateId(positive, template):
 
 
 @is_action()
-def exportTemplate(positive, template, storagedomain, exclusive='false'):
+def exportTemplate(positive, template, storagedomain, exclusive='false',
+                   wait=False):
     '''
     Description: export template
     Author: edolinin
@@ -381,6 +381,7 @@ def exportTemplate(positive, template, storagedomain, exclusive='false'):
        * storagedomain - name of export storage domain where to export to
        * exclusive - 'true' if overwrite already existed templates with the same
                        name, 'false' otherwise ('false' by default)
+       * wait - waits until template is exported
     Return: status (True if template was exported properly, False otherwise)
     '''
 
@@ -388,8 +389,12 @@ def exportTemplate(positive, template, storagedomain, exclusive='false'):
 
     sd = StorageDomain(name=storagedomain)
     actionParams = dict(storage_domain=sd, exclusive=exclusive)
+    result = TEMPLATE_API.syncAction(templObj, "export", positive,
+                                     **actionParams)
+    if wait and result:
+        return waitForTemplatesStates(names=template)
 
-    return TEMPLATE_API.syncAction(templObj, "export", positive, **actionParams)
+    return result
 
 
 @is_action()
