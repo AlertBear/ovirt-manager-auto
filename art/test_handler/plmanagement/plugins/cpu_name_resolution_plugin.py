@@ -83,12 +83,13 @@ class AutoCpuNameResolution(Component):
         selected_cpu = None
         for name, passwd in  zip(vds_list, vds_passwd_list):
             m = Machine(name, 'root', passwd).util(LINUX)
-            rc, out = m.runCmd(['vdsClient', '-s', '0', 'getVdsCaps', '|',
-                                'grep', '-i', 'flags', '|',
-                                'grep', '-o', "'model_.*'"])
+            with m.ssh as ssh:
+                rc, out, err = ssh.runCmd(['vdsClient', '-s', '0', 'getVdsCaps',
+                        '|', 'grep', '-i', 'flags', '|', 'grep', '-o',
+                        "'model_.*'"])
             out = out.strip()
             if not rc or not out:
-                logger.warning("Failed to get CPU models of {0}".format(name))
+                logger.warning("Failed to get CPU models of {0}: {1}".format(name, err))
                 return
             host_cpu_models = out.split(',')
             host_model = max(host_cpu_models,

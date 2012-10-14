@@ -7,12 +7,7 @@ import utilities.utils as utils
 import utilities.errors as errors
 from utilities.enum import Enum
 
-try:
-    # From /usr/lib64/python2.7/nitrate.py @qtms.qa.lab.tlv.redhat.com (most up-to-dated)
-    import nitrate as nitrateApi
-except ImportError:
-    # From the current project folder (most stable)
-    import nitrateApi
+import nitrate
 
 # TCMS entity names
 eTcmsEntity = Enum( TestPlan=1,
@@ -36,7 +31,7 @@ class UnsupportedEntityTypeError(errors.GeneralException):
     message = "no such entity in TCMS model"
 
 
-class CustomNitrateKerbXmlrpc(nitrateApi.NitrateXmlrpc):
+class CustomNitrateKerbXmlrpc(nitrate.xmlrpc.NitrateXmlrpc):
     """
         This class supports login-on-demand into Nitrate xmlrpc service.
         We need it for supporting deserialization process of TcmsAgent class object
@@ -63,7 +58,7 @@ class CustomNitrateKerbXmlrpc(nitrateApi.NitrateXmlrpc):
 
         # Support secure http only
         if url.startswith(SECURE_URL):
-            self._transport = nitrateApi.KerbTransport()
+            self._transport = nitrate.xmlrpc.KerbTransport()
         elif url.startswith(URL):
             raise NitrateObjectCreationError("only secure http is supported")
         else:
@@ -72,10 +67,10 @@ class CustomNitrateKerbXmlrpc(nitrateApi.NitrateXmlrpc):
         self.logger = logging.getLogger("nitrate")
         try:
             # Create xmlrpc server
-            self._transport.cookiejar = nitrateApi.CookieJar()
-            self.server = nitrateApi.xmlrpclib.ServerProxy(url,
+            self._transport.cookiejar = nitrate.xmlrpc.CookieJar()
+            self.server = nitrate.xmlrpclib.ServerProxy(url,
                                                     transport=self._transport,
-                                                    verbose=nitrateApi.VERBOSE)
+                                                    verbose=nitrate.xmlrpc.VERBOSE)
             if userName is not None:
                 # Try to login into Nitrate xmlrpc service
                 if self._obtainKerberosTicket(userName, keytabFile):
@@ -125,7 +120,7 @@ class CustomNitrateKerbXmlrpc(nitrateApi.NitrateXmlrpc):
                     return [res]    # Return non-empty dictionary inside a list
                 elif res:
                     return res      # Return non-empty list
-            except nitrateApi.NitrateXmlrpcError as err:
+            except nitrate.xmlrpc.NitrateXmlrpcError as err:
                 if "duplicate entry" in str(err).lower():
                     msg = "skip creation of duplicate entry for verb '%s' with args '%s"
                     self.logger.warning(msg, verb, args)
