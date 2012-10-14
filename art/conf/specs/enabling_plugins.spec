@@ -1,5 +1,6 @@
 [ERROR_FETCHER]
-enabled = boolean(default=False)
+enabled = boolean(default=True)
+vdc_root_password = string(default='qum5net')
 
 [HOST_NICS_RESOLUTION]
 enabled = boolean(default=True)
