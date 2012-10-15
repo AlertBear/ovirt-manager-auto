@@ -640,16 +640,16 @@
   <test_case>
     <id>cb8bf60e-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Remove VMs after testing VM creation with various options</test_name>
-    <test_action>removeVms</test_action>
-    <parameters>vms='restvm_update restvm_server restvm_stateless restvm_guaranteed_mem restvm_disks restvm_os_params restvm_os_rhel restvm_os_win restvm_bootorder restvm_disks_sd'</parameters>
+    <test_action>removeVm</test_action>
+    <parameters>vm='{vms_basic_tests}'</parameters>
     <positive>TRUE</positive>
-    <run>yes</run>
+    <run>forkfor({vms_basic_tests})</run>
   </test_case>
   <test_case>
     <id>cb8bf834-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Remove VMs that are created only in version 3.x</test_name>
-    <test_action>removeVms</test_action>
-    <parameters>vms='restvm_custom_prop'</parameters>
+    <test_action>removeVm</test_action>
+    <parameters>vm='restvm_custom_prop'</parameters>
     <positive>TRUE</positive>
     <run>if('{compatibility_version}'.startswith('3.'))</run>
   </test_case>
@@ -1032,10 +1032,10 @@
   <test_case>
     <id>cb8c5c7a-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Remove VMs after testing disks, snapshots, basic operations, NICs and others</test_name>
-    <test_action>removeVms</test_action>
-    <parameters>vms='restvm_domain restvm_multiple_disks restvm_snapshots restvm_basic_operations restvm_nic'</parameters>
+    <test_action>removeVm</test_action>
+    <parameters>vm='{vms_advanced_tests}'</parameters>
     <positive>TRUE</positive>
-    <run>yes</run>
+    <run>forkfor({vms_advanced_tests})</run>
   </test_case>
   <!-- ////////////////////////////////////////////////////////////////////// -->
   <test_case>
@@ -1288,10 +1288,10 @@
   <test_case>
     <id>cb8c9262-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Remove VMs after testing export, spice, vnc and other</test_name>
-    <test_action>removeVms</test_action>
-    <parameters>vms='restvm_export restvm_spice restvm_vnc'</parameters>
+    <test_action>removeVm</test_action>
+    <parameters>vm='{vms_display_tests}'</parameters>
     <positive>TRUE</positive>
-    <run>yes</run>
+    <run>forkfor({vms_display_tests})</run>
   </test_case>
   <!-- ////////////////////////// ISO + VM ////////////////////////////////// -->
   <test_case>
@@ -1840,10 +1840,10 @@
   <test_case>
     <id>cb8d32a8-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Remove all remaining VMs</test_name>
-    <test_action>removeVms</test_action>
-    <parameters>vms='restvm_templates restvm_templates2 restvm_templates_cloned restvm_templates_sd restvm_migration restvm_run_once rest_testPool-1 rest_testPool-2 rest_testPoolUpd-1'</parameters>
+    <test_action>removeVm</test_action>
+    <parameters>vm='{vms_templates_tests}'</parameters>
     <positive>TRUE</positive>
-    <run>yes</run>
+    <run>forkfor({vms_templates_tests})</run>
     <conf>headers={'Correlation-Id': 526}</conf>
     <exp_events>19</exp_events>
   </test_case>
@@ -1922,10 +1922,10 @@
   <test_case>
     <id>cb8d45c2-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Remove all remaining data centers</test_name>
-    <test_action>removeDataCenters</test_action>
-    <parameters>datacenters='DefaultRest RestDataCenter2'</parameters>
+    <test_action>removeDataCenter</test_action>
+    <parameters>datacenter='{datacenters_to_remove}'</parameters>
     <positive>TRUE</positive>
-    <run>yes</run>
+    <run>forkfor({datacenters_to_remove})</run>
   </test_case>
   <test_case>
     <id>cb8d47ac-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1972,10 +1972,10 @@
   <test_case>
     <id>cb8d53dc-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Remove all remaining clusters</test_name>
-    <test_action>removeClusters</test_action>
-    <parameters>clusters='RestCluster1, RestCluster3, RestCluster4'</parameters>
+    <test_action>removeCluster</test_action>
+    <parameters>cluster='{clusters_to_remove}'</parameters>
     <positive>TRUE</positive>
-    <run>yes</run>
+    <run>forkfor({clusters_to_remove})</run>
     <bz>756044</bz>
   </test_case>
 </input>

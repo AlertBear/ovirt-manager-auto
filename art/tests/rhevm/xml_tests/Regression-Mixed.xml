@@ -1101,10 +1101,10 @@
   <test_case>
     <id>cb8bf834-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Remove VMs</test_name>
-    <test_action>removeVms</test_action>
-    <parameters>vms='restvm_tags_users restvm_templates'</parameters>
+    <test_action>removeVm</test_action>
+    <parameters>vm='{vms_to_remove}'</parameters>
     <positive>TRUE</positive>
-    <run>yes</run>
+    <run>forkfor({vms_to_remove})</run>
   </test_case>
   <test_case>
     <id>ad2d8da4-c8f6-11e1-a294-0024d7421ca4</id>
@@ -1166,10 +1166,10 @@
   <test_case>
     <id>d75abf74-c695-11e1-a578-f0def10e0ce8</id>
     <test_name>Remove clusters</test_name>
-    <test_action>removeClusters</test_action>
-    <parameters>clusters='RestCluster1 RestCluster4 RestCluster5 RestCluster6 RestCluster7'</parameters>
+    <test_action>removeCluster</test_action>
+    <parameters>cluster='{clusters_to_remove}'</parameters>
     <positive>TRUE</positive>
-    <run>yes</run>
+    <run>forkfor({clusters_to_remove})</run>
   </test_case>
   <test_case>
     <test_name>END_GROUP: Teardown</test_name>

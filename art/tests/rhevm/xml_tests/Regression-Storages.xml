@@ -232,8 +232,8 @@
   <test_case>
     <id>99fb01ca-c695-11e1-ac4a-f0def10e0ce8</id>
     <test_name>Remove local data center</test_name>
-    <test_action>removeDataCenters</test_action>
-    <parameters>datacenters='RestDataCenter_LOCAL'</parameters>
+    <test_action>removeDataCenter</test_action>
+    <parameters>datacenter='RestDataCenter_LOCAL'</parameters>
     <positive>TRUE</positive>
     <run>if('{compatibility_version}'.startswith('3.'))</run>
     <conf>headers={'Correlation-Id': 211}</conf>
@@ -744,9 +744,9 @@
   <test_case>
     <id>99fb8bea-c695-11e1-ac4a-f0def10e0ce8</id>
     <test_name>Remove all remaining clusters</test_name>
-    <test_action>removeClusters</test_action>
-    <parameters>clusters='RestCluster3, RestCluster1, RestCluster_LOCAL'</parameters>
+    <test_action>removeCluster</test_action>
+    <parameters>cluster='{clusters_to_remove}'</parameters>
     <positive>TRUE</positive>
-    <run>yes</run>
+    <run>forkfor({clusters_to_remove})</run>
   </test_case>
 </input>
