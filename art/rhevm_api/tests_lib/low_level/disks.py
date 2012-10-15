@@ -46,7 +46,7 @@ TAG_API = get_api('tag', 'tags')
 CDROM_API = get_api('cdrom', 'cdroms')
 
 logger = logging.getLogger(__package__ + __name__)
-xpathMatch = is_action('xpathMatch')(XPathMatch(VM_API).__call__)
+xpathMatch = is_action('xpathMatch')(XPathMatch(VM_API))
 
 
 def getObjDisks(name, get_href=True, is_template=False):

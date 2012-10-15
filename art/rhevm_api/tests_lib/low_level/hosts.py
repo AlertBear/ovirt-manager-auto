@@ -48,8 +48,8 @@ TAG_API = get_api('tag', 'tags')
 HOST_NICS_API = get_api('host_nic', 'host_nics')
 VM_API = get_api('vm', 'vms')
 
-xpathMatch = is_action('xpathHosts')(XPathMatch(HOST_API).__call__)
-xpathHostsLinks = is_action('xpathLinksHosts')(XPathLinks(HOST_API).__call__)
+xpathMatch = is_action('xpathHosts')(XPathMatch(HOST_API))
+xpathHostsLinks = is_action('xpathLinksHosts')(XPathLinks(HOST_API))
 
 Host = getDS('Host')
 Options = getDS('Options')

@@ -61,7 +61,7 @@ vmUtil = get_api('vm', 'vms')
 clUtil = get_api('cluster', 'clusters')
 fileUtil = get_api('file', 'files')
 
-xpathMatch = is_action('xpathStoragedomains')(XPathMatch(util).__call__)
+xpathMatch = is_action('xpathStoragedomains')(XPathMatch(util))
 
 
 def _prepareStorageDomainObject(positive, **kwargs):
