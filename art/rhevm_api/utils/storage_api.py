@@ -81,7 +81,7 @@ def flushIptables(host, userName, password, chain='', persistently=False):
 def getStorageManager(ip, storageType):
     """
         Wrapper for retrieving an instance of any sub-class
-        of utilities.storageManagement.StorageManager base class.
+        of storageManagement.StorageManager base class.
         Author: mbenenso
         Parameters:
          * ip - IP address of storage server
