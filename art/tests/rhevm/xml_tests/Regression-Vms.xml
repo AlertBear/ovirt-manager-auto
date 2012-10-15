@@ -1372,6 +1372,7 @@
     <test_action>changeCDWhileRunning</test_action>
     <parameters>vm_name='restvm_run_once', cdrom_image='{cdrom_image}'</parameters>
     <positive>NONE</positive>
+    <bz>864836</bz>
     <run>yes</run>
   </test_case>
   <test_case>
@@ -1895,6 +1896,22 @@
     <run>yes</run>
   </test_case>
   <test_case>
+    <id>cb8d3e38-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Detach non-master storage domain</test_name>
+    <test_action>detachStorageDomain</test_action>
+    <parameters>datacenter='DefaultRest', storagedomain='DataDomainRest2'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
+    <id>cb8d498c-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Remove non-master storage domain</test_name>
+    <test_action>removeStorageDomain</test_action>
+    <parameters>storagedomain='DataDomainRest2', host='{vds[0]}', format='true'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
     <id>cb8d43e2-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Deactivate master storage domain</test_name>
     <test_action>deactivateStorageDomain</test_action>
@@ -1918,15 +1935,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
   </test_case>
-  <test_case>
-    <id>cb8d498c-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Remove non-master storage domain</test_name>
-    <test_action>removeStorageDomain</test_action>
-    <parameters>storagedomain='DataDomainRest2', host='{vds[0]}', format='true'</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
+   <test_case>
     <id>cb8d4b76-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Set active first host to maintenance</test_name>
     <test_action>deactivateHost</test_action>
