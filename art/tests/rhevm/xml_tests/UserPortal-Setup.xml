@@ -67,7 +67,7 @@
             diskType='e{disk_type_system}', volumeType='true', volumeFormat='cow',
             diskInterface='e{interface_virtio}', bootable='true',
             wipe_after_deletion='true', memory=1073741824,
-            cpu_socket='1', cpu_cores='2', display_type='SPICE',
+            cpu_socket='1', cpu_cores='2', display_type='e{display_type_spice}',
             type='e{vm_type_desktop}'
         </parameters>
         <positive>TRUE</positive>
@@ -89,7 +89,7 @@
             diskType='e{disk_type_system}', volumeType='true',
             volumeFormat='cow', diskInterface='e{interface_virtio}', bootable='true',
             wipe_after_deletion='true', memory=1073741824, cpu_socket='1',
-            cpu_cores='2', display_type='SPICE', type='e{vm_type_server}'
+            cpu_cores='2', display_type='e{display_type_spice}', type='e{vm_type_server}'
         </parameters>
         <positive>TRUE</positive>
         <run>YES</run>
