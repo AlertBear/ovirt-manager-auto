@@ -15,6 +15,7 @@ from art.test_handler.plmanagement.interfaces.config_validator import\
               IConfigValidation
 from art.test_handler.plmanagement.interfaces.tests_listener import \
         ITestSuiteHandler, ITestCaseHandler
+from art.test_handler.plmanagement import common
 
 
 DEFUALT_SITE = 'http://log-server.eng.lab.tlv.redhat.com:9292'
@@ -54,8 +55,10 @@ class LogStash(Component):
         if not self.is_enabled(params, conf):
             return
 
+        vds_section = common.get_vds_section(conf)
+
         self.site = conf[LOGSTASH_SEC][SITE]
-        self.vds = [self.__get_name(x) for x in conf[PARAMETERS].as_list(VDS)]
+        self.vds = [self.__get_name(x) for x in conf[vds_section].as_list(VDS)]
         self.vds_logs = conf[LOGSTASH_SEC][VDS_LOGS]
         self.vdc = self.__get_name(conf[VDC_PARAMS][VDC])
         self.vdc_logs = conf[LOGSTASH_SEC][VDC_LOGS]

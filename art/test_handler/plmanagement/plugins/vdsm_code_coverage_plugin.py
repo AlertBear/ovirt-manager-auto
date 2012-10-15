@@ -6,7 +6,7 @@ from art.test_handler.plmanagement.interfaces.application import IConfigurable, 
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.plmanagement.interfaces.config_validator import\
                                                     IConfigValidation
-
+from art.test_handler.plmanagement import common
 from utilities.machine import Machine, LINUX
 
 
@@ -21,7 +21,6 @@ PARAMETERS = 'PARAMETERS'
 VDS_PASSWORD = 'vds_password'
 VDS = 'vds'
 VDSM_SERVER_PATH = 'vdsm_root_path'
-DC_TYPE = 'data_center_type'
 
 DEBUG_CLIENT = 'debugPluginClient.py'
 VDSM_DEBUG_PLUGIN = 'vdsm-debug-plugin'
@@ -120,10 +119,7 @@ class VDSMCodeCoverage(Component):
             return
         self.res_dir = params.vdsm_code_coverage
 
-        vds_section = PARAMETERS
-        dc_val = conf[PARAMETERS][DC_TYPE].upper()
-        if dc_val != 'NONE' and dc_val in conf:
-            vds_section = dc_val
+        vds_section = common.get_vds_section(conf)
 
         vds = conf[vds_section].as_list(VDS)
         vds_passwd = conf[vds_section].as_list(VDS_PASSWORD)
