@@ -13,6 +13,7 @@ enabled = boolean(default=True)
 
 [LOG_CAPTURE]
 enabled = boolean(default=True)
+fmt = string(default='#(asctime)s - #(threadName)s - #(name)s - #(levelname)s - #(message)s')
 
 [BUGZILLA]
 enabled = boolean(default=True)

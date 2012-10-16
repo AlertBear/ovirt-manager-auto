@@ -75,6 +75,8 @@ class LogCapture(Component):
         self.rec_name = conf.get(LOGS).get(record_name)
 
         fmt_ = conf.get(LOGS).get(fmt)
+        if fmt_:
+            fmt_ = re.sub('[#]([(][^)]+[)]s)', '%\\1', fmt_)
         level = conf.get(LOGS).get(logging_level).upper()
         level = getattr(logging, level)
         self.log_handler = LogCaptureHandler()
