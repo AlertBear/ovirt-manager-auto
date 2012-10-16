@@ -20,9 +20,13 @@
 from cStringIO import StringIO
 import sys
 from art.core_api.apis_utils import data_st_validate as ds
+from art.core_api.apis_utils import settings
 import re
 
 ATTR_IGNORE_LIST = ['href', 'link', 'rel']
+if settings.opts.get('engine') == 'sdk':
+    ATTR_IGNORE_LIST = ATTR_IGNORE_LIST + ['actions', 'disks']
+
 VALS_IGNORE_DICT = {
                     'usage': ['VM'],
                     }
