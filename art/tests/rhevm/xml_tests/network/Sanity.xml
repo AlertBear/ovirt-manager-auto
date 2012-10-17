@@ -1023,6 +1023,7 @@
    <report>YES</report>
    <vital>FALSE</vital>
    <test_description/>
+   <bz>863277</bz>
 </test_case>
 <test_case>
    <test_name>Check that nic2 is ACTIVE (After HotPlug)</test_name>
@@ -1034,6 +1035,7 @@
    <report>YES</report>
    <vital>FALSE</vital>
    <test_description/>
+   <bz>863277</bz>
 </test_case>
 <test_case>
    <test_name>Deactivating nic2 via HotPlug</test_name>
@@ -1045,6 +1047,7 @@
    <report>YES</report>
    <vital>FALSE</vital>
    <test_description/>
+   <bz>863277</bz>
 </test_case>
 <test_case>
    <test_name>Check that nic2 is INACTIVE (After HotPlug)</test_name>
