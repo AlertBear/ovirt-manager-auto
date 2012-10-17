@@ -3,7 +3,7 @@ from art.test_handler.plmanagement import Component, implements, get_logger, Plu
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.plmanagement.interfaces.config_validator import IConfigValidation
-
+from art.test_handler.plmanagement import common
 from utilities.machine import Machine, LINUX
 
 logger = get_logger('host_nic_resolution')
@@ -31,10 +31,7 @@ class AutoHostNicsResolution(Component):
         if not self.is_enabled(params, conf):
             return
 
-        vds_section = PARAMETERS
-        dc_val = conf[PARAMETERS][DC_TYPE].upper()
-        if dc_val != 'NONE' and dc_val in conf:
-            vds_section = dc_val
+        vds_section = common.get_vds_section(conf)
 
         vds = conf[vds_section].as_list(VDS)
         vds_passwd = conf[vds_section].as_list(VDS_PASSWORD)

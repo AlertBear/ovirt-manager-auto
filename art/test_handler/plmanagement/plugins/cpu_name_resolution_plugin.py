@@ -4,7 +4,7 @@ from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.plmanagement.interfaces.config_validator import\
                                                     IConfigValidation
-
+from art.test_handler.plmanagement import common
 from utilities.machine import Machine, LINUX
 
 logger = get_logger('cpu_name_resolution')
@@ -17,7 +17,6 @@ CPU_NAME = 'cpu_name'
 COMPATIBILITY_VERSION = 'compatibility_version'
 DEFAULT_STATE = False
 ENABLED = 'enabled'
-DC_TYPE = 'data_center_type'
 
 
 class CpuNameResolutionFailed(PluginError):
@@ -72,10 +71,7 @@ class AutoCpuNameResolution(Component):
 
 
         #processing the hosts, looking for compatible cpu
-        vds_section = PARAMETERS
-        dc_val = conf[PARAMETERS][DC_TYPE].upper()
-        if dc_val != 'NONE' and dc_val in conf:
-            vds_section = dc_val
+        vds_section = common.get_vds_section(conf)
 
         vds_list = conf[vds_section].as_list(VDS)
         vds_passwd_list = conf[vds_section].as_list(VDS_PASSWORD)

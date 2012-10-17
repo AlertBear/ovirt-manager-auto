@@ -67,12 +67,36 @@ class XMLFormatter(Component):
         # Write the remaining fields.
         written = set(['start_time', 'end_time', 'module_name', 'group_desc'])
         for key in set(kwargs.keys()) - written:
-            element = Element(key)
-            element.text = unicode(kwargs[key])
-            module.append(element)
+            self.__add_aditional_attrs(module, key, kwargs[key])
 
         self.root.append(module)
         self.generate_report()
+
+    def __add_aditional_attrs(self, root, key, val):
+        if isinstance(val, dict):
+            e = Element(key)
+            for subkey, subval in val.items():
+                self.__add_aditional_attrs(e, subkey, subval)
+            root.append(e)
+        elif isinstance(val, (list, tuple, set)):
+            for subelm in val:
+                self.__add_aditional_attrs(root, key, subelm)
+        else:
+            e = Element(key)
+            if isinstance(val, basestring):
+#                e.text = unicode(val, errors='replace')
+                e.text = unicode(val)
+            else:
+                e.text = str(val)
+            root.append(e)
+
+    def add_group_result(self, res, tg):
+        for key, val in res.items():
+            self.__add_aditional_attrs(self.root, key, val)
+
+    def add_suite_result(self, res, ts):
+        for key, val in res.items():
+            self.__add_aditional_attrs(self.root, key, val)
 
     def generate_report(self):
         if self.tree is not None:
