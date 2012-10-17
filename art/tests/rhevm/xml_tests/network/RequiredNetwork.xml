@@ -1,0 +1,424 @@
+<input>
+<test_case>
+   <test_name>START_GROUP: RequiredNetwork</test_name>
+   <test_action/>
+   <parameters>n/a1</parameters>
+   <positive>NONE</positive>
+   <run>if('requirednetwork' in '[run_groups]')</run>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>START_GROUP: Positive_RequiredNetwork</test_name>
+   <test_action/>
+   <parameters>n/a1</parameters>
+   <positive>NONE</positive>
+   <run>if('positive' in '[requirednetwork]')</run>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>START_GROUP: RequiredClusterPolicy</test_name>
+   <test_action/>
+   <parameters>n/a1</parameters>
+   <positive>NONE</positive>
+   <run>if('requiredclusterpolicy' in '[requirednetwork]' or '*' in '[requirednetwork]')</run>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Move Host2 to Maintenance </test_name>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[1]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Running this topology only with one host</test_description>
+</test_case>
+<test_case>
+   <test_name>Wait for SPM</test_name>
+   <test_action>waitForSPM</test_action>
+   <parameters>datacenter='{datacenter}',timeout=900,sleep=5</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Create sw1 network</test_name>
+   <test_action>addNetwork</test_action>
+   <parameters>name='{networks[0]}',data_center='{datacenter}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+<test_name>Attach sw1 to Cluster</test_name>
+  <test_action>addNetworkToCluster</test_action>
+  <parameters>network='{networks[0]}', cluster='{cluster}',required='true'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>generate sw1 network element</test_name>
+  <test_action>genSNNic</test_action>
+  <parameters>nic='{host_nics[1]}', network='{networks[0]}'</parameters>
+  <positive>NONE</positive>
+  <run>YES</run>
+  <fetch_output>host_nic->sw1_nic</fetch_output>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Add sw1 to Hosts</test_name>
+  <test_action>sendSNRequest</test_action>
+  <parameters>host='{vds[0]}', nics=[%sw1_nic%], auto_nics=['{host_nics[0]}'],check_connectivity='true', connectivity_timeout=60, force='false'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output></fetch_output>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description>Send automatic MGMT interface and SW1 to eth2 interfce.</test_description>
+</test_case>
+<test_case>
+  <test_name>Validate if sw1 status is operational</test_name>
+  <test_action>validateNetwork</test_action>
+  <parameters>cluster='{cluster}', network='{networks[0]}',tag='status', val='operational'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Turn DOWN eth2</test_name>
+  <test_action>ifdownNic</test_action>
+  <parameters>host='{vds[0]}',root_password='{vm_linux_password}',nic='{host_nics[1]}'</parameters>
+  <positive>NONE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Check that Host become NON_OPERATIONAL within 70 sec</test_name>
+  <test_action>waitForHostsStates</test_action>
+  <!-- TODO: nonoperational change to reasonable constant -->
+  <parameters>names='{vds[0]}', states='nonoperational',timeout=70</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Validate Event occurrence regarding non-operational reason</test_name>
+  <test_action>searchForRecentEvent</test_action>
+  <parameters>win_start_query='{networks[0]} type=920', query='{networks[0]} type=603', expected_count=1</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Turn UP eth2</test_name>
+  <test_action>ifupNic</test_action>
+  <parameters>host='{vds[0]}',root_password='{vm_linux_password}',nic='{host_nics[1]}',wait=False</parameters>
+  <positive>NONE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Activate Host1</test_name>
+  <test_action>activateHost</test_action>
+  <parameters>host='{vds[0]}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Check that Nic eth2 is UP</test_name>
+  <test_action>waitForHostNicState</test_action>
+  <parameters>host='{vds[0]}',nic='{host_nics[1]}',state='UP',interval=5, attempts=10</parameters>
+  <positive>NONE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Wait for SPM</test_name>
+  <test_action>waitForSPM</test_action>
+  <parameters>datacenter='{datacenter}',timeout=900,sleep=5</parameters>
+  <positive>NONE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>NO</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>generate sw1 bond network element</test_name>
+  <test_action>genSNBond</test_action>
+  <parameters>name='{bond[0]}', network='{networks[0]}', slaves=['{host_nics[2]}','{host_nics[3]}'], mode=1</parameters>
+  <positive>NONE</positive>
+  <run>YES</run>
+  <fetch_output>host_nic->sw1_bond0_nic</fetch_output>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Add sw1 Bond mode 1 to Hosts eth2 and eth3</test_name>
+  <test_action>sendSNRequest</test_action>
+  <parameters>host='{vds[0]}', nics=[%sw1_bond0_nic%], auto_nics=['{host_nics[0]}'],check_connectivity='true', connectivity_timeout=60, force='false'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description>Send automatic MGMT interface, SW1 bond interfce.</test_description>
+</test_case>
+<test_case>
+  <test_name>Validate if sw1 status is operational</test_name>
+  <test_action>validateNetwork</test_action>
+  <parameters>cluster='{cluster}', network='{networks[0]}',tag='status', val='operational'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Turn DOWN slave eth2</test_name>
+  <test_action>ifdownNic</test_action>
+  <parameters>host='{vds[0]}',root_password='{vm_linux_password}',nic='{host_nics[2]}'</parameters>
+  <positive>NONE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Check that host doesn't become Non operational</test_name>
+  <test_action>waitForHostsStates</test_action>
+  <parameters>names='{vds[0]}', states='e{host_state_up}',timeout=70</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Turn DOWN slave eth3</test_name>
+  <test_action>ifdownNic</test_action>
+  <parameters>host='{vds[0]}',root_password='{vm_linux_password}',nic='{host_nics[3]}'</parameters>
+  <positive>NONE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Check that Host become NON_OPERATIONAL within 70 sec</test_name>
+  <test_action>waitForHostsStates</test_action>
+  <!-- TODO: nonoperational change to reasonable constant -->
+  <parameters>names='{vds[0]}', states='nonoperational',timeout=120</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Turn UP slaves eth2</test_name>
+  <test_action>ifupNic</test_action>
+  <parameters>host='{vds[0]}',root_password='{vm_linux_password}',nic='{host_nics[2]}',wait=False</parameters>
+  <positive>NONE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Turn UP slaves eth3</test_name>
+  <test_action>ifupNic</test_action>
+  <parameters>host='{vds[0]}',root_password='{vm_linux_password}',nic='{host_nics[3]}',wait=False</parameters>
+  <positive>NONE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Activate Host1</test_name>
+  <test_action>activateHost</test_action>
+  <parameters>host='{vds[0]}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Detach sw1 from cluster</test_name>
+  <test_action>removeNetworkFromCluster</test_action>
+  <parameters>network='{networks[0]}', cluster='{cluster}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+   <test_name>Clear hosts network interfaces</test_name>
+   <test_action>sendSNRequest</test_action>
+   <parameters>host='{vds}',auto_nics=['{host_nics[0]}'],check_connectivity='true', connectivity_timeout=60, force='false'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Send automatic MGMT interface.</test_description>
+</test_case>
+<test_case>
+  <test_name>Save Network Configuration</test_name>
+  <test_action>commitNetConfig</test_action>
+  <parameters>host='{vds[0]}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+<test_name>Remove sw1 from DataCenter</test_name>
+  <test_action>removeNetwork</test_action>
+  <parameters>network='{networks[0]}',data_center='{datacenter}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Activate Host2</test_name>
+  <test_action>activateHost</test_action>
+  <parameters>host='{vds[1]}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Wait for SPM</test_name>
+  <test_action>waitForSPM</test_action>
+  <parameters>datacenter='{datacenter}',timeout=900,sleep=5</parameters>
+  <positive>NONE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>NO</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: RequiredClusterPolicy</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+
+<test_case>
+   <test_name>END_GROUP: Positive_RequiredNetwork</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<!-- ======================================================================================================== -->
+<test_case>
+   <test_name>START_GROUP: Negative_RequiredNetwork</test_name>
+   <test_action/>
+   <parameters>n/a1</parameters>
+   <positive>NONE</positive>
+   <run>if('negative' in '[requirednetwork]')</run>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: Negative_RequiredNetwork</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: RequiredNetwork</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+</input>

@@ -1,0 +1,69 @@
+<input>
+<test_case>
+   <test_name>START_GROUP: SyncNetwork</test_name>
+   <test_action/>
+   <parameters>n/a1</parameters>
+   <positive>NONE</positive>
+   <run>if('syncnetwork' in '[run_groups]')</run>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>START_GROUP: Positive_SyncNetwork</test_name>
+   <test_action/>
+   <parameters>n/a1</parameters>
+   <positive>NONE</positive>
+   <run>if('positive' in '[syncnetwork]')</run>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: Positive_SyncNetwork</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<!-- ======================================================================================================== -->
+<test_case>
+   <test_name>START_GROUP: Negative_SyncNetwork</test_name>
+   <test_action/>
+   <parameters>n/a1</parameters>
+   <positive>NONE</positive>
+   <run>if('negative' in '[syncnetwork]')</run>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: Negative_SyncNetwork</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: SyncNetwork</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+</input>

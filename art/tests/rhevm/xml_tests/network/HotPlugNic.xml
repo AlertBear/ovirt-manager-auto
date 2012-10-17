@@ -1,0 +1,145 @@
+<!-- 
+1. Create sw1, a required logical network with vlan id
+2. Create sw2, a required logical network for bond purposes
+3. Add both networks to cluster
+4. Send Setupnetworks as followed:
+   rhevm - eth0
+   sw1 - eth1.166 - eth1
+   sw2 - bond0 - eth2
+               \ eth3 
+5. Create VM from template (vim has nic1 wich is rhevm and VIRTIO)
+6. Validate nic1 is active
+7. add inactive nic2 - sw1 (RTL driver)
+8. start VM
+9. check connectivity to nic1
+10. validate that nic2 is not connected
+11. deactivate nic1 
+12. validate that nic1 is not connected
+13. activate nic2
+14. check connectivity to nic2
+15. deactivate nic2
+16. add inactive nic3 - sw2 (E1000) to live VM
+17. activate nic3
+18. check connectivity to nic3
+19. (negative) try to remove active nic3 from VM 
+24. inactive nic3
+25. stop VM
+26. Reconfigure host networks by setupnetworks
+    rhevm - eth0
+    sw1 - bond0.166 - bond0 - eth2
+                            \ eth3
+27. start VM (while all nics are deactivated)
+28. activate nic2 (sw1 - vlan over bond)
+29. check connectivity to nic2
+30. (negative) try to activate nic3 (sw2 was removed from host there shouldn't succeed)
+31. remove nic1 and nic3 from VM
+32. stop VM
+33. remove nic2 from VM
+34. remove VM
+35. remove sw1 and sw2 from cluster
+36. reset host network by setupnetworks
+    rhevm - eth0
+37. remove networks from Data Center
+
+
+TODO: 
+1. (negative) move required network to non-required while network attached to VM, both when active and inactive
+2. check snapshot functionality with hotplug states
+3. check migration
+ -->
+<input>
+<test_case>
+   <test_name>START_GROUP: HotPlugNic</test_name>
+   <test_action/>
+   <parameters>n/a1</parameters>
+   <positive>NONE</positive>
+   <run>if('hotplugnic' in '[run_groups]')</run>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>START_GROUP: Positive_HotPlugNic</test_name>
+   <test_action/>
+   <parameters>n/a1</parameters>
+   <positive>NONE</positive>
+   <run>if('positive' in '[hotplugnic]')</run>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>START_GROUP: HotPlugNic_BasicFunctionality</test_name>
+   <test_action/>
+   <parameters>n/a1</parameters>
+   <positive>NONE</positive>
+   <run>if('basic' in '[hotplugnic]' or '*' in '[hotplugnic]')</run>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description>Covers all basic functionalities, some negative cases, vlan, bond, vlan over bond and also cover all VM supported nic drivers</test_description>
+</test_case>
+
+
+
+
+
+<test_case>
+   <test_name>END_GROUP: HotPlugNic_BasicFunctionality</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: Positive_HotPlugNic</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<!-- ======================================================================================================== -->
+<test_case>
+   <test_name>START_GROUP: Negative_HotPlugNic</test_name>
+   <test_action/>
+   <parameters>n/a1</parameters>
+   <positive>NONE</positive>
+   <run>if('negative' in '[hotplugnic]')</run>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: Negative_HotPlugNic</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: HotPlugNic</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+</input>
