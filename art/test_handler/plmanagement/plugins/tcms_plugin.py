@@ -1,4 +1,5 @@
 
+import re
 from art.test_handler.plmanagement import Component, implements, get_logger
 from art.test_handler.plmanagement.interfaces.application import \
         IConfigurable, IApplicationListener
@@ -24,6 +25,8 @@ KEYTAB_LOCATION = 'keytab_files_location'
 CATEGORY = 'category'
 SEND_MAIL = 'send_result_email'
 RUN_NAME_TEMPL = 'test_run_name_template'
+GENERATE_LINKS = 'generate_links'
+TCMS_SITE = 'tcms_site'
 
 TCMS_DEC = 'tcms'
 TCMS_TEST_CASE = 'tcms_test_case'
@@ -71,14 +74,18 @@ class TCMS(Component):
                 dest='tcms_enabled', help="enable plugin")
         group.add_argument('--tcms-user', action="store", dest='tcms_user', \
                 help="username for TCMS")
+        group.add_argument('--tcms-gen-links', action="store_true", \
+                dest='tcms_gen_links', help="generate links to tmcs_test_cases")
 
     def configure(self, params, conf):
         if not self.is_enabled(params, conf):
             return
         tcms_cfg = conf.get(TCMS_OPTION)
 
+        url = tcms_cfg[TCMS_SITE]
+        self.site = re.match('^(?P<site>[^/]+//[^/]+)/.*$', url).group('site')
         self.user = params.tcms_user or tcms_cfg[USER]
-        self.info = {'tcms_url': TCMS_URL,\
+        self.info = {'tcms_url': url,\
                 'placeholder_plan_type':  PLAN_TYPE,\
                 'keytab_files_location': tcms_cfg[KEYTAB_LOCATION], \
                 'redhat_email_extension': REALM, \
@@ -91,6 +98,8 @@ class TCMS(Component):
 
         self.version = conf[PARAMETERS]['compatibility_version']
         self.category = tcms_cfg[CATEGORY]
+        self.generate_links = params.tcms_gen_links or \
+                tcms_cfg.as_bool(GENERATE_LINKS)
         self.__register_functions()
 
     def __register_functions(self):
@@ -129,6 +138,9 @@ class TCMS(Component):
         res = self.results.get(plan, {})
         res[tcms_case] = test
         self.results[plan] = res
+
+        if self.generate_links:
+            logger.info("TCMS link: %s/case/%s" % (self.site, tcms_case))
 
     def on_application_exit(self):
         if self.results:
@@ -206,5 +218,7 @@ class TCMS(Component):
         section_spec[SEND_MAIL] = 'boolean(default=true)'
         section_spec[RUN_NAME_TEMPL] =\
             "string(default='Auto TestRun for {0} TestPlan')"
+        section_spec[GENERATE_LINKS] = "boolean(default=false)"
+        section_spec[TCMS_SITE] = "string(default='%s')" % TCMS_URL
         spec[TCMS_OPTION] = section_spec
 
