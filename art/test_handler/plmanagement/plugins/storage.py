@@ -18,7 +18,7 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-import storageManagement.storageManagerWrapper as smngr
+import storageapi.storageManagerWrapper as smngr
 from utilities.utils import getIpAddressByHostName, getHostName
 from utilities.machine import Machine, runLocalCmd
 from utilities.errors import FileAlreadyExistsError, GeneralException
