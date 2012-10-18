@@ -47,10 +47,15 @@ class SdkUtil(APIUtil):
         global sdkInit
 
         if not sdkInit:
-            user_with_domain = '{0}@{1}'.format(self.opts['user'],\
+            user_with_domain = '{0}@{1}'.format(self.opts['user'],
                                         self.opts['user_domain'])
-            self.api = sdkApi.API(self.opts['uri'], user_with_domain,
-                                self.opts['password'], insecure=True)
+            if not self.opts['secure']:
+                self.api = sdkApi.API(self.opts['uri'], user_with_domain,
+                    self.opts['password'], insecure=True)
+            else:
+                self.api = sdkApi.API(self.opts['uri'], user_with_domain,
+                        self.opts['password'], self.opts['ssl_key_file'],
+                        self.opts['ssl_cert_file'], self.opts['ssl_ca_file'])
             sdkInit = self.api
         else:
             self.api = sdkInit

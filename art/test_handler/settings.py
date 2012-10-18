@@ -188,6 +188,7 @@ def readTestRunOpts(path, redefs):
     opts['engine'] = runSection['engine']
     opts['data_struct_mod'] = runSection['data_struct_mod']
     opts['media_type'] = runSection['media_type']
+    opts['secure'] = runSection.as_bool('secure')
 
     try:
         __import__(opts['data_struct_mod'])

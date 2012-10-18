@@ -13,6 +13,7 @@ media_type = option('application/xml', default='application/xml')
 in_parallel = force_list(default=list())
 parallel_configs = force_list(default=list())
 parallel_sections = force_list(default=list())
+secure=boolean(default=False)
 
 [REST_CONNECTION]
 scheme = option('http', 'https', default='http')
