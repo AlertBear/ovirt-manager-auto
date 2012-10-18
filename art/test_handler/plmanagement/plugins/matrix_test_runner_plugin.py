@@ -171,6 +171,8 @@ class TestComposer(object):
     def __init__(self, test_file, config, elements=None, groups=None):
         self.tf = test_file
         #self.a = {}
+        if MatrixBasedTestComposer.discover_actions:
+            ActionSetType.reset_cache()
         for module in config.get(MATRIX_TEST_RUNNER_SEC).as_list(TEST_MODULES):
             ActionSetType.load_module(module)
         self.a = ActionSetType.actions()
@@ -734,6 +736,7 @@ class MatrixBasedTestComposer(Component):
             IConfigValidation, ITestGroupHandler)
     parsers = ExtensionPoint(IMatrixBasedParser)
     name = 'Matrix Based Test Composer'
+    discover_actions = False
 
     def __init__(self):
         self.parser = None
@@ -769,6 +772,7 @@ class MatrixBasedTestComposer(Component):
         if self.parser is None:
             return
         self.groups = params.groups
+        self.discover_actions = params.discover_actions
         self.conf = conf
         TestResult.ATTRIBUTES['module_name'] = \
                 ('mod_name', None, None)
@@ -800,6 +804,9 @@ class MatrixBasedTestComposer(Component):
                 'the test file should be executed', action=GroupsAction)
         group.add_argument('--compile', '--dry-run', action='store_true', \
                 dest='compile', help='run suites without execution')
+        group.add_argument('--discover-actions', action='store_true', \
+                dest='discover_actions', help='goes over known modules and '\
+                'discover all actions', default=False)
 
     def pre_test_result_reported(self, res, tc):
         if not tc.test_report:

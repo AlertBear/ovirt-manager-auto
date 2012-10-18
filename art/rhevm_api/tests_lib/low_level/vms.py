@@ -67,7 +67,7 @@ CDROM_API = get_api('cdrom', 'cdroms')
 NETWORK_API = get_api('network', 'networks')
 
 logger = logging.getLogger(__package__ + __name__)
-xpathMatch = is_action('xpathVms')(XPathMatch(VM_API).__call__)
+xpathMatch = is_action('xpathVms')(XPathMatch(VM_API))
 
 
 class DiskNotFound(Exception):

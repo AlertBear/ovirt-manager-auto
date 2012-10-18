@@ -1,3 +1,5 @@
+import re
+
 from art.test_handler.plmanagement import (Component, implements, get_logger,
                                                                 PluginError)
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
@@ -18,6 +20,7 @@ COMPATIBILITY_VERSION = 'compatibility_version'
 DEFAULT_STATE = False
 ENABLED = 'enabled'
 
+MODEL_RE = re.compile(r'model_[A-Za-z_1-9]+')
 
 class CpuNameResolutionFailed(PluginError):
     pass
@@ -80,14 +83,12 @@ class AutoCpuNameResolution(Component):
         for name, passwd in  zip(vds_list, vds_passwd_list):
             m = Machine(name, 'root', passwd).util(LINUX)
             with m.ssh as ssh:
-                rc, out, err = ssh.runCmd(['vdsClient', '-s', '0', 'getVdsCaps',
-                        '|', 'grep', '-i', 'flags', '|', 'grep', '-o',
-                        "'model_.*'"])
+                rc, out, err = ssh.runCmd(['vdsClient', '-s', '0', 'getVdsCaps'])
             out = out.strip()
-            if not rc or not out:
+            if rc or not out:
                 logger.warning("Failed to get CPU models of {0}: {1}".format(name, err))
                 return
-            host_cpu_models = out.split(',')
+            host_cpu_models = MODEL_RE.findall(out)
             host_model = max(host_cpu_models,
                 key=lambda m: cpus_model_mapping.get(m, {}).get('level', -1))
             sel_host_cpu  = cpus_model_mapping.get(host_model)
