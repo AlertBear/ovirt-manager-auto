@@ -213,10 +213,12 @@ class TcmsAgent(object):
         self.sender = agentParams['default_sender']
 
         try:
+            userName = re.match('^((?P<service>[^/]+)/)?(?P<name>.+)$', userName).groupdict('')
             # Initialize Nitrate API object
-            username = userName + agentParams['redhat_email_extension']
+            username = userName['service'] + '/' + userName['name'] + \
+                    agentParams['redhat_email_extension']
             pathToKeyTab = os.path.join(agentParams['keytab_files_location'],
-                                        userName + agentParams['keytab_file_extension'])
+                                        userName['name'] + agentParams['keytab_file_extension'])
             self._nitrateApi = CustomNitrateKerbXmlrpc(self.tcmsUrl, username, pathToKeyTab)
         except Exception as err:
             self.logger.error(traceback.format_exc())
