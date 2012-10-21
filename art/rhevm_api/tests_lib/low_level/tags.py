@@ -29,7 +29,7 @@ util = get_api(ELEMENT, COLLECTION)
 Tag = getDS('Tag')
 TagParent = getDS('TagParent')
 
-xpathMatch = is_action('xpathTags')(XPathMatch(util))
+xpathMatch = is_action('xpathTags', id_name='xpathMatch')(XPathMatch(util))
 
 
 def _prepareTagObject(**kwargs):

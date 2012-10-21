@@ -46,7 +46,7 @@ SchedulingPolicy = getDS('SchedulingPolicy')
 ErrorHandlingOptions = getDS('ErrorHandlingOptions')
 CPU = getDS('CPU')
 
-xpathMatch = is_action('xpathClusters')(XPathMatch(util))
+xpathMatch = is_action('xpathClusters', id_name='xpathMatch')(XPathMatch(util))
 
 
 def _prepareClusterObject(**kwargs):

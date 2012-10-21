@@ -31,7 +31,7 @@ dcUtil = get_api('data_center', 'datacenters')
 permitUtil = get_api('permit', 'capabilities')
 versionCaps = permitUtil.get(absLink=False)
 
-xpathMatch = is_action('xpathGeneral')(XPathMatch(util))
+xpathMatch = is_action('xpathGeneral', id_name='xpathMatch')(XPathMatch(util))
 
 VM = getDS('VM')
 

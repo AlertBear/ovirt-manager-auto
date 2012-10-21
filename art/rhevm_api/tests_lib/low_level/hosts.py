@@ -48,7 +48,7 @@ TAG_API = get_api('tag', 'tags')
 HOST_NICS_API = get_api('host_nic', 'host_nics')
 VM_API = get_api('vm', 'vms')
 
-xpathMatch = is_action('xpathHosts')(XPathMatch(HOST_API))
+xpathMatch = is_action('xpathHosts', id_name='xpathMatch')(XPathMatch(HOST_API))
 xpathHostsLinks = is_action('xpathLinksHosts')(XPathLinks(HOST_API))
 
 Host = getDS('Host')

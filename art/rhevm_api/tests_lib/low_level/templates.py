@@ -51,7 +51,7 @@ VM = getDS('VM')
 ELEMENTS = os.path.join(os.path.dirname(__file__), '../../../conf/elements.conf')
 ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
 
-xpathMatch = is_action('xpathTemplates')(XPathMatch(TEMPLATE_API))
+xpathMatch = is_action('xpathTemplates', id_name='xpathMatch')(XPathMatch(TEMPLATE_API))
 
 
 def _prepareTemplateObject(**kwargs):
