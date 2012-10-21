@@ -83,11 +83,9 @@ class XMLFormatter(Component):
                 self.__add_aditional_attrs(root, key, subelm)
         else:
             e = Element(key)
-            if isinstance(val, basestring):
-#                e.text = unicode(val, errors='replace')
-                e.text = unicode(val)
-            else:
-                e.text = str(val)
+            if not isinstance(val, basestring):
+                val = str(val)
+            e.text = val
             root.append(e)
 
     def add_group_result(self, res, tg):
