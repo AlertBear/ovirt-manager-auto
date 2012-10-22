@@ -29,13 +29,32 @@ class CleanUpHosts(Component):
     @classmethod
     def add_options(cls, parser):
         group = parser.add_argument_group(cls.name, description=cls.__doc__)
+        group = group.add_mutually_exclusive_group()
         group.add_argument('--cleanup', action="store_true", dest='cleanup', \
-                help="enable cleanup functionality", default=None)
+                help="enable cleanup functionality, storage and network", \
+                default=False)
+        group.add_argument('--cleanup-storage', action="store_true", \
+                dest='cleanup_str', help="cleanup storage only", default=False)
+        group.add_argument('--cleanup-network', action="store_true", \
+                dest='cleanup_net', help="cleanup network only", default=False)
 
     def configure(self, params, conf):
+        if not self.is_enabled(params, conf):
+            return
         logger.info("Configuring hosts plugin.")
         self.auto = conf.get(RUN_SECTION).as_bool(AD_ENABLED)
         self.conf = conf
+        if not (params.cleanup_str or params.cleanup_net):
+            self.storage, self.network = True
+        elif params.cleanup_str:
+            self.storage = True
+            self.network = False
+        elif params.cleanup_net:
+            self.storage = False
+            self.network = True
+        else:
+            self.storage, self.network = False
+            assert False, "This case shouldn't occure"
 
     def on_storages_prep_request(self):
         pass
@@ -46,13 +65,14 @@ class CleanUpHosts(Component):
     def on_hosts_cleanup_req(self):
         logger.info('Starting hosts cleanup process...')
         from utilities.host_utils import hostsCleanup
-        if not hostsCleanup(self.conf['PARAMETERS'], self.auto):
+        if not hostsCleanup(self.conf['PARAMETERS'], self.auto, \
+                storage=self.storage, network=self.network):
             logger.error('Cleaning process was Failed.')
         logger.info('Finish Cleanup process')
 
     @classmethod
     def is_enabled(cls, params, conf):
-        return conf.get('cleanup') or params.cleanup
+        return any((params.cleanup, params.cleanup_str, params.cleanup_net))
 
     @classmethod
     def fill_setup_params(cls, params):

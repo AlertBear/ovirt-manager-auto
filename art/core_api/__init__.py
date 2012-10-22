@@ -42,14 +42,16 @@ class OrphanAction(ActionDiscoveryError):
     pass
 
 
-def is_action(alias=None, module=None):
+def is_action(alias=None, module=None, id_name=None):
     """
     Decorator which is dedicated to mark function as test_action
     """
     if module is None:
         f = sys._getframe(1)
         module = f.f_globals.get('__name__', None)
-    def decorator(func, alias=alias, module=module):
+    def decorator(func, alias=alias, module=module, id_name=id_name):
+        if id_name is not None:
+            func.__id_name = id_name
         ActionSetType.register_test_action(alias, func, module)
         return func
     return decorator
@@ -83,7 +85,9 @@ class TestAction(object):
         elif callable(self._func):
             #name = self._func.__class__.__name__
             # NOTE: this is hack due to callable classes
-            name = self.name
+            name = getattr(self._func, '__id_name', None)
+            if not name:
+                name = self.name
         else:
             raise ActionDiscoveryError("%s: %s is not callable" % (func, type(func)))
         return name
