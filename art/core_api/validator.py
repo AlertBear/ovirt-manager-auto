@@ -31,6 +31,13 @@ VALS_IGNORE_DICT = {
                     'usage': ['VM'],
                     }
 
+DS_CLASS_MAPPER = {
+                'ClusterNetwork': 'Network',
+                'VMCdRom': 'CdRom',
+                'RolePermits': 'Permits',
+                'HostNicStatistics': 'Statistics'
+}
+
 
 def dump_entity(ds, root_name):
     '''
@@ -181,14 +188,7 @@ def getAttibuteValue(elm, attrName):
 
 def getClassName(elmClass):
 
-    if elmClass == 'ClusterNetwork':
-        elmClass = 'Network'
-    elif elmClass == 'VMCdRom':
-        elmClass = 'CdRom'
-    elif elmClass == 'RolePermits':
-        elmClass = 'Permits'
-
-    return elmClass
+    return DS_CLASS_MAPPER.get(elmClass, elmClass)
 
 
 def compareElements(expElm, actElm, logger, root):
