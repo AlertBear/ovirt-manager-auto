@@ -772,7 +772,7 @@ class MatrixBasedTestComposer(Component):
         if self.parser is None:
             return
         self.groups = params.groups
-        self.discover_actions = params.discover_actions
+        MatrixBasedTestComposer.discover_actions = params.discover_actions
         self.conf = conf
         TestResult.ATTRIBUTES['module_name'] = \
                 ('mod_name', None, None)
