@@ -303,6 +303,7 @@
    <parameters>vdsName='{vds[0]}', username='root', passwd='{vds_password[0]}', dataCenter='{data_center_type}StorageTest', storageDomain='ImpExp_{data_center_type}',template='{data_center_type}TestTempl', fake=False, noImages=False</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <bz>868634</bz>
    <fetch_output/>
 </test_case>
 <test_case>
