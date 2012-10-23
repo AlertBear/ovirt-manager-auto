@@ -4,46 +4,6 @@
 
 <input>
 <test_case>
-   <test_name>Set proper PGPASSFILE</test_name>
-   <test_action>runMachineCommand</test_action>
-   <parameters>ip='{vdc}', user='root', password='{vdc_password}', cmd="echo \"export PGPASSFILE=/etc/ovirt-engine/.pgpass\" >> ~/.bashrc"</parameters>
-   <positive>true</positive>
-   <run>yes</run>
-   <report>yes</report>
-</test_case>
-<test_case>
-   <test_name>Set InstallVds to false</test_name>
-   <test_action>runMachineCommand</test_action>
-   <parameters>ip='{vdc}', user='root', password='{vdc_password}', cmd="psql engine postgres -c \"UPDATE vdc_options SET option_value='false' WHERE option_name='InstallVds';\""</parameters>
-   <positive>true</positive>
-   <run>if(not {install_hosts})</run>
-   <report>yes</report>
-</test_case>
-<test_case>
-   <test_name>Stop engine</test_name>
-   <test_action>toggleServiceOnHost</test_action>
-   <parameters>host='{vdc}', user='root', password='{vdc_password}', service='ovirt-engine', action='stop'</parameters>
-   <positive>true</positive>
-   <run>no</run>
-   <report>yes</report>
-</test_case>
-<test_case>
-   <test_name>Start engine</test_name>
-   <test_action>toggleServiceOnHost</test_action>
-   <parameters>host='{vdc}', user='root', password='{vdc_password}', service='ovirt-engine', action='start'</parameters>
-   <positive>true</positive>
-   <run>no</run>
-   <report>yes</report>
-</test_case>
-<test_case>
-   <test_name>Sleep a bit</test_name>
-   <test_action>sleep</test_action>
-   <parameters>seconds=60</parameters>
-   <positive>none</positive>
-   <run>no</run>
-   <report>no</report>
-</test_case>
-<test_case>
    <test_name>START_GROUP:Sanlock</test_name>
    <test_action/>
    <parameters/>
@@ -398,46 +358,6 @@
    <run/>
    <fetch_output/>
    <report/>
-</test_case>
-<test_case>
-   <test_name>Set InstallVds to false</test_name>
-   <test_action>runMachineCommand</test_action>
-   <parameters>ip='{vdc}', user='root', password='{vdc_password}', cmd="psql engine postgres -c \"UPDATE vdc_options SET option_value='false' WHERE option_name='InstallVds';\""</parameters>
-   <positive>true</positive>
-   <run>if({install_hosts})</run>
-   <report>yes</report>
-</test_case>
-<test_case>
-   <test_name>Activate auto-recovery</test_name>
-   <test_action>runMachineCommand</test_action>
-   <parameters>ip='{vdc}', user='root', password='{vdc_password}', cmd="psql engine postgres -c \"UPDATE vdc_options SET option_value='{\\\"storage domains\\\":\\\"true\\\", \\\"hosts\\\":\\\"true\\\"}' WHERE option_name='AutoRecoveryAllowedTypes';\""</parameters>
-   <positive>true</positive>
-   <run>yes</run>
-   <report>yes</report>
-</test_case>
-<test_case>
-   <test_name>Stop engine</test_name>
-   <test_action>toggleServiceOnHost</test_action>
-   <parameters>host='{vdc}', user='root', password='{vdc_password}', service='ovirt-engine', action='stop'</parameters>
-   <positive>true</positive>
-   <run>yes</run>
-   <report>yes</report>
-</test_case>
-<test_case>
-   <test_name>Start engine</test_name>
-   <test_action>toggleServiceOnHost</test_action>
-   <parameters>host='{vdc}', user='root', password='{vdc_password}', service='ovirt-engine', action='start'</parameters>
-   <positive>true</positive>
-   <run>yes</run>
-   <report>yes</report>
-</test_case>
-<test_case>
-   <test_name>Sleep a bit</test_name>
-   <test_action>sleep</test_action>
-   <parameters>seconds=120</parameters>
-   <positive>none</positive>
-   <run>yes</run>
-   <report>no</report>
 </test_case>
 <test_case>
    <test_name>WORKAROUND FOR BZ#842257</test_name>
