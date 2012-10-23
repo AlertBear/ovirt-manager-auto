@@ -51,10 +51,19 @@ class CliUtil(RestUtil):
         if not cliInit:
             user_with_domain = '{0}@{1}'.format(self.opts['user'],\
                                         self.opts['user_domain'])
-            cli_connect = '"{0}" -c -l "{1}" -u "{2}" -p "{3}" "{4}"'.\
-                format(self.opts['cli_tool'], self.opts['uri'],
-                       user_with_domain, self.opts['password'],
-                       self.opts['cli_optional_params'])
+            if not self.opts['secure']:
+                cli_connect = '"{0}" -c -l "{1}" -u "{2}" -p "{3}" "{4}"'.\
+                    format(self.opts['cli_tool'], self.opts['uri'],
+                        user_with_domain, self.opts['password'],
+                        self.opts['cli_optional_params'])
+            else:
+                cli_connect = '"{0}" -c -l "{1}" -u "{2}" -p "{3}" {4} -K' \
+                              ' {5} -C {6} -A {7}'.\
+                    format(self.opts['cli_tool'], self.opts['uri'],
+                        user_with_domain, self.opts['password'],
+                        self.opts['cli_optional_params'],
+                        self.opts['ssl_key_file'], self.opts['ssl_cert_file'],
+                        self.opts['ssl_ca_file'])
             try:
                 self.logger.debug('Connect: %s' % cli_connect)
                 self.cli = pe.spawn(cli_connect, timeout=CLI_TIMEOUT)
