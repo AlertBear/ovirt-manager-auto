@@ -87,5 +87,5 @@ class RHEVM_SSL_Plugin(Component):
         params['author_email'] = 'gleibovi@redhat.com'
         params['description'] = 'Sets up SSL connection to RHEVM'
         params['long_description'] = cls.__doc__
-        params['pip_deps'] = ['pyOpenSSL']
+        params['requires'] = ['pyOpenSSL']
         params['py_modules'] = ['art.test_handler.plmanagement.plugins.ssl_plugin']
