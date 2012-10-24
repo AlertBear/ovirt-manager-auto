@@ -18,6 +18,7 @@ VDC = 'host'
 ENABLED = 'enabled'
 LOG_PATH = 'path_to_log'
 VDC_PASSWD = 'vdc_root_password'
+PARAMS = 'PARAMETERS'
 
 DEFAULT_LOG_PATH = '/var/log/ovirt-engine/engine.log'
 TEMP_FILE = '/tmp/tailed_engine_log.log'
@@ -42,8 +43,8 @@ class ErrorFetcher(Component):
         group = parser.add_argument_group(cls.name, description=cls.__doc__)
         group.add_argument('--fetch-errors', action='store_true', \
                 dest='error_fetcher', help="enable plugin")
-        group.add_argument('--fe-vdc-pass', action='store', \
-                dest='fe_vdc_pass', help="Password for root account on VDC machine")
+#        group.add_argument('--fe-vdc-pass', action='store', \
+#                dest='fe_vdc_pass', help="Password for root account on VDC machine")
         group.add_argument('--fe-path-to-log', action='store', \
                 dest='fe_path_to_log', help="Path to log on VDC machine")
 
@@ -51,7 +52,7 @@ class ErrorFetcher(Component):
         if not self.is_enabled(params, conf):
             return
 
-        passwd = params.fe_vdc_pass or conf.get(CONF_SEC).get(VDC_PASSWD)
+        passwd = conf.get(PARAMS).get(VDC_PASSWD)
         self.vdc = Machine(conf[PARAMETERS][VDC], 'root', passwd).util(LINUX)
         self.path_to_log = params.fe_path_to_log
         self.path_to_log = self.path_to_log or conf.get(CONF_SEC).get(LOG_PATH)
@@ -118,6 +119,8 @@ class ErrorFetcher(Component):
         section_spec = spec.get(CONF_SEC, {})
         section_spec[ENABLED] = 'boolean(default=%s)' % DEFAULT_STATE
         section_spec[LOG_PATH] = "string(default='%s')" % DEFAULT_LOG_PATH
-        section_spec[VDC_PASSWD] = "string(default=None)"
         spec[CONF_SEC] = section_spec
+        parms_spec = spec.get(PARAMS, {})
+        parms_spec[VDC_PASSWD] = "string(default=None)"
+        spec[PARAMS] = parms_spec
 

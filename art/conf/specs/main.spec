@@ -33,6 +33,7 @@ optional_params = string(default='')
 
 [PARAMETERS]
 test_conf_specs = string_list(default=list())
+vdc_root_password = string(default='qum5net')
 
 [REPORT]
 has_sub_tests = boolean(default=True)
