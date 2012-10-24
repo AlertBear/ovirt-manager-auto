@@ -458,6 +458,9 @@ class RestUtil(APIUtil):
                     return link.get_href()
 
                 linkCont = self.get(link.get_href())
+                if not linkCont:
+                    return None
+
                 if isinstance(linkCont, list):
                     return linkCont
                 else:
