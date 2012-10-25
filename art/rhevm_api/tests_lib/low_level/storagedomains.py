@@ -759,7 +759,7 @@ def cleanDataCenter(positive,datacenter,formatIsoStorage='false'):
         sd_attached = False
         # If storage domain is still attached to any dataCenter skip to next one
         for dc in dcUtil.get(absLink=False):
-            sdObjList = util.getElemFromLink(dc, get_href=False)
+            sdObjList = util.getElemFromLink(dc, get_href=False) or []
             for storageDomain in sdObjList:
                 if storageDomain == sd.get_name():
                     sd_attached = True
