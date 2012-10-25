@@ -46,14 +46,14 @@ try:
     runner.run()
 except KeyboardInterrupt:
     pass
-except IOError as e:
-    print >>stderr, e
-    print >>stderr, "Exiting with IO failure."
-    exit(RC.IO)
 except SocketError as ex:
     traceback.print_exc(file=stderr)
     print >>stderr, "Exiting with Connection failure."
     exit(RC.Connection)
+except IOError as e:
+    print >>stderr, e
+    print >>stderr, "Exiting with IO failure."
+    exit(RC.IO)
 except CmdLineError as e:
     print >>stderr, e
     print >>stderr, "Exiting with Command line failure."
