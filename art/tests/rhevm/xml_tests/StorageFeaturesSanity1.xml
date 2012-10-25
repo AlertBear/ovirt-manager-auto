@@ -196,14 +196,14 @@
 <test_case>
    <test_name>Wait for GuestInfo IP address</test_name>
    <test_action>waitUntilVmQuery</test_action>
-   <parameters>vm='vm_test1', query='ip!=""', timeout=600</parameters>
+   <parameters>vm='vm_test1', query='ip!=""', timeout=1800</parameters>
    <positive>NONE</positive>
    <run>YES</run>
 </test_case>
 <test_case>
    <test_name>Wait for GuestInfo IP address</test_name>
    <test_action>waitUntilVmQuery</test_action>
-   <parameters>vm='vm_test2', query='ip!=""', timeout=600</parameters>
+   <parameters>vm='vm_test2', query='ip!=""', timeout=1800</parameters>
    <positive>NONE</positive>
    <run>YES</run>
 </test_case>
@@ -266,14 +266,14 @@
 <test_case>
    <test_name>Wait for GuestInfo IP address</test_name>
    <test_action>waitUntilVmQuery</test_action>
-   <parameters>vm='vm_test1', query='ip!=""', timeout=600</parameters>
+   <parameters>vm='vm_test1', query='ip!=""', timeout=1800</parameters>
    <positive>NONE</positive>
    <run>YES</run>
 </test_case>
 <test_case>
    <test_name>Wait for GuestInfo IP address</test_name>
    <test_action>waitUntilVmQuery</test_action>
-   <parameters>vm='vm_test2', query='ip!=""', timeout=600</parameters>
+   <parameters>vm='vm_test2', query='ip!=""', timeout=1800</parameters>
    <positive>NONE</positive>
    <run>YES</run>
 </test_case>
@@ -789,7 +789,8 @@
    <test_action/>
    <parameters/>
    <positive>none</positive>
-   <run>if(len('[vds]'.split(','))&gt;1)</run>
+   <!-- This feature has been dropped for 3.1 -->
+   <run>no</run>
    <report/>
 </test_case>
 <test_case>
@@ -1255,7 +1256,7 @@
 <test_case>
    <test_name>Wait for GuestInfo IP address</test_name>
    <test_action>waitUntilVmQuery</test_action>
-   <parameters>vm='vm_test', query='ip!=""', timeout=600</parameters>
+   <parameters>vm='vm_test', query='ip!=""', timeout=1800</parameters>
    <positive>NONE</positive>
    <run>YES</run>
 </test_case>
@@ -1447,28 +1448,28 @@
 <test_case>
    <test_name>Wait for GuestInfo IP address</test_name>
    <test_action>waitUntilVmQuery</test_action>
-   <parameters>vm='vm_test', query='ip!=""', timeout=600</parameters>
+   <parameters>vm='vm_test', query='ip!=""', timeout=1800</parameters>
    <positive>NONE</positive>
    <run>YES</run>
 </test_case>
 <test_case>
    <test_name>Wait for GuestInfo IP address</test_name>
    <test_action>waitUntilVmQuery</test_action>
-   <parameters>vm='twin_brother', query='ip!=""', timeout=600</parameters>
+   <parameters>vm='twin_brother', query='ip!=""', timeout=1800</parameters>
    <positive>NONE</positive>
    <run>YES</run>
 </test_case>
 <test_case>
    <test_name>Wait for GuestInfo IP address</test_name>
    <test_action>waitUntilVmQuery</test_action>
-   <parameters>vm='from_twin', query='ip!=""', timeout=600</parameters>
+   <parameters>vm='from_twin', query='ip!=""', timeout=1800</parameters>
    <positive>NONE</positive>
    <run>YES</run>
 </test_case>
 <test_case>
    <test_name>Wait for GuestInfo IP address</test_name>
    <test_action>waitUntilVmQuery</test_action>
-   <parameters>vm='from_first', query='ip!=""', timeout=600</parameters>
+   <parameters>vm='from_first', query='ip!=""', timeout=1800</parameters>
    <positive>NONE</positive>
    <run>YES</run>
 </test_case>
@@ -1741,7 +1742,7 @@
 <test_case>
    <test_name>Wait for GuestInfo IP address</test_name>
    <test_action>waitUntilVmQuery</test_action>
-   <parameters>vm='vm_test', query='ip!=""', timeout=600</parameters>
+   <parameters>vm='vm_test', query='ip!=""', timeout=1800</parameters>
    <positive>NONE</positive>
    <run>YES</run>
 </test_case>
@@ -1928,7 +1929,7 @@
 <test_case>
    <test_name>Wait for agent running</test_name>
    <test_action>waitUntilVmQuery</test_action>
-   <parameters>vm='vm_test', query='ip!=""', timeout=600</parameters>
+   <parameters>vm='vm_test', query='ip!=""', timeout=1800</parameters>
    <positive>NONE</positive>
    <run>YES</run>
 </test_case>
