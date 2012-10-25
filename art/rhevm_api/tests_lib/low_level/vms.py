@@ -45,14 +45,14 @@ DEFAULT_CLUSTER = 'Default'
 NAME_ATTR = 'name'
 ID_ATTR = 'id'
 DEF_SLEEP = 10
-VM_ACTION_TIMEOUT = 180 
+VM_ACTION_TIMEOUT = 180
 VM_REMOVE_SNAPSHOT_TIMEOUT = 300
 VM_DISK_CLONE_TIMEOUT = 720
 VM_IMAGE_OPT_TIMEOUT = 300
 VM_SAMPLING_PERIOD = 3
 BLANK_TEMPLATE = '00000000-0000-0000-0000-000000000000'
 ADD_DISK_KWARGS = ['size', 'type', 'interface', 'format', 'bootable',
-                   'sparse', 'wipe_after_deletion', 'propagate_errors']
+                   'sparse', 'wipe_after_delete', 'propagate_errors']
 VM_WAIT_FOR_IP_TIMEOUT = 600
 
 VM_API = get_api('vm', 'vms')
@@ -680,7 +680,7 @@ def addDisk(positive, vm, size, wait=True, storagedomain=None,
         * format - disk format type
         * sparse - if disk sparse or preallocated
         * bootable - if disk bootable or not
-        * wipe_after_deletion - if disk should be wiped after deletion or not
+        * wipe_after_delete - if disk should be wiped after deletion or not
         * propagate_errors - if propagate errors or not
     Return: status (True if disk was added properly, False otherwise)
     '''
@@ -1666,7 +1666,7 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
         mac_address=None, storageDomainName=None, size=None, diskType=ENUMS['disk_type_data'],
         volumeType='true', volumeFormat=ENUMS['format_cow'],
         diskInterface=ENUMS['interface_ide'], bootable='true',
-        wipe_after_deletion='false', start='false', template='Blank',
+        wipe_after_delete='false', start='false', template='Blank',
         templateUuid=None, type=ENUMS['vm_type_desktop'],
         os_type='UNASSIGNED', memory=1073741824, cpu_socket=1, cpu_cores=1,
         display_type=ENUMS['display_type_spice'], installation=False, slim=False,
@@ -1686,7 +1686,7 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
         volumeFormat = format type (COW)
         diskInterface = disk interface (VIRTIO or IDE ...)
         bootable = True when disk bootable otherwise False
-        wipe_after_deletion = Can be true or false
+        wipe_after_delete = Can be true or false
         type - vm type (SERVER or DESKTOP)
         start = in case of true the function start vm
         template = name of already created template or Blank (start from scratch)
@@ -1718,7 +1718,7 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
 
     if template == 'Blank' and storageDomainName and templateUuid == None:
         if not addDisk(positive, vm=vmName, size=size, storagedomain=storageDomainName, type=diskType, sparse=volumeType,
-                            interface=diskInterface, format=volumeFormat, bootable=bootable, wipe_after_deletion=wipe_after_deletion):
+                            interface=diskInterface, format=volumeFormat, bootable=bootable, wipe_after_delete=wipe_after_delete):
             return False
 
     if installation == True:
