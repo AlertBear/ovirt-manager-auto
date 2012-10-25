@@ -46,24 +46,13 @@
 <test_case>
   <test_name>Adding Host</test_name>
   <test_action>addHost</test_action>
-  <parameters>name='{vds[0]}',root_password='{vds_password[0]}',cluster='{cluster}',vdcPort='{port}'</parameters>
+  <parameters>name='{vds}',root_password='{vds_password[0]}',cluster='{cluster}',vdcPort='{port}'</parameters>
   <positive>TRUE</positive>
-  <run>YES</run>
+  <run>loop({vds})</run>
   <fetch_output/>
   <report>YES</report>
   <vital>TRUE</vital>
   <test_description/>
-</test_case>
-<test_case>
-   <test_name>Adding second Host</test_name>
-   <test_action>addHost</test_action>
-   <parameters>name='{vds[1]}',root_password='{vds_password[0]}',cluster='{cluster}',vdcPort='{port}'</parameters>
-   <positive>TRUE</positive>
-   <run>if(not {sanity})</run>
-   <fetch_output/>
-   <report>YES</report>
-   <vital>TRUE</vital>
-   <test_description/>
 </test_case>
 <test_case>
   <test_name>Add Data Storage Domain NFS</test_name>
@@ -93,7 +82,7 @@
    <test_action/>
    <parameters>n/a1</parameters>
    <positive>NONE</positive>
-   <run>if(not {sanity} and {vm_network})</run>
+   <run>if({vm_network})</run>
    <fetch_output/>
    <report/>
    <vital/>

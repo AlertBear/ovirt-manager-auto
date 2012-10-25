@@ -3,7 +3,7 @@ A collection of wrappers which allow the usage of general utils functions and st
 """
 import logging
 
-import storageManagement.storageManagerWrapper as sm
+import storageapi.storageManagerWrapper as sm
 import utilities.utils as utils
 import utilities.VDS4 as vds4
 import utilities.machine as hostUtil

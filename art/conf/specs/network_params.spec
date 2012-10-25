@@ -13,10 +13,9 @@ template_name = string(default='tempTest1')
 vm_os = option('Red Hat Enterprise Linux 6.x x64', 'Windows 7 x64', 'Windows 2008 R2 x64', 'Windows XP', default='Red Hat Enterprise Linux 6.x x64')
 
 #Running arguments
-vm_network = boolean(default=True)
-sanity = boolean(default=True)
+vm_network = boolean(default=False)
 run_topologies = force_list(default=list('sanity-30', 'sanity-31', 'negative', 'topology-a-30', 'topology-a-31', 'topology-b-30', 'topology-b-31', 'topology-c-30','topology-c-31', 'topology-d', 'topology-e', 'topology-f', 'topology-g'))
-run_groups = force_list(default=list('migration', 'vlan', 'vlansoverbond', 'bondmodes', 'clustepolicyvalidation', 'nicdrivers'))
+run_groups = force_list(default=list('migration', 'vlan', 'vlansoverbond', 'bondmodes', 'clustepolicyvalidation', 'nicdrivers', 'networksanity'))
 
 # regression tests
 migration = force_list(default=list('positive', '*'))
@@ -25,6 +24,7 @@ vlansoverbond = force_list(default=list('positive', '*'))
 bondmodes = force_list(default=list('positive', '*'))
 clustepolicyvalidation = force_list(default=list('positive', '*'))
 nicdrivers = force_list(default=list('positive', '*'))
+networksanity = force_list(default=list('positive', '*'))
 
 # new features tests
 hotplugnic = force_list(default=list('positive', '*'))
