@@ -28,7 +28,7 @@ if settings.opts.get('engine') == 'sdk':
     ATTR_IGNORE_LIST = ATTR_IGNORE_LIST + ['actions', 'disks']
 
 VALS_IGNORE_DICT = {
-                    'usage': ['VM'],
+                    'usage': ['vm'],
                     }
 
 DS_CLASS_MAPPER = {
