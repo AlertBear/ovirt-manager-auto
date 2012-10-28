@@ -134,7 +134,7 @@ class SdkUtil(APIUtil):
             expEntity = entity if not expectedEntity else expectedEntity
             if not validator.compareElements(expEntity, response,
                                 self.logger, self.element_name):
-                return None, False
+                return response, False
 
         except RequestError as e:
             if positive:
