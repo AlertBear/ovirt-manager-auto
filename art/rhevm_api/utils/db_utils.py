@@ -55,6 +55,8 @@ class WrongTimeIntervalTypeError(errors.GeneralException):
     message += 'Can be one of the following: {0}, {1}, {2}'.format(
             HOUR_INTERVAL, DAY_INTERVAL, MONTH_INTERVAL)
 
+class WrongTimeFormatError(errors.GeneralException):
+    message = 'wrong start date format: Year-Month-Day [Hour:[Minutes]] [] - optional'
 
 class HistoryDB(object):
 
@@ -136,6 +138,7 @@ class HistoryDB(object):
         '''
         Get entity Id by name.
         '''
+
         if re.match('^host', entity):
             baseEntity = 'host'
         elif re.match('^vm', entity):
@@ -191,10 +194,16 @@ class HistoryDB(object):
                 interval_val = MAX_DAYS
         return interval_val
 
-    def __getStartTime(self, type):
-        if type == DAILY:
-            return date.today()
-        return datetime.now(tz.tzlocal())
+    def __getStartTime(self, type, start_time=None):
+        if not start_time:
+            if type == DAILY:
+                return date.today()
+            return datetime.now(tz.tzlocal()) #hourly
+        res = re.match('(\d{4})-(\d{2})-(\d{2})( \d{2}:\d{2})?$', start_time) #validate start_time structure
+        if not res:
+            raise WrongTimeFormatError(start_time)
+        start_time = "%s-%s-%s %s" % res.groups('00:00')
+        return datetime.strptime(start_time, "%Y-%m-%d %H:%M")
 
     def __getTimestamp(self, type, startTime, cnt):
         if type == SAMPLES:
@@ -217,10 +226,11 @@ class HistoryDB(object):
         self.__update(self.TABLES['config'], 'var_name', 'lastHourAggr',
                         'var_datetime', end)
 
-    def fillTable(self, entity, name, type, properties, values, interval):
+    def fillTable(self, entity, name, type, properties, values, interval, start_time):
         '''
         Insert data to DB table
         '''
+
         try:
             table = self.TABLES[entity][type]
         except KeyError:
@@ -231,7 +241,7 @@ class HistoryDB(object):
         try:
             entityId = self.__getEntityId(entity, name)
             recordCnt = self.__calculateRecordsCount(interval, type)
-            startTime = self.__getStartTime(type)
+            startTime = self.__getStartTime(type, start_time)
             entityStatus = 1
             props = [self.DATETIME_COL, '%s_id' % entity]
             if entity == 'host' or entity == 'vm':
@@ -255,7 +265,7 @@ class HistoryDB(object):
 
 
 @is_action()
-def forgeHistoryData(entity, name, type, properties, values, interval):
+def forgeHistoryData(entity, name, type, properties, values, interval, start_time=None):
     '''
     Insert fake data to DB table
     Parameters:
@@ -265,10 +275,13 @@ def forgeHistoryData(entity, name, type, properties, values, interval):
         - properties - property names (comma separated)
         - values - property values (comma separated)
         - interval - time interval (Nh - N hours, Nd - N days, Nm - N month)
+        - start_time - optional parameter to determine when to start filling the DB backward.
+             syntx: 'YYYY-MM-DD[ HH:[mm]]', where time is optional and hours in 24 hours format
     Return:
         True/False
     '''
+
     with HistoryDB() as dbh:
-        rc = dbh.fillTable(entity, name, type, properties, values, interval)
+        rc = dbh.fillTable(entity, name, type, properties, values, interval, start_time)
         return rc
 
