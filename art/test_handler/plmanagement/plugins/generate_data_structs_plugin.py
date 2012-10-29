@@ -17,20 +17,18 @@ Configuration Options:
     enabled - to enable plugin (true/false)
 """
 
+import os
+import re
+import art
+from subprocess  import Popen, PIPE
 from art.test_handler.plmanagement import Component, implements, get_logger,\
      PluginError
-from art.test_handler.plmanagement.interfaces.application import\
-     IConfigurable, IApplicationListener
+from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.test_handler.plmanagement.interfaces.config_validator import\
               IConfigValidation
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.core_api.http import HTTPProxy
 from art.test_handler.settings import opts
-import art
-
-import os
-import re
-from subprocess  import Popen, PIPE
 
 
 logger = get_logger('data_struct_gen')
@@ -77,17 +75,24 @@ class GenerateDataStructures(Component):
         if not self.is_enabled(params, conf):
             return
 
-        ds = conf[RUN]['data_struct_mod']
-        ds = __import__(ds, fromlist=[ds.rsplit('.', 1)])
-        ds_path = re.match('^(?P<path>.+?)[oc]?$', ds.__file__).group('path')
-
-        xsd_path = conf[RUN]['api_xsd']
-
+        xsd_path = self.__resolve_absolute_file_path(conf[RUN]['api_xsd'])
+        logger.debug("Path to api.xsd :" + xsd_path)
         self.__download_xsd(xsd_path)
-        self.__generate_ds(xsd_path, ds_path)
 
-        reload(ds)
+        ds_import_path = conf[RUN]['data_struct_mod']
+        ds_rel_path = re.sub("^art.", '',ds_import_path)
+        ds_rel_path = ds_rel_path.replace('.',  '/') + '.py'
+        ds_full_path = self.__resolve_absolute_file_path(ds_rel_path)
+        logger.debug("Path to data_structures:" + ds_full_path)
+        self.__generate_ds(xsd_path, ds_full_path)
+
+        __import__(ds_import_path, fromlist=[ds_import_path.rsplit('.', 1)])
         logger.info("Data structures were sucessfully updated")
+
+    @classmethod
+    def __resolve_absolute_file_path(cls, file_path):
+        return os.path.join(os.path.dirname(art.__file__), file_path)
+
 
     @classmethod
     def __download_xsd(cls, file_path):

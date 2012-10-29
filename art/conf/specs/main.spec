@@ -3,9 +3,6 @@ parameters_section_validation = section_exists(section='PARAMETERS', default=Tru
 
 [RUN]
 engine = option('sdk', 'rest', 'cli', default='rest')
-#tests_file = path_exists()
-data_struct_mod = python_module()
-api_xsd = path_exists()
 debug = boolean(default=True)
 auto_devices = boolean(default=False)
 auto_devices_cleanup = boolean(default=True)
