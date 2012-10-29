@@ -231,13 +231,23 @@ def addVm(positive, wait = True, **kwargs):
     '''
     kwargs.update(add=True)
     vmObj = _prepareVmObject(**kwargs)
+    status = False
 
-    vmObj, status = VM_API.create(vmObj, positive)
+    # Workaround for framework validator:
+    #     if disk_clone==false Tempalte_Id will be set to BLANK_TEMPLATE
+    expectedVm = deepcopy(vmObj)
+
+    if False in [positive, wait]:
+        vmObj, status = VM_API.create(vmObj, positive, expectedEntity=expectedVm)
+        return status
 
     disk_clone = kwargs.pop('disk_clone', None)
-    if status and wait and disk_clone and disk_clone.lower() == 'true':
+    if disk_clone and disk_clone.lower() == 'true':
+        expectedVm.set_template(data_st.Template(id=BLANK_TEMPLATE))
+        vmObj, status = VM_API.create(vmObj, positive, expectedEntity=expectedVm)
         status = VM_API.waitForElemStatus(vmObj, "DOWN", VM_DISK_CLONE_TIMEOUT)
     else:
+        vmObj, status = VM_API.create(vmObj, positive, expectedEntity=expectedVm)
         status = VM_API.waitForElemStatus(vmObj, "DOWN", VM_ACTION_TIMEOUT)
 
     return status
