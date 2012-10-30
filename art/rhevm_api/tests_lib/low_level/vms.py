@@ -49,7 +49,7 @@ DEF_SLEEP = 10
 VM_ACTION_TIMEOUT = 180
 VM_REMOVE_SNAPSHOT_TIMEOUT = 300
 VM_DISK_CLONE_TIMEOUT = 720
-VM_IMAGE_OPT_TIMEOUT = 300
+VM_IMAGE_OPT_TIMEOUT = 600
 VM_SAMPLING_PERIOD = 3
 BLANK_TEMPLATE = '00000000-0000-0000-0000-000000000000'
 ADD_DISK_KWARGS = ['size', 'type', 'interface', 'format', 'bootable',
@@ -500,7 +500,8 @@ def changeVMStatus(positive, vm, action, expectedStatus, async='true'):
 
 
 @is_action()
-def startVm(positive, vm, wait_for_status=ENUMS['vm_state_powering_up']):
+def startVm(positive, vm, wait_for_status=ENUMS['vm_state_powering_up'],
+            wait_for_ip=False):
     '''
     Description: start vm
     Author: edolinin
@@ -531,8 +532,11 @@ def startVm(positive, vm, wait_for_status=ENUMS['vm_state_powering_up']):
 
     query = "name={0} and status={1} or name={0} and status=up".format(vm,
                                     wait_for_status.lower().replace('_', ''))
+    started = VM_API.waitForQuery(query, timeout=VM_ACTION_TIMEOUT, sleep=10)
+    if started and wait_for_ip:
+        started = bool(waitForIP(vm))
 
-    return VM_API.waitForQuery(query, timeout=VM_ACTION_TIMEOUT, sleep=10)
+    return started
 
 
 @is_action()
