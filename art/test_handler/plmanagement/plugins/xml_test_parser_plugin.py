@@ -98,7 +98,7 @@ class XMLTestFile(mr.TestFile):
             elm[mr.TEST_VITAL] = mr.get_attr_as_bool(elm, mr.TEST_VITAL, default='no')
             if mr.TEST_RUN not in elm:
                 elm[mr.TEST_RUN] = 'yes'
-            elm[mr.TEST_EXP_EVENTS] = int(elm.get(mr.TEST_EXP_EVENTS, 1))
+            elm[mr.TEST_EXP_EVENTS] = elm.get(mr.TEST_EXP_EVENTS, None)
             elm[mr.TEST_EXPECTED_EXCEPTIONS] = \
                     tuple(elm.get(mr.TEST_EXPECTED_EXCEPTIONS, '').replace(',', ' ').split())
             if TCMS_TEST_CASE_TAG in elm:
