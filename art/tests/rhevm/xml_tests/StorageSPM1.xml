@@ -123,7 +123,7 @@
 <test_case>
    <test_name>Create and Start VM</test_name>
    <test_action>createVm</test_action>
-   <parameters>vmName='testVm', vmDescription='Test VM', cluster='TestCluster', nic='nic1', nicType='e{nic_type_virtio}', storageDomainName='ISCSIDataDomain', size=2147483648, diskType='e{disk_type_system}', volumeFormat='e{format_cow}', diskInterface='e{interface_ide}', bootable='true', wipe_after_deletion='false', start='true', network='{mgmt_bridge}'</parameters>
+   <parameters>vmName='testVm', vmDescription='Test VM', cluster='TestCluster', nic='nic1', nicType='e{nic_type_virtio}', storageDomainName='ISCSIDataDomain', size=2147483648, diskType='e{disk_type_system}', volumeFormat='e{format_cow}', diskInterface='e{interface_ide}', bootable='true', wipe_after_delete='false', start='true', network='{mgmt_bridge}'</parameters>
    <positive>TRUE</positive>
    <run>YES</run>
    <report>YES</report>
@@ -469,7 +469,7 @@
 <test_case>
    <test_name>Create and Start VM</test_name>
    <test_action>createVm</test_action>
-   <parameters>vmName='testVm', vmDescription='Test VM', cluster='TestCluster', nic='nic1', storageDomainName='ISCSIDataDomain', size=2147483648, diskType='e{disk_type_system}', volumeFormat='e{format_cow}', diskInterface='e{interface_ide}', bootable='true', wipe_after_deletion='false', start='true', network='{mgmt_bridge}'</parameters>
+   <parameters>vmName='testVm', vmDescription='Test VM', cluster='TestCluster', nic='nic1', storageDomainName='ISCSIDataDomain', size=2147483648, diskType='e{disk_type_system}', volumeFormat='e{format_cow}', diskInterface='e{interface_ide}', bootable='true', wipe_after_delete='false', start='true', network='{mgmt_bridge}'</parameters>
    <positive>TRUE</positive>
    <run>YES</run>
    <report>YES</report>
@@ -801,7 +801,7 @@
 <test_case>
    <test_name>Create and Start VM</test_name>
    <test_action>createVm</test_action>
-   <parameters>vmName='testVm', vmDescription='Test VM', cluster='TestCluster', nic='nic1', storageDomainName='ISCSIDataDomain', size=2147483648, diskType='e{disk_type_system}', volumeFormat='e{format_cow}', diskInterface='e{interface_ide}', bootable='true', wipe_after_deletion='false', start='true', network='{mgmt_bridge}'</parameters>
+   <parameters>vmName='testVm', vmDescription='Test VM', cluster='TestCluster', nic='nic1', storageDomainName='ISCSIDataDomain', size=2147483648, diskType='e{disk_type_system}', volumeFormat='e{format_cow}', diskInterface='e{interface_ide}', bootable='true', wipe_after_delete='false', start='true', network='{mgmt_bridge}'</parameters>
    <positive>TRUE</positive>
    <run>YES</run>
    <report>YES</report>
@@ -1145,7 +1145,7 @@
 <test_case>
    <test_name>Create and Start VM</test_name>
    <test_action>createVm</test_action>
-   <parameters>vmName='testVm', vmDescription='Test VM', cluster='TestCluster', nic='nic1', storageDomainName='ISCSIDataDomain', size=2147483648, diskType='e{disk_type_system}', volumeFormat='e{format_cow}', diskInterface='e{interface_ide}', bootable='true', wipe_after_deletion='false', start='true', network='{mgmt_bridge}'</parameters>
+   <parameters>vmName='testVm', vmDescription='Test VM', cluster='TestCluster', nic='nic1', storageDomainName='ISCSIDataDomain', size=2147483648, diskType='e{disk_type_system}', volumeFormat='e{format_cow}', diskInterface='e{interface_ide}', bootable='true', wipe_after_delete='false', start='true', network='{mgmt_bridge}'</parameters>
    <positive>TRUE</positive>
    <run>YES</run>
    <report>YES</report>
