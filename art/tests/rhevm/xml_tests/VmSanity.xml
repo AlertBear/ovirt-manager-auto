@@ -858,7 +858,7 @@
 <test_case>
    <test_name>Run VM</test_name>
    <test_action>startVm</test_action>
-   <parameters>vm='{vm_name}_{data_center_type}_snap', wait_for_status='up'</parameters>
+   <parameters>vm='{vm_name}_{data_center_type}_snap', wait_for_status='up', wait_for_ip=True</parameters>
    <positive>TRUE</positive>
    <run>YES</run>
    <report>YES</report>
@@ -902,7 +902,7 @@
 <test_case>
    <test_name>Run VM</test_name>
    <test_action>startVm</test_action>
-   <parameters>vm='{vm_name}_{data_center_type}_snap', wait_for_status='up'</parameters>
+   <parameters>vm='{vm_name}_{data_center_type}_snap', wait_for_status='up', wait_for_ip=True</parameters>
    <positive>TRUE</positive>
    <run>YES</run>
    <report>YES</report>
@@ -1026,7 +1026,7 @@
 <test_case>
    <test_name>Run VM</test_name>
    <test_action>startVm</test_action>
-   <parameters>vm='{vm_name}_{data_center_type}_snap', wait_for_status='up'</parameters>
+   <parameters>vm='{vm_name}_{data_center_type}_snap', wait_for_status='up', wait_for_ip=True</parameters>
    <positive>TRUE</positive>
    <run>YES</run>
    <report>YES</report>
@@ -1097,7 +1097,7 @@
 <test_case>
    <test_name>Run VM</test_name>
    <test_action>startVm</test_action>
-   <parameters>vm='{vm_name}_{data_center_type}_snap', wait_for_status='up'</parameters>
+   <parameters>vm='{vm_name}_{data_center_type}_snap', wait_for_status='up', wait_for_ip=True</parameters>
    <positive>TRUE</positive>
    <run>YES</run>
    <report>YES</report>
