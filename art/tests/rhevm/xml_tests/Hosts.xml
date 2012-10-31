@@ -272,12 +272,12 @@
    <run>yes</run>
 </test_case>
 <test_case>
-   <test_name>Configure power management with no password</test_name>
-   <test_action>updateHost</test_action>
-   <parameters>host='{vds[0]}', pm='true', pm_type='{pm_type}', pm_address='{pm_address}', pm_username='{pm_username}'</parameters>
-   <positive>FALSE</positive>
-   <run>no</run>
- </test_case>
+<test_name>Configure power management with no password</test_name>
+    <test_action>updateHost</test_action>
+    <parameters>host='{vds[0]}', pm='true', pm_type='{pm_type}', pm_address='{pm_address}', pm_username='{pm_username}'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+</test_case>
 <test_case>
    <test_name>Configure power management for the host</test_name>
    <test_action>updateHost</test_action>
@@ -321,6 +321,13 @@
    <run>if(1&lt;len('[vds]'.split(',')))</run>
 </test_case>
 <test_case>
+   <test_name>Sleep</test_name>
+   <test_action>sleep</test_action>
+   <parameters>seconds=180</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
    <test_name>Stop vdsmd on the host</test_name>
    <test_action>stopVdsmd</test_action>
    <parameters>vds='{vds[0]}', password='{vds_password[0]}'</parameters>
@@ -340,20 +347,6 @@
    <parameters>names='{vds[0]}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
-</test_case>
-<test_case>
-   <test_name>Stop vdsmd on the host</test_name>
-   <test_action>stopVdsmd</test_action>
-   <parameters>vds='{vds[1]}', password='{vds_password[1]}'</parameters>
-   <positive>NONE</positive>
-   <run>no</run>
-</test_case>
-<test_case>
-   <test_name>SSH reboot host</test_name>
-   <test_action>rebootHost</test_action>
-   <parameters>host='{vds[1]}', username='root', password='{vds_password[1]}'</parameters>
-   <positive>TRUE</positive>
-   <run>no</run>
 </test_case>
 <!-- at this point all hosts should be up -->
 <test_case>
@@ -399,13 +392,6 @@
    <run>YES</run>
  </test_case>
 <test_case>
-   <test_name>Prepare machine for template creation</test_name>
-   <test_action>setPersistentNetwork</test_action>
-   <parameters>vmName='rest_vm_rhel',user='{vm_username}',password='{vm_password}',eths='ifcfg-eth0'</parameters>
-   <positive>NONE</positive>
-   <run>no</run>
- </test_case>
-<test_case>
    <test_name>Stop VM</test_name>
    <test_action>stopVm</test_action>
    <parameters>vm='rest_vm_rhel'</parameters>
@@ -424,13 +410,6 @@
    <test_action>addVm</test_action>
    <parameters>name='template_vm',custom_properties='fileinject=/vdsm_hook_test:vdsm_hook_test_content',disk_clone='true',cluster='RestCluster1',template='domain_template',storagedomain='DataDomainRest'</parameters>
    <positive>TRUE</positive>
-   <run>yes</run>
-</test_case>
-<test_case>
-   <test_name>Sleep</test_name>
-   <test_action>sleep</test_action>
-   <parameters>seconds=150</parameters>
-   <positive>NONE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
