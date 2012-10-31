@@ -17,7 +17,7 @@ CLI Options
     --bz-user BZ_USER  User name for Bugzilla ,
         the default is 'bugzilla-qe-tlv@redhat.com'.
     --bz-pass BZ_PASS  Password for the Bugzilla ,
-            the default is '2kNeViSUVO'.
+            the default is 'F3x5RiBnzn'.
     --bz-host BZ_HOST  URL  address for Bugzilla ,
             the default is https://bugzilla.redhat.com/xmlrpc.cgi
 
@@ -71,7 +71,7 @@ PRODUCT = 'product'
 
 DEFAULT_URL = 'https://bugzilla.redhat.com/xmlrpc.cgi'
 DEFAULT_USER = 'bugzilla-qe-tlv@redhat.com'
-DEFAULT_PASSWD = '2kNeViSUVO'
+DEFAULT_PASSWD = 'F3x5RiBnzn'
 DEFAULT_STATE = False
 
 RHEVM_RPM = 'rhevm'
