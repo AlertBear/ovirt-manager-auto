@@ -59,14 +59,7 @@ class PluginManager(core.ComponentManager, core.Component):
     def configure(self, args=None, config=None):
         self.args = args
         self.config = config
-        for config_able in self.configurables:
-            try:
-                config_able.configure(args, config)
-            except Exception as ex:
-                logger.warn("Plugin '%s' failed during configuration. "\
-                        "It will be dissabled. %s", config_able.name, ex)
-                logger.debug(str(ex), exc_info=True)
-                self.disable_component(config_able)
+        self.configurables.configure(args, config)
         self.configured = True
 
 
