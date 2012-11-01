@@ -322,17 +322,14 @@ class TestComposer(object):
             else:
                 loop['var'] = '#' + stm['var']
 
-            m = re.match('((?P<s>[0-9]+) *- *)?(?P<e>[0-9]+)', stm['range'])
+            m = re.match('^((int(?P<s>{[^}]+})|(?P<s_i>[0-9+]))? *- *)?'\
+                    '(int(?P<e>{[^}]+})|(?P<e_i>[0-9]+))$', stm['range'], re.I)
             if m:
-                try:
-                    s = 0
-                    if m.group('s') is not None:
-                        s = int(m.group('s'))
-                    e = int(m.group('e'))
-                    loop['attrs'] = 'xrange(%s, %s)' % (s, e)
-                    return loop
-                except TypeError:
-                    raise errors.WrongIterableParams(stm['range'])
+                attrs = m.groupdict()
+                attrs['s'] = attrs['s'] or attrs['s_i'] or '0'
+                attrs['e'] = attrs['e'] or attrs['e_i']
+                loop['attrs'] = 'xrange(int({s}), int({e}))'.format(**attrs)
+                return loop
 
             attrs = []
             for att in stm['range'].split(','):
@@ -692,7 +689,8 @@ class MatrixLoopElm(MatrixTestGroup):
                 yield elm
                 loop_id += 1
         else:
-            for ind in eval(self.loop):
+            xrange_attr = self.tc.resolve_place_holders(self.loop)
+            for ind in eval(xrange_attr):
                 elm = copy(self.elm)
                 elm.local_scope = copy(self.local_scope)
                 elm.loop_index = ind
