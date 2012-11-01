@@ -1,3 +1,47 @@
+"""
+-----------
+TCMS Plugin
+-----------
+
+Plugin allows registering automatic test runs in TCMS site.
+
+CLI Options
+------------
+    --with-tcms enable the plugin
+    --tcms-user username for TCMS site
+    --tcms-gen-links generate links to tmcs_test_cases
+
+Configuration Options:
+----------------------
+    [TCMS]
+    enabled - to enable the plugin (true/false)
+    user - username for TCMS site
+    site - url addres to TCMS site,
+           default: https://tcms.engineering.redhat.com/xmlrpc/
+    realm - KRB realm, default: @REDHAT.COM
+    keytab_files_location - path to directory where KRB keytabs are located
+    send_result_email - if to send the results by email (true/false)
+    test_run_name_template - test run template name, for an example:
+            "Auto Run for {0} TestPlan"
+    category - test category name (should be compatible with TCMS category)
+
+Usage
+-----
+For XML tests sheet
++++++++++++++++++++
+There are 2 tags dedicated for this plugin:
+    * <tcms_test_plan> - TCMS test plan ID. You can use this tag for each
+    test_suite,  test_group or test_case.
+    It is inherited into nested elements (grouped test cases for an example),
+    so you don't need to repeate it there.
+    * <tcms_test_case> - TCMS test case ID. You can use this tag for either
+    test_group or test_case.
+
+From unittets suite
++++++++++++++++++++
+In art.test_handler.tools module there is defined tcms(plan_id, case_id)
+decorator. You can use it to decorate your functions.
+"""
 
 import re
 from art.test_handler.plmanagement import Component, implements, get_logger
@@ -25,6 +69,7 @@ KEYTAB_LOCATION = 'keytab_files_location'
 CATEGORY = 'category'
 SEND_MAIL = 'send_result_email'
 RUN_NAME_TEMPL = 'test_run_name_template'
+REALM_OPT = 'realm'
 GENERATE_LINKS = 'generate_links'
 TCMS_SITE = 'tcms_site'
 
@@ -88,7 +133,7 @@ class TCMS(Component):
         self.info = {'tcms_url': url,\
                 'placeholder_plan_type':  PLAN_TYPE,\
                 'keytab_files_location': tcms_cfg[KEYTAB_LOCATION], \
-                'redhat_email_extension': REALM, \
+                'redhat_email_extension': tcms_cfg[REALM_OPT], \
                 'keytab_file_extension': KT_EXT,
                 'configure_logger': False,
                 'send_result_email': tcms_cfg[SEND_MAIL],
@@ -216,6 +261,7 @@ class TCMS(Component):
         section_spec[KEYTAB_LOCATION] = "string(default=None)"
         section_spec[CATEGORY] = "string(default=None)"
         section_spec[SEND_MAIL] = 'boolean(default=true)'
+        section_spec[REALM_OPT] = 'string(default=%s)' % REALM
         section_spec[RUN_NAME_TEMPL] =\
             "string(default='Auto TestRun for {0} TestPlan')"
         section_spec[GENERATE_LINKS] = "boolean(default=false)"
