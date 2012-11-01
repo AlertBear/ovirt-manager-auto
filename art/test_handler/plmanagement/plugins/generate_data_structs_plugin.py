@@ -93,8 +93,10 @@ class GenerateDataStructures(Component):
     def __download_xsd(cls, file_path):
         proxy = HTTPProxy(opts)
         res = proxy.GET('/api?schema')
+        reason = res.get('reason', 'no_reason')
+        logger.debug("Fetch schema: code=%s, reason=%s", res['status'], reason)
         if res['status'] > 300:
-            raise FailedToDonwloadSchema(res['reason'])
+            raise FailedToDonwloadSchema(reason)
 
         with open(file_path, 'w') as fh:
             fh.write(res['body'])
@@ -106,6 +108,7 @@ class GenerateDataStructures(Component):
 
         p = Popen(cmd, stdout=PIPE, stderr=PIPE)
         out, err = p.communicate()
+        logger.debug("Generate DS: %s %s", out, err)
         if p.returncode:
             raise GenerateDSExecutionError(err)
 
