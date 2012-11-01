@@ -5,7 +5,6 @@ import datetime
 from dateutil import tz
 
 import os
-import logging
 from art.test_handler.plmanagement import Component, implements
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.test_handler.plmanagement.interfaces.report_formatter import IResultsFormatter
@@ -13,7 +12,7 @@ from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 
 
 # TODO: same problem as tcms_plugin
-logger = logging.getLogger('results_formatter')
+
 
 class XMLFormatter(Component):
     """
@@ -86,10 +85,7 @@ class XMLFormatter(Component):
             e = Element(key)
             if not isinstance(val, basestring):
                 val = str(val)
-            try:
-                e.text = val
-            except ValueError:
-                logger.debug("failed setting key: {0} to val={1}, type(val)={2}".format(key, val, type(val)))
+            e.text = val
             root.append(e)
 
     def add_group_result(self, res, tg):

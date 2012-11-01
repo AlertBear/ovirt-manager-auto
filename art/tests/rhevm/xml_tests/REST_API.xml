@@ -2002,7 +2002,7 @@
    <test_name>Add cow ide data disk to VM bootable</test_name>
    <test_type>rest</test_type>
    <test_action>addDiskToVm</test_action>
-   <parameters>vm='restvm_multiple_disks', size=2147483648, type='e{disk_type_data}', format='e{format_cow}', interface='e{interface_ide}', bootable='true', wipe_after_delete='true'</parameters>
+   <parameters>vm='restvm_multiple_disks', size=2147483648, type='e{disk_type_data}', format='e{format_cow}', interface='e{interface_ide}', bootable='true', wipe_after_deletion='true'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>

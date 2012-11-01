@@ -289,7 +289,7 @@
 <test_case>
    <test_name>Remove networks from DataCenter</test_name>
    <test_action>removeNetwork</test_action>
-   <parameters>network='{vlan_networks}'</parameters>
+   <parameters>networks='{vlan_networks}'</parameters>
    <positive>TRUE</positive>
    <run>loop({vlan_networks})</run>
    <fetch_output/>
