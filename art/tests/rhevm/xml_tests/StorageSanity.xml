@@ -14,7 +14,7 @@
 <test_case>
    <test_name>Add data center '{data_center_type}'</test_name>
    <test_action>addDataCenter</test_action>
-   <parameters>name='{data_center_type}StorageTest',storage_type='{data_center_type}',version='{compatibility_version}'</parameters>
+   <parameters>name='{data_center_type}StorageTest', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -32,7 +32,7 @@
 <test_case>
    <test_name>Add hosts '{data_center_type}'</test_name>
    <test_action>addHost</test_action>
-   <parameters>name='{vds}',root_password='{vds_password}',cluster='{data_center_type}StorageTest',wait=False,vdcPort='{port}'</parameters>
+   <parameters>name='{vds}', root_password='{vds_password}', cluster='{data_center_type}StorageTest', wait=False, vdcPort='{port}'</parameters>
    <positive>TRUE</positive>
    <run>loop({vds},{vds_password})</run>
    <fetch_output/>
@@ -50,7 +50,7 @@
 <test_case>
    <test_name>iscsi discover</test_name>
    <test_action>iscsiDiscover</test_action>
-   <parameters>host='{vds[0]}',address='{lun_address}'</parameters>
+   <parameters>host='{vds[0]}', address='{lun_address}'</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}');loop({lun_address})</run>
    <fetch_output/>
@@ -58,7 +58,7 @@
 <test_case>
    <test_name>iscsi login</test_name>
    <test_action>iscsiLogin</test_action>
-   <parameters>host='{vds[0]}',address='{lun_address}',target='{lun_target}'</parameters>
+   <parameters>host='{vds[0]}', address='{lun_address}', target='{lun_target}'</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}');loop({lun_address},{lun_target})</run>
    <fetch_output/>
@@ -66,7 +66,7 @@
 <test_case>
    <test_name>create data domain NFS</test_name>
    <test_action>addStorageDomain</test_action>
-   <parameters>name='{data_center_type}StorageTest_data_domain_#loop_index',type='e{storage_dom_type_data}',storage_type='e{storage_type_nfs}',address='{data_domain_address}',host='{vds[0]}',path='{data_domain_path}'</parameters>
+   <parameters>name='{data_center_type}StorageTest_data_domain_#loop_index', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address}', host='{vds[0]}', path='{data_domain_path}', nfs_version={nfs_version}</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_nfs}');loop({data_domain_path},{data_domain_address})</run>
    <fetch_output/>
@@ -75,7 +75,7 @@
 <test_case>
    <test_name>create data domain ISCSI</test_name>
    <test_action>addStorageDomain</test_action>
-   <parameters>name='{data_center_type}StorageTest_data_domain_#loop_index',type='e{storage_dom_type_data}',storage_type='e{storage_type_iscsi}',host='{vds[0]}',lun='{lun}',lun_address='{lun_address}',lun_target='{lun_target}',lun_port=3260</parameters>
+   <parameters>name='{data_center_type}StorageTest_data_domain_#loop_index', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun}', lun_address='{lun_address}', lun_target='{lun_target}', lun_port=3260</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}');loop({lun},{lun_address},{lun_target})</run>
    <fetch_output/>
@@ -84,7 +84,7 @@
 <test_case>
    <test_name>create data domain FCP</test_name>
    <test_action>addStorageDomain</test_action>
-   <parameters>name='{data_center_type}StorageTest_data_domain_#loop_index',type='e{storage_dom_type_data}',storage_type='e{storage_type_fcp}',host='{vds[0]}',lun='{lun}',lun_port=3260</parameters>
+   <parameters>name='{data_center_type}StorageTest_data_domain_#loop_index', type='e{storage_dom_type_data}', storage_type='e{storage_type_fcp}', host='{vds[0]}', lun='{lun}', lun_port=3260</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_fcp}');loop({lun})</run>
    <fetch_output/>
@@ -93,7 +93,7 @@
 <test_case>
    <test_name>create data domain local</test_name>
    <test_action>addStorageDomain</test_action>
-   <parameters>name='{data_center_type}StorageTest_data_domain_#loop_index',type='e{storage_dom_type_data}',storage_type='e{storage_type_local}',host='{vds[0]}',path='{local_domain_path}'</parameters>
+   <parameters>name='{data_center_type}StorageTest_data_domain_#loop_index', type='e{storage_dom_type_data}', storage_type='e{storage_type_local}', host='{vds[0]}', path='{local_domain_path}'</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_local}');loop({local_domain_path})</run>
    <fetch_output/>
@@ -102,7 +102,7 @@
 <test_case>
    <test_name>Create iso domain for '{data_center_type}'</test_name>
    <test_action>addStorageDomain</test_action>
-   <parameters>name='{data_center_type}StorageTest_ISO',type='e{storage_dom_type_iso}',storage_type='e{storage_type_nfs}',address='{tests_iso_domain_address}',host='{vds[0]}',path='{tests_iso_domain_path}'</parameters>
+   <parameters>name='{data_center_type}StorageTest_ISO', type='e{storage_dom_type_iso}', storage_type='e{storage_type_nfs}', address='{tests_iso_domain_address}', host='{vds[0]}', path='{tests_iso_domain_path}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -110,7 +110,7 @@
 <test_case>
    <test_name>attach data Storage domain to data center NFS</test_name>
    <test_action>attachStorageDomain</test_action>
-   <parameters>datacenter='{data_center_type}StorageTest',storagedomain='{data_center_type}StorageTest_data_domain_#loop_index'</parameters>
+   <parameters>datacenter='{data_center_type}StorageTest', storagedomain='{data_center_type}StorageTest_data_domain_#loop_index'</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_nfs}');loop({data_domain_path})</run>
    <fetch_output/>
@@ -119,7 +119,7 @@
 <test_case>
    <test_name>attach data Storage domain to data center ISCSI/FCP</test_name>
    <test_action>attachStorageDomain</test_action>
-   <parameters>datacenter='{data_center_type}StorageTest',storagedomain='{data_center_type}StorageTest_data_domain_#loop_index'</parameters>
+   <parameters>datacenter='{data_center_type}StorageTest', storagedomain='{data_center_type}StorageTest_data_domain_#loop_index'</parameters>
    <positive>TRUE</positive>
    <run>if(('{data_center_type}'=='e{storage_type_iscsi}') or ('{data_center_type}'=='e{storage_type_fcp}'));loop({lun})</run>
    <fetch_output/>
@@ -128,7 +128,7 @@
 <test_case>
    <test_name>attach iso Storage domain to data center '{data_center_type}'</test_name>
    <test_action>attachStorageDomain</test_action>
-   <parameters>datacenter='{data_center_type}StorageTest',storagedomain='{data_center_type}StorageTest_ISO'</parameters>
+   <parameters>datacenter='{data_center_type}StorageTest', storagedomain='{data_center_type}StorageTest_ISO'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -136,7 +136,7 @@
 <test_case>
    <test_name>Activate Non Master Domains '{data_center_type}'</test_name>
    <test_action>execOnNonMasterDomains</test_action>
-   <parameters>datacenter='{data_center_type}StorageTest',operation='activate',type='all'</parameters>
+   <parameters>datacenter='{data_center_type}StorageTest', operation='activate', type='all'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -144,7 +144,7 @@
 <test_case>
    <test_name>iscsi discover</test_name>
    <test_action>iscsiDiscover</test_action>
-   <parameters>host='{vds[0]}',address='{extend_lun_address}'</parameters>
+   <parameters>host='{vds[0]}', address='{extend_lun_address}'</parameters>
    <positive>TRUE</positive>
    <run>if(('{extend_lun}' is not 'None') and ('{data_center_type}'=='e{storage_type_iscsi}'))</run>
    <fetch_output/>
@@ -152,7 +152,7 @@
 <test_case>
    <test_name>iscsi login</test_name>
    <test_action>iscsiLogin</test_action>
-   <parameters>host='{vds[0]}',address='{extend_lun_address}',target='{extend_lun_target}'</parameters>
+   <parameters>host='{vds[0]}', address='{extend_lun_address}', target='{extend_lun_target}'</parameters>
    <positive>TRUE</positive>
    <run>if(('{extend_lun}' is not 'None') and ('{data_center_type}'=='e{storage_type_iscsi}'))</run>
    <fetch_output/>
@@ -160,7 +160,7 @@
 <test_case>
    <test_name>extend storage domain ISCSI</test_name>
    <test_action>extendStorageDomain</test_action>
-   <parameters>storagedomain='{data_center_type}StorageTest_data_domain_0',lun='{extend_lun}',lun_address='{extend_lun_address}',lun_target='{extend_lun_target}',lun_port=3260,host='{vds[0]}',storage_type= 'e{storage_type_iscsi}'</parameters>
+   <parameters>storagedomain='{data_center_type}StorageTest_data_domain_0', lun='{extend_lun}', lun_address='{extend_lun_address}', lun_target='{extend_lun_target}', lun_port=3260, host='{vds[0]}', storage_type= 'e{storage_type_iscsi}'</parameters>
    <positive>TRUE</positive>
    <run>if(('{extend_lun}' is not 'None') and ('{data_center_type}'=='e{storage_type_iscsi}')) </run>
    <fetch_output/>
@@ -168,7 +168,7 @@
 <test_case>
    <test_name>extend storage domain FCP</test_name>
    <test_action>extendStorageDomain</test_action>
-   <parameters>storagedomain='{data_center_type}StorageTest_data_domain_0',lun='{extend_lun}',host='{vds[0]}',storage_type= 'e{storage_type_fcp}'</parameters>
+   <parameters>storagedomain='{data_center_type}StorageTest_data_domain_0', lun='{extend_lun}', host='{vds[0]}', storage_type= 'e{storage_type_fcp}'</parameters>
    <positive>TRUE</positive>
    <run>if(('{extend_lun}' is not 'None') and ('{data_center_type}'=='e{storage_type_fcp}'))</run>
    <fetch_output/>
@@ -208,7 +208,7 @@
 <test_case>
    <test_name>Deactivate Non Master Domains '{data_center_type}'</test_name>
    <test_action>execOnNonMasterDomains</test_action>
-   <parameters>datacenter='{data_center_type}StorageTest',operation='deactivate',type='all'</parameters>
+   <parameters>datacenter='{data_center_type}StorageTest', operation='deactivate', type='all'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -216,7 +216,7 @@
 <test_case>
    <test_name>Detach Non Master Domains '{data_center_type}'</test_name>
    <test_action>execOnNonMasterDomains</test_action>
-   <parameters>datacenter='{data_center_type}StorageTest',operation='detach',type='all'</parameters>
+   <parameters>datacenter='{data_center_type}StorageTest', operation='detach', type='all'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -224,7 +224,7 @@
 <test_case>
    <test_name>Deactivate storage data Master '{data_center_type}'</test_name>
    <test_action>deactivateStorageDomain</test_action>
-   <parameters>datacenter='{data_center_type}StorageTest',storagedomain='{data_center_type}StorageTest_data_domain_0'</parameters>
+   <parameters>datacenter='{data_center_type}StorageTest', storagedomain='{data_center_type}StorageTest_data_domain_0'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -241,7 +241,7 @@
 <test_case>
    <test_name>Remove DATA storage domains NFS</test_name>
    <test_action>removeStorageDomain</test_action>
-   <parameters>storagedomain='{data_center_type}StorageTest_data_domain_#loop_index',host='{vds[0]}',format='true'</parameters>
+   <parameters>storagedomain='{data_center_type}StorageTest_data_domain_#loop_index', host='{vds[0]}', format='true'</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_nfs}');loop({data_domain_path})</run>
    <fetch_output/>
@@ -250,7 +250,7 @@
 <test_case>
    <test_name>Remove DATA storage domains ISCSI/FCP</test_name>
    <test_action>removeStorageDomain</test_action>
-   <parameters>storagedomain='{data_center_type}StorageTest_data_domain_#loop_index',host='{vds[0]}',format='true'</parameters>
+   <parameters>storagedomain='{data_center_type}StorageTest_data_domain_#loop_index', host='{vds[0]}', format='true'</parameters>
    <positive>TRUE</positive>
    <run>if(('{data_center_type}'=='e{storage_type_iscsi}') or ('{data_center_type}'=='e{storage_type_fcp}'));loop({lun})</run>
    <fetch_output/>
@@ -259,7 +259,7 @@
 <test_case>
    <test_name>Remove ISO storage domain of '{data_center_type}'</test_name>
    <test_action>removeStorageDomain</test_action>
-   <parameters>storagedomain='{data_center_type}StorageTest_ISO',host='{vds[0]}',format='true'</parameters>
+   <parameters>storagedomain='{data_center_type}StorageTest_ISO', host='{vds[0]}', format='true'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -283,7 +283,7 @@
 <test_case>
    <test_name>Add data center '{data_center_type}'</test_name>
    <test_action>addDataCenter</test_action>
-   <parameters>name='{data_center_type}StorageTest',storage_type='{data_center_type}',version='{compatibility_version}'</parameters>
+   <parameters>name='{data_center_type}StorageTest', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -292,7 +292,7 @@
 <test_case>
    <test_name>Connect cluster to Data Center '{data_center_type}'</test_name>
    <test_action>connectClusterToDataCenter</test_action>
-   <parameters>cluster='{data_center_type}StorageTest',datacenter='{data_center_type}StorageTest'</parameters>
+   <parameters>cluster='{data_center_type}StorageTest', datacenter='{data_center_type}StorageTest'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -301,7 +301,7 @@
 <test_case>
    <test_name>iscsi discover</test_name>
    <test_action>iscsiDiscover</test_action>
-   <parameters>host='{vds[0]}',address='{lun_address}'</parameters>
+   <parameters>host='{vds[0]}', address='{lun_address}'</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}');loop({lun_address})</run>
    <fetch_output/>
@@ -309,7 +309,7 @@
 <test_case>
    <test_name>iscsi login</test_name>
    <test_action>iscsiLogin</test_action>
-   <parameters>host='{vds[0]}',address='{lun_address}',target='{lun_target}'</parameters>
+   <parameters>host='{vds[0]}', address='{lun_address}', target='{lun_target}'</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}');loop({lun_address},{lun_target})</run>
    <fetch_output/>
@@ -317,7 +317,7 @@
 <test_case>
    <test_name>create data domain NFS</test_name>
    <test_action>addStorageDomain</test_action>
-   <parameters>name='{data_center_type}StorageTest_data_domain_#loop_index',type='e{storage_dom_type_data}',storage_type='e{storage_type_nfs}',address='{data_domain_address}',host='{vds[0]}',path='{data_domain_path}'</parameters>
+   <parameters>name='{data_center_type}StorageTest_data_domain_#loop_index', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address}', host='{vds[0]}', path='{data_domain_path}', nfs_version={nfs_version}</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_nfs}');loop({data_domain_path},{data_domain_address})</run>
    <fetch_output/>
@@ -326,7 +326,7 @@
 <test_case>
    <test_name>create data domain LOCAL</test_name>
    <test_action>addStorageDomain</test_action>
-   <parameters>name='{data_center_type}StorageTest_data_domain_#loop_index',type='e{storage_dom_type_data}',storage_type='e{storage_type_local}',path='{local_domain_path}',host='{vds[0]}'</parameters>
+   <parameters>name='{data_center_type}StorageTest_data_domain_#loop_index', type='e{storage_dom_type_data}', storage_type='e{storage_type_local}', path='{local_domain_path}', host='{vds[0]}'</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_local}');loop({local_domain_path})</run>
    <fetch_output/>
@@ -335,7 +335,7 @@
 <test_case>
    <test_name>create data domain ISCSI</test_name>
    <test_action>addStorageDomain</test_action>
-   <parameters>name='{data_center_type}StorageTest_data_domain_#loop_index',type='e{storage_dom_type_data}',storage_type='e{storage_type_iscsi}',host='{vds[0]}',lun='{lun}',lun_address='{lun_address}',lun_target='{lun_target}',lun_port=3260</parameters>
+   <parameters>name='{data_center_type}StorageTest_data_domain_#loop_index', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun}', lun_address='{lun_address}', lun_target='{lun_target}', lun_port=3260</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}');loop({lun},{lun_address},{lun_target})</run>
    <fetch_output/>
@@ -344,7 +344,7 @@
 <test_case>
    <test_name>create data domain FCP</test_name>
    <test_action>addStorageDomain</test_action>
-   <parameters>name='{data_center_type}StorageTest_data_domain_#loop_index',type='e{storage_dom_type_data}',storage_type='e{storage_type_fcp}',host='{vds[0]}',lun='{lun}',lun_port=3260</parameters>
+   <parameters>name='{data_center_type}StorageTest_data_domain_#loop_index', type='e{storage_dom_type_data}', storage_type='e{storage_type_fcp}', host='{vds[0]}', lun='{lun}', lun_port=3260</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_fcp}');loop({lun})</run>
    <fetch_output/>
@@ -353,7 +353,7 @@
 <test_case>
    <test_name>Create iso domain for '{data_center_type}'</test_name>
    <test_action>addStorageDomain</test_action>
-   <parameters>name='{data_center_type}StorageTest_ISO',type='e{storage_dom_type_iso}',storage_type='e{storage_type_nfs}',address='{tests_iso_domain_address}',host='{vds[0]}',path='{tests_iso_domain_path}'</parameters>
+   <parameters>name='{data_center_type}StorageTest_ISO', type='e{storage_dom_type_iso}', storage_type='e{storage_type_nfs}', address='{tests_iso_domain_address}', host='{vds[0]}', path='{tests_iso_domain_path}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -361,7 +361,7 @@
 <test_case>
    <test_name>attach data Storage domain to data center NFS</test_name>
    <test_action>attachStorageDomain</test_action>
-   <parameters>datacenter='{data_center_type}StorageTest',storagedomain='{data_center_type}StorageTest_data_domain_#loop_index'</parameters>
+   <parameters>datacenter='{data_center_type}StorageTest', storagedomain='{data_center_type}StorageTest_data_domain_#loop_index'</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_nfs}');loop({data_domain_path})</run>
    <fetch_output/>
@@ -370,7 +370,7 @@
 <test_case>
    <test_name>attach data Storage domain to data center ISCSI/FCP</test_name>
    <test_action>attachStorageDomain</test_action>
-   <parameters>datacenter='{data_center_type}StorageTest',storagedomain='{data_center_type}StorageTest_data_domain_#loop_index'</parameters>
+   <parameters>datacenter='{data_center_type}StorageTest', storagedomain='{data_center_type}StorageTest_data_domain_#loop_index'</parameters>
    <positive>TRUE</positive>
    <run>if(('{data_center_type}'=='e{storage_type_iscsi}') or ('{data_center_type}'=='e{storage_type_fcp}'));loop({lun})</run>
    <fetch_output/>
@@ -379,7 +379,7 @@
 <test_case>
    <test_name>attach iso Storage domain to data center</test_name>
    <test_action>attachStorageDomain</test_action>
-   <parameters>datacenter='{data_center_type}StorageTest',storagedomain='{data_center_type}StorageTest_ISO'</parameters>
+   <parameters>datacenter='{data_center_type}StorageTest', storagedomain='{data_center_type}StorageTest_ISO'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -387,7 +387,7 @@
 <test_case>
    <test_name>Activate Non Master Domains '{data_center_type}'</test_name>
    <test_action>execOnNonMasterDomains</test_action>
-   <parameters>datacenter='{data_center_type}StorageTest',operation='activate',type='all'</parameters>
+   <parameters>datacenter='{data_center_type}StorageTest', operation='activate', type='all'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -395,7 +395,7 @@
 <test_case>
    <test_name>Detach Non Master Data Domains '{data_center_type}'</test_name>
    <test_action>execOnNonMasterDomains</test_action>
-   <parameters>datacenter='{data_center_type}StorageTest',operation='detach',type='e{storage_dom_type_data}'</parameters>
+   <parameters>datacenter='{data_center_type}StorageTest', operation='detach', type='e{storage_dom_type_data}'</parameters>
    <positive>FALSE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -404,7 +404,7 @@
 <test_case>
    <test_name>Deactivate Non Master Data Domains '{data_center_type}'</test_name>
    <test_action>execOnNonMasterDomains</test_action>
-   <parameters>datacenter='{data_center_type}StorageTest',operation='deactivate',type='e{storage_dom_type_data}'</parameters>
+   <parameters>datacenter='{data_center_type}StorageTest', operation='deactivate', type='e{storage_dom_type_data}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -413,7 +413,7 @@
 <test_case>
    <test_name>Activate Non Master Data Domains '{data_center_type}'</test_name>
    <test_action>execOnNonMasterDomains</test_action>
-   <parameters>datacenter='{data_center_type}StorageTest',operation='activate',type='e{storage_dom_type_data}'</parameters>
+   <parameters>datacenter='{data_center_type}StorageTest', operation='activate', type='e{storage_dom_type_data}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -422,7 +422,7 @@
 <test_case>
    <test_name>Deactivate Non Master Data Domains '{data_center_type}'</test_name>
    <test_action>execOnNonMasterDomains</test_action>
-   <parameters>datacenter='{data_center_type}StorageTest',operation='deactivate',type='e{storage_dom_type_data}'</parameters>
+   <parameters>datacenter='{data_center_type}StorageTest', operation='deactivate', type='e{storage_dom_type_data}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -431,7 +431,7 @@
 <test_case>
    <test_name>Detach Non Master Data Domains '{data_center_type}'</test_name>
    <test_action>execOnNonMasterDomains</test_action>
-   <parameters>datacenter='{data_center_type}StorageTest',operation='detach',type='e{storage_dom_type_data}'</parameters>
+   <parameters>datacenter='{data_center_type}StorageTest', operation='detach', type='e{storage_dom_type_data}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -440,7 +440,7 @@
 <test_case>
    <test_name>Attach Non Master Data Domains '{data_center_type}'</test_name>
    <test_action>execOnNonMasterDomains</test_action>
-   <parameters>datacenter='{data_center_type}StorageTest',operation='attach',type='e{storage_dom_type_data}'</parameters>
+   <parameters>datacenter='{data_center_type}StorageTest', operation='attach', type='e{storage_dom_type_data}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -449,7 +449,7 @@
 <test_case>
    <test_name>Activate Non Master Data Domains '{data_center_type}'</test_name>
    <test_action>execOnNonMasterDomains</test_action>
-   <parameters>datacenter='{data_center_type}StorageTest',operation='activate',type='e{storage_dom_type_data}'</parameters>
+   <parameters>datacenter='{data_center_type}StorageTest', operation='activate', type='e{storage_dom_type_data}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -458,7 +458,7 @@
 <test_case>
    <test_name>Deactivate Non Master Domains '{data_center_type}'</test_name>
    <test_action>execOnNonMasterDomains</test_action>
-   <parameters>datacenter='{data_center_type}StorageTest',operation='deactivate',type='all'</parameters>
+   <parameters>datacenter='{data_center_type}StorageTest', operation='deactivate', type='all'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -467,7 +467,7 @@
 <test_case>
    <test_name>Detach Non Master Domains '{data_center_type}'</test_name>
    <test_action>execOnNonMasterDomains</test_action>
-   <parameters>datacenter='{data_center_type}StorageTest',operation='detach',type='all'</parameters>
+   <parameters>datacenter='{data_center_type}StorageTest', operation='detach', type='all'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -476,7 +476,7 @@
 <test_case>
    <test_name>Deactivate storage data Master '{data_center_type}'</test_name>
    <test_action>deactivateStorageDomain</test_action>
-   <parameters>datacenter='{data_center_type}StorageTest',storagedomain='{data_center_type}StorageTest_data_domain_0'</parameters>
+   <parameters>datacenter='{data_center_type}StorageTest', storagedomain='{data_center_type}StorageTest_data_domain_0'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -494,7 +494,7 @@
 <test_case>
    <test_name>Remove DATA storage domains NFS</test_name>
    <test_action>removeStorageDomain</test_action>
-   <parameters>storagedomain='{data_center_type}StorageTest_data_domain_#loop_index',host='{vds[0]}',format='true'</parameters>
+   <parameters>storagedomain='{data_center_type}StorageTest_data_domain_#loop_index', host='{vds[0]}', format='true'</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_nfs}');loop({data_domain_path})</run>
    <fetch_output/>
@@ -503,7 +503,7 @@
 <test_case>
    <test_name>Remove DATA storage domains ISCSI/FCP</test_name>
    <test_action>removeStorageDomain</test_action>
-   <parameters>storagedomain='{data_center_type}StorageTest_data_domain_#loop_index',host='{vds[0]}',format='true'</parameters>
+   <parameters>storagedomain='{data_center_type}StorageTest_data_domain_#loop_index', host='{vds[0]}', format='true'</parameters>
    <positive>TRUE</positive>
    <run>if(('{data_center_type}'=='e{storage_type_iscsi}') or ('{data_center_type}'=='e{storage_type_fcp}'));loop({lun})</run>
    <fetch_output/>
@@ -512,7 +512,7 @@
 <test_case>
    <test_name>Remove ISO storage domain '{data_center_type}'</test_name>
    <test_action>removeStorageDomain</test_action>
-   <parameters>storagedomain='{data_center_type}StorageTest_ISO',host='{vds[0]}',format='true'</parameters>
+   <parameters>storagedomain='{data_center_type}StorageTest_ISO', host='{vds[0]}', format='true'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -530,13 +530,13 @@
    <test_action/>
    <parameters>n/a2</parameters>
    <positive>NONE</positive>
-   <run>if(('{data_center_type}' == 'e{storage_type_nfs}' and 1&lt;len('[data_domain_path]'.split(','))) or ('{data_center_type}' == 'e{storage_type_iscsi}' and 1&lt;len('[lun]'.split(','))) or ('{data_center_type}' == 'e{storage_type_fcp}' and 1&lt;len('[lun]'.split(','))) or ('{data_center_type}' == 'e{storage_type_local}' and 1&lt;len('[local_domain_path]'.split(','))))</run>
+   <run>if(('{data_center_type}' == 'e{storage_type_nfs}' and 1&lt;len('[data_domain_path]'.split(', '))) or ('{data_center_type}' == 'e{storage_type_iscsi}' and 1&lt;len('[lun]'.split(', '))) or ('{data_center_type}' == 'e{storage_type_fcp}' and 1&lt;len('[lun]'.split(', '))) or ('{data_center_type}' == 'e{storage_type_local}' and 1&lt;len('[local_domain_path]'.split(', '))))</run>
    <fetch_output/>
 </test_case>
 <test_case>
    <test_name>Add data center '{data_center_type}'</test_name>
    <test_action>addDataCenter</test_action>
-   <parameters>name='{data_center_type}StorageTest',storage_type='{data_center_type}',version='{compatibility_version}'</parameters>
+   <parameters>name='{data_center_type}StorageTest', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -545,7 +545,7 @@
 <test_case>
    <test_name>Connect cluster to Data Center '{data_center_type}'</test_name>
    <test_action>connectClusterToDataCenter</test_action>
-   <parameters>cluster='{data_center_type}StorageTest',datacenter='{data_center_type}StorageTest'</parameters>
+   <parameters>cluster='{data_center_type}StorageTest', datacenter='{data_center_type}StorageTest'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -554,7 +554,7 @@
 <test_case>
    <test_name>iscsi discover</test_name>
    <test_action>iscsiDiscover</test_action>
-   <parameters>host='{vds[0]}',address='{lun_address}'</parameters>
+   <parameters>host='{vds[0]}', address='{lun_address}'</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}');loop({lun_address})</run>
    <fetch_output/>
@@ -562,7 +562,7 @@
 <test_case>
    <test_name>iscsi login</test_name>
    <test_action>iscsiLogin</test_action>
-   <parameters>host='{vds[0]}',address='{lun_address}',target='{lun_target}'</parameters>
+   <parameters>host='{vds[0]}', address='{lun_address}', target='{lun_target}'</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}');loop({lun_address},{lun_target})</run>
    <fetch_output/>
@@ -570,7 +570,7 @@
 <test_case>
    <test_name>create data domain NFS</test_name>
    <test_action>addStorageDomain</test_action>
-   <parameters>name='{data_center_type}StorageTest_data_domain_#loop_index',type='e{storage_dom_type_data}',storage_type='e{storage_type_nfs}',address='{data_domain_address}',host='{vds[0]}',path='{data_domain_path}'</parameters>
+   <parameters>name='{data_center_type}StorageTest_data_domain_#loop_index', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address}', host='{vds[0]}', path='{data_domain_path}', nfs_version={nfs_version}</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_nfs}');loop({data_domain_path},{data_domain_address})</run>
    <fetch_output/>
@@ -579,7 +579,7 @@
 <test_case>
    <test_name>create data domain LOCAL</test_name>
    <test_action>addStorageDomain</test_action>
-   <parameters>name='{data_center_type}StorageTest_data_domain_#loop_index',type='e{storage_dom_type_data}',storage_type='e{storage_type_local}',host='{vds[0]}',path='{local_domain_path}'</parameters>
+   <parameters>name='{data_center_type}StorageTest_data_domain_#loop_index', type='e{storage_dom_type_data}', storage_type='e{storage_type_local}', host='{vds[0]}', path='{local_domain_path}'</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_local}');loop({local_domain_path})</run>
    <fetch_output/>
@@ -588,7 +588,7 @@
 <test_case>
    <test_name>create data domain ISCSI</test_name>
    <test_action>addStorageDomain</test_action>
-   <parameters>name='{data_center_type}StorageTest_data_domain_#loop_index',type='e{storage_dom_type_data}',storage_type='e{storage_type_iscsi}',host='{vds[0]}',lun='{lun}',lun_address='{lun_address}',lun_target='{lun_target}',lun_port=3260</parameters>
+   <parameters>name='{data_center_type}StorageTest_data_domain_#loop_index', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun}', lun_address='{lun_address}', lun_target='{lun_target}', lun_port=3260</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}');loop({lun},{lun_address},{lun_target})</run>
    <fetch_output/>
@@ -597,7 +597,7 @@
 <test_case>
    <test_name>create data domain FCP</test_name>
    <test_action>addStorageDomain</test_action>
-   <parameters>name='{data_center_type}StorageTest_data_domain_#loop_index',type='e{storage_dom_type_data}',storage_type='e{storage_type_fcp}',host='{vds[0]}',lun='{lun}',lun_port=3260</parameters>
+   <parameters>name='{data_center_type}StorageTest_data_domain_#loop_index', type='e{storage_dom_type_data}', storage_type='e{storage_type_fcp}', host='{vds[0]}', lun='{lun}', lun_port=3260</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_fcp}');loop({lun})</run>
    <fetch_output/>
@@ -606,7 +606,7 @@
 <test_case>
    <test_name>Create iso domain '{data_center_type}'</test_name>
    <test_action>addStorageDomain</test_action>
-   <parameters>name='{data_center_type}StorageTest_ISO',type='e{storage_dom_type_iso}',storage_type='e{storage_type_nfs}',address='{tests_iso_domain_address}',host='{vds[0]}',path='{tests_iso_domain_path}'</parameters>
+   <parameters>name='{data_center_type}StorageTest_ISO', type='e{storage_dom_type_iso}', storage_type='e{storage_type_nfs}', address='{tests_iso_domain_address}', host='{vds[0]}', path='{tests_iso_domain_path}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -614,7 +614,7 @@
 <test_case>
    <test_name>attach data Storage domain to data center NFS</test_name>
    <test_action>attachStorageDomain</test_action>
-   <parameters>datacenter='{data_center_type}StorageTest',storagedomain='{data_center_type}StorageTest_data_domain_#loop_index'</parameters>
+   <parameters>datacenter='{data_center_type}StorageTest', storagedomain='{data_center_type}StorageTest_data_domain_#loop_index'</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_nfs}');loop({data_domain_path})</run>
    <fetch_output/>
@@ -623,7 +623,7 @@
 <test_case>
    <test_name>attach data Storage domain to data center ISCSI/FCP</test_name>
    <test_action>attachStorageDomain</test_action>
-   <parameters>datacenter='{data_center_type}StorageTest',storagedomain='{data_center_type}StorageTest_data_domain_#loop_index'</parameters>
+   <parameters>datacenter='{data_center_type}StorageTest', storagedomain='{data_center_type}StorageTest_data_domain_#loop_index'</parameters>
    <positive>TRUE</positive>
    <run>if(('{data_center_type}'=='e{storage_type_iscsi}') or ('{data_center_type}'=='e{storage_type_fcp}'));loop({lun})</run>
    <fetch_output/>
@@ -632,7 +632,7 @@
 <test_case>
    <test_name>attach iso Storage domain to data center '{data_center_type}'</test_name>
    <test_action>attachStorageDomain</test_action>
-   <parameters>datacenter='{data_center_type}StorageTest',storagedomain='{data_center_type}StorageTest_ISO'</parameters>
+   <parameters>datacenter='{data_center_type}StorageTest', storagedomain='{data_center_type}StorageTest_ISO'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -640,7 +640,7 @@
 <test_case>
    <test_name>activateNonMasterDomains '{data_center_type}'</test_name>
    <test_action>execOnNonMasterDomains</test_action>
-   <parameters>datacenter='{data_center_type}StorageTest',operation='activate',type='all'</parameters>
+   <parameters>datacenter='{data_center_type}StorageTest', operation='activate', type='all'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -649,7 +649,7 @@
 <test_case>
    <test_name>Deactivate storage data Master '{data_center_type}'</test_name>
    <test_action>deactivateStorageDomain</test_action>
-   <parameters>datacenter='{data_center_type}StorageTest',storagedomain='{data_center_type}StorageTest_data_domain_0'</parameters>
+   <parameters>datacenter='{data_center_type}StorageTest', storagedomain='{data_center_type}StorageTest_data_domain_0'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -658,7 +658,7 @@
 <test_case>
    <test_name>Verify Storage data 0 not Master anymore '{data_center_type}'</test_name>
    <test_action>isStorageDomainMaster</test_action>
-   <parameters>dataCenterName='{data_center_type}StorageTest',storageDomainName='{data_center_type}StorageTest_data_domain_0'</parameters>
+   <parameters>dataCenterName='{data_center_type}StorageTest', storageDomainName='{data_center_type}StorageTest_data_domain_0'</parameters>
    <positive>FALSE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -676,7 +676,7 @@
 <test_case>
    <test_name>activate storage data 0 '{data_center_type}'</test_name>
    <test_action>activateStorageDomain</test_action>
-   <parameters>datacenter='{data_center_type}StorageTest',storagedomain='{data_center_type}StorageTest_data_domain_0'</parameters>
+   <parameters>datacenter='{data_center_type}StorageTest', storagedomain='{data_center_type}StorageTest_data_domain_0'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -685,7 +685,7 @@
 <test_case>
    <test_name>Deactivate Non Master Domains '{data_center_type}'</test_name>
    <test_action>execOnNonMasterDomains</test_action>
-   <parameters>datacenter='{data_center_type}StorageTest',operation='deactivate',type='all'</parameters>
+   <parameters>datacenter='{data_center_type}StorageTest', operation='deactivate', type='all'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -694,7 +694,7 @@
 <test_case>
    <test_name>Detach Non Master Domains '{data_center_type}'</test_name>
    <test_action>execOnNonMasterDomains</test_action>
-   <parameters>datacenter='{data_center_type}StorageTest',operation='detach',type='all'</parameters>
+   <parameters>datacenter='{data_center_type}StorageTest', operation='detach', type='all'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -703,7 +703,7 @@
 <test_case>
    <test_name>Deactivate storage data Master '{data_center_type}'</test_name>
    <test_action>deactivateStorageDomain</test_action>
-   <parameters>datacenter='{data_center_type}StorageTest',storagedomain=%masterDomain%</parameters>
+   <parameters>datacenter='{data_center_type}StorageTest', storagedomain=%masterDomain%</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -721,7 +721,7 @@
 <test_case>
    <test_name>Remove DATA storage domains NFS</test_name>
    <test_action>removeStorageDomain</test_action>
-   <parameters>storagedomain='{data_center_type}StorageTest_data_domain_#loop_index',host='{vds[0]}',format='true'</parameters>
+   <parameters>storagedomain='{data_center_type}StorageTest_data_domain_#loop_index', host='{vds[0]}', format='true'</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_nfs}');loop({data_domain_path})</run>
    <fetch_output/>
@@ -730,7 +730,7 @@
 <test_case>
    <test_name>Remove DATA storage domains ISCSI/FCP</test_name>
    <test_action>removeStorageDomain</test_action>
-   <parameters>storagedomain='{data_center_type}StorageTest_data_domain_#loop_index',host='{vds[0]}',format='true'</parameters>
+   <parameters>storagedomain='{data_center_type}StorageTest_data_domain_#loop_index', host='{vds[0]}', format='true'</parameters>
    <positive>TRUE</positive>
    <run>if(('{data_center_type}'=='e{storage_type_iscsi}') or ('{data_center_type}'=='e{storage_type_fcp}'));loop({lun})</run>
    <fetch_output/>
@@ -739,7 +739,7 @@
 <test_case>
    <test_name>Remove ISO storage domain '{data_center_type}'</test_name>
    <test_action>removeStorageDomain</test_action>
-   <parameters>storagedomain='{data_center_type}StorageTest_ISO',host='{vds[0]}',format='true'</parameters>
+   <parameters>storagedomain='{data_center_type}StorageTest_ISO', host='{vds[0]}', format='true'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
