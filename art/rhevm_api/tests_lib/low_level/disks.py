@@ -21,6 +21,7 @@ import os.path
 import time
 
 from art.core_api.apis_utils import data_st
+from art.rhevm_api.data_struct.data_structures import Fault
 from art.rhevm_api.utils.test_utils import get_api, split
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from utilities.utils import readConfFile
@@ -159,7 +160,8 @@ def addDisk(positive, **kwargs):
     kwargs.update(name=kwargs.pop('diskName', None))
     disk = _prepareDiskObject(**kwargs)
     disk, status = DISKS_API.create(disk, positive)
-    return status, { 'diskId' : disk.get_id() if disk else None }
+    return status, { 'diskId' : disk.get_id()
+                     if disk and not isinstance(disk, Fault) else None }
 
 
 @is_action()
