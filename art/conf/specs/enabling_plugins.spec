@@ -22,3 +22,6 @@ enabled = boolean(default=True)
 
 [LOGSTASH]
 enabled = boolean(default=True)
+
+[TRAC]
+enabled = boolean(default=True)

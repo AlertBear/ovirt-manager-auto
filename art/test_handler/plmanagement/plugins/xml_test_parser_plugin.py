@@ -22,13 +22,14 @@ TEST_PARAMS_TAG = 'parameters'
 TEST_POSITIVE_TAG = 'positive'
 TEST_REPORT_TAG = 'report'
 TEST_FETCH_OUTPUT_TAG = 'fetch_output'
-TEST_BZ_ID_TAG = 'bz'
+TEST_BZ_ID_TAG = 'bz' # TODO: shouldn't be here
 TEST_VITAL_TAG = 'vital'
 TEST_CONF_TAG = 'conf'
-TEST_EXP_EVENTS_TAG = 'exp_events'
+TEST_EXP_EVENTS_TAG = 'exp_events' # TODO: shouldn't be here
 TEST_EXPECT_TAG = 'expect'
-TCMS_TEST_CASE_TAG = 'tcms_test_case'
-TCMS_TEST_PLAN_TAG = 'tcms_plan_id'
+TCMS_TEST_CASE_TAG = 'tcms_test_case' # TODO: shouldn't be here
+TCMS_TEST_PLAN_TAG = 'tcms_plan_id' # TODO: shouldn't be here
+TRAC_ID_TAG = 'trac' # TODO: shouldn't be here
 
 ROOT_SUITE = 'root_suite'
 
@@ -51,6 +52,7 @@ ELMS_NAME_MAP = {
             TEST_EXPECT_TAG: mr.TEST_EXPECTED_EXCEPTIONS,
             TCMS_TEST_CASE_TAG: mr.TEST_TCMS_CASE_ID,
             TCMS_TEST_PLAN_TAG: mr.TEST_TCMS_PLAN_ID,
+            TRAC_ID_TAG: mr.TEST_TRAC_ID,
         }
 
 

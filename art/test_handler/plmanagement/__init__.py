@@ -29,7 +29,8 @@ class PluginError(Exception):
 
     def __str__(self):
         if self.name is not None:
-            return "%s: %s" % (self.name, super(PluginError, self).__str__())
+            return "%s: %s(%s)" % (self.name, self.__class__,
+                    super(PluginError, self).__str__())
         return super(PluginError, self).__str__()
 
 def N_(string):

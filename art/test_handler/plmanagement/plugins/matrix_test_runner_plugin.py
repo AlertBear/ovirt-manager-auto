@@ -41,13 +41,14 @@ TEST_PARAMS = 'parameters'
 TEST_POSITIVE = 'positive'
 TEST_REPORT = 'test_report'
 TEST_FETCH_OUTPUT = 'fetch_output'
-TEST_BZ_ID = 'bz'
+TEST_BZ_ID = 'bz' # TODO: shouldn't be here
 TEST_VITAL = 'vital'
 TEST_CONF = 'conf'
-TEST_EXP_EVENTS = 'exp_events'
+TEST_EXP_EVENTS = 'exp_events' # TODO: shouldn't be here
 TEST_EXPECTED_EXCEPTIONS = 'expected_exc'
-TEST_TCMS_CASE_ID = 'tcms_test_case'
-TEST_TCMS_PLAN_ID = 'tcms_plan_id'
+TEST_TCMS_CASE_ID = 'tcms_test_case' # TODO: shouldn't be here
+TEST_TCMS_PLAN_ID = 'tcms_plan_id' # TODO: shouldn't be here
+TEST_TRAC_ID = 'trac' # TODO: shouldn't be here
 
 
 fetch_path = lambda x: os.path.abspath(\
@@ -814,6 +815,14 @@ class MatrixBasedTestComposer(Component):
         res.iter_num = "%03d" % res.iter_num
         # here should be added some code which will take care about [REPORT] section
 
+        if tc.status in (tc.TEST_STATUS_PASSED, tc.TEST_STATUS_SKIPPED):
+            st_msg = logger.info
+        elif tc.status == tc.TEST_STATUS_UNDEFINED:
+            st_msg = logger.warn
+        else:
+            st_msg = logger.error
+        st_msg(tc.format_attr('status'))
+
         logger.info(TEST_CASES_SEPARATOR)
 
     def pre_group_result_reported(self, res, tg):
@@ -838,17 +847,11 @@ class MatrixBasedTestComposer(Component):
         logger.info(TEST_CASES_SEPARATOR)
 
     def post_test_case(self, tc):
-        if tc.status == tc.TEST_STATUS_PASSED or tc.status == tc.TEST_STATUS_SKIPPED:
-            st_msg = logger.info
+        if tc.status in (tc.TEST_STATUS_PASSED, tc.TEST_STATUS_SKIPPED):
             if tc.status == tc.TEST_STATUS_SKIPPED and isinstance(tc.exc, DoNotRun):
                 tc.test_report = False
                 tc.status = tc.TEST_STATUS_PASSED
                 logger.info("Test case '%s' will be not executed: %s", tc.test_name, tc.exc)
-        elif tc.status == tc.TEST_STATUS_UNDEFINED:
-            st_msg = logger.warn
-        else:
-            st_msg = logger.error
-        st_msg(tc.format_attr('status'))
 
     def test_group_skipped(self, tg):
         pass
