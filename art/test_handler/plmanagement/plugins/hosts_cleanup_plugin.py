@@ -60,7 +60,7 @@ class CleanUpHosts(Component):
         self.auto = conf.get(RUN_SECTION).as_bool(AD_ENABLED)
         self.conf = conf
         if not (params.cleanup_str or params.cleanup_net):
-            self.storage, self.network = True
+            self.storage, self.network = True, True
         elif params.cleanup_str:
             self.storage = True
             self.network = False
@@ -68,7 +68,7 @@ class CleanUpHosts(Component):
             self.storage = False
             self.network = True
         else:
-            self.storage, self.network = False
+            self.storage, self.network = False, False
             assert False, "This case shouldn't occure"
 
     def on_storages_prep_request(self):
