@@ -6,6 +6,7 @@ import logging
 from contextlib import contextmanager
 from types import MethodType, FunctionType
 from configobj import ConfigObj
+from threading import Lock
 import art
 
 
@@ -111,10 +112,16 @@ class LazyTestAction(TestAction):
     Extends TestAction to be able to import test_action when it should be
     executed.
     """
+
+    def __init__(self, *args, **kwargs):
+        super(LazyTestAction, self).__init__(*args, **kwargs)
+        self._lock = Lock()
+
     def __call__(self, *args, **kwargs):
-        if isinstance(self._func, basestring):
-            m = __import__(self.module, fromlist=[self._func])
-            self._func = getattr(m, self._func)
+        with self._lock:
+            if isinstance(self._func, basestring):
+                m = __import__(self.module, fromlist=[self._func])
+                self._func = getattr(m, self._func)
         return super(LazyTestAction, self).__call__(*args, **kwargs)
 
     def __str__(self):
