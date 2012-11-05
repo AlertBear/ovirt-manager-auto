@@ -40,6 +40,7 @@ PARAMETERS = 'PARAMETERS'
 TEST_CONF_SPEC = 'test_conf_specs'
 FINE_PRINT_HEADER = "#" * 80
 ART_DIR = 'art'
+TMP_FILE = '/tmp/configObj.tmp'
 
 logger = logging.getLogger(__name__)
 
@@ -66,12 +67,18 @@ class ParamsValidator(object):
         self._extraParameters = None
         self._extra_values_keys = None
         self._basePath = os.sep.join([sys.path[0], ART_DIR])
+        self._globalConfSpec = []
+        self._globalConfSpecFileName = "%s.spec" % confFile.rsplit('.', 1)[0]
         #updating validation functions dictionary
         if funcsDict is not None:
                 self.valFuncsDict = funcsDict
 
         self.validateConfigFile(confSpecFile)
         self.validatedPluginConfig()
+        #writing global spec file (good for debug)
+        with open(self._globalConfSpecFileName, 'w') as f:
+            f.writelines(self._globalConfSpec)
+        logger.info("Global spec file: %s", self._globalConfSpecFileName)
         self.printSkippedParameters()
 
     @property
@@ -145,6 +152,15 @@ class ParamsValidator(object):
             raise ValidationError("Parsing of %s failed"\
                                   " with error:\n'%s'" % (self._confFile, msg))
 
+        #dumping spec files
+        if isinstance(confSpecFile, ConfigObj):
+            confSpecFile.filename = TMP_FILE
+            confSpecFile.write()
+            with open(TMP_FILE) as f:
+                self._globalConfSpec.extend(f.readlines())
+        else:
+            with open(confSpecFile) as f:
+                self._globalConfSpec.extend(f.readlines())
         # in case that customized funcsDict for this
         # function run should be used
         if funcsDict == None:
