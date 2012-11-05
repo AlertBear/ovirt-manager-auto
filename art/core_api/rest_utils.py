@@ -16,13 +16,15 @@
 # License along with this software; if not, write to the Free
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-from art.core_api import http, template_parser, validator, measure_time
-import time
-from art.core_api.apis_exceptions import EntityNotFound
 from lxml import etree
-from art.core_api.apis_utils import APIUtil, XSD_PATH, parse
 import os
 import re
+import time
+
+from art.core_api import http, template_parser, validator, measure_time
+from art.core_api.apis_exceptions import EntityNotFound
+from art.core_api.apis_utils import APIUtil, XSD_PATH, parse
+from art.rhevm_api.data_struct.data_structures import Fault
 
 DEF_TIMEOUT = 900 # default timeout
 DEF_SLEEP = 10 # default sleep
@@ -463,6 +465,11 @@ class RestUtil(APIUtil):
 
                 if isinstance(linkCont, list):
                     return linkCont
+                elif isinstance(linkCont, Fault):
+                    raise EntityNotFound("Obtained Fault object for %s "
+                                         "element and link_name %s link with"
+                                         " response: %s" % (elm, link_name,
+                                                            Fault.get_detail()))
                 else:
                     return getattr(linkCont, 'get_' + attr)()
         return None
