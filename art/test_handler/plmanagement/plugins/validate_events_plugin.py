@@ -73,6 +73,9 @@ class ValidateEvents(Component):
         if not t.conf:
             return
 
+        if 'run' in t.run and t.run['run'] == 'False':
+            return
+
         from art.rhevm_api.utils.test_utils import searchForObj
 
         conf_val = re.sub(r'"|\'|\s', '', t.conf)
