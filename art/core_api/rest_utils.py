@@ -454,6 +454,8 @@ class RestUtil(APIUtil):
         if not attr:
             attr = self.element_name
 
+        no_results = None if get_href else []
+
         for link in elm.get_link():
             if link.get_rel() == link_name:
                 if get_href:
@@ -461,7 +463,7 @@ class RestUtil(APIUtil):
 
                 linkCont = self.get(link.get_href())
                 if not linkCont:
-                    return None
+                    return no_results
 
                 if isinstance(linkCont, list):
                     return linkCont
@@ -472,7 +474,7 @@ class RestUtil(APIUtil):
                                                             Fault.get_detail()))
                 else:
                     return getattr(linkCont, 'get_' + attr)()
-        return None
+        return no_results
 
 
     def waitForElemStatus(self, restElement, status, timeout=DEF_TIMEOUT,
