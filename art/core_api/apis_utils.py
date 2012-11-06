@@ -22,7 +22,6 @@ import time
 from time import strftime
 import abc
 import logging
-from art.rhevm_api.data_struct.data_structures import GracePeriod, Action
 from art.core_api.apis_exceptions import APITimeout, APICommandError, EntityNotFound
 import art.test_handler.settings as settings
 
@@ -109,9 +108,9 @@ class APIUtil(object):
         Return: action
         '''
 
-        action = Action()
+        action = data_st.Action()
         action.async = str(async).lower()
-        action.grace_period = GracePeriod()
+        action.grace_period = data_st.GracePeriod()
         action.grace_period.expiry = expiry
         action.grace_period.absolute = 'false'
         for p in params:
