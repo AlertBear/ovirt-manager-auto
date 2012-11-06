@@ -32,7 +32,7 @@
    <test_action>addHost</test_action>
    <parameters>name='{vds}', root_password='{vds_password}', cluster='storage_sanity_31_cluster', wait='true'</parameters>
    <positive>true</positive>
-   <run>loop({vds},{vds_password})</run>
+   <run>forkfor({vds},{vds_password})</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -212,7 +212,7 @@
    <test_action>toggleServiceOnHost</test_action>
    <parameters>host='{vds}', user='{vds_admin}', password='{vds_password}', service='sanlock', action='status'</parameters>
    <positive>true</positive>
-   <run>loop({vds},{vds_admin},{vds_password})</run>
+   <run>forkfor({vds},{vds_admin},{vds_password})</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -330,7 +330,7 @@
    <test_action>deactivateHost</test_action>
    <parameters>host='{vds}'</parameters>
    <positive>true</positive>
-   <run>loop({vds})</run>
+   <run>forkfor({vds})</run>
    <fetch_output/>
    <report>yes</report>
 </test_case>
@@ -339,7 +339,7 @@
    <test_action>removeHost</test_action>
    <parameters>host='{vds}'</parameters>
    <positive>true</positive>
-   <run>loop({vds})</run>
+   <run>forkfor({vds})</run>
    <fetch_output/>
    <report>yes</report>
 </test_case>
@@ -364,7 +364,7 @@
    <test_action>runMachineCommand</test_action>
    <parameters>ip='{vds}', user='root', password='{vds_password}', cmd="dmsetup remove_all"</parameters>
    <positive>true</positive>
-   <run>loop({vds},{vds_password})</run>
+   <run>forkfor({vds},{vds_password})</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -405,7 +405,7 @@
    <test_action>addHost</test_action>
    <parameters>name='{vds}', root_password='{vds_password}', cluster='storage_sanity_31_cluster', wait='true'</parameters>
    <positive>true</positive>
-   <run>loop({vds},{vds_password})</run>
+   <run>forkfor({vds},{vds_password})</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -533,7 +533,7 @@
    <test_action>deactivateHost</test_action>
    <parameters>host='{vds}'</parameters>
    <positive>true</positive>
-   <run>loop({vds})</run>
+   <run>forkfor({vds})</run>
    <fetch_output/>
    <report>yes</report>
 </test_case>
@@ -542,7 +542,7 @@
    <test_action>removeHost</test_action>
    <parameters>host='{vds}'</parameters>
    <positive>true</positive>
-   <run>loop({vds})</run>
+   <run>forkfor({vds})</run>
    <fetch_output/>
    <report>yes</report>
 </test_case>
@@ -567,7 +567,7 @@
    <test_action>runMachineCommand</test_action>
    <parameters>ip='{vds}', user='root', password='{vds_password}', cmd="dmsetup remove_all"</parameters>
    <positive>true</positive>
-   <run>loop({vds},{vds_password})</run>
+   <run>forkfor({vds},{vds_password})</run>
    <report>yes</report>
 </test_case>
 
@@ -600,7 +600,7 @@
    <test_action>addHost</test_action>
    <parameters>name='{vds}', root_password='{vds_password}', cluster='storage_sanity_31_cluster', wait='true'</parameters>
    <positive>true</positive>
-   <run>loop({vds},{vds_password})</run>
+   <run>forkfor({vds},{vds_password})</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -746,7 +746,7 @@
    <test_action>deactivateHost</test_action>
    <parameters>host='{vds}'</parameters>
    <positive>true</positive>
-   <run>loop({vds})</run>
+   <run>forkfor({vds})</run>
    <fetch_output/>
    <report>yes</report>
 </test_case>
@@ -755,7 +755,7 @@
    <test_action>removeHost</test_action>
    <parameters>host='{vds}'</parameters>
    <positive>true</positive>
-   <run>loop({vds})</run>
+   <run>forkfor({vds})</run>
    <fetch_output/>
    <report>yes</report>
 </test_case>
@@ -780,7 +780,7 @@
    <test_action>runMachineCommand</test_action>
    <parameters>ip='{vds}', user='root', password='{vds_password}', cmd="dmsetup remove_all"</parameters>
    <positive>true</positive>
-   <run>loop({vds},{vds_password})</run>
+   <run>forkfor({vds},{vds_password})</run>
    <report>yes</report>
 </test_case>
 
@@ -814,7 +814,7 @@
    <test_action>addHost</test_action>
    <parameters>name='{vds}', root_password='{vds_password}', cluster='storage_sanity_31_cluster', wait='true'</parameters>
    <positive>true</positive>
-   <run>loop({vds},{vds_password})</run>
+   <run>forkfor({vds},{vds_password})</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -1050,7 +1050,7 @@
    <test_action>deactivateHost</test_action>
    <parameters>host='{vds}'</parameters>
    <positive>true</positive>
-   <run>loop({vds})</run>
+   <run>forkfor({vds})</run>
    <fetch_output/>
    <report>yes</report>
 </test_case>
@@ -1059,7 +1059,7 @@
    <test_action>removeHost</test_action>
    <parameters>host='{vds}'</parameters>
    <positive>true</positive>
-   <run>loop({vds})</run>
+   <run>forkfor({vds})</run>
    <fetch_output/>
    <report>yes</report>
 </test_case>
@@ -1084,7 +1084,7 @@
    <test_action>runMachineCommand</test_action>
    <parameters>ip='{vds}', user='root', password='{vds_password}', cmd="dmsetup remove_all"</parameters>
    <positive>true</positive>
-   <run>loop({vds},{vds_password})</run>
+   <run>forkfor({vds},{vds_password})</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -1116,7 +1116,7 @@
    <test_action>addHost</test_action>
    <parameters>name='{vds}', root_password='{vds_password}', cluster='storage_sanity_31_cluster', wait='true'</parameters>
    <positive>true</positive>
-   <run>loop({vds},{vds_password})</run>
+   <run>forkfor({vds},{vds_password})</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -1559,7 +1559,7 @@
    <test_action>deactivateHost</test_action>
    <parameters>host='{vds}'</parameters>
    <positive>true</positive>
-   <run>loop({vds})</run>
+   <run>forkfor({vds})</run>
    <fetch_output/>
    <report>yes</report>
 </test_case>
@@ -1568,7 +1568,7 @@
    <test_action>removeHost</test_action>
    <parameters>host='{vds}'</parameters>
    <positive>true</positive>
-   <run>loop({vds})</run>
+   <run>forkfor({vds})</run>
    <fetch_output/>
    <report>yes</report>
 </test_case>
@@ -1593,7 +1593,7 @@
    <test_action>runMachineCommand</test_action>
    <parameters>ip='{vds}', user='root', password='{vds_password}', cmd="dmsetup remove_all"</parameters>
    <positive>true</positive>
-   <run>loop({vds},{vds_password})</run>
+   <run>forkfor({vds},{vds_password})</run>
    <report>yes</report>
 </test_case>
 
@@ -2068,7 +2068,7 @@
    <test_action>runMachineCommand</test_action>
    <parameters>ip='{vds}', user='root', password='{vds_password}', cmd="dmsetup remove_all"</parameters>
    <positive>true</positive>
-   <run>loop({vds},{vds_password})</run>
+   <run>forkfor({vds},{vds_password})</run>
    <report>yes</report>
 </test_case>
 
@@ -2101,7 +2101,7 @@
    <test_action>addHost</test_action>
    <parameters>name='{vds}', root_password='{vds_password}', cluster='storage_sanity_31_cluster', wait='true'</parameters>
    <positive>true</positive>
-   <run>loop({vds},{vds_password})</run>
+   <run>forkfor({vds},{vds_password})</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -2217,7 +2217,7 @@
    <test_action>deactivateHost</test_action>
    <parameters>host='{vds}'</parameters>
    <positive>true</positive>
-   <run>loop({vds})</run>
+   <run>forkfor({vds})</run>
    <fetch_output/>
    <report>yes</report>
 </test_case>
@@ -2226,7 +2226,7 @@
    <test_action>removeHost</test_action>
    <parameters>host='{vds}'</parameters>
    <positive>true</positive>
-   <run>loop({vds})</run>
+   <run>forkfor({vds})</run>
    <fetch_output/>
    <report>yes</report>
 </test_case>
@@ -2251,7 +2251,7 @@
    <test_action>runMachineCommand</test_action>
    <parameters>ip='{vds}', user='root', password='{vds_password}', cmd="dmsetup remove_all"</parameters>
    <positive>true</positive>
-   <run>loop({vds},{vds_password})</run>
+   <run>forkfor({vds},{vds_password})</run>
    <report>yes</report>
 </test_case>
 </input>
