@@ -25,7 +25,8 @@ import re
 
 ATTR_IGNORE_LIST = ['href', 'link', 'rel']
 if settings.opts.get('engine') == 'sdk':
-    ATTR_IGNORE_LIST = ATTR_IGNORE_LIST + ['actions', 'disks']
+    ATTR_IGNORE_LIST = ATTR_IGNORE_LIST + \
+                     ['actions', 'disks', 'certificate', 'lun_storage']
 
 VALS_IGNORE_DICT = {
                     'usage': ['vm'],
@@ -191,7 +192,7 @@ def getClassName(elmClass):
     return DS_CLASS_MAPPER.get(elmClass, elmClass)
 
 
-def compareElements(expElm, actElm, logger, root):
+def compareElements(expElm, actElm, logger, root, equal=True):
     '''
     Recursive function for elements comparison,
     elements are compared vis DS scheme
@@ -200,11 +201,11 @@ def compareElements(expElm, actElm, logger, root):
     * actElm - actual element
     * logger - logger instance
     * root - name of the root node
+    * equal - elements are equal or not till this point
     Returns: True is elements are equal, False otherwise
     '''
     ignore = ATTR_IGNORE_LIST + ['status', 'role', 'active', 'total',
                                 'required', 'permit']
-    equal = True
 
     if not actElm:
         logger.warn("Attribute '{0}' doesn't exist"
@@ -282,11 +283,11 @@ def compareElements(expElm, actElm, logger, root):
                             logger.warn(MSG.format(nodeName, i))
                             continue
                         if not compareElements(attrExpVal[i], attrActVal[i],
-                                               logger, nodeName):
+                                               logger, nodeName, equal):
                             equal = False
                 else:
                     if not compareElements(attrExpVal, attrActVal, logger,
-                                           nodeName):
+                                           nodeName, equal):
                         equal = False
 
     return equal
