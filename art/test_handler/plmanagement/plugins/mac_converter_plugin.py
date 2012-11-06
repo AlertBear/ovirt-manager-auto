@@ -83,6 +83,20 @@ class TCPDumpParser(object):
     S_GW_IP = 4
     S_MAC_ADDR = 5
 
+    P_REPLY = 'BOOTP/DHCP, Reply'
+    P_YOUR_IP = 'Your-IP (?P<ip>([0-9]+[.]){3}[0-9]+)'
+    P_SERVER_IP = 'Server-IP'
+    P_GW_IP = 'Gateway-IP'
+    P_MAC = 'Client-Ethernet-Address (?P<mac>([0-9a-f]+[-:]){5}[0-9a-f]+)'
+
+    EXPECT = {
+            S_UNKNOWN: (P_REPLY,),
+            S_REPLY: (P_YOUR_IP,),
+            S_CL_IP: (P_SERVER_IP,),
+            S_SER_IP: (P_GW_IP, P_MAC),
+            S_GW_IP: (P_MAC,),
+            }
+
     def __init__(self, cache):
         super(TCPDumpParser, self).__init__()
         self.c = cache
@@ -93,26 +107,28 @@ class TCPDumpParser(object):
         """
         Accepts output from tcpdump, line-by-line
         """
+        logger.debug("EXPECT %s GOT %s",
+                " OR ".join(["'%s'" % x for x in self.EXPECT[self.st]]), line)
         if self.st == self.S_UNKNOWN:
-            if re.search('BOOTP/DHCP, Reply', line):
+            if re.search(self.P_REPLY, line):
                 # saw reply -> waiting for IP
                 self.st = self.S_REPLY
                 return
         elif self.st == self.S_REPLY:
             # saw IP -> waiting for server IP
-            m = re.search('Your-IP (?P<ip>([0-9]+[.]){3}[0-9]+)', line)
+            m = re.search(self.P_YOUR_IP, line)
             if m:
                 self.ip = m.group('ip')
                 self.st = self.S_CL_IP
                 return
         elif self.st == self.S_CL_IP:
             # saw server IP -> waiting for GW
-            if re.search('Server-IP', line):
+            if re.search(self.P_SERVER_IP, line):
                 self.st = self.S_SER_IP
                 return
         elif self.st == self.S_SER_IP:
             # saw GW -> waiting for MAC
-            if re.search('Gateway-IP', line):
+            if re.search(self.P_GW_IP, line):
                 self.st = self.S_GW_IP
                 return
             if self.__read_mac(line):
@@ -125,13 +141,14 @@ class TCPDumpParser(object):
         self.st = self.S_UNKNOWN
 
     def __read_mac(self, line):
-        m = re.search('Client-Ethernet-Address (?P<mac>([0-9a-f]+[-:]){5}[0-9a-f]+)', line, re.I)
+        m = re.search(self.P_MAC, line, re.I)
         if m:
             with self.c:
                 mac = unify_mac_format(m.group('mac'))
                 ips = self.c.get(mac, set())
                 ips.add(self.ip)
                 self.c[mac] = ips
+            logger.info("Caught %s for %s", self.ip, mac)
             self.st = self.S_UNKNOWN
             return True
         return False
