@@ -2130,7 +2130,7 @@
 <test_case>
    <test_name>Create data storage domain NFS</test_name>
    <test_action>addStorageDomain</test_action>
-   <parameters>name='nfs3', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[1]}', host='{vds[0]}', path='{data_domain_path[1]}', nfs_retrans=5, nfs_timeo=800, nfs_version=3</parameters>
+   <parameters>name='nfs3', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[1]}', host='{vds[0]}', path='{data_domain_path[1]}', nfs_retrans=5, nfs_timeo=800, nfs_version='e{nfs_version_3}'</parameters>
    <positive>true</positive>
    <run>yes</run>
    <report>yes</report>
@@ -2161,7 +2161,7 @@
 <test_case>
    <test_name>Check for NFS settings on nfs3</test_name>
    <test_action>checkStorageDomainParameters</test_action>
-   <parameters>storagedomain="nfs3", nfs_retrans=5, nfs_timeo=800, nfs_version=3</parameters>
+   <parameters>storagedomain="nfs3", nfs_retrans=5, nfs_timeo=800, nfs_version='e{nfs_version_3}'</parameters>
    <positive>true</positive>
    <run>yes</run>
 </test_case>
