@@ -4,46 +4,6 @@
 
 <input>
 <test_case>
-   <test_name>Set proper PGPASSFILE</test_name>
-   <test_action>runMachineCommand</test_action>
-   <parameters>ip='{vdc}', user='root', password='{vdc_password}', cmd="echo \"export PGPASSFILE=/etc/ovirt-engine/.pgpass\" >> ~/.bashrc"</parameters>
-   <positive>true</positive>
-   <run>yes</run>
-   <report>yes</report>
-</test_case>
-<test_case>
-   <test_name>Set InstallVds to false</test_name>
-   <test_action>runMachineCommand</test_action>
-   <parameters>ip='{vdc}', user='root', password='{vdc_password}', cmd="psql engine postgres -c \"UPDATE vdc_options SET option_value='false' WHERE option_name='InstallVds';\""</parameters>
-   <positive>true</positive>
-   <run>if(not {install_hosts})</run>
-   <report>yes</report>
-</test_case>
-<test_case>
-   <test_name>Stop engine</test_name>
-   <test_action>toggleServiceOnHost</test_action>
-   <parameters>host='{vdc}', user='root', password='{vdc_password}', service='ovirt-engine', action='stop'</parameters>
-   <positive>true</positive>
-   <run>if(not {install_hosts})</run>
-   <report>yes</report>
-</test_case>
-<test_case>
-   <test_name>Start engine</test_name>
-   <test_action>toggleServiceOnHost</test_action>
-   <parameters>host='{vdc}', user='root', password='{vdc_password}', service='ovirt-engine', action='start'</parameters>
-   <positive>true</positive>
-   <run>if(not {install_hosts})</run>
-   <report>yes</report>
-</test_case>
-<test_case>
-   <test_name>Sleep just a little bit</test_name>
-   <test_action>sleep</test_action>
-   <parameters>seconds=60</parameters>
-   <positive>none</positive>
-   <run>if(not {install_hosts})</run>
-   <report>no</report>
-</test_case>
-<test_case>
    <test_name>START_GROUP:Hotplug</test_name>
    <test_action/>
    <parameters/>
@@ -258,14 +218,14 @@
 <test_case>
    <test_name>Wait for GuestInfo IP address</test_name>
    <test_action>waitUntilVmQuery</test_action>
-   <parameters>vm='vm_test1', query='ip!=""', timeout=600</parameters>
+   <parameters>vm='vm_test1', query='ip!=""', timeout=1800</parameters>
    <positive>NONE</positive>
    <run>YES</run>
 </test_case>
 <test_case>
    <test_name>Wait for GuestInfo IP address</test_name>
    <test_action>waitUntilVmQuery</test_action>
-   <parameters>vm='vm_test2', query='ip!=""', timeout=600</parameters>
+   <parameters>vm='vm_test2', query='ip!=""', timeout=1800</parameters>
    <positive>NONE</positive>
    <run>YES</run>
 </test_case>
@@ -291,6 +251,7 @@
    <parameters>diskName='shared', vmName='vm_test1'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <bz>854479</bz>
 </test_case>
 <test_case>
    <test_name>Wait till disk is active</test_name>
@@ -305,6 +266,7 @@
    <parameters>diskName='shared', vmName='vm_test2'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <bz>854479</bz>
 </test_case>
 <test_case>
    <test_name>Wait till disk is active</test_name>
@@ -455,39 +417,6 @@
    <report/>
 </test_case>
 <test_case>
-   <test_name>Set InstallVds to false</test_name>
-   <test_action>runMachineCommand</test_action>
-   <parameters>ip='{vdc}', user='root', password='{vdc_password}', cmd="psql engine postgres -c \"UPDATE vdc_options SET option_value='false' WHERE option_name='InstallVds';\""</parameters>
-   <positive>true</positive>
-   <run>if({install_hosts})</run>
-   <report>yes</report>
-</test_case>
-<test_case>
-   <test_name>Stop engine</test_name>
-   <test_action>toggleServiceOnHost</test_action>
-   <parameters>host='{vdc}', user='root', password='{vdc_password}', service='ovirt-engine', action='stop'</parameters>
-   <positive>true</positive>
-   <run>if({install_hosts})</run>
-   <report>yes</report>
-</test_case>
-<test_case>
-   <test_name>Start engine</test_name>
-   <test_action>toggleServiceOnHost</test_action>
-   <parameters>host='{vdc}', user='root', password='{vdc_password}', service='ovirt-engine', action='start'</parameters>
-   <positive>true</positive>
-   <run>if({install_hosts})</run>
-   <report>yes</report>
-</test_case>
-<test_case>
-   <test_name>Sleep a bit</test_name>
-   <test_action>sleep</test_action>
-   <parameters>seconds=120</parameters>
-   <positive>none</positive>
-   <run>if({install_hosts})</run>
-   <report>no</report>
-</test_case>
-
-<test_case>
    <test_name>START_GROUP:StorageLiveUpgradeWithDCNFS</test_name>
    <test_action/>
    <parameters/>
@@ -608,7 +537,7 @@
 <test_case>
    <test_name>Wait for GuestInfo IP address</test_name>
    <test_action>waitUntilVmQuery</test_action>
-   <parameters>vm='vm_test', query='ip!=""', timeout=600</parameters>
+   <parameters>vm='vm_test', query='ip!=""', timeout=1800</parameters>
    <positive>NONE</positive>
    <run>YES</run>
 </test_case>
@@ -967,7 +896,7 @@
 <test_case>
    <test_name>Wait for GuestInfo IP address</test_name>
    <test_action>waitUntilVmQuery</test_action>
-   <parameters>vm='vm_test', query='ip!=""', timeout=600</parameters>
+   <parameters>vm='vm_test', query='ip!=""', timeout=1800</parameters>
    <positive>NONE</positive>
    <run>YES</run>
 </test_case>
@@ -1422,14 +1351,14 @@
 <test_case>
    <test_name>Wait for GuestInfo IP address 1</test_name>
    <test_action>waitUntilVmQuery</test_action>
-   <parameters>vm='vm_test1', query='ip!=""', timeout=600</parameters>
+   <parameters>vm='vm_test1', query='ip!=""', timeout=1800</parameters>
    <positive>NONE</positive>
    <run>YES</run>
 </test_case>
 <test_case>
    <test_name>Wait for GuestInfo IP address 2</test_name>
    <test_action>waitUntilVmQuery</test_action>
-   <parameters>vm='vm_test2', query='ip!=""', timeout=600</parameters>
+   <parameters>vm='vm_test2', query='ip!=""', timeout=1800</parameters>
    <positive>NONE</positive>
    <run>YES</run>
 </test_case>
@@ -1454,6 +1383,7 @@
    <parameters>diskName='floating', vmName='vm_test1'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <bz>854479</bz>
 </test_case>
 <test_case>
    <test_name>Wait till disk is active</test_name>
@@ -1483,6 +1413,7 @@
    <parameters>diskName='floating', vmName='vm_test2'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <bz>854479</bz>
 </test_case>
 <test_case>
    <test_name>Wait till disk is active</test_name>
@@ -1829,14 +1760,14 @@
 <test_case>
    <test_name>Wait for GuestInfo IP address 1</test_name>
    <test_action>waitUntilVmQuery</test_action>
-   <parameters>vm='vm_test1', query='ip!=""', timeout=600</parameters>
+   <parameters>vm='vm_test1', query='ip!=""', timeout=1800</parameters>
    <positive>NONE</positive>
    <run>YES</run>
 </test_case>
 <test_case>
    <test_name>Wait for GuestInfo IP address 2</test_name>
    <test_action>waitUntilVmQuery</test_action>
-   <parameters>vm='vm_test2', query='ip!=""', timeout=600</parameters>
+   <parameters>vm='vm_test2', query='ip!=""', timeout=1800</parameters>
    <positive>NONE</positive>
    <run>YES</run>
 </test_case>
@@ -1860,6 +1791,7 @@
    <parameters>diskName='shared', vmName='vm_test1'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <bz>854479</bz>
 </test_case>
 <test_case>
    <test_name>Wait till disk is active</test_name>
@@ -1874,6 +1806,7 @@
    <parameters>diskName='shared', vmName='vm_test2'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <bz>854479</bz>
 </test_case>
 <test_case>
    <test_name>Wait till disk is active</test_name>
