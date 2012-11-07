@@ -78,10 +78,12 @@ class UTestGroup(TestGroup):
         try:
             self.context.setUp()
             for c in self.context:
-                if not isinstance(c, Test):
-                    yield UTestGroup(c)
-                else:
+                if isinstance(c, Test):
                     yield UTestCase(c)
+                elif None is c.context:
+                    continue
+                else:
+                    yield UTestGroup(c)
         finally:
             self.context.tearDown()
 
@@ -99,10 +101,12 @@ class UTestSuite(TestSuite):
         try:
             self.context.setUp()
             for c in self.context:
-                if not isinstance(c, Test):
-                    yield UTestGroup(c)
-                else:
+                if isinstance(c, Test):
                     yield UTestCase(c)
+                elif None is c.context:
+                    continue
+                else:
+                    yield UTestGroup(c)
         finally:
             self.context.tearDown()
 
@@ -130,18 +134,19 @@ class UnittestLoader(Component):
         return True
 
     def next_test_object(self):
-        if not hasattr(self, 'suites'):
+        if not hasattr(self, 'done'):
+            self.done = True
             if self.root_path is not None:
                 sys.path.insert(0, self.root_path)
             from nose.loader import TestLoader
-            mod = __import__(self.mod_path)
+            mod = __import__(self.mod_path.rsplit('.')[0])
             setattr(mod, 'ART_CONFIG', self.conf)
+
+            mod = __import__(self.mod_path, fromlist=[self.mod_path.split('.')[-1]])
+
             loader = TestLoader()
-            self.suites = [UTestSuite(x) for x in loader.loadTestsFromModule(mod)]
-        try:
-            return self.suites.pop()
-        except IndexError:
-            return None
+            return UTestSuite(loader.loadTestsFromModule(mod))
+        return None
 
     def configure(self, params, conf):
         if not self.is_enabled(params, conf):
