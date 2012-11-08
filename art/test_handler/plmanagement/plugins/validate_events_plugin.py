@@ -70,7 +70,9 @@ class ValidateEvents(Component):
 
     def post_test_case(self, t):
 
-        if not t.conf:
+        conf = getattr(t, 'conf', None)
+
+        if conf is None:
             return
 
         if 'run' in t.run and t.run['run'] == 'False':
