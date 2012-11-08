@@ -1449,7 +1449,7 @@
 <test_case>
    <test_name>Add sw1 to Hosts</test_name>
    <test_action>attachHostNic</test_action>
-   <parameters>host='{vds[0]}', nic='{nics[1]}', network='{networks[0]}'</parameters>
+   <parameters>host='{vds[0]}', nic='{host_nics[1]}', network='{networks[0]}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -1471,7 +1471,7 @@
 <test_case>
    <test_name>re-Add sw1 to Hosts eth2</test_name>
    <test_action>attachHostNic</test_action>
-   <parameters>host='{vds[0]}', nic='{nics[2]}', network='{networks[0]}'</parameters>
+   <parameters>host='{vds[0]}', nic='{host_nics[2]}', network='{networks[0]}'</parameters>
    <positive>FALSE</positive>
    <run>if(%nicCounter%&gt;=3)</run>
    <fetch_output/>
