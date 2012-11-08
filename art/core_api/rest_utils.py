@@ -23,8 +23,7 @@ import time
 
 from art.core_api import http, template_parser, validator, measure_time
 from art.core_api.apis_exceptions import EntityNotFound
-from art.core_api.apis_utils import APIUtil, XSD_PATH, parse
-from art.rhevm_api.data_struct.data_structures import Fault
+from art.core_api.apis_utils import APIUtil, XSD_PATH, parse, data_st
 
 DEF_TIMEOUT = 900 # default timeout
 DEF_SLEEP = 10 # default sleep
@@ -467,11 +466,11 @@ class RestUtil(APIUtil):
 
                 if isinstance(linkCont, list):
                     return linkCont
-                elif isinstance(linkCont, Fault):
+                elif isinstance(linkCont, data_st.Fault):
                     raise EntityNotFound("Obtained Fault object for %s "
-                                         "element and link_name %s link with"
-                                         " response: %s" % (elm, link_name,
-                                                            Fault.get_detail()))
+                                        "element and link_name %s link with"
+                                        " response: %s" % (elm, link_name,
+                                        data_st.Fault.get_detail()))
                 else:
                     return getattr(linkCont, 'get_' + attr)()
         return no_results
