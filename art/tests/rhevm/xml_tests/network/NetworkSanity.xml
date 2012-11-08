@@ -1,0 +1,1861 @@
+<input>
+<test_case>
+   <test_name>START_GROUP: NetworkSanity</test_name>
+   <test_action/>
+   <parameters>n/a1</parameters>
+   <positive>NONE</positive>
+   <run>if('networksanity' in '[run_groups]')</run>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>START_GROUP: Positive_NetworkSanity</test_name>
+   <test_action/>
+   <parameters>n/a1</parameters>
+   <positive>NONE</positive>
+   <run>if('positive' in '[networksanity]')</run>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>START_GROUP: NetworkSanity_31</test_name>
+   <test_action/>
+   <parameters>n/a1</parameters>
+   <positive>NONE</positive>
+   <run>if('sanity31' in '[networksanity]' or '*' in '[networksanity]')</run>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Add all used networks to default datacenter</test_name>
+   <test_action>addNetwork</test_action>
+   <parameters>name='{networks}',data_center='Default'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({networks})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Adding all supported networks to default datacenter in order to cover bugs related to multi networks with the same name under api/networks path</test_description>
+</test_case>
+<test_case>
+   <test_name>Validate that MANAGEMENT is Required by default</test_name>
+   <test_action>isNetworkRequired</test_action>
+   <parameters>network='{mgmt_bridge}',cluster='{cluster}'</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Validate that MANAGEMENT Status is Operational</test_name>
+   <test_action>validateNetwork</test_action>
+   <parameters>cluster='{cluster}', network='{mgmt_bridge}',tag='status', val='operational'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Create sw1 Logical Network</test_name>
+   <test_action>addNetwork</test_action>
+   <parameters>name='{networks[0]}',data_center='{datacenter}',vlan_id='{vlan_id[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Should be VM network by default</test_description>
+</test_case>
+<test_case>
+   <test_name>Update Logical Network sw1 with MTU 9000</test_name>
+   <test_action>updateNetwork</test_action>
+   <parameters>network='{networks[0]}', data_center='{datacenter}', mtu=9000</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Attach sw1 to Cluster as a required network</test_name>
+   <test_action>addNetworkToCluster</test_action>
+   <parameters>network='{networks[0]}', cluster='{cluster}', required='true'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Validate if sw1 Status is non-operational</test_name>
+   <test_action>validateNetwork</test_action>
+   <parameters>cluster='{cluster}', network='{networks[0]}',tag='status', val='non_operational'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>a required netwrk should be non-operational</test_description>
+</test_case>
+<test_case>
+   <test_name>Set sw1 as display network</test_name>
+   <test_action>updateClusterNetwork</test_action>
+   <parameters>cluster='{cluster}',network='{networks[0]}',usages='display'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Detach sw1 from cluster</test_name>
+   <test_action>removeNetworkFromCluster</test_action>
+   <parameters>network='{networks[0]}', cluster='{cluster}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Remove sw1 from DataCenter</test_name>
+   <test_action>removeNetwork</test_action>
+   <parameters>network='{networks[0]}', data_center='{datacenter}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Create new VM network sw1 with vlan</test_name>
+   <test_action>addNetwork</test_action>
+   <parameters>name='{networks[0]}',data_center='{datacenter}',vlan_id='{vlan_id[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Count Host1 nics</test_name>
+   <test_action>countHostNics</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <fetch_output>nicsNumber-&gt;nicCounter</fetch_output>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Create new VM Network sw2 with mtu 9000</test_name>
+   <test_action>addNetwork</test_action>
+   <parameters>name='{networks[1]}',data_center='{datacenter}', mtu=9000</parameters>
+   <positive>TRUE</positive>
+   <run>if(%nicCounter%&gt;=4)</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>sw2 would be bond with jumbo frames</test_description>
+</test_case>
+<test_case>
+   <test_name>Create new Bridgeless network sw3</test_name>
+   <test_action>addNetwork</test_action>
+   <parameters>name='sw3',data_center='{datacenter}', usages=''</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Adding empty usages will create non VM network</test_description>
+</test_case>
+<test_case>
+   <test_name>Attach sw3 to cluster as non required</test_name>
+   <test_action>addNetworkToCluster</test_action>
+   <parameters>network='sw3', cluster='{cluster}', required='false'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>generate sw3 network element</test_name>
+   <test_action>genSNNic</test_action>
+   <parameters>nic='{host_nics[1]}', network='sw3'</parameters>
+   <positive>NONE</positive>
+   <run>YES</run>
+   <fetch_output>host_nic->sw3_nic</fetch_output>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>send SN</test_name>
+   <test_action>sendSNRequest</test_action>
+   <parameters>host='{vds[0]}', nics=[%sw3_nic%], auto_nics=['{host_nics[0]}'],check_connectivity='true', connectivity_timeout=60, force='false'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output></fetch_output>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Send automatic MGMT interface, SW3 as a brideless network.</test_description>
+</test_case>
+<test_case>
+   <test_name>Check that host status is UP after network changes</test_name>
+   <test_action>waitForHostsStates</test_action>
+   <parameters>names='{vds[0]}', states='up',timeout=180</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <test_description>Check that doesnt move to non-operational mode</test_description>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Validate if sw3 status is operational</test_name>
+   <test_action>validateNetwork</test_action>
+   <parameters>cluster='{cluster}', network='sw3',tag='status', val='operational'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Wait for SPM</test_name>
+   <test_action>waitForSPM</test_action>
+   <parameters>datacenter='{datacenter}',timeout=900,sleep=5</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Attach sw1 Cluster as required</test_name>
+   <test_action>addNetworkToCluster</test_action>
+   <parameters>network='{networks[0]}', cluster='{cluster}', required='true'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Attach sw2 to Cluster as required</test_name>
+   <test_action>addNetworkToCluster</test_action>
+   <parameters>network='{networks[1]}', cluster='{cluster}', required='true'</parameters>
+   <positive>TRUE</positive>
+   <run>if(%nicCounter%&gt;=4)</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>generate sw1 network element</test_name>
+   <test_action>genSNNic</test_action>
+   <parameters>nic='{host_nics[1]}', network='{networks[0]}', address='1.1.1.1', netmask='255.255.255.0', vlan='{vlan_id[0]}'</parameters>
+   <positive>NONE</positive>
+   <run>YES</run>
+   <fetch_output>host_nic->sw1_nic</fetch_output>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>adding sw1 with ip configurations</test_description>
+</test_case>
+<test_case>
+   <test_name>generate sw2 bond network element</test_name>
+   <test_action>genSNBond</test_action>
+   <parameters>name='{bond[0]}', network='{networks[1]}', slaves=['{host_nics[2]}','{host_nics[3]}'], mode=1</parameters>
+   <positive>NONE</positive>
+   <run>if(%nicCounter%&gt;=4)</run>
+   <fetch_output>host_nic->sw2_bond_nic</fetch_output>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>send SN</test_name>
+   <test_action>sendSNRequest</test_action>
+   <parameters>host='{vds[0]}',nics=[%sw1_nic%, %sw2_bond_nic%],auto_nics=['{host_nics[0]}','{host_nics[1]}'],check_connectivity='true',connectivity_timeout=60, force='false'</parameters>
+   <positive>TRUE</positive>
+   <run>if(%nicCounter%&gt;=4)</run>
+   <fetch_output></fetch_output>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Remove previous sw3 conf and add sw1 with sw2</test_description>
+</test_case>
+<test_case>
+   <test_name>send SN</test_name>
+   <test_action>sendSNRequest</test_action>
+   <parameters>host='{vds[0]}',nics=[%sw1_nic%],auto_nics=['{host_nics[0]}','{host_nics[1]}'],check_connectivity='true',connectivity_timeout=60, force='false'</parameters>
+   <positive>TRUE</positive>
+   <run>if(%nicCounter%&lt;4)</run>
+   <fetch_output></fetch_output>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Remove previous sw3 conf and add sw1 with sw2</test_description>
+</test_case>
+<test_case>
+   <test_name>Save Network Configuration</test_name>
+   <test_action>commitNetConfig</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Get OS Info </test_name>
+   <test_action>getOsInfo</test_action>
+   <parameters>host='{vds[0]}',root_password='{vds_password[0]}'</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <fetch_output>osName-&gt;osName</fetch_output>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Reboot Ovirt after commit network</test_name>
+   <test_action>rebootMachine</test_action>
+   <parameters>ip='{vds[0]}',user='root',password='{vds_password}',osType='linux'</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('hypervisor',%osName%,re.I))</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Sleep while Ovirt reboots</test_name>
+   <test_action>sleep</test_action>
+   <parameters>seconds=220</parameters>
+   <positive>NONE</positive>
+   <run>if(re.search('hypervisor',%osName%,re.I))</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check that Ovirt host status is UP after network changes</test_name>
+   <test_action>waitForHostsStates</test_action>
+   <parameters>names='{vds[0]}', states='up',timeout=180</parameters>
+   <positive>TRUE</positive>
+   <run>if(re.search('hypervisor',%osName%,re.I))</run>
+   <fetch_output/>
+   <report>YES</report>
+   <test_description>In case of ovirt, check configuration persistence</test_description>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Validate if sw1 status is operational</test_name>
+   <test_action>validateNetwork</test_action>
+   <parameters>cluster='{cluster}', network='{networks[0]}',tag='status', val='operational'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Validate if sw2 status is operational</test_name>
+   <test_action>validateNetwork</test_action>
+   <parameters>cluster='{cluster}', network='{networks[1]}',tag='status', val='operational'</parameters>
+   <positive>TRUE</positive>
+   <run>if(%nicCounter%&gt;=4)</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Wait for SPM</test_name>
+   <test_action>waitForSPM</test_action>
+   <parameters>datacenter='{datacenter}',timeout=900,sleep=5</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Create VM </test_name>
+   <test_action>addVm</test_action>
+   <parameters>name='{vm_name[0]}',cluster='{cluster}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Add Disk to VM</test_name>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='{vm_name[0]}',size=1073741824,sparse='true',type='e{disk_type_data}',format='e{format_cow}',storagedomain='{storage}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Add ACTIVE management network to VM</test_name>
+   <test_action>addNic</test_action>
+   <parameters>vm='{vm_name[0]}',name='nic1',network='{mgmt_bridge}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check that nic1 is active by default</test_name>
+   <test_action>isVmNicActive</test_action>
+   <parameters>vm='{vm_name[0]}',nic='nic1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Add INACTIVETED sw1 network to VM</test_name>
+   <test_action>addNic</test_action>
+   <parameters>vm='{vm_name[0]}',name='nic2',network='{networks[0]}',active='false'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check that nic2 is INACTIVE</test_name>
+   <test_action>isVmNicActive</test_action>
+   <parameters>vm='{vm_name[0]}',nic='nic2'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Activating nic2 via HotPlug</test_name>
+   <test_action>hotPlugNic</test_action>
+   <parameters>vm='{vm_name[0]}',nic='nic2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+   <bz>863277</bz>
+</test_case>
+<test_case>
+   <test_name>Check that nic2 is ACTIVE (After HotPlug)</test_name>
+   <test_action>isVmNicActive</test_action>
+   <parameters>vm='{vm_name[0]}',nic='nic2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+   <bz>863277</bz>
+</test_case>
+<test_case>
+   <test_name>Deactivating nic2 via HotPlug</test_name>
+   <test_action>hotUnplugNic</test_action>
+   <parameters>vm='{vm_name[0]}',nic='nic2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+   <bz>863277</bz>
+</test_case>
+<test_case>
+   <test_name>Check that nic2 is INACTIVE (After HotPlug)</test_name>
+   <test_action>isVmNicActive</test_action>
+   <parameters>vm='{vm_name[0]}',nic='nic2'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Add sw2 network to VM</test_name>
+   <test_action>addNic</test_action>
+   <parameters>vm='{vm_name[0]}',name='nic3',network='{networks[1]}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(%nicCounter%&gt;=4)</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Validate default active value is true</test_name>
+   <test_action>isVmNicActive</test_action>
+   <parameters>vm='{vm_name[0]}',nic='nic3'</parameters>
+   <positive>TRUE</positive>
+   <run>if(%nicCounter%&gt;=4)</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>default nic state should be active</test_description>
+</test_case>
+<test_case>
+   <test_name>Update VM nic1 driver to rtl8139</test_name>
+   <test_action>updateNic</test_action>
+   <parameters>vm='{vm_name[0]}',nic='nic1', interface='e{nic_type_rtl8139}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Remove network sw2 from VM</test_name>
+   <test_action>removeNic</test_action>
+   <parameters>vm='{vm_name[0]}',nic='nic3'</parameters>
+   <positive>TRUE</positive>
+   <run>if(%nicCounter%&gt;=4)</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Remove network sw1 from VM</test_name>
+   <test_action>removeNic</test_action>
+   <parameters>vm='{vm_name[0]}',nic='nic2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Create template</test_name>
+   <test_action>createTemplate</test_action>
+   <parameters>vm='{vm_name[0]}',name='{template_name}',cluster='{cluster}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Add sw1 Network to Template</test_name>
+   <test_action>addTemplateNic</test_action>
+   <parameters>template='{template_name}',name='nic2',network='{networks[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Update Template nic</test_name>
+   <test_action>updateTemplateNic</test_action>
+   <parameters>template='{template_name}',nic='nic1', interface='e{nic_type_rtl8139}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Remove Network sw1 from Template </test_name>
+   <test_action>removeTemplateNic</test_action>
+   <parameters>template='{template_name}',nic='nic1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Remove VM</test_name>
+   <test_action>removeVm</test_action>
+   <parameters>vm='{vm_name[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Remove Template</test_name>
+   <test_action>removeTemplate</test_action>
+   <parameters>template='{template_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Detach sw1 from cluster</test_name>
+   <test_action>removeNetworkFromCluster</test_action>
+   <parameters>network='{networks[0]}', cluster='{cluster}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Detach sw2 from cluster</test_name>
+   <test_action>removeNetworkFromCluster</test_action>
+   <parameters>network='{networks[1]}', cluster='{cluster}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(%nicCounter%&gt;=4)</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Detach sw3 from custer</test_name>
+   <test_action>removeNetworkFromCluster</test_action>
+   <parameters>network='sw3', cluster='{cluster}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>send SN</test_name>
+   <test_action>sendSNRequest</test_action>
+   <parameters>host='{vds[0]}', auto_nics=['{host_nics[0]}'],check_connectivity='true', connectivity_timeout=60, force='false'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output></fetch_output>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Reset host network configuration</test_description>
+</test_case>
+<test_case>
+   <test_name>Save Network Configuration</test_name>
+   <test_action>commitNetConfig</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Remove sw1 from DataCenter</test_name>
+   <test_action>removeNetwork</test_action>
+   <parameters>network='{networks[0]}',data_center='{datacenter}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Remove sw2 from DataCenter</test_name>
+   <test_action>removeNetwork</test_action>
+   <parameters>network='{networks[1]}',data_center='{datacenter}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(%nicCounter%&gt;=4)</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Remove sw3 from DataCenter</test_name>
+   <test_action>removeNetwork</test_action>
+   <parameters>network='sw3',data_center='{datacenter}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+  <test_name>Remove all networks from Default DC</test_name>
+  <test_action>removeNetwork</test_action>
+  <parameters>network='{networks}',data_center='Default'</parameters>
+  <positive>TRUE</positive>
+  <run>loop({networks})</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: NetworkSanity_31</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<!-- ####################################################################### -->
+<test_case>
+   <test_name>START_GROUP: NetworkSanity_30</test_name>
+   <test_action/>
+   <parameters>n/a1</parameters>
+   <positive>NONE</positive>
+   <run>if('sanity30' in '[networksanity]' or '*' in '[networksanity]')</run>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<test_case>
+  <test_name>Add all used networks to default datacenter</test_name>
+  <test_action>addNetwork</test_action>
+  <parameters>name='{networks}',data_center='Default'</parameters>
+  <positive>TRUE</positive>
+  <run>loop({networks})</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description>Adding all supported networks to default datacenter in order to cover bugs related to multi networks with the same name under api/networks path</test_description>
+</test_case>
+<test_case>
+  <test_name>Validate if MANAGEMENT in DataCenter</test_name>
+  <test_action>getNetworkConfig</test_action>
+  <parameters>cluster='{cluster}', network='{mgmt_bridge}',datacenter='{datacenter}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Validate if MANAGEMENT Status is Operational</test_name>
+  <test_action>validateNetwork</test_action>
+  <parameters>cluster='{cluster}', network='{mgmt_bridge}',tag='status', val='operational'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Create sw1 Logical Network</test_name>
+  <test_action>addNetwork</test_action>
+  <parameters>name='{networks[0]}',data_center='{datacenter}',vlan_id='{vlan_id[0]}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Update Logical Network sw1 with stp</test_name>
+  <test_action>updateNetwork</test_action>
+  <parameters>network='{networks[0]}', data_center='{datacenter}', stp='true'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Attach sw1 to Cluster</test_name>
+  <test_action>addNetworkToCluster</test_action>
+  <parameters>network='{networks[0]}', cluster='{cluster}',required='true'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Validate if sw1 Status is non-operational</test_name>
+  <test_action>validateNetwork</test_action>
+  <parameters>cluster='{cluster}', network='{networks[0]}',tag='status', val='non_operational'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Detach sw1 from cluster</test_name>
+  <test_action>removeNetworkFromCluster</test_action>
+  <parameters>network='{networks[0]}', cluster='{cluster}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Remove sw1 from DataCenter</test_name>
+  <test_action>removeNetwork</test_action>
+  <parameters>network='{networks[0]}',data_center='{datacenter}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Create Logical network sw1 with vlan</test_name>
+  <test_action>addNetwork</test_action>
+  <parameters>name='{networks[0]}',data_center='{datacenter}',vlan_id='{vlan_id[0]}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Count Host1 nics</test_name>
+  <test_action>countHostNics</test_action>
+  <parameters>host='{vds[0]}'</parameters>
+  <positive>NONE</positive>
+  <run>yes</run>
+  <fetch_output>nicsNumber-&gt;nicCounter</fetch_output>
+  <report>NO</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Create Logical Network sw2</test_name>
+  <test_action>addNetwork</test_action>
+  <parameters>name='{networks[1]}',data_center='{datacenter}'</parameters>
+  <positive>TRUE</positive>
+  <run>if(%nicCounter%&gt;=4)</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Attach sw1 to Cluster</test_name>
+  <test_action>addNetworkToCluster</test_action>
+  <parameters>network='{networks[0]}', cluster='{cluster}',required='true'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Attach sw2 to Cluster</test_name>
+  <test_action>addNetworkToCluster</test_action>
+  <parameters>network='{networks[1]}', cluster='{cluster}',required='true'</parameters>
+  <positive>TRUE</positive>
+  <run>if(%nicCounter%&gt;=4)</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Add sw1 to Host1</test_name>
+  <test_action>attachHostNic</test_action>
+  <parameters>host='{vds[0]}', nic='{host_nics[1]}', network='{networks[0]}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description>Cluster &lt;= 3.0</test_description>
+</test_case>
+<test_case>
+  <test_name>Add Bond0 sw2 to Host1</test_name>
+  <test_action>addBond</test_action>
+  <parameters>host='{vds[0]}',name='{bond[0]}', slaves=['{host_nics[2]}','{host_nics[3]}'],network='{networks[1]}'</parameters>
+  <positive>TRUE</positive>
+  <run>if(%nicCounter%&gt;=4)</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description>Run only for host contain >= 4 physical nics.</test_description>
+</test_case>
+<test_case>
+  <test_name>Move Host to Maintnance</test_name>
+  <test_action>deactivateHost</test_action>
+  <parameters>host='{vds[0]}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Update Host Nic</test_name>
+  <test_action>updateHostNic</test_action>
+  <parameters>host='{vds[0]}', nic='{host_nics[1]}.{vlan_id[0]}',boot_protocol='static',address='1.1.1.1',netmask='255.255.255.0'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Save Network Configuration</test_name>
+  <test_action>commitNetConfig</test_action>
+  <parameters>host='{vds[0]}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Get OS Info </test_name>
+  <test_action>getOsInfo</test_action>
+  <parameters>host='{vds[0]}',root_password='{vds_password[0]}'</parameters>
+  <positive>NONE</positive>
+  <run>yes</run>
+  <fetch_output>osName-&gt;osName</fetch_output>
+  <report>NO</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Reboot Ovirt after commit network</test_name>
+  <test_action>rebootMachine</test_action>
+  <parameters>ip='{vds[0]}',user='root',password='{vds_password}',osType='linux'</parameters>
+  <positive>TRUE</positive>
+  <run>if(re.search('hypervisor',%osName%,re.I))</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Sleep while Ovirt reboots</test_name>
+  <test_action>sleep</test_action>
+  <parameters>seconds=220</parameters>
+  <positive>NONE</positive>
+  <run>if(re.search('hypervisor',%osName%,re.I))</run>
+  <fetch_output/>
+  <report>NO</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Move host up</test_name>
+  <test_action>activateHost</test_action>
+  <parameters>host='{vds[0]}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Check that Ovirt host status is UP after network changes</test_name>
+  <test_action>waitForHostsStates</test_action>
+  <parameters>names='{vds[0]}', states='up',timeout=180</parameters>
+  <positive>TRUE</positive>
+  <run>if(re.search('hypervisor',%osName%,re.I))</run>
+  <fetch_output/>
+  <report>YES</report>
+  <test_description>In case of ovirt, check configuration persistence</test_description>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Validate if sw1 status is operational</test_name>
+  <test_action>validateNetwork</test_action>
+  <parameters>cluster='{cluster}', network='{networks[0]}',tag='status', val='operational'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Validate if sw2 status is operational</test_name>
+  <test_action>validateNetwork</test_action>
+  <parameters>cluster='{cluster}', network='{networks[1]}',tag='status', val='operational'</parameters>
+  <positive>TRUE</positive>
+  <run>if(%nicCounter%&gt;=4)</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Wait for SPM</test_name>
+  <test_action>waitForSPM</test_action>
+  <parameters>datacenter='{datacenter}',timeout=900,sleep=5</parameters>
+  <positive>NONE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>NO</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Create VM </test_name>
+  <test_action>addVm</test_action>
+  <parameters>name='{vm_name[0]}',cluster='{cluster}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Add Disk to VM</test_name>
+  <test_action>addDiskToVm</test_action>
+  <parameters>vm='{vm_name[0]}',size=1073741824,sparse='true',type='e{disk_type_data}',format='e{format_cow}',storagedomain='{storage}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Add management network to VM</test_name>
+  <test_action>addNic</test_action>
+  <parameters>vm='{vm_name[0]}',name='nic1', network='{mgmt_bridge}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Add sw1 network to VM</test_name>
+  <test_action>addNic</test_action>
+  <parameters>vm='{vm_name[0]}',name='nic2',network='{networks[0]}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Add sw2 network to VM</test_name>
+  <test_action>addNic</test_action>
+  <parameters>vm='{vm_name[0]}',name='nic3',network='{networks[1]}'</parameters>
+  <positive>TRUE</positive>
+  <run>if(%nicCounter%&gt;=4)</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Update VM nic</test_name>
+  <test_action>updateNic</test_action>
+  <parameters>vm='{vm_name[0]}',nic='nic1', interface='e{nic_type_rtl8139}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Remove network sw2 from VM</test_name>
+  <test_action>removeNic</test_action>
+  <parameters>vm='{vm_name[0]}',nic='nic3'</parameters>
+  <positive>TRUE</positive>
+  <run>if(%nicCounter%&gt;=4)</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Remove network sw1 from VM</test_name>
+  <test_action>removeNic</test_action>
+  <parameters>vm='{vm_name[0]}',nic='nic2'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Create template</test_name>
+  <test_action>createTemplate</test_action>
+  <parameters>vm='{vm_name[0]}',name='{template_name}',cluster='{cluster}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Add sw1 Network to Template</test_name>
+  <test_action>addTemplateNic</test_action>
+  <parameters>template='{template_name}',name='nic2',network='{networks[0]}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Update Template nic</test_name>
+  <test_action>updateTemplateNic</test_action>
+  <parameters>template='{template_name}',nic='nic1', interface='e{nic_type_rtl8139}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Remove Network sw1 from Template </test_name>
+  <test_action>removeTemplateNic</test_action>
+  <parameters>template='{template_name}',nic='nic1'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Remove VM</test_name>
+  <test_action>removeVm</test_action>
+  <parameters>vm='{vm_name[0]}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Remove Template</test_name>
+  <test_action>removeTemplate</test_action>
+  <parameters>template='{template_name}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Detach sw1 from cluster</test_name>
+  <test_action>removeNetworkFromCluster</test_action>
+  <parameters>network='{networks[0]}', cluster='{cluster}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Detach sw2 from cluster</test_name>
+  <test_action>removeNetworkFromCluster</test_action>
+  <parameters>network='{networks[1]}', cluster='{cluster}'</parameters>
+  <positive>TRUE</positive>
+  <run>if(%nicCounter%&gt;=4)</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Remove bond from host1</test_name>
+  <test_action>detachHostNic</test_action>
+  <parameters>host='{vds[0]}', nic='{bond[0]}', network='{networks[1]}'</parameters>
+  <positive>TRUE</positive>
+  <run>if(%nicCounter%&gt;=4)</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Remove vlan from host1</test_name>
+  <test_action>detachHostNic</test_action>
+  <parameters>host='{vds[0]}', nic='{host_nics[1]}.{vlan_id[0]}', network='{networks[0]}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Save Network Configuration</test_name>
+  <test_action>commitNetConfig</test_action>
+  <parameters>host='{vds[0]}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Remove sw1 from DataCenter</test_name>
+  <test_action>removeNetwork</test_action>
+  <parameters>network='{networks[0]}',data_center='{datacenter}'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Remove sw2 from DataCenter</test_name>
+  <test_action>removeNetwork</test_action>
+  <parameters>network='{networks[1]}',data_center='{datacenter}'</parameters>
+  <positive>TRUE</positive>
+  <run>if(%nicCounter%&gt;=4)</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Remove all networks from Default DC</test_name>
+  <test_action>removeNetwork</test_action>
+  <parameters>network='{networks}',data_center='Default'</parameters>
+  <positive>TRUE</positive>
+  <run>loop({networks})</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: NetworkSanity_30</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: Positive_NetworkSanity</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<!-- ======================================================================================================== -->
+<test_case>
+   <test_name>START_GROUP: Negative_NetworkSanity</test_name>
+   <test_action/>
+   <parameters>n/a1</parameters>
+   <positive>NONE</positive>
+   <run>if('negative' in '[networksanity]')</run>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Add logical network with illegal vlan 4096</test_name>
+   <test_action>addNetwork</test_action>
+   <parameters>name='{networks[0]}',data_center='{datacenter}',vlan_id='4096'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description></test_description>
+</test_case>
+<test_case>
+   <test_name>Add logical network with illegal vlan -1</test_name>
+   <test_action>addNetwork</test_action>
+   <parameters>name='{networks[0]}',data_center='{datacenter}',vlan_id='-1'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description></test_description>
+</test_case>
+<test_case>
+   <test_name>Add logical network with illegal name langth of more than 15 chars</test_name>
+   <test_action>addNetwork</test_action>
+   <parameters>name='aaaaaaaaaaaaaaa1',data_center='{datacenter}'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>should be limited to 15 chanrs same as in WebUI</test_description>
+</test_case>
+<test_case>
+   <test_name>Add logical network with illegal chars in the name</test_name>
+   <test_action>addNetwork</test_action>
+   <parameters>name=' *%',data_center='{datacenter}'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>name can contain only alphanumeric or underscores</test_description>
+</test_case>
+<test_case>
+<!-- BZ#773315 -->
+   <test_name>Add logical network with illegal description langth of more than 40 chars</test_name>
+   <test_action>addNetwork</test_action>
+   <parameters>name='{networks[0]}',data_center='{datacenter}',description='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'</parameters>
+   <positive>FALSE</positive>
+   <run>no</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>should be limited to 40 chanrs same as in WebUI</test_description>
+</test_case>
+<test_case>
+   <test_name>Edit MANAGEMENT network</test_name>
+   <test_action>updateNetwork</test_action>
+   <parameters>network='{mgmt_bridge}',data_center='{datacenter}',vlan_id='1'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Shouldnt be able to edit MANAGEMENT</test_description>
+</test_case>
+<test_case>
+   <test_name>Remove MANAGEMENT network</test_name>
+   <test_action>removeNetwork</test_action>
+   <parameters>network='{mgmt_bridge}',data_center='{datacenter}'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Shouldnt be able to remove MANAGEMEN</test_description>
+</test_case>
+<test_case>
+   <test_name>Add logical network</test_name>
+   <test_action>addNetwork</test_action>
+   <parameters>name='{networks[0]}',data_center='{datacenter}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Valid creation</test_description>
+</test_case>
+<test_case>
+   <test_name>Attach network To Cluster</test_name>
+   <test_action>addNetworkToCluster</test_action>
+   <parameters>network='{networks[0]}',cluster='{cluster}',required='true'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>TRUE</vital>
+   <test_description>Attach valid network to cluster</test_description>
+</test_case>
+<test_case>
+   <test_name>Count Host1 nics</test_name>
+   <test_action>countHostNics</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <fetch_output>nicsNumber-&gt;nicCounter</fetch_output>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Add sw1 to Hosts</test_name>
+   <test_action>attachHostNic</test_action>
+   <parameters>host='{vds[0]}', nic='{nics[1]}', network='{networks[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Add valid network to host</test_description>
+</test_case>
+<test_case>
+   <test_name>Save Network Configuration</test_name>
+   <test_action>commitNetConfig</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>re-Add sw1 to Hosts eth2</test_name>
+   <test_action>attachHostNic</test_action>
+   <parameters>host='{vds[0]}', nic='{nics[2]}', network='{networks[0]}'</parameters>
+   <positive>FALSE</positive>
+   <run>if(%nicCounter%&gt;=3)</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Cant add network to two different nics</test_description>
+</test_case>
+<test_case>
+   <test_name>Remove sw1 from from host</test_name>
+   <test_action>detachHostNic</test_action>
+   <parameters>host='{vds[0]}', nic='{nics[1]}', network='{networks[0]}'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>shouldnt remove network while host is up</test_description>
+</test_case>
+<test_case>
+   <test_name>Move Host to Maintnance</test_name>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Update Host Nic ip 256.1.1.1</test_name>
+   <test_action>updateHostNic</test_action>
+   <parameters>host='{vds[0]}', nic='{nics[1]}',boot_protocol='static',address='256.1.1.1',netmask='255.255.255.0'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Update with illegal ip</test_description>
+</test_case>
+<test_case>
+   <test_name>Update Host Nic netmask 256.0.0.0</test_name>
+   <test_action>updateHostNic</test_action>
+   <parameters>host='{vds[0]}', nic='{nics[1]}',boot_protocol='static',address='1.1.1.1',netmask='256.0.0.0'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Update with illegal netmask</test_description>
+</test_case>
+<test_case>
+   <test_name>Update Host Nic ip 1.1.1.1.1</test_name>
+   <test_action>updateHostNic</test_action>
+   <parameters>host='{vds[0]}', nic='{nics[1]}',boot_protocol='static',address='1.1.1.1.1',netmask='255.0.0.0'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Update with illegal ip length</test_description>
+</test_case>
+<test_case>
+   <test_name>Update Host Nic to static without ip</test_name>
+   <test_action>updateHostNic</test_action>
+   <parameters>host='{vds[0]}', nic='{nics[1]}',boot_protocol='static'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Static boot protocol must get ip address and subnetmask</test_description>
+</test_case>
+<test_case>
+   <test_name>Move host up</test_name>
+   <test_action>activateHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Wait for SPM</test_name>
+   <test_action>waitForSPM</test_action>
+   <parameters>datacenter='{datacenter}',timeout=900,sleep=5</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Create VM</test_name>
+   <test_action>addVm</test_action>
+   <parameters>name='{vm_name[0]}',cluster='{cluster}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Create Windows VM</test_name>
+   <test_action>addVm</test_action>
+   <parameters>name='{vm_name[1]}',cluster='{cluster}',os_type='e{windowsxp}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Add Disk to VM</test_name>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='{vm_name}',size=1073741824,sparse='true',type='e{disk_type_data}',format='e{format_cow}',storagedomain='{storage}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+<!-- BZ#773316 -->
+   <test_name>Add e1000 network to windows VM</test_name>
+   <test_action>addNic</test_action>
+   <parameters>vm='{vm_name[1]}',name='nic1',network='{networks[0]}',interface='e{nic_type_e1000}'</parameters>
+   <positive>FALSE</positive>
+   <run>no</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>e1000 shouldn't exist in windows VM</test_description>
+</test_case>
+<test_case>
+   <test_name>Add management network to VM with illegal name</test_name>
+   <test_action>addNic</test_action>
+   <parameters>vm='{vm_name[0]}',name='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1', network='{mgmt_bridge}'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>illegal name. has more than 50 characters</test_description>
+</test_case>
+<test_case>
+<!-- BZ#773320 -->
+   <test_name>Add sw1 network to VM with illegal mac</test_name>
+   <test_action>addNic</test_action>
+   <parameters>vm='{vm_name[0]}',name='nic1',network='{networks[0]}',mac_address='00:00:00'</parameters>
+   <positive>FALSE</positive>
+   <run>no</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Add sw1 network to VM</test_name>
+   <test_action>addNic</test_action>
+   <parameters>vm='{vm_name[0]}',name='nic1',network='{networks[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Detach sw1 from cluster while used by VM</test_name>
+   <test_action>removeNetworkFromCluster</test_action>
+   <parameters>network='{networks[0]}', cluster='{cluster}'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Should not be detached while being used by VM</test_description>
+</test_case>
+<test_case>
+   <test_name>Start Vm</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='{vm_name[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Add management network to VM while VM is up</test_name>
+   <test_action>addNic</test_action>
+   <parameters>vm='{vm_name[0]}',name='nic2', network='{mgmt_bridge}'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Shouldn't be able to add nic while VM is up</test_description>
+</test_case>
+<test_case>
+   <test_name>Update nic while VM is up</test_name>
+   <test_action>updateNic</test_action>
+   <parameters>vm='{vm_name[0]}',nic='nic1',mac_address='52:54:00:4B:8F:E1'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Shouldn't be able to update nic while VM is up</test_description>
+</test_case>
+<test_case>
+   <test_name>Unattach sw1 while VM is up</test_name>
+   <test_action>removeNic</test_action>
+   <parameters>vm='{vm_name[0]}',nic='nic1'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Shouldn't be able to remove nic while VM is up</test_description>
+</test_case>
+<test_case>
+   <test_name>Stop VM</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='{vm_name[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Create template</test_name>
+   <test_action>createTemplate</test_action>
+   <parameters>vm='{vm_name[0]}',name='testTemp1',cluster='{cluster}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Create windows template</test_name>
+   <test_action>createTemplate</test_action>
+   <parameters>vm='{vm_name[1]}',name='testTemp2',cluster='{cluster}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Add duplicate nic1</test_name>
+   <test_action>addTemplateNic</test_action>
+   <parameters>template='testTemp1',name='nic1',network='{networks[0]}'</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Adding network with existed name on template1</test_description>
+</test_case>
+<test_case>
+<!-- BZ#773316 -->
+   <test_name>Add e1000 Network to windows Template</test_name>
+   <test_action>addTemplateNic</test_action>
+   <parameters>template='testTemp2',name='nic1',network='{networks[0]}',interface='e{nic_type_e1000}'</parameters>
+   <positive>FALSE</positive>
+   <run>no</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+
+<!-- Cleaning negativ env -->
+<test_case>
+   <test_name>Remove VMs</test_name>
+   <test_action>removeVm</test_action>
+   <parameters>vm='{vm_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vm_name})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Remove Template1</test_name>
+   <test_action>removeTemplate</test_action>
+   <parameters>template='testTemp1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Remove Template2</test_name>
+   <test_action>removeTemplate</test_action>
+   <parameters>template='testTemp2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Detach sw1 from cluster</test_name>
+   <test_action>removeNetworkFromCluster</test_action>
+   <parameters>network='sw1', cluster='{cluster}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Remove sw1 from host</test_name>
+   <test_action>detachHostNic</test_action>
+   <parameters>host='{vds[0]}', nic='{nics[1]}', network='{networks[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Save Network Configuration</test_name>
+   <test_action>commitNetConfig</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Remove sw1 from DataCenter</test_name>
+   <test_action>removeNetwork</test_action>
+   <parameters>network='{networks[0]}',data_center='{datacenter}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: Negative_NetworkSanity</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: NetworkSanity</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+</input>
