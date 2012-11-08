@@ -1,0 +1,215 @@
+<!-- Author: awinter@redhat.com -->
+<input xmlns:xi="http://www.w3.org/2001/XInclude" tcms_plan_id="5868">
+<test_case>
+   <test_name>START_GROUP: RequiredNetwork</test_name>
+   <test_action/>
+   <parameters>n/a1</parameters>
+   <positive>NONE</positive>
+   <run>if('requirednetwork' in '[run_groups]')</run>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description>
+        This test tests the Required network feature. In default, it tests the four policies (Regular, Vlan, Bond, Vlans over bond)
+        and afterwards it tests uncovered TCMS cases.
+   </test_description>
+</test_case>
+<test_case>
+   <test_name>START_GROUP: Positive_RequiredNetwork</test_name>
+   <test_action/>
+   <parameters>n/a1</parameters>
+   <positive>NONE</positive>
+   <run>if('positive' in '[requirednetwork]')</run>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>START_GROUP: RequiredClusterPolicy</test_name>
+   <test_action/>
+   <parameters>n/a1</parameters>
+   <positive>NONE</positive>
+   <run>if('requiredclusterpolicy' in '[requirednetwork]' or '*' in '[requirednetwork]')</run>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Move Host2 to Maintenance </test_name>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[1]}'</parameters>
+   <positive>TRUE</positive>
+   <run>if(len(['{vds}']) &gt; 1)</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Running this feature with only one host</test_description>
+</test_case>
+<test_case>
+   <test_name>Wait for SPM</test_name>
+   <test_action>waitForSPM</test_action>
+   <parameters>datacenter='{datacenter}',timeout=900,sleep=1</parameters>
+   <positive>NONE</positive>
+   <run>if(len(['{vds}']) &gt; 1)</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+
+<!-- The following test tests the regular policy -->
+<xi:include href="regular-ReqNetwork.xml"/>
+
+<!-- The following test tests the vlan policy -->
+<xi:include href="vlan-ReqNetwork.xml"/>
+
+<!-- The following test tests the bond policy -->
+<xi:include href="bond-ReqNetwork.xml"/>
+
+<!-- The following test tests the vlans over bond policy -->
+<xi:include href="vlanOverBond-ReqNetwork.xml"/>
+
+<!-- The following test tests uncovered TCMS cases -->
+<xi:include href="uncoverTCMS-ReqNetwork.xml"/>
+
+<!-- The following code restores the changes made before this test -->
+<test_case>
+  <test_name>Activate Host2</test_name>
+  <test_action>activateHost</test_action>
+  <parameters>host='{vds[1]}'</parameters>
+  <positive>TRUE</positive>
+   <run>if(len(['{vds}']) &gt; 1)</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Wait for SPM</test_name>
+  <test_action>waitForSPM</test_action>
+  <parameters>datacenter='{datacenter}',timeout=900,sleep=1</parameters>
+  <positive>NONE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>NO</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: RequiredClusterPolicy</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: Positive_RequiredNetwork</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<!-- ======================================================================================================== -->
+<!-- The negative wasn't spltted since it contains only one case -->
+<test_case>
+   <test_name>START_GROUP: Negative_RequiredNetwork</test_name>
+   <test_action/>
+   <parameters>n/a1</parameters>
+   <positive>NONE</positive>
+   <run>if('negative' in '[requirednetwork]')</run>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>START_GROUP: Negative_UncoveredTCMSCases</test_name>
+   <test_action/>
+   <parameters>n/a1</parameters>
+   <positive>NONE</positive>
+   <run>if('uncoveredtcms' in '[requirednetwork]')</run>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<!-- Case number 166462 : BEGIN -->
+<test_case>
+   <test_name>Validate that MANAGEMENT is Required by default</test_name>
+   <test_action>isNetworkRequired</test_action>
+   <parameters>network='{mgmt_bridge}',cluster='{cluster}'</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Editing rhevm to be non-required</test_name>
+   <test_action>updateClusterNetwork</test_action>
+   <parameters>cluster='{cluster}',network='{mgmt_bridge}',required='false'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Validate that MANAGEMENT is Required by default</test_name>
+   <test_action>isNetworkRequired</test_action>
+   <parameters>network='{mgmt_bridge}',cluster='{cluster}'</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <tcms_test_case>166462</tcms_test_case>
+   <test_description/>
+</test_case>
+<!-- Case number 166462 : END -->
+<test_case>
+   <test_name>END_GROUP: Negative_UncoveredTCMSCases</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: Negative_RequiredNetwork</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: RequiredNetwork</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+   <vital/>
+   <test_description/>
+</test_case>
+</input>
