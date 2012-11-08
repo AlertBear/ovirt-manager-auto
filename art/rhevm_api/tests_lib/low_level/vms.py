@@ -116,8 +116,18 @@ def _prepareVmObject(**kwargs):
     # cpu topology
     cpu_socket = kwargs.pop('cpu_socket', 1 if add else None)
     cpu_cores = kwargs.pop('cpu_cores', 1 if add else None)
-    vm.set_cpu(data_st.CPU(topology=data_st.CpuTopology(sockets=cpu_socket,
-            cores=cpu_cores)))
+    cpu = data_st.CPU(topology=data_st.CpuTopology(sockets=cpu_socket,
+            cores=cpu_cores))
+
+    # cpu pinning
+    vcpu_pinning = kwargs.pop('vcpu_pinning', None)
+    if vcpu_pinning is not None and vcpu_pinning=="":
+        cpu.set_cpu_tune(data_st.CpuTune())
+    elif vcpu_pinning:
+        cpu.set_cpu_tune(data_st.CpuTune([data_st.VCpuPin(vcpu,cpu_set) \
+                                          for vcpu,cpu_set in \
+                                          vcpu_pinning.iteritems()]))
+    vm.set_cpu(cpu)
 
     # os options
     os = data_st.OperatingSystem(type_=kwargs.pop('os_type',
@@ -174,7 +184,9 @@ def _prepareVmObject(**kwargs):
     ppolicy = data_st.VmPlacementPolicy(affinity=
         kwargs.pop('placement_affinity', None))
     phost = kwargs.pop('placement_host', None)
-    if phost and phost != ENUMS['placement_host_any_host_in_cluster']:
+    if phost and phost == ENUMS['placement_host_any_host_in_cluster']:
+        ppolicy.set_host(data_st.Host())
+    elif phost:
         aff_host = HOST_API.find(phost)
         ppolicy.set_host(data_st.Host(id=aff_host.id))
     vm.set_placement_policy(ppolicy)
@@ -231,6 +243,7 @@ def addVm(positive, wait = True, **kwargs):
        * kernel - kernel path
        * initrd - initrd path
        * cmdline - kernel paramters
+       * vcpu_pinning - vcpu pinning affinity (dictionary)
        * placement_affinity - vm to host affinity
        * placement_host - host that the affinity holds for
        * highly_available - if to set high-availablity for vm
@@ -1705,7 +1718,8 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
         display_type=ENUMS['display_type_spice'], installation=False, slim=False,
         user=None, password=None, attempt=60, interval=60,
         cobblerAddress=None, cobblerUser=None, cobblerPasswd=None, image=None,
-        async=False, hostname=None, network='rhevm', useAgent=False):
+        async=False, hostname=None, network='rhevm', useAgent=False,
+        placement_affinity=None, placement_host=None, vcpu_pinning=None):
     '''
     The function createStartVm adding new vm with nic,disk and started new created vm.
         vmName = VM name
@@ -1735,13 +1749,18 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
         cobblerPasswd - password for cobbler
         image - profile in cobbler
         useAgent - Set to 'true', if desired to read the ip from VM (agent exist on VM)
+        placement_affinity - vm to host affinity
+        placement_host - host that the affinity holds for
+        vcpu_pinning - vcpu pinning affinity (dictionary)
     return values : Boolean value (True/False ) True in case of success otherwise False
     '''
     ip = False
     if not addVm(positive, name=vmName, description=vmDescription, cluster=cluster,
             template=template, templateUuid=templateUuid, os_type=ENUMS[os_type.lower()],
             type=type, memory=memory, cpu_socket=cpu_socket,
-            cpu_cores=cpu_cores, display_type=display_type, async=async):
+            cpu_cores=cpu_cores, display_type=display_type, async=async,
+            placement_affinity=placement_affinity, placement_host=placement_host,
+            vcpu_pinning=vcpu_pinning):
         return False
 
     if nic:
