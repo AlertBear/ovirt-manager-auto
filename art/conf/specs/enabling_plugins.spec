@@ -25,3 +25,7 @@ enabled = boolean(default=True)
 
 [TRAC]
 enabled = boolean(default=True)
+
+[TCMS]
+user = string(default="TCMS/jenkins.qa.lab.tlv.redhat.com")
+keytab_files_location = path_exists(default="/etc")
