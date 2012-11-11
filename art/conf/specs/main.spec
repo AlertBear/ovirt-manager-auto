@@ -26,12 +26,8 @@ user_domain = domain_format()
 tool = option('ovirt-shell', 'rhevm-shell', default='rhevm-shell')
 optional_params = string(default='')
 
-[SDK_CONNECTION]
-
-
 [PARAMETERS]
 test_conf_specs = string_list(default=list())
-vdc_root_password = string(default='qum5net')
 
 [REPORT]
 has_sub_tests = boolean(default=True)

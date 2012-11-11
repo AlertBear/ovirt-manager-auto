@@ -13,10 +13,11 @@ mgmt_bridge = string(default='rhevm')
 compatibility_version = option('3.0', '3.1', default='3.1')
 local_domain_path = string(default='/home/rest_test_domain')
 product_name = string(default='Red Hat Enterprise Virtualization')
-vds_password = force_list(default=None)
+vds_password = force_list(default=list('qum5net', 'qum5net'))
 vds = force_list(default=None)
 data_center_type= option('nfs', 'iscsi', 'localfs', 'none', default='none')
 host_nics = force_list(default=None)
+vdc_root_password = string(default='qum5net')
 
 #users
 no_roles_user = string(default='larisa')
