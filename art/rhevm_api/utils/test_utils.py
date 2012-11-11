@@ -218,7 +218,7 @@ def validateElementStatus(positive, element, collection, elementName,
         try:
             elementObj = util.find(elementName)
         except Exception as err:
-            util.logger.error(MSG.format(elementName, elementToFind, err))
+            util.logger.error(MSG.format(elementName, element, err))
             return False
 
         if not hasattr(elementObj.get_status(), attribute):
