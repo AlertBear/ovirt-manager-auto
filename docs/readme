@@ -1,0 +1,28 @@
+ART Documentation quick howto
+=============================
+
+ART documentation is built using sphinx. The documents are written in ReStructured Text (ReST) format.
+
+You can learn more about the ReST format here: http://sphinx-doc.org/rest.html
+
+Build Docs
+----------
+The makefile included takes care of building the documentation in the format you choose.
+for instance, you can build html docs using 'make html'.
+Note that you need to have sphinx installed (package python-sphinx)
+
+PDF:
+to make pdf doc you need to run 'make latexpdf'
+Make sure you have the package texlive-latex installed.
+
+Headlines
+---------
+In ReST, the headlines levels are determined by when they change, so the first header style used is top most, second one used is second level and so on..
+Our convention is to use '=' for top most header, and '-' for second level.
+Note:: that the headline needs to be the same length as the headline text.
+
+To add a new document, you just make a new file with extension .rst formatted with ReST, and then you can link to it in the TOC in index.rst, by adding the name of the file to the list, in the order you want it to appear. (note the indentation).
+
+Plugins
+-------
+To generate plugins sources, run generate_plugins_doc.py.
