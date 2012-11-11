@@ -26,7 +26,7 @@ import re
 ATTR_IGNORE_LIST = ['href', 'link', 'rel']
 if settings.opts.get('engine') == 'sdk':
     ATTR_IGNORE_LIST = ATTR_IGNORE_LIST + \
-                     ['actions', 'disks', 'certificate', 'lun_storage']
+                     ['actions', 'disks', 'certificate', 'lun_storage', 'statistic']
 
 VALS_IGNORE_DICT = {
                     'usage': ['vm'],
