@@ -546,7 +546,7 @@ def startVm(positive, vm, wait_for_status=ENUMS['vm_state_powering_up'],
                                     wait_for_status.lower().replace('_', ''))
     started = VM_API.waitForQuery(query, timeout=VM_ACTION_TIMEOUT, sleep=10)
     if started and wait_for_ip:
-        started = bool(waitForIP(vm))
+        started = waitForIP(vm)[0]
 
     return started
 
@@ -1790,7 +1790,7 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
             return False
 
         if useAgent:
-            ip = waitForIP(vmName)
+            ip = waitForIP(vmName)[1]['ip']
 
         return checkVMConnectivity(positive, vmName, os_type,
                                    attempt=attempt, interval=interval,
@@ -1814,7 +1814,8 @@ def waitForIP(vm, timeout=600, sleep=DEF_SLEEP):
        * vm - name of the virtual machine
        * timeout - how long to wait
        * sleep - polling interval
-    Return: First IP occurence or False if no ip has been found
+    Return: Tupple ( True/False whether it obtained the IP,
+                     IP if fetched or None)
     '''
     start_time = time.time()
     while time.time() - start_time < timeout:
@@ -1823,9 +1824,9 @@ def waitForIP(vm, timeout=600, sleep=DEF_SLEEP):
         if guest_info is not None:
             ip = guest_info.get_ips().get_ip()[0].get_address()
             VM_API.logger.debug("Got IP: %s", ip)
-            return ip
+            return True, { 'ip' : ip }
 
-    return False
+    return False, { 'ip' : None }
 
 
 #TODO: replace with generic "async create requests" mechanism

@@ -123,7 +123,7 @@ def runLoadOnGuest(positive, targetVM, osType, username, password, loadType,
         clientIPs = []
         for clientVM in clientVMList:
             clientIP = clientVM if isValidIp(clientVM) \
-                        else waitForIP(clientVM)
+                        else waitForIP(clientVM)[1]['ip']
             clientIPs.append(clientIP)
         initParams['protocol'] = protocol
         startParams['clientMachines'] = []
@@ -136,7 +136,7 @@ def runLoadOnGuest(positive, targetVM, osType, username, password, loadType,
         initParams['extra'] = extra
 
     vmIPAddress = targetVM if isValidIp(targetVM) \
-        else waitForIP(targetVM)
+        else waitForIP(targetVM)[1]['ip']
     machine = Machine(vmIPAddress, username, password).util(osType)
     agent = load_agent.LoadAgent(machine, targetVM)
     if not agent.addLoadGenerator(loadType, **initParams):
