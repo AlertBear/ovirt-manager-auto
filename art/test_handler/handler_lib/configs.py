@@ -227,8 +227,9 @@ class ParamsValidator(object):
         try:
             getaddrinfo(value, None)
         except gaierror:
-            raise ValidateError("Domain %s doesn't exist" % value)
-
+            #raise ValidateError("Domain %s doesn't exist" % value)
+            logger.warning("Domain %s doesn't exist or it is IPA domain"\
+                           % value)
         return value
 
     def checkHostIsAlive(self, value):
