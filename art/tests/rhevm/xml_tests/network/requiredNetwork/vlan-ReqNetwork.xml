@@ -36,7 +36,7 @@
 <test_case>
   <test_name>generate sw1 network element</test_name>
   <test_action>genSNNic</test_action>
-  <parameters>nic='{host_nics[1]}', networks='{networks[0]}'</parameters>
+  <parameters>nic='{host_nics[1]}', network='{networks[0]}'</parameters>
   <positive>NONE</positive>
   <run>YES</run>
   <fetch_output>host_nic->sw1_nic</fetch_output>
@@ -111,15 +111,15 @@
   <test_description/>
 </test_case>
 <test_case>
-   <test_name>Editing sw1 to be required</test_name>
-   <test_action>updateClusterNetwork</test_action>
-   <parameters>cluster='{cluster}',network='{networks[0]}',required='true'</parameters>
-   <positive>TRUE</positive>
-   <run>yes</run>
-   <fetch_output/>
-   <report>YES</report>
-   <vital>FALSE</vital>
-   <test_description/>
+  <test_name>Editing sw1 to be required</test_name>
+  <test_action>updateClusterNetwork</test_action>
+  <parameters>cluster='{cluster}',network='{networks[0]}',required='true'</parameters>
+  <positive>TRUE</positive>
+  <run>yes</run>
+  <fetch_output/>
+  <report>YES</report>
+  <vital>FALSE</vital>
+  <test_description/>
 </test_case>
 <test_case>
   <test_name>Turn DOWN eth1</test_name>
