@@ -126,7 +126,7 @@ def _prepareDiskObject(**kwargs):
             direct_lun.set_username(lun_creds[0])
             direct_lun.set_password(lun_creds[1])
 
-        disk.set_lunStorage(data_st.Storage(logical_unit=[direct_lun],
+        disk.set_lun_storage(data_st.Storage(logical_unit=[direct_lun],
                                             type_=type_))
 
     return disk
