@@ -1,6 +1,7 @@
 Input Test Scenario File
 ========================
-This file defines the test scenario. Each test case in this file should contain the following attributes (xml nodes for .xml file, column for .ods file, TestCase object attributes for .py file):
+This file defines the test scenario which contains a set of test cases.
+Each test case in this file should contain the following attributes (xml nodes for .xml file, column for .ods file, TestCase object attributes for .py file):
 
 * test_name - *mandatory* Name of the test which will appear in reports 
 * test_action - *mandatory* Action which will run to implement the test, each action is mapped to the function in conf/actions.conf file 
@@ -18,43 +19,60 @@ This file defines the test scenario. Each test case in this file should contain 
 
 Grouping tests in input file into test sets
 -------------------------------------------
-You can group your tests according to their functionality, flows, testing purpose, and so on. To define a custom group in input file,  add a new test case before the tests that should be grouped. Fill this test case as follows: 
+You can group your tests according to their functionality, flows, testing purpose and so on. To define a custom group in input file add a new test case before the tests that should be grouped. Fill this test case as follows: 
     ``test_name=START_GROUP: <name_of_tests_group>``
 All other fields except 'run'  are not applicable and can be set as 'n/a' or  skipped. 
-The 'run' value should be set if you want to run the whole group of tests in a loop or by certain conditions. See 'run' possible values above. All test case ‘run’ possible values are applicable also in scope of tests groups. 
+The 'run' value should be set if you want to run the whole group of tests in a loop or by certain conditions. See 'run' possible values below. All test case ‘run’ possible values are applicable also in scope of tests groups.
+Example for starting group in xml file::
+
+    <test_case>
+        <test_name>START_GROUP: Setup</test_name>
+        <run>yes</run>
+    </test_case>
+
 To mark where the test group is finished add a new test case after the last test of the group and fill it as follows: 
-test_name=END_GROUP:<name_of_tests_group>. Name of the test group here  must be the same as the value specified in START_GROUP . 
+    ``test_name=END_GROUP:<name_of_tests_group>``
+Name of the test group here  must be the same as the value specified in START_GROUP.
+Example for ending group in xml file::
+
+    <test_case>
+        <test_name>END_GROUP: Setup</test_name>
+    </test_case>
 
 
 Parameters
 ----------
-Parameter names should correspond to the names of test function parameters. You can put parameters names from conf/settings.conf file here as place holders.
+Parameter names should correspond to the names of test function parameters. You can put parameters names from ``conf/settings.conf`` file here as place holders.
 
-Just put parameter name in {} brackets and it will be replaced with the relevant value during the run time. If you want to get product constants from conf/elements.conf section call it  e{param_name}.
+Just put parameter name in {} brackets and it will be replaced with the relevant value during the run time. If you want to get product constants from ``conf/elements.conf`` section call it  e{param_name}.
 
-If you have a comma separated list in conf/settings.conf you can fetch its value in a way of array indexing - {name_of_param[param_index]}.
+If you have a comma separated list in ``conf/settings.conf`` you can fetch its value in a way of array indexing - *{name_of_param[param_index]}*.
 
-If you want to get these listed as a string you can call it as [name_of_param].
+If you want to get these listed as a string you can call it as *[name_of_param]*.
 
 If you are using loop in 'run' column (see below) you can concatenate loop iteration index to any of your parameters.
 
 Here are a few examples for values of parameters column:
 
-Get parameter 'compatibility_version' from settings
+Get parameter 'compatibility_version' from settings::
         
-    ``name='Test1',version='{compatibility_version}'``
-Get parameter 'storage_type_nfs' from conf/elements.conf 
+    name='Test1',version='{compatibility_version}'
+
+Get parameter 'storage_type_nfs' from conf/elements.conf::
         
-    ``name='Test1',storage_type='e{storage_type_nfs}'`` 
-Get first parameter from list of 'vm_names' from settings 
+    name='Test1',storage_type='e{storage_type_nfs}'
+
+Get first parameter from list of 'vm_names' from settings::
         
-    ``name='{vm_names[0]}'``
-Get list of 'vm_names' names as a string from settings 
+    name='{vm_names[0]}'
+
+Get list of 'vm_names' names as a string from settings::
         
-    ``name='[vm_names]'``
-Add iteration index to name (relevant when running in loop) 
+    name='[vm_names]'
+
+Add iteration index to name (relevant when running in loop)::
         
-    ``name='testVM#loop_index'``
+    name='testVM#loop_index'
 
 Run Conditions
 --------------
@@ -67,66 +85,91 @@ Action condition:
     ``not ifaction(<action_name>,<action parameters>) # test will run if action return False``
 
 Loop and forkfor:
-Loop can be used to make several same operations. While  loop does all iterations one after another , forkfor executes them simultaneously. Both can be used with groups so the contents of the group will get executed several times. 
-    ``loop(<number_of_iterations>) loop(<iterations_range>) loop({<parameter_name_to_iterate_on>})``
+Loop can be used to make several same operations. While  loop does all iterations one after another , forkfor executes them simultaneously. Both can be used with groups so the contents of the group will get executed several times.
+You can iterate over predefined number, range, parameters or number defined in configuration file:
 
-    ``forkfor(<number_of_iterations>) forkfor(<iterations_range>)``
+    ``loop(<number_of_iterations>) loop(<iterations_range>) loop({<parameter_name_to_iterate_on>}) loop(int{xxx})``
 
-    ``forkfor({<parameter_name_to_iterate_on>})``
+    ``forkfor(<number_of_iterations>) forkfor(<iterations_range>) forkfor({<parameter_name_to_iterate_on>}) forkfor(int{xxx})``
+
 Note that Python might not be able to create more than  600 threads, therefore forkfor(700) may fail.  In addition, executing too many  requests can lead to load problems on remote side.
 
-'if' and 'loop' together:
+You can use 'if' and 'loop' together:
 
     ``if(<condition>);loop(<number_of_iterations>)``
 
 Examples: 
 
-Simple condition:
-    ``if('{compatibility_version}'=='2.3')``
+Simple condition::
+
+    if('{compatibility_version}'=='2.3')
     
-    ``if(len({hosts})>2) # will run if number of values in ‘hosts’ parameter in configuration file is greater than 2``
+    if(len({hosts})>2) # will run if number of values in ‘hosts’ parameter in configuration file is greater than 2
 
-Action conditions: 
-    ``ifaction(activateHost,'TRUE',name='{host}')``
+Action conditions::
 
-    ``not ifaction(activateHost,'TRUE',name='{host}')``
+    ifaction(activateHost,'TRUE',name='{host}')
 
-Loop statements
-    ``loop(5) loop(5-10) loop({os_name})``
+    not ifaction(activateHost,'TRUE',name='{host}')
 
-'if' and 'loop' together: 
-    ``if('{compatibility_version}'=='2.3');loop(5)``
+Loop statements::
 
-You can iterate over several parameters at once. It can be useful for an example for host installation.  If you want to install several hosts which all have different passwords, define the following parameters in the settings.conf file::
+    loop(5)
+    loop(5-10)
+    loop({os_name})
+    loop(int{num_of_vms})
+
+'if' and 'loop' together::
+
+    if('{compatibility_version}'=='2.3');loop(5)
+
+You can iterate over several parameters at once. It can be useful for an example for host installation.  If you want to install several hosts which all have different passwords, define the following parameters in the *settings.conf* file::
 
     hosts = host1,host2,host3
     password = pass1,pass2,pass3
 
-Then in your input file put the following in the 'parameters' field: 
-    ``host={host},password={password}``
-And in 'run' field: 
-    ``loop({host},{password})``
+Then in your input file put the following in the *parameters* field::
+
+    host={host},password={password}
+
+And in *run* field::
+
+    loop({host},{password})
+    
 Your test will run for 3 times and each time the required action will be run with the hostname and password relevant to the current iteration.
 
 Fetch Output
 ------------
 It assumed that the function will  return additional values (besides status) in dictionary format. Specify  the key name related to the desired output value and  the parameter name of where the key will be put. The format of this value should be the following: 
     ``<fetch_output_from_key_name>-><fetch_output_to_parameter_name>``
-Examples: 
-    ``osName->myOsName``
-You can use parameters place holders in <fetch_output_to_parameter_name> (can be useful in parallel runs) 
-    ``osName->osName{index}``
-Then you can use this fetched value as parameter in your further tests: 
-    ``vm='MyVm',os_name=%myOsName%``
-or with parameters place holders: 
-    ``vm='MyVm',os_name=%osName{index}%``
-or to concatenate fetched output to another string: 
-    ``vm='MyVm',os_name='test' + %osName{index}%``
-You can fetch several output parameters in the same manner, just separate them with commas. For example: 
-    ``osName->myOsName, osType->myOsType``
-If the function returns a Python list type object, it's possible to reference the individual items like this later on: 
-    ``name=%out%[1]``
+Examples::
+
+    osName->myOsName
+
+You can use parameters place holders in *<fetch_output_to_parameter_name>* (can be useful in parallel runs)::
+
+    osName->osName{index}
+    
+Then you can use this fetched value as *parameter* in your further tests::
+
+    vm='MyVm',os_name=%myOsName%
+    
+or with parameters place holders::
+
+    vm='MyVm',os_name=%osName{index}%
+    
+or to concatenate fetched output to another string::
+
+    vm='MyVm',os_name='test' + %osName{index}%
+    
+You can fetch several output parameters in the same manner, just separate them with commas. For example::
+
+    osName->myOsName, osType->myOsType
+    
+If the function returns a Python list type object, it's possible to reference the individual items like this later on::
+
+    name=%out%[1]
 
 Test Templates
 ---------------
- You can find samples of test scenarios files at tests/xml_templates/ folder.
+ You can find samples of test scenarios files at `tests/xml_templates/` folder.

@@ -6,12 +6,12 @@ API initialization
 ::
 
     from rhevm_api.utils.test_utils import get_api
-    ELEMENT = 'my_object_name'
-    COLLECTION = 'my_objects_collection_name'
+    ELEMENT = 'host' # object name
+    COLLECTION = 'hosts' # objects collectionname
     my_api = get_api(ELEMENT, COLLECTION)
 
-Fetching REST Objects
-======================
+Fetching REST Objects from Data Structures
+==========================================
 There are 2 possible ways:
 
     **using getDS**::
@@ -82,4 +82,16 @@ Add element to an element sub-collection
         parentObjColl = getObjCollection(parent_obj_name, collection_name, collection_elem_name)
         addObj = my_api.find(add_object_name)
         obj, status = my_api.create(addObj, positive, collection=parentObjColl)
+    return status
+
+Setting function to be an action
+================================
+Action means to be able to call this function from your test files. It can be done easily by decorating your function.
+::
+
+    @is_action()
+    def addObj(positive, **kwargs):
+        new_obj = _prepareObject(**kwargs)
+        res, status = OBJ_API.create(new_obj, positive)
+
     return status
