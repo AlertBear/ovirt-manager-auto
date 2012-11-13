@@ -14,14 +14,14 @@ Test Case Configuration
 
 CLI Options
 -----------
-    --with-trac Enables plugin
+    --with-trac  Enable plugin
 
 Configuration File Options
 --------------------------
-    [TRAC]
-    enabled - True/False, enables plugin
-    url - trac site URL, 'http(s)://[user[:pass]@]host[:port]/path/to/rpc/entry'
-            default: https://engineering.redhat.com/trac/automation/rpc
+    | **[TRAC]**
+    | **enabled** - True/False, enables plugin
+    | **url** - trac site URL, 'http(s)://[user[:pass]@]host[:port]/path/to/rpc/entry'
+    |        *default*: https://engineering.redhat.com/trac/automation/rpc
 
 """
 

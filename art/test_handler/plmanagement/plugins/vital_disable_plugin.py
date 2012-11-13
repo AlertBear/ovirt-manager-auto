@@ -12,11 +12,13 @@ don't want to change your xml file.
 This is exactly what this plugin provides for you.
 
 CLI Options:
-    --vital-disable enable plugin
+------------
+    --vital-disable  Enable plugin
 
 Configuration Options:
-    [VITAL_DISABLE]
-    enabled   to enable the plugin (true/false)
+----------------------
+    | **[VITAL_DISABLE]**
+    | **enabled**   to enable the plugin (true/false)
 """
 
 from art.test_handler.plmanagement import Component, implements, get_logger, PluginError

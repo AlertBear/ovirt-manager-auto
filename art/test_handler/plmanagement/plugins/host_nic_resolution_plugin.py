@@ -8,12 +8,12 @@ It will replace host_nics in PARAMETERS section with values fetched from vds
 
 CLI Options:
 ------------
-    --with-host-nics-resolution enable plugin
+    --with-host-nics-resolution  Enable the plugin
 
 Configuration Options:
 ----------------------
-    [HOST_NICS_RESOLUTION]
-    enabled   to enable the plugin (true/false)
+    | **[HOST_NICS_RESOLUTION]**
+    | **enabled**   to enable the plugin (true/false)
 """
 
 from art.test_handler.plmanagement import Component, implements, get_logger, PluginError

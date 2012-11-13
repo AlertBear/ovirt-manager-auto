@@ -12,7 +12,7 @@ Test Case Configuration
 <bz>bug_num</bz>
 
 CLI Options
-------------
+-----------
     --with-bz  Enables  the Bugzilla plugin.
     --bz-user BZ_USER  User name for Bugzilla ,
         the default is 'bugzilla-qe-tlv@redhat.com'.
@@ -23,12 +23,12 @@ CLI Options
 
 Configuration File Options
 --------------------------
-    [BUGZILLA]
-    enabled  true/false; equivalent to with-bz CLI option
-    user  equivalent to bz-user CLI option
-    password  equivalent to bz-pass CLI option
-    url  equivalent to bz-host CLI option
-    constant_list  list of bug states which should be not skipped
+    | **[BUGZILLA]**
+    | **enabled**  true/false; equivalent to with-bz CLI option
+    | **user**  Equivalent to bz-user CLI option
+    | **password**  Equivalent to bz-pass CLI option
+    | **url**  Equivalent to bz-host CLI option
+    | **constant_list**  List of bug states which should be not skipped
 
 Usage
 -----

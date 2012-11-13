@@ -5,6 +5,8 @@ import sys
 PATH_TO_PLUGINS = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'art', 'test_handler', 'plmanagement', 'plugins'))
 
 if __name__ == '__main__':
+    if not os.path.exists('source/plugins'):
+        os.makedirs('source/plugins')
     plugins_doc = open('source/plugins.rst', 'w')
     plugins_doc.write("""
 ART Plugins

@@ -10,15 +10,15 @@ under <captured_log> tag.
 
 CLI Options:
 ------------
-    --log-capture enable plugin
+    --log-capture   Enable the plugin
 
 Configuration Options:
 ----------------------
-    [LOG_CAPTURE]
-    enabled - to enable the plugin (true/false)
-    level - logging level, default: debug
-    record_name - xml node name in results file, default: captured_log
-    fmt - a string which describes the log  message format, for an example:
+    | **[LOG_CAPTURE]**
+    | **enabled** - to enable the plugin (true/false)
+    | **level** - logging level, default: debug
+    | **record_name** - xml node name in results file, default: captured_log
+    | **fmt** - a string which describes the log  message format, for an example:
         '#(asctime)s - #(threadName)s - #(name)s - #(levelname)s - #(message)s')
 """
 

@@ -8,9 +8,9 @@ machines as defined in your configuration file.
 
 CLI Options:
 ------------
-    --cleanup enable plugin and clean all (storage and network)
-    --cleanup-storage enable plugin and clean storage only
-    --cleanup-network enable plugin and clean network only
+    --cleanup   Enable the plugin and clean all (storage and network)
+    --cleanup-storage   Enable plugin and clean storage only
+    --cleanup-network   Enable plugin and clean network only
 """
 
 import logging

@@ -9,12 +9,12 @@ puts it into PARAMETERS.cpu_name value.
 
 CLI Options:
 ------------
-    --with-cpu-name-resolution enable plugin
+    --with-cpu-name-resolution  Enable the plugin
 
 Configuration File Options:
-----------------------
-    [CPU_NAME_RESOLUTION]
-    enabled   to enable the plugin (true/false)
+---------------------------
+    | **[CPU_NAME_RESOLUTION]**
+    | **enabled** To enable the plugin (true/false)
 """
 
 import re

@@ -9,12 +9,12 @@ according to RUN.data_struct_mod.
 
 CLI Options:
 ------------
-    --with-ds-gen enable plugin
+    --with-ds-gen   Enable the plugin
 
 Configuration Options:
 ----------------------
-    [GENERATE_DS]
-    enabled - to enable plugin (true/false)
+    | **[GENERATE_DS]**
+    | **enabled** - to enable plugin (true/false)
 """
 
 import os
