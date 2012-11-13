@@ -26,7 +26,8 @@
    <test_action/>
    <parameters>n/a1</parameters>
    <positive>NONE</positive>
-   <run>if('sanity31' in '[networksanity]' or '*' in '[networksanity]')</run>
+   <run>if('sanity31' in '[networksanity]')</run>
+   <!--   <run>if('sanity31' in '[networksanity]' or '*' in '[networksanity]')</run> -->
    <fetch_output/>
    <report/>
    <vital/>
@@ -1482,7 +1483,7 @@
 <test_case>
    <test_name>Remove sw1 from from host</test_name>
    <test_action>detachHostNic</test_action>
-   <parameters>host='{vds[0]}', nic='{nics[1]}', network='{networks[0]}'</parameters>
+   <parameters>host='{vds[0]}', nic='{host_nics[1]}', network='{networks[0]}'</parameters>
    <positive>FALSE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -1504,7 +1505,7 @@
 <test_case>
    <test_name>Update Host Nic ip 256.1.1.1</test_name>
    <test_action>updateHostNic</test_action>
-   <parameters>host='{vds[0]}', nic='{nics[1]}',boot_protocol='static',address='256.1.1.1',netmask='255.255.255.0'</parameters>
+   <parameters>host='{vds[0]}', nic='{host_nics[1]}',boot_protocol='static',address='256.1.1.1',netmask='255.255.255.0'</parameters>
    <positive>FALSE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -1515,7 +1516,7 @@
 <test_case>
    <test_name>Update Host Nic netmask 256.0.0.0</test_name>
    <test_action>updateHostNic</test_action>
-   <parameters>host='{vds[0]}', nic='{nics[1]}',boot_protocol='static',address='1.1.1.1',netmask='256.0.0.0'</parameters>
+   <parameters>host='{vds[0]}', nic='{host_nics[1]}',boot_protocol='static',address='1.1.1.1',netmask='256.0.0.0'</parameters>
    <positive>FALSE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -1526,7 +1527,7 @@
 <test_case>
    <test_name>Update Host Nic ip 1.1.1.1.1</test_name>
    <test_action>updateHostNic</test_action>
-   <parameters>host='{vds[0]}', nic='{nics[1]}',boot_protocol='static',address='1.1.1.1.1',netmask='255.0.0.0'</parameters>
+   <parameters>host='{vds[0]}', nic='{host_nics[1]}',boot_protocol='static',address='1.1.1.1.1',netmask='255.0.0.0'</parameters>
    <positive>FALSE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -1537,7 +1538,7 @@
 <test_case>
    <test_name>Update Host Nic to static without ip</test_name>
    <test_action>updateHostNic</test_action>
-   <parameters>host='{vds[0]}', nic='{nics[1]}',boot_protocol='static'</parameters>
+   <parameters>host='{vds[0]}', nic='{host_nics[1]}',boot_protocol='static'</parameters>
    <positive>FALSE</positive>
    <run>yes</run>
    <fetch_output/>
@@ -1806,7 +1807,7 @@
 <test_case>
    <test_name>Remove sw1 from host</test_name>
    <test_action>detachHostNic</test_action>
-   <parameters>host='{vds[0]}', nic='{nics[1]}', network='{networks[0]}'</parameters>
+   <parameters>host='{vds[0]}', nic='{host_nics[1]}', network='{networks[0]}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
