@@ -53,6 +53,16 @@ URL_REG = re.compile('^(?P<scheme>https?)://((?P<user>[^@:]+)'\
 CONTENT_TYPE = 'application/json'
 
 
+class TracSkipTest(SkipTest):
+    def __init__(self, ticket, site):
+        self.ticket = ticket
+        self.site = site
+
+    def __str__(self):
+        msg = "Known issue %s/ticket/%s" % (self.site, self.ticket)
+        return msg
+
+
 class TracPluginError(PluginError):
     pass
 
@@ -107,6 +117,8 @@ class Trac(Component):
             self.port = int(site['site'])
         else:
             self.port = None
+        self.site_url = "%s://%s/%s" % (site['scheme'], site['host'], \
+                site['path'].rsplit('/', 1)[0])
 
     def _should_be_skipped(self, test):
         ids = getattr(test, 'trac', "").strip()
@@ -118,7 +130,7 @@ class Trac(Component):
             ticket = self._ticket(id_)
             logger.info("TRAC<%s> '%s': %s", id_, ticket['summary'], ticket['status'])
             if ticket['status'].lower() != 'closed':
-                raise SkipTest(ticket)
+                raise TracSkipTest(ticket, self.site_url)
 
     def _ticket(self, id_):
         ticket = self._cache.get(id_, None)
@@ -154,9 +166,10 @@ class Trac(Component):
     def __set_status(self, elm):
         try:
             self._should_be_skipped(elm)
-        except SkipTest:
+        except SkipTest as ex:
             st = getattr(elm, 'status', elm.TEST_STATUS_FAILED)
             if st in (elm.TEST_STATUS_FAILED, elm.TEST_STATUS_ERROR):
+                logger.info("Test marked as Skipped due to: %s", ex)
                 elm.status = elm.TEST_STATUS_SKIPPED
 
     def post_test_case(self, t):

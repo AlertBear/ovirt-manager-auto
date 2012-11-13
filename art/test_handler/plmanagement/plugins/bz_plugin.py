@@ -89,6 +89,9 @@ OVIRT_PRODUCT = 'oVirt'
 
 BZ_ID = 'bz'
 
+URL_RE = re.compile("^(https?://[^/]+)")
+
+
 def bz_decorator(*ids):
     """
     Bugzilla decorator
@@ -112,6 +115,16 @@ def transform_ovirt_comp(comp):
     if m == 'restapi':
         m = REST
     return m
+
+
+class BugzillaSkipTest(SkipTest):
+    def __init___(self, bz_id, site):
+        self.bz = bz_id
+        self.site = site
+
+    def __str__(self):
+        msg = "Known issue %s/show_bug.cgi?id=%s" % (self.site, self.bz)
+        return msg
 
 
 class BugzillaPluginError(PluginError):
@@ -183,10 +196,10 @@ class Bugzilla(Component):
             return
         bz_cfg = conf.get(BZ_OPTION)
         import bugzilla
+        self.url = params.bz_host or bz_cfg.get('url')
         self.user = params.bz_user or bz_cfg.get('user')
         self.passwd = params.bz_pass or bz_cfg.get('password')
-        self.bugzilla = bugzilla.RHBugzilla(url=params.bz_host\
-                or bz_cfg.get('url'))
+        self.bugzilla = bugzilla.RHBugzilla(url=self.url)
         self.bugzilla.login(self.user, self.passwd)
 
         self.const_list = bz_cfg.get('constant_list', "Closed, Verified")
@@ -200,6 +213,8 @@ class Bugzilla(Component):
         self.comp = conf[RUN][ENGINE].lower()
         self.product = bz_cfg[PRODUCT]
         self.__register_functions()
+
+        self.url = URL_RE.match(self.url).group(0)
 
     def __register_functions(self):
         from art.test_handler import tools
@@ -314,7 +329,7 @@ class Bugzilla(Component):
                 continue
 
             if self.__is_open(bz) and self.__deal_with_comp_and_version(bz):
-                raise SkipTest(bz)
+                raise BugzillaSkipTest(bz, self.url)
 
     def should_be_test_case_skipped(self, test_case):
         pass
@@ -330,7 +345,7 @@ class Bugzilla(Component):
     def __set_status(self, elm):
         try:
             self._should_be_skipped(elm)
-        except SkipTest:
+        except SkipTest as ex:
             st = getattr(elm, 'status', elm.TEST_STATUS_FAILED)
             if st in (elm.TEST_STATUS_FAILED, elm.TEST_STATUS_ERROR):
                 # NOTE: many test_cases running with sdk_engine ends with
@@ -338,6 +353,7 @@ class Bugzilla(Component):
                 # also these test_cases. I am not happy with that because
                 # status ERROR is dedicated for different purpose, but current
                 # design is not able to handle in better way.
+                logger.info("Test marked as Skipped due to: %s", ex)
                 elm.status = elm.TEST_STATUS_SKIPPED
 
     def post_test_case(self, t):
