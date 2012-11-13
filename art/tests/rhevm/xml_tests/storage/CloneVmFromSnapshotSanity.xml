@@ -322,7 +322,7 @@
    <test_type>rest</test_type>
    <test_action>addVm</test_action>
    <parameters>name='vm_from_snapshot3', cluster='clone_cluster', snapshot='vm_snapshot1'</parameters>
-   <positive>TRUE</positive>
+   <positive>false</positive>
    <run>yes</run>
 </test_case>
 <test_case>
@@ -330,21 +330,6 @@
    <test_type>rest</test_type>
    <test_action>lockVm</test_action>
    <parameters>vm_name='vm_for_snapshot', ip='{host}', user='root', password='{password}', unlock=True</parameters>
-   <positive>TRUE</positive>
-   <run>yes</run>
-</test_case>
-<test_case>
-   <test_name>Wait until VM is unlocked</test_name>
-   <test_type>rest</test_type>
-   <test_action>waitForVMState</test_action>
-   <parameters>vm='vm_from_snapshot3', state='down'</parameters>
-   <positive>NONE</positive>
-   <run>yes</run>
-</test_case><test_case>
-   <test_name>Remove VM</test_name>
-   <test_type>rest</test_type>
-   <test_action>removeVm</test_action>
-   <parameters>vm='vm_from_snapshot3'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
