@@ -2,7 +2,6 @@
 import os
 import re
 import sys
-import copy
 
 from art.test_handler.plmanagement import Component, implements, get_logger, PluginError
 from art.test_handler.plmanagement.interfaces.application import ITestParser, IConfigurable
@@ -12,29 +11,37 @@ from art.test_handler.test_runner import TestCase, TestSuite, TestGroup, TestRes
 from art.test_handler.exceptions import SkipTest
 import art
 
+logger = get_logger("unittest_loader")
+
 DEPS_INSTALLED = None
 
 try:
-    from unittest import SkipTest as USkipTest
     from nose.suite import ContextSuite
     from nose.case import Test
+except ImportError as ex:
+    ContextSuite = Test = None # this is required
+    DEPS_INSTALLED = ex
+
+try:
+    from unittest import SkipTest as USkipTest
+except ImportError as ex: # py2.6 doesn't contain this class
+    USkipTest = None
+try:
     from unittest2 import SkipTest as USkipTest2
 except ImportError as ex:
-    ContextSuite = Test = USkipTest = USkipTest2 = None
-    DEPS_INSTALLED = ex
+    logger.warning("unittest2 module is not installed") # it can work without it
+    USkipTest2 = None
 
 RUN_SEC = 'RUN'
 TESTS_FILE = 'tests_file'
 CONFIG_PARAMS = 'PARAMETERS'
 REST_CONNECTION = 'REST_CONNECTION'
 
-BZ_ID = 'bz'
-TCMS_PLAN_ID = 'tcms_plan_id'
-TCMS_TEST_CASE = 'tcms_test_case'
+BZ_ID = 'bz' # TODO: should be removed
+TCMS_PLAN_ID = 'tcms_plan_id' # TODO: should be removed
+TCMS_TEST_CASE = 'tcms_test_case' # TODO: should be removed
 
 TEST_CASES_SEPARATOR = '\n' + '=' * 80
-
-logger = get_logger("unittest_loader")
 
 
 class UTestCase(TestCase):
@@ -126,10 +133,16 @@ class UnittestLoader(Component):
     implements(ITestParser, IResultExtension, IConfigurable, IPackaging)
     name = 'Unittest runner'
 
+    def __check_deps(self):
+        if DEPS_INSTALLED is not None:
+            raise DEPS_INSTALLED
+
+
     def is_able_to_run(self, ti):
         m = re.match('unittest://((?P<root_path>[^:]+):)?(?P<mod_path>.+)', ti)
         if not m:
             return False
+        self.__check_deps()
         self.mod_path = m.group('mod_path')
         self.root_path = m.group('root_path')
         if not os.path.exists(self.root_path):
@@ -139,6 +152,7 @@ class UnittestLoader(Component):
         return True
 
     def next_test_object(self):
+        self.__check_deps()
         if not hasattr(self, 'done'):
             self.done = True
             if self.root_path is not None:
@@ -157,8 +171,7 @@ class UnittestLoader(Component):
         if not self.is_enabled(params, conf):
             return
 
-        if DEPS_INSTALLED:
-            raise DEPS_INSTALLED
+        self.__check_deps()
 
         # FIXME: why this is done in both matrix_runner and here ? it should be somewhere else.
         self.conf = conf
@@ -182,12 +195,6 @@ class UnittestLoader(Component):
         res.module_name = tc.mod_name
         res.iter_num = "%03d" % res.iter_num
         logger.info(TEST_CASES_SEPARATOR)
-
-    def pre_group_result_reported(self, res, tg):
-        pass
-
-    def pre_suite_result_reported(self, res, ts):
-        pass
 
     def pre_group_result_reported(self, res, tg):
         pass
