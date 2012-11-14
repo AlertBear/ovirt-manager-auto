@@ -1,7 +1,5 @@
 from lxml.etree import Element, ElementTree
 from lxml.builder import E
-import threading
-import datetime
 from dateutil import tz
 
 import os
@@ -13,7 +11,7 @@ from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 
 
 # TODO: same problem as tcms_plugin
-logger = logging.getLogger('results_formatter')
+logger = logging.getLogger('xml_results_formatter')
 
 class XMLFormatter(Component):
     """
@@ -66,7 +64,7 @@ class XMLFormatter(Component):
         module.append(E.end_time(e_time.strftime(self.TIME_FORMAT)))
 
         # Write the remaining fields.
-        written = set(['start_time', 'end_time', 'module_name', 'group_desc'])
+        written = set(['start_time', 'end_time', 'group_desc'])
         for key in set(kwargs.keys()) - written:
             self.__add_aditional_attrs(module, key, kwargs[key])
 
@@ -89,7 +87,9 @@ class XMLFormatter(Component):
             try:
                 e.text = val
             except ValueError:
-                logger.debug("failed setting key: {0} to val={1}, type(val)={2}".format(key, val, type(val)))
+                logger.debug(
+                    "failed setting key: {0} to val={1}, type(val)={2}".format(
+                    key, val, type(val)))
             root.append(e)
 
     def add_group_result(self, res, tg):

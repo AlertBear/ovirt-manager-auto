@@ -113,7 +113,7 @@ class LogCapture(Component):
 
     def pre_test_result_reported(self, res, t):
         self.log_handler.set_test_case(None)
-        setattr(res, self.rec_name, getattr(t, ATTR_NAME, str()))
+        res.add_result_attribute(ATTR_NAME, self.rec_name, 'Log Capture', '')
 
     def pre_group_result_reported(self, res, g):
         pass

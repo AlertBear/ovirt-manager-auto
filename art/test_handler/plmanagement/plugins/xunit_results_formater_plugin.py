@@ -2,7 +2,7 @@ from lxml.etree import Element, ElementTree, PI
 from lxml.builder import E
 import datetime
 from dateutil import tz
-
+import logging
 
 import os
 from art.test_handler.plmanagement import Component, implements
@@ -14,6 +14,7 @@ JUNIT_NOFRAMES_STYLESHEET = "junit-noframes.xsl"
 
 
 # TODO: same problem as tcms_plugin
+logger = logging.getLogger('xunit_results_formatter')
 
 
 def total_seconds(td):
@@ -82,7 +83,7 @@ class XUnit(Component):
         real_classname = '%s.%s' % (test_case.mod_path, test_case.test_action)
         start_time = kwargs['start_time'].astimezone(tz.tzlocal())
         start_time = start_time.isoformat()
-
+        
         testcase = Element('testcase')
         testcase.attrib['name']         = test_name
         testcase.attrib['classname']    = test_classname
@@ -103,24 +104,44 @@ class XUnit(Component):
 
 
         traits = E.traits()
-        testcase.append(traits)
-        remainder = set(['start_time', 'end_time', 'test_name', 'status'])
-        for k in set(kwargs.keys()) - remainder:
-            val = kwargs[k]
-            if not isinstance(val, basestring):
-                val = str(val)
-            traits.append(E.trait(name=k, value=val))
+        written = ['start_time', 'end_time', 'test_name', 'status']
+        if 'captured_log' in kwargs:
+            testcase.append(E.description(kwargs['captured_log']))
+            written.append('captured_log')
+        for k in set(kwargs.keys()) - set(written):
+            self.__add_aditional_attrs(traits, k, kwargs[k])
         traits.append(E.trait(name='real_classname',
                               value=real_classname))
         traits.append(E.trait(name='start_time',
                               value=start_time))
+        testcase.append(traits)
         self.generate_report()
 
+    def __add_aditional_attrs(self, root, key, val):
+        if isinstance(val, dict):
+            for subkey, subval in val.items():
+                self.__add_aditional_attrs(root, subkey, subval)
+        elif isinstance(val, (list, tuple, set)):
+            for subelm in val:
+                self.__add_aditional_attrs(root, key, subelm)
+        else:
+            if not isinstance(val, basestring):
+                val = str(val)
+            try:
+                e = E.trait(name=key, value=val)
+            except ValueError:
+                logger.debug(
+                    "failed setting key: {0} to val={1}, type(val)={2}".format(
+                    key, val, type(val)))
+            root.append(e)
+
     def add_group_result(self, res, tg):
-        pass
+        for key, val in res.items():
+            self.__add_aditional_attrs(self.testsuite, key, val)
 
     def add_suite_result(self, res, ts):
-        pass
+        for key, val in res.items():
+            self.__add_aditional_attrs(self.testsuite, key, val)
 
     def __update_testsuite_attrs(self):
         tsa = self.testsuite.attrib

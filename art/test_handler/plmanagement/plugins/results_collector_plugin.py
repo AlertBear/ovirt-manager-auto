@@ -26,8 +26,9 @@ class ResultsCollector(Component):
             self.extenders.pre_group_result_reported(res, test)
             self.formatters.add_group_result(res, test)
         elif isinstance(test, TestCase):
-            res = TestResult.result_from_test_case(test)
+            res = TestResult()
             self.extenders.pre_test_result_reported(res, test)
+            res = res.result_from_test_case(test)
             self.formatters.add_test_result(res, test)
         else:
             assert False, "%s is not in (%s, %s, %s)" % \

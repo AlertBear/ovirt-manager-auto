@@ -3,7 +3,6 @@ import os
 import re
 import logging
 from copy import copy
-from configobj import ConfigObj
 from socket import error as SocketError
 from contextlib import contextmanager
 from argparse import Action
@@ -806,8 +805,8 @@ class MatrixBasedTestComposer(Component):
         if not tc.test_report:
             res._report = False
             return
-        res.module_name = tc.mod_name
-        res.iter_num = "%03d" % res.iter_num
+        res.add_result_attribute('module_name', 'mod_name', 'Module Name', '')
+        res.add_result_attribute('iter_num', 'serial', 'Iteration Number', '')
         # here should be added some code which will take care about [REPORT] section
 
         if tc.status in (tc.TEST_STATUS_PASSED, tc.TEST_STATUS_SKIPPED):

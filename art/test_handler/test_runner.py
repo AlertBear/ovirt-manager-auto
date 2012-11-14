@@ -3,12 +3,11 @@
 
 import logging
 
-from configobj import ConfigObj
 from datetime import datetime
 from dateutil.tz import tzutc
 import threading
 import copy
-from art.test_handler.settings import opts, initPlmanager
+from art.test_handler.settings import initPlmanager
 from art.test_handler.exceptions import VitalTestFailed, SkipTest
 from utilities.jobs import JobsSet, Job # TODO: consider to use http://docs.python.org/dev/library/concurrent.futures.html instead
 
@@ -66,14 +65,19 @@ class _DictLikeObject(dict):
             super(_DictLikeObject, self).__setattr__(key, val)
         else:
             self[key] = val
-#class _DictLikeObject(object):
-#    pass
 
 class Result(_DictLikeObject):
+    ATTRIBUTES = {}
+
     # TODO: need to do results more general.
     def __init__(self):
         super(Result, self).__init__()
         self._report = True
+
+    @classmethod
+    def add_result_attribute(cls, attr_name, e_name, nice_name=None,
+                             default=None):
+        cls.ATTRIBUTES[attr_name] = (e_name, nice_name, default)
 
 class TestResult(Result):
     # result.attr_name: (test_elm.name, 'nice_name', 'default_value')
@@ -86,17 +90,12 @@ class TestResult(Result):
             'status': ('status', 'Status', None),
             }
 
-    @classmethod
-    def result_from_test_case(cls, test_case):
-        res = TestResult()
-        for r_name, attrs in cls.ATTRIBUTES.items():
-            setattr(res, r_name, getattr(test_case, attrs[0], attrs[2]))
-        # TODO: more informations
-        return res
-
-    @classmethod
-    def add_result_attribute(cls, attr_name, te_name, nice_name=None, default=None):
-        cls.ATTRIBUTES[attr_name] = (te_name, nice_name, default)
+    def result_from_test_case(self, test_case):
+        for r_name, attrs in self.ATTRIBUTES.items():
+            setattr(self, r_name, getattr(test_case, attrs[0], attrs[2]))
+            if r_name == 'iter_num':
+                self.iter_num =  "%03d" % self.iter_num
+        return self
 
     def formated_attribute(self, attr_name):
         val = getattr(self, attr_name, None)
