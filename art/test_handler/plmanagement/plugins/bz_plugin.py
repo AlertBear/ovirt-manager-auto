@@ -189,7 +189,7 @@ class Bugzilla(Component):
                 or bz_cfg.get('url'))
         self.bugzilla.login(self.user, self.passwd)
 
-        self.const_list = bz_cfg.get('constant_list', "Closed,ON_QA, Verified")
+        self.const_list = bz_cfg.get('constant_list', "Closed, Verified")
         self.const_list = set(self.const_list.upper().replace(',', ' ').\
                               split())
 
