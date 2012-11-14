@@ -18,13 +18,15 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
+
+import logging
+import traceback
+import re
+
 import storageapi.storageManagerWrapper as smngr
 from utilities.utils import getIpAddressByHostName, getHostName
 from utilities.machine import Machine, runLocalCmd
 from utilities.errors import FileAlreadyExistsError, GeneralException
-import logging
-import traceback
-import re
 
 FAIL_REMOVE_MSG = 'Failed to remove device of type {0}: {1}\n{2}'
 PASS_REMOVE_MSG = 'Successfully removed device of type {0}: {1}'
@@ -33,12 +35,15 @@ PASS_CREATE_MSG = 'Successfully created device of type {0}: {1}'
 
 MAIN_SECTION = 'PARAMETERS'
 DEVICES_TARGET_PATHS = {
+                        'gluster': '%s.%s' % (MAIN_SECTION, 'gluster_domain'),
                         'nfs': '%s.%s' % (MAIN_SECTION, 'data_domain'),
                         'export': '%s.%s' % (MAIN_SECTION, 'export_domain'),
                         'iso': '%s.%s' % (MAIN_SECTION, 'tests_iso_domain'),
                         'iscsi': '%s.%s' % (MAIN_SECTION, 'lun'),
                         'local': '%s.%s' % (MAIN_SECTION, 'local_domain'),
                         }
+POSIXFS_TYPES = ['gluster']
+
 
 def processConfList(confList):
     '''
@@ -48,7 +53,7 @@ def processConfList(confList):
     Return: list if its length more than 1, otherwise - first element
     '''
 
-    return confList[0] if len(confList)==1 else confList
+    return confList[0] if len(confList) == 1 else confList
 
 
 def getFromMainConfSection(config, key, mainSection=MAIN_SECTION, asList=True):
@@ -102,6 +107,7 @@ def filterNonEmptyDicts(originalDict):
 class CreateHostGroupNameException(GeneralException):
     message = "Host group is missing. Failed to create it from vdc hostname."
 
+
 def createHostGroupName(vdc):
     '''
     Create host group name from vdc hostname/IP
@@ -120,6 +126,7 @@ class StorageUtils:
     def __init__(self, config):
 
         self.nfs_devices = {}
+        self.gluster_devices = {}
         self.iscsi_devices = {}
         self.local_devices = {}
         self.iso_devices = {}
@@ -133,7 +140,8 @@ class StorageUtils:
         self.data_center_type = str(getFromMainConfSection(config,
                                 'data_center_type', asList=False))
 
-        self.storages = {'nfs':     {},
+        self.storages = {'gluster': {},
+                         'nfs':     {},
                          'iscsi':   {},
                          'local':   {},
                          'iso':     {},
@@ -147,7 +155,8 @@ class StorageUtils:
 
         vdsServers = map(lambda x: getIpAddressByHostName(x),
                         getFromMainConfSection(config, 'vds', vdsSection))
-        vdsPasswords = getFromMainConfSection(config, 'vds_password', vdsSection)
+        vdsPasswords = getFromMainConfSection(config, 'vds_password',
+                                              vdsSection)
 
         if self.data_center_type == 'iscsi' or self.data_center_type == 'none':
             for vds, password in zip(vdsServers, vdsPasswords):
@@ -165,32 +174,34 @@ class StorageUtils:
                                     vdsPasswords[0], subSection)
 
         # new style - no sub-sections, default paths are set
-        self.getStorageConfData(self.storageConf, vdsServers[0], vdsPasswords[0])
+        self.getStorageConfData(self.storageConf, vdsServers[0],
+                                vdsPasswords[0])
 
         if not self.host_group:
-            self.host_group = createHostGroupName(getFromMainConfSection(config,
-                'host', mainSection='REST_CONNECTION', asList=False))
+            self.host_group = createHostGroupName(getFromMainConfSection(\
+              config, 'host', mainSection='REST_CONNECTION', asList=False))
 
-
-    def getDeviceTargetPath(self, targetPath, type):
+    def getDeviceTargetPath(self, targetPath, type_):
         '''
         Description: decide the path in conf file where to put the device,
             target path has the following format: section_name.param_name
         Author: edolinin
         Parameters:
            * targetPath - pre-defined path or None
-           * type - device type, possible values: nfs, iscsi, local, export, iso
+           * type - device type, possible values: nfs, gluster, iscsi, local,
+            export, iso
         Return: target path of a device in conf file
         '''
         if targetPath:
             return targetPath
 
-        return DEVICES_TARGET_PATHS[type]
+        return DEVICES_TARGET_PATHS[type_]
 
-
-    def getStorageConfData(self, confStorageSection, vds, vdsPassw, targetPath=None):
+    def getStorageConfData(self, confStorageSection, vds, vdsPassw,
+                           targetPath=None):
         '''
-        Description: retrieve configuration data for allocation of storage devices
+        Description: retrieve configuration data for allocation of
+                     storage devices
         Author: edolinin
         Parameters:
             * confStorageSection - config section or sub-section
@@ -200,6 +211,15 @@ class StorageUtils:
             * targetPath - pre-defined path where to put the device
         Return: None
         '''
+
+        glusterStorage = confStorageSection.get('gluster_server', None)
+        if glusterStorage:
+            targetDevPath = self.getDeviceTargetPath(targetPath, 'gluster')
+
+            self.storages['gluster'][targetDevPath] = {
+                'ip': getIpAddressByHostName(glusterStorage),
+                'total': int(confStorageSection.get('gluster_devices', '0')),
+            }
 
         nfsStorage = confStorageSection.get('nfs_server', None)
         if nfsStorage:
@@ -249,50 +269,114 @@ class StorageUtils:
                 'paths': confStorageSection.as_list('local_devices'),
         }
 
+    def _storageSetupNAS(self, data_center_type):
+        """
+        Description: creation of NAS devices
+        Author: imeerovi
+        Parameters:
+            * data_center_type - data center type from conf file
+        Return: None
+        """
+        if data_center_type == 'posixfs':
+            for fsType in POSIXFS_TYPES:
+                for storageSection, sectionParams in\
+                    self.storages[fsType].items():
+                        self.gluster_devices[storageSection] = [
+                        self.__create_nas_device(sectionParams['ip'],
+                                                     self.host_group,
+                                                     fsType)
+                                for i in range(0, sectionParams['total'])
+                        ]
 
-    def storageSetup(self):
-        '''
-        Description: create NFS nad ISCSI devices defined in settings
-        Author: edolinin
-        Parameters: None
-        '''
-
-        if self.data_center_type == 'nfs' or self.data_center_type == 'none':
-            for storageSection, sectionParams in self.storages['nfs'].items():
-                self.nfs_devices[storageSection] = [
-                    self.__create_nfs_device(sectionParams['ip'], self.host_group)
-                        for i in range(0, sectionParams['total'])
+        elif data_center_type == 'nfs':
+            for storageSection, sectionParams in\
+                self.storages[data_center_type].items():
+                    self.nfs_devices[storageSection] = [
+                    self.__create_nas_device(sectionParams['ip'],
+                                             self.host_group,
+                                             data_center_type)
+                            for i in range(0, sectionParams['total'])
                     ]
 
-        if self.data_center_type == 'iscsi' or self.data_center_type == 'none':
-            for storageSection, sectionParams in self.storages['iscsi'].items():
+    def _storageSetupSAN(self):
+        """
+        Description: creation of SAN devices
+        Author: imeerovi
+        Parameters:
+            * data_center_type - data center type from conf file
+        Return: None
+        """
+        for storageSection, sectionParams in self.storages['iscsi'].items():
                 self.iscsi_devices[storageSection] = [
-                    self.__create_iscsi_device(sectionParams, self.host_group, sectionParams['capacity'], **self.vdsData)
+                    self.__create_iscsi_device(sectionParams, self.host_group,
+                                    sectionParams['capacity'], **self.vdsData)
                         for i in range(0, sectionParams['total'])
                     ]
 
-        if self.data_center_type == 'localfs' or \
-           self.data_center_type == 'none':
-            for storageSection, sectionParams in self.storages['local'].items():
+    def _storageSetupDAS(self):
+        """
+        Description: creation of local fs devices
+        Author: imeerovi
+        Parameters:
+            * data_center_type - data center type from conf file
+        Return: None
+        """
+        for storageSection, sectionParams in self.storages['local'].items():
                 self.local_devices[storageSection] = [
-                    self.__create_local_device(sectionParams['ip'], sectionParams['password'], path)
+                    self.__create_local_device(sectionParams['ip'],
+                                    sectionParams['password'], path)
                         for path in sectionParams['paths']
                     ]
 
+    def _storageSetupISOandExportDomains(self):
+        """
+        Description: creation of iso and export domains
+        Author: imeerovi
+        Parameters:
+            * data_center_type - data center type from conf file
+        Return: None
+        """
+        fsType = self.config[MAIN_SECTION]['iso_export_domain_nas']
+
         for storageSection, sectionParams in self.storages['iso'].items():
             self.iso_devices[storageSection] = [
-                self.__create_nfs_device(sectionParams['ip'], self.host_group)
+                self.__create_nas_device(sectionParams['ip'], self.host_group,
+                            fsType)
                     for i in range(0, sectionParams['total'])
             ]
 
         for storageSection, sectionParams in self.storages['export'].items():
             self.export_devices[storageSection] = [
-                self.__create_nfs_device(sectionParams['ip'], self.host_group)
+                self.__create_nas_device(sectionParams['ip'], self.host_group,
+                                             fsType)
                     for i in range(0, sectionParams['total'])
             ]
 
-        self.logger.info("Finished successfully creation of storage devices")
+    def storageSetup(self):
+        '''
+        Description: create NAS and ISCSI devices defined in settings
+        Author: edolinin
+        Parameters: None
+        '''
+        if self.data_center_type == 'none':
+            self._storageSetupNAS('nfs')
+            self._storageSetupNAS('posixfs')
+            self._storageSetupSAN()
+            self._storageSetupDAS()
 
+        elif self.data_center_type == 'nfs' or\
+           self.data_center_type == 'posixfs':
+            self._storageSetupNAS(self.data_center_type)
+
+        elif self.data_center_type == 'iscsi':
+            self._storageSetupSAN()
+
+        elif self.data_center_type == 'localfs':
+            self._storageSetupDAS()
+
+        self._storageSetupISOandExportDomains()
+
+        self.logger.info("Finished successfully creation of storage devices")
 
     def updateConfFile(self):
         '''
@@ -301,12 +385,23 @@ class StorageUtils:
         Parameters: None
         Return: None
         '''
+        # GLUSTER domain
+        for target in filterNonEmptyDicts(self.gluster_devices):
+            targetData = self.storages['gluster'][target]
 
+            glusterAddress = processConfList(\
+                                    [targetData['ip']] * targetData['total'])
+            setConfValueByKeyPath(self.config, target, glusterAddress,
+                                  '_address')
+
+            glusterPath = processConfList(self.gluster_devices[target])
+            setConfValueByKeyPath(self.config, target, glusterPath, '_path')
         # NFS domain
         for target in filterNonEmptyDicts(self.nfs_devices):
             targetData = self.storages['nfs'][target]
 
-            nfsAddress = processConfList([targetData['ip']] * targetData['total'])
+            nfsAddress = processConfList(\
+                                    [targetData['ip']] * targetData['total'])
             setConfValueByKeyPath(self.config, target, nfsAddress, '_address')
 
             nfsPath = processConfList(self.nfs_devices[target])
@@ -316,7 +411,8 @@ class StorageUtils:
         for target in filterNonEmptyDicts(self.iso_devices):
             targetData = self.storages['iso'][target]
 
-            nfsAddress = processConfList([targetData['ip']] * targetData['total'])
+            nfsAddress = processConfList(\
+                                    [targetData['ip']] * targetData['total'])
             setConfValueByKeyPath(self.config, target, nfsAddress, '_address')
 
             nfsPath = processConfList(self.iso_devices[target])
@@ -326,7 +422,8 @@ class StorageUtils:
         for target in filterNonEmptyDicts(self.export_devices):
             targetData = self.storages['export'][target]
 
-            nfsAddress = processConfList([targetData['ip']] * targetData['total'])
+            nfsAddress = processConfList(\
+                                    [targetData['ip']] * targetData['total'])
             setConfValueByKeyPath(self.config, target, nfsAddress, '_address')
 
             nfsPath = processConfList(self.export_devices[target])
@@ -336,13 +433,17 @@ class StorageUtils:
         for target in filterNonEmptyDicts(self.iscsi_devices):
             targetData = self.storages['iscsi'][target]
 
-            iscsiAddress = processConfList([targetData['ip']] * targetData['total'])
-            setConfValueByKeyPath(self.config, target, iscsiAddress, '_address')
+            iscsiAddress = processConfList(\
+                                    [targetData['ip']] * targetData['total'])
+            setConfValueByKeyPath(self.config, target, iscsiAddress,
+                                  '_address')
 
-            iscsiTarget = processConfList(map(lambda x:x['target'], self.iscsi_devices[target]))
+            iscsiTarget = processConfList(\
+                        map(lambda x: x['target'], self.iscsi_devices[target]))
             setConfValueByKeyPath(self.config, target, iscsiTarget, '_target')
 
-            iscsiLun = processConfList(map(lambda x:x['uuid'], self.iscsi_devices[target]))
+            iscsiLun = processConfList(\
+                        map(lambda x: x['uuid'], self.iscsi_devices[target]))
             setConfValueByKeyPath(self.config, target, iscsiLun)
 
         # Local domain
@@ -352,7 +453,6 @@ class StorageUtils:
 
         self.config.write()
 
-
     def storageCleanup(self):
         '''
         Description: remove NFS and ISCSI devices defined in settings
@@ -360,41 +460,51 @@ class StorageUtils:
         Parameters: None
         Return: None
         '''
+        for storageSection in self.storages['gluster']:
+            if storageSection in self.gluster_devices.keys():
+                for device in self.gluster_devices[storageSection]:
+                    self.__remove_nas_device(\
+                     self.storages['gluster'][storageSection]['ip'], device,
+                     'gluster')
 
         for storageSection in self.storages['nfs']:
             if storageSection in self.nfs_devices.keys():
                 for device in self.nfs_devices[storageSection]:
-                    self.__remove_nfs_device(self.storages['nfs'][storageSection]['ip'],
-                                            device)
+                    self.__remove_nas_device(\
+                     self.storages['nfs'][storageSection]['ip'], device, 'nfs')
 
         for storageSection in self.storages['iscsi']:
-            lunId = 'serial' if self.storages['iscsi'][storageSection]['is_specific'] else 'uuid'
+            lunId = 'serial' if self.storages['iscsi'][\
+                             storageSection]['is_specific'] else 'uuid'
             if storageSection in self.iscsi_devices.keys():
                 for device in self.iscsi_devices[storageSection]:
-                    self.__remove_iscsi_device(self.storages['iscsi'][storageSection]['ip'],
-                                            device[lunId])
+                    self.__remove_iscsi_device(self.storages['iscsi'][\
+                            storageSection]['ip'], device[lunId])
 
         for storageSection in self.storages['local']:
             if storageSection in self.local_devices.keys():
                 for device in self.local_devices[storageSection]:
-                    self.__remove_local_device(self.storages['local'][storageSection]['ip'],
-                                            self.storages['local'][storageSection]['password'],
-                                            device)
+                    self.__remove_local_device(self.storages['local'][\
+                            storageSection]['ip'],
+                            self.storages['local'][storageSection]['password'],
+                            device)
+
+        # choosing nas type for iso and export domain removal
+        fsType = self.config[MAIN_SECTION]['iso_export_domain_nas']
 
         for storageSection in self.storages['iso']:
             if storageSection in self.iso_devices.keys():
                 for device in self.iso_devices[storageSection]:
-                    self.__remove_nfs_device(self.storages['iso'][storageSection]['ip'],
-                                            device)
+                    self.__remove_nas_device(self.storages['iso'][\
+                        storageSection]['ip'], device, fsType)
 
         for storageSection in self.storages['export']:
             if storageSection in self.export_devices.keys():
                 for device in self.export_devices[storageSection]:
-                    self.__remove_nfs_device(self.storages['export'][storageSection]['ip'],
-                                            device)
+                    self.__remove_nas_device(self.storages['export'][\
+                        storageSection]['ip'], device, fsType)
 
-
-    def __create_nfs_device(self,storageServerIp,deviceName):
+    def __create_nas_device(self, storageServerIp, deviceName, fsType):
         '''
         Description: create NFS device with given name
         Author: edolinin
@@ -403,15 +513,16 @@ class StorageUtils:
         Return: path of a new device
         '''
 
-        storageMngr = smngr.StorageManagerWrapper(storageServerIp, 'NFS').manager
+        storageMngr = smngr.StorageManagerWrapper(storageServerIp,
+                                                  fsType.upper()).manager
         path = storageMngr.createDevice(deviceName)
 
-        self.logger.info(PASS_CREATE_MSG.format('nfs', path))
+        self.logger.info(PASS_CREATE_MSG.format(fsType, path))
 
         return path
 
-
-    def __create_iscsi_device(self, storageServer, lunName, capacity, **serversData):
+    def __create_iscsi_device(self, storageServer, lunName, capacity,
+                               **serversData):
         '''
         Description: create ISCSI device with given name
         Author: edolinin
@@ -424,10 +535,12 @@ class StorageUtils:
         '''
 
         storageServerIp = storageServer['ip']
-        storageMngr = smngr.StorageManagerWrapper(storageServerIp, 'ISCSI').manager
+        storageMngr = smngr.StorageManagerWrapper(storageServerIp,
+                                                  'ISCSI').manager
         lunId, targetName = storageMngr.createLun(lunName, capacity)
 
-        storageServer['is_specific'] = re.match('netapp|xtreamio', storageMngr.__class__.__name__, re.I)
+        storageServer['is_specific'] = re.match('netapp|xtreamio',
+                                        storageMngr.__class__.__name__, re.I)
         # linux TGT requires host IP instead of iqn for mapping
         isTGT = re.match('TGT', storageMngr.__class__.__name__, re.I)
         initiators = serversData.values() if not isTGT else serversData.keys()
@@ -448,7 +561,6 @@ class StorageUtils:
 
         return lunInfo
 
-
     def __create_local_device(self, server, password, path, username='root'):
         '''
         Description: create local device with given path
@@ -465,7 +577,8 @@ class StorageUtils:
             if not machineObj.isAlive():
                 raise Exception("Machine is not reachable: " + server)
             if not machineObj.createLocalStorage(path):
-                raise Exception("Failed to create local storage device:" + path)
+                raise Exception("Failed to create local storage device:"\
+                                + path)
         except FileAlreadyExistsError:
             pass
 
@@ -473,8 +586,7 @@ class StorageUtils:
 
         return path
 
-
-    def __remove_nfs_device(self, storageServerIp, path):
+    def __remove_nas_device(self, storageServerIp, path, fsType):
         '''
         Description: remove NFS device with given name
         Author: edolinin
@@ -483,14 +595,14 @@ class StorageUtils:
            * path - path to NFS device
         Return: None
         '''
-
         try:
-            storageMngr = smngr.StorageManagerWrapper(storageServerIp, 'NFS').manager
+            storageMngr = smngr.StorageManagerWrapper(storageServerIp,
+                                            fsType.upper()).manager
             storageMngr.removeDevice(path)
-            self.logger.info(PASS_REMOVE_MSG.format('nfs', path))
+            self.logger.info(PASS_REMOVE_MSG.format(fsType, path))
         except:
-            self.logger.info(FAIL_REMOVE_MSG.format('nfs', path, traceback.format_exc()))
-
+            self.logger.info(FAIL_REMOVE_MSG.format(fsType, path,
+                                                    traceback.format_exc()))
 
     def __remove_iscsi_device(self, storageServerIp, deviceId):
         '''
@@ -503,12 +615,13 @@ class StorageUtils:
         '''
 
         try:
-            storageMngr = smngr.StorageManagerWrapper(storageServerIp, 'ISCSI').manager
+            storageMngr = smngr.StorageManagerWrapper(storageServerIp,
+                                                      'ISCSI').manager
             storageMngr.removeLun(deviceId)
             self.logger.info(PASS_REMOVE_MSG.format('iscsi', deviceId))
         except:
-            self.logger.info(FAIL_REMOVE_MSG.format('iscsi', deviceId, traceback.format_exc()))
-
+            self.logger.info(FAIL_REMOVE_MSG.format('iscsi', deviceId,
+                                                    traceback.format_exc()))
 
     def __remove_local_device(self, server, password, path, username='root'):
         '''
@@ -527,8 +640,9 @@ class StorageUtils:
             if not machineObj.isAlive():
                 raise Exception("Machine is not reachable: " + server)
             if not machineObj.removeLocalStorage(path, force=True):
-                raise Exception("Failed to remove local storage device: " + path)
+                raise Exception("Failed to remove local storage device: "\
+                                + path)
             self.logger.info(PASS_REMOVE_MSG.format('local', path))
         except:
-            self.logger.info(FAIL_REMOVE_MSG.format('local', path, traceback.format_exc()))
-
+            self.logger.info(FAIL_REMOVE_MSG.format('local', path,
+                                                 traceback.format_exc()))
