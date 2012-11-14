@@ -116,18 +116,19 @@ def _prepareVmObject(**kwargs):
     # cpu topology
     cpu_socket = kwargs.pop('cpu_socket', 1 if add else None)
     cpu_cores = kwargs.pop('cpu_cores', 1 if add else None)
-    cpu = data_st.CPU(topology=data_st.CpuTopology(sockets=cpu_socket,
+    if cpu_socket or cpu_cores:
+        cpu = data_st.CPU(topology=data_st.CpuTopology(sockets=cpu_socket,
             cores=cpu_cores))
 
-    # cpu pinning
-    vcpu_pinning = kwargs.pop('vcpu_pinning', None)
-    if vcpu_pinning is not None and vcpu_pinning=="":
-        cpu.set_cpu_tune(data_st.CpuTune())
-    elif vcpu_pinning:
-        cpu.set_cpu_tune(data_st.CpuTune([data_st.VCpuPin(vcpu,cpu_set) \
+        # cpu pinning
+        vcpu_pinning = kwargs.pop('vcpu_pinning', None)
+        if vcpu_pinning is not None and vcpu_pinning=="":
+            cpu.set_cpu_tune(data_st.CpuTune())
+        elif vcpu_pinning:
+            cpu.set_cpu_tune(data_st.CpuTune([data_st.VCpuPin(vcpu,cpu_set) \
                                           for vcpu,cpu_set in \
                                           vcpu_pinning.iteritems()]))
-    vm.set_cpu(cpu)
+        vm.set_cpu(cpu)
 
     # os options
     os = data_st.OperatingSystem(type_=kwargs.pop('os_type',
@@ -139,7 +140,7 @@ def _prepareVmObject(**kwargs):
     if boot_seq:
         boot_seq = boot_seq.split()
         os.set_boot([data_st.Boot(dev=boot_dev) for boot_dev in boot_seq])
-    vm.set_os(os)
+        vm.set_os(os)
 
     # template
     template_name = kwargs.pop('template', 'Blank' if add else None)
@@ -155,20 +156,21 @@ def _prepareVmObject(**kwargs):
     # type
     vm.set_type(kwargs.pop('type', ENUMS['vm_type_desktop'] if add else None))
 
-    # display
+    # display monitors and type
     display_type = kwargs.pop('display_type',
         ENUMS['display_type_spice'] if add else None)
     display_monitors = kwargs.pop('display_monitors', 1 if add else None)
-    vm.set_display(data_st.Display(type_=display_type,
-            monitors=display_monitors))
+    if display_monitors or display_type:
+        vm.set_display(data_st.Display(type_=display_type, monitors=display_monitors))
 
     # stateless
     vm.set_stateless(kwargs.pop('stateless', None))
 
     # high availablity
     ha = kwargs.pop('highly_available', None)
-    ha_priority = kwargs.pop('availablity_priority', None if add else None)
-    vm.set_high_availability(data_st.HighAvailability(enabled=ha,
+    ha_priority = kwargs.pop('availablity_priority',None if add else None)
+    if ha or ha_priority:
+        vm.set_high_availability(data_st.HighAvailability(enabled=ha,
             priority=ha_priority))
 
     # custom properties
@@ -176,20 +178,23 @@ def _prepareVmObject(**kwargs):
     if custom_prop:
         vm.set_custom_properties(_createCustomPropertiesFromArg(custom_prop))
 
-    # memory policy
-    vm.set_memory_policy(data_st.MemoryPolicy(guaranteed=
-        kwargs.pop('memory_guaranteed', None)))
+    # memory policy memory_guaranteed
+    guaranteed = kwargs.pop('memory_guaranteed', None)
+    if guaranteed:
+        vm.set_memory_policy(data_st.MemoryPolicy(guaranteed))
 
-    # placement policy
-    ppolicy = data_st.VmPlacementPolicy(affinity=
-        kwargs.pop('placement_affinity', None))
+    # placement policy:
+    # placement_affinity
+    affinity = kwargs.pop('placement_affinity', None)
+    ppolicy = data_st.VmPlacementPolicy(affinity)
+    # placement_host
     phost = kwargs.pop('placement_host', None)
     if phost and phost == ENUMS['placement_host_any_host_in_cluster']:
         ppolicy.set_host(data_st.Host())
     elif phost:
         aff_host = HOST_API.find(phost)
         ppolicy.set_host(data_st.Host(id=aff_host.id))
-    vm.set_placement_policy(ppolicy)
+        vm.set_placement_policy(ppolicy)
 
     # storagedomain
     sd_name = kwargs.pop('storagedomain', None)
@@ -197,8 +202,10 @@ def _prepareVmObject(**kwargs):
         sd = STORAGE_DOMAIN_API.find(sd_name)
         vm.set_storage_domain(sd)
 
-    # domain name
-    vm.set_domain(data_st.Domain(name=kwargs.pop('domainName', None)))
+    #  domain_name
+    domain_name = kwargs.pop('domainName', None)
+    if domain_name:
+        vm.set_domain(data_st.Domain(name=domain_name))
 
     # disk_clone
     disk_clone = kwargs.pop('disk_clone', None)
