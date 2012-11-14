@@ -214,16 +214,16 @@
 <test_case>
    <test_name>Wait for VM on SPM to finish installation</test_name>
    <test_type>rest</test_type>
-   <test_action>waitUntilVmQuery</test_action>
-   <parameters>vm='vm_on_spm', query='ip!=""', timeout=1200</parameters>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='vm_on_spm', timeout=1800</parameters>
    <positive>NONE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Wait for VM on HSM to finish installation</test_name>
    <test_type>rest</test_type>
-   <test_action>waitUntilVmQuery</test_action>
-   <parameters>vm='vm_on_hsm', query='ip!=""', timeout=1200</parameters>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='vm_on_hsm', timeout=1800</parameters>
    <positive>NONE</positive>
    <run>yes</run>
 </test_case>
@@ -292,6 +292,14 @@
    <test_action>startVm</test_action>
    <parameters>vm='vm_on_spm', wait_for_status='up'</parameters>
    <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until VM is operable</test_name>
+   <test_type>rest</test_type>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='vm_on_spm'</parameters>
+   <positive>None</positive>
    <run>yes</run>
 </test_case>
 <test_case>
@@ -367,6 +375,14 @@
    <test_action>startVm</test_action>
    <parameters>vm='vm_on_hsm', wait_for_status='up'</parameters>
    <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until VM is operable</test_name>
+   <test_type>rest</test_type>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='vm_on_hsm'</parameters>
+   <positive>None</positive>
    <run>yes</run>
 </test_case>
 <test_case>
@@ -485,8 +501,8 @@
 <test_case>
    <test_name>Wait for VM on SPM to finish installation</test_name>
    <test_type>rest</test_type>
-   <test_action>waitUntilVmQuery</test_action>
-   <parameters>vm='vm_on_spm2', query='ip!=""', timeout=1200</parameters>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='vm_on_spm2', timeout=1800</parameters>
    <positive>NONE</positive>
    <run>yes</run>
 </test_case>
@@ -555,6 +571,14 @@
    <test_action>startVm</test_action>
    <parameters>vm='vm_on_spm2', wait_for_status='up'</parameters>
    <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until VM is operable</test_name>
+   <test_type>rest</test_type>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='vm_on_spm2'</parameters>
+   <positive>None</positive>
    <run>yes</run>
 </test_case>
 <test_case>
@@ -868,16 +892,16 @@
 <test_case>
    <test_name>Wait for VM on SPM to finish installation</test_name>
    <test_type>rest</test_type>
-   <test_action>waitUntilVmQuery</test_action>
-   <parameters>vm='vm_on_spm', query='ip!=""', timeout=1200</parameters>
-   <positive>NONE</positive>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='vm_on_spm', timeout=1800</parameters>
+   <positive>None</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Wait for VM on HSM to finish installation</test_name>
    <test_type>rest</test_type>
-   <test_action>waitUntilVmQuery</test_action>
-   <parameters>vm='vm_on_hsm', query='ip!=""', timeout=1200</parameters>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='vm_on_hsm', timeout=1800</parameters>
    <positive>NONE</positive>
    <run>yes</run>
 </test_case>
@@ -946,6 +970,14 @@
    <test_action>startVm</test_action>
    <parameters>vm='vm_on_spm', wait_for_status='up'</parameters>
    <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until VM is operable</test_name>
+   <test_type>rest</test_type>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='vm_on_spm'</parameters>
+   <positive>None</positive>
    <run>yes</run>
 </test_case>
 <test_case>
@@ -1021,6 +1053,14 @@
    <test_action>startVm</test_action>
    <parameters>vm='vm_on_hsm', wait_for_status='up'</parameters>
    <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until VM is operable</test_name>
+   <test_type>rest</test_type>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='vm_on_hsm'</parameters>
+   <positive>None</positive>
    <run>yes</run>
 </test_case>
 <test_case>
@@ -1147,8 +1187,8 @@
 <test_case>
    <test_name>Wait for VM on SPM to finish installation</test_name>
    <test_type>rest</test_type>
-   <test_action>waitUntilVmQuery</test_action>
-   <parameters>vm='vm_on_spm2', query='ip!=""', timeout=1200</parameters>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='vm_on_spm2', timeout=1800</parameters>
    <positive>NONE</positive>
    <run>yes</run>
 </test_case>
@@ -1217,6 +1257,14 @@
    <test_action>startVm</test_action>
    <parameters>vm='vm_on_spm2', wait_for_status='up'</parameters>
    <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until VM is operable</test_name>
+   <test_type>rest</test_type>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='vm_on_spm2'</parameters>
+   <positive>None</positive>
    <run>yes</run>
 </test_case>
 <test_case>
@@ -1855,8 +1903,8 @@
 <test_case>
    <test_name>Wait for VM to finish installation</test_name>
    <test_type>rest</test_type>
-   <test_action>waitUntilVmQuery</test_action>
-   <parameters>vm='vm_for_testing', query='ip!=""', timeout=1200</parameters>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='vm_for_testing', timeout=1800</parameters>
    <positive>NONE</positive>
    <run>yes</run>
 </test_case>
@@ -1925,6 +1973,14 @@
    <test_action>startVm</test_action>
    <parameters>vm='vm_for_testing', wait_for_status='up'</parameters>
    <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until VM is operable</test_name>
+   <test_type>rest</test_type>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='vm_for_testing'</parameters>
+   <positive>None</positive>
    <run>yes</run>
 </test_case>
 <test_case>
@@ -2437,6 +2493,13 @@
    <test_action>addSnapshot</test_action>
    <parameters>vm='vm_testing', description='vm_snapshot'</parameters>
    <positive>FALSe</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Stop VM</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='vm_testing'</parameters>
+   <positive>true</positive>
    <run>yes</run>
 </test_case>
 <test_case>
