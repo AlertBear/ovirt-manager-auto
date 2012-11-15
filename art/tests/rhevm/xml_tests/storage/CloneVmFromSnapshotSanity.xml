@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- vim: set ts=3 sw=3 expandtab: -->
 <?xml-stylesheet type="text/xsl" href="table.xslt"?>
-<input>
+<input tcms_plan_id="5290">
 <test_case>
    <test_name>START_GROUP: SETUP</test_name>
    <test_action/>
@@ -184,6 +184,7 @@
    <parameters/>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>134130</tcms_test_case>
 </test_case>
 <test_case>
    <test_name>Create VM from snapshot</test_name>
@@ -238,6 +239,7 @@
    <parameters/>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>134131</tcms_test_case>
 </test_case>
 <test_case>
    <test_name>Create VM on another storage domain</test_name>
@@ -284,6 +286,7 @@
    <parameters/>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>134132</tcms_test_case>
 </test_case>
 <test_case>
    <test_name>Start VM</test_name>
@@ -370,6 +373,7 @@
    <parameters/>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>137688</tcms_test_case>
 </test_case>
 <test_case>
    <test_name>Create VM with the duplicated name</test_name>
@@ -400,6 +404,7 @@
    <parameters/>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>166174</tcms_test_case>
 </test_case>
 <test_case>
    <test_name>Create VM</test_name>
@@ -494,6 +499,7 @@
    <parameters/>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>166175</tcms_test_case>
 </test_case>
 <test_case>
    <test_name>Create VM</test_name>
@@ -588,6 +594,7 @@
    <parameters/>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>166179</tcms_test_case>
 </test_case>
 <test_case>
    <test_name>Create desktop VM</test_name>
@@ -746,6 +753,7 @@
    <parameters/>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>166182</tcms_test_case>
 </test_case>
 <test_case>
    <test_name>Create VM</test_name>

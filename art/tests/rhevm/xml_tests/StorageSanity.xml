@@ -2,13 +2,14 @@
 <!-- vim: set ts=3 sw=3 expandtab: -->
 <?xml-stylesheet type="text/xsl" href="table.xslt"?>
 
-<input>
+<input tcms_plan_id="4038">
 <test_case>
    <test_name>START_GROUP: Create_remove_data_center</test_name>
    <test_action/>
    <parameters>n/a2</parameters>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>94947</tcms_test_case>
    <fetch_output/>
 </test_case>
 <test_case>
@@ -313,6 +314,7 @@
    <parameters>n/a2</parameters>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>94950</tcms_test_case>
    <fetch_output/>
 </test_case>
 <test_case>
@@ -593,6 +595,7 @@
    <parameters>n/a2</parameters>
    <positive>NONE</positive>
    <run>if(('{data_center_type}' == 'e{storage_type_nfs}' and 1&lt;len('[data_domain_path]'.split(', '))) or ('{data_center_type}' == 'e{storage_type_iscsi}' and 1&lt;len('[lun]'.split(', '))) or ('{data_center_type}' == 'e{storage_type_fcp}' and 1&lt;len('[lun]'.split(', '))) or ('{data_center_type}' == 'e{storage_type_local}' and 1&lt;len('[local_domain_path]'.split(', '))))</run>
+   <tcms_test_case>94954</tcms_test_case>
    <fetch_output/>
 </test_case>
 <test_case>
@@ -847,6 +850,7 @@
    <parameters>n/a2</parameters>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>99062</tcms_test_case>
    <fetch_output/>
 </test_case>
 <test_case>

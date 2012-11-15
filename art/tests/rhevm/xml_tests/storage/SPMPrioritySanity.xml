@@ -1,10 +1,11 @@
-<input>
+<input tcms_plan_id="5299">
 <test_case>
    <test_name>START_GROUP: TC_136167</test_name>
    <test_action/>
    <parameters/>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>136167</tcms_test_case>
    <report/>
 </test_case>
 <test_case>
@@ -259,6 +260,7 @@
    <parameters/>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>136169</tcms_test_case>
    <report/>
 </test_case>
 <test_case>
@@ -466,6 +468,7 @@
    <parameters/>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>136171</tcms_test_case>
    <report/>
 </test_case>
 <test_case>
@@ -737,6 +740,7 @@
    <parameters/>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>136449</tcms_test_case>
    <report/>
 </test_case>
 <test_case>
@@ -896,6 +900,7 @@
    <parameters/>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>136454</tcms_test_case>
    <report/>
 </test_case>
 <test_case>
@@ -991,6 +996,7 @@
    <parameters/>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>136466</tcms_test_case>
    <report/>
 </test_case>
 <test_case>
@@ -1167,6 +1173,7 @@
    <positive>NONE</positive>
 <!-- BZ 843798 -->
    <run>no</run>
+   <tcms_test_case>136468</tcms_test_case>
    <report/>
 </test_case>
 <test_case>
@@ -1423,6 +1430,7 @@
    <positive>NONE</positive>
 <!--   BZ 845302 -->
    <run>no</run>
+   <tcms_test_case>136477</tcms_test_case>
    <report/>
 </test_case>
 <test_case>
@@ -1646,6 +1654,7 @@
    <parameters/>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>138270</tcms_test_case>
    <report/>
 </test_case>
 <test_case>

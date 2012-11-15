@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- vim: set ts=3 sw=3 expandtab: -->
 <?xml-stylesheet type="text/xsl" href="table.xslt"?>
-<input>
+<input tcms_plan_id="5426">
 <test_case>
    <test_name>START_GROUP: Setup</test_name>
    <test_action/>
@@ -72,6 +72,7 @@
    <parameters></parameters>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>138744</tcms_test_case>
    <fetch_output/>
 </test_case>
 <test_case>
@@ -95,6 +96,7 @@
    <parameters></parameters>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>138745</tcms_test_case>
 </test_case>
 <test_case>
    <test_name>Attach disk to VM</test_name>
@@ -117,6 +119,7 @@
    <parameters></parameters>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>138749</tcms_test_case>
 </test_case>
 <test_case>
    <test_name>Start VM with direct lun</test_name>
@@ -148,6 +151,7 @@
    <parameters></parameters>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>138756</tcms_test_case>
 </test_case>
 <test_case>
    <test_name>Create template with direct LUN</test_name>
@@ -184,6 +188,7 @@
    <parameters></parameters>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>138768</tcms_test_case>
 </test_case>
 <test_case>
    <test_name>Detach LUN from VM</test_name>
@@ -206,6 +211,7 @@
    <parameters></parameters>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>138769</tcms_test_case>
 </test_case>
 <test_case>
    <test_name>Remove direct LUN</test_name>
@@ -229,6 +235,7 @@
    <parameters></parameters>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>138763</tcms_test_case>
 </test_case>
 <test_case>
    <test_name>Direct LUN</test_name>

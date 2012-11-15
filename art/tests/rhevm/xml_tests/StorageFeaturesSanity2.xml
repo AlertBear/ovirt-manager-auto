@@ -2,13 +2,14 @@
 <!-- vim: set ts=3 sw=3 expandtab: -->
 <?xml-stylesheet type="text/xsl" href="table.xslt"?>
 
-<input>
+<input tcms_plan_id="6458">
 <test_case>
    <test_name>START_GROUP:Hotplug</test_name>
    <test_action/>
    <parameters/>
    <positive>none</positive>
    <run>yes</run>
+   <tcms_test_case>174616</tcms_test_case>
    <report/>
 </test_case>
 <test_case>
@@ -422,6 +423,7 @@
    <parameters/>
    <positive>none</positive>
    <run>if('[data_domain_address]'.split(',')&gt;1 and '{data_center_type}'=='e{storage_type_nfs}')</run>
+   <tcms_test_case>174630</tcms_test_case>
    <report/>
 </test_case>
 <test_case>
@@ -765,6 +767,7 @@
    <parameters/>
    <positive>none</positive>
    <run>if('[lun_address]'.split(',')&gt;1 and '{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <tcms_test_case>174630</tcms_test_case>
    <report/>
 </test_case>
 <test_case>
@@ -1156,6 +1159,7 @@
    <parameters/>
    <positive>none</positive>
    <run>yes</run>
+   <tcms_test_case>174614</tcms_test_case>
    <report/>
 </test_case>
 <test_case>
@@ -1565,6 +1569,7 @@
    <parameters/>
    <positive>none</positive>
    <run>yes</run>
+   <tcms_test_case>174621</tcms_test_case>
    <report/>
 </test_case>
 <test_case>

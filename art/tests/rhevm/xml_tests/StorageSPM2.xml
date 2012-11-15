@@ -2,13 +2,14 @@
 <!-- vim: set ts=3 sw=3 expandtab: -->
 <?xml-stylesheet type="text/xsl" href="table.xslt"?>
 
-<input>
+<input tcms_plan_id="2461">
 <test_case>
    <test_name>START_GROUP: Non_data_storage_domains</test_name>
    <test_action/>
    <parameters/>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>50030</tcms_test_case>
    <report/>
    <fetch_output/>
 </test_case>
@@ -331,6 +332,7 @@
    <parameters/>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>50029</tcms_test_case>
    <report/>
    <fetch_output/>
 </test_case>
@@ -662,6 +664,7 @@
    <parameters/>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>87244</tcms_test_case>
    <report/>
    <fetch_output/>
 </test_case>
@@ -1087,6 +1090,7 @@
    <parameters/>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>50031</tcms_test_case>
    <report/>
    <fetch_output/>
 </test_case>

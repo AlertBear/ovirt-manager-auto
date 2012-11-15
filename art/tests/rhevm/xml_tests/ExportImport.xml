@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- vim: set ts=3 sw=3 expandtab: -->
 <?xml-stylesheet type="text/xsl" href="table.xslt"?>
-<input>
+<input tcms_plan_id="2092">
 <test_case>
    <test_name>START_GROUP: Setup</test_name>
    <test_action/>
    <parameters>n/a2</parameters>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>41240</tcms_test_case>
    <fetch_output/>
 </test_case>
 <test_case>
@@ -437,6 +438,7 @@
    <parameters>n/a2</parameters>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>42054</tcms_test_case>
    <fetch_output/>
 </test_case>
 <test_case>
@@ -536,6 +538,7 @@
    <parameters>n/a2</parameters>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>41256</tcms_test_case>
    <fetch_output/>
 </test_case>
 <test_case>
@@ -638,6 +641,7 @@
    <parameters>n/a2</parameters>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>41242</tcms_test_case>
    <fetch_output/>
 </test_case>
 <test_case>

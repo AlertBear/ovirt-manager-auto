@@ -2,13 +2,14 @@
 <!-- vim: set ts=3 sw=3 expandtab: -->
 <?xml-stylesheet type="text/xsl" href="table.xslt"?>
 
-<input>
+<input tcms_plan_id="6458">
 <test_case>
    <test_name>START_GROUP:Sanlock</test_name>
    <test_action/>
    <parameters/>
    <positive>none</positive>
    <run>yes</run>
+   <tcms_test_case>174615</tcms_test_case>
    <report/>
 </test_case>
 <test_case>
@@ -373,6 +374,7 @@
    <parameters/>
    <positive>none</positive>
    <run>if(len('[vds]'.split(','))&gt;1)</run>
+   <tcms_test_case>174610</tcms_test_case>
    <report/>
 </test_case>
 <test_case>
@@ -576,8 +578,10 @@
    <test_action/>
    <parameters/>
    <positive>none</positive>
-   <!-- Blocked by BZ#879253 -->
+   <!-- Blocked by BZ#879253 
+   <run>if(len('[vds]'.split(','))&gt;1)</run> -->
    <run>no</run>
+   <tcms_test_case>174611</tcms_test_case>
    <report/>
 </test_case>
 <test_case>
@@ -1094,7 +1098,8 @@
    <test_action/>
    <parameters/>
    <positive>none</positive>
-   <run/>
+   <run>yes</run>
+   <tcms_test_case>174617</tcms_test_case>
    <report/>
 </test_case>
 <test_case>
@@ -1570,6 +1575,7 @@
    <parameters/>
    <positive>none</positive>
    <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+   <tcms_test_case>174631</tcms_test_case>
    <report/>
 </test_case>
 <test_case>
@@ -1966,6 +1972,7 @@
    <positive>none</positive>
    <!-- This feature has been dropped for 3.1 -->
    <run>no</run>
+   <tcms_test_case>174613</tcms_test_case>
    <report/>
 </test_case>
 <test_case>
