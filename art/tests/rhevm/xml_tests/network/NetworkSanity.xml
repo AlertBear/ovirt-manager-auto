@@ -113,7 +113,7 @@
 <test_case>
    <test_name>Set sw1 as display network</test_name>
    <test_action>updateClusterNetwork</test_action>
-   <parameters>cluster='{cluster}',network='{networks[0]}',usages='display'</parameters>
+   <parameters>cluster='{cluster}',network='{networks[0]}',display='True'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
