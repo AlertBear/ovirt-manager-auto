@@ -1,8 +1,7 @@
 Summary:
 In general our goal is to achieve full RHEVM network functionality testing.
 The functionality concept is based on a simple flow: add, edit and remove within each RHEVM component.
-It also divided to Sanity and topologies tests. This way we can manage our automation test to run full network validation which requires more resources and time
-but covers real life scenarios with Live VMs and network traffic.
+It also divided to Sanity and feature tests. This way we can manage our automation test to run full network validation which requires more resources and time but covers real life scenarios with Live VMs and network traffic.
 The second option is to run only sanity which validate full RHEVM functionality, takes less time with less resources but doesn't include real network traffic with real
 VMs.
 The entire test XML is divided to groups which gives the ability to decide which groups/topology will be tested each run.
@@ -12,7 +11,7 @@ As for backward compatibility, we offer 3.1 and 3.0 flows in a different groups.
 
 
 Environment restrictions:
-1. One host for sanity and Two for topologies.
+1. One host for sanity and Two for features groups.
 2. Each host should have at least 2 nics for sanity and 4 nics for topologies.
 3. Network router should hold several vlans while each vlan is related to different network (DHCP should allocate different network regarding vlan).
    Vlans: each interface on the switch should have vlan allow (all the existing vlans)
@@ -28,13 +27,34 @@ Requirements:
 1. Sanity: requires one host with at least 2 interfaces.
    only two interfaces won't including bonding validation.
    while 4 interfaces will include both vlan and bond validation.
-2. Topologies: requires two hosts with 4 interfaces each.
+2. Features Groups: requires two hosts with 4 interfaces each.
 
+
+
+XML Template:
+Each XML written based on common template. the ides is to achive a modular but standart test flow.
+each XML will contain both positive and negative base on a specific feature.
+
+<>Feature Name<>
+    <>positive_feature_name<>
+        <>groupA<>
+            <test cases>
+        <>groupB<>
+            <test cases>
+    <>close<>
+    <>negative_feature_name<>
+        <>groupC<>
+            <test cases>
+        <>groupD<>
+            <test cases>
+    <>close<>
+<>clouse<>
 
 
 ################################################################################
 Sanity:
 ################################################################################
+Positive:
 Sanity_30: will execute sanity test which validate RHEVM 3.0 features
 (note that sanity 3.0 should pass on rhevm 3.1 as well)
 1.
@@ -43,6 +63,11 @@ Sanity_30: will execute sanity test which validate RHEVM 3.0 features
 
 
 Sanity_31: will execute sanity test which validate RHEVM 3.1 features
+1.
+2.
+3.
+
+Negative:
 1.
 2.
 3.
@@ -56,10 +81,64 @@ Negative:
 
 
 ################################################################################
-Topologies:
+Groups:
 Could run with Linux or Windows VM OS.
 ################################################################################
 
+###########
+Vlan.xml
+execute multiple vlans test. check connectivity on VM.
+###########
+1.
+2.
+
+###########
+VlansOverBond.xml
+execute multiple vlans over bond tests.
+###########
+1.
+2.
+
+
+###########
+BondModes.xml
+execute real connectivity to VM threugh all supported bond modes: 1,2,4,5
+###########
+1.
+2.
+
+###########
+Migration.xml
+execute migration tests base on non-operational host regarding missing network.
+###########
+1.
+2.
+
+
+###########
+RequiredNetwork.xml
+contain ClusterPolicyValidation.xml which test the cluster policy of moving host to non-oprational
+regarding missing network which is required network.
+###########
+1.
+2.
+
+
+
+###########
+HotPlugNic.xml
+execute host plug nic tests features.
+it also covers the Nic Drivers tests which validate all VM nic dirvers: rtl8139, e1000 and virtio.
+###########
+1.
+2.
+
+
+
+
+
+###########
+Old topologies for 3.0 tests:
 ###########
 Topology A:
 Purpose: Validate all supported VM nic interfaces are working (virtio, e1000 and rtl8139)
