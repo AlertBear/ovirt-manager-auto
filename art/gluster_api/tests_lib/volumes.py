@@ -419,7 +419,7 @@ def addBrickToVolume(positive, cluster, volume, bricks):
 
     volBricks, status = bricksUtil.create(volBricks, positive,
                         collection=volBricksColl, coll_elm_name='brick',
-                        incrementBy=len(bricks))
+                        incrementBy=len(bricks), async=True)
     return status
 
 
@@ -491,11 +491,11 @@ def removeBrickFromVolume(positive, cluster, volume, bricks, force=True):
     else:
         return False
 
-    if vol.volume_type in ('REPLICATE', 'DISTRIBUTED_REPLICATE',
-                           'DISTRIBUTED_STRIPE'):
+    if vol.volume_type in ('replicate', 'distributed_replicate',
+                           'distributed_stripe'):
         delBricks = GlusterBricks()
         delBricks.set_replica_count((vol.replica_count -1) \
-                                    if vol.volume_type == 'REPLICATE' \
+                                    if vol.volume_type == 'replicate' \
                                     else vol.replica_count)
         delBricks.set_brick(bricks)
         return util.delete(vol.link[index], positive, body=delBricks,
@@ -509,30 +509,32 @@ def removeBrickFromVolume(positive, cluster, volume, bricks, force=True):
 
 
 @is_action()
-def checkVolumeParams(positive, cluster, volume, **kwargs):
+def checkVolumeParam(positive, cluster, volume, key, value):
     '''
-    Description: Add brick to volume
+    Description: Checks volume parameter
     Author: imeerovi
     Parameters:
+    * cluster - cluster name
     * volume - volume name
-    * key=value
+    * key - the name of option
+    * value - the value of options
     Returns: True if actual value is equal to value of key
-            False in case that values are not equal
+             False in case that values are not equal
     '''
     vol = getClusterVolume(cluster, volume)
-
     ERROR = "%s of %s has wrong value, expected: %s, actual: %s."
     status = True
 
     try:
-        # Check bricks if requested:
-        if 'access_control_list' in kwargs:
-            expectedValue = kwargs.pop('access_control_list')
-            actualValue = vol.get_access_control_list().get_ip()
-            if expectedValue != actualValue:
-                status = False
-                util.logger.error(ERROR % ("ACL parameter",
-                          vol.get_name(), expectedValue, actualValue))
+        options = vol.options.get_option()
+        actualValue = None
+        for option in options:
+            if option.name == key:
+                actualValue = option.value
+        if value != actualValue:
+            status = False
+            util.logger.error(ERROR % ("Parameter",
+                      vol.get_name(), value, actualValue))
 
     except AttributeError as e:
         util.logger.error("checkVolumeParams: %s", str(e))
