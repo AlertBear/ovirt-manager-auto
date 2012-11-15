@@ -13,6 +13,7 @@ paths = list(set([os.path.abspath(x) for x in sys.path]) - set((project_path,)))
 paths.insert(0, project_path)
 sys.path = paths
 # __package_exclude_end__
+from utilities.configs import ValidationError
 
 from art.test_handler.test_runner import TestRunner
 from art.test_handler.settings import populateOptsFromArgv, CmdLineError, \
@@ -20,7 +21,6 @@ from art.test_handler.settings import populateOptsFromArgv, CmdLineError, \
 from art.test_handler.plmanagement import PluginError
 from art.test_handler.reports import initializeLogger
 from art.test_handler.settings import ReturnCode as RC
-from art.test_handler.handler_lib.configs import ValidationError
 
 
 logger = logging.getLogger(__name__)

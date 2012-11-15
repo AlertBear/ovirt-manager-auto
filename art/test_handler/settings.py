@@ -30,10 +30,11 @@ from time import strftime
 from shutil import copyfile
 from configobj import ConfigObj
 
+from utilities.configs import ParamsValidator
+
 import art
 from art.test_handler.plmanagement.manager import PluginManager
-from art.test_handler.handler_lib.configs import ParamsValidator
-
+from art.test_handler import find_config_file
 
 opts = {}
 """ A options global for all REST tests. """
@@ -160,7 +161,10 @@ def readTestRunOpts(path, redefs):
     copyfile(path, confFileCopyName)
 
     ParamsValidator(confFile=confFileCopyName,
-                        confSpecFile=opts['confSpec'])
+                    confSpecFile=opts['confSpec'],
+                    frameworkBasePath=os.path.dirname(art.__file__),
+                    findConfigFileFunc=find_config_file,
+                    pluginManagerHandle=initPlmanager())
 
     config = ConfigObj(confFileCopyName)
     rewriteConfig(config, redefs)
