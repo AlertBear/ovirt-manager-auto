@@ -88,6 +88,14 @@
    <run>yes</run>
 </test_case>
 <test_case>
+   <test_name>Wait for SPM</test_name>
+   <test_type>rest</test_type>
+   <test_action>waitForSPM</test_action>
+   <parameters>datacenter='live_snapshot_dc', timeout=100, sleep=10</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
    <test_name>Get SPM host</test_name>
    <test_type>rest</test_type>
    <test_action>returnSPMHost</test_action>
@@ -747,6 +755,14 @@
    <test_action>attachStorageDomain</test_action>
    <parameters>storagedomain='data_sd', datacenter='live_snapshot_dc'</parameters>
    <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait for SPM</test_name>
+   <test_type>rest</test_type>
+   <test_action>waitForSPM</test_action>
+   <parameters>datacenter='live_snapshot_dc', timeout=100, sleep=10</parameters>
+   <positive>NONE</positive>
    <run>yes</run>
 </test_case>
 <test_case>

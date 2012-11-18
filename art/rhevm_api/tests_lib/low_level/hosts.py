@@ -1318,7 +1318,7 @@ def returnSPMHost(hosts):
     * hosts - the list of hosts to be searched through
     '''
     for host in hosts.split(','):
-        if checkHostSpmStatus('true', host):
+        if checkHostSpmStatus(True, host):
             return True, {'spmHost': host}
     return False, {'spmHost': None}
 
@@ -1332,7 +1332,7 @@ def getAnyNonSPMHost(hosts):
     * hosts - the list of hosts to be searched through
     '''
     for host in hosts.split(','):
-        if not checkHostSpmStatus('true', host):
+        if not checkHostSpmStatus(True, host):
             return True, {'hsmHost': host}
     return False, {'hsmHost': None}
 
