@@ -218,6 +218,14 @@
    <run>yes</run>
 </test_case>
 <test_case>
+   <test_name>Wait until all VM's disks are OK</test_name>
+   <test_type>rest</test_type>
+   <test_action>waitForVmsDisks</test_action>
+   <parameters>vm='vm_from_snapshot'</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
    <test_name>END_GROUP: TC_134130</test_name>
    <test_action/>
    <parameters/>
@@ -244,6 +252,14 @@
    <test_type>rest</test_type>
    <test_action>waitForVMState</test_action>
    <parameters>vm='vm_on_sd2', state='down'</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until all VM's disks are OK</test_name>
+   <test_type>rest</test_type>
+   <test_action>waitForVmsDisks</test_action>
+   <parameters>vm='vm_on_sd2'</parameters>
    <positive>NONE</positive>
    <run>yes</run>
 </test_case>
@@ -290,6 +306,14 @@
    <test_type>rest</test_type>
    <test_action>waitForVMState</test_action>
    <parameters>vm='vm_from_snapshot2', state='down'</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until all VM's disks are OK</test_name>
+   <test_type>rest</test_type>
+   <test_action>waitForVmsDisks</test_action>
+   <parameters>vm='vm_from_snapshot2'</parameters>
    <positive>NONE</positive>
    <run>yes</run>
 </test_case>
@@ -442,6 +466,14 @@
    <run>yes</run>
 </test_case>
 <test_case>
+   <test_name>Wait until all VM's disks are OK</test_name>
+   <test_type>rest</test_type>
+   <test_action>waitForVmsDisks</test_action>
+   <parameters>vm='vm_cloned_with_two_nics'</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
    <test_name>Remove VMs with two nics</test_name>
    <test_type>rest</test_type>
    <test_action>removeVms</test_action>
@@ -528,6 +560,14 @@
    <run>yes</run>
 </test_case>
 <test_case>
+   <test_name>Wait until all VM's disks are OK</test_name>
+   <test_type>rest</test_type>
+   <test_action>waitForVmsDisks</test_action>
+   <parameters>vm='vm_cloned_with_two_disks'</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
    <test_name>Remove VMs with two disks</test_name>
    <test_type>rest</test_type>
    <test_action>removeVms</test_action>
@@ -606,6 +646,14 @@
    <run>yes</run>
 </test_case>
 <test_case>
+   <test_name>Wait until all VM's disks are OK</test_name>
+   <test_type>rest</test_type>
+   <test_action>waitForVmsDisks</test_action>
+   <parameters>vm='vm_from_desktop'</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
    <test_name>Remove desktop VMs</test_name>
    <test_type>rest</test_type>
    <test_action>removeVms</test_action>
@@ -666,6 +714,14 @@
    <test_type>rest</test_type>
    <test_action>waitForVMState</test_action>
    <parameters>vm='vm_from_server', state='down'</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until all VM's disks are OK</test_name>
+   <test_type>rest</test_type>
+   <test_action>waitForVmsDisks</test_action>
+   <parameters>vm='vm_from_server'</parameters>
    <positive>NONE</positive>
    <run>yes</run>
 </test_case>
@@ -752,6 +808,14 @@
    <test_type>rest</test_type>
    <test_action>waitForVMState</test_action>
    <parameters>vm='vm_with_two_disks', state='down'</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until all VM's disks are OK</test_name>
+   <test_type>rest</test_type>
+   <test_action>waitForVmsDisks</test_action>
+   <parameters>vm='vm_two_disks'</parameters>
    <positive>NONE</positive>
    <run>yes</run>
 </test_case>

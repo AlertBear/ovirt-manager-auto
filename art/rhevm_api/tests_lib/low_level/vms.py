@@ -2312,3 +2312,32 @@ def lockVm(positive, vm_name, ip, user, password, unlock=False):
                                         else VM_API.logger.info
         log_fce('Command \'%s\' failed: %s' % (cmd, status[1]['out']))
     return status[0] == positive
+
+
+@is_action()
+def waitForVmsDisks(vm, disks_status=ENUMS['disk_state_ok'], timeout=600,
+                    sleep=10):
+    """
+    Description: Waits until all vm's disks are in given state
+    Author: jlibosva
+    Parameters:
+        * vm_name - name of VM
+        * disks_status - desired state of all disks
+    Returns: True on success, False on timeout
+    """
+    vm = VM_API.find(vm)
+
+    start_time = time.time()
+    disks_to_wait = [disk for disk in
+                     DISKS_API.getElemFromLink(vm, get_href=False)
+                     if disk.get_status() is not None and
+                        disk.get_status().get_state() != disks_status]
+    while disks_to_wait and time.time() - start_time < timeout:
+        time.sleep(sleep)
+        disks_to_wait = [disk for disk in
+                         DISKS_API.getElemFromLink(vm, get_href=False)
+                         if disk.get_status() is not None and
+                            disk.get_status().get_state() != disks_status]
+
+    return False if disks_to_wait else True
+
