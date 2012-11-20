@@ -136,6 +136,7 @@
    <parameters></parameters>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>47191</tcms_test_case>
 </test_case>
 
 <!-- Populate test variables  -->
@@ -273,6 +274,7 @@
    <parameters></parameters>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>68535</tcms_test_case>
 </test_case>
 
 <test_case>
@@ -343,6 +345,7 @@
    <parameters></parameters>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>50775</tcms_test_case>
 </test_case>
 <test_case>
    <test_name>Attach ISO Domain to Data Center</test_name>
@@ -550,6 +553,7 @@
    <parameters></parameters>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>50840</tcms_test_case>
 </test_case>
 <test_case>
    <test_name>Get Master Storage Domain Name</test_name>
@@ -646,6 +650,7 @@
    <parameters></parameters>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>50776</tcms_test_case>
 </test_case>
 <test_case>
    <test_name>Deactivate ISO Storage Domain</test_name>
@@ -710,6 +715,7 @@
    <parameters></parameters>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>86148</tcms_test_case>
 </test_case>
 <test_case>
    <test_name>Get Master Storage Domain Name</test_name>
@@ -856,6 +862,7 @@
    <parameters></parameters>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>86149</tcms_test_case>
 </test_case>
 <test_case>
    <test_name>Get setup hostname</test_name>
@@ -1219,6 +1226,7 @@
    <parameters></parameters>
    <positive>NONE</positive>
    <run/>
+   <tcms_test_case>86150</tcms_test_case>
 </test_case>
 <test_case>
    <test_name>Deactivate ISO Domain</test_name>
