@@ -1,5 +1,6 @@
 #!/bin/env python
 
+import os
 from utilities.setup_utils import setup
 from utilities.setup_utils import common
 
@@ -20,7 +21,9 @@ PIP_DEPS = [
         'generateDS',
         ]
 
-RELEASE = 1
+RELEASE = os.environ.get('RELEASE', '1')
+VERSION = os.environ.get('VERSION', "1.0.0")
+CHANGELOG = os.environ.get('CHANGELOG', None)
 
 SUB_MODULES = [
                 'rhevm_api',
@@ -66,7 +69,7 @@ if __name__ == '__main__':
 
     setup(
             name=RPM_NAME,
-            version='1.0',
+            version=VERSION,
             release=RELEASE,
             author='Red Hat',
             author_email='edolinin@redhat.com',
@@ -84,5 +87,6 @@ if __name__ == '__main__':
             post_install_script=SCRIPT,
             requires=DEPS,
             config=CONFS,
+            changelog=CHANGELOG,
     )
 

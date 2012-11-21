@@ -8,7 +8,9 @@ PIP_DEPS = [
         'configobj>=4.7.2',
         ]
 
-RELEASE = 1
+RELEASE = os.environ.get('RELEASE', "1")
+VERSION = os.environ.get('VERSION', "1.0.0")
+CHANGELOG = os.environ.get('CHANGELOG', None)
 
 PACKAGE_NAME = 'art'
 DESCRIPTION = "Automated framework for testing REST APIs applications, "\
@@ -109,7 +111,7 @@ if __name__ == '__main__':
 
     setup(
             name=PACKAGE_NAME,
-            version='1.0',
+            version=VERSION,
             release=RELEASE,
             author='Red Hat',
             author_email='edolinin@redhat.com',
@@ -119,7 +121,7 @@ if __name__ == '__main__':
             long_description=DESCRIPTION,
             platforms='Linux',
             scripts=['scripts/art', 'scripts/art-setup'],
-#                license='?',
+            license='GPLv2',
             package_dir={PACKAGE_NAME: 'art'},
             packages=SUB_MODULES,
             py_modules=PY_MODULES,
@@ -131,5 +133,6 @@ if __name__ == '__main__':
             post_uninstall_script=UN_SCRIPT,
             pipdeps=PIP_DEPS,
             requires=DEPS,
+            changelog=CHANGELOG,
     )
 

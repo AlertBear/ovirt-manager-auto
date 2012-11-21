@@ -14,7 +14,10 @@ from configobj import ConfigObj
 SETUP_DIR = './'
 SETUP_NAME = 'setup_%s_plugin.py'
 PREFIX_NAME = 'art-plugin'
-DEFAULT_RELEASE = 1
+
+RELEASE = os.environ.get('RELEASE', "1")
+VERSION = os.environ.get('VERSION', "1.0.0")
+CHANGELOG = os.environ.get('CHANGELOG', None)
 
 
 SETUP_SCRIPT = """
@@ -47,8 +50,12 @@ def check_params(params):
             break
     else:
         params['requires'].append('art')
-    if 'release' not in params:
-        params['release'] = DEFAULT_RELEASE
+    #if 'release' not in params:
+    #    params['release'] = RELEASE
+    # NOTE: currently we want to have same version and release for all packages
+    params['release'] = RELEASE
+    params['version'] = VERSION
+    params['changelog'] = CHANGELOG
     if 'pip_deps' not in params:
         params['pip_deps'] = []
     if params['pip_deps']:

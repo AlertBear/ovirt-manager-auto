@@ -1,9 +1,5 @@
-RELEASE ?= 1
-VERSION ?= 1.0
-#CHANGELOG ?= $(shell date +"* %a %b %d %Y Generated <rhevm-qe-dept@redhat.com>")
-
 SETUP_ACTION="bdist_rpm"
-SETUP_ACTION_OPTS=--release="$(RELEASE)" #--changelog="$(CHANGELOG)"
+SETUP_ACTION_OPTS=
 RHEVM_API="setup_rhevm_api.py"
 GLUSTER_API="setup_gluster_api.py"
 JASPER_API="setup_jasper_api.py"
@@ -42,6 +38,6 @@ install_pip:
 install_deps: install_yum install_pip
 
 clean:
-	rm -rf build dist results
+	$(RM) -r build dist results
 	find . -type f -regex '.*[.]py[co]$$' -exec rm -rf {} \;
 	find . -type d -regex '.*/results$$' -exec rm -rf {} \;
