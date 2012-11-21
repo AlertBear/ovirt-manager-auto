@@ -28,10 +28,3 @@ lun_address = force_list(default=None)
 vds = force_list(default=None)
 vds_password = force_list(default=None)
 local_domain_path = force_list(default=None)
-
-[POSIXFS]
-vfs_type = option('glusterfs', default='glusterfs')
-vds = force_list(default=None)
-vds_password = force_list(default=None)
-gluster_domain_address = force_list(default=None)
-gluster_domain_path = force_list(default=None)
