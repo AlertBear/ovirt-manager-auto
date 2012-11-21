@@ -133,6 +133,10 @@ class UnittestLoader(Component):
     implements(ITestParser, IResultExtension, IConfigurable, IPackaging)
     name = 'Unittest runner'
 
+    def __init__(self):
+        super(UnittestLoader, self).__init__()
+        self.suites = None
+
     def __check_deps(self):
         if DEPS_INSTALLED is not None:
             raise DEPS_INSTALLED
@@ -155,17 +159,37 @@ class UnittestLoader(Component):
         self.__check_deps()
         if not hasattr(self, 'done'):
             self.done = True
+        if self.suites is None:
+            self.suites = []
+            modules = []
             if self.root_path is not None:
                 sys.path.insert(0, self.root_path)
-            from nose.loader import TestLoader
-            mod = __import__(self.mod_path.rsplit('.')[0])
-            setattr(mod, 'ART_CONFIG', self.conf)
 
-            mod = __import__(self.mod_path, fromlist=[self.mod_path.split('.')[-1]])
+            from nose.loader import TestLoader
+            for mod_path in self.mod_path:
+
+                m = re.match("(?P<module>.+?)((\.(?P<name>[A-Z].+))|$)", mod_path)
+                if not m:
+                    return None
+                module = m.group('module')
+                name = m.group('name')
+
+                mod = __import__(module.rsplit('.')[0])
+                setattr(mod, 'ART_CONFIG', self.conf)
+
+                mod = __import__(module, fromlist=[module.split('.')[-1]])
+                modules.append([name, mod])
 
             loader = TestLoader()
-            return UTestSuite(loader.loadTestsFromModule(mod))
-        return None
+            for m in modules:
+                if m[0] is not None:
+                    self.suites.append(UTestSuite(loader.loadTestsFromName(module=m[1], name=m[0])))
+                else:
+                    self.suites.append(UTestSuite(loader.loadTestsFromModule(m[1])))
+        try:
+            return self.suites.pop()
+        except IndexError:
+            return None
 
     def configure(self, params, conf):
         if not self.is_enabled(params, conf):
