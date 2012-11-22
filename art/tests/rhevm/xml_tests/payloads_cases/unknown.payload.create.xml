@@ -1,0 +1,62 @@
+<?xml-stylesheet type="text/xsl" href="table.xslt"?>
+<input>
+<test_case>
+    <test_name>START_GROUP: PAYLOAD_UNKNOWN_VIA_CREATE</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>NONE</positive>
+    <run>NO</run>
+</test_case>
+<test_case>
+    <test_name>Create VM from template to test payload type CDROM via CREATE</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='unknown-payload', description='payload test', cluster='{cluster_name}', template= 'payload-template-for-test', display_type='{display_type}', payloads=[('cdrom','unknown.file','payload cdrom!')]</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Start VM to test cdrom payload status</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='unknown-payload'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait for VM to become up to fetch the IP</test_name>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='unknown-payload', timeout=1200, sleep=10</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <fetch_output>ip->guest_ip</fetch_output>
+</test_case>
+<test_case>
+   <test_name>get payload unknown</test_name>
+   <test_action>getVmPayloads</test_action>
+   <parameters>vm='unknown-payload'</parameters>
+   <positive>TRUE</positive>
+   <BZ>878900</BZ>
+   <run>yes</run>
+   <fetch_output>property_object->property_object</fetch_output>
+</test_case>
+<test_case>
+    <test_name>Stop VM, so we can remove the VM.</test_name>
+    <test_action>stopVm</test_action>
+    <parameters>vm='unknown-payload'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove VM unknown-payload</test_name>
+   <test_action>removeVm</test_action>
+   <parameters>vm='unknown-payload', wait=True</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>END_GROUP: PAYLOAD_UNKNOWN_VIA_CREATE</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>NONE</positive>
+    <run>NO</run>
+</test_case>
+</input>

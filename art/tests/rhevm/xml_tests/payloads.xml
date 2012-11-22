@@ -1,0 +1,10 @@
+<input xmlns:xi="http://www.w3.org/2001/XInclude">
+	<xi:include href="payloads_cases/setup.xml" />
+	<xi:include href="payloads_cases/cd.via.create.xml" />
+	<xi:include href="payloads_cases/cd.via.update.xml" />
+	<xi:include href="payloads_cases/floppy.via.create.xml" />
+	<xi:include href="payloads_cases/floppy.via.update.xml" />
+	<xi:include href="payloads_cases/payload_content.xml" />
+	<xi:include href="payloads_cases/unknown.payload.create.xml" />
+	<xi:include href="payloads_cases/teardown.xml" />
+</input>

@@ -214,6 +214,18 @@ def _prepareVmObject(**kwargs):
         disk_array.set_clone(disk_clone)
         vm.set_disks(disk_array)
 
+    # payloads
+    payloads = kwargs.pop('payloads', None)
+    if payloads:
+        payload_array = []
+        for payload_type, payload_fname, payload_file_content in payloads:
+            payload_file = data_st.PayloadFile(payload_fname, payload_file_content)
+            payload = data_st.Payload(payload_type, payload_file)
+            payload_array.append(payload)
+
+        payloads = data_st.Payloads(payload_array)
+        vm.set_payloads(payloads)
+
     return vm
 
 def _createCustomPropertiesFromArg(prop_arg):
@@ -2353,3 +2365,26 @@ def waitForVmsDisks(vm, disks_status=ENUMS['disk_state_ok'], timeout=600,
 
     return False if disks_to_wait else True
 
+@is_action()
+def getVmPayloads(positive, vm, **kwargs):
+    '''
+    Description: returns the payloads object from certain vm
+    Author: talayan
+    Parameters:
+    * positive = TRUE/FALSE
+    * vm - vm name to retreive payloads property from
+    Return: status, element obj or None if not found
+    '''
+
+    try:
+        vm_obj = VM_API.find(vm)
+    except EntityNotFound:
+        logger.error('Entity %s not found!' % vm)
+        return False, {'property_obj': None}
+
+    property_object = vm_obj.get_payloads()
+    if property_object is None:
+        logger.error('Property payloads not found in entity %s!' % vm)
+        return False, {'property_object': None}
+
+    return True, {'property_object': property_object}

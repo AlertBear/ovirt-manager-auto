@@ -1,0 +1,98 @@
+<?xml-stylesheet type="text/xsl" href="table.xslt"?>
+<input>
+<test_case>
+    <test_name>START_GROUP: PAYLOAD_FLOPPY_VIA_UPDATE</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>NONE</positive>
+    <run>NO</run>
+</test_case>
+<test_case>
+    <test_name>Create VM from template to test both payload via UPDATE</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='floppy-update', description='payloads', cluster='{cluster_name}', template= 'payload-template-for-test', display_type='{display_type}' </parameters>
+    <positive>TRUE</positive>
+    <BZ>875720</BZ>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>update with payload floppy</test_name>
+    <test_action>updateVm</test_action>
+    <parameters>vm='floppy-update',payloads=[('floppy','file.floppy','floppy update!')]</parameters>
+    <positive>TRUE</positive>
+    <BZ>875720</BZ>
+    <run>yes</run>
+</test_case>
+ <test_case>
+    <test_name>Sleep 15sec to allow refresh</test_name>
+    <test_action>sleep</test_action>
+    <parameters>seconds=15</parameters>
+    <positive>NONE</positive>
+    <BZ>875720</BZ>
+    <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Start VM that was update with payload type=floppy</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='floppy-update'</parameters>
+   <positive>TRUE</positive>
+   <BZ>875720</BZ>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait for VM to become up to fetch the IP</test_name>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='floppy-update', timeout=1200, sleep=10</parameters>
+   <positive>NONE</positive>
+   <BZ>875720</BZ>
+   <run>yes</run>
+   <fetch_output>ip->guest_ip</fetch_output>
+</test_case>
+<test_case>
+   <test_name>run command on vm</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip=%guest_ip%, user='root', password='qum5net', cmd="modprobe floppy; mkdir /tmp/floppy_payload; mount /dev/fd0 /tmp/floppy_payload"</parameters>
+   <BZ>875720</BZ>
+   <positive>true</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Check is file exists in the payload</test_name>
+    <test_action>checkForFileExistenceAndContent</test_action>
+    <parameters>ip=%guest_ip%,password='qum5net',filename='/tmp/floppy_payload/file.floppy',content='floppy update!',user='root'</parameters>
+    <positive>NONE</positive>
+    <BZ>875720</BZ>
+    <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>run command on vm</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip=%guest_ip%, user='root', password='qum5net', cmd="umount /dev/fd0; rm -rf /tmp/floppy_payload"</parameters>
+   <positive>True</positive>
+   <BZ>875720</BZ>
+   <run>yes</run>
+</test_case>
+ <test_case>
+    <test_name>Stop VM, so we can remove the VM.</test_name>
+    <test_action>stopVm</test_action>
+    <parameters>vm='floppy-update'</parameters>
+    <positive>TRUE</positive>
+    <BZ>875720</BZ>
+    <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove VM floppy-update</test_name>
+   <test_action>removeVm</test_action>
+   <parameters>vm='floppy-update', wait=True</parameters>
+   <positive>TRUE</positive>
+   <BZ>875720</BZ>
+   <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>END_GROUP: PAYLOAD_FLOPPY_VIA_UPDATE</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>NONE</positive>
+    <run>NO</run>
+</test_case>
+</input>

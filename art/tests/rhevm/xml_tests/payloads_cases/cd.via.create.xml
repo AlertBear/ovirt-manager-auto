@@ -1,0 +1,74 @@
+<?xml-stylesheet type="text/xsl" href="table.xslt"?>
+<input>
+<test_case>
+    <test_name>START_GROUP: PAYLOAD_CDROM_VIA_CREATE</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>NONE</positive>
+    <run>YES</run>
+</test_case>
+<test_case>
+    <test_name>Create VM from template to test payload type CDROM via CREATE</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='cd-payload', description='payload test', cluster='{cluster_name}', template= 'payload-template-for-test', display_type='{display_type}', payloads=[('cdrom','file.cd','payload cdrom!')]</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Start VM to test cdrom payload status</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='cd-payload'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait for VM to become up to fetch the IP</test_name>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='cd-payload', timeout=1200, sleep=10</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <fetch_output>ip->guest_ip</fetch_output>
+</test_case>
+<test_case>
+   <test_name>Mount cdrom in the VM and create a temp directory</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip=%guest_ip%, user='root', password='qum5net', cmd="mkdir /tmp/cdrom_payload; mount /dev/cdrom /tmp/cdrom_payload"</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Verify file existence and content in the VM</test_name>
+    <test_action>checkForFileExistenceAndContent</test_action>
+    <parameters>ip=%guest_ip%, password='qum5net', filename='/tmp/cdrom_payload/file.cd',content='payload cdrom!',user='root'</parameters>
+    <positive>NONE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>umount cdrom and delete temp directory</test_name>
+   <test_action>runMachineCommand</test_action>
+   <parameters>ip=%guest_ip%, user='root', password='qum5net', cmd="umount /dev/cdrom; rm -rf /tmp/cdrom_payload"</parameters>
+   <positive>True</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Stop VM, so we can remove the VM.</test_name>
+    <test_action>stopVm</test_action>
+    <parameters>vm='cd-payload'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove VM cd-payload</test_name>
+   <test_action>removeVm</test_action>
+   <parameters>vm='cd-payload', wait=True</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>END_GROUP: PAYLOAD_CDROM_VIA_CREATE</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>NONE</positive>
+    <run>YES</run>
+</test_case>
+</input>
