@@ -1002,7 +1002,6 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 468}</conf>
-    <exp_events>2</exp_events>
   </test_case>
   <test_case>
     <id>cb8c56c6-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1020,24 +1019,6 @@
     <positive>FALSE</positive>
     <run>yes</run>
   </test_case>
-  <test_case>
-    <id>cb8c5a90-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Stop VM for basic operations</test_name>
-    <test_action>stopVm</test_action>
-    <parameters>vm='restvm_basic_operations'</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-    <conf>headers={'Correlation-Id': 470}</conf>
-  </test_case>
-  <test_case>
-    <id>cb8c5c7a-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Remove VMs after testing disks, snapshots, basic operations, NICs and others</test_name>
-    <test_action>removeVm</test_action>
-    <parameters>vm='{vms_advanced_tests}'</parameters>
-    <positive>TRUE</positive>
-    <run>forkfor({vms_advanced_tests})</run>
-  </test_case>
-  <!-- ////////////////////////////////////////////////////////////////////// -->
   <test_case>
     <id>cb8c5e64-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Set first host to maintenance so that active objects are migrated to second host</test_name>
@@ -1066,6 +1047,32 @@
     <run>if(1&lt;len('[vds]'.split(',')))</run>
     <bz>756044</bz>
   </test_case>
+    <test_case>
+    <id>cb8c5a90-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Stop VM for basic operations</test_name>
+    <test_action>stopVm</test_action>
+    <parameters>vm='restvm_basic_operations'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <conf>headers={'Correlation-Id': 470}</conf>
+  </test_case>
+  <test_case>
+    <id>cb8c5c7a-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Remove VMs after testing disks, snapshots, basic operations, NICs and others</test_name>
+    <test_action>removeVm</test_action>
+    <parameters>vm='{vms_advanced_tests}'</parameters>
+    <positive>TRUE</positive>
+    <run>forkfor({vms_advanced_tests})</run>
+  </test_case>
+    <test_case>
+    <id>cb8c6238-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Set the second host to maintenance, for the SPM selection</test_name>
+    <test_action>deactivateHost</test_action>
+    <parameters>host='{vds[1]}'</parameters>
+    <positive>TRUE</positive>
+    <run>if(1&lt;len('[vds]'.split(',')))</run>
+  </test_case>
+  <!-- ////////////////////////////////////////////////////////////////////// -->
   <test_case>
     <id>cb8c644a-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Activate first host</test_name>

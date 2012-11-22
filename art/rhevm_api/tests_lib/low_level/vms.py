@@ -1428,7 +1428,8 @@ def migrateVm(positive, vm, host=None, wait=True):
         wait=%s, positive=%s' % (str(wait), positive))
         return True
 
-    if not VM_API.waitForElemStatus(vmObj, 'powering_up', 300):
+    #Barak: change status to up from powering up, since all migrations ends in up, but diskless VM skips the powering_up phase
+    if not VM_API.waitForElemStatus(vmObj, 'up', 300):
         return False
 
     # Check whether we tried to migrate vm to different cluster
