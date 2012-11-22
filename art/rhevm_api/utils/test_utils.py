@@ -507,7 +507,7 @@ def verifyDataOnVm(positive, ip, user, password, osType, dest, destToCompare):
     try:
         machine = Machine(ip, user, password).util(osType)
         srcLocal = "{0}/{1}".format(dest, os.path.basename(destToCompare))
-        if not machine.copyFrom(srcLocal, dest, 300):
+        if not machine.copyFrom(srcLocal, dest, 300, exc_info=positive):
             logger.error("copy data from %s" % ip)
             return False == positive
         logger.info("compare: %s to %s" % (srcLocal, destToCompare))
