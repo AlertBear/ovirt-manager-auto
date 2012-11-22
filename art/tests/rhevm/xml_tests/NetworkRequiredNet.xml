@@ -3,6 +3,6 @@
 
 <xi:include href="network/requiredNetwork/RequiredNetwork.xml" />
 
-<xi:include href="network/Cleanup.xml" />
+<xi:include href="network/CleanSetup.xml" />
 <!-- ======================================================================================================== -->
 </input>
