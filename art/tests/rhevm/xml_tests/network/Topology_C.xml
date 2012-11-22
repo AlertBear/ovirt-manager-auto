@@ -232,6 +232,7 @@
 </test_case>
 <test_case>
    <test_name>Check Linux VMs connectivity through bond mode 2</test_name>
+   <trac>1554</trac>
    <test_action>checkVMConnectivity</test_action>
    <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=60,interval=5,user='{vm_linux_user}',password='{vm_linux_password}'</parameters>
    <positive>TRUE</positive>
@@ -816,6 +817,7 @@
 </test_case>
 <test_case>
    <test_name>Check Linux VMs connectivity through bond mode 2</test_name>
+   <trac>1554</trac>
    <test_action>checkVMConnectivity</test_action>
    <parameters>vm='{vm_name}',osType=%osTypeElement%,attempt=60,interval=5,user='{vm_linux_user}',password='{vm_linux_password}'</parameters>
    <positive>TRUE</positive>

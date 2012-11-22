@@ -166,6 +166,7 @@
 </test_case>
 <test_case>
    <test_name>Wait till VMs Start Migration</test_name>
+   <trac>1554</trac>
    <test_action>waitForVmsStates</test_action>
    <parameters>names='{vm_name[0]}',states='migrating',sleep=1,timeout=120</parameters>
    <positive>TRUE</positive>

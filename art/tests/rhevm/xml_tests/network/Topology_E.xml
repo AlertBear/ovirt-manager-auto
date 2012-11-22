@@ -101,6 +101,7 @@
 </test_case>
 <test_case>
    <test_name>Validate Event occurrence regarding non-operational reason</test_name>
+   <trac>1554</trac>
    <test_action>searchForRecentEvent</test_action>
    <parameters>win_start_query='{networks[0]} type=920', query='{networks[0]} type=603', expected_count=1</parameters>
    <positive>TRUE</positive>
@@ -489,6 +490,7 @@
 </test_case>
 <test_case>
   <test_name>Validate Event occurrence regarding non-operational reason</test_name>
+  <trac>1554</trac>
   <test_action>searchForRecentEvent</test_action>
   <parameters>win_start_query='{networks[0]} type=920', query='{networks[0]} type=603', expected_count=1</parameters>
   <positive>TRUE</positive>
