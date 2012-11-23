@@ -55,6 +55,7 @@ CONTENT_TYPE = 'application/json'
 
 class TracSkipTest(SkipTest):
     def __init__(self, ticket, site):
+        super(TracSkipTest, self).__init__()
         self.ticket = ticket
         self.site = site
 

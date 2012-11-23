@@ -118,7 +118,8 @@ def transform_ovirt_comp(comp):
 
 
 class BugzillaSkipTest(SkipTest):
-    def __init___(self, bz_id, site):
+    def __init__(self, bz_id, site):
+        super(BugzillaSkipTest, self).__init__()
         self.bz = bz_id
         self.site = site
 
