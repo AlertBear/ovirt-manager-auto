@@ -16,6 +16,8 @@ JUNIT_NOFRAMES_STYLESHEET = "junit-noframes.xsl"
 # TODO: same problem as tcms_plugin
 logger = logging.getLogger('xunit_results_formatter')
 
+DEFAULT_OUT_MSG = 'Sorry, no support for backtrace yet.'
+
 
 def total_seconds(td):
     ''' For Py2.7 compatibility. There is no function in Py2.6 computing this. '''
@@ -54,14 +56,15 @@ class XUnit(Component):
                 text='type="text/xsl" href="%s"'
                 % JUNIT_NOFRAMES_STYLESHEET)
         self.testsuites.addprevious(XSLT)
-        self.testsuite = E.testsuite(name=str(config['RUN']['engine']),
-                                     timestamp=timestamp)
+        test_name = config['RUN']['tests_file'].split('/')[-1]
+        self.testsuite = E.testsuite(name=test_name, timestamp=timestamp,
+                            hostname=config['REST_CONNECTION']['host'])
         self.testsuites.append(self.testsuite)
 
         self.testsuite_props = E.properties()
         self.testsuite.append(self.testsuite_props)
 
-        self.failures = self.errors = self.tests = 0
+        self.failures = self.errors = self.tests = self.skip = 0
         self.__update_testsuite_attrs()
         self.tree = ElementTree(self.testsuites)
         self.testsuites.addprevious(XSLT)
@@ -70,7 +73,7 @@ class XUnit(Component):
         self.testsuite_props.append(E.property(name='log_path',
                                                value=opts['log']))
         self.testsuite_props.append(E.property(name='test_sheet_path',
-                                               value=str(config['RUN']['tests_file'])))
+                                    value=config['RUN']['tests_file']))
 
     def add_test_result(self, kwargs, test_case):
         if not kwargs._report:
@@ -78,8 +81,8 @@ class XUnit(Component):
         time_delta = kwargs['end_time'] - kwargs['start_time']
         test_name = '{0}({1[parameters]})'.format( # these_hardcoded names must be changed
                         test_case.test_action, kwargs)
-        test_classname = '%s.%s' % (kwargs['module_name'],
-                                    kwargs['test_name'].replace(".", ";"))
+        test_classname = '%s.%s-%s' % (kwargs['module_name'],
+                    kwargs['iter_num'], kwargs['test_name'].replace(".", ";"))
         real_classname = '%s.%s' % (test_case.mod_path, test_case.test_action)
         start_time = kwargs['start_time'].astimezone(tz.tzlocal())
         start_time = start_time.isoformat()
@@ -89,32 +92,43 @@ class XUnit(Component):
         testcase.attrib['classname']    = test_classname
         testcase.attrib['time']         = str(total_seconds(time_delta))
 
+        written = ['start_time', 'end_time', 'test_name', 'status']
+        out_msg = DEFAULT_OUT_MSG
+        if 'captured_log' in kwargs:
+            out_msg = kwargs['captured_log']
+            written.append('captured_log')
+
         if kwargs['status'] == test_case.TEST_STATUS_FAILED:
             self.failures += 1
-            failure = E.failure('Sorry, no support for backtrace yet.')
+            failure = E.failure(out_msg)
             testcase.append(failure)
-        elif kwargs['status'] is None:
+        elif kwargs['status'] == test_case.TEST_STATUS_SKIPPED:
+            self.skip += 1
+            skipped = E.skipped(out_msg)
+            testcase.append(skipped)
+        elif kwargs['status'] is test_case.TEST_STATUS_ERROR:
             self.errors += 1
-            error = E.error('Sorry, no support for backtrace yet.')
+            error = E.error(out_msg)
             testcase.append(error)
         self.tests += 1
 
         self.testsuite.append(testcase)
         self.__update_testsuite_attrs()
 
+        if kwargs['status'] not in [test_case.TEST_STATUS_FAILED,
+        test_case.TEST_STATUS_SKIPPED, test_case.TEST_STATUS_ERROR]:
+            systemout = Element('system-out')
+            systemout.text = out_msg
+            testcase.append(systemout)
 
-        traits = E.traits()
-        written = ['start_time', 'end_time', 'test_name', 'status']
-        if 'captured_log' in kwargs:
-            testcase.append(E.description(kwargs['captured_log']))
-            written.append('captured_log')
+        properties = E.properties()
         for k in set(kwargs.keys()) - set(written):
-            self.__add_aditional_attrs(traits, k, kwargs[k])
-        traits.append(E.trait(name='real_classname',
+            self.__add_aditional_attrs(properties, k, kwargs[k])
+        properties.append(E.property(name='real_classname',
                               value=real_classname))
-        traits.append(E.trait(name='start_time',
+        properties.append(E.property(name='start_time',
                               value=start_time))
-        testcase.append(traits)
+        testcase.append(properties)
         self.generate_report()
 
     def __add_aditional_attrs(self, root, key, val):
@@ -128,7 +142,7 @@ class XUnit(Component):
             if not isinstance(val, basestring):
                 val = str(val)
             try:
-                e = E.trait(name=key, value=val)
+                e = E.property(name=key, value=val)
             except ValueError:
                 logger.debug(
                     "failed setting key: {0} to val={1}, type(val)={2}".format(
@@ -147,6 +161,7 @@ class XUnit(Component):
         tsa = self.testsuite.attrib
         tsa['failures'] = str(self.failures)
         tsa['errors'] = str(self.errors)
+        tsa['skip'] = str(self.skip)
         tsa['tests'] = str(self.tests)
         time_delta = datetime.datetime.now(tz.tzutc()) - self.suite_start
         tsa['time'] = str(total_seconds(time_delta))
