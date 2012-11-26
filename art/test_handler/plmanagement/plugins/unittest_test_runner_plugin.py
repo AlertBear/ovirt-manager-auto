@@ -192,8 +192,9 @@ class UnittestLoader(Component):
         pass
 
     def pre_test_result_reported(self, res, tc):
-        res.module_name = tc.mod_name
-        res.iter_num = "%03d" % res.iter_num
+        res.add_result_attribute('module_name', 'mod_name', 'Module Name', '')
+        res.add_result_attribute('iter_num', 'serial', 'Iteration Number', '')
+        res.add_result_attribute('parameters', '', 'Test Parameters', '')
         logger.info(TEST_CASES_SEPARATOR)
 
     def pre_group_result_reported(self, res, tg):

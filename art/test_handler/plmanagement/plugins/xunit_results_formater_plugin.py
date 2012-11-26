@@ -79,14 +79,16 @@ class XUnit(Component):
         if not kwargs._report:
             return
         time_delta = kwargs['end_time'] - kwargs['start_time']
-        test_name = '{0}({1[parameters]})'.format( # these_hardcoded names must be changed
+        test_name = '{0}({1[parameters]})'.format(
                         test_case.test_action, kwargs)
+        test_name = kwargs['test_name'] if 'test_name' in kwargs else ''
+        mod_path = test_case.mod_path if 'mod_path' in test_case else ''
         test_classname = '%s.%s-%s' % (kwargs['module_name'],
                     kwargs['iter_num'], kwargs['test_name'].replace(".", ";"))
-        real_classname = '%s.%s' % (test_case.mod_path, test_case.test_action)
+        real_classname = '%s.%s' % (mod_path, test_case.test_action)
         start_time = kwargs['start_time'].astimezone(tz.tzlocal())
         start_time = start_time.isoformat()
-        
+
         testcase = Element('testcase')
         testcase.attrib['name']         = test_name
         testcase.attrib['classname']    = test_classname
