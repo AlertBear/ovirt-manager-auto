@@ -44,6 +44,8 @@ DEVICES_TARGET_PATHS = {
                         }
 POSIXFS_TYPES = ['gluster']
 
+logger = logging.getLogger(__name__)
+
 
 def processConfList(confList):
     '''
@@ -74,7 +76,7 @@ def getFromMainConfSection(config, key, mainSection=MAIN_SECTION, asList=True):
         return config[mainSection].get(key)
 
 
-def setConfValueByKeyPath(config, targetPath, keyValue, kyeExtension=''):
+def setConfValueByKeyPath(config, targetPath, keyValue, keyExtension=''):
     '''
     Description: set value in configuration file by given key path
     Author: edolinin
@@ -88,7 +90,10 @@ def setConfValueByKeyPath(config, targetPath, keyValue, kyeExtension=''):
 
     targetConfSection, targetConfKey = targetPath.split('.')
     cfg = config.get(targetConfSection, {})
-    cfg[targetConfKey + kyeExtension] = keyValue
+    stKey = targetConfKey + keyExtension
+    cfg[stKey] = keyValue
+    logger.debug("dynamic storage: filling variable: %s.%s = %s" % (\
+                                    targetConfSection, stKey, keyValue))
     config[targetConfSection] = cfg
 
 
