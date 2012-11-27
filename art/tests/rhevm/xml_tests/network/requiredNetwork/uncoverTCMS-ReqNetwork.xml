@@ -87,6 +87,7 @@
   <fetch_output/>
   <report>YES</report>
   <vital>FALSE</vital>
+  <tcms_plan_id>5868</tcms_plan_id>
   <tcms_test_case>217610</tcms_test_case>
   <test_description/>
 </test_case>
@@ -143,6 +144,7 @@
   <fetch_output/>
   <report>YES</report>
   <vital>FALSE</vital>
+  <tcms_plan_id>5868</tcms_plan_id>
   <tcms_test_case>217612</tcms_test_case>
   <test_description/>
 </test_case>
@@ -343,6 +345,7 @@
   <fetch_output/>
   <report>YES</report>
   <vital>FALSE</vital>
+  <tcms_plan_id>5868</tcms_plan_id>
   <tcms_test_case>220526</tcms_test_case>
   <test_description/>
 </test_case>
@@ -421,6 +424,7 @@
   <fetch_output/>
   <report>YES</report>
   <vital>FALSE</vital>
+  <tcms_plan_id>5868</tcms_plan_id>
   <tcms_test_case>220526</tcms_test_case>
   <test_description/>
 </test_case>

@@ -175,6 +175,7 @@
    <fetch_output/>
    <report>YES</report>
    <vital>FALSE</vital>
+   <tcms_plan_id>5868</tcms_plan_id>
    <tcms_test_case>166462</tcms_test_case>
    <test_description/>
 </test_case>
