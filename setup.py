@@ -65,6 +65,8 @@ SCRIPT = """\
 if [ $1 -eq 1 ] ;
 then
   echo "export PYTHONPATH=\$PYTHONPATH:/opt/art:" > %{_sysconfdir}/profile.d/art.sh
+  echo "export ART_CONFIG_LOCATIONS=\$ART_CONFIG_LOCATIONS:/opt/art:/opt/art/conf:" >> %{_sysconfdir}/profile.d/art.sh
+  echo "export ART_TEST_LOCATIONS=\$ART_TEST_LOCATIONS:/opt/art:/opt/art/tests:" >> %{_sysconfdir}/profile.d/art.sh
   chmod +x %{_sysconfdir}/profile.d/art.sh
   . %{_sysconfdir}/profile.d/art.sh
 fi
