@@ -57,7 +57,7 @@ if __name__ == '__main__':
 
     setup(
             name=RPM_NAME,
-            version='1.0',
+            version=VERSION,
             release=RELEASE,
             author='Red Hat',
             author_email='edolinin@redhat.com',
