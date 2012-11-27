@@ -1148,7 +1148,7 @@ def addSnapshot(positive, vm, description, wait=True):
 
 
 @is_action()
-def restoreSnapshot(positive, vm, description):
+def restoreSnapshot(positive, vm, description, ensure_vm_down=False):
     '''
     Description: restore vm snapshot
     Author: edolinin
@@ -1160,11 +1160,13 @@ def restoreSnapshot(positive, vm, description):
 
     vmObj = VM_API.find(vm)
     snapshot = _getVmSnapshot(vm, description)
-    expectedStatus = vmObj.status.state
-
+    if ensure_vm_down:
+        if not checkVmState(True, vm, ENUMS['vm_state_down'], host=None):
+            if not stopVm(positive, vm, async='true'):
+                return False
     status = SNAPSHOT_API.syncAction(snapshot, "restore", positive)
     if status and positive:
-        return VM_API.waitForElemStatus(vmObj, expectedStatus, VM_ACTION_TIMEOUT)
+        return VM_API.waitForElemStatus(vmObj, ENUMS['vm_state_down'], VM_ACTION_TIMEOUT)
 
     return status
 

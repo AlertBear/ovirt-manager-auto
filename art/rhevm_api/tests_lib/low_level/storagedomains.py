@@ -31,8 +31,8 @@ from art.rhevm_api.tests_lib.low_level.hosts import deactivateHost, removeHost, 
                                                     getHostCompatibilityVersion
 from art.rhevm_api.tests_lib.low_level.hosts import addHost, \
                                     waitForHostsStates,getHost
-from art.rhevm_api.tests_lib.low_level.vms import removeVms, stopVms
-from art.rhevm_api.tests_lib.low_level.templates import removeTemplates
+from art.rhevm_api.tests_lib.low_level.vms import removeVms, stopVms, createVm
+from art.rhevm_api.tests_lib.low_level.templates import removeTemplates, importTemplate
 from art.rhevm_api.utils.storage_api import getVmsInfo, getImagesList, \
                                     getVolumeInfo, getVolumesList
 from art.rhevm_api.utils.test_utils import validateElementStatus, get_api, \
@@ -1280,5 +1280,45 @@ def checkVolume(positive, vdsName, username, passwd, dataCenter, storageDomain,
         return not positive
     return positive
 
+@is_action()
+def prepareVmWithRhevm(positive, hosts, cpuName, username, password, datacenter,
+               storage_type, cluster, data_domain_address, data_storage_domains,
+               version, type, export_domain_address, export_storage_domain,
+               export_domain_name, data_domain_name, template_name, vm_name,
+               vm_description, tested_setup_mac_address, memory_size,
+               format_export_domain, nic, nicType):
 
-
+    util.logger.info("prepareVmWithRhevm function arguments: %s" % locals())
+    # Create Data Center
+    if not createDatacenter(True, hosts=hosts, cpuName=cpuName, username=username,
+                     password=password, datacenter=datacenter,
+                     storage_type=storage_type, cluster=cluster, version=version,
+                     dataStorageDomains=data_storage_domains, address=data_domain_address):
+        return False
+    #Import export domain
+    if not importStorageDomain(True, type=type, storage_type=storage_type, address=export_domain_address, host=hosts, path=export_storage_domain):
+        return False
+    # Attach export storage domain to data center
+    if not attachStorageDomain(True, datacenter=datacenter,storagedomain=export_domain_name):
+        return False
+    # Activate export storage domain
+    if not activateStorageDomain(True, datacenter=datacenter,storagedomain=export_domain_name):
+        return False
+    #Import template from export domain
+    if not importTemplate(True, template=template_name, import_storagedomain=data_domain_name, export_storagedomain=export_domain_name, cluster=cluster):
+        return False
+    #Create VM From Template
+    if not createVm(True, vmName=vm_name, vmDescription=vm_description, cluster=cluster,
+                   template=template_name, mac_address=tested_setup_mac_address,
+                   nic=nic, nicType=nicType):
+        return False
+    # Deactivate export storage domain
+    if not deactivateStorageDomain(True, datacenter=datacenter, storagedomain=export_domain_name):
+        return False
+    # Detach active storage domain
+    if not detachStorageDomain(True, datacenter=datacenter, storagedomain=export_domain_name):
+        return False
+    # Remove export storage domain
+    if not removeStorageDomain(True, storagedomain=export_domain_name, host=hosts, format=format_export_domain):
+        return False
+    return True

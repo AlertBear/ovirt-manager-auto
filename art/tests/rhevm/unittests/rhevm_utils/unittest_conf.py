@@ -4,11 +4,12 @@ global config
 config = ConfigObj(raise_errors=True)
 
 #MAIN_SETUP = "https://10.34.63.3:443/api"
-MAIN_SETUP = "https://brq-setup.rhev.lab.eng.brq.redhat.com:8443/api"
-
+# workaround to skip sdk for now
+MAIN_SETUP = "https://lilach-rhel.qa.lab.tlv.redhat.com:443/api"
+PGPASS = "123456"
 
 DEFAULT = {
-        'def_vm_name': 'lb-internal-tools', # name
+        'def_vm_name': 'internal-tools', # name
         'wait_timeout': 600,            # wait for VM state change
         'install_timeout': 1800,        # wait for RHEVM installation
         '_password': '123456',          # default password
@@ -78,7 +79,7 @@ ANSWERS['3.1.0-7.el6ev'] = ( #si11
 
 
 SETUP = {
-        'vm_name': 'lb-internal-tools3',
+        'vm_name': 'internal-tools',
         'answer_file': '/tmp/answer_file',
         'organization': '%(_organization)s',
         'db_pass': '123456',

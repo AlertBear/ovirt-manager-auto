@@ -113,16 +113,19 @@ class CleanUpTestCase(RHEVMUtilsTestCase):
 
     @istest
     def cleanUp(self):
+        """ clean_Up """
         self.ut()
         self.ut.autoTest()
 
     @istest
     def cleanUpDontRemoveCA(self):
+        """ clean_Up_Dont_Remove_CA """
         self.ut(c=None)
         self.ut.autoTest()
 
     @istest
     def cleanUpDontRemoveDB(self):
+        """ clean_Up_Dont_Remove_DB """
         self.ut(d=None)
         import time
         self.ut.autoTest()
@@ -139,6 +142,7 @@ class CleanUpTestCase(RHEVMUtilsTestCase):
 
     @istest
     def cleanUpDontRemoveAnyThing(self):
+        """ clean_Up_Dont_Remove_Any_Thing """
         #v = self.ut.version
         #if v[0] > 3 or (v[0] == 3 and v[1] >= 1):
         #    self.ut(d=None, c=None, l=None)
@@ -152,6 +156,7 @@ class CleanUpTestCase(RHEVMUtilsTestCase):
 
     @istest
     def TCMS_4657_112243_StopRhevmNotifierdService(self):
+        """ TCMS_4657_112243_Stop_Rhevm_Notifierd_Service """
         # 1. Stop notifierd service by running: service notifierd stop
         service = self.ut.getVar('NOTIFIERD_SERVICE')
         self.ut.setup.stopService(service)
@@ -163,49 +168,23 @@ class CleanUpTestCase(RHEVMUtilsTestCase):
         self.ut.testCleanup()
 
     @istest
-    def TCMS_4657_112242_RunCleanUpUtilityWhenFileIsOpen(self):
-        script = "import os\n"\
-                 "import time\n"\
-                 "try:\n"\
-                 "    fd = os.open('%s', os.O_RDONLY)\n"\
-                 "    time.sleep(3600)\n"\
-                 "    os.close(fd)\n"\
-                 "except KeyboardInterrupt:\n"\
-                 "    os.close(fd)\n"
-        def openFileAndCheckItFailed(filename, data):
-            data = data % filename
-            # 1. Open <filename> file using python
-            with self.ut.setup.runCmdOnBg(['python'], data=data) as pid:
-                # 2. Run rhevm-cleanup utility
-                self.ut()
-                # Expect: 2. Rhevm-cleanup utility process failed.
-                # TODO: I think we can be more specific here, what failed and, verify damages
-                self.assertRaises(errors.ReturnCodeError, self.ut.testReturnCode)
-                self.assertTrue(self.ut.setup.isProcessExists(pid))
-
-        # run testcase for jbossas related files
-        openFileAndCheckItFailed(self.ut.getVar('JBOSS_PROFILE_PATH'), script)
-        # run testcase for certs related files
-        openFileAndCheckItFailed(self.ut.getVar('CA_PATH'), script)
-
-    @istest
     def TCMS_4657_112241_PostgresqlServiceIsDown(self):
+        """ TCMS_4657_112241_Postgresql_Service_Is_Down """
         # 1. Stop posgresql service by running the command: service postgresql stop
         self.ut.setup.stopService('postgresql')
         # Expect: Service is down
         self.assertFalse(self.ut.setup.isServiceRunning('posgresql'))
         # 2. Run rhevm-cleanup utility
         self.ut()
-        # Expect: 2. Rhevm-cleanup utility process successfull.
-        self.ut.testCleanup()
+        # Expect: Rhevm-cleanup utility process fail.
+        self.assertRaises(errors.ReturnCodeError, self.ut.testReturnCode)
 
     @istest
     def TCMS_4657_112240_MissingDataBase(self):
+        """ TCMS_4657_112240_Missing_Data_Base """
         # 1. Drop db by running the command; dropdb rhevm -U postgres
         self.ut.stopJboss()
-        rc, out = self.ut.setup.runCmd(['dropdb', self.ut.setup.dbname, \
-                '-U', self.ut.setup.dbuser])
-        logger.info("remove DB: %s, %s", rc, out)
+        rc = self.ut.setup.dropDb()
         self.assertTrue(rc)
         # Expect: No longer db exist for rhevm user
         self.assertFalse(self.ut.isDBExists())
@@ -217,6 +196,7 @@ class CleanUpTestCase(RHEVMUtilsTestCase):
 
     @istest
     def TCMS_4657_111386_RunCleanUpUtilityWhileConnectionToTheDBIsOpen(self):
+        """ TCMS_4657_111386_Run_Clean_Up_Utility_While_Connection_To_The_DB_Is_Open """
         # 1. Open connection to the rhevm DB using PGAdmin3
         script = "import subprocess as s\n"\
                 "import time\n"\
@@ -245,6 +225,7 @@ class CleanUpTestCase(RHEVMUtilsTestCase):
 
     @istest
     def TCMS_4657_111384_RunningRhevmSetupWhenRHEVMIsAlreadyInstalled(self):
+        """ TCMS_4657_111384_Running_Rhevm_Setup_When_RHEVM_Is_Already_Installed """
         # 1. Run rhevm-cleanup utility
         self.ut()
         self.ut.autoTest()

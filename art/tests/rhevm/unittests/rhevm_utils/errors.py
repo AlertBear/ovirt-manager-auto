@@ -48,6 +48,12 @@ class MissingParameter(InvalidParameter):
 class InconsistentDataInDB(RHEVMUtilsError):
     message = "there are some wrong data in DB"
 
+class AddSnapshotFailure(RHEVMUtilsError):
+    message = "failed to add snapshot"
+
+class RestoreSnapshotFailure(RHEVMUtilsError):
+    message = "failed to restore snapshot"
+
 # SETUP
 
 class SetupUtilityError(RHEVMUtilsError):

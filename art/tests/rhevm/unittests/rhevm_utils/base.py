@@ -11,6 +11,10 @@ import time
 import logging
 from contextlib import contextmanager
 import unittest
+from art.rhevm_api.tests_lib.low_level.vms import addSnapshot, restoreSnapshot
+from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter, prepareVmWithRhevm
+from configobj import ConfigObj
+
 # Folowing 'try-except' blocks are here because this modules are needed only
 # for nose testframework, but you can use this module also for another purposes.
 try:
@@ -20,7 +24,8 @@ except ImportError:
     API = None
     sdk_params = None
 try:
-    from testconfig import config
+    # PGPASS, PREPARE_CONF should move to test conf file, once possible.
+    from unittest_conf import config, PGPASS
     if not config:
         raise ImportError()
 except ImportError:
@@ -37,7 +42,8 @@ import utilities.utils as ut
 from rhevm_utils import errors
 from art.test_handler.settings import opts
 
-logger = logging.getLogger('rhevm-utils')
+#logger = logging.getLogger('rhevm-utils')
+logger = logging.getLogger(__name__)
 
 BIN = {
         'psql'          :   '/usr/bin/psql',
@@ -62,9 +68,10 @@ PRODUCT_RPM = {PRODUCT_OVIRT: 'ovirt-engine',
                 PRODUCT_RHEVM: 'rhevm'}
 
 DB_USER = 'postgres'
-TIMEOUT = 10
+SSH_CONNECTION_TIMEOUT = 30
 HOST_PATH_TO_TMP = "/tmp"
 WAIT_TIMEOUT = 600
+from art.test_handler import find_config_file
 
 CONFIG_ELEMENTS = 'elements_conf'
 CONFIG_SECTION = 'RHEVM Utilities'
@@ -100,9 +107,10 @@ class Setup(LinuxMachine):
         self.dbuser = dbuser
         self.setDBConnection()
         self._bin = dict((x, y % self.product) for x, y in _BIN.items())
-        self.connectionTimeout = TIMEOUT
-        self.execTimeout = TIMEOUT
+        self.connectionTimeout = SSH_CONNECTION_TIMEOUT
+        self.execTimeout = SSH_CONNECTION_TIMEOUT
         self.tmp = HOST_PATH_TO_TMP
+        self.pgpass = PGPASS
 
     def setDBConnection(self, host=None, root_passwd=None):
         """
@@ -119,7 +127,7 @@ class Setup(LinuxMachine):
             self.db = LinuxMachine(host, 'root', root_passwd, local=False)
 
     def _fetchRPMVersion(self, rpmname):
-        rc, out = self.runCmd(['rpm', '-qa', rpmname])
+        rc, out = self.runCmd(cmd=['rpm', '-qa', rpmname], timeout=SSH_CONNECTION_TIMEOUT)
         out = out.strip()
         if not rc or not out:
             raise errors.ProductIsNotInstaled(rpmname)
@@ -149,15 +157,25 @@ class Setup(LinuxMachine):
          * kwargs - keyword args in query: '%(key)s'
         """
         sep = '__RECORD_SEPARATOR__'
-        timeout = kwargs.get('timeout', TIMEOUT)
+        timeout = kwargs.get('timeout', SSH_CONNECTION_TIMEOUT)
         if args:
             sql = sql % tuple(args)
-        cmd = [BIN['psql'], '-d', self.dbname, '-U', self.dbuser, '-R', sep, '-t', '-A', '-c', sql]
+        cmd = ['export', 'PGPASSWORD=%s;' % (self.pgpass), BIN['psql'], '-d', self.dbname, '-U', self.dbuser, '-R', sep, '-t', '-A', '-c', sql]
+        logger.info("psql cmd is %s", cmd)
         with self.db.ssh as ssh:
             rc, out, err = ssh.runCmd(cmd, timeout=self.connectionTimeout, conn_timeout=timeout)
         if rc:
             raise errors.ExecuteDBQueryError(self.db.host, sql, rc, out, err)
         return [ a.strip().split('|') for a in out.strip().split(sep) if a.strip() ]
+
+    def dropDb(self):
+        logger.info("Drop DB")
+        # 1. Drop db by running the command; dropdb rhevm -U postgres
+        cmd = ['export', 'PGPASSWORD=%s;' % (self.pgpass), 'dropdb', self.dbname, \
+            '-U', self.dbuser]
+        rc, out = self.runCmd(cmd)
+        logger.info("remove DB: %s, %s", rc, out)
+        return rc
 
     @contextmanager
     def runCmdOnBg(self, cmd, killSig='-2', **kwargs):
@@ -200,6 +218,8 @@ class Setup(LinuxMachine):
         util(gen_answer_file=ans)
         params = setup.getInstallParams(self.rpmVer, conf['testing_env'], conf['ANSWERS'])
         util.fillAnswerFile(**params)
+        # Temporary delay to debug nslookup while running for rhevm IP
+        time.sleep(300)
         logger.info("%s: install setup with %s", self.host, params)
         # TODO: adjust DB connection according to DB params in answer file, automatically.
         util(answer_file='host:'+ans)
@@ -397,7 +417,13 @@ class SDK(object):
     @classmethod
     def init(cls, address, user, passwd):
         if API is not None:
-            cls.API = API(address, user, passwd)
+            conf = ConfigObj(opts.get('conf'))
+            host = conf.get('REST_CONNECTION').get('host')
+            logger.info("DEBUG: sdk class, init method, host found = %s" % host)
+            #cls.API = API(address, user, passwd)
+            # workaround to skip sdk for now
+            #cls.API = API('https://lilach-rhel.qa.lab.tlv.redhat.com/api', 'admin@internal', '123456', insecure=True)
+            cls.API = API(host, 'admin@internal', '123456', insecure=True)
         else:
             logger.warn("SDK package is missing some functionality couldn't work")
 
@@ -507,32 +533,27 @@ class SetupManager(object):
             raise errors.SetupsManagerError("can't find testing machine: %s" % name)
         return machine
 
-    def createSnapshot(self, machine, name):
-        """
-        Creates snapshot of machine
-        Parameters:
-         * machine - VM machine
-         * name - name of snapshot
-        """
-        self.ensureMachineIsDown(machine)
-        machine = self.refreshMachine(machine)
-        machine.snapshots.add(SDK.params.Snapshot(name=name, description=name))
-        self.waitForMachineStatus(machine, 'down')
+    def createSnapshotWrapper(self, vm_name, snapshot_desc):
+	"""
+	Creates snapshot of machine
+	Parameters:
+	* vm_name - VM name
+	* snapshot_desc - name of snapshot
+	"""
+        rc = addSnapshot(True, vm_name, snapshot_desc, True)
+        if not rc:
+            raise errors.AddSnapshotFailure("Create snapshot %s from vm %s" % snapshot_desc, vm_name)
 
-    def restoreSnapshot(self, machine, name):
-        """
-        Restores to snapshot
-        Parameters:
-         * machine - VM object
-         * name - name of snapshot
-        """
-        self.ensureMachineIsDown(machine)
-        machine = self.refreshMachine(machine)
-        #snap = machine.snapshots.get(name=name)
-        snap = machine.snapshots.get(description=name)
-        if snap is not None:
-            snap.restore()
-            self.waitForMachineStatus(machine, 'down')
+    def restoreSnapshotWrapper(self, vm_name, snapshot_desc):
+	"""
+	Restores to snapshot
+	Parameters:
+	* vm_name - VM name
+	* snapshot_desc - name of snapshot
+	"""
+        rc = restoreSnapshot(True, vm_name, snapshot_desc, ensure_vm_down=True)
+        if not rc:
+            raise errors.RestoreSnapshotFailure("Restore snapshot %s for vm %s" % snapshot_desc, vm_name)
 
     def getIp(self, machine):
         """
@@ -558,7 +579,7 @@ class SetupManager(object):
         #        return
         #    else:
         #        self.restoreSnapshot(machine, self.BASE_SNAPSHOT)
-        self.createSnapshot(machine, self.BASE_SNAPSHOT)
+        self.createSnapshotWrapper(machine.name, self.BASE_SNAPSHOT)
 
     def startSetup(self, name):
         machine = self.maps[name]
@@ -571,10 +592,12 @@ class SetupManager(object):
         self.waitForMachineStatus(machine, 'down')
 
     def saveSetup(self, name, point):
-        self.createSnapshot(self.maps[name], point)
+        machine = self.refreshMachine(self.maps[name])
+        self.createSnapshotWrapper(machine.name, point)
 
     def restoreSetup(self, name, point):
-        self.restoreSnapshot(self.maps[name], point)
+        machine = self.refreshMachine(self.maps[name])
+        self.restoreSnapshotWrapper(machine.name, point)
 
     def dispatchSetup(self, name):
         machine = self.refreshMachine(self.maps[name])
@@ -592,7 +615,7 @@ class SetupManager(object):
             if machine.status.get_state() == 'up':
                 machine.stop()
                 self.waitForMachineStatus(machine, 'down')
-            self.restoreSnapshot(machine, self.BASE_SNAPSHOT)
+            self.restoreSnapshotWrapper(machine.name, self.BASE_SNAPSHOT)
         finally:
             self.releaseMachine(name)
 
@@ -620,7 +643,53 @@ class RHEVMUtilsTestCase(unittest.TestCase):
         """
         Prepares setup machine, install RHEVM on it, and create snapshot
         """
+        ENUMS = opts['elements_conf']['RHEVM Enums']
+        logger.info("Preparation flow")
+        #  The use of this conf is temporary till the test updated conf file will
+        #  be recognized here, such as ART_CONFIG().
+        #  Also all [0] usage bellow, should be removed and needed when using
+        #  the .valid conf.
+        conf = ConfigObj('{0}.valid'.format(opts.get('conf')))
+        #conf = ConfigObj(opts.get('conf'))
+        params = conf.get('PARAMETERS')
+        nfs_params = conf.get('nfs')
+
+        hosts = params.get('vds')
+        cpuName = params.get('cpu_name')
+        username = 'root'
+        password = params.get('vds_password')[0]
+        datacenter ='%sToolsTest' % params.get('data_center_type')
+        storage_type = ENUMS['storage_type_nfs']
+        cluster = '%sToolsTest' % params.get('data_center_type')
+        #data_domain_address= params.get('data_domain_address')
+        #data_storage_domains=params.get('data_domain_path')
+        data_domain_address = nfs_params.get('data_domain_address')
+        data_storage_domains = nfs_params.get('data_domain_path')
+        version=params.get('compatibility_version')
+        type = ENUMS['storage_dom_type_export']
+        export_domain_address = params.get('export_domain_address')[0]
+        export_storage_domain = params.get('export_domain_path')[0]
+        export_domain_name = params.get('export_domain_name')
+        data_domain_name = params.get('data_domain_name')
+        template_name = params.get('template_name')
+        vm_name = params.get('vm_name')
+        vm_description = params.get('vm_description')
+        tested_setup_mac_address = params.get('tested_setup_mac_address')
+        memory_size = int(params.get('memory_size'))
+        format_export_domain = params.get('format_export_domain')
+        nic = params.get('host_nics')
+        nicType = ENUMS['nic_type_virtio']
+
+        if not prepareVmWithRhevm(True, hosts, cpuName, username, password, datacenter,
+               storage_type, cluster, data_domain_address, data_storage_domains,
+               version, type, export_domain_address, export_storage_domain,
+               export_domain_name, data_domain_name, template_name, vm_name,
+               vm_description, tested_setup_mac_address, memory_size,
+               format_export_domain, nic, nicType):
+            logger.info("prepareVmWithRhevm failed")
+        logger.info("DEBUG: cls.utility = %s", cls.utility)
         cls.c = config[cls.utility]
+        logger.info("DEBUG: cls.c %s", cls.c)
         cls.manager.prepareSetup(cls.utility)
         machine = cls.manager.dispatchSetup(cls.utility)
         machine.install(config)
@@ -632,6 +701,8 @@ class RHEVMUtilsTestCase(unittest.TestCase):
         Remove all snapshosts, and relase machine
         """
         cls.manager.releaseSetup(cls.utility)
+        logger.info("Clean Data center")
+        cleanDataCenter(True, 'nfsToolsTest')
 
     def setUp(self):
         """
