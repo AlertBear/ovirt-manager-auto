@@ -499,7 +499,8 @@ class CliUtil(RestUtil):
             params['from'] = event_id
 
         queryCmd = 'list {0} --query "{1}" {2}'.format(self.collection_name,
-                constraint, " ".join(createCommandLineOptionFromDict(params)))
+                constraint, " ".join(createCommandLineOptionFromDict(params,
+                                                             long_glue=' ')))
 
         self.logger.debug("SEARCH cli command is: %s" % queryCmd)
 
