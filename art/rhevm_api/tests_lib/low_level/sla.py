@@ -29,6 +29,7 @@ from art.rhevm_api.utils.test_utils import get_api
 ELEMENTS = os.path.join(os.path.dirname(__file__), '../../../conf/elements.conf')
 ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
 HOST_API = get_api('host', 'hosts')
+VM_API = get_api('vm', 'vms')
 
 logger = logging.getLogger(__package__ + __name__)
 
@@ -48,14 +49,14 @@ def getPinnedCPU(positive, host, host_user, host_pwd, vm, vcpu):
     '''
     output = None
     host_machine = machine.Machine(host, host_user, host_pwd).util('linux')
-    rc, output, err = host_machine.runCmd(['virsh', '-r', 'list','|grep', vm])
-    if rc or not output:
+    rc, output = host_machine.runCmd(['virsh', '-r', 'list','|grep', vm])
+    if not rc or not output:
          HOST_API.logger.error("Can't read 'virsh -r list' on %s", host)
          return False
     vm_id = output.split()[0]
     HOST_API.logger.info("VM pid is %s",vm_id)
-    rc, output, err = host_machine.runCmd(['virsh','-r','vcpuinfo', vm_id])
-    if rc or not output:
+    rc, output = host_machine.runCmd(['virsh','-r','vcpuinfo', vm_id])
+    if not rc or not output:
          HOST_API.logger.error("Can't read 'virsh -r vcpuinfo {0}'"
                                " on {1}".format(vm_id, host))
          return False
@@ -81,13 +82,13 @@ def getPinnedCPUAffinity(positive, host, host_user, host_pwd, vm, vcpu):
     '''
     output = None
     host_machine = machine.Machine(host, host_user, host_pwd).util('linux')
-    rc, output, err = host_machine.runCmd(['virsh','-r','list', '|grep', vm])
-    if rc or not output:
+    rc, output = host_machine.runCmd(['virsh','-r','list', '|grep', vm])
+    if not rc or not output:
          HOST_API.logger.error("Can't read 'virsh -r list' on %s", host)
          return False
     vm_id = output.split()[0]
-    rc, output, err  = host_machine.runCmd(['virsh','-r','vcpuinfo', vm_id])
-    if rc or not output:
+    rc, output  = host_machine.runCmd(['virsh','-r','vcpuinfo', vm_id])
+    if not rc or not output:
          HOST_API.logger.error("Can't read 'virsh -r vcpuinfo {0} on"
                                " {1}".format(vm_id,host))
          return False
@@ -96,3 +97,82 @@ def getPinnedCPUAffinity(positive, host, host_user, host_pwd, vm, vcpu):
     HOST_API.logger.info("CPU affinity of vCPU {0} of VM {1} is "
                          "{2}.".format(vcpu, vm, res))
     return res
+
+@is_action()
+def checkRandomPinning(positive, host, host_user, host_pwd, vm):
+    '''
+    Pins a VM with a single core CPU to a random core on host, checking
+    if pinning works as expected.
+    Author: ibegun
+    Parameters:
+        * host - ip of host
+        * host_user - user for the host
+        * host_pwd - user password
+        * vm - name of the vm
+    Return value: True on success, False on failure
+    '''
+    host_obj = HOST_API.find(host)
+    total_cores = int(host_obj.cpu.topology.sockets) * int(host_obj.cpu.topology.cores)
+    expected_pin = str(random.randint(0, total_cores - 1))
+    expected_affinity = '-' * int(expected_pin) + 'y' + '-' * (total_cores - int(expected_pin) - 1)
+    if not updateVm(positive=True, vm=vm, vcpu_pinning={'0':expected_pin},
+                    placement_affinity=ENUMS['vm_affinity_pinned'], placement_host=host):
+        VM_API.logger.error("Could not update VM.")
+        return not positive
+    if not startVm(positive=True, vm=vm):
+        VM_API.logger.error("Could not start VM.")
+        return not positive
+    actual_pin = getPinnedCPU(positive, host, host_user, host_pwd, vm, '0')
+    actual_affinity = getPinnedCPUAffinity(positive, host, host_user, host_pwd, vm, '0')[:total_cores]
+    if not stopVm(positive=True, vm=vm):
+        VM_API.logger.error("Could not stop VM.")
+        return not positive
+    if (not actual_pin) or (not actual_affinity):
+        HOST_API.logger.error("Could not retrieve VM pinning information.")
+        return not positive
+    VM_API.logger.info("vCPU #0 is expected to be pinned to vCPU #{0}, and is actually pinned to "
+                       "vCPU #{1}.".format(expected_pin, actual_pin))
+    VM_API.logger.info("vCPU #0 is expected to have pinning affinity of {0}, and actually has "
+                       "{1}.".format(expected_affinity, actual_affinity))
+    if (actual_pin != expected_pin) or (actual_affinity != expected_affinity):
+        return not positive
+    return positive
+
+@is_action()
+def testPinningLoad(positive, host, host_user, host_pwd, vm):
+    '''
+    Pins all vCPU's of a VM to a single pCPU on host, checking
+    if pinning holds.
+    Author: ibegun
+    Parameters:
+        * host - ip of host
+        * host_user - user for the host
+        * host_pwd - user password
+        * vm - name of the vm
+    Return value: True on success, False on failure
+    '''
+    vm_obj = VM_API.find(vm)
+    vm_total_cores = int(vm_obj.cpu.topology.sockets) * int(vm_obj.cpu.topology.cores)
+    actual_pin = 0
+    pinning = dict()
+    for i in range(vm_total_cores):
+        pinning[str(i)] = '0'
+    if not updateVm(positive=True, vm=vm, vcpu_pinning=pinning,
+                    placement_affinity=ENUMS['vm_affinity_pinned'], placement_host=host):
+        VM_API.logger.error("Could not update VM.")
+        return not positive
+    if not startVm(positive=True, vm=vm):
+        VM_API.logger.error("Could not start VM.")
+        return not positive
+    for i in range(vm_total_cores):
+        actual_pin = getPinnedCPU(positive, host, host_user, host_pwd, vm, str(i))
+        if (not actual_pin):
+            HOST_API.logger.error("Could not retrieve VM pinning information.")
+            return not positive
+        if actual_pin != '0':
+            VM_API.logger.error("vCPU #{0} is not running on pCPU #0.".format(i))
+            return not positive
+    if not stopVm(positive=True, vm=vm):
+        VM_API.logger.error("Could not stop VM.")
+        return not positive
+    return positive
