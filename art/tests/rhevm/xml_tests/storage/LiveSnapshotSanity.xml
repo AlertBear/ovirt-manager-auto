@@ -2502,6 +2502,7 @@
    <parameters>vm='vm_testing', wait=False</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <bz>879253</bz>
 </test_case>
 <test_case>
    <test_name>Create snapshot</test_name>
@@ -2510,6 +2511,7 @@
    <parameters>vm='vm_testing', description='vm_snapshot'</parameters>
    <positive>FALSe</positive>
    <run>yes</run>
+   <bz>879253</bz>
 </test_case>
 <test_case>
    <test_name>Stop VM</test_name>
