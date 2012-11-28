@@ -1,3 +1,6 @@
+[RUN]
+data_struct_mod = string(default='art.rhevm_api.data_struct.data_structures')
+
 [HTTP_HEADERS]
 Prefer = string(default='persistent-auth')
 
@@ -37,3 +40,6 @@ vm_windows_user = string(default='Administrator')
 vm_windows_password = string(default='123456')
 vm_linux_user = string(default='root')
 vm_linux_password = string(default='qum5net')
+
+[MATRIX_TEST_RUNNER]
+test_modules = force_list(default=list('art.rhevm_api',))

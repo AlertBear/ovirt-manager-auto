@@ -196,7 +196,6 @@ def readTestRunOpts(path, redefs):
     opts['data_struct_mod'] = runSection['data_struct_mod']
     opts['media_type'] = runSection['media_type']
     opts['secure'] = runSection.as_bool('secure')
-    opts['api_xsd'] = runSection['api_xsd']
 
     reportSection = config['REPORT']
     opts['has_sub_tests'] = reportSection['has_sub_tests']
