@@ -217,7 +217,7 @@ class TCMS(Component):
 
         self.agent.iterationInfo(sub_test_name=test.test_name,
                             test_case_name=test.test_name,
-                            info_line = [re.escape(str(test))],
+                            info_line = [str(test).replace("'", "\\'")],
                             iter_number=test.serial,
                             iter_status=test.status,
                             bz_info=getattr(test, 'bz', None),
