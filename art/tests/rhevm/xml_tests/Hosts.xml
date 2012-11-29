@@ -297,6 +297,7 @@
    <test_action>fenceHost</test_action>
    <parameters>host='{vds[0]}', fence_type='e{fence_type_restart}'</parameters>
    <positive>TRUE</positive>
+   <vital>TRUE</vital>
    <run>yes</run>
 </test_case>
 <test_case>
