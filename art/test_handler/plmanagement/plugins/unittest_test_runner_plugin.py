@@ -215,7 +215,7 @@ class UnittestLoader(Component):
         params['author_email'] = 'lbednar@redhat.com'
         params['description'] = 'Unittest runner plugin for ART'
         params['long_description'] = cls.__doc__
-        params['requires'] = ['python-nose']
-        params['pip_deps'] = ['unittest2']
+        params['requires'] = ['python-nose', 'python-unittest2']
+#        params['pip_deps'] = ['unittest2']
         params['py_modules'] = ['art.test_handler.plmanagement.plugins.unittest_test_runner_plugin']
 

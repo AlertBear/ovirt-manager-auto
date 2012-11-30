@@ -1,5 +1,5 @@
 SETUP_ACTION="bdist_rpm"
-SETUP_ACTION_OPTS=
+SETUP_ACTION_OPTS?=--source-only
 RHEVM_API="setup_rhevm_api.py"
 GLUSTER_API="setup_gluster_api.py"
 JASPER_API="setup_jasper_api.py"

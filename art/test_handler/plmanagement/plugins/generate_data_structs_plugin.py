@@ -103,7 +103,7 @@ class GenerateDataStructures(Component):
         params['author_email'] = 'lbednar@redhat.com'
         params['description'] = 'Generate DS plugin for ART'
         params['long_description'] = cls.__doc__
-        params['pip_deps'] = ['generateDS']
+#        params['pip_deps'] = ['generateDS'] # not used yet
         params['py_modules'] = ['art.test_handler.plmanagement.plugins.generate_data_structs_plugin']
 
     def config_spec(self, spec, val_funcs):

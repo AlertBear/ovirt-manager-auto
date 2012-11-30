@@ -8,7 +8,6 @@ from art.test_handler.plmanagement import implements
 from art.test_handler.plmanagement.interfaces import packaging
 from art.test_handler.plmanagement.manager import PluginManager
 from subprocess import Popen, PIPE
-from configobj import ConfigObj
 
 #SETUP_DIR = 'plugin_setups'
 SETUP_DIR = './'
@@ -56,12 +55,14 @@ def check_params(params):
     params['release'] = RELEASE
     params['version'] = VERSION
     params['changelog'] = CHANGELOG
-    if 'pip_deps' not in params:
-        params['pip_deps'] = []
-    if params['pip_deps']:
-        if 'python-pip' not in params['requires']:
-            params['requires'].append('python-pip')
-    params['pipdeps'] = params.pop('pip_deps')
+    #if 'pip_deps' not in params:
+    #    params['pip_deps'] = []
+    #if params['pip_deps']:
+    #    if 'python-pip' not in params['requires']:
+    #        params['requires'].append('python-pip')
+    #params['pipdeps'] = params.pop('pip_deps')
+    params.pop('pip_deps', None)
+    params['config'] = {'bdist_rpm': {'build_requires': 'art-utilities'}}
 
 def main():
 

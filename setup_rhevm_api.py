@@ -18,7 +18,7 @@ DEPS = [
         ]
 
 PIP_DEPS = [
-        'generateDS',
+        'generateDS', # not used yet
         ]
 
 RELEASE = os.environ.get('RELEASE', '1')
@@ -57,7 +57,9 @@ chmod -R ugo+rw /opt/art/rhevm_api &> /dev/null
 
 """
 
-CONFS = {'install': {'install_lib': INSTALLATION_PATH}}
+CONFS = {'install': {'install_lib': INSTALLATION_PATH},
+         'bdist_rpm': {'build_requires': 'art-utilities'},
+         }
 
 
 MANIFEST = [
@@ -83,7 +85,7 @@ if __name__ == '__main__':
             package_data=PACKAGE_DATA,
             data_files=DATA_FILES,
             manifest_list=MANIFEST,
-            pipdeps=PIP_DEPS,
+#            pipdeps=PIP_DEPS,
             post_install_script=SCRIPT,
             requires=DEPS,
             config=CONFS,

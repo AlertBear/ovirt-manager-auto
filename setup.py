@@ -58,6 +58,7 @@ DEPS = [
         'python-dateutil',
         'python-pip',
         'art-utilities',
+        'python-configobj >= 4.7.2',
         ]
 
 
@@ -109,6 +110,9 @@ MANIFEST = [
 #           'include art/test_handler/plmanagement/plugins/__init__.py',
            ]
 
+CONFS = {'bdist_rpm': {'build_requires': 'art-utilities'}}
+
+
 if __name__ == '__main__':
 
     setup(
@@ -133,8 +137,9 @@ if __name__ == '__main__':
             pre_install_script=SCRIPT,
             post_install_script=POST_INSTALL,
             post_uninstall_script=UN_SCRIPT,
-            pipdeps=PIP_DEPS,
+#            pipdeps=PIP_DEPS,
             requires=DEPS,
+            config=CONFS,
             changelog=CHANGELOG,
     )
 
