@@ -579,8 +579,6 @@ class StorageUtils:
 
         try:
             machineObj = Machine(server, username, password).util('linux')
-            if not machineObj.isAlive():
-                raise Exception("Machine is not reachable: " + server)
             if not machineObj.createLocalStorage(path):
                 raise Exception("Failed to create local storage device:"\
                                 + path)
