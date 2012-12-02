@@ -1,3 +1,21 @@
+"""
+------------------
+XML Results Plugin
+------------------
+
+This plugin allows to generate tests results in simple xml format.
+It's enabled by default and reports all input test properties together
+with status and time statistics.
+Grouping of test cases in results file is defined by definition
+in [REPORT] section .
+
+CLI Options
+-----------
+    --rf-xml Enables the plugin and sets the path to the results file,
+                default is results/results.xml
+
+"""
+
 from lxml.etree import Element, ElementTree
 from lxml.builder import E
 from dateutil import tz

@@ -1,3 +1,20 @@
+"""
+---------------
+xUnit results plugin Plugin
+---------------
+
+This plugin allows to generate tests results in xunit format.
+All test properties are reported under <properties> node.
+If log_capture plugin is enabled captured log is added under <system-out> node.
+The results file can be automatically parsed by any standard xUnit parser.
+
+CLI Options
+-----------
+    --rf-x-unit Enables the plugin and sets the path to the results file,
+                default is results/xunit_results.xml
+
+"""
+
 from lxml.etree import Element, ElementTree, PI
 from lxml.builder import E
 import datetime
@@ -31,7 +48,7 @@ class XUnit(Component):
     implements(IResultsFormatter, IConfigurable, IPackaging)
     name = 'X unit'
     enabled = True
-    default_file_name = "xunit_output.xml"
+    default_file_name = "xunit_results.xml"
 
     def __init__(self):
         super(XUnit, self).__init__()
@@ -40,7 +57,7 @@ class XUnit(Component):
 
     @classmethod
     def add_options(cls, parser):
-        out = os.path.expanduser("~/results/%s" % cls.default_file_name)
+        out = os.path.abspath("results/%s" % cls.default_file_name)
         parser.add_argument('--rf-x-unit', action="store", dest='rf_x_unit', \
                 help=cls.__doc__, const=out, default=None, nargs='?')
 
