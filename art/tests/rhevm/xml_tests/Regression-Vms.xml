@@ -511,6 +511,7 @@
     <run>yes</run>
     <conf>headers={'Correlation-Id': 428}</conf>
     <exp_events>2</exp_events>
+    <trac>1575</trac>
   </test_case>
   <test_case>
     <id>cb8bd9a8-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1380,6 +1381,7 @@
     <parameters>vm_name='restvm_run_once', cdrom_image='{cdrom_image}'</parameters>
     <positive>NONE</positive>
     <bz>864836</bz>
+    <trac>1572</trac>
     <run>yes</run>
   </test_case>
   <test_case>
