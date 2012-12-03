@@ -26,9 +26,6 @@ user_domain = domain_format()
 tool = option('ovirt-shell', 'rhevm-shell', default='rhevm-shell')
 optional_params = string(default='')
 
-[PARAMETERS]
-test_conf_specs = string_list(default=list())
-
 [REPORT]
 has_sub_tests = boolean(default=True)
 add_report_nodes = string(default=no)
