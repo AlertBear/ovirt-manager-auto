@@ -75,7 +75,7 @@ fi
 """
 
 POST_INSTALL="""\
-find %{{python_sitelib}}/art -type f -regex .*[.]py$ -exec sed -i -e '/^# *__package_exclude_start__.*/,/^# *__package_exclude_end__.*/ d' -e 's/art[.]\(rhevm\|gluster\|jasper\)_api/\\1_api/g' '{{}}' \;
+find %{{python_sitelib}}/art -type f -regex .*[.]py$ -exec sed -i 's/art[.]\(rhevm\|gluster\|jasper\)_api/\\1_api/g' '{{}}' \;
 find /opt/art/conf -type f -regex .*[.]spec$ -exec sed -i 's/art[.]\(rhevm\|gluster\|jasper\)_api/\\1_api/g' '{{}}' \;
 
 #python << __EOF__

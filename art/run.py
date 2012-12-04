@@ -7,12 +7,6 @@ from sys import argv, exit, stderr
 import traceback
 from socket import error as SocketError
 
-# __package_exclude_start__
-project_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-paths = list(set([os.path.abspath(x) for x in sys.path]) - set((project_path,)))
-paths.insert(0, project_path)
-sys.path = paths
-# __package_exclude_end__
 from utilities.configs import ValidationError
 
 from art.core_api.apis_exceptions import APICommandError, APIException
