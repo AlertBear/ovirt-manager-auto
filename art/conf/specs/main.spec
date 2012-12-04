@@ -4,8 +4,6 @@ parameters_section_validation = section_exists(section='PARAMETERS', default=Tru
 [RUN]
 engine = option('sdk', 'rest', 'cli', default='rest')
 debug = boolean(default=True)
-auto_devices = boolean(default=False)
-auto_devices_cleanup = boolean(default=True)
 media_type = option('application/xml', default='application/xml')
 in_parallel = force_list(default=list())
 parallel_configs = force_list(default=list())

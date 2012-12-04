@@ -38,12 +38,15 @@ the following parameters:
 
 """
 
+import re
 from art.test_handler.plmanagement import Component, implements, get_logger
 from art.test_handler.plmanagement.interfaces.resources_listener import IResourcesListener
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.plmanagement.interfaces.config_validator import\
                                                     IConfigValidation
+from art.test_handler.plmanagement.interfaces.tests_listener import\
+                                                    ITestSuiteHandler
 
 logger = get_logger('auto_devices')
 
@@ -58,7 +61,8 @@ class AutoDevices(Component):
     """
     Plugin provides storage allocation tool.
     """
-    implements(IResourcesListener, IConfigurable, IPackaging, IConfigValidation)
+    implements(IResourcesListener, IConfigurable, IPackaging, \
+                        IConfigValidation, ITestSuiteHandler)
 
     name = "Auto Devices"
 
@@ -66,12 +70,12 @@ class AutoDevices(Component):
         super(AutoDevices, self).__init__()
         self.su = None
         self.conf = None
-        self.clean = 'yes'
+        self.clean = None
 
     def configure(self, params, conf):
         logger.info("Configuring storages plugin.")
         self.conf = conf
-        self.clean = conf.get(RUN_SECTION).as_bool(AD_CLEANUP)
+        self.cleanup = conf[RUN_SECTION][AD_CLEANUP]
 
     def add_options(self, parser):
         pass
@@ -85,6 +89,15 @@ class AutoDevices(Component):
         self.su = storage.StorageUtils(self.conf)
         self.su.storageSetup()
         self.su.updateConfFile()
+
+    def pre_test_suite(self, suite):
+        pass
+
+    def post_test_suite(self, suite):
+        if re.match('all|yes', self.cleanup):
+            self.clean = True
+        else:
+            self.clean = (self.cleanup == suite.status.lower())
 
     def on_storages_cleanup_request(self):
         logger.info("Cleaning storages.")
@@ -112,4 +125,9 @@ class AutoDevices(Component):
     def config_spec(self, spec, val_funcs):
         section_spec = spec.get(STR_SECTION, {})
         spec[STR_SECTION] = section_spec
+        run_spec = spec.get(RUN_SECTION, {})
+        run_spec[AD_ENABLED] = "boolean(default=False)"
+        run_spec[AD_CLEANUP] = "option('pass','fail','all','yes',default='all')"
+        spec[RUN_SECTION] = run_spec
+
 

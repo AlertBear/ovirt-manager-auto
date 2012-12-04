@@ -267,13 +267,13 @@ class TestRunner(object):
                 for test_elm in test_group:
                     self._run_test_elm(test_elm)
                     if test_elm.status == _TestElm.TEST_STATUS_PASSED:
-                        with test_group.passed as c: c += 1
+                        test_group.passed += 1
                     elif test_elm.status == _TestElm.TEST_STATUS_FAILED:
-                        with test_group.failed as c: c += 1
+                        test_group.failed += 1
                     elif test_elm.status == _TestElm.TEST_STATUS_SKIPPED:
-                        with test_group.skipped as c: c += 1
+                        test_group.skipped += 1
                     elif test_elm.status == _TestElm.TEST_STATUS_ERROR:
-                        with test_group.error as c: c += 1
+                        test_group.error += 1
                     else:
                         assert False, "status has to be defined for "\
                                 "each TestElement: %s" % test_elm.status
@@ -298,9 +298,9 @@ class TestRunner(object):
                     test_group.error != 0:
                 raise VitalTestFailed(test_group.test_name)
         if test_group.error > 0:
-            self.test_group.status = _TestElm.TEST_STATUS_ERROR
+            test_group.status = _TestElm.TEST_STATUS_ERROR
         elif test_group.failed > 0:
-            self.test_group.status = _TestElm.TEST_STATUS_FAILED
+            test_group.status = _TestElm.TEST_STATUS_FAILED
         else:
             test_group.status = _TestElm.TEST_STATUS_PASSED
 
