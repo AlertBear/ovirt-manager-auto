@@ -1,7 +1,7 @@
 import os
 import logging
-from subprocess  import Popen, PIPE
 from art.core_api import ActionSet
+from art.generateDS.setup_ds import GenerateDataStructures
 from art.test_handler.settings import opts
 import art
 
@@ -11,43 +11,21 @@ DATA_STRUCT_PATH = os.path.join('data_struct', 'data_structures.py')
 logger = logging.getLogger('rhevm_api')
 
 
-def __set_xsd_path():
-    xsd_path = os.path.join(os.path.dirname(__file__), 'data_struct', 'api.xsd')
-    opts['api_xsd'] = xsd_path
-__set_xsd_path()
+class GenerateRhevmDataStructures(GenerateDataStructures):
 
+    def __init__(self, conf):
+        super(GenerateRhevmDataStructures, self).__init__(
+                     opts, repo_path=os.path.dirname(art.__file__))
 
-def generate_ds(conf): # do same for orhers_apies
-    from art.core_api.http import HTTPProxy
-    from art.test_handler.settings import opts
+    def _set_xsd_path(self):
+        xsd_path = os.path.join(os.path.dirname(__file__),
+                                'data_struct', 'api.xsd')
+        self._ds_path = os.path.join(os.path.dirname(__file__),
+                                     DATA_STRUCT_PATH)
+        self._xsd_path = xsd_path
+        opts['api_xsd'] = xsd_path
 
-    def __download_xsd(file_path):
-        proxy = HTTPProxy(opts)
-        res = proxy.GET('/api?schema')
-        if res['status'] > 300:
-            raise Exception("Failed to download schema: %s " % res['reason'])
-
-        with open(file_path, 'w') as fh:
-            fh.write(res['body'])
-        logger.info("Downloaded XSD scheme: %s", file_path)
-
-    def __generate_ds(xsd, ds_path):
-        repo_path = os.path.dirname(art.__file__)
-        ds_exec = os.path.join(repo_path, 'generateDS', 'generateDS.py')
-        cmd = ['python', ds_exec, '-f', '-o', ds_path, \
-                '--member-specs=dict', xsd]
-
-        p = Popen(cmd, stdout=PIPE, stderr=PIPE)
-        out, err = p.communicate()
-        if p.returncode:
-            raise Exception(err)
-        logger.info("Generated data structures: %s", ds_path)
-
-
-    ds_path = os.path.join(os.path.dirname(__file__), DATA_STRUCT_PATH)
-
-    __download_xsd(opts['api_xsd'])
-    __generate_ds(opts['api_xsd'], ds_path)
+generate_ds = GenerateRhevmDataStructures(opts)
 
 
 class RHEVMActionSet(ActionSet):

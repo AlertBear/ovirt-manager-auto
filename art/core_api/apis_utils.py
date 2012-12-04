@@ -42,6 +42,8 @@ DEF_SLEEP = 10  # default sleep
 HEADERS = 'headers'
 CORRELATION_ID = 'Correlation-Id'
 
+logger = logging.getLogger('api_utils')
+
 
 def getDS(ds_name):
     if hasattr(data_st, ds_name):
