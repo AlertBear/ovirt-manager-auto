@@ -579,9 +579,11 @@ class StorageUtils:
 
         try:
             machineObj = Machine(server, username, password).util('linux')
-            if not machineObj.createLocalStorage(path):
-                raise Exception("Failed to create local storage device:"\
-                                + path)
+            rc, out = machineObj.createLocalStorage(path)
+            if not rc:
+                raise Exception("Failed to create local storage device with"
+                                "path %s. Error message is %s" %
+                                (path, out))
         except FileAlreadyExistsError:
             pass
 
@@ -640,11 +642,11 @@ class StorageUtils:
 
         try:
             machineObj = Machine(server, username, password).util('linux')
-            if not machineObj.isAlive():
-                raise Exception("Machine is not reachable: " + server)
-            if not machineObj.removeLocalStorage(path, force=True):
-                raise Exception("Failed to remove local storage device: "\
-                                + path)
+            rc, out = machineObj.removeLocalStorage(path, force=True)
+            if not rc:
+                raise Exception("Failed to remove local storage device with"
+                                "path %s. Error message is %s" %
+                                (path, out))
             self.logger.info(PASS_REMOVE_MSG.format('local', path))
         except:
             self.logger.info(FAIL_REMOVE_MSG.format('local', path,
