@@ -222,6 +222,7 @@ def readTestRunOpts(path, redefs):
     # Populate opts from the CLI section.
     cliSection = config['CLI_CONNECTION']
     opts['cli_tool'] = cliSection['tool']
+    opts['cli_log_file'] = cliSection['cli_log_file']
     opts['cli_optional_params'] = cliSection['optional_params']
     return config
 

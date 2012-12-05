@@ -42,11 +42,14 @@ QUERY_ID_RE = 'id(\s+):'
 class CliConnection(object):
     __metaclass__ = ABCMeta
 
-    def __init__(self, command, prompt, timeout):
+    def __init__(self, command, prompt, timeout, logFile=None):
         self._prompt = prompt
         self.cliConnection = pe.spawn(command, timeout=timeout)
         timestamp = strftime('%Y%m%d_%H%M%S')
-        self.cliLog = "/tmp/cli_log_%s.log" % timestamp
+        if logFile:
+            self.cliLog = logFile
+        else:
+            self.cliLog = "/tmp/cli_log_%s.log" % timestamp
         self.cliConnection.logfile = open(self.cliLog, 'w')
         self._expectDict = {}
         self._illegalXMLCharsRE = re.compile(ILLEGAL_XML_CHARS)
@@ -77,7 +80,7 @@ class CliConnection(object):
         """
         This method sends command
         Input:
-        cmd - command
+        cmd - command to run
         timeout - specific timeout in [sec] for this command run
         Output: string with data from child process
         """
@@ -156,7 +159,8 @@ class RhevmCli(CliConnection):
     """
 
     def __init__(self, logger, uri, user, userDomain, password,
-                 secure, sslKeyFile, sslCertFile, sslCaFile, **kwargs):
+                 secure, sslKeyFile, sslCertFile, sslCaFile, logFile,
+                 **kwargs):
         """
         Input:
          - logger - logger reference
@@ -165,6 +169,7 @@ class RhevmCli(CliConnection):
         """
         # rhevm shell specific configs
         self._rhevmOutputErrorKeys = ['error', 'status', 'reason', 'detail']
+        self._debugMsg = "send:.*header:.*(\r\r\n\r)"
         self._errorStatusMsgSearch = "error.*status.*reason.*detail.*"
         self._errorParametersMsgSearch = "error:.*"
         self._errorSyntaxMsgSearch = "\*\*\* Unknown syntax.*"
@@ -181,7 +186,8 @@ class RhevmCli(CliConnection):
             secure, sslKeyFile, sslCertFile, sslCaFile, additionalArgs=kwargs)
         super(RhevmCli, self).__init__(self._connectionCommand,
                             prompt=self._RHEVM_PROMPT,
-                            timeout=self._RHEVM_TIMEOUT)
+                            timeout=self._RHEVM_TIMEOUT,
+                            logFile=logFile)
         self.logger.debug("CLI logfile: %s" % self.cliLog)
         self.login(password)
         # updating parent dictionary for cli work
@@ -242,6 +248,11 @@ class RhevmCli(CliConnection):
                                        output, flags=re.DOTALL)
         errorSyntaxMsg = re.search(self._errorSyntaxMsgSearch,
                                        output, flags=re.DOTALL)
+        debugMsg = re.search(self._debugMsg,
+                                       output, flags=re.DOTALL)
+        if debugMsg:
+            self.logger.debug('Debug output: %s',
+                              self.outputCleaner(debugMsg.group(0)))
         if errorStatusMsg:
             data = re.search(self._insiderSearch, errorStatusMsg.group(0),
                              flags=re.DOTALL).group(0).split(self._EOL)
@@ -285,6 +296,7 @@ class CliUtil(RestUtil):
                             sslKeyFile=self.opts.get('ssl_key_file', None),
                             sslCertFile=self.opts.get('ssl_cert_file', None),
                             sslCaFile=self.opts.get('ssl_ca_file', None),
+                            logFile=self.opts['cli_log_file'],
                             optionalParms=self.opts['cli_optional_params'],
                             )
                 else:
@@ -294,7 +306,6 @@ class CliUtil(RestUtil):
             except pe.ExceptionPexpect as e:
                 self.logger.error('Pexpect Connection Error: %s ' % e.value)
                 exit(2)
-
             cliInit = self.cli
         else:
             self.cli = cliInit
