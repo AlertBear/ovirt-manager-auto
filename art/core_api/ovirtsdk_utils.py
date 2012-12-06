@@ -91,7 +91,7 @@ class SdkUtil(APIUtil):
         return results
 
     def create(self, entity, positive, expectedEntity=None, incrementBy=1,
-               async=False, collection=None):
+               async=False, collection=None, current=None):
         '''
         Description: creates a new element
         Author: edolinin
@@ -116,8 +116,7 @@ class SdkUtil(APIUtil):
 
         response = None
         try:
-            response = collection.add(entity, correlation_id=\
-                                        self.getCorrelationId())
+            response = collection.add(entity, **self.getReqMatrixParams(current))
 
             if not async:
                 self.find(response.id, 'id', collection=collection.list())
@@ -142,7 +141,7 @@ class SdkUtil(APIUtil):
         '''
         getattr(entity, 'set_' + property_name)(property_value)
 
-    def update(self, origEntity, newEntity, positive):
+    def update(self, origEntity, newEntity, positive, current=None):
         '''
         Description: update an element
         Author: edolinin
@@ -175,8 +174,7 @@ class SdkUtil(APIUtil):
 
         try:
             if positive:
-                response = origEntity.update(correlation_id=\
-                                        self.getCorrelationId())
+                response = origEntity.update(**self.getReqMatrixParams(current))
                 self.logger.info(self.element_name + " was updated")
 
                 if not validator.compareElements(newEntity, response,

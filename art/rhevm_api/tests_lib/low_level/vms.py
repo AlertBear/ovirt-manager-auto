@@ -1636,9 +1636,8 @@ def changeCDWhileRunning(vm_name, cdrom_image):
 
     newCdrom = cdroms[0]
     newCdrom.set_file(data_st.File(id=cdrom_image))
-    cdroms[0].set_href(cdroms[0].href + "?current")
-
-    cdrom, status = CDROM_API.update(cdroms[0], newCdrom, True)
+    
+    cdrom, status = CDROM_API.update(cdroms[0], newCdrom, True, current=True)
 
     return status
 

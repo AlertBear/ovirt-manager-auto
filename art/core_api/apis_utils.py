@@ -103,6 +103,18 @@ class APIUtil(object):
     def getCorrelationId(self):
         return self.opts[HEADERS].get(CORRELATION_ID, None)
 
+    def getReqMatrixParams(self, current=None):
+        '''
+        Description: build dict of matrix parameters for request
+        Parameters:
+           * current - boolean current value (True/False)
+        Return: dict of parameters: correlation_id, current
+        '''
+        add_params = dict(correlation_id=self.getCorrelationId())
+        if current is not None:
+            add_params['current'] = current
+        return add_params
+
     def makeAction(self, async, expiry, **params):
         '''
         Description: build action (post body for actions urls)

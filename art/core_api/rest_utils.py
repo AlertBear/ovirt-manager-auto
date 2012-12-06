@@ -83,6 +83,20 @@ class RestUtil(APIUtil):
                                   'error: %s. body: %s' % (err, ret['body']))
 
 
+    def buildUrl(self, href, current=None):
+        '''
+        Description: builds url with matrix parameters
+        Parameters:
+           * href - initial url for request
+           * current - boolean current value (True/False)
+        Return: result url
+        '''
+        url = href
+        if current is True:
+            url = '%s;current' % href
+        return url
+
+
     def get(self, href=None, elm=None, absLink=True, listOnly=False,
             noParse=False, validate=True):
         '''
@@ -136,7 +150,7 @@ class RestUtil(APIUtil):
     def create(self, entity, positive,
                 expected_pos_status=[200, 201, 202], expected_neg_status=[500, 400],
                 expectedEntity=None, incrementBy=1, async=False, collection=None,
-                coll_elm_name = None):
+                coll_elm_name = None, current=None):
         '''
         Description: implements POST method and verify the response
         Author: edolinin
@@ -165,11 +179,12 @@ class RestUtil(APIUtil):
         collection = self.get(href, listOnly=True, elm=coll_elm_name)
         entity = validator.dump_entity(entity, self.element_name)
 
+        post_url = self.buildUrl(href, current)
         self.logger.debug("CREATE request content is --  url:%(uri)s body:%(body)s " \
-                            % {'uri': href, 'body': entity })
+                            % {'uri': post_url, 'body': entity })
 
         with measure_time():
-            ret = self.api.POST(href, entity)
+            ret = self.api.POST(post_url, entity)
 
         collection = self.get(href, listOnly=True, elm=coll_elm_name)
 
@@ -207,7 +222,7 @@ class RestUtil(APIUtil):
 
 
     def update(self, origEntity, newEntity, positive, expected_pos_status=[200, 201],
-                                        expected_neg_status=[500, 400]):
+                                expected_neg_status=[500, 400], current=None):
         '''
         Description: implements PUT method and verify the response
         Author: edolinin
@@ -222,11 +237,12 @@ class RestUtil(APIUtil):
 
         entity = validator.dump_entity(newEntity, self.element_name)
 
+        put_url = self.buildUrl(origEntity.href, current)
         self.logger.debug("PUT request content is --  url:%(uri)s body:%(body)s " \
-                                    % {'uri': origEntity.href, 'body': entity })
+                                    % {'uri': put_url, 'body': entity })
 
         with measure_time():
-            ret = self.api.PUT(origEntity.href, entity)
+            ret = self.api.PUT(put_url, entity)
 
         self.logger.debug("Response body for PUT request is: %s " % ret['body'])
 

@@ -1380,8 +1380,6 @@
     <test_action>changeCDWhileRunning</test_action>
     <parameters>vm_name='restvm_run_once', cdrom_image='{cdrom_image}'</parameters>
     <positive>NONE</positive>
-    <bz>864836</bz>
-    <trac>1572</trac>
     <run>yes</run>
   </test_case>
   <test_case>
