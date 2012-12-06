@@ -1,5 +1,6 @@
 #!/bin/env python
 import os
+import sys
 #from distutils.core import setup
 from utilities.setup_utils import setup, common
 
@@ -51,7 +52,6 @@ DEPS = [
         # REQUIRES
         'python >= 2.6',
         'python-lxml',
-        'python-argparse', # this can cause problem on py2.7
         'python-lockfile',
         'python-tpg',
         'PyXML',
@@ -60,6 +60,8 @@ DEPS = [
         'art-utilities',
         'python-configobj >= 4.7.2',
         ]
+if sys.version_info[0] == 2 and sys.version_info[1] < 7:
+    DEPS.append('python-argparse')
 
 
 SCRIPT = """\
