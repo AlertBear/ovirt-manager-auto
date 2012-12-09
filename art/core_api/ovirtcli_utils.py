@@ -468,7 +468,7 @@ class CliUtil(RestUtil):
         if body:
             addBody = validator.cliEntety(body, self.element_name)
 
-        deleteCmd = 'remove {0} {1} {2}'.format(self.cli_element_name,
+        deleteCmd = 'remove {0} "{1}" {2}'.format(self.cli_element_name,
                                             entity.name, addBody)
 
         ownerId, ownerName, entityName = \

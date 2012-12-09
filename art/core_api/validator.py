@@ -74,8 +74,7 @@ def cliEntety(elm, node_name):
     return output.replace(', ', '" ')
 
 
-def cli_entity(elm, node_name, level=0, collection=False, start=False,
-               end=False):
+def cli_entity(elm, node_name, level=0, collection=False, start=False):
     '''
     Dump DS element to cli format, shouldn't be used directly
     use cliEntety as wrapper for this function
@@ -135,21 +134,15 @@ def cli_entity(elm, node_name, level=0, collection=False, start=False,
                     base = '-'.join([tmp[0], tmp[1]])
                     collectionData = '.'.join([tmp[1], tmp[2]])
 
-                    # collection with single element
-                    if start and end:
-                        nodeName = ' '.join([base, collectionData])
-                        dumped_ent += " --{0}={1}".format(nodeName, attrVal)
-
-                    # Middle of collection
-                    elif not start:
-                        nodeName = collectionData
-                        dumped_ent += "{0}={1},".format(nodeName, attrVal)
-
                     # beginning of collection
-                    elif start:
+                    if start:
                         start = False
                         nodeName = ''.join([base, ' "', collectionData])
                         dumped_ent += " --{0}={1},".format(nodeName, attrVal)
+                    # Middle of collection
+                    else:
+                        nodeName = collectionData
+                        dumped_ent += "{0}={1},".format(nodeName, attrVal)
 
                 else:
                     # default behavior for unchecked types
@@ -165,15 +158,12 @@ def cli_entity(elm, node_name, level=0, collection=False, start=False,
                 # collection ahead
                 if attrContainer:
                     for i in range(length):
-                        if length == 1:
-                            dumped_ent += cli_entity(attrVal[i], nodeName,
-                              nextLevel, collection=True, start=True, end=True)
-                        elif i != 0:
-                            dumped_ent += cli_entity(attrVal[i], nodeName,
-                                        nextLevel, collection=True)
-                        elif i == 0:
+                        if i == 0:
                             dumped_ent += cli_entity(attrVal[i], nodeName,
                                         nextLevel, collection=True, start=True)
+                        else:
+                            dumped_ent += cli_entity(attrVal[i], nodeName,
+                                        nextLevel, collection=True)
                 else:
                     for i in range(length):
                         dumped_ent += cli_entity(attrVal[i], nodeName,
