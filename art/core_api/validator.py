@@ -122,7 +122,8 @@ def cli_entity(elm, node_name, level=0, collection=False, start=False,
                     or re.search('unsignedShort', attrType):
                     attrVal = "%d" % attrVal
 
-                if re.search('string', attrType):
+                if re.search('string', attrType) or\
+                   re.search('dateTime', attrType):
                     if collection:
                         attrVal = "%s" % attrVal
                     else:
@@ -151,6 +152,7 @@ def cli_entity(elm, node_name, level=0, collection=False, start=False,
                         dumped_ent += " --{0}={1},".format(nodeName, attrVal)
 
                 else:
+                    # default behavior for unchecked types
                     dumped_ent += " --{0} {1}".format(nodeName, attrVal)
                 if level > 0 and attr == 'id':
                     break
