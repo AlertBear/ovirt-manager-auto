@@ -1,3 +1,20 @@
+"""
+--------------------------------
+Puppet Plugin
+--------------------------------
+
+Plugin disables puppet daemon on VDC and VDSs machines before test is
+executed and also enables puppet daemon when test is done.
+
+CLI Options:
+------------
+    --with-puppet  Enable the plugin
+
+Configuration Options:
+----------------------
+    | **[PUPPET]**
+    | **enabled**   to enable the plugin (true/false)
+"""
 
 from art.test_handler.plmanagement import Component, implements, get_logger,\
      PluginError
