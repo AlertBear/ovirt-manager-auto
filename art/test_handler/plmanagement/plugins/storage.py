@@ -170,6 +170,7 @@ class StorageUtils:
                     self.vdsData[vds] = machine.getIscsiInitiatorName()
                 except:
                     self.logger.error("Failed to get iqn for host " + vds)
+                    raise
 
         # keeping this loop for backward compatibility, devices still
         # can be configured with sub-sections

@@ -47,6 +47,7 @@ from art.test_handler.plmanagement.interfaces.config_validator import\
                                                     IConfigValidation
 from art.test_handler.plmanagement.interfaces.tests_listener import\
                                                     ITestSuiteHandler
+from art.test_handler.exceptions import VitalTestFailed
 
 logger = get_logger('auto_devices')
 
@@ -87,7 +88,13 @@ class AutoDevices(Component):
         logger.info("Preparing storages.")
         from art.test_handler.plmanagement.plugins import storage
         self.su = storage.StorageUtils(self.conf)
-        self.su.storageSetup()
+
+        try:
+            self.su.storageSetup()
+        except Exception as ex:
+            logger.error(str(ex), exc_info=True)
+            raise VitalTestFailed('Storage device creation')
+
         self.su.updateConfFile()
 
     def pre_test_suite(self, suite):
