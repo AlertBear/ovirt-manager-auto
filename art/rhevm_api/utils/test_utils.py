@@ -229,9 +229,10 @@ def validateElementStatus(positive, element, collection, elementName,
     expectedStatuses = [status.strip().upper() for status in expectedStatus.split(',')]
     result = elementObj.get_status().get_state().upper() in expectedStatuses
 
-    MSG = "Status of element {0} is \'{1}\' expected statuses are {2}"
-    util.logger.warning(MSG.format(elementName,
-        elementObj.get_status().get_state().upper(), expectedStatuses))
+    if not result:
+        MSG = "Status of element {0} is \'{1}\' expected statuses are {2}"
+        util.logger.warning(MSG.format(elementName,
+            elementObj.get_status().get_state().upper(), expectedStatuses))
 
     return result
 
