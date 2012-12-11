@@ -43,6 +43,7 @@ TEST_REPORT = 'test_report'
 TEST_FETCH_OUTPUT = 'fetch_output'
 TEST_BZ_ID = 'bz' # TODO: shouldn't be here
 TEST_VITAL = 'vital'
+TEST_VITAL4GROUP = 'vital4group'
 TEST_CONF = 'conf'
 TEST_EXP_EVENTS = 'exp_events' # TODO: shouldn't be here
 TEST_EXPECTED_EXCEPTIONS = 'expected_exc'

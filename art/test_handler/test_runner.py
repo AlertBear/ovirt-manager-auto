@@ -8,7 +8,8 @@ from dateutil.tz import tzutc
 import threading
 import copy
 from art.test_handler.settings import initPlmanager
-from art.test_handler.exceptions import VitalTestFailed, SkipTest
+from art.test_handler.exceptions import VitalTestFailed, \
+                        Vital4GroupTestFailed, SkipTest
 from utilities.jobs import JobsSet, Job # TODO: consider to use http://docs.python.org/dev/library/concurrent.futures.html instead
 
 # TODO: Consider trigger_action
@@ -174,6 +175,7 @@ class TestCase(_TestElm):
     def __init__(self):
         super(TestCase, self).__init__()
         self.exc = None
+        self.vital4group = False
 
     def __call__(self):
         raise NotImplementedError()
@@ -255,6 +257,9 @@ class TestRunner(object):
         self.plmanager.results_collector.add_test_result(test_case)
         if test_case.vital and test_case.status != test_case.TEST_STATUS_PASSED:
             raise VitalTestFailed(test_case.test_name)
+        if test_case.vital4group and test_case.status != \
+                            test_case.TEST_STATUS_PASSED:
+            raise Vital4GroupTestFailed(test_case.test_name)
 
     def _run_test_group(self, test_group):
         assert isinstance(test_group, TestGroup), \
@@ -265,7 +270,15 @@ class TestRunner(object):
             self.plmanager.test_skippers.should_be_test_group_skipped(test_group)
             if test_group.workers == 1:
                 for test_elm in test_group:
-                    self._run_test_elm(test_elm)
+                    try:
+                        self._run_test_elm(test_elm)
+                    except Vital4GroupTestFailed:
+                        logger.error('Vital for group test failed: %s' \
+                                                    % test_elm.test_name)
+                        logger.warn('Skipping all further tests in group: %s' \
+                                                        % test_group.test_name)
+                        raise SkipTest
+
                     if test_elm.status == _TestElm.TEST_STATUS_PASSED:
                         test_group.passed += 1
                     elif test_elm.status == _TestElm.TEST_STATUS_FAILED:

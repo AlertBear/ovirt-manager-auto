@@ -11,6 +11,13 @@ class VitalTestFailed(Exception):
         return MSG.format(self.test_name)
 
 
+class Vital4GroupTestFailed(VitalTestFailed):
+    '''
+    Raised when some vital test on group level fails.
+    '''
+    pass
+
+
 class CannotRunTests(Exception):
     ''' Raised when some problem occured during running the test scenario. '''
 

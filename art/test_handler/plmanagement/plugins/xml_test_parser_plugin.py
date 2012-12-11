@@ -25,6 +25,7 @@ TEST_REPORT_TAG = 'report'
 TEST_FETCH_OUTPUT_TAG = 'fetch_output'
 TEST_BZ_ID_TAG = 'bz' # TODO: shouldn't be here
 TEST_VITAL_TAG = 'vital'
+TEST_VITAL4GROUP_TAG = 'vital4group'
 TEST_CONF_TAG = 'conf'
 TEST_EXP_EVENTS_TAG = 'exp_events' # TODO: shouldn't be here
 TEST_EXPECT_TAG = 'expect'
@@ -49,6 +50,7 @@ ELMS_NAME_MAP = {
             TEST_FETCH_OUTPUT_TAG: mr.TEST_FETCH_OUTPUT,
             TEST_BZ_ID_TAG: mr.TEST_BZ_ID,
             TEST_VITAL_TAG: mr.TEST_VITAL,
+            TEST_VITAL4GROUP_TAG: mr.TEST_VITAL4GROUP,
             TEST_EXP_EVENTS_TAG: mr.TEST_EXP_EVENTS,
             TEST_EXPECT_TAG: mr.TEST_EXPECTED_EXCEPTIONS,
             TCMS_TEST_CASE_TAG: mr.TEST_TCMS_CASE_ID,
