@@ -103,6 +103,8 @@ class AutoDevices(Component):
     def post_test_suite(self, suite):
         if re.match('all|yes', self.cleanup):
             self.clean = True
+        elif self.cleanup == 'no':
+            self.clean = False
         else:
             self.clean = (self.cleanup == suite.status.lower())
 
@@ -134,7 +136,7 @@ class AutoDevices(Component):
         spec[STR_SECTION] = section_spec
         run_spec = spec.get(RUN_SECTION, {})
         run_spec[AD_ENABLED] = "boolean(default=False)"
-        run_spec[AD_CLEANUP] = "option('pass','fail','all','yes',default='all')"
+        run_spec[AD_CLEANUP] = "option('pass','fail','all','yes','no',default='all')"
         spec[RUN_SECTION] = run_spec
 
 
