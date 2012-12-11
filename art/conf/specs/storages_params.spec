@@ -4,7 +4,7 @@ vm_os = string(default='Red Hat Enterprise Linux 6.x x64')
 display_type = option('spice', 'vnc', 'rdesktop', default='spice')
 
 # cobbler configuration
-cobbler_address = string(default='qa-cobbler.qa.lab.tlv.redhat.com')
+cobbler_address = is_alive(default='qa-cobbler.qa.lab.tlv.redhat.com')
 cobbler_user = string(default='root')
 cobbler_passwd = string(default='qum5net')
 cobbler_profile = string(default='short_agent_rhel6.x_jenkins-x86_64')
