@@ -21,6 +21,7 @@ Configuration Options:
     | **timeout** - timeout in seconds for reading DHCP leases, default: 10
     | **attempts** - number of attempts for retry, default: 60
     | **wait_interval** - seconds to sleep between attempts, default: 1
+    | **debug** - enables debugging output, bool(default=False)
 """
 
 import sys
@@ -48,7 +49,9 @@ VDS_PASSWORD = 'vds_password'
 VDS = 'vds'
 MAC_TO_IP_CONV = "MAC_TO_IP_CONV"
 DEFAULT_STATE = False
+DEFAULT_DEBUG = False
 ENABLED = 'enabled'
+DEBUG = 'debug'
 TIMEOUT = 'timeout'
 ATTEMPTS = 'attempts'
 WAIT_INT = 'wait_interval'
@@ -97,17 +100,19 @@ class TCPDumpParser(object):
             S_GW_IP: (P_MAC,),
             }
 
-    def __init__(self, cache):
+    def __init__(self, cache, debug=False):
         super(TCPDumpParser, self).__init__()
         self.c = cache
         self.st = self.S_UNKNOWN
         self.ip = None
+        self.debug = debug
 
     def parse_line(self, line):
         """
         Accepts output from tcpdump, line-by-line
         """
-        logger.debug("EXPECT %s GOT %s",
+        if self.debug:
+            logger.debug("EXPECT %s GOT %s",
                 " OR ".join(["'%s'" % x for x in self.EXPECT[self.st]]), line)
         if self.st == self.S_UNKNOWN:
             if re.search(self.P_REPLY, line):
@@ -143,12 +148,16 @@ class TCPDumpParser(object):
     def __read_mac(self, line):
         m = re.search(self.P_MAC, line, re.I)
         if m:
+            mac_count = 0 # NOTE: want to print only first occurance
             with self.c:
                 mac = unify_mac_format(m.group('mac'))
                 ips = self.c.get(mac, set())
+                mac_count = len(ips)
                 ips.add(self.ip)
+                mac_count = mac_count - len(ips)
                 self.c[mac] = ips
-            logger.info("Caught %s for %s", self.ip, mac)
+            if mac_count < 0:
+                logger.info("Caught %s for %s", self.ip, mac)
             self.st = self.S_UNKNOWN
             return True
         return False
@@ -328,6 +337,7 @@ class MacToIpConverter(Component):
         self.timeout = mac_conf.as_int(TIMEOUT)
         self.attempts = mac_conf.as_int(ATTEMPTS)
         self.wait_interval = mac_conf.as_float(WAIT_INT)
+        self.debug = mac_conf.as_bool(DEBUG)
 
     def get_ip(self, mac, subnet_class_b, vlan):
         mac = unify_mac_format(mac)
@@ -343,8 +353,8 @@ class MacToIpConverter(Component):
 
     def on_application_start(self):
         for name, passwd in  zip(self.vds, self.vds_passwd):
-            ssh = SSHProducer(TCPDumpParser(self.catcher.cache), name, \
-                    passwd, timeout=self.timeout)
+            ssh = SSHProducer(TCPDumpParser(self.catcher.cache, self.debug), \
+                    name, passwd, timeout=self.timeout)
             self.catcher.add_reader(ssh)
 
         # binding convertMacToIp function to cache
@@ -387,6 +397,7 @@ class MacToIpConverter(Component):
     def config_spec(self, spec, val_funcs):
         section_spec = spec.get(MAC_TO_IP_CONV, {})
         section_spec[ENABLED] = 'boolean(default=%s)' % DEFAULT_STATE
+        section_spec[DEBUG] = 'boolean(default=%s)' % DEFAULT_DEBUG
         section_spec[TIMEOUT] = 'integer(default=%s)' % DEFAULT_TIMEOUT
         section_spec[ATTEMPTS] = 'integer(default=%s)' % DEFAULT_ATTEMPTS
         section_spec[WAIT_INT] = 'integer(default=%s)' % DEFAULT_WAIT
