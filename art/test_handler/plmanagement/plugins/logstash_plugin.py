@@ -165,7 +165,7 @@ class LogStash(Component):
         self.xmllogger.field(name=title,
                              titlecolor=color,
                              value=" Aggregated logs",
-                             href=self.__get_query(st, et, source_hosts=hosts))
+                             href=self.__get_query(st, et, source_host=hosts))
         self.xmllogger.table()
         ## add the rows
         self.xmllogger.table_add_row('ENGINE:%s' % self.vdc,
@@ -180,7 +180,7 @@ class LogStash(Component):
             self.xmllogger.table_add_cell('ENGINE:%s' % self.vdc,
                                 path,
                                 '%s:%s' % (self.vdc, path),
-                                href=self.__get_query(st, et, sorce_host=self.vdc, source_path=path))
+                                href=self.__get_query(st, et, source_host=self.vdc, source_path=path))
         for vds in self.vds:
             for name, path in self.vds_logs.items():
                 self.xmllogger.table_add_column(path,
@@ -188,7 +188,7 @@ class LogStash(Component):
                 self.xmllogger.table_add_cell('VDS:%s' % vds,
                                 path,
                                 '%s:%s' % (vds, path),
-                                href=self.__get_query(st, et, sorce_host=vds, source_path=path))
+                                href=self.__get_query(st, et, source_host=vds, source_path=path))
 
     def __get_query(self, st, et, **conditions):
         ## handle arrays and tuples as 'or' conditions
