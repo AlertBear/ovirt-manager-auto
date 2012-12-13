@@ -24,9 +24,10 @@ from abc import ABCMeta, abstractmethod
 from time import strftime
 from art.rhevm_api.data_struct.data_structures import *
 from art.rhevm_api.data_struct.data_structures import ClassesMapping
+from art.core_api.apis_utils import parse
 from art.core_api.rest_utils import RestUtil
 from art.core_api.apis_exceptions import CLIError, CLITimeout,\
-            CLICommandFailure, UnsupportedCLIEngine, EntityNotFound
+            CLICommandFailure, UnsupportedCLIEngine
 from art.core_api import validator
 from utilities.utils import createCommandLineOptionFromDict
 
@@ -37,6 +38,7 @@ CONTROL_CHARS = u'[\n\r]'
 RHEVM_SHELL = 'rhevm-shell'
 
 QUERY_ID_RE = 'id(\s+):'
+ID_EXTRACT_RE = 'id(\\s+):(\\s+)(\S*)'
 
 
 class CliConnection(object):
@@ -332,8 +334,9 @@ class CliUtil(RestUtil):
         Return: POST response (None on parse error.),
                 status (True if POST test succeeded, False otherwise.)
         '''
+        out = ''
         addEntity = validator.cliEntety(entity, self.element_name)
-        createCmd = 'add {0} {1}'.format(self.cli_element_name,
+        createCmd = 'add {0} {1} --expect 201'.format(self.cli_element_name,
             validator.cliEntety(entity, self.element_name))
 
         if collection:
@@ -341,11 +344,9 @@ class CliUtil(RestUtil):
                             self._getHrefData(collection)
 
             if ownerId and ownerName:  # adding to some element collection
-                createCmd = "add {0} --{1}-identifier '{2}' {3}".format(\
-                                                        self.cli_element_name,
-                                                        ownerId.rstrip('s'),
-                                                        entityName,
-                                                        addEntity)
+                createCmd = "add {0} --{1}-identifier '{2}' {3} --expect 201".\
+                            format(self.cli_element_name, ownerId.rstrip('s'),
+                                   entityName, addEntity)
         correlationId = self.getCorrelationId()
         if correlationId:
             createCmd = "%s --correlation_id %s" % (createCmd, correlationId)
@@ -364,25 +365,27 @@ class CliUtil(RestUtil):
             if positive:
                 return response, False
         else:
-            # refresh collection
-            collection = self.getCollection(collHref)
-
-            if entity.name:
-                response = self.find(entity.name,
-                        collection=collection, absLink=False)
-                self.logger.info("New entity was added successfully")
-
-            expEntity = entity if not expectedEntity else expectedEntity
-
             if positive:
+            # refresh collection
+                if collHref:
+                    collection = self.get(collHref, listOnly=True)
+                else:
+                    collection = self.getCollection(collHref)
+                # looking for id in cli output:
+                elemId = re.search(ID_EXTRACT_RE, out).group().split('[')[0].\
+                                                        split(':')[1].strip()
+                #pdb.set_trace()
+                response = self.find(elemId, attribute='id',
+                                     collection=collection,
+                                     absLink=False)
+
+                expEntity = entity if not expectedEntity else expectedEntity
+
                 if response and not validator.compareElements(\
                     expEntity, response, self.logger, self.element_name):
                     return response, False
-            else:
-                if response and validator.compareElements(\
-                    expEntity, response, self.logger, self.element_name):
-                    return response, False
 
+                self.logger.info("New entity was added successfully")
         return response, True
 
     def update(self, origEntity, newEntity, positive):
@@ -433,15 +436,23 @@ class CliUtil(RestUtil):
             if positive:
                 return response, False
         else:
-            if collHref:
-                collection = self.get(collHref, listOnly=True)
+            if positive:
+                if collHref:
+                    collection = self.get(collHref, listOnly=True)
+                else:
+                    # refresh collection
+                    collection = self.getCollection(collHref)
+                # looking for id in cli output:
+                elemId = re.search(ID_EXTRACT_RE, out).group().split('[')[0].\
+                                                        split(':')[1].strip()
+                #pdb.set_trace()
+                response = self.find(elemId, attribute='id',
+                                     collection=collection,
+                                     absLink=False)
 
-            response = self.find(origEntity.id, 'id', absLink=defaultColl,
-                                                    collection=collection)
-
-            if positive and not validator.compareElements(newEntity, response,
+                if not validator.compareElements(newEntity, response,
                                 self.logger, self.element_name):
-                return response, False
+                    return response, False
 
         return response, True
 
@@ -468,15 +479,16 @@ class CliUtil(RestUtil):
         if body:
             addBody = validator.cliEntety(body, self.element_name)
 
-        deleteCmd = 'remove {0} "{1}" {2}'.format(self.cli_element_name,
-                                            entity.name, addBody)
+        deleteCmd = 'remove {0} "{1}" {2} --expect 201'.format(\
+                            self.cli_element_name, entity.name, addBody)
 
         ownerId, ownerName, entityName = \
                                 self._getHrefData(entity.href)
 
         if ownerId and ownerName and entityName:
-            deleteCmd = "remove {0} '{1}' --{2}-identifier '{3}' {4}".\
-                format(entityName, entity.id, ownerName, ownerId, addBody)
+            deleteCmd = "remove {0} '{1}' --{2}-identifier '{3}' {4}\
+             --expect 201".format(entityName, entity.id, ownerName, ownerId,
+                                  addBody)
 
         correlationId = self.getCorrelationId()
         if correlationId:
