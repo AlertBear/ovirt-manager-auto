@@ -34,7 +34,8 @@ from art.core_api.validator import compareCollectionSize, dump_entity
 from art.rhevm_api.tests_lib.low_level.networks import getClusterNetwork
 from art.rhevm_api.tests_lib.low_level.vms import startVm, stopVm, stopVms, startVms
 from art.rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
-from art.rhevm_api.utils.test_utils import searchForObj, runMachineCommand
+from art.rhevm_api.utils.test_utils import searchForObj
+from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.test_handler import settings
 from art.core_api import is_action
 from art.rhevm_api.utils.guest import runLoadOnGuests, runLoadOnGuest

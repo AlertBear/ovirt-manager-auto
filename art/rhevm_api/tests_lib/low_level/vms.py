@@ -33,8 +33,8 @@ from utilities.utils import readConfFile
 from utilities.machine import Machine
 from art.rhevm_api.utils.test_utils import searchForObj, getImageByOsType, \
     convertMacToIpAddress, checkHostConnectivity, updateVmStatusInDatabase, \
-    runMachineCommand, get_api, split, cobblerAddNewSystem, \
-    cobblerSetLinuxHostName, getAllImages
+    get_api, split, cobblerAddNewSystem, cobblerSetLinuxHostName, getAllImages
+from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils.threads import runParallel
 from art.core_api import is_action
 
@@ -1655,7 +1655,7 @@ def changeCDWhileRunning(vm_name, cdrom_image):
 
     newCdrom = cdroms[0]
     newCdrom.set_file(data_st.File(id=cdrom_image))
-    
+
     cdrom, status = CDROM_API.update(cdroms[0], newCdrom, True, current=True)
 
     return status

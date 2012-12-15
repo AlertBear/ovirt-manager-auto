@@ -440,85 +440,11 @@ def yum(address, password, package, action):
     return machine.yum(package, action)
 
 
-@lookingForIpAdressByEntityName("vms", "ip", "vmName")
-@is_action()
-def runMachineCommand(positive, ip=None, user=None, password=None, type='linux', cmd='', **kwargs):
-    '''
-    wrapper for runCmd
-    '''
-    cmd = shlex.split(cmd)
-    try:
-        if not ip:
-            machine = Machine().util()
-        else:
-            machine = Machine(ip, user, password).util(type)
-        ecode, out = machine.runCmd(cmd, **kwargs)
-        logger.debug('%s: runcmd : %s, result: %s, out: %s',\
-                machine.host, cmd, ecode, out)
-        return positive == ecode, {'out': out}
-    except Exception as ex:
-        logger.error("Failed to run command : %s : %s", cmd, ex)
-    return False, {'out': None}
-
-
 @is_action()
 def cleanupData(path):
     if path and os.path.exists(path):
         shutil.rmtree(path, ignore_errors=True)
     return True
-
-@lookingForIpAdressByEntityName("vms", "ip", "vmName")
-@is_action()
-def copyDataToVm(ip, user, password, osType, src, dest):
-    '''
-    Copy dirs/files to VM
-    Parameters:
-        ip - VM IP address
-        user - VM user
-        password - VM password
-        osType - VM os type
-        src - local source directory/file
-        dest - remote destination directory/file
-    Return:
-        True/False
-    '''
-    try:
-        machine = Machine(ip, user, password).util(osType)
-        return machine.copyTo(src, dest, 300)
-    except Exception as err:
-        logger.error("copy data to %s: %s" % (ip, err))
-    return False
-
-@lookingForIpAdressByEntityName("vms", "ip", "vmName")
-@is_action()
-def verifyDataOnVm(positive, ip, user, password, osType, dest, destToCompare):
-    '''
-    Description: Verify dirs/files on VM
-    Parameters:
-        ip - VM IP address
-        user - VM user
-        password - VM password
-        osType - VM os type
-        src - remote source directory/file
-        dest - local destination directory/file
-        destToCompare - local destination directory/file to compare with
-    Return:
-        True/False
-    '''
-    try:
-        machine = Machine(ip, user, password).util(osType)
-        srcLocal = "{0}/{1}".format(dest, os.path.basename(destToCompare))
-        if not machine.copyFrom(srcLocal, dest, 300, exc_info=positive):
-            logger.error("copy data from %s" % ip)
-            return False == positive
-        logger.info("compare: %s to %s" % (srcLocal, destToCompare))
-        res = machine.compareDirs(srcLocal, destToCompare)
-        cleanupData(srcLocal)
-        return res == positive
-    except Exception as err:
-        logger.error("verify data on %s: %s" % (ip, err))
-    return False == positive
-
 
 @is_action()
 def rhevmConfig(positive, setup, user, passwd, dbuser, dbpasswd, dbname, \
@@ -645,36 +571,6 @@ def waitUntilPingable(IPs, timeout=180):
         logger.info(MSG.format(dead_machines))
         time.sleep(10)
     logger.info("All IP's are pingable now.")
-
-
-@lookingForIpAdressByEntityName("vms", "ip", "vmName")
-@is_action()
-def runBenchmarkOnVm(positive, ip, user, password, netPath, benchmark, type, timeoutMin):
-    '''
-    Execute Phoronix benchmark on VM
-    Parameters:
-        * ip - VM ip
-        * user - VM user for remote access
-        * password - VM password for remote access
-        * netPath - network path of the benchmark
-        * benchmark - benchmark script path
-        * type - benchmark type
-        * timeoutMin - waiting for benchmark termination timeout
-    Return value:
-        * status
-    '''
-    try:
-        vm = Machine(ip, user, password).util('linux')
-        cmd = ['python', netPath + benchmark, netPath + settings.opts['results'], type]
-        rc, pid = vm.runCmd(cmd, bg=True)
-        if not rc:
-            logger.error("execute benchmark on VM %s" % ip)
-            return False
-        logger.info("wait for benchmark (pid=%s) termination on VM %s" % (pid, ip))
-        return vm.waitForProcessTermination(pid=pid, attempts=int(timeoutMin), sleepTime=60)
-    except:
-        logger.error("run benchmark on VM: %s" % format_exc())
-        return False
 
 
 @is_action()

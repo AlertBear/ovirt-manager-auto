@@ -63,6 +63,7 @@ REST_CONNECTION = 'REST_CONNECTION'
 MATRIX_TEST_RUNNER_SEC = 'MATRIX_TEST_RUNNER'
 
 TEST_MODULES = 'test_modules'
+DISCOVER_ACTIONS = 'discover_action'
 
 ACTIONS = 'ACTIONS'
 EXCEPTIONS = {}
@@ -765,8 +766,10 @@ class MatrixBasedTestComposer(Component):
     def configure(self, params, conf):
         if self.parser is None:
             return
+        auto_discover = params.discover_actions or \
+                conf[MATRIX_TEST_RUNNER_SEC].as_bool(DISCOVER_ACTIONS)
         self.groups = params.groups
-        MatrixBasedTestComposer.discover_actions = params.discover_actions
+        MatrixBasedTestComposer.discover_actions = auto_discover
         self.conf = conf
         TestResult.ATTRIBUTES['module_name'] = \
                 ('mod_name', None, None)
@@ -860,6 +863,7 @@ class MatrixBasedTestComposer(Component):
                 "default=list('art.rhevm_api',"\
                 "'art.gluster_api',"\
                 "'art.jasper_api'))"
+        section_spec[DISCOVER_ACTIONS] = "boolean(default=False)"
         spec[MATRIX_TEST_RUNNER_SEC] = section_spec
 
     @classmethod

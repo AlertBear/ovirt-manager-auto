@@ -43,3 +43,4 @@ vm_linux_password = string(default='qum5net')
 
 [MATRIX_TEST_RUNNER]
 test_modules = force_list(default=list('art.rhevm_api',))
+auto_discovery = boolean(default=True)
