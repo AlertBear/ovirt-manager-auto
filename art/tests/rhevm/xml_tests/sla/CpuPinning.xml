@@ -92,7 +92,7 @@
 </test_case>
 <!-- Repeat N times -->
 <test_case>
-   <test_name>Pinning Test</test_name>
+   <test_name>Pin vCPU to a random pCPU and if check pinning holds - #loop_index</test_name>
    <test_action>checkRandomPinning</test_action>
    <parameters>host='{vds[0]}', host_user='root', host_pwd='{vds_password[0]}', vm='cputest_vm1'</parameters>
    <positive>TRUE</positive>
@@ -116,7 +116,7 @@
    <run>YES</run>
 </test_case>
 <test_case>
-   <test_name>Pin a vCPU of a migratable VM</test_name>
+   <test_name>Negative: Pin a vCPU of a migratable VM</test_name>
    <test_action>updateVm</test_action>
    <parameters>vm='cputest_vm2', vcpu_pinning={'0':'0'}</parameters>
    <positive>FALSE</positive>
@@ -140,7 +140,7 @@
    <run>YES</run>
 </test_case>
 <test_case>
-   <test_name>Change VM to migratable</test_name>
+   <test_name>Negative: Change VM placement affinity to migratable</test_name>
    <test_action>updateVm</test_action>
    <parameters>vm='cputest_vm3', placement_affinity='migratable', placement_host='{vds[0]}'</parameters>
    <positive>FALSE</positive>
@@ -165,7 +165,7 @@
    <run>NO</run>
 </test_case>
 <test_case>
-   <test_name>Pin VM</test_name>
+   <test_name>Negative: Pin a non-exising vPU to an existing CPU</test_name>
    <test_action>updateVm</test_action>
    <parameters>vm='cputest_vm4', placement_affinity='pinned', placement_host='{vds[0]}', vcpu_pinning={1500:'0'}</parameters>
    <positive>TRUE</positive>
@@ -197,7 +197,7 @@
    <run>NO</run>
 </test_case>
 <test_case>
-   <test_name>Pin VM</test_name>
+   <test_name>Negative: Pin an existing vCPU to a non-eisting pCPU</test_name>
    <test_action>updateVm</test_action>
    <parameters>vm='cputest_vm5', placement_affinity='pinned', placement_host='{vds[0]}', vcpu_pinning={0:'1500'}</parameters>
    <positive>TRUE</positive>
@@ -228,7 +228,7 @@
    <run>YES</run>
 </test_case>
 <test_case>
-   <test_name>Pinning Test</test_name>
+   <test_name>Pin all vCPU's to a single pCPU and check if pinning holds</test_name>
    <test_action>testPinningLoad</test_action>
    <parameters>host='{vds[0]}', host_user='root', host_pwd='{vds_password[0]}', vm='cputest_vm6'</parameters>
    <positive>TRUE</positive>
@@ -250,7 +250,7 @@
 </test_case>
    <!-- ////////////////////////////////////////////////////////////////////// -->
 <test_case>
-<test_name>START_GROUP: ksmtest_tear-down</test_name>
+<test_name>START_GROUP: CPU_Pinning_Teardown</test_name>
    <test_action/>
    <parameters/>
    <positive>NONE</positive>
@@ -299,7 +299,7 @@
    <run>YES</run>
 </test_case>
 <test_case>
-   <test_name>END_GROUP: ksmtest_tear-down</test_name>
+   <test_name>END_GROUP: CPU_Pinning_Teardown</test_name>
    <test_action/>
    <parameters/>
    <positive>NONE</positive>

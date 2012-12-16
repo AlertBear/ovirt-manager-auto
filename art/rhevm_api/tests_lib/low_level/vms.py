@@ -113,21 +113,21 @@ def _prepareVmObject(**kwargs):
     # memory
     vm.memory=kwargs.pop('memory', GBYTE if add else None)
 
-    # cpu topology
+    # cpu topology & cpu pinning
     cpu_socket = kwargs.pop('cpu_socket', 1 if add else None)
     cpu_cores = kwargs.pop('cpu_cores', 1 if add else None)
-    if cpu_socket or cpu_cores:
-        cpu = data_st.CPU(topology=data_st.CpuTopology(sockets=cpu_socket,
-            cores=cpu_cores))
-
-        # cpu pinning
-        vcpu_pinning = kwargs.pop('vcpu_pinning', None)
+    vcpu_pinning = kwargs.pop('vcpu_pinning', None)
+    if cpu_socket or cpu_cores or vcpu_pinning:
+        cpu = data_st.CPU()
+        if cpu_socket or cpu_cores:
+            cpu.set_topology(topology=data_st.CpuTopology(sockets=cpu_socket,
+                                                          cores=cpu_cores))
         if vcpu_pinning is not None and vcpu_pinning=="":
             cpu.set_cpu_tune(data_st.CpuTune())
         elif vcpu_pinning:
             cpu.set_cpu_tune(data_st.CpuTune([data_st.VCpuPin(vcpu,cpu_set) \
-                                          for vcpu,cpu_set in \
-                                          vcpu_pinning.iteritems()]))
+                                              for vcpu,cpu_set in \
+                                              vcpu_pinning.iteritems()]))
         vm.set_cpu(cpu)
 
     # os options
@@ -183,18 +183,19 @@ def _prepareVmObject(**kwargs):
     if guaranteed:
         vm.set_memory_policy(data_st.MemoryPolicy(guaranteed))
 
-    # placement policy:
-    # placement_affinity
-    ppolicy = data_st.VmPlacementPolicy(
-                affinity=kwargs.pop('placement_affinity', None))
-    # placement_host
+    # placement policy: placement_affinity & placement_host
+    affinity = kwargs.pop('placement_affinity', None)
     phost = kwargs.pop('placement_host', None)
-    if phost and phost == ENUMS['placement_host_any_host_in_cluster']:
-        ppolicy.set_host(data_st.Host())
-    elif phost:
-        aff_host = HOST_API.find(phost)
-        ppolicy.set_host(data_st.Host(id=aff_host.id))
-    vm.set_placement_policy(ppolicy)
+    if phost or affinity:
+        ppolicy = data_st.VmPlacementPolicy()
+        if affinity:
+            ppolicy.set_affinity(affinity)
+        if phost and phost == ENUMS['placement_host_any_host_in_cluster']:
+            ppolicy.set_host(data_st.Host())
+        elif phost:
+            aff_host = HOST_API.find(phost)
+            ppolicy.set_host(data_st.Host(id=aff_host.id))
+        vm.set_placement_policy(ppolicy)
 
     # storagedomain
     sd_name = kwargs.pop('storagedomain', None)

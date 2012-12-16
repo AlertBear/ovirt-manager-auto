@@ -25,9 +25,9 @@ from utilities.utils import readConfFile
 from art.core_api import is_action
 from vms import updateVm, startVm, stopVm, createVm, removeVm
 from art.rhevm_api.utils.test_utils import get_api
+from art.test_handler.settings import opts
 
-ELEMENTS = os.path.join(os.path.dirname(__file__), '../../../conf/elements.conf')
-ENUMS = readConfFile(ELEMENTS, 'RHEVM Enums')
+ENUMS = opts['elements_conf']['RHEVM Enums']
 HOST_API = get_api('host', 'hosts')
 VM_API = get_api('vm', 'vms')
 
