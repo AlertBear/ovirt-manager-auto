@@ -48,7 +48,7 @@
   <test_action>addHost</test_action>
   <parameters>name='{vds}',root_password='{vds_password[0]}',cluster='{cluster}',vdcPort='{port}'</parameters>
   <positive>TRUE</positive>
-  <run>loop({vds})</run>
+  <run>forkfor({vds})</run>
   <fetch_output/>
   <report>YES</report>
   <vital>TRUE</vital>
