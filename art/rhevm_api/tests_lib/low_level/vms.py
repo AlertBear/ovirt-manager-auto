@@ -1903,6 +1903,7 @@ def getVmMacAddress(positive, vm, nic='nic1'):
     try:
         nicObj = getVmNic(vm, nic)
     except EntityNotFound:
+        VM_API.logger.error("Vm %s doesn't have nic '%s'", vm.name, nic)
         return False, {'macAddress': None}
     return True, {'macAddress': str(nicObj.mac.address)}
 
@@ -1926,6 +1927,8 @@ def unattendedInstallation(positive, vm, cobblerAddress, cobblerUser,
     boot_dev = 'cdrom'
     if re.search('rhel', image, re.I):
         status, mac = getVmMacAddress(positive, vm, nic=nic)
+        if not status:
+            return False
         if not cobblerAddNewSystem(cobblerAddress, cobblerUser, cobblerPasswd,
                                    mac=mac['macAddress'], osName=image):
             return False
