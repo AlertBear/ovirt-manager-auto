@@ -24,7 +24,6 @@ from abc import ABCMeta, abstractmethod
 from time import strftime
 from art.rhevm_api.data_struct.data_structures import *
 from art.rhevm_api.data_struct.data_structures import ClassesMapping
-from art.core_api.apis_utils import parse
 from art.core_api.rest_utils import RestUtil
 from art.core_api.apis_exceptions import CLIError, CLITimeout,\
             CLICommandFailure, UnsupportedCLIEngine
@@ -47,6 +46,7 @@ class CliConnection(object):
     def __init__(self, command, prompt, timeout, logFile=None):
         self._prompt = prompt
         self.cliConnection = pe.spawn(command, timeout=timeout)
+        self.cliConnection.setecho(False)
         timestamp = strftime('%Y%m%d_%H%M%S')
         if logFile:
             self.cliLog = logFile
