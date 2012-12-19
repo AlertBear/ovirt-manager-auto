@@ -159,6 +159,7 @@ def runLoadOnGuest(positive, targetVM, osType, username, password, loadType,
 
 
 @lookingForIpAdressByEntityName('vms', 'targetVM', 'targetVM')
+@is_action()
 def stopLoadOnGuest(targetVM, loadType, agent):
     """
     Just stop load generator on machine

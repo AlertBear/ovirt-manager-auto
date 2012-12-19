@@ -21,22 +21,26 @@ import os.path
 from Queue import Queue
 import re
 import time
+import random
 from copy import deepcopy
 
-from art.core_api.apis_exceptions import APITimeout, EntityNotFound
+from art.core_api.apis_exceptions import APITimeout, EntityNotFound, TestCaseError
 from art.core_api.apis_utils import data_st, TimeoutingSampler, getDS
 from art.rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
 from art.test_handler.settings import opts
 from threading import Thread
 from utilities.jobs import Job, JobsSet
-from utilities.utils import readConfFile
+from utilities.utils import readConfFile, pingToVms, makeVmList
 from utilities.machine import Machine
 from art.rhevm_api.utils.test_utils import searchForObj, getImageByOsType, \
     convertMacToIpAddress, checkHostConnectivity, updateVmStatusInDatabase, \
-    get_api, split, cobblerAddNewSystem, cobblerSetLinuxHostName, getAllImages
+    get_api, cobblerAddNewSystem, cobblerSetLinuxHostName, cobblerRemoveSystem, \
+    split, getAllImages, waitUntilPingable, restoringRandomState
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils.threads import runParallel
 from art.core_api import is_action
+from art.rhevm_api.utils.name2ip import name2ip, LookUpVMIpByName
+from operator import and_
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 DEFAULT_CLUSTER = 'Default'
@@ -402,7 +406,6 @@ def removeVmAsynch(positive, tasksQ, resultsQ, stopVm=False):
     finally:
         resultsQ.put((vm, status))
         tasksQ.task_done()
-
 
 @is_action()
 def removeVms(positive, vms, stop='false'):
@@ -2448,4 +2451,157 @@ def compareDisksCountOfVm(positive, vds, vds_username, vds_password, dc_name,
                           sd.id, vm.id)
 
     return positive == (len(images) == expected_count)
+
+
+@is_action('pingVm')
+@LookUpVMIpByName('vm_ip','name_vm')
+def pingVm(vm_ip=None):
+    '''
+    Ping VM.
+
+    retreives ip for vmName using lookingForIpAdressByEntityName and sends
+    totally VM_PING_ATTEMPTS_COUNT ICMP Echo requests, expecting at least one
+    ICMP Echo reply.
+
+    returns: True iff at least one reply per IP is received,
+             False otherwise.
+    '''
+
+    ips = [vm_ip]
+    return waitUntilPingable(ips)
+
+@is_action()
+def migrateVmsSimultaneously(positive, vm_name, range_low, range_high, hosts, useAgent, seed=None):
+    '''
+    Migrate several VMs between the hosts, taking random one.
+    Original Author: jhenner
+    Modified Author: bdagan
+    Parameters:
+       * vms - name of vm
+       * hosts    - A comma separated list of hosts hostnames/ip-addreses to
+                    migrate vm between.
+       * useAgent - Wait for guest_info to appear. Set this to True when
+                    you need to ensure an IP address reported by guest agent
+                    should be used. Note that after the VM migration, there is
+                    some delay until the guest IP reappears.
+       * seed     - A seed for pseudo-random generator. If None, the generator
+                    will not be seeded, nor the status will be recovered after
+                    test finish.
+    Return: True if all migrations performed with no error detected.
+    '''
+    assert positive
+    PING_ATTEMPTS = 10
+
+    hostsObjs = [HOST_API.find(host) for host in set(split(hosts))]
+    if len(hostsObjs) < 2:
+        raise TestCaseError('There is less then 2 hosts. Migrations impossible!')
+    all_hosts_ids = set(hostObj.id for hostObj in hostsObjs)
+
+    vmsObjs = [VM_API.find(vm) for vm in makeVmList(vm_name, range_low, range_high)]
+    if not vmsObjs:
+        raise TestCaseError('No vm to migrate on.')
+
+    if useAgent:
+        vm_ips = [waitForIP(vmObj.name)[1]['ip'] for vmObj in vmsObjs]
+    else:
+        vm_ips = [LookUpVMIpByName('ip', 'name').get_ip(vmObj.name) for vmObj in vmsObjs]
+
+    waitUntilPingable(vm_ips)
+
+    # Save the state of the random generator and seed it with the `seed`
+    # constant. The state should get recovered before thiLookUpVMIpByName('ip', 'name').get_ip(vmObj.name)s method returns.
+
+    with restoringRandomState(seed):
+        for vmObj in vmsObjs:
+            # Get the host to migrate the vm on.
+            try:
+                oldHostId = vmObj.host.id
+            except AttributeError as ex:
+                MSG = 'The VM {0} is probably not running \
+                    since it has no attribute \'host\'.'
+                raise TestCaseError(MSG.format(vmObj.name))
+
+            # Pick a new host.
+            hostCandidates = all_hosts_ids - set((oldHostId,))
+            vmObj.host.id = random.choice(list(hostCandidates))
+
+        # Ping before
+        MSG = 'Pinging {0} before the migration.'
+        logger.info(MSG.format(sorted(vm_ips)))
+        pingResult = pingToVms(vm_ips, PING_ATTEMPTS)
+        dead_machines = [ip for ip, alive in pingResult.iteritems()
+                            if not alive]
+        if dead_machines:
+            MSG = "IPs {0} seems to be dead before the migration."
+            raise TestCaseError(MSG.format(dead_machines)) # need to change the error
+
+        # Migrate
+        actions_states = [
+            VM_API.syncAction(vmObj, "migrate", positive, host=vmObj.host)
+            for vmObj in vmsObjs
+        ]
+
+        for vm, action_succeed in zip(vmsObjs, actions_states):
+            # Check migration and VM status.
+            if not action_succeed:
+                MSG = 'Failed to migrate VM %s from %s to host %s.'
+                raise TestCaseError(MSG % (vm.name, oldHostId, vm.host.id))
+
+        # Wait for all migrated VMs are UP.
+        def vmsUp(state):
+            StateResults = (VM_API.find(vm.name).status.state.lower() == state for vm in vmsObjs)
+            return reduce(and_, StateResults)
+
+        logger.info('Waiting for all migrated machines UP.')
+        for state in ['migrating', 'up']:
+            sampler = TimeoutingSampler(VM_ACTION_TIMEOUT, 10, vmsUp, state)
+            sampler.timeout_exc_args = \
+                    'Timeouted when waiting for all VMs UP after the migration.',
+            for statusOk in sampler:
+                if statusOk:
+                    break
+
+
+        logger.info('Checking whether VMs really migrated.')
+        for vm in vmsObjs:
+            if vm.href == VM_API.find(vm.name).host.href: # need to check if it works on SDK
+                MSG = 'VM is on same host as it was before migrating.'
+                raise MigrationError(MSG)
+            logger.info('VM {0} migrated.'.format(vm.name))
+
+        # Ping after.
+        MSG = 'Pinging {0} after the migration.'
+        logger.info(MSG.format(sorted(vm_ips)))
+        pingResult = pingToVms(vm_ips, PING_ATTEMPTS)
+        dead_machines = [ip for ip, alive in pingResult.iteritems()
+                            if not alive]
+        if dead_machines:
+            MSG = "IPs {0} seems to be dead after the migration."
+            raise TestCaseError(MSG.format(dead_machines))
+
+        logger.info('Succeed to migrate all the VMs.')
+        return True
+
+@is_action()
+def cobblerRemoveMultiSystem(positive, vms, cobblerAddress, cobblerUser,
+                             cobblerPasswd, nic='nic1'):
+    '''
+    Description: Remove Multi systems from cobbler.
+    Author: Tomer
+    Parameters:
+       * vms - string of VMs seperate by comma or space.
+    Return: status (True if all systems removed, False otherwise).
+    '''
+    if not isinstance(vms, str):
+        util.logger.error('VMs parameter error, Only string is accepted ')
+        return False
+    vmsList = split(vms)
+
+    for vm in vmsList:
+        status, mac = getVmMacAddress(positive, vm, nic=nic)
+        wasRemoved = cobblerRemoveSystem(cobblerAddress, cobblerUser,
+                                         cobblerPasswd, mac['macAddress'])
+        if not (wasRemoved and status):
+            return False
+    return True
 
