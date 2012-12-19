@@ -38,7 +38,6 @@ from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils.threads import runParallel
 from art.core_api import is_action
 
-GBYTE = 1024 * 1024 * 1024
 ENUMS = opts['elements_conf']['RHEVM Enums']
 DEFAULT_CLUSTER = 'Default'
 NAME_ATTR = 'name'
@@ -99,6 +98,17 @@ def _prepareVmObject(**kwargs):
                 vm.set_snapshots(snapshots)
                 break
 
+    # template
+    template_name = kwargs.pop('template', 'Blank' if add else None)
+    template_id = kwargs.pop('templateUuid', None)
+    search_by = NAME_ATTR
+    if template_id:
+        template_name = template_id
+        search_by = ID_ATTR
+    if template_name:
+        template = TEMPLATE_API.find(template_name, search_by)
+        vm.set_template(data_st.Template(id=template.id))
+
     #cluster
     cluster_name = kwargs.pop('cluster', DEFAULT_CLUSTER if add else None)
     cluster_id = kwargs.pop('clusterUuid', None)
@@ -111,11 +121,11 @@ def _prepareVmObject(**kwargs):
         vm.set_cluster(cluster)
 
     # memory
-    vm.memory=kwargs.pop('memory', GBYTE if add else None)
+    vm.memory=kwargs.pop('memory', None)
 
     # cpu topology & cpu pinning
-    cpu_socket = kwargs.pop('cpu_socket', 1 if add else None)
-    cpu_cores = kwargs.pop('cpu_cores', 1 if add else None)
+    cpu_socket = kwargs.pop('cpu_socket', None)
+    cpu_cores = kwargs.pop('cpu_cores', None)
     vcpu_pinning = kwargs.pop('vcpu_pinning', None)
     if cpu_socket or cpu_cores or vcpu_pinning:
         cpu = data_st.CPU()
@@ -131,8 +141,7 @@ def _prepareVmObject(**kwargs):
         vm.set_cpu(cpu)
 
     # os options
-    os = data_st.OperatingSystem(type_=kwargs.pop('os_type',
-        ENUMS['unassigned'] if add else None))
+    os = data_st.OperatingSystem(type_=kwargs.pop('os_type', None))
     for opt_name in 'kernel', 'initrd', 'cmdline':
         opt_val = kwargs.pop(opt_name, None)
         setattr(os, opt_name, opt_val)
@@ -142,24 +151,12 @@ def _prepareVmObject(**kwargs):
         os.set_boot([data_st.Boot(dev=boot_dev) for boot_dev in boot_seq])
         vm.set_os(os)
 
-    # template
-    template_name = kwargs.pop('template', 'Blank' if add else None)
-    template_id = kwargs.pop('templateUuid', None)
-    search_by = NAME_ATTR
-    if template_id:
-        template_name = template_id
-        search_by = ID_ATTR
-    if template_name:
-        template = TEMPLATE_API.find(template_name, search_by)
-        vm.set_template(data_st.Template(id=template.id))
-
     # type
-    vm.set_type(kwargs.pop('type', ENUMS['vm_type_desktop'] if add else None))
+    vm.set_type(kwargs.pop('type', None))
 
     # display monitors and type
-    display_type = kwargs.pop('display_type',
-        ENUMS['display_type_spice'] if add else None)
-    display_monitors = kwargs.pop('display_monitors', 1 if add else None)
+    display_type = kwargs.pop('display_type', None)
+    display_monitors = kwargs.pop('display_monitors', None)
     if display_monitors or display_type:
         vm.set_display(data_st.Display(type_=display_type, monitors=display_monitors))
 
@@ -168,7 +165,7 @@ def _prepareVmObject(**kwargs):
 
     # high availablity
     ha = kwargs.pop('highly_available', None)
-    ha_priority = kwargs.pop('availablity_priority',None if add else None)
+    ha_priority = kwargs.pop('availablity_priority',None)
     if ha or ha_priority:
         vm.set_high_availability(data_st.HighAvailability(enabled=ha,
             priority=ha_priority))
@@ -1755,10 +1752,9 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
         volumeType='true', volumeFormat=ENUMS['format_cow'],
         diskInterface=ENUMS['interface_ide'], bootable='true',
         wipe_after_delete='false', start='false', template='Blank',
-        templateUuid=None, type=ENUMS['vm_type_desktop'],
-        os_type='UNASSIGNED', memory=1073741824, cpu_socket=1, cpu_cores=1,
-        display_type=ENUMS['display_type_spice'], installation=False, slim=False,
-        user=None, password=None, attempt=60, interval=60,
+        templateUuid=None, type=None, os_type=None, memory=None,
+        cpu_socket=None, cpu_cores=None, display_type=None, installation=False,
+        slim=False, user=None, password=None, attempt=60, interval=60,
         cobblerAddress=None, cobblerUser=None, cobblerPasswd=None, image=None,
         async=False, hostname=None, network='rhevm', useAgent=False,
         placement_affinity=None, placement_host=None, vcpu_pinning=None,
