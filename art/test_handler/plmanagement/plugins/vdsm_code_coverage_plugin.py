@@ -27,7 +27,6 @@ from art.test_handler.plmanagement.interfaces.application import IConfigurable, 
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.plmanagement.interfaces.config_validator import\
                                                     IConfigValidation
-from art.test_handler.plmanagement import common
 from utilities.machine import Machine, LINUX
 
 
@@ -140,10 +139,8 @@ class VDSMCodeCoverage(Component):
             return
         self.res_dir = params.vdsm_code_coverage
 
-        vds_section = common.get_vds_section(conf)
-
-        vds = conf[vds_section].as_list(VDS)
-        vds_passwd = conf[vds_section].as_list(VDS_PASSWORD)
+        vds = conf[PARAMETERS].as_list(VDS)
+        vds_passwd = conf[PARAMETERS].as_list(VDS_PASSWORD)
 
         for name, passwd in  zip(vds, vds_passwd):
             self.machines[name] = Machine(name, 'root', passwd).util(LINUX)

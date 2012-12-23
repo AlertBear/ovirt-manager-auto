@@ -23,7 +23,6 @@ from art.test_handler.plmanagement.interfaces.application import\
 from art.test_handler.plmanagement.interfaces.config_validator import\
               IConfigValidation
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
-from art.test_handler.plmanagement import common
 
 
 from utilities.machine import Machine, LINUX
@@ -68,11 +67,10 @@ class PuppetPlugin(Component):
         if not self.is_enabled(params, conf):
             return
 
-        vds_section = common.get_vds_section(conf)
         vdc_passwd = conf[PARAMETERS][VDC_PASSWD]
         vdc = conf[VDC_PARAMS][VDC]
-        vds = conf[vds_section].as_list(VDS)
-        vds_passwd = conf[vds_section].as_list(VDS_PASSWORD)
+        vds = conf[PARAMETERS].as_list(VDS)
+        vds_passwd = conf[PARAMETERS].as_list(VDS_PASSWORD)
         user = 'root'
 
         self.machines = [Machine(vdc, user, vdc_passwd).util(LINUX)]

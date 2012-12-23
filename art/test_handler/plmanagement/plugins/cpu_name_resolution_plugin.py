@@ -25,7 +25,6 @@ from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.plmanagement.interfaces.config_validator import\
                                                     IConfigValidation
-from art.test_handler.plmanagement import common
 from utilities.machine import Machine, LINUX
 
 logger = get_logger('cpu_name_resolution')
@@ -93,10 +92,8 @@ class AutoCpuNameResolution(Component):
 
 
         #processing the hosts, looking for compatible cpu
-        vds_section = common.get_vds_section(conf)
-
-        vds_list = conf[vds_section].as_list(VDS)
-        vds_passwd_list = conf[vds_section].as_list(VDS_PASSWORD)
+        vds_list = conf[PARAMETERS].as_list(VDS)
+        vds_passwd_list = conf[PARAMETERS].as_list(VDS_PASSWORD)
 
         selected_cpu = None
         for name, passwd in  zip(vds_list, vds_passwd_list):

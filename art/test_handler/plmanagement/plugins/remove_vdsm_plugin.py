@@ -22,11 +22,11 @@ from art.test_handler.plmanagement import logger as root_logger
 from art.test_handler.plmanagement import Component, implements
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
-from art.test_handler.plmanagement import common
 from utilities.machine import Machine, LINUX
 
 logger = logging.getLogger(root_logger.name+'.remove_vdsm')
 
+PARAMETERS = 'PARAMETERS'
 PKG_SECTION = 'REMOVE_PACKAGES'
 ENABLED = 'enabled'
 PACKAGES = 'packages'
@@ -60,9 +60,8 @@ class VdsmRemoval(Component):
             return
         logger.info("Configuring remove-vdsm plugin.")
 
-        vds_section = common.get_vds_section(conf)
-        vds = conf[vds_section].as_list(VDS)
-        vds_passwd = conf[vds_section].as_list(VDS_PASSWORD)
+        vds = conf[PARAMETERS].as_list(VDS)
+        vds_passwd = conf[PARAMETERS].as_list(VDS_PASSWORD)
         user = 'root'
         packages = conf[PKG_SECTION].as_list(PACKAGES) if PKG_SECTION in conf \
             else DEFAULT_PACKAGES

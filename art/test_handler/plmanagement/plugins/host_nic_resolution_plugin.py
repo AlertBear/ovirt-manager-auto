@@ -20,7 +20,6 @@ from art.test_handler.plmanagement import Component, implements, get_logger, Plu
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.plmanagement.interfaces.config_validator import IConfigValidation
-from art.test_handler.plmanagement import common
 from utilities.machine import Machine, LINUX
 
 logger = get_logger('host_nic_resolution')
@@ -48,10 +47,8 @@ class AutoHostNicsResolution(Component):
         if not self.is_enabled(params, conf):
             return
 
-        vds_section = common.get_vds_section(conf)
-
-        vds = conf[vds_section].as_list(VDS)
-        vds_passwd = conf[vds_section].as_list(VDS_PASSWORD)
+        vds = conf[PARAMETERS].as_list(VDS)
+        vds_passwd = conf[PARAMETERS].as_list(VDS_PASSWORD)
 
 
         # FIXME: what if there will be two hosts host1: em[0-9], host2: eth[0-9]

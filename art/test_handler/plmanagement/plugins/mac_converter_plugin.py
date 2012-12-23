@@ -34,7 +34,6 @@ from utilities.sshConnection import SSHSession
 from utilities.machine import Machine, LINUX
 
 from art.test_handler.plmanagement import Component, implements, get_logger, PluginError
-from art.test_handler.plmanagement import common
 from art.test_handler.plmanagement.interfaces.application import IConfigurable, IApplicationListener
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.plmanagement.interfaces.config_validator import\
@@ -329,10 +328,9 @@ class MacToIpConverter(Component):
         if not self.is_enabled(params, conf):
             return
         self.catcher = DHCPLeasesCatcher()
-        vds_section = common.get_vds_section(conf)
 
-        self.vds = conf[vds_section].as_list(VDS)
-        self.vds_passwd = conf[vds_section].as_list(VDS_PASSWORD)
+        self.vds = conf[PARAMETERS].as_list(VDS)
+        self.vds_passwd = conf[PARAMETERS].as_list(VDS_PASSWORD)
         mac_conf = conf.get(MAC_TO_IP_CONV)
         self.timeout = mac_conf.as_int(TIMEOUT)
         self.attempts = mac_conf.as_int(ATTEMPTS)

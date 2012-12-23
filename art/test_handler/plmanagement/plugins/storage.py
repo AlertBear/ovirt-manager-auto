@@ -174,15 +174,10 @@ class StorageUtils:
                          'export':  {},
                          }
 
-        vdsSection = MAIN_SECTION
-        if self.data_center_type == 'iscsi' or \
-           self.data_center_type == 'localfs':
-            vdsSection = self.data_center_type.upper()
-
         vdsServers = map(lambda x: getIpAddressByHostName(x),
-                        getFromMainConfSection(config, 'vds', vdsSection))
+                        getFromMainConfSection(config, 'vds', MAIN_SECTION))
         vdsPasswords = getFromMainConfSection(config, 'vds_password',
-                                              vdsSection)
+                                              MAIN_SECTION)
 
         numOfVds = len(vdsServers)
         numOfPassw = len(vdsPasswords)
