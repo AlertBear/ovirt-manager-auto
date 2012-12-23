@@ -71,6 +71,9 @@ def cliEntety(elm, node_name):
     output = cli_entity(elm, node_name)
     # reducing complexity of cli_entity by replacing
     # of last ',' in collection to '"'
+    # take care if collection is last one in string
+    if output.endswith(','):
+        output = '%s"' % output.rstrip(',')
     return output.replace(', ', '" ')
 
 

@@ -35,7 +35,7 @@ cliInit = False
 ILLEGAL_XML_CHARS = u'[\x00-\x08\x0b\x0c\x0e-\x1F\uD800-\uDFFF\uFFFE\uFFFF]'
 CONTROL_CHARS = u'[\n\r]'
 RHEVM_SHELL = 'rhevm-shell'
-
+TMP_FILE = '/tmp/cli_output.tmp'
 QUERY_ID_RE = 'id(\s+):'
 ID_EXTRACT_RE = 'id(\\s+):(\\s+)(\S*)'
 
@@ -77,6 +77,10 @@ class CliConnection(object):
     @expectDict.deleter
     def expectDict(self):
         del(self._expectDict)
+
+    def readTmpFile(self):
+        with open(TMP_FILE) as f:
+            return f.read()
 
     def sendCmd(self, cmd, timeout):
         """
@@ -351,14 +355,19 @@ class CliUtil(RestUtil):
         if correlationId:
             createCmd = "%s --correlation_id %s" % (createCmd, correlationId)
 
+        createCmd = "%s > %s" % (createCmd, TMP_FILE)
         collHref = collection
         collection = self.getCollection(collHref)
 
         response = None
         try:
             self.logger.debug("CREATE cli command is: %s", createCmd)
-            out = self.cli.commandRun(createCmd)
-            self.logger.debug("CREATE cli command output: %s", out)
+            errAndDebug = self.cli.commandRun(createCmd)
+            out = self.cli.readTmpFile()
+            self.logger.debug("CREATE cli command Debug and Error output: %s",
+                              errAndDebug)
+            self.logger.debug("CREATE cli command output: %s",
+                              out)
         except CLICommandFailure as e:
             errorMsg = "Failed to create a new element, details: {0}"
             self.logger.error(errorMsg.format(e))
@@ -372,8 +381,8 @@ class CliUtil(RestUtil):
                 else:
                     collection = self.getCollection(collHref)
                 # looking for id in cli output:
-                elemId = re.search(ID_EXTRACT_RE, out).group().split('[')[0].\
-                                                        split(':')[1].strip()
+                elemId = re.search(ID_EXTRACT_RE, out).group().\
+                                                       split(':')[1].strip()
                 #pdb.set_trace()
                 response = self.find(elemId, attribute='id',
                                      collection=collection,
@@ -423,12 +432,17 @@ class CliUtil(RestUtil):
         if correlationId:
             updateCmd = "%s --correlation_id %s" % (updateCmd, correlationId)
 
+        updateCmd = "%s > %s" % (updateCmd, TMP_FILE)
         self.logger.debug("UPDATE cli command is: %s" % updateCmd)
 
         response = None
         try:
-            out = self.cli.commandRun(updateCmd)
-            self.logger.debug("UPDATE cli command output: %s", out)
+            errAndDebug = self.cli.commandRun(updateCmd)
+            out = self.cli.readTmpFile()
+            self.logger.debug("UPDATE cli command Debug and Error output: %s",
+                              errAndDebug)
+            self.logger.debug("UPDATE cli command output: %s",
+                              out)
             self.logger.info(self.element_name + " was updated")
         except CLICommandFailure as e:
             errorMsg = "Failed to update a new element, details: {0}"
@@ -443,7 +457,7 @@ class CliUtil(RestUtil):
                     # refresh collection
                     collection = self.getCollection(collHref)
                 # looking for id in cli output:
-                elemId = re.search(ID_EXTRACT_RE, out).group().split('[')[0].\
+                elemId = re.search(ID_EXTRACT_RE, out).group().\
                                                         split(':')[1].strip()
                 #pdb.set_trace()
                 response = self.find(elemId, attribute='id',
@@ -494,11 +508,16 @@ class CliUtil(RestUtil):
         if correlationId:
             deleteCmd = "%s --correlation_id %s" % (deleteCmd, correlationId)
 
+        deleteCmd = "%s > %s" % (deleteCmd, TMP_FILE)
         self.logger.debug("DELETE cli command is: %s" % deleteCmd)
 
         try:
-            out = self.cli.commandRun(deleteCmd)
-            self.logger.debug("DELETE cli command output: %s", out)
+            errAndDebug = self.cli.commandRun(deleteCmd)
+            out = self.cli.readTmpFile()
+            self.logger.debug("DELETE cli command Debug and Error output: %s",
+                              errAndDebug)
+            self.logger.debug("UPDATE cli command output: %s",
+                              out)
 
         except CLICommandFailure as e:
             errorMsg = "Failed to delete an element, details: {0}"
@@ -525,20 +544,25 @@ class CliUtil(RestUtil):
                 constraint, " ".join(createCommandLineOptionFromDict(params,
                                                              long_glue=' ')))
 
+        queryCmd = "%s > %s" % (queryCmd, TMP_FILE)
         self.logger.debug("SEARCH cli command is: %s" % queryCmd)
 
         try:
-            result = self.cli.commandRun(queryCmd)
-            self.logger.debug("Query cli command output: %s", result)
+            errAndDebug = self.cli.commandRun(queryCmd)
+            out = self.cli.readTmpFile()
+            self.logger.debug("QUERY cli command Debug and Error output: %s",
+                              errAndDebug)
+            self.logger.debug("QUERY cli command output: %s",
+                              out)
 
         except CLICommandFailure as e:
             errorMsg = "Failed to perform query, details: {0}"
             self.logger.error(errorMsg.format(e))
             return []
 
-        data = re.findall(QUERY_ID_RE, result)
+        data = re.findall(QUERY_ID_RE, out)
         if data:
-            results = re.findall(QUERY_ID_RE, result)
+            results = re.findall(QUERY_ID_RE, out)
         else:
             results = []
 
