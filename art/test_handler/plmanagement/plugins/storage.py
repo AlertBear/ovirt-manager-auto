@@ -163,6 +163,12 @@ class StorageUtils:
         vdsPasswords = getFromMainConfSection(config, 'vds_password',
                                               vdsSection)
 
+        numOfVds = len(vdsServers)
+        numOfPassw = len(vdsPasswords)
+        if numOfPassw < numOfVds:
+            addPasswords = [vdsPasswords[0]] * (numOfVds-numOfPassw)
+            vdsPasswords.extend(addPasswords)
+
         if self.data_center_type == 'iscsi' or self.data_center_type == 'none':
             for vds, password in zip(vdsServers, vdsPasswords):
                 try:
