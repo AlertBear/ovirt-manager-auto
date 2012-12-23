@@ -141,7 +141,10 @@ def _prepareVmObject(**kwargs):
         vm.set_cpu(cpu)
 
     # os options
-    os = data_st.OperatingSystem(type_=kwargs.pop('os_type', None))
+    os_type = kwargs.pop('os_type', None)
+    if os_type != None:
+        os_type = ENUMS.get(os_type.lower(), os_type.lower())
+    os = data_st.OperatingSystem(type_=os_type)
     for opt_name in 'kernel', 'initrd', 'cmdline':
         opt_val = kwargs.pop(opt_name, None)
         setattr(os, opt_name, opt_val)
@@ -1795,7 +1798,7 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
     '''
     ip = False
     if not addVm(positive, name=vmName, description=vmDescription, cluster=cluster,
-            template=template, templateUuid=templateUuid, os_type=ENUMS[os_type.lower()],
+            template=template, templateUuid=templateUuid, os_type=os_type,
             type=type, memory=memory, cpu_socket=cpu_socket,
             cpu_cores=cpu_cores, display_type=display_type, async=async,
             placement_affinity=placement_affinity, placement_host=placement_host,
