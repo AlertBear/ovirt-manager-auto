@@ -17,7 +17,7 @@ compatibility_version = option('3.0', '3.1', default='3.1')
 local_domain_path = string(default='/home/rest_test_domain')
 product_name = string(default='Red Hat Enterprise Virtualization')
 vds_password = force_list(default=list('qum5net', 'qum5net'))
-vds = force_list(default=None)
+vds = is_alive()
 data_center_type= option('nfs', 'iscsi', 'posixfs', 'localfs', 'none', default='none')
 # This parameter will be used in order to choose nas protocol for iso and export domains
 iso_export_domain_nas = option('nfs', 'posixfs', default='nfs')
