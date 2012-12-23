@@ -160,6 +160,10 @@ def readTestRunOpts(path, redefs):
     confFileCopyName = "%s.valid" % path
     copyfile(path, confFileCopyName)
 
+    config = ConfigObj(confFileCopyName)
+    rewriteConfig(config, redefs)
+    config.write()
+
     ParamsValidator(confFile=confFileCopyName,
                     confSpecFile=opts['confSpec'],
                     frameworkBasePath=os.path.dirname(art.__file__),
@@ -167,7 +171,6 @@ def readTestRunOpts(path, redefs):
                     pluginManagerHandle=initPlmanager())
 
     config = ConfigObj(confFileCopyName)
-    rewriteConfig(config, redefs)
 
     plmanager.configure.im_func.func_defaults = \
             (plmanager.configure.im_func.func_defaults[0], config)
