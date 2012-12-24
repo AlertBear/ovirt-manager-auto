@@ -294,13 +294,15 @@ def addVm(positive, wait = True, **kwargs):
         return status
 
     disk_clone = kwargs.pop('disk_clone', None)
+    wait_timeout = VM_ACTION_TIMEOUT
     if disk_clone and disk_clone.lower() == 'true':
         expectedVm.set_template(data_st.Template(id=BLANK_TEMPLATE))
-        vmObj, status = VM_API.create(vmObj, positive, expectedEntity=expectedVm)
-        status = VM_API.waitForElemStatus(vmObj, "DOWN", VM_DISK_CLONE_TIMEOUT)
-    else:
-        vmObj, status = VM_API.create(vmObj, positive, expectedEntity=expectedVm)
-        status = VM_API.waitForElemStatus(vmObj, "DOWN", VM_ACTION_TIMEOUT)
+        wait_timeout = VM_DISK_CLONE_TIMEOUT
+
+    vmObj, status = VM_API.create(vmObj, positive, expectedEntity=expectedVm)
+
+    if status:
+        status = VM_API.waitForElemStatus(vmObj, "DOWN", wait_timeout)
 
     return status
 
