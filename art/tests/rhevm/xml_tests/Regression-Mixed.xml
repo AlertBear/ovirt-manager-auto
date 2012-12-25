@@ -588,6 +588,7 @@
     <run>yes</run>
     <conf>headers={'Correlation-Id': 326}</conf>
     <exp_events>2</exp_events>
+    <bz>890124</bz>
   </test_case>
   <test_case>
     <id>d75a2b22-c695-11e1-a578-f0def10e0ce8</id>
@@ -910,6 +911,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 349}</conf>
+    <bz>887805</bz>
   </test_case>
   <test_case>
     <id>d75a80fe-c695-11e1-a578-f0def10e0ce8</id>
