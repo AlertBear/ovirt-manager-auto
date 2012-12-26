@@ -157,7 +157,7 @@
 <test_case>
    <test_name>Create Windows VM</test_name>
    <test_action>createVm</test_action>
-   <parameters>vmName='{vm_name[0]}',vmDescription='{vm_name[0]}',cluster='{cluster}',nic='nic1',nicType='e{nic_type_virtio}',storageDomainName='{storage}',size=21474836480,diskType='e{disk_type_system}',display_type='e{display_type_vnc}',cobblerAddress='{cobbler_address}',cobblerUser='{cobbler_user}',cobblerPasswd='{cobbler_passwd}',network='{mgmt_bridge}'</parameters>
+   <parameters>vmName='{vm_name[0]}',vmDescription='{vm_name[0]}',cluster='{cluster}',nic='nic1',nicType='e{nic_type_virtio}',storageDomainName='{storage}',size=21474836480,diskType='e{disk_type_system}',display_type='e{display_type_spice}',cobblerAddress='{cobbler_address}',cobblerUser='{cobbler_user}',cobblerPasswd='{cobbler_passwd}',network='{mgmt_bridge}'</parameters>
    <positive>TRUE</positive>
    <run>if(re.search('Win',%osTypeElement%))</run>
    <fetch_output/>
@@ -179,7 +179,7 @@
 <test_case>
    <test_name>Check Windows VM connectivity</test_name>
    <test_action>checkVMConnectivity</test_action>
-   <parameters>vm='{vm_name[0]}',osType=%osTypeElement%,attempt=300,interval=5,user='{vm_win_user}',password='{vm_win_password}'</parameters>
+   <parameters>vm='{vm_name[0]}',osType=%osTypeElement%,attempt=600,interval=2,user='{vm_win_user}',password='{vm_win_password}'</parameters>
    <positive>TRUE</positive>
    <run>if(re.search('Win',%osTypeElement%))</run>
    <fetch_output/>
@@ -190,7 +190,7 @@
 <test_case>
    <test_name>Create Linux Vms</test_name>
    <test_action>createVm</test_action>
-   <parameters>vmName='{vm_name[0]}',vmDescription='linux vm',cluster='{cluster}',nic='nic1',nicType='e{nic_type_virtio}',storageDomainName='{storage}',size=21474836480,diskType='e{disk_type_system}',display_type='e{display_type_vnc}',cobblerAddress='{cobbler_address}',cobblerUser='{cobbler_user}',cobblerPasswd='{cobbler_passwd}'</parameters>
+   <parameters>vmName='{vm_name[0]}',vmDescription='linux vm',cluster='{cluster}',nic='nic1',nicType='e{nic_type_virtio}',storageDomainName='{storage}',size=21474836480,diskType='e{disk_type_system}',display_type='e{display_type_spice}',cobblerAddress='{cobbler_address}',cobblerUser='{cobbler_user}',cobblerPasswd='{cobbler_passwd}'</parameters>
    <positive>TRUE</positive>
    <run>if(re.search('RHEL',%osTypeElement%))</run>
    <fetch_output/>
@@ -212,7 +212,7 @@
 <test_case>
    <test_name>Check Linux Vms connectivity</test_name>
    <test_action>checkVMConnectivity</test_action>
-   <parameters>vm='{vm_name[0]}',osType=%osTypeElement%,attempt=300,interval=2,user='{vm_linux_user}',password='{vm_linux_password}'</parameters>
+   <parameters>vm='{vm_name[0]}',osType=%osTypeElement%,attempt=600,interval=2,user='{vm_linux_user}',password='{vm_linux_password}'</parameters>
    <positive>TRUE</positive>
    <run>if(re.search('RHEL',%osTypeElement%))</run>
    <fetch_output/>
