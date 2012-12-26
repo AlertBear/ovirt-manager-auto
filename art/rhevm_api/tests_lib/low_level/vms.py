@@ -1044,7 +1044,11 @@ def hotPlugNic(positive, vm, nic):
         * nic - nic name to plug.
     Return: True in case of succeed, False otherwise
     '''
-    nic_obj = getVmNic(vm, nic)
+    try:
+        nic_obj = getVmNic(vm,nic)
+    except EntityNotFound:
+        logger.error('Entity %s not found!' % nic)
+        return not positive
 
     return NIC_API.syncAction(nic_obj, "activate", positive)
 
@@ -1059,7 +1063,11 @@ def hotUnplugNic(positive, vm, nic):
         * nic - nic name to plug.
     Return: True in case of succeed, False otherwise
     '''
-    nic_obj = getVmNic(vm, nic)
+    try:
+        nic_obj = getVmNic(vm, nic)
+    except EntityNotFound:
+        logger.error('Entity %s not found!' % nic)
+        return not positive
 
     return NIC_API.syncAction(nic_obj, "deactivate", positive)
 
