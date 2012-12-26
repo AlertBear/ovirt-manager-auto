@@ -19,6 +19,8 @@
 
 import pexpect as pe
 import re
+import threading
+from functools import wraps
 from sys import exit
 from abc import ABCMeta, abstractmethod
 from time import strftime
@@ -31,6 +33,7 @@ from art.core_api import validator
 from utilities.utils import createCommandLineOptionFromDict
 
 cliInit = False
+addlock = threading.Lock()
 
 ILLEGAL_XML_CHARS = u'[\x00-\x08\x0b\x0c\x0e-\x1F\uD800-\uDFFF\uFFFE\uFFFF]'
 CONTROL_CHARS = u'[\n\r]'
@@ -38,6 +41,17 @@ RHEVM_SHELL = 'rhevm-shell'
 TMP_FILE = '/tmp/cli_output.tmp'
 QUERY_ID_RE = 'id(\s+):'
 ID_EXTRACT_RE = 'id(\\s+):(\\s+)(\S*)'
+
+
+def threadSafeRun(func):
+    """
+    This closure will be used as decorator while calling API methods
+    """
+    @wraps(func)
+    def apifunc(*args, **kwargs):
+        with addlock:
+            return func(*args, **kwargs)
+    return apifunc
 
 
 class CliConnection(object):
@@ -163,6 +177,19 @@ class RhevmCli(CliConnection):
     """
     CLI connection implementation for rhevm-shell
     """
+    # rhevm shell specific configs
+    _rhevmOutputErrorKeys = ['error', 'status', 'reason', 'detail']
+    _debugMsg = "send:.*header:.*(\r\r\n\r)"
+    _errorStatusMsgSearch = "error.*status.*reason.*detail.*"
+    _errorParametersMsgSearch = "error:.*"
+    _errorSyntaxMsgSearch = "\*\*\* Unknown syntax.*"
+    _insiderSearch = "status.*reason.*detail.*"
+    _eol = '\r\n'
+    _rhevmLoginPrompt = "Password:"
+    _rhevmPrompt = '\[RHEVM shell \(connected\)\]# '
+    _rhevmDisconnectedPrompt = '\[RHEVM shell \(disconnected\)\]# '
+    _rhevmTimeout = 900
+    _specialCliPrompt = {'\r\n:': ' ', '7m\(END\)': 'q'}
 
     def __init__(self, logger, uri, user, userDomain, password,
                  secure, sslKeyFile, sslCertFile, sslCaFile, logFile,
@@ -173,35 +200,31 @@ class RhevmCli(CliConnection):
          - uri, user, userDomain, password - REST API Parameters
          - additional parameters to CLI could be passed via kwargs
         """
-        # rhevm shell specific configs
-        self._rhevmOutputErrorKeys = ['error', 'status', 'reason', 'detail']
-        self._debugMsg = "send:.*header:.*(\r\r\n\r)"
-        self._errorStatusMsgSearch = "error.*status.*reason.*detail.*"
-        self._errorParametersMsgSearch = "error:.*"
-        self._errorSyntaxMsgSearch = "\*\*\* Unknown syntax.*"
-        self._insiderSearch = "status.*reason.*detail.*"
-        self._EOL = '\r\n'
-        self._RHEVM_LOGIN_PROMPT = "Password:"
-        self._RHEVM_PROMPT = '\[RHEVM shell \(connected\)\]# '
-        self._RHEVM_DISCONNECTED_PROMPT = '\[RHEVM shell \(disconnected\)\]# '
-        self._RHEVM_TIMEOUT = 900
-        self._SPECIAL_CLI_PROMPT = {'\r\n:': ' ', '7m\(END\)': 'q'}
-
         self.logger = logger
         self.prepareConnectionCommand(uri, user, userDomain,
             secure, sslKeyFile, sslCertFile, sslCaFile, additionalArgs=kwargs)
         super(RhevmCli, self).__init__(self._connectionCommand,
-                            prompt=self._RHEVM_PROMPT,
-                            timeout=self._RHEVM_TIMEOUT,
+                            prompt=self._rhevmPrompt,
+                            timeout=self._rhevmTimeout,
                             logFile=logFile)
         self.logger.debug("CLI logfile: %s" % self.cliLog)
         self.login(password)
         # updating parent dictionary for cli work
-        self.expectDict = self._SPECIAL_CLI_PROMPT
+        self.expectDict = self._specialCliPrompt
+
+    @threadSafeRun
+    def cliCmdRunner(self, apiCmd, apiCmdName):
+        self.logger.debug("%s cli command is: %s", apiCmdName, apiCmd)
+        errAndDebug = self.commandRun(apiCmd)
+        out = self.readTmpFile()
+        self.logger.debug("%s cli command Debug and Error output: %s",
+                              apiCmdName, errAndDebug)
+        self.logger.debug("%s cli command output: %s", apiCmdName, out)
+        return out
 
     def login(self, password):
-        self.expectDict = {self._RHEVM_LOGIN_PROMPT: password}
-        self.expectDict = {self._RHEVM_DISCONNECTED_PROMPT: "exit"}
+        self.expectDict = {self._rhevmLoginPrompt: password}
+        self.expectDict = {self._rhevmDisconnectedPrompt: "exit"}
 
         expectList = self. expectDict.keys()
         expectList.insert(0, self._prompt)
@@ -261,7 +284,7 @@ class RhevmCli(CliConnection):
                               self.outputCleaner(debugMsg.group(0)))
         if errorStatusMsg:
             data = re.search(self._insiderSearch, errorStatusMsg.group(0),
-                             flags=re.DOTALL).group(0).split(self._EOL)
+                             flags=re.DOTALL).group(0).split(self._eol)
             status = self.outputCleaner(data[0])
             reason = self.outputCleaner(data[1])
             detail = self.outputCleaner(data[2:])
@@ -361,13 +384,7 @@ class CliUtil(RestUtil):
 
         response = None
         try:
-            self.logger.debug("CREATE cli command is: %s", createCmd)
-            errAndDebug = self.cli.commandRun(createCmd)
-            out = self.cli.readTmpFile()
-            self.logger.debug("CREATE cli command Debug and Error output: %s",
-                              errAndDebug)
-            self.logger.debug("CREATE cli command output: %s",
-                              out)
+            out = self.cli.cliCmdRunner(createCmd, 'CREATE')
         except CLICommandFailure as e:
             errorMsg = "Failed to create a new element, details: {0}"
             self.logger.error(errorMsg.format(e))
@@ -409,7 +426,6 @@ class CliUtil(RestUtil):
         '''
 
         updateBody = validator.cliEntety(newEntity, self.element_name)
-        defaultColl = True
         collHref, collection = None, None
 
         updateCmd = 'update {0} {1} {2}'.format(self.cli_element_name,
@@ -426,24 +442,16 @@ class CliUtil(RestUtil):
 
             collHref = '/api/{0}s/{1}/{2}s'.format(ownerName,
                                         ownerId, entityName)
-            defaultColl = False
 
         correlationId = self.getCorrelationId()
         if correlationId:
             updateCmd = "%s --correlation_id %s" % (updateCmd, correlationId)
 
         updateCmd = "%s > %s" % (updateCmd, TMP_FILE)
-        self.logger.debug("UPDATE cli command is: %s" % updateCmd)
 
         response = None
         try:
-            errAndDebug = self.cli.commandRun(updateCmd)
-            out = self.cli.readTmpFile()
-            self.logger.debug("UPDATE cli command Debug and Error output: %s",
-                              errAndDebug)
-            self.logger.debug("UPDATE cli command output: %s",
-                              out)
-            self.logger.info(self.element_name + " was updated")
+            out = self.cli.cliCmdRunner(updateCmd, 'UPDATE')
         except CLICommandFailure as e:
             errorMsg = "Failed to update a new element, details: {0}"
             self.logger.error(errorMsg.format(e))
@@ -479,7 +487,7 @@ class CliUtil(RestUtil):
 
         return (actionOwnerId, actionOwnerName, actionEntityName)
 
-    def delete(self, entity, positive, body=None, **kwargs):
+    def delete(self, entity, positive,  body=None, **kwargs):
         '''
         Description: delete an element
         Author: edolinin
@@ -509,16 +517,9 @@ class CliUtil(RestUtil):
             deleteCmd = "%s --correlation_id %s" % (deleteCmd, correlationId)
 
         deleteCmd = "%s > %s" % (deleteCmd, TMP_FILE)
-        self.logger.debug("DELETE cli command is: %s" % deleteCmd)
 
         try:
-            errAndDebug = self.cli.commandRun(deleteCmd)
-            out = self.cli.readTmpFile()
-            self.logger.debug("DELETE cli command Debug and Error output: %s",
-                              errAndDebug)
-            self.logger.debug("UPDATE cli command output: %s",
-                              out)
-
+            self.cli.cliCmdRunner(deleteCmd, 'DELETE')
         except CLICommandFailure as e:
             errorMsg = "Failed to delete an element, details: {0}"
             self.logger.error(errorMsg.format(e))
@@ -527,8 +528,8 @@ class CliUtil(RestUtil):
 
         return True
 
-    def query(self, constraint, exp_status=None, href=None, event_id=None,
-                                                                **params):
+    def query(self, constraint,  exp_status=None, href=None, event_id=None,
+                                                                 **params):
         '''
         Description: run search query
         Author: edolinin
@@ -545,16 +546,9 @@ class CliUtil(RestUtil):
                                                              long_glue=' ')))
 
         queryCmd = "%s > %s" % (queryCmd, TMP_FILE)
-        self.logger.debug("SEARCH cli command is: %s" % queryCmd)
 
         try:
-            errAndDebug = self.cli.commandRun(queryCmd)
-            out = self.cli.readTmpFile()
-            self.logger.debug("QUERY cli command Debug and Error output: %s",
-                              errAndDebug)
-            self.logger.debug("QUERY cli command output: %s",
-                              out)
-
+            out = self.cli.cliCmdRunner(queryCmd, 'SEARCH')
         except CLICommandFailure as e:
             errorMsg = "Failed to perform query, details: {0}"
             self.logger.error(errorMsg.format(e))
@@ -597,16 +591,23 @@ class CliUtil(RestUtil):
                     addParams += " --{0}-id '{1}'".format(p, params[p].id)
 
             actionCmd = "action {0} '{1}' {2} --{3}-identifier '{4}' {5}".\
-                                format(entityName, entity.id, action,
-                                        ownerName, ownerId, addParams)
+                        format(entityName, entity.id, action, ownerName,
+                                 ownerId, addParams)
 
-        self.logger.debug("ACTION cli command is: %s" % actionCmd)
-        res = self.cli.commandRun(actionCmd)
+        actionCmd = "%s > %s" % (actionCmd, TMP_FILE)
+        try:
+            res = self.cli.cliCmdRunner(actionCmd, 'ACTION')
+        except CLICommandFailure as e:
+            errorMsg = "Failed to perform action, details: {0}"
+            self.logger.error(errorMsg.format(e))
+            if positive:
+                return False
+
         expectOut = 'status-state'
         if action == 'iscsidiscover':
             expectOut = 'iscsi_target'
 
-        actionStateMatch = re.match('.*: (\w+).*', res)
+        actionStateMatch = re.match('.*: (\w+).*', res, flags=re.DOTALL)
         if not actionStateMatch and positive:
             return False
 
