@@ -29,3 +29,6 @@ enabled = boolean(default=True)
 [TCMS]
 user = string(default="TCMS/jenkins.qa.lab.tlv.redhat.com")
 keytab_files_location = path_exists(default="/etc")
+
+[MATRIX_TEST_RUNNER]
+discover_action = boolean(default=True)
