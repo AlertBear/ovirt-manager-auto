@@ -39,8 +39,6 @@ ILLEGAL_XML_CHARS = u'[\x00-\x08\x0b\x0c\x0e-\x1F\uD800-\uDFFF\uFFFE\uFFFF]'
 CONTROL_CHARS = u'[\n\r]'
 RHEVM_SHELL = 'rhevm-shell'
 TMP_FILE = '/tmp/cli_output.tmp'
-QUERY_ID_RE = 'id(\s+):'
-ID_EXTRACT_RE = 'id(\\s+):(\\s+)(\S*)'
 
 
 def threadSafeRun(func):
@@ -178,12 +176,15 @@ class RhevmCli(CliConnection):
     CLI connection implementation for rhevm-shell
     """
     # rhevm shell specific configs
+    _query_id_re = 'id(\s+):'
+    _id_extract_re = 'id(\\s+):(\\s+)(\S*)'
+    _status_extract_re = '.*: (\w+).*'
     _rhevmOutputErrorKeys = ['error', 'status', 'reason', 'detail']
     _debugMsg = "send:.*header:.*(\r\r\n\r)"
-    _errorStatusMsgSearch = "error.*status.*reason.*detail.*"
+    _errorStatusMsgSearch = "error:.*status:.*reason:.*detail:.*"
     _errorParametersMsgSearch = "error:.*"
     _errorSyntaxMsgSearch = "\*\*\* Unknown syntax.*"
-    _insiderSearch = "status.*reason.*detail.*"
+    _insiderSearch = "status:.*reason:.*detail:.*"
     _eol = '\r\n'
     _rhevmLoginPrompt = "Password:"
     _rhevmPrompt = '\[RHEVM shell \(connected\)\]# '
@@ -271,20 +272,19 @@ class RhevmCli(CliConnection):
 
     def outputValidator(self, output):
         # looking for error - to change to more generic map style
-        errorStatusMsg = re.search(self._errorStatusMsgSearch, output,
-                                   flags=re.DOTALL)
+        errorStatusMsg = re.search(self._errorStatusMsgSearch,
+                                   output, flags=re.DOTALL)
         errorParametersMsg = re.search(self._errorParametersMsgSearch,
-                                       output, flags=re.DOTALL)
+                                   output, flags=re.DOTALL)
         errorSyntaxMsg = re.search(self._errorSyntaxMsgSearch,
-                                       output, flags=re.DOTALL)
-        debugMsg = re.search(self._debugMsg,
-                                       output, flags=re.DOTALL)
+                                   output, flags=re.DOTALL)
+        debugMsg = re.search(self._debugMsg, output, flags=re.DOTALL)
         if debugMsg:
             self.logger.debug('Debug output: %s',
                               self.outputCleaner(debugMsg.group(0)))
         if errorStatusMsg:
             data = re.search(self._insiderSearch, errorStatusMsg.group(0),
-                             flags=re.DOTALL).group(0).split(self._eol)
+                              flags=re.DOTALL).group(0).split(self._eol)
             status = self.outputCleaner(data[0])
             reason = self.outputCleaner(data[1])
             detail = self.outputCleaner(data[2:])
@@ -398,9 +398,8 @@ class CliUtil(RestUtil):
                 else:
                     collection = self.getCollection(collHref)
                 # looking for id in cli output:
-                elemId = re.search(ID_EXTRACT_RE, out).group().\
+                elemId = re.search(self.cli._id_extract_re, out).group().\
                                                        split(':')[1].strip()
-                #pdb.set_trace()
                 response = self.find(elemId, attribute='id',
                                      collection=collection,
                                      absLink=False)
@@ -465,9 +464,8 @@ class CliUtil(RestUtil):
                     # refresh collection
                     collection = self.getCollection(collHref)
                 # looking for id in cli output:
-                elemId = re.search(ID_EXTRACT_RE, out).group().\
+                elemId = re.search(self.cli._id_extract_re, out).group().\
                                                         split(':')[1].strip()
-                #pdb.set_trace()
                 response = self.find(elemId, attribute='id',
                                      collection=collection,
                                      absLink=False)
@@ -554,9 +552,9 @@ class CliUtil(RestUtil):
             self.logger.error(errorMsg.format(e))
             return []
 
-        data = re.findall(QUERY_ID_RE, out)
+        data = re.findall(self.cli._query_id_re, out)
         if data:
-            results = re.findall(QUERY_ID_RE, out)
+            results = data
         else:
             results = []
 
@@ -607,7 +605,8 @@ class CliUtil(RestUtil):
         if action == 'iscsidiscover':
             expectOut = 'iscsi_target'
 
-        actionStateMatch = re.match('.*: (\w+).*', res, flags=re.DOTALL)
+        actionStateMatch = re.match(self.cli._status_extract_re, res,
+                                    flags=re.DOTALL)
         if not actionStateMatch and positive:
             return False
 
