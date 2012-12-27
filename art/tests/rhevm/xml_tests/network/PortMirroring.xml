@@ -1,69 +1,74 @@
+<!--
+Author: awinter
+This is a temporery test to test the functionality of portmirroring.
+(This xml is ran via HotPlugNic.xml)
+-->
+
 <input>
-<test_case>
-   <test_name>START_GROUP: PortMirroring</test_name>
-   <test_action/>
-   <parameters>n/a1</parameters>
-   <positive>NONE</positive>
-   <run>if('portmirroring' in '[run_groups]')</run>
-   <fetch_output/>
-   <report/>
-   <vital/>
-   <test_description/>
-</test_case>
-<test_case>
-   <test_name>START_GROUP: Positive_PortMirroring</test_name>
-   <test_action/>
-   <parameters>n/a1</parameters>
-   <positive>NONE</positive>
-   <run>if('positive' in '[portmirroring]')</run>
-   <fetch_output/>
-   <report/>
-   <vital/>
-   <test_description/>
-</test_case>
-<test_case>
-   <test_name>END_GROUP: Positive_PortMirroring</test_name>
-   <test_action/>
-   <parameters/>
-   <positive>NONE</positive>
-   <run/>
-   <fetch_output/>
-   <report/>
-   <vital/>
-   <test_description/>
-</test_case>
-<!-- ======================================================================================================== -->
-<test_case>
-   <test_name>START_GROUP: Negative_PortMirroring</test_name>
-   <test_action/>
-   <parameters>n/a1</parameters>
-   <positive>NONE</positive>
-   <run>if('negative' in '[portmirroring]')</run>
-   <fetch_output/>
-   <report/>
-   <vital/>
-   <test_description/>
-</test_case>
-<test_case>
-   <test_name>END_GROUP: Negative_PortMirroring</test_name>
-   <test_action/>
-   <parameters/>
-   <positive>NONE</positive>
-   <run/>
-   <fetch_output/>
-   <report/>
-   <vital/>
-   <test_description/>
-</test_case>
-<test_case>
-   <test_name>END_GROUP: PortMirroring</test_name>
-   <test_action/>
-   <parameters/>
-   <positive>NONE</positive>
-   <run/>
-   <fetch_output/>
-   <report/>
-   <vital/>
-   <test_description/>
-</test_case>
+  <test_case>
+    <test_name>Add nic3 with portmirroring with network sw1</test_name>
+    <test_action>addNic</test_action>
+    <parameters>vm='{vm_name}',name='nic3', interface='e{nic_type_rtl8139}', network='{networks[0]}',active='false',portmirroring='{networks[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>loop({vm_name})</run>
+    <fetch_output/>
+    <report>YES</report>
+    <vital>FALSE</vital>
+    <test_description/>
+  </test_case>
+  <test_case>
+     <test_name>Add nic4 without portmirroring with network sw1</test_name>
+     <test_action>addNic</test_action>
+     <parameters>vm='{vm_name}',name='nic4', interface='e{nic_type_rtl8139}', network='{networks[0]}',active='false'</parameters>
+     <positive>TRUE</positive>
+     <run>loop({vm_name})</run>
+     <fetch_output/>
+     <report>YES</report>
+     <vital>FALSE</vital>
+     <test_description/>
+  </test_case>
+  <test_case>
+     <test_name>Edit nic3 network to be without portmirroring</test_name>
+     <test_action>updateNic</test_action>
+     <parameters>vm='{vm_name}',nic='nic3',network='{networks[0]}'</parameters>
+     <positive>TRUE</positive>
+     <run>loop({vm_name})</run>
+     <fetch_output/>
+     <report>YES</report>
+     <vital>FALSE</vital>
+     <test_description/>
+  </test_case>
+  <test_case>
+      <test_name>Edit nic4 network to be with portmirroring</test_name>
+      <test_action>updateNic</test_action>
+      <parameters>vm='{vm_name}',nic='nic4',network='{networks[0]}', portmirroring='{networks[0]}'</parameters>
+      <positive>TRUE</positive>
+      <run>loop({vm_name})</run>
+      <fetch_output/>
+      <report>YES</report>
+      <vital>FALSE</vital>
+      <test_description/>
+  </test_case>
+  <test_case>
+     <test_name>Remove nic3</test_name>
+     <test_action>removeNic</test_action>
+     <parameters>vm='{vm_name}',nic='nic3'</parameters>
+     <positive>TRUE</positive>
+     <run>loop({vm_name})</run>
+     <fetch_output/>
+     <report>YES</report>
+     <vital>FALSE</vital>
+     <test_description/>
+  </test_case>
+  <test_case>
+     <test_name>Remove nic4</test_name>
+     <test_action>removeNic</test_action>
+     <parameters>vm='{vm_name}',nic='nic4'</parameters>
+     <positive>TRUE</positive>
+     <run>loop({vm_name})</run>
+     <fetch_output/>
+     <report>YES</report>
+     <vital>FALSE</vital>
+     <test_description/>
+  </test_case>
 </input>
