@@ -166,7 +166,7 @@ class UnittestLoader(Component):
                 sys.path.insert(0, self.root_path)
 
             from nose.loader import TestLoader
-            for mod_path in self.mod_path:
+            for mod_path in self.mod_path.split(':'):
 
                 m = re.match("(?P<module>.+?)((\.(?P<name>[A-Z].+))|$)", mod_path)
                 if not m:
