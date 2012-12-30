@@ -1,3 +1,56 @@
+"""
+--------------------------------
+Matrix Test Runner Plugin
+--------------------------------
+
+Plugin that runs the tests scenario (Test Suite).
+
+CLI Options:
+------------
+    --lines     Defines what lines from the test scenario should be executed.
+                Relevant for test scenarios in .ods format. When set only
+                specicied lines will be executed, all others will be skipped.
+                Possible formats: comma separated list of lines numbers or
+                ranges, single line number or range
+    --groups    Defines what groups from test scenario should be executed.
+                When set only specicied groups will be executed,
+                all others will be skipped.
+                Possible formats: comma separated list of group names,
+                single group
+    --compile   Pre-complication of test suite without executing it. In this case
+            the test scenario will be checked for syntax errors.
+    --discover-actions  Enables actions auto discovery which goes over known
+            modules and discover all test actions.
+
+    Examples::
+
+        # to execute only specific lines
+        python run.py --conf=/tmp/mytest.conf --lines=1,5-20,30,40-50
+        python run.py --conf=/tmp/mytest.conf --lines=6
+        python run.py --conf=/tmp/mytest.conf --lines=7-9
+
+        # to execute only specific groups
+        python run.py --conf=/tmp/mytest.conf --groups=Group1,Group2
+        python run.py --conf=/tmp/mytest.conf --groups=Group1
+
+        # to check the test scenario for syntax errors
+        python run.py --conf=/tmp/mytest.conf --compile
+
+        # to rediscover tests actions
+        python run.py --conf=/tmp/mytest.conf --discover-actions
+
+
+
+Configuration Options:
+----------------------
+    | **[MATRIX_TEST_RUNNER]**
+    | **test_modules**   list of modules which include testing functions,
+        the default is: art.rhevm_api,art.gluster_api,art.jasper_api
+    | **discover_action**   true/false; if to enable actions auto discovery or
+        not. When disabled the actions are loaded from cached data
+        (conf/actions.conf). If cached data doesn't exist yet (first test run)
+        the auto discovery will be still enabled. The default value is: false
+"""
 
 import os
 import re
