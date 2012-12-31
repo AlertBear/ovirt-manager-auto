@@ -1252,3 +1252,23 @@ def getAllImages(vds, vds_username, vds_password, spool_id, domain_id,
     return [disk.attrib[attrib].split('/', 1)[0] for disk in disks_elements]
 
 
+def checkSpoofingFilterRuleByVer(positive,host,user,passwd,version,state=True):
+    '''
+    Description: Check that spoofing filter rule is enabled for a requested
+    version
+    Author: awinter
+    Parameters:
+      * host - name of the rhevm
+      * user - user name for the rhevm
+      * passwd - password for the user
+      * version - The requested version
+      * state = The expected state. True by default
+    return: True if the filter is enabled for the version, False otherwise
+    '''
+    host_obj = Machine(host,user,passwd).util('linux')
+    cmd = ['engine-config', '-g', 'EnableMACAntiSpoofingFilterRules', '|', 'grep', '-c','true version: %s' %version]
+    output = host_obj.runCmd(cmd)[1][0]
+    if(output == '1'):
+        return (state and positive)
+    return not (state and positive)
+
