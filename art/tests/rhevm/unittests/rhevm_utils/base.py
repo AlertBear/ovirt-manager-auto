@@ -9,7 +9,6 @@ import re
 import os
 import time
 import logging
-import configobj
 from contextlib import contextmanager
 import unittest
 # Folowing 'try-except' blocks are here because this modules are needed only
@@ -36,6 +35,7 @@ except ImportError:
 from utilities.machine import LinuxMachine, LINUX
 import utilities.utils as ut
 from rhevm_utils import errors
+from art.test_handler.settings import opts
 
 logger = logging.getLogger('rhevm-utils')
 
@@ -66,7 +66,7 @@ TIMEOUT = 10
 HOST_PATH_TO_TMP = "/tmp"
 WAIT_TIMEOUT = 600
 
-CONFIG_FILE = '../conf/elements.conf'
+CONFIG_ELEMENTS = 'elements_conf'
 CONFIG_SECTION = 'RHEVM Utilities'
 
 DB_NAME = 'DB_NAME'
@@ -78,7 +78,7 @@ DB_NAME = 'DB_NAME'
 
 class Setup(LinuxMachine):
 
-    VARS = configobj.ConfigObj(infile=os.path.join(os.path.dirname(__file__), CONFIG_FILE))[CONFIG_SECTION]
+    VARS = opts[CONFIG_ELEMENTS][CONFIG_SECTION]
 
     def __init__(self, host, user, passwd, dbuser=DB_USER, product=None):
         # TODO: remote DB
