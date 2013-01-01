@@ -1,0 +1,10 @@
+<input xmlns:xi="http://www.w3.org/2001/XInclude" tcms_plan_id="6915">
+<xi:include href="PrepareSetupIE.xml" />
+
+<xi:include href="import_export_VM.xml" />
+
+<xi:include href="import_export_Template.xml" />
+
+<xi:include href="CleanSetupIE.xml" />
+<!-- ======================================================================================================== -->
+</input>
