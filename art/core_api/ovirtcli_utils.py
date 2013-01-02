@@ -554,6 +554,8 @@ class CliUtil(RestUtil):
         if event_id is not None:
             params['from'] = event_id
 
+        constraint = re.sub('\'|\"', '', constraint)
+
         queryCmd = 'list {0} --query "{1}" {2}'.\
             format(self.collection_name, constraint,
                    " ".join(createCommandLineOptionFromDict(params,
