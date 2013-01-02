@@ -28,6 +28,7 @@ from art.core_api.apis_utils import TimeoutingSampler, data_st
 from art.core_api.apis_exceptions import APITimeout, EntityNotFound
 import utilities.ssh_session as ssh_session
 import re
+import tempfile
 from utilities.utils import getIpAddressByHostName, getHostName, readConfFile
 # TODO: remove both compareCollectionSize, dump_entity is not needed
 from art.core_api.validator import compareCollectionSize, dump_entity
@@ -62,6 +63,7 @@ StorageManager = getDS('StorageManager')
 SED = '/bin/sed'
 SERVICE = '/sbin/service'
 ENUMS = settings.opts['elements_conf']['RHEVM Enums']
+RHEVM_UTILS = settings.opts['elements_conf']['RHEVM Utilities']
 KSM_STATUSFILE = '/sys/kernel/mm/ksm/run'
 HOST_STATE_TIMEOUT=1000
 KSMTUNED_CONF = '/etc/ksmtuned.conf'
@@ -70,6 +72,8 @@ KSM_THRES_CONST = 2048 * MEGABYTE
 KSM_THRES_COEFF = 20
 IP_PATTERN = '10.35.*'
 
+virsh_cmd = ['nwfilter-dumpxml', 'vdsm-no-mac-spoofing']
+search_for = ["<filterref filter='no-mac-spoofing'/>","<filterref filter='no-arp-mac-spoofing'/>"]
 
 @is_action()
 def isKSMRunning(positive, host, host_user, host_passwd):
@@ -1983,3 +1987,116 @@ def checkKSMRun(host, host_user, host_passwd, timeout=150, sleep=1):
             time.sleep(sleep)
     HOST_API.logger.info('KSM is not running.')
     return False
+
+@is_action()
+def checkNetworkFiltering(positive, host, user, passwd):
+    '''
+    Description: Check that network filtering is enabled via VDSM
+                 This function is also described in tcms_plan 6955
+                 test_case 198901
+    Author: awinter
+    Parameters:
+      * host - name of the host
+      * user - user name for the host
+      * passwd - password for the user
+    return: True if network filtering is enabled, False otherwise
+    '''
+
+    host_obj = machine.Machine(host,user,passwd).util('linux')
+    if host_obj.runVirshCmd(['nwfilter-list'])[1].count("vdsm-no-mac-spoofing") != 1:
+        HOST_API.logger.error("nwfilter-list does not have 'vdsm-no-mac-spoofing'")
+        return not positive
+    if not host_obj.isFileExists(RHEVM_UTILS['NWFILTER_DUMPXML']):
+        HOST_API.logger.error("vdsm-no-mac-spoofing.xml file not found")
+        return not positive
+    if not checkNWFilterVirsh(host_obj):
+        return not positive
+    if not host_obj.removeFile(RHEVM_UTILS['NWFILTER_DUMPXML']):
+        HOST_API.logger.error("Deletion failed")
+        return not positive
+    if not host_obj.restartService("vdsmd"):
+        HOST_API.logger.error("restarting vdsm failed")
+        return not positive
+    time.sleep(30)
+    if not checkNWFilterVirsh(host_obj):
+        return not positive
+    return positive
+
+def checkNWFilterVirsh(host_obj):
+    '''
+    Description: Checking that NWfilter is enable in dumpxml and in virsh
+    Author: awinter
+    Parameters:
+      * host_obj - the host's object
+    return: True if all the elements were found, False otherwise
+    '''
+    NOT_FOUND = -1
+
+    xml_file = tempfile.NamedTemporaryFile()
+    if not host_obj.copyFrom(RHEVM_UTILS['NWFILTER_DUMPXML'], xml_file.name):
+        HOST_API.logger.error("Coping failed")
+        return False
+    with xml_file as f:
+        tmp_file = f.read().strip()
+        for string in search_for:
+            if (tmp_file.find(string) == NOT_FOUND) or \
+                    (host_obj.runVirshCmd(virsh_cmd)[1].count(string) != 1):
+                HOST_API.logger.error("nwfilter tags weren't found in file")
+                return False
+    return True
+
+@is_action()
+def checkNetworkFilteringDumpxml(positive, host, user, passwd, vm, nics):
+    '''
+    Description: Check that network filtering is enabled via dumpxml
+                 This function is also described in tcms_plan 6955
+                 test_case 198914
+    Author: awinter
+    Parameters:
+      * host - name of the host
+      * user - user name for the host
+      * passwd - password for the user
+      * vm - name of the vm
+      * nics - number nics for vm in dumpxml
+    return: True if network filtering is enabled, False otherwise
+    '''
+    host_obj = machine.Machine(host,user,passwd).util('linux')
+    res, out = host_obj.runVirshCmd(['dumpxml', '%s' %vm])
+    if not out.count("<filterref filter='vdsm-no-mac-spoofing'/>") == int(nics):
+        return not positive
+    return positive
+
+@is_action()
+def checkNetworkFilteringEbtables(positive, host, user, passwd, nics, vm_macs, mac_range):
+    '''
+    Description: Check that network filtering is enabled via ebtables
+                 This function is also described in tcms_plan 6955
+                 test_case 198920
+    Author: awinter
+    Parameters:
+      * host - name of the host
+      * user - user name for the host
+      * passwd - password for the user
+      * nics - number of nics
+      * vm_macs - list of vms' macs
+      * mac_range - valid mac range
+    return: True if network filtering is enabled, False otherwise
+    '''
+    count = 0
+    macTemplate = re.compile('([0-9a-f]+[:]){5}[0-9a-f]+', re.I)
+    host_obj = machine.Machine(host,user,passwd).util('linux')
+    cmd = ['ebtables', '-t', 'nat', '-L']
+    output = (host_obj.runCmd(cmd)[1].strip()).splitlines()
+    for line in output:
+        line_list = line.split()
+        mac_addr = [word for word in line_list if re.match(macTemplate, "0" + word)]
+        if mac_addr:
+            mac = "0" + mac_addr[0]
+            if mac in vm_macs:
+                count = count + 1
+            else:
+                HOST_API.logger.error("Mac is not in range")
+                return not positive
+    if count != 2 * int(nics):
+        return not positive
+    return positive

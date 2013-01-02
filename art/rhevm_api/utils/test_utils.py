@@ -1251,8 +1251,8 @@ def getAllImages(vds, vds_username, vds_password, spool_id, domain_id,
     attrib = '{' + namespace_dict['ovf'] + '}fileRef'
     return [disk.attrib[attrib].split('/', 1)[0] for disk in disks_elements]
 
-
-def checkSpoofingFilterRuleByVer(positive,host,user,passwd,version,state=True):
+@is_action()
+def checkSpoofingFilterRuleByVer(positive,host,user,passwd,version,system_ver,state=True):
     '''
     Description: Check that spoofing filter rule is enabled for a requested
     version
@@ -1265,6 +1265,10 @@ def checkSpoofingFilterRuleByVer(positive,host,user,passwd,version,state=True):
       * state = The expected state. True by default
     return: True if the filter is enabled for the version, False otherwise
     '''
+    if float(version) > float(system_ver):
+        ''' This 'if statement' supports SKIP for ineligible versions'''
+        logger.info("The system's version is too low this case")
+        return True
     host_obj = Machine(host,user,passwd).util('linux')
     cmd = ['engine-config', '-g', 'EnableMACAntiSpoofingFilterRules', '|', 'grep', '-c','true version: %s' %version]
     output = host_obj.runCmd(cmd)[1][0]
@@ -1272,3 +1276,49 @@ def checkSpoofingFilterRuleByVer(positive,host,user,passwd,version,state=True):
         return (state and positive)
     return not (state and positive)
 
+@is_action()
+def setNetworkFilterStatus(enable, host, user, passwd, version):
+    '''
+    Description: Disabling or enabling network filtering.
+    Author: awinter
+    Parameters:
+      * enable - True for enabling, False for disabling
+      * host - name of the rhevm
+      * user - user name for the rhevm
+      * passwd - password for the user
+      * version - Data center's version
+    return: True if network filtering is disabled, False otherwise
+    '''
+    cmd = ["rhevm-config", "-s", "EnableMACAntiSpoofingFilterRules=%s" \
+                    %enable.lower(), "--cver=%s" %version]
+
+    host_obj = Machine(host,user,passwd).util('linux')
+    if not host_obj.runCmd(cmd)[0]:
+        logger.error("Operation failed")
+        return False
+    return restartOvirtEngine(host_obj,5,25,70)
+
+@is_action()
+def restartOvirtEngine(host_obj, interval, attemts, timeout):
+    '''
+    Description: Restarting Ovirt engine
+    Author: awinter
+    Parameters:
+      * host_obj - host object
+      * interval - Checking in "interval" time, sampling every "interval" seconds
+      * attemts - number of attents to check that ovirt is UP
+      * timeout - the amount of time to sleep after HealthPage is UP
+    return: True if Ovirt engine was successfully restarted, False otherwise
+    '''
+    if not host_obj.restartService("ovirt-engine"):
+        logger.error("restarting ovirt-engine failed")
+        return False
+    for attempt in range(1,attemts):
+        sleep(int(interval))
+        if host_obj.runCmd(["curl", "http://localhost/OvirtEngineWeb/HealthStatus"]) \
+                    [1].count("Welcome") == 1:
+           sleep(int(timeout))
+           logger.info("HealthPage is UP")
+           return True
+    logger.error("HealthPage was not up after %s attempts", num_of_attemts)
+    return False
