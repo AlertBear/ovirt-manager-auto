@@ -1,3 +1,29 @@
+"""
+----------------------
+Unittest Runner Plugin
+----------------------
+Plugin that runs the unittets. It encapsulates nose test runner [nose_url]_ .
+Actually it uses its TestLoader to load modules, and executes test cases.
+In additional it provides integration with TCMS plugin, and Bugzilla plugin.
+Also supports the unittest2 backport from py3.
+
+
+Configuration Options:
+----------------------
+    | **[RUN]**
+    | **tests_file** the test specification;
+        unittest://path/to/module:name_of_module
+
+How to start
+------------
+there [unittets_example]_ is commented basic example how the test module
+should look like.
+
+
+.. [nose_url] https://nose.readthedocs.org/en/latest/
+.. [unittets_example] ART/art/tests/unittest_template/example
+
+"""
 
 import os
 import re
