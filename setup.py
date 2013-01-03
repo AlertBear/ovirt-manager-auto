@@ -54,7 +54,6 @@ DEPS = [
         'python-lxml',
         'python-lockfile',
         'python-tpg',
-        'PyXML',
         'python-dateutil',
         'python-pip',
         'art-utilities',

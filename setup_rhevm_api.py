@@ -12,7 +12,6 @@ DEPS = [
         'art',
         'python >= 2.6',
         'python-lxml',
-        'PyXML',
         'python-pip',
         'art-utilities',
         ]
