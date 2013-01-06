@@ -101,8 +101,12 @@ class AutoCpuNameResolution(Component):
             with m.ssh as ssh:
                 rc, out, err = ssh.runCmd(['vdsClient', '-s', '0', 'getVdsCaps'])
             out = out.strip()
+            err = err.strip()
             if rc or not out:
-                logger.warning("Failed to get CPU models of {0}: {1}".format(name, err))
+                logger.error('Failed to get CPU models of {0}. '
+                        'Failed running vdsClient on host. '
+                        'Error message: {1} '
+                        'vdsClient output: {2}'.format(name, err, out))
                 return
             host_cpu_models = MODEL_RE.findall(out)
             host_model = max(host_cpu_models,
