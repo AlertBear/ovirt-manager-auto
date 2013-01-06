@@ -24,8 +24,9 @@ import traceback
 import re
 
 import storageapi.storageManagerWrapper as smngr
+import storageapi.snmp as snmp
 from utilities.utils import getIpAddressByHostName, getHostName
-from utilities.machine import Machine, runLocalCmd
+from utilities.machine import Machine
 from utilities.errors import FileAlreadyExistsError, GeneralException
 
 FAIL_REMOVE_MSG = 'Failed to remove device of type {0}: {1}\n{2}'
@@ -43,6 +44,7 @@ DEVICES_TARGET_PATHS = {
                         'local': '%s.%s' % (MAIN_SECTION, 'local_domain'),
                         }
 POSIXFS_TYPES = ['gluster']
+ISO_EXPORT_TYPE = 'iso_export_domain_nas'
 
 logger = logging.getLogger(__name__)
 
@@ -113,6 +115,10 @@ class CreateHostGroupNameException(GeneralException):
     message = "Host group is missing. Failed to create it from vdc hostname."
 
 
+class GetServerForDynamicStorageAllocationException(GeneralException):
+    message = "Failed to get server for dynamic storage allocation"
+
+
 def createHostGroupName(vdc):
     '''
     Create host group name from vdc hostname/IP
@@ -122,6 +128,20 @@ def createHostGroupName(vdc):
                                              vdc) else vdc.split('.')[0]
     except Exception as e:
         raise CreateHostGroupNameException(e)
+
+def getStorageServer(type, servers=None):
+    '''
+    Get less used storage server(less used disk space + cpu load)
+    Parameters:
+        * storageType - storage type(NFS/iSCSI)
+        * servers - list of storage server IPs to choose from, if not defined -
+                    configuration file used
+    '''
+    try:
+        monitor = snmp.SNMPMonitor(type, servers=servers)
+        return monitor.getServerByDiskSpaceToCpuRatio()
+    except Exception as e:
+        raise GetServerForDynamicStorageAllocationException(e)
 
 
 class StorageUtils:
@@ -137,6 +157,7 @@ class StorageUtils:
         self.iso_devices = {}
         self.export_devices = {}
         self.vdsData = {}
+        self.storageServers = {}
 
         self.config = config
         self.storageConf = config['STORAGE']
@@ -281,6 +302,18 @@ class StorageUtils:
                 'paths': confStorageSection.as_list('local_devices'),
         }
 
+    def getStorageServers(self, servers=None):
+        for type in self.storages:
+            if self.storages[type] and type != 'local':
+                storageType = self.config[MAIN_SECTION][ISO_EXPORT_TYPE] \
+                    if type in ('iso', 'export') else type
+                if storageType not in self.storageServers:
+                    server = getStorageServer(storageType, servers)
+                    self.storageServers[storageType] = server
+                for section, params in self.storages[type].items():
+                    self.storages[type][section]['ip'] = \
+                        self.storageServers[storageType]
+
     def _storageSetupNAS(self, data_center_type):
         """
         Description: creation of NAS devices
@@ -348,7 +381,7 @@ class StorageUtils:
             * data_center_type - data center type from conf file
         Return: None
         """
-        fsType = self.config[MAIN_SECTION]['iso_export_domain_nas']
+        fsType = self.config[MAIN_SECTION][ISO_EXPORT_TYPE]
 
         for storageSection, sectionParams in self.storages['iso'].items():
             self.iso_devices[storageSection] = [
@@ -502,7 +535,7 @@ class StorageUtils:
                             device)
 
         # choosing nas type for iso and export domain removal
-        fsType = self.config[MAIN_SECTION]['iso_export_domain_nas']
+        fsType = self.config[MAIN_SECTION][ISO_EXPORT_TYPE]
 
         for storageSection in self.storages['iso']:
             if storageSection in self.iso_devices.keys():
@@ -561,7 +594,11 @@ class StorageUtils:
             hostGroups = storageMngr.getInitiatorHostGroups(initiator)
             for hg in hostGroups:
                 if hg != lunName:
+                    self.logger.info('Unmap initiator %s from host group %s' %
+                                     (initiator, hg))
                     storageMngr.unmapInitiator(hg, initiator)
+        self.logger.info('Map initiators %s to host group %s' %
+                         (initiators, lunName))
         storageMngr.mapLun(lunId, lunName, *initiators)
 
         if storageServer['is_specific']:

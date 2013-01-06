@@ -56,6 +56,8 @@ AD_CLEANUP = 'auto_devices_cleanup'
 DEFAULT_STATE = False
 STR_SECTION = 'STORAGE'
 RUN_SECTION = 'RUN'
+LB_ENABLED = 'devices_load_balancing'
+STORAGE_POOL = 'storage_pool'
 
 
 class AutoDevices(Component):
@@ -88,7 +90,10 @@ class AutoDevices(Component):
         logger.info("Preparing storages.")
         from art.test_handler.plmanagement.plugins import storage
         self.su = storage.StorageUtils(self.conf)
-
+        if self.conf[RUN_SECTION].as_bool(LB_ENABLED):
+            spool = self.conf[STR_SECTION].as_list(STORAGE_POOL)
+            spool = None if 'None' in spool else spool
+            self.su.getStorageServers(spool)
         try:
             self.su.storageSetup()
         except Exception as ex:
@@ -133,10 +138,12 @@ class AutoDevices(Component):
 
     def config_spec(self, spec, val_funcs):
         section_spec = spec.get(STR_SECTION, {})
+        section_spec[STORAGE_POOL] = "force_list(default=None)"
         spec[STR_SECTION] = section_spec
         run_spec = spec.get(RUN_SECTION, {})
         run_spec[AD_ENABLED] = "boolean(default=False)"
         run_spec[AD_CLEANUP] = "option('pass','fail','all','yes','no',default='all')"
+        run_spec[LB_ENABLED] = "boolean(default=False)"
         spec[RUN_SECTION] = run_spec
 
 
