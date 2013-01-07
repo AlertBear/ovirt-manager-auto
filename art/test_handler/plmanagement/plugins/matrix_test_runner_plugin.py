@@ -119,7 +119,6 @@ TEST_MODULES = 'test_modules'
 DISCOVER_ACTIONS = 'discover_action'
 
 ACTIONS = 'ACTIONS'
-EXCEPTIONS = {}
 
 
 GLOBAL_SCOPE = {
@@ -162,25 +161,6 @@ class LinesAction(Action):
 class GroupsAction(Action):
     def __call__(self, parser, namespace, values, option_string=None):
         setattr(namespace, self.dest, values.split(','))
-
-
-class TestExceptionType(type):
-    """
-    Customized type of exceptions which privides auto-discovery these
-    exceptions
-    """
-    def __new__(cls, name, bases, dct):
-        ex_cls = type.__new__(cls, name, bases, dct)
-        EXCEPTIONS[name] = ex_cls
-        return ex_cls
-
-
-class TestException(Exception):
-    """
-    Base class for exceptions used in negative test_cases, in order
-    to identify specific (expected) type of fail.
-    """
-    __metaclass__ = TestExceptionType
 
 
 class DoNotRun(errors.SkipTest):
@@ -618,8 +598,8 @@ class MatrixTestCase(TestCase):
                 mod, ex = ex.rsplit('.', 1)
                 exec("from %s import %s" % (mod, ex))
                 excepts.append(eval(ex))
-            elif ex in EXCEPTIONS:
-                excepts.append(EXCEPTIONS[ex])
+            elif ex in errors.TestExceptionType.EXCEPTIONS:
+                excepts.append(errors.TestExceptionType.EXCEPTIONS[ex])
             else:
                 excepts.append(eval(ex))
         self.expected_exc = tuple(excepts)
@@ -838,12 +818,6 @@ class MatrixBasedTestComposer(Component):
                 (TEST_REPORT, "Report test", None)
         TestResult.ATTRIBUTES[TEST_EXP_EVENTS] = \
                 (TEST_EXP_EVENTS, "Number of expected events", None)
-
-        self.__register_objects()
-
-    def __register_objects(self):
-        from art.test_handler import tools
-        setattr(tools, 'TestException', TestException)
 
     @classmethod
     def add_options(cls, parser):
