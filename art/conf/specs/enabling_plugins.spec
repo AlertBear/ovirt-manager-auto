@@ -22,6 +22,12 @@ enabled = boolean(default=True)
 
 [LOGSTASH]
 enabled = boolean(default=True)
+[[vds]]
+vdsm=string(default='/var/log/vdsm/vdsm.log')
+
+[[vdc]]
+engine=string(default='/var/log/ovirt-engine/engine.log')
+bootstrap=string(default='/var/log/ovirt-engine/host-deploy/*')
 
 [TRAC]
 enabled = boolean(default=True)
