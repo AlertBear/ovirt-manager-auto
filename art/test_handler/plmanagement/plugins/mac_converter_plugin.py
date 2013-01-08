@@ -84,12 +84,14 @@ class TCPDumpParser(object):
     S_SER_IP = 3
     S_GW_IP = 4
     S_MAC_ADDR = 5
+    S_MSG = 6
 
     P_REPLY = 'BOOTP/DHCP, Reply'
     P_YOUR_IP = 'Your-IP (?P<ip>([0-9]+[.]){3}[0-9]+)'
     P_SERVER_IP = 'Server-IP'
     P_GW_IP = 'Gateway-IP'
     P_MAC = 'Client-Ethernet-Address (?P<mac>([0-9a-f]+[-:]){5}[0-9a-f]+)'
+    P_MSG = 'DHCP-Message Option [0-9]+, length [0-9]+: (?P<msg>[a-z]+)'
 
     EXPECT = {
             S_UNKNOWN: (P_REPLY,),
@@ -97,6 +99,7 @@ class TCPDumpParser(object):
             S_CL_IP: (P_SERVER_IP,),
             S_SER_IP: (P_GW_IP, P_MAC),
             S_GW_IP: (P_MAC,),
+            S_MAC_ADDR: (P_MSG,),
             }
 
     def __init__(self, cache, debug=False):
@@ -104,6 +107,7 @@ class TCPDumpParser(object):
         self.c = cache
         self.st = self.S_UNKNOWN
         self.ip = None
+        self.mac = None
         self.debug = debug
 
     def parse_line(self, line):
@@ -113,6 +117,7 @@ class TCPDumpParser(object):
         if self.debug:
             logger.debug("EXPECT %s GOT %s",
                 " OR ".join(["'%s'" % x for x in self.EXPECT[self.st]]), line)
+
         if self.st == self.S_UNKNOWN:
             if re.search(self.P_REPLY, line):
                 # saw reply -> waiting for IP
@@ -131,35 +136,46 @@ class TCPDumpParser(object):
                 self.st = self.S_SER_IP
                 return
         elif self.st == self.S_SER_IP:
-            # saw GW -> waiting for MAC
             if re.search(self.P_GW_IP, line):
+                # saw GW -> waiting for MAC
                 self.st = self.S_GW_IP
                 return
             if self.__read_mac(line):
+                # saw MAC -> waiting for MESSAGE_TYPE
                 return
         elif self.st == self.S_GW_IP:
-            # saw MAC -> I don't care about rest -> wating for REPLY
+            # saw MAC -> wating for MESSAGE_TYPE
             if self.__read_mac(line):
                 return
+        elif self.st == self.S_MSG:
+            m = re.search(self.P_MSG, line, re.I)
+            if m:
+                # saw MESSAGE -> check if it is ACK
+                msg = m.group('msg').lower()
+                if msg == 'ack':
+                    self.__store_mac()
+                # else -> don't care about this lease -> wait for REPLY
+            else: # stay in this state and wait for MESSAGE line
+                return
+
         # no expected match -> waiting for REPLY
         self.st = self.S_UNKNOWN
 
     def __read_mac(self, line):
         m = re.search(self.P_MAC, line, re.I)
         if m:
-            mac_count = 0 # NOTE: want to print only first occurance
-            with self.c:
-                mac = unify_mac_format(m.group('mac'))
-                ips = self.c.get(mac, set())
-                mac_count = len(ips)
-                ips.add(self.ip)
-                mac_count = mac_count - len(ips)
-                self.c[mac] = ips
-            if mac_count < 0:
-                logger.info("Caught %s for %s", self.ip, mac)
-            self.st = self.S_UNKNOWN
+            self.mac = unify_mac_format(m.group('mac'))
+            self.st = self.S_MSG
             return True
         return False
+
+    def __store_mac(self):
+        old_ip = None
+        with self.c:
+            old_ip = self.c.get(self.mac, None)
+            self.c[self.mac] = self.ip
+        if old_ip != self.ip:
+            logger.info("Caught %s for %s", self.ip, self.mac)
 
 
 class Producer(Thread):
@@ -295,7 +311,7 @@ class DHCPLeasesCatcher(object):
                 raise ReaderIsNotReady(reader)
             time.sleep(1)
 
-    def get_ips(self, mac):
+    def get_ip(self, mac):
         with self.cache:
             return self.cache[mac]
 
@@ -339,11 +355,12 @@ class MacToIpConverter(Component):
 
     def get_ip(self, mac, subnet_class_b, vlan):
         mac = unify_mac_format(mac)
-        ips = self.catcher.get_ips(mac)
+        ip = self.catcher.get_ip(mac)
         subnet_class_b = subnet_class_b.replace('.', '[.]')
-        belongs_to_subnet = \
-                [x for x in ips if re.match('^%s' % subnet_class_b, x)]
-        return ips.pop()
+        if re.match('^%s' % subnet_class_b, ip):
+            return ip
+        raise KeyError(mac)
+
 
     def on_application_exit(self):
         if self.catcher is not None:
