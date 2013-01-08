@@ -1912,7 +1912,7 @@ def getVmMacAddress(positive, vm, nic='nic1'):
     try:
         nicObj = getVmNic(vm, nic)
     except EntityNotFound:
-        VM_API.logger.error("Vm %s doesn't have nic '%s'", vm.name, nic)
+        VM_API.logger.error("Vm %s doesn't have nic '%s'", vm, nic)
         return False, {'macAddress': None}
     return True, {'macAddress': str(nicObj.mac.address)}
 
