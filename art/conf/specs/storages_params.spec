@@ -9,8 +9,6 @@ cobbler_user = string(default='root')
 cobbler_passwd = string(default='qum5net')
 cobbler_profile = string(default='short_agent_rhel6.x_jenkins-x86_64')
 
-useAgent = string(default='False')
-
 [NFS]
 data_domain_address = force_list(default=None)
 data_domain_path = force_list(default=None)

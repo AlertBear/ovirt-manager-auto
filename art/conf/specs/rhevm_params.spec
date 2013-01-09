@@ -41,6 +41,8 @@ vm_windows_password = string(default='123456')
 vm_linux_user = string(default='root')
 vm_linux_password = string(default='qum5net')
 
+useAgent = string(default='True')
+
 [MATRIX_TEST_RUNNER]
 test_modules = force_list(default=list('art.rhevm_api',))
 auto_discovery = boolean(default=True)
