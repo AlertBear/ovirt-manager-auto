@@ -14,6 +14,7 @@ logger = logging.getLogger('test_utils')
 
 VM_API = get_api('vm', 'vms')
 HOST_API = get_api('host', 'hosts')
+NIC_API = get_api('nic', 'nics')
 
 
 class IpLookUpError(APIException):
@@ -140,11 +141,15 @@ class LookUpVMIpByName(LookUpIpByEntityName):
             return guest_info.get_ips().get_ip()[self.nic].get_address()
 
     def _get_ip_from_mac(self, vm_name):
-        guest_info = VM_API.find(vm_name).get_guest_info()
-        if guest_info is not None:
-            mac = guest_info.get_ips().get_ip()[self.nic].get_mac()
-            if mac is not None:
-                return convertMacToIp(mac)
+        vm = VM_API.find(vm_name)
+        if vm is None:
+            return None
+        nics = NIC_API.getElemFromLink(vm, get_href=False)
+        if not nics:
+            return None
+        nic = nics[self.nic]
+        mac = nic.mac.address
+        return convertMacToIp(mac)
 
 
 class LookUpHostIpByName(LookUpIpByEntityName):
