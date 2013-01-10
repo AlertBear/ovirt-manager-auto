@@ -58,3 +58,41 @@ class TestException(Exception):
     __metaclass__ = TestExceptionType
 
 
+class RHEVMEntityException(TestException):
+    """
+    Base class for particular RHEVM entities exceptions
+    """
+    pass
+
+
+class DataCenterException(RHEVMEntityException):
+    pass
+
+
+class ClusterException(RHEVMEntityException):
+    pass
+
+
+class StorageDomainException(RHEVMEntityException):
+    pass
+
+
+class HostException(RHEVMEntityException):
+    pass
+
+
+class VMException(RHEVMEntityException):
+    pass
+
+
+class TemplateException(RHEVMEntityException):
+    pass
+
+
+class DiskException(RHEVMEntityException):
+    pass
+
+class UnkownConfigurationException(RHEVMEntityException):
+    pass
+
+
