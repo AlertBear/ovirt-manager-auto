@@ -36,5 +36,8 @@ enabled = boolean(default=True)
 user = string(default="TCMS/jenkins.qa.lab.tlv.redhat.com")
 keytab_files_location = path_exists(default="/etc")
 
+[STORAGE]
+devices_load_balancing = boolean(default=True)
+
 [MATRIX_TEST_RUNNER]
 discover_action = boolean(default=True)
