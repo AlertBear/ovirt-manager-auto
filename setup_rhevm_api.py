@@ -49,6 +49,9 @@ DATA_FILES = [
         'art/tests/rhevm/xml_tests/payloads_cases/*.xml',
         'art/tests/rhevm/xml_tests/sla/*.xml',
         'art/tests/rhevm/xml_tests/storage/*.xml',
+        'art/tests/rhevm/unittests/user_roles_tests/*.py',
+        'art/tests/rhevm/unittests/rhevm_utils/*.py',
+        'art/tests/rhevm/unittests/rhevm_utils/lc_reports_content/*.xml',
         'art/rhevm_api/data_struct/api.xsd',
         ]
 DATA_FILES = common.expand_paths(TEST_DATA_PATH, *DATA_FILES)
@@ -56,6 +59,7 @@ DATA_FILES = common.expand_paths(TEST_DATA_PATH, *DATA_FILES)
 
 SCRIPT = """\
 find /opt/art/rhevm_api -type f -regex '.*[.]py$' -exec sed -i 's/art[.]rhevm_api/rhevm_api/g' '{}' \; &> /dev/null
+find /opt/art/tests/rhevm -type f -regex '.*[.]py$' -exec sed -i 's/art[.]rhevm_api/rhevm_api/g' '{}' \; &> /dev/null
 chmod -R ugo+rw /opt/art/rhevm_api &> /dev/null
 
 """
@@ -68,6 +72,7 @@ CONFS = {'install': {'install_lib': INSTALLATION_PATH},
 MANIFEST = [
            'recursive-include art/rhevm_api *.xsd',
            'recursive-include art/tests/rhevm *.conf *.xml',
+           'recursive-include art/tests/rhevm/unittests *.py',
            ]
 
 if __name__ == '__main__':
