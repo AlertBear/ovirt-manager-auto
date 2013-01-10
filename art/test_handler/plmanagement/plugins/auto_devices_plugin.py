@@ -90,7 +90,7 @@ class AutoDevices(Component):
         logger.info("Preparing storages.")
         from art.test_handler.plmanagement.plugins import storage
         self.su = storage.StorageUtils(self.conf)
-        if self.conf[RUN_SECTION].as_bool(LB_ENABLED):
+        if self.conf[STR_SECTION].as_bool(LB_ENABLED):
             spool = self.conf[STR_SECTION].as_list(STORAGE_POOL)
             spool = None if 'None' in spool else spool
             self.su.getStorageServers(spool)
@@ -132,18 +132,18 @@ class AutoDevices(Component):
         params['description'] = 'Storage provisioning plugin for ART'
         params['long_description'] = 'Plugin for ART which provides '\
                 'Storage provisioning functionality.'
-        params['requires'] = ['art-storage-api']
+        params['requires'] = ['art-storage-api', 'pysnmp']
         params['py_modules'] = ['art.test_handler.plmanagement.plugins.auto_devices_plugin',
                 'art.test_handler.plmanagement.plugins.storage']
 
     def config_spec(self, spec, val_funcs):
         section_spec = spec.get(STR_SECTION, {})
         section_spec[STORAGE_POOL] = "force_list(default=None)"
+        section_spec[LB_ENABLED] = "boolean(default=False)"
         spec[STR_SECTION] = section_spec
         run_spec = spec.get(RUN_SECTION, {})
         run_spec[AD_ENABLED] = "boolean(default=False)"
         run_spec[AD_CLEANUP] = "option('pass','fail','all','yes','no',default='all')"
-        run_spec[LB_ENABLED] = "boolean(default=False)"
         spec[RUN_SECTION] = run_spec
 
 
