@@ -470,6 +470,7 @@
     <parameters>name='{product_name}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <bz>891048</bz>
   </test_case>
   <test_case>
     <id>d75a179a-c695-11e1-a578-f0def10e0ce8</id>
@@ -1091,6 +1092,7 @@
     <parameters/>
     <positive>NONE</positive>
     <run>yes</run>
+    <bz>891301</bz>
   </test_case>
   <test_case>
     <test_name>END_GROUP: User_Roles</test_name>
