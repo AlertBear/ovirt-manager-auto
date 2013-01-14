@@ -601,17 +601,13 @@ class CliUtil(RestUtil):
             if positive:
                 return False
 
-        expectOut = 'status-state'
-        if action == 'iscsidiscover':
-            expectOut = 'iscsi_target'
-
         actionStateMatch = re.match(self.cli._status_extract_re, res,
                                     flags=re.DOTALL)
         if not actionStateMatch and positive:
             return False
 
         actionState = actionStateMatch.group(1)
-        if positive and expectOut == 'status-state':
+        if positive:
             if not async:
                 return validator.compareActionStatus(actionState,
                                         ["complete"], self.logger)
