@@ -120,10 +120,10 @@ def _prepareDiskObject(**kwargs):
         storage_domains.add_storage_domain(storage_domain)
         disk.storage_domains = storage_domains
 
-    if not None in lun:
+    if lun != (None, None, None, 3260):
         direct_lun = data_st.LogicalUnit(address=lun[0], target=lun[1],
                                          id=lun[2], port=lun[3])
-        if not None in lun_creds:
+        if lun_creds != (None, None):
             direct_lun.set_username(lun_creds[0])
             direct_lun.set_password(lun_creds[1])
 
