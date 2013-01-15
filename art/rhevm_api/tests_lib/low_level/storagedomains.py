@@ -679,6 +679,7 @@ def cleanDataCenter(positive,datacenter,formatIsoStorage='false'):
 
     status = True
     vmList = []
+    nonDownVmList = []
     templList = []
     sd_attached = False
 
@@ -696,10 +697,14 @@ def cleanDataCenter(positive,datacenter,formatIsoStorage='false'):
     vmObjList = vmUtil.get(absLink=False)
     vmsConnectedToCluster = filter(lambda vmObj: vmObj.get_cluster().get_id() == clId, vmObjList)
     if vmsConnectedToCluster:
+        #Build vmList
         [vmList.append(vmObj.get_name()) for vmObj in vmsConnectedToCluster]
-        if not stopVms(','.join(vmList)):
-            return False
-
+        #Build non down vm List to be stopped
+        nonDownVms = filter(lambda vmObj: vmObj.status.state.lower() != ENUMS['vm_state_down'], vmsConnectedToCluster)
+        if nonDownVms:
+            [nonDownVmList.append(vmObj.get_name()) for vmObj in nonDownVms]
+            if not stopVms(','.join(nonDownVmList)):
+                return False
         if not removeVms(positive, ','.join(vmList)):
             return False
 
