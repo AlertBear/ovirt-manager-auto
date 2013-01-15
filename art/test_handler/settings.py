@@ -30,9 +30,9 @@ from time import strftime
 from shutil import copyfile
 from configobj import ConfigObj
 
-from utilities.configs import ParamsValidator
-
+from utilities.validation_lib import ValidationFuncs
 import art
+from art.test_handler.handler_lib.configs import ParamsValidator
 from art.test_handler.plmanagement.manager import PluginManager
 from art.test_handler import find_config_file
 
@@ -167,7 +167,8 @@ def readTestRunOpts(path, redefs):
                     confSpecFile=opts['confSpec'],
                     frameworkBasePath=os.path.dirname(art.__file__),
                     findConfigFileFunc=find_config_file,
-                    pluginManagerHandle=initPlmanager())
+                    pluginManagerHandle=initPlmanager()
+                    )
 
     config = ConfigObj(confFileCopyName)
 

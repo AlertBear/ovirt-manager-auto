@@ -7,8 +7,6 @@ from sys import argv, exit, stderr
 import traceback
 from socket import error as SocketError
 
-from utilities.configs import ValidationError
-
 from art.core_api.apis_exceptions import APICommandError, APIException
 from art.test_handler.test_runner import TestRunner
 from art.test_handler.settings import populateOptsFromArgv, CmdLineError, \
@@ -16,7 +14,7 @@ from art.test_handler.settings import populateOptsFromArgv, CmdLineError, \
 from art.test_handler.plmanagement import PluginError
 from art.test_handler.reports import initializeLogger
 from art.test_handler.settings import ReturnCode as RC
-
+from art.test_handler.handler_lib.configs import ValidationError
 
 logger = logging.getLogger(__name__)
 
