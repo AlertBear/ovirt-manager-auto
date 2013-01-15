@@ -93,7 +93,8 @@ class AutoDevices(Component):
         if self.conf[STR_SECTION].as_bool(LB_ENABLED):
             spool = self.conf[STR_SECTION].as_list(STORAGE_POOL)
             spool = None if 'None' in spool else spool
-            self.su.getStorageServers(spool)
+            self.su.load_balancing = True
+            self.su.serverPool = spool
         try:
             self.su.storageSetup()
         except Exception as ex:

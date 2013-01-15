@@ -22,6 +22,7 @@
 import logging
 import traceback
 import re
+from functools import wraps
 
 import storageapi.storageManagerWrapper as smngr
 import storageapi.snmp as snmp
@@ -48,6 +49,31 @@ ISO_EXPORT_TYPE = 'iso_export_domain_nas'
 
 logger = logging.getLogger(__name__)
 
+
+def getStorageServers(storageType='none'):
+    def outwrap(f):
+        setattr(f, 'storageType', storageType)
+        @wraps(f)
+        def wrapper(self, *args, **kwargs):
+            if self.load_balancing:
+                storageType = f.storageType
+                stypes = [storageType]
+                if storageType == ISO_EXPORT_TYPE:
+                    stypes = [self.config[MAIN_SECTION][ISO_EXPORT_TYPE]]
+                elif storageType == 'none':
+                    stypes = [args[0]] if args[0] != 'posixfs' \
+                                       else POSIXFS_TYPES
+                for stype in stypes:
+                    if self.storages[stype]:
+                        if stype not in self.storageServers:
+                            server = getStorageServer(stype, self.serverPool)
+                            self.storageServers[stype] = server
+                        for section, params in self.storages[stype].items():
+                            self.storages[stype][section]['ip'] = \
+                                self.storageServers[stype]
+            return f(self, *args, **kwargs)
+        return wrapper
+    return outwrap
 
 def processConfList(confList):
     '''
@@ -165,6 +191,8 @@ class StorageUtils:
         self.host_group = self.storageConf.get('host_group')
         self.data_center_type = str(getFromMainConfSection(config,
                                 'data_center_type', asList=False))
+        self.load_balancing = False
+        self.serverPool = None
 
         self.storages = {'gluster': {},
                          'nfs':     {},
@@ -297,18 +325,7 @@ class StorageUtils:
                 'paths': confStorageSection.as_list('local_devices'),
         }
 
-    def getStorageServers(self, servers=None):
-        for type in self.storages:
-            if self.storages[type] and type != 'local':
-                storageType = self.config[MAIN_SECTION][ISO_EXPORT_TYPE] \
-                    if type in ('iso', 'export') else type
-                if storageType not in self.storageServers:
-                    server = getStorageServer(storageType, servers)
-                    self.storageServers[storageType] = server
-                for section, params in self.storages[type].items():
-                    self.storages[type][section]['ip'] = \
-                        self.storageServers[storageType]
-
+    @getStorageServers()
     def _storageSetupNAS(self, data_center_type):
         """
         Description: creation of NAS devices
@@ -338,6 +355,7 @@ class StorageUtils:
                             for i in range(0, sectionParams['total'])
                     ]
 
+    @getStorageServers('iscsi')
     def _storageSetupSAN(self):
         """
         Description: creation of SAN devices
@@ -368,6 +386,7 @@ class StorageUtils:
                         for path in sectionParams['paths']
                     ]
 
+    @getStorageServers(ISO_EXPORT_TYPE)
     def _storageSetupISOandExportDomains(self):
         """
         Description: creation of iso and export domains
