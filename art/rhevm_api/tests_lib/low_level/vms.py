@@ -1454,15 +1454,16 @@ def suspendVms(vms):
 
 
 @is_action()
-def shutdownVm(positive, vm):
+def shutdownVm(positive, vm, async='true'):
     '''
     Description: shutdown vm
     Author: edolinin
     Parameters:
        * vm - name of vm
+       * async - if false, wait for VM to shutdown
     Return: status (True if vm was stopped properly, False otherwise)
     '''
-    return changeVMStatus(positive, vm, 'shutdown', 'down')
+    return changeVMStatus(positive, vm, 'shutdown', 'down', async=async)
 
 
 @is_action()
