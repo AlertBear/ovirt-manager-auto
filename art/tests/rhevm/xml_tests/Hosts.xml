@@ -643,6 +643,7 @@
    <test_action>checkResponsesAreXsdValid</test_action>
    <parameters/>
    <positive>NONE</positive>
+   <bz>891301</bz>
    <run>yes</run>
  </test_case>
 </input>
