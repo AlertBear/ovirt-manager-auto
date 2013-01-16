@@ -399,8 +399,8 @@
    <report>YES</report>
    <bz>877737</bz>
    <vital>FALSE</vital>
-   <!-- <tcms_plan_id>6915</tcms_plan_id> -->
-   <!-- <tcms_test_case>225422</tcms_test_case> <test_description/> -->
+   <tcms_plan_id>6915</tcms_plan_id>
+   <tcms_test_case>225422</tcms_test_case> <test_description/>
 </test_case>
 <test_case>
    <test_name>Remove VM after importing it</test_name>
