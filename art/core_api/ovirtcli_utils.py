@@ -600,20 +600,22 @@ class CliUtil(RestUtil):
             self.logger.error(errorMsg.format(e))
             if positive:
                 return False
-
-        actionStateMatch = re.match(self.cli._status_extract_re, res,
-                                    flags=re.DOTALL)
-        if not actionStateMatch and positive:
-            return False
-
-        actionState = actionStateMatch.group(1)
-        if positive:
-            if not async:
-                return validator.compareActionStatus(actionState,
-                                        ["complete"], self.logger)
-            else:
-                return validator.compareActionStatus(actionState,
-                            ["pending", "complete"], self.logger)
         else:
-            return validator.compareActionStatus(actionState,
-                                    ["failed"], self.logger)
+            if positive:
+                actionStateMatch = re.match(self.cli._status_extract_re, res,
+                                            flags=re.DOTALL)
+                if not actionStateMatch and positive:
+                    return False
+
+                actionState = actionStateMatch.group(1)
+                if positive:
+                    if not async:
+                        return validator.compareActionStatus(actionState,
+                                                ["complete"], self.logger)
+                    else:
+                        return validator.compareActionStatus(actionState,
+                                    ["pending", "complete"], self.logger)
+                else:
+                    return validator.compareActionStatus(actionState,
+                                            ["failed"], self.logger)
+        return True
