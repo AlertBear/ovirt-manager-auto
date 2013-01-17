@@ -99,8 +99,16 @@
    <parameters>vm='payload-vm-for-test', timeout=1200, sleep=10</parameters>
    <positive>NONE</positive>
    <run>yes</run>
- </test_case>
- <test_case>
+   <fetch_output>ip->guest_ip</fetch_output>
+</test_case>
+<test_case>
+    <test_name>set linux vm persistent</test_name>
+    <test_action>setPersistentNetwork</test_action>
+    <parameters>host=%guest_ip%, password='{vm_password}'</parameters>
+    <positive>NONE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
     <test_name>Stop VM, so we can create template from it.</test_name>
     <test_action>stopVm</test_action>
     <parameters>vm='payload-vm-for-test'</parameters>

@@ -81,11 +81,19 @@
    <run>YES</run>
 </test_case>
 <test_case>
-   <test_name>Wait for master to be installed</test_name>
-   <test_action>waitUntilVmQuery</test_action>
-   <parameters>vm='ksmtest_master',query='status=up and ip=10.35.*', timeout=1200, sleep=10</parameters>
-   <positive>NONE</positive>
-   <run>YES</run>
+    <test_name>Wait for GuestInfo (master) for install to finished</test_name>
+    <test_action>waitForIP</test_action>
+    <parameters>vm='ksmtest_master', timeout=1200, sleep=10</parameters>
+    <positive>NONE</positive>
+    <fetch_output>ip->guest_ip</fetch_output>
+    <run>YES</run>
+</test_case>
+<test_case>
+    <test_name>set linux vm persistent</test_name>
+    <test_action>setPersistentNetwork</test_action>
+    <parameters>host=%guest_ip%, password='{guest_passwd}'</parameters>
+    <positive>NONE</positive>
+<run>yes</run>
 </test_case>
 <test_case>
    <test_name>Stop master VM</test_name>
