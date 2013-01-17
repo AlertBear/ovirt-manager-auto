@@ -668,7 +668,7 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
 
 
 @is_action()
-def cleanDataCenter(positive,datacenter,formatIsoStorage='false'):
+def cleanDataCenter(positive, datacenter, formatIsoStorage='false', formatExpStorage='false'):
     '''
     Description: Remove all elements in data center: dataCenter, storage domains, hosts & cluster.
     Author: istein
@@ -776,10 +776,13 @@ def cleanDataCenter(positive,datacenter,formatIsoStorage='false'):
                     sd_attached = True
 
         if not sd_attached:
+            # Set formatStorage to 'true' for data storage domains
+            formatStorage = 'true'
             if sd.get_type() == ENUMS['storage_dom_type_iso']:
-                removeStatus = removeStorageDomain(positive, sd.get_name(), spmHostName, formatIsoStorage)
-            else:
-                removeStatus = removeStorageDomain(positive, sd.get_name(), spmHostName, 'true')
+                formatStorage = formatIsoStorage
+            elif sd.get_type() == ENUMS['storage_dom_type_export']:
+                formatStorage = formatExpStorage
+            removeStatus = removeStorageDomain(positive, sd.get_name(), spmHostName, formatStorage)
             if not removeStatus:
                 util.logger.error("Remove storage domain %s Failed" % sd.get_name())
                 status = False
