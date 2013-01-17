@@ -460,6 +460,14 @@
   </test_case>
   <!-- /////////////////////// TEST SCENARIO //////////////////////////////// -->
   <test_case>
+    <id>ba3ddf2a-c695-11e1-bc9c-f0def10e0ce8</id>
+    <test_name>Activate active host</test_name>
+    <test_action>activateHost</test_action>
+    <parameters>host='{vds[0]}'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
     <test_name>START_GROUP: Mixed_Scenario</test_name>
     <run>yes</run>
   </test_case>
