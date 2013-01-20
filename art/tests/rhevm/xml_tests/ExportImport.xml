@@ -248,6 +248,7 @@
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
+   <bz>882632</bz>
 </test_case>
 <test_case>
    <test_name>checkVmVolume after VMs export '{data_center_type}'</test_name>
@@ -256,6 +257,7 @@
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
+   <bz>882632</bz>
 </test_case>
 <test_case>
    <test_name>Remove VMs from export domain '{data_center_type}'</test_name>
@@ -263,7 +265,7 @@
    <parameters>vm='{data_center_type}TemplVm',datacenter='{data_center_type}StorageTest',export_storagedomain='ImpExp_{data_center_type}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
-   <bz>858618</bz>
+   <bz>882632</bz>
 </test_case>
 <test_case>
    <test_name>checkVmVolume after VMs removal from export domain '{data_center_type}'</test_name>
@@ -271,7 +273,6 @@
    <parameters>vdsName='{vds[0]}', username='root', passwd='{vds_password[0]}', dataCenter='{data_center_type}StorageTest', storageDomain='ImpExp_{data_center_type}', vm='{data_center_type}TemplVm',fake=True, noImages=True, exists=False</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
-   <bz>858618</bz>
 </test_case>
 <test_case>
    <test_name>Export VM after VMs removal from export domain '{data_center_type}'</test_name>
@@ -279,7 +280,7 @@
    <parameters>vm='{data_center_type}TemplVm',storagedomain='ImpExp_{data_center_type}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
-   <bz>858618</bz>
+   <bz>882632</bz>
 </test_case>
 <test_case>
    <test_name>checkVmVolume after the second VM export '{data_center_type}'</test_name>
@@ -288,6 +289,7 @@
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
+   <bz>882632</bz>
 </test_case>
 <test_case>
    <test_name>Export template '{data_center_type}'</test_name>
@@ -313,6 +315,7 @@
    <positive>FALSE</positive>
    <run>yes</run>
    <fetch_output/>
+   <bz>882632</bz>
 </test_case>
 <test_case>
    <test_name>Wait for VM's down status '{data_center_type}'</test_name>
@@ -541,7 +544,6 @@
    <parameters>vm='{data_center_type}TemplVm',datacenter='{data_center_type}StorageTest',export_storagedomain='ImpExp_{data_center_type}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
-   <bz>858618</bz>
 </test_case>
 <test_case>
    <test_name>Stop running VM to test collapse snapshots option '{data_center_type}'</test_name>
@@ -581,7 +583,6 @@
    <parameters>vm='{data_center_type}TemplVm',storagedomain='ImpExp_{data_center_type}',discard_snapshots='true'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
-   <bz>858618</bz>
 </test_case>
 <test_case>
    <test_name>Remove VM after exporting it with collapse snapshots option '{data_center_type}'</test_name>
