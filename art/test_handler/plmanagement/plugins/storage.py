@@ -25,6 +25,7 @@ import re
 from functools import wraps
 
 import storageapi.storageManagerWrapper as smngr
+from storageapi.storageErrors import StorageManagerObjectCreationError
 import storageapi.snmp as snmp
 from utilities.utils import getIpAddressByHostName, getHostName
 from utilities.machine import Machine
@@ -49,6 +50,13 @@ ISO_EXPORT_TYPE = 'iso_export_domain_nas'
 
 logger = logging.getLogger(__name__)
 
+def createStorageManager(ips, type):
+    for i in range(0, len(ips)):
+        try:
+            return smngr.StorageManagerWrapper(ips.pop(i), type.upper()).manager
+        except StorageManagerObjectCreationError as ex:
+            logger.warning(ex)
+    raise
 
 def getStorageServers(storageType='none'):
     def outwrap(f):
@@ -66,11 +74,12 @@ def getStorageServers(storageType='none'):
                 for stype in stypes:
                     if self.storages[stype]:
                         if stype not in self.storageServers:
-                            server = getStorageServer(stype, self.serverPool)
-                            self.storageServers[stype] = server
+                            servers = getStorageServer(stype, self.serverPool)
+                            smngr = createStorageManager(servers, stype)
+                            self.storageServers[stype] = smngr
                         for section, params in self.storages[stype].items():
                             self.storages[stype][section]['ip'] = \
-                                self.storageServers[stype]
+                                self.storageServers[stype].host
             return f(self, *args, **kwargs)
         return wrapper
     return outwrap
@@ -563,6 +572,10 @@ class StorageUtils:
                     self.__remove_nas_device(self.storages['export'][\
                         storageSection]['ip'], device, fsType)
 
+    def getStorageManager(self, type, serverIp):
+        return self.storageServers[type] if type in self.storageServers else \
+            smngr.StorageManagerWrapper(serverIp,type.upper()).manager
+
     def __create_nas_device(self, storageServerIp, deviceName, fsType):
         '''
         Description: create NFS device with given name
@@ -571,9 +584,8 @@ class StorageUtils:
            * deviceName - device name
         Return: path of a new device
         '''
+        storageMngr = self.getStorageManager(fsType, storageServerIp)
 
-        storageMngr = smngr.StorageManagerWrapper(storageServerIp,
-                                                  fsType.upper()).manager
         path = storageMngr.createDevice(deviceName)
 
         self.logger.info(PASS_CREATE_MSG.format(fsType, path))
@@ -592,10 +604,8 @@ class StorageUtils:
            * servers - list of lun initiators
         Return: dictionary of lunInfo and type of storage server
         '''
+        storageMngr = self.getStorageManager('iscsi', storageServer['ip'])
 
-        storageServerIp = storageServer['ip']
-        storageMngr = smngr.StorageManagerWrapper(storageServerIp,
-                                                  'ISCSI').manager
         lunId, targetName = storageMngr.createLun(lunName, capacity)
 
         storageServer['is_specific'] = re.match('netapp|xtreamio',
@@ -659,8 +669,7 @@ class StorageUtils:
         Return: None
         '''
         try:
-            storageMngr = smngr.StorageManagerWrapper(storageServerIp,
-                                            fsType.upper()).manager
+            storageMngr = self.getStorageManager(fsType, storageServerIp)
             storageMngr.removeDevice(path)
             self.logger.info(PASS_REMOVE_MSG.format(fsType, path))
         except:
@@ -678,8 +687,7 @@ class StorageUtils:
         '''
 
         try:
-            storageMngr = smngr.StorageManagerWrapper(storageServerIp,
-                                                      'ISCSI').manager
+            storageMngr = self.getStorageManager('iscsi', storageServerIp)
             storageMngr.removeLun(deviceId)
             self.logger.info(PASS_REMOVE_MSG.format('iscsi', deviceId))
         except:
