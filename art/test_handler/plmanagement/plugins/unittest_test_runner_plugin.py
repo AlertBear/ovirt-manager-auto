@@ -85,11 +85,14 @@ class UTestCase(TestCase):
         self.mod_name, self.test_action = t.address()[1:]
         self.t = t
         self.f = getattr(t.test, t.test._testMethodName)
-        self.test_name = self.f.__doc__
+        self.test_name = self.test_action
         self.bz = getattr(self.f.im_func, BZ_ID, None)
         self.tcms_plan_id = getattr(self.f.im_func, TCMS_PLAN_ID, None)
         self.tcms_test_case = getattr(self.f.im_func, TCMS_TEST_CASE, None)
         setattr(self.t.test, 'vital4group', False)
+        if self.f.__doc__ is None:
+            logger.error("Test case %s has missing documentation string!",
+                         self.test_name)
         # TODO: set another atts
 
     def __call__(self):
