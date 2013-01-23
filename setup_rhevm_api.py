@@ -45,7 +45,7 @@ PACKAGE_DATA = {
 DATA_FILES = [
         'art/tests/rhevm/xml_tests/*.xml',
         'art/tests/rhevm/xml_tests/network/*.xml',
-        'art/tests/rhevm/xml_tests/network/requiredNetwork/*.xml',
+        'art/tests/rhevm/xml_tests/network/*/*.xml',
         'art/tests/rhevm/xml_tests/payloads_cases/*.xml',
         'art/tests/rhevm/xml_tests/sla/*.xml',
         'art/tests/rhevm/xml_tests/storage/*.xml',
