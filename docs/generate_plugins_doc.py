@@ -2,7 +2,8 @@
 import os
 import sys
 
-PATH_TO_PLUGINS = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'art', 'test_handler', 'plmanagement', 'plugins'))
+PATH_TO_ART = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+PATH_TO_PLUGINS = os.path.join(PATH_TO_ART, 'art', 'test_handler', 'plmanagement', 'plugins')
 
 if __name__ == '__main__':
     if not os.path.exists('source/plugins'):
@@ -18,6 +19,7 @@ Here is a list of ART plugins and documentation
 
 """)
     plugins = [ x for x in os.listdir(PATH_TO_PLUGINS) if x.endswith('_plugin.py')]
+    sys.path.insert(0, PATH_TO_ART)
     sys.path.insert(0, PATH_TO_PLUGINS)
     for plugin in plugins:
         try:
