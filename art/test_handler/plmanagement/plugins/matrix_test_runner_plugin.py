@@ -75,9 +75,6 @@ from art.core_api import ActionSetType, TestAction
 from art.test_handler.settings import opts
 
 
-TEST_CASES_SEPARATOR = '\n' + '=' * 80
-
-
 logger = get_logger('matrix-test-composer')
 
 NO_TB_EXCEPTIONS = (EntityNotFound,)
@@ -738,6 +735,7 @@ class MatrixTestSuite(TestSuite):
         super(MatrixTestSuite, self).__init__()
         self.tc = tc
         self.it = tc.tf.iter_suite(name)
+        self.name = name
 
     def __iter__(self):
         while True:
@@ -754,6 +752,9 @@ class MatrixTestSuite(TestSuite):
             return te
         else:
             return MatrixTestCase._create_elm(elm, self.tc)
+
+    def __str__(self):
+        return self.name
 
 
 class MatrixBasedTestComposer(Component):
@@ -848,8 +849,6 @@ class MatrixBasedTestComposer(Component):
             st_msg = logger.error
         st_msg(tc.format_attr('status'))
 
-        logger.info(TEST_CASES_SEPARATOR)
-
     def pre_group_result_reported(self, res, tg):
         pass
 
@@ -857,19 +856,13 @@ class MatrixBasedTestComposer(Component):
         pass
 
     def pre_test_group(self, tg):
-        if isinstance(tg, MatrixTestSuite):
-            return
-        logger.info(TEST_CASES_SEPARATOR)
-        logger.info("Starting %s", tg)
+        pass
 
     def post_test_group(self, tg):
-        if isinstance(tg, MatrixTestSuite):
-            return
-        logger.info("Finishing %s", tg)
-        logger.info(TEST_CASES_SEPARATOR)
+        pass
 
     def pre_test_case(self, tc):
-        logger.info(TEST_CASES_SEPARATOR)
+        pass
 
     def post_test_case(self, tc):
         if tc.status in (tc.TEST_STATUS_PASSED, tc.TEST_STATUS_SKIPPED):

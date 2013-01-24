@@ -19,6 +19,7 @@ from utilities.jobs import JobsSet, Job # TODO: consider to use http://docs.pyth
 
 logger = logging.getLogger('test_runner')
 
+TEST_CASES_SEPARATOR = '\n' + '=' * 80
 
 def serial_generator(start=0, end=None, step=1):
     lock = threading.Lock()
@@ -240,6 +241,8 @@ class TestRunner(object):
         assert isinstance(test_case, TestCase), \
                 "test_elm must be TestCase, not %s" % type(test_case)
         test_case.start_time = datetime.now(tzutc())
+        logger.info(TEST_CASES_SEPARATOR)
+        logger.info(test_case.test_name)
         try:
             self.plmanager.test_cases.pre_test_case(test_case)
             self.plmanager.test_skippers.should_be_test_case_skipped(test_case)
@@ -247,6 +250,7 @@ class TestRunner(object):
         except SkipTest as s:
             test_case.status = test_case.TEST_STATUS_SKIPPED
             test_case.exc = s
+            logger.info("Skipped: %s, the reason: %s", test_case.test_name, s)
         except Exception as ex:
             test_case.status = test_case.TEST_STATUS_ERROR
             test_case.exc = ex
@@ -267,6 +271,8 @@ class TestRunner(object):
         test_group.start_time = datetime.now(tzutc())
         try:
             self.plmanager.test_groups.pre_test_group(test_group)
+            logger.info(TEST_CASES_SEPARATOR)
+            logger.info("Starting %s", test_group)
             self.plmanager.test_skippers.should_be_test_group_skipped(test_group)
             if test_group.workers == 1:
                 for test_elm in test_group:
@@ -296,12 +302,15 @@ class TestRunner(object):
                 assert False, 'number of workers must be positive not %s' % test_group.workers
         except SkipTest as s:
             test_group.status = test_group.TEST_STATUS_SKIPPED
+            logger.info("Skipped: %s, the reason: %s", test_group.test_name, s)
             #raise SkipTest("FIXME: I don't know what should I do here: %s" % s)
             # TODO: what will we do here?, maybe we should go over whole
             # content and mark everythig as Skipped.
         finally:
             test_group.end_time = datetime.now(tzutc())
             self.plmanager.test_groups.post_test_group(test_group)
+            logger.info("Finishing %s", test_group)
+            logger.info(TEST_CASES_SEPARATOR)
 
         self.plmanager.results_collector.add_test_result(test_group)
 
