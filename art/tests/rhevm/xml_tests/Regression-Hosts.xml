@@ -144,8 +144,8 @@
     <test_action>installHost</test_action>
     <parameters>host='{vds[0]}', root_password='{vds_password[0]}'</parameters>
     <positive>TRUE</positive>
-    <run>yes</run>
-    <vital>TRUE</vital>
+    <run>if(not('{rhevh}' == 'True'))</run>
+    <!-- <vital>TRUE</vital> -->
     <conf>headers={'Correlation-Id': 107}</conf>
   </test_case>
   <test_case>
@@ -154,7 +154,7 @@
     <test_action>deactivateHost</test_action>
     <parameters>host='{vds[0]}'</parameters>
     <positive>TRUE</positive>
-    <run>yes</run>
+    <run>if(not('{rhevh}' == 'True'))</run>
     <conf>headers={'Correlation-Id': 108}</conf>
   </test_case>
   <test_case>
@@ -172,7 +172,7 @@
     <test_action>installHost</test_action>
     <parameters>host='{vds[0]}', root_password='{vds_password[0]}'</parameters>
     <positive>FALSE</positive>
-    <run>yes</run>
+    <run>if(not('{rhevh}' == 'True'))</run>
   </test_case>
   <test_case>
     <id>ba3df884-c695-11e1-bc9c-f0def10e0ce8</id>
