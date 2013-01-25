@@ -7,7 +7,6 @@ this folder.
 from unittest import TestCase, TestSuite, skipIf
 from nose.tools import istest
 from nose.suite import ContextSuite
-from art.test_handler.plmanagement.plugins.unittest_test_runner_plugin import isvital4group
 
 try:
     from . import ART_CONFIG
@@ -32,7 +31,6 @@ class MyTestCase(TestCase):
     def tearDownClass(cls):
         print "tear down class"
 
-    @isvital4group
     def setUp(self):
         print "setup test"
 
@@ -46,14 +44,8 @@ class MyTestCase(TestCase):
         print "testing 'ahoj' functionality"
 
     @istest
-    @isvital4group
     def test_cau(self):
         """TEST cau"""
         print "testing 'cau' functionality"
 
-    @istest
-    @isvital4group
-    def test_myau(self):
-        """TEST myau"""
-        print "testing 'myau' functionality"
 

@@ -28,14 +28,12 @@ should look like.
 import os
 import re
 import sys
-from functools import wraps
 
-from art.test_handler.plmanagement import Component, implements, get_logger
+from art.test_handler.plmanagement import Component, implements, get_logger, PluginError
 from art.test_handler.plmanagement.interfaces.application import ITestParser, IConfigurable
 from art.test_handler.plmanagement.interfaces.report_formatter import IResultExtension
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
-from art.test_handler.test_runner import TestCase, TestSuite, TestGroup,\
-    TestResult, TEST_CASES_SEPARATOR
+from art.test_handler.test_runner import TestCase, TestSuite, TestGroup, TestResult
 from art.test_handler.exceptions import SkipTest
 import art
 
@@ -69,13 +67,7 @@ BZ_ID = 'bz' # TODO: should be removed
 TCMS_PLAN_ID = 'tcms_plan_id' # TODO: should be removed
 TCMS_TEST_CASE = 'tcms_test_case' # TODO: should be removed
 
-
-def isvital4group(f):
-    @wraps(f)
-    def wrapper(self, *args, **kwargs):
-        self.vital4group = True
-        return f(self, *args, **kwargs)
-    return wrapper
+TEST_CASES_SEPARATOR = '\n' + '=' * 80
 
 
 class UTestCase(TestCase):
@@ -89,15 +81,12 @@ class UTestCase(TestCase):
         self.bz = getattr(self.f.im_func, BZ_ID, None)
         self.tcms_plan_id = getattr(self.f.im_func, TCMS_PLAN_ID, None)
         self.tcms_test_case = getattr(self.f.im_func, TCMS_TEST_CASE, None)
-        setattr(self.t.test, 'vital4group', False)
         # TODO: set another atts
 
     def __call__(self):
         try:
-            logger.info(TEST_CASES_SEPARATOR)
-            logger.info("setUp: %s", self.test_name)
+            self.t.test.setUp()
             try:
-                self.t.test.setUp()
                 self.f()
                 self.status = self.TEST_STATUS_PASSED
             except AssertionError as ex:
@@ -111,13 +100,7 @@ class UTestCase(TestCase):
                 self.status = self.TEST_STATUS_ERROR
                 self.exc = ex
         finally:
-            logger.info("tearDown: %s", self.test_name)
-            logger.info(TEST_CASES_SEPARATOR)
             self.t.test.tearDown()
-            if self.status == self.TEST_STATUS_FAILED \
-                or self.status == self.TEST_STATUS_ERROR:
-                    if self.t.test.vital4group:
-                        self.vital4group = True
 
     def __str__(self):
         return "Test Action: %s; Test Name: %s" % (self.test_action, self.test_name)
@@ -128,17 +111,10 @@ class UTestGroup(TestGroup):
         super(UTestGroup, self).__init__()
         self.context = c
         self.tcms_plan_id = getattr(c.context, TCMS_PLAN_ID, None)
-        self.test_name = self.context.context.__name__
 
     def __iter__(self):
         try:
-            try:
-                self.context.setUp()
-            except Exception as ex:
-                logger.error("TEST GROUP failed: %s", ex)
-                self.status = self.TEST_STATUS_FAILED
-                self.exc = ex
-                raise SkipTest(str(ex))
+            self.context.setUp()
             for c in self.context:
                 if isinstance(c, Test):
                     yield UTestCase(c)
@@ -149,8 +125,8 @@ class UTestGroup(TestGroup):
         finally:
             self.context.tearDown()
 
-    def __str__(self):
-        return self.test_name
+#    def __str__(self):
+#        return "FIXME: I don't know what should be here."
 
 
 class UTestSuite(TestSuite):
@@ -158,17 +134,10 @@ class UTestSuite(TestSuite):
         super(UTestSuite, self).__init__()
         self.context = context
         self.tcms_plan_id = getattr(context.context, TCMS_PLAN_ID, None)
-        self.test_name = self.context.context.__name__
 
     def __iter__(self):
         try:
-            try:
-                self.context.setUp()
-            except Exception as ex:
-                logger.error("TEST SUITE failed: %s", ex)
-                self.status = self.TEST_STATUS_FAILED
-                self.exc = ex
-                raise SkipTest(str(ex))
+            self.context.setUp()
             for c in self.context:
                 if isinstance(c, Test):
                     yield UTestCase(c)
@@ -179,8 +148,8 @@ class UTestSuite(TestSuite):
         finally:
             self.context.tearDown()
 
-    def __str__(self):
-        return self.test_name
+#    def __str__(self):
+#        return "FIXME: I don't know what should be here."
 
 
 class UnittestLoader(Component):
@@ -276,6 +245,7 @@ class UnittestLoader(Component):
         res.add_result_attribute('module_name', 'mod_name', 'Module Name', '')
         res.add_result_attribute('iter_num', 'serial', 'Iteration Number', '')
         res.add_result_attribute('parameters', '', 'Test Parameters', '')
+        logger.info(TEST_CASES_SEPARATOR)
 
     def pre_group_result_reported(self, res, tg):
         pass
