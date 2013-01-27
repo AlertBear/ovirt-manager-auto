@@ -596,26 +596,31 @@ class CliUtil(RestUtil):
         try:
             res = self.cli.cliCmdRunner(actionCmd, 'ACTION')
         except CLICommandFailure as e:
-            errorMsg = "Failed to perform action, details: {0}"
-            self.logger.error(errorMsg.format(e))
             if positive:
+                errorMsg = "Failed to perform an action, details: {0}"
+                self.logger.error(errorMsg.format(e))
                 return False
+            else:
+                return True
         else:
-            if positive:
-                actionStateMatch = re.match(self.cli._status_extract_re, res,
-                                            flags=re.DOTALL)
-                if not actionStateMatch and positive:
-                    return False
+            if not positive:
+                errorMsg = "Succeeded to run an action '{0}' for negative test"
+                self.logger.error(errorMsg.format(action))
+                return False
 
-                actionState = actionStateMatch.group(1)
-                if positive:
-                    if not async:
-                        return validator.compareActionStatus(actionState,
-                                                ["complete"], self.logger)
-                    else:
-                        return validator.compareActionStatus(actionState,
-                                    ["pending", "complete"], self.logger)
-                else:
-                    return validator.compareActionStatus(actionState,
-                                            ["failed"], self.logger)
+
+        actionStateMatch = re.match(self.cli._status_extract_re, res,
+                                            flags=re.DOTALL)
+        if not actionStateMatch and positive:
+            return False
+
+        actionState = actionStateMatch.group(1)
+
+        if not async:
+            return validator.compareActionStatus(actionState,
+                                    ["complete"], self.logger)
+        else:
+            return validator.compareActionStatus(actionState,
+                        ["pending", "complete"], self.logger)
+
         return True

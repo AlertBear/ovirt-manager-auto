@@ -444,10 +444,6 @@ class RestUtil(APIUtil):
         else:
             if not validator.compareResponseCode(ret, negative_stat, self.logger):
                 return False
-            if resp_action and not validator.compareActionStatus(resp_action.status.state,
-                                                                    ["failed"],
-                                                                    self.logger):
-                return False
 
         self.validateResponseViaXSD(actionHref, ret)
         return validator.compareActionLink(entity.actions, action, self.logger)

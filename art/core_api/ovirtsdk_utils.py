@@ -317,19 +317,21 @@ class SdkUtil(APIUtil):
                 errorMsg = "Failed to run an action '{0}', status: {1},reason: {2}, details: {3}"
                 self.logger.error(errorMsg.format(action, e.status, e.reason, e.detail))
                 return False
-
-        if positive and not async:
-            if not validator.compareActionStatus(act.status.state, ["complete"],
-                                                                    self.logger):
+            else:
+                return True
+        else:
+            if not positive:
+                errorMsg = "Succeeded to run an action '{0}' for negative test"
+                self.logger.error(errorMsg.format(action))
                 return False
 
-        elif positive and async:
-            if not validator.compareActionStatus(act.status.state, ["pending", "complete"],
-                                                                    self.logger):
+        if async:
+            if not validator.compareActionStatus(act.status.state,
+                ["pending", "complete"], self.logger):
                 return False
         else:
-            if act.status and not validator.compareActionStatus(act.status.state, ["failed"],
-                                                                    self.logger):
+            if not validator.compareActionStatus(act.status.state,
+                ["complete"], self.logger):
                 return False
 
         return True
