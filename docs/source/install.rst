@@ -1,5 +1,9 @@
-Clone the project from git repository:
-git clone git://git.engineering.redhat.com/users/edolinin/ART.git
+Installation
+============
+Download ART rpm compatible with your OS (currently RHEL and Fedora are supported):
+http://art-build-srv.qa.lab.tlv.redhat.com/art/
 
-Also  install the following Python packages:
-            yum install python-lockfile odfpy python-tpg pexpect python-lxml python-psycopg2
+Install the rpm::
+
+    yum clean all
+    yum install -y --nogpgcheck art-*

@@ -12,6 +12,8 @@ Automated REST Testing (ART) is a framework for automated tests of REST APIs.
    :maxdepth: 2
 
    Intro
+   install
+   QuickStart
    Configuration
    input
    running_files
