@@ -1,0 +1,136 @@
+<input>
+<test_case>
+   <test_name>Stop VM</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='{vm_name[0]}'</parameters>
+   <positive>True</positive>
+   <run>YES</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Wait for VM to Shutdown (status DOWN)</test_name>
+   <test_action>waitForVMState</test_action>
+   <parameters>vm='{vm_name[0]}',state='down',sleep=1,timeout=120</parameters>
+   <positive>NONE</positive>
+   <run>YES</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Remove VM</test_name>
+   <test_action>removeVm</test_action>
+   <parameters>vm='{vm_name[0]}'</parameters>
+   <positive>True</positive>
+   <run>YES</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Wait for SPM</test_name>
+   <test_action>waitForSPM</test_action>
+   <parameters>datacenter='{datacenter}',timeout=900,sleep=5</parameters>
+   <positive>NONE</positive>
+   <run>YES</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Cobbler remove Macs</test_name>
+   <test_action>cobblerRemoveSystem</test_action>
+   <parameters>cobblerAddress='{cobbler_address}',cobblerUser='{cobbler_user}',cobblerPasswd='{cobbler_passwd}',
+   mac=%macAddress%</parameters>
+   <positive>NONE</positive>
+   <run>YES</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+	<test_name>Deactivate Master Storage Domain</test_name>
+	<test_action>deactivateStorageDomain</test_action>
+	<parameters>datacenter='{datacenter}',storagedomain='{storage}_data_domain0'</parameters>
+	<positive>True</positive>
+	<run>YES</run>
+	<fetch_output/>
+	<report>NO</report>
+	<vital>FALSE</vital>
+	<test_description/>
+</test_case>
+<test_case>
+   <test_name>Enabling network filter</test_name>
+   <test_action>setNetworkFilterStatus</test_action>
+   <parameters>enable='True', host='{host}', user='{vm_linux_user}', passwd='{vm_linux_password}',
+   version='{compatibility_version}'</parameters>
+   <positive>NONE</positive>
+   <run>YES</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+  <test_name>Remove Data Centers</test_name>
+  <test_action>removeDataCenters</test_action>
+  <parameters>datacenters='{datacenter}'</parameters>
+  <positive>True</positive>
+  <run>YES</run>
+  <fetch_output/>
+  <report>NO</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Remove Master Storage Domain</test_name>
+  <test_action>removeStorageDomain</test_action>
+  <parameters>storagedomain='{storage}_data_domain0',host='{vds[0]}',format='true'</parameters>
+  <positive>True</positive>
+  <run>YES</run>
+  <fetch_output/>
+  <report>NO</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Set Active Host To Maintenance</test_name>
+  <test_action>deactivateHost</test_action>
+  <parameters>host='{vds}'</parameters>
+  <positive>True</positive>
+  <run>loop({vds})</run>
+  <fetch_output/>
+  <report>NO</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Remove Inactive Host</test_name>
+  <test_action>removeHost</test_action>
+  <parameters>host='{vds}'</parameters>
+  <positive>True</positive>
+  <run>loop({vds})</run>
+  <fetch_output/>
+  <report>NO</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+<test_case>
+  <test_name>Remove Clusters</test_name>
+  <test_action>removeClusters</test_action>
+  <parameters>clusters='{cluster}'</parameters>
+  <positive>True</positive>
+  <run>YES</run>
+  <fetch_output/>
+  <report>NO</report>
+  <vital>FALSE</vital>
+  <test_description/>
+</test_case>
+</input>
