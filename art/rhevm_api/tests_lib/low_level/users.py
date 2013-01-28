@@ -158,6 +158,9 @@ def searchForUserInAD(positive, query_key, query_val, key_name, domain):
         except AttributeError:
             pass
 
+    # query for all existed users, for debug purpose
+    util.query("")
+
     # Compare it with the RHEVM results.
     contsraint = "{0}={1}".format(query_key, query_val)
     query_users =  util.query(contsraint)

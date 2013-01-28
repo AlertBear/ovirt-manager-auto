@@ -1089,7 +1089,7 @@
     <id>d75aa660-c695-11e1-a578-f0def10e0ce8</id>
     <test_name>Search for an user in active directory by upn</test_name>
     <test_action>searchForUserInAD</test_action>
-    <parameters>query_key='usrname', query_val='vdcadmin@*', key_name='user_name', domain='{user_domain}'</parameters>
+    <parameters>query_key='usrname', query_val='vdcadmin@{user_domain}', key_name='user_name', domain='{user_domain}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
   </test_case>
