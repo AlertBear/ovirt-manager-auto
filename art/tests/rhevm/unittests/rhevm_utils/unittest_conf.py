@@ -1,7 +1,16 @@
 from configobj import ConfigObj
+from art.test_handler.settings import opts
 
 global config
 config = ConfigObj(raise_errors=True)
+
+#  The use of this conf is temporary till the test updated conf file will
+#  be recognized here, such as ART_CONFIG().
+#  Also all [0] usage bellow, should be removed and needed when using
+#  the .valid conf.
+conf = ConfigObj('{0}.valid'.format(opts.get('conf')))
+params = conf.get('PARAMETERS')
+VM_NAME = params.get('vm_name')
 
 #MAIN_SETUP = "https://10.34.63.3:443/api"
 # workaround to skip sdk for now
@@ -9,7 +18,7 @@ MAIN_SETUP = "https://lilach-rhel.qa.lab.tlv.redhat.com:443/api"
 PGPASS = "123456"
 
 DEFAULT = {
-        'def_vm_name': 'internal-tools', # name
+        'def_vm_name': VM_NAME,         # name
         'wait_timeout': 600,            # wait for VM state change
         'install_timeout': 1800,        # wait for RHEVM installation
         '_password': '123456',          # default password
@@ -79,7 +88,7 @@ ANSWERS['3.1.0-7.el6ev'] = ( #si11
 
 
 SETUP = {
-        'vm_name': 'internal-tools',
+        'vm_name': '%(def_vm_name)s',
         'answer_file': '/tmp/answer_file',
         'organization': '%(_organization)s',
         'db_pass': '123456',
