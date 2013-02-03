@@ -244,30 +244,15 @@ class SetupTestCase(RHEVMUtilsTestCase):
     clear_snap = 'clear_machine'
     _multiprocess_can_split_ = True
 
-    @classmethod
-    def setUpClass(cls):
-        cls.c = config[cls.utility]
-        cls.manager.prepareSetup(cls.utility)
-
-    @classmethod
-    def tearDownClass(cls):
-        super(SetupTestCase, cls).tearDownClass()
-
-    def setUp(self):
-        self.manager.saveSetup(self.utility, self.clear_snap)
-        self.ut = self.utility_class(self.manager.dispatchSetup(self.utility))
-        self.ut.installTimeout = int(config.get('install_timeout', INSTALL_TIMEOUT))
-
-    def tearDown(self):
-        self.manager.restoreSetup(self.utility, self.clear_snap)
-
     @istest
     def generatingAnswerFile(self):
+        """ generating_Answer_File """
         self.ut(gen_answer_file=self.c['answer_file'])
         self.ut.testGenerateAnswerFile()
 
     @istest
     def installSetup(self):
+        """ install_Setup """
         self.generatingAnswerFile()
         params = getInstallParams(self.ut.setup.rpmVer, self.c)
         self.ut.fillAnswerFile(**params)
@@ -276,6 +261,7 @@ class SetupTestCase(RHEVMUtilsTestCase):
 
     @istest
     def TCMS_4657_111385_RunCleanUpUtilityBeforeRhevmSetup(self):
+        """ TCMS_4657_111385_Run_Clean_Up_Utility_Before_Rhevm_Setup """
         # 1. Run rhevm-cleanup utility
         from rhevm_utils import cleanup
         cl = cleanup.CleanUpUtility(self.ut.setup)

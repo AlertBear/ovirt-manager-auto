@@ -636,6 +636,7 @@ class RHEVMUtilsTestCase(unittest.TestCase):
     utility_class = None
     manager = SetupManager()
     snapshot_setup_installed = "installed_setup"
+    clear_snap = 'clear_machine'
     _multiprocess_can_split_ = True
 
     @classmethod
@@ -691,9 +692,10 @@ class RHEVMUtilsTestCase(unittest.TestCase):
         cls.c = config[cls.utility]
         logger.info("DEBUG: cls.c %s", cls.c)
         cls.manager.prepareSetup(cls.utility)
-        machine = cls.manager.dispatchSetup(cls.utility)
-        machine.install(config)
-        #cls.manager.saveSetup(cls.utility, cls.snapshot_setup_installed)
+        if cls.utility is not 'setup':
+            machine = cls.manager.dispatchSetup(cls.utility)
+            machine.install(config)
+            #cls.manager.saveSetup(cls.utility, cls.snapshot_setup_installed)
 
     @classmethod
     def tearDownClass(cls):
@@ -708,12 +710,15 @@ class RHEVMUtilsTestCase(unittest.TestCase):
         """
         Fetch instance of utility for test-case
         """
-        self.manager.saveSetup(self.utility, self.snapshot_setup_installed)
+        if self.utility is not 'setup':
+            self.manager.saveSetup(self.utility, self.snapshot_setup_installed)
+        self.manager.saveSetup(self.utility, self.clear_snap)
         self.ut = self.utility_class(self.manager.dispatchSetup(self.utility))
 
     def tearDown(self):
         """
         Discart changes which was made by test-case
         """
-        self.manager.restoreSetup(self.utility, self.snapshot_setup_installed)
-
+        if self.utility is not 'setup':
+            self.manager.restoreSetup(self.utility, self.snapshot_setup_installed)
+        self.manager.restoreSetup(self.utility, self.clear_snap)
