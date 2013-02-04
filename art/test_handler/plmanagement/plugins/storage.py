@@ -45,7 +45,7 @@ DEVICES_TARGET_PATHS = {
                         'iscsi': '%s.%s' % (MAIN_SECTION, 'lun'),
                         'local': '%s.%s' % (MAIN_SECTION, 'local_domain'),
                         }
-POSIXFS_TYPES = ['gluster']
+POSIXFS_TYPE = 'gluster'
 ISO_EXPORT_TYPE = 'iso_export_domain_nas'
 
 logger = logging.getLogger(__name__)
@@ -65,20 +65,23 @@ def getStorageServers(storageType='none'):
         def wrapper(self, *args, **kwargs):
             if self.load_balancing:
                 storageType = f.storageType
-                stypes = [storageType]
+                stype = storageType
+                dtypes = [stype]
                 if storageType == ISO_EXPORT_TYPE:
-                    stypes = [self.config[MAIN_SECTION][ISO_EXPORT_TYPE]]
+                    stype = self.config[MAIN_SECTION][ISO_EXPORT_TYPE]
+                    dtypes = ['iso', 'export']
                 elif storageType == 'none':
-                    stypes = [args[0]] if args[0] != 'posixfs' \
-                                       else POSIXFS_TYPES
-                for stype in stypes:
-                    if self.storages[stype]:
-                        if stype not in self.storageServers:
-                            servers = getStorageServer(stype, self.serverPool)
-                            smngr = createStorageManager(servers, stype)
-                            self.storageServers[stype] = smngr
-                        for section, params in self.storages[stype].items():
-                            self.storages[stype][section]['ip'] = \
+                    stype = args[0] if args[0] != 'posixfs' \
+                                       else POSIXFS_TYPE
+                    dtypes = [stype]
+                if self.storages[stype]:
+                    if stype not in self.storageServers:
+                        servers = getStorageServer(stype, self.serverPool)
+                        smngr = createStorageManager(servers, stype)
+                        self.storageServers[stype] = smngr
+                    for t in dtypes:
+                        for section, params in self.storages[t].items():
+                            self.storages[t][section]['ip'] = \
                                 self.storageServers[stype].host
             return f(self, *args, **kwargs)
         return wrapper
@@ -344,15 +347,14 @@ class StorageUtils:
         Return: None
         """
         if data_center_type == 'posixfs':
-            for fsType in POSIXFS_TYPES:
-                for storageSection, sectionParams in\
-                    self.storages[fsType].items():
-                        self.gluster_devices[storageSection] = [
-                        self.__create_nas_device(sectionParams['ip'],
-                                                     self.host_group,
-                                                     fsType)
-                                for i in range(0, sectionParams['total'])
-                        ]
+            for storageSection, sectionParams in\
+                self.storages[POSIXFS_TYPE].items():
+                    self.gluster_devices[storageSection] = [
+                    self.__create_nas_device(sectionParams['ip'],
+                                                 self.host_group,
+                                                 POSIXFS_TYPE)
+                            for i in range(0, sectionParams['total'])
+                    ]
 
         elif data_center_type == 'nfs':
             for storageSection, sectionParams in\
