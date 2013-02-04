@@ -28,7 +28,7 @@ from art.rhevm_api.data_struct.data_structures import *
 from art.rhevm_api.data_struct.data_structures import ClassesMapping
 from art.core_api.rest_utils import RestUtil
 from art.core_api.apis_exceptions import CLIError, CLITimeout,\
-            CLICommandFailure, UnsupportedCLIEngine
+    CLICommandFailure, UnsupportedCLIEngine
 from art.core_api import validator
 from utilities.utils import createCommandLineOptionFromDict
 
@@ -39,6 +39,7 @@ ILLEGAL_XML_CHARS = u'[\x00-\x08\x0b\x0c\x0e-\x1F\uD800-\uDFFF\uFFFE\uFFFF]'
 CONTROL_CHARS = u'[\n\r]'
 RHEVM_SHELL = 'rhevm-shell'
 TMP_FILE = '/tmp/cli_output.tmp'
+IP_FORMAT = '^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$'
 
 
 def threadSafeRun(func):
@@ -120,10 +121,10 @@ class CliConnection(object):
                 # WA for trash in buffer (END issue)
                 try:
                     i = self.cliConnection.expect(self._prompt,
-                                              timeout=0.001)
+                                                  timeout=0.001)
                 except pe.TIMEOUT:
                     i = self.cliConnection.expect(expectList,
-                                              timeout)
+                                                  timeout)
 
             output.append(self.cliConnection.before)
         except pe.TIMEOUT as e:
@@ -203,11 +204,12 @@ class RhevmCli(CliConnection):
         """
         self.logger = logger
         self.prepareConnectionCommand(uri, user, userDomain,
-            secure, sslKeyFile, sslCertFile, sslCaFile, additionalArgs=kwargs)
+                                      secure, sslKeyFile, sslCertFile,
+                                      sslCaFile, additionalArgs=kwargs)
         super(RhevmCli, self).__init__(self._connectionCommand,
-                            prompt=self._rhevmPrompt,
-                            timeout=self._rhevmTimeout,
-                            logFile=logFile)
+                                       prompt=self._rhevmPrompt,
+                                       timeout=self._rhevmTimeout,
+                                       logFile=logFile)
         self.logger.debug("CLI logfile: %s" % self.cliLog)
         self.login(password)
         # updating parent dictionary for cli work
@@ -219,7 +221,7 @@ class RhevmCli(CliConnection):
         errAndDebug = self.commandRun(apiCmd)
         out = self.readTmpFile()
         self.logger.debug("%s cli command Debug and Error output: %s",
-                              apiCmdName, errAndDebug)
+                          apiCmdName, errAndDebug)
         self.logger.debug("%s cli command output: %s", apiCmdName, out)
         return out
 
@@ -249,18 +251,19 @@ class RhevmCli(CliConnection):
         del self.expectDict
 
     def prepareConnectionCommand(self, uri, user, userDomain,
-                secure, sslKeyFile, sslCertFile, sslCaFile, additionalArgs):
+                                 secure, sslKeyFile, sslCertFile,
+                                 sslCaFile, additionalArgs):
         cliConnect = []
 
         userWithDomain = '{0}@{1}'.format(user, userDomain)
 
         # mandatory data
-        cliConnect.append('{0} -c -l "{1}" -u "{2}"'.\
-                    format(RHEVM_SHELL, uri, userWithDomain))
+        cliConnect.append('{0} -c -l "{1}" -u "{2}"'.
+                          format(RHEVM_SHELL, uri, userWithDomain))
         # ssl stuff
         if secure:
-            cliConnect.append('-K {0} -C {1} -A {2}'.\
-                    format(sslKeyFile, sslCertFile, sslCaFile))
+            cliConnect.append('-K {0} -C {1} -A {2}'.
+                              format(sslKeyFile, sslCertFile, sslCaFile))
         else:
             cliConnect.append('-I')
         # optional params
@@ -275,7 +278,7 @@ class RhevmCli(CliConnection):
         errorStatusMsg = re.search(self._errorStatusMsgSearch,
                                    output, flags=re.DOTALL)
         errorParametersMsg = re.search(self._errorParametersMsgSearch,
-                                   output, flags=re.DOTALL)
+                                       output, flags=re.DOTALL)
         errorSyntaxMsg = re.search(self._errorSyntaxMsgSearch,
                                    output, flags=re.DOTALL)
         debugMsg = re.search(self._debugMsg, output, flags=re.DOTALL)
@@ -284,17 +287,17 @@ class RhevmCli(CliConnection):
                               self.outputCleaner(debugMsg.group(0)))
         if errorStatusMsg:
             data = re.search(self._insiderSearch, errorStatusMsg.group(0),
-                              flags=re.DOTALL).group(0).split(self._eol)
+                             flags=re.DOTALL).group(0).split(self._eol)
             status = self.outputCleaner(data[0])
             reason = self.outputCleaner(data[1])
             detail = self.outputCleaner(data[2:])
             raise CLICommandFailure('Command Failed:', status, reason, detail)
         elif errorParametersMsg:
-            raise CLICommandFailure('Wrong parameters:',
-                            self.outputCleaner(errorParametersMsg.group(0)))
+            raise CLICommandFailure('Wrong parameters:', self.outputCleaner(
+                                    errorParametersMsg.group(0)))
         elif errorSyntaxMsg:
-            raise CLICommandFailure('Wrong syntax:',
-                            self.outputCleaner(errorSyntaxMsg.group(0)))
+            raise CLICommandFailure('Wrong syntax:', self.outputCleaner(
+                                    errorSyntaxMsg.group(0)))
 
         return self.outputCleaner(output)
 
@@ -316,18 +319,21 @@ class CliUtil(RestUtil):
             try:
                 if self.opts['cli_tool'] == RHEVM_SHELL:
                     self.cli = RhevmCli(self.logger,
-                            self.opts['uri'],
-                            self.opts['user'],
-                            self.opts['user_domain'],
-                            self.opts['password'],
-                            self.opts['secure'],
-                            # WA until conf spec implementation in ssl plugin
-                            sslKeyFile=self.opts.get('ssl_key_file', None),
-                            sslCertFile=self.opts.get('ssl_cert_file', None),
-                            sslCaFile=self.opts.get('ssl_ca_file', None),
-                            logFile=self.opts['cli_log_file'],
-                            optionalParms=self.opts['cli_optional_params'],
-                            )
+                                        self.opts['uri'],
+                                        self.opts['user'],
+                                        self.opts['user_domain'],
+                                        self.opts['password'],
+                                        self.opts['secure'],
+                                        sslKeyFile=self.opts.get(
+                                            'ssl_key_file', None),
+                                        sslCertFile=self.opts.get(
+                                            'ssl_cert_file', None),
+                                        sslCaFile=self.opts.get('ssl_ca_file',
+                                                                None),
+                                        logFile=self.opts['cli_log_file'],
+                                        optionalParms=self.opts[
+                                            'cli_optional_params'],
+                                        )
                 else:
                     msg = 'Unsupported CLI engine: %s' % self.opts['cli_tool']
                     raise UnsupportedCLIEngine(msg)
@@ -347,7 +353,7 @@ class CliUtil(RestUtil):
         return self.get(href, listOnly=True)
 
     def create(self, entity, positive, expectedEntity=None, incrementBy=1,
-            async=False, collection=None):
+               async=False, collection=None):
         '''
         Description: creates a new element
         Author: edolinin
@@ -363,12 +369,13 @@ class CliUtil(RestUtil):
         '''
         out = ''
         addEntity = validator.cliEntety(entity, self.element_name)
-        createCmd = 'add {0} {1} --expect 201'.format(self.cli_element_name,
-            validator.cliEntety(entity, self.element_name))
+        createCmd = 'add {0} {1} --expect 201'.\
+            format(self.cli_element_name,
+                   validator.cliEntety(entity, self.element_name))
 
         if collection:
             ownerId, ownerName, entityName = \
-                            self._getHrefData(collection)
+                self._getHrefData(collection)
 
             if ownerId and ownerName:  # adding to some element collection
                 createCmd = "add {0} --{1}-identifier '{2}' {3} --expect 201".\
@@ -399,15 +406,15 @@ class CliUtil(RestUtil):
                     collection = self.getCollection(collHref)
                 # looking for id in cli output:
                 elemId = re.search(self.cli._id_extract_re, out).group().\
-                                                       split(':')[1].strip()
+                    split(':')[1].strip()
                 response = self.find(elemId, attribute='id',
                                      collection=collection,
                                      absLink=False)
 
                 expEntity = entity if not expectedEntity else expectedEntity
 
-                if response and not validator.compareElements(\
-                    expEntity, response, self.logger, self.element_name):
+                if response and not validator.compareElements(
+                        expEntity, response, self.logger, self.element_name):
                     return response, False
 
                 self.logger.info("New entity was added successfully")
@@ -427,20 +434,24 @@ class CliUtil(RestUtil):
         updateBody = validator.cliEntety(newEntity, self.element_name)
         collHref, collection = None, None
 
-        updateCmd = 'update {0} {1} {2}'.format(self.cli_element_name,
-                                    origEntity.name, updateBody)
+        if re.match(IP_FORMAT, origEntity.name):
+            name = "'%s'" % origEntity.name
+        else:
+            name = origEntity.name
+
+        updateCmd = "update {0} {1} {2}".format(self.cli_element_name,
+                                                name, updateBody)
 
         ownerId, ownerName, entityName = \
-                        self._getHrefData(origEntity.href)
+            self._getHrefData(origEntity.href)
 
         if ownerId and ownerName and entityName:
-            updateCmd = \
-            "update {0} '{1}' --{2}-identifier '{3}' {4}".\
-                    format(entityName, origEntity.id,
-                        ownerName, ownerId, updateBody)
+            updateCmd = "update {0} '{1}' --{2}-identifier '{3}' {4}".\
+                format(entityName, origEntity.id, ownerName, ownerId,
+                       updateBody)
 
             collHref = '/api/{0}s/{1}/{2}s'.format(ownerName,
-                                        ownerId, entityName)
+                                                   ownerId, entityName)
 
         correlationId = self.getCorrelationId()
         if correlationId:
@@ -465,13 +476,14 @@ class CliUtil(RestUtil):
                     collection = self.getCollection(collHref)
                 # looking for id in cli output:
                 elemId = re.search(self.cli._id_extract_re, out).group().\
-                                                        split(':')[1].strip()
+                    split(':')[1].strip()
                 response = self.find(elemId, attribute='id',
                                      collection=collection,
                                      absLink=False)
 
                 if not validator.compareElements(newEntity, response,
-                                self.logger, self.element_name):
+                                                 self.logger,
+                                                 self.element_name):
                     return response, False
 
         return response, True
@@ -485,7 +497,7 @@ class CliUtil(RestUtil):
 
         return (actionOwnerId, actionOwnerName, actionEntityName)
 
-    def delete(self, entity, positive,  body=None, **kwargs):
+    def delete(self, entity, positive, body=None, **kwargs):
         '''
         Description: delete an element
         Author: edolinin
@@ -499,11 +511,10 @@ class CliUtil(RestUtil):
         if body:
             addBody = validator.cliEntety(body, self.element_name)
 
-        deleteCmd = 'remove {0} "{1}" {2} --expect 201'.format(\
-                            self.cli_element_name, entity.name, addBody)
+        deleteCmd = 'remove {0} "{1}" {2} --expect 201'.format(
+            self.cli_element_name, entity.name, addBody)
 
-        ownerId, ownerName, entityName = \
-                                self._getHrefData(entity.href)
+        ownerId, ownerName, entityName = self._getHrefData(entity.href)
 
         if ownerId and ownerName and entityName:
             deleteCmd = "remove {0} '{1}' --{2}-identifier '{3}' {4}\
@@ -526,8 +537,8 @@ class CliUtil(RestUtil):
 
         return True
 
-    def query(self, constraint,  exp_status=None, href=None, event_id=None,
-                                                                 **params):
+    def query(self, constraint, exp_status=None, href=None, event_id=None,
+              **params):
         '''
         Description: run search query
         Author: edolinin
@@ -539,9 +550,10 @@ class CliUtil(RestUtil):
         if event_id is not None:
             params['from'] = event_id
 
-        queryCmd = 'list {0} --query "{1}" {2}'.format(self.collection_name,
-                constraint, " ".join(createCommandLineOptionFromDict(params,
-                                                             long_glue=' ')))
+        queryCmd = 'list {0} --query "{1}" {2}'.\
+            format(self.collection_name, constraint,
+                   " ".join(createCommandLineOptionFromDict(params,
+                                                            long_glue=' ')))
 
         queryCmd = "%s > %s" % (queryCmd, TMP_FILE)
 
@@ -577,10 +589,9 @@ class CliUtil(RestUtil):
 
         actionCmd = "action {0} '{1}' {2} {3}".\
             format(self.element_name.replace('_', ''), entity.id, action,
-                                    validator.cliEntety(act, 'action'))
+                   validator.cliEntety(act, 'action'))
 
-        ownerId, ownerName, entityName = \
-                            self._getHrefData(entity.href)
+        ownerId, ownerName, entityName = self._getHrefData(entity.href)
 
         if ownerId and ownerName and entityName:
             addParams = ''
@@ -590,7 +601,7 @@ class CliUtil(RestUtil):
 
             actionCmd = "action {0} '{1}' {2} --{3}-identifier '{4}' {5}".\
                         format(entityName, entity.id, action, ownerName,
-                                 ownerId, addParams)
+                               ownerId, addParams)
 
         actionCmd = "%s > %s" % (actionCmd, TMP_FILE)
         try:
@@ -608,9 +619,8 @@ class CliUtil(RestUtil):
                 self.logger.error(errorMsg.format(action))
                 return False
 
-
         actionStateMatch = re.match(self.cli._status_extract_re, res,
-                                            flags=re.DOTALL)
+                                    flags=re.DOTALL)
         if not actionStateMatch and positive:
             return False
 
@@ -618,9 +628,10 @@ class CliUtil(RestUtil):
 
         if not async:
             return validator.compareActionStatus(actionState,
-                                    ["complete"], self.logger)
+                                                 ["complete"], self.logger)
         else:
             return validator.compareActionStatus(actionState,
-                        ["pending", "complete"], self.logger)
+                                                 ["pending", "complete"],
+                                                 self.logger)
 
         return True
