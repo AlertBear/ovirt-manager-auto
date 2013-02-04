@@ -32,21 +32,21 @@
 <test_case>
    <test_name>Mount cdrom in the VM and create a temp directory</test_name>
    <test_action>runMachineCommand</test_action>
-   <parameters>ip=%guest_ip%, user='root', password='qum5net', cmd="mkdir /tmp/cdrom_payload; mount /dev/cdrom /tmp/cdrom_payload"</parameters>
+   <parameters>ip=%guest_ip%, user='{vm_username}', password='{vm_password}', cmd="mkdir /tmp/cdrom_payload; mount /dev/cdrom"+'{dev_cdrom_to_mount}'+" /tmp/cdrom_payload"</parameters>
    <positive>true</positive>
    <run>yes</run>
 </test_case>
 <test_case>
     <test_name>Verify file existence and content in the VM</test_name>
     <test_action>checkForFileExistenceAndContent</test_action>
-    <parameters>ip=%guest_ip%, password='qum5net', filename='/tmp/cdrom_payload/file.cd',content='payload cdrom!',user='root'</parameters>
+    <parameters>ip=%guest_ip%, password='{vm_password}', filename='/tmp/cdrom_payload/file.cd',content='payload cdrom!',user='{vm_username}'</parameters>
     <positive>NONE</positive>
     <run>yes</run>
 </test_case>
 <test_case>
    <test_name>umount cdrom and delete temp directory</test_name>
    <test_action>runMachineCommand</test_action>
-   <parameters>ip=%guest_ip%, user='root', password='qum5net', cmd="umount /dev/cdrom; rm -rf /tmp/cdrom_payload"</parameters>
+   <parameters>ip=%guest_ip%, user='{vm_username}', password='{vm_password}', cmd="umount /dev/cdrom"+'{dev_cdrom_to_mount}'+"; rm -rf /tmp/cdrom_payload"</parameters>
    <positive>True</positive>
    <run>yes</run>
 </test_case>

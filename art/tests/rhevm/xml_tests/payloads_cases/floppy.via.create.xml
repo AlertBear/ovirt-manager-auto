@@ -32,21 +32,21 @@
 <test_case>
 	<test_name>modprobe floppy and mount /dev/fd0 and create a temp directory</test_name>
    <test_action>runMachineCommand</test_action>
-   <parameters>ip=%guest_ip%, user='root', password='qum5net', cmd="modprobe floppy; mkdir /tmp/floppy_payload; mount /dev/fd0 /tmp/floppy_payload"</parameters>
+   <parameters>ip=%guest_ip%, user='{vm_username}', password='{vm_password}', cmd="modprobe floppy; mkdir /tmp/floppy_payload; mount /dev/fd0 /tmp/floppy_payload"</parameters>
    <positive>true</positive>
    <run>yes</run>
 </test_case>
 <test_case>
     <test_name>Verify file content and existence on the VM (floppy success)</test_name>
     <test_action>checkForFileExistenceAndContent</test_action>
-    <parameters>ip=%guest_ip%,password='qum5net',filename='/tmp/floppy_payload/file.create.floppy',content='floppy create payload!',user='root'</parameters>
+    <parameters>ip=%guest_ip%,password='{vm_password}',filename='/tmp/floppy_payload/file.create.floppy',content='floppy create payload!',user='{vm_username}'</parameters>
     <positive>NONE</positive>
     <run>yes</run>
 </test_case>
 <test_case>
 	<test_name>umount /dev/fd0 and delete temp directory</test_name>
    <test_action>runMachineCommand</test_action>
-   <parameters>ip=%guest_ip%, user='root', password='qum5net', cmd="umount /dev/fd0; rm -fr /tmp/floppy_payload"</parameters>
+   <parameters>ip=%guest_ip%, user='{vm_username}', password='{vm_password}', cmd="umount /dev/fd0; rm -fr /tmp/floppy_payload"</parameters>
    <positive>True</positive>
    <run>yes</run>
 </test_case>

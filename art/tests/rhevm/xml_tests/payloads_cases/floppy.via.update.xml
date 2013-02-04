@@ -51,7 +51,7 @@
 <test_case>
    <test_name>run command on vm</test_name>
    <test_action>runMachineCommand</test_action>
-   <parameters>ip=%guest_ip%, user='root', password='qum5net', cmd="modprobe floppy; mkdir /tmp/floppy_payload; mount /dev/fd0 /tmp/floppy_payload"</parameters>
+   <parameters>ip=%guest_ip%, user='{vm_username}', password='{vm_password}', cmd="modprobe floppy; mkdir /tmp/floppy_payload; mount /dev/fd0 /tmp/floppy_payload"</parameters>
    <BZ>875720</BZ>
    <positive>true</positive>
    <run>yes</run>
@@ -59,7 +59,7 @@
 <test_case>
     <test_name>Check is file exists in the payload</test_name>
     <test_action>checkForFileExistenceAndContent</test_action>
-    <parameters>ip=%guest_ip%,password='qum5net',filename='/tmp/floppy_payload/file.floppy',content='floppy update!',user='root'</parameters>
+    <parameters>ip=%guest_ip%,password='{vm_password}',filename='/tmp/floppy_payload/file.floppy',content='floppy update!',user='{vm_username}'</parameters>
     <positive>NONE</positive>
     <BZ>875720</BZ>
     <run>yes</run>
@@ -67,7 +67,7 @@
 <test_case>
    <test_name>run command on vm</test_name>
    <test_action>runMachineCommand</test_action>
-   <parameters>ip=%guest_ip%, user='root', password='qum5net', cmd="umount /dev/fd0; rm -rf /tmp/floppy_payload"</parameters>
+   <parameters>ip=%guest_ip%, user='{vm_username}', password='{vm_password}', cmd="umount /dev/fd0; rm -rf /tmp/floppy_payload"</parameters>
    <positive>True</positive>
    <BZ>875720</BZ>
    <run>yes</run>

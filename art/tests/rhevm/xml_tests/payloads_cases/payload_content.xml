@@ -51,7 +51,7 @@
 <test_case>
    <test_name>run command on vm</test_name>
    <test_action>runMachineCommand</test_action>
-   <parameters>ip=%guest_ip%, user='root', password='qum5net', cmd="mkdir /tmp/cdrom_payload; mount /dev/cdrom /tmp/cdrom_payload"</parameters>
+   <parameters>ip=%guest_ip%, user='{vm_username}', password='{vm_password}', cmd="mkdir /tmp/cdrom_payload; mount /dev/cdrom /tmp/cdrom_payload"</parameters>
    <positive>true</positive>
    <BZ>875623</BZ>
    <run>yes</run>
@@ -59,7 +59,7 @@
 <test_case>
     <test_name>Check is file exists in the payload</test_name>
     <test_action>checkForFileExistenceAndContent</test_action>
-    <parameters>ip=%guest_ip%,password='qum5net',filename='/tmp/cdrom_payload/file.newlines.cdrom',content='cdrom update!\nline 2\nline 3\n',user='root'</parameters>
+    <parameters>ip=%guest_ip%,password='{vm_password}',filename='/tmp/cdrom_payload/file.newlines.cdrom',content='cdrom update!\nline 2\nline 3\n',user='{vm_username}'</parameters>
     <positive>NONE</positive>
     <BZ>875623</BZ>
     <run>yes</run>
@@ -67,7 +67,7 @@
 <test_case>
    <test_name>run command on vm</test_name>
    <test_action>runMachineCommand</test_action>
-   <parameters>ip=%guest_ip%, user='root', password='qum5net', cmd="umount /dev/cdrom; rm -rf /tmp/cdrom_payload"</parameters>
+   <parameters>ip=%guest_ip%, user='{vm_username}', password='{vm_password}', cmd="umount /dev/cdrom; rm -rf /tmp/cdrom_payload"</parameters>
    <positive>True</positive>
    <BZ>875623</BZ>
    <run>yes</run>
