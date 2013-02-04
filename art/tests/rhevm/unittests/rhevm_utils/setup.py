@@ -258,27 +258,3 @@ class SetupTestCase(RHEVMUtilsTestCase):
         self.ut.fillAnswerFile(**params)
         self.ut(answer_file='host:'+self.c['answer_file'])
         self.ut.testInstallation()
-
-    @istest
-    def TCMS_4657_111385_RunCleanUpUtilityBeforeRhevmSetup(self):
-        """ TCMS_4657_111385_Run_Clean_Up_Utility_Before_Rhevm_Setup """
-        # 1. Run rhevm-cleanup utility
-        from rhevm_utils import cleanup
-        cl = cleanup.CleanUpUtility(self.ut.setup)
-        cl()
-        # Expect: rhevm-cleanup utility is running.
-        # 2. Ensure that: db no longer exists for user rhevm, both files under: /etc/pki/rhevm deleted, rhevm-slimmed profile successfully removed (/var/lib/jbossas/server/rhevm-slimmed), and jbossas service is down
-        # Expect: Getting out print of: "Cleanup process succeeded".
-        # 3. Ensure that you are getting the right message printed on screen.
-        # TODO: check message printed on screen
-        # Expect: DB , files , rhevm-slimmed profile successfully removed, and jbossas service is down.
-        jboss = self.ut.getVar('JBOSS_SERVICE')
-        self.assertFalse(self.ut.setup.isServiceRunning(jboss))
-        cl.autoTest()
-        # 4. Go to cleanup.log file under: /var/log/rhevm/cleanup.log , and check: spelling check, logs are clearly.
-        # Expect: Logs written correctly, and clearly to the user.
-        # TODO: check message in log
-        # 5. Run rhevm-setup and ensure rhevm installation process finished successfully.
-        # Expect: Installation process finished successfully.
-        self.installSetup()
-
