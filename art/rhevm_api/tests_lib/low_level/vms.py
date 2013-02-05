@@ -574,8 +574,11 @@ def startVm(positive, vm, wait_for_status=ENUMS['vm_state_powering_up'],
     started = VM_API.waitForQuery(query, timeout=timeout, sleep=10)
     if started and wait_for_ip:
         started = waitForIP(vm)[0]
+        if started != positive:
+            VM_API.logger.error("waitForIP returned %s, positive is set to %s",
+                            started, positive)
 
-    return started
+    return started == positive
 
 
 @is_action()
