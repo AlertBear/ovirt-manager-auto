@@ -28,12 +28,14 @@ should look like.
 import os
 import re
 import sys
+from functools import wraps
 
-from art.test_handler.plmanagement import Component, implements, get_logger, PluginError
+from art.test_handler.plmanagement import Component, implements, get_logger
 from art.test_handler.plmanagement.interfaces.application import ITestParser, IConfigurable
 from art.test_handler.plmanagement.interfaces.report_formatter import IResultExtension
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
-from art.test_handler.test_runner import TestCase, TestSuite, TestGroup, TestResult
+from art.test_handler.test_runner import TestCase, TestSuite, TestGroup,\
+    TestResult, TEST_CASES_SEPARATOR
 from art.test_handler.exceptions import SkipTest
 import art
 
@@ -67,7 +69,13 @@ BZ_ID = 'bz' # TODO: should be removed
 TCMS_PLAN_ID = 'tcms_plan_id' # TODO: should be removed
 TCMS_TEST_CASE = 'tcms_test_case' # TODO: should be removed
 
-TEST_CASES_SEPARATOR = '\n' + '=' * 80
+
+def isvital4group(f):
+    @wraps(f)
+    def wrapper(self, *args, **kwargs):
+        self.vital4group = True
+        return f(self, *args, **kwargs)
+    return wrapper
 
 
 class UTestCase(TestCase):
@@ -81,30 +89,35 @@ class UTestCase(TestCase):
         self.bz = getattr(self.f.im_func, BZ_ID, None)
         self.tcms_plan_id = getattr(self.f.im_func, TCMS_PLAN_ID, None)
         self.tcms_test_case = getattr(self.f.im_func, TCMS_TEST_CASE, None)
+        setattr(self.t.test, 'vital4group', False)
         # TODO: set another atts
 
     def __call__(self):
         try:
-            logger.info("Running case: %s", self.test_name)
-            self.t.test.setUp()
+            logger.info(TEST_CASES_SEPARATOR)
+            logger.info("setUp: %s", self.test_name)
             try:
+                self.t.test.setUp()
                 self.f()
-                logger.info("Test case succeed.")
                 self.status = self.TEST_STATUS_PASSED
             except AssertionError as ex:
                 logger.error("Test case failed: %s", ex)
                 self.exc = ex
                 self.status = self.TEST_STATUS_FAILED
             except self.skip_exceptios as ex:
-                logger.warning("Test case skipped: %s", ex)
                 self.status = self.TEST_STATUS_SKIPPED
                 raise SkipTest(str(ex))
             except Exception as ex:
-                logger.error("Test case error: %s", ex)
                 self.status = self.TEST_STATUS_ERROR
                 self.exc = ex
         finally:
+            logger.info("tearDown: %s", self.test_name)
+            logger.info(TEST_CASES_SEPARATOR)
             self.t.test.tearDown()
+            if self.status == self.TEST_STATUS_FAILED \
+                or self.status == self.TEST_STATUS_ERROR:
+                    if self.t.test.vital4group:
+                        self.vital4group = True
 
     def __str__(self):
         return "Test Action: %s; Test Name: %s" % (self.test_action, self.test_name)
@@ -115,26 +128,34 @@ class UTestGroup(TestGroup):
         super(UTestGroup, self).__init__()
         self.context = c
         self.tcms_plan_id = getattr(c.context, TCMS_PLAN_ID, None)
+        self.test_name = self.context.context.__name__
 
     def __iter__(self):
         try:
             logger.info(TEST_CASES_SEPARATOR)
-            logger.info("Setting up whole module.")
-            self.context.setUp()
+            logger.info("setUp: %s", self.test_name)
+            try:
+                self.context.setUp()
+            except Exception as ex:
+                logger.error("TEST GROUP error: %s", ex)
+                self.status = self.TEST_STATUS_ERROR
+                self.exc = ex
+                self.error += 1
+                raise StopIteration(str(ex))
             for c in self.context:
                 if isinstance(c, Test):
                     yield UTestCase(c)
                 elif None is c.context:
                     continue
                 else:
-                    logger.info(TEST_CASES_SEPARATOR)
-                    logger.info("Running test class: %s", c.context.__name__)
                     yield UTestGroup(c)
         finally:
             self.context.tearDown()
+            logger.info("tearDown: %s", self.test_name)
+            logger.info(TEST_CASES_SEPARATOR)
 
-#    def __str__(self):
-#        return "FIXME: I don't know what should be here."
+    def __str__(self):
+        return self.test_name
 
 
 class UTestSuite(TestSuite):
@@ -142,26 +163,34 @@ class UTestSuite(TestSuite):
         super(UTestSuite, self).__init__()
         self.context = context
         self.tcms_plan_id = getattr(context.context, TCMS_PLAN_ID, None)
+        self.test_name = self.context.context.__name__
 
     def __iter__(self):
         try:
-            self.context.setUp()
+            logger.info(TEST_CASES_SEPARATOR)
+            logger.info("setUp: %s", self.test_name)
+            try:
+                self.context.setUp()
+            except Exception as ex:
+                logger.error("TEST SUITE error: %s", ex)
+                self.status = self.TEST_STATUS_ERROR
+                self.exc = ex
+                self.error += 1
+                raise StopIteration(str(ex))
             for c in self.context:
                 if isinstance(c, Test):
                     yield UTestCase(c)
                 elif None is c.context:
                     continue
                 else:
-                    logger.info(TEST_CASES_SEPARATOR)
-                    logger.info("Running module: %s", c.context.__name__)
                     yield UTestGroup(c)
         finally:
             self.context.tearDown()
-            logger.info("Whole module tore down.")
+            logger.info("tearDown: %s", self.test_name)
             logger.info(TEST_CASES_SEPARATOR)
 
-#    def __str__(self):
-#        return "FIXME: I don't know what should be here."
+    def __str__(self):
+        return self.test_name
 
 
 class UnittestLoader(Component):
@@ -257,7 +286,6 @@ class UnittestLoader(Component):
         res.add_result_attribute('module_name', 'mod_name', 'Module Name', '')
         res.add_result_attribute('iter_num', 'serial', 'Iteration Number', '')
         res.add_result_attribute('parameters', '', 'Test Parameters', '')
-        logger.info(TEST_CASES_SEPARATOR)
 
     def pre_group_result_reported(self, res, tg):
         pass
