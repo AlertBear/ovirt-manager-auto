@@ -1,0 +1,80 @@
+<?xml-stylesheet type="text/xsl" href="table.xslt"?>
+<input>
+<test_case>
+   <test_name>START_GROUP: TEARDOWN</test_name>
+   <test_action/>
+   <parameters></parameters>
+   <positive>NONE</positive>
+   <run>YES</run>
+</test_case>
+ <test_case>
+   <test_name>Remove Template</test_name>
+   <test_action>removeTemplate</test_action>
+   <parameters>template='{vm_for_template}',wait=True</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+ <test_case>
+   <test_name>Remove {vm_for_template}</test_name>
+   <test_action>removeVm</test_action>
+   <parameters>vm='{vm_for_template}', wait=True</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Deactivate Master Storage Domain</test_name>
+   <test_action>deactivateStorageDomain</test_action>
+   <parameters>datacenter='{dc_prefix}', storagedomain='{sd_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove Data Centers</test_name>
+   <test_action>removeDataCenters</test_action>
+   <parameters>datacenters='{dc_prefix}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove Master Storage Domain</test_name>
+   <test_action>removeStorageDomain</test_action>
+   <parameters>storagedomain='{sd_name}', host='{vds[0]}',format='true'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Set Active Host To Maintenance</test_name>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove Inactive Host</test_name>
+   <test_action>removeHost</test_action>
+   <parameters>host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Remove Clusters</test_name>
+   <test_action>removeClusters</test_action>
+   <parameters>clusters='{cluster_prefix}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+ </test_case>
+<test_case>
+   <test_name>END_GROUP: TEARDOWN</test_name>
+   <test_action/>
+   <parameters></parameters>
+   <positive>NONE</positive>
+   <run>YES</run>
+</test_case>
+<test_case>
+   <test_name>Check xsd schema validations</test_name>
+   <test_action>checkResponsesAreXsdValid</test_action>
+   <parameters/>
+   <positive>NONE</positive>
+   <run>yes</run>
+</test_case>
+</input>
