@@ -1100,7 +1100,7 @@
     <parameters/>
     <positive>NONE</positive>
     <run>yes</run>
-    <bz>891301</bz>
+    <bz>904935</bz>
   </test_case>
   <test_case>
     <test_name>END_GROUP: User_Roles</test_name>
