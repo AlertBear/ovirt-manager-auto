@@ -448,6 +448,7 @@ class MatrixTestCase(TestCase):
             res = False
         finally:
             if not res:
+                run['run'] = 'False'
                 raise DoNotRun("<run> expression evalued as False: %s" % cmd)
 
     @property
