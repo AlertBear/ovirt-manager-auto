@@ -265,6 +265,17 @@ def startVdsmd(vds, password):
     machine = Machine(vds, 'root', password).util('linux')
     return machine.startService('vdsmd')
 
+@is_action()
+def restartVdsmd(vds, password):
+    '''
+    Restart vdsmd on the given host
+    Author: gcheresh
+    Parameters:
+       * vds - name of the host
+       * password - ssh password for the host
+    '''
+    machine = Machine(vds, 'root', password).util('linux')
+    return machine.restartService('vdsmd')
 
 @is_action()
 def stopVdsmd(vds, password):
@@ -278,6 +289,17 @@ def stopVdsmd(vds, password):
     machine = Machine(vds, 'root', password).util('linux')
     return machine.stopService('vdsmd')
 
+@is_action()
+def restartNetwork(vds, password):
+    '''
+    Restart network on the given host
+    Author: gcheresh
+    Parameters:
+       * vds - name of the host
+       * password - ssh password for the host
+    '''
+    machine = Machine(vds, 'root', password).util('linux')
+    return machine.restartService('network')
 
 @is_action()
 def updateVmStatusInDatabase(vmName, status, vdc, vdc_pass,
