@@ -11,10 +11,21 @@ Configuration Options
 To enable this plugin add the following parameter to the RUN section:
     * auto_devices=yes
 
+To clean the devices after the test finished use the following parameter in
+RUN section:
+    * auto_devices_cleanup=yes|all  - to always clean the devices
+    * auto_devices_cleanup=no - to never clean the devices
+    * auto_devices_cleanup=pass - to clean devices only if test passes
+    * auto_devices_cleanup=fail - to clean devices only if test fails
+
 In your settings.conf file add a section STORAGE and fill it with
 the following parameters:
 
     | **[STORAGE]**
+    | # to enable/disable load balancing
+    | **devices_load_balancing** =  true|false
+    | **storage_pool** = <list_of_storage_servers_ips>
+
     | # possible keys for nfs devices:
     | **nfs_server** = <nfs_server_name>
     | **nfs_devices** = <number_of_nfs_devices>
