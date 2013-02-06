@@ -281,7 +281,7 @@
 <test_case>
    <test_name>Configure power management for the host</test_name>
    <test_action>updateHost</test_action>
-   <parameters>host='{vds[0]}', pm='true', pm_type='{pm_type}', pm_address='{pm_address}', pm_username='{pm_username}', pm_password='{pm_password}'</parameters>
+   <parameters>host='{vds[0]}', pm='true', pm_type='{pm_type}', pm_address='{pm_address}', pm_username='{pm_username}', pm_password='{pm_password}', pm_proxies=[('cluster'),('dc')], agents=[('{pm_type}','{pm_address}','{pm_username}','{pm_password}',None,False,1,)]</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
@@ -650,8 +650,8 @@
    <test_name>Check xsd schema validations</test_name>
    <test_action>checkResponsesAreXsdValid</test_action>
    <parameters/>
+   <bz>904935</bz>
    <positive>NONE</positive>
-   <bz>891301</bz>
    <run>yes</run>
  </test_case>
 </input>

@@ -57,6 +57,11 @@ Host = getDS('Host')
 Options = getDS('Options')
 Option = getDS('Option')
 PowerManagement = getDS('PowerManagement')
+PmProxyTypes = getDS('PmProxyTypes')
+PmProxy=getDS('PmProxy')
+PmProxies=getDS('PmProxies')
+Agent = getDS('Agent')
+Agents = getDS('Agents')
 Tag = getDS('Tag')
 StorageManager = getDS('StorageManager')
 
@@ -551,8 +556,8 @@ def updateHost(positive, host, **kwargs):
         pm_port = kwargs.get('pm_port')
         pm_slot = kwargs.get('pm_slot')
         pm_secure = kwargs.get('pm_secure')
-
         pmOptions = None
+        pm_proxies = None
 
         if pm_port or pm_secure:
             pmOptions = Options()
@@ -566,9 +571,45 @@ def updateHost(positive, host, **kwargs):
                 op = Option(name='slot', value=pm_slot)
                 pmOptions.add_option(op)
 
-        hostPm = PowerManagement(type_=kwargs.get('pm_type'), address=pm_address,
-            enabled=kwargs.get('pm'), username=pm_username, password=pm_password,
-            options=pmOptions)
+        if kwargs.get('pm_proxies'):
+            pm_proxies_list = [PmProxy(type_=proxy) for proxy \
+                                                    in kwargs.get('pm_proxies')]
+            pm_proxies = PmProxies(pm_proxy=pm_proxies_list)
+
+        if kwargs.get('agents'):
+            agents_array = []
+            agents = None
+            use_agents = kwargs.get('agents')
+            for pm_agent_type   , pm_agent_addr, pm_agent_usr \
+              , pm_agent_passwd , pm_agent_opts, pm_agent_concurrent \
+              , pm_agent_order \
+              in use_agents:
+                agent_obj = Agent(type_=pm_agent_type            \
+                                , address=pm_agent_addr          \
+                                , username=pm_agent_usr          \
+                                , password=pm_agent_passwd       \
+                                , options=pm_agent_opts          \
+                                , concurrent=pm_agent_concurrent \
+                                , order=pm_agent_order)
+                agents_array.append(agent_obj)
+                agents = Agents(agent=agents_array)
+
+        if kwargs.get('agents') and kwargs.get('pm_proxies'):
+            hostPm = PowerManagement(type_=kwargs.get('pm_type') \
+                                   , address=pm_address          \
+                                   , enabled=kwargs.get('pm')    \
+                                   , username=pm_username        \
+                                   , password=pm_password        \
+                                   , options=pmOptions           \
+                                   , pm_proxies=pm_proxies       \
+                                   , agents=agents)
+        else:
+             hostPm = PowerManagement(type_=kwargs.get('pm_type')\
+                                    , address=pm_address         \
+                                    , enabled=kwargs.get('pm')   \
+                                    , username=pm_username       \
+                                    , password=pm_password       \
+                                    , options=pmOptions)
 
         hostUpd.set_power_management(hostPm)
 
