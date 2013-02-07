@@ -16,6 +16,7 @@
    <test_name>Create data center</test_name>
    <test_action>addDataCenter</test_action>
    <parameters>name='storage_sanity_31_dc', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <vital>TRUE</vital>
    <positive>true</positive>
    <run>yes</run>
    <report>yes</report>
@@ -35,6 +36,7 @@
    <positive>true</positive>
    <run>forkfor({vds},{vds_password})</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create data storage domain NFS</test_name>
@@ -456,6 +458,7 @@
    <parameters>name='{vds[0]}', root_password='{vds_password[0]}', cluster='storage_san_clust_nfs', wait='true'</parameters>
    <positive>true</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -800,6 +803,7 @@
    <parameters>name='{vds[0]}', root_password='{vds_password[0]}', cluster='storage_san_clust_iscsi', wait='true'</parameters>
    <positive>true</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -1192,6 +1196,7 @@
    <parameters>name='{vds[0]}', root_password='{vds_password[0]}', cluster='storage_sanity_31_cluster', wait='true'</parameters>
    <positive>true</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -1603,6 +1608,7 @@
    <positive>true</positive>
    <run>forkfor({vds},{vds_password})</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create data storage domain NFS</test_name>
