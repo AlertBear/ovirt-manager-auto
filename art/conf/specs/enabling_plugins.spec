@@ -46,3 +46,12 @@ discover_action = boolean(default=True)
 enabled = boolean(default=True)
 host = string_list(default=list())
 vds = string_list(default=list('vdsm', 'libvirt'))
+
+[PUBLISH_TEST_DESC]
+enabled = boolean(default=True)
+ [[CONFIG_VARS]]
+ hosts = string(default="JENKINS.required_hosts")
+ macs = string(default="JENKINS.required_macs")
+ [[ATTRIBUTES]]
+ bz_id = test_attribute(default="case,group:bz:set")
+ tcms_plans = test_attribute(default="*:tcms_plan_id:set")

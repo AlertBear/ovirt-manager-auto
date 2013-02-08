@@ -229,6 +229,7 @@ class UnittestLoader(Component):
         if self.suites is None:
             self.suites = []
             modules = []
+            description = {}
             if self.root_path is not None:
                 sys.path.insert(0, self.root_path)
 
@@ -243,6 +244,7 @@ class UnittestLoader(Component):
 
                 mod = __import__(module.rsplit('.')[0])
                 setattr(mod, 'ART_CONFIG', self.conf)
+                description[mod.__name__] = mod.__doc__
 
                 mod = __import__(module, fromlist=[module.split('.')[-1]])
                 modules.append([name, mod])
@@ -250,9 +252,11 @@ class UnittestLoader(Component):
             loader = TestLoader()
             for m in modules:
                 if m[0] is not None:
-                    self.suites.append(UTestSuite(loader.loadTestsFromName(module=m[1], name=m[0])))
+                    suite = UTestSuite(loader.loadTestsFromName(module=m[1], name=m[0]))
                 else:
-                    self.suites.append(UTestSuite(loader.loadTestsFromModule(m[1])))
+                    suite = UTestSuite(loader.loadTestsFromModule(m[1]))
+                suite.description = description[m[1].__name__]
+                self.suites.append(suite)
         try:
             return self.suites.pop()
         except IndexError:

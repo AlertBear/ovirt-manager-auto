@@ -69,14 +69,33 @@ class XMLTestFile(mr.TestFile):
         self.lines = lines
 
     def get_suites(self):
+        root = self.tree.getroot()
+        tcms_id = root.attrib.get(mr.TEST_TCMS_PLAN_ID, None)
+        description = self.__get_description(root)
         return [
             ( ROOT_SUITE,
             {
             mr.TEST_NAME: ROOT_SUITE,
-            mr.TEST_TCMS_PLAN_ID: self.tree.getroot().attrib.get(mr.TEST_TCMS_PLAN_ID, None),
+            mr.TEST_TCMS_PLAN_ID: tcms_id,
             'workers': 1,
+            'description': description,
             })
             ]
+
+    def __get_description(self, root):
+        try:
+            for elm in root:
+                if not elm.tag is etree.Comment:
+                    continue
+                if elm.text is None:
+                    continue
+                if "TEST_DESCRIPTION" not in elm.text:
+                    continue
+                return elm.text
+        except Exception:
+            logger.debug("Reading description failed: %s", self.path, \
+                    exc_info=True)
+        return None
 
     def iter_suite(self, name):
         return self.__iter__()

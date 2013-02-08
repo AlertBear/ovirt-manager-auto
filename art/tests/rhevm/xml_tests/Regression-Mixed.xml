@@ -2,6 +2,9 @@
 <!-- vim: set ts=3 sw=3 expandtab: -->
 <?xml-stylesheet type="text/xsl" href="table.xslt"?>
 <input>
+   <!-- <span style="display:none" >TEST_DESCRIPTION</span>
+      Test which covers XXX and there are no special requirements
+    -->
   <!-- ////////////////////////// SETUP /////////////////////////////// -->
   <test_case>
     <test_name>START_GROUP: Setup</test_name>
