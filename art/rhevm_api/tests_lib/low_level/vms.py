@@ -892,12 +892,14 @@ def _prepareNicObj(**kwargs):
     if 'active' in kwargs:
         nic_obj.set_active(kwargs.get('active'))
 
-    if 'port_mirroring' in kwargs:
+    port_mirror = kwargs.get('port_mirroring', None)
+    networks_obj = None
+    if port_mirror:
         networks_obj = data_st.Networks()
-        networks = kwargs.get('port_mirroring').split(',')
+        networks = port_mirror.split(',')
         for network in networks:
             networks_obj.add_network(data_st.Network(name=network))
-        nic_obj.set_port_mirroring(data_st.PortMirroring(networks=networks_obj))
+    nic_obj.set_port_mirroring(data_st.PortMirroring(networks=networks_obj))
 
     return nic_obj
 
@@ -1776,7 +1778,7 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
         cobblerAddress=None, cobblerUser=None, cobblerPasswd=None, image=None,
         async=False, hostname=None, network='rhevm', useAgent=False,
         placement_affinity=None, placement_host=None, vcpu_pinning=None,
-        highly_available=None, availablity_priority=None):
+        highly_available=None, availablity_priority=None, port_mirroring=None):
     '''
     The function createStartVm adding new vm with nic,disk and started new created vm.
         vmName = VM name
@@ -1809,6 +1811,7 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
         placement_affinity - vm to host affinity
         placement_host - host that the affinity holds for
         vcpu_pinning - vcpu pinning affinity (dictionary)
+        port_mirroring - port_mirroring on specific network of NIC
     return values : Boolean value (True/False ) True in case of success otherwise False
     '''
     ip = False
@@ -1823,7 +1826,7 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
 
     if nic:
         if not addNic(positive, vm=vmName, name=nic, interface=nicType,
-                      mac_address=mac_address, network=network):
+                      mac_address=mac_address, network=network, port_mirroring=port_mirroring):
             return False
 
     if template == 'Blank' and storageDomainName and templateUuid == None:
@@ -2254,6 +2257,20 @@ def getVmHost(vm):
     except EntityNotFound:
         return False, {'vmHoster': None}
     return True, {'vmHoster': host_obj.get_name()}
+
+@is_action()
+def getVmNicPortMirroring(positive, vm, nic='nic1'):
+    '''
+    Get nic port mirror network
+    Author: gcheresh
+    Parameters:
+        * vm - vm name
+        * nic - nic name
+    Return: True if port_mirroring is enabled on NIC, otherwise False
+    '''
+    nic_obj = getVmNic(vm, nic)
+    return bool(nic_obj.get_port_mirroring()) == positive
+
 
 
 @is_action()
