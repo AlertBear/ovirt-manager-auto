@@ -41,3 +41,8 @@ devices_load_balancing = boolean(default=True)
 
 [MATRIX_TEST_RUNNER]
 discover_action = boolean(default=True)
+
+[VERSION_FETCHER]
+enabled = boolean(default=True)
+host = string_list(default=list())
+vds = string_list(default=list('vdsm', 'libvirt'))
