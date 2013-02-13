@@ -482,7 +482,7 @@ class RestUtil(APIUtil):
                     raise EntityNotFound("Obtained Fault object for %s "
                                         "element and link_name %s link with"
                                         " response: %s" % (elm, link_name,
-                                        data_st.Fault.get_detail()))
+                                        linkCont.get_detail()))
                 else:
                     return getattr(linkCont, 'get_' + attr)()
         return no_results
