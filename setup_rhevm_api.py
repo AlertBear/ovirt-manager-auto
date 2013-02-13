@@ -49,6 +49,7 @@ DATA_FILES = [
         'art/tests/rhevm/xml_tests/payloads_cases/*.xml',
         'art/tests/rhevm/xml_tests/sla/*.xml',
         'art/tests/rhevm/xml_tests/storage/*.xml',
+        'art/tests/rhevm/xml_tests/hooks_test_files/*.xml',
         'art/tests/rhevm/unittests/user_roles_tests/*.py',
         'art/tests/rhevm/unittests/rhevm_utils/*.py',
         'art/tests/rhevm/unittests/rhevm_utils/lc_reports_content/*.xml',
