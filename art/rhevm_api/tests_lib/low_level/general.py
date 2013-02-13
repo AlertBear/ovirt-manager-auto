@@ -260,7 +260,7 @@ def getProductName():
 
 
 @is_action()
-def checkProductName(positive, name):
+def checkProductName(name):
     '''
     Checks whether the product's name is the same as name parameter.
     Author: gleibovi
@@ -271,4 +271,11 @@ def checkProductName(positive, name):
     if not status:
         return status
     product_name = ret['product_name']
-    return product_name == name if positive else product_name != name
+
+    if product_name != name:
+        util.logger.error("Product name is wrong, expected: '%s', actual: '%s'" \
+                    % (name, product_name))
+        return False
+
+    util.logger.info("Product name is correct: '%s'" % name)
+    return True
