@@ -28,6 +28,7 @@ from art.core_api.apis_exceptions import APITimeout, EntityNotFound, TestCaseErr
 from art.core_api.apis_utils import data_st, TimeoutingSampler, getDS
 from art.rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
 from art.test_handler.settings import opts
+import art.test_handler.exceptions as errors
 from threading import Thread
 from utilities.jobs import Job, JobsSet
 from utilities.utils import readConfFile, pingToVms, makeVmList
@@ -40,6 +41,7 @@ from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils.threads import runParallel
 from art.core_api import is_action
 from art.rhevm_api.utils.name2ip import name2ip, LookUpVMIpByName
+from art.rhevm_api.tests_lib.low_level.disks import getVmDisk
 from operator import and_
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
@@ -2612,7 +2614,7 @@ def cobblerRemoveMultiSystem(positive, vms, cobblerAddress, cobblerUser,
     Return: status (True if all systems removed, False otherwise).
     '''
     if not isinstance(vms, str):
-        util.logger.error('VMs parameter error, Only string is accepted ')
+        logger.error('VMs parameter error, Only string is accepted ')
         return False
     vmsList = split(vms)
 
@@ -2623,4 +2625,26 @@ def cobblerRemoveMultiSystem(positive, vms, cobblerAddress, cobblerUser,
         if not (wasRemoved and status):
             return False
     return True
+
+@is_action('moveVmDisk')
+def move_vm_disk(vm_name, disk_name, target_sd):
+    """
+    Description: Moves disk of vm to another storage domain
+    Parameters:
+        * vm_name - Name of the disk's vm
+        * disk_name - Name of the disk
+        * target_sd - Name of storage domain disk should be moved to
+    Throws: DiskException if syncAction returns False (syncAction should raise
+            exception itself instead of returning False)
+    """
+    logger.info("Moving disk %s of vm %s to storage domain %s", disk_name,
+                vm_name, target_sd)
+    disk = getVmDisk(vm_name, disk_name)
+    sd = STORAGE_DOMAIN_API.find(target_sd)
+    if not DISKS_API.syncAction(disk, 'move', storage_domain=sd,
+                                positive=True):
+        raise errors.DiskException("Failed to move disk %s of vm %s to "
+                                   " storage domain %s"
+                                   % (vm_name, disk_name, target_sd))
+
 
