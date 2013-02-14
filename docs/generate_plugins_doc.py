@@ -18,7 +18,7 @@ Here is a list of ART plugins and documentation
     :titlesonly:
 
 """)
-    plugins = [ x for x in os.listdir(PATH_TO_PLUGINS) if x.endswith('_plugin.py')]
+    plugins = [ x for x in sorted(os.listdir(PATH_TO_PLUGINS)) if x.endswith('_plugin.py')]
     sys.path.insert(0, PATH_TO_ART)
     sys.path.insert(0, PATH_TO_PLUGINS)
     for plugin in plugins:
