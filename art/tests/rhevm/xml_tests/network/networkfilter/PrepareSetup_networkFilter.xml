@@ -51,7 +51,7 @@ version='{compatibility_version}'
    <test_name>Create Linux Vms</test_name>
    <test_action>createVm</test_action>
    <parameters>vmName='{vm_name[0]}',vmDescription='linux vm',cluster='{cluster}',nic='nic1',nicType='e{nic_type_virtio}',
-   storageDomainName='{storage}_data_domain0',size=21474836480,diskType='e{disk_type_system}',display_type='e{display_type_spice}',
+   storageDomainName='DataCenterTest_data_domain0',size=21474836480,diskType='e{disk_type_system}',display_type='e{display_type_spice}',
    cobblerAddress='{cobbler_address}',cobblerUser='{cobbler_user}',cobblerPasswd='{cobbler_passwd}'</parameters>
    <positive>True</positive>
    <run>YES</run>
