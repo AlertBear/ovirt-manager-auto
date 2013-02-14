@@ -30,9 +30,7 @@ from time import strftime
 from shutil import copyfile
 from configobj import ConfigObj
 
-from utilities.validation_lib import ValidationFuncs
-import art
-from art.test_handler.handler_lib.configs import ParamsValidator
+from art.test_handler.handler_lib.configs import ARTConfigValidator
 from art.test_handler.plmanagement.manager import PluginManager
 from art.test_handler import find_config_file
 
@@ -156,21 +154,17 @@ def readTestRunOpts(path, redefs):
         raise IOError("Configuration file doesn't exist: %s" % path)
 
     #preparing working copy of conf file
-    confFileCopyName = "%s.valid" % path
+    confFileCopyName = "%s.copy" % path
     copyfile(path, confFileCopyName)
 
     config = ConfigObj(confFileCopyName)
     rewriteConfig(config, redefs)
     config.write()
 
-    ParamsValidator(confFile=confFileCopyName,
-                    confSpecFile=opts['confSpec'],
-                    frameworkBasePath=os.path.dirname(art.__file__),
-                    findConfigFileFunc=find_config_file,
-                    pluginManagerHandle=initPlmanager()
-                    )
+    validator = ARTConfigValidator(confFileCopyName, opts['confSpec'],
+            initPlmanager())
 
-    config = ConfigObj(confFileCopyName)
+    config = validator()
 
     plmanager.configure.im_func.func_defaults = \
             (plmanager.configure.im_func.func_defaults[0], config)
