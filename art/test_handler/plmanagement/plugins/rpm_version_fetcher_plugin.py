@@ -47,6 +47,9 @@ class VersionFetcher(Component):
 
     def __init__(self):
         super(VersionFetcher, self).__init__()
+        self.vdc = None
+        self.vds = []
+        self.configured = False
 
     @classmethod
     def add_options(cls, parser):
@@ -74,13 +77,14 @@ class VersionFetcher(Component):
         user = 'root'
 
         self.vdc = Machine(vdc, user, vdc_passwd).util(LINUX)
-        self.vds = []
 
         for name, passwd in  zip(vds, vds_passwd):
             self.vds.append(Machine(name, user, passwd).util(LINUX))
 
         self.vdc_rpms = conf.get(CONFIG_SECTION).as_list(VDC)
         self.vds_rpms = conf.get(CONFIG_SECTION).as_list(VDS)
+
+        self.configured = True
 
     @classmethod
     def fill_setup_params(cls, params):
@@ -106,6 +110,9 @@ class VersionFetcher(Component):
         pass
 
     def on_application_exit(self):
+        if not self.configured:
+            return
+
         error_msg = "%s: Failed to get version of rpms %s: %s"
         try:
             vdc_rpms = self.__get_version_info(self.vdc, *self.vdc_rpms)
