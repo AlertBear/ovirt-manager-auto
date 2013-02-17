@@ -102,7 +102,7 @@ class ErrorFetcher(Component):
             return
 
         cmd = ['sed', '-n', '/ ERROR /,/ \(INFO\|DEBUG\|WARN\) / p', \
-                TEMP_FILE, '|', 'grep', '-v', '\(INFO\|DEBUG\|WARN\)']
+                TEMP_FILE, '|', 'grep', '-av', '\(INFO\|DEBUG\|WARN\)']
         rc, out, err = self.ssh.runCmd(cmd)
         if rc:
             if not out.strip() and not err.strip():
