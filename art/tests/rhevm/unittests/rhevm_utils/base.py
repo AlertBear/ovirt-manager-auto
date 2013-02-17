@@ -363,15 +363,16 @@ class RHEVMUtilsTestCase(unittest.TestCase):
         """
         Fetch instance of utility for test-case
         """
-        if self.utility is not 'setup':
-            self.manager.saveSetup(self.utility, self.snapshot_setup_installed)
-        self.manager.saveSetup(self.utility, self.clear_snap)
+        snap = self.clear_snap if self.utility is 'setup' else self.snapshot_setup_installed
+        self.manager.saveSetup(self.utility, snap)
         self.ut = self.utility_class(self.manager.dispatchSetup(self.utility))
 
     def tearDown(self):
         """
         Discart changes which was made by test-case
         """
-        if self.utility is not 'setup':
-            self.manager.restoreSetup(self.utility, self.snapshot_setup_installed)
-        self.manager.restoreSetup(self.utility, self.clear_snap)
+        snap = self.clear_snap if self.utility is 'setup' else self.snapshot_setup_installed
+        self.manager.restoreSetup(self.utility, snap)
+
+
+
