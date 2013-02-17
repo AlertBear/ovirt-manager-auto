@@ -40,7 +40,7 @@ TCMS_ENTITY_MAP = { eTcmsEntity.TestCase: 'cases',
 SUCCESS = re.compile("^[Pp]ass|1|^[Tt]rue|^[Ss]ucc")
 
 # BZ info string
-BZ_INFO = "'case_run_id': '{0}', \
+BZ_INFO = "'case_run_id': {0}, \
             'bug_id': '{1}', \
             'bug_system_id': '1', \
             'summary': 'Bug info', \

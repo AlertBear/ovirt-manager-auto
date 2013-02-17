@@ -212,14 +212,15 @@ class TCMS(Component):
             self.__fill_test_case(case, test)
 
     def __fill_test_case(self, case, test):
+        status = test.status
         if test.status == test.TEST_STATUS_SKIPPED:
-            return # TODO: don't know how to report skipped tests
+            status = test.TEST_STATUS_FAILED
 
         self.agent.iterationInfo(sub_test_name=test.test_name,
                             test_case_name=test.test_name,
                             info_line = [str(test).replace("'", "\\'")],
                             iter_number=test.serial,
-                            iter_status=test.status,
+                            iter_status=status,
                             bz_info=getattr(test, 'bz', None),
                             test_case_id=str(case))
 
