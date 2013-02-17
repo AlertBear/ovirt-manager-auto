@@ -1,15 +1,10 @@
 from configobj import ConfigObj
-from art.test_handler.settings import opts
 
 global config
 config = ConfigObj(raise_errors=True)
 
-#  The use of this conf is temporary till the test updated conf file will
-#  be recognized here, such as ART_CONFIG().
-#  Also all [0] usage bellow, should be removed and needed when using
-#  the .valid conf.
-conf = ConfigObj('{0}.valid'.format(opts.get('conf')))
-params = conf.get('PARAMETERS')
+from . import ART_CONFIG
+params = ART_CONFIG['PARAMETERS']
 VM_NAME = params.get('vm_name')
 
 #MAIN_SETUP = "https://10.34.63.3:443/api"

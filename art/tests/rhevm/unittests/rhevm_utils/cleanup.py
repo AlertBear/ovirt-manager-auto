@@ -1,108 +1,11 @@
-
-# Usage: rhevm-cleanup [options]
-#
-# Options:
-#   -h, --help            show this help message and exit
-#   -u, --unattended      unattended cleanup
-#   -d, --dont-drop-db    Don't drop database
-#   -c, --dont-remove-ca  Don't remove CA
-#   -s, --dont-remove-profile
-#                         Don't remove rhevm-slimmed JBoss profile
-#   -l, --dont-unlink-ear # FOR RHEVM >=3.1
-
-__test__ = False
-
-import os
-import re
-from rhevm_utils.base import Utility, logger, RHEVMUtilsTestCase, istest
-from rhevm_utils import errors
+from rhevm_utils.base import RHEVMUtilsTestCase, istest
+from utilities.rhevm_tools.cleanup import CleanUpUtility
+from utilities.rhevm_tools import errors
 
 NAME = 'cleanup'
 
-OPT_HELP = set(('h', 'help'))
-OPT_UNATENDED = set(('u', 'unattended'))
-OPT_DONT_DROP_DB = set(('d', 'dont-drop-db'))
-OPT_DONT_REMOVE_CA = set(('c', 'dont-remove-ca'))
-OPT_DONT_REMOVE_PROFILE = set(('s', 'dont-remove-profile', \
-                                'l', 'dont-unlink-ear'))
-
-TIMEOUT = 10 * 60
-
-# ( pattern, exeption, names of params, (sub errors, .. ) )
-ERROR_PATTERNS = ()
-
-class CleanUpUtility(Utility):
-    """
-    Encapsulation of rhevm-cleanup utility
-    """
-    def __init__(self, *args, **kwargs):
-        super(CleanUpUtility, self).__init__(*args, **kwargs)
-        self.cleanTimeout = kwargs.get('timeout', TIMEOUT)
-        self.kwargs = None
-
-    def __call__(self, *args, **kwargs):
-        self.kwargs = self.clearParams(kwargs)
-
-        if OPT_HELP not in self.kwargs and OPT_UNATENDED not in self.kwargs:
-            logger.warn("adding --unattended option to avoid prompt")
-            self.kwargs['unattended'] = None
-
-        cmd = self.createCommand(NAME, self.kwargs)
-
-        self.execute(NAME, cmd, timeout=self.cleanTimeout)
-
-        #self.autoTest()
-
-    # ====== TESTS ========
-
-    def autoTest(self):
-        if OPT_HELP in self.kwargs:
-            self.testReturnCode()
-            return
-        self.testReturnCode()
-        self.testCleanup()
-
-    def testCleanup(self):
-        db_exists = self.isDBExists()
-        if OPT_DONT_DROP_DB not in self.kwargs and db_exists:
-            raise errors.DBExistsError(self.setup.dbname)
-        if OPT_DONT_DROP_DB in self.kwargs and not db_exists:
-            raise errors.DBDoesntExistError(self.setup.dbname)
-
-        with self.setup.ssh as ssh:
-
-            fh = ssh.getFileHandler(timeout=self.setup.connectionTimeout)
-
-            for name in ('.truststore', '.keystore'):
-                path = os.path.join(self.getVar('CA_PATH'), name)
-                caExists = fh.exists(path) and not fh.isDir(path)
-                if OPT_DONT_REMOVE_CA in self.kwargs and not caExists:
-                    raise errors.CADoesntExistError(self.setup.host, path)
-                if OPT_DONT_REMOVE_CA not in self.kwargs and caExists:
-                    raise errors.CAExistsError(self.setup.host, path)
-
-            # NOTE: parameter -s disappear
-            #profPath = self.getVar('JBOSS_PROFILE_PATH')
-            #profExists = fh.exists(profPath) and fh.isDir(profPath)
-            #if OPT_DONT_REMOVE_PROFILE in self.kwargs and not profExists:
-            #    raise errors.ProfileDoesntExistError(self.setup.host, profPath)
-            #if OPT_DONT_REMOVE_PROFILE not in self.kwargs and profExists:
-            #    raise errors.ProfileExistsError(self.setup.host, profPath)
-
-            if OPT_DONT_REMOVE_CA not in self.kwargs:
-                pass #TODO: need to verify backup
-            if OPT_DONT_DROP_DB not in self.kwargs:
-                pass #todo: need to verify backup
-            #if OPT_DONT_REMOVE_PROFILE not in self.kwargs:
-            #    pass #todo: need to verify backup
-
-            if self.isJbossRunning():
-                raise errors.JbossIsStillRunning()
-
-#### UNITTESTS #####
-
-
 _multiprocess_can_split_ = True
+
 
 class CleanUpTestCase(RHEVMUtilsTestCase):
 
