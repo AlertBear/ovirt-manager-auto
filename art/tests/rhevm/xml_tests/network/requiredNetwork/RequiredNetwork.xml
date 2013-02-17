@@ -159,7 +159,7 @@
    <test_name>Editing rhevm to be non-required</test_name>
    <test_action>updateClusterNetwork</test_action>
    <parameters>cluster='{cluster}',network='{mgmt_bridge}',required='false'</parameters>
-   <positive>TRUE</positive>
+   <positive>FALSE</positive>
    <run>yes</run>
    <fetch_output/>
    <report>YES</report>
@@ -175,7 +175,6 @@
    <fetch_output/>
    <report>YES</report>
    <vital>FALSE</vital>
-   <bz>875488</bz>
    <tcms_plan_id>5868</tcms_plan_id>
    <tcms_test_case>166462</tcms_test_case>
    <test_description/>
