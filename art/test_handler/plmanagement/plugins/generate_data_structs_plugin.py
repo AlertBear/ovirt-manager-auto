@@ -39,9 +39,9 @@ REPO_PATH = os.path.dirname(art.__file__)
 GENERATE_DS_PATH = os.path.join(REPO_PATH, 'generateDS', 'generateDS.py')
 
 DS_GEN_OPTIONS = "GENERATE_DS"
-
 DEFAULT_STATE = False
-
+VITAL = 'vital'
+DEFAULT_VITAL = True
 RUN = 'RUN'
 
 
@@ -96,6 +96,10 @@ class GenerateDataStructures(Component):
         return params.ds_gen_enabled or conf_en
 
     @classmethod
+    def is_vital(cls, conf):
+        return conf.get(SECTION_NAME).as_bool(VITAL)
+
+    @classmethod
     def fill_setup_params(cls, params):
         params['name'] = cls.name.lower().replace(' ', '-')
         params['version'] = '1.0'
@@ -109,5 +113,6 @@ class GenerateDataStructures(Component):
     def config_spec(self, spec, val_funcs):
         section_spec = spec.get(DS_GEN_OPTIONS, {})
         section_spec['enabled'] = 'boolean(default=%s)' % DEFAULT_STATE
+        section_spec[VITAL] = 'boolean(default=%s)' % DEFAULT_VITAL
         spec[DS_GEN_OPTIONS] = section_spec
 

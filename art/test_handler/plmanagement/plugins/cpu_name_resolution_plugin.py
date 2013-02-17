@@ -37,6 +37,8 @@ CPU_NAME = 'cpu_name'
 COMPATIBILITY_VERSION = 'compatibility_version'
 DEFAULT_STATE = False
 ENABLED = 'enabled'
+VITAL = 'vital'
+DEFAULT_VITAL = True
 
 MODEL_RE = re.compile(r'model_[A-Za-z_1-9]+')
 
@@ -142,6 +144,10 @@ class AutoCpuNameResolution(Component):
         return params.cpu_name_enabled or conf_en
 
     @classmethod
+    def is_vital(cls, conf):
+        return conf.get(SECTION_NAME).as_bool(VITAL)
+
+    @classmethod
     def fill_setup_params(cls, params):
         params['name'] = cls.name.lower().replace(' ', '-')
         params['version'] = '1.0'
@@ -157,4 +163,5 @@ class AutoCpuNameResolution(Component):
     def config_spec(self, spec, val_funcs):
         section_spec = spec.get(SECTION_NAME, {})
         section_spec[ENABLED] = 'boolean(default=%s)' % DEFAULT_STATE
+        section_spec[VITAL] = 'boolean(default=%s)' % DEFAULT_VITAL
         spec[SECTION_NAME] = section_spec

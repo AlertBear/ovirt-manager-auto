@@ -8,8 +8,10 @@ from art.test_handler.plmanagement import logger
 from art.test_handler.plmanagement import implements
 from interfaces import application, report_formatter, \
         tests_listener, time_measurement, config_validator
+from art.test_handler.exceptions import VitalTestFailed
 
 DEFAULT_PATH = os.path.join(os.path.dirname(__file__), 'plugins')
+VITAL_FAILED_MSG = '{0} plugin configuration failure'
 
 
 # Note that application is Component as well as it's own ComponentManager.
@@ -63,10 +65,16 @@ class PluginManager(core.ComponentManager, core.Component):
             try:
                 config_able.configure(args, config)
             except Exception as ex:
-                logger.warn("Plugin '%s' failed during configuration. "\
-                        "It will be disabled. %s", config_able.name, ex)
                 logger.debug(str(ex), exc_info=True)
+
+                if hasattr(config_able, 'is_vital') and \
+                            config_able.is_vital(config):
+                    raise VitalTestFailed(VITAL_FAILED_MSG.format(config_able.name))
+
+                logger.warn("Plugin '%s' failed during configuration. "\
+                    "It will be disabled. %s", config_able.name, ex)
                 self.disable_component(config_able)
+
         self.configured = True
 
 

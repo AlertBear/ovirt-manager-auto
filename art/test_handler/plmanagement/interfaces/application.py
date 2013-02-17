@@ -39,6 +39,16 @@ class IConfigurable(Interface):
         """
         pass
 
+    @classmethod
+    def is_vital(cls, config):
+        """
+        Allows to define plugin as vital. When configuration of
+        vital plugin fails the test is terminated.
+        Parameters:
+         * config - configobj.ConfigObj contains loaded config file
+        """
+        pass
+
 
 class ITestParser(Interface):
     def is_able_to_run(self, test_identifier):

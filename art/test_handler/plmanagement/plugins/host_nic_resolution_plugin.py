@@ -30,7 +30,8 @@ VDS_PASSWORD = 'vds_password'
 VDS = 'vds'
 HOST_NICS = 'host_nics'
 ENABLED = 'enabled'
-DC_TYPE = 'data_center_type'
+VITAL = 'vital'
+DEFAULT_VITAL = True
 
 class NicResolutionFailed(PluginError):
     pass
@@ -85,6 +86,10 @@ class AutoHostNicsResolution(Component):
         return params.host_nics_enabled or en
 
     @classmethod
+    def is_vital(cls, conf):
+        return conf.get(SECTION_NAME).as_bool(VITAL)
+
+    @classmethod
     def fill_setup_params(cls, params):
         params['name'] = 'hosts-nics-resolution'
         params['version'] = '1.0'
@@ -100,5 +105,6 @@ class AutoHostNicsResolution(Component):
     def config_spec(self, spec, val_funcs):
         section_spec = spec.get(SECTION_NAME, {})
         section_spec[ENABLED] = 'boolean(default=false)'
+        section_spec[VITAL] = 'boolean(default=%s)' % DEFAULT_VITAL
         spec[SECTION_NAME] = section_spec
 
