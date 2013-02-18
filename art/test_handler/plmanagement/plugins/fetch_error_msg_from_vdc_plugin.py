@@ -101,8 +101,9 @@ class ErrorFetcher(Component):
         if t.status != t.TEST_STATUS_FAILED:
             return
 
-        cmd = ['sed', '-n', '/ ERROR /,/ \(INFO\|DEBUG\|WARN\) / p', \
-                TEMP_FILE, '|', 'grep', '-av', '\(INFO\|DEBUG\|WARN\)']
+        cmd = ['sed', '-n', '/ ERROR /,/ \(INFO\|DEBUG\|WARN\) / p',
+                TEMP_FILE, '|', 'iconv', '-t', 'ASCII//TRANSLIT',
+                '|', 'grep', '-av', '\(INFO\|DEBUG\|WARN\)']
         rc, out, err = self.ssh.runCmd(cmd)
         if rc:
             if not out.strip() and not err.strip():
