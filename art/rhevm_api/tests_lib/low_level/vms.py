@@ -133,7 +133,8 @@ def _prepareVmObject(**kwargs):
     cpu_socket = kwargs.pop('cpu_socket', None)
     cpu_cores = kwargs.pop('cpu_cores', None)
     vcpu_pinning = kwargs.pop('vcpu_pinning', None)
-    if cpu_socket or cpu_cores or vcpu_pinning:
+    cpu_mode = kwargs.pop('cpu_mode', None)
+    if cpu_socket or cpu_cores or vcpu_pinning is not None or cpu_mode is not None:
         cpu = data_st.CPU()
         if cpu_socket or cpu_cores:
             cpu.set_topology(topology=data_st.CpuTopology(sockets=cpu_socket,
@@ -144,6 +145,11 @@ def _prepareVmObject(**kwargs):
             cpu.set_cpu_tune(data_st.CpuTune([data_st.VCpuPin(vcpu, cpu_set) \
                                               for vcpu, cpu_set in \
                                               vcpu_pinning.iteritems()]))
+
+        if cpu_mode is not None and cpu_mode == "":
+            cpu.set_mode("CUSTOM")
+        elif cpu_mode:
+            cpu.set_mode(cpu_mode)
         vm.set_cpu(cpu)
 
     # os options
@@ -240,6 +246,11 @@ def _prepareVmObject(**kwargs):
         payloads = data_st.Payloads(payload_array)
         vm.set_payloads(payloads)
 
+    # delete protection
+    protected = kwargs.pop('protected', None)
+    if protected is not None:
+        vm.set_delete_protected(protected)
+
     return vm
 
 def _createCustomPropertiesFromArg(prop_arg):
@@ -334,6 +345,7 @@ def updateVm(positive, vm, **kwargs):
        * memory - vm memory size in bytes
        * cpu_socket - number of cpu sockets
        * cpu_cores - number of cpu cores
+       * cpu_mode - mode of cpu
        * os_type - OS type of new vm
        * boot - type of boot
        * template - name of template that should be used
@@ -353,6 +365,7 @@ def updateVm(positive, vm, **kwargs):
        * placement_affinity - vm to host affinity
        * placement_host - host that the affinity holds for
        * quota - vm quota
+       * protected - true if vm is delete protected
     Return: status (True if vm was updated properly, False otherwise)
     '''
     vmObj = VM_API.find(vm)
@@ -1854,13 +1867,14 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
         diskInterface=ENUMS['interface_ide'], bootable='true',
         wipe_after_delete='false', start='false', template='Blank',
         templateUuid=None, type=None, os_type=None, memory=None,
-        cpu_socket=None, cpu_cores=None, display_type=None, installation=False,
-        slim=False, user=None, password=None, attempt=60, interval=60,
-        cobblerAddress=None, cobblerUser=None, cobblerPasswd=None, image=None,
-        async=False, hostname=None, network='rhevm', useAgent=False,
+        cpu_socket=None, cpu_cores=None, cpu_mode=None, display_type=None,
+        installation=False, slim=False, user=None, password=None, attempt=60,
+        interval=60, cobblerAddress=None, cobblerUser=None, cobblerPasswd=None,
+        image=None, async=False, hostname=None, network='rhevm', useAgent=False,
         placement_affinity=None, placement_host=None, vcpu_pinning=None,
         highly_available=None, availablity_priority=None, port_mirroring=None,
-        vm_quota=None, disk_quota=None, plugged='true', linked='true'):
+        vm_quota=None, disk_quota=None, plugged='true', linked='true',
+        protected=None):
     '''
     The function createStartVm adding new vm with nic,disk and started new created vm.
         vmName = VM name
@@ -1898,6 +1912,8 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
         disk_quota - quota for vm disk
         plugged - shows if specific VNIC is plugged/unplugged
         linked - shows if specific VNIC is linked or not
+        protected - true if VM is delete protected
+        cpu_mode - cpu mode
     return values : Boolean value (True/False ) True in case of success otherwise False
     '''
     ip = False
@@ -1907,7 +1923,8 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
             cpu_cores=cpu_cores, display_type=display_type, async=async,
             placement_affinity=placement_affinity, placement_host=placement_host,
             vcpu_pinning=vcpu_pinning, highly_available=highly_available,
-            availablity_priority=availablity_priority, quota=vm_quota):
+            availablity_priority=availablity_priority, quota=vm_quota,
+            protected=protected, cpu_mode=cpu_mode):
         return False
 
     if nic:

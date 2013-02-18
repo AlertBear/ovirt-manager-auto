@@ -119,6 +119,10 @@ def _prepareClusterObject(**kwargs):
         errorHandling = ErrorHandling(on_error=kwargs.pop('on_error'))
         cl.set_error_handling(errorHandling)
 
+    threads = kwargs.pop('threads_as_cores', None)
+    if threads is not None:
+        cl.set_threads_as_cores(threads)
+
     return cl
 
 
@@ -151,6 +155,8 @@ def addCluster(positive, **kwargs):
                                 Transparent Hugepages
        * on_error - in case of non - operational
                     (migrate, do_not_migrate, migrate_highly_available)
+       * threads - if True, will count threads as cores, otherwise counts
+                   only cores
     Return: status (True if cluster was removed properly, False otherwise)
     '''
 
@@ -189,6 +195,8 @@ def updateCluster(positive, cluster, **kwargs):
                                 Transparent Hugepages
        * on_error - in case of non - operational
                     (migrate, do_not_migrate, migrate_highly_available)
+       * threads - if True, will count threads as cores, otherwise counts
+                    only cores
     Return: status (True if cluster was removed properly, False otherwise)
     '''
 
