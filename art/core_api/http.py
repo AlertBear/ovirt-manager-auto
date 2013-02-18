@@ -21,6 +21,7 @@ import httplib
 import base64
 import re
 import cgi
+import copy
 from art.core_api.apis_exceptions import APIException
 from socket import error as SocketError
 
@@ -38,6 +39,7 @@ class HTTPProxy():
         self.cookie = None
         self.type = opts['media_type']
         self.connections_pool = []
+        self.headers = self.opts['headers']
 
         self.default_conn = self.add_connection()
 
@@ -180,11 +182,14 @@ class HTTPProxy():
         '''
         Build request headers
         '''
-        headers = {}
+        headers = copy.deepcopy(self.headers)
+
         if self.opts['user'] and self.opts['password']:
-            headers['Authorization'] = self.basic_auth()
             if self.cookie:
                 headers['Cookie'] = self.cookie
+            else:
+                headers['Authorization'] = self.basic_auth()
+
             headers.update(self.opts['headers'])
 
         return headers
