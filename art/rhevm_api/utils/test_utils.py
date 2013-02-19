@@ -1274,29 +1274,34 @@ def getAllImages(vds, vds_username, vds_password, spool_id, domain_id,
     return [disk.attrib[attrib].split('/', 1)[0] for disk in disks_elements]
 
 @is_action()
-def checkSpoofingFilterRuleByVer(positive,host,user,passwd,version,system_ver,state=True):
+def checkSpoofingFilterRuleByVer(host,user,passwd,target_version='3.2'):
     '''
-    Description: Check that spoofing filter rule is enabled for a requested
+    Description: Check if NetworkFilter (nwfilter) rule is enabled/disabled for a requested
     version
-    Author: awinter
+    Author: myakove
     Parameters:
       * host - name of the rhevm
       * user - user name for the rhevm
       * passwd - password for the user
-      * version - The requested version
-      * state = The expected state. True by default
-    return: True if the filter is enabled for the version, False otherwise
-    '''
-    if float(version) > float(system_ver):
-        ''' This 'if statement' supports SKIP for ineligible versions'''
-        logger.info("The system's version is too low this case")
-        return True
+      * target_version - the lower veriosn that nwfilter is enabled
+    Return True for version >= 3.2 and False for <=3.1
+     '''
     host_obj = Machine(host,user,passwd).util('linux')
-    cmd = ['engine-config', '-g', 'EnableMACAntiSpoofingFilterRules', '|', 'grep', '-c','true version: %s' %version]
-    output = host_obj.runCmd(cmd)[1][0]
-    if(output == '1'):
-        return (state and positive)
-    return not (state and positive)
+    cmd = ['engine-config', '-g', 'EnableMACAntiSpoofingFilterRules']
+    rc, output = host_obj.runCmd(cmd)
+    ERR_MSG = 'Version {0} has incorrect nwfilter value: {1}'
+
+    logger.info(output)
+    for line in output.splitlines():
+        data = line.split()
+        version = data[3]
+        status = data[1].lower()
+        ver_status = version >= target_version
+        test_status = status == str(ver_status).lower()
+        if not test_status:
+            logger.error(ERR_MSG.format(version, status))
+            return False
+    return True
 
 @is_action()
 def setNetworkFilterStatus(enable, host, user, passwd, version):
