@@ -149,7 +149,7 @@ def createPythonScriptToVerifyCustomHook(ip, password, scriptName, customHook, t
     except Exception as err:
 	logger.error("Oops! something went wrong in connecting or copying data to %s" % (ip,err))
 
-    cmd = [CHMOD, "u+x", target+"/"+scriptName]
+    cmd = [CHMOD, "755", target+"/"+scriptName]
     host.runCmd(cmd)
 
     return True

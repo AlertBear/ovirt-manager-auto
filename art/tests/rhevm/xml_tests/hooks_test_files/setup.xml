@@ -98,9 +98,17 @@
    <test_action>waitForIP</test_action>
    <parameters>vm='{vm_for_template}', timeout=1200, sleep=10</parameters>
    <positive>NONE</positive>
+   <fetch_output>ip->guest_ip</fetch_output>
    <run>yes</run>
  </test_case>
  <test_case>
+    <test_name>set linux vm persistent</test_name>
+    <test_action>setPersistentNetwork</test_action>
+    <parameters>host=%guest_ip%, password='{passwd}'</parameters>
+    <positive>NONE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
     <test_name>Stop VM, so we can create template from it.</test_name>
     <test_action>stopVm</test_action>
     <parameters>vm='{vm_for_template}'</parameters>
@@ -110,7 +118,7 @@
 <test_case>
     <test_name>Create Template From VM</test_name>
     <test_action>createTemplate</test_action>
-    <parameters>vm='{vm_for_template}',name='template-for-test',cluster='{cluster_prefix}'</parameters>
+    <parameters>vm='{vm_for_template}',name='{vm_template_for_test}',cluster='{cluster_prefix}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
 </test_case>

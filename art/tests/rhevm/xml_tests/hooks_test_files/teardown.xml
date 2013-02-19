@@ -10,7 +10,7 @@
  <test_case>
    <test_name>Remove Template</test_name>
    <test_action>removeTemplate</test_action>
-   <parameters>template='{vm_for_template}',wait=True</parameters>
+   <parameters>template='{vm_template_for_test}',wait=True</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
