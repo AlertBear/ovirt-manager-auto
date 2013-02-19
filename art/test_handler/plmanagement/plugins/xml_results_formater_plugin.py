@@ -108,6 +108,7 @@ class XMLFormatter(Component):
                 logger.debug(
                     "failed setting key: {0} to val={1}, type(val)={2}".format(
                     key, val, type(val)))
+                e.text = "[malformed data]"
             root.append(e)
 
     def add_group_result(self, res, tg):

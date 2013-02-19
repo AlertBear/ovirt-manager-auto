@@ -117,18 +117,23 @@ class XUnit(Component):
             out_msg = kwargs['captured_log']
             written.append('captured_log')
 
+        error_elm = None
         if kwargs['status'] == test_case.TEST_STATUS_FAILED:
             self.failures += 1
-            failure = E.failure(out_msg)
-            testcase.append(failure)
+            error_elm = E.failure
         elif kwargs['status'] == test_case.TEST_STATUS_SKIPPED:
             self.skip += 1
-            skipped = E.skipped(out_msg)
-            testcase.append(skipped)
+            error_elm = E.skipped
         elif kwargs['status'] is test_case.TEST_STATUS_ERROR:
             self.errors += 1
-            error = E.error(out_msg)
-            testcase.append(error)
+            error_elm = E.error
+        if error_elm is not None:
+            try:
+                elm = error_elm(out_msg)
+            except ValueError as ex:
+                logger.warn("failed setting message: %s, %s", ex, out_msg)
+                elm = error_elm("[malformed data]")
+            testcase.append(elm)
         self.tests += 1
 
         self.testsuite.append(testcase)
