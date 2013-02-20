@@ -1344,3 +1344,26 @@ def restartOvirtEngine(host_obj, interval, attemts, timeout):
            return True
     logger.error("HealthPage was not up after %s attempts", num_of_attemts)
     return False
+
+@is_action()
+def configureTempStaticIp(host, user, password, ip, nic='eth1', netmask='255.255.255.0'):
+    '''
+    Configure static IP on specific interface
+    Author: gcheresh
+    Parameters:
+       * host - remote machine ip address or fqdn
+       * user - user name for the machine
+       * password - password for root user
+       * nic - specific NIC to configure ip/netmask on
+       * ip - IP to configure on NIC
+       * netmask - Netmask to configure on NIC
+    Return: (True if command executed successfuly, False otherwise)
+    '''
+    machine_obj = Machine(host, user, password).util('linux')
+    cmd = ["ifconfig", nic, ip, "netmask", netmask]
+    rc, output = machine_obj.runCmd(cmd)
+    if not rc:
+        logger.error("Failed to configure ip '%s' on machine '%s' and nic '%s'", ip, host, nic)
+        logger.error(output)
+        return False
+    return True
