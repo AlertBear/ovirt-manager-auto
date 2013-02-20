@@ -244,9 +244,9 @@ class UnittestLoader(Component):
 
                 mod = __import__(module.rsplit('.')[0])
                 setattr(mod, 'ART_CONFIG', self.conf)
-                description[mod.__name__] = mod.__doc__
 
                 mod = __import__(module, fromlist=[module.split('.')[-1]])
+                description[mod.__name__] = mod.__doc__
                 modules.append([name, mod])
 
             loader = TestLoader()
