@@ -279,6 +279,19 @@ class Bugzilla(Component):
                     return False
         return True
 
+    def __check_fixed_at(self, bug):
+        '''
+        Returns True if the bug was fixed at a later version,
+        hence should be skipped.
+        '''
+        if getattr(bug, "target_release", None):
+            fixed_at = bug.target_release[0]
+            fixed_at = Version(fixed_at)
+            if fixed_at > self.version:
+                return True
+        else:
+            return False
+
     def __deal_with_comp_and_version(self, bug):
         comp = expect_list(bug, 'component', '')
         if comp and comp[0]:
@@ -302,7 +315,6 @@ class Bugzilla(Component):
     def __is_open(self, bug):
         return bug.bug_status not in self.const_list
 
-
     def __is_related_product(self, bug):
         product = getattr(bug, 'product', '')
         # there could be bug which is not related to RHEVM or oVirt
@@ -313,8 +325,6 @@ class Bugzilla(Component):
                 logger.warn(msg, bug.id, self.product, product)
                 return False
         return True
-
-
 
     def _should_be_skipped(self, test):
         if not getattr(test, 'bz', False):
@@ -329,7 +339,10 @@ class Bugzilla(Component):
             if not self.__is_related_product(bz):
                 continue
 
-            if self.__is_open(bz) and self.__deal_with_comp_and_version(bz):
+            skipped = self.__deal_with_comp_and_version(bz)
+            if not self.__is_open(bz):
+                skipped |= self.__check_fixed_at(bz)
+            if skipped:
                 raise BugzillaSkipTest(bz, self.url)
 
     def should_be_test_case_skipped(self, test_case):
