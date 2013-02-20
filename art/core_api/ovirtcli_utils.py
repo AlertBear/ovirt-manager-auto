@@ -192,6 +192,7 @@ class RhevmCli(CliConnection):
     _rhevmDisconnectedPrompt = '\[RHEVM shell \(disconnected\)\]# '
     _rhevmTimeout = 900
     _specialCliPrompt = {'\r\n:': ' ', '7m\(END\)': 'q'}
+    _specialMatrixParamsDict = {'case-sensitive': 'case_sensitive'}
 
     def __init__(self, logger, uri, user, userDomain, password,
                  secure, sslKeyFile, sslCertFile, sslCaFile, logFile,
@@ -557,6 +558,10 @@ class CliUtil(RestUtil):
 
         queryCmd = "%s > %s" % (queryCmd, TMP_FILE)
 
+        # checking for special cases
+        for cliFormatParam, restFormatParam in \
+                self.cli._specialMatrixParamsDict.iteritems():
+            queryCmd = queryCmd.replace(cliFormatParam, restFormatParam)
         try:
             out = self.cli.cliCmdRunner(queryCmd, 'SEARCH')
         except CLICommandFailure as e:
