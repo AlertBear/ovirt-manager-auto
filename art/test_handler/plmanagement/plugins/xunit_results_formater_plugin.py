@@ -15,6 +15,8 @@ CLI Options
 
 """
 
+import re
+import string
 from lxml.etree import Element, ElementTree, PI
 from lxml.builder import E
 import datetime
@@ -117,6 +119,9 @@ class XUnit(Component):
             out_msg = kwargs['captured_log']
             written.append('captured_log')
 
+        out_msg = re.sub('[^%s]' % string.printable.replace(']', '\\\\]'),
+                                                            '_', out_msg)
+
         error_elm = None
         if kwargs['status'] == test_case.TEST_STATUS_FAILED:
             self.failures += 1
@@ -131,8 +136,9 @@ class XUnit(Component):
             try:
                 elm = error_elm(out_msg)
             except ValueError as ex:
-                logger.warn("failed setting message: %s, %s", ex, out_msg)
-                elm = error_elm("[malformed data]")
+                logger.error("failed to add test_element info: %s", ex)
+                out_msg = "[malformed data]"
+                elm = error_elm(out_msg)
             testcase.append(elm)
         self.tests += 1
 
@@ -142,7 +148,12 @@ class XUnit(Component):
         if kwargs['status'] not in [test_case.TEST_STATUS_FAILED,
         test_case.TEST_STATUS_SKIPPED, test_case.TEST_STATUS_ERROR]:
             systemout = Element('system-out')
-            systemout.text = out_msg
+            try:
+                systemout.text = out_msg
+            except ValueError as ex:
+                logger.error("failed to add test_element info: %s", ex)
+                out_msg = "[malformed data]"
+                systemout.text = out_msg
             testcase.append(systemout)
 
         properties = E.properties()

@@ -16,6 +16,8 @@ CLI Options
 
 """
 
+import re
+import string
 from lxml.etree import Element, ElementTree
 from lxml.builder import E
 from dateutil import tz
@@ -102,6 +104,9 @@ class XMLFormatter(Component):
             e = Element(key)
             if not isinstance(val, basestring):
                 val = str(val)
+
+            val = re.sub('[^%s]' % string.printable.replace(']', '\\\\]'),
+                                                                '_', val)
             try:
                 e.text = val
             except ValueError:
