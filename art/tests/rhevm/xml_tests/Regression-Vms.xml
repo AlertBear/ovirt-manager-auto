@@ -1846,7 +1846,7 @@
   <!-- ////////////////////////// TEARDOWN /////////////////////////////// -->
   <test_case>
     <id>cb8d32a8-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Remove all remaining VMs</test_name>
+    <test_name>Remove all remaining VMs-#loop_index</test_name>
     <test_action>removeVm</test_action>
     <parameters>vm='{vms_templates_tests}'</parameters>
     <positive>TRUE</positive>
