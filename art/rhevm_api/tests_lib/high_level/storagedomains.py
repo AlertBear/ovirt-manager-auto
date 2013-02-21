@@ -28,6 +28,30 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 
 logger = logging.getLogger(__name__)
 
+
+def _ISCSIdiscoverAndLogin(host, lun_address, lun_target):
+    """
+        Description: performs iscsi discovery and login
+        Author: kjachim
+        Parameters:
+            * host - host on which iscsi commands should be performed
+            * lun_address - iscsi server address
+            * lun_target - iscsi target (name of lun on iscsi address)
+        returns True of both operations succeeded, False otherwise
+    """
+    if not storagedomains.iscsiDiscover('True', host, lun_address):
+        logger.error('Failed to discover lun address %s from %s' %
+                     (lun_address, host))
+        return False
+
+    if not storagedomains.iscsiLogin('True', host, lun_address, lun_target):
+        logger.error('Failed to login %s on target %s from %s' %
+                     (lun_address, lun_target, host))
+        return False
+
+    return True
+
+
 @is_action()
 def addISCSIDataDomain(host, storage, data_center, lun, lun_address,
                        lun_target, lun_port=3260, storage_format=None):
@@ -46,14 +70,7 @@ def addISCSIDataDomain(host, storage, data_center, lun, lun_address,
     return True if succeeded, False otherwise
     '''
 
-    if not storagedomains.iscsiDiscover(True, host, lun_address):
-        logger.error('Failed to discover lun address %s from %s' %
-                     (lun_address, host))
-        return False
-
-    if not storagedomains.iscsiLogin(True, host, lun_address, lun_target):
-        logger.error('Failed to login %s on target %s from %s' %
-                     (lun_address, lun_target, host))
+    if not _ISCSIdiscoverAndLogin(host, lun_address, lun_target):
         return False
 
     if not storagedomains.addStorageDomain(True, host=host, name=storage,
@@ -71,6 +88,56 @@ def addISCSIDataDomain(host, storage, data_center, lun, lun_address,
 
     return status and storagedomains.activateStorageDomain(True, data_center,
                                  storage)
+
+
+@is_action()
+def extendISCSIDomain(storage_domain, host, extend_lun, extend_lun_address,
+                     extend_lun_target, extend_lun_port=3260):
+    """
+    Description:
+        Extends iscsi storage domain with given lun,
+        performs all needed operation (discover & login)
+    Author: kjachim
+    Parameters:
+        * host - host on which storage domain is created
+        * storage_domain - storage domain to extend
+        * extend_lun - lun which we want to extend storage domain with
+        * extend_lun_address - iscsi server address
+        * extend_lun_target - iscsi target (name of lun on iscsi address)
+        * extend_lun_port - (optional) iscsi server port (default 3260)
+    returns True in case of success, False otherwise
+    """
+    if not _ISCSIdiscoverAndLogin(host, extend_lun_address, extend_lun_target):
+        return False
+
+    return storagedomains.extendStorageDomain(
+                True,
+                storagedomain=storage_domain,
+                lun=extend_lun,
+                lun_address=extend_lun_address,
+                lun_target=extend_lun_target,
+                lun_port=extend_lun_port,
+                host=host,
+                storage_type=ENUMS['storage_type_iscsi'])
+
+
+@is_action()
+def extendFCPDomain(storage_domain, host, lun):
+    """
+    Description: extends fcp storage domain with given lun
+    Author: kjachim
+    Parameters:
+        * host - host on which storage domain is created
+        * lun - lun which we want to extend storage domain with
+        * storage_domain - storage domain to extend
+    returns True in case of success, False otherwise
+    """
+    return storagedomains.extendStorageDomain(
+                True,
+                storagedomain=storage_domain,
+                lun=lun,
+                host=host,
+                storage_type=ENUMS['storage_type_fcp'])
 
 
 @is_action()
@@ -101,6 +168,63 @@ def addNFSDomain(host, storage, data_center, address, path,
                                                 True)
     return status and storagedomains.activateStorageDomain(True, data_center,
                                  storage)
+
+
+def extend_storage_domain(storage_domain, type_, host, storage):
+    """
+    Description: Extends given storage domain with luns defined
+        with extend_lun* params
+    Author: kjachim
+    Parameters:
+        * storage_domain - name of storage domain which should be extended
+        * storage - dictionary ([storage_type] section)
+        * type_ - type of storage (iscsi, nfs, fcp, localfs)
+        * host - name of the host to use
+    """
+    logger.info("extending storage domain %s" % storage_domain)
+    if type_ == ENUMS['storage_type_iscsi']:
+        __extend_iscsi_domain(storage_domain, host, storage)
+    elif type_ == ENUMS['storage_type_fcp']:
+        __extend_fcp_domain(storage_domain, host, storage)
+    else:
+        raise errors.UnkownConfigurationException(
+            "Extending storage domain is supported for iscsi/fcp data centers")
+
+
+def __extend_iscsi_domain(storage_domain, host, storage_conf):
+    """
+    Description: Extends iscsi domain with luns defined with extend_lun* params
+    Parameters:
+        * storage_domain - storage domain to extend
+        * host - host on which storage domain is created
+        * storage_conf - dictionary ([storage_type] section)
+    """
+    lun_targets_list = storage_conf.as_list('extend_lun_target')
+    lun_addresses_list = storage_conf.as_list('extend_lun_address')
+    lun_list = storage_conf.as_list('extend_lun')
+    for (lun, lun_address, lun_target) in zip(
+                lun_list, lun_addresses_list, lun_targets_list):
+        if not extendISCSIDomain(
+                    storage_domain, host, lun, lun_address, lun_target):
+            raise errors.StorageDomainException(
+                    "extendISCSIDomain(%s, %s, %s, %s, %s) failed.",
+                    storage_domain, host, lun, lun_address, lun_target)
+
+
+def __extend_fcp_domain(storage_domain, host, storage_conf):
+    """
+    Description: Extends fcp domain with luns defined with extend_lun parameter
+    Parameters:
+        * storage_domain - storage domain to extend
+        * host - host on which storage domain is created
+        * storage_conf - dictionary ([storage_type] section)
+    """
+    lun_list = storage_conf.as_list('extend_lun')
+    for lun in lun_list:
+        if not extendFCPDomain(storage_domain, host, lun):
+            raise errors.StorageDomainException(
+                    "extendFCPDomain(%s, %s, %s) failed.",
+                    storage_domain, host, lun)
 
 
 def create_storages(storage, type_, host, datacenter,
@@ -210,9 +334,9 @@ def __create_localfs_storages(datacenter, host, storage_conf):
     """
     raise NotImplementedError("Not implemented yet!")
 
+
 def __create_posixfs_storages(datacenter, host, storage_conf):
     """
     TODO
     """
     raise NotImplementedError("Not implemented yet!")
-
