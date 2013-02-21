@@ -718,6 +718,87 @@
    <fetch_output/>
 </test_case>
 <test_case>
+   <test_name>START_GROUP: Positive_test_testCase_exportImportVmWith3Disks</test_name>
+   <test_action/>
+   <parameters>n/a2</parameters>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Stop running VM for adding disks '{data_center_type}'</test_name>
+   <test_action>stopVm</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <vital>TRUE</vital>
+</test_case>
+<test_case>
+   <test_name>Add second 3G COW IDE data disk to VM to test more disks export '{data_center_type}'</test_name>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='{data_center_type}TestVm', size=3221225472, type='e{disk_type_data}', interface='e{interface_virtio}', sparse='true', format='e{format_cow}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Add third 3G RAW IDE data disk to VM to test more disks export '{data_center_type}'</test_name>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='{data_center_type}TestVm', size=3221225472, type='e{disk_type_data}', interface='e{interface_virtio}', format='e{format_raw}', sparse=False</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Remove VM '{data_center_type}' from export to test export of vm with more disks</test_name>
+   <test_action>removeVmFromExportDomain</test_action>
+   <parameters>vm='{data_center_type}TestVm', datacenter='{data_center_type}StorageTest', export_storagedomain='ImpExp_{data_center_type}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Export VM with 3 disks '{data_center_type}'</test_name>
+   <test_action>exportVm</test_action>
+   <parameters>vm='{data_center_type}TestVm', storagedomain='ImpExp_{data_center_type}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Remove VM with 3 disks '{data_center_type}'</test_name>
+   <test_action>removeVm</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Import exported VM with 3 disks '{data_center_type}'</test_name>
+   <test_action>importVm</test_action>
+   <parameters>vm='{data_center_type}TestVm', import_storagedomain='{data_center_type}StorageTest_data_domain0', export_storagedomain='ImpExp_{data_center_type}', cluster='{data_center_type}StorageTest'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>Start exported VM with 3 disks '{data_center_type}'</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>END_GROUP:Positive_test_testCase_exportImportVmWith3Disks</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>NONE</positive>
+   <run/>
+   <fetch_output/>
+</test_case>
+<test_case>
    <test_name>START_GROUP: CleanUp</test_name>
    <test_action/>
    <parameters>n/a2</parameters>
