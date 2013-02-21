@@ -1,38 +1,14 @@
-<input>
+<input tcms_plan_id="6955">
 <test_case>
    <test_name>Checking that spoofing filter rule enabled</test_name>
    <test_action>checkSpoofingFilterRuleByVer</test_action>
-   <parameters>host='{host}',user='{vm_linux_user}',passwd='{vm_linux_password}',version='3.2',system_ver='{compatibility_version}'</parameters>
-   <positive>True</positive>
+   <parameters>host='{host}',user='{vm_linux_user}',passwd='{vm_linux_password}'</parameters>
+   <positive>None</positive>
    <run>YES</run>
    <fetch_output/>
    <report>YES</report>
    <vital>FALSE</vital>
-   <!-- tcms case: 233972 -->
-   <test_description/>
-</test_case>
-<test_case>
-   <test_name>Checking that spoofing filter rule enabled</test_name>
-   <test_action>checkSpoofingFilterRuleByVer</test_action>
-   <parameters>host='{host}',user='{vm_linux_user}',passwd='{vm_linux_password}',version='3.1',system_ver='{compatibility_version}'</parameters>
-   <positive>True</positive>
-   <run>YES</run>
-   <fetch_output/>
-   <report>YES</report>
-   <vital>FALSE</vital>
-   <!-- tcms case: 195126 -->
-   <test_description/>
-</test_case>
-<test_case>
-   <test_name>Checking that spoofing filter rule enabled</test_name>
-   <test_action>checkSpoofingFilterRuleByVer</test_action>
-   <parameters>host='{host}',user='{vm_linux_user}',passwd='{vm_linux_password}',version='3.0',system_ver='{compatibility_version}'</parameters>
-   <positive>FALSE</positive>
-   <run>YES</run>
-   <fetch_output/>
-   <report>YES</report>
-   <vital>FALSE</vital>
-   <!-- tcms case: 198618 -->
+   <tcms_test_case>233972</tcms_test_case>
    <test_description/>
 </test_case>
 <test_case>
@@ -44,28 +20,26 @@
    <fetch_output/>
    <report>YES</report>
    <vital>FALSE</vital>
-   <!-- tcms case: 198901 -->
+   <tcms_test_case>198901</tcms_test_case>
    <test_description/>
 </test_case>
 <!-- VM is ready for use -->
 <test_case>
    <test_name>Checking that network filtering is enabled via dumpxml</test_name>
    <test_action>checkNetworkFilteringDumpxml</test_action>
-   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', vm='{vm_name[0]}',
-   nics='1'</parameters>
+   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', vm='{vm_name[0]}', nics='1'</parameters>
    <positive>True</positive>
    <run>YES</run>
    <fetch_output/>
    <report>YES</report>
    <vital>FALSE</vital>
-	<!-- tcms case: 198903 -->
+   <tcms_test_case>198903</tcms_test_case>
    <test_description/>
 </test_case>
 <test_case>
   <test_name>Add nic2 as RTL8139 with network rhevm</test_name>
   <test_action>addNic</test_action>
-  <parameters>vm='{vm_name[0]}',name='nic2', interface='e{nic_type_rtl8139}', network='{mgmt_bridge}',
-  active='true'</parameters>
+  <parameters>vm='{vm_name[0]}',name='nic2', interface='e{nic_type_rtl8139}', network='{mgmt_bridge}', active='true'</parameters>
   <positive>TRUE</positive>
   <run>YES</run>
   <fetch_output/>
@@ -87,14 +61,13 @@
 <test_case>
    <test_name>Checking that network filtering is enabled via dumpxml</test_name>
    <test_action>checkNetworkFilteringDumpxml</test_action>
-   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', vm='{vm_name[0]}',
-   nics='2'</parameters>
+   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', vm='{vm_name[0]}', nics='2'</parameters>
    <positive>True</positive>
    <run>YES</run>
    <fetch_output/>
    <report>YES</report>
    <vital>FALSE</vital>
-	<!-- tcms case: 198914 -->
+   <tcms_test_case>198914</tcms_test_case>
    <test_description/>
 </test_case>
 <test_case>
@@ -133,8 +106,7 @@
 <test_case>
    <test_name>Checking that network filtering is enabled via ebtables</test_name>
    <test_action>checkNetworkFilteringEbtables</test_action>
-   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}',nics='2',
-   vm_macs=[%macAddress_nic1%,%macAddress_nic2%], mac_range='{MacPoolRanges}'</parameters>
+   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}',nics='2', vm_macs=[%macAddress_nic1%,%macAddress_nic2%], mac_range='{MacPoolRanges}'</parameters>
    <positive>True</positive>
    <run>YES</run>
    <fetch_output/>
@@ -168,8 +140,7 @@
 <test_case>
    <test_name>Checking that network filtering is enabled via ebtables</test_name>
    <test_action>checkNetworkFilteringEbtables</test_action>
-   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', nics='2',
-   vm_macs=[%macAddress_nic1%,%macAddress_nic2%], mac_range='{MacPoolRanges}'</parameters>
+   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', nics='2', vm_macs=[%macAddress_nic1%,%macAddress_nic2%], mac_range='{MacPoolRanges}'</parameters>
    <positive>FALSE</positive>
    <run>YES</run>
    <fetch_output/>
@@ -186,7 +157,7 @@
    <fetch_output/>
    <report/>
    <vital/>
-   <!-- tcms case: 198920 -->
+   <tcms_test_case>198920</tcms_test_case>
    <test_description/>
 </test_case>
 <test_case>
@@ -259,8 +230,7 @@
 <test_case>
    <test_name>Checking that network filtering is enabled via ebtables</test_name>
    <test_action>checkNetworkFilteringEbtables</test_action>
-   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', nics='1',
-   vm_macs=[%macAddress_nic1%], mac_range='{MacPoolRanges}'</parameters>
+   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', nics='1', vm_macs=[%macAddress_nic1%], mac_range='{MacPoolRanges}'</parameters>
    <positive>True</positive>
    <run>YES</run>
    <fetch_output/>
@@ -271,8 +241,7 @@
 <test_case>
   <test_name>Add nic2 as RTL8139 with network rhevm</test_name>
   <test_action>addNic</test_action>
-  <parameters>vm='{vm_name[0]}',name='nic2', interface='e{nic_type_rtl8139}', network='{mgmt_bridge}',
-  active='true'</parameters>
+  <parameters>vm='{vm_name[0]}',name='nic2', interface='e{nic_type_rtl8139}', network='{mgmt_bridge}', active='true'</parameters>
   <positive>TRUE</positive>
   <run>YES</run>
   <fetch_output/>
@@ -305,8 +274,7 @@
 <test_case>
    <test_name>Checking that network filtering is enabled via ebtables</test_name>
    <test_action>checkNetworkFilteringEbtables</test_action>
-   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', nics='2',
-   vm_macs=[%macAddress_nic1%, %macAddress_nic2%], mac_range='{MacPoolRanges}'</parameters>
+   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', nics='2', vm_macs=[%macAddress_nic1%, %macAddress_nic2%], mac_range='{MacPoolRanges}'</parameters>
    <positive>True</positive>
    <run>YES</run>
    <fetch_output/>
@@ -350,8 +318,7 @@
 <test_case>
    <test_name>Checking that network filtering is enabled via ebtables</test_name>
    <test_action>checkNetworkFilteringEbtables</test_action>
-   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', nics='1',
-   vm_macs=[%macAddress_nic1%], mac_range='{MacPoolRanges}'</parameters>
+   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', nics='1', vm_macs=[%macAddress_nic1%], mac_range='{MacPoolRanges}'</parameters>
    <positive>True</positive>
    <run>YES</run>
    <fetch_output/>
@@ -390,7 +357,7 @@
    <fetch_output/>
    <report/>
    <vital/>
-   <!-- tcms case: 198966 -->
+   <tcms_test_case>198966</tcms_test_case>
    <test_description/>
 </test_case>
 <test_case>
@@ -407,8 +374,7 @@
 <test_case>
    <test_name>Disabling network filter</test_name>
    <test_action>setNetworkFilterStatus</test_action>
-   <parameters>enable='False', host='{host}', user='{vm_linux_user}', passwd='{vm_linux_password}',
-   version='{compatibility_version}'</parameters>
+   <parameters>enable='False', host='{host}', user='{vm_linux_user}', passwd='{vm_linux_password}', version='{compatibility_version}'</parameters>
    <positive>NONE</positive>
    <run>YES</run>
    <fetch_output/>
@@ -441,8 +407,7 @@
 <test_case>
    <test_name>Checking that network filtering is enabled via dumpxml</test_name>
    <test_action>checkNetworkFilteringDumpxml</test_action>
-   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', vm='{vm_name[0]}',
-   nics='1'</parameters>
+   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', vm='{vm_name[0]}', nics='1'</parameters>
    <positive>False</positive>
    <run>YES</run>
    <fetch_output/>
@@ -453,8 +418,7 @@
 <test_case>
    <test_name>Checking that network filtering is enabled via ebtables</test_name>
    <test_action>checkNetworkFilteringEbtables</test_action>
-   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', nics='1',
-	vm_macs=[%macAddress_nic1%], mac_range='{MacPoolRanges}'</parameters>
+   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', nics='1', vm_macs=[%macAddress_nic1%], mac_range='{MacPoolRanges}'</parameters>
    <positive>False</positive>
    <run>YES</run>
    <fetch_output/>
@@ -471,7 +435,7 @@
    <fetch_output/>
    <report/>
    <vital/>
-   <!-- tcms case: 203261 -->
+   <tcms_test_case>203261</tcms_test_case>
    <test_description/>
 </test_case>
 </input>
