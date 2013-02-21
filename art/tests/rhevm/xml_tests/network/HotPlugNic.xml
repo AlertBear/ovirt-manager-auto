@@ -261,10 +261,6 @@ In addition, It tests test cases at proposed in its TCMS plan: #5813
   <vital>FALSE</vital>
   <test_description/>
 </test_case>
-
-<!-- The following test tests the functionality of portmirroring -->
-<xi:include href="PortMirroring.xml"/>
-
 <test_case>
    <test_name>Start VMs</test_name>
    <test_action>startVm</test_action>
