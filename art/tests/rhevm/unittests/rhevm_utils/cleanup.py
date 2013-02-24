@@ -1,3 +1,7 @@
+"""
+    rhevm cleanup module
+"""
+
 from rhevm_utils.base import RHEVMUtilsTestCase, istest
 from utilities.rhevm_tools.cleanup import CleanUpUtility
 from utilities.rhevm_tools import errors
@@ -8,6 +12,9 @@ _multiprocess_can_split_ = True
 
 
 class CleanUpTestCase(RHEVMUtilsTestCase):
+    """
+        rhevm cleanup test cases
+    """
 
     __test__ = True
     utility = NAME

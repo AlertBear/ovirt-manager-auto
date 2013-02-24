@@ -11,18 +11,11 @@ import unittest
 from art.rhevm_api.tests_lib.low_level.vms import addSnapshot, restoreSnapshot
 from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter, \
     prepareVmWithRhevm
-from configobj import ConfigObj
 from art.rhevm_api.utils.test_utils import get_api
 VM_API = get_api('vm', 'vms')
 
 # Folowing 'try-except' blocks are here because this modules are needed only
 # for nose testframework, but you can use this module also for another purposes.
-try:
-    from ovirtsdk.api import API
-    from ovirtsdk.xml import params as sdk_params
-except ImportError:
-    API = None
-    sdk_params = None
 try:
     # PGPASS, PREPARE_CONF should move to test conf file, once possible.
     from unittest_conf import config, PGPASS
@@ -58,35 +51,6 @@ from . import ART_CONFIG
 # changed in next versions
 
 
-class SDK(object):
-    API = None
-    params = sdk_params
-    manager = None
-
-    @classmethod
-    def __new__(cls, sub):
-        if cls.API is None:
-            if config:
-                conf = config['SDK']
-                SDK.init(conf['address'], conf['user'], conf['password'])
-            else:
-                logger.warn("You can have problem with SDK connection, which is used for testing purposes")
-        return cls.API
-
-    @classmethod
-    def init(cls, address, user, passwd):
-        if API is not None:
-            conf = ConfigObj(opts.get('conf'))
-            host = conf.get('REST_CONNECTION').get('host')
-            logger.info("DEBUG: sdk class, init method, host found = %s" % host)
-            #cls.API = API(address, user, passwd)
-            # workaround to skip sdk for now
-            #cls.API = API('https://lilach-rhel.qa.lab.tlv.redhat.com/api', 'admin@internal', '123456', insecure=True)
-            cls.API = API(host, 'admin@internal', '123456', insecure=True)
-        else:
-            logger.warn("SDK package is missing some functionality couldn't work")
-
-
 class SetupManager(object):
     """
     Class which is able to work with setup and perform cleanning action
@@ -100,7 +64,6 @@ class SetupManager(object):
         """
         C'tor
         """
-        self.sdk = SDK()
         self.maps = {}
         self.setups = {}
 
