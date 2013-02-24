@@ -303,9 +303,23 @@
 <test_case>
    <test_name>Restart vdsmd on the host</test_name>
    <test_action>restartVdsmd</test_action>
-   <parameters>vds='{vds}', password='{vds_password}'</parameters>
+   <parameters>vds='{vds}', password='{vds_password[0]}'</parameters>
    <positive>NONE</positive>
    <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check if data center status is problematic</test_name>
+   <test_action>waitForDataCenterState</test_action>
+   <parameters>name='{datacenter}', state='e{data_center_state_problematic}', timeout=300, sleep=10</parameters>
+   <positive>NONE</positive>
+   <run>YES</run>
+</test_case>
+<test_case>
+   <test_name>Check if data center status is up</test_name>
+   <test_action>waitForDataCenterState</test_action>
+   <parameters>name='{datacenter}', state='e{data_center_state_up}', timeout=300, sleep=10</parameters>
+   <positive>NONE</positive>
+   <run>YES</run>
 </test_case>
 <test_case>
    <test_name>Check VM has port_mirroring</test_name>
@@ -319,9 +333,16 @@
 <test_case>
    <test_name>Restart network on the host</test_name>
    <test_action>restartNetwork</test_action>
-   <parameters>vds='{vds}', password='{vds_password}'</parameters>
+   <parameters>vds='{vds}', password='{vds_password[0]}'</parameters>
    <positive>NONE</positive>
    <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Check if data center status is up</test_name>
+   <test_action>waitForDataCenterState</test_action>
+   <parameters>name='{datacenter}', state='e{data_center_state_up}', timeout=300, sleep=10</parameters>
+   <positive>NONE</positive>
+   <run>YES</run>
 </test_case>
 <test_case>
    <test_name>Check VM has port_mirroring</test_name>
@@ -331,21 +352,6 @@
    <run>YES</run>
    <fetch_output/>
    <report>YES</report>
-</test_case>
-<test_case>
-   <test_name>Check if data center status is problematic</test_name>
-   <test_action>waitForDataCenterState</test_action>
-   <parameters>name='{datacenter}', state='e{data_center_state_problematic}', timeout=300, sleep=10</parameters>
-   <positive>NONE</positive>
-   <run>YES</run>
-</test_case>
-
-<test_case>
-   <test_name>Check if data center status is up</test_name>
-   <test_action>waitForDataCenterState</test_action>
-   <parameters>name='{datacenter}', state='e{data_center_state_up}', timeout=300, sleep=10</parameters>
-   <positive>NONE</positive>
-   <run>YES</run>
 </test_case>
 <test_case>
    <test_name>END_GROUP:TestRestart_VDSM_NETWORK</test_name>
