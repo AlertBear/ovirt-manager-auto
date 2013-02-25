@@ -581,9 +581,8 @@
    <test_action/>
    <parameters/>
    <positive>none</positive>
-   <!-- Blocked by BZ#879253 
-   <run>if(len('[vds]'.split(','))&gt;1)</run> -->
-   <run>no</run>
+   <!-- Blocked by BZ#879253 -->
+   <run>if(len('[vds]'.split(','))&gt;1)</run>
    <tcms_test_case>174611</tcms_test_case>
    <report/>
 </test_case>
