@@ -123,8 +123,10 @@ class RestUtil(APIUtil):
         self.logger.debug("GET request content is --  url:%(uri)s " % {'uri': href })
         ret = self.api.GET(href)
 
-        if  validator.compareResponseCode(ret, [200, 201], self.logger) and\
-                                                                validate:
+        if not validator.compareResponseCode(ret, [200, 201], self.logger):
+            return None
+
+        if  validate:
             self.validateResponseViaXSD(href, ret)
 
         self.logger.debug("Response body for GET request is: %s " % ret['body'])
@@ -379,8 +381,10 @@ class RestUtil(APIUtil):
 
         self.logger.debug("Response body for QUERY request is: %s " % ret['body'])
 
-        if validator.compareResponseCode(ret, expected_status, self.logger):
-            self.validateResponseViaXSD(href, ret)
+        if not validator.compareResponseCode(ret, expected_status, self.logger):
+            return None
+
+        self.validateResponseViaXSD(href, ret)
 
         return getattr(parse(ret['body']), self.element_name)
 
