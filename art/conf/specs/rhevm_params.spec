@@ -43,6 +43,16 @@ vm_linux_password = string(default='qum5net')
 
 useAgent = string(default='True')
 
+# vm_os used in exportImport test. Options: Any supported os image name.
+vm_os = string(default='Red Hat Enterprise Linux 6.x x64')
+display_type = option('spice', 'vnc', 'rdesktop', default='spice')
+
+# cobbler configuration
+cobbler_address = is_alive(default='qa-cobbler.qa.lab.tlv.redhat.com')
+cobbler_user = string(default='root')
+cobbler_passwd = string(default='qum5net')
+cobbler_profile = string(default='short_agent_rhel6.x_jenkins-x86_64')
+
 [MATRIX_TEST_RUNNER]
 test_modules = force_list(default=list('art.rhevm_api',))
 auto_discovery = boolean(default=True)

@@ -209,16 +209,8 @@ class TestComposer(object):
         self.e.merge(opts['elements_conf'][RHEVM_PERMITS])
         self.c = config[CONFIG_PARAMS]
         self.c.merge(config[REST_CONNECTION])
-        self.c.merge(self.__get_data_center_config(config))
         self.f = {}
         self.groups = groups
-
-    def __get_data_center_config(self, config):
-        # FIXME: ugly hardcoded variable
-        dc_type_sec = config[CONFIG_PARAMS].get('data_center_type', 'none').upper()
-        if dc_type_sec != 'NONE' and dc_type_sec in config:
-            return config[dc_type_sec]
-        return {}
 
     def resolve_place_holders(self, value, local_scope=None):
         # replace all variables from local_scope

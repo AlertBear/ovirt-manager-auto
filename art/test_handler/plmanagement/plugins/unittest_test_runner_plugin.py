@@ -274,9 +274,6 @@ class UnittestLoader(Component):
         # FIXME: why this is done in both matrix_runner and here ? it should be somewhere else.
         self.conf = conf
         self.conf[CONFIG_PARAMS].merge(self.conf[REST_CONNECTION])
-        dc_type_sec = conf[CONFIG_PARAMS].get('data_center_type','none').upper()
-        if dc_type_sec != 'NONE' and dc_type_sec in conf:
-            self.conf[CONFIG_PARAMS].merge(conf[dc_type_sec])
 
         TestResult.ATTRIBUTES['module_name'] = \
                 ('mod_name', None, None)
