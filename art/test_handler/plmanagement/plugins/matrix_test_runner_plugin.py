@@ -278,7 +278,8 @@ class TestComposer(object):
                 logger.warn("Parameter %s doesn't exist." % (place_holder))
                 #raise
             else:
-                value = value.replace(place_holder, ",".join(place_holder_val))
+                value = value.replace(place_holder, \
+                    ",".join([str(x) for x in place_holder_val]))
 
         # replace fetch output values with stored in ouput dictionary by key name
         vals = re.findall(r'%\w+%', value)
