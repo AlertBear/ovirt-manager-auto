@@ -97,7 +97,7 @@ class GenerateDataStructures(Component):
 
     @classmethod
     def is_vital(cls, conf):
-        return conf.get(SECTION_NAME).as_bool(VITAL)
+        return conf.get(DS_GEN_OPTIONS).as_bool(VITAL)
 
     @classmethod
     def fill_setup_params(cls, params):
