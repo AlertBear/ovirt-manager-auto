@@ -30,7 +30,8 @@ from time import strftime
 from shutil import copyfile
 from configobj import ConfigObj
 
-from art.test_handler.handler_lib.configs import ARTConfigValidator
+from art.test_handler.handler_lib.configs import ARTConfigValidator, \
+        ConfigLoader
 from art.test_handler.plmanagement.manager import PluginManager
 from art.test_handler import find_config_file
 
@@ -161,8 +162,11 @@ def readTestRunOpts(path, redefs):
     rewriteConfig(config, redefs)
     config.write()
 
-    validator = ARTConfigValidator(confFileCopyName, opts['confSpec'],
-            initPlmanager())
+
+    conf = ConfigLoader(find_config_file(confFileCopyName), raise_errors=True)
+    spec = ConfigLoader(find_config_file(opts['confSpec']), raise_errors=True,
+            _inspec=True)
+    validator = ARTConfigValidator(conf.load(), spec.load(), initPlmanager())
 
     config = validator()
 

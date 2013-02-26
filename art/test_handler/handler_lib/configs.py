@@ -88,25 +88,18 @@ class ARTConfigValidator(ConfigValidator):
     _parameters = 'PARAMETERS'
     _test_conf_spec = 'test_conf_specs'
 
-    def __init__(self, conf_path, spec_path, plmngmnt):
+    def __init__(self, conf, spec, plmngmnt):
         funcs = ARTValidationFuncs()
-        conf_path = funcs.findConfigFile(conf_path)
-        spec_path = funcs.findConfigFile(spec_path)
-        super(ARTConfigValidator, self).__init__(conf_path, spec_path, funcs,
+        super(ARTConfigValidator, self).__init__(conf, spec, funcs,
                 True)
         self.funcs['section_exists'] = self.checkSectionExistence
         self.plmngmnt = plmngmnt
-        self.conf = {}
 
-    def loadSpec(self):
-        spec = super(ARTConfigValidator, self).loadSpec()
+    def prepareSpec(self):
+        spec = super(ARTConfigValidator, self).prepareSpec()
         self.__loadSpecFromPlugins(spec)
         self.__loadSpecFromFiles(spec)
         return spec
-
-    def loadConf(self):
-        self.conf = super(ARTConfigValidator, self).loadConf()
-        return self.conf
 
     def __loadSpecFromPlugins(self, spec):
         for entry in self.plmngmnt.conf_validators:
@@ -115,7 +108,7 @@ class ARTConfigValidator(ConfigValidator):
             spec.merge(plspec)
 
     def __loadSpecFromFiles(self, spec):
-        conf = self.loadConf()
+        conf = self.prepareConf()
         if self._parameters not in conf:
             return
         parameters = conf[self._parameters]
