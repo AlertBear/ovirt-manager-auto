@@ -2,7 +2,7 @@
 parameters_section_validation = section_exists(section='PARAMETERS', default=True)
 
 [RUN]
-engine = option('sdk', 'rest', 'cli', default='rest')
+engine = option('sdk', 'rest', 'cli', 'java', default='rest')
 debug = boolean(default=True)
 media_type = option('application/xml', default='application/xml')
 in_parallel = force_list(default=list())
@@ -27,6 +27,12 @@ tool = option('ovirt-shell', 'rhevm-shell', default='rhevm-shell')
 cli_log_file = string(default='/tmp/cli_log.log')
 validate_cli_command = boolean(default=True)
 optional_params = string(default='')
+
+[JAVA_SDK]
+#timeout = integer(default=100)
+#persistent_auth = boolean(default=True)
+no_host_verification = boolean(default=True)
+#filter = boolean(default=True)
 
 [REPORT]
 has_sub_tests = boolean(default=True)

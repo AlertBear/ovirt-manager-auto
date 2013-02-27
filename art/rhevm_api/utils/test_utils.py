@@ -62,6 +62,7 @@ MTU_DEFAULT_VALUE = 1500
 TASK_TIMEOUT = 300
 TASK_POLL = 5
 
+
 def get_api(element, collection):
     '''
     Fetch proper API instance based on engine type
@@ -77,7 +78,9 @@ def get_api(element, collection):
     if engine == 'cli':
         from art.core_api.ovirtcli_utils import CliUtil
         api = CliUtil(element, collection)
-
+    if engine == 'java':
+        from art.core_api.ovirtsdk_java_utils import JavaSdkUtil
+        api = JavaSdkUtil(element, collection)
     return api
 
 
