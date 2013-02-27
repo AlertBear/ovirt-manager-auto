@@ -538,7 +538,7 @@ def changeVMStatus(positive, vm, action, expectedStatus, async='true'):
 
 @is_action()
 def startVm(positive, vm, wait_for_status=ENUMS['vm_state_powering_up'],
-            wait_for_ip=False):
+            wait_for_ip=False, timeout=VM_ACTION_TIMEOUT):
     '''
     Description: start vm
     Author: edolinin
@@ -569,7 +569,7 @@ def startVm(positive, vm, wait_for_status=ENUMS['vm_state_powering_up'],
 
     query = "name={0} and status={1} or name={0} and status=up".format(vm,
                                     wait_for_status.lower().replace('_', ''))
-    started = VM_API.waitForQuery(query, timeout=VM_ACTION_TIMEOUT, sleep=10)
+    started = VM_API.waitForQuery(query, timeout=timeout, sleep=10)
     if started and wait_for_ip:
         started = waitForIP(vm)[0]
 
