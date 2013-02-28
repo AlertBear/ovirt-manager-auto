@@ -2,7 +2,7 @@
     rhevm cleanup module
 """
 
-from rhevm_utils.base import RHEVMUtilsTestCase, istest
+from rhevm_utils.base import RHEVMUtilsTestCase, istest, config
 from utilities.rhevm_tools.cleanup import CleanUpUtility
 from utilities.rhevm_tools import errors
 
@@ -129,7 +129,7 @@ class CleanUpTestCase(RHEVMUtilsTestCase):
         # TODO: check messagess in log
         # Expect: Logs written correctly, and clearly to the user.
         # 6. Run rhevm-setup and ensure rhevm installation process finished successfully.
-        self.ut.setup.install()
+        self.ut.setup.install(conf=config)
         # Expect: Installation process finished successfully.
 
 
@@ -140,6 +140,6 @@ class CleanUpTestCase(RHEVMUtilsTestCase):
         self.ut()
         self.ut.autoTest()
         # TODO: check logs
-        self.ut.setup.install()
+        self.ut.setup.install(conf=config)
 
 
