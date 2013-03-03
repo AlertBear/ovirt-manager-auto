@@ -35,13 +35,15 @@ from utilities.utils import readConfFile, pingToVms, makeVmList
 from utilities.machine import Machine
 from art.rhevm_api.utils.test_utils import searchForObj, getImageByOsType, \
     convertMacToIpAddress, checkHostConnectivity, updateVmStatusInDatabase, \
-    get_api, cobblerAddNewSystem, cobblerSetLinuxHostName, cobblerRemoveSystem, \
-    split, getAllImages, waitUntilPingable, restoringRandomState, waitUntilGone
+    get_api, split, getAllImages, waitUntilPingable, restoringRandomState, \
+    waitUntilGone
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils.threads import runParallel
 from art.core_api import is_action
 from art.rhevm_api.utils.name2ip import name2ip, LookUpVMIpByName
-from art.rhevm_api.tests_lib.low_level.disks import getVmDisk, _prepareDiskObject
+from art.rhevm_api.tests_lib.low_level.disks import getVmDisk, \
+    _prepareDiskObject
+from art.rhevm_api.utils.provisioning_utils import ProvisionProvider
 from operator import and_
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
@@ -1862,22 +1864,25 @@ def checkVmStatistics(positive, vm):
 
 
 @is_action()
-def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicType=None,
-        mac_address=None, storageDomainName=None, size=None, diskType=ENUMS['disk_type_data'],
-        volumeType='true', volumeFormat=ENUMS['format_cow'],
-        diskInterface=ENUMS['interface_ide'], bootable='true',
-        wipe_after_delete='false', start='false', template='Blank',
-        templateUuid=None, type=None, os_type=None, memory=None,
-        cpu_socket=None, cpu_cores=None, cpu_mode=None, display_type=None,
-        installation=False, slim=False, user=None, password=None, attempt=60,
-        interval=60, cobblerAddress=None, cobblerUser=None, cobblerPasswd=None,
-        image=None, async=False, hostname=None, network='rhevm', useAgent=False,
-        placement_affinity=None, placement_host=None, vcpu_pinning=None,
-        highly_available=None, availablity_priority=None, port_mirroring=None,
-        vm_quota=None, disk_quota=None, plugged='true', linked='true',
-        protected=None):
+def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
+             nicType=None, mac_address=None, storageDomainName=None, size=None,
+             diskType=ENUMS['disk_type_data'], volumeType='true',
+             volumeFormat=ENUMS['format_cow'],
+             diskInterface=ENUMS['interface_ide'], bootable='true',
+             wipe_after_delete='false', start='false', template='Blank',
+             templateUuid=None, type=None, os_type=None, memory=None,
+             cpu_socket=None, cpu_cores=None, cpu_mode=None, display_type=None,
+             installation=False, slim=False, user=None, password=None,
+             attempt=60, interval=60, cobblerAddress=None, cobblerUser=None,
+             cobblerPasswd=None, image=None, async=False, hostname=None,
+             network='rhevm', useAgent=False, placement_affinity=None,
+             placement_host=None, vcpu_pinning=None, highly_available=None,
+             availablity_priority=None, port_mirroring=None, vm_quota=None,
+             disk_quota=None, plugged='true', linked='true', protected=None):
     '''
-    The function createStartVm adding new vm with nic,disk and started new created vm.
+    Description: The function createStartVm adding new vm with nic,disk
+                 and started new created vm.
+    Parameters:
         vmName = VM name
         vmDescription = Decription of VM
         cluster = cluster name
@@ -1885,26 +1890,25 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
         storageDomainName = storage doamin name
         size = size of disk (in bytes)
         diskType = disk type (SYSTEM,DATA)
-        volumeType = true its mean sparse (thin provision) ,false - preallocated.
+        volumeType = true its mean sparse (thin provision) ,
+                     false - preallocated.
         volumeFormat = format type (COW)
         diskInterface = disk interface (VIRTIO or IDE ...)
         bootable = True when disk bootable otherwise False
         wipe_after_delete = Can be true or false
         type - vm type (SERVER or DESKTOP)
         start = in case of true the function start vm
-        template = name of already created template or Blank (start from scratch)
+        template = name of already created template or Blank
+                   (start from scratch)
         display_type - type of vm display (VNC or SPICE)
         installation - true for install os and check connectivity in the end
-        slim - true for slim os(relevant to installation)
         user - user to connect to vm after installation
         password - password to connect to vm after installation
         attempt- attempts to connect after installation
         inerval - interval between attempts
-        cobblerAddress - IP or hostname of cobbler server
-        cobblerUser - username for cobbler
-        cobblerPasswd - password for cobbler
-        image - profile in cobbler
-        useAgent - Set to 'true', if desired to read the ip from VM (agent exist on VM)
+        osType - type of OS as it appears in art/conf/elements.conf
+        useAgent - Set to 'true', if desired to read the ip from VM
+                   (agent exist on VM)
         placement_affinity - vm to host affinity
         placement_host - host that the affinity holds for
         vcpu_pinning - vcpu pinning affinity (dictionary)
@@ -1915,23 +1919,29 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
         linked - shows if specific VNIC is linked or not
         protected - true if VM is delete protected
         cpu_mode - cpu mode
-    return values : Boolean value (True/False ) True in case of success otherwise False
+        cobbler* - backward compatibility with cobbler provisioning,
+                   should be removed
+    return values : Boolean value (True/False ) True in case of success
+                    otherwise False
     '''
     ip = False
-    if not addVm(positive, name=vmName, description=vmDescription, cluster=cluster,
-            template=template, templateUuid=templateUuid, os_type=os_type,
-            type=type, memory=memory, cpu_socket=cpu_socket,
-            cpu_cores=cpu_cores, display_type=display_type, async=async,
-            placement_affinity=placement_affinity, placement_host=placement_host,
-            vcpu_pinning=vcpu_pinning, highly_available=highly_available,
-            availablity_priority=availablity_priority, quota=vm_quota,
-            protected=protected, cpu_mode=cpu_mode):
+    if not addVm(positive, name=vmName, description=vmDescription,
+                 cluster=cluster, template=template, templateUuid=templateUuid,
+                 os_type=os_type, type=type, memory=memory,
+                 cpu_socket=cpu_socket, cpu_cores=cpu_cores,
+                 display_type=display_type, async=async,
+                 placement_affinity=placement_affinity,
+                 placement_host=placement_host, vcpu_pinning=vcpu_pinning,
+                 highly_available=highly_available,
+                 availablity_priority=availablity_priority, quota=vm_quota,
+                 protected=protected, cpu_mode=cpu_mode):
         return False
 
     if nic:
         if not addNic(positive, vm=vmName, name=nic, interface=nicType,
-                      mac_address=mac_address, network=network, port_mirroring=port_mirroring,
-                      plugged=plugged, linked=linked):
+                      mac_address=mac_address, network=network,
+                      port_mirroring=port_mirroring, plugged=plugged,
+                      linked=linked):
             return False
 
     if template == 'Blank' and storageDomainName and templateUuid == None:
@@ -1948,14 +1958,11 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
             (status, res) = getImageByOsType(positive, os_type, slim)
             if not status:
                 return False
-
             image = res['osBoot']
             floppy = res['floppy']
 
-        if not unattendedInstallation(positive, vmName,
-                            cobblerAddress, cobblerUser, cobblerPasswd,
-                            image=image, floppyImage=floppy,
-                            nic=nic, hostname=hostname):
+        if not unattendedInstallation(positive, vmName, image, nic=nic,
+                                      floppyImage=floppy, hostname=hostname):
             return False
         if not waitForVMState(vmName):
             return False
@@ -1968,11 +1975,11 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
 
         if not checkVMConnectivity(positive, vmName, os_type,
                                    attempt=attempt, interval=interval,
-                                   nic=nic, user=user , password=password,
+                                   nic=nic, user=user, password=password,
                                    ip=ip):
             return False
-        if not cobblerRemoveSystem(cobblerAddress, cobblerUser, cobblerPasswd,
-                                   mac[1]['macAddress']):
+
+        if not removeSystem(mac[1]['macAddress']):
             return False
         return True
     else:
@@ -2043,19 +2050,51 @@ def getVmMacAddress(positive, vm, nic='nic1'):
 
 
 @is_action()
-def unattendedInstallation(positive, vm, cobblerAddress, cobblerUser,
-                           cobblerPasswd, image, floppyImage=None,
-                           nic='nic1', hostname=None):
+def removeSystem(mac, cobblerAddress=None, cobblerUser=None,
+                 cobblerPasswd=None):
+    '''
+    Description: remove system from provisioning provider:
+    Author: imeerovi
+    Parameters:
+       * mac - mac address of system to remove
+       * cobbler* - backward compatibility with cobbler provisioning,
+                    should be removed
+    Return: True if remove succseeded and False otherwise.
+    '''
+    return ProvisionProvider.remove_system(mac)
+
+
+@is_action()
+def cobblerRemoveSystem(mac, cobblerAddress=None, cobblerUser=None,
+                        cobblerPasswd=None):
+    '''
+    Description: wrapper for 3.1 compatibility:
+    Author: imeerovi
+    Parameters:
+       * mac - mac address of system to remove
+       * cobbler* - backward compatibility with cobbler provisioning,
+                    should be removed
+    Return: True if remove succseeded and False otherwise.
+    '''
+    return removeSystem(mac)
+
+
+@is_action()
+def unattendedInstallation(positive, vm, image, nic='nic1', hostname=None,
+                           floppyImage=None, cobblerAddress=None,
+                           cobblerUser=None, cobblerPasswd=None):
     '''
     Description: install VM with answer file:
     unattended floppy disk for windows.
     via PXE for rhel.
-    Author: Tomer
+    Author: imeerovi
     Parameters:
        * vm - VM with clean bootable hard disk.
+       * nic- nic name to find out mac address- relevant for rhel only.
        * image- cdrom image for windows or profile for rhel.
        * floppyImage- answer file for windows.
-       * nic- nic name to find out mac address- relevant for rhel only.
+       * cobbler* - backward compatibility with cobbler provisioning,
+                    should be removed
     Return: status (True if VM started to insall OS, False otherwise).
     '''
     boot_dev = 'cdrom'
@@ -2063,17 +2102,19 @@ def unattendedInstallation(positive, vm, cobblerAddress, cobblerUser,
         status, mac = getVmMacAddress(positive, vm, nic=nic)
         if not status:
             return False
-        if not cobblerAddNewSystem(cobblerAddress, cobblerUser, cobblerPasswd,
-                                   mac=mac['macAddress'], osName=image):
+
+        if not ProvisionProvider.add_system(mac=mac['macAddress'],
+                                            os_name=image):
             return False
 
         if hostname:
-            if not cobblerSetLinuxHostName(cobblerAddress, cobblerUser, cobblerPasswd,
-                                           name=mac['macAddress'], hostname=hostname):
+            if not ProvisionProvider.set_host_name(name=mac['macAddress'],
+                                                   hostname=hostname):
                 return False
 
         boot_dev = 'hd,network'
         image = None
+
     return runVmOnce(positive, vm, cdrom_image=image, floppy_image=floppyImage,
                      boot_dev=boot_dev)
 

@@ -47,11 +47,6 @@ useAgent = string(default='True')
 vm_os = string(default='Red Hat Enterprise Linux 6.x x64')
 display_type = option('spice', 'vnc', 'rdesktop', default='spice')
 
-# cobbler configuration
-cobbler_address = is_alive(default='qa-cobbler.qa.lab.tlv.redhat.com')
-cobbler_user = string(default='root')
-cobbler_passwd = string(default='qum5net')
-
 [MATRIX_TEST_RUNNER]
 test_modules = force_list(default=list('art.rhevm_api',))
 auto_discovery = boolean(default=True)

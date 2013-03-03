@@ -38,7 +38,6 @@ from art.core_api.apis_utils import TimeoutingSampler
 from utilities.utils import readConfFile, calculateTemplateUuid, \
 convertMacToIp, pingToVms, getIpAddressByHostName, createDirTree
 from utilities.machine import Machine, eServiceAction, LINUX
-from utilities.cobblerApi import Cobbler
 from art.core_api.apis_exceptions import APITimeout, EntityNotFound
 from utilities.tools import updateGuestTools, isToolsInstalledOnGuest, \
     removeToolsFromGuest, waitForGuestReboot, installAutoUpgraderCD, \
@@ -795,50 +794,6 @@ def convertOsNameToOsTypeElement(positive, osName):
 
 
 @is_action()
-def cobblerAddNewSystem(cobblerAddress, cobblerUser, cobblerPasswd, mac, osName):
-    '''Create new system with specific MAC address
-       mac = MAC address of system (it will be name of system)
-       osName = profile of system
-       return True/False
-    '''
-    try:
-        api = Cobbler(host=cobblerAddress, user=cobblerUser, passwd=cobblerPasswd)
-        return api.addNewSystem(mac, osName)
-    except Exception as err:
-        logger.error(str(err))
-        return False
-
-
-@is_action()
-def cobblerRemoveSystem(cobblerAddress, cobblerUser, cobblerPasswd, mac):
-    '''
-    Function removes item acorging name
-    mac = name of system
-    return True/False
-    '''
-    try:
-        api = Cobbler(host=cobblerAddress, user=cobblerUser, passwd=cobblerPasswd)
-        return api.removeSystem(mac)
-    except Exception as err:
-        logger.error(str(err))
-        return False
-
-
-def cobblerSetLinuxHostName(cobblerAddress, cobblerUser, cobblerPasswd, name, hostname):
-    '''Set linux system hostname
-        name = system name
-        hostname = New system hostname
-        return True/False
-    '''
-    try:
-        api = Cobbler(host=cobblerAddress, user=cobblerUser, passwd=cobblerPasswd)
-        return api.setSystemHostName(name=name, hostname=hostname)
-    except Exception as err:
-        logger.error(str(err))
-        return False
-
-
-@is_action()
 def getImageByOsType(positive, osType, slim=False):
     '''
     Function get osTypeElement and return image from action.conf file.
@@ -848,19 +803,21 @@ def getImageByOsType(positive, osType, slim=False):
     '''
     if slim:
         if re.search('rhel', osType, re.I):
-            # Following line should be removed once RHEL5_SLIM, and RHEL6_SLIM will be added.
+            # Following line should be removed once RHEL5_SLIM, and RHEL6_SLIM
+            # will be added.
             if ((osType != 'RHEL5') and (osType != 'RHEL6')):
                 osType = osType + '_SLIM'
     try:
         supportedOs = settings.opts['elements_conf'][osType]
     except Exception as err:
         logger.error(err)
-        return False, {'osBoot' : None, 'floppy' : None}
+        return False, {'osBoot': None, 'floppy': None}
 
     if re.search('rhel', osType, re.I):
-        return True, {'osBoot' : supportedOs['profile'], 'floppy' : None}
+        return True, {'osBoot': supportedOs['profile'], 'floppy': None}
     elif re.search('win', osType, re.I):
-        return True, {'osBoot' : supportedOs['cdrom_image'], 'floppy' : supportedOs['floppy_image']}
+        return True, {'osBoot': supportedOs['cdrom_image'],
+                      'floppy': supportedOs['floppy_image']}
 
 
 @is_action()

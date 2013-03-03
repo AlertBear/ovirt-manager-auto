@@ -67,3 +67,6 @@ enabled = boolean(default=True)
  [[ATTRIBUTES]]
  bz_id = test_attribute(default="case,group:bz:set")
  tcms_plans = test_attribute(default="*:tcms_plan_id:set")
+
+[PROVISIONING_TOOLS]
+enabled = boolean(default=True)
