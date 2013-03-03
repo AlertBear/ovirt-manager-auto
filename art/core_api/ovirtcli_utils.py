@@ -624,12 +624,12 @@ class CliUtil(RestUtil):
                 self.logger.error(errorMsg.format(action))
                 return False
 
-        actionStateMatch = re.match(self.cli._status_extract_re, res,
-                                    flags=re.DOTALL)
+        actionStateMatch = [i.split(':')[1].strip() for i in res.split('\n')
+                            if 'status-state' in i]
         if not actionStateMatch and positive:
             return False
 
-        actionState = actionStateMatch.group(1)
+        actionState = actionStateMatch[0]
 
         if not async:
             return validator.compareActionStatus(actionState,
