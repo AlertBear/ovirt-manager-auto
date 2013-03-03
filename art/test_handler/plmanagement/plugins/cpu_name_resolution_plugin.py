@@ -100,6 +100,7 @@ class AutoCpuNameResolution(Component):
         selected_cpu = None
         for name, passwd in  zip(vds_list, vds_passwd_list):
             m = Machine(name, 'root', passwd).util(LINUX)
+            logger.debug("Running vdsClient on {0}".format(name))
             with m.ssh as ssh:
                 rc, out, err = ssh.runCmd(['vdsClient', '-s', '0', 'getVdsCaps'])
             out = out.strip()
@@ -113,6 +114,7 @@ class AutoCpuNameResolution(Component):
             host_cpu_models = MODEL_RE.findall(out)
             host_model = max(host_cpu_models,
                 key=lambda m: cpus_model_mapping.get(m, {}).get('level', -1))
+            logger.debug("{0}: cpu model is {1}".format(name, host_model))
             sel_host_cpu  = cpus_model_mapping.get(host_model)
             if sel_host_cpu is None:
                 logger.warning('Unknown CPU of host {0}'.format(name))
