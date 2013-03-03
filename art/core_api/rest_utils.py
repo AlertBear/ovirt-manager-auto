@@ -178,7 +178,9 @@ class RestUtil(APIUtil):
         if not coll_elm_name:
             coll_elm_name = self.element_name
 
-        collection = self.get(href, listOnly=True, elm=coll_elm_name)
+        if self.opts['validate']:
+            collection = self.get(href, listOnly=True, elm=coll_elm_name)
+
         entity = validator.dump_entity(entity, self.element_name)
 
         post_url = self.buildUrl(href, current)
@@ -187,6 +189,9 @@ class RestUtil(APIUtil):
 
         with measure_time():
             ret = self.api.POST(post_url, entity)
+
+        if not self.opts['validate']:
+            return None, True
 
         collection = self.get(href, listOnly=True, elm=coll_elm_name)
 
@@ -246,6 +251,9 @@ class RestUtil(APIUtil):
         with measure_time():
             ret = self.api.PUT(put_url, entity)
 
+        if not self.opts['validate']:
+            return None, True
+
         self.logger.debug("Response body for PUT request is: %s " % ret['body'])
 
         if positive:
@@ -295,6 +303,9 @@ class RestUtil(APIUtil):
                                                             % {'uri': entity.href})
             with measure_time():
                 ret = self.api.DELETE(entity.href)
+
+        if not self.opts['validate']:
+            return True
 
         self.logger.debug("Response body for DELETE request is: %s " % ret['body'])
 
@@ -422,6 +433,9 @@ class RestUtil(APIUtil):
 
         with measure_time():
             ret = self.api.POST(actionHref, actionBody)
+
+        if not self.opts['validate']:
+            return True
 
         self.logger.debug("Response body for action request is: %s " % ret['body'])
         resp_action = None

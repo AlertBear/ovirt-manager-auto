@@ -10,6 +10,7 @@ parallel_configs = force_list(default=list())
 parallel_sections = force_list(default=list())
 secure=boolean(default=False)
 elements_conf = path_to_config(default='conf/elements.conf')
+validate=boolean(default=True)
 
 [REST_CONNECTION]
 scheme = option('http', 'https', default='http')

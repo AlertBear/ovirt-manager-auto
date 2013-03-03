@@ -146,7 +146,7 @@ class CSVFormatter(Component):
         self.th_scope.measures = []
 
     def post_test_case(self, t):
-        del self.th_scope.measures
+        pass
 
     def test_case_skipped(self, t):
         pass
