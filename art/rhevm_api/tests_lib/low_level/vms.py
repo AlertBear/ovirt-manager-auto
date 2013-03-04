@@ -221,6 +221,13 @@ def _prepareVmObject(**kwargs):
         disk_array.set_clone(disk_clone)
         vm.set_disks(disk_array)
 
+    # quota
+    quota_id = kwargs.pop('quota', None)
+    if quota_id == '':
+        vm.set_quota(data_st.Quota())
+    elif quota_id:
+        vm.set_quota(data_st.Quota(id=quota_id))
+
     # payloads
     payloads = kwargs.pop('payloads', None)
     if payloads:
@@ -285,6 +292,7 @@ def addVm(positive, wait = True, **kwargs):
        * disk_clone - defines whether disk should be cloned from template
        * disk parameters - same as in addDisk function
        * domainName = sys.prep domain name
+       * quota - vm quota
     Return: status (True if vm was added properly, False otherwise)
     '''
     kwargs.update(add=True)
@@ -343,6 +351,7 @@ def updateVm(positive, vm, **kwargs):
        * domainName = sys.prep domain name
        * placement_affinity - vm to host affinity
        * placement_host - host that the affinity holds for
+       * quota - vm quota
     Return: status (True if vm was updated properly, False otherwise)
     '''
     vmObj = VM_API.find(vm)
@@ -758,6 +767,7 @@ def addDisk(positive, vm, size, wait=True, storagedomain=None,
         * bootable - if disk bootable or not
         * wipe_after_delete - if disk should be wiped after deletion or not
         * propagate_errors - if propagate errors or not
+        * quota - disk quota
     Return: status (True if disk was added properly, False otherwise)
     '''
     vmObj = VM_API.find(vm)
@@ -769,6 +779,13 @@ def addDisk(positive, vm, size, wait=True, storagedomain=None,
         param_val = kwargs.pop(param_name, None)
         if param_val is not None:
             setattr(disk, param_name, param_val)
+
+    # quota
+    quota_id = kwargs.pop('quota', None)
+    if quota_id == '':
+        disk.set_quota(data_st.Quota())
+    elif quota_id:
+        disk.set_quota(data_st.Quota(id=quota_id))
 
     # Report the unknown arguments that remains.
     if 0 < len(kwargs):
@@ -1783,7 +1800,8 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
         cobblerAddress=None, cobblerUser=None, cobblerPasswd=None, image=None,
         async=False, hostname=None, network='rhevm', useAgent=False,
         placement_affinity=None, placement_host=None, vcpu_pinning=None,
-        highly_available=None, availablity_priority=None, port_mirroring=None):
+        highly_available=None, availablity_priority=None, port_mirroring=None,
+        vm_quota=None, disk_quota=None):
     '''
     The function createStartVm adding new vm with nic,disk and started new created vm.
         vmName = VM name
@@ -1817,6 +1835,8 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
         placement_host - host that the affinity holds for
         vcpu_pinning - vcpu pinning affinity (dictionary)
         port_mirroring - port_mirroring on specific network of NIC
+        vm_quota - quota for vm
+        disk_quota - quota for vm disk
     return values : Boolean value (True/False ) True in case of success otherwise False
     '''
     ip = False
@@ -1826,7 +1846,7 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
             cpu_cores=cpu_cores, display_type=display_type, async=async,
             placement_affinity=placement_affinity, placement_host=placement_host,
             vcpu_pinning=vcpu_pinning, highly_available=highly_available,
-            availablity_priority=availablity_priority):
+            availablity_priority=availablity_priority, quota=vm_quota):
         return False
 
     if nic:
@@ -1835,8 +1855,11 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
             return False
 
     if template == 'Blank' and storageDomainName and templateUuid == None:
-        if not addDisk(positive, vm=vmName, size=size, storagedomain=storageDomainName, type=diskType, sparse=volumeType,
-                            interface=diskInterface, format=volumeFormat, bootable=bootable, wipe_after_delete=wipe_after_delete):
+        if not addDisk(positive, vm=vmName, size=size, type=diskType,
+                            storagedomain=storageDomainName, sparse=volumeType,
+                            interface=diskInterface, format=volumeFormat,
+                            bootable=bootable, quota=disk_quota,
+                            wipe_after_delete=wipe_after_delete):
             return False
 
     if installation == True:

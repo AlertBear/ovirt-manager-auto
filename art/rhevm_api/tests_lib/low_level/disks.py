@@ -98,6 +98,7 @@ def _prepareDiskObject(**kwargs):
         * wipe_after_delete - True or False whether disk should wiped after
                               deletion
         * storagedomain - name of storage domain where disk will reside
+        * quota - disk quota
     Author: jlibosva
     Return: Disk object
     """
@@ -119,6 +120,13 @@ def _prepareDiskObject(**kwargs):
         storage_domains = data_st.StorageDomains()
         storage_domains.add_storage_domain(storage_domain)
         disk.storage_domains = storage_domains
+
+    # quota
+    quota_id = kwargs.pop('quota', None)
+    if quota_id == '':
+        disk.set_quota(data_st.Quota())
+    elif quota_id:
+        disk.set_quota(data_st.Quota(id=quota_id))
 
     if lun != (None, None, None, 3260):
         direct_lun = data_st.LogicalUnit(address=lun[0], target=lun[1],
@@ -154,6 +162,7 @@ def addDisk(positive, **kwargs):
         * lun_address - iscsi server address for direct lun
         * lun_target - iscsi target for direct lun
         * lun_id - direct lun's id
+        * quota - disk quota
     Author: jlibosva
     Return: True - if positive and successfully added or not positive and not
                    added successfully
@@ -185,6 +194,7 @@ def updateDisk(positive, **kwargs):
         * wipe_after_delete - True or False whether disk should wiped after
                               deletion
         * storagedomain - name of storage domain where disk will reside
+        * quota - disk quota
     Author: jlibosva
     Return: Status of the operation's result dependent on positive value
     """
