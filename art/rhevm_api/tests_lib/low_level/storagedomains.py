@@ -89,10 +89,11 @@ def _prepareStorageDomainObject(positive, **kwargs):
         storage_format = kwargs.pop('storage_format', None)
         if storage_format is None:
             status, hostCompVer = getHostCompatibilityVersion(positive, host)
-            if hostCompVer['hostCompatibilityVersion'] == '3.1' and type and type.lower() == 'data':
-                storage_format = ENUMS['storage_format_version_v3']
-            else:
-                storage_format = ENUMS['storage_format_version_v1']
+            if type and type.lower() == 'data':
+                if hostCompVer['hostCompatibilityVersion'] == '2.2':
+                    storage_format = ENUMS['storage_format_version_v1']
+                else:
+                    storage_format = ENUMS['storage_format_version_v3']
         sd.set_storage(Storage(type_=storage_type, path=kwargs.pop('path', None),
                             address=kwargs.pop('address', None),
                             nfs_version=kwargs.pop('nfs_version', None),
