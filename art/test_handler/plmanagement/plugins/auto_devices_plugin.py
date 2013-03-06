@@ -47,9 +47,14 @@ the following parameters:
     | **local_devices** = <device_path>
     | **local_server** = <host_name> # optional, default is first vds server
 
+To replace the storage configuration file define its fullpath name via the
+environment variable STORAGE_CONF_FILE
+
+export STORAGE_CONF_FILE=/mypath/myfile.conf
 """
 
 import re
+import os
 from art.test_handler.plmanagement import Component, implements, get_logger
 from art.test_handler.plmanagement.interfaces.resources_listener import IResourcesListener
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
@@ -69,6 +74,7 @@ STR_SECTION = 'STORAGE'
 RUN_SECTION = 'RUN'
 LB_ENABLED = 'devices_load_balancing'
 STORAGE_POOL = 'storage_pool'
+CONF_PATH_ENV = 'STORAGE_CONF_FILE'
 
 
 class AutoDevices(Component):
@@ -106,6 +112,8 @@ class AutoDevices(Component):
             spool = None if 'None' in spool else spool
             self.su.load_balancing = True
             self.su.serverPool = spool
+            # option to pass storage conf. file via env. variable
+            self.su.storageConfigFile = os.getenv(CONF_PATH_ENV)
         try:
             self.su.storageSetup()
         except Exception as ex:

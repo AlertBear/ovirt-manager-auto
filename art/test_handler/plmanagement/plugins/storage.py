@@ -50,10 +50,11 @@ ISO_EXPORT_TYPE = 'iso_export_domain_nas'
 
 logger = logging.getLogger(__name__)
 
-def createStorageManager(ips, type):
+def createStorageManager(ips, type, conf):
     for i in range(0, len(ips)):
         try:
-            return smngr.StorageManagerWrapper(ips.pop(i), type.upper()).manager
+            return smngr.StorageManagerWrapper(ips.pop(i), type.upper(),
+                                               conf).manager
         except StorageManagerObjectCreationError as ex:
             logger.warning(ex)
     raise
@@ -77,7 +78,8 @@ def getStorageServers(storageType='none'):
                 if self.storages[stype]:
                     if stype not in self.storageServers:
                         servers = getStorageServer(stype, self.serverPool)
-                        smngr = createStorageManager(servers, stype)
+                        smngr = createStorageManager(servers, stype,
+                                                     self.storageConfigFile)
                         self.storageServers[stype] = smngr
                     for t in dtypes:
                         for section, params in self.storages[t].items():
@@ -206,6 +208,7 @@ class StorageUtils:
                                 'data_center_type', asList=False))
         self.load_balancing = False
         self.serverPool = None
+        self.storageConfigFile = None
 
         self.storages = {'gluster': {},
                          'nfs':     {},
@@ -577,7 +580,8 @@ class StorageUtils:
 
     def getStorageManager(self, type, serverIp):
         return self.storageServers[type] if type in self.storageServers else \
-            smngr.StorageManagerWrapper(serverIp,type.upper()).manager
+            smngr.StorageManagerWrapper(serverIp,type.upper(),
+                                        self.storageConfigFile).manager
 
     def __create_nas_device(self, storageServerIp, deviceName, fsType):
         '''
