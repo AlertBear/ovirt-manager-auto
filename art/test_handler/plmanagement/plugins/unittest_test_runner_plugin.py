@@ -294,6 +294,14 @@ class UnittestLoader(Component):
         res.add_result_attribute('iter_num', 'serial', 'Iteration Number', '')
         res.add_result_attribute('parameters', '', 'Test Parameters', '')
 
+        if tc.status in (tc.TEST_STATUS_PASSED, tc.TEST_STATUS_SKIPPED):
+            st_msg = logger.info
+        elif tc.status == tc.TEST_STATUS_UNDEFINED:
+            st_msg = logger.warn
+        else:
+            st_msg = logger.error
+        st_msg(tc.format_attr('status'))
+
     def pre_group_result_reported(self, res, tg):
         pass
 
