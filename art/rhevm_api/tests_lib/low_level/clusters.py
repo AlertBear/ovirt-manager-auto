@@ -25,7 +25,7 @@ from art.core_api.apis_utils import getDS
 from art.rhevm_api.utils.test_utils import get_api, split
 from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.tests_lib.low_level.hosts import activateHost, \
-                                        deactivateHost, updateHost
+    deactivateHost, updateHost
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from art.rhevm_api.utils.test_utils import searchForObj
 from art.core_api import is_action
@@ -43,7 +43,7 @@ TransparentHugePages = getDS('TransparentHugePages')
 MemoryPolicy = getDS('MemoryPolicy')
 SchedulingPolicyThresholds = getDS('SchedulingPolicyThresholds')
 SchedulingPolicy = getDS('SchedulingPolicy')
-ErrorHandlingOptions = getDS('ErrorHandlingOptions')
+ErrorHandling = getDS('ErrorHandling')
 CPU = getDS('CPU')
 
 xpathMatch = is_action('xpathClusters', id_name='xpathMatch')(XPathMatch(util))
@@ -78,8 +78,7 @@ def _prepareClusterObject(**kwargs):
     if 'virt_support' in kwargs:
         cl.set_virt_service(kwargs.pop('virt_support'))
 
-    if 'mem_ovrcmt_prc' in kwargs or \
-    'transparent_hugepages' in kwargs:
+    if 'mem_ovrcmt_prc' in kwargs or 'transparent_hugepages' in kwargs:
 
         transparentHugepages = None
         overcommit = None
@@ -88,8 +87,9 @@ def _prepareClusterObject(**kwargs):
             overcommit = MemoryOverCommit(percent=kwargs.pop('mem_ovrcmt_prc'))
 
         if kwargs.get('transparent_hugepages'):
-            transparentHugepages = TransparentHugePages(
-                                enabled=kwargs.pop('transparent_hugepages'))
+            transparentHugepages = \
+                TransparentHugePages(enabled=kwargs.
+                                     pop('transparent_hugepages'))
 
         memoryPolicy = MemoryPolicy(overcommit=overcommit,
                                     transparent_hugepages=transparentHugepages)
@@ -105,18 +105,18 @@ def _prepareClusterObject(**kwargs):
         # If at least one threshold tag parameter is set.
         if max(thresholdLow, thresholdHigh, thresholdDuration) is not None:
             thresholds = SchedulingPolicyThresholds(high=thresholdHigh,
-                        duration=thresholdDuration, low=thresholdLow)
+                                                    duration=thresholdDuration,
+                                                    low=thresholdLow)
 
-        schedulingPolicy = SchedulingPolicy(
-                                policy=kwargs.pop('scheduling_policy'),
-                                thresholds=thresholds)
+        schedulingPolicy = \
+            SchedulingPolicy(policy=kwargs.pop('scheduling_policy'),
+                             thresholds=thresholds)
 
         cl.set_scheduling_policy(schedulingPolicy)
 
     errorHandling = None
     if 'on_error' in kwargs:
-        errorHandling = ErrorHandlingOptions(
-                                on_error=kwargs.pop('on_error').split(','))
+        errorHandling = ErrorHandling(on_error=kwargs.pop('on_error'))
         cl.set_error_handling(errorHandling)
 
     return cl
@@ -257,7 +257,7 @@ def waitForClustersGone(positive, clusters, timeout=30, samplingPeriod=5):
 
         if len(remainingCls) > 0:
             util.logger.info("Waiting for %d clusters to disappear.",
-                                                len(remainingCls))
+                             len(remainingCls))
             time.sleep(samplingPeriod)
         else:
             util.logger.info("All %d clusters are gone.", len(clsList))
@@ -286,7 +286,7 @@ def removeClusters(positive, clusters):
     num_worker_threads = len(clsList)
     for i in range(num_worker_threads):
         t = Thread(target=removeClusterAsynch, name='Cluster removing',
-                args=(positive, tasksQ, resultsQ))
+                   args=(positive, tasksQ, resultsQ))
         threads.add(t)
         t.daemon = False
         t.start()
@@ -305,7 +305,7 @@ def removeClusters(positive, clusters):
             util.logger.info("Cluster '%s' deleted asynchronously.", cl)
         else:
             util.logger.error("Failed to asynchronously remove cluster '%s'.",
-                               cl)
+                              cl)
             status = False
 
     return status and waitForClustersGone(positive, clusters)
@@ -384,7 +384,7 @@ def connectClusterToDataCenter(positive, cluster, datacenter):
         return not positive
 
     # Deactivate all "UP" hosts, which are connected to cluster
-    hosts = filter(lambda hostObj: hostObj.get_cluster().get_id() == clId and \
+    hosts = filter(lambda hostObj: hostObj.get_cluster().get_id() == clId and
                    hostObj.get_status().get_state() == "up", hostObjList)
     for hostObj in hosts:
         if not deactivateHost(positive, hostObj.get_name()):
@@ -460,55 +460,57 @@ def checkClusterParams(positive, cluster, thrhld_low=None, thrhld_high=None,
                 is not None:
             clspth = cl.get_scheduling_policy().get_thresholds()
             if (None is not thrhld_low) and \
-               (clspth.get_low() != int(thrhld_low)):
+                    (clspth.get_low() != int(thrhld_low)):
                 status = False
-                util.logger.error(ERROR % ("Thresholds low",
-                    cl.get_name(), thrhld_low, clspth.get_low()))
+                util.logger.error(ERROR % ("Thresholds low", cl.get_name(),
+                                           thrhld_low, clspth.get_low()))
 
             if (None is not thrhld_low) and \
-                (clspth.get_high() != int(thrhld_high)):
+                    (clspth.get_high() != int(thrhld_high)):
                 status = False
-                util.logger.error(ERROR % ("Thresholds high",
-                    cl.get_name(), thrhld_high, clspth.get_high()))
+                util.logger.error(ERROR % ("Thresholds high", cl.get_name(),
+                                           thrhld_high, clspth.get_high()))
 
             if (None is not duration) and \
-                (clspth.get_duration() != int(duration)):
+                    (clspth.get_duration() != int(duration)):
                 status = False
-                util.logger.error(ERROR % ("Duration",
-                    cl.get_name(), duration, clspth.get_duration()))
+                util.logger.error(ERROR % ("Duration", cl.get_name(), duration,
+                                           clspth.get_duration()))
 
             # Check the scheduling_policy strategy if requested:
             if (None is not scheduling_policy) and \
-            (cl.get_scheduling_policy().get_policy() != scheduling_policy):
+                    (cl.get_scheduling_policy().get_policy() !=
+                     scheduling_policy):
                 status = False
-                util.logger.error(ERROR % ("Scheduling policy",
-                    cl.get_name(), scheduling_policy,
-                    cl.get_scheduling_policy().get_policy()))
+                util.logger.error(ERROR % ("Scheduling policy", cl.get_name(),
+                                           scheduling_policy,
+                                           cl.get_scheduling_policy().
+                                           get_policy()))
 
         # Check the memory policy if requested:
         if (None is not mem_ovrcmt_prc) \
-                    and (cl.get_memory_policy().get_overcommit().get_percent()\
-                    != int(mem_ovrcmt_prc)):
+                and (cl.get_memory_policy().get_overcommit().get_percent()
+                     != int(mem_ovrcmt_prc)):
             status = False
             util.logger.error(ERROR % ("Memory overcommit percent",
-                cl.get_name(), mem_ovrcmt_prc,
-                cl.get_memory_policy().get_overcommit().get_percent()))
+                                       cl.get_name(), mem_ovrcmt_prc,
+                                       cl.get_memory_policy().
+                                       get_overcommit().get_percent()))
 
         # Check gluster support policy if requested:
         if (None is not gluster_support)\
-                    and (cl.get_gluster_service() != gluster_support):
+                and (cl.get_gluster_service() != gluster_support):
             status = False
-            util.logger.error(ERROR % ("Gluster support",
-                cl.get_name(), gluster_support,
-                cl.get_gluster_service()))
+            util.logger.error(ERROR % ("Gluster support", cl.get_name(),
+                                       gluster_support,
+                                       cl.get_gluster_service()))
 
         # Check virt support policy if requested:
         if (None is not virt_support)\
-                    and (cl.get_virt_service() != virt_support):
+                and (cl.get_virt_service() != virt_support):
             status = False
-            util.logger.error(ERROR % ("Virt support",
-                cl.get_name(), virt_support,
-                cl.get_virt_service()))
+            util.logger.error(ERROR % ("Virt support", cl.get_name(),
+                                       virt_support, cl.get_virt_service()))
 
     except AttributeError as e:
         util.logger.error("checkClusterParams: %s" % str(e))
