@@ -55,6 +55,10 @@ elementConfSection = 'elements'
 
 api = None
 
+IFCFG_NETWORK_SCRIPTS_DIR = '/etc/sysconfig/network-scripts'
+SYS_CLASS_NET_DIR = '/sys/class/net'
+MTU_DEFAULT_VALUE = 1500
+
 def get_api(element, collection):
     '''
     Fetch proper API instance based on engine type
@@ -1371,4 +1375,123 @@ def configureTempStaticIp(host, user, password, ip, nic='eth1', netmask='255.255
         logger.error("Failed to configure ip '%s' on machine '%s' and nic '%s'", ip, host, nic)
         logger.error(output)
         return False
+    return True
+
+
+def buildListFilesMtu(physical_layer=True, network=None, nic=None,
+                      vlan=None, bond=None, bond_nic1='eth3',
+                      bond_nic2='eth2', bridged=True):
+    '''
+    Builds a list of file names to check MTU value
+    Author: gcheresh
+    Parameters:
+    * network - network name to build ifcfg-network name
+    * physical_layer - flag to create file names for physical or logical layer
+    * nic - nic name to build ifcfg-nic name
+    * vlan - vlan name to build ifcfg-* files names for
+    * bond - bond name to create ifcfg-* files names for
+    * bond_nic1 - name of the first nic of the bond
+    * bond_nic2 - name of the second nic of the bond
+    * bridged - flag, to differentiate bridged and non_bridged network
+    Return: 2 lists of ifcfg files names
+    '''
+    ifcfg_script_list = []
+    sys_class_net_list = []
+    temp_name_list = []
+    if not physical_layer:
+        if bridged:
+            temp_name_list.append('%s' % network)
+        if vlan and bond:
+            temp_name_list.append('%s.%s' % (bond, vlan))
+        if vlan and not bond:
+            temp_name_list.append('%s.%s' % (nic, vlan))
+    else:
+        if bond:
+            for if_name in [bond_nic1, bond_nic2, bond]:
+                temp_name_list.append('%s' % if_name)
+        elif vlan or nic:
+            temp_name_list.append('%s' % nic)
+    for script_name in temp_name_list:
+        ifcfg_script_list.append(os.path.join(IFCFG_NETWORK_SCRIPTS_DIR,
+                                              'ifcfg-%s' % script_name))
+        sys_class_net_list.append(os.path.join(SYS_CLASS_NET_DIR,
+                                               script_name, 'mtu'))
+    return ifcfg_script_list, sys_class_net_list
+
+
+@is_action()
+def checkMTU(host, user, password, mtu, physical_layer=True, network=None,
+             nic=None, vlan=None, bond=None, bond_nic1='eth3',
+             bond_nic2='eth2', bridged=True):
+    '''
+        Check MTU for all files provided from buildListFilesMtu function
+        Uses helper testMTUInScriptList function to do it
+        Author: gcheresh
+        Parameters:
+        * host - remote machine ip address or fqdn
+        * user - root user on the machine
+        * password - password for root user
+        * mtu - the value to test against
+        * network - the network name to test the MTU value
+        * physical_layer - flag to test MTU for physical or logical layer
+        * nic - interface name to test the MTU value for
+        * vlan - vlan number to test the MTU value for nic.vlan
+        * bond - bond name to test the MTU value for
+        * bond_nic1 - name of the first nic of the bond
+        * bond_nic2 - name of the second nic of the bond
+        * bridged - flag, to differentiate bridged and non_bridged network
+        Return: True value if MTU in script files is correct
+    '''
+    ifcfg_script_list, sys_class_net_list = buildListFilesMtu(physical_layer,
+                                                              network, nic,
+                                                              vlan, bond,
+                                                              bond_nic1,
+                                                              bond_nic2,
+                                                              bridged)
+    if not ifcfg_script_list or not sys_class_net_list:
+        if not physical_layer and not bridged and not vlan:
+            return True
+        else:
+            logger.error("The file with MTU parameter is empty")
+            return False
+    return testMTUInScriptList(host, user, password, ifcfg_script_list, mtu,
+                               1) and testMTUInScriptList(host, user, password,
+                                                          sys_class_net_list,
+                                                          mtu)
+
+
+def testMTUInScriptList(host, user, password, script_list, mtu,
+                        flag_for_ifcfg=0):
+    '''
+        Helper function for checkMTU to test specific list of files
+        Author: gcheresh
+        Parameters:
+        * host - remote machine ip address or fqdn
+        * user - root user on the machine
+        * password - password for root user
+        * script_list - list with names of files to test MTU in
+        * mtu - the value to test against
+        * flag_for_ifcfg - flag if this file is ifcfg or not
+        Return: True value if MTU in script list is correct
+    '''
+    ERR_MSG = '"MTU in {0} is {1} when the expected is {2}"'
+    machine_obj = Machine(host, user, password).util('linux')
+    for script_name in script_list:
+        rc, output = machine_obj.runCmd(['cat', script_name])
+        if not rc:
+            logger.error("Can't read {0}".format(script_name))
+            return False
+        if flag_for_ifcfg:
+            match_obj = re.search('MTU=([0-9]+)', output)
+            if match_obj:
+                mtu_script = int(match_obj.group(1))
+            else:
+                mtu_script = MTU_DEFAULT_VALUE
+            if mtu_script != mtu:
+                logger.error(ERR_MSG.format(script_name, mtu_script, mtu))
+                return False
+        else:
+            if int(output) != mtu:
+                logger.error(ERR_MSG.format(script_name, mtu_script, mtu))
+                return False
     return True
