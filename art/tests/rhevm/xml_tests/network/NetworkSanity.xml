@@ -344,7 +344,7 @@
 <test_case>
    <test_name>Reboot Ovirt after commit network</test_name>
    <test_action>rebootMachine</test_action>
-   <parameters>ip='{vds[0]}',user='root',password='{vds_password}',osType='linux'</parameters>
+   <parameters>ip='{vds[0]}',user='root',password='{vds_password[0]}',osType='linux'</parameters>
    <positive>TRUE</positive>
    <run>if(re.search('hypervisor',%osName%,re.I))</run>
    <fetch_output/>
@@ -986,7 +986,7 @@
 <test_case>
   <test_name>Reboot Ovirt after commit network</test_name>
   <test_action>rebootMachine</test_action>
-  <parameters>ip='{vds[0]}',user='root',password='{vds_password}',osType='linux'</parameters>
+  <parameters>ip='{vds[0]}',user='root',password='{vds_password[0]}',osType='linux'</parameters>
   <positive>TRUE</positive>
   <run>if(re.search('hypervisor',%osName%,re.I))</run>
   <fetch_output/>
