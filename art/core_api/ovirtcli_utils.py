@@ -421,7 +421,7 @@ class CliUtil(RestUtil):
                 self.logger.info("New entity was added successfully")
         return response, True
 
-    def update(self, origEntity, newEntity, positive):
+    def update(self, origEntity, newEntity, positive, current=None):
         '''
         Description: update an element
         Author: edolinin
@@ -435,7 +435,7 @@ class CliUtil(RestUtil):
         updateBody = validator.cliEntety(newEntity, self.element_name)
         collHref, collection = None, None
 
-        if re.match(IP_FORMAT, origEntity.name):
+        if origEntity.name and re.match(IP_FORMAT, origEntity.name):
             name = "'%s'" % origEntity.name
         else:
             name = origEntity.name
@@ -457,6 +457,9 @@ class CliUtil(RestUtil):
         correlationId = self.getCorrelationId()
         if correlationId:
             updateCmd = "%s --correlation_id %s" % (updateCmd, correlationId)
+
+        if current is not None:
+            updateCmd = "%s --current %s" % (updateCmd, current)
 
         updateCmd = "%s > %s" % (updateCmd, TMP_FILE)
 
