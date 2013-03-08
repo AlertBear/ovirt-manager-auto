@@ -83,6 +83,7 @@ INFO_TAGS = ('version', 'build_id', 'bug_status', 'product', 'short_desc', \
 CLI = 'cli'
 SDK = 'sdk'
 REST = 'rest'
+NONE_VER = '---'
 
 RHEVM_PRODUCT = 'Red Hat Enterprise Virtualization Manager'
 OVIRT_PRODUCT = 'oVirt'
@@ -286,6 +287,9 @@ class Bugzilla(Component):
         '''
         if getattr(bug, "target_release", None):
             fixed_at = bug.target_release[0]
+            if fixed_at == NONE_VER:
+                return False
+
             fixed_at = Version(fixed_at)
             if fixed_at > self.version:
                 return True
