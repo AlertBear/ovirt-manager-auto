@@ -421,7 +421,7 @@ def importTemplate(positive, template, export_storagedomain,
     actionParams = dict(storage_domain=sd, cluster=cl)
 
     actionName = 'import'
-    if opts['engine'] == 'sdk':
+    if opts['engine'] in ('cli', 'sdk'):
         actionName = 'import_template'
 
     if name is not None:
@@ -429,7 +429,8 @@ def importTemplate(positive, template, export_storagedomain,
         newTemplate = Template(name=name)
         actionParams['template'] = newTemplate
 
-    status = TEMPLATE_API.syncAction(templObj, actionName, positive, **actionParams)
+    status = TEMPLATE_API.syncAction(templObj, actionName, positive,
+                                     **actionParams)
     time.sleep(30)
 
     return status

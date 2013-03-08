@@ -572,7 +572,7 @@ class CliUtil(RestUtil):
             self.logger.error(errorMsg.format(e))
             return []
 
-        data = re.findall(self.cli._query_id_re, out)
+        data = [i.split(':')[1].strip() for i in out.split('\n') if 'id' in i]
         if data:
             results = data
         else:
@@ -605,7 +605,13 @@ class CliUtil(RestUtil):
             addParams = ''
             for p in params:
                 if ClassesMapping.get(p, None):
-                    addParams += " --{0}-id '{1}'".format(p, params[p].id)
+                    if params[p].id is None:
+                        addParams += " --{0}-name '{1}'".format(p,
+                                                                params[p].name)
+                        self.logger.debug("%s.id=None, using %s.name instead",
+                                          params[p], params[p])
+                    else:
+                        addParams += " --{0}-id '{1}'".format(p, params[p].id)
 
             actionCmd = "action {0} '{1}' {2} --{3}-identifier '{4}' {5}".\
                         format(entityName, entity.id, action, ownerName,

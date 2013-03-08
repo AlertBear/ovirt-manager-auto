@@ -1594,7 +1594,7 @@ def importVm(positive, vm, export_storagedomain, import_storagedomain,
     '''
     expStorDomObj = STORAGE_DOMAIN_API.find(export_storagedomain)
     sdVms = VM_API.getElemFromLink(expStorDomObj, link_name='vms', attr='vm',
-                                                            get_href=False)
+                                   get_href=False)
     vmObj = VM_API.find(vm, collection=sdVms)
 
     expectedStatus = vmObj.status.state
@@ -1608,7 +1608,7 @@ def importVm(positive, vm, export_storagedomain, import_storagedomain,
     }
 
     actionName = 'import'
-    if opts['engine'] == 'sdk':
+    if opts['engine'] in ('cli', 'sdk'):
         actionName = 'import_vm'
 
     if name is not None:
