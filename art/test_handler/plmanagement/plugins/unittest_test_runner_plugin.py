@@ -140,7 +140,7 @@ class UTestGroup(TestGroup):
             try:
                 self.context.setUp()
             except Exception as ex:
-                logger.error("TEST GROUP error: %s", ex)
+                logger.error("TEST GROUP error: %s", ex, exc_info=True)
                 self.status = self.TEST_STATUS_ERROR
                 self.exc = ex
                 self.error += 1
@@ -175,7 +175,7 @@ class UTestSuite(TestSuite):
             try:
                 self.context.setUp()
             except Exception as ex:
-                logger.error("TEST SUITE error: %s", ex)
+                logger.error("TEST SUITE error: %s", ex, exc_info=True)
                 self.status = self.TEST_STATUS_ERROR
                 self.exc = ex
                 self.error += 1
