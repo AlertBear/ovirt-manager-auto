@@ -106,7 +106,7 @@
 <test_case>
    <test_name>Checking that network filtering is enabled via ebtables</test_name>
    <test_action>checkNetworkFilteringEbtables</test_action>
-   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}',nics='2', vm_macs=[%macAddress_nic1%,%macAddress_nic2%], mac_range='{MacPoolRanges}'</parameters>
+   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}',nics='2', vm_macs=[%macAddress_nic1%,%macAddress_nic2%]</parameters>
    <positive>True</positive>
    <run>YES</run>
    <fetch_output/>
@@ -140,7 +140,7 @@
 <test_case>
    <test_name>Checking that network filtering is enabled via ebtables</test_name>
    <test_action>checkNetworkFilteringEbtables</test_action>
-   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', nics='2', vm_macs=[%macAddress_nic1%,%macAddress_nic2%], mac_range='{MacPoolRanges}'</parameters>
+   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', nics='2', vm_macs=[%macAddress_nic1%,%macAddress_nic2%]</parameters>
    <positive>FALSE</positive>
    <run>YES</run>
    <fetch_output/>
@@ -230,7 +230,7 @@
 <test_case>
    <test_name>Checking that network filtering is enabled via ebtables</test_name>
    <test_action>checkNetworkFilteringEbtables</test_action>
-   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', nics='1', vm_macs=[%macAddress_nic1%], mac_range='{MacPoolRanges}'</parameters>
+   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', nics='1', vm_macs=[%macAddress_nic1%]</parameters>
    <positive>True</positive>
    <run>YES</run>
    <fetch_output/>
@@ -274,7 +274,7 @@
 <test_case>
    <test_name>Checking that network filtering is enabled via ebtables</test_name>
    <test_action>checkNetworkFilteringEbtables</test_action>
-   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', nics='2', vm_macs=[%macAddress_nic1%, %macAddress_nic2%], mac_range='{MacPoolRanges}'</parameters>
+   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', nics='2', vm_macs=[%macAddress_nic1%, %macAddress_nic2%]</parameters>
    <positive>True</positive>
    <run>YES</run>
    <fetch_output/>
@@ -318,7 +318,7 @@
 <test_case>
    <test_name>Checking that network filtering is enabled via ebtables</test_name>
    <test_action>checkNetworkFilteringEbtables</test_action>
-   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', nics='1', vm_macs=[%macAddress_nic1%], mac_range='{MacPoolRanges}'</parameters>
+   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', nics='1', vm_macs=[%macAddress_nic1%]</parameters>
    <positive>True</positive>
    <run>YES</run>
    <fetch_output/>
@@ -418,7 +418,7 @@
 <test_case>
    <test_name>Checking that network filtering is enabled via ebtables</test_name>
    <test_action>checkNetworkFilteringEbtables</test_action>
-   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', nics='1', vm_macs=[%macAddress_nic1%], mac_range='{MacPoolRanges}'</parameters>
+   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', nics='1', vm_macs=[%macAddress_nic1%]</parameters>
    <positive>False</positive>
    <run>YES</run>
    <fetch_output/>

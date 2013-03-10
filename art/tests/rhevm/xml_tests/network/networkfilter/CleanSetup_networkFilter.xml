@@ -44,6 +44,28 @@
    <test_description/>
 </test_case>
 <test_case>
+   <test_name>Clear hosts network interfaces</test_name>
+   <test_action>sendSNRequest</test_action>
+   <parameters>host='{vds}',auto_nics=['{host_nics[0]}'],check_connectivity='true', connectivity_timeout=60, force='false'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Send automatic MGMT interface.</test_description>
+</test_case>
+<test_case>
+   <test_name>Save Network Configuration</test_name>
+   <test_action>commitNetConfig</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
    <test_name>Cobbler remove Macs</test_name>
    <test_action>cobblerRemoveSystem</test_action>
    <parameters>cobblerAddress='{cobbler_address}',cobblerUser='{cobbler_user}',cobblerPasswd='{cobbler_passwd}',
@@ -67,15 +89,15 @@
    <test_description/>
    </test_case>
 <test_case>
-  <test_name>Remove Data Centers</test_name>
-  <test_action>removeDataCenters</test_action>
-  <parameters>datacenters='{datacenter}'</parameters>
-  <positive>True</positive>
-  <run>YES</run>
-  <fetch_output/>
-  <report>NO</report>
-  <vital>FALSE</vital>
-  <test_description/>
+   <test_name>Remove Data Centers</test_name>
+   <test_action>removeDataCenters</test_action>
+   <parameters>datacenters='{datacenter}'</parameters>
+   <positive>True</positive>
+   <run>YES</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
 </test_case>
 <test_case>
   <test_name>Remove Master Storage Domain</test_name>
