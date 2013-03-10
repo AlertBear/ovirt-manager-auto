@@ -1,17 +1,16 @@
 <!-- Author: awinter@redhat.com -->
 <input>
 <test_case>
-   <test_name>START_GROUP: UncoverTCMSCases</test_name>
+   <test_name>START_GROUP: nonVM_network</test_name>
    <test_action/>
    <parameters>n/a1</parameters>
    <positive>NONE</positive>
-   <run>if('uncoveredtcms' in '[requirednetwork]' or '*' in '[requirednetwork]')</run>
+   <run>if('nonVMnetwork' in '[requirednetwork]' or '*' in '[requirednetwork]')</run>
    <fetch_output/>
    <report/>
    <vital/>
-   <test_description/>
+   <test_description>Checking policies for required_network over a nonVM network</test_description>
 </test_case><!-- Case number 217610, 217612, 220525 & 220526 : BEGIN -->
-<!-- Testing for a single interface (eth1) -->
 <test_case>
    <test_name>Create sw1 network</test_name>
    <test_action>addNetwork</test_action>
@@ -166,18 +165,7 @@
   <positive>TRUE</positive>
   <run>yes</run>
   <fetch_output/>
-  <report>NO</report>
-  <vital>FALSE</vital>
-  <test_description/>
-</test_case>
-<test_case>
-  <test_name>Wait for SPM</test_name>
-  <test_action>waitForSPM</test_action>
-  <parameters>datacenter='{datacenter}',timeout=900,sleep=1</parameters>
-  <positive>NONE</positive>
-  <run>yes</run>
-  <fetch_output/>
-  <report>NO</report>
+  <report>YES</report>
   <vital>FALSE</vital>
   <test_description/>
 </test_case>
@@ -446,18 +434,7 @@
   <positive>TRUE</positive>
   <run>yes</run>
   <fetch_output/>
-  <report>NO</report>
-  <vital>FALSE</vital>
-  <test_description/>
-</test_case>
-<test_case>
-  <test_name>Wait for SPM</test_name>
-  <test_action>waitForSPM</test_action>
-  <parameters>datacenter='{datacenter}',timeout=900,sleep=1</parameters>
-  <positive>NONE</positive>
-  <run>yes</run>
-  <fetch_output/>
-  <report>NO</report>
+  <report>YES</report>
   <vital>FALSE</vital>
   <test_description/>
 </test_case>
@@ -529,7 +506,7 @@
 </test_case>
 <!-- Case number 217610, 217612, 220525 & 220526 : END -->
 <test_case>
-   <test_name>END_GROUP: UncoverTCMSCases</test_name>
+   <test_name>END_GROUP: nonVM_network</test_name>
    <test_action/>
    <parameters/>
    <positive>NONE</positive>

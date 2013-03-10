@@ -205,17 +205,6 @@
   <positive>TRUE</positive>
   <run>yes</run>
   <fetch_output/>
-  <report>YES</report>
-  <vital>FALSE</vital>
-  <test_description/>
-</test_case>
-<test_case>
-  <test_name>Wait for SPM</test_name>
-  <test_action>waitForSPM</test_action>
-  <parameters>datacenter='{datacenter}',timeout=900,sleep=1</parameters>
-  <positive>NONE</positive>
-  <run>yes</run>
-  <fetch_output/>
   <report>NO</report>
   <vital>FALSE</vital>
   <test_description/>
