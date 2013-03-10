@@ -2108,7 +2108,7 @@ def checkNetworkFilteringDumpxml(positive, host, user, passwd, vm, nics):
     return positive
 
 @is_action()
-def checkNetworkFilteringEbtables(positive, host, user, passwd, nics, vm_macs, mac_range):
+def checkNetworkFilteringEbtables(positive, host, user, passwd, nics, vm_macs):
     '''
     Description: Check that network filtering is enabled via ebtables
                  This function is also described in tcms_plan 6955
@@ -2120,7 +2120,6 @@ def checkNetworkFilteringEbtables(positive, host, user, passwd, nics, vm_macs, m
       * passwd - password for the user
       * nics - number of nics
       * vm_macs - list of vms' macs
-      * mac_range - valid mac range
     return: True if network filtering is enabled, False otherwise
     '''
     count = 0
@@ -2136,7 +2135,7 @@ def checkNetworkFilteringEbtables(positive, host, user, passwd, nics, vm_macs, m
             if mac in vm_macs:
                 count = count + 1
             else:
-                HOST_API.logger.error("Mac is not in range")
+                HOST_API.logger.error("Mac not found in ebtables")
                 return not positive
     if count != 2 * int(nics):
         return not positive
