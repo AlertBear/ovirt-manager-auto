@@ -3,7 +3,8 @@
 <?xml-stylesheet type="text/xsl" href="table.xslt"?>
 <input>
    <!-- <span style="display:none" >TEST_DESCRIPTION</span>
-      Test which covers XXX and there are no special requirements
+    Regression tests of basic rhevm functionality.
+    Includes add/udate/remove and search operations for: clusters, datacenters, hosts, storages, tags, users, roles, permissions
     -->
   <!-- ////////////////////////// SETUP /////////////////////////////// -->
   <test_case>
