@@ -269,19 +269,30 @@ class RHEVMUtilsTestCase(unittest.TestCase):
         ENUMS = opts['elements_conf']['RHEVM Enums']
         logger.info("Preparation flow")
         params = ART_CONFIG['PARAMETERS']
-        nfs_params = ART_CONFIG['nfs']
+
+        data_domain_address = None
+        data_storage_domains = None
+        lun_address = None
+        lun_target = None
+        luns = None
 
         hosts = params.get('vds')
         cpuName = params.get('cpu_name')
         username = 'root'
         password = params.get('vds_password')[0]
-        datacenter ='%sToolsTest' % params.get('data_center_type')
-        storage_type = ENUMS['storage_type_nfs']
-        cluster = '%sToolsTest' % params.get('data_center_type')
-        #data_domain_address= params.get('data_domain_address')
-        #data_storage_domains=params.get('data_domain_path')
-        data_domain_address = nfs_params.get('data_domain_address')
-        data_storage_domains = nfs_params.get('data_domain_path')
+        data_center_type = params.get('data_center_type')
+        datacenter ='%sToolsTest' % data_center_type
+        storage_type = data_center_type
+        cluster = '%sToolsTest' % data_center_type
+        if data_center_type.lower() is ENUMS['storage_type_nfs']:
+            nfs_params = ART_CONFIG['NFS']
+            data_domain_address = nfs_params.get('data_domain_address')
+            data_storage_domains = nfs_params.get('data_domain_path')
+        if data_center_type.lower() is ENUMS['storage_type_iscsi']:
+            iscsi_params = ART_CONFIG['ISCSI']
+            lun_address = iscsi_params.get('lun_address')
+            lun_target = iscsi_params.get('lun_target')
+            luns = iscsi_params.get('lun')
         version=params.get('compatibility_version')
         type = ENUMS['storage_dom_type_export']
         export_domain_address = params.get('export_domain_address')[0]
@@ -297,12 +308,14 @@ class RHEVMUtilsTestCase(unittest.TestCase):
         nic = params.get('host_nics')
         nicType = ENUMS['nic_type_virtio']
 
+
         if not prepareVmWithRhevm(True, hosts, cpuName, username, password, datacenter,
                storage_type, cluster, data_domain_address, data_storage_domains,
                version, type, export_domain_address, export_storage_domain,
                export_domain_name, data_domain_name, template_name, vm_name,
                vm_description, tested_setup_mac_address, memory_size,
-               format_export_domain, nic, nicType):
+               format_export_domain, nic, nicType, lun_address,
+               lun_target, luns):
             logger.info("prepareVmWithRhevm failed")
         logger.info("DEBUG: cls.utility = %s", cls.utility)
         cls.c = config[cls.utility]

@@ -1287,17 +1287,23 @@ def prepareVmWithRhevm(positive, hosts, cpuName, username, password, datacenter,
                version, type, export_domain_address, export_storage_domain,
                export_domain_name, data_domain_name, template_name, vm_name,
                vm_description, tested_setup_mac_address, memory_size,
-               format_export_domain, nic, nicType):
+               format_export_domain, nic, nicType, lun_address, lun_target,
+               luns):
 
     util.logger.info("prepareVmWithRhevm function arguments: %s" % locals())
     # Create Data Center
     if not createDatacenter(True, hosts=hosts, cpuName=cpuName, username=username,
                      password=password, datacenter=datacenter,
                      storage_type=storage_type, cluster=cluster, version=version,
-                     dataStorageDomains=data_storage_domains, address=data_domain_address):
+                     dataStorageDomains=data_storage_domains,
+                     address=data_domain_address, lun_address=lun_address,
+                     lun_target=lun_target, luns=luns):
         return False
     #Import export domain
-    if not importStorageDomain(True, type=type, storage_type=storage_type, address=export_domain_address, host=hosts, path=export_storage_domain):
+    if not importStorageDomain(True, type=type,
+                               storage_type=ENUMS['storage_type_nfs'],
+                               address=export_domain_address, host=hosts,
+                               path=export_storage_domain):
         return False
     # Attach export storage domain to data center
     if not attachStorageDomain(True, datacenter=datacenter,storagedomain=export_domain_name):
