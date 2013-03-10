@@ -263,9 +263,6 @@ class Bugzilla(Component):
 
     def __check_version(self, bug):
         """Skip?"""
-        if self.version is None:
-            from art.rhevm_api.tests_lib.low_level.general import getSystemVersion
-            self.version = Version("%d.%d" % getSystemVersion())
         if getattr(bug, 'version', None):
             version = expect_list(bug, 'version')
             version = [x for x in version if x != 'unspecified']
@@ -302,6 +299,11 @@ class Bugzilla(Component):
             comp = comp.pop()
         else:
             comp = ''
+
+        if self.version is None:
+            from art.rhevm_api.tests_lib.low_level.general import getSystemVersion
+            self.version = Version("%d.%d" % getSystemVersion())
+
         if 'ovirt-engine' in comp:
             comp = transform_ovirt_comp(comp)
             if comp in (SDK, CLI) and self.comp == REST:
@@ -345,7 +347,7 @@ class Bugzilla(Component):
 
             skipped = self.__deal_with_comp_and_version(bz)
             if not self.__is_open(bz):
-                skipped |= self.__check_fixed_at(bz)
+                skipped &= self.__check_fixed_at(bz)
             if skipped:
                 raise BugzillaSkipTest(bz, self.url)
 
