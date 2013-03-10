@@ -600,7 +600,6 @@
     <run>yes</run>
     <conf>headers={'Correlation-Id': 326}</conf>
     <exp_events>3</exp_events>
-    <bz>890124</bz>
   </test_case>
   <test_case>
     <id>d75a2b22-c695-11e1-a578-f0def10e0ce8</id>
