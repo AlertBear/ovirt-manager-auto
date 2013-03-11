@@ -21,7 +21,6 @@ import logging
 
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.core_api import is_action
-from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
 
