@@ -330,7 +330,7 @@
     <id>ba3e28a4-c695-11e1-bc9c-f0def10e0ce8</id>
     <test_name>Add power management to host</test_name>
     <test_action>updateHost</test_action>
-    <parameters>host='{vds[0]}', pm='true', pm_type='alom', pm_address='10.10.10.10', pm_username='qa', pm_password='111', pm_port='4444', pm_secure='true'</parameters>
+    <parameters>host='{vds[0]}', pm='true', pm_type='apc', pm_address='10.10.10.10', pm_username='qa', pm_password='111', pm_port='4444', pm_secure='true'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
     <test_description>pwr_mngmt</test_description>
@@ -340,7 +340,7 @@
     <id>ba3e2a8e-c695-11e1-bc9c-f0def10e0ce8</id>
     <test_name>Disable power management</test_name>
     <test_action>updateHost</test_action>
-    <parameters>host='{vds[0]}', pm='false', pm_type='alom', pm_address=' ', pm_username=' ', pm_password=' ', pm_port=' ', pm_secure='false'</parameters>
+    <parameters>host='{vds[0]}', pm='false', pm_type='apc', pm_address=' ', pm_username=' ', pm_password=' ', pm_port=' ', pm_secure='false'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
     <test_description>pwr_mngmt</test_description>
@@ -420,4 +420,4 @@
     <positive>TRUE</positive>
     <run>yes</run>
   </test_case>
-</input>
+  </input>
