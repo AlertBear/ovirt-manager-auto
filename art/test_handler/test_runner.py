@@ -259,9 +259,6 @@ class TestRunner(object):
         finally:
             test_case.end_time = datetime.now(tzutc())
             self.plmanager.test_cases.post_test_case(test_case)
-            if test_case.exc is not None:
-                logger.error("Test case ended with exception: %s",
-                        test_case.exc, exc_info=True)
         self.plmanager.results_collector.add_test_result(test_case)
         if test_case.vital and test_case.status != test_case.TEST_STATUS_PASSED:
             raise VitalTestFailed(test_case.test_name)
