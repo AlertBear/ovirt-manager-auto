@@ -161,7 +161,7 @@ class AttributeDispatcher(object):
         return self.tt.new_value(var)
 
     def test_elm_var(self, obj, type_):
-        if self.type_ & set((ALL_NAME, type_)):
+        if not self.type_ & set((ALL_NAME, type_)):
             return None
         return self.__get_var(obj)
 
