@@ -32,10 +32,6 @@ from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.plmanagement.interfaces.report_formatter import IResultExtension
 from art.test_handler.plmanagement.interfaces.config_validator import\
                                                     IConfigValidation
-try:
-    from art.test_handler.reports import FMT
-except ImportError:
-    FMT = "%(message)s"
 
 
 LOGS = 'LOG_CAPTURE'
@@ -151,7 +147,6 @@ class LogCapture(Component):
         section_spec = spec.get(LOGS, {})
         section_spec[ENABLED] = 'boolean(default=%s)' % DEFAULT_STATE
         section_spec[record_name] = 'string(default=%s)' % ATTR_NAME
-        #section_spec[fmt] = 'string(default=%s)' % re.sub('[$][A-Z_]+', '', FMT)
         section_spec[logging_level] = 'string(default=%s)' % DEFAULT_LEVEL
         spec[LOGS] = section_spec
 

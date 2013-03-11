@@ -41,7 +41,7 @@ COLORS = {
 
 
 FMT = '%(asctime)s - %(threadName)s - %(name)s - ' \
-      '$COL_LVL%(levelname)s$COL_RST - $COL_MSG%(message)s$COL_RST'
+      '$COL_LVL%(levelname)s$COL_RST - %(message)s'
 
 JUNIT_NOFRAMES_STYLESHEET = "junit-noframes.xsl"
 
@@ -59,23 +59,19 @@ class ColoredFormatter(logging.Formatter):
     def __init__(self, msg, use_color=True):
         logging.Formatter.__init__(self, msg)
         self.useColor = use_color
+        self.colors = {'$COL_LVL': '', '$COL_RST': ''}
 
     def format(self, record):
-        colours = {'$COL_LVL': '', '$COL_MSG': '', '$COL_RST': ''}
         if self.useColor:
-            colours['$COL_LVL'] = '\033[%d;1m' \
+            self.colors['$COL_LVL'] = '\033[%d;1m' \
                     % COLORS.get(record.levelname, 35)
-            colours['$COL_RST'] = '\033[0m'
-            if str(record.msg).startswith('Test name'):
-                colours['$COL_MSG'] = '\033[38;1m'
+            self.colors['$COL_RST'] = '\033[0m'
         else:
-            colours['$COL_LVL'] = '\033[%dm' \
+            self.colors['$COL_LVL'] = '\033[%dm' \
                     % COLORS.get(record.levelname, 35)
-            colours['$COL_RST'] = '\033[0m'
-            if str(record.msg).startswith('Test name'):
-                colours['$COL_MSG'] = '\033[38m'
+            self.colors['$COL_RST'] = '\033[0m'
 
-        self._fmt = colorize_fmt(FMT, colours)
+        self._fmt = colorize_fmt(FMT, self.colors)
         return logging.Formatter.format(self, record)
 
 
@@ -90,7 +86,7 @@ def initializeLogger():
 
     # Prepare empty colours for the colour placeholders for messages going to
     # file.
-    bw_colours = {'$COL_LVL': '', '$COL_MSG': '', '$COL_RST': ''}
+    bw_colours = {'$COL_LVL': '', '$COL_RST': ''}
     bw_fmt = colorize_fmt(FMT, bw_colours)
 
     if not opts['log']:
