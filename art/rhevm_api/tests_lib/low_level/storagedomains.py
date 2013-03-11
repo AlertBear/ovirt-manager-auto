@@ -1297,7 +1297,7 @@ def prepareVmWithRhevm(positive, hosts, cpuName, username, password, datacenter,
                      storage_type=storage_type, cluster=cluster, version=version,
                      dataStorageDomains=data_storage_domains,
                      address=data_domain_address, lun_address=lun_address,
-                     lun_target=lun_target, luns=luns):
+                     lun_target=lun_target, luns=luns, lun_port=3260):
         return False
     #Import export domain
     if not importStorageDomain(True, type=type,

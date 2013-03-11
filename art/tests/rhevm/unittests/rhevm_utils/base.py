@@ -269,7 +269,6 @@ class RHEVMUtilsTestCase(unittest.TestCase):
         ENUMS = opts['elements_conf']['RHEVM Enums']
         logger.info("Preparation flow")
         params = ART_CONFIG['PARAMETERS']
-
         data_domain_address = None
         data_storage_domains = None
         lun_address = None
@@ -284,15 +283,14 @@ class RHEVMUtilsTestCase(unittest.TestCase):
         datacenter ='%sToolsTest' % data_center_type
         storage_type = data_center_type
         cluster = '%sToolsTest' % data_center_type
-        if data_center_type.lower() is ENUMS['storage_type_nfs']:
-            nfs_params = ART_CONFIG['NFS']
-            data_domain_address = nfs_params.get('data_domain_address')
-            data_storage_domains = nfs_params.get('data_domain_path')
-        if data_center_type.lower() is ENUMS['storage_type_iscsi']:
-            iscsi_params = ART_CONFIG['ISCSI']
-            lun_address = iscsi_params.get('lun_address')
-            lun_target = iscsi_params.get('lun_target')
-            luns = iscsi_params.get('lun')
+        if data_center_type.lower() == ENUMS['storage_type_nfs']:
+            data_domain_address = params.as_list('data_domain_address')[0]
+            data_storage_domains = params.as_list('data_domain_path')[0]
+        if data_center_type.lower() == ENUMS['storage_type_iscsi']:
+            lun_address = params.as_list('lun_address')[0]
+            lun_target = params.as_list('lun_target')[0]
+            luns = params.as_list('lun')[0]
+
         version=params.get('compatibility_version')
         type = ENUMS['storage_dom_type_export']
         export_domain_address = params.get('export_domain_address')[0]
