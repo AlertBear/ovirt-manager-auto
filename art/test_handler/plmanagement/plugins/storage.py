@@ -618,7 +618,7 @@ class StorageUtils:
         storageServer['is_specific'] = re.match('netapp|xtreamio',
                                         storageMngr.__class__.__name__, re.I)
         # linux TGT requires host IP instead of iqn for mapping
-        isTGT = re.match('TGT', storageMngr.__class__.__name__, re.I)
+        isTGT = re.search('TGT', storageMngr.__class__.__name__, re.I)
         initiators = serversData.values() if not isTGT else serversData.keys()
 
         for initiator in initiators:
