@@ -52,7 +52,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Create VM from blank template add disk and install OS</test_name>
+   <test_name>Create VM from blank template add disk sparse cow virtio and install OS</test_name>
    <test_action>createVm</test_action>
    <parameters>vmName='{vm_name}_{data_center_type}_virtio', vmDescription='{vm_name}_{data_center_type}_prep', cluster='{data_center_type}{cluster_name}', nic='{host_nics[0]}', storageDomainName='{data_center_type}VmTest_data_domain0', size={disk_size}, diskType='e{disk_type_system}', volumeType='true', volumeFormat='cow', diskInterface='e{interface_virtio}', bootable='true', wipe_after_delete='false', start='false', memory=1073741824, cpu_socket='{cpu_socket}', cpu_cores='{cpu_cores}', nicType='e{nic_type_virtio}', display_type='{display_type}', os_type=%osTypeElement%, user='{vm_linux_user}', password='{vm_linux_password}', type='e{vm_type_desktop}', installation=True, slim=True, cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}', image='{cobbler_profile}', network='{mgmt_bridge}', useAgent={useAgent}</parameters>
    <positive>TRUE</positive>
@@ -60,7 +60,7 @@
    <report>YES</report>
 </test_case>
 <test_case>
-   <test_name>Get mac address</test_name>
+   <test_name>Get mac address of VM sparse cow virtio</test_name>
    <test_action>getVmMacAddress</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_virtio', nic='{host_nics[0]}'</parameters>
    <positive>TRUE</positive>
@@ -69,7 +69,7 @@
    <fetch_output>macAddress-&gt;macAddress</fetch_output>
 </test_case>
 <test_case>
-   <test_name>Remove system from Cobbler</test_name>
+   <test_name>Remove VM from blank template system from Cobbler</test_name>
    <test_action>cobblerRemoveSystem</test_action>
    <parameters>cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}', mac=%macAddress%</parameters>
    <positive>NONE</positive>
@@ -77,7 +77,7 @@
    <report>YES</report>
 </test_case>
 <test_case>
-   <test_name>Stop VM</test_name>
+   <test_name>Stop VM sparse cow virtio</test_name>
    <test_action>stopVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_virtio'</parameters>
    <positive>TRUE</positive>
@@ -85,7 +85,7 @@
    <report>YES</report>
 </test_case>
 <test_case>
-   <test_name>Remove the source VM</test_name>
+   <test_name>Remove the source VM sparse cow virtio</test_name>
    <test_action>removeVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_virtio'</parameters>
    <positive>TRUE</positive>
@@ -111,7 +111,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Create VM from blank template add disk and install OS</test_name>
+   <test_name>Create VM from blank template add disk sparse cow and install OS</test_name>
    <test_action>createVm</test_action>
    <parameters>vmName='{vm_name}_{data_center_type}_prep', vmDescription='{vm_name}_{data_center_type}_prep', cluster='{data_center_type}{cluster_name}', nic='{host_nics[0]}', storageDomainName='{data_center_type}VmTest_data_domain0', size={disk_size}, diskType='e{disk_type_system}', volumeType='true', volumeFormat='cow', diskInterface='e{interface_ide}', bootable='true', wipe_after_delete='false', start='false', memory=1073741824, cpu_socket='{cpu_socket}', cpu_cores='{cpu_cores}', nicType='e{nic_type_virtio}', display_type='{display_type}', os_type=%osTypeElement%, user='{vm_linux_user}', password='{vm_linux_password}', type='e{vm_type_desktop}', installation=True, slim=True, cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}', image='{cobbler_profile}', network='{mgmt_bridge}', useAgent={useAgent}</parameters>
    <positive>TRUE</positive>
@@ -120,7 +120,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Get mac address</test_name>
+   <test_name>Get mac address of sparse cow VM</test_name>
    <test_action>getVmMacAddress</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_prep', nic='{host_nics[0]}'</parameters>
    <positive>TRUE</positive>
@@ -129,7 +129,7 @@
    <fetch_output>macAddress-&gt;macAddress</fetch_output>
 </test_case>
 <test_case>
-   <test_name>Remove system from Cobbler</test_name>
+   <test_name>Remove sparse cow VM system from Cobbler</test_name>
    <test_action>cobblerRemoveSystem</test_action>
    <parameters>cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}', mac=%macAddress%</parameters>
    <positive>NONE</positive>
@@ -138,7 +138,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Stop VM</test_name>
+   <test_name>Stop sparse cow VM</test_name>
    <test_action>stopVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_prep'</parameters>
    <positive>TRUE</positive>
@@ -147,7 +147,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Create template from VM</test_name>
+   <test_name>Create template from sparse cow VM</test_name>
    <test_action>createTemplate</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_prep', name='{template_name}_{data_center_type}', cluster='{data_center_type}{cluster_name}'</parameters>
    <positive>TRUE</positive>
@@ -156,7 +156,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Remove the source VM</test_name>
+   <test_name>Remove the source sparse cow VM</test_name>
    <test_action>removeVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_prep'</parameters>
    <positive>TRUE</positive>
@@ -174,7 +174,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Create VM from template</test_name>
+   <test_name>Create thin sparse cow VM from template</test_name>
    <test_action>cloneVmFromTemplate</test_action>
    <parameters>name='{vm_name}_{data_center_type}_thin', cluster='{data_center_type}{cluster_name}', template='{template_name}_{data_center_type}', timeout=600</parameters>
    <positive>TRUE</positive>
@@ -183,7 +183,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Remove VM</test_name>
+   <test_name>Remove thin sparse cow VM</test_name>
    <test_action>removeVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_thin'</parameters>
    <positive>TRUE</positive>
@@ -192,7 +192,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Clone VM from template</test_name>
+   <test_name>Clone sparse cow VM from template</test_name>
    <test_action>cloneVmFromTemplate</test_action>
    <parameters>name='{vm_name}_{data_center_type}_clone', cluster='{data_center_type}{cluster_name}', template='{template_name}_{data_center_type}', clone='true', timeout=900</parameters>
    <positive>TRUE</positive>
@@ -201,7 +201,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Validate VM disks allocation type and format</test_name>
+   <test_name>Validate VM sparse cow disks allocation type and format</test_name>
    <test_action>validateVmDisks</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_clone', sparse=True, format='COW'</parameters>
    <positive>TRUE</positive>
@@ -210,7 +210,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Remove VM</test_name>
+   <test_name>Remove cloned sparse cow VM</test_name>
    <test_action>removeVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_clone'</parameters>
    <positive>TRUE</positive>
@@ -219,7 +219,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Clone VM from template with image converting</test_name>
+   <test_name>Clone sparse raw VM from sparse cow template with image converting</test_name>
    <test_action>cloneVmFromTemplate</test_action>
    <parameters>name='{vm_name}_{data_center_type}_conv1', cluster='{data_center_type}{cluster_name}', template='{template_name}_{data_center_type}', clone='true', timeout=900, vol_sparse='true', vol_format='RAW'</parameters>
    <positive>TRUE</positive>
@@ -228,7 +228,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Validate VM disks allocation type and format</test_name>
+   <test_name>Validate converted VM from sparse cow template sparse raw disks allocation type and format</test_name>
    <test_action>validateVmDisks</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_conv1', sparse=True, format='RAW'</parameters>
    <positive>TRUE</positive>
@@ -237,7 +237,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Remove VM</test_name>
+   <test_name>Remove converted sparse raw VM from sparse cow template</test_name>
    <test_action>removeVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_conv1'</parameters>
    <positive>TRUE</positive>
@@ -246,7 +246,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Clone VM from template with image converting</test_name>
+   <test_name>Clone raw VM from sparse cow template with image converting</test_name>
    <test_action>cloneVmFromTemplate</test_action>
    <parameters>name='{vm_name}_{data_center_type}_conv2', cluster='{data_center_type}{cluster_name}', template='{template_name}_{data_center_type}', clone='true', timeout=900, vol_sparse='false', vol_format='RAW'</parameters>
    <positive>TRUE</positive>
@@ -255,7 +255,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Validate VM disks allocation type and format</test_name>
+   <test_name>Validate cloned VM raw disks allocation type and format</test_name>
    <test_action>validateVmDisks</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_conv2', sparse=False, format='RAW'</parameters>
    <positive>TRUE</positive>
@@ -264,7 +264,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Remove VM</test_name>
+   <test_name>Remove cloned raw VM</test_name>
    <test_action>removeVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_conv2'</parameters>
    <positive>TRUE</positive>
@@ -273,7 +273,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Remove template</test_name>
+   <test_name>Remove sparse cow template</test_name>
    <test_action>removeTemplate</test_action>
    <parameters>template='{template_name}_{data_center_type}'</parameters>
    <positive>TRUE</positive>
@@ -309,7 +309,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Create VM from blank template add disk and install OS</test_name>
+   <test_name>Create VM from blank template add sparse raw disk and install OS</test_name>
    <test_action>createVm</test_action>
    <parameters>vmName='{vm_name}_{data_center_type}_prep', vmDescription='{vm_name}_{data_center_type}_prep', cluster='{data_center_type}{cluster_name}', nic='{host_nics[0]}', storageDomainName='{data_center_type}VmTest_data_domain0', size={disk_size}, diskType='e{disk_type_system}', volumeType='true', volumeFormat='raw', diskInterface='e{interface_ide}', bootable='true', wipe_after_delete='false', start='false', memory=1073741824, cpu_socket='{cpu_socket}', cpu_cores='{cpu_cores}', nicType='e{nic_type_virtio}', display_type='{display_type}', os_type=%osTypeElement%, user='{vm_linux_user}', password='{vm_linux_password}', type='e{vm_type_desktop}', installation=True, slim=True, cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}', image='{cobbler_profile}', network='{mgmt_bridge}', useAgent={useAgent}</parameters>
    <positive>TRUE</positive>
@@ -318,7 +318,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Get mac address</test_name>
+   <test_name>Get mac address of sparse raw vm</test_name>
    <test_action>getVmMacAddress</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_prep', nic='{host_nics[0]}'</parameters>
    <positive>TRUE</positive>
@@ -327,7 +327,7 @@
    <fetch_output>macAddress-&gt;macAddress</fetch_output>
 </test_case>
 <test_case>
-   <test_name>Remove system from Cobbler</test_name>
+   <test_name>Remove sparse raw system from Cobbler</test_name>
    <test_action>cobblerRemoveSystem</test_action>
    <parameters>cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}', mac=%macAddress%</parameters>
    <positive>NONE</positive>
@@ -336,7 +336,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Stop VM</test_name>
+   <test_name>Stop sparse raw VM</test_name>
    <test_action>stopVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_prep'</parameters>
    <positive>TRUE</positive>
@@ -345,7 +345,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Create template from VM</test_name>
+   <test_name>Create template from sparse raw VM</test_name>
    <test_action>createTemplate</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_prep', name='{template_name}_{data_center_type}', cluster='{data_center_type}{cluster_name}'</parameters>
    <positive>TRUE</positive>
@@ -354,7 +354,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Remove the source VM</test_name>
+   <test_name>Remove the source sparse raw VM</test_name>
    <test_action>removeVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_prep'</parameters>
    <positive>TRUE</positive>
@@ -372,7 +372,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Create VM from template</test_name>
+   <test_name>Create thin sparse raw VM from template</test_name>
    <test_action>cloneVmFromTemplate</test_action>
    <parameters>name='{vm_name}_{data_center_type}_thin', cluster='{data_center_type}{cluster_name}', template='{template_name}_{data_center_type}', timeout=600</parameters>
    <positive>TRUE</positive>
@@ -381,7 +381,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Remove VM</test_name>
+   <test_name>Remove thin sparse raw VM</test_name>
    <test_action>removeVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_thin'</parameters>
    <positive>TRUE</positive>
@@ -390,7 +390,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Clone VM from template</test_name>
+   <test_name>Clone sparse raw VM from template</test_name>
    <test_action>cloneVmFromTemplate</test_action>
    <parameters>name='{vm_name}_{data_center_type}_clone', cluster='{data_center_type}{cluster_name}', template='{template_name}_{data_center_type}', clone='true', timeout=900</parameters>
    <positive>TRUE</positive>
@@ -399,7 +399,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Validate VM disks allocation type and format</test_name>
+   <test_name>Validate sparse raw cloned VM disks allocation type and format</test_name>
    <test_action>validateVmDisks</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_clone', sparse=True, format='RAW'</parameters>
    <positive>TRUE</positive>
@@ -408,7 +408,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Remove VM</test_name>
+   <test_name>Remove cloned sparse raw VM</test_name>
    <test_action>removeVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_clone'</parameters>
    <positive>TRUE</positive>
@@ -417,7 +417,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Clone VM from template with image converting</test_name>
+   <test_name>Clone sparse cow VM from sparse raw template with image converting</test_name>
    <test_action>cloneVmFromTemplate</test_action>
    <parameters>name='{vm_name}_{data_center_type}_conv1', cluster='{data_center_type}{cluster_name}', template='{template_name}_{data_center_type}', clone='true', timeout=900, vol_sparse='true', vol_format='COW'</parameters>
    <positive>TRUE</positive>
@@ -426,7 +426,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Validate VM disks allocation type and format</test_name>
+   <test_name>Validate converted VM from sparse raw template sparse cow disks allocation type and format</test_name>
    <test_action>validateVmDisks</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_conv1', sparse=True, format='COW'</parameters>
    <positive>TRUE</positive>
@@ -435,7 +435,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Remove VM</test_name>
+   <test_name>Remove converted sparse cow VM from sparse raw template</test_name>
    <test_action>removeVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_conv1'</parameters>
    <positive>TRUE</positive>
@@ -444,7 +444,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Clone VM from template with image converting</test_name>
+   <test_name>Clone cow VM from sparse raw template with image converting</test_name>
    <test_action>cloneVmFromTemplate</test_action>
    <parameters>name='{vm_name}_{data_center_type}_conv2', cluster='{data_center_type}{cluster_name}', template='{template_name}_{data_center_type}', clone='true', timeout=900, vol_sparse='false', vol_format='COW'</parameters>
    <positive>FALSE</positive>
@@ -453,7 +453,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Remove template</test_name>
+   <test_name>Remove sparse raw template</test_name>
    <test_action>removeTemplate</test_action>
    <parameters>template='{template_name}_{data_center_type}'</parameters>
    <positive>TRUE</positive>
@@ -489,7 +489,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Create VM from blank template add disk and install OS</test_name>
+   <test_name>Create VM from blank template add preallocated raw disk and install OS</test_name>
    <test_action>createVm</test_action>
    <parameters>vmName='{vm_name}_{data_center_type}_prep', vmDescription='{vm_name}_{data_center_type}_prep', cluster='{data_center_type}{cluster_name}', nic='{host_nics[0]}', storageDomainName='{data_center_type}VmTest_data_domain0', size={prealloc_disk_size}, diskType='e{disk_type_system}', volumeType='false', volumeFormat='raw', diskInterface='e{interface_ide}', bootable='true', wipe_after_delete='false', start='false', memory=1073741824, cpu_socket='{cpu_socket}', cpu_cores='{cpu_cores}', nicType='e{nic_type_virtio}', display_type='{display_type}', os_type=%osTypeElement%, user='{vm_linux_user}', password='{vm_linux_password}', type='e{vm_type_desktop}', installation=True, slim=True, cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}', image='{cobbler_profile}', network='{mgmt_bridge}', useAgent={useAgent}</parameters>
    <positive>TRUE</positive>
@@ -498,7 +498,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Get mac address</test_name>
+   <test_name>Get mac address of preallocated raw disk</test_name>
    <test_action>getVmMacAddress</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_prep', nic='{host_nics[0]}'</parameters>
    <positive>TRUE</positive>
@@ -507,7 +507,7 @@
    <fetch_output>macAddress-&gt;macAddress</fetch_output>
 </test_case>
 <test_case>
-   <test_name>Remove system from Cobbler</test_name>
+   <test_name>Remove preallocated raw system from Cobbler</test_name>
    <test_action>cobblerRemoveSystem</test_action>
    <parameters>cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}', mac=%macAddress%</parameters>
    <positive>NONE</positive>
@@ -516,7 +516,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Stop VM</test_name>
+   <test_name>Stop preallocated raw VM</test_name>
    <test_action>stopVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_prep'</parameters>
    <positive>TRUE</positive>
@@ -525,7 +525,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Create template from VM</test_name>
+   <test_name>Create template from preallocated raw VM</test_name>
    <test_action>createTemplate</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_prep', name='{template_name}_{data_center_type}', cluster='{data_center_type}{cluster_name}'</parameters>
    <positive>TRUE</positive>
@@ -534,7 +534,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Remove the source VM</test_name>
+   <test_name>Remove the source preallocated raw VM</test_name>
    <test_action>removeVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_prep'</parameters>
    <positive>TRUE</positive>
@@ -552,7 +552,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Create VM from template</test_name>
+   <test_name>Create thin preallocated raw VM from preallocated raw template</test_name>
    <test_action>cloneVmFromTemplate</test_action>
    <parameters>name='{vm_name}_{data_center_type}_thin', cluster='{data_center_type}{cluster_name}', template='{template_name}_{data_center_type}', timeout=900</parameters>
    <positive>TRUE</positive>
@@ -561,7 +561,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Remove VM</test_name>
+   <test_name>Remove thin preallocated raw VM</test_name>
    <test_action>removeVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_thin'</parameters>
    <positive>TRUE</positive>
@@ -570,7 +570,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Clone VM from template</test_name>
+   <test_name>Clone VM from preallocated raw template</test_name>
    <test_action>cloneVmFromTemplate</test_action>
    <parameters>name='{vm_name}_{data_center_type}_clone', cluster='{data_center_type}{cluster_name}', template='{template_name}_{data_center_type}', clone='true', timeout=900</parameters>
    <positive>TRUE</positive>
@@ -579,7 +579,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Validate VM disks allocation type and format</test_name>
+   <test_name>Validate VM preallocated raw disks allocation type and format</test_name>
    <test_action>validateVmDisks</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_clone', sparse=False, format='RAW'</parameters>
    <positive>TRUE</positive>
@@ -588,7 +588,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Remove VM</test_name>
+   <test_name>Remove cloned preallocated raw VM</test_name>
    <test_action>removeVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_clone'</parameters>
    <positive>TRUE</positive>
@@ -597,7 +597,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Clone VM from template with image converting</test_name>
+   <test_name>Clone sparse cow VM from preallocated raw template with image converting</test_name>
    <test_action>cloneVmFromTemplate</test_action>
    <parameters>name='{vm_name}_{data_center_type}_conv1', cluster='{data_center_type}{cluster_name}', template='{template_name}_{data_center_type}', clone='true', timeout=900, vol_sparse='true', vol_format='COW'</parameters>
    <positive>TRUE</positive>
@@ -606,7 +606,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Validate VM disks allocation type and format</test_name>
+   <test_name>Validate converted VM from preallocated raw template sparse cow disks allocation type and format</test_name>
    <test_action>validateVmDisks</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_conv1', sparse=True, format='COW'</parameters>
    <positive>TRUE</positive>
@@ -615,7 +615,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Remove VM</test_name>
+   <test_name>Remove converted sparse cow VM from preallocated raw template</test_name>
    <test_action>removeVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_conv1'</parameters>
    <positive>TRUE</positive>
@@ -624,7 +624,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Clone VM from template with image converting</test_name>
+   <test_name>Clone sparse raw VM from preallocated raw template with image converting</test_name>
    <test_action>cloneVmFromTemplate</test_action>
    <parameters>name='{vm_name}_{data_center_type}_conv2', cluster='{data_center_type}{cluster_name}', template='{template_name}_{data_center_type}', clone='true', timeout=900, vol_sparse='true', vol_format='RAW'</parameters>
    <positive>TRUE</positive>
@@ -633,7 +633,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Validate VM disks allocation type and format</test_name>
+   <test_name>Validate converted VM fro preallocated raw template sparse raw disks allocation type and format</test_name>
    <test_action>validateVmDisks</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_conv2', sparse=True, format='RAW'</parameters>
    <positive>TRUE</positive>
@@ -642,7 +642,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Remove VM</test_name>
+   <test_name>Remove converted sparse raw VM from preallocated raw template</test_name>
    <test_action>removeVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_conv2'</parameters>
    <positive>TRUE</positive>
@@ -651,7 +651,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Remove template</test_name>
+   <test_name>Remove preallocated raw template</test_name>
    <test_action>removeTemplate</test_action>
    <parameters>template='{template_name}_{data_center_type}'</parameters>
    <positive>TRUE</positive>
@@ -678,7 +678,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Convert Os name to Os type element </test_name>
+   <test_name>Convert Os name to Os type element again</test_name>
    <test_action>convertOsNameToOsTypeElement</test_action>
    <parameters>osName='{vm_os}'</parameters>
    <positive>TRUE</positive>
@@ -696,7 +696,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Create VM from blank template add disk and install OS</test_name>
+   <test_name>Create source VM from blank template add cow disk and install OS for snapshot testing</test_name>
    <test_action>createVm</test_action>
    <parameters>vmName='{vm_name}_{data_center_type}_snap', vmDescription='{vm_name}_{data_center_type}_snap', cluster='{data_center_type}{cluster_name}', nic='{host_nics[0]}', storageDomainName='{data_center_type}VmTest_data_domain0', size={disk_size}, diskType='e{disk_type_system}', volumeType='true', volumeFormat='cow', diskInterface='e{interface_ide}', bootable='true', wipe_after_delete='false', start='false', memory=1073741824, cpu_socket='{cpu_socket}', cpu_cores='{cpu_cores}', nicType='e{nic_type_virtio}', display_type='{display_type}', os_type=%osTypeElement%, user='{vm_linux_user}', password='{vm_linux_password}', type='e{vm_type_desktop}', installation=True, slim=True, cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}', image='{cobbler_profile}', network='{mgmt_bridge}', useAgent={useAgent}</parameters>
    <positive>TRUE</positive>
@@ -705,7 +705,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Get mac address</test_name>
+   <test_name>Get mac address of vm for snapshot testing</test_name>
    <test_action>getVmMacAddress</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_snap', nic='{host_nics[0]}'</parameters>
    <positive>TRUE</positive>
@@ -714,7 +714,7 @@
    <fetch_output>macAddress-&gt;macAddress</fetch_output>
 </test_case>
 <test_case>
-   <test_name>Remove system from Cobbler</test_name>
+   <test_name>Remove vm for snapshot testing system from Cobbler</test_name>
    <test_action>cobblerRemoveSystem</test_action>
    <parameters>cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}', mac=%macAddress%</parameters>
    <positive>NONE</positive>
@@ -723,7 +723,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Get VM IP address</test_name>
+   <test_name>Get VM for snapshot testing IP address</test_name>
    <test_action>convertMacToIpAddress</test_action>
    <parameters>mac=%macAddress%</parameters>
    <positive>TRUE</positive>
@@ -732,7 +732,7 @@
    <fetch_output>ip-&gt;ip</fetch_output>
 </test_case>
 <test_case>
-   <test_name>Wait for VM up status</test_name>
+   <test_name>Wait for snapshot testing VM up status</test_name>
    <test_action>waitForVmsStates</test_action>
    <parameters>names='{vm_name}_{data_center_type}_snap'</parameters>
    <positive>TRUE</positive>
@@ -741,7 +741,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Prepare data to copy to VM</test_name>
+   <test_name>Prepare data to copy to source VM for snapshot testing</test_name>
    <test_action>prepareDataForVm</test_action>
    <parameters>root_dir='{data_root_dir}', root_name_prefix='snap', dir_cnt='{data_dir_cnt}', file_cnt='{data_file_cnt}'</parameters>
    <positive>NONE</positive>
@@ -768,7 +768,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Copy data to VM</test_name>
+   <test_name>Copy data to source VM for snapshot testing #loop_index</test_name>
    <test_action>copyDataToVm</test_action>
    <parameters>ip=%ip%, user='{vm_linux_user}', password='{vm_linux_password}', osType='linux', src=%data_path#loop_index%, dest='{dest_dir}'</parameters>
    <positive>NONE</positive>
@@ -777,7 +777,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Stop VM</test_name>
+   <test_name>Stop source VM for snapshot testing #loop_index</test_name>
    <test_action>shutdownVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_snap'</parameters>
    <positive>TRUE</positive>
@@ -786,7 +786,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Wait till vm is down</test_name>
+   <test_name>Wait till source vm for snapshot testing is down #loop_index</test_name>
    <test_action>waitForVmsStates</test_action>
    <parameters>names='{vm_name}_{data_center_type}_snap', timeout=120, states='e{vm_state_down}'</parameters>
    <positive>true</positive>
@@ -794,7 +794,7 @@
    <report>yes</report>
 </test_case>
 <test_case>
-   <test_name>Create snapshot</test_name>
+   <test_name>Create snapshot #loop_index out of 2</test_name>
    <test_action>addSnapshot</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_snap', description='snap#loop_index'</parameters>
    <positive>TRUE</positive>
@@ -803,7 +803,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Run VM</test_name>
+   <test_name>Run VM with one snapshot #loop_index</test_name>
    <test_action>startVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_snap', wait_for_status='up'</parameters>
    <positive>TRUE</positive>
@@ -830,7 +830,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Stop VM</test_name>
+   <test_name>Stop VM with two snapshots</test_name>
    <test_action>shutdownVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_snap'</parameters>
    <positive>TRUE</positive>
@@ -839,7 +839,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Wait till vm is down</test_name>
+   <test_name>Wait till vm with two snapshots is down</test_name>
    <test_action>waitForVmsStates</test_action>
    <parameters>names='{vm_name}_{data_center_type}_snap', timeout=120, states='e{vm_state_down}'</parameters>
    <positive>true</positive>
@@ -856,7 +856,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Run VM</test_name>
+   <test_name>Run VM with one snapshot</test_name>
    <test_action>startVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_snap', wait_for_status='up', wait_for_ip=True</parameters>
    <positive>TRUE</positive>
@@ -865,7 +865,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Validate data on VM</test_name>
+   <test_name>Validate data on VM with one snapshot</test_name>
    <test_action>verifyDataOnVm</test_action>
    <parameters>ip=%ip%, user='{vm_linux_user}', password='{vm_linux_password}', osType='linux', dest='{dest_dir}', destToCompare=%data_path#loop_index%</parameters>
    <positive>TRUE</positive>
@@ -874,7 +874,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Stop VM</test_name>
+   <test_name>Stop VM with one snapshot</test_name>
    <test_action>shutdownVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_snap'</parameters>
    <positive>TRUE</positive>
@@ -883,7 +883,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Wait till vm is down</test_name>
+   <test_name>Wait till vm with one snapshot is down</test_name>
    <test_action>waitForVmsStates</test_action>
    <parameters>names='{vm_name}_{data_center_type}_snap', timeout=120, states='e{vm_state_down}'</parameters>
    <positive>true</positive>
@@ -900,7 +900,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Run VM</test_name>
+   <test_name>Run VM with deleted snapshots</test_name>
    <test_action>startVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_snap', wait_for_status='up', wait_for_ip=True</parameters>
    <positive>TRUE</positive>
@@ -909,7 +909,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Validate data on VM</test_name>
+   <test_name>Validate data on VM with deleted snapshots</test_name>
    <test_action>verifyDataOnVm</test_action>
    <parameters>ip=%ip%, user='{vm_linux_user}', password='{vm_linux_password}', osType='linux', dest='{dest_dir}', destToCompare=%data_path#loop_index%</parameters>
    <positive>TRUE</positive>
@@ -936,7 +936,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Copy data to VM</test_name>
+   <test_name>Copy data to VM with deleted snapshots #loop_index</test_name>
    <test_action>copyDataToVm</test_action>
    <parameters>ip=%ip%, user='{vm_linux_user}', password='{vm_linux_password}', osType='linux', src=%data_path#loop_index%, dest='{dest_dir}'</parameters>
    <positive>NONE</positive>
@@ -945,7 +945,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Stop VM</test_name>
+   <test_name>Stop VM with deleted snapshots #loop_index</test_name>
    <test_action>shutdownVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_snap'</parameters>
    <positive>TRUE</positive>
@@ -954,7 +954,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Wait till vm is down</test_name>
+   <test_name>Wait till vm with deleted snapshots is down #loop_index</test_name>
    <test_action>waitForVmsStates</test_action>
    <parameters>names='{vm_name}_{data_center_type}_snap', timeout=120, states='e{vm_state_down}'</parameters>
    <positive>true</positive>
@@ -962,7 +962,7 @@
    <report>yes</report>
 </test_case>
 <test_case>
-   <test_name>Create snapshot</test_name>
+   <test_name>Create snapshot #loop_index out of 5</test_name>
    <test_action>addSnapshot</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_snap', description='snap#loop_index'</parameters>
    <positive>TRUE</positive>
@@ -971,7 +971,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Run VM</test_name>
+   <test_name>Run VM with created snapshots #loop_index</test_name>
    <test_action>startVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_snap', wait_for_status='up'</parameters>
    <positive>TRUE</positive>
@@ -998,7 +998,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Stop VM</test_name>
+   <test_name>Stop VM with 3 new snapshots</test_name>
    <test_action>shutdownVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_snap'</parameters>
    <positive>TRUE</positive>
@@ -1007,7 +1007,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Wait till vm is down</test_name>
+   <test_name>Wait till vm with 3 new snapshots is down</test_name>
    <test_action>waitForVmsStates</test_action>
    <parameters>names='{vm_name}_{data_center_type}_snap', timeout=120, states='e{vm_state_down}'</parameters>
    <positive>true</positive>
@@ -1015,7 +1015,7 @@
    <report>yes</report>
 </test_case>
 <test_case>
-   <test_name>Delete the oldest snapshot</test_name>
+   <test_name>Delete the oldest(fifth) snapshot</test_name>
    <test_action>removeSnapshot</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_snap', description='snap2', timeout=2100</parameters>
    <positive>TRUE</positive>
@@ -1024,7 +1024,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Run VM</test_name>
+   <test_name>Run VM with deleted fifth snapshot</test_name>
    <test_action>startVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_snap', wait_for_status='up', wait_for_ip=True</parameters>
    <positive>TRUE</positive>
@@ -1033,7 +1033,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Validate data on VM</test_name>
+   <test_name>Validate data on VM with deleted fifth snapshot #loop_index</test_name>
    <test_action>verifyDataOnVm</test_action>
    <parameters>ip=%ip%, user='{vm_linux_user}', password='{vm_linux_password}', osType='linux', dest='{dest_dir}', destToCompare=%data_path#loop_index%</parameters>
    <positive>TRUE</positive>
@@ -1060,7 +1060,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Copy data to VM</test_name>
+   <test_name>Copy data to VM with deleted fifth snapshot</test_name>
    <test_action>copyDataToVm</test_action>
    <parameters>ip=%ip%, user='{vm_linux_user}', password='{vm_linux_password}', osType='linux', src=%data_path5%, dest='{dest_dir}'</parameters>
    <positive>NONE</positive>
@@ -1069,7 +1069,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Stop VM</test_name>
+   <test_name>Stop VM with deleted fifth snapshot</test_name>
    <test_action>shutdownVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_snap'</parameters>
    <positive>TRUE</positive>
@@ -1078,7 +1078,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Wait till vm is down</test_name>
+   <test_name>Wait till vm with deleted fifth snapshot is down</test_name>
    <test_action>waitForVmsStates</test_action>
    <parameters>names='{vm_name}_{data_center_type}_snap', timeout=120, states='e{vm_state_down}'</parameters>
    <positive>true</positive>
@@ -1086,7 +1086,7 @@
    <report>yes</report>
 </test_case>
 <test_case>
-   <test_name>Create snapshot</test_name>
+   <test_name>Create fifth snapshot again</test_name>
    <test_action>addSnapshot</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_snap', description='snap5'</parameters>
    <positive>TRUE</positive>
@@ -1095,7 +1095,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Run VM</test_name>
+   <test_name>Run VM with three snapshot</test_name>
    <test_action>startVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_snap', wait_for_status='up', wait_for_ip=True</parameters>
    <positive>TRUE</positive>
@@ -1104,7 +1104,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Validate data on VM</test_name>
+   <test_name>Validate data on VM with re-newed fifth snapshot</test_name>
    <test_action>verifyDataOnVm</test_action>
    <parameters>ip=%ip%, user='{vm_linux_user}', password='{vm_linux_password}', osType='linux', dest='{dest_dir}', destToCompare=%data_path#loop_index%</parameters>
    <positive>TRUE</positive>
@@ -1131,7 +1131,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Cleanup data prepared for VM</test_name>
+   <test_name>Cleanup data prepared for VM for snapshot testing</test_name>
    <test_action>cleanupData</test_action>
    <parameters>path=%data_path#loop_index%</parameters>
    <positive>NONE</positive>
@@ -1139,7 +1139,7 @@
    <report>NO</report>
 </test_case>
 <test_case>
-   <test_name>Remove VM</test_name>
+   <test_name>Remove VM for snapshot testing</test_name>
    <test_action>removeVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_snap', stopVM='true'</parameters>
    <positive>TRUE</positive>
