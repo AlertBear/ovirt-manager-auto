@@ -1494,4 +1494,27 @@ def testMTUInScriptList(host, user, password, script_list, mtu,
             if int(output) != mtu:
                 logger.error(ERR_MSG.format(script_name, mtu_script, mtu))
                 return False
+
+
+@is_action()
+def configureTempMTU(host, user, password, mtu, nic='eth1'):
+    '''
+    Configure static IP on specific interface
+    Author: gcheresh
+    Parameters:
+       * host - remote machine ip address or fqdn
+       * user - user name for the machine
+       * password - password for root user
+       * mtu - MTU value we want to configure on machine
+       * nic - specific NIC to configure mtu on
+    Return: (True if command executed successfuly, False otherwise)
+    '''
+    machine_obj = Machine(host, user, password).util('linux')
+    cmd = ["ifconfig", nic, "mtu", mtu]
+    rc, output = machine_obj.runCmd(cmd)
+    if not rc:
+        logger.error("Failed to configure mtu '%s' on machine '%s'",
+                     mtu, host)
+        logger.error(output)
+        return False
     return True
