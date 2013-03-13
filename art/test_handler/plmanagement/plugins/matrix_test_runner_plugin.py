@@ -226,7 +226,7 @@ class TestComposer(object):
                 logger.error("Enum %s doesn't exist." % (place_holder))
                 raise
 
-            value = value.replace(place_holder, place_holder_val)
+            value = value.replace(place_holder, str(place_holder_val))
 
         # replace settings params (single values)
         vals = re.findall(r'{\w+}', value)
@@ -257,7 +257,7 @@ class TestComposer(object):
                 logger.warn("Parameter %s with index %s doesn't exist." % (place_holder_name, place_holder_ind))
                 #raise
 
-            value = value.replace('{' + place_holder + '}', place_holder_val)
+            value = value.replace('{%s}' % place_holder, str(place_holder_val))
 
         # replace settings params, take list value as a single string element
         vals = re.findall(r'\[\w+\]', value)
