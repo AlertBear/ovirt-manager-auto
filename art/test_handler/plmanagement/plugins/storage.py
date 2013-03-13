@@ -238,16 +238,15 @@ class StorageUtils:
                     self.logger.error("Failed to get iqn for host " + vds)
                     raise
 
+        # new style - no sub-sections, default paths are set
+        self.getStorageConfData(self.storageConf, vdsServers[0],
+                                vdsPasswords[0])
         # keeping this loop for backward compatibility, devices still
         # can be configured with sub-sections
         for subSection in self.storageConf.sections:
             confSubSection = self.storageConf[subSection]
             self.getStorageConfData(confSubSection, vdsServers[0],
                                     vdsPasswords[0], subSection)
-
-        # new style - no sub-sections, default paths are set
-        self.getStorageConfData(self.storageConf, vdsServers[0],
-                                vdsPasswords[0])
 
         if not self.host_group:
             self.host_group = createHostGroupName(getFromMainConfSection(\
@@ -284,52 +283,20 @@ class StorageUtils:
         Return: None
         '''
 
-        glusterStorage = confStorageSection.get('gluster_server', None)
-        if glusterStorage:
-            targetDevPath = self.getDeviceTargetPath(targetPath, 'gluster')
-
-            self.storages['gluster'][targetDevPath] = {
-                'ip': getIpAddressByHostName(glusterStorage),
-                'total': int(confStorageSection.get('gluster_devices', '0')),
+        for dev_type in ('gluster', 'nfs', 'iso', 'export', 'iscsi'):
+            storageServer = confStorageSection.get(
+                            '{0}_server'.format(dev_type), None)
+            targetDevPath = self.getDeviceTargetPath(targetPath, dev_type)
+            self.storages[dev_type][targetDevPath] = {
+                'ip': getIpAddressByHostName(storageServer) if storageServer \
+                      else None,
+                'total': int(confStorageSection.get(
+                             '{0}_devices'.format(dev_type), '0')),
             }
-
-        nfsStorage = confStorageSection.get('nfs_server', None)
-        if nfsStorage:
-            targetDevPath = self.getDeviceTargetPath(targetPath, 'nfs')
-
-            self.storages['nfs'][targetDevPath] = {
-                'ip': getIpAddressByHostName(nfsStorage),
-                'total': int(confStorageSection.get('nfs_devices', '0')),
-            }
-
-        isoStorage = confStorageSection.get('iso_server', None)
-        if isoStorage:
-            targetDevPath = self.getDeviceTargetPath(targetPath, 'iso')
-
-            self.storages['iso'][targetDevPath] = {
-                'ip': getIpAddressByHostName(isoStorage),
-                'total': int(confStorageSection.get('iso_devices', '0')),
-            }
-
-        exportStorage = confStorageSection.get('export_server', None)
-        if exportStorage:
-            targetDevPath = self.getDeviceTargetPath(targetPath, 'export')
-
-            self.storages['export'][targetDevPath] = {
-                'ip': getIpAddressByHostName(exportStorage),
-                'total': int(confStorageSection.get('export_devices', '0')),
-            }
-
-        iscsiStorage = confStorageSection.get('iscsi_server', None)
-        if iscsiStorage:
-            targetDevPath = self.getDeviceTargetPath(targetPath, 'iscsi')
-
-            self.storages['iscsi'][targetDevPath] = {
-                'ip': getIpAddressByHostName(iscsiStorage),
-                'total': int(confStorageSection.get('iscsi_devices', '0')),
-                'capacity': confStorageSection.get('devices_capacity', '0'),
-                'is_specific': False,
-            }
+            if dev_type == 'iscsi':
+                self.storages[dev_type][targetDevPath]['capacity'] = \
+                    confStorageSection.get('devices_capacity', '0')
+                self.storages[dev_type][targetDevPath]['is_specific'] = False
 
         localDevices = confStorageSection.get('local_devices', None)
         if localDevices:
@@ -459,66 +426,27 @@ class StorageUtils:
         Parameters: None
         Return: None
         '''
-        # GLUSTER domain
-        for target in filterNonEmptyDicts(self.gluster_devices):
-            targetData = self.storages['gluster'][target]
-
-            glusterAddress = processConfList(\
+        for type, devices in dict(gluster=self.gluster_devices,
+                                  nfs=self.nfs_devices,
+                                  iso=self.iso_devices,
+                                  export=self.export_devices,
+                                  iscsi=self.iscsi_devices).iteritems():
+            for target in filterNonEmptyDicts(devices):
+                targetData = self.storages[type][target]
+                address = processConfList(
                                     [targetData['ip']] * targetData['total'])
-            setConfValueByKeyPath(self.config, target, glusterAddress,
-                                  '_address')
-
-            glusterPath = processConfList(self.gluster_devices[target])
-            setConfValueByKeyPath(self.config, target, glusterPath, '_path')
-        # NFS domain
-        for target in filterNonEmptyDicts(self.nfs_devices):
-            targetData = self.storages['nfs'][target]
-
-            nfsAddress = processConfList(\
-                                    [targetData['ip']] * targetData['total'])
-            setConfValueByKeyPath(self.config, target, nfsAddress, '_address')
-
-            nfsPath = processConfList(self.nfs_devices[target])
-            setConfValueByKeyPath(self.config, target, nfsPath, '_path')
-
-        # ISO domain
-        for target in filterNonEmptyDicts(self.iso_devices):
-            targetData = self.storages['iso'][target]
-
-            nfsAddress = processConfList(\
-                                    [targetData['ip']] * targetData['total'])
-            setConfValueByKeyPath(self.config, target, nfsAddress, '_address')
-
-            nfsPath = processConfList(self.iso_devices[target])
-            setConfValueByKeyPath(self.config, target, nfsPath, '_path')
-
-        # Export domain
-        for target in filterNonEmptyDicts(self.export_devices):
-            targetData = self.storages['export'][target]
-
-            nfsAddress = processConfList(\
-                                    [targetData['ip']] * targetData['total'])
-            setConfValueByKeyPath(self.config, target, nfsAddress, '_address')
-
-            nfsPath = processConfList(self.export_devices[target])
-            setConfValueByKeyPath(self.config, target, nfsPath, '_path')
-
-        # ISCSI domain
-        for target in filterNonEmptyDicts(self.iscsi_devices):
-            targetData = self.storages['iscsi'][target]
-
-            iscsiAddress = processConfList(\
-                                    [targetData['ip']] * targetData['total'])
-            setConfValueByKeyPath(self.config, target, iscsiAddress,
-                                  '_address')
-
-            iscsiTarget = processConfList(\
-                        map(lambda x: x['target'], self.iscsi_devices[target]))
-            setConfValueByKeyPath(self.config, target, iscsiTarget, '_target')
-
-            iscsiLun = processConfList(\
-                        map(lambda x: x['uuid'], self.iscsi_devices[target]))
-            setConfValueByKeyPath(self.config, target, iscsiLun)
+                setConfValueByKeyPath(self.config, target, address, '_address')
+                if type is not 'iscsi':
+                    path = processConfList(devices[target])
+                    setConfValueByKeyPath(self.config, target, path, '_path')
+                else:
+                    iscsiTarget = processConfList(
+                        map(lambda x: x['target'], devices[target]))
+                    setConfValueByKeyPath(self.config, target, iscsiTarget,
+                                          '_target')
+                    iscsiLun = processConfList(
+                        map(lambda x: x['uuid'], devices[target]))
+                    setConfValueByKeyPath(self.config, target, iscsiLun)
 
         # Local domain
         for target in filterNonEmptyDicts(self.local_devices):
@@ -580,8 +508,8 @@ class StorageUtils:
 
     def getStorageManager(self, type, serverIp):
         return self.storageServers[type] if type in self.storageServers else \
-            smngr.StorageManagerWrapper(serverIp,type.upper(),
-                                        self.storageConfigFile).manager
+            createStorageManager([serverIp], type.upper(),
+                                 self.storageConfigFile)
 
     def __create_nas_device(self, storageServerIp, deviceName, fsType):
         '''
