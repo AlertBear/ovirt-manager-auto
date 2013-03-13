@@ -1854,6 +1854,14 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
                             image=image, floppyImage=floppy,
                             nic=nic, hostname=hostname):
             return False
+        if not waitForVMState(vmName):
+            return False
+        mac = getVmMacAddress(positive, vmName, nic=nic)
+        if not mac[0]:
+            return False
+        if not cobblerRemoveSystem(cobblerAddress, cobblerUser, cobblerPasswd,
+                                   mac[1]['macAddress']):
+            return False
 
         if useAgent:
             ip = waitForIP(vmName)[1]['ip']
