@@ -121,7 +121,7 @@ class XMLTestFile(mr.TestFile):
             elm[mr.TEST_EXPECTED_EXCEPTIONS] = \
                     tuple(elm.get(mr.TEST_EXPECTED_EXCEPTIONS, '').replace(',', ' ').split())
             if TCMS_TEST_CASE_TAG in elm:
-                elm[mr.TEST_TCMS_CASE_ID] = int(elm[TCMS_TEST_CASE_TAG])
+                elm[mr.TEST_TCMS_CASE_ID] = elm[TCMS_TEST_CASE_TAG]
             if TCMS_TEST_PLAN_TAG in elm:
                 elm[mr.TEST_TCMS_PLAN_ID] = int(elm[TCMS_TEST_PLAN_TAG])
             yield elm

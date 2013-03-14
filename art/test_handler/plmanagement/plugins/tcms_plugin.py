@@ -74,6 +74,7 @@ TCMS_SITE = 'tcms_site'
 TCMS_DEC = 'tcms'
 TCMS_TEST_CASE = 'tcms_test_case'
 TCMS_PLAN_ID = 'tcms_plan_id'
+REPORT_BZ = 'report_bz' # currently disabled due to problems in nitrate api
 
 logger = get_logger('tcms_agent')
 
@@ -143,6 +144,7 @@ class TCMS(Component):
         self.category = tcms_cfg[CATEGORY]
         self.generate_links = params.tcms_gen_links or \
                 tcms_cfg.as_bool(GENERATE_LINKS)
+        self.report_bz = tcms_cfg.as_bool(REPORT_BZ)
         self.__register_functions()
 
     def __register_functions(self):
@@ -167,10 +169,11 @@ class TCMS(Component):
         pass
 
     def post_test_case(self, test):
-        tcms_case = getattr(test, TCMS_TEST_CASE, None)
-        if not tcms_case:
+        tcms_data = getattr(test, TCMS_TEST_CASE, None)
+        if not tcms_data:
             return
 
+        tcms_cases = tcms_data.split(',')
         plan = getattr(test, TCMS_PLAN_ID, None)
         if not plan and self.tcms_plans:
             plan = self.tcms_plans[-1]
@@ -179,11 +182,14 @@ class TCMS(Component):
                         # NOTE: it shouldn't happen
 
         res = self.results.get(plan, {})
-        res[tcms_case] = test
-        self.results[plan] = res
 
-        if self.generate_links:
-            logger.info("TCMS link: %s/case/%s" % (self.site, tcms_case))
+        for case in tcms_cases:
+            res[case] = test
+
+            if self.generate_links:
+                logger.info("TCMS link: %s/case/%s" % (self.site, case))
+
+        self.results[plan] = res
 
     def on_application_exit(self):
         if self.results:
@@ -213,15 +219,18 @@ class TCMS(Component):
 
     def __fill_test_case(self, case, test):
         status = test.status
+        bz = None
         if test.status == test.TEST_STATUS_SKIPPED:
             status = test.TEST_STATUS_FAILED
+            if self.report_bz:
+                bz = getattr(test, 'bz', None)
 
         self.agent.iterationInfo(sub_test_name=test.test_name,
                             test_case_name=test.test_name,
                             info_line = [str(test).replace("'", "\\'")],
                             iter_number=test.serial,
                             iter_status=status,
-                            bz_info=getattr(test, 'bz', None),
+                            bz_info=bz,
                             test_case_id=str(case))
 
 
@@ -261,6 +270,7 @@ class TCMS(Component):
         section_spec[KEYTAB_LOCATION] = "string(default=None)"
         section_spec[CATEGORY] = "string(default=None)"
         section_spec[SEND_MAIL] = 'boolean(default=true)'
+        section_spec[REPORT_BZ] = 'boolean(default=false)'
         section_spec[REALM_OPT] = 'string(default=%s)' % REALM
         section_spec[RUN_NAME_TEMPL] =\
             "string(default='Auto TestRun for {0} TestPlan')"
