@@ -92,7 +92,7 @@ def populateOptsFromArgv(argv):
                                 help='path to the main conf spec file',
                                 dest='confSpec')
     parser.add_argument('--standalone', '-standalone', action='store_true',
-                                help='run without rhevm dependencies')
+                                help='run without opts dependencies')
     parser.add_argument('-D',   metavar='OPTION', action='append',
                                 default=[],
                                 help='modify the option in config',

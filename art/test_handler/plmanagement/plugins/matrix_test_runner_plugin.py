@@ -44,8 +44,7 @@ CLI Options:
 Configuration Options:
 ----------------------
     | **[MATRIX_TEST_RUNNER]**
-    | **test_modules**   list of modules which include testing functions,
-        the default is: art.rhevm_api,art.gluster_api,art.jasper_api
+    | **test_modules**   list of modules which include testing functions
     | **discover_action**   true/false; if to enable actions auto discovery or
         not. When disabled the actions are loaded from cached data
         (conf/actions.conf). If cached data doesn't exist yet (first test run)
@@ -874,9 +873,7 @@ class MatrixBasedTestComposer(Component):
     def config_spec(self, spec, val_funcs):
         section_spec = spec.get(MATRIX_TEST_RUNNER_SEC, {})
         section_spec[TEST_MODULES] = "string_list("\
-                "default=list('art.rhevm_api',"\
-                "'art.gluster_api',"\
-                "'art.jasper_api'))"
+                "default=force_list(default=None)"
         section_spec[DISCOVER_ACTIONS] = "boolean(default=False)"
         spec[MATRIX_TEST_RUNNER_SEC] = section_spec
 
