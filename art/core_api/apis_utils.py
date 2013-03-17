@@ -22,7 +22,7 @@ import time
 from time import strftime
 import abc
 import logging
-from art.core_api.apis_exceptions import APITimeout, APICommandError, EntityNotFound
+from art.core_api.apis_exceptions import APITimeout, EntityNotFound
 import art.test_handler.settings as settings
 
 # TODO: move default values to conf spec
@@ -252,91 +252,3 @@ class TimeoutingSampler(object):
                         *self.timeout_exc_args,
                         **self.timeout_exc_kwargs)
             time.sleep(self.sleep)
-
-
-class TestRunnerWrapper():
-    '''
-    Runs APIs functions not from run.py and without settings.conf.
-    Required settings options are defined in constructor.
-
-    Usage Example:
-        from framework_utils.restutils import TestRunnerWrapper
-        wrapper = TestRunnerWrapper('10.35.113.80')
-        try:
-            status = wrapper.runCommand('rest.datacenters.addDataCenter','true',name='test',storage_type='NFS',version='2.2')
-        except APICommandError:
-            ...
-
-    Author: edolinin
-    '''
-
-    def __init__(self, ip, **kwargs):
-        '''
-        Defines settings configuration required to run REST APIs functions
-        Parameters:
-        * ip - vdc ip
-        * kwargs - dictionary with settings configurations, keys names are
-        the same as in settings.conf, if omitted - defaults are set
-        '''
-
-        from art.test_handler.settings import opts
-        import logging
-
-        opts['host'] = ip
-
-        opts['scheme'] = kwargs.get('scheme', 'https')
-        opts['port'] = kwargs.get('port', '8443')
-        opts['entry_point'] = kwargs.get('entry_point', 'api')
-        opts['user'] = kwargs.get('user', 'vdcadmin')
-        opts['user_domain'] = kwargs.get('user_domain', 'qa.lab.tlv.redhat.com')
-        opts['password'] = kwargs.get('password', '123456')
-        opts['engine'] = kwargs.get('engine', 'rest')
-        opts['debug'] = kwargs.get('debug', 'DEBUG')
-        opts['media_type'] = kwargs.get('media_type', 'application/xml')
-        opts['headers'] = kwargs.get('headers', '')
-        opts['log'] = kwargs.get('log', "/var/tmp/%sTests%s.log" % (opts['engine'], strftime('%Y%m%d_%H%M%S')))
-        opts['urisuffix'] = ''
-        opts['uri'] = '%(scheme)s://%(host)s:%(port)s/%(entry_point)s%(urisuffix)s/' \
-            % opts
-
-        opts['in_parallel'] = kwargs.get('in_parallel', [])
-        opts['parallel_run'] = True if opts['in_parallel'] else False
-        opts['standalone'] = kwargs.get('standalone', False)
-        #opts['api_xsd'] = kwargs.get('api_xsd', '')
-
-        self.logger = logging.getLogger(__name__)
-        print "Log file is initialized at {0}".format(opts['log'])
-
-
-    @classmethod
-    def runCommand(cls, action, *args, **kwargs):
-        '''
-        Runs REST APIs functions
-
-        Parameters:
-        * action - full path of the action which should be run
-        * args - list of function's non-keyword arguments
-        * kwargs - dictionary with function's keyword arguments
-
-        Exceptions: raises APICommandError in case of error
-
-        '''
-
-        actionModulesNames = action.split(".")
-        funcPackage = ".".join(actionModulesNames[:-1])
-        funcName = actionModulesNames[-1]
-
-        exec("from " + funcPackage + " import " + funcName)
-
-        params = ''
-        for arg in args:
-            params = "{0},{1!r}".format(params, arg)
-
-        for paramName, paramVal in kwargs.items():
-            params = "{0},{1}={2!r}".format(params, paramName, paramVal)
-        cmd = funcName + "(" + params.strip(' ,') + ")"
-
-        try:
-            return eval(cmd)
-        except Exception as e:
-            raise APICommandError(cmd, e)

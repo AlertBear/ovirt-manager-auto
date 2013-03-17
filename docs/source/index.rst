@@ -738,15 +738,19 @@ Run externally
 --------------
 
 If you need to use REST API's functions in your code, independent of the
-whole framework, you can do it with the RestTestRunnerWrapper instance.
+whole ART framework, you can do it with the TestRunnerWrapper instance.
 For Example::
 
-    from utils.restutils import RestTestRunnerWrapper
-    restWrapper = RestTestRunnerWrapper('10.35.113.80') # provide ip of your rest client server
+    from art.core_api.external_api import TestRunnerWrapper
+    from art.core_api.apis_exceptions import APICommandError
+    wrapper = TestRunnerWrapper('10.10.10.10')
     try:
-        status = restWrapper.runCommand('rest.datacenters.addDataCenter', 'true', name='test',storage_type='NFS', version='2.2') # run the function via wrapper, first parameter is a function path, then a list of function's parameters
-    except RestApiCommandError:
+        status = wrapper.runCommand(\
+            'art.rhevm_api.tests_lib.low_level.datacenters.addDataCenter',
+            'true',name='test',storage_type='NFS',version='3.1')
+    except APICommandError:
         pass #handle error
+
 
 Creating testing functions
 ==========================
