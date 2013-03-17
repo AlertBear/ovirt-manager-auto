@@ -11,18 +11,7 @@
   <test_description/>
 </test_case>
 <test_case>
-  <test_name>Create Data Center NFS</test_name>
-  <test_action>addDataCenter</test_action>
-  <parameters>name='{datacenter}',storage_type='e{storage_type_nfs}',version='{comp_version}'</parameters>
-  <positive>TRUE</positive>
-  <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
-  <fetch_output/>
-  <report>YES</report>
-  <vital>TRUE</vital>
-  <test_description/>
-</test_case>
-<test_case>
-  <test_name>Create Data Center ISCSI</test_name>
+  <test_name>Create Data Centers ISCSI</test_name>
   <test_action>addDataCenter</test_action>
   <parameters>name='{datacenter}#loop_index',storage_type='e{storage_type_iscsi}',version='{comp_version}'</parameters>
   <positive>TRUE</positive>
@@ -34,7 +23,7 @@
   <test_description/>
 </test_case>
 <test_case>
-  <test_name>Create Cluster</test_name>
+  <test_name>Create Clusters</test_name>
   <test_action>addCluster</test_action>
   <parameters>name='{cluster}#loop_index',cpu='{cpu_name}',data_center='{datacenter}#loop_index',version='{comp_version}'</parameters>
   <positive>TRUE</positive>
@@ -75,7 +64,7 @@
  <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
  <fetch_output/>
  <report>YES</report>
- <vital>False</vital>
+ <vital>TRUE</vital>
  <test_description/>
 </test_case>
 <test_case>
@@ -107,11 +96,32 @@
    <vital>TRUE</vital>
 </test_case>
 <test_case>
+   <test_name>Clear hosts network interfaces</test_name>
+   <test_action>sendSNRequest</test_action>
+   <parameters>host='{vds}',auto_nics=['{host_nics[0]}'],check_connectivity='true', connectivity_timeout=60, force='false'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds})</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description>Send automatic MGMT interface.</test_description>
+</test_case>
+<test_case>
+    <test_name>Save Network Configuration</test_name>
+    <test_action>commitNetConfig</test_action>
+    <parameters>host='{vds}'</parameters>
+    <positive>TRUE</positive>
+    <run>loop({vds})</run>
+    <fetch_output/>
+    <report>YES</report>
+    <vital>FALSE</vital>
+    <test_description/>
+</test_case>
+<test_case>
   <test_name>Create sw1 Logical Network</test_name>
   <test_action>addNetwork</test_action>
   <parameters>name='{networks[0]}',data_center='{datacenter}#loop_index'</parameters>
   <positive>TRUE</positive>
-  <run>yes</run>
   <run>loop(2)</run>
   <fetch_output/>
   <report>YES</report>
@@ -123,7 +133,6 @@
    <test_action>updateNetwork</test_action>
    <parameters>network='{networks[0]}',data_center='{datacenter}#loop_index',vlan_id='1'</parameters>
    <positive>True</positive>
-   <run>yes</run>
    <run>loop(2)</run>
    <fetch_output/>
    <report>YES</report>
@@ -135,7 +144,6 @@
   <test_action>addNetwork</test_action>
   <parameters>name='{networks[1]}',data_center='{datacenter}#loop_index'</parameters>
   <positive>TRUE</positive>
-  <run>yes</run>
   <run>loop(2)</run>
   <fetch_output/>
   <report>YES</report>
@@ -145,9 +153,9 @@
 <test_case>
   <test_name>Create Logical Network sw3</test_name>
   <test_action>addNetwork</test_action>
-  <parameters>name='{networks[2]}',data_center='{datacenter}0'</parameters>
+  <parameters>name='{networks[2]}',data_center='{datacenter}#loop_index'</parameters>
   <positive>TRUE</positive>
-  <run>yes</run>
+  <run>loop(2)</run>
   <fetch_output/>
   <report>YES</report>
   <vital>FALSE</vital>
@@ -158,7 +166,6 @@
    <test_action>addNetworkToCluster</test_action>
    <parameters>network='{networks[0]}', cluster='{cluster}#loop_index', required='false'</parameters>
    <positive>TRUE</positive>
-   <run>yes</run>
    <run>loop(2)</run>
    <fetch_output/>
    <report>YES</report>
@@ -170,7 +177,6 @@
    <test_action>addNetworkToCluster</test_action>
    <parameters>network='{networks[1]}', cluster='{cluster}#loop_index', required='false'</parameters>
    <positive>TRUE</positive>
-   <run>yes</run>
    <run>loop(2)</run>
    <fetch_output/>
    <report>YES</report>
@@ -178,11 +184,11 @@
    <test_description/>
 </test_case>
 <test_case>
-   <test_name>Attach sw3 to Cluster in 3.0</test_name>
+   <test_name>Attach sw3 to Clusters</test_name>
    <test_action>addNetworkToCluster</test_action>
-   <parameters>network='{networks[2]}', cluster='{cluster}0', required='false'</parameters>
+   <parameters>network='{networks[2]}', cluster='{cluster}#loop_index', required='false'</parameters>
    <positive>TRUE</positive>
-   <run>yes</run>
+   <run>loop(2)</run>
    <fetch_output/>
    <report>YES</report>
    <vital>FALSE</vital>
@@ -228,7 +234,7 @@
    <run>yes</run>
    <fetch_output>osTypeElement-&gt;osTypeElement</fetch_output>
    <report>NO</report>
-   <vital>TRUE</vital>
+   <vital>False</vital>
    <test_description/>
 </test_case>
 <test_case>
@@ -239,12 +245,12 @@
    <run>if(re.search('RHEL',%osTypeElement%))</run>
    <fetch_output>osBoot-&gt;osBoot</fetch_output>
    <report>NO</report>
-   <vital>TRUE</vital>
+   <vital>False</vital>
    <test_description/>
 </test_case>
 
 <test_case>
-   <test_name>Create Linux VMs with 3 NICs for Cluster in 3.0 and Cluster in 3.1</test_name>
+   <test_name>Create Linux VMs with 3 NICs for '{cluster}0' and '{cluster}1'</test_name>
    <test_action>createVm</test_action>
    <parameters>vmName='{vm_name[#loop_index]}',vmDescription='linux vm',cluster='{cluster}#loop_index',nic='nic1',nicType='e{nic_type_virtio}',storageDomainName='{storage}#loop_index',size=21474836480,diskType='e{disk_type_system}',display_type='e{display_type_spice}',cobblerAddress='{cobbler_address}',cobblerUser='{cobbler_user}',cobblerPasswd='{cobbler_passwd}'</parameters>
    <positive>TRUE</positive>
@@ -256,7 +262,7 @@
    <test_description/>
 </test_case>
 <test_case>
-   <test_name>Create Linux VMs with 4 NICs for Cluster in 3.0</test_name>
+   <test_name>Create Linux VMs with 4 NICs for '{cluster}0'</test_name>
    <test_action>createVm</test_action>
    <parameters>vmName='{vm_name[2]}',vmDescription='linux vm',cluster='{cluster}0',nic='nic1',nicType='e{nic_type_virtio}',storageDomainName='{storage}0',size=21474836480,diskType='e{disk_type_system}',display_type='e{display_type_spice}',cobblerAddress='{cobbler_address}',cobblerUser='{cobbler_user}',cobblerPasswd='{cobbler_passwd}'</parameters>
    <positive>TRUE</positive>
@@ -272,7 +278,6 @@
    <test_action>addNic</test_action>
    <parameters>vm='{vm_name[#loop_index]}', name='nic2', network='{networks[0]}', interface='e{nic_type_virtio}'</parameters>
    <positive>true</positive>
-   <run>yes</run>
    <run>loop(3)</run>
    <report>yes</report>
 </test_case>
@@ -281,7 +286,6 @@
    <test_action>addNic</test_action>
    <parameters>vm='{vm_name[#loop_index]}', name='nic3', network='{networks[1]}', interface='e{nic_type_virtio}'</parameters>
    <positive>true</positive>
-   <run>yes</run>
    <run>loop(3)</run>
    <report>yes</report>
 </test_case>
@@ -292,66 +296,6 @@
    <positive>true</positive>
    <run>yes</run>
    <report>yes</report>
-</test_case>
-<test_case>
-   <test_name>Install Linux Vms With Unattended</test_name>
-   <test_action>unattendedInstallation</test_action>
-   <parameters>vm='{vm_name[#loop_index]}',image=%osBoot%,cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}'</parameters>
-   <positive>TRUE</positive>
-   <run>if(re.search('RHEL',%osTypeElement%))</run>
-   <run>loop(3)</run>
-   <fetch_output/>
-   <report>YES</report>
-   <vital>TRUE</vital>
-   <test_description/>
-</test_case>
-<test_case>
-   <test_name>Get MAC address of 3 VMs</test_name>
-   <test_action>getVmMacAddress</test_action>
-   <parameters>vm='{vm_name[#loop_index]}',nic='nic1'</parameters>
-   <positive>TRUE</positive>
-   <run>if(re.search('RHEL',%osTypeElement%))</run>
-   <run>loop(3)</run>
-   <fetch_output>macAddress-&gt;macAddress#loop_index</fetch_output>
-   <report>NO</report>
-   <vital>TRUE</vital>
-   <test_description/>
-</test_case>
-<test_case>
-   <test_name>Get IP address of 3 VMs</test_name>
-   <test_action>convertMacToIpAddress</test_action>
-   <parameters>mac=%macAddress#loop_index%</parameters>
-   <positive>TRUE</positive>
-   <run>if(re.search('RHEL',%osTypeElement%))</run>
-   <run>loop(3)</run>
-   <fetch_output>ip-&gt;ipAddress#loop_index</fetch_output>
-   <report>NO</report>
-   <vital>FALSE</vital>
-   <test_description/>
-</test_case>
-<test_case>
-   <test_name>Cobbler remove Macs of 3 VMs</test_name>
-   <test_action>cobblerRemoveSystem</test_action>
-   <parameters>cobblerAddress='{cobbler_address}',cobblerUser='{cobbler_user}',cobblerPasswd='{cobbler_passwd}',mac=%macAddress#loop_index%</parameters>
-   <positive>NONE</positive>
-   <run>if(re.search('RHEL',%osTypeElement%))</run>
-   <run>loop(3)</run>
-   <fetch_output/>
-   <report>NO</report>
-   <vital>FALSE</vital>
-   <test_description/>
-</test_case>
-<test_case>
-   <test_name>Stop VM</test_name>
-   <test_action>stopVm</test_action>
-   <parameters>vm='{vm_name[#loop_index]}'</parameters>
-   <positive>TRUE</positive>
-   <run>YES</run>
-   <run>loop(3)</run>
-   <fetch_output/>
-   <report>YES</report>
-   <vital>TRUE</vital>
-   <test_description/>
 </test_case>
 <test_case>
    <test_name>Create template</test_name>
@@ -393,7 +337,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Export template from 3.0 with 3 NICs</test_name>
+   <test_name>Export template '{template_name}0' with 3 NICs</test_name>
    <test_action>exportTemplate</test_action>
    <parameters>template='{template_name}0',storagedomain='ImpExp_{data_center_type}', wait=True</parameters>
    <positive>TRUE</positive>
@@ -401,7 +345,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Export template from 3.0 with 4 NICs</test_name>
+   <test_name>Export template '{template_name}2' with 4 NICs</test_name>
    <test_action>exportTemplate</test_action>
    <parameters>template='{template_name}2',storagedomain='ImpExp_{data_center_type}', wait=True</parameters>
    <positive>TRUE</positive>
@@ -409,7 +353,7 @@
    <fetch_output/>
 </test_case>
 <test_case>
-    <test_name>Remove Template in 3.0 with 4 NICs</test_name>
+    <test_name>Remove Template '{template_name}2' with 4 NICs</test_name>
     <test_action>removeTemplate</test_action>
     <parameters>template='{template_name}2'</parameters>
     <positive>TRUE</positive>
@@ -420,25 +364,25 @@
     <test_description/>
 </test_case>
 <test_case>
-   <test_name>Remove VM with 3 NICs in 3.0</test_name>
+   <test_name>Remove VM '{vm_name[0]}' with 3 NICs</test_name>
    <test_action>removeVm</test_action>
    <parameters>vm='{vm_name[0]}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
    <report>YES</report>
-   <vital>TRUE</vital>
+   <vital>False</vital>
    <test_description/>
 </test_case>
 <test_case>
-   <test_name>Remove VM with 4 NICs in 3.0</test_name>
+   <test_name>Remove VM '{vm_name[2]}'with 4 NICs</test_name>
    <test_action>removeVm</test_action>
    <parameters>vm='{vm_name[2]}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
    <report>YES</report>
-   <vital>TRUE</vital>
+   <vital>False</vital>
    <test_description/>
 </test_case>
 <test_case>
@@ -449,10 +393,9 @@
    <run>yes</run>
    <fetch_output/>
    <report>NO</report>
-   <vital>TRUE</vital>
+   <vital>False</vital>
    <test_description/>
 </test_case>
-
 <test_case>
    <test_name>Deactivate data storage domain</test_name>>
    <test_action>deactivateStorageDomain</test_action>

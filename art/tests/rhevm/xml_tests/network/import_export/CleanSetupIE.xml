@@ -11,7 +11,7 @@
    <test_description>Cleaning up Environment</test_description>
 </test_case>
 <test_case>
-   <test_name>Clean data centers from 3.0 and 3.1</test_name>
+   <test_name>Clean environment</test_name>
    <test_action>cleanDataCenter</test_action>
    <parameters>datacenter='{datacenter}#loop_index'</parameters>
    <positive>TRUE</positive>
