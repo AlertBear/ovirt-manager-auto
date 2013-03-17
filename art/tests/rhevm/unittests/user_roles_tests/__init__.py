@@ -58,9 +58,9 @@ def tearDownPackage():
     try:
         ############################# STORAGE #################################
         if API.storagedomains.get(config.MAIN_STORAGE_NAME) is not None:
-            common.removeMasterStorage(storageName=config.MAIN_STORAGE_NAME,
-                                       datacenter=config.MAIN_DC_NAME,
-                                       host=config.MAIN_HOST_NAME)
+            common.deactivateMasterStorage(config.MAIN_STORAGE_NAME,
+                    datacenter=config.MAIN_DC_NAME,
+                    host=config.MAIN_HOST_NAME)
 
         ############################# HOST ####################################
         host = API.hosts.get(config.MAIN_HOST_NAME)
@@ -75,6 +75,7 @@ def tearDownPackage():
 
         ############################# CLUSTER #################################
         common.removeCluster(config.MAIN_CLUSTER_NAME)
+        common.removeDataCenter(config.MAIN_DC_NAME, force=True)
     except Exception as err:
         LOGGER.warning("while cleaing => %s" % str(err))
 

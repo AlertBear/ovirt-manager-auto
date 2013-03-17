@@ -18,18 +18,17 @@
 
 __test__ = True
 
+import unittest2 as unittest
+import logging
+
+from functools import wraps
+from nose.tools import istest
+from ovirtsdk.xml import params
 from user_roles_tests import config
 from user_roles_tests import common
 from user_roles_tests import states
 from user_roles_tests import roles
-from nose.tools import istest
-from functools import wraps
-from ovirtsdk.xml import params
 from ovirtsdk.infrastructure import errors
-
-import time
-import unittest2 as unittest
-import logging
 
 try:
     from art.test_handler.tools import bz
@@ -48,20 +47,29 @@ TCMS_PLAN_ID = 5767
 
 # Names of created objects. Should be removed at the end of this test module
 # and not used by any other test module.
-DISK = None
 VM_NAME = 'user_disk_permissions__vm'
-DISK_NAME = 'user_disk_permissions__disk'
-CLUSTER_NAME = 'user_disk_permissions__cluster'
-
 TMP_VM_NAME = 'user_disk_permissions__vm_tmp'
+CLUSTER_NAME = 'user_disk_permissions__cluster'
+DISK_NAME = 'user_disk_permissions__disk'
+DISK_SHARED = 'user_disk_permissions__shared'
 TMP_DISK_NAME = 'user_disk_permissions__disk_tmp'
 TMP2_DISK_NAME = 'user_disk_permissions__disk_tmp2'
 
+def loginAsUser(**kwargs):
+    common.loginAsUser(**kwargs)
+    global API
+    API = common.API
+
+def loginAsAdmin():
+    common.loginAsAdmin()
+    global API
+    API = common.API
+
 def setUpModule():
-    global DISK
+    ''' setUpModule '''
     common.addUser()
     common.createVm(VM_NAME)
-    DISK = common.createDiskObject(DISK_NAME)
+    common.createDiskObject(DISK_NAME)
 
     common.createNfsStorage(storageName=config.ALT1_STORAGE_NAME,
                             address=config.ALT1_STORAGE_ADDRESS,
@@ -71,288 +79,289 @@ def setUpModule():
     common.attachActivateStorage(config.ALT1_STORAGE_NAME)
 
 def tearDownModule():
-    common.loginAsAdmin()
+    ''' tearDownModule '''
+    loginAsAdmin()
     common.removeNonMasterStorage(storageName=config.ALT1_STORAGE_NAME,
                                   datacenter=config.MAIN_DC_NAME,
                                   host=config.MAIN_HOST_NAME)
     common.removeVm(VM_NAME)
-    common.deleteDiskObject(DISK)
     common.deleteDisk(None, DISK_NAME)
     common.removeUser()
 
-
 class DiskPermissionsTests(unittest.TestCase):
+    ''' DiskPermissionsTests '''
     __test__ = True
 
+    def setUp(self):
+        loginAsAdmin()
+
     @tcms(TCMS_PLAN_ID, 147121)
-    @bz(881145)
     def testDiskInheritedPermissions(self):
         """ DiskInheritedPermissions """
         # Check if disk inherit perms from SD
-        # Check if after disk is attach to vm it iherit VM perms
         sd = API.storagedomains.get(config.MAIN_STORAGE_NAME)
         vm = API.vms.get(VM_NAME)
 
-        temp_disk = 'temp_disk12'
-        DISK = common.createDiskObject(temp_disk)
-        try:
-            common.givePermissionToObject(DISK, roles.role.DiskOperator)
-            self.assertTrue(common.hasUserPermissions(DISK, roles.role.DiskOperator))
-            common.givePermissionToObject(vm, roles.role.UserVmManager)
-            vm.disks.add(DISK)
-            self.assertTrue(common.hasUserPermissions(DISK, roles.role.UserVmManager))
-        except Exception as e:
-            raise e
-        finally:
-            # cleanUP
-            DISK.delete()
-            common.waitForRemove(DISK)
-            common.removeAllPermissionFromObject(DISK)
-            common.removeAllPermissionFromObject(vm)
+        disk = common.createDiskObject(TMP_DISK_NAME)
+        common.givePermissionToObject(sd, roles.role.DiskOperator)
+        self.assertTrue(common.hasUserPermissions(disk, roles.role.DiskOperator))
+        LOGGER.info("Disk %s inherited permissions from sd." %(TMP_DISK_NAME))
+
+        # Check if after disk is attach to vm it iherit VM perms
+        common.givePermissionToObject(vm, roles.role.UserVmManager)
+        vm.disks.add(disk)
+        self.assertTrue(common.hasUserPermissions(disk, roles.role.UserVmManager))
+        LOGGER.info("After attaching disk to vm, disk inherited permissons from VM.")
+
+        # clean up
+        disk.delete()
+        common.waitForRemove(disk)
+        common.removeAllPermissionFromObject(vm)
+        common.removeAllPermissionFromObject(sd)
 
     @tcms(TCMS_PLAN_ID, 147122)
     def testCreateDisk(self):
         """ CreateDisk """
-        # Check if user has DiskOperator perms on SD he can create Disk
-        # Check if user has not DiskOperator perms on SD he can't create Disk
         sd = API.storagedomains.get(config.MAIN_STORAGE_NAME)
-        common.givePermissionToObject(sd, roles.role.DiskOperator)
-        common.loginAsUser()
-        tmp_disk = common.createDiskObjectNoCheck(TMP_DISK_NAME, storage=sd.get_name())
-        # FIXME After filter is ok
-        common.loginAsAdmin()
-        # FIXME: after .. could be removed
-        dd = API.disks.get(alias=TMP_DISK_NAME)
-        common.waitForState(dd, 'ok')
+        common.givePermissionToObject(sd, roles.role.StorageAdmin)
 
+        # Check if user has StorageAdmin perms on SD he can create Disk
+        loginAsUser(filter_=False)
+        dd = common.createDiskObject(TMP_DISK_NAME, storage=config.MAIN_STORAGE_NAME)
+        common.deleteDiskObject(dd)
+        LOGGER.info("User with StorageAdmin perms on SD can create disk.")
+
+        # remove permissions from SD
+        loginAsAdmin()
         common.removeAllPermissionFromObject(sd)
-        common.loginAsUser()
-        self.assertRaises(Exception, common.createDiskObjectNoCheck, TMP_DISK_NAME + 'x')
-        # Replace by this after BZ 869334 is OK
-        #self.assertRaises(errors.RequestError, common.createDiskObjectNoCheck, TMP_DISK_NAME + 'x')
+        common.givePermissionToObject(sd, roles.role.UserRole)
 
-        # clean Up
-        common.loginAsAdmin()
-        common.deleteDisk(None, alias=TMP_DISK_NAME)
+        # Check if user has not StorageAdmin perms on SD he can't create Disk
+        loginAsUser()
+        self.assertRaises(errors.RequestError, common.createDiskObject,
+                TMP_DISK_NAME)
+        LOGGER.info("User without StorageAdmin perms on SD can't create disk.")
+        common.removeAllPermissionFromObject(sd)
 
     @tcms(TCMS_PLAN_ID, 147123)
-    @bz(881145)
     def testAttachDiskToVM(self):
         """ AttachDiskToVM """
         # Attach disk need perm on disk and on VM.
         vm = API.vms.get(VM_NAME)
-
-        common.givePermissionToObject(DISK, roles.role.DiskOperator)
+        disk = API.disks.get(alias=DISK_NAME)
+        common.givePermissionToObject(disk, roles.role.DiskOperator)
         common.givePermissionToObject(vm, roles.role.UserVmManager)
 
-        common.loginAsUser()
-        vm.disks.add(DISK)  # Attach
+        loginAsUser()
+        vm = common.getObjectByName(API.vms, VM_NAME)
+        disk = common.getObjectByName(API.disks, DISK_NAME)
+        vm.disks.add(disk)  # Attach
+        LOGGER.info("User with UserVmManager role on vm and DiskOperator role"+
+                " on disk can attach disk.")
 
         # Clean up
-        common.loginAsAdmin()
-        vm.disks.get(id=DISK.get_id()).delete(params.Action(detach=True))  # Detach
-        common.removeAllPermissionFromObject(DISK)
+        loginAsAdmin()
+        vm = API.vms.get(VM_NAME)
+        disk = API.disks.get(alias=DISK_NAME)
+        vm.disks.get(id=disk.get_id()).delete(params.Action(detach=True))  # Detach
         common.removeAllPermissionFromObject(vm)
+        common.removeAllPermissionFromObject(disk)
 
     @tcms(TCMS_PLAN_ID, 147124)
     def testDetachDisk(self):
         """ DetachDisk """
         # Detach disk need only perms on VM
         vm = API.vms.get(VM_NAME)
+        disk = API.disks.get(alias=DISK_NAME)
+        vm.disks.add(disk)  # Attach
 
         common.givePermissionToObject(vm, roles.role.UserVmManager)
-        disk = vm.disks.add(DISK)
+        # Need to have also have some perms on disk, to view
+        # this disk to test if we can attach it
+        common.givePermissionToObject(disk, roles.role.UserTemplateBasedVm)
 
-        common.loginAsUser() # Try detach disk
-        vm.disks.get(id=disk.get_id()).delete(params.Action(detach=True))
+        loginAsUser() # Try detach disk
+        vm = common.getObjectByName(API.vms, VM_NAME)
+        disk_id = common.getObjectByName(API.disks, DISK_NAME).get_id()
+        vm.disks.get(id=disk_id).delete(params.Action(detach=True))
+        LOGGER.info("User who has UserVmManager perms on vm, can detach disk.")
 
-        # Clean up
-        common.loginAsAdmin()
+        loginAsAdmin()  # clean up
+        vm = API.vms.get(VM_NAME)
+        disk = API.disks.get(alias=DISK_NAME)
         common.removeAllPermissionFromObject(vm)
+        common.removeAllPermissionFromObject(disk)
 
     @tcms(TCMS_PLAN_ID, 147125)
     def testActivateDeactivateDisk(self):
         """ ActivateDeactivateDisk """
         # Activate/deactivate disk need to have perms only on VM
         vm = API.vms.get(VM_NAME)
-
         common.givePermissionToObject(vm, roles.role.UserVmManager)
 
-        common.loginAsUser()  # Try detach disk
-
+        loginAsUser()  # Try detach disk
+        vm = common.getObjectByName(API.vms, VM_NAME)
         vmdisk = vm.disks.list()[0]
         vmdisk.deactivate()
         vmdisk.activate()
+        LOGGER.info("User with UserVmManager permissions can active/deactive vm disk.")
 
         # Clean up
-        common.loginAsAdmin()
+        loginAsAdmin()
+        vm = API.vms.get(VM_NAME)
         common.removeAllPermissionFromObject(vm)
 
     @tcms(TCMS_PLAN_ID, 147126)
-    @bz(881145)
     def testRemoveDisk(self):
         """ RemoveDisk """
         # To remove disk you need aproriate permissions on disk
-        common.loginAsAdmin()
-        tmp_disk = common.createDiskObject(TMP_DISK_NAME)
-        common.removeAllPermissionFromObject(common.getUser())
+        common.createDiskObject(TMP_DISK_NAME)
 
-        try:
-            common.loginAsUser()
-            self.assertRaises(errors.RequestError, common.deleteDiskObject, tmp_disk)
+        loginAsAdmin()  # Give user DiskOperator permissions
+        disk = API.disks.get(TMP_DISK_NAME)
+        common.givePermissionToObject(disk, roles.role.DiskOperator)
+        # This is need, because after we delete disk we lost all permissions,
+        # so even login perms
+        common.givePermissionToObject(API.vms.get(VM_NAME), roles.role.UserRole)
 
-            common.loginAsAdmin()
-            common.givePermissionToObject(tmp_disk, roles.role.DiskOperator)
+        loginAsUser(filter_=True)  # Try to remove dsk as DiskOperator
+        disk = common.getObjectByName(API.disks, TMP_DISK_NAME)
+        common.deleteDiskObject(disk)
 
-            common.loginAsUser()
-            common.deleteDiskObject(tmp_disk)
-        except Exception as e:
-            raise e
-        finally:
-            common.loginAsAdmin()
-            common.deleteDiskObject(tmp_disk)
+        loginAsAdmin()
+        common.removeAllPermissionFromObject(API.vms.get(VM_NAME))
+        LOGGER.info("User with DiskOperator permissions can remove disk.")
 
     @tcms(TCMS_PLAN_ID, 147127)
-    @bz(881145)
     def testUpdateDisk(self):
         """ UpdateDisk """
         # Edit disks need appropriate perms on disk.
         # Currently only vm disk can be updated
-        common.loginAsAdmin()
-        if API.vms.get(TMP_VM_NAME) is not None:
-            common.removeVm(TMP_VM_NAME)
-        common.createVm(TMP_VM_NAME)
-        vm = API.vms.get(TMP_VM_NAME)
-        tmp_disk = vm.disks.list()[0]
+        loginAsAdmin()
+        common.givePermissionToObject(API.vms.get(VM_NAME), roles.role.DiskOperator)
 
-        try:
-            common.loginAsUser()
-            assert common.getObjectByName(API.vms, TMP_VM_NAME) is None
+        loginAsUser(filter_=True)
+        common.editVmDiskProperties(VM_NAME)
 
-            common.loginAsAdmin()
-            common.givePermissionToObject(tmp_disk, roles.role.DiskOperator)
-            #common.givePermissionToObject(vm, roles.role.UserVmManager)
-
-            common.loginAsUser()
-            common.editVmDiskProperties(TMP_VM_NAME)
-        except Exception as e:
-            raise e
-        finally:
-            common.loginAsAdmin()
-            common.removeVm(TMP_VM_NAME)
+        loginAsAdmin()
+        common.removeAllPermissionFromObject(API.vms.get(VM_NAME))
 
     @tcms(TCMS_PLAN_ID, 147128)
-    @bz(881145)
-    def testMoveOrCopy(self):
-        """ MoveOrCopy """
-        try:
-            common.loginAsAdmin()
-            disk = common.createDiskObject(TMP2_DISK_NAME, storage=config.MAIN_STORAGE_NAME)
-            sd = common.getObjectByName(API.storagedomains, config.ALT1_STORAGE_NAME)
-            source = common.getObjectByName(API.storagedomains, config.MAIN_STORAGE_NAME)
-            common.loginAsUser()
+    def testMoveDisk(self):
+        """ testMoveDisk """
+        # Move disk without pemrissions
+        common.createVm(TMP_VM_NAME)
+        vm = API.vms.get(TMP_VM_NAME)
+        common.givePermissionToObject(vm, roles.role.StorageAdmin)
 
-            # Move disk without pemrissions
-            self.assertRaises(errors.RequestError, disk.move,
-                    params.Action(storage_domain=sd))
-            # Move disk with permissions only on source sd
-            common.loginAsAdmin()
-            common.givePermissionToObject(source, roles.role.StorageAdmin)
-            common.loginAsUser(filter_=False)
-            self.assertRaises(errors.RequestError, disk.move,
-                    params.Action(storage_domain=sd))
-            # Move disk with permissions on both sds
-            common.loginAsAdmin()
-            common.givePermissionToObject(sd, roles.role.StorageAdmin)
-            common.loginAsUser(filter_=False)
-            disk.move(params.Action(storage_domain=sd))
-            common.waitForState(disk, 'ok')
-        finally:
-            common.loginAsAdmin()
-            common.waitForState(disk, 'ok')
-            common.removeObject(disk)
+        loginAsUser(filter_=False)
+        disk = common.getObjectByName(API.vms, TMP_VM_NAME).disks.list()[0]
+        sd2 = common.getObjectByName(API.storagedomains, config.ALT1_STORAGE_NAME)
+        self.assertRaises(errors.RequestError, disk.move,
+                params.Action(storage_domain=sd2))
+        LOGGER.info("User without perms on sds can't move disk.")
+
+        # Move disk with permissions only on destination sd
+        loginAsAdmin()
+        sd = API.storagedomains.get(config.MAIN_STORAGE_NAME)
+        sd2 = API.storagedomains.get(config.ALT1_STORAGE_NAME)
+        common.removeAllPermissionFromObject(vm)
+        common.givePermissionToObject(sd, roles.role.StorageAdmin)
+
+        loginAsUser(filter_=False)
+        disk = common.getObjectByName(API.vms, TMP_VM_NAME).disks.list()[0]
+        sd2 = common.getObjectByName(API.storagedomains, config.ALT1_STORAGE_NAME)
+        self.assertRaises(errors.RequestError, disk.move,
+                params.Action(storage_domain=sd2))
+        LOGGER.info("User without perms on target sd can't move disk.")
+
+        # Move disk with permissions on both sds
+        loginAsAdmin()
+        sd2 = API.storagedomains.get(config.ALT1_STORAGE_NAME)
+        common.givePermissionToObject(sd2, roles.role.DiskCreator)
+
+        loginAsUser(filter_=False)
+        disk = common.getObjectByName(API.vms, TMP_VM_NAME).disks.list()[0]
+        sd2 = common.getObjectByName(API.storagedomains, config.ALT1_STORAGE_NAME)
+        disk.move(params.Action(storage_domain=sd2))
+        common.waitForState(disk, states.disk.ok)
+        LOGGER.info("User with perms on target sd and disk can move disk.")
+
+        loginAsAdmin()
+        sd2 = API.storagedomains.get(config.ALT1_STORAGE_NAME)
+        sd = API.storagedomains.get(config.MAIN_STORAGE_NAME)
+        common.removeAllPermissionFromObject(sd)
+        common.removeAllPermissionFromObject(sd2)
+        common.removeVm(TMP_VM_NAME)
 
     @tcms(TCMS_PLAN_ID, 147129)
     def testAddDiskToVm(self):
         """ editAddDiskToVm """
-        vm = API.vms.get(VM_NAME)
-        storage = API.storagedomains.get(config.MAIN_STORAGE_NAME)
-        sd = params.StorageDomains(storage_domain=[storage])
-        disk = params.Disk(storage_domains=sd, size=1 * 1024 * 1024,
+        sd = API.storagedomains.get(config.MAIN_STORAGE_NAME)
+        common.givePermissionToObject(sd, roles.role.UserTemplateBasedVm)
+        common.givePermissionToVm(VM_NAME, roles.role.UserVmManager)
+
+        sd = params.StorageDomains(storage_domain=[sd])
+        disk = params.Disk(storage_domains=sd, size=1024 * 1024,
                     status=None, interface='virtio', format='cow',
                     sparse=True)
 
-        common.loginAsUser()
+        loginAsUser()
+        vm = common.getObjectByName(API.vms, VM_NAME)
         self.assertRaises(errors.RequestError, vm.disks.add, disk)
-        LOGGER.info("User with no permissions cant add vm disk.")
+        LOGGER.info("User wihout approriate perms can't add disk to vm.")
 
-        common.loginAsAdmin()
-        common.givePermissionToVm(VM_NAME, roles.role.UserVmManager)
+        loginAsAdmin()
+        sd = API.storagedomains.get(config.MAIN_STORAGE_NAME)
+        common.givePermissionToObject(sd, roles.role.DiskCreator)
 
-        common.loginAsUser()
-        self.assertRaises(errors.RequestError, vm.disks.add, disk)
-        LOGGER.info("User with permissions VmManager on VM, cant add disk to VM.")
-
-        common.loginAsAdmin()
-        common.givePermissionToObject(storage, roles.role.UserVmManager)
-
-        common.loginAsUser()
-        disk2 = vm.disks.add(disk)
-        common.waitForState(disk2, 'ok')
+        loginAsUser()
+        vm = common.getObjectByName(API.vms, VM_NAME)
+        d = vm.disks.add(disk)
+        common.waitForState(d, states.disk.ok)
+        common.deleteDiskObject(d)
         LOGGER.info("User with permissions on SD can add disk to vm.")
-        vm.disks.get(id=disk2.get_id()).delete(params.Action(detach=True))
-        LOGGER.info("Attached/detached")
 
-        common.loginAsAdmin()
-        disk = API.disks.get(id=disk2.get_id())
-        common.removeObject(disk)
-
+        loginAsAdmin()
+        sd = API.storagedomains.get(config.MAIN_STORAGE_NAME)
+        common.removeAllPermissionFromObject(sd)
+        common.removeAllPermissionFromObject(API.vms.get(VM_NAME))
 
     @tcms(TCMS_PLAN_ID, 147130)
     def testRemoveVm(self):
         """ RemoveVm """
-        common.loginAsAdmin()
+        loginAsAdmin()
         common.createVm(TMP_VM_NAME)
-        vm = API.vms.get(TMP_VM_NAME)
+        common.givePermissionToVm(TMP_VM_NAME, roles.role.DiskOperator)
 
-        common.loginAsUser()
-        self.assertRaises(errors.RequestError, vm.delete)
+        loginAsUser()  # Try to remove vm as disk operator
+        self.assertRaises(errors.RequestError, common.removeVm, TMP_VM_NAME)
+        LOGGER.info("User can't remove vm as DiskOperator.")
 
-        common.loginAsAdmin()
+        loginAsAdmin()
         common.givePermissionToVm(TMP_VM_NAME, roles.role.UserVmManager)
 
-        common.loginAsUser()
-        common.removeVmObject(vm)
-
+        loginAsUser()  # Try to remove vm as uservmmanager
+        common.removeVm(TMP_VM_NAME)
+        LOGGER.info("User can remove vm as UserVmManager.")
 
     @tcms(TCMS_PLAN_ID, 147137)
-    @bz(881145)
     def testSharedDisk(self):
         """ SharedDisk """
-        common.loginAsAdmin()
-        common.createVm(TMP_VM_NAME, createDisk=False,
-                       storage=config.MAIN_STORAGE_NAME)
-
-        storage = API.storagedomains.get(config.MAIN_STORAGE_NAME)
-        sd = params.StorageDomains(storage_domain=[storage])
-        disk = params.Disk(storage_domains=sd, size=1 * 1024 * 1024,
-                    status=None, interface='virtio', format='raw',
-                    sparse=True, shareable=True)
+        sd = API.storagedomains.get(config.MAIN_STORAGE_NAME)
+        sd = params.StorageDomains(storage_domain=[sd])
+        disk = params.Disk(storage_domains=sd, size=1024 * 1024,
+                interface='virtio', format='raw',
+                shareable=True, alias=DISK_SHARED)
         d = API.disks.add(disk)
-        common.waitForState(d, 'ok')
-        vm = API.vms.get(TMP_VM_NAME)
-        try:
-            common.givePermissionToObject(vm, roles.role.UserVmManager)
-            common.givePermissionToObject(d, roles.role.DiskOperator)
-            common.loginAsUser()
-            disk = vm.disks.add(d)  # Attach
-            common.editVmDiskProperties(TMP_VM_NAME)  # Edit
-            d.delete()  # Delete
-            common.waitForRemove(d)
-        except Exception as e:
-            raise e
-        finally:
-            # Should be changed after bz is OK.
-            common.loginAsAdmin()
-            common.removeVm(TMP_VM_NAME)
-            common.removeObject(d)
+        common.waitForState(d, states.disk.ok)
+        common.givePermissionToVm(VM_NAME, roles.role.UserVmManager)
+        common.givePermissionToObject(d, roles.role.DiskOperator)
+
+        loginAsUser()
+        vm = common.getObjectByName(API.vms, VM_NAME)
+        d = common.getObjectByName(API.disks, DISK_SHARED)
+
+        disk = vm.disks.add(d)  # Attach
+        common.editVmDiskProperties(VM_NAME, diskId=disk.get_id())
+        common.deleteDiskObject(d)

@@ -16,7 +16,7 @@
 # limitations under the License.
 #
 
-__test__ = False
+__test__ = True
 
 import config
 import common
@@ -74,8 +74,6 @@ DC_NETWORK_NAME = 'dc_net_name'
 DC_NETWORK_NAME_TMP = 'dc_net_name_tmp'
 DC_NAME_TMP = 'user_actions__dc_tmp'
 DC_NAME_TMP2 = 'user_actions__dc_tm2p'
-DISK = None
-
 ROLE_NAME = 'user_actions__role'
 USER_ROLE_PERMITS = permit=API.roles.get(roles.role.UserRole).get_permits().list()
 
@@ -87,43 +85,6 @@ NEG_ID = 211210  # first negative test case id
 POS_ID = 211847  # first positive test case id
 POS_PLAN = 7468  # positive plan id
 NEG_PLAN = 7450  # negative plan id
-
-# Generate id's of test cases
-class TcmsIdGenerator:
-    def __init__(self, pos_id, neg_id):
-        self.pos_id = pos_id
-        self.neg_id = neg_id
-        self.sorted_roles = sorted(API.roles.list(), key=lambda r: r.get_name())
-        su_p = API.roles.get(roles.role.SuperUser).get_permits().list()
-        self.sorted_perms = [perm.get_name() for perm in su_p]
-        self.sorted_perms.sort()
-        self.positive = False  # Pos/neg test?
-
-    def createGenerator(self):
-        for role in self.sorted_roles:
-            for perm in self.sorted_perms:
-                if self.positive:
-                    self.pos_id += 1
-                    yield self.pos_id
-                else:
-                    self.neg_id += 1
-                    yield self.neg_id
-
-# Tcms Ids generator have to be global for chaging
-# of generation pos/neg id's
-TCMS_GEN_CLASS = TcmsIdGenerator(POS_ID, NEG_ID)
-TCMS_GEN = TCMS_GEN_CLASS.createGenerator()
-
-
-# Because of calling bz decorator inside of another decorator
-from art.test_handler.settings import initPlmanager
-pl = initPlmanager()
-bz_m = [ x for x in pl.components.values() if hasattr(x, 'name') and x.name == 'Bugzilla' ][0]
-
-class MyBzId(object):
-    """ For calling bzs from decorator """
-    def __init__(self, bz_id):
-        self.bz = bz_id
 
 # Decide if test make sense, if not skip the test.
 def resolve_permissions(func):
@@ -143,26 +104,12 @@ def resolve_permissions(func):
 
         # Switch counting of ID's
         # Set neg, because there is much more neg cases
-        plan = NEG_PLAN
-        TCMS_GEN_CLASS.positive = False
-        if m.group('type') == 'POSITIVE':
-            plan = POS_PLAN
-            TCMS_GEN_CLASS.positive = True
-
         #tcms(plan, nn)(func)
         # For logging of errors
         try:
             return func(self, *args, **kwargs)
         except Exception as err:
-            bz_num = None
-            if self.role in ['TemplateOwner', 'TemplateAdmin', 'ClusterAdmin', 'StorageAdmin']\
-                and m.group('perm') == 'copy_template':
-                    bz_num = '863202'  # FIXME
-
-            if bz_num is not None:
-                msg = "BZ for '%s, %s, %s'"
-                LOGGER.info(msg % (self.role, m.group('type'), m.group('perm')))
-                bz_m._should_be_skipped(MyBzId(bz_num))
+            LOGGER.error(err)
             raise err
 
     return wrapper
@@ -170,7 +117,6 @@ def resolve_permissions(func):
 # Prepares setup for only this test module
 def setUpModule():
     """ Prepare testing setup """
-    global DISK
     global ISO_NAME
     common.addUser()
     common.createNfsStorage(EXPORT_NAME, storageType='export',
@@ -182,21 +128,20 @@ def setUpModule():
     common.addNetworkToDC(DC_NETWORK_NAME, config.MAIN_DC_NAME)
 
     common.createHost(config.MAIN_CLUSTER_NAME, hostName=config.ALT1_HOST_ADDRESS,
-                                hostAddress=config.ALT1_HOST_ADDRESS,
-                                hostPassword=config.ALT1_HOST_ROOT_PASSWORD)
+            hostAddress=config.ALT1_HOST_ADDRESS,
+            hostPassword=config.ALT1_HOST_ROOT_PASSWORD)
     common.createNfsStorage(storageName=config.ALT1_STORAGE_NAME,
-                            address=config.ALT1_STORAGE_ADDRESS,
-                            path=config.ALT1_STORAGE_PATH,
-                            datacenter=config.MAIN_DC_NAME,
-                            host=config.MAIN_HOST_NAME)
-    common.attachActivateStorage(config.ALT1_STORAGE_NAME)#, isMaster=True)
+            address=config.ALT1_STORAGE_ADDRESS,
+            path=config.ALT1_STORAGE_PATH,
+            datacenter=config.MAIN_DC_NAME,
+            host=config.MAIN_HOST_NAME)
+    common.attachActivateStorage(config.ALT1_STORAGE_NAME)
     common.createDataCenter(DC_NAME_TMP2)
-    DISK = common.createDiskObject(DISK_NAME, storage=config.MAIN_STORAGE_NAME).get_id()
 
 # Removes created objects from setup
 def tearDownModule():
     common.removeUser()
-    for d in API.disks.list(): # Investigate why there is many tmp_disks
+    for d in API.disks.list():
         common.deleteDiskObject(d)
 
     common.removeAllFromSD(EXPORT_NAME)
@@ -213,6 +158,15 @@ def tearDownModule():
     common.removeHost(hostName=config.ALT1_HOST_ADDRESS)
     common.removeDataCenter(DC_NAME_TMP2)
 
+def loginAsUser(**kwargs):
+    common.loginAsUser(**kwargs)
+    global API
+    API = common.API
+
+def loginAsAdmin():
+    common.loginAsAdmin()
+    global API
+    API = common.API
 
 ##################### BASE CLASS OF TESTS #####################################
 class UserActionsTests(unittest.TestCase):
@@ -220,37 +174,39 @@ class UserActionsTests(unittest.TestCase):
     __test__ = False
 
     def setUp(self):
-        common.loginAsUser(filter_=self.filter_)
-
-    def tearDown(self):
-        pass
-
+        loginAsUser(filter_=self.filter_)
 
     @classmethod
     def setUpClass(cls):
+        common.createDiskObject(DISK_NAME, storage=config.MAIN_STORAGE_NAME)
         common.createCluster(CLUSTER_NAME, config.MAIN_DC_NAME)
         common.createVm(VM_NAME, storage=config.MAIN_STORAGE_NAME)
         common.createTemplate(VM_NAME, TEMPLATE_NAME)
         common.createTemplate(VM_NAME, TEMPLATE_VMPOOL)
-        # FIXME: 872219 ??
-        common.givePermissionsToGroup(TEMPLATE_NAME)
         common.createVmPool(VMPOOL_NAME, TEMPLATE_VMPOOL)
-        common.loginAsAdmin() # AFTER BZ IS OK ...
-
+        common.givePermissionsToGroup(TEMPLATE_NAME)
         common.addRoleToUser(cls.role)
         common.givePermissionToVm(VM_NAME, cls.role)
-        common.givePermissionToObject(API.templates.get('Blank'), cls.role)
-        common.loginAsUser(filter_=cls.filter_)
+        common.givePermissionToPool(VMPOOL_NAME, cls.role)
+        common.givePermissionToTemplate(TEMPLATE_NAME, cls.role)
+        common.givePermissionToTemplate(TEMPLATE_VMPOOL, cls.role)
+        common.givePermissionToDisk(DISK_NAME, cls.role)
+        common.givePermissionToObject(API.networks.get(DC_NETWORK_NAME),
+                cls.role)
+        common.givePermissionToNet(config.NETWORK_NAME, config.MAIN_DC_NAME,
+                cls.role)
+
+        loginAsUser(filter_=cls.filter_)
 
     @classmethod
     def tearDownClass(cls):
-        common.loginAsAdmin()
-        common.removeCluster(CLUSTER_NAME)
+        loginAsAdmin()
 
         common.removeRoleFromUser(cls.role)
-        common.removeAllPermissionFromObject(API.templates.get('Blank'))
         common.removeAllPermissionFromDc(config.MAIN_DC_NAME)
+        common.removeAllPermissionFromObject(API.networks.get(DC_NETWORK_NAME))
 
+        common.removeCluster(CLUSTER_NAME)
         vmpool = API.vmpools.get(VMPOOL_NAME)
         common.removeAllVmsInPool(VMPOOL_NAME)
         common.removeVmPool(vmpool)
@@ -258,6 +214,7 @@ class UserActionsTests(unittest.TestCase):
         common.removeTemplate(TEMPLATE_NAME)
         common.removeTemplate(TEMPLATE_VMPOOL)
         common.removeVm(VM_NAME)
+        common.deleteDisk(None, alias=DISK_NAME)
 
     @istest
     @resolve_permissions
@@ -285,23 +242,19 @@ class UserActionsTests(unittest.TestCase):
     @resolve_permissions
     def NEG_vm_basic_operations(self):
         """ NEG_vm_basic_operations """
+        self.assertRaises(errors.RequestError, common.startVm, VM_NAME)
+
+        loginAsAdmin()
+        common.startVm(VM_NAME)
+
+        loginAsUser(filter_=self.filter_)
         vm = common.getObjectByName(API.vms, VM_NAME)
-        self.assertRaises(errors.RequestError, vm.start)
-
-        common.loginAsAdmin()
-        vm.start()
-        LOGGER.info("Starting vm, to test suspend, stop, shutdown.")
-        common.waitForState(vm, states.vm.up)
-        common.loginAsUser(filter_=self.filter_)
-
         self.assertRaises(errors.RequestError, vm.stop)
         self.assertRaises(errors.RequestError, vm.suspend)
         self.assertRaises(errors.RequestError, vm.shutdown)
 
-        common.loginAsAdmin()
-        vm.stop()
-        LOGGER.info("VM '%s' stoping" % (VM_NAME))
-        common.waitForState(vm, states.vm.down)
+        loginAsAdmin()
+        common.stopVm(VM_NAME)
 
     @istest
     @resolve_permissions
@@ -311,7 +264,7 @@ class UserActionsTests(unittest.TestCase):
         common.createVm(TMP_VM_NAME, createDisk=False,
                 storage=config.MAIN_STORAGE_NAME)
 
-        common.loginAsAdmin() # clean
+        loginAsAdmin() # clean
         common.removeVm(TMP_VM_NAME)
 
     @istest
@@ -326,11 +279,11 @@ class UserActionsTests(unittest.TestCase):
     def POSITIVE_delete_vm(self):
         """ POSITIVE_delete_vm """
         # Try delete vm
-        common.loginAsAdmin()
+        loginAsAdmin()
         common.createVm(TMP_VM_NAME, createDisk=False,
                 storage=config.MAIN_STORAGE_NAME)
-        common.loginAsUser(filter_=self.filter_)
 
+        loginAsUser(filter_=self.filter_)
         common.removeVm(TMP_VM_NAME)
 
     @istest
@@ -374,51 +327,34 @@ class UserActionsTests(unittest.TestCase):
     def POSITIVE_change_vm_cd(self):
         """ POSITIVE_change_vm_cd """
         # Try to change vm cd
-        common.loginAsAdmin()
-        vm = API.vms.get(VM_NAME)
-
-        sDomain = API.storagedomains.get(ISO_NAME)
-        newFile = sDomain.files.get(name=config.ISO_FILE)
-        param = params.CdRom(file=newFile)
-        vm.cdroms.add(param)
-
-        if vm.status.state != states.vm.up:
-            vm.start()
-            common.waitForState(vm, states.vm.up)
-
-        common.loginAsUser(filter_=self.filter_)
-        vm.cdroms.list()[0].update(current=True)
-        LOGGER.info("VM's '%s' CD changed" %(vm.get_name()))
-
-        common.loginAsAdmin()
-        vm.stop()
-        common.waitForState(vm, states.vm.down)
+        common.startVm(VM_NAME)
+        vm = common.getObjectByName(API.vms, VM_NAME)
+        sDomain = common.getObjectByName(API.storagedomains, ISO_NAME)
+        isofile = sDomain.files.get(id=config.ISO_FILE)
+        cdrom = vm.cdroms.get(id="00000000-0000-0000-0000-000000000000")
+        cdrom.set_file(isofile)
+        cdrom.update(current=True)
+        LOGGER.info("VM's '%s' CD changed" % vm.get_name())
+        common.stopVm(VM_NAME)
 
     @istest
     @resolve_permissions
     def NEG_change_vm_cd(self):
         """ NEG_change_vm_cd """
-        # FIXME
-        common.loginAsAdmin()
-        vm = API.vms.get(VM_NAME)
+        loginAsAdmin()
+        common.startVm(VM_NAME)
 
-        sDomain = API.storagedomains.get(ISO_NAME)
-        newFile = sDomain.files.get(name=config.ISO_FILE)
-        param = params.CdRom(file=newFile)
-        vm.cdroms.add(param)
+        loginAsUser(filter_=self.filter_)
+        vm = common.getObjectByName(API.vms, VM_NAME)
+        sDomain = common.getObjectByName(API.storagedomains, ISO_NAME)
+        isofile = sDomain.files.get(id=config.ISO_FILE)
+        cdrom = vm.cdroms.get(id="00000000-0000-0000-0000-000000000000")
+        cdrom.set_file(isofile)
+        self.assertRaises(errors.RequestError, cdrom.update, current=True)
+        LOGGER.info("VM's '%s' CD can't be changed" % vm.get_name())
 
-        if vm.status.state != states.vm.up:
-            vm.start()
-            common.waitForState(vm, states.vm.up)
-
-        common.loginAsUser(filter_=self.filter_)
-
-        cd = vm.cdroms.list()[0]
-        self.assertRaises(errors.RequestError, cd.update, current=True)
-
-        common.loginAsAdmin()
-        vm.stop()
-        common.waitForState(vm, states.vm.down)
+        loginAsAdmin()
+        common.stopVm(VM_NAME)
 
     @istest
     @resolve_permissions
@@ -441,7 +377,8 @@ class UserActionsTests(unittest.TestCase):
         vm.export(param)
         common.waitForState(vm, states.vm.down)
 
-        common.loginAsAdmin()
+        loginAsAdmin()
+        storage = common.getObjectByName(API.storagedomains, EXPORT_NAME)
         common.removeVmObject(storage.vms.get(VM_NAME))
 
     @istest
@@ -473,8 +410,7 @@ class UserActionsTests(unittest.TestCase):
         # Add disk to vm(not floationg disk)
         vm = common.getObjectByName(API.vms, VM_NAME)
         storage = common.getObjectByName(API.storagedomains, config.MAIN_STORAGE_NAME)
-        param1 = params.StorageDomains(
-                    storage_domain=[storage])
+        param1 = params.StorageDomains(storage_domain=[storage])
         param2 = params.Disk(storage_domains=param1, size=GB,
                 status=None, interface='virtio', format='cow',
                 sparse=True)
@@ -484,10 +420,12 @@ class UserActionsTests(unittest.TestCase):
     @resolve_permissions
     def POSITIVE_configure_vm_storage(self):
         """ POSITIVE_configure_vm_storage """
+        if not 'create_disk' in self.perms:
+            LOGGER.warning("Configure storage can't be tested..")
+            return
         vm = common.getObjectByName(API.vms, VM_NAME)
         storage = common.getObjectByName(API.storagedomains, config.MAIN_STORAGE_NAME)
-        param1 = params.StorageDomains(
-                storage_domain=[storage])
+        param1 = params.StorageDomains(storage_domain=[storage])
         param2 = params.Disk(storage_domains=param1, size=GB,
                 status=None, interface='virtio', format='cow',
                 sparse=True)
@@ -514,6 +452,8 @@ class UserActionsTests(unittest.TestCase):
         common.waitForState(s, states.disk.ok)
         snap = vm.snapshots.get(id=s.get_id())
         self.assertTrue(snap is not None)
+        snap.delete()
+        common.waitForRemove(snap)
         LOGGER.info("VM '%s' manipulate snaps success" % (VM_NAME))
 
     @istest
@@ -530,7 +470,7 @@ class UserActionsTests(unittest.TestCase):
         """ POSITIVE_create_template """
         common.createTemplate(VM_NAME, TMP_TEMPLATE_NAME)
 
-        common.loginAsAdmin()
+        loginAsAdmin()
         common.removeTemplate(TMP_TEMPLATE_NAME)
 
     @istest
@@ -600,7 +540,7 @@ class UserActionsTests(unittest.TestCase):
         # creates vmpool
         common.createVmPool(TMP_VMPOOL_NAME, TEMPLATE_VMPOOL)
 
-        common.loginAsAdmin()
+        loginAsAdmin()
         vmpool = API.vmpools.get(TMP_VMPOOL_NAME)
         common.removeAllVmsInPool(TMP_VMPOOL_NAME)
         common.removeVmPool(vmpool)
@@ -609,18 +549,14 @@ class UserActionsTests(unittest.TestCase):
     @resolve_permissions
     def NEG_edit_vm_pool_configuration(self):
         """ NEG_edit_vm_pool_configuration """
-        common.loginAsAdmin()
         vmpool = common.getObjectByName(API.vmpools, VMPOOL_NAME)
-        common.loginAsUser(filter_=self.filter_)
-
         self.assertRaises(errors.RequestError, common.addVmToPool, vmpool)
 
     @istest
     @resolve_permissions
     def POSITIVE_edit_vm_pool_configuration(self):
         """ POSITIVE_edit_vm_pool_configuration """
-        # Add one vm to pool
-        vmpool = API.vmpools.get(VMPOOL_NAME)
+        vmpool = common.getObjectByName(API.vmpools, VMPOOL_NAME)
         common.addVmToPool(vmpool)
 
     @istest
@@ -628,12 +564,12 @@ class UserActionsTests(unittest.TestCase):
     def NEG_vm_pool_basic_operations(self):
         """ NEG_vm_pool_basic_operations """
         # Check if vm has any vms to run, if not add one
-        common.loginAsAdmin()
+        loginAsAdmin()
         pool = API.vmpools.get(VMPOOL_NAME)
         if pool.get_size() == 0:
             common.addVmToPool(pool)
-        common.loginAsUser(filter_=self.filter_)
-
+        loginAsUser(filter_=self.filter_)
+        pool = common.getObjectByName(API.vmpools, VMPOOL_NAME)
         self.assertRaises(errors.RequestError, common.vmpoolBasicOperations, pool)
 
     @istest
@@ -641,15 +577,16 @@ class UserActionsTests(unittest.TestCase):
     def POSITIVE_vm_pool_basic_operations(self):
         """ POSITIVE_vm_pool_basic_operations """
         # Check if vm has any vms to run, if not add one
-        common.loginAsAdmin()
+        loginAsAdmin()
         pool = API.vmpools.get(VMPOOL_NAME)
         if pool.get_size() == 0:
             common.addVmToPool(pool)
-        common.loginAsAdmin()
+        loginAsAdmin()
         for vm in common.getAllVmsInPool(VMPOOL_NAME):
             common.waitForState(vm, states.vm.down)
-        common.loginAsUser(filter_=self.filter_)
 
+        loginAsUser(filter_=self.filter_)
+        pool = common.getObjectByName(API.vmpools, VMPOOL_NAME)
         common.vmpoolBasicOperations(pool)
 
     @istest
@@ -657,31 +594,45 @@ class UserActionsTests(unittest.TestCase):
     def NEG_delete_vm_pool(self):
         """ NEG_delete_vm_pool """
         # Create pool, that could be deleted
-        common.loginAsAdmin()
+        loginAsAdmin()
         common.createVmPool(TMP_VMPOOL_NAME, TEMPLATE_VMPOOL)
-        common.loginAsAdmin()
+        common.givePermissionToPool(TMP_VMPOOL_NAME, self.role)
         vmpool = API.vmpools.get(TMP_VMPOOL_NAME)
-        vms = common.getAllVmsInPool(TMP_VMPOOL_NAME)
-        common.loginAsUser(filter_=self.filter_)
+        vms = [vm.get_id() for vm in common.getAllVmsInPool(TMP_VMPOOL_NAME)]
 
+        loginAsUser(filter_=self.filter_)
         # Try to detach vms from pool as user
-        for vm in vms:
-            self.assertRaises(errors.RequestError, vm.detach)
+
+        # Can't try to detach vm for this roles, because they
+        # never can't see vmpools vms
+        if not (self.role in ['DiskCreator', 'VmCreator', 'TemplateCreator',
+                'PowerUserRole']):
+            for vm in vms:
+                self.assertRaises(errors.RequestError, API.vms.get(id=vm).detach)
 
         # Detach and remove all vms in pool
-        common.loginAsAdmin()
-        for vm in vms:
+        loginAsAdmin()
+        for i in vms:
+            vm = API.vms.get(id=i)
             vm.detach()
             common.waitForState(vm, states.vm.down)
             vm.delete()
             common.waitForRemove(vm)
 
         # Try to remove vm pool
-        common.loginAsUser(filter_=self.filter_)
-        self.assertRaises(errors.RequestError, vmpool.delete)
+        loginAsUser(filter_=self.filter_)
+        if self.filter_:
+            # BUG, Entity not found: 735ad44c-e71f-4585-be79-7d68da22ebfc
+            # If vmpools has no vms and access via Filter API
+            self.assertRaises(errors.RequestError, common.getObjectByName,
+                    API.vmpools, TMP_VMPOOL_NAME)
+        else:
+            vmpool = common.getObjectByName(API.vmpools, TMP_VMPOOL_NAME)
+            self.assertRaises(errors.RequestError, vmpool.delete)
 
         # clean up
-        common.loginAsAdmin()
+        loginAsAdmin()
+        vmpool = API.vmpools.get(TMP_VMPOOL_NAME)
         common.removeVmPool(vmpool)
 
     @istest
@@ -689,18 +640,19 @@ class UserActionsTests(unittest.TestCase):
     def POSITIVE_delete_vm_pool(self):
         """ POSITIVE_delete_vm_pool """
         # Create vmpool that will be deleted
-        common.loginAsAdmin()
+        loginAsAdmin()
         common.createVmPool(TMP_VMPOOL_NAME, TEMPLATE_VMPOOL)
-        common.loginAsUser(filter_=self.filter_)
 
+        loginAsUser(filter_=self.filter_)
         # Try to delete vmpool, detach vms, remove vms and remove vmpool
-        vmpool = API.vmpools.get(TMP_VMPOOL_NAME)
-        vms = common.detachAllVmsInPool(TMP_VMPOOL_NAME)
+        vmpool = common.getObjectByName(API.vmpools, TMP_VMPOOL_NAME)
+        vms = [vm.get_id() for vm in common.detachAllVmsInPool(TMP_VMPOOL_NAME)]
         common.removeVmPool(vmpool)
 
         # Remove vms, which were attached to vmpool
-        common.loginAsAdmin()  # Cleanup
-        for vm in vms:
+        loginAsAdmin()  # Cleanup
+        for v in vms:
+            vm = API.vms.get(id=v)
             vm.delete()
             common.waitForRemove(vm)
 
@@ -719,52 +671,48 @@ class UserActionsTests(unittest.TestCase):
         # Because of RemoveTemplate need for run no dependency vms
         common.removeTemplate(TEMPLATE_NAME)
 
-        common.loginAsAdmin()  # Recreate
+        loginAsAdmin()  # Recreate
         common.createTemplate(VM_NAME, TEMPLATE_NAME)
 
     @istest
     @resolve_permissions
     def NEG_manipulate_permissions(self):
         """ NEG_manipulate_permissions """
-        common.loginAsAdmin()
+        loginAsAdmin()
         common.createVm(TMP_VM_NAME, storage=config.MAIN_STORAGE_NAME)
+        common.givePermissionToVm(TMP_VM_NAME, self.role)
 
-        # Woraround because of bz 869334.
-        vm = API.vms.get(TMP_VM_NAME)
-        user = API.users.get(config.USER_NAME)
-        role = API.roles.get(roles.role.UserRole)
-        common.loginAsUser(filter_=self.filter_)
-
+        loginAsUser(filter_=self.filter_)
+        vm = common.getObjectByName(API.vms, TMP_VM_NAME)
+        role = common.getObjectByName(API.roles, roles.role.UserRole)
+        user = common.getObjectByName(API.users, config.USER_NAME)
         self.assertRaises(errors.RequestError, common.givePermissionToObject, vm,
                 roles.role.UserRole, user_object=user, role_object=role)
 
         # Then remove
-        common.loginAsAdmin()
+        loginAsAdmin()
         common.removeVm(TMP_VM_NAME)
-
 
     @istest
     @resolve_permissions
     def POSITIVE_manipulate_permissions(self):
         """ POSITIVE_manipulate_permissions """
         # Add 'UserRole' permissions to user
-        common.loginAsAdmin()
+        loginAsAdmin()
         common.createVm(TMP_VM_NAME, storage=config.MAIN_STORAGE_NAME)
 
-        # Woraround because of bz 869334.
-        vm = API.vms.get(TMP_VM_NAME)
-        user = API.users.get(config.USER_NAME)
-        role = API.roles.get(roles.role.UserRole)
-
+        loginAsUser(filter_=self.filter_)
+        vm = common.getObjectByName(API.vms, TMP_VM_NAME)
+        role = common.getObjectByName(API.roles, roles.role.UserRole)
+        user = common.getObjectByName(API.users, config.USER_NAME)
         userID = user.get_id()
         roleID = role.get_id()
-        common.loginAsUser(filter_=self.filter_)
 
         common.givePermissionToObject(vm, roles.role.UserRole,
                 user_object=user, role_object=role)
 
         # Then remove and check if permissions was really added
-        common.loginAsAdmin()
+        loginAsAdmin()
         ok = False
         for p in vm.permissions.list():
             if p.get_role().get_id() == roleID and p.get_user().get_id() == userID:
@@ -797,15 +745,11 @@ class UserActionsTests(unittest.TestCase):
     def NEG_edit_host_configuration(self):
         """ NEG_edit_host_configuration """
         # If role is user role, try user can't access /hosts url
-        # Then get host as admin, to test edit configuration
         if self.filter_:
             self.assertRaises(errors.RequestError, API.hosts.get,
                     config.MAIN_HOST_NAME)
-            common.loginAsAdmin()
-            host = API.hosts.get(config.MAIN_HOST_NAME)
-            common.loginAsUser(filter_=self.filter_)
-        else:
-            host = API.hosts.get(config.MAIN_HOST_NAME)
+            return
+        host = API.hosts.get(config.MAIN_HOST_NAME)
         # Try to change host name
         before = host.get_name()
         newName = before + '_'
@@ -826,35 +770,62 @@ class UserActionsTests(unittest.TestCase):
 
         host = API.hosts.get(newName)
         assert host is not None, "Failed to update Host name"
-        now = host.get_name()
-        assert before != now, "Failed to update Host name"
         LOGGER.info("Host '%s' configuration success" % (config.MAIN_HOST_NAME))
-        config.MAIN_HOST_NAME = now
+        config.MAIN_HOST_NAME = newName
 
     @istest
     @resolve_permissions
     def POSITIVE_configure_host_network(self):
         """ POSITIVE_configure_host_network """
-        common.configureHostNetwork(config.MAIN_HOST_NAME)
+        loginAsAdmin()  # switch to maintence
+        host = API.hosts.get(config.MAIN_HOST_NAME)
+        common.waitForTasks(host)
+        common.waitForState(host, states.host.maintenance)
+
+        loginAsUser(filter_=self.filter_)
+        try:
+            common.configureHostNetwork(config.MAIN_HOST_NAME)
+        finally:
+            try:
+                loginAsAdmin()  # switch host up
+                host = API.hosts.get(config.MAIN_HOST_NAME)
+                host.activate()
+                common.waitForHostUpState(host)
+                dc = API.datacenters.get(config.MAIN_DC_NAME)
+                common.waitForState(dc, states.host.up)
+            except Exception as e:
+                LOGGER.warning("Error ocured while activating host: '%s'" % e)
 
     @istest
     @resolve_permissions
     def NEG_configure_host_network(self):
         """ NEG_configure_host_network """
+        loginAsAdmin()  # switch to maintence
+        host = API.hosts.get(config.MAIN_HOST_NAME)
+        common.waitForTasks(host)
+        common.waitForState(host, states.host.maintenance)
+
+        loginAsUser(filter_=self.filter_)
         self.assertRaises(errors.RequestError, common.configureHostNetwork,
                     config.MAIN_HOST_NAME)
+
+        loginAsAdmin()  # switch host up
+        host = API.hosts.get(config.MAIN_HOST_NAME)
+        host.activate()
+        common.waitForHostUpState(host)
+        dc = API.datacenters.get(config.MAIN_DC_NAME)
+        common.waitForState(dc, states.host.up)
 
     @istest
     @resolve_permissions
     def NEG_maniputlate_host(self):
         """ NEG_maniputlate_host """
         # Get host as admin, cause user can't access /hosts url
-        common.loginAsAdmin()
-        host = API.hosts.get(config.MAIN_HOST_NAME)
-        common.loginAsUser(filter_=self.filter_)
-
-        # Try to deactive host
-        self.assertRaises(errors.RequestError, host.deactivate)
+        if self.filter_:
+            self.assertRaises(errors.RequestError, API.hosts.list)
+        else:
+            host = API.hosts.get(config.MAIN_HOST_NAME)
+            self.assertRaises(errors.RequestError, host.deactivate)
 
     @istest
     @resolve_permissions
@@ -867,7 +838,7 @@ class UserActionsTests(unittest.TestCase):
     @resolve_permissions
     def NEG_create_disk(self):
         """ NEG_create_disk """
-        self.assertRaises(errors.RequestError, common.createDiskObjectNoCheck,
+        self.assertRaises(errors.RequestError, common.createDiskObject,
                 TMP_DISK_NAME, storage=config.MAIN_STORAGE_NAME)
 
     @istest
@@ -875,13 +846,8 @@ class UserActionsTests(unittest.TestCase):
     def POSITIVE_create_disk(self):
         """ POSITIVE_create_disk """
         # create disk - using no check because of bz 869334
-        tmp_disk_name = 'tmp_disk_name__create'
-        disk = common.createDiskObjectNoCheck(tmp_disk_name,
+        disk = common.createDiskObject(TMP_DISK_NAME,
                 storage=config.MAIN_STORAGE_NAME)
-
-        common.loginAsAdmin()
-        # Wait for it as admin, because user can't access /disks url(bz 869334)
-        disk = API.disks.get(alias=tmp_disk_name)
         common.waitForState(disk, states.disk.ok)
         common.deleteDiskObject(disk)
 
@@ -892,37 +858,39 @@ class UserActionsTests(unittest.TestCase):
     def POSITIVE_attach_disk(self):
         """ POSITIVE_attach_disk """
         # Create a disk, to attach
-        common.loginAsAdmin()
-        DISK = common.createDiskObject(TMP_DISK_NAME, storage=config.MAIN_STORAGE_NAME)
-        common.loginAsUser(filter_=self.filter_)
+        loginAsAdmin()
+        disk = common.createDiskObject(TMP_DISK_NAME, storage=config.MAIN_STORAGE_NAME)
+        loginAsUser(filter_=self.filter_)
 
         if 'configure_vm_storage' in self.perms:
-            common.attachDiskToVm(DISK, VM_NAME)
+            common.attachDiskToVm(disk, VM_NAME)
         else:
             LOGGER.info("Attach disk can't be tested because for attach floating disk\
                 you need configure_vm_storage permissions on vm.")
 
-        common.loginAsAdmin()  # Cleanup
-        common.deleteDiskObject(DISK)
+        loginAsAdmin()  # Cleanup
+        common.deleteDiskObject(disk)
 
     @istest
     @resolve_permissions
     def NEG_attach_disk(self):
         """ NEG_attach_disk """
         # Create disk to be attached
-        common.loginAsAdmin()
-        DISK = common.createDiskObject(TMP_DISK_NAME, storage=config.MAIN_STORAGE_NAME)
-        common.loginAsUser(filter_=self.filter_)
+        loginAsAdmin()
+        diskId = common.createDiskObject(TMP_DISK_NAME, storage=config.MAIN_STORAGE_NAME).get_id()
+        common.givePermissionToObject(API.disks.get(id=diskId), self.role)
 
+        loginAsUser(filter_=self.filter_)
+        disk = API.disks.get(id=diskId)
         if 'configure_vm_storage' in self.perms:
-            self.assertRaises(errors.RequestError, common.attachDiskToVm, DISK,
-                VM_NAME)
+            self.assertRaises(errors.RequestError, common.attachDiskToVm,
+                    disk, VM_NAME)
         else:
             LOGGER.info("Attach disk can't be tested because for attach floating disk\
                     you need configure_vm_storage permissions on vm.")
 
-        common.loginAsAdmin()
-        common.deleteDiskObject(DISK)
+        loginAsAdmin()
+        common.deleteDiskObject(API.disks.get(id=diskId))
 
     @istest
     @resolve_permissions
@@ -943,25 +911,21 @@ class UserActionsTests(unittest.TestCase):
     def NEG_delete_disk(self):
         """ NEG_delete_disk """
         # Creates a disk that shoul be removed, as admin
-        common.loginAsAdmin()
-        disk = common.createDiskObject(TMP_DISK_NAME, storage=config.MAIN_STORAGE_NAME)
-        common.loginAsUser(filter_=self.filter_)
-
+        loginAsUser(filter_=self.filter_)
+        disk = common.getObjectByName(API.disks, None, alias=DISK_NAME)
         self.assertRaises(errors.RequestError, disk.delete)
 
     @istest
     @resolve_permissions
     def POSITIVE_delete_disk(self):
         """ POSITIVE_delete_disk """
-        common.loginAsAdmin()
-        disk = common.createDiskObject(TMP_DISK_NAME, storage=config.MAIN_STORAGE_NAME)
-        common.loginAsUser(filter_=self.filter_)
+        loginAsAdmin()
+        disk = common.createDiskObject(TMP_DISK_NAME,
+                storage=config.MAIN_STORAGE_NAME).get_id()
+        common.givePermissionToObject(API.disks.get(id=disk), self.role)
 
-        disk.delete()
-
-        common.loginAsAdmin()  # Workaround cause user can't access /disks url
-        # loginAsAdmin should be removed after bz 869334 is OK
-        common.waitForRemove(disk)
+        loginAsUser(filter_=self.filter_)
+        common.deleteDisk(disk)
 
     @istest
     @resolve_permissions
@@ -978,7 +942,7 @@ class UserActionsTests(unittest.TestCase):
         common.createCluster(TMP_CLUSTER_NAME, config.MAIN_DC_NAME)
 
         # clean
-        common.loginAsAdmin()
+        loginAsAdmin()
         common.removeCluster(TMP_CLUSTER_NAME)
 
     @istest
@@ -1021,29 +985,30 @@ class UserActionsTests(unittest.TestCase):
 
     @istest
     @resolve_permissions
-    def NEG_configure_cluster_network(self):
-        """ NEG_configure_cluster_network """
-        common.loginAsAdmin()
-        cluster = API.clusters.get(CLUSTER_NAME)
-        net = API.networks.get(DC_NETWORK_NAME)
-        common.loginAsUser(filter_=self.filter_)
+    def NEG_assign_cluster_network(self):
+        """ NEG_assign_cluster_network """
+        cluster = common.getObjectByName(API.clusters, CLUSTER_NAME)
+        net = common.getObjectByName(API.networks, DC_NETWORK_NAME)
 
         self.assertRaises(errors.RequestError, cluster.networks.add, net)
 
     @istest
     @resolve_permissions
-    def POSITIVE_configure_cluster_network(self):
-        """ POSITIVE_configure_cluster_network """
+    def POSITIVE_assign_cluster_network(self):
+        """ POSITIVE_assign_cluster_network """
         # Assign new network to cluster, then delete it
         cluster = API.clusters.get(CLUSTER_NAME)
-
         net = API.networks.get(DC_NETWORK_NAME)
         nets = cluster.networks.add(net)
 
         net = cluster.networks.get(DC_NETWORK_NAME)
         assert net is not None
+        LOGGER.info("Network '%s' assigned" % DC_NETWORK_NAME)
+
+        loginAsAdmin()
+        cluster = API.clusters.get(CLUSTER_NAME)
+        net = cluster.networks.get(DC_NETWORK_NAME)
         net.delete()
-        LOGGER.info("Configuring cluster '%s' success" % CLUSTER_NAME)
 
     @istest
     @resolve_permissions
@@ -1059,7 +1024,7 @@ class UserActionsTests(unittest.TestCase):
         # removes cluster
         common.removeCluster(CLUSTER_NAME)
 
-        common.loginAsAdmin()
+        loginAsAdmin()
         common.createCluster(CLUSTER_NAME, config.MAIN_DC_NAME)
 
     @istest
@@ -1067,15 +1032,15 @@ class UserActionsTests(unittest.TestCase):
     def NEG_manipulate_roles(self):
         """ NEG_manipulate_roles """
         self.assertRaises(errors.RequestError, common.addRole, ROLE_NAME,
-                USER_ROLE_PERMITS)
+                roles.role.UserRole)
 
     @istest
     @resolve_permissions
     def POSITIVE_manipulate_roles(self):
         """ POSITIVE_manipulate_roles """
         # Create new role
-        common.addRole(ROLE_NAME, USER_ROLE_PERMITS)
-        common.removeRole(ROLE_NAME)
+        common.addRole(ROLE_NAME, roles.role.UserRole)
+        common.deleteRole(ROLE_NAME)
 
     @istest
     @resolve_permissions
@@ -1157,28 +1122,26 @@ class UserActionsTests(unittest.TestCase):
     @resolve_permissions
     def NEG_port_mirroring(self):
         """ NEG_port_mirroring """
-        common.loginAsAdmin()
-        n = params.Networks(network=[API.networks.get(config.NETWORK_NAME)])
+        network = common.getObjectByName(API.networks, config.NETWORK_NAME)
+        n = params.Networks(network=[network])
         pm = params.PortMirroring(networks=n)
-        net = API.networks.get(config.NETWORK_NAME)
-        vm = API.vms.get(VM_NAME)
+        vm = common.getObjectByName(API.vms, VM_NAME)
         param = params.NIC(name=VM_NET_NAME,
-                    network=net,
+                    network=network,
                     interface='virtio',
                     port_mirroring=pm)
-        common.loginAsUser(filter_=self.filter_)
         self.assertRaises(errors.RequestError, vm.nics.add, param)
 
     @istest
     @resolve_permissions
     def POSITIVE_port_mirroring(self):
         """ POSITIVE_port_mirroring """
-        n = params.Networks(network=[API.networks.get(config.NETWORK_NAME)])
+        network = common.getObjectByName(API.networks, config.NETWORK_NAME)
+        n = params.Networks(network=[network])
         pm = params.PortMirroring(networks=n)
-        net = API.networks.get(config.NETWORK_NAME)
-        vm = API.vms.get(VM_NAME)
+        vm = common.getObjectByName(API.vms, VM_NAME)
         param = params.NIC(name=VM_NET_NAME,
-                    network=net,
+                    network=network,
                     interface='virtio',
                     port_mirroring=pm)
         vm.nics.add(param)
@@ -1217,17 +1180,17 @@ class UserActionsTests(unittest.TestCase):
     @resolve_permissions
     def NEG_move_vm(self):
         """ NEG_move_vm """
-        common.loginAsAdmin()
+        loginAsAdmin()
         if API.vms.get(TMP_VM_NAME) is not None:
             common.removeVm(TMP_VM_NAME)
         common.createVm(TMP_VM_NAME, storage=config.MAIN_STORAGE_NAME)
         common.givePermissionToVm(TMP_VM_NAME, self.role)
-        common.loginAsUser(filter_=self.filter_)
 
+        loginAsUser(filter_=self.filter_)
         self.assertRaises(errors.RequestError, common.moveVm,
                 TMP_VM_NAME, config.ALT1_STORAGE_NAME)
 
-        common.loginAsAdmin() # clean
+        loginAsAdmin() # clean
         common.removeVm(TMP_VM_NAME)
 
     @istest
@@ -1237,42 +1200,43 @@ class UserActionsTests(unittest.TestCase):
         # Move vm from one SD to another
         # Create temporary vm, and then remove it as Admin
         # Dont suppose that user can create/remove vm/disk
-
-        common.loginAsAdmin()
+        loginAsAdmin()
         if API.vms.get(TMP_VM_NAME) is not None:
             common.removeVm(TMP_VM_NAME)
         common.createVm(TMP_VM_NAME, storage=config.MAIN_STORAGE_NAME)
         common.givePermissionToVm(TMP_VM_NAME, self.role)
-        common.loginAsUser(filter_=self.filter_)
 
+        loginAsUser(filter_=self.filter_)
         common.moveVm(TMP_VM_NAME, config.ALT1_STORAGE_NAME)
 
-        common.loginAsAdmin() # clean
+        loginAsAdmin() # clean
         common.removeVm(TMP_VM_NAME)
 
     @istest
     @resolve_permissions
     def NEG_migrate_vm(self):
         """ NEG_migrate_vm """
-        common.loginAsAdmin()
+        if self.filter_:
+            self.assertRaises(errors.RequestError, API.hosts.list)
+            return
+
+        loginAsAdmin()
+        common.startVm(VM_NAME)
         vm = API.vms.get(VM_NAME)
-        vm.start()
-        common.waitForState(vm, states.vm.up)
-        vm = common.updateObject(vm)
         hostName = API.hosts.get(id=vm.get_host().get_id()).get_name()
 
+        loginAsUser(filter_=self.filter_)
         host1 = API.hosts.get(config.MAIN_HOST_NAME)
         host2 = API.hosts.get(config.ALT1_HOST_ADDRESS)
-        common.loginAsUser(filter_=self.filter_)
+        vm = API.vms.get(VM_NAME)
 
         if hostName == config.ALT1_HOST_ADDRESS:
             self.assertRaises(errors.RequestError, common.migrateVm, vm, host1)
         else:
             self.assertRaises(errors.RequestError, common.migrateVm, vm, host2)
 
-        common.loginAsAdmin()
-        vm.stop()  # Suppose vm is running
-        common.waitForState(vm, states.vm.down)
+        loginAsAdmin()
+        common.stopVm(VM_NAME)
 
     @istest
     @resolve_permissions
@@ -1281,30 +1245,26 @@ class UserActionsTests(unittest.TestCase):
         # Migrate vm to another host, suppose that user
         # also can run/stop vm if he can migrate_vm
 
-        # Have to be used, because UserVmManger cant access /hosts url
-        common.loginAsAdmin()
+        # Have to be used, because UserVmManager cant access /hosts url
+        loginAsAdmin()
+        common.startVm(VM_NAME)
         vm = API.vms.get(VM_NAME)
-        vm.start()
-        common.waitForState(vm, states.vm.up)
-        vm = common.updateObject(vm)
         hostName = API.hosts.get(id=vm.get_host().get_id()).get_name()
-
         common.checkHostStatus(config.MAIN_HOST_NAME)
         common.checkHostStatus(config.ALT1_HOST_ADDRESS)
 
+        loginAsUser(filter_=self.filter_)
         host1 = API.hosts.get(config.MAIN_HOST_NAME)
         host2 = API.hosts.get(config.ALT1_HOST_ADDRESS)
-        common.loginAsUser(filter_=self.filter_)
+        vm = common.getObjectByName(API.vms, VM_NAME)
 
         if hostName == config.ALT1_HOST_ADDRESS:
             common.migrateVm(vm, host1)
         else:
             common.migrateVm(vm, host2)
 
-        common.loginAsAdmin()
-        vm.stop()  # Suppose vm is running
-        common.waitForState(vm, states.vm.down)
-
+        loginAsAdmin()
+        common.stopVm(VM_NAME)
 
     @istest
     @resolve_permissions
@@ -1341,20 +1301,39 @@ class UserActionsTests(unittest.TestCase):
     @resolve_permissions
     def NEG_copy_template(self):
         """ NEG_copy_template """
-        self.assertRaises(errors.RequestError, common.copyTemplate, templateName=TEMPLATE_NAME,
-                storageName=config.ALT1_STORAGE_NAME)
+        if 'configure_disk_storage' in self.perms:
+            LOGGER.warning('Copy_template is deprecated, so user can copy template \
+                    when he has configure_disk_storage permissions.')
+            common.copyTemplate(templateName=TEMPLATE_NAME,
+                    storageName=config.ALT1_STORAGE_NAME)
+            loginAsAdmin()
+            common.removeTemplate(TEMPLATE_NAME)
+            common.createTemplate(VM_NAME, TEMPLATE_NAME)
+        else:
+            LOGGER.warning('Copy_template is deprecated, so user cant copy template \
+                    when he has not configure_disk_storage permissions.')
+            self.assertRaises(errors.RequestError, common.copyTemplate,
+                    templateName=TEMPLATE_NAME,
+                    storageName=config.ALT1_STORAGE_NAME)
 
     @istest
     @resolve_permissions
     def POSITIVE_copy_template(self):
         """ POSITIVE_copy_template """
-        common.copyTemplate(templateName=TEMPLATE_NAME,
-                storageName=config.ALT1_STORAGE_NAME)
-
-        # Remove it
-        common.loginAsAdmin()
-        common.removeTemplate(TEMPLATE_NAME)
-        common.createTemplate(VM_NAME, TEMPLATE_NAME)
+        if 'configure_disk_storage' in self.perms:
+            LOGGER.warning('Copy_template is deprecated, so user can copy template \
+                    when he has configure_disk_storage permissions.')
+            common.copyTemplate(templateName=TEMPLATE_NAME,
+                    storageName=config.ALT1_STORAGE_NAME)
+            loginAsAdmin()
+            common.removeTemplate(TEMPLATE_NAME)
+            common.createTemplate(VM_NAME, TEMPLATE_NAME)
+        else:
+            LOGGER.warning('Copy_template is deprecated, so user cant copy template \
+                    when he has not configure_disk_storage permissions.')
+            self.assertRaises(errors.RequestError, common.copyTemplate,
+                    templateName=TEMPLATE_NAME,
+                    storageName=config.ALT1_STORAGE_NAME)
 
     @istest
     @resolve_permissions
@@ -1365,7 +1344,7 @@ class UserActionsTests(unittest.TestCase):
                 storageType=config.MAIN_STORAGE_TYPE)
 
         # If success, remove it as admin
-        common.loginAsAdmin()
+        loginAsAdmin()
         common.removeDataCenter(DC_NAME_TMP)
 
     @istest
@@ -1380,11 +1359,11 @@ class UserActionsTests(unittest.TestCase):
         """ POSITIVE_delete_storage_pool """
         # Try to remove datacenter
         # First of all create one as admin.
-        common.loginAsAdmin()
+        loginAsAdmin()
         common.createDataCenter(DC_NAME_TMP,
                 storageType=config.MAIN_STORAGE_TYPE)
-        common.loginAsUser(filter_=self.filter_)
 
+        loginAsUser(filter_=self.filter_)
         common.removeDataCenter(DC_NAME_TMP)
 
     @istest
@@ -1392,16 +1371,16 @@ class UserActionsTests(unittest.TestCase):
     def NEG_delete_storage_pool(self):
         """ NEG_delete_storage_pool """
         # First of all create one as admin.
-        common.loginAsAdmin()
+        loginAsAdmin()
         common.createDataCenter(DC_NAME_TMP,
                 storageType=config.MAIN_STORAGE_TYPE)
-        common.loginAsUser(filter_=self.filter_)
 
+        loginAsUser(filter_=self.filter_)
         self.assertRaises(errors.RequestError, common.removeDataCenter,
                 DC_NAME_TMP)
 
         # Unsuccessfull? Delete it.
-        common.loginAsAdmin()
+        loginAsAdmin()
         common.removeDataCenter(DC_NAME_TMP)
 
     @istest
@@ -1415,17 +1394,16 @@ class UserActionsTests(unittest.TestCase):
     @resolve_permissions
     def NEG_edit_storage_pool_configuration(self):
         """ NEG_edit_storage_pool_configuration """
-        newName = DC_NAME_TMP2 + '_'
         self.assertRaises(errors.RequestError, common.editObject,
-                API.datacenters, DC_NAME_TMP2, newName=newName)
+                API.datacenters, DC_NAME_TMP2, newName=VM_NAME)
 
     @istest
     @resolve_permissions
     def POSITIVE_configure_storage_pool_network(self):
         """ POSITIVE_configure_storage_pool_network """
         # Try to add new network to DC.
-        net = common.addNetworkToDC(DC_NETWORK_NAME_TMP, DC_NAME_TMP2)
-        net.delete()
+        common.addNetworkToDC(DC_NETWORK_NAME_TMP, DC_NAME_TMP2)
+        common.deleteNetwork(DC_NETWORK_NAME_TMP, DC_NAME_TMP2)
 
     @istest
     @resolve_permissions
@@ -1438,17 +1416,7 @@ class UserActionsTests(unittest.TestCase):
     @resolve_permissions
     def POSITIVE_connect_to_vm(self):
         """ POSITIVE_connect_to_vm """
-        # Via api we can try to generate ticket for vm to test if we
-        # can connect to running vm
-        vm = common.getObjectByName(API.vms, VM_NAME)
-        # VM has to be running
-        # Suppose that user that can connect to VM,
-        # Can also run/stop VM.
-        vm.start()
-        common.waitForState(vm, states.vm.up)
-        vm.ticket()
-        vm.stop()
-        common.waitForState(vm, states.vm.down)
+        common.generateTicket(VM_NAME)
 
     @istest
     @resolve_permissions
@@ -1456,198 +1424,13 @@ class UserActionsTests(unittest.TestCase):
         """ NEG_connect_to_vm """
         # Have to run vm, as admin, because I can't suppose that
         # user can run VM. Then try to generate ticket for VM.
-        common.loginAsAdmin()
-        vm = API.vms.get(VM_NAME)
-        vm.start()
-        common.waitForState(vm, states.vm.up)
-        common.loginAsUser(filter_=self.filter_)
+        loginAsAdmin()
+        common.startVm(VM_NAME)
 
+        loginAsUser(filter_=self.filter_)
+        vm = common.getObjectByName(API.vms, VM_NAME)
         self.assertRaises(errors.RequestError, vm.ticket)
+        LOGGER.info("Vm '%s' ticket can't be generated." % VM_NAME)
 
-        common.loginAsAdmin()
-        vm.stop()
-        common.waitForState(vm, states.vm.down)
-
-    ## TODO:
-    ## 'configure_rhevm,
-    ## QUOTAS
-    ## 'configure_quota', 'consume_quota',
-    ## GLUSTER
-    ## 'create_gluster_volume', 'manipulate_gluster_volume', 'delete_gluster_volume'
-
-
-##################### ROLE TESTS ##############################################
-class UserVmManagerActionsTests(UserActionsTests):
-    __test__ = True
-
-    @classmethod
-    def setUpClass(self):
-        self.role = roles.role.UserVmManager
-        self.perms = common.hasPermissions(self.role)
-        self.filter_ = True
-        super(UserVmManagerActionsTests, self).setUpClass()
-
-
-class DiskOperatorActionsTests(UserActionsTests):
-    __test__ = True
-
-    @classmethod
-    def setUpClass(self):
-        self.role = roles.role.DiskOperator
-        self.filter_ = True
-        self.perms = common.hasPermissions(self.role)
-        super(DiskOperatorActionsTests, self).setUpClass()
-
-
-class DiskCreatorActionsTests(UserActionsTests):
-    __test__ = True
-
-    @classmethod
-    def setUpClass(self):
-        self.role = roles.role.DiskCreator
-        self.filter_ = True
-        self.perms = common.hasPermissions(self.role)
-        super(DiskCreatorActionsTests, self).setUpClass()
-
-
-class PowerUserRoleActionsTests(UserActionsTests):
-    __test__ = True
-
-    @classmethod
-    def setUpClass(self):
-        self.role = roles.role.PowerUserRole
-        self.filter_ = True
-        self.perms = common.hasPermissions(self.role)
-        super(PowerUserRoleActionsTests, self).setUpClass()
-
-class UserRoleActionsTests(UserActionsTests):
-    __test__ = True  # fail check 226
-
-    @classmethod
-    def setUpClass(self):
-        self.role = roles.role.UserRole
-        self.filter_ = True
-        self.perms = common.hasPermissions(self.role)
-        super(UserRoleActionsTests, self).setUpClass()
-
-
-class VmCreatorActionsTests(UserActionsTests):
-    __test__ = True
-
-    @classmethod
-    def setUpClass(self):
-        self.role = roles.role.VmCreator
-        self.filter_ = True
-        self.perms = common.hasPermissions(self.role)
-        super(VmCreatorActionsTests, self).setUpClass()
-
-
-class TemplateCreatorActionsTests(UserActionsTests):
-    __test__ = True
-
-    @classmethod
-    def setUpClass(self):
-        self.role = roles.role.TemplateCreator
-        self.filter_ = True
-        self.perms = common.hasPermissions(self.role)
-        super(TemplateCreatorActionsTests, self).setUpClass()
-
-
-class TemplateOwnerActionsTests(UserActionsTests):
-    __test__ = True
-
-    @classmethod
-    def setUpClass(self):
-        self.role = roles.role.TemplateOwner
-        self.filter_ = True
-        self.perms = common.hasPermissions(self.role)
-        super(TemplateOwnerActionsTests, self).setUpClass()
-
-
-class SuperUserActionsTests(UserActionsTests):
-    __test__ = True
-
-    @classmethod
-    def setUpClass(self):
-        self.role = roles.role.SuperUser
-        self.filter_ = False
-        self.perms = common.hasPermissions(self.role)
-        super(SuperUserActionsTests, self).setUpClass()
-
-
-class TemplateAdminActionsTests(UserActionsTests):
-    __test__ = True
-
-    @classmethod
-    def setUpClass(self):
-        self.role = roles.role.TemplateAdmin
-        self.filter_ = False
-        self.perms = common.hasPermissions(self.role)
-        super(TemplateAdminActionsTests, self).setUpClass()
-
-
-class VmPoolAdminActionsTests(UserActionsTests):
-    __test__ = True
-
-    @classmethod
-    def setUpClass(self):
-        self.role = roles.role.VmPoolAdmin
-        self.filter_ = False
-        self.perms = common.hasPermissions(self.role)
-        super(VmPoolAdminActionsTests, self).setUpClass()
-
-
-class HostAdminActionsTests(UserActionsTests):
-    __test__ = True
-
-    @classmethod
-    def setUpClass(self):
-        self.role = roles.role.HostAdmin
-        self.filter_ = False
-        self.perms = common.hasPermissions(self.role)
-        super(HostAdminActionsTests, self).setUpClass()
-
-
-class StorageAdminActionsTests(UserActionsTests):
-    __test__ = True
-
-    @classmethod
-    def setUpClass(self):
-        self.role = roles.role.StorageAdmin
-        self.filter_ = False
-        self.perms = common.hasPermissions(self.role)
-        super(StorageAdminActionsTests, self).setUpClass()
-
-class DataCenterAdminActionsTests(UserActionsTests):
-    __test__ = True
-
-    @classmethod
-    def setUpClass(self):
-        self.role = roles.role.DataCenterAdmin
-        self.filter_ = False
-        self.perms = common.hasPermissions(self.role)
-        super(DataCenterAdminActionsTests, self).setUpClass()
-
-
-class ClusterAdminActionsTests(UserActionsTests):
-    __test__ = True
-
-    @classmethod
-    def setUpClass(self):
-        self.role = roles.role.ClusterAdmin
-        self.filter_ = False
-        self.perms = common.hasPermissions(self.role)
-
-        super(ClusterAdminActionsTests, self).setUpClass()
-
-
-class NetworkAdminActionsTests(UserActionsTests):
-    __test__ = True
-
-    @classmethod
-    def setUpClass(self):
-        self.role = roles.role.NetworkAdmin
-        self.filter_ = False
-        self.perms = common.hasPermissions(self.role)
-
-        super(NetworkAdminActionsTests, self).setUpClass()
+        loginAsAdmin()
+        common.stopVm(VM_NAME)

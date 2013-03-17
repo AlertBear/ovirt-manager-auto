@@ -113,7 +113,8 @@ USER_NAME3 =            'userportal3'
 USER_DOMAIN =           'qa.lab.tlv.redhat.com'
 USER_PASSWORD =         '123456'
 
-GROUP_NAME = 'qa.lab.tlv.redhat.com/QA-All-Users/QA-MembersGroup'
+GROUP_USER = 'q-student'
+GROUP_NAME = 'qa.lab.tlv.redhat.com/Users/q-Students'
 
 ############################ OPTIONS ##########################################
 

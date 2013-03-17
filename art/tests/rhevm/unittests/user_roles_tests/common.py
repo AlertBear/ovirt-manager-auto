@@ -30,6 +30,7 @@ import logging
 import ovirtsdk.api
 from ovirtsdk.xml import params
 from ovirtsdk.infrastructure import errors
+from ovirtsdk.infrastructure.context import context
 from ovirtsdk.infrastructure import contextmanager
 from functools import wraps
 
@@ -42,21 +43,7 @@ _major = int(config.OVIRT_VERSION[0])
 _minor = int(config.OVIRT_VERSION[2:])
 VERSION = params.Version(major=_major, minor=_minor)
 
-def disconnect():
-    proxy = contextmanager.get('proxy')
-    persistent_auth = contextmanager.get('persistent_auth')
-    filter_header = contextmanager.get('filter')
-
-    if proxy and persistent_auth:
-        try:
-            proxy.request(method='GET',
-                        url='/api',
-                        headers={'Filter': filter_header},
-                        last=True)
-        except Exception:
-            pass
-    contextmanager._clear(force=True)
-
+users = {}
 def _getApi():
     """ Return ovirtsdk api.
 
@@ -65,14 +52,15 @@ def _getApi():
     Works around problem when reloading, which would
     otherwise cause the error `ImmutableError: [ERROR]::'proxy' is immutable.`.
     """
+    global users
     try:
         return API
     except NameError:
-        disconnect()
-        return ovirtsdk.api.API(
+        users[config.OVIRT_USERNAME] = ovirtsdk.api.API(
                     url=config.OVIRT_URL, insecure=True,
                     username=config.OVIRT_USERNAME+'@'+config.OVIRT_DOMAIN,
                     password=config.OVIRT_PASSWORD)
+        return users[config.OVIRT_USERNAME]
 
 API = _getApi()
 
@@ -194,6 +182,12 @@ def updateObject(obj):
         tmpId = obj.get_template().get_id()
         tmp = API.templates.get(id=tmpId)
         parent = tmp.disks
+    elif 'ClusterNetwork' == t:
+        clId = obj.get_cluster().get_id()
+        cl = API.clusters.get(id=clId)
+        parent = cl.permissions
+    elif 'Network' == t:
+        parent = API.networks
     else:
         raise Exception("Unknown object %s, cannot update it's state"
                         % (objectDescr(obj)))
@@ -250,20 +244,34 @@ def createDataCenter(name, storageType=config.MAIN_STORAGE_TYPE,
 
 def addNetworkToDC(name, dcName):
     """ Add new network to DC 'dcName' with name 'name'. """
-    dc = API.datacenters.get(dcName)
+    dc = getObjectByName(API.datacenters, dcName)
     API.networks.add(params.Network(data_center=dc, name=name))
-    LOGGER.info("Network '%s' was added to DC '%s'." %(name, dcName))
+    LOGGER.info("Network '%s' was added to DC '%s'." % (name, dcName))
 
     net = API.networks.get(name=name)
     assert net is not None, "Network couldn't be created."
-    return net
 
-def removeDataCenter(name):
+def _getNetwork(networkName, dcName):
+    """ Search network networkName by name in dc dcName """
+    for network in API.networks.list():
+        if dcName == API.datacenters.get(id=network.get_data_center().get_id()).get_name() and \
+                network.get_name() == networkName:
+                    return network
+
+def deleteNetwork(name, dcName):
+    ''' Delete network '''
+    network = _getNetwork(name, dcName)
+    LOGGER.info("Removing network '%s' name from dc '%s'" % (name, dcName))
+    if network:
+        network.delete()
+        waitForRemove(network)
+
+def removeDataCenter(name, force=False):
     """ Removes datacenter """
-    dc = API.datacenters.get(name)
+    dc = getObjectByName(API.datacenters, name)
     if dc is not None:
         LOGGER.info("Removing datacenter '%s'" % name)
-        dc.delete()
+        dc.delete(params.Action(force=force))
         assert updateObject(dc) is None, "Can't remove datacenter"
 
 def createCluster(name, datacenterName,
@@ -282,7 +290,7 @@ def createCluster(name, datacenterName,
 
 def removeCluster(name):
     """ Removes cluster """
-    cluster = API.clusters.get(name)
+    cluster = getObjectByName(API.clusters, name)
     if cluster is not None:
         cluster.delete()
         LOGGER.info("Removing cluster '%s'" % name)
@@ -340,6 +348,7 @@ def waitForTasks(host, max_times=3, sleep_time=10):
             if max_times == 0:
                 raise er
             sleep(sleep_time)
+    LOGGER.info("Switching host '%s' to maintence" % host.get_name())
 
 def removeHost(hostName):
     """ remove Host"""
@@ -413,34 +422,12 @@ def configureHostNetwork(hostName):
     Parameters:
      * hostName - name of host to be changed
     """
-    h = getFilterHeader()
     # Deactive host - need to be before configuring network
-    loginAsAdmin()
     host = API.hosts.get(hostName)
-    waitForTasks(host)
-    waitForState(host, states.host.maintenance)
-
-    try:
-        host = API.hosts.get(hostName)
-        loginAsUser(filter_=h)
-        for nic in host.nics.list():
-            if nic.status.state == 'up':
-                nic.set_boot_protocol("dhcp")
-                nic.update()
-                break
-    except Exception as e:
-        raise e
-    else:
-        pass
-    finally:
-        # Activate host after test
-        loginAsAdmin()
-        host = API.hosts.get(hostName)
-        host.activate()
-        waitForHostUpState(host)
-        dc = API.datacenters.get(config.MAIN_DC_NAME)
-        waitForState(dc, states.host.up)
-        loginAsUser(filter_=h)
+    for nic in host.nics.list():
+        if nic.status.state == 'up':
+            nic.update()
+            break
 
 maxTry = 3
 def waitForHostUpState(host):
@@ -470,16 +457,27 @@ def generateTicket(vmName):
     """
     Starts vm and wait for up state.
     Generate ticket to connect to vm """
-    #vm = API.vms.get(vmName)
     vm = getObjectByName(API.vms, vmName)
     if vm.status.state != states.vm.up:
         vm.start()
         waitForState(vm, states.vm.up)
+    LOGGER.info("Vm '%s' started." % vmName)
     vm.ticket()
+    LOGGER.info("Vm '%s' ticket generated." % vmName)
     vm.stop()
     waitForState(vm, states.vm.down)
 
-def createVm(vmName, memory=1*GB, createDisk=True, diskSize=512*MB,
+def startVm(vmName):
+    ''' Starts vm '''
+    vm = getObjectByName(API.vms, vmName)
+    if vm.status.state == states.vm.up:
+        LOGGER.info("Vm '%s' is already started" % vmName)
+        return
+    vm.start()
+    LOGGER.info("Staritng vm '%s'" % vmName)
+    waitForState(vm, states.vm.up)
+
+def createVm(vmName, memory=1*GB, createDisk=True, diskSize=GB,
                 cluster=config.MAIN_CLUSTER_NAME,
                 storage=config.MAIN_STORAGE_NAME):
     """ Creates VM and adds a system disk.
@@ -648,24 +646,24 @@ def moveVm(vmName, storageName):
     waitForState(vm, states.vm.down, timeout=7*60)
     LOGGER.info("VM '%s' was moved to sd '%s'" % (vmName, storageName))
 
-def createDiskObjectNoCheck(diskName, storage=config.MAIN_STORAGE_NAME):
+def createDiskObjectNoCheck(diskName, storage=config.MAIN_STORAGE_NAME, bootable=False):
     """ Create disk and return it, dont wait for ok state """
     sd = getObjectByName(API.storagedomains, storage)
     param = params.StorageDomains(storage_domain=[sd])
-    disk = API.disks.add(params.Disk(alias=diskName, name=diskName, provisioned_size=10,
-            size=10, status=None, interface='virtio',
-            format='cow', sparse=True, bootable=False,
+    disk = API.disks.add(params.Disk(alias=diskName, name=diskName, provisioned_size=GB,
+            size=GB, status=None, interface='virtio',
+            format='cow', sparse=True, bootable=bootable,
             storage_domains=param))
     return disk
 
-def createDiskObject(diskName, storage=config.MAIN_STORAGE_NAME):
+def createDiskObject(diskName, storage=config.MAIN_STORAGE_NAME, bootable=False):
     """
     Create disk and return it.
     Parameters:
      * diskName - name of disk
      * storage  - storage, where disk should be created
     """
-    disk = createDiskObjectNoCheck(diskName, storage=storage)
+    disk = createDiskObjectNoCheck(diskName, storage=storage, bootable=bootable)
     waitForState(disk, states.disk.ok)
     LOGGER.info("Disk '%s' created." % (disk.get_name()))
     assert disk is not None
@@ -677,8 +675,8 @@ def deleteDiskObject(disk):
     Parameters:
      * disk - disk to be removed
     """
-    disk.delete()
     LOGGER.info("Removing disk '%s'" % (disk.get_alias()))
+    disk.delete()
     waitForRemove(disk)
 
 def deleteDisk(diskId, alias=None):
@@ -722,7 +720,7 @@ def attachDiskToVm(disk, vmName):
     disk = vm.disks.get(id=disk.get_id())
     waitForState(disk, states.disk.ok)
 
-def editVmDiskProperties(vmName, diskAlias=None):
+def editVmDiskProperties(vmName, diskId=None, description=None):
     """
     Edit vm disk properies.
     Parameters:
@@ -732,8 +730,8 @@ def editVmDiskProperties(vmName, diskAlias=None):
     if vm is None:
         LOGGER.warning("Vm '%s' not exists." % (vmName))
         return
-    if diskAlias is not None:
-        disk = vm.disks.get(alias=diskAlias)
+    if diskId is not None:
+        disk = vm.disks.get(id=diskId)
     else:
         disk = vm.disks.list()[0]
     if disk is None:
@@ -741,18 +739,19 @@ def editVmDiskProperties(vmName, diskAlias=None):
 
     dName = disk.get_name()
     dId = disk.get_id()
-    before = disk.get_interface()
-    if before == 'virtio':
-        after = 'ide'
-    else:
-        after = 'virtio'
 
-    disk.set_interface(after)
+    if description:
+        before = disk.get_description()
+        disk.set_description(description)
+    else:
+        before = disk.get_interface()
+        disk.set_interface('ide' if before == 'virtio' else 'virtio')
+
     disk.update()
     disk = vm.disks.get(id=dId)
-    now = disk.get_interface()
-    assert before != now, "Failed to update disk interface properties"
-    LOGGER.info("Editting disk '" + dName + "'")
+    now = disk.get_description() if description else disk.get_interface()
+    assert before != now, "Failed to update disk properties"
+    LOGGER.info("Disk '%s' was edited." % dName)
 
 def startStopVm(vmName):
     """ Starts and stops VM """
@@ -789,7 +788,7 @@ def removeTemplate(templateName):
     LOGGER.info("Removing template '" + templateName + "'")
     waitForRemove(template)
 
-def searchByObjectName(obj, name, id):
+def searchByObjectName(obj, name, id, alias=None):
     """
     Return object by its name
     Parameters:
@@ -797,6 +796,10 @@ def searchByObjectName(obj, name, id):
      * name - name of object
      * id   - id of object, used if name is None
     """
+    if alias is not None:
+        for o in obj.list():
+            if o.get_alias() == alias:
+                return o
     if name is None:
         return obj.get(id=id)
     # This is used because user level API don't support searching
@@ -804,7 +807,7 @@ def searchByObjectName(obj, name, id):
         if o.get_name() == name:
             return o
 
-def getObjectByName(obj, name, id=None):
+def getObjectByName(obj, name, id=None, alias=None):
     """
     Return object by its name. Valid /vmpools.
     Parameters:
@@ -812,32 +815,20 @@ def getObjectByName(obj, name, id=None):
      * name - name of object
      * id   - id of object, used if name is None
     """
-    try:
-        return searchByObjectName(obj, name, id)
-    except errors.RequestError as er:
-        # This is used because user can't access to some urls
-        # So this is workaround and should be removed after bug is OK
-        filter_header = getFilterHeader()
-        loginAsAdmin()
-        o = searchByObjectName(obj, name, id)
-        loginAsUser(filter_=filter_header)
-        return o
+    return searchByObjectName(obj, name, id, alias)
 
 #################### VM POOLS #################################################
 def createVmPool(poolName, templateName, clusterName=config.MAIN_CLUSTER_NAME,
                  size=1):
     """ Create Vm pool """
-    template = API.templates.get(templateName)
-    cluster = API.clusters.get(clusterName)
+    template = getObjectByName(API.templates, templateName)
+    cluster = getObjectByName(API.clusters, clusterName)
 
     API.vmpools.add(params.VmPool(name=poolName, cluster=cluster,
                 template=template, size=size))
 
-    ff = getFilterHeader()
-    loginAsAdmin()
-    assert API.vmpools.get(poolName) is not None
-    LOGGER.info('Creating vmpool "' + poolName + '"')
-    loginAsUser(filter_=ff)
+    assert getObjectByName(API.vmpools, poolName) is not None
+    LOGGER.info('Created vmpool "' + poolName + '"')
 
 def waitForRemove(obj):
     """
@@ -911,14 +902,6 @@ def addVmToPool(vmpool):
     newSize = int(sizeBefore) + 1
     vmpool.set_size(newSize)
     vmpool.update()
-
-    ####### REMOVE AFTER BZ IS OK
-    ff = getFilterHeader()
-    loginAsAdmin()
-    vmpool = API.vmpools.get(vmpool.get_name())
-    loginAsUser(filter_=ff)
-    now = vmpool.get_size()
-    assert sizeBefore != now, "Failed to update vmpools configuration"
 
 def vmpoolBasicOperations(vmpool):
     """
@@ -1202,29 +1185,17 @@ def detachAttachSD(storageName=config.MAIN_STORAGE_NAME,
                 host=config.MAIN_HOST_NAME)
 
 ###############################################################################
-def removeRole(roleName):
-    """
-    Remove role.
-    Parameters:
-     * roleName - name of role to be removed
-    """
-    role = API.roles.get(name=roleName)
-    if role is None:
-        LOGGER.warning("Role '%s' can't be removed, because don't exists." % (roleName))
-    role.delete()
-
-def addRole(roleName, permits, description="", administrative=False):
+def addRole(roleName, role, description="", administrative=False):
     """ Add new role to system """
     msg = "User role '%s' has not been created"
-
-    perms = params.Permits(permits)
-    role = params.Role(name=roleName, permits=perms, description=description,
-            administrative=administrative)
-
+    permits = API.roles.get(role).permits.list()
+    perms = params.Permits(permit=permits)
+    role = params.Role(name=roleName, permits=perms, administrative=administrative,
+            description=description)
     API.roles.add(role)
-    LOGGER.info("Added new role '%s'." %roleName)
-    role = API.roles.get(name=roleName)
-    assert role is not None, msg % roleName
+
+    assert API.roles.get(roleName) is not None, msg
+    LOGGER.info("Role '%s' was created." % roleName)
 
 def updateRole(roleName, permits=None, description=None, administrative=None):
     """
@@ -1239,13 +1210,15 @@ def updateRole(roleName, permits=None, description=None, administrative=None):
         return
 
     if permits is not None:
-        role.set_permits(permits)
+        for p in permits:
+            role.permits.add(p)
     if description is not None:
         role.set_description(description)
     if administrative is not None:
         role.set_administrative(administrative)
 
     role.update()
+    LOGGER.info("Role '%s' was successfylly updated." % roleName)
 
 def deleteRole(roleName):
     """ Delete role roleName """
@@ -1253,10 +1226,11 @@ def deleteRole(roleName):
     if role is None:
         LOGGER.warning("Role '%s' doesnt exists. Cant remove it." % roleName)
         return
-    role.delete()
 
+    role.delete()
     role = API.roles.get(roleName)
     assert role is None, "Unable to remove role '%s'" % roleName
+    LOGGER.info("Role '%s' was removed." % roleName)
 
 def addGroup(groupName=config.GROUP_NAME):
     """ Add group to system """
@@ -1274,12 +1248,16 @@ def addRoleToGroup(roleName, group):
     group.roles.add(API.roles.get(roleName))
     assert group.roles.get(roleName) is not None
 
-def deleteGroup(group):
+def deleteGroup(groupName=config.GROUP_NAME):
     """ Deletes group from system """
+    LOGGER.info("Deleteing group '%s'" % groupName)
+    group = API.groups.get(groupName)
     if group is None:
-        LOGGER.warning("Group '%s' doesnt exists. Cant remove it." % group.get_name())
+        LOGGER.warning("Group '%s' doesnt exists. Cant remove it." % groupName)
         return
     group.delete()
+    group = API.groups.get(groupName)
+    assert group is None
 
 def addUser(userName=config.USER_NAME, domainName=config.USER_DOMAIN):
     """ Add user to system """
@@ -1316,13 +1294,9 @@ def getUser(userName=config.USER_NAME, domainName=config.USER_DOMAIN):
     """ Return user object """
     try:
         return API.users.list(user_name=userName + '@' + domainName)[0]
-    except IndexError:
-        try:
-            return API.users.list(user_name=userName)[0]
-        except Exception as err:
-            LOGGER.error(err)
-            LOGGER.error("User %s not found." % userName)
-            return None
+    except Exception as err:
+        LOGGER.error("User %s not found." % userName)
+        return None
 
 ########################### PERMISSIONS #############################
 def addRoleToUser(roleName, userName=config.USER_NAME, domainName=config.USER_DOMAIN):
@@ -1371,7 +1345,8 @@ def removeRoleFromUser(roleName, userName=config.USER_NAME, domainName=config.US
     if user is None:
         return
     role = user.roles.get(roleName)
-    role.delete()
+    if role:
+        role.delete()
 
     role = user.roles.get(roleName)
     assert role is None, "Unable to remove role '%s'" % roleName
@@ -1430,12 +1405,13 @@ def givePermissionToObject(rhevm_object, roleName, userName=config.USER_NAME,
     permissionParam = params.Permission(user=user, role=role)
     try:
         rhevm_object.permissions.add(permissionParam)
-    except AttributeError as e:
+    except errors.RequestError as e:
         # Bz 869334 - after BZ ok, could be removed
-        pass
+        if e.status != 500:
+            raise e
 
     msg = "Added permission on '%s' with role '%s' for user '%s'"
-    LOGGER.info(msg % (type(rhevm_object).__name__, roleName, user.get_name()))
+    #LOGGER.info(msg % (type(rhevm_object).__name__, roleName, user.get_name()))
 
 def givePermissionToVm(vmName, roleName, userName=config.USER_NAME,
         domainName=config.USER_DOMAIN):
@@ -1457,6 +1433,22 @@ def givePermissionToTemplate(templateName, roleName, userName=config.USER_NAME,
     tmp = getObjectByName(API.templates, templateName)
     givePermissionToObject(tmp, roleName, userName, domainName)
 
+def givePermissionToDisk(diskName, roleName, userName=config.USER_NAME,
+        domainName=config.USER_DOMAIN):
+    tmp = API.disks.get(alias=diskName)
+    givePermissionToObject(tmp, roleName, userName, domainName)
+
+def givePermissionToPool(poolName, roleName, userName=config.USER_NAME,
+        domainName=config.USER_DOMAIN):
+    tmp = getObjectByName(API.vmpools, poolName)
+    givePermissionToObject(tmp, roleName, userName, domainName)
+
+def givePermissionToNet(netName, dcName, roleName, userName=config.USER_NAME,
+        domainName=config.USER_DOMAIN):
+    for net in API.networks.list():
+        if dcName == API.datacenters.get(id=net.get_data_center().get_id()).get_name():
+            givePermissionToObject(net, roleName, userName, domainName)
+
 def removeAllPermissionFromObject(rhevm_object):
     """
     Removes all permissions from object
@@ -1469,9 +1461,20 @@ def removeAllPermissionFromObject(rhevm_object):
         return
 
     permissions = rhevm_object.permissions.list()
-    for perm in permissions:
-        perm.delete()
-    assert len(rhevm_object.permissions.list()) == 0
+    i = 0
+    for p in permissions:
+        u = API.users.get(id=p.get_user().get_id())
+        if u.get_name() == 'admin' and u.get_domain().get_name() == 'internal':
+            i += 1
+            continue
+        try:
+            p.delete()
+        except errors.RequestError as e:
+            if e.status == 400:
+                pass  # bz 919686
+            else:
+                raise e
+    assert len(rhevm_object.permissions.list()) == i
 
 def removeAllPermissionFromVm(vmName):
     vm = getObjectByName(API.vms, vmName)
@@ -1486,22 +1489,21 @@ def removeAllPermissionFromCluster(clusterName):
     removeAllPermissionFromObject(cluster)
 
 ############# USERS ####################
-
-def getFilterHeader():
-    """ Has user admin role or user role? """
-    return contextmanager.get('filter')
-
 def loginAsUser(userName=config.USER_NAME,
                 domain=config.USER_DOMAIN,
                 password=config.USER_PASSWORD,
                 filter_=True):
-    LOGGER.info("Login as %s" % userName)
-    global API
-    API.disconnect()
-    API = ovirtsdk.api.API(url=config.OVIRT_URL, insecure=True,
+    LOGGER.info("Login as %s@%s(filter=%s)" % (userName, domain, filter_))
+    i = userName + str(filter_)
+    try:
+        global users
+        global API
+        API = users[i]
+    except KeyError:
+        users[i] = ovirtsdk.api.API(url=config.OVIRT_URL, insecure=True,
                     username=userName+'@'+domain,
                     password=password, filter=filter_)
-
+        API = users[i]
 
 def loginAsAdmin():
     loginAsUser(config.OVIRT_USERNAME,
@@ -1590,7 +1592,8 @@ def hasUserPermissions(obj, role, user=config.USER_NAME, domain=config.USER_DOMA
     for perm in perms:
         role_name = API.roles.get(id=perm.get_role().get_id()).get_name()
         user_name = API.users.get(id=perm.get_user().get_id()).get_user_name()
-        if user_name + '@' + domain == user and role_name == role:
+        LOGGER.info("User %s has perms %s on obj %s" % (user_name, role_name, obj.get_name()))
+        if user + '@' + domain == user_name and role_name == role:
             return True
     return False
 
