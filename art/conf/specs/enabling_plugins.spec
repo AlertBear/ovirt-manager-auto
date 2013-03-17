@@ -38,7 +38,8 @@ keytab_files_location = path_exists(default="/etc")
 generate_links = boolean(default=True)
 
 [STORAGE]
-devices_load_balancing = boolean(default=True)
+# TODO: remove false, it remained for backward compatibility
+devices_load_balancing = option('capacity', 'random', 'no', 'false', default='random')
 
 [MATRIX_TEST_RUNNER]
 discover_action = boolean(default=True)

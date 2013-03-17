@@ -47,6 +47,8 @@ DEVICES_TARGET_PATHS = {
                         }
 POSIXFS_TYPE = 'gluster'
 ISO_EXPORT_TYPE = 'iso_export_domain_nas'
+LOAD_BALANCING_CAPACITY = 'capacity'
+LOAD_BALANCING_RANDOM = 'random'
 
 logger = logging.getLogger(__name__)
 
@@ -77,10 +79,12 @@ def getStorageServers(storageType='none'):
                     dtypes = [stype]
                 if self.storages[stype]:
                     if stype not in self.storageServers:
-                        servers = getStorageServer(stype, self.serverPool)
-                        smngr = createStorageManager(servers, stype,
+                        servers = getStorageServer(stype, self.load_balancing,
+                                                   self.storageConfigFile,
+                                                   self.serverPool)
+                        smng = createStorageManager(servers, stype,
                                                      self.storageConfigFile)
-                        self.storageServers[stype] = smngr
+                        self.storageServers[stype] = smng
                     for t in dtypes:
                         for section, params in self.storages[t].items():
                             self.storages[t][section]['ip'] = \
@@ -170,7 +174,7 @@ def createHostGroupName(vdc):
     except Exception as e:
         raise CreateHostGroupNameException(e)
 
-def getStorageServer(type, servers=None):
+def getStorageServer(type, load_balancing, conf=None, servers=None):
     '''
     Get less used storage server(less used disk space + cpu load)
     Parameters:
@@ -179,8 +183,14 @@ def getStorageServer(type, servers=None):
                     configuration file used
     '''
     try:
-        monitor = snmp.SNMPMonitor(type, servers=servers)
-        return monitor.getServerByDiskSpaceToCpuRatio()
+        if load_balancing == LOAD_BALANCING_CAPACITY:
+            monitor = snmp.SNMPMonitor(type, conf, servers=servers)
+            return monitor.getServersByDiskSpaceToCpuRatio()
+        elif load_balancing == LOAD_BALANCING_RANDOM:
+            return smngr.getRandomServers(type, conf, servers)
+        else:
+            raise GetServerForDynamicStorageAllocationException(
+                "Unsupported load-balancing type: %s" % load_balancing)
     except Exception as e:
         raise GetServerForDynamicStorageAllocationException(e)
 
@@ -415,7 +425,14 @@ class StorageUtils:
         elif self.data_center_type == 'localfs':
             self._storageSetupDAS()
 
-        self._storageSetupISOandExportDomains()
+        create_iso_exp = False
+        for stype in ('iso', 'export'):
+            for targ in self.storages[stype]:
+                if self.storages[stype][targ]['total'] > 0:
+                    create_iso_exp = True
+                    break
+        if create_iso_exp:
+            self._storageSetupISOandExportDomains()
 
         self.logger.info("Finished successfully creation of storage devices")
 

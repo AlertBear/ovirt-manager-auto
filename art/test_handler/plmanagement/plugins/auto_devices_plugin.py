@@ -23,7 +23,7 @@ the following parameters:
 
     | **[STORAGE]**
     | # to enable/disable load balancing
-    | **devices_load_balancing** =  true|false
+    | **devices_load_balancing** =  capacity|random|no|false
     | **storage_pool** = <list_of_storage_servers_ips>
 
     | # possible keys for nfs devices:
@@ -107,10 +107,11 @@ class AutoDevices(Component):
         logger.info("Preparing storages.")
         from art.test_handler.plmanagement.plugins import storage
         self.su = storage.StorageUtils(self.conf)
-        if self.conf[STR_SECTION].as_bool(LB_ENABLED):
+        load_balancing = self.conf[STR_SECTION][LB_ENABLED]
+        if load_balancing == 'capacity' or load_balancing == 'random':
             spool = self.conf[STR_SECTION].as_list(STORAGE_POOL)
             spool = None if 'None' in spool else spool
-            self.su.load_balancing = True
+            self.su.load_balancing = load_balancing
             self.su.serverPool = spool
             # option to pass storage conf. file via env. variable
             self.su.storageConfigFile = os.getenv(CONF_PATH_ENV)
@@ -159,7 +160,9 @@ class AutoDevices(Component):
     def config_spec(self, spec, val_funcs):
         section_spec = spec.get(STR_SECTION, {})
         section_spec[STORAGE_POOL] = "force_list(default=None)"
-        section_spec[LB_ENABLED] = "boolean(default=False)"
+        #TODO: remove false, it remained for backward compatibility
+        section_spec[LB_ENABLED] = \
+            "option('capacity', 'random', 'no', 'false', default=random)"
         spec[STR_SECTION] = section_spec
         run_spec = spec.get(RUN_SECTION, {})
         run_spec[AD_ENABLED] = "boolean(default=False)"
