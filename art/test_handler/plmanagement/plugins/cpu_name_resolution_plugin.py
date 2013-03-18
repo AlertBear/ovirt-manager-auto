@@ -41,10 +41,11 @@ VITAL = 'vital'
 DEFAULT_VITAL = True
 
 MODEL_RE = re.compile(r'model_[A-Za-z_1-9]+')
+MIN_INTEL="model_Conroe"
+MIN_AMD="model_Opteron_G1"
 
 class CpuNameResolutionFailed(PluginError):
     pass
-
 
 class AutoCpuNameResolution(Component):
     """
@@ -53,6 +54,46 @@ class AutoCpuNameResolution(Component):
     """
     implements(IConfigurable, IPackaging, IConfigValidation)
     name = "Auto CPU name resolution"
+
+    def get_cpu_model(self, name, passwd):
+        m = Machine(name, 'root', passwd).util(LINUX)
+        logger.debug("Running vdsClient on {0}".format(name))
+        with m.ssh as ssh:
+            rc, out, err = ssh.runCmd(['vdsClient', '-s', '0', 'getVdsCaps'])
+            out = out.strip()
+            err = err.strip()
+            if rc or not out:
+                logger.error('Failed to get CPU models of {0}. '
+                             'Failed running vdsClient on host. '
+                             'Error message: {1} '
+                             'vdsClient output: {2}'.format(name, err, out))
+                return None
+        host_cpu_models = MODEL_RE.findall(out)
+        host_model = max(host_cpu_models,
+            key=lambda m: self.cpus_model_mapping.get(m, {}).get('level', -1))
+        logger.debug("{0}: cpu model is {1}".format(name, host_model))
+        sel_host_cpu  = self.cpus_model_mapping.get(host_model)
+        if sel_host_cpu is None:
+            logger.warning('Unknown CPU of host {0}'.format(name))
+        return sel_host_cpu
+
+    def get_vendor_fallback(self, name, passwd):
+        #Getting CPU vendor
+        m = Machine(name, 'root', passwd).util(LINUX)
+        with m.ssh as ssh:
+            rc, out, err = ssh.runCmd(['cat', '/proc/cpuinfo', '|',
+                                        'grep', 'vendor_id', '|', 'uniq'])
+            out = out.strip()
+            err = err.strip()
+            if rc or not out:
+                return None
+        if 'Intel' in out:
+            return self.cpus_model_mapping[MIN_INTEL]
+        elif 'AMD' in out:
+            return self.cpus_model_mapping[MIN_AMD]
+        else:
+            return None
+
 
     def configure(self, params, conf):
         if not self.is_enabled(params, conf):
@@ -75,7 +116,7 @@ class AutoCpuNameResolution(Component):
             return
 
         cpus = version.get_cpus().get_cpu()
-        cpus_model_mapping = dict()
+        self.cpus_model_mapping = dict()
         for cpu in cpus:
             #building a mapping from model_ to a dict
             name = cpu.get_id()
@@ -89,7 +130,7 @@ class AutoCpuNameResolution(Component):
                 vendor = 'AMD'
             else:
                 raise CpuNameResolutionFailed('Unknown vendor of %s' % name)
-            cpus_model_mapping[model_name] = {'name' : name, 'level' : level,
+            self.cpus_model_mapping[model_name] = {'name' : name, 'level' : level,
                                               'vendor' : vendor}
 
 
@@ -98,27 +139,15 @@ class AutoCpuNameResolution(Component):
         vds_passwd_list = conf[PARAMETERS].as_list(VDS_PASSWORD)
 
         selected_cpu = None
+        fallback = self.get_vendor_fallback(vds_list[0], vds_passwd_list[0])
         for name, passwd in  zip(vds_list, vds_passwd_list):
-            m = Machine(name, 'root', passwd).util(LINUX)
-            logger.debug("Running vdsClient on {0}".format(name))
-            with m.ssh as ssh:
-                rc, out, err = ssh.runCmd(['vdsClient', '-s', '0', 'getVdsCaps'])
-            out = out.strip()
-            err = err.strip()
-            if rc or not out:
-                logger.error('Failed to get CPU models of {0}. '
-                        'Failed running vdsClient on host. '
-                        'Error message: {1} '
-                        'vdsClient output: {2}'.format(name, err, out))
-                return
-            host_cpu_models = MODEL_RE.findall(out)
-            host_model = max(host_cpu_models,
-                key=lambda m: cpus_model_mapping.get(m, {}).get('level', -1))
-            logger.debug("{0}: cpu model is {1}".format(name, host_model))
-            sel_host_cpu  = cpus_model_mapping.get(host_model)
+            sel_host_cpu = self.get_cpu_model(name, passwd)
             if sel_host_cpu is None:
-                logger.warning('Unknown CPU of host {0}'.format(name))
-                return
+                logger.warning('Falling back to cpu model:'.format(
+                    None if fallback is None else fallback.get('name', None)
+                ))
+                selected_cpu = fallback
+                break
             if (selected_cpu is None or
                         (sel_host_cpu['vendor'] == selected_cpu['vendor'] and
                         sel_host_cpu['level'] < selected_cpu['level'])):
