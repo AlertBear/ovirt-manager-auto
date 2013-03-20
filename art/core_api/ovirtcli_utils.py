@@ -53,6 +53,15 @@ def threadSafeRun(func):
     return apifunc
 
 
+class QueryResult(object):
+    """
+    This class contains query result data
+    """
+    def __init__(self, dataDict):
+        for key, val in dataDict.iteritems():
+            setattr(self, key, val)
+
+
 class CliConnection(object):
     __metaclass__ = ABCMeta
 
@@ -551,6 +560,9 @@ class CliUtil(RestUtil):
         Return: query results
         '''
 
+        results = []
+        tmpResDict = {}
+
         if event_id is not None:
             params['from'] = event_id
 
@@ -574,11 +586,20 @@ class CliUtil(RestUtil):
             self.logger.error(errorMsg.format(e))
             return []
 
-        data = [i.split(':')[1].strip() for i in out.split('\n') if 'id' in i]
-        if data:
-            results = data
-        else:
-            results = []
+        # splitting  and cleaning output (first and last lines are empty)
+        data = out.split('\n')
+        data.pop(0)
+        data.pop(-1)
+
+        for line in data:
+            # dumping entity data (there is empty line between entities)
+            if not line:
+                results.append(QueryResult(tmpResDict))
+                tmpResDict = {}
+                continue
+            # getting data
+            keyAndValue = line.split(':')
+            tmpResDict[keyAndValue[0].strip()] = keyAndValue[1].strip()
 
         self.logger.debug("Response for QUERY request is: %s " % results)
 
