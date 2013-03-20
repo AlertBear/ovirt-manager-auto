@@ -1,4 +1,12 @@
 <input xmlns:xi="http://www.w3.org/2001/XInclude">
+	<!-- <span style="display:none" >TEST_DESCRIPTION</span>
+	This XML tests the basic network functions.
+	Includes add, edit and remove for the features: Jumbo Frame, Required Network
+	Bridgeless and Hotplug.<br/>
+	Test requirements:<br/>
+		1 host<br/>
+		4 NICs<br/>
+		10 MACs (00:1a:4a:16:88:66-00:1a:4a:16:88:70) -->
 <xi:include href="network/PrepareSetup.xml" />
 <!-- ======================================================================================================== -->
 <xi:include href="network/NetworkSanity.xml" />

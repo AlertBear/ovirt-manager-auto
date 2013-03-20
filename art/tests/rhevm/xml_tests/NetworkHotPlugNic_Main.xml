@@ -1,4 +1,11 @@
 <input xmlns:xi="http://www.w3.org/2001/XInclude">
+	<!-- <span style="display:none" >TEST_DESCRIPTION</span>
+	This XML adds, edits & removes nics while VM is UP & DOWN over regular network,
+	vlan, bond & vlan over bond.<br/>
+	Test requirements:<br/>
+		1 host<br/>
+		4 NICs<br/>
+		20 MACs (00:1a:4a:16:88:96-00:1a:4a:16:88:aa) -->
 <xi:include href="network/PrepareSetup.xml" />
 <!-- ======================================================================================================== -->
 <xi:include href="network/HotPlugNic.xml" />

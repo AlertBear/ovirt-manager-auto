@@ -1,4 +1,12 @@
 <input xmlns:xi="http://www.w3.org/2001/XInclude">
+	<!-- <span style="display:none" >TEST_DESCRIPTION</span>
+	This XML creates, edits & removes network as required and as non-required.
+	It checks host's status when a required network is being took down & up.
+	The test doesn't include VMs.<br/>
+	Test requirements:<br/>
+		1 host<br/>
+		4 NICs<br/>
+		10 MACs (00:1a:4a:16:88:66-00:1a:4a:16:88:70) -->
 <xi:include href="network/PrepareSetup.xml" />
 
 <xi:include href="network/requiredNetwork/RequiredNetwork.xml" />
