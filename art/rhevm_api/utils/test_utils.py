@@ -1494,6 +1494,7 @@ def testMTUInScriptList(host, user, password, script_list, mtu,
             if int(output) != mtu:
                 logger.error(ERR_MSG.format(script_name, mtu_script, mtu))
                 return False
+    return True
 
 
 @is_action()
