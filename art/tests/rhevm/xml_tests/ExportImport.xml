@@ -815,14 +815,6 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>CleanUp:Remove system from Cobbler '{data_center_type}'</test_name>
-   <test_action>cobblerRemoveSystem</test_action>
-   <parameters>cobblerAddress='{cobbler_address}',cobblerUser='{cobbler_user}',cobblerPasswd='{cobbler_passwd}',mac=%macAddress{data_center_type}%</parameters>
-   <positive>NONE</positive>
-   <run>if(re.search('RHEL',%osTypeElement{data_center_type}%))</run>
-   <fetch_output/>
-</test_case>
-<test_case>
    <test_name>END_GROUP: CleanUp</test_name>
    <test_action/>
    <parameters/>

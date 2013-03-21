@@ -60,23 +60,6 @@
    <report>YES</report>
 </test_case>
 <test_case>
-   <test_name>Get mac address of VM sparse cow virtio</test_name>
-   <test_action>getVmMacAddress</test_action>
-   <parameters>vm='{vm_name}_{data_center_type}_virtio', nic='{host_nics[0]}'</parameters>
-   <positive>TRUE</positive>
-   <run>YES</run>
-   <report>NO</report>
-   <fetch_output>macAddress-&gt;macAddress</fetch_output>
-</test_case>
-<test_case>
-   <test_name>Remove VM from blank template system from Cobbler</test_name>
-   <test_action>cobblerRemoveSystem</test_action>
-   <parameters>cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}', mac=%macAddress%</parameters>
-   <positive>NONE</positive>
-   <run>YES</run>
-   <report>YES</report>
-</test_case>
-<test_case>
    <test_name>Stop VM sparse cow virtio</test_name>
    <test_action>stopVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_virtio'</parameters>
@@ -115,24 +98,6 @@
    <test_action>createVm</test_action>
    <parameters>vmName='{vm_name}_{data_center_type}_prep', vmDescription='{vm_name}_{data_center_type}_prep', cluster='{data_center_type}{cluster_name}', nic='{host_nics[0]}', storageDomainName='{data_center_type}VmTest_data_domain0', size={disk_size}, diskType='e{disk_type_system}', volumeType='true', volumeFormat='cow', diskInterface='e{interface_ide}', bootable='true', wipe_after_delete='false', start='false', memory=1073741824, cpu_socket='{cpu_socket}', cpu_cores='{cpu_cores}', nicType='e{nic_type_virtio}', display_type='{display_type}', os_type=%osTypeElement%, user='{vm_linux_user}', password='{vm_linux_password}', type='e{vm_type_desktop}', installation=True, slim=True, cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}', image='{cobbler_profile}', network='{mgmt_bridge}', useAgent={useAgent}</parameters>
    <positive>TRUE</positive>
-   <run>YES</run>
-   <report>YES</report>
-   <fetch_output/>
-</test_case>
-<test_case>
-   <test_name>Get mac address of sparse cow VM</test_name>
-   <test_action>getVmMacAddress</test_action>
-   <parameters>vm='{vm_name}_{data_center_type}_prep', nic='{host_nics[0]}'</parameters>
-   <positive>TRUE</positive>
-   <run>YES</run>
-   <report>NO</report>
-   <fetch_output>macAddress-&gt;macAddress</fetch_output>
-</test_case>
-<test_case>
-   <test_name>Remove sparse cow VM system from Cobbler</test_name>
-   <test_action>cobblerRemoveSystem</test_action>
-   <parameters>cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}', mac=%macAddress%</parameters>
-   <positive>NONE</positive>
    <run>YES</run>
    <report>YES</report>
    <fetch_output/>
@@ -318,24 +283,6 @@
    <fetch_output/>
 </test_case>
 <test_case>
-   <test_name>Get mac address of sparse raw vm</test_name>
-   <test_action>getVmMacAddress</test_action>
-   <parameters>vm='{vm_name}_{data_center_type}_prep', nic='{host_nics[0]}'</parameters>
-   <positive>TRUE</positive>
-   <run>YES</run>
-   <report>NO</report>
-   <fetch_output>macAddress-&gt;macAddress</fetch_output>
-</test_case>
-<test_case>
-   <test_name>Remove sparse raw system from Cobbler</test_name>
-   <test_action>cobblerRemoveSystem</test_action>
-   <parameters>cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}', mac=%macAddress%</parameters>
-   <positive>NONE</positive>
-   <run>YES</run>
-   <report>YES</report>
-   <fetch_output/>
-</test_case>
-<test_case>
    <test_name>Stop sparse raw VM</test_name>
    <test_action>stopVm</test_action>
    <parameters>vm='{vm_name}_{data_center_type}_prep'</parameters>
@@ -493,24 +440,6 @@
    <test_action>createVm</test_action>
    <parameters>vmName='{vm_name}_{data_center_type}_prep', vmDescription='{vm_name}_{data_center_type}_prep', cluster='{data_center_type}{cluster_name}', nic='{host_nics[0]}', storageDomainName='{data_center_type}VmTest_data_domain0', size={prealloc_disk_size}, diskType='e{disk_type_system}', volumeType='false', volumeFormat='raw', diskInterface='e{interface_ide}', bootable='true', wipe_after_delete='false', start='false', memory=1073741824, cpu_socket='{cpu_socket}', cpu_cores='{cpu_cores}', nicType='e{nic_type_virtio}', display_type='{display_type}', os_type=%osTypeElement%, user='{vm_linux_user}', password='{vm_linux_password}', type='e{vm_type_desktop}', installation=True, slim=True, cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}', image='{cobbler_profile}', network='{mgmt_bridge}', useAgent={useAgent}</parameters>
    <positive>TRUE</positive>
-   <run>YES</run>
-   <report>YES</report>
-   <fetch_output/>
-</test_case>
-<test_case>
-   <test_name>Get mac address of preallocated raw disk</test_name>
-   <test_action>getVmMacAddress</test_action>
-   <parameters>vm='{vm_name}_{data_center_type}_prep', nic='{host_nics[0]}'</parameters>
-   <positive>TRUE</positive>
-   <run>YES</run>
-   <report>NO</report>
-   <fetch_output>macAddress-&gt;macAddress</fetch_output>
-</test_case>
-<test_case>
-   <test_name>Remove preallocated raw system from Cobbler</test_name>
-   <test_action>cobblerRemoveSystem</test_action>
-   <parameters>cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}', mac=%macAddress%</parameters>
-   <positive>NONE</positive>
    <run>YES</run>
    <report>YES</report>
    <fetch_output/>
@@ -712,15 +641,6 @@
    <run>YES</run>
    <report>NO</report>
    <fetch_output>macAddress-&gt;macAddress</fetch_output>
-</test_case>
-<test_case>
-   <test_name>Remove vm for snapshot testing system from Cobbler</test_name>
-   <test_action>cobblerRemoveSystem</test_action>
-   <parameters>cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}', mac=%macAddress%</parameters>
-   <positive>NONE</positive>
-   <run>YES</run>
-   <report>YES</report>
-   <fetch_output/>
 </test_case>
 <test_case>
    <test_name>Get VM for snapshot testing IP address</test_name>

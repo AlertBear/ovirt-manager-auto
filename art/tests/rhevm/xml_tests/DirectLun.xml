@@ -50,15 +50,6 @@
    <run>yes</run>
 </test_case>
 <test_case>
-   <test_name>Get mac address '{data_center_type}'</test_name>
-   <test_action>getVmMacAddress</test_action>
-   <parameters>vm='{data_center_type}TestVm',nic='{host_nics[0]}'</parameters>
-   <positive>True</positive>
-   <run>yes</run>
-   <fetch_output>macAddress-&gt;macAddress{data_center_type}</fetch_output>
-   <vital>True</vital>
-</test_case>
-<test_case>
    <test_name>END_GROUP: Setup</test_name>
    <test_action/>
    <parameters/>
@@ -855,6 +846,21 @@
    <run>yes</run>
 </test_case>
 <test_case>
+   <test_name>Get mac address '{data_center_type}'</test_name>
+   <test_action>getVmMacAddress</test_action>
+   <parameters>vm='vm_with_direct',nic='nic1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output>macAddress-&gt;vm_with_direct_mac</fetch_output>
+</test_case>
+<test_case>
+   <test_name>Remove system for vm_with_direct from Cobbler</test_name>
+   <test_action>cobblerRemoveSystem</test_action>
+   <parameters>cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}', mac=%vm_with_direct_mac%</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
    <test_name>Check that VM has only one disk</test_name>
    <test_action>runMachineCommand</test_action>
    <parameters>ip=%vm_ip%, user='{vm_linux_user}', password='{vm_linux_password}', cmd='[ `ls /dev/sd* /dev/vd* | grep -v [0-9] | wc -l` -eq 1 ]'</parameters>
@@ -1344,14 +1350,6 @@
    <test_action>cleanDataCenter</test_action>
    <parameters>datacenter='{data_center_type}DirectLunTest'</parameters>
    <positive>True</positive>
-   <run>yes</run>
-   <fetch_output/>
-</test_case>
-<test_case>
-   <test_name>CleanUp:Remove system from Cobbler '{data_center_type}'</test_name>
-   <test_action>cobblerRemoveSystem</test_action>
-   <parameters>cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}', mac=%macAddress{data_center_type}%</parameters>
-   <positive>None</positive>
    <run>yes</run>
    <fetch_output/>
 </test_case>
