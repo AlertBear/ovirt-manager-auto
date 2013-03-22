@@ -14,6 +14,7 @@ from art.test_handler.settings import opts
 LOGGER = logging.getLogger(__name__)
 ENUMS = opts['elements_conf']['RHEVM Enums']
 
+
 def build_setup(config, storage, storage_type, basename="testname"):
     """
     Description: Creates a setup based on what's specified in the config
@@ -22,6 +23,7 @@ def build_setup(config, storage, storage_type, basename="testname"):
         * storage - dict containing storage specification ([{storage}] section)
         * storage_type - type of storage to use (NFS, ISCSI, FCP, LOCALFS)
         * basename - baseword for naming objects in setup
+    Returns names of created storage domains
     """
     datacenter_name = config.get('dc_name', 'datacenter_%s' % basename)
     cluster_name = config.get('cluster_name', 'cluster_%s' % basename)
@@ -48,6 +50,5 @@ def build_setup(config, storage, storage_type, basename="testname"):
 
     hosts.add_hosts(config.as_list('vds'), config.as_list('vds_password'),
                     cluster_name)
-    storagedomains.create_storages(storage, storage_type,
+    return storagedomains.create_storages(storage, storage_type,
                                    config.as_list('vds')[0], datacenter_name)
-

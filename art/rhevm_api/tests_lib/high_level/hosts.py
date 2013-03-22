@@ -13,6 +13,7 @@ from art.test_handler.settings import opts
 LOGGER = logging.getLogger(__name__)
 ENUMS = opts['elements_conf']['RHEVM Enums']
 
+
 @is_action()
 def add_hosts(hosts_list, passwords, cluster):
     """
@@ -40,5 +41,3 @@ def add_hosts(hosts_list, passwords, cluster):
 
     if not hosts.waitForHostsStates(True, ",".join(hosts_list)):
         raise errors.HostException("Some of hosts didn't come to up status")
-
-

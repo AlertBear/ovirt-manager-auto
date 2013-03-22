@@ -1743,9 +1743,9 @@ def cloneVmFromTemplate(positive, name, template, cluster, timeout=VM_IMAGE_OPT_
                                              attr='disk', get_href=False)
         for dsk in disks:
             disk = data_st.Disk(id=dsk.id)
-            if vol_sparse:
+            if vol_sparse is not None:
                 disk.set_sparse(vol_sparse)
-            if vol_format:
+            if vol_format is not None:
                 disk.set_format(vol_format)
 
             diskArray.add_disk(disk)

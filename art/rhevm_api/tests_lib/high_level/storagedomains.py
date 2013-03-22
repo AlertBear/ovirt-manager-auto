@@ -325,15 +325,15 @@ def create_storages(storage, type_, host, datacenter,
     """
 
     if type_ == ENUMS['storage_type_nfs']:
-        __create_nfs_storages(datacenter, host, storage)
+        names = __create_nfs_storages(datacenter, host, storage)
     elif type_ == ENUMS['storage_type_iscsi']:
-        __create_iscsi_storages(datacenter, host, storage)
+        names = __create_iscsi_storages(datacenter, host, storage)
     elif type_ == ENUMS['storage_type_fcp']:
-        __create_fcp_storages(datacenter, host, storage)
+        names = __create_fcp_storages(datacenter, host, storage)
     elif type_ == ENUMS['storage_type_local']:
-        __create_localfs_storages(datacenter, host, storage)
+        names = __create_localfs_storages(datacenter, host, storage)
     elif type_ == ENUMS['storage_type_posixfs']:
-        __create_posixfs_storages(datacenter, host, storage)
+        names = __create_posixfs_storages(datacenter, host, storage)
     else:
         raise errors.UnkownConfigurationException("unknown storage type: %s" %
                                                   type_)
@@ -360,6 +360,7 @@ def create_storages(storage, type_, host, datacenter,
                     "addNFSDomain iso (%s, %s) to DC %s failed." %
                     (iso_address, iso_path, datacenter))
         logging.info("ISO domain %s was created successfully", iso_name)
+    return names
 
 
 def __create_nfs_storages(datacenter, host, storage_conf):
@@ -371,16 +372,19 @@ def __create_nfs_storages(datacenter, host, storage_conf):
         * storage_conf - storage configuration section
     """
     data_domain_paths = storage_conf.as_list('data_domain_path')
+    names = []
     for index, address in enumerate(
                           storage_conf.as_list('data_domain_address')):
+        name = "nfs_%d" % index
         path = data_domain_paths[index]
-        if not addNFSDomain(host, "nfs_%d" % index, datacenter,
-                            address, path, ENUMS['storage_dom_type_data']):
+        if not addNFSDomain(host, name, datacenter, address, path,
+                            ENUMS['storage_dom_type_data']):
             raise errors.StorageDomainException(
                     "addNFSDomain (%s, %s) to DC %s failed." %
                     (address, path, datacenter))
-        logging.info("NFS data domain %s was created successfully",
-                     "nfs_%d" % index)
+        logging.info("NFS data domain %s was created successfully", name)
+        names.append(name)
+    return names
 
 
 def __create_iscsi_storages(datacenter, host, storage_conf):
@@ -393,17 +397,19 @@ def __create_iscsi_storages(datacenter, host, storage_conf):
     """
     lun_targets_list = storage_conf.as_list('lun_target')
     lun_addresses_list = storage_conf.as_list('lun_address')
+    names = []
     for index, lun in enumerate(storage_conf.as_list('lun')):
         lun_target = lun_targets_list[index]
         lun_address = lun_addresses_list[index]
-        if not addISCSIDataDomain(host, "iscsi_%d" % index,
-                                  datacenter, lun, lun_address,
-                                  lun_target):
+        name = "iscsi_%d" % index
+        if not addISCSIDataDomain(host, name, datacenter,
+                                  lun, lun_address, lun_target):
             raise errors.StorageDomainException(
                     "addISCSIDomain (%s, %s, %s) to DC %s failed." %
                     (lun_address, lun_target, lun, datacenter))
-        logging.info("iSCSI data domain %s was created successfully",
-                     "iscsi_%d" % index)
+        logging.info("iSCSI data domain %s was created successfully", name)
+        names.append(name)
+    return names
 
 
 def __create_fcp_storages(datacenter, host, storage_conf):
@@ -440,6 +446,7 @@ def __create_localfs_storages(datacenter, host, storage_conf):
                 "addLocalDataDomain(%s, %s, %s, %s) failed!" % (
                                     host, name, datacenter, path))
         logging.info("local data domain %s created successfully", name)
+
 
 
 def __create_posixfs_storages(datacenter, host, storage_conf):
