@@ -92,7 +92,10 @@ class TemplateException(RHEVMEntityException):
 class DiskException(RHEVMEntityException):
     pass
 
+
 class UnkownConfigurationException(RHEVMEntityException):
     pass
 
 
+class NetworkException(RHEVMEntityException):
+    pass
