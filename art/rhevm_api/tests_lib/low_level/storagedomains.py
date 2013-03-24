@@ -1288,7 +1288,11 @@ def prepareVmWithRhevm(positive, hosts, cpuName, username, password, datacenter,
                export_domain_name, data_domain_name, template_name, vm_name,
                vm_description, tested_setup_mac_address, memory_size,
                format_export_domain, nic, nicType, lun_address, lun_target,
-               luns):
+               luns, disk_size, disk_type, volume_format, disk_interface,
+               bootable, wipe_after_delete, start, vm_type, cpu_socket,
+               cpu_cores, display_type, installation, slim, vm_user,
+               vm_password, cobblerAddress, cobblerUser, cobblerPasswd, image,
+               network, useAgent):
 
     util.logger.info("prepareVmWithRhevm function arguments: %s" % locals())
     # Create Data Center
@@ -1299,33 +1303,19 @@ def prepareVmWithRhevm(positive, hosts, cpuName, username, password, datacenter,
                      address=data_domain_address, lun_address=lun_address,
                      lun_target=lun_target, luns=luns, lun_port=3260):
         return False
-    #Import export domain
-    if not importStorageDomain(True, type=type,
-                               storage_type=ENUMS['storage_type_nfs'],
-                               address=export_domain_address, host=hosts,
-                               path=export_storage_domain):
-        return False
-    # Attach export storage domain to data center
-    if not attachStorageDomain(True, datacenter=datacenter,storagedomain=export_domain_name):
-        return False
-    # Activate export storage domain
-    if not activateStorageDomain(True, datacenter=datacenter,storagedomain=export_domain_name):
-        return False
-    #Import template from export domain
-    if not importTemplate(True, template=template_name, import_storagedomain=data_domain_name, export_storagedomain=export_domain_name, cluster=cluster):
-        return False
-    #Create VM From Template
+
+    # Create VM and install it
     if not createVm(True, vmName=vm_name, vmDescription=vm_description, cluster=cluster,
-                   template=template_name, mac_address=tested_setup_mac_address,
-                   nic=nic, nicType=nicType):
-        return False
-    # Deactivate export storage domain
-    if not deactivateStorageDomain(True, datacenter=datacenter, storagedomain=export_domain_name):
-        return False
-    # Detach active storage domain
-    if not detachStorageDomain(True, datacenter=datacenter, storagedomain=export_domain_name):
-        return False
-    # Remove export storage domain
-    if not removeStorageDomain(True, storagedomain=export_domain_name, host=hosts, format=format_export_domain):
+                   mac_address=tested_setup_mac_address,
+                   nic=nic, nicType=nicType, storageDomainName=data_domain_name,
+                   size=disk_size, diskType=disk_type, volumeFormat=volume_format,
+                   diskInterface=disk_interface, bootable=bootable,
+                   wipe_after_delete=wipe_after_delete, start=start,type=vm_type,
+                   memory=memory_size, cpu_socket=cpu_socket,
+                   cpu_cores=cpu_cores, display_type=display_type,
+                   installation=True, slim=slim, user=vm_user,
+                   password=vm_password, cobblerAddress=cobblerAddress,
+                   cobblerUser=cobblerUser, cobblerPasswd=cobblerPasswd,
+                   image=image,network=network,useAgent=useAgent):
         return False
     return True

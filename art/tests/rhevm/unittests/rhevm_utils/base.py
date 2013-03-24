@@ -18,7 +18,7 @@ VM_API = get_api('vm', 'vms')
 # for nose testframework, but you can use this module also for another purposes.
 try:
     # PGPASS, PREPARE_CONF should move to test conf file, once possible.
-    from unittest_conf import config, PGPASS
+    from unittest_conf import config, PGPASS, REST_API_PASS, ISO_UP_CONF
     if not config:
         raise ImportError()
 except ImportError:
@@ -130,8 +130,6 @@ class SetupManager(object):
         machine = VM_API.find(vm_name)
         if not machine:
             raise errors.SetupsManagerError("can't find testing machine: %s" % vm_name)
-        if machine.status.get_state() != 'down':
-            raise errors.SetupsManagerError("machine is not down: %s" % vm_name)
         self.maps[name] = machine
         return machine
 
@@ -228,7 +226,7 @@ class SetupManager(object):
             self.waitForMachineStatus(machine, 'up')
         self.waitForAgentIsUp(machine)
         ip = self.getIp(machine)
-        return Setup(ip, 'root', config['testing_env']['password'],
+        return Setup(ip, 'root', config['testing_env']['host_pass'],
                      dbpassw=PGPASS, conf=VARS)
 
     def releaseSetup(self, name):
@@ -303,8 +301,30 @@ class RHEVMUtilsTestCase(unittest.TestCase):
         tested_setup_mac_address = params.get('tested_setup_mac_address')
         memory_size = int(params.get('memory_size'))
         format_export_domain = params.get('format_export_domain')
-        nic = params.get('host_nics')
+        nic = params.get('host_nics')[0]
         nicType = ENUMS['nic_type_virtio']
+        disk_size = int(params.get('disk_size'))
+        disk_type = ENUMS['disk_type_system']
+        volume_format = ENUMS['format_cow']
+        disk_interface = ENUMS['interface_ide']
+        bootable = params.get('bootable')
+        wipe_after_delete = params.get('wipe_after_delete')
+        start = params.get('start')
+        vm_type = ENUMS['vm_type_server']
+        #os_type = params.get('vm_os')
+        cpu_socket = params.get('cpu_socket')
+        cpu_cores = params.get('cpu_cores')
+        display_type = ENUMS['display_type_spice']
+        installation = params.get('installation')
+        slim = params.get('slim')
+        vm_user = params.get('vm_linux_user')
+        vm_password = params.get('vm_linux_password')
+        cobblerAddress = params.get('cobbler_address')
+        cobblerUser = params.get('cobbler_user')
+        cobblerPasswd = params.get('cobbler_passwd')
+        image = params.get('cobbler_profile')
+        network = params.get('mgmt_bridge')
+        useAgent = params.get('useAgent')
 
 
         if not prepareVmWithRhevm(True, hosts, cpuName, username, password, datacenter,
@@ -312,8 +332,12 @@ class RHEVMUtilsTestCase(unittest.TestCase):
                version, type, export_domain_address, export_storage_domain,
                export_domain_name, data_domain_name, template_name, vm_name,
                vm_description, tested_setup_mac_address, memory_size,
-               format_export_domain, nic, nicType, lun_address,
-               lun_target, luns):
+               format_export_domain, nic, nicType, lun_address, lun_target,
+               luns, disk_size, disk_type, volume_format, disk_interface,
+               bootable, wipe_after_delete, start, vm_type, cpu_socket,
+               cpu_cores, display_type, installation, slim, vm_user,
+               vm_password, cobblerAddress, cobblerUser, cobblerPasswd, image,
+               network, useAgent):
             logger.info("prepareVmWithRhevm failed")
         logger.info("DEBUG: cls.utility = %s", cls.utility)
         cls.c = config[cls.utility]
