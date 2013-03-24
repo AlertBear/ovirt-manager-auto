@@ -147,6 +147,7 @@
     <run>if(not('{rhevh}' == 'True'))</run>
     <!-- <vital>TRUE</vital> -->
     <conf>headers={'Correlation-Id': 107}</conf>
+    <exp_events>24</exp_events>
   </test_case>
   <test_case>
     <id>ba3df2c6-c695-11e1-bc9c-f0def10e0ce8</id>
