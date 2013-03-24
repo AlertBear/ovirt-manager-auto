@@ -104,6 +104,7 @@
     <positive>TRUE</positive>
     <run>if('{compatibility_version}'.startswith('3.'))</run>
     <conf>headers={'Correlation-Id': 201}</conf>
+    <exp_events>5</exp_events>
   </test_case>
   <test_case>
     <id>99fae69a-c695-11e1-ac4a-f0def10e0ce8</id>
@@ -307,6 +308,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 215}</conf>
+    <exp_events>4</exp_events>
   </test_case>
   <test_case>
     <id>99fb1340-c695-11e1-ac4a-f0def10e0ce8</id>
@@ -380,6 +382,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 220}</conf>
+    <exp_events>4</exp_events>
   </test_case>
   <test_case>
     <id>99fb22fe-c695-11e1-ac4a-f0def10e0ce8</id>
