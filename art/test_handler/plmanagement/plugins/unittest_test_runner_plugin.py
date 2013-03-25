@@ -104,7 +104,6 @@ class UTestCase(TestCase):
                 self.f()
                 self.status = self.TEST_STATUS_PASSED
             except AssertionError as ex:
-                logger.error("Test case failed: %s", ex)
                 self.exc = ex
                 self.status = self.TEST_STATUS_FAILED
             except self.skip_exceptios as ex:

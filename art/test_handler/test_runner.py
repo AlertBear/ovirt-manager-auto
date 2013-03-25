@@ -257,6 +257,12 @@ class TestRunner(object):
             test_case.exc = ex
             raise
         finally:
+            if test_case.exc:
+                if test_case.status == test_case.TEST_STATUS_FAILED:
+                    logger.error("Test Case failed: %s", test_case.exc)
+                elif test_case.status == test_case.TEST_STATUS_ERROR:
+                    logger.error("Test Case execution failed: %s",
+                                 test_case.exc)
             test_case.end_time = datetime.now(tzutc())
             self.plmanager.test_cases.post_test_case(test_case)
         self.plmanager.results_collector.add_test_result(test_case)

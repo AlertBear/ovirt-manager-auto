@@ -505,7 +505,6 @@ class MatrixTestCase(TestCase):
         except NO_TB_EXCEPTIONS as ex:
             self.status = self.TEST_STATUS_FAILED
             self.exc = ex
-            logger.error(ex)
         except SocketError, errors.SkipTest:
             raise
         except EngineTypeError as ex:
@@ -513,12 +512,12 @@ class MatrixTestCase(TestCase):
         except Exception as ex:
             self.status = self.TEST_STATUS_ERROR
             self.exc = ex
-            logger.error("Test Case execution failed", exc_info=True)
+            logger.error("Test Case exception info", exc_info=True)
         else:
             if self.expected_exc:
-                msg = "Expected %s but it passed witout exception" % self.expected_exc
-                logger.error(msg)
                 self.status = self.TEST_STATUS_FAILED
+                msg = "Expected %s but it passed without exception" % \
+                      self.expected_exc
                 self.exc = Exception(msg)
 
         if res is None:
