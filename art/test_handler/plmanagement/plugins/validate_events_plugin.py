@@ -88,7 +88,10 @@ class ValidateEvents(Component):
 
         exp_events_count = 0
         if t.positive:
-            exp_events_count = int(t.exp_events) if t.exp_events else [1,2]
+            if not t.exp_events:
+                exp_events_count = [1,2]
+            else:
+                exp_events_count = [int(x) for x in t.exp_events.split(',')]
 
         if t.status ==  t.TEST_STATUS_PASSED and \
         not searchForObj(self.event_api, 'correlation_id', corr_id.group(1),
