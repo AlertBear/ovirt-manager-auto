@@ -34,6 +34,8 @@ from art.test_handler.plmanagement import Component, implements, get_logger
 from art.test_handler.plmanagement.interfaces.application import ITestParser, IConfigurable
 from art.test_handler.plmanagement.interfaces.report_formatter import IResultExtension
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
+from art.test_handler.plmanagement.interfaces.tests_listener \
+    import ITestGroupHandler
 from art.test_handler.test_runner import TestCase, TestSuite, TestGroup,\
     TestResult, TEST_CASES_SEPARATOR
 from art.test_handler.exceptions import SkipTest
@@ -158,11 +160,13 @@ class UTestGroup(TestGroup):
                 raise StopIteration(str(ex))
             for c in self.context:
                 if isinstance(c, Test):
-                    yield UTestCase(c)
+                    test_elm = UTestCase(c)
                 elif None is c.context:
                     continue
                 else:
-                    yield UTestGroup(c)
+                    test_elm = UTestGroup(c)
+                test_elm.parent = self.context
+                yield test_elm
         finally:
             logger.info("TEST GROUP tearDown: %s", self.test_name)
             try:
@@ -198,11 +202,13 @@ class UTestSuite(TestSuite):
                 raise StopIteration(str(ex))
             for c in self.context:
                 if isinstance(c, Test):
-                    yield UTestCase(c)
+                    test_elm = UTestCase(c)
                 elif None is c.context:
                     continue
                 else:
-                    yield UTestGroup(c)
+                    test_elm = UTestGroup(c)
+                test_elm.parent = self.context
+                yield test_elm
         finally:
             logger.info("TEST SUITE tearDown: %s", self.test_name)
             try:
@@ -220,7 +226,8 @@ class UnittestLoader(Component):
     """
     Plugin allows to test_runner be able to run unittest based tests
     """
-    implements(ITestParser, IResultExtension, IConfigurable, IPackaging)
+    implements(ITestParser, IResultExtension, IConfigurable, IPackaging,
+               ITestGroupHandler)
     name = 'Unittest runner'
 
     def __init__(self):
@@ -323,6 +330,33 @@ class UnittestLoader(Component):
         pass
 
     def pre_suite_result_reported(self, res, ts):
+        pass
+
+    def pre_test_group(self, test_group):
+        pass
+
+    def post_test_group(self, test_group):
+        """
+        Calls test group teardown if test case set that it has failure. Another
+        teardown will be called on test group after all test cases were run.
+        Before following test case is run, test group setup will be called.
+        """
+        parent = test_group.parent
+        if parent is not None:
+            if not hasattr(parent, 'tests_to_run'):
+                parent.tests_to_run = len([test for test in parent])
+            context = test_group.context
+            parent.tests_to_run -= 1
+            if hasattr(context.context, 'automatic_rebuild') and \
+                    context.context.automatic_rebuild and \
+                    test_group.failed > 0 and \
+                    parent.tests_to_run > 0:
+                parent.teardownContext(parent.context)
+                del parent.factory.was_torndown[parent.context]
+                del parent.factory.was_setup[parent.context]
+                parent.setupContext(parent.context)
+
+    def test_group_skipped(self, test_group):
         pass
 
     @classmethod

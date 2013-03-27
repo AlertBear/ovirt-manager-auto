@@ -137,6 +137,7 @@ class _TestElm(_DictLikeObject):
         self.vital = False
         self.start_time = None
         self.end_time = None
+        self.parent = None
 
     def format_attr(self, name):
         try:
