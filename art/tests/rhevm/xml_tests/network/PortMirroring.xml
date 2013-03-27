@@ -120,14 +120,6 @@
    <fetch_output>macAddress-&gt;macAddress</fetch_output>
 </test_case>
 <test_case>
-   <test_name>Remove system from Cobbler</test_name>
-   <test_action>cobblerRemoveSystem</test_action>
-   <parameters>cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}', mac=%macAddress%</parameters>
-   <positive>NONE</positive>
-   <run>YES</run>
-   <report>YES</report>
-</test_case>
-<test_case>
    <test_name>Get IP address</test_name>
    <test_action>convertMacToIpAddress</test_action>
    <parameters>mac=%macAddress%</parameters>
