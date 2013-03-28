@@ -27,6 +27,8 @@ def build_setup(config, storage, storage_type, basename="testname"):
     """
     datacenter_name = config.get('dc_name', 'datacenter_%s' % basename)
     cluster_name = config.get('cluster_name', 'cluster_%s' % basename)
+    config['dc_name'] = datacenter_name
+    config['cluster_name'] = cluster_name
 
     if not datacenters.addDataCenter(True, name=datacenter_name,
                                      storage_type=storage_type,

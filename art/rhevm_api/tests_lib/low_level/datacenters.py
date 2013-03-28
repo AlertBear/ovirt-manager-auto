@@ -28,6 +28,7 @@ from utilities.utils import readConfFile
 from art.rhevm_api.utils.test_utils import searchForObj
 from art.core_api import is_action
 from art.test_handler.settings import opts
+import art.test_handler.exceptions as exceptions
 
 
 ELEMENT = 'data_center'
@@ -197,6 +198,31 @@ def waitForDataCenterState(name, state=ENUMS['data_center_state_up'],
     query = 'name=%s and status=%s' % (name, state)
 
     return util.waitForQuery(query, timeout=timeout, sleep=sleep)
+
+
+@is_action("waitForDataCenterStateApi")
+def wait_for_datacenter_state_api(name, state=ENUMS['data_center_state_up'],
+                                  timeout=DATA_CENTER_INIT_TIMEOUT, sleep=10):
+    """
+    Description: Waits for state of datacenter using API polling. It's similar
+                 to function waitForDataCenterState. which uses search engine
+    Parameters:
+        * name - Name of datacenter
+        * state - Desired state of given datacenter
+        * timeout - How long should it wait
+        * sleep - How often should it poll
+    """
+    dc_obj = util.find(name)
+    start_t = time.time()
+    while dc_obj.status.state != state and time.time() - start_t < timeout:
+        time.sleep(sleep)
+        dc_obj = util.find(name)
+        util.logger.debug(
+            "State of %s datacenter is %s", name, dc_obj.status.state)
+    if dc_obj.status.state != state:
+        raise exceptions.DataCenterException(
+            "Waiting for %s dc's state timed out. Final state is still %s, "
+            "but expected was %s" % (name, dc_obj.status.state, state))
 
 
 def checkSupportedVersions(name):

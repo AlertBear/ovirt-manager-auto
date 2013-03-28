@@ -1262,8 +1262,8 @@ def get_running_tasks(vdc, vdc_pass, sp_id):
 
 
 @is_action("waitForTasks")
-def wait_for_tasks(vdc, vdc_password, datacenter,
-                   timeout=TASK_TIMEOUT, sleep=TASK_POLL):
+def wait_for_tasks(vdc, vdc_password, datacenter, timeout=TASK_TIMEOUT,
+                   sleep=TASK_POLL):
     """
     Description: Waits until all tasks in data-center are finished
     Parameters:
