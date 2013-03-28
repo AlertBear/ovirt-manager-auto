@@ -211,19 +211,19 @@ class QuotaTestMode(unittest.TestCase):
         assert vms.createVm(True, VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
                 storageDomainName=config.MAIN_STORAGE_NAME, size=10*GB,
                 memory=512*MB, vm_quota=q_id, disk_quota=q_id)
-        test.set_up()
 
     @classmethod
     def tearDownClass(cls): # Delete/release resources of test
         assert vms.removeVm(True, VM_NAME)
-        test.tear_down()
 
     @istest
     def a_quotaRAMLimit(self):
         """ Quota RAM limit """
         # Create VM with RAM 1024, quota level to 1024MB, try to run VM
+        test.set_up()
         test.edit_quota(config.MAIN_DC_NAME, QUOTA_NAME,
                 mem_limit=1024, vcpu_limit=0, storage_limit=0)
+        test.tear_down()
         assert vms.startVm(True, VM_NAME)
         assert vms.stopVm(True, VM_NAME)
 
@@ -254,9 +254,11 @@ class QuotaTestMode(unittest.TestCase):
         """ Quota vCPU limit """
         # Set vCPU to 1 from unlimited
         # set RAM to unlimited - same for RAM
+        db.updateQuota(QUOTA_NAME, grace_vds_group_percentage=100)
+        test.set_up()
         test.edit_quota(config.MAIN_DC_NAME, QUOTA_NAME,
                 mem_limit=0, vcpu_limit=1, storage_limit=0)
-        db.updateQuota(QUOTA_NAME, grace_vds_group_percentage=100)
+        test.tear_down()
         assert vms.startVm(True, VM_NAME)
         assert vms.stopVm(True, VM_NAME)
 
@@ -277,15 +279,17 @@ class QuotaTestMode(unittest.TestCase):
         if self.possitive:
             assert vms.stopVm(True, VM_NAME)
         assert vms.updateVm(True, VM_NAME, cpu_cores=1)
-        db.updateQuota(QUOTA_NAME, grace_vds_group_percentage=20)
         # TODO: check if warning event was generated
 
     @istest
     def g_quotaStorageLimit(self):
         """ Quota storage limit """
         # Disable cluster quota
+        db.updateQuota(QUOTA_NAME, grace_vds_group_percentage=20)
+        test.set_up()
         test.edit_quota(config.MAIN_DC_NAME, QUOTA_NAME,
                 mem_limit=0, vcpu_limit=0, storage_limit=20)
+        test.tear_down()
         q_id = db.getQuotaIdByName(QUOTA_NAME)
         assert disks.addDisk(True, alias=DISK_NAME, provisioned_size=10*GB,
                       interface='virtio', format='cow',
@@ -320,17 +324,19 @@ class QuotaTestMode(unittest.TestCase):
             disks.waitForDisksState(DISK_NAME)
             assert disks.deleteDisk(True, alias=DISK_NAME)
             disks.waitForDisksGone(True, DISK_NAME)
+        test.set_up()
         test.edit_quota(config.MAIN_DC_NAME, QUOTA_NAME,
                 mem_limit=0, vcpu_limit=0, storage_limit=0)
+        test.tear_down()
         # TODO: check if warning event was generated
 
     @istest
     def j_deleteQuotaInUse(self):
         """ Delete quota in use """
+        test.set_up()
         self.assertRaises(GeneralException,
                 test.remove_quota, config.MAIN_DC_NAME, QUOTA_NAME)
         test.tear_down()
-        test.set_up()
 
 class QuotaTestEnforced(QuotaTestMode):
     '''
@@ -417,15 +423,15 @@ class QuotaTestObjectWithoutQuota(unittest.TestCase):
             LOGGER.info("Removing snapshot '%s'" % VM_SNAPSHOT)
 
     @istest
-    @bz(913551)
     def createTemplate(self):
         """ Create template """
         # Template should be created in Enforced and in Audit
         # also when vm and vm disk has no quota assigned
         LOGGER.info("Creating template '%s'" % TEMPLATE_NAME)
-        assert templates.createTemplate(True, vm=VM_NAME,
+        assert templates.createTemplate(self.positive, vm=VM_NAME,
                 name=TEMPLATE_NAME, cluster=config.MAIN_CLUSTER_NAME)
-        templates.removeTemplate(True, TEMPLATE_NAME)
+        if self.positive:
+            templates.removeTemplate(True, TEMPLATE_NAME)
 
     @istest
     @tcms(TCMS_PLAN_ID, 4) # TODO:
@@ -496,7 +502,6 @@ class QuotaConsumptionCalc(unittest.TestCase):
 
     @istest
     @tcms(TCMS_PLAN_ID, 236237)
-    @bz(913551)
     def removeTemplate(self):
         """ Remove template """
         assert templates.createTemplate(True, vm=VM_NAME, name=TMP_TEMPLATE_NAME)
