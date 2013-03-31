@@ -99,11 +99,9 @@ class HTTPProxy():
         try:
             headers = self.basic_headers()
 
-            if type:
-                headers['Accept'] = self.type
 
-                if body:
-                    headers['Content-type'] = self.type
+            if body:
+                headers['Content-type'] = self.type
 
             # run http request
             conn.request(method, url, body, headers = headers)
@@ -117,6 +115,10 @@ class HTTPProxy():
             resp_body = re.sub(r'^\s*<\?xml\s+.*?\?>', '', resp_body)
 
             ret = { 'status' : resp.status, 'body' : resp_body }
+
+            if resp.status == 401 and self.cookie:
+                self.cookie = None
+                raise httplib.CannotSendRequest
 
             if resp.status >= 300:
                 ret['reason'] = resp.reason
