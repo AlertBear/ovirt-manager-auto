@@ -49,10 +49,14 @@ poolUtil = get_api('vmpool', 'vmpools')
 domUtil = get_api('domain', 'domains')
 groupUtil = get_api('group', 'groups')
 permisUtil = get_api('permission', 'permissions')
-versionCaps = permitUtil.get(absLink=False)
-if isinstance(versionCaps, list):
-    versionCaps = versionCaps[0]
-PERMITS = versionCaps.get_permits().get_permit()
+try:
+    versionCaps = permitUtil.get(absLink=False)
+    if isinstance(versionCaps, list):
+        versionCaps = versionCaps[0]
+    PERMITS = versionCaps.get_permits().get_permit()
+except KeyError:
+    util.logger.warn("Can't get list of permissions from capabilities")
+    pass
 
 
 @is_action()

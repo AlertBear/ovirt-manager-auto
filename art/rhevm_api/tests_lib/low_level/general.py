@@ -29,7 +29,11 @@ userUtil = get_api('user', 'users')
 sdUtil = get_api('storage_domain', 'storagedomains')
 dcUtil = get_api('data_center', 'datacenters')
 permitUtil = get_api('permit', 'capabilities')
-versionCaps = permitUtil.get(absLink=False)
+try:
+    versionCaps = permitUtil.get(absLink=False)
+except KeyError:
+    util.logger.warn("Can't get list of permissions from capabilities")
+    pass
 
 xpathMatch = is_action('xpathGeneral', id_name='xpathMatch')(XPathMatch(util))
 
