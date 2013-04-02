@@ -44,14 +44,14 @@
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
    <positive>TRUE</positive>
-   <run>yes</run>
+   <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
 </test_case>
 <test_case>
    <test_name>iSCSI discover</test_name>
    <test_action>iscsiDiscover</test_action>
    <parameters>host='{vds[0]}', address='{lun_address[0]}'</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_iscsi}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -59,7 +59,7 @@
    <test_action>iscsiLogin</test_action>
    <parameters>host='{vds[0]}', address='{lun_address[0]}', target='{lun_target[0]}'</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_iscsi}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -67,7 +67,7 @@
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun[0]}', lun_address='{lun_address[0]}', lun_target='{lun_target[0]}', lun_port=3260</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_iscsi}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -75,7 +75,7 @@
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_fcp}', host='{vds[0]}', lun='{lun[0]}', lun_port=3260</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_fcp}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -300,14 +300,14 @@
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
    <positive>TRUE</positive>
-   <run>yes</run>
+   <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
 </test_case>
 <test_case>
    <test_name>iSCSI discover</test_name>
    <test_action>iscsiDiscover</test_action>
    <parameters>host='{vds[0]}', address='{lun_address[0]}'</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_iscsi}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -315,7 +315,7 @@
    <test_action>iscsiLogin</test_action>
    <parameters>host='{vds[0]}', address='{lun_address[0]}', target='{lun_target[0]}'</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_iscsi}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -323,15 +323,7 @@
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun[0]}', lun_address='{lun_address[0]}', lun_target='{lun_target[0]}', lun_port=3260</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_iscsi}')</run>
-   <report>yes</report>
-</test_case>
-<test_case>
-   <test_name>Create iSCSI data storage domain</test_name>
-   <test_action>addStorageDomain</test_action>
-   <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun[0]}', lun_address='{lun_address[0]}', lun_target='{lun_target[0]}', lun_port=3260</parameters>
-   <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_iscsi}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -339,7 +331,7 @@
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_fcp}', host='{vds[0]}', lun='{lun[0]}', lun_port=3260</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_fcp}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -508,14 +500,14 @@
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
    <positive>TRUE</positive>
-   <run>yes</run>
+   <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
 </test_case>
 <test_case>
    <test_name>iSCSI discover</test_name>
    <test_action>iscsiDiscover</test_action>
    <parameters>host='{vds[0]}', address='{lun_address[0]}'</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_iscsi}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -523,7 +515,7 @@
    <test_action>iscsiLogin</test_action>
    <parameters>host='{vds[0]}', address='{lun_address[0]}', target='{lun_target[0]}'</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_iscsi}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -531,15 +523,7 @@
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun[0]}', lun_address='{lun_address[0]}', lun_target='{lun_target[0]}', lun_port=3260</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_iscsi}')</run>
-   <report>yes</report>
-</test_case>
-<test_case>
-   <test_name>Create iSCSI data storage domain</test_name>
-   <test_action>addStorageDomain</test_action>
-   <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun[0]}', lun_address='{lun_address[0]}', lun_target='{lun_target[0]}', lun_port=3260</parameters>
-   <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_iscsi}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -547,7 +531,7 @@
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_fcp}', host='{vds[0]}', lun='{lun[0]}', lun_port=3260</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_fcp}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -780,14 +764,14 @@
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
    <positive>TRUE</positive>
-   <run>yes</run>
+   <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
 </test_case>
 <test_case>
    <test_name>iSCSI discover</test_name>
    <test_action>iscsiDiscover</test_action>
    <parameters>host='{vds[0]}', address='{lun_address[0]}'</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_iscsi}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -795,7 +779,7 @@
    <test_action>iscsiLogin</test_action>
    <parameters>host='{vds[0]}', address='{lun_address[0]}', target='{lun_target[0]}'</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_iscsi}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -803,15 +787,7 @@
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun[0]}', lun_address='{lun_address[0]}', lun_target='{lun_target[0]}', lun_port=3260</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_iscsi}')</run>
-   <report>yes</report>
-</test_case>
-<test_case>
-   <test_name>Create iSCSI data storage domain</test_name>
-   <test_action>addStorageDomain</test_action>
-   <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun[0]}', lun_address='{lun_address[0]}', lun_target='{lun_target[0]}', lun_port=3260</parameters>
-   <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_iscsi}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -819,7 +795,7 @@
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_fcp}', host='{vds[0]}', lun='{lun[0]}', lun_port=3260</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_fcp}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -1036,14 +1012,14 @@
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
    <positive>TRUE</positive>
-   <run>yes</run>
+   <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
 </test_case>
 <test_case>
    <test_name>iSCSI discover</test_name>
    <test_action>iscsiDiscover</test_action>
    <parameters>host='{vds[0]}', address='{lun_address[0]}'</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_iscsi}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -1051,7 +1027,7 @@
    <test_action>iscsiLogin</test_action>
    <parameters>host='{vds[0]}', address='{lun_address[0]}', target='{lun_target[0]}'</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_iscsi}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -1059,15 +1035,7 @@
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun[0]}', lun_address='{lun_address[0]}', lun_target='{lun_target[0]}', lun_port=3260</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_iscsi}')</run>
-   <report>yes</report>
-</test_case>
-<test_case>
-   <test_name>Create iSCSI data storage domain</test_name>
-   <test_action>addStorageDomain</test_action>
-   <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun[0]}', lun_address='{lun_address[0]}', lun_target='{lun_target[0]}', lun_port=3260</parameters>
-   <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_iscsi}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -1075,7 +1043,7 @@
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_fcp}', host='{vds[0]}', lun='{lun[0]}', lun_port=3260</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_fcp}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -1213,14 +1181,14 @@
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
    <positive>TRUE</positive>
-   <run>yes</run>
+   <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
 </test_case>
 <test_case>
    <test_name>iSCSI discover</test_name>
    <test_action>iscsiDiscover</test_action>
    <parameters>host='{vds[0]}', address='{lun_address[0]}'</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_iscsi}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -1228,7 +1196,7 @@
    <test_action>iscsiLogin</test_action>
    <parameters>host='{vds[0]}', address='{lun_address[0]}', target='{lun_target[0]}'</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_iscsi}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -1236,15 +1204,7 @@
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun[0]}', lun_address='{lun_address[0]}', lun_target='{lun_target[0]}', lun_port=3260</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_iscsi}')</run>
-   <report>yes</report>
-</test_case>
-<test_case>
-   <test_name>Create iSCSI data storage domain</test_name>
-   <test_action>addStorageDomain</test_action>
-   <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun[0]}', lun_address='{lun_address[0]}', lun_target='{lun_target[0]}', lun_port=3260</parameters>
-   <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_iscsi}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -1252,7 +1212,7 @@
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_fcp}', host='{vds[0]}', lun='{lun[0]}', lun_port=3260</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_fcp}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -1470,14 +1430,14 @@
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
    <positive>TRUE</positive>
-   <run>yes</run>
+   <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
 </test_case>
 <test_case>
    <test_name>iSCSI discover</test_name>
    <test_action>iscsiDiscover</test_action>
    <parameters>host='{vds[0]}', address='{lun_address[0]}'</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_iscsi}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -1485,7 +1445,7 @@
    <test_action>iscsiLogin</test_action>
    <parameters>host='{vds[0]}', address='{lun_address[0]}', target='{lun_target[0]}'</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_iscsi}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -1493,15 +1453,7 @@
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun[0]}', lun_address='{lun_address[0]}', lun_target='{lun_target[0]}', lun_port=3260</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_iscsi}')</run>
-   <report>yes</report>
-</test_case>
-<test_case>
-   <test_name>Create iSCSI data storage domain</test_name>
-   <test_action>addStorageDomain</test_action>
-   <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun[0]}', lun_address='{lun_address[0]}', lun_target='{lun_target[0]}', lun_port=3260</parameters>
-   <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_iscsi}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -1509,7 +1461,7 @@
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_fcp}', host='{vds[0]}', lun='{lun[0]}', lun_port=3260</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_fcp}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -1694,14 +1646,14 @@
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
    <positive>TRUE</positive>
-   <run>yes</run>
+   <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
 </test_case>
 <test_case>
    <test_name>iSCSI discover</test_name>
    <test_action>iscsiDiscover</test_action>
    <parameters>host='{vds[0]}', address='{lun_address[0]}'</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_iscsi}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -1709,7 +1661,7 @@
    <test_action>iscsiLogin</test_action>
    <parameters>host='{vds[0]}', address='{lun_address[0]}', target='{lun_target[0]}'</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_iscsi}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -1717,15 +1669,7 @@
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun[0]}', lun_address='{lun_address[0]}', lun_target='{lun_target[0]}', lun_port=3260</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_iscsi}')</run>
-   <report>yes</report>
-</test_case>
-<test_case>
-   <test_name>Create iSCSI data storage domain</test_name>
-   <test_action>addStorageDomain</test_action>
-   <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun[0]}', lun_address='{lun_address[0]}', lun_target='{lun_target[0]}', lun_port=3260</parameters>
-   <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_iscsi}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
@@ -1733,7 +1677,7 @@
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_fcp}', host='{vds[0]}', lun='{lun[0]}', lun_port=3260</parameters>
    <positive>true</positive>
-   <run>if('{storage_type}'=='e{storage_type_fcp}')</run>
+   <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
    <report>yes</report>
 </test_case>
 <test_case>
