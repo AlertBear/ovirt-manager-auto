@@ -971,6 +971,14 @@ You can change the default location by setting a new path::
 
     python run.py -conf=<config_path> --rf-x-unit=<xunit_results_path>
 
+RHEVM Lib
+=========
+.. toctree::
+
+    art.rhevm_api.tests_lib.high_level
+    art.rhevm_api.tests_lib.low_level
+
+
 ART Plugins
 ===========
 
