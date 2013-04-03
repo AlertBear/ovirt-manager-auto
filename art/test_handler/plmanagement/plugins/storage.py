@@ -27,6 +27,7 @@ from functools import wraps
 import storageapi.storageManagerWrapper as smngr
 from storageapi.storageErrors import StorageManagerObjectCreationError
 import storageapi.snmp as snmp
+from storageapi.storageUtils import timeStamp
 from utilities.utils import getIpAddressByHostName, getHostName
 from utilities.machine import Machine
 from utilities.errors import FileAlreadyExistsError, GeneralException
@@ -596,7 +597,7 @@ class StorageUtils:
            * username - server username
         Return: path of a new local device
         '''
-
+        path = '{0}_{1}'.format(path, timeStamp())
         try:
             machineObj = Machine(server, username, password).util('linux')
             rc, out = machineObj.createLocalStorage(path)
