@@ -1,8 +1,8 @@
 <input xmlns:xi="http://www.w3.org/2001/XInclude" tcms_plan_id="6955">
-<xi:include href="PrepareSetup_networkFilter.xml"/>
+<xi:include href="../PrepareSetup.xml"/>
 
 <xi:include href="NetworkFilter.xml"/>
 
-<xi:include href="CleanSetup_networkFilter.xml" />
+<xi:include href="../CleanSetup.xml" />
 <!-- ======================================================================================================== -->
 </input>

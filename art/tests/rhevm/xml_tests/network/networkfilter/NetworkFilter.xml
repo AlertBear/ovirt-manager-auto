@@ -1,5 +1,27 @@
 <input>
 <test_case>
+   <test_name>Create VM from template</test_name>
+   <test_action>addVm</test_action>
+   <parameters>name='{vm_name[0]}',cluster='{cluster}',template='{template_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>YES</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Start VM</test_name>
+   <test_action>startVm</test_action>
+   <parameters>vm='{vm_name[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>YES</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
    <test_name>Checking that spoofing filter rule enabled</test_name>
    <test_action>checkSpoofingFilterRuleByVer</test_action>
    <parameters>host='{host}',user='{vm_linux_user}',passwd='{vm_linux_password}'</parameters>
