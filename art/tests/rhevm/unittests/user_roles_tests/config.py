@@ -50,6 +50,10 @@ except IndexError:
 
 # usually 'rhevm' or 'ovirtmgmt'
 NETWORK_NAME =          'rhevm'
+NETWORK_NAME1 =          'rhevm1'
+NETWORK_NAME2 =          'rhevm2'
+NETWORK_NAME3 =          'rhevm3'
+NETWORK_NAME4 =          'rhevm4'
 
 ############################ STORAGE ##########################################
 # WARNING - all given storages may be formatted
@@ -112,6 +116,10 @@ USER_NAME2 =            'userportal2'
 USER_NAME3 =            'userportal3'
 USER_DOMAIN =           'qa.lab.tlv.redhat.com'
 USER_PASSWORD =         '123456'
+
+USER = '%s@%s' %(USER_NAME, USER_DOMAIN)
+USER2 = '%s@%s' %(USER_NAME2, USER_DOMAIN)
+USER3 = '%s@%s' %(USER_NAME3, USER_DOMAIN)
 
 GROUP_USER = 'q-student'
 GROUP_NAME = 'qa.lab.tlv.redhat.com/Users/q-Students'

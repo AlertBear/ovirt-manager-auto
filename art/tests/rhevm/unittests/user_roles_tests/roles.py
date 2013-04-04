@@ -45,5 +45,7 @@ role = Enum([
     "TemplateCreator",
     "TemplateOwner",
     "GlusterAdmin",
-    "PowerUserRole"
+    "PowerUserRole",
+    "NetworkUser",
+    "ExternalEventsCreator"
     ])
