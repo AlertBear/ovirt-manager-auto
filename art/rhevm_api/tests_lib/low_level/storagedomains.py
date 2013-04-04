@@ -26,14 +26,14 @@ from art.core_api.validator import compareCollectionSize
 from art.rhevm_api.tests_lib.low_level.clusters import addCluster, removeCluster, \
                          isHostAttachedToCluster, attachHostToCluster, \
                          connectClusterToDataCenter
-from art.rhevm_api.tests_lib.low_level.datacenters import addDataCenter,removeDataCenter
-from art.rhevm_api.tests_lib.low_level.disks import getStorageDomainDisks,\
-                                                    deleteDisk,\
+from art.rhevm_api.tests_lib.low_level.datacenters import addDataCenter, removeDataCenter
+from art.rhevm_api.tests_lib.low_level.disks import getStorageDomainDisks, \
+                                                    deleteDisk, \
                                                     waitForDisksGone
 from art.rhevm_api.tests_lib.low_level.hosts import deactivateHost, removeHost, \
                                                     getHostCompatibilityVersion
 from art.rhevm_api.tests_lib.low_level.hosts import addHost, \
-                                    waitForHostsStates,getHost
+                                    waitForHostsStates, getHost
 from art.rhevm_api.tests_lib.low_level.vms import removeVms, stopVms, createVm
 from art.rhevm_api.tests_lib.low_level.templates import removeTemplates, importTemplate
 from art.rhevm_api.utils.storage_api import getVmsInfo, getImagesList, \
@@ -54,6 +54,7 @@ IscsiDetails = getDS('IscsiDetails')
 Host = getDS('Host')
 Storage = getDS('Storage')
 LogicalUnit = getDS('LogicalUnit')
+DataCenter = getDS('DataCenter')
 
 ELEMENT = 'storage_domain'
 COLLECTION = 'storagedomains'
@@ -67,6 +68,7 @@ fileUtil = get_api('file', 'files')
 diskUtil = get_api('disk', 'disks')
 
 xpathMatch = is_action('xpathStoragedomains', id_name='xpathMatch')(XPathMatch(util))
+
 
 def _prepareStorageDomainObject(positive, **kwargs):
 
@@ -94,7 +96,7 @@ def _prepareStorageDomainObject(positive, **kwargs):
         if storage_format is None:
             status, hostCompVer = getHostCompatibilityVersion(positive, host)
             if type and type.lower() == 'data':
-                if hostCompVer['hostCompatibilityVersion'] == '2.2':
+                if hostCompVer['hostCompatibilityVersion'] in ['2.2', '3.0']:
                     storage_format = ENUMS['storage_format_version_v1']
                 else:
                     storage_format = ENUMS['storage_format_version_v3']
@@ -188,7 +190,7 @@ def updateStorageDomain(positive, storagedomain, **kwargs):
     '''
     storDomObj = util.find(storagedomain)
     storDomNew = _prepareStorageDomainObject(positive, **kwargs)
-    sd,status = util.update(storDomObj, storDomNew, positive)
+    sd, status = util.update(storDomObj, storDomNew, positive)
     return status
 
 
@@ -212,7 +214,7 @@ def extendStorageDomain(positive, storagedomain, **kwargs):
     storDomObj = util.find(storagedomain)
 
     storDomNew = _prepareStorageDomainObject(positive, **kwargs)
-    sd,status = util.update(storDomObj, storDomNew, positive)
+    sd, status = util.update(storDomObj, storDomNew, positive)
 
     return status
 
@@ -418,7 +420,8 @@ def removeStorageDomain(positive, storagedomain, host, format='false'):
 
 
 @is_action()
-def importStorageDomain(positive, type, storage_type, address, path, host):
+def importStorageDomain(positive, type, storage_type, address, path, host,
+                        nfs_version=None, nfs_retrans=None, nfs_timeo=None):
     '''
     Description: import storage domain (similar to create function, but not providing name)
     Author: edolinin
@@ -431,7 +434,8 @@ def importStorageDomain(positive, type, storage_type, address, path, host):
     Return: status (True if storage domain was imported properly, False otherwise)
     '''
 
-    sdStorage = Storage(type_=storage_type, address=address, path=path)
+    sdStorage = Storage(type_=storage_type, address=address, path=path,
+        nfs_version=nfs_version, nfs_retrans=nfs_retrans, nfs_timeo=nfs_timeo)
     h = Host(name=host)
 
     sd = StorageDomain(type_=type, host=h, storage=sdStorage)
@@ -463,9 +467,9 @@ def removeStorageDomains(positive, storagedomains, host, format='true'):
                         continue
                 else:
                     deactivateStatus = deactivateStorageDomain(positive,
-                                            dc.get_name(),sd.get_name())
+                                            dc.get_name(), sd.get_name())
                     detachStatus = detachStorageDomain(positive,
-                                    dc.get_name(),sd.get_name())
+                                    dc.get_name(), sd.get_name())
                     if not detachStatus:
                         status = False
 
@@ -513,14 +517,14 @@ def isStorageDomainMaster(positive, dataCenterName, storageDomainName):
     '''
 
     storDomObj = getDCStorage(dataCenterName, storageDomainName)
-    attribute='master'
+    attribute = 'master'
     if not hasattr(storDomObj, attribute):
         util.logger.error("Storage Domain " + storageDomainName + \
                             " doesn't have attribute " + attribute)
         return False
 
     util.logger.info("isStorageDomainMaster - Master status of Storage Domain " + \
-                    storageDomainName  + " is: " + str(storDomObj.master))
+                    storageDomainName + " is: " + str(storDomObj.master))
     isMaster = storDomObj.get_master()
     if positive:
         return isMaster
@@ -574,7 +578,7 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
     try:
         dcUtil.find(datacenter)
     except EntityNotFound:
-        util.logger.info("Create an empty %s Storage Pool %s" %  (storage_type, datacenter))
+        util.logger.info("Create an empty %s Storage Pool %s" % (storage_type, datacenter))
         if not addDataCenter(positive, name=datacenter,
                              storage_type=storage_type, version=version):
             util.logger.error('Creating an empty Storage Pool %s failed' % datacenter)
@@ -691,7 +695,7 @@ def cleanDataCenter(positive, datacenter, formatIsoStorage='false',
     sd_attached = False
     floating_disks = []
 
-    spmExist,spmHostName = getHost(positive, datacenter, True)
+    spmExist, spmHostName = getHost(positive, datacenter, True)
 
     if not spmExist:
         util.logger.error("No SPM host found in data center %s, storage domains can't be removed, exit cleanDataCenter" % datacenter)
@@ -786,11 +790,11 @@ def cleanDataCenter(positive, datacenter, formatIsoStorage='false',
             if validateElementStatus(positive, 'storagedomain',
                                      'storagedomains', sd.get_name(), 'active',
                                      datacenter):
-                deactivateStatus = deactivateStorageDomain(positive,datacenter, sd.get_name())
+                deactivateStatus = deactivateStorageDomain(positive, datacenter, sd.get_name())
                 if not deactivateStatus:
                     util.logger.error("Deactivate storage domain %s Failed" % sd.get_name())
                     status = False
-            detachStatus = detachStorageDomain(positive,datacenter,sd.get_name())
+            detachStatus = detachStorageDomain(positive, datacenter, sd.get_name())
             if not detachStatus:
                 util.logger.error("Detach storage domain %s Failed" % sd.get_name())
                 status = False
@@ -956,7 +960,7 @@ def findNonMasterStorageDomains(positive, datacenter):
     return not positive, {'nonMasterDomains' : ''}
 
 @is_action()
-def findMasterStorageDomain(positive,datacenter):
+def findMasterStorageDomain(positive, datacenter):
     '''
     Description: find the master storage domain.
     Author: istein
@@ -1363,12 +1367,28 @@ def prepareVmWithRhevm(positive, hosts, cpuName, username, password, datacenter,
                    nic=nic, nicType=nicType, storageDomainName=data_domain_name,
                    size=disk_size, diskType=disk_type, volumeFormat=volume_format,
                    diskInterface=disk_interface, bootable=bootable,
-                   wipe_after_delete=wipe_after_delete, start=start,type=vm_type,
+                   wipe_after_delete=wipe_after_delete, start=start, type=vm_type,
                    memory=memory_size, cpu_socket=cpu_socket,
                    cpu_cores=cpu_cores, display_type=display_type,
                    installation=True, os_type=os_type, user=vm_user,
                    password=vm_password, cobblerAddress=cobblerAddress,
                    cobblerUser=cobblerUser, cobblerPasswd=cobblerPasswd,
-                   image=image,network=network,useAgent=useAgent):
+                   image=image, network=network, useAgent=useAgent):
         return False
     return True
+
+
+@is_action("isStorageDomainActive")
+def is_storage_domain_active(datacenter, domain):
+    """
+    Description: Checks if the storage domain is
+    active in the given datacenter
+    Author: gickowic
+    Parameters:
+        * datacenter - datacenter name
+        * domain - domain name
+    Returns: True if domain is active in the domain, false otherwise
+    """
+    sdObj = getDCStorage(datacenter, domain)
+    active = sdObj.get_status().get_state()
+    return active == ENUMS['storage_domain_state_active']

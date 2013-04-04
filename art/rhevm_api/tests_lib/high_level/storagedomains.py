@@ -20,6 +20,7 @@
 import logging
 
 from art.rhevm_api.tests_lib.low_level import storagedomains
+from art.rhevm_api.tests_lib.high_level import datastructures
 from art.core_api import is_action
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
@@ -448,7 +449,6 @@ def __create_localfs_storages(datacenter, host, storage_conf):
         logging.info("local data domain %s created successfully", name)
 
 
-
 def __create_posixfs_storages(datacenter, host, storage_conf):
     """
     Description: Creates posixfs storages
@@ -470,3 +470,81 @@ def __create_posixfs_storages(datacenter, host, storage_conf):
                 "addPosixfsDataDomain(%s, %s, %s, %s, %s, %s) failed!" % (
                             host, name, datacenter, address, path, vfs_type))
         logging.info("posixfs data domain %s created successfully", name)
+
+
+@is_action()
+def remove_storage_domain(name, datacenter, host, format_disk=False, vdc=None,
+                          vdc_password=None):
+    """ Deactivates, detaches and removes storage domain.
+    """
+
+    dc_storages = []
+    if datacenter is not None:
+        dc_storages = [
+            x.name for x in storagedomains.getDCStorages(datacenter, False)]
+
+    if name in dc_storages:
+        if storagedomains.is_storage_domain_active(datacenter, name):
+            logging.info("Deactivating storage domain")
+            if not storagedomains.deactivateStorageDomain(
+                    True, datacenter, name):
+                raise errors.StorageDomainException(
+                    "Cannot deactivate storage domain %s in datacenter %s!" % (
+                        name, datacenter))
+
+        logging.info("Detaching storage domain")
+        if not storagedomains.detachStorageDomain(True, datacenter, name):
+            raise errors.StorageDomainException(
+                "Cannot detach storage domain %s from datacenter %s!" % (
+                    name, datacenter))
+
+    logging.info("Removing storage domain")
+    if not storagedomains.removeStorageDomain(
+            True, name, host, str(format_disk)):
+        raise errors.StorageDomainException(
+            "Cannot remove storage domain %s!" % name)
+    logging.info("Storage domain %s removed" % name)
+
+
+@is_action()
+def create_nfs_domain_with_options(
+        name, sd_type, host, address, path, version=None, retrans=None,
+        timeo=None, datacenter=None, positive=True):
+    """
+    Creates NFS storage domain with specified options. If datacenter is not
+    None, also attaches to the specified datacenter.
+
+    **Author**: Katarzyna Jachim
+
+    **Parameters**:
+        * *name* - name of created storage domain
+        * *sd_type* - one of ENUMS['storage_dom_type_export'],
+             ENUMS['storage_dom_type_iso'] or ENUMS['storage_dom_type_data']
+        * *host* - host on which NFS resource should be mounted
+        * *address* - address of NFS server
+        * *path* - path of the NFS resource on the server
+        * *version* - NFS protocol version which should be used
+        * *retrans* - # retransmissions (NFS option)
+        * *timeo* - NFS timeout
+        * *datacenter* - if not None: datacenter to which sd should be attached
+
+    **Returns**: nothing, raise an exception in case of an error
+    """
+    logging.info("Adding storage domain")
+    old_storage = storagedomains.Storage
+    if not positive:  # in positive tests we won't pass incorrect values
+        storagedomains.Storage = datastructures.Storage
+    if not storagedomains.addStorageDomain(
+            positive, name=name, type=sd_type, host=host, address=address,
+            storage_type=ENUMS['storage_type_nfs'], path=path,
+            nfs_version=version, nfs_retrans=retrans, nfs_timeo=timeo):
+        storagedomains.Storage = old_storage  # just in case...
+        raise errors.StorageDomainException(
+            "Cannot add storage domain %s" % name)
+    storagedomains.Storage = old_storage
+
+    if datacenter is not None:
+        logging.info("Attaching storage domain")
+        if not storagedomains.attachStorageDomain(True, datacenter, name):
+            raise errors.StorageDomainException(
+                "Cannot attach %s to %s" % (name, datacenter))
