@@ -21,7 +21,11 @@ import os
 import logging
 import re
 
-from art.rhevm_api.tests_lib.low_level import networks as nets
+from art.rhevm_api.tests_lib.low_level.networks import addNetwork,\
+    getClusterNetwork, DC_API, removeNetwork, addNetwork,\
+    addNetworkToCluster
+from art.rhevm_api.tests_lib.low_level.hosts import sendSNRequest,\
+    commitNetConfig, genSNNic, genSNBond
 from art.core_api.apis_exceptions import EntityNotFound
 from utilities.utils import readConfFile
 from art.core_api import is_action
@@ -47,8 +51,8 @@ def addMultipleVlanedNetworks(networks, data_center, **kwargs):
 
     for network in networks:
         vlan = re.search(r'(\d+)', network)
-        if not nets.addNetwork('True', name=network, data_center=data_center,
-                               vlan_id=vlan.group(0), **kwargs):
+        if not addNetwork('True', name=network, data_center=data_center,
+                          vlan_id=vlan.group(0), **kwargs):
             return False
     return True
 
@@ -72,14 +76,14 @@ def getNetworkConfig(positive, cluster, network, datacenter=None, tag=None):
      return: True and value of the given filed, otherwise False and None
     '''
     try:
-        netObj = nets.getClusterNetwork(cluster, network)
+        netObj = getClusterNetwork(cluster, network)
     except EntityNotFound:
         return False, {'value': None}
 
     # validate cluster network related to the given datacenter
     if datacenter:
         try:
-            dcObj = nets.DC_API.find(datacenter)
+            dcObj = DC_API.find(datacenter)
         except EntityNotFound:
             return False, {'value': None}
 
@@ -126,7 +130,7 @@ def removeMultiNetworks(positive, networks):
     return True/False
     '''
     for net in networks:
-        if not nets.removeNetwork(positive, net):
+        if not removeNetwork(positive, net):
             return False
     return True
 
@@ -161,43 +165,43 @@ def createAndAttachNetworkSN(data_center, cluster, host, auto_nics=[],
     for key in network_dict.keys():
         logger.info("Adding network to DC")
         bond = network_dict[key].get('bond')
-        if not lnet.addNetwork(True, name=key, data_center=data_center,
-                               usages=network_dict[key].get('usages', 'vm'),
-                               vlan_id=network_dict[key].get('vlan_id'),
-                               mtu=network_dict[key].get('mtu')):
+        if not addNetwork(True, name=key, data_center=data_center,
+                          usages=network_dict[key].get('usages', 'vm'),
+                          vlan_id=network_dict[key].get('vlan_id'),
+                          mtu=network_dict[key].get('mtu')):
             logger.error("Cannot add network to DC")
             return False
 
         logger.info("Adding network to Cluster")
-        if not lnet.addNetworkToCluster(True, network=key, cluster=cluster,
-                                        required=network_dict[key].
-                                        get('required')):
+        if not addNetworkToCluster(True, network=key, cluster=cluster,
+                                   required=network_dict[key].
+                                   get('required')):
             logger.error("Cannot add network to Cluster")
             return False
 
         if not bond:
             logger.info("Generating network object for SetupNetwork ")
-            rc, out = lhosts.genSNNic(nic=network_dict[key]['nic'],
-                                      network=key,
-                                      vlan=network_dict[key].get('vlan_id'))
+            rc, out = genSNNic(nic=network_dict[key]['nic'],
+                               network=key,
+                               vlan=network_dict[key].get('vlan_id', 0))
             if not rc:
                 logger.error("Cannot generate network object")
                 return False
             net_obj.append(out['host_nic'])
         if bond:
             logger.info("Generating network object for bond ")
-            rc, out = lhosts.genSNBond(name=network_dict[key]['bond'],
-                                       network=key,
-                                       slaves=network_dict[key].get('slaves'),
-                                       mode=network_dict[key].get('mode'))
+            rc, out = genSNBond(name=network_dict[key]['bond'],
+                                network=key,
+                                slaves=network_dict[key].get('slaves'),
+                                mode=network_dict[key].get('mode'))
             if not rc:
                 logger.error("Cannot generate network object ")
                 return False
             net_obj.append(out['host_nic'])
     try:
-        lhosts.sendSNRequest(True, host=host, nics=net_obj,
-                             auto_nics=auto_nics, check_connectivity='true',
-                             connectivity_timeout=60, force='false')
+        sendSNRequest(True, host=host, nics=net_obj,
+                      auto_nics=auto_nics, check_connectivity='true',
+                      connectivity_timeout=60, force='false')
     except Exception as ex:
         logger.error("SendSNRequest failed %s", ex)
         return False
@@ -216,14 +220,14 @@ def removeNetFromSetup(host, auto_nics=['eth0'], network=[]):
                 from Host, Cluster DC
     '''
     try:
-        lhosts.sendSNRequest(True, host=host,
-                             auto_nics=auto_nics,
-                             check_connectivity='true',
-                             connectivity_timeout=CONNECTIVITY_TIMEOUT,
-                             force='false')
-        lhosts.commitNetConfig(True, host=host)
+        sendSNRequest(True, host=host,
+                      auto_nics=auto_nics,
+                      check_connectivity='true',
+                      connectivity_timeout=CONNECTIVITY_TIMEOUT,
+                      force='false')
+        commitNetConfig(True, host=host)
         for index in range(len(network)):
-            lnet.removeNetwork(True, network=config.NETWORKS[index])
+            removeNetwork(True, network=network[index])
     except Exception as ex:
         logger.error("Remove Network from setup failed %s", ex, exc_info=True)
         return False
