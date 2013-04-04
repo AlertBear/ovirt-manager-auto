@@ -13,11 +13,9 @@ def setup_module():
     """ creates datacenter, adds hosts, clusters, storages according to
         config file
     """
-    # sorry, dynamic provisioning adds params to PARAMETERS..
-    config.STORAGE.update(config.PARAMETERS)
     datacenters.build_setup(
         config=config.PARAMETERS,
-        storage=config.STORAGE,
+        storage=config.PARAMETERS,
         storage_type=config.DATA_CENTER_TYPE,
         basename=config.BASENAME)
 
