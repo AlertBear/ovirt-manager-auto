@@ -379,7 +379,7 @@ class CliUtil(RestUtil):
         '''
         out = ''
         addEntity = validator.cliEntety(entity, self.element_name)
-        createCmd = 'add {0} {1} --expect 201'.\
+        createCmd = "add {0} {1} --expect '201-created'".\
             format(self.cli_element_name,
                    validator.cliEntety(entity, self.element_name))
 
@@ -388,9 +388,9 @@ class CliUtil(RestUtil):
                 self._getHrefData(collection)
 
             if ownerId and ownerName:  # adding to some element collection
-                createCmd = "add {0} --{1}-identifier '{2}' {3} --expect 201".\
-                            format(self.cli_element_name, ownerId.rstrip('s'),
-                                   entityName, addEntity)
+                createCmd = "add {0} --{1}-identifier '{2}' {3} \
+--expect '201-created'".format(self.cli_element_name, ownerId.rstrip('s'),
+                               entityName, addEntity)
         correlationId = self.getCorrelationId()
         if correlationId:
             createCmd = "%s --correlation_id %s" % (createCmd, correlationId)
@@ -524,15 +524,14 @@ class CliUtil(RestUtil):
         if body:
             addBody = validator.cliEntety(body, self.element_name)
 
-        deleteCmd = 'remove {0} "{1}" {2} --expect 201'.format(
+        deleteCmd = 'remove {0} "{1}" {2} --async false'.format(
             self.cli_element_name, entity.name, addBody)
 
         ownerId, ownerName, entityName = self._getHrefData(entity.href)
 
         if ownerId and ownerName and entityName:
-            deleteCmd = "remove {0} '{1}' --{2}-identifier '{3}' {4}\
-             --expect 201".format(entityName, entity.id, ownerName, ownerId,
-                                  addBody)
+            deleteCmd = "remove {0} '{1}' --{2}-identifier '{3}' {4} \
+--async false".format(entityName, entity.id, ownerName, ownerId, addBody)
 
         correlationId = self.getCorrelationId()
         if correlationId:
