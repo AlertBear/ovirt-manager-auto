@@ -170,6 +170,91 @@ def addNFSDomain(host, storage, data_center, address, path,
                                  storage)
 
 
+@is_action()
+def addLocalDataDomain(host, storage, data_center, path):
+    """
+    positive flow for adding local storage including all the necessary steps
+    Author: kjachim
+    Parameters:
+        * host - name of host
+        * storage - name of storage domain that will be created in rhevm
+        * data_center - name of DC which will contain this SD
+        * path - path on the local machine
+    return True if succeeded, False otherwise
+    """
+    if not storagedomains.addStorageDomain(True, host=host, name=storage,
+            type=ENUMS['storage_dom_type_data'],
+            storage_type=ENUMS['storage_type_local'], path=path):
+        logger.error('Failed to add local storage %s to %s' % (path, host))
+        return False
+
+    if not storagedomains.activateStorageDomain(True, data_center, storage):
+        logger.error("Cannot activate storage domain %s" % storage)
+        return False
+
+    return True
+
+
+@is_action()
+def addPosixfsDataDomain(host, storage, data_center, address, path, vfs_type):
+    """
+    positive flow for adding posixfs storage including all the necessary steps
+    Author: kjachim
+    Parameters:
+        * host - name of host
+        * storage - name of storage domain that will be created in rhevm
+        * data_center - name of DC which will contain this SD
+        * storage_format - storage format version (v1/v2/v3)
+        * address - nfs server address
+        * path - path for nfs mount
+        * sd_type - type of storage domain: data, iso or export
+        * vfs_type - ...
+    return True if succeeded, False otherwise
+    """
+    if not storagedomains.addStorageDomain(True, host=host, name=storage,
+            type=ENUMS['storage_dom_type_data'], address=address,
+            storage_type=ENUMS['storage_type_posixfs'], path=path,
+            vfs_type=vfs_type):
+        logger.error('Failed to add posixfs storage %s to %s' % (path, host))
+        return False
+
+    if not storagedomains.attachStorageDomain(
+                                    True, data_center, storage, True):
+        logger.error("Cannot attach posixfs domain %s" % storage)
+        return False
+
+    if not storagedomains.activateStorageDomain(True, data_center, storage):
+        logger.error("Cannot activate posixfs domain %s" % storage)
+        return False
+
+    return True
+
+
+@is_action()
+def addFCPDataDomain(host, storage, data_center, lun):
+    """
+    positive flow for adding FCP storage including all the necessary steps
+    Author: kjachim
+    Parameters:
+        * host - name of host
+        * storage - name of storage domain that will be created in rhevm
+        * data_center - name of DC which will contain this SD
+        * lun - lun
+    return True if succeeded, False otherwise
+    """
+    if not storagedomains.addStorageDomain(True, host=host, name=storage,
+            type=ENUMS['storage_dom_type_data'],
+            storage_type=ENUMS['storage_type_fcp'], lun=lun):
+        logger.error('Failed to add fcp storage %s to %s' % (lun, storage))
+        return False
+
+    if not storagedomains.activateStorageDomain(True, data_center, storage):
+        logger.error("Cannot activate storage domain %s" % storage)
+        return False
+
+    return True
+
+
 def extend_storage_domain(storage_domain, type_, host, storage):
     """
     Description: Extends given storage domain with luns defined
@@ -245,9 +330,9 @@ def create_storages(storage, type_, host, datacenter,
         __create_iscsi_storages(datacenter, host, storage)
     elif type_ == ENUMS['storage_type_fcp']:
         __create_fcp_storages(datacenter, host, storage)
-    elif type_ == ENUMS['storage_type_posixfs']:
-        __create_localfs_storages(datacenter, host, storage)
     elif type_ == ENUMS['storage_type_local']:
+        __create_localfs_storages(datacenter, host, storage)
+    elif type_ == ENUMS['storage_type_posixfs']:
         __create_posixfs_storages(datacenter, host, storage)
     else:
         raise errors.UnkownConfigurationException("unknown storage type: %s" %
@@ -323,20 +408,58 @@ def __create_iscsi_storages(datacenter, host, storage_conf):
 
 def __create_fcp_storages(datacenter, host, storage_conf):
     """
-    TODO: Future Kuba will do it
+    Description: Creates fcp storages
+    Author: kjachim
+    Parameters:
+        * datacenter - name of datacenter
+        * host - host that will create storage domains
+        * storage_conf - storage configuration section
     """
-    raise NotImplementedError("Not implemented yet!")
+    for index, lun in enumerate(storage_conf.as_list('lun')):
+        name = "fcp_%d" % index
+        if not addFCPDataDomain(host, name, datacenter, lun):
+            raise errors.StorageDomainException(
+                "addFCPDataDomain (%s) to DC %s failed." % (lun, datacenter))
+        logging.info("FCP data domain %s was created successfully", name)
 
 
 def __create_localfs_storages(datacenter, host, storage_conf):
     """
-    TODO
+    Description: Creates local storages
+    Author: kjachim
+    Parameters:
+        * datacenter - name of datacenter
+        * host - host that will create storage domains
+        * storage_conf - storage configuration section
     """
-    raise NotImplementedError("Not implemented yet!")
+    local_domain_paths = storage_conf.as_list("local_domain_path")
+    for index, path in enumerate(local_domain_paths):
+        name = "local_%s" % index
+        if not addLocalDataDomain(host, name, datacenter, path):
+            raise errors.StorageDomainException(
+                "addLocalDataDomain(%s, %s, %s, %s) failed!" % (
+                                    host, name, datacenter, path))
+        logging.info("local data domain %s created successfully", name)
 
 
 def __create_posixfs_storages(datacenter, host, storage_conf):
     """
-    TODO
+    Description: Creates posixfs storages
+    Author: kjachim
+    Parameters:
+        * datacenter - name of datacenter
+        * host - host that will create storage domains
+        * storage_conf - storage configuration section
     """
-    raise NotImplementedError("Not implemented yet!")
+    gluster_domain_paths = storage_conf.as_list("gluster_domain_path")
+    gluster_domain_addresses = storage_conf.as_list("gluster_domain_address")
+    vfs_type = storage_conf["vfs_type"]
+    for index, (path, address) in enumerate(
+                        zip(gluster_domain_paths, gluster_domain_addresses)):
+        name = "posixfs_%s" % index
+        if not addPosixfsDataDomain(
+                        host, name, datacenter, address, path, vfs_type):
+            raise errors.StorageDomainException(
+                "addPosixfsDataDomain(%s, %s, %s, %s, %s, %s) failed!" % (
+                            host, name, datacenter, address, path, vfs_type))
+        logging.info("posixfs data domain %s created successfully", name)
