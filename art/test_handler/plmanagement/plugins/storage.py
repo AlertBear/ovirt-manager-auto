@@ -78,7 +78,9 @@ def getStorageServers(storageType='none'):
                     stype = args[0] if args[0] != 'posixfs' \
                                        else POSIXFS_TYPE
                     dtypes = [stype]
-                if self.storages[stype]:
+                targetDevPath = self.getDeviceTargetPath(None, stype)
+                if self.storages[stype] and \
+                    self.storages[stype][targetDevPath]['total'] > 0:
                     if stype not in self.storageServers:
                         servers = getStorageServer(stype, self.load_balancing,
                                                    self.storageConfigFile,
