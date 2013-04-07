@@ -1783,7 +1783,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 523}</conf>
-    <exp_events>5</exp_events>
+    <exp_events>3,5</exp_events>
   </test_case>
   <test_case>
     <id>cb8d1e58-c695-11e1-bca8-f0def10e0ce8</id>
