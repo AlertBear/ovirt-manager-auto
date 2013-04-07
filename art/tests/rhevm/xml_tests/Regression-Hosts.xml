@@ -269,7 +269,7 @@
     <test_action>getFreeInterface</test_action>
     <parameters>host='{vds[0]}'</parameters>
     <positive>TRUE</positive>
-    <run>yes</run>
+    <run>if(1&lt;len('[host_nics]'.split(',')))</run>
     <fetch_output>freeNic-&gt;freeNic</fetch_output>
   </test_case>
   <test_case>
