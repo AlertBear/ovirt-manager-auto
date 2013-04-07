@@ -202,7 +202,7 @@ class StorageUtils:
     '''
     Implements storage management methods
     '''
-    def __init__(self, config):
+    def __init__(self, config, storageConfig=None):
 
         self.nfs_devices = {}
         self.gluster_devices = {}
@@ -221,7 +221,7 @@ class StorageUtils:
                                 'data_center_type', asList=False))
         self.load_balancing = False
         self.serverPool = None
-        self.storageConfigFile = None
+        self.storageConfigFile = storageConfig
 
         self.storages = {'gluster': {},
                          'nfs':     {},

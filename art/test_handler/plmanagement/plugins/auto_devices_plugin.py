@@ -106,15 +106,13 @@ class AutoDevices(Component):
     def on_storages_prep_request(self):
         logger.info("Preparing storages.")
         from art.test_handler.plmanagement.plugins import storage
-        self.su = storage.StorageUtils(self.conf)
+        self.su = storage.StorageUtils(self.conf, os.getenv(CONF_PATH_ENV))
         load_balancing = self.conf[STR_SECTION][LB_ENABLED]
         if load_balancing == 'capacity' or load_balancing == 'random':
             spool = self.conf[STR_SECTION].as_list(STORAGE_POOL)
             spool = None if 'None' in spool else spool
             self.su.load_balancing = load_balancing
             self.su.serverPool = spool
-            # option to pass storage conf. file via env. variable
-            self.su.storageConfigFile = os.getenv(CONF_PATH_ENV)
         try:
             self.su.storageSetup()
         except Exception as ex:
