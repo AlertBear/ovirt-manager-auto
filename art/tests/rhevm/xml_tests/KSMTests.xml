@@ -13,16 +13,18 @@
 <test_case>
    <test_name>Create Data Center</test_name>
    <test_action>addDataCenter</test_action>
-   <parameters>name='ksmtest_DC', storage_type='{storage_type}', version='{compatibility_version}'</parameters>
+   <parameters>name='ksmtest_DC', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>YES</run>
+   <vital>True</vital>
 </test_case>
 <test_case>
    <test_name>Create Cluster</test_name>
    <test_action>addCluster</test_action>
-   <parameters>name='ksmtest_Cl', cpu='{cpu_name}', version='{compatibility_version}', data_center='ksmtest_DC'</parameters>
+   <parameters>name='ksmtest_Cl', cpu='{cpu_name}', version='{compatibility_version}', data_center='ksmtest_DC', mem_ovrcmt_prc='{ksmtest_cluster_overcommit}'</parameters>
    <positive>TRUE</positive>
    <run>YES</run>
+   <vital>True</vital>
 </test_case>
 <test_case>
    <test_name>Add Host</test_name>
@@ -30,34 +32,35 @@
    <parameters>name='{vds[0]}', root_password='{vds_password[0]}', cluster='ksmtest_Cl', wait=True</parameters>
    <positive>TRUE</positive>
    <run>YES</run>
+   <vital>True</vital>
 </test_case>
 <test_case>
    <test_name>iSCSI Discover</test_name>
    <test_action>iscsiDiscover</test_action>
    <parameters>host='{vds[0]}', address='{lun_address}'</parameters>
    <positive>TRUE</positive>
-   <run>if('{storage_type}' == 'e{storage_type_iscsi}')</run>
+   <run>if('{data_center_type}' == 'e{storage_type_iscsi}')</run>
 </test_case>
 <test_case>
    <test_name>iSCSI Login</test_name>
    <test_action>iscsiLogin</test_action>
    <parameters>host='{vds[0]}', address='{lun_address}', target='{lun_target}'</parameters>
    <positive>TRUE</positive>
-   <run>if('{storage_type}' == 'e{storage_type_iscsi}')</run>
+   <run>if('{data_center_type}' == 'e{storage_type_iscsi}')</run>
 </test_case>
 <test_case>
    <test_name>Create Data Storage Domain iSCSI</test_name>
    <test_action>addStorageDomain</test_action>
    <parameters>name='ksmtest_DD', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun}', lun_address='{lun_address}', lun_target='{lun_target}', lun_port='3260'</parameters>
    <positive>TRUE</positive>
-   <run>if('{storage_type}' == 'e{storage_type_iscsi}')</run>
+   <run>if('{data_center_type}' == 'e{storage_type_iscsi}')</run>
 </test_case>
 <test_case>
    <test_name>Create Data Storage Domain NFS</test_name>
    <test_action>addStorageDomain</test_action>
    <parameters>name='ksmtest_DD', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', host='{vds[0]}', address='{ksmtest_data_domain_address}', path='{ksmtest_data_domain_path[0]}'</parameters>
    <positive>TRUE</positive>
-   <run>if('{storage_type}' == 'e{storage_type_nfs}')</run>
+   <run>if('{data_center_type}' == 'e{storage_type_nfs}')</run>
 </test_case>
 <test_case>
    <test_name>Attach Master Data Storage Domain to Data Center</test_name>
@@ -65,13 +68,24 @@
    <parameters>datacenter='ksmtest_DC', storagedomain='ksmtest_DD'</parameters>
    <positive>TRUE</positive>
    <run>YES</run>
+   <vital>True</vital>
+</test_case>
+<test_case>
+   <test_name>Calculate KSM threshold and VM memory load</test_name>
+   <test_action>getKSMStats</test_action>
+   <parameters>host='{vds[0]}', host_user='root', host_passwd='{vds_password[0]}', vm_num='{ksmtest_vm_num}', ksm_const='{ksmtest_thres_const}', ksm_coeff='{ksmtest_thres_coeff}', mem_ovrcmt='{ksmtest_cluster_overcommit}'</parameters>
+   <positive>TRUE</positive>
+   <run>YES</run>
+   <vital>True</vital>
+   <fetch_output>vm_mem->vm_mem,vm_load->vm_load,pool_size->pool_size</fetch_output>
 </test_case>
 <test_case>
    <test_name>Create master VM</test_name>
    <test_action>createVm</test_action>
-   <parameters>vmName='ksmtest_master', vmDescription='KSM and THP testing VM master', cluster='ksmtest_Cl', storageDomainName='ksmtest_DD', size=3221225472, nic='nic1', memory={ksmtest_vmmem}</parameters>
+   <parameters>vmName='ksmtest_master', vmDescription='KSM and THP testing VM master', cluster='ksmtest_Cl', storageDomainName='ksmtest_DD', size=3221225472, nic='nic1', memory=%vm_mem%</parameters>
    <positive>TRUE</positive>
    <run>YES</run>
+   <vital>True</vital>
 </test_case>
 <test_case>
    <test_name>Install RHEL on master</test_name>
@@ -79,6 +93,7 @@
    <parameters>vm='ksmtest_master', nic='nic1', image='{cobbler_profile}', cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}'</parameters>
    <positive>TRUE</positive>
    <run>YES</run>
+   <vital>True</vital>
 </test_case>
 <test_case>
     <test_name>Wait for GuestInfo (master) for install to finished</test_name>
@@ -87,12 +102,14 @@
     <positive>NONE</positive>
     <fetch_output>ip->guest_ip</fetch_output>
     <run>YES</run>
+    <vital>True</vital>
 </test_case>
 <test_case>
     <test_name>set linux vm persistent</test_name>
     <test_action>setPersistentNetwork</test_action>
     <parameters>host=%guest_ip%, password='{guest_passwd}'</parameters>
     <positive>NONE</positive>
+    <vital>True</vital>
 <run>yes</run>
 </test_case>
 <test_case>
@@ -101,6 +118,7 @@
    <parameters>vm='ksmtest_master'</parameters>
    <positive>TRUE</positive>
    <run>YES</run>
+   <vital>True</vital>
 </test_case>
 <test_case>
    <test_name>Create Template From master VM</test_name>
@@ -108,6 +126,7 @@
    <parameters>vm='ksmtest_master', name='ksmtest_template', cluster='ksmtest_Cl'</parameters>
    <positive>TRUE</positive>
    <run>YES</run>
+   <vital>True</vital>
 </test_case>
 <test_case>
    <test_name>Remove master VM</test_name>
@@ -117,21 +136,12 @@
    <run>YES</run>
 </test_case>
 <test_case>
-   <test_name>Calculate max number for guests</test_name>
-   <test_action>calcVMNum</test_action>
-   <parameters>host='{vds[0]}', vm_mem={ksmtest_vmmem}, cluster='ksmtest_Cl'</parameters>
-   <positive>TRUE</positive>
-   <run>YES</run>
-   <fetch_output>
-      vm_num->vm_num
-   </fetch_output>
-</test_case>
-<test_case>
-   <test_name>Add the calculated number of VMs</test_name>
+   <test_name>Add the VM pool</test_name>
    <test_action>addVmPool</test_action>
-   <parameters>name='ksmtest', size=%vm_num%, cluster='ksmtest_Cl', template='ksmtest_template'</parameters>
+   <parameters>name='ksmtest', size=%pool_size%, cluster='ksmtest_Cl', template='ksmtest_template'</parameters>
    <positive>TRUE</positive>
    <run>YES</run>
+   <vital>True</vital>
 </test_case>
 <test_case>
    <test_name>END_GROUP: ksmtest_set-up</test_name>
@@ -150,21 +160,23 @@
 <test_case>
    <test_name>Do the KSM kickin test</test_name>
    <test_action>measureKSMThreshold</test_action>
-   <parameters>poolname='ksmtest', vm_total=%vm_num%, host='{vds[0]}', host_user='root', host_passwd='{vds_password[0]}', guest_user='{guest_user}', guest_passwd='{guest_passwd}', vm_mem={ksmtest_vmmem}, loadType='MEM', port={ksmtest_loadport}, allocationSize={ksmtest_memload_mb}</parameters>
+   <parameters>poolname='ksmtest', pool_size=%pool_size%, vm_num='{ksmtest_vm_num}', host='{vds[0]}', host_user='root', host_passwd='{vds_password[0]}', guest_user='{guest_user}', guest_passwd='{guest_passwd}', vm_mem=%vm_mem%, loadType='MEM', port={ksmtest_loadport}, allocationSize=%vm_load%</parameters>
    <positive>TRUE</positive>
    <run>YES</run>
+   <fetch_output>actual_thres->actual_thres</fetch_output>
+   <vital>True</vital>
 </test_case>
 <test_case>
    <test_name>Verify the KSM kickin point</test_name>
    <test_action>verifyKSMThreshold</test_action>
-   <parameters>poolname='ksmtest', vm_total=%vm_num%, host='{vds[0]}', host_user='root', host_passwd='{vds_password[0]}', guest_user='{guest_user}', guest_passwd='{guest_passwd}', vm_mem={ksmtest_vmmem}, loadType='MEM', port={ksmtest_loadport}, allocationSize={ksmtest_memload_mb}</parameters>
+   <parameters>poolname='ksmtest', vm_num=%actual_thres%, host='{vds[0]}', host_user='root', host_passwd='{vds_password[0]}', guest_user='{guest_user}', guest_passwd='{guest_passwd}', vm_mem=%vm_mem%, loadType='MEM', port={ksmtest_loadport}, allocationSize=%vm_load%</parameters>
    <positive>TRUE</positive>
    <run>YES</run>
 </test_case>
 <test_case>
    <test_name>Do the host saturation test</test_name>
    <test_action>saturateHost</test_action>
-   <parameters>poolname='ksmtest', vm_total=%vm_num%, host='{vds[0]}', host_user='root', host_passwd='{vds_password[0]}', guest_user='{guest_user}', guest_passwd='{guest_passwd}', loadType='CPU', port={ksmtest_loadport}, load=100</parameters>
+   <parameters>poolname='ksmtest', vm_total=%pool_size%, host='{vds[0]}', host_user='root', host_passwd='{vds_password[0]}', guest_user='{guest_user}', guest_passwd='{guest_passwd}', loadType='CPU', port={ksmtest_loadport}, load=100</parameters>
    <positive>TRUE</positive>
    <run>YES</run>
 </test_case>
@@ -199,7 +211,7 @@
 <test_case>
    <test_name>Remove the VMs that were in the pool</test_name>
    <test_action>removePooledVms</test_action>
-   <parameters>name="ksmtest", vm_total=%vm_num%</parameters>
+   <parameters>name="ksmtest", vm_total=%pool_size%</parameters>
    <positive>TRUE</positive>
    <run>YES</run>
 </test_case>
