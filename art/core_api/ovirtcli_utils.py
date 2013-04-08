@@ -628,6 +628,10 @@ class CliUtil(RestUtil):
             addParams = ''
             for p in params:
                 if ClassesMapping.get(p, None):
+                    if params[p] is None:
+                        self.logger.error("%s is None", p)
+                        self.logger.error("syncAction failed to run")
+                        return False
                     if params[p].id is None:
                         addParams += " --{0}-name '{1}'".format(p,
                                                                 params[p].name)
