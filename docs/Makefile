@@ -158,4 +158,5 @@ rhevm:
 	sphinx-apidoc -o tmpdoc -T ..
 	cp tmpdoc/art.rhevm_api.tests_lib.high_level.rst source/
 	cp tmpdoc/art.rhevm_api.tests_lib.low_level.rst source/
+	sed -i 's/Module//' source/art.rhevm_api.tests_lib.*
 	rm -rf tmpdoc
