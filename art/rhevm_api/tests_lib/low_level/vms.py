@@ -914,6 +914,12 @@ def _prepareNicObj(**kwargs):
     if 'active' in kwargs:
         nic_obj.set_active(kwargs.get('active'))
 
+    if 'plugged' in kwargs:
+        nic_obj.set_plugged(kwargs.get('plugged'))
+
+    if 'linked' in kwargs:
+        nic_obj.set_linked(kwargs.get('linked'))
+
     port_mirror = kwargs.get('port_mirroring', None)
     networks_obj = None
     if port_mirror:
@@ -954,6 +960,8 @@ def addNic(positive, vm, **kwargs):
        * active - Boolean attribute which present nic hostplug state
        * port_mirroring - string of networks separated by comma and include
          which we'd like to listen to
+       * plugged - shows if VNIC is plugged/unplugged
+       * linked - shows if VNIC is linked or not
     Return: status (True if nic was added properly, False otherwise)
     '''
 
@@ -1027,6 +1035,8 @@ def updateNic(positive, vm, nic, **kwargs):
        * active - Boolean attribute which present nic hostplug state
        * port_mirroring - string of networks separated by comma and include
          which we'd like to listen to
+       * plugged - shows if VNIC is plugged/unplugged
+       * linked - shows if VNIC is linked or not
     Return: status (True if nic was updated properly, False otherwise)
     '''
 
@@ -1801,7 +1811,7 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
         async=False, hostname=None, network='rhevm', useAgent=False,
         placement_affinity=None, placement_host=None, vcpu_pinning=None,
         highly_available=None, availablity_priority=None, port_mirroring=None,
-        vm_quota=None, disk_quota=None):
+        vm_quota=None, disk_quota=None, plugged='true', linked='true'):
     '''
     The function createStartVm adding new vm with nic,disk and started new created vm.
         vmName = VM name
@@ -1837,6 +1847,8 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
         port_mirroring - port_mirroring on specific network of NIC
         vm_quota - quota for vm
         disk_quota - quota for vm disk
+        plugged - shows if specific VNIC is plugged/unplugged
+        linked - shows if specific VNIC is linked or not
     return values : Boolean value (True/False ) True in case of success otherwise False
     '''
     ip = False
@@ -1851,7 +1863,8 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
 
     if nic:
         if not addNic(positive, vm=vmName, name=nic, interface=nicType,
-                      mac_address=mac_address, network=network, port_mirroring=port_mirroring):
+                      mac_address=mac_address, network=network, port_mirroring=port_mirroring,
+                      plugged=plugged, linked=linked):
             return False
 
     if template == 'Blank' and storageDomainName and templateUuid == None:
@@ -2307,6 +2320,33 @@ def getVmNicPortMirroring(positive, vm, nic='nic1'):
     nic_obj = getVmNic(vm, nic)
     return bool(nic_obj.get_port_mirroring()) == positive
 
+
+@is_action()
+def getVmNicPlugged(vm, nic='nic1'):
+    '''
+    Get nic plugged parameter value of the NIC
+    **Author**: gcheresh
+    **Parameters**:
+        *  *vm* - vm name
+        *  *nic* - nic name
+    **Returns**: True if NIC is plugged, otherwise False
+    '''
+    nic_obj = getVmNic(vm, nic)
+    return nic_obj.get_plugged()
+
+
+@is_action()
+def getVmNicLinked(vm, nic='nic1'):
+    '''
+    Get nic linked parameter value of the NIC
+    **Author**: gcheresh
+    **Parameters**:
+        *  *vm* - vm name
+        *  *nic* - nic name
+    **Returns**: True if NIC is linked, otherwise False
+    '''
+    nic_obj = getVmNic(vm, nic)
+    return nic_obj.get_linked()
 
 
 @is_action()
