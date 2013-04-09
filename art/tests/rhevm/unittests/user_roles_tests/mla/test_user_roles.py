@@ -262,7 +262,7 @@ class RolesTests(unittest.TestCase):
                     common.addRole, char, roles.role.UserRole)
 
     @tcms(TCMS_PLAN_ID, 54412)
-    @bz(921450)
+    @bz(949950)
     def testRolesHiearchy(self):
         """ RolesHiearchy """
         # HIEARCHY:

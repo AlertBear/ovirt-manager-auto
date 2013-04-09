@@ -232,10 +232,8 @@ class PermissionsTests(unittest.TestCase):
     # When you're user/super user ,try to delegate permission to another
     # user/super user. - SUCCESS
     @tcms(TCMS_PLAN_ID, 54425)
-    @bz(919686)
     def testDelegatePerms(self):
         """ testDelegatePerms """
-        b = False
         common.createVm(TMP_VM_NAME)
         # Test SuperUser that he can add permissions
         for role in [r.get_name() for r in API.roles.list()]:
@@ -262,36 +260,31 @@ class PermissionsTests(unittest.TestCase):
                     LOGGER.info("'%s' can't add admin permissions." % role)
                     common.givePermissionToObject(vm, roles.role.UserVmManager)
                     LOGGER.info("'%s' can add user permissions." % role)
-                    try:
-                        common.removeAllPermissionFromObject(vm)
-                    except Exception as e:  # bz 919686
-                        loginAsAdmin()
-                        common.removeAllPermissionFromVm(TMP_VM_NAME)
-                        b = True
+                    common.removeUserPermissionsFromObject(vm,
+                            '%s@%s' % (config.USER_NAME, config.USER_DOMAIN),
+                            roles.role.UserVmManager)
                 else:
                     common.givePermissionToObject(vm, roles.role.UserVmManager)
                     LOGGER.info("'%s' can add user permissions." % role)
                     common.givePermissionToObject(vm, roles.role.TemplateAdmin)
                     LOGGER.info("'%s' can add admin permissions." % role)
-                    try:
-                        common.removeAllPermissionFromObject(vm)
-                    except Exception as e:  # bz 919686
-                        loginAsAdmin()
-                        common.removeAllPermissionFromVm(TMP_VM_NAME)
-                        b = True
+                    common.removeUserPermissionsFromObject(vm,
+                            '%s@%s' % (config.USER_NAME, config.USER_DOMAIN),
+                            roles.role.UserVmManager)
+                    common.removeUserPermissionsFromObject(vm,
+                            '%s@%s' % (config.USER_NAME, config.USER_DOMAIN),
+                            roles.role.TemplateAdmin)
             else:
                 self.assertRaises(errors.RequestError, common.givePermissionToObject,
                         vm, roles.role.UserRole)
                 LOGGER.info("'%s' can't manipulate permisisons." % role)
 
             loginAsAdmin()
-            common.removeRoleFromUser(role)
             common.removeAllPermissionFromVm(TMP_VM_NAME)
+            common.removeRoleFromUser(role)
 
         loginAsAdmin()
         common.removeVm(TMP_VM_NAME)
-        if b:
-            raise AssertionError
 
     # in order ro add new object you will need the appropriate permission on the
     # ancestor (e.g. to create a new storage domain you'll need a "add storage
@@ -328,7 +321,7 @@ class PermissionsTests(unittest.TestCase):
     # user API - createVm - should add perms UserVmManager on VM
     @tcms(TCMS_PLAN_ID, 54420)
     #@bz(881145) - bz_plugin don't check verison
-    @bz(921450)
+    @bz(949950)
     def testObjAdminUser(self):
         """ Object creating from User and Admin portal """
         # This is already implemented in test_user_roles
@@ -402,26 +395,28 @@ class PermissionsTests(unittest.TestCase):
     # Check that data-center has a user with UserRole permission
     # Create new desktop pool
     # Check that permission was inherited from data-center
-    # Go to User-portal and ensure that user can take a machine from created pool
+    # Ensure that user can take a machine from created pool
     @tcms(TCMS_PLAN_ID, 109086)
+    @bz(955545)
     def testPermsInhForVmPools(self):
         """ Permission inheritance for desktop pools """
         loginAsAdmin()
         common.givePermissionToDc(config.MAIN_DC_NAME, roles.role.UserRole)
 
-        loginAsUser()
-        vmpool = common.getObjectByName(API.vmpools, VM_POOL_NAME)
-        common.vmpoolBasicOperations(vmpool)
-
-        loginAsAdmin()
-        common.removeAllPermissionFromDc(config.MAIN_DC_NAME)
+        try:
+            loginAsUser()
+            vmpool = common.getObjectByName(API.vmpools, VM_POOL_NAME)
+            common.vmpoolBasicOperations(vmpool)
+        finally:
+            loginAsAdmin()
+            common.removeAllPermissionFromDc(config.MAIN_DC_NAME)
 
     # create a StorageDomain with templates and VMs
     # grant permissions for user X to some VMs & templates on that SD
     # destroy the SD take a look in the user under permission tab
     @tcms(TCMS_PLAN_ID, 111082)
     #@bz(892642) - bz_plugin don't check verison
-    @bz(921450)
+    @bz(949950)
     def testPermsRemovedAfterObjectRemove(self):
         """ PermsRemovedAfterObjectRemove """
         common.createNfsStorage(storageName=config.ALT1_STORAGE_NAME,

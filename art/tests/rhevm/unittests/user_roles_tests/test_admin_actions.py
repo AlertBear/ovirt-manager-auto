@@ -508,7 +508,7 @@ class UserActionsTests(unittest.TestCase):
     def NEG_configure_template_network(self):
         """ NEG_configure_template_network """
         # Add new network to tempalte
-        template = API.templates.get(TEMPLATE_NAME)
+        template = common.getObjectByName(API.templates, TEMPLATE_NAME)
         param = params.NIC(name=TEMPLATE_NET_NAME,
                     network=params.Network(name=config.NETWORK_NAME),
                     interface='virtio')
@@ -518,7 +518,7 @@ class UserActionsTests(unittest.TestCase):
     @resolve_permissions
     def POSITIVE_configure_template_network(self):
         """ POSITIVE_configure_template_network """
-        template = API.templates.get(TEMPLATE_NAME)
+        template = common.getObjectByName(API.templates, TEMPLATE_NAME)
         param = params.NIC(name=TEMPLATE_NET_NAME,
                     network=params.Network(name=config.NETWORK_NAME),
                     interface='virtio')
@@ -574,6 +574,7 @@ class UserActionsTests(unittest.TestCase):
 
     @istest
     @resolve_permissions
+    @bz(955545)
     def POSITIVE_vm_pool_basic_operations(self):
         """ POSITIVE_vm_pool_basic_operations """
         # Check if vm has any vms to run, if not add one
@@ -950,7 +951,7 @@ class UserActionsTests(unittest.TestCase):
     def POSITIVE_edit_cluster_configuration(self):
         """ POSITIVE_edit_cluster_configuration """
         # Chamge cpu type of cluster
-        cluster = API.clusters.get(CLUSTER_NAME)
+        cluster = common.getObjectByName(API.clusters, CLUSTER_NAME)
 
         before = cluster.get_cpu().get_id()
         if before == config.HOST_CPU_TYPE:
@@ -962,7 +963,7 @@ class UserActionsTests(unittest.TestCase):
         cluster.set_cpu(cpu)
         cluster.update()
 
-        cluster = API.clusters.get(CLUSTER_NAME)
+        cluster = common.getObjectByName(API.clusters, CLUSTER_NAME)
         now = cluster.get_cpu().get_id()
         assert before != now, "Failed to update cluster configuration"
         LOGGER.info("Cluster '%s' editing success" % (CLUSTER_NAME))
@@ -997,11 +998,11 @@ class UserActionsTests(unittest.TestCase):
     def POSITIVE_assign_cluster_network(self):
         """ POSITIVE_assign_cluster_network """
         # Assign new network to cluster, then delete it
-        cluster = API.clusters.get(CLUSTER_NAME)
-        net = API.networks.get(DC_NETWORK_NAME)
+        cluster = common.getObjectByName(API.clusters, CLUSTER_NAME)
+        net = common.getObjectByName(API.networks, DC_NETWORK_NAME)
         nets = cluster.networks.add(net)
 
-        net = cluster.networks.get(DC_NETWORK_NAME)
+        net = common.getObjectByName(cluster.networks, DC_NETWORK_NAME)
         assert net is not None
         LOGGER.info("Network '%s' assigned" % DC_NETWORK_NAME)
 
@@ -1110,9 +1111,9 @@ class UserActionsTests(unittest.TestCase):
     def POSITIVE_manipulate_storage_domain(self):
         """ POSITIVE_manipulate_storage_domain """
         # Try to activate deactivate SD
-        dc = API.datacenters.get(config.MAIN_DC_NAME)
-        storage = API.storagedomains.get(EXPORT_NAME)
-        storageInDc = dc.storagedomains.get(EXPORT_NAME)
+        dc = common.getObjectByName(API.datacenters, config.MAIN_DC_NAME)
+        storage = common.getObjectByName(API.storagedomains, EXPORT_NAME)
+        storageInDc = common.getObjectByName(dc.storagedomains, EXPORT_NAME)
 
         common.deactivateActivateByStateObject(storage=storage, storageInDc=storageInDc,
                 state=states.storage.maintenance, jmp=True,
@@ -1181,7 +1182,7 @@ class UserActionsTests(unittest.TestCase):
     def NEG_move_vm(self):
         """ NEG_move_vm """
         loginAsAdmin()
-        if API.vms.get(TMP_VM_NAME) is not None:
+        if common.getObjectByName(API.vms, TMP_VM_NAME) is not None:
             common.removeVm(TMP_VM_NAME)
         common.createVm(TMP_VM_NAME, storage=config.MAIN_STORAGE_NAME)
         common.givePermissionToVm(TMP_VM_NAME, self.role)
@@ -1201,7 +1202,7 @@ class UserActionsTests(unittest.TestCase):
         # Create temporary vm, and then remove it as Admin
         # Dont suppose that user can create/remove vm/disk
         loginAsAdmin()
-        if API.vms.get(TMP_VM_NAME) is not None:
+        if common.getObjectByName(API.vms, TMP_VM_NAME) is not None:
             common.removeVm(TMP_VM_NAME)
         common.createVm(TMP_VM_NAME, storage=config.MAIN_STORAGE_NAME)
         common.givePermissionToVm(TMP_VM_NAME, self.role)
@@ -1222,13 +1223,13 @@ class UserActionsTests(unittest.TestCase):
 
         loginAsAdmin()
         common.startVm(VM_NAME)
-        vm = API.vms.get(VM_NAME)
+        vm = common.getObjectByName(API.vms, VM_NAME)
         hostName = API.hosts.get(id=vm.get_host().get_id()).get_name()
 
         loginAsUser(filter_=self.filter_)
         host1 = API.hosts.get(config.MAIN_HOST_NAME)
         host2 = API.hosts.get(config.ALT1_HOST_ADDRESS)
-        vm = API.vms.get(VM_NAME)
+        vm = common.getObjectByName(API.vms, VM_NAME)
 
         if hostName == config.ALT1_HOST_ADDRESS:
             self.assertRaises(errors.RequestError, common.migrateVm, vm, host1)

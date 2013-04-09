@@ -239,7 +239,7 @@ def createDataCenter(name, storageType=config.MAIN_STORAGE_TYPE,
                 name=name,
                 storage_type=storageType,
                 version=version))
-    dc = API.datacenters.get(name)
+    dc = getObjectByName(API.datacenters, name)
     assert dc is not None
 
 def addNetworkToDC(name, dcName):
@@ -248,7 +248,7 @@ def addNetworkToDC(name, dcName):
     API.networks.add(params.Network(data_center=dc, name=name))
     LOGGER.info("Network '%s' was added to DC '%s'." % (name, dcName))
 
-    net = API.networks.get(name=name)
+    net = getObjectByName(API.networks, name)
     assert net is not None, "Network couldn't be created."
 
 def _getNetwork(networkName, dcName):
@@ -278,13 +278,13 @@ def createCluster(name, datacenterName,
                     cpu_type=config.HOST_CPU_TYPE, version=VERSION):
     """ Creates cluster """
     LOGGER.info("create_cluster")
-    dc = API.datacenters.get(datacenterName)
+    dc = getObjectByName(API.datacenters, datacenterName)
     API.clusters.add(params.Cluster(
                 name=name,
                 cpu=params.CPU(id=cpu_type),
                 data_center=dc,
                 version=VERSION))
-    cluster = API.clusters.get(name)
+    cluster = getObjectByName(API.clusters, name)
     LOGGER.info("Creating cluster '%s'" % name)
     assert cluster is not None
 
@@ -303,7 +303,7 @@ def getRoles():
 
 def getRolePermissions(roleName):
     """ Return permissions of role """
-    role = API.roles.get(roleName)
+    role = getObjectByName(API.roles, roleName)
     return [perm.get_name() for perm in role.get_permits().list()]
 
 def getSuperUserPermissions():
@@ -316,7 +316,7 @@ def createHost(clusterName, hostName, hostAddress, hostPassword):
     msg = "Installing host '%s' on '%s'"
     LOGGER.info(msg % (hostAddress, clusterName))
 
-    cluster = API.clusters.get(clusterName)
+    cluster = getObjectByName(API.clusters, clusterName)
     API.hosts.add(params.Host(
             name=hostName,
             address=hostAddress,
@@ -383,7 +383,7 @@ def activeDeactiveHost(hostName):
     waitForHostUpState(host)
 
     # Check DC state
-    dc = API.datacenters.get(config.MAIN_DC_NAME)
+    dc = getObjectByName(API.datacenters, config.MAIN_DC_NAME)
     waitForState(dc, 'up')
 
 def checkHostStatus(hostName):
@@ -408,7 +408,7 @@ def checkDataCenterStatus(dcName):
     Parameters:
      * dcName - name of DC to be printed
     """
-    dc = API.datacenters.get(dcName)
+    dc = getObjectByName(API.datacenters, dcName)
     if dc is None:
         LOGGER.info("DC '%s' dont exists." % dcName)
         return
@@ -595,7 +595,7 @@ def suspendVm(vmName):
     While suspending, the 'asynchronous running task' RequestError often
     occurs and means you have to wait a while to suspend the VM.
     """
-    vm = API.vms.get(vmName)
+    vm = getObjectByName(API.vms, vmName)
     assert vm.status.state == states.vm.up, \
         "VM has to be in state 'up' before suspend"
     asyncException = True
@@ -755,7 +755,7 @@ def editVmDiskProperties(vmName, diskId=None, description=None):
 
 def startStopVm(vmName):
     """ Starts and stops VM """
-    vm = API.vms.get(vmName)
+    vm = getObjectByName(API.vms, vmName)
     vm.start()
     LOGGER.info("VM '%s' starting" % (vmName))
     waitForState(vm, states.vm.up)
@@ -939,8 +939,8 @@ def createNfsStorage(storageName, storageType='data',
     :param host:            (string) name of the host to use
     """
 
-    dc = API.datacenters.get(datacenter)
-    sd = API.storagedomains.get(storageName)
+    dc = getObjectByName(API.datacenters, datacenter)
+    sd = getObjectByName(API.storagedomains, storageName)
 
     storageParams = params.Storage(type_='nfs',
             address = address, path = path)
@@ -952,7 +952,7 @@ def createNfsStorage(storageName, storageType='data',
             (storageName, host))
     LOGGER.info("IP/Path of NFS: %s:%s" %(address, path))
     storage = API.storagedomains.add(sdParams)
-    storage = API.storagedomains.get(storage.get_name())
+    storage = getObjectByName(API.storagedomains, storage.get_name())
     assert storage is not None, "Failed to create storage"
     return storage.get_name()
 
@@ -1053,8 +1053,8 @@ def removeNonMasterStorage(storageName,
                             host=config.MAIN_HOST_NAME,
                             destroy=False):
     """ Deactivate, detach and remove a non-master storage domain.  """
-    dc = API.datacenters.get(name=datacenter)
-    storage = API.storagedomains.get(storageName)
+    dc = getObjectByName(API.datacenters, datacenter)
+    storage = getObjectByName(API.storagedomains, storageName)
     if storage is None:
         LOGGER.warning("SD '%s' not exists." % storageName)
         return
@@ -1062,7 +1062,7 @@ def removeNonMasterStorage(storageName,
     doFormat = False if storage.get_type() == 'iso' else True
 
     if isStorageAttached(storageName):
-        s = dc.storagedomains.get(storageName)
+        s = getObjectByName(dc.storagedomains, storageName)
         if s.status.state != states.storage.inactive and \
             s.status.state != states.storage.maintenance:
                 LOGGER.info("Deactivating storage")
@@ -1071,7 +1071,7 @@ def removeNonMasterStorage(storageName,
         if not destroy:
             LOGGER.info("Detaching storage from data center")
             s.delete()
-            s = API.storagedomains.get(storageName)
+            s = getObjectByName(API.storagedomains, storageName)
             waitForState(s, states.storage.unattached)
 
     LOGGER.info("Deleting storage '%s'" % (storageName))
@@ -1079,7 +1079,7 @@ def removeNonMasterStorage(storageName,
             host=params.Host(name=host), format=doFormat,
             destroy=destroy)
     storage.delete(param)
-    storage = API.storagedomains.get(storageName)
+    storage = getObjectByName(API.storagedomains, storageName)
     assert storage is None, "Failed to remove SD '%s'" % (storageName)
 
 def deactivateMasterStorage(storageName=config.MAIN_STORAGE_NAME,
@@ -1156,12 +1156,12 @@ def isStorageAttached(storageName, datacenter=config.MAIN_DC_NAME):
     :return:    (bool) True if it is attached (even if it is locked or
                 unreachable), False if it doesn't exist or if it is unattached.
     """
-    dc = API.datacenters.get(name=datacenter)
-    storage = API.storagedomains.get(storageName)
+    dc = getObjectByName(API.datacenters, datacenter)
+    storage = getObjectByName(API.storagedomains, storageName)
     if storage is None: # storage doesn't even exist
         return False
 
-    storageInDc = dc.storagedomains.get(storageName)
+    storageInDc = getObjectByName(dc.storagedomains, storageName)
     if  storage.status is None and storageInDc is not None and \
         storageInDc.status is not None:
             return True
@@ -1286,6 +1286,11 @@ def removeUser(userName=config.USER_NAME, domainName=config.USER_DOMAIN):
     user = getUser(userName, domainName)
     if user is None:
         return
+
+    global users # Remove user also from dictionary
+    users.pop(userName + 'True', None)
+    users.pop(userName + 'False', None)
+
     nameOfUser = user.get_name()
     user.delete()
     assert API.users.get(nameOfUser) is None
@@ -1403,12 +1408,7 @@ def givePermissionToObject(rhevm_object, roleName, userName=config.USER_NAME,
         return
 
     permissionParam = params.Permission(user=user, role=role)
-    try:
-        rhevm_object.permissions.add(permissionParam)
-    except errors.RequestError as e:
-        # Bz 869334 - after BZ ok, could be removed
-        if e.status != 500:
-            raise e
+    rhevm_object.permissions.add(permissionParam)
 
     msg = "Added permission on '%s' with role '%s' for user '%s'"
     #LOGGER.info(msg % (type(rhevm_object).__name__, roleName, user.get_name()))
@@ -1449,6 +1449,23 @@ def givePermissionToNet(netName, dcName, roleName, userName=config.USER_NAME,
         if dcName == API.datacenters.get(id=net.get_data_center().get_id()).get_name():
             givePermissionToObject(net, roleName, userName, domainName)
 
+def removeUserPermissionsFromObject(rhevm_object, user_name, role):
+    """
+    Remove all user permissions with specific role from object.
+    Parameters:
+      * rhevm_object - object from which permissions should be removed
+      * user_name - name of user who should be perms deleted
+      * role - role that should be deleted from user
+    """
+    msg = "Removing permissions from object %s with perms %s from user %s"
+    permissions = rhevm_object.permissions.list()
+    LOGGER.info(msg % (rhevm_object.get_name(), role, user_name))
+    for p in permissions:
+        u = API.users.get(id=p.get_user().get_id())
+        if p.get_role().get_id() == API.roles.get(role).get_id() and \
+                u.get_user_name() == user_name:
+                    p.delete()
+
 def removeAllPermissionFromObject(rhevm_object):
     """
     Removes all permissions from object
@@ -1467,13 +1484,7 @@ def removeAllPermissionFromObject(rhevm_object):
         if u.get_name() == 'admin' and u.get_domain().get_name() == 'internal':
             i += 1
             continue
-        try:
-            p.delete()
-        except errors.RequestError as e:
-            if e.status == 400:
-                pass  # bz 919686
-            else:
-                raise e
+        p.delete()
     assert len(rhevm_object.permissions.list()) == i
 
 def removeAllPermissionFromVm(vmName):
@@ -1521,7 +1532,7 @@ def editObject(rhevm_object, name, newName=None, description=None, append=False)
      * description - description to be updated
      * append - True if append to old description else create new
     """
-    obj = rhevm_object.get(name)
+    obj = getObjectByName(rhevm_object, name)
 
     old_name = obj.get_name()
     old_desc = obj.get_description()
@@ -1529,7 +1540,7 @@ def editObject(rhevm_object, name, newName=None, description=None, append=False)
         LOGGER.info("Updating name from '%s' to '%s'" %(name, newName))
         obj.set_name(newName)
         obj.update()
-        obj = rhevm_object.get(name)
+        obj = getObjectByName(rhevm_object, name)
         assert old_name != obj.get_name(), "Failed to update object name"
 
     if description is not None:
@@ -1538,7 +1549,7 @@ def editObject(rhevm_object, name, newName=None, description=None, append=False)
             old_desc = ""
         obj.set_description(old_desc + description if append else description)
         obj.update()
-        obj = rhevm_object.get(name)
+        obj = getObjectByName(rhevm_object, name)
         assert old_desc != obj.get_description(), "Failed to update object description"
 
 def copyTemplate(templateName, storageName):

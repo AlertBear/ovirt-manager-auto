@@ -58,6 +58,7 @@ VM4_NAME = 'user_info_access__vm4'
 TEMPLATE_NAME = 'user_info_access__template'
 TEMPLATE2_NAME = 'user_info_access__template2'
 ADMIN_TEMPLATE = 'template1admin'
+ALT_HOST_ID = None
 
 TCMS_PLAN_ID = 6283
 
@@ -81,6 +82,8 @@ def setUpModule():
                                 host=config.ALT1_HOST_ADDRESS)
         common.attachActivateStorage(config.ALT1_STORAGE_NAME,
                                 datacenter=DC_NAME_B, isMaster=True)
+        global ALT_HOST_ID
+        ALT_HOST_ID = API.hosts.get(config.ALT1_HOST_ADDRESS).get_id()
 
 def tearDownModule():
     common.removeVm(VM1_NAME)
@@ -189,7 +192,6 @@ class VmUserInfoTests(unittest.TestCase):
         LOGGER.info("User can't access /hosts.")
 
     @tcms(TCMS_PLAN_ID, 171077)
-    @bz(921274)
     def testEventFilter_vmEvents(self):
         """ testEventFilter_vmEvents """
         msgBlind = "User cannot see VM events where he has permissions"
@@ -199,50 +201,56 @@ class VmUserInfoTests(unittest.TestCase):
         loginAsAdmin()
         common.startStopVm(VM1_NAME)
         common.startStopVm(VM2_NAME)
+        vm1_id = API.vms.get(VM1_NAME).get_id()
+        vm2_id = API.vms.get(VM2_NAME).get_id()
         LOGGER.info("Events on VMs generated")
 
         loginAsUser(filter_=self.filter_)
-        eventsVM1 = API.events.list("Vms.name = " + VM1_NAME)
-        assert len(eventsVM1) > 0, msgBlind
+        lst_of_vms = []
+        for e in API.events.list():
+            if e.get_vm():
+                lst_of_vms.append(e.get_vm().get_id())
+
+        assert vm1_id in lst_of_vms, msgBlind
         LOGGER.info("User can see events from VM he has permissions for.")
 
-        eventsVM2 = API.events.list("Vms.name = " + VM2_NAME)
-        assert len(eventsVM2) == 0
+        assert vm2_id not in lst_of_vms
         LOGGER.info("User can't see events from VM he has not permissions for.")
 
     @tcms(TCMS_PLAN_ID, 171856)
-    @bz(921274)
     def testEventFilter_parentObjectEvents(self):
         """ testEventFilter_parentObjectEvents """
         msgBlind = "User cannot see events for %s where he has permissions"
         msgVisible = "User can see events for %s where he has no permissions." + \
                         "Can see %s"
         loginAsAdmin()
-        common.createVm(VM_NAME_B, createDisk=False, cluster=CLUSTER_NAME_B)
+        TEMPLATE_NAME_B = 'template_b'
+        VM_NAME_B = 'vm_b'
 
-        objsY = [config.MAIN_CLUSTER_NAME, VM1_NAME, config.MAIN_HOST_NAME]
-        objsN = [CLUSTER_NAME_B, VM_NAME_B, config.ALT1_HOST_ADDRESS]
+        common.createVm(VM_NAME_B, createDisk=False, cluster=CLUSTER_NAME_B)
+        common.createTemplate(VM_NAME_B, TEMPLATE_NAME_B)
 
         loginAsUser(filter_=self.filter_)
         try:
             for e in API.events.list():
-                if e.get_user():
-                    assert API.users.get(id=e.get_user().get_id).get_name() == config.USER_NAME
-                if e.get_vm():
-                    assert API.vms.get(id=e.get_vm().get_id).get_name() == VM1_NAME
-                if e.get_storage_domain():
-                    assert API.storagedomains.get(id=e.get_vm().get_id).get_name() != config.ALT1_STORAGE_NAME
-                if e.get_cluster():
-                    assert API.clusters.get(id=e.get_vm().get_id).get_name() == config.MAIN_CLUSTER_NAME
-                if e.get_data_center():
-                    assert API.datacenters.get(id=e.get_vm().get_id).get_name() == config.MAIN_DC_NAME
-                assert e.get_host() is None  # user can't see /hosts
-                assert e.get_template() is None  # User have not perms on any template
-        except Exception as e:
-            raise e
+                if e is None:
+                    continue
+                if e.get_vm() and API.vms.get(id=e.get_vm().get_id()):
+                    assert API.vms.get(id=e.get_vm().get_id()).get_name() != VM_NAME_B
+                if e.get_storage_domain() and API.storagedomains.get(id=e.get_storage_domain().get_id()):
+                    assert API.storagedomains.get(id=e.get_storage_domain().get_id()).get_name() != config.ALT1_STORAGE_NAME
+                if e.get_cluster() and API.clusters.get(id=e.get_cluster().get_id()):
+                    assert API.clusters.get(id=e.get_cluster().get_id()).get_name() != CLUSTER_NAME_B
+                if e.get_data_center() and API.datacenters.get(id=e.get_data_center().get_id()):
+                    assert API.datacenters.get(id=e.get_data_center().get_id()).get_name() != DC_NAME_B
+                if e.get_host():
+                    assert e.get_host().get_id() != ALT_HOST_ID
+                if e.get_template() and API.templates.get(id=e.get_template().get_id()):
+                    assert API.templates.get(id=e.get_template().get_id()).get_name() != TEMPLATE_NAME_B
         finally:
             loginAsAdmin()
             common.removeVm(VM_NAME_B)
+            common.removeTemplate(TEMPLATE_NAME_B)
 
     @tcms(TCMS_PLAN_ID, 171079)
     def testSpecificId(self):
@@ -272,7 +280,7 @@ class VmUserInfoTests(unittest.TestCase):
         networks = API.networks.list()
 
         # User should see network, cause every user have NetworkUser perms
-        assert len(networks) == 1, msg %('networks', niceList(networks))
+        assert len(networks) == 3, msg %('networks', niceList(networks))
         # User should see SD, which is attach to sd, in which is his VM
         assert len(storages) == 1, msg %('storages', niceList(storages))
         # User should se Blank template
@@ -450,7 +458,6 @@ class TemplateCreatorInfoTests(unittest.TestCase):
     # Should see all templates in Datacenter1, but none in Datacenter2.
     @istest
     @tcms(TCMS_PLAN_ID, 174405)
-    @bz(921450)
     def templateCreatorDataCenterAdmin_filter_templates(self):
         """ templateCreatorDataCenterAdmin_filter_templates """
         loginAsAdmin()
