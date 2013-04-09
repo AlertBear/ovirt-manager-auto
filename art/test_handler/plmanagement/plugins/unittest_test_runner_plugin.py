@@ -69,6 +69,12 @@ BZ_ID = 'bz' # TODO: should be removed
 TCMS_PLAN_ID = 'tcms_plan_id' # TODO: should be removed
 TCMS_TEST_CASE = 'tcms_test_case' # TODO: should be removed
 
+ITER_NUM = 0
+
+def iterNumber():
+    global ITER_NUM
+    ITER_NUM += 1
+    return ITER_NUM
 
 def isvital4group(f):
     @wraps(f)
@@ -90,6 +96,7 @@ class UTestCase(TestCase):
         self.tcms_plan_id = getattr(self.f.im_func, TCMS_PLAN_ID, None)
         self.tcms_test_case = getattr(self.f.im_func, TCMS_TEST_CASE, None)
         setattr(self.t.test, 'vital4group', False)
+        self.serial = iterNumber()
         if self.f.__doc__ is None:
             logger.error("Test case %s has missing documentation string!",
                          self.test_name)
@@ -97,10 +104,11 @@ class UTestCase(TestCase):
 
     def __call__(self):
         try:
-            logger.info(TEST_CASES_SEPARATOR)
             logger.info("setUp: %s", self.test_name)
             try:
                 self.t.test.setUp()
+                logger.info(self.format_attr('test_name'))
+                logger.info(self.format_attr('serial'))
                 self.f()
                 self.status = self.TEST_STATUS_PASSED
             except AssertionError as ex:
@@ -114,7 +122,6 @@ class UTestCase(TestCase):
                 self.exc = ex
         finally:
             logger.info("tearDown: %s", self.test_name)
-            logger.info(TEST_CASES_SEPARATOR)
             self.t.test.tearDown()
             if self.status == self.TEST_STATUS_FAILED \
                 or self.status == self.TEST_STATUS_ERROR:

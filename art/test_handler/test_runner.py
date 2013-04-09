@@ -242,7 +242,6 @@ class TestRunner(object):
                 "test_elm must be TestCase, not %s" % type(test_case)
         test_case.start_time = datetime.now(tzutc())
         logger.info(TEST_CASES_SEPARATOR)
-        logger.info(test_case.test_name)
         try:
             self.plmanager.test_cases.pre_test_case(test_case)
             self.plmanager.test_skippers.should_be_test_case_skipped(test_case)
