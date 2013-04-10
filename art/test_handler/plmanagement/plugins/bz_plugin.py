@@ -150,7 +150,7 @@ class Version(object):
             d = a - b
             if d != 0:
                 return d
-        return len(self.ver) - len(ver.ver)
+        return 0
 
     def __str__(self):
         return '.'.join([str(x) for x in self.ver])
@@ -290,8 +290,8 @@ class Bugzilla(Component):
             fixed_at = Version(fixed_at)
             if fixed_at > self.version:
                 return True
-        else:
-            return False
+
+        return False
 
     def __deal_with_comp_and_version(self, bug):
         comp = expect_list(bug, 'component', '')
