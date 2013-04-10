@@ -1,0 +1,8 @@
+<input xmlns:xi="http://www.w3.org/2001/XInclude" tcms_plan_id="6566">
+<xi:include href="PrepareSetup.xml"/>
+
+<xi:include href="portMirroring/PortMirroring.xml"/>
+
+<xi:include href="CleanSetup.xml" />
+<!-- ======================================================================================================== -->
+</input>
