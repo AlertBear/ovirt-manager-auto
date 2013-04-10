@@ -52,6 +52,7 @@ class PuppetPlugin(Component):
             IPackaging)
 
     name = "Puppet"
+    priority = -2000 # to ensure it runs first
 
     def __init__(self):
         super(PuppetPlugin, self).__init__()
@@ -100,7 +101,7 @@ class PuppetPlugin(Component):
             cmds = (toogle_cmd, test_cmd)
             action_msg = 'enabled'
         elif opt == OPT_DISABLE:
-            cmds = (toogle_cmd,)
+            cmds = (test_cmd, toogle_cmd)
             action_msg = 'disabled'
         else:
             assert False, "opt argument must be %s or %s, but got %s" % \
