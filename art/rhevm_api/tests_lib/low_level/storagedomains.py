@@ -532,7 +532,7 @@ def isStorageDomainMaster(positive, dataCenterName, storageDomainName):
 def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
                      storage_type, cluster, version, dataStorageDomains='', address='',
                      lun_address='', lun_target='', luns='', lun_port='',
-                     sdNameSuffix='_data_domain'):
+                     sdNameSuffix='_data_domain', reboot=True):
     """
     Function creates data center.
         positive           = positive
@@ -598,7 +598,8 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
             util.logger.info("Add host %s" % host)
             ipAddress = getIpAddressByHostName(host)
             if not addHost(positive=positive, name=host, address=ipAddress,
-            root_password=passwordArr[index], port=54321, cluster=cluster, wait=False):
+            root_password=passwordArr[index], port=54321, cluster=cluster,
+            wait=False, reboot=reboot):
                 util.logger.error("Add host %s failed" % host)
                 return False
 

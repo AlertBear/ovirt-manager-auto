@@ -13,7 +13,7 @@
 <test_case>
    <test_name>Prepare ISCSI DC with cluster, storage, and host</test_name>
    <test_action>createDatacenter</test_action>
-   <parameters>hosts='[vds]', cpuName='{cpu_name}', username='root', password='[vds_password]', datacenter='{datacenter}', storage_type='e{storage_type_iscsi}', cluster='{cluster}', lun_address='[lun_address]', lun_target='[lun_target]', luns='[lun]', lun_port=3260, version='{compatibility_version}'</parameters>
+   <parameters>hosts='[vds]', cpuName='{cpu_name}', username='root', password='[vds_password]', datacenter='{datacenter}', storage_type='e{storage_type_iscsi}', cluster='{cluster}', lun_address='[lun_address]', lun_target='[lun_target]', luns='[lun]', lun_port=3260, version='{compatibility_version}', reboot=False</parameters>
    <positive>TRUE</positive>
    <run>YES</run>
    <report>YES</report>

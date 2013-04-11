@@ -367,23 +367,26 @@ def _check_hypervisor(positive, host, cluster):
 
 
 @is_action()
-def addHost(positive, name, wait=True, vdcPort=None, rhel_like=True, **kwargs):
+def addHost(positive, name, wait=True, vdcPort=None, rhel_like=True,
+            reboot=True, **kwargs):
     '''
     Description: add new host
     Author: edolinin, jhenner
     Parameters:
        * name - name of a new host
-       * root_password - password of root user (required, can be empty only for negative tests)
-       * address - host IP address, if not provided - fetched automatically from name
+       * root_password - (required, can be empty only for negative tests)
+       * address - host IP address, if not provided - fetched from name
        * port - port number
        * cluster - name of the cluster where to attach a new host
-       * wait - True if test should wait until timeout or the host state to be "UP".
-       * vdcPort - vdc port (default = port parameter, located at settings.conf)
+       * wait - True if test should wait till timeout or host state to be "UP"
+       * vdcPort - default = port parameter, located at settings.conf
        * override_iptables - override iptables. gets true/false strings.
        * rhel_like - for hypervisors only - True will install hypervisor as it
                                             does with rhel
-                                          - False will install hypervisor using
-                                            vdsm-reg on hypervisor
+                                          - False will install hypervisor
+                                            using vdsm-reg on hypervisor
+       * reboot - True - to reboot host after install.
+                  False- host won't reboot after install.
     Return: True if host     added and test is    positive,
             True if host not added and test isn't positive,
             False otherwise.
@@ -404,7 +407,8 @@ def addHost(positive, name, wait=True, vdcPort=None, rhel_like=True, **kwargs):
     osType = 'rhel'
     root_password = kwargs.get('root_password')
     if root_password and positive:
-        hostObj = machine.Machine(host_address, 'root', root_password).util('linux')
+        hostObj = machine.Machine(host_address,
+                                  'root', root_password).util('linux')
         hostObj.isConnective(attempt=5, interval=5, remoteCmd=False)
         osType = hostObj.getOsInfo()
         if not osType:
@@ -412,7 +416,8 @@ def addHost(positive, name, wait=True, vdcPort=None, rhel_like=True, **kwargs):
             return False
 
     if osType.lower().find('hypervisor') == -1 or rhel_like:
-        host = Host(name=name, cluster=hostCl, address=host_address, **kwargs)
+        host = Host(name=name, cluster=hostCl, address=host_address,
+                    reboot_after_installation=reboot, **kwargs)
         host, status = HOST_API.create(host, positive)
 
         if not wait:
@@ -425,7 +430,8 @@ def addHost(positive, name, wait=True, vdcPort=None, rhel_like=True, **kwargs):
     if vdcPort is None:
         vdcPort = settings.opts['port']
 
-    if not installOvirtHost(positive, name, 'root', root_password, settings.opts['host'], vdcPort):
+    if not installOvirtHost(positive, name, 'root', root_password,
+                            settings.opts['host'], vdcPort):
         return False
 
     return approveHost(positive, name, cluster)
