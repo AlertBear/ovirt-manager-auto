@@ -1472,12 +1472,12 @@ def migrateVm(positive, vm, host=None, wait=True):
     Migrate the VM.
 
     If the host was specified, after the migrate action was performed,
-    the method is checking whether the VM status is UP or POWERING_UP
-    and whether the VM runs on required destination host.
+    the method is checking whether the VM status is UP and whether
+    the VM runs on required destination host.
 
     If the host was not specified, after the migrate action was performed, the
-    method is checking whether the VM is UP or POWERING_UP
-    and whether the VM runs on host different to the source host.
+    method is checking whether the VM is UP and whether the VM runs
+    on host different to the source host.
 
     Author: edolinin, jhenner
     Parameters:
@@ -1520,6 +1520,12 @@ def migrateVm(positive, vm, host=None, wait=True):
     realDestHostId = VM_API.find(vm).host.id
     realDestHostObj = HOST_API.find(realDestHostId, 'id')
     if vmObj.cluster.id != realDestHostObj.cluster.id:
+        logger.error('VM migrated to a different cluster')
+        return False
+
+    # Validating that the vm did migrate to a diffrent host
+    if vmObj.host.id == realDestHostId:
+        logger.error('VM stayed on the same host')
         return False
 
     return True
@@ -2431,12 +2437,12 @@ def checkVmState(positive, vmName, state, host=None):
              False otherwise
     '''
     vmObj = VM_API.find(vmName)
-    general_check =  True if vmObj.get_status().get_state() == state else False
+    general_check = True if vmObj.get_status().get_state() == state else False
     if host:
         hostObj = HOST_API.find(host)
-        return vmObj.host.id == hostObj.id and general_check
+        return positive == (vmObj.host.id == hostObj.id and general_check)
     else:
-        return general_check
+        return positive == general_check
 
 
 @is_action()
