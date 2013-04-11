@@ -163,6 +163,7 @@ class TestGroup(_TestElm):
         self.passed = TSInt()
         self.skipped = TSInt()
         self.error = TSInt()
+        self.exc = None
 
     def __iter__(self):
         raise NotImplementedError()
@@ -331,6 +332,10 @@ class TestRunner(object):
             test_group.status = _TestElm.TEST_STATUS_FAILED
         else:
             test_group.status = _TestElm.TEST_STATUS_PASSED
+
+        if (test_group.error > 0 or test_group.failed > 0) and test_group.exc:
+            logger.error("Test Group failed: %s: %s", test_group.test_name,
+                         test_group.exc)
 
     def __run_test_group_in_parallel(self, test_group):
         jobs = [Job(target=self._run_test_elm, args=(x,))

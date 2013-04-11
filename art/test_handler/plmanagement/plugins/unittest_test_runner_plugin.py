@@ -122,7 +122,11 @@ class UTestCase(TestCase):
                 self.exc = ex
         finally:
             logger.info("tearDown: %s", self.test_name)
-            self.t.test.tearDown()
+            try:
+                self.t.test.tearDown()
+            except Exception as ex:
+                self.exc = ex
+                self.status = self.TEST_STATUS_FAILED
             if self.status == self.TEST_STATUS_FAILED \
                 or self.status == self.TEST_STATUS_ERROR:
                     if self.t.test.vital4group:
@@ -142,11 +146,12 @@ class UTestGroup(TestGroup):
     def __iter__(self):
         try:
             logger.info(TEST_CASES_SEPARATOR)
-            logger.info("setUp: %s", self.test_name)
+            logger.info("TEST GROUP setUp: %s", self.test_name)
             try:
                 self.context.setUp()
             except Exception as ex:
-                logger.error("TEST GROUP error: %s", ex, exc_info=True)
+                logger.error("TEST GROUP setUp ERROR: %s: %s", ex,
+                             self.test_name, exc_info=True)
                 self.status = self.TEST_STATUS_ERROR
                 self.exc = ex
                 self.error += 1
@@ -159,8 +164,12 @@ class UTestGroup(TestGroup):
                 else:
                     yield UTestGroup(c)
         finally:
-            self.context.tearDown()
-            logger.info("tearDown: %s", self.test_name)
+            logger.info("TEST GROUP tearDown: %s", self.test_name)
+            try:
+                self.context.tearDown()
+            except Exception as ex:
+                self.exc = ex
+                self.status = self.TEST_STATUS_FAILED
             logger.info(TEST_CASES_SEPARATOR)
 
     def __str__(self):
@@ -177,11 +186,12 @@ class UTestSuite(TestSuite):
     def __iter__(self):
         try:
             logger.info(TEST_CASES_SEPARATOR)
-            logger.info("setUp: %s", self.test_name)
+            logger.info("TEST SUITE setUp: %s", self.test_name)
             try:
                 self.context.setUp()
             except Exception as ex:
-                logger.error("TEST SUITE error: %s", ex, exc_info=True)
+                logger.error("TEST SUITE setUp ERROR: %s: %s", ex,
+                             self.test_name, exc_info=True)
                 self.status = self.TEST_STATUS_ERROR
                 self.exc = ex
                 self.error += 1
@@ -194,8 +204,12 @@ class UTestSuite(TestSuite):
                 else:
                     yield UTestGroup(c)
         finally:
-            self.context.tearDown()
-            logger.info("tearDown: %s", self.test_name)
+            logger.info("TEST SUITE tearDown: %s", self.test_name)
+            try:
+                self.context.tearDown()
+            except Exception as ex:
+                self.exc = ex
+                self.status = self.TEST_STATUS_FAILED
             logger.info(TEST_CASES_SEPARATOR)
 
     def __str__(self):
