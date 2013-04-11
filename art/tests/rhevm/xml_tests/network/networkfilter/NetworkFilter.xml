@@ -24,7 +24,7 @@
 <test_case>
    <test_name>Checking that spoofing filter rule enabled</test_name>
    <test_action>checkSpoofingFilterRuleByVer</test_action>
-   <parameters>host='{host}',user='{vm_linux_user}',passwd='{vm_linux_password}'</parameters>
+   <parameters>host='{host[0]}',user='{vm_linux_user}',passwd='{vm_linux_password}'</parameters>
    <positive>None</positive>
    <run>YES</run>
    <fetch_output/>
@@ -36,7 +36,7 @@
 <test_case>
    <test_name>Checking that network filtering is enabled via vdsm</test_name>
    <test_action>checkNetworkFiltering</test_action>
-   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}'</parameters>
+   <parameters>host='{vds[0]}',user='{vm_linux_user}',passwd='{vm_linux_password}'</parameters>
    <positive>True</positive>
    <run>YES</run>
    <fetch_output/>
@@ -49,7 +49,7 @@
 <test_case>
    <test_name>Checking that network filtering is enabled via dumpxml</test_name>
    <test_action>checkNetworkFilteringDumpxml</test_action>
-   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', vm='{vm_name[0]}', nics='1'</parameters>
+   <parameters>host='{vds[0]}',user='{vm_linux_user}',passwd='{vm_linux_password}', vm='{vm_name[0]}', nics='1'</parameters>
    <positive>True</positive>
    <run>YES</run>
    <fetch_output/>
@@ -83,7 +83,7 @@
 <test_case>
    <test_name>Checking that network filtering is enabled via dumpxml</test_name>
    <test_action>checkNetworkFilteringDumpxml</test_action>
-   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', vm='{vm_name[0]}', nics='2'</parameters>
+   <parameters>host='{vds[0]}',user='{vm_linux_user}',passwd='{vm_linux_password}', vm='{vm_name[0]}', nics='2'</parameters>
    <positive>True</positive>
    <run>YES</run>
    <fetch_output/>
@@ -128,7 +128,7 @@
 <test_case>
    <test_name>Checking that network filtering is enabled via ebtables</test_name>
    <test_action>checkNetworkFilteringEbtables</test_action>
-   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}',nics='2', vm_macs=[%macAddress_nic1%,%macAddress_nic2%]</parameters>
+   <parameters>host='{vds[0]}',user='{vm_linux_user}',passwd='{vm_linux_password}',nics='2', vm_macs=[%macAddress_nic1%,%macAddress_nic2%]</parameters>
    <positive>True</positive>
    <run>YES</run>
    <fetch_output/>
@@ -162,7 +162,7 @@
 <test_case>
    <test_name>Checking that network filtering is enabled via ebtables</test_name>
    <test_action>checkNetworkFilteringEbtables</test_action>
-   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', nics='2', vm_macs=[%macAddress_nic1%,%macAddress_nic2%]</parameters>
+   <parameters>host='{vds[0]}',user='{vm_linux_user}',passwd='{vm_linux_password}', nics='2', vm_macs=[%macAddress_nic1%,%macAddress_nic2%]</parameters>
    <positive>FALSE</positive>
    <run>YES</run>
    <fetch_output/>
@@ -187,7 +187,7 @@
    <test_action/>
    <parameters>n/a1</parameters>
    <positive>NONE</positive>
-   <run>NO</run>
+   <run>YES</run>
    <fetch_output/>
    <report/>
    <vital/>
@@ -252,7 +252,7 @@
 <test_case>
    <test_name>Checking that network filtering is enabled via ebtables</test_name>
    <test_action>checkNetworkFilteringEbtables</test_action>
-   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', nics='1', vm_macs=[%macAddress_nic1%]</parameters>
+   <parameters>host='{vds[0]}',user='{vm_linux_user}',passwd='{vm_linux_password}', nics='1', vm_macs=[%macAddress_nic1%]</parameters>
    <positive>True</positive>
    <run>YES</run>
    <fetch_output/>
@@ -296,7 +296,7 @@
 <test_case>
    <test_name>Checking that network filtering is enabled via ebtables</test_name>
    <test_action>checkNetworkFilteringEbtables</test_action>
-   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', nics='2', vm_macs=[%macAddress_nic1%, %macAddress_nic2%]</parameters>
+   <parameters>host='{vds[0]}',user='{vm_linux_user}',passwd='{vm_linux_password}', nics='2', vm_macs=[%macAddress_nic1%, %macAddress_nic2%]</parameters>
    <positive>True</positive>
    <run>YES</run>
    <fetch_output/>
@@ -340,7 +340,7 @@
 <test_case>
    <test_name>Checking that network filtering is enabled via ebtables</test_name>
    <test_action>checkNetworkFilteringEbtables</test_action>
-   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', nics='1', vm_macs=[%macAddress_nic1%]</parameters>
+   <parameters>host='{vds[0]}',user='{vm_linux_user}',passwd='{vm_linux_password}', nics='1', vm_macs=[%macAddress_nic1%]</parameters>
    <positive>True</positive>
    <run>YES</run>
    <fetch_output/>
@@ -396,7 +396,7 @@
 <test_case>
    <test_name>Disabling network filter</test_name>
    <test_action>setNetworkFilterStatus</test_action>
-   <parameters>enable='False', host='{host}', user='{vm_linux_user}', passwd='{vm_linux_password}', version='{compatibility_version}'</parameters>
+   <parameters>enable='False', host='{host[0]}', user='{vm_linux_user}', passwd='{vm_linux_password}', version='{compatibility_version}'</parameters>
    <positive>NONE</positive>
    <run>YES</run>
    <fetch_output/>
@@ -429,7 +429,7 @@
 <test_case>
    <test_name>Checking that network filtering is enabled via dumpxml</test_name>
    <test_action>checkNetworkFilteringDumpxml</test_action>
-   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', vm='{vm_name[0]}', nics='1'</parameters>
+   <parameters>host='{vds[0]}',user='{vm_linux_user}',passwd='{vm_linux_password}', vm='{vm_name[0]}', nics='1'</parameters>
    <positive>False</positive>
    <run>YES</run>
    <fetch_output/>
@@ -440,8 +440,19 @@
 <test_case>
    <test_name>Checking that network filtering is enabled via ebtables</test_name>
    <test_action>checkNetworkFilteringEbtables</test_action>
-   <parameters>host='{vds}',user='{vm_linux_user}',passwd='{vm_linux_password}', nics='1', vm_macs=[%macAddress_nic1%]</parameters>
+   <parameters>host='{vds[0]}',user='{vm_linux_user}',passwd='{vm_linux_password}', nics='1', vm_macs=[%macAddress_nic1%]</parameters>
    <positive>False</positive>
+   <run>YES</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Enabling network filter</test_name>
+   <test_action>setNetworkFilterStatus</test_action>
+   <parameters>enable='True', host='{host[0]}', user='{vm_linux_user}', passwd='{vm_linux_password}', version='{compatibility_version}'</parameters>
+   <positive>NONE</positive>
    <run>YES</run>
    <fetch_output/>
    <report>YES</report>
