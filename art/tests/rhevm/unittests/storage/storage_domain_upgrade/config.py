@@ -24,4 +24,4 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 
 DC_VERSIONS = PARAMETERS.as_list('dc_versions')
 DC_UPGRADE_VERSIONS = PARAMETERS.as_list('dc_upgrade_versions')
-STORAGE_TYPES = PARAMETERS.as_list('storage_types')
+DC_TYPE = PARAMETERS['data_center_type']

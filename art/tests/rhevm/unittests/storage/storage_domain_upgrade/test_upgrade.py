@@ -245,7 +245,6 @@ class TestUpgradeFCP(TestUpgrade):
         raise NotImplementedError("FCP test hasn't been implemented yet")
         super(TestUpgradeFCP, cls).setup_class()
 
-
     @classmethod
     def teardown_class(cls):
         raise NotImplementedError("FCP test hasn't been implemented yet")
@@ -261,34 +260,33 @@ TYPE_TO_CLASS = {
     config.ENUMS['storage_type_posixfs']: TestUpgradePosix,
 }
 
-for storage_type in config.STORAGE_TYPES:
-    for dc_version in config.DC_VERSIONS:
-        dc_version_name = dc_version.replace('.', '')
-        for dc_upgrade_version in config.DC_UPGRADE_VERSIONS:
-            if dc_version == dc_upgrade_version:
-                continue
-            dc_upgrade_version_name = dc_upgrade_version.replace('.', '')
-            if storage_type == config.ENUMS['storage_type_nfs']:
-                storage_format = config.ENUMS['storage_format_version_v1']
-            elif storage_type == config.ENUMS['storage_type_iscsi']:
-                storage_format = config.ENUMS['storage_format_version_v2']
-            name_pattern = (storage_type, dc_version_name,
-                            dc_upgrade_version_name)
-            class_name = "TestUpgrade%s%s%s" % name_pattern
-            class_attrs = {
-                    '__doc__': "Test case upgrades %s datacenter from %s "
-                               "to %s" % name_pattern,
-                    '__test__': True,
-                    'dc_name': 'dc_%s_upgrade_%s_%s' % name_pattern,
-                    'cluster_name': 'c_%s_upgrade_%s_%s' % name_pattern,
-                    'sd_name_pattern': "%s%%d_%s_%s" % name_pattern,
-                    'dc_version': dc_version,
-                    'dc_upgraded_version': dc_upgrade_version,
-                    'storage_format': storage_format,
-                    'upgraded_storage_format':
-                        config.ENUMS['storage_format_version_v3']
-                    }
-            new_class = type(class_name, (TYPE_TO_CLASS[storage_type],),
-                             class_attrs)
-            setattr(__THIS_MODULE, class_name, new_class)
+for dc_version in config.DC_VERSIONS:
+    dc_version_name = dc_version.replace('.', '')
+    for dc_upgrade_version in config.DC_UPGRADE_VERSIONS:
+        if dc_version == dc_upgrade_version:
+            continue
+        dc_upgrade_version_name = dc_upgrade_version.replace('.', '')
+        if config.DC_TYPE == config.ENUMS['storage_type_nfs']:
+            storage_format = config.ENUMS['storage_format_version_v1']
+        elif config.DC_TYPE == config.ENUMS['storage_type_iscsi']:
+            storage_format = config.ENUMS['storage_format_version_v2']
+        name_pattern = (config.DC_TYPE, dc_version_name,
+                        dc_upgrade_version_name)
+        class_name = "TestUpgrade%s%s%s" % name_pattern
+        class_attrs = {
+                '__doc__': "Test case upgrades %s datacenter from %s "
+                           "to %s" % name_pattern,
+                '__test__': True,
+                'dc_name': 'dc_%s_upgrade_%s_%s' % name_pattern,
+                'cluster_name': 'c_%s_upgrade_%s_%s' % name_pattern,
+                'sd_name_pattern': "%s%%d_%s_%s" % name_pattern,
+                'dc_version': dc_version,
+                'dc_upgraded_version': dc_upgrade_version,
+                'storage_format': storage_format,
+                'upgraded_storage_format':
+                    config.ENUMS['storage_format_version_v3']
+                }
+        new_class = type(class_name, (TYPE_TO_CLASS[config.DC_TYPE],),
+                         class_attrs)
+        setattr(__THIS_MODULE, class_name, new_class)
 delattr(__THIS_MODULE, 'new_class')
