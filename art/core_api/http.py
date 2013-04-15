@@ -37,6 +37,7 @@ class HTTPProxy():
     def __init__(self, opts):
         self.opts = opts
         self.cookie = None
+        self.last_active_user = None
         self.type = opts['media_type']
         self.connections_pool = []
         self.headers = self.opts['headers']
@@ -80,6 +81,7 @@ class HTTPProxy():
         response = self.__do_request("HEAD", self.opts['uri'],
                         get_header='Set-Cookie', conn=conn)
         self.cookie = response['Set-Cookie']
+        self.last_active_user = self.__get_user()
 
 
     def __do_request(self, method, url, body=None, get_header=None, conn=None):
@@ -115,6 +117,10 @@ class HTTPProxy():
             resp_body = re.sub(r'^\s*<\?xml\s+.*?\?>', '', resp_body)
 
             ret = { 'status' : resp.status, 'body' : resp_body }
+
+            if headers.get('Authorization', None):
+                self.cookie = resp.getheader('Set-Cookie')
+                self.last_active_user = self.__get_user()
 
             if resp.status == 401 and self.cookie:
                 self.cookie = None
@@ -187,7 +193,7 @@ class HTTPProxy():
         headers = copy.deepcopy(self.headers)
 
         if self.opts['user'] and self.opts['password']:
-            if self.cookie:
+            if self.cookie and self.last_active_user == self.__get_user():
                 headers['Cookie'] = self.cookie
             else:
                 headers['Authorization'] = self.basic_auth()
@@ -211,6 +217,13 @@ class HTTPProxy():
             rel = rel[:s.find(';')]
         links[rel] = url
         return links
+
+
+    def __get_user(self):
+        '''
+        Return user@domain who is currenlty specified in opts.
+        '''
+        return '%s@%s' % (self.opts['user'], self.opts['user_domain'])
 
 
     def HEAD_for_links(self):
