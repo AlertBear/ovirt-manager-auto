@@ -23,6 +23,7 @@ from utilities.utils import readConfFile
 from art.rhevm_api.utils.test_utils import get_api, split
 from art.core_api import is_action
 from art.test_handler.settings import opts
+from networks import findNetwork
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 CONF_PERMITS = opts['elements_conf']['RHEVM Permits']
@@ -322,6 +323,21 @@ def addUserPermitsForObj(positive, user, role, obj, group=False):
 
 
 @is_action()
+def addPermissionsForNetwork(positive, user, network, data_center, role="NetworkAdmin"):
+    '''
+    Description: add permissions for user on network
+    Author: omachace
+    Parameters:
+       * user - name of user
+       * network - name of network
+       * data_center - name of datacenter of network
+       * role - role to add
+    Return: status (True if permission was added properly, False otherwise)
+    '''
+    netObj = findNetwork(network, data_center)
+    return addUserPermitsForObj(positive, user, role, netObj)
+
+
 def addPermissionsForTemplate(positive, user, template, role="TemplateAdmin"):
     '''
     Description: add template permissios to user
@@ -419,6 +435,166 @@ def addVmPoolPermissionToUser(positive, user, vmpool, role):
 
     poolObj = poolUtil.find(vmpool)
     return addPermitsToUser(positive, user, role, poolObj, 'vmpool')
+
+
+def removeUsersPermissionsFromObject(positive, obj, user_names):
+    '''
+    Description: remove all permissions on obj of specified users
+    Author: omachace
+    Parameters:
+       * obj - object where permissions should be removed
+       * user_names - list with user names (ie.['user1@..', 'user2@..'])
+    Return: status (True if permissions was removed, False otherwise)
+    '''
+    status = True
+    permits = permisUtil.getElemFromLink(obj, get_href=False)
+    user_ids = [userUtil.find(user_name, attribute='user_name').get_id() \
+            for user_name in user_names]
+
+    for perm in permits:
+        if perm.get_user().get_id() in user_ids and \
+                not permisUtil.delete(perm, positive):
+                    status = False
+
+    return status
+
+
+@is_action()
+def removeUsersPermissionsFromNetwork(positive, network, data_center, user_names):
+    '''
+    Description: remove all permissions on network of specified users
+    Author: omachace
+    Parameters:
+       * network - network where permissions should be removed
+       * data_center - name of datacenter of network
+       * user_names - list with user names (ie.['user1@..', 'user2@..'])
+    Return: status (True if permissions was removed, False otherwise)
+    '''
+    netObj = findNetwork(network, data_center)
+    return removeUsersPermissionsFromObject(positive, netObj, user_names)
+
+
+@is_action()
+def removeUserPermissionsFromNetwork(positive, network, data_center, user_name):
+    '''
+    Description: remove all permissions on network of specified user
+    Author: omachace
+    Parameters:
+       * network - network where permissions should be removed
+       * data_center - name of datacenter of network
+       * user_name - user name
+    Return: status (True if permissions was removed, False otherwise)
+    '''
+    return removeUsersPermissionsFromNetwork(positive, network,
+            data_center, [user_name])
+
+
+@is_action()
+def removeUsersPermissionsFromDatacenter(positive, data_center, user_names):
+    '''
+    Description: remove all permissions on datacenter of specified users
+    Author: omachace
+    Parameters:
+       * data_center - datacenter where permissions should be removed
+       * user_names - list with user names (ie.['user1@..', 'user2@..'])
+    Return: status (True if permissions was removed, False otherwise)
+    '''
+    dcObj = dcUtil.find(data_center)
+    return removeUsersPermissionsFromObject(positive, dcObj, user_names)
+
+
+@is_action()
+def removeUserPermissionsFromDatacenter(positive, data_center, user_name):
+    '''
+    Description: remove all permissions on datacenter of specified user
+    Author: omachace
+    Parameters:
+       * data_center - datacenter where permissions should be removed
+       * user_name - user name
+    Return: status (True if permissions was removed, False otherwise)
+    '''
+    return removeUsersPermissionsFromDatacenter(positive, data_center, [user_name])
+
+
+@is_action()
+def removeUsersPermissionsFromCluster(positive, cluster, user_names):
+    '''
+    Description: remove all permissions on cluster of specified users
+    Author: omachace
+    Parameters:
+       * cluster - cluster where permissions should be removed
+       * user_names - list with user names (ie.['user1@..', 'user2@..'])
+    Return: status (True if permissions was removed, False otherwise)
+    '''
+    clusterObj = clUtil.find(cluster)
+    return removeUsersPermissionsFromObject(positive, clusterObj, user_names)
+
+
+@is_action()
+def removeUserPermissionsFromCluster(positive, cluster, user_name):
+    '''
+    Description: remove all permissions on cluster of specified user
+    Author: omachace
+    Parameters:
+       * cluster - cluster where permissions should be removed
+       * user_name - user name
+    Return: status (True if permissions was removed, False otherwise)
+    '''
+    return removeUsersPermissionsFromCluster(positive, cluster, [user_name])
+
+
+@is_action()
+def removeUsersPermissionsFromVm(positive, vm, user_names):
+    '''
+    Description: remove all permissions on vm of specified users
+    Author: omachace
+    Parameters:
+       * vm - vm where permissions should be removed
+       * user_names - list with user names (ie.['user1@..', 'user2@..'])
+    Return: status (True if permissions was removed, False otherwise)
+    '''
+    vmObj = vmUtil.find(vm)
+    return removeUsersPermissionsFromObject(positive, vmObj, user_names)
+
+
+@is_action()
+def removeUserPermissionsFromVm(positive, vm, user_name):
+    '''
+    Description: remove all permissions on vm of specified user
+    Author: omachace
+    Parameters:
+       * vm - vm where permissions should be removed
+       * user_name - user name
+    Return: status (True if permissions was removed, False otherwise)
+    '''
+    return removeUsersPermissionsFromVm(positive, vm, [user_name])
+
+
+@is_action()
+def removeUsersPermissionsFromTemplate(positive, template, user_names):
+    '''
+    Description: remove all permissions on template of specified users
+    Author: omachace
+    Parameters:
+       * template - template where permissions should be removed
+       * user_names - list with user names (ie.['user1@..', 'user2@..'])
+    Return: status (True if permissions was removed, False otherwise)
+    '''
+    tmpObj = templUtil.find(template)
+    return removeUsersPermissionsFromObject(positive, tmpObj, user_names)
+
+
+@is_action()
+def removeUserPermissionsFromTemplate(positive, template, user_name):
+    '''
+    Description: remove all permissions on template of specified user
+    Author: omachace
+    Parameters:
+       * template - template where permissions should be removed
+       * user_name - user name
+    Return: status (True if permissions was removed, False otherwise)
+    '''
+    return removeUsersPermissionsFromTemplate(positive, template, [user_name])
 
 
 @is_action()
