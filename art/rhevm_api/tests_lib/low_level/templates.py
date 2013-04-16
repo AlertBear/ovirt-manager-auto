@@ -233,10 +233,13 @@ def _prepareNicObj(**kwargs):
         nic_obj.set_interface(kwargs.get('interface'))
 
     if 'network' in kwargs:
-        cluster = kwargs.get('cluster')
-        cl_obj = CL_API.find(cluster, 'id')
-        cl_net = getClusterNetwork(cl_obj.name, kwargs.get('network'))
-        nic_obj.set_network(cl_net)
+        if kwargs.get('network'):
+            cluster = kwargs.get('cluster')
+            cl_obj = CL_API.find(cluster, 'id')
+            cl_net = getClusterNetwork(cl_obj.name, kwargs.get('network'))
+            nic_obj.set_network(cl_net)
+        else:
+            nic_obj.set_network(data_st.Network(name=None))
 
     if 'active' in kwargs:
         nic_obj.set_active(kwargs.get('active'))
