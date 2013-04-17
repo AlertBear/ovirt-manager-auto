@@ -2349,6 +2349,21 @@ def getVmNicLinked(vm, nic='nic1'):
     return nic_obj.get_linked()
 
 
+def getVmNicNetwork(vm, nic='nic1'):
+    '''
+    Check if NIC contains network
+    **Author**: gcheresh
+    **Parameters**:
+        *  *vm* - vm name
+        *  *nic* - nic name
+    **Returns**: True if NIC contains non-empty network object
+                or False for Empty network object
+    '''
+    nic_obj = getVmNic(vm, nic)
+
+    return bool(nic_obj.get_network())
+
+
 @is_action()
 def getVmNicVlanId(vm, nic='nic1'):
     '''
