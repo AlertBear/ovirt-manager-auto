@@ -920,14 +920,15 @@ def _prepareNicObj(**kwargs):
     if 'linked' in kwargs:
         nic_obj.set_linked(kwargs.get('linked'))
 
-    port_mirror = kwargs.get('port_mirroring', None)
-    networks_obj = None
-    if port_mirror:
-        networks_obj = data_st.Networks()
-        networks = port_mirror.split(',')
-        for network in networks:
-            networks_obj.add_network(data_st.Network(name=network))
-    nic_obj.set_port_mirroring(data_st.PortMirroring(networks=networks_obj))
+    if 'port_mirroring' in kwargs:
+        port_mirror = kwargs.get('port_mirroring')
+        networks_obj = None
+        if port_mirror:
+            networks_obj = data_st.Networks()
+            networks = port_mirror.split(',')
+            for network in networks:
+                networks_obj.add_network(data_st.Network(name=network))
+        nic_obj.set_port_mirroring(data_st.PortMirroring(networks=networks_obj))
 
     return nic_obj
 
