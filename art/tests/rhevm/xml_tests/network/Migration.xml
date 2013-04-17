@@ -153,6 +153,7 @@
    <vital>FALSE</vital>
    <test_description/>
 </test_case>
+<!-- Migrating, Cause: Non-operational host : START -->
 <test_case>
    <test_name>Turn DOWN eth1</test_name>
    <test_action>ifdownNic</test_action>
@@ -177,17 +178,6 @@
    <test_description/>
 </test_case>
 <test_case>
-   <test_name>Wait till VM Start Migration</test_name>
-   <test_action>waitForVMState</test_action>
-   <parameters>vm='{vm_name[0]}',state='migrating_from',sleep=1,timeout=120</parameters>
-   <positive>NONE</positive>
-   <run>yes</run>
-   <fetch_output/>
-   <report>YES</report>
-   <vital>FALSE</vital>
-   <test_description/>
-</test_case>
-<test_case>
    <test_name>Wait till VM comes UP after migration</test_name>
    <test_action>waitForVMState</test_action>
    <parameters>vm='{vm_name[0]}',state='up',sleep=1,timeout=120</parameters>
@@ -204,6 +194,17 @@
    <parameters>vm='{vm_name[0]}',osType=%osTypeElement%,attempt=600,interval=2,user='{vm_linux_user}',password='{vm_linux_password}'</parameters>
    <positive>TRUE</positive>
    <run>YES</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Checking that the vm has switched hosts</test_name>
+   <test_action>checkVmState</test_action>
+   <parameters>vmName='{vm_name[0]}',state='up',host=%hostName%</parameters>
+   <positive>FALSE</positive>
+   <run>yes</run>
    <fetch_output/>
    <report>YES</report>
    <vital>FALSE</vital>
@@ -242,6 +243,53 @@
    <vital>FALSE</vital>
    <test_description/>
 </test_case>
+<!-- Migrating, Cause: Non-operational host : END -->
+<!-- Migrating, Cause: Initiative migrating : START -->
+<test_case>
+   <test_name>Which Host does the VM runs on</test_name>
+   <test_action>getVmHost</test_action>
+   <parameters>vm='{vm_name[0]}'</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <fetch_output>vmHoster-&gt;hostName</fetch_output>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Migrating vm from one host to another</test_name>
+   <test_action>migrateVm</test_action>
+   <parameters>vm='{vm_name[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>NO</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Wait till VM comes UP after migration</test_name>
+   <test_action>waitForVMState</test_action>
+   <parameters>vm='{vm_name[0]}',state='up',sleep=1,timeout=120</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>Check Vm connectivity</test_name>
+   <test_action>checkVMConnectivity</test_action>
+   <parameters>vm='{vm_name[0]}',osType=%osTypeElement%,attempt=600,interval=2,user='{vm_linux_user}',password='{vm_linux_password}'</parameters>
+   <positive>TRUE</positive>
+   <run>YES</run>
+   <fetch_output/>
+   <report>YES</report>
+   <vital>FALSE</vital>
+   <test_description/>
+</test_case>
+<!-- Migrating, Cause: Initiative migrating : END -->
 <test_case>
    <test_name>Shutdown Vm</test_name>
    <test_action>stopVm</test_action>
