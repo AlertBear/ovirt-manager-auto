@@ -1290,7 +1290,7 @@ def prepareVmWithRhevm(positive, hosts, cpuName, username, password, datacenter,
                format_export_domain, nic, nicType, lun_address, lun_target,
                luns, disk_size, disk_type, volume_format, disk_interface,
                bootable, wipe_after_delete, start, vm_type, cpu_socket,
-               cpu_cores, display_type, installation, slim, vm_user,
+               cpu_cores, display_type, installation, os_type, vm_user,
                vm_password, cobblerAddress, cobblerUser, cobblerPasswd, image,
                network, useAgent):
 
@@ -1313,7 +1313,7 @@ def prepareVmWithRhevm(positive, hosts, cpuName, username, password, datacenter,
                    wipe_after_delete=wipe_after_delete, start=start,type=vm_type,
                    memory=memory_size, cpu_socket=cpu_socket,
                    cpu_cores=cpu_cores, display_type=display_type,
-                   installation=True, slim=slim, user=vm_user,
+                   installation=True, os_type=os_type, user=vm_user,
                    password=vm_password, cobblerAddress=cobblerAddress,
                    cobblerUser=cobblerUser, cobblerPasswd=cobblerPasswd,
                    image=image,network=network,useAgent=useAgent):

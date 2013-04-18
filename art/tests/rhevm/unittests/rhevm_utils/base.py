@@ -311,12 +311,11 @@ class RHEVMUtilsTestCase(unittest.TestCase):
         wipe_after_delete = params.get('wipe_after_delete')
         start = params.get('start')
         vm_type = ENUMS['vm_type_server']
-        #os_type = params.get('vm_os')
+        os_type = params.get('vm_os')
         cpu_socket = params.get('cpu_socket')
         cpu_cores = params.get('cpu_cores')
         display_type = ENUMS['display_type_spice']
         installation = params.get('installation')
-        slim = params.get('slim')
         vm_user = params.get('vm_linux_user')
         vm_password = params.get('vm_linux_password')
         cobblerAddress = params.get('cobbler_address')
@@ -335,7 +334,7 @@ class RHEVMUtilsTestCase(unittest.TestCase):
                format_export_domain, nic, nicType, lun_address, lun_target,
                luns, disk_size, disk_type, volume_format, disk_interface,
                bootable, wipe_after_delete, start, vm_type, cpu_socket,
-               cpu_cores, display_type, installation, slim, vm_user,
+               cpu_cores, display_type, installation, os_type, vm_user,
                vm_password, cobblerAddress, cobblerUser, cobblerPasswd, image,
                network, useAgent):
             logger.info("prepareVmWithRhevm failed")
