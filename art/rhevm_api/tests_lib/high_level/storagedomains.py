@@ -548,3 +548,71 @@ def create_nfs_domain_with_options(
         if not storagedomains.attachStorageDomain(True, datacenter, name):
             raise errors.StorageDomainException(
                 "Cannot attach %s to %s" % (name, datacenter))
+
+@is_action('attachAndActivateDomain')
+def attach_and_activate_domain(datacenter, domain):
+    """
+    Description: Attaches (if necessary) and activates a domain
+    Author: gickowic
+    Parameters:
+        * datacenter - datacenter name
+        * domain - domain name
+    Returns true if successful
+    """
+    logger.info('Checking if domain %s is attached to dc %s'
+                % (domain, datacenter))
+
+    dc_storage_objects = storagedomains.getDCStorages(datacenter, False)
+
+    if not [sd for sd in dc_storage_objects if sd.get_name() == domain]:
+        logger.info('Attaching domain %s to dc %s' % (domain, datacenter))
+        if not storagedomains.attachStorageDomain(True, datacenter, domain):
+            raise errors.StorageDomainException(
+                'Unable to attach domain %s to dc %s'
+                % (domain, datacenter))
+    logger.info('Domain %s attached to dc %s' % (domain, datacenter))
+
+    logger.info('Activating domain %s on dc %s' % (domain, datacenter))
+
+    if not storagedomains.activateStorageDomain(True, datacenter, domain):
+        raise errors.StorageDomainException(
+            'Unable to activate domain %s on dc %s'
+            % (domain, datacenter))
+    logger.info('Domain %s actived' % domain)
+
+    return True
+
+
+@is_action('detachAndDeactivateDomain')
+def detach_and_deactivate_domain(datacenter, domain):
+    """
+    Description: deactivates a domain (if necessary) and detaches it
+    Author: gickowic
+    Parameters:
+        * datacenter - datacenter name
+        * domain - domain name
+    Returns true if successful
+    """
+    logger.info('Checking if domain %s active in dc %s'
+                % (domain, datacenter))
+    if storagedomains.is_storage_domain_active(datacenter, domain):
+        logger.info('Domain %s is active in dc %s' % (domain, datacenter))
+
+        logger.info('Deactivating domain  %s in dc %s' % (domain, datacenter))
+        if not storagedomains.deactivateStorageDomain(True, datacenter,
+                                                      domain):
+            raise errors.StorageDomainException(
+                'Unable to deactivate domain %s on dc %s'
+                % (domain, datacenter))
+
+    logger.info('Domain %s is inactive in datacenter %s'
+                % (domain, datacenter))
+
+    logger.info('Detaching domain %s from dc %s' % (domain, datacenter))
+    if not storagedomains.detachStorageDomain(True, datacenter, domain):
+        raise errors.StorageDomainException(
+            'Unable to detach domain %s from dc %s'
+            % (domain, datacenter))
+    logger.info('Domain %s detached to dc %s' % (domain, datacenter))
+
+    return True
