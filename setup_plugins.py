@@ -4,7 +4,6 @@ import os
 import sys
 import re
 import art.test_handler.plmanagement as plcore
-from art.test_handler.plmanagement import implements
 from art.test_handler.plmanagement.interfaces import packaging
 from art.test_handler.plmanagement.manager import PluginManager
 from subprocess import Popen, PIPE
@@ -87,17 +86,16 @@ def main():
             params['post_install_script'] = post_install
 #                " &> /dev/null"
 
+        manifest = [
+                "exclude art/test_handler/plmanagement/plugins/__init__.py",
+                "include %s" % file_name,
+                ]
+        params['manifest_list'] = manifest
 
         args = globals()
         args.update(locals())
         with open(file_name, 'w') as fh:
             fh.write(SETUP_SCRIPT.format(**args))
-
-        manifest = [
-                "exclude test_handler/plmanagement/plugins/__init__.py",
-                "include %s" % file_name,
-                ]
-        params['manifest_list'] = manifest
 
         cmd = ['python', file_name]
         cmd.extend(sys.argv[1:])
