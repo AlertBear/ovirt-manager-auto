@@ -1897,18 +1897,19 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None, nicTy
         mac = getVmMacAddress(positive, vmName, nic=nic)
         if not mac[0]:
             return False
-        if not cobblerRemoveSystem(cobblerAddress, cobblerUser, cobblerPasswd,
-                                   mac[1]['macAddress']):
-            return False
 
         if useAgent:
             ip = waitForIP(vmName)[1]['ip']
 
-        return checkVMConnectivity(positive, vmName, os_type,
+        if not checkVMConnectivity(positive, vmName, os_type,
                                    attempt=attempt, interval=interval,
                                    nic=nic, user=user , password=password,
-                                   ip=ip)
-
+                                   ip=ip):
+            return False
+        if not cobblerRemoveSystem(cobblerAddress, cobblerUser, cobblerPasswd,
+                                   mac[1]['macAddress']):
+            return False
+        return True
     else:
         if (start.lower() == 'true'):
             if not startVm(positive, vmName):
