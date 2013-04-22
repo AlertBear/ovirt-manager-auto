@@ -338,6 +338,7 @@ def addPermissionsForNetwork(positive, user, network, data_center, role="Network
     return addUserPermitsForObj(positive, user, role, netObj)
 
 
+@is_action()
 def addPermissionsForTemplate(positive, user, template, role="TemplateAdmin"):
     '''
     Description: add template permissios to user
