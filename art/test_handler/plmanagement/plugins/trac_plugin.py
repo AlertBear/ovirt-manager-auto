@@ -51,6 +51,7 @@ URL_REG = re.compile('^(?P<scheme>https?)://((?P<user>[^@:]+)'\
         '(?P<path>.+)?$')
 
 CONTENT_TYPE = 'application/json'
+TRAC_ID = 'trac'
 
 
 class TracSkipTest(SkipTest):
@@ -93,6 +94,10 @@ class Trac(Component):
     def configure(self, params, conf):
         if not self.is_enabled(params, conf):
             return
+
+        from art.test_handler.test_runner import TestGroup
+        TestGroup.add_elm_attribute('TEST_TRAC_ID', TRAC_ID)
+
         site = conf[CONF_SEC]['url']
         m = URL_REG.match(site)
         if not m:
@@ -122,7 +127,7 @@ class Trac(Component):
                 site['path'].rsplit('/', 1)[0])
 
     def _should_be_skipped(self, test):
-        ids = getattr(test, 'trac', "").strip()
+        ids = getattr(test, TRAC_ID, "").strip()
         if not ids:
             return
 

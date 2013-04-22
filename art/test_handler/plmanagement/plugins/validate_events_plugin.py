@@ -22,23 +22,29 @@ Configuration Options:
 
 import re
 from art.test_handler.plmanagement import Component, implements, get_logger
-from art.test_handler.plmanagement.interfaces.application import IConfigurable
-from art.test_handler.plmanagement.interfaces.tests_listener import ITestCaseHandler
+from art.test_handler.plmanagement.interfaces.application import \
+    IConfigurable, IApplicationListener
+from art.test_handler.plmanagement.interfaces.tests_listener import \
+    ITestCaseHandler, ITestGroupHandler
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.plmanagement.interfaces.config_validator import\
                                                     IConfigValidation
+from art.test_handler.test_runner import TestGroup
 
 logger = get_logger('validate_events')
 CORRELATION_ID = 'Correlation-Id'
 EVENTS_OPTION = 'VALIDATE_EVENTS'
 DEFAULT_STATE = False
 ENABLED = 'enabled'
+EXP_EVENTS = 'exp_events'
+
 
 class ValidateEvents(Component):
     """
     Plugin provides validation of events by correlation id.
     """
-    implements(IConfigurable, ITestCaseHandler, IPackaging, IConfigValidation)
+    implements(IConfigurable, ITestCaseHandler, IPackaging, IConfigValidation,
+               ITestGroupHandler)
     name = "Validate_Events"
 
     def __init__(self):
@@ -64,9 +70,10 @@ class ValidateEvents(Component):
         self.event_api = get_api('event', 'events')
         logger.info("Plugin for event validations is enabled.")
 
+        TestGroup.add_elm_attribute('TEST_EXP_EVENTS', EXP_EVENTS)
 
     def pre_test_case(self, t):
-       pass
+       t[TestGroup.TEST_EXP_EVENTS] = t.get(TestGroup.TEST_EXP_EVENTS, None)
 
     def post_test_case(self, t):
 
@@ -98,6 +105,14 @@ class ValidateEvents(Component):
         'correlation_id', expected_count = exp_events_count):
             t.status = t.TEST_STATUS_FAILED
 
+    def pre_test_group(self, g):
+        pass
+
+    def post_test_group(self, g):
+        pass
+
+    def test_group_skipped(self, g):
+        pass
 
     @classmethod
     def fill_setup_params(cls, params):

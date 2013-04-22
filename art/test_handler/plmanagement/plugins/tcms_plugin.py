@@ -147,6 +147,10 @@ class TCMS(Component):
         self.report_bz = tcms_cfg.as_bool(REPORT_BZ)
         self.__register_functions()
 
+        from art.test_handler.test_runner import TestGroup
+        TestGroup.add_elm_attribute('TEST_TCMS_CASE_ID', TCMS_TEST_CASE)
+        TestGroup.add_elm_attribute('TEST_TCMS_PLAN_ID', TCMS_PLAN_ID)
+
     def __register_functions(self):
         from art.test_handler import tools
         setattr(tools, TCMS_DEC, tcms_decorator)

@@ -10,7 +10,9 @@ import copy
 from art.test_handler.settings import initPlmanager
 from art.test_handler.exceptions import VitalTestFailed, \
                         Vital4GroupTestFailed, SkipTest
-from utilities.jobs import JobsSet, Job # TODO: consider to use http://docs.python.org/dev/library/concurrent.futures.html instead
+from utilities.jobs import JobsSet, Job
+# TODO: consider to use
+# http://docs.python.org/dev/library/concurrent.futures.html instead
 
 # TODO: Consider trigger_action
 # TODO: Consider async. actions
@@ -121,6 +123,12 @@ class GroupResult(Result):
 
 
 class _TestElm(_DictLikeObject):
+
+    TEST_NAME = 'test_name'
+    TEST_VITAL = 'vital'
+    TEST_VITAL4GROUP = 'vital4group'
+    TEST_CONF = 'conf'
+
     TEST_STATUS_PASSED = 'Pass'
     TEST_STATUS_FAILED = 'Fail'
     TEST_STATUS_SKIPPED = 'Skipped'
@@ -150,6 +158,10 @@ class _TestElm(_DictLikeObject):
         cp = copy.copy(super(_TestElm, self))
         cp.serial = SERIAL.next()
         return cp
+
+    @classmethod
+    def add_elm_attribute(cls, attr_name, attr_value):
+        setattr(cls, attr_name, attr_value)
 
 
 class TestGroup(_TestElm):

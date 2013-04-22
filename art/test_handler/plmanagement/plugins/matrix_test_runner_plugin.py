@@ -51,7 +51,6 @@ Configuration Options:
         the auto discovery will be still enabled. The default value is: false
 """
 
-import os
 import re
 import logging
 from copy import copy
@@ -79,28 +78,6 @@ logger = get_logger('matrix-test-composer')
 NO_TB_EXCEPTIONS = (EntityNotFound,)
 RUN_SEC = 'RUN'
 
-TEST_CASE = 'test_case'
-TEST_ID = 'id'
-TEST_SERIAL = 'serial'
-TEST_NAME = 'test_name'
-TEST_RUN = 'run'
-TEST_DESCR = 'test_description'
-TEST_ACTION = 'test_action'
-TEST_PARAMS = 'parameters'
-TEST_POSITIVE = 'positive'
-TEST_REPORT = 'test_report'
-TEST_FETCH_OUTPUT = 'fetch_output'
-TEST_BZ_ID = 'bz' # TODO: shouldn't be here
-TEST_VITAL = 'vital'
-TEST_VITAL4GROUP = 'vital4group'
-TEST_CONF = 'conf'
-TEST_EXP_EVENTS = 'exp_events' # TODO: shouldn't be here
-TEST_EXPECTED_EXCEPTIONS = 'expected_exc'
-TEST_TCMS_CASE_ID = 'tcms_test_case' # TODO: shouldn't be here
-TEST_TCMS_PLAN_ID = 'tcms_plan_id' # TODO: shouldn't be here
-TEST_TRAC_ID = 'trac' # TODO: shouldn't be here
-
-
 START_GROUP = 'START_GROUP'
 END_GROUP = 'END_GROUP'
 _LOOP_INDEX = '#loop_index'
@@ -123,13 +100,15 @@ GLOBAL_SCOPE = {
 
 
 def assign_attributes(te, elm):
-    te.test_name = elm[TEST_NAME]
+    te.test_name = elm[te.TEST_NAME]
     #te.description = elm[TEST_DESCR]
 
 
 def get_attr_as_bool(elm, name, default='yes'):
-    elm[name] = elm.get(name, default).lower().strip()
-    if elm[name] in ('yes', '1', 'true'):
+    attr = elm.get(name, default)
+    if isinstance(attr, bool):
+        return attr
+    if attr.lower().strip() in ('yes', '1', 'true'):
         return True
     return False
 
@@ -412,6 +391,8 @@ class MatrixTestCase(TestCase):
         self.expected_exc = ()
         self.local_scope = {}
         self.conf = None
+        elm[TestGroup.TEST_VITAL] = get_attr_as_bool(elm,
+                TestGroup.TEST_VITAL, default='no')
         for key, val in elm.items():
             self[key] = val
 
@@ -463,19 +444,19 @@ class MatrixTestCase(TestCase):
         self._run(self.run, self.tc)
 
         self.test_name = self.tc.resolve_place_holders(self.test_name, self.local_scope)
-        logger.info(self.format_attr(TEST_NAME))
-        logger.info(self.format_attr(TEST_SERIAL))
-        logger.info(self.format_attr(TEST_ID))
+        logger.info(self.format_attr(self.TEST_NAME))
+        logger.info(self.format_attr(self.TEST_SERIAL))
+        logger.info(self.format_attr(self.TEST_ID))
         self.parameters = self.tc.resolve_place_holders(self.parameters, self.local_scope)
 
         if self.positive is not None:
             self.parameters = "%s, %s" % (self.positive, self.parameters)
-        logger.info(self.format_attr(TEST_POSITIVE))
+        logger.info(self.format_attr(self.TEST_POSITIVE))
 
         func = self.tc.resolve_func_path(self.test_action)
         self.test_action = func.name
-        logger.info(self.format_attr(TEST_ACTION))
-        logger.info(self.format_attr(TEST_PARAMS))
+        logger.info(self.format_attr(self.TEST_ACTION))
+        logger.info(self.format_attr(self.TEST_PARAMS))
         self.mod_name = self.group_name
         if not self.mod_name:
             self.mod_name = func.module.split('.')[-1]
@@ -596,7 +577,7 @@ class MatrixTestCase(TestCase):
     @classmethod
     def _create_elm(cls, elm, tc):
         case = MatrixTestCase(tc, elm)
-        run = tc.parse_run_attr(elm[TEST_RUN])
+        run = tc.parse_run_attr(elm[cls.TEST_RUN])
         return MatrixTestCase._resolve_run_attr(run, case)
 
     def __str__(self):
@@ -623,6 +604,8 @@ class MatrixTestGroup(TestGroup):
         self.elms = elms
         self.conf = None
         self.local_scope = {}
+        elm[TestGroup.TEST_VITAL] = get_attr_as_bool(elm,
+                TestGroup.TEST_VITAL, default='no')
         for key, val in elm.items():
             self[key] = val
 
@@ -637,9 +620,9 @@ class MatrixTestGroup(TestGroup):
             it = iter(self.elms)
             while True:
                 elm = it.next()
-                group_name = self.tc.group_starts(elm[TEST_NAME])
+                group_name = self.tc.group_starts(elm[self.TEST_NAME])
                 if group_name:
-                    elm[TEST_NAME] = group_name
+                    elm[self.TEST_NAME] = group_name
                     te = MatrixTestGroup._create_elm(elm, it, self.tc, \
                             self.local_scope)
                     if self.tc.groups and group_name not in self.tc.groups:
@@ -652,12 +635,12 @@ class MatrixTestGroup(TestGroup):
 
     @classmethod
     def _create_elm(cls, elm, it, tc, local_scope=None):
-        name = elm[TEST_NAME]
+        name = elm[cls.TEST_NAME]
         try:
             elms = []
             while True:
                 next_elm = it.next()
-                if tc.group_ends(next_elm[TEST_NAME]) == name:
+                if tc.group_ends(next_elm[cls.TEST_NAME]) == name:
                     break
                 elms.append(next_elm)
         except StopIteration as ex:
@@ -666,7 +649,7 @@ class MatrixTestGroup(TestGroup):
         if local_scope is not None:
             g.local_scope.update(local_scope)
         assign_attributes(g, elm) #FIXME: seems to be redundant
-        run = tc.parse_run_attr(elm[TEST_RUN])
+        run = tc.parse_run_attr(elm[cls.TEST_RUN])
         g = MatrixTestCase._resolve_run_attr(run, g)
         return g
 
@@ -722,7 +705,9 @@ class MatrixLoopElm(MatrixTestGroup):
 
 
 class MatrixTestSuite(TestSuite):
-
+    """
+    Contains iterator for test elements.
+    """
     def __init__(self, name, tc):
         super(MatrixTestSuite, self).__init__()
         self.tc = tc
@@ -735,9 +720,9 @@ class MatrixTestSuite(TestSuite):
 
     def __compose_element(self, it):
         elm = it.next()
-        group_name = self.tc.group_starts(elm[TEST_NAME])
+        group_name = self.tc.group_starts(elm[self.TEST_NAME])
         if group_name:
-            elm[TEST_NAME] = group_name
+            elm[self.TEST_NAME] = group_name
             te = MatrixTestGroup._create_elm(elm, it, self.tc)
             if self.tc.groups and group_name not in self.tc.groups:
                 return self.__compose_element(it)
@@ -797,20 +782,32 @@ class MatrixBasedTestComposer(Component):
         self.groups = params.groups
         MatrixBasedTestComposer.discover_actions = auto_discover
         self.conf = conf
-        TestResult.ATTRIBUTES['module_name'] = \
-                ('mod_name', None, None)
-        TestResult.ATTRIBUTES['iter_num'] = \
-                ('serial', "Iteration number", None)
-        TestResult.ATTRIBUTES[TEST_PARAMS] = \
-                (TEST_PARAMS, "Test parameters", None)
-        TestResult.ATTRIBUTES[TEST_POSITIVE] = \
-                (TEST_POSITIVE, "Test positive", None)
-        TestResult.ATTRIBUTES[TEST_ACTION] = \
-                (TEST_ACTION, "Test action", None)
-        TestResult.ATTRIBUTES[TEST_REPORT] = \
-                (TEST_REPORT, "Report test", None)
-        TestResult.ATTRIBUTES[TEST_EXP_EVENTS] = \
-                (TEST_EXP_EVENTS, "Number of expected events", None)
+
+        TestCase.add_elm_attribute('TEST_SERIAL', 'serial')
+        TestCase.add_elm_attribute('TEST_ID', 'id')
+        TestGroup.add_elm_attribute('TEST_RUN', 'run')
+        TestCase.add_elm_attribute('TEST_RUN', 'run')
+        TestGroup.add_elm_attribute('TEST_ACTION', 'test_action')
+        TestCase.add_elm_attribute('TEST_ACTION', 'test_action')
+        TestGroup.add_elm_attribute('TEST_PARAMS', 'parameters')
+        TestCase.add_elm_attribute('TEST_PARAMS', 'parameters')
+        TestGroup.add_elm_attribute('TEST_POSITIVE', 'positive')
+        TestCase.add_elm_attribute('TEST_POSITIVE', 'positive')
+        TestGroup.add_elm_attribute('TEST_FETCH_OUTPUT', 'fetch_output')
+
+        TestResult.add_result_attribute('module_name', 'mod_name',
+                                        'Module name')
+        TestResult.add_result_attribute('iter_num', 'serial',
+                                        'Iteration number')
+        TestResult.add_result_attribute('parameters', 'parameters',
+                                        'Test parameters')
+        TestResult.add_result_attribute('positive', 'positive',
+                                        'Test positive')
+        TestResult.add_result_attribute('test_action', 'test_action',
+                                        'Test action')
+        TestResult.add_result_attribute('report', 'report', 'Report test')
+        TestResult.add_result_attribute('exp_events', 'exp_events',
+                                 'Number of expected events')
 
     @classmethod
     def add_options(cls, parser):
@@ -826,7 +823,7 @@ class MatrixBasedTestComposer(Component):
                 'discover all actions', default=False)
 
     def pre_test_result_reported(self, res, tc):
-        if not tc.test_report:
+        if not tc.report:
             res._report = False
             return
         res.add_result_attribute('module_name', 'mod_name', 'Module Name', '')
@@ -854,12 +851,21 @@ class MatrixBasedTestComposer(Component):
         pass
 
     def pre_test_case(self, tc):
-        pass
+        positive = tc.get(TestGroup.TEST_POSITIVE, 'none').lower()
+        tc[TestGroup.TEST_POSITIVE] = {'none': None, 'true': True,
+                                       'false': False}[positive]
+        tc[TestGroup.TEST_REPORT] = get_attr_as_bool(tc, TestGroup.TEST_REPORT)
+        if TestGroup.TEST_PARAMS not in tc:
+            tc[TestGroup.TEST_PARAMS] = str()
+        if TestGroup.TEST_FETCH_OUTPUT not in tc:
+            tc[TestGroup.TEST_FETCH_OUTPUT] = None
+        if TestGroup.TEST_RUN not in tc:
+            tc[TestGroup.TEST_RUN] = 'yes'
 
     def post_test_case(self, tc):
         if tc.status in (tc.TEST_STATUS_PASSED, tc.TEST_STATUS_SKIPPED):
             if tc.status == tc.TEST_STATUS_SKIPPED and isinstance(tc.exc, DoNotRun):
-                tc.test_report = False
+                tc.report = False
                 tc.status = tc.TEST_STATUS_PASSED
                 logger.info("Test case '%s' will be not executed: %s", tc.test_name, tc.exc)
 

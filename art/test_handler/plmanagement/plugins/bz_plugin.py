@@ -218,6 +218,9 @@ class Bugzilla(Component):
 
         self.url = URL_RE.match(self.url).group(0)
 
+        from art.test_handler.test_runner import TestGroup
+        TestGroup.add_elm_attribute('TEST_BZ_ID', BZ_ID)
+
     def __register_functions(self):
         from art.test_handler import tools
         setattr(tools, BZ_ID, bz_decorator)

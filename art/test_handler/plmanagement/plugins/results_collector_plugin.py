@@ -1,5 +1,6 @@
 
-from art.test_handler.plmanagement.interfaces.application import IApplicationListener
+from art.test_handler.plmanagement.interfaces.application import \
+    IApplicationListener, IConfigurable
 from art.test_handler.plmanagement import Component, ExtensionPoint, implements, get_logger
 from art.test_handler.plmanagement.interfaces.report_formatter import \
         IResultsFormatter, IResultsCollector, IResultExtension
@@ -12,9 +13,21 @@ class ResultsCollector(Component):
     """
     Plugin collects results and distributes them into formatters
     """
-    implements(IResultsCollector, IApplicationListener)
+    implements(IResultsCollector, IApplicationListener, IConfigurable)
     formatters = ExtensionPoint(IResultsFormatter)
     extenders = ExtensionPoint(IResultExtension)
+    name = "Results Collector"
+
+    @classmethod
+    def add_options(cls, parser):
+        pass
+
+    def configure(self, params, config):
+        TestGroup.add_elm_attribute('TEST_REPORT', 'report')
+
+    @classmethod
+    def is_vital(cls, config):
+        pass
 
     def add_test_result(self, test):
         if isinstance(test, TestSuite):
