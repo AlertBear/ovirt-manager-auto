@@ -26,6 +26,12 @@ from art.rhevm_api.tests_lib.low_level.networks import addNetwork,\
     addNetworkToCluster
 from art.rhevm_api.tests_lib.low_level.hosts import sendSNRequest,\
     commitNetConfig, genSNNic, genSNBond
+from art.rhevm_api.tests_lib.low_level.templates import createTemplate
+from art.rhevm_api.tests_lib.low_level.vms import getVmMacAddress,\
+    startVm, stopVm, createVm, waitForVmsStates
+from art.rhevm_api.utils.test_utils import convertMacToIpAddress,\
+    setPersistentNetwork
+from art.rhevm_api.tests_lib.low_level.storagedomains import createDatacenter
 from art.core_api.apis_exceptions import EntityNotFound
 from utilities.utils import readConfFile
 from art.core_api import is_action
@@ -35,6 +41,11 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 
 logger = logging.getLogger(__package__ + __name__)
 CONNECTIVITY_TIMEOUT = 60
+DISK_SIZE = 21474836480
+LUN_PORT = 3260
+INTERVAL = 2
+ATTEMPTS = 600
+TIMEOUT = 120
 
 
 @is_action()
@@ -231,4 +242,123 @@ def removeNetFromSetup(host, auto_nics=['eth0'], network=[]):
     except Exception as ex:
         logger.error("Remove Network from setup failed %s", ex, exc_info=True)
         return False
+    return True
+
+
+@is_action()
+def prepareSetup(hosts, cpuName, username, password, datacenter,
+                 storage_type, cluster, version,
+                 storageDomainName=None, lun_address='', lun_target='',
+                 luns='', lun_port=LUN_PORT,
+                 diskType='system', auto_nics=['eth0'],
+                 vm_user='root', vm_password=None,
+                 vmName='VMTest1', vmDescription='linux vm',
+                 cobblerAddress=None, cobblerUser=None,
+                 cobblerPasswd=None, nicType='virtio', display_type='spice',
+                 os_type='RHEL6x64', image='rhel6.4-agent3.2',
+                 nic='nic1', size=DISK_SIZE, useAgent=True,
+                 template_name='tempTest1', attempt=ATTEMPTS,
+                 interval=INTERVAL, vm_flag=True, template_flag=True):
+    '''
+        Function that creates DC, Cluster, Storage, Hosts
+        It creates VM and Template if flag is on:
+        **Author**: gcheresh
+        **Parameters**:
+            *  *hosts* - host\s name\s or ip\s.
+                A single host, or a list of hosts separated by comma.
+            *  *cpuName* - cpu type in the Cluster
+            *  *username* - user name for the host machines
+            *  *password* - password for the host machines
+            *  *datacenter* - data center name
+            *  *storage_type* - type of storage
+            *  *cluster* - cluster name
+            *  *version* - supported version like 3.1, 3.2...
+            *  *storageDomainName* - name of the storage domain
+            *  *lun_address* - address of iSCSI machine
+            *  *lun_target* - LUN target
+            *  *luns* - lun\s id.
+                A single lun id, or a list of luns, separeted by comma.
+            *  *lun_port* - lun port
+            *  *diskType* - type of the disk
+            *  *vm_user* - user name for the VM
+            *  *vm_password* - password for the VM
+            *  *auto_nics* - a list of nics
+            *  *vmName* - VM name
+            *  *vmDescription* - Decription of VM
+            *  *cobblerAddress* - IP or hostname of cobbler server
+            *  *cobblerUser* - username for cobbler
+            *  *cobblerPasswd* - password for cobbler
+            *  *display_type* - type of vm display (VNC or SPICE)
+            *  *nicType* - type of the NIC (virtio, RTL or e1000)
+            *  *os_type* - type of the OS
+            *  *image* - profile in cobbler
+            *  *nic* - nic name
+            *  *size* - the size of the disk
+            *  *useAgent* - Set to 'true', if desired to read the ip from VM.
+                Agent exist on VM
+            *  *template_name* - name of the template to create
+            *  *attempt*- attempts to connect after installation
+            *  *inerval* - interval between attempts
+            *  *vm_flag* - Set to true, if desired VM
+            *  *template_flag* - set to true if desired template
+        **Returns**: True if creation of the setup succeeded, otherwise False
+    '''
+    if not createDatacenter(True, hosts=hosts, cpuName=cpuName,
+                            username=username, password=password,
+                            datacenter=datacenter, storage_type=storage_type,
+                            cluster=cluster, version=version,
+                            lun_address=lun_address, lun_target=lun_target,
+                            luns=luns, lun_port=lun_port):
+        logger.error("Couldn't create setup (DC, Cluster, Storage, Host)")
+        return False
+
+    hostArray = hosts.split(',')
+    for host in hostArray:
+        try:
+            sendSNRequest(True, host=host,
+                          auto_nics=auto_nics,
+                          check_connectivity='true',
+                          connectivity_timeout=CONNECTIVITY_TIMEOUT,
+                          force='false')
+            commitNetConfig(True, host=host)
+        except Exception as ex:
+            logger.error("Cleaning host interfaces failed %s", ex,
+                         exc_info=True)
+            return False
+    if vm_flag:
+        if not createVm(True, vmName=vmName,
+                        vmDescription='linux vm', cluster=cluster,
+                        nic=nic, storageDomainName=storageDomainName,
+                        size=size,
+                        nicType=nicType,
+                        display_type=display_type, os_type=os_type,
+                        image=image, user=vm_user,
+                        password=vm_password, installation=True,
+                        cobblerAddress=cobblerAddress,
+                        cobblerUser=cobblerUser,
+                        cobblerPasswd=cobblerPasswd, network='rhevm',
+                        useAgent=True, diskType=diskType,
+                        attempt=attempt, interval=interval):
+            logger.error("Cannot create VM")
+            return False
+    if template_flag:
+        try:
+            rc, out = getVmMacAddress(True, vm=vmName, nic='nic1')
+            mac_addr = out['macAddress']
+            rc, out = convertMacToIpAddress(True, mac_addr)
+            ip_addr = out['ip']
+            setPersistentNetwork(host=ip_addr, password=vm_password)
+            stopVm(True, vm=vmName)
+            createTemplate(True, vm=vmName, cluster=cluster,
+                           name=template_name)
+        except Exception as ex:
+            logger.error("Creating template failed %s", ex,
+                         exc_info=True)
+            return False
+        if not startVm(True, vm=vmName):
+            logger.error("Can't start VM")
+            return False
+        if not waitForVmsStates(True, names=vmName, timeout=TIMEOUT,
+                                states='up'):
+            logger.error("VM status is not up in the predefined timeout")
     return True
