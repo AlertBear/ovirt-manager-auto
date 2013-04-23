@@ -2,6 +2,11 @@
 <!-- vim: set ts=3 sw=3 expandtab: -->
 <?xml-stylesheet type="text/xsl" href="table.xslt"?>
 <input>
+  <!-- <span style="display:none" >TEST_DESCRIPTION</span>
+    Regression tests of vm functionality.
+    Includes add/udate/modify/migrate/run/run once/check status vms
+    Requirements: 8 macs(vms)
+  -->
   <!-- ////////////////////////// SETUP /////////////////////////////// -->
   <test_case>
     <id>cb8b6752-c695-11e1-bca8-f0def10e0ce8</id>

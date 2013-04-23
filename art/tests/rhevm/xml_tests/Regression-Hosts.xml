@@ -2,6 +2,11 @@
 <!-- vim: set ts=3 sw=3 expandtab: -->
 <?xml-stylesheet type="text/xsl" href="table.xslt"?>
 <input>
+  <!-- <span style="display:none" >TEST_DESCRIPTION</span>
+    Regression tests of host functionality.
+    Includes add/udate/modify host and pm of host
+    Requirements: for some tests need two nics
+  -->
   <!-- ////////////////////////// SETUP /////////////////////////////// -->
   <test_case>
     <id>ba3dd1b0-c695-11e1-bc9c-f0def10e0ce8</id>

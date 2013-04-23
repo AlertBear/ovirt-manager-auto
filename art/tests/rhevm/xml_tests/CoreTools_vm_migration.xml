@@ -3,6 +3,11 @@
 <?xml-stylesheet type="text/xsl" href="table.xslt"?>
 
 <input pydocs="/home/jhenner/work/rest-api-tests/html_editor/docs.txt">
+<!-- <span style="display:none" >TEST_DESCRIPTION</span>
+   Tests of migration functionality.
+   Including manual migration, maintained host, cluster policies, migration between clusters and negative tests
+   Requirements: 2 hosts, 16 macs(vms)
+-->
 <test_case>
    <test_name>START_GROUP: migrations_set-up</test_name>
    <test_action/>

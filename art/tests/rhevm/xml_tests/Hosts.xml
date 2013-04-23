@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet type="text/xsl" href="table.xslt"?>
 <input>
+<!-- <span style="display:none" >TEST_DESCRIPTION</span>
+   Tests of basic host, vdsm and vm functionality
+   Includes basic host functionality, power management, and hooks
+   Requirements: Two hosts
+-->
 <test_case>
    <test_name>START_GROUP: set-up</test_name>
    <test_action/>
