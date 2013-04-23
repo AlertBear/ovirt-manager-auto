@@ -197,7 +197,7 @@
 <test_case>
    <test_name>Suspend VM with direct lun</test_name>
    <test_action>suspendVm</test_action>
-   <parameters>vm='{data_center_type}TestVm'</parameters>
+   <parameters>vm='{data_center_type}TestVm', wait=False</parameters>
    <positive>True</positive>
    <run>yes</run>
 </test_case>
@@ -209,21 +209,28 @@
    <run>yes</run>
 </test_case>
 <test_case>
-   <test_name>Start VM with direct lun</test_name>
+   <test_name>Start suspended VM with direct lun</test_name>
    <test_action>startVm</test_action>
-   <parameters>vm='{data_center_type}TestVm', timeout=300</parameters>
+   <parameters>vm='{data_center_type}TestVm', timeout=300, wait_for_status='e{vm_state_up}'</parameters>
    <positive>True</positive>
    <run>yes</run>
 </test_case>
 <test_case>
-   <test_name>Check that VM has two physical disks</test_name>
+   <test_name>Check that VM has two physical disks after resuming from suspended state</test_name>
    <test_action>runMachineCommand</test_action>
    <parameters>ip=%vm_ip%, user='{vm_linux_user}', password='{vm_linux_password}', cmd='[ `ls /dev/sd* /dev/vd* | grep -v [0-9] | wc -l` -eq 2 ]'</parameters>
    <positive>True</positive>
    <run>yes</run>
 </test_case>
 <test_case>
-   <test_name>Stop VM with direct lun</test_name>
+   <test_name>Wait due to bz#952603</test_name>
+   <test_action>sleep</test_action>
+   <parameters>seconds=5</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Stop VM with direct lun, that was resumed from suspended state</test_name>
    <test_action>stopVm</test_action>
    <parameters>vm='{data_center_type}TestVm'</parameters>
    <positive>True</positive>
