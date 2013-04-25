@@ -51,6 +51,18 @@ logger = logging.getLogger(__package__ + __name__)
 xpathMatch = is_action('xpathMatch')(XPathMatch(VM_API))
 
 
+def getStorageDomainDisks(storagedomain, get_href):
+    '''
+    Descrpition: Returns all disks in the given storage domain
+    Parameters:
+        * storagedomain - name of the storage domain
+        * get_href - Returns link for rest if True or sdk object if false
+    Author: gickowic
+    '''
+    sdObj = STORAGE_DOMAIN_API.find(storagedomain)
+    return DISKS_API.getElemFromLink(sdObj, get_href=get_href)
+
+
 def getObjDisks(name, get_href=True, is_template=False):
     """
     Description: Returns given vm's disks collection

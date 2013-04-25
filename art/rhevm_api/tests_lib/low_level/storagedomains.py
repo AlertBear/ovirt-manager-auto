@@ -27,6 +27,9 @@ from art.rhevm_api.tests_lib.low_level.clusters import addCluster, removeCluster
                          isHostAttachedToCluster, attachHostToCluster, \
                          connectClusterToDataCenter
 from art.rhevm_api.tests_lib.low_level.datacenters import addDataCenter,removeDataCenter
+from art.rhevm_api.tests_lib.low_level.disks import getStorageDomainDisks,\
+                                                    deleteDisk,\
+                                                    waitForDisksGone
 from art.rhevm_api.tests_lib.low_level.hosts import deactivateHost, removeHost, \
                                                     getHostCompatibilityVersion
 from art.rhevm_api.tests_lib.low_level.hosts import addHost, \
@@ -42,6 +45,7 @@ from art.rhevm_api.utils.xpath_utils import XPathMatch
 from utilities.utils import getIpAddressByHostName, readConfFile
 from art.core_api import is_action
 from art.test_handler.settings import opts
+
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 
@@ -60,9 +64,9 @@ templUtil = get_api('template', 'templates')
 vmUtil = get_api('vm', 'vms')
 clUtil = get_api('cluster', 'clusters')
 fileUtil = get_api('file', 'files')
+diskUtil = get_api('disk', 'disks')
 
 xpathMatch = is_action('xpathStoragedomains', id_name='xpathMatch')(XPathMatch(util))
-
 
 def _prepareStorageDomainObject(positive, **kwargs):
 
@@ -683,6 +687,7 @@ def cleanDataCenter(positive, datacenter, formatIsoStorage='false', formatExpSto
     nonDownVmList = []
     templList = []
     sd_attached = False
+    floating_disks = []
 
     spmExist,spmHostName = getHost(positive, datacenter, True)
 
@@ -693,33 +698,64 @@ def cleanDataCenter(positive, datacenter, formatIsoStorage='false', formatExpSto
 
     spmHostObject = hostUtil.find(spmHostName)
     clId = spmHostObject.get_cluster().get_id()
+    cluster_name = spmHostObject.get_cluster().get_name()
 
     util.logger.info('Remove VMs, if any, connected to cluster')
     vmObjList = vmUtil.get(absLink=False)
     vmsConnectedToCluster = filter(lambda vmObj: vmObj.get_cluster().get_id() == clId, vmObjList)
     if vmsConnectedToCluster:
-        #Build vmList
+        # Build vmList
         [vmList.append(vmObj.get_name()) for vmObj in vmsConnectedToCluster]
-        #Build non down vm List to be stopped
+        # Build non down vm List to be stopped
         nonDownVms = filter(lambda vmObj: vmObj.status.state.lower() != ENUMS['vm_state_down'], vmsConnectedToCluster)
         if nonDownVms:
             [nonDownVmList.append(vmObj.get_name()) for vmObj in nonDownVms]
+            util.logger.info('Shutting down vms that are still up: %s' %
+                             ','.join(nonDownVmList))
             if not stopVms(','.join(nonDownVmList)):
                 return False
         if not removeVms(positive, ','.join(vmList)):
             return False
+    else:
+        util.logger.info('No vms found in cluster %s' % cluster_name)
 
     util.logger.info('Remove Templates, if any, connected to cluster')
     templObjList = templUtil.get(absLink=False)
     templConnectedToCluster = filter(lambda templObj: templObj.get_cluster().get_id() == clId, templObjList)
     if templConnectedToCluster:
         [templList.append(templObj.name) for templObj in templConnectedToCluster]
+        util.logger.info('Removing templates: %s' % ','.join(templList))
         rmTemplStatus = removeTemplates(positive, ','.join(templList))
         if not rmTemplStatus:
             return False
+        util.logger.info('All templates in cluster %s removed succesfully' %
+                         cluster_name)
+    else:
+        util.logger.info('No templates found in cluster %s' % cluster_name)
+
+    sdObjList = getDCStorages(datacenter, False)
+
+    # remove any floating disks left after cleaning vms
+    for storage_domain in sdObjList:
+        util.logger.info('Find any floating disks in storage domain %s' %
+                         storage_domain.get_name())
+        floating_disks = getStorageDomainDisks(storage_domain.get_name(), False)
+        if floating_disks:
+            floating_disks_list = [disk.get_alias() for disk in floating_disks]
+            for disk in floating_disks_list:
+                util.logger.info('Removing floating disk %s' % disk)
+                if not deleteDisk(True, alias=disk, async=False):
+                    return False
+            util.logger.info('Ensuring all disks are removed')
+            if not waitForDisksGone(True, ','.join(floating_disks_list), sleep=10):
+                    return False
+            util.logger.info('All floating disks removed succesfully')
+            util.logger.info('%s' % floating_disks_list)
+        else:
+            util.logger.info('No floating disks found in storage domain %s' %
+                             storage_domain.get_name())
 
     util.logger.info("Find all non master storage domains")
-    sdObjList = getDCStorages(datacenter, False)
 
     nonMasterSdObjects = filter(lambda sdObj: not sdObj.get_master(), sdObjList)
 
