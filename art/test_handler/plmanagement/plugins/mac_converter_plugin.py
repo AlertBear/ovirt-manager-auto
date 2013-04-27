@@ -24,20 +24,21 @@ Configuration Options:
     | **debug** - enables debugging output, bool(default=False)
 """
 
-import sys
 import re
 import select
 import time
 from threading import Thread
-from subprocess import Popen, PIPE, list2cmdline
+from subprocess import list2cmdline
 from utilities.sshConnection import SSHSession
 from utilities.machine import Machine, LINUX
 
-from art.test_handler.plmanagement import Component, implements, get_logger, PluginError
-from art.test_handler.plmanagement.interfaces.application import IConfigurable, IApplicationListener
+from art.test_handler.plmanagement import Component, implements, get_logger,\
+    PluginError
+from art.test_handler.plmanagement.interfaces.application import\
+    IConfigurable, IApplicationListener
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.plmanagement.interfaces.config_validator import\
-                                                    IConfigValidation
+    IConfigValidation
 
 
 logger = get_logger('mac_to_ip_conv')
@@ -55,8 +56,9 @@ TIMEOUT = 'timeout'
 ATTEMPTS = 'attempts'
 WAIT_INT = 'wait_interval'
 DEFAULT_TIMEOUT = 10
-DEFAULT_ATTEMPTS =  60
+DEFAULT_ATTEMPTS = 60
 DEFAULT_WAIT = 1
+
 
 class MacToIpConverterError(PluginError):
     pass
@@ -71,6 +73,8 @@ class ReaderIsNotReady(MacToIpConverterError):
 
 
 def unify_mac_format(mac):
+    if not isinstance(mac, basestring):
+        raise ValueError("Expected string, got %s" % type(mac))
     return mac.upper().replace('-', ':')
 
 
@@ -93,14 +97,13 @@ class TCPDumpParser(object):
     P_MAC = 'Client-Ethernet-Address (?P<mac>([0-9a-f]+[-:]){5}[0-9a-f]+)'
     P_MSG = 'DHCP-Message Option [0-9]+, length [0-9]+: (?P<msg>[a-z]+)'
 
-    EXPECT = {
-            S_UNKNOWN: (P_REPLY,),
-            S_REPLY: (P_YOUR_IP,),
-            S_CL_IP: (P_SERVER_IP,),
-            S_SER_IP: (P_GW_IP, P_MAC),
-            S_GW_IP: (P_MAC,),
-            S_MAC_ADDR: (P_MSG,),
-            }
+    EXPECT = {S_UNKNOWN: (P_REPLY,),
+              S_REPLY: (P_YOUR_IP,),
+              S_CL_IP: (P_SERVER_IP,),
+              S_SER_IP: (P_GW_IP, P_MAC),
+              S_GW_IP: (P_MAC,),
+              S_MAC_ADDR: (P_MSG,),
+              }
 
     def __init__(self, cache, debug=False):
         super(TCPDumpParser, self).__init__()
@@ -115,8 +118,8 @@ class TCPDumpParser(object):
         Accepts output from tcpdump, line-by-line
         """
         if self.debug:
-            logger.debug("EXPECT %s GOT %s",
-                " OR ".join(["'%s'" % x for x in self.EXPECT[self.st]]), line)
+            expect = " OR ".join(["'%s'" % x for x in self.EXPECT[self.st]])
+            logger.debug("EXPECT %s GOT %s", expect, line)
 
         if self.st == self.S_UNKNOWN:
             if re.search(self.P_REPLY, line):
@@ -155,7 +158,7 @@ class TCPDumpParser(object):
                 if msg == 'ack':
                     self.__store_mac()
                 # else -> don't care about this lease -> wait for REPLY
-            else: # stay in this state and wait for MESSAGE line
+            else:  # stay in this state and wait for MESSAGE line
                 return
 
         # no expected match -> waiting for REPLY
@@ -199,7 +202,7 @@ class Producer(Thread):
             yield line
 
     def run(self):
-        with self.s as fh:
+        with self.s:
             for line in self:
                 self.p.parse_line(line)
         self.s = None
@@ -250,12 +253,11 @@ class SSHProducer(Producer):
                 m = Machine(self.hostname, 'root', self.password).util(LINUX)
                 m.isAlive(self.timeout, 1)
 
-
     def collecting(self):
         cmd = ['tcpdump', '-lnpvi', 'any', 'dst', 'port', '68']
         cmd = list2cmdline(cmd)
-        self.m = SSHSession(hostname=self.hostname, username='root', \
-                password=self.password)
+        self.m = SSHSession(hostname=self.hostname, username='root',
+                            password=self.password)
         with self.m._getSession(self.timeout) as channel:
             # execute command
             channel.exec_command(cmd)
@@ -269,9 +271,10 @@ class SSHProducer(Producer):
                 while channel.recv_stderr_ready() or channel.recv_ready():
                     if channel.recv_ready():
                         self.out += channel.recv(self.IOBUFF)
+                        self.ready = True  # got some data
                     if channel.recv_stderr_ready():
                         logger.debug(channel.recv_stderr(self.IOBUFF))
-                        self.ready = True # printed info about capturing
+                        self.ready = True  # printed info about capturing
                     self.parse()
 
             while channel.recv_ready():
@@ -308,8 +311,11 @@ class DHCPLeasesCatcher(object):
                 break
             timeout -= 1
             if timeout < 0:
-                raise ReaderIsNotReady(reader)
-            time.sleep(1)
+#                raise ReaderIsNotReady(reader)
+                logger.warn("The output producer doesn't provide any output "
+                            "yet: %s", reader)
+            else:
+                time.sleep(1)
 
     def get_ip(self, mac):
         with self.cache:
@@ -325,7 +331,8 @@ class MacToIpConverter(Component):
     Plugin provides way to collect DHCP leases which are going through VDS.
     It allows to you collect MAC: IPs pairs, which could be used for
     """
-    implements(IConfigurable, IApplicationListener, IPackaging, IConfigValidation)
+    implements(IConfigurable, IApplicationListener, IPackaging,
+               IConfigValidation)
     name = "Mac to IP converter"
     enabled = True
     depends_on = []
@@ -337,8 +344,8 @@ class MacToIpConverter(Component):
     @classmethod
     def add_options(cls, parser):
         group = parser.add_argument_group(cls.name, description=cls.__doc__)
-        group.add_argument('--with-mac-ip-conv', action='store_true', \
-                dest='mac_ip_conv_enabled', help="enable plugin")
+        group.add_argument('--with-mac-ip-conv', action='store_true',
+                           dest='mac_ip_conv_enabled', help="enable plugin")
 
     def configure(self, params, conf):
         if not self.is_enabled(params, conf):
@@ -361,15 +368,14 @@ class MacToIpConverter(Component):
             return ip
         raise KeyError(mac)
 
-
     def on_application_exit(self):
         if self.catcher is not None:
             self.catcher.stop()
 
     def on_application_start(self):
-        for name, passwd in  zip(self.vds, self.vds_passwd):
-            ssh = SSHProducer(TCPDumpParser(self.catcher.cache, self.debug), \
-                    name, passwd, timeout=self.timeout)
+        for name, passwd in zip(self.vds, self.vds_passwd):
+            ssh = SSHProducer(TCPDumpParser(self.catcher.cache, self.debug),
+                              name, passwd, timeout=self.timeout)
             self.catcher.add_reader(ssh)
 
         # binding convertMacToIp function to cache
@@ -385,8 +391,8 @@ class MacToIpConverter(Component):
         from utilities.utils import convertMacToIp
         convertMacToIp.func_code = wrapper.func_code
         convertMacToIp.func_globals['my_self'] = self
-        convertMacToIp.func_globals['CanNotTranslateMacToIP'] = CanNotTranslateMacToIP
-
+        convertMacToIp.func_globals['CanNotTranslateMacToIP'] =\
+            CanNotTranslateMacToIP
 
     def on_plugins_loaded(self):
         pass
@@ -395,7 +401,6 @@ class MacToIpConverter(Component):
     def is_enabled(cls, params, conf):
         conf_en = conf.get(MAC_TO_IP_CONV).as_bool(ENABLED)
         return params.mac_ip_conv_enabled or conf_en
-
 
     @classmethod
     def fill_setup_params(cls, params):
@@ -406,16 +411,13 @@ class MacToIpConverter(Component):
         params['description'] = 'MAC to IP address converter for ART'
         params['long_description'] = cls.__doc__.strip().replace('\n', ' ')
         params['requires'] = ['art-utilities']
-        params['py_modules'] = ['art.test_handler.plmanagement.plugins.mac_converter_plugin']
-
+        params['py_modules'] = ['art.test_handler.plmanagement.plugins.'
+                                'mac_converter_plugin']
 
     def config_spec(self, spec, val_funcs):
-        section_spec = spec.get(MAC_TO_IP_CONV, {})
+        section_spec = spec.setdefault(MAC_TO_IP_CONV, {})
         section_spec[ENABLED] = 'boolean(default=%s)' % DEFAULT_STATE
         section_spec[DEBUG] = 'boolean(default=%s)' % DEFAULT_DEBUG
         section_spec[TIMEOUT] = 'integer(default=%s)' % DEFAULT_TIMEOUT
         section_spec[ATTEMPTS] = 'integer(default=%s)' % DEFAULT_ATTEMPTS
         section_spec[WAIT_INT] = 'integer(default=%s)' % DEFAULT_WAIT
-        spec[MAC_TO_IP_CONV] = section_spec
-
-
