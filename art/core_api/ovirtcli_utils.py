@@ -534,14 +534,14 @@ class CliUtil(RestUtil):
         if body:
             addBody = validator.cliEntety(body, self.element_name)
 
-        deleteCmd = 'remove {0} "{1}" {2} --async false'.format(
+        deleteCmd = 'remove {0} "{1}" {2}'.format(
             self.cli_element_name, entity.name, addBody)
 
         ownerId, ownerName, entityName = self._getHrefData(entity.href)
 
         if ownerId and ownerName and entityName:
-            deleteCmd = "remove {0} '{1}' --{2}-identifier '{3}' {4} \
---async false".format(entityName, entity.id, ownerName, ownerId, addBody)
+            deleteCmd = "remove {0} '{1}' --{2}-identifier '{3}' {4} ".\
+                format(entityName, entity.id, ownerName, ownerId, addBody)
 
         correlationId = self.getCorrelationId()
         if correlationId:
