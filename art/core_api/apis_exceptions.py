@@ -92,3 +92,24 @@ class CLICommandFailure(APIException):
     Raised when cli command returns error
     '''
     pass
+
+
+class CLITracebackError(APIException):
+    '''
+    Raised when it is internal error in cli engine
+    '''
+    _error_start = "Traceback (most recent call last):"
+
+    def __init__(self, error):
+        self.before_error, self.error = error.split(self._error_start)
+        self.prepare_traceback_message()
+
+    def __str__(self):
+        before_traceback = "{0}".format(self.before_error)
+        traceback_msg = \
+            "Traceback found in RHEVM/oVirt CLI output: {0}".format(self.error)
+        return "Output before traceback: {0}\nTraceback:\n{1}".\
+            format(before_traceback, traceback_msg)
+
+    def prepare_traceback_message(self):
+        self.error = self.error.replace('File', '\nFile')

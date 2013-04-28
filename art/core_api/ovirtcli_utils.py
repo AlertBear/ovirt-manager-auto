@@ -28,7 +28,7 @@ from art.rhevm_api.data_struct.data_structures import *
 from art.rhevm_api.data_struct.data_structures import ClassesMapping
 from art.core_api.rest_utils import RestUtil
 from art.core_api.apis_exceptions import CLIError, CLITimeout,\
-    CLICommandFailure, UnsupportedCLIEngine
+    CLICommandFailure, UnsupportedCLIEngine, CLITracebackError
 from art.core_api import validator
 from utilities.utils import createCommandLineOptionFromDict
 
@@ -189,6 +189,7 @@ class RhevmCli(CliConnection):
     _query_id_re = 'id(\s+):'
     _id_extract_re = 'id(\\s+):(\\s+)(\S*)'
     _status_extract_re = '.*: (\w+).*'
+    _tracebackMsgSearch = "Traceback (most recent call last):"
     _rhevmOutputErrorKeys = ['error', 'status', 'reason', 'detail']
     _debugMsg = "send:.*header:.*(\r\r\n\r)"
     _errorStatusMsgSearch = "error:.*status:.*reason:.*detail:.*"
@@ -285,6 +286,7 @@ class RhevmCli(CliConnection):
 
     def outputValidator(self, output):
         # looking for error - to change to more generic map style
+        tracebackMsg = self._tracebackMsgSearch in output
         errorStatusMsg = re.search(self._errorStatusMsgSearch,
                                    output, flags=re.DOTALL)
         errorParametersMsg = re.search(self._errorParametersMsgSearch,
@@ -292,6 +294,8 @@ class RhevmCli(CliConnection):
         errorSyntaxMsg = re.search(self._errorSyntaxMsgSearch,
                                    output, flags=re.DOTALL)
         debugMsg = re.search(self._debugMsg, output, flags=re.DOTALL)
+        if tracebackMsg:
+            raise CLITracebackError(self.outputCleaner(output))
         if debugMsg:
             self.logger.debug('Debug output: %s',
                               self.outputCleaner(debugMsg.group(0)))
@@ -402,6 +406,9 @@ class CliUtil(RestUtil):
         response = None
         try:
             out = self.cli.cliCmdRunner(createCmd, 'CREATE')
+        except CLITracebackError as e:
+            self.logger.error("%s", e)
+            return response, False
         except CLICommandFailure as e:
             errorMsg = "Failed to create a new element, details: {0}"
             self.logger.error(errorMsg.format(e))
@@ -475,6 +482,9 @@ class CliUtil(RestUtil):
         response = None
         try:
             out = self.cli.cliCmdRunner(updateCmd, 'UPDATE')
+        except CLITracebackError as e:
+            self.logger.error("%s", e)
+            return response, False
         except CLICommandFailure as e:
             errorMsg = "Failed to update a new element, details: {0}"
             self.logger.error(errorMsg.format(e))
@@ -541,6 +551,9 @@ class CliUtil(RestUtil):
 
         try:
             self.cli.cliCmdRunner(deleteCmd, 'DELETE')
+        except CLITracebackError as e:
+            self.logger.error("%s", e)
+            return False
         except CLICommandFailure as e:
             errorMsg = "Failed to delete an element, details: {0}"
             self.logger.error(errorMsg.format(e))
@@ -580,6 +593,9 @@ class CliUtil(RestUtil):
             queryCmd = queryCmd.replace(cliFormatParam, restFormatParam)
         try:
             out = self.cli.cliCmdRunner(queryCmd, 'SEARCH')
+        except CLITracebackError as e:
+            self.logger.error("%s", e)
+            return []
         except CLICommandFailure as e:
             errorMsg = "Failed to perform query, details: {0}"
             self.logger.error(errorMsg.format(e))
@@ -646,6 +662,9 @@ class CliUtil(RestUtil):
         actionCmd = "%s > %s" % (actionCmd, TMP_FILE)
         try:
             res = self.cli.cliCmdRunner(actionCmd, 'ACTION')
+        except CLITracebackError as e:
+            self.logger.error("%s", e)
+            return False
         except CLICommandFailure as e:
             if positive:
                 errorMsg = "Failed to perform an action, details: {0}"
