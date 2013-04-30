@@ -58,6 +58,8 @@ api = None
 IFCFG_NETWORK_SCRIPTS_DIR = '/etc/sysconfig/network-scripts'
 SYS_CLASS_NET_DIR = '/sys/class/net'
 MTU_DEFAULT_VALUE = 1500
+TASK_TIMEOUT = 300
+TASK_POLL = 5
 
 def get_api(element, collection):
     '''
@@ -1219,7 +1221,7 @@ def getSetupHostname(vdc):
 
 
 def runSQLQueryOnSetup(vdc, vdc_pass, query,
-                       psql_username='postgres', psql_db='engine'):
+                       psql_username='postgres', psql_db='engine', timeout=10):
     """
     Runs a SQL query on the setup database.
     Parameters:
@@ -1233,12 +1235,56 @@ def runSQLQueryOnSetup(vdc, vdc_pass, query,
     """
     setup = Machine(vdc, 'root', vdc_pass).util('linux')
     sep = '__RECORD_SEPARATOR__'
-    timeout = kwargs.get('timeout', 10)
     cmd = ['psql', '-d', psql_db, '-U', psql_username, '-R', sep, '-t', '-A', '-c', query]
-    rc, out = setup.runCmd(cmd, timeout=timeout, conn_timeout=timeout)
-    if rc:
+    passed, out = setup.runCmd(cmd, timeout=timeout, conn_timeout=timeout)
+    if not passed:
+        logger.error("Query %s failed with an output: %s", query, out)
         return False, []
     return True, [a.strip().split('|') for a in out.strip().split(sep) if a.strip()]
+
+
+def get_running_tasks(vdc, vdc_pass, sp_id):
+    """
+    Description: Gets tuple (task_id, storage_pool_id) for all tasks running
+                 in rhevm
+    Parameters:
+        * vdc - ip or hostname of rhevm
+        * vdc_pass - root password for rhevm machine
+        * sp_id - storage pool id
+    """
+    query = "select task_id, task_params_class " \
+            "from async_tasks where storage_pool_id = '%s'" % sp_id
+    status, tasks = runSQLQueryOnSetup(vdc, vdc_pass, query)
+    if not status:
+        raise Exception("runSQLQueryOnSetup returned False")
+    return tasks
+
+
+@is_action("waitForTasks")
+def wait_for_tasks(vdc, vdc_password, datacenter,
+                   timeout=TASK_TIMEOUT, sleep=TASK_POLL):
+    """
+    Description: Waits until all tasks in data-center are finished
+    Parameters:
+        * vdc - ip or hostname of rhevm
+        * vdc_password - root password for rhevm machine
+        * datacenter - name of datacenter that has running tasks
+    """
+    dc_util = get_api('data_center', 'datacenters')
+    dc = dc_util.find(datacenter)
+    tasks = get_running_tasks(vdc, vdc_password, dc.id)
+    start_time = time.time()
+    while tasks and time.time() - start_time < timeout:
+        logger.debug("There are %d running tasks in datacenter %s",
+                          len(tasks), datacenter)
+        time.sleep(sleep)
+        tasks = get_running_tasks(vdc, vdc_password, dc.id)
+    if tasks:
+        raise Exception(
+                "There are still %s tasks on datacenter %s" %
+                          (tasks, datacenter))
+    logger.info("All tasks on datacenter %s are gone", datacenter)
+
 
 def getAllImages(vds, vds_username, vds_password, spool_id, domain_id,
                         object_id):
