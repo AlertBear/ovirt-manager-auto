@@ -275,9 +275,9 @@
 <test_case>
    <test_name>Run VM</test_name>
    <test_action>startVm</test_action>
-   <parameters>vm='{vm_name}', wait_for_status='up'</parameters>
+   <parameters>vm='{vm_name[0]}', wait_for_status='up'</parameters>
    <positive>TRUE</positive>
-   <run>loop({vm_name})</run>
+   <run>YES</run>
    <report>YES</report>
    <fetch_output/>
 </test_case>
