@@ -1596,3 +1596,101 @@ def sendICMP(host, user, password, ip='', count=5, packet_size=None):
         logger.error('Failed to start sending ICMP traffic: %s', output)
         return False
     return True
+
+
+def runTcpDumpCmd(machine, user, password, nic, **kwargs):
+    '''
+    Desciption: Runs tcpdump on the given machine and returns its output.
+    **Author**: tgeft
+        **Parameters**:
+        *  *machine* - machine ip address or fqdn
+        *  *user* - root user on the machine
+        *  *password* - password for the root user
+        *  *nic* - interface on which traffic will be monitored
+        *  *src* - source IP by which to filter packets
+        *  *dst* - destination IP by which to filter packets
+        *  *srcPort* - source port by which to filter packets, should be
+                       numeric (e.g. 80 instead of 'HTTP')
+        *  *dstPort* - destination port by which to filter packets, should
+                       be numeric like 'srcPort'
+        *  *protocol* - protocol by which traffic will be received
+        *  *numPackets* - number of packets to be received (10 by default)
+    **Return**: Returns tcpdump's output and return code.
+    '''
+    paramPrefix = {'src': 'src', 'srcPort': 'src port', 'dst': 'dst',
+                   'dstPort': 'dst port', 'protocol': ''}
+
+    cmd = ['tcpdump', '-i', nic, '-c', str(kwargs.pop('numPackets', '10')),
+           '-nn']
+
+    if kwargs:
+        for k, v in kwargs.iteritems():
+            cmd.extend([paramPrefix[k], str(v), 'and'])
+
+        cmd.pop()  # Removes unneccesary 'and'
+
+    logger.info('TcpDump command to be sent: %s', cmd)
+
+    machineObj = Machine(machine, user, password).util('linux')
+    rc, output = machineObj.runCmd(cmd)
+
+    logger.debug('TcpDump output: ' + output)
+
+    if not rc:
+        if 'timeout' in output:
+            logger.info('Tcpdump timed out (no packets passed the filter).')
+            rc = True  # Getting a timeout is considered to be a successful run
+        else:
+            logger.error('Failed to run tcpdump command. Output: %s', output)
+
+    return rc, output
+
+
+def checkTraffic(machine, user, password, nic, src, dst, **kwargs):
+    '''
+    Desciption: Runs tcpdump on the given machine and verifies its output to
+                check if traffic was received according to the parameters.
+    **Author**: tgeft
+        **Parameters**:
+        *  *machine* - machine ip address or fqdn
+        *  *user* - root user on the machine
+        *  *password* - password for the root user
+        *  *nic* - interface on which traffic will be monitored
+        *  *src* - source IP by which to filter packets
+        *  *dst* - destination IP by which to filter packets
+        *  *srcPort* - source port by which to filter packets, should be
+                       numeric (e.g. 80 instead of 'HTTP')
+        *  *dstPort* - destination port by which to filter packets, should
+                       be numeric like 'srcPort'
+        *  *protocol* - protocol by which traffic will be received
+        *  *numPackets* - number of packets to be received (10 by default)
+    **Return**: Returns true if traffic according to the parameters was
+                received, false otherwise (or the opposite if the test is
+                negative).
+    '''
+    rc, tcpDumpOutput = runTcpDumpCmd(machine, user, password, nic,
+                                      src=src, dst=dst, **kwargs)
+
+    if not rc:
+        raise Exception('Can\'t analyze traffic as running tcpdump failed.')
+
+    pattern = '(.*)'.join([src, str(kwargs.get('srcPort', '')), dst,
+                           str(kwargs.get('dstPort', ''))])
+
+    logger.info('Checking TcpDump output. RE Pattern: ' + pattern)
+
+    '''
+    If the protocol is ICMP, we check that 'ICMP' shows up in the output. For
+    other protocols, the protocol name is displayed on a different line from
+    the source and destination IP's, so the check is not done for them.
+    '''
+    for line in tcpDumpOutput.splitlines():
+        if re.search(pattern, line) and ('ICMP' in line.upper() or
+                                         kwargs.get('protocol', '') != 'icmp'):
+            logger.info('Found match in tcpdump output in the following '
+                        'line: ' + line)
+            return True
+
+    logger.info('The traffic that was searched for was not found in tcpdump '
+                'output')
+    return False
