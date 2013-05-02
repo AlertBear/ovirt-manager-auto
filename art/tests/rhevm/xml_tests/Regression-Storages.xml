@@ -222,6 +222,13 @@
     <exp_events>2</exp_events>
   </test_case>
   <test_case>
+    <test_name>Wait for all background tasks to finish on hosts</test_name>
+    <test_action>waitForTasks</test_action>
+    <parameters>vdc='{host}', vdc_password='{password}', datacenter='RestDataCenter_LOCAL'</parameters>
+    <positive>None</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
     <id>99faffe0-c695-11e1-ac4a-f0def10e0ce8</id>
     <test_name>Deactivate local storage domain</test_name>
     <test_action>deactivateStorageDomain</test_action>

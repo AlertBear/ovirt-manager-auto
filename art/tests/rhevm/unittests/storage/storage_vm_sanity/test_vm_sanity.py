@@ -40,7 +40,8 @@ def setup_module():
 def teardown_module():
     """ removes created datacenter, storages etc.
     """
-    storagedomains.cleanDataCenter(True, config.DATA_CENTER_NAME)
+    storagedomains.cleanDataCenter(True, config.DATA_CENTER_NAME,
+                        vdc=config.VDC, vdc_password=config.VDC_PASSWORD)
 
 
 def _create_vm(vm_name, vm_description, disk_interface,

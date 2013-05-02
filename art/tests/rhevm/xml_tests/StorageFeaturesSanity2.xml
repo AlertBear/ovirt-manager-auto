@@ -354,10 +354,17 @@
    <run>yes</run>
 </test_case>
 <test_case>
-   <test_name>Wait untill disk disappears</test_name>
+   <test_name>Wait until disk disappears</test_name>
    <test_action>waitForDisksGone</test_action>
    <parameters>disksNames='shared'</parameters>
    <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait for all background tasks to finish on hosts</test_name>
+   <test_action>waitForTasks</test_action>
+   <parameters>vdc='{host}', vdc_password='{password}', datacenter='storage_sanity_31_dc'</parameters>
+   <positive>None</positive>
    <run>yes</run>
 </test_case>
 <test_case>
@@ -683,6 +690,13 @@
    <positive>true</positive>
    <run>yes</run>
    <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Wait for all background tasks to finish on hosts</test_name>
+   <test_action>waitForTasks</test_action>
+   <parameters>vdc='{host}', vdc_password='{password}', datacenter='storage_san_upgr_nfs'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Deactivate non-master data domain</test_name>
@@ -1076,6 +1090,13 @@
    <positive>true</positive>
    <run>yes</run>
    <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Wait for all background tasks to finish on hosts</test_name>
+   <test_action>waitForTasks</test_action>
+   <parameters>vdc='{host}', vdc_password='{password}', datacenter='storage_san_upgr_iscsi'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Deactivate non-master data domain</test_name>
@@ -1501,14 +1522,12 @@
    <run>yes</run>
    <report>yes</report>
 </test_case>
-<!--TODO: better checking -->
 <test_case>
-   <test_name>Sleep a bit</test_name>
-   <test_action>sleep</test_action>
-   <parameters>seconds=120</parameters>
-   <positive>none</positive>
+   <test_name>Wait for all background tasks to finish on hosts</test_name>
+   <test_action>waitForTasks</test_action>
+   <parameters>vdc='{host}', vdc_password='{password}', datacenter='storage_sanity_31_dc'</parameters>
+   <positive>None</positive>
    <run>yes</run>
-   <report>no</report>
 </test_case>
 <test_case>
    <test_name>Deactivate master data domain</test_name>
@@ -1881,6 +1900,13 @@
    <positive>true</positive>
    <run>yes</run>
    <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Wait for all background tasks to finish on hosts</test_name>
+   <test_action>waitForTasks</test_action>
+   <parameters>vdc='{host}', vdc_password='{password}', datacenter='storage_sanity_31_dc'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Deactivate master data domain</test_name>

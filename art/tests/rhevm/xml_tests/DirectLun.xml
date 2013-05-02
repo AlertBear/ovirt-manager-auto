@@ -415,6 +415,13 @@
    <run/>
 </test_case>
 <test_case>
+   <test_name>Wait for all background tasks to finish on hosts</test_name>
+   <test_action>waitForTasks</test_action>
+   <parameters>vdc='{host}', vdc_password='{password}', datacenter='{data_center_type}DirectLunTest'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
    <test_name>Create snapshot on VM with direct lun</test_name>
    <test_action>addSnapshot</test_action>
    <parameters>vm='{data_center_type}TestVm', description="snapik"</parameters>
@@ -1355,7 +1362,7 @@
 <test_case>
    <test_name>Clean data center '{data_center_type}'</test_name>
    <test_action>cleanDataCenter</test_action>
-   <parameters>datacenter='{data_center_type}DirectLunTest'</parameters>
+   <parameters>datacenter='{data_center_type}DirectLunTest', vdc='{host}', vdc_password='{password}'</parameters>
    <positive>True</positive>
    <run>yes</run>
    <fetch_output/>

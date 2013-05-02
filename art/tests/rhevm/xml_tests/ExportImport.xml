@@ -492,6 +492,13 @@
    <fetch_output/>
 </test_case>
 <test_case>
+    <test_name>Wait for all background tasks to finish on hosts</test_name>
+    <test_action>waitForTasks</test_action>
+	<parameters>vdc='{host}', vdc_password='{password}', datacenter='{data_center_type}StorageTest'</parameters>
+	<positive>None</positive>
+	<run>yes</run>
+</test_case>
+<test_case>
    <test_name>Import exported VM with force override option '{data_center_type}'</test_name>
    <test_action>importVm</test_action>
    <parameters>vm='{data_center_type}TemplVm',import_storagedomain='{data_center_type}StorageTest_data_domain0',export_storagedomain='ImpExp_{data_center_type}',cluster='{data_center_type}StorageTest'</parameters>
@@ -506,6 +513,13 @@
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
+</test_case>
+<test_case>
+    <test_name>Wait for all background tasks to finish on hosts</test_name>
+    <test_action>waitForTasks</test_action>
+	<parameters>vdc='{host}', vdc_password='{password}', datacenter='{data_center_type}StorageTest'</parameters>
+	<positive>None</positive>
+	<run>yes</run>
 </test_case>
 <test_case>
    <test_name>Start imported VM with force override option '{data_center_type}' and different name</test_name>
@@ -573,6 +587,13 @@
    <fetch_output/>
 </test_case>
 <test_case>
+    <test_name>Wait for all background tasks to finish on hosts</test_name>
+    <test_action>waitForTasks</test_action>
+	<parameters>vdc='{host}', vdc_password='{password}', datacenter='{data_center_type}StorageTest'</parameters>
+	<positive>None</positive>
+	<run>yes</run>
+</test_case>
+<test_case>
    <test_name>Add 3G COW IDE data disk to VM to test collapse snapshots option '{data_center_type}'</test_name>
    <test_action>addDiskToVm</test_action>
    <parameters>vm='{data_center_type}TemplVm',size=3221225472,type='e{disk_type_data}',interface='e{interface_ide}',sparse='true',format='e{format_cow}'</parameters>
@@ -596,6 +617,13 @@
    <fetch_output/>
 </test_case>
 <test_case>
+    <test_name>Wait for all background tasks to finish on hosts</test_name>
+    <test_action>waitForTasks</test_action>
+	<parameters>vdc='{host}', vdc_password='{password}', datacenter='{data_center_type}StorageTest'</parameters>
+	<positive>None</positive>
+	<run>yes</run>
+</test_case>
+<test_case>
    <test_name>Import exported VM with collapse snapshots option '{data_center_type}'</test_name>
    <test_action>importVm</test_action>
    <parameters>vm='{data_center_type}TemplVm',import_storagedomain='{data_center_type}StorageTest_data_domain0',export_storagedomain='ImpExp_{data_center_type}',cluster='{data_center_type}StorageTest'</parameters>
@@ -610,6 +638,13 @@
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
+</test_case>
+<test_case>
+    <test_name>Wait for all background tasks to finish on hosts</test_name>
+    <test_action>waitForTasks</test_action>
+	<parameters>vdc='{host}', vdc_password='{password}', datacenter='{data_center_type}StorageTest'</parameters>
+	<positive>None</positive>
+	<run>yes</run>
 </test_case>
 <test_case>
    <test_name>Start exported VM with collapse snapshots option '{data_center_type}'</test_name>
@@ -759,6 +794,13 @@
    <fetch_output/>
 </test_case>
 <test_case>
+    <test_name>Wait for all background tasks to finish on hosts</test_name>
+    <test_action>waitForTasks</test_action>
+	<parameters>vdc='{host}', vdc_password='{password}', datacenter='{data_center_type}StorageTest'</parameters>
+	<positive>None</positive>
+	<run>yes</run>
+</test_case>
+<test_case>
    <test_name>Export VM with 3 disks '{data_center_type}'</test_name>
    <test_action>exportVm</test_action>
    <parameters>vm='{data_center_type}TestVm', storagedomain='ImpExp_{data_center_type}'</parameters>
@@ -775,12 +817,26 @@
    <fetch_output/>
 </test_case>
 <test_case>
+    <test_name>Wait for all background tasks to finish on hosts</test_name>
+    <test_action>waitForTasks</test_action>
+	<parameters>vdc='{host}', vdc_password='{password}', datacenter='{data_center_type}StorageTest'</parameters>
+	<positive>None</positive>
+	<run>yes</run>
+</test_case>
+<test_case>
    <test_name>Import exported VM with 3 disks '{data_center_type}'</test_name>
    <test_action>importVm</test_action>
    <parameters>vm='{data_center_type}TestVm', import_storagedomain='{data_center_type}StorageTest_data_domain0', export_storagedomain='ImpExp_{data_center_type}', cluster='{data_center_type}StorageTest'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>
+</test_case>
+<test_case>
+    <test_name>Wait for all background tasks to finish on hosts</test_name>
+    <test_action>waitForTasks</test_action>
+	<parameters>vdc='{host}', vdc_password='{password}', datacenter='{data_center_type}StorageTest'</parameters>
+	<positive>None</positive>
+	<run>yes</run>
 </test_case>
 <test_case>
    <test_name>Start exported VM with 3 disks '{data_center_type}'</test_name>
@@ -809,7 +865,7 @@
 <test_case>
    <test_name>Clean data center '{data_center_type}'</test_name>
    <test_action>cleanDataCenter</test_action>
-   <parameters>datacenter='{data_center_type}StorageTest'</parameters>
+   <parameters>datacenter='{data_center_type}StorageTest', vdc='{host}', vdc_password='{password}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <fetch_output/>

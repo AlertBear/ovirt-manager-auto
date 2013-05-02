@@ -14,7 +14,7 @@ import art.rhevm_api.tests_lib.low_level.hosts           as llhosts
 import art.rhevm_api.tests_lib.low_level.storagedomains  as llstoragedomains
 import art.rhevm_api.tests_lib.low_level.vms             as llvms
 import art.rhevm_api.tests_lib.high_level.storagedomains as hlstoragedomains
-from art.rhevm_api.utils.test_utils import get_api, cobblerRemoveSystem
+from art.rhevm_api.utils.test_utils import get_api, cobblerRemoveSystem, wait_for_tasks
 import config
 
 __THIS_MODULE = modules[__name__]
@@ -90,6 +90,12 @@ class TestUpgrade(TestCase):
         llvms.stopVms(",".join(up_vms))
         for vm_obj in vms:
             llvms.removeVm(True, vm_obj.name)
+        vdc = config.VDC
+        vdc_password = config.VDC_PASSWORD
+        if vdc is not None and vdc_password is not None:
+            LOGGER.info('Waiting for vms to be removed')
+            wait_for_tasks(vdc=vdc, vdc_password=vdc_password,
+                             datacenter=cls.dc_name)
         assert llstoragedomains.execOnNonMasterDomains(True, cls.dc_name,
                                             'deactivate', 'all')
         assert llstoragedomains.execOnNonMasterDomains(True, cls.dc_name,

@@ -25,3 +25,6 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 DC_VERSIONS = PARAMETERS.as_list('dc_versions')
 DC_UPGRADE_VERSIONS = PARAMETERS.as_list('dc_upgrade_versions')
 DC_TYPE = PARAMETERS['data_center_type']
+
+VDC = PARAMETERS.get('host', None)
+VDC_PASSWORD = PARAMETERS.get('password', None)

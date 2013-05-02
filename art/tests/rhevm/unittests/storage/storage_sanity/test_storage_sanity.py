@@ -23,7 +23,8 @@ def setup_module():
 def teardown_module():
     """ removes created datacenter, storages etc.
     """
-    ll_st_domains.cleanDataCenter(True, config.DATA_CENTER_NAME)
+    ll_st_domains.cleanDataCenter(True, config.DATA_CENTER_NAME,
+                            vdc=config.VDC, vdc_password=config.VDC_PASSWORD)
 
 
 class TestCase94947(TestCase):
@@ -45,7 +46,8 @@ class TestCase94947(TestCase):
 
         master_domain_name = master_domain['masterDomain']
         if config.EXTEND_LUN is not None:
-            logger.info("extending master storage domain %s" % master_domain_name)
+            logger.info(
+                "extending master storage domain %s" % master_domain_name)
             storagedomains.extend_storage_domain(
                 master_domain_name,
                 config.DATA_CENTER_TYPE,

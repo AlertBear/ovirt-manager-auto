@@ -24,4 +24,4 @@ def teardown_package():
     """
     logger.info("teardown")
     dc_name = config.PARAMETERS['dc_name']
-    cleanDataCenter(True, dc_name)
+    cleanDataCenter(True, dc_name, vdc=config.VDC, vdc_password=config.VDC_PASSWORD)

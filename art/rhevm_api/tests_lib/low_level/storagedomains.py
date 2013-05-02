@@ -40,7 +40,7 @@ from art.rhevm_api.utils.storage_api import getVmsInfo, getImagesList, \
                                     getVolumeInfo, getVolumesList
 from art.rhevm_api.utils.test_utils import validateElementStatus, get_api, \
                                     searchForObj, getImageAndVolumeID, \
-                                    getAllImages
+                                    getAllImages, wait_for_tasks
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from utilities.utils import getIpAddressByHostName, readConfFile
 from art.core_api import is_action
@@ -673,7 +673,8 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
 
 
 @is_action()
-def cleanDataCenter(positive, datacenter, formatIsoStorage='false', formatExpStorage='false'):
+def cleanDataCenter(positive, datacenter, formatIsoStorage='false',
+                    formatExpStorage='false', vdc=None, vdc_password=None):
     '''
     Description: Remove all elements in data center: dataCenter, storage domains, hosts & cluster.
     Author: istein
@@ -719,6 +720,11 @@ def cleanDataCenter(positive, datacenter, formatIsoStorage='false', formatExpSto
     else:
         util.logger.info('No vms found in cluster %s' % cluster_name)
 
+    if vdc is not None and vdc_password is not None:
+        util.logger.info('Waiting for vms to be removed')
+        wait_for_tasks(vdc=vdc, vdc_password=vdc_password,
+                       datacenter=datacenter)
+
     util.logger.info('Remove Templates, if any, connected to cluster')
     templObjList = templUtil.get(absLink=False)
     templConnectedToCluster = filter(lambda templObj: templObj.get_cluster().get_id() == clId, templObjList)
@@ -732,6 +738,11 @@ def cleanDataCenter(positive, datacenter, formatIsoStorage='false', formatExpSto
                          cluster_name)
     else:
         util.logger.info('No templates found in cluster %s' % cluster_name)
+
+    if vdc is not None and vdc_password is not None:
+        util.logger.info('Waiting for templates to be removed')
+        wait_for_tasks(vdc=vdc, vdc_password=vdc_password,
+                       datacenter=datacenter)
 
     sdObjList = getDCStorages(datacenter, False)
 
@@ -754,6 +765,11 @@ def cleanDataCenter(positive, datacenter, formatIsoStorage='false', formatExpSto
         else:
             util.logger.info('No floating disks found in storage domain %s' %
                              storage_domain.get_name())
+
+    if vdc is not None and vdc_password is not None:
+        util.logger.info('Waiting for disks to be removed')
+        wait_for_tasks(vdc=vdc, vdc_password=vdc_password,
+                       datacenter=datacenter)
 
     util.logger.info("Find all non master storage domains")
 

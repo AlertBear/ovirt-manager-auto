@@ -859,6 +859,13 @@
    <run>yes</run>
 </test_case>
 <test_case>
+   <test_name>Wait for all background tasks to finish on hosts</test_name>
+   <test_action>waitForTasks</test_action>
+   <parameters>vdc='{host}', vdc_password='{password}', datacenter='clone_dc'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
    <test_name>Deactivate storage domain</test_name>
    <test_type>rest</test_type>
    <test_action>deactivateStorageDomain</test_action>

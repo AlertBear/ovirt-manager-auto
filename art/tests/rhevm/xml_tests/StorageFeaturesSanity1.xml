@@ -303,6 +303,13 @@
    <report>yes</report>
 </test_case>
 <test_case>
+   <test_name>Wait for all background tasks to finish on hosts</test_name>
+   <test_action>waitForTasks</test_action>
+   <parameters>vdc='{host}', vdc_password='{password}', datacenter='storage_sanity_31_dc'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
    <test_name>Deactivate master data domain</test_name>
    <test_action>deactivateStorageDomain</test_action>
    <parameters>datacenter='storage_sanity_31_dc', storagedomain='master_sd'</parameters>
@@ -1006,6 +1013,13 @@
    <report>yes</report>
 </test_case>
 <test_case>
+   <test_name>Wait for all background tasks to finish on hosts</test_name>
+   <test_action>waitForTasks</test_action>
+   <parameters>vdc='{host}', vdc_password='{password}', datacenter='storage_sanity_31_dc'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
    <test_name>Deactivate export domain</test_name>
    <test_action>deactivateStorageDomain</test_action>
    <parameters>datacenter='storage_sanity_31_dc', storagedomain='{export_domain_name}'</parameters>
@@ -1460,10 +1474,10 @@
    <report>yes</report>
 </test_case>
 <test_case>
-   <test_name>Wait a bit till task disappears</test_name>
-   <test_action>sleep</test_action>
-   <parameters>seconds=20</parameters>
-   <positive>none</positive>
+   <test_name>Wait for all background tasks to finish on hosts</test_name>
+   <test_action>waitForTasks</test_action>
+   <parameters>vdc='{host}', vdc_password='{password}', datacenter='storage_sanity_31_dc'</parameters>
+   <positive>None</positive>
    <run>yes</run>
 </test_case>
 <test_case>

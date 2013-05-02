@@ -1079,7 +1079,7 @@
 <test_case>
    <test_name>Clean Data Center</test_name>
    <test_action>cleanDataCenter</test_action>
-   <parameters>datacenter='{data_center_type}VmTest', formatIsoStorage='true'</parameters>
+   <parameters>datacenter='{data_center_type}VmTest', formatIsoStorage='true', vdc='{host}', vdc_password='{password}'</parameters>
    <positive>TRUE</positive>
    <run>YES</run>
    <report>YES</report>

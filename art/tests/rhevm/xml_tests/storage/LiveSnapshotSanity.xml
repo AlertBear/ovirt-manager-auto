@@ -614,6 +614,13 @@
    <run>yes</run>
 </test_case>
 <test_case>
+   <test_name>Wait for all background tasks to finish on hosts</test_name>
+   <test_action>waitForTasks</test_action>
+   <parameters>vdc='{host}', vdc_password='{password}', datacenter='live_snapshot_dc'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
    <test_name>Deactivate data storage domain</test_name>
    <test_type>rest</test_type>
    <test_action>deactivateStorageDomain</test_action>
@@ -1308,6 +1315,13 @@
    <run>yes</run>
 </test_case>
 <test_case>
+   <test_name>Wait for all background tasks to finish on hosts</test_name>
+   <test_action>waitForTasks</test_action>
+   <parameters>vdc='{host}', vdc_password='{password}', datacenter='live_snapshot_dc'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
    <test_name>Deactivate data storage domain</test_name>
    <test_type>rest</test_type>
    <test_action>deactivateStorageDomain</test_action>
@@ -1505,6 +1519,13 @@
    <test_action>stopVm</test_action>
    <parameters>vm='vm_with_two_disks'</parameters>
    <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait for all background tasks to finish on hosts</test_name>
+   <test_action>waitForTasks</test_action>
+   <parameters>vdc='{host}', vdc_password='{password}', datacenter='live_snapshot_dc'</parameters>
+   <positive>None</positive>
    <run>yes</run>
 </test_case>
 <test_case>
@@ -1713,6 +1734,13 @@
    <test_action>removeVm</test_action>
    <parameters>vm='vm_for_testing'</parameters>
    <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait for all background tasks to finish on hosts</test_name>
+   <test_action>waitForTasks</test_action>
+   <parameters>vdc='{host}', vdc_password='{password}', datacenter='live_snapshot_dc'</parameters>
+   <positive>None</positive>
    <run>yes</run>
 </test_case>
 <test_case>
@@ -2024,6 +2052,13 @@
    <run>yes</run>
 </test_case>
 <test_case>
+   <test_name>Wait for all background tasks to finish on hosts</test_name>
+   <test_action>waitForTasks</test_action>
+   <parameters>vdc='{host}', vdc_password='{password}', datacenter='live_snapshot_dc'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
    <test_name>Deactivate data storage domain</test_name>
    <test_type>rest</test_type>
    <test_action>deactivateStorageDomain</test_action>
@@ -2296,6 +2331,13 @@
    <run>yes</run>
 </test_case>
 <test_case>
+   <test_name>Wait for all background tasks to finish on hosts</test_name>
+   <test_action>waitForTasks</test_action>
+   <parameters>vdc='{host}', vdc_password='{password}', datacenter='live_snapshot_dc'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
    <test_name>Deactivate data storage domain</test_name>
    <test_type>rest</test_type>
    <test_action>deactivateStorageDomain</test_action>
@@ -2526,6 +2568,13 @@
    <test_action>removeVm</test_action>
    <parameters>vm='vm_testing'</parameters>
    <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait for all background tasks to finish on hosts</test_name>
+   <test_action>waitForTasks</test_action>
+   <parameters>vdc='{host}', vdc_password='{password}', datacenter='live_snapshot_dc'</parameters>
+   <positive>None</positive>
    <run>yes</run>
 </test_case>
 <test_case>

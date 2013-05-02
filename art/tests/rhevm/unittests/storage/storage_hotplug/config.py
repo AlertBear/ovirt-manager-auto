@@ -19,3 +19,6 @@ COBBLER_USER = PARAMETERS['cobbler_user']
 COBBLER_PASSWORD = PARAMETERS['cobbler_passwd']
 
 MAX_WORKERS = PARAMETERS.get('max_workers', 10)
+
+VDC = PARAMETERS.get('host', None)
+VDC_PASSWORD = PARAMETERS.get('password', None)
