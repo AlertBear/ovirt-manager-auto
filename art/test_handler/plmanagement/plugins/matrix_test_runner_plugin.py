@@ -391,6 +391,8 @@ class MatrixTestCase(TestCase):
         self.expected_exc = ()
         self.local_scope = {}
         self.conf = None
+        if TestGroup.TEST_RUN not in elm:
+            elm[TestGroup.TEST_RUN] = 'yes'
         elm[TestGroup.TEST_VITAL] = get_attr_as_bool(elm,
                 TestGroup.TEST_VITAL, default='no')
         for key, val in elm.items():
@@ -604,6 +606,8 @@ class MatrixTestGroup(TestGroup):
         self.elms = elms
         self.conf = None
         self.local_scope = {}
+        if TestGroup.TEST_RUN not in elm:
+            elm[TestGroup.TEST_RUN] = 'yes'
         elm[TestGroup.TEST_VITAL] = get_attr_as_bool(elm,
                 TestGroup.TEST_VITAL, default='no')
         for key, val in elm.items():
@@ -859,8 +863,6 @@ class MatrixBasedTestComposer(Component):
             tc[TestGroup.TEST_PARAMS] = str()
         if TestGroup.TEST_FETCH_OUTPUT not in tc:
             tc[TestGroup.TEST_FETCH_OUTPUT] = None
-        if TestGroup.TEST_RUN not in tc:
-            tc[TestGroup.TEST_RUN] = 'yes'
 
     def post_test_case(self, tc):
         if tc.status in (tc.TEST_STATUS_PASSED, tc.TEST_STATUS_SKIPPED):
