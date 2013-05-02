@@ -25,6 +25,7 @@ enabled = boolean(default=True)
 
 [LOGSTASH]
 enabled = boolean(default=True)
+site = string(default='http://logstash.qa.lab.tlv.redhat.com:9292')
 [[vds]]
 vdsm=string(default='/var/log/vdsm/vdsm.log')
 
