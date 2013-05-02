@@ -284,7 +284,12 @@ class UnittestLoader(Component):
                 if m[0] is not None:
                     suite = UTestSuite(loader.loadTestsFromName(module=m[1], name=m[0]))
                 else:
-                    suite = UTestSuite(loader.loadTestsFromModule(m[1]))
+                    tests = loader.loadTestsFromModule(m[1])
+                    suite = UTestSuite(tests)
+                    for t in [t for t in tests.factory.context]:
+                        if t.context.__name__ == 'Failure':
+                            logger.error("Failed to load test: %s",
+                                t._get_tests().next().__str__())
                 suite.description = description[m[1].__name__]
                 self.suites.append(suite)
         try:
