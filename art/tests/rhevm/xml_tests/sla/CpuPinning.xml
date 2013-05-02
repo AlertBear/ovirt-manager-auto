@@ -12,7 +12,7 @@
 <test_case>
    <test_name>Create Data Center</test_name>
    <test_action>addDataCenter</test_action>
-   <parameters>name='{dc_name}', storage_type='{storage_type}', version='{compatibility_version}'</parameters>
+   <parameters>name='{dc_name}', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>YES</run>
 </test_case>
@@ -35,28 +35,28 @@
    <test_action>iscsiDiscover</test_action>
    <parameters>host='{vds[0]}', address='{lun_address}'</parameters>
    <positive>TRUE</positive>
-   <run>if('{storage_type}' == 'e{storage_type_iscsi}')</run>
+   <run>if('{data_center_type}' == 'e{storage_type_iscsi}')</run>
 </test_case>
 <test_case>
    <test_name>iSCSI Login</test_name>
    <test_action>iscsiLogin</test_action>
    <parameters>host='{vds[0]}', address='{lun_address}', target='{lun_target}'</parameters>
    <positive>TRUE</positive>
-   <run>if('{storage_type}' == 'e{storage_type_iscsi}')</run>
+   <run>if('{data_center_type}' == 'e{storage_type_iscsi}')</run>
 </test_case>
 <test_case>
    <test_name>Create Data Storage Domain iSCSI</test_name>
    <test_action>addStorageDomain</test_action>
    <parameters>name='{storage_name}', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun}', lun_address='{lun_address}', lun_target='{lun_target}', lun_port='3260'</parameters>
    <positive>TRUE</positive>
-   <run>if('{storage_type}' == 'e{storage_type_iscsi}')</run>
+   <run>if('{data_center_type}' == 'e{storage_type_iscsi}')</run>
 </test_case>
 <test_case>
    <test_name>Create Data Storage Domain NFS</test_name>
    <test_action>addStorageDomain</test_action>
    <parameters>name='{storage_name}', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', host='{vds[0]}', address='{slatest_data_domain_address}', path='{slatest_data_domain_path[0]}'</parameters>
    <positive>TRUE</positive>
-   <run>if('{storage_type}' == 'e{storage_type_nfs}')</run>
+   <run>if('{data_center_type}' == 'e{storage_type_nfs}')</run>
 </test_case>
 <test_case>
    <test_name>Attach Master Data Storage Domain to Data Center</test_name>
