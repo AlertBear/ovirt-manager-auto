@@ -371,5 +371,4 @@ def isVMNetwork(network, cluster):
     '''
     net_obj = getClusterNetwork(cluster, network)
     usages = net_obj.get_usages()
-    # FIXME: 817798
-    return 'VM' in usages.usage
+    return 'vm' in usages.usage
