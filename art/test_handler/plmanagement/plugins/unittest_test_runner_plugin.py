@@ -99,7 +99,9 @@ class UTestCase(TestCase):
         self.tcms_test_case = getattr(self.f.im_func, TCMS_TEST_CASE, None)
         setattr(self.t.test, 'vital4group', False)
         self.serial = iterNumber()
-        if self.f.__doc__ is None:
+        try:
+            self.description = self.f.__doc__.strip()
+        except AttributeError:
             logger.error("Test case %s has missing documentation string!",
                          self.test_name)
         # TODO: set another atts
@@ -110,6 +112,7 @@ class UTestCase(TestCase):
             try:
                 self.t.test.setUp()
                 logger.info(self.format_attr('test_name'))
+                logger.info('Test description: %s', self.description)
                 logger.info(self.format_attr('serial'))
                 self.f()
                 self.status = self.TEST_STATUS_PASSED
