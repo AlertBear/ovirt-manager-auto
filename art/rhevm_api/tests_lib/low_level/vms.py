@@ -127,7 +127,7 @@ def _prepareVmObject(**kwargs):
         vm.set_cluster(cluster)
 
     # memory
-    vm.memory=kwargs.pop('memory', None)
+    vm.memory = kwargs.pop('memory', None)
 
     # cpu topology & cpu pinning
     cpu_socket = kwargs.pop('cpu_socket', None)
@@ -138,11 +138,11 @@ def _prepareVmObject(**kwargs):
         if cpu_socket or cpu_cores:
             cpu.set_topology(topology=data_st.CpuTopology(sockets=cpu_socket,
                                                           cores=cpu_cores))
-        if vcpu_pinning is not None and vcpu_pinning=="":
+        if vcpu_pinning is not None and vcpu_pinning == "":
             cpu.set_cpu_tune(data_st.CpuTune())
         elif vcpu_pinning:
-            cpu.set_cpu_tune(data_st.CpuTune([data_st.VCpuPin(vcpu,cpu_set) \
-                                              for vcpu,cpu_set in \
+            cpu.set_cpu_tune(data_st.CpuTune([data_st.VCpuPin(vcpu, cpu_set) \
+                                              for vcpu, cpu_set in \
                                               vcpu_pinning.iteritems()]))
         vm.set_cpu(cpu)
 
@@ -174,7 +174,7 @@ def _prepareVmObject(**kwargs):
 
     # high availablity
     ha = kwargs.pop('highly_available', None)
-    ha_priority = kwargs.pop('availablity_priority',None)
+    ha_priority = kwargs.pop('availablity_priority', None)
     if ha or ha_priority:
         vm.set_high_availability(data_st.HighAvailability(enabled=ha,
             priority=ha_priority))
@@ -257,7 +257,7 @@ def _createCustomPropertiesFromArg(prop_arg):
 
 
 @is_action()
-def addVm(positive, wait = True, **kwargs):
+def addVm(positive, wait=True, **kwargs):
     '''
     Description: add new vm
     Parameters:
@@ -301,7 +301,8 @@ def addVm(positive, wait = True, **kwargs):
 
     # Workaround for framework validator:
     #     if disk_clone==false Tempalte_Id will be set to BLANK_TEMPLATE
-    expectedVm = deepcopy(vmObj)
+    #expectedVm = deepcopy(vmObj)
+    expectedVm = _prepareVmObject(**kwargs)
 
     if False in [positive, wait]:
         vmObj, status = VM_API.create(vmObj, positive, expectedEntity=expectedVm)
@@ -1083,7 +1084,7 @@ def hotPlugNic(positive, vm, nic):
     Return: True in case of succeed, False otherwise
     '''
     try:
-        nic_obj = getVmNic(vm,nic)
+        nic_obj = getVmNic(vm, nic)
     except EntityNotFound:
         logger.error('Entity %s not found!' % nic)
         return not positive
@@ -1379,7 +1380,7 @@ def runVmOnce(positive, vm, pause=None, display_type=None, stateless=None,
         if positive and status:
             # in case status is False we shouldn't wait for rest element status
             if pause.lower() == 'true':
-                state = wait_for_status=ENUMS['vm_state_paused']
+                state = wait_for_status = ENUMS['vm_state_paused']
             else:
                 state = ENUMS['vm_state_powering_up']
             return VM_API.waitForElemStatus(vm_obj, state,
@@ -1718,13 +1719,50 @@ def changeCDWhileRunning(vm_name, cdrom_image):
     return status
 
 
+def _createVmForClone(name, template, cluster, clone, vol_sparse, vol_format):
+    """
+    Description: helper function - creates VM objects for VM_API.create call
+                 when VM is created from template, sets all required attributes
+    Author: kjachim
+    Parameters:
+       * template - template name
+       * name - vm name
+       * cluster - cluster name
+       * clone - true/false - if true, template disk will be copied
+       * vol_sparse - true/false - convert VM disk to sparse/preallocated
+       * vol_format - COW/RAW - convert VM disk format
+    Returns: VM object
+    """
+    vm = data_st.VM(name=name)
+    templObj = TEMPLATE_API.find(template)
+    vm.set_template(templObj)
+    clusterObj = CLUSTER_API.find(cluster)
+    vm.set_cluster(clusterObj)
+    diskArray = data_st.Disks()
+    if clone and clone.lower() == 'true':
+        diskArray.set_clone(clone)
+        disks = DISKS_API.getElemFromLink(templObj, link_name='disks',
+                                          attr='disk', get_href=False)
+        for dsk in disks:
+            disk = data_st.Disk(id=dsk.id)
+            if vol_sparse is not None:
+                disk.set_sparse(vol_sparse)
+            if vol_format is not None:
+                disk.set_format(vol_format)
+            diskArray.add_disk(disk)
+        vm.set_disks(diskArray)
+    return vm
+
+
 @is_action()
-def cloneVmFromTemplate(positive, name, template, cluster, timeout=VM_IMAGE_OPT_TIMEOUT,
-                        clone='true', vol_sparse=None, vol_format=None):
+def cloneVmFromTemplate(positive, name, template, cluster,
+                        timeout=VM_IMAGE_OPT_TIMEOUT, clone='true',
+                        vol_sparse=None, vol_format=None):
     '''
     Description: clone vm from a pre-defined template
     Author: edolinin
     Parameters:
+       * name - vm name
        * template - template name
        * cluster - cluster name
        * timeout - action timeout (depends on disk size or system load
@@ -1733,34 +1771,15 @@ def cloneVmFromTemplate(positive, name, template, cluster, timeout=VM_IMAGE_OPT_
        * vol_format - COW/RAW - convert VM disk format
     Return: status (True if vm was cloned properly, False otherwise)
     '''
-    vm = data_st.VM(name=name)
 
-    templObj = TEMPLATE_API.find(template)
-    vm.set_template(templObj)
+    # don't even try to use deepcopy, it will fail
+    expectedVm = _createVmForClone(name, template, cluster, clone, vol_sparse,
+                                   vol_format)
+    newVm = _createVmForClone(name, template, cluster, clone, vol_sparse,
+                              vol_format)
 
-    clusterObj = CLUSTER_API.find(cluster)
-    vm.set_cluster(clusterObj)
-
-    expectedVm = None
-    diskArray = data_st.Disks()
-    if clone and clone.lower() == 'true':
-        diskArray.set_clone(clone)
-        disks = DISKS_API.getElemFromLink(templObj, link_name='disks',
-                                             attr='disk', get_href=False)
-        for dsk in disks:
-            disk = data_st.Disk(id=dsk.id)
-            if vol_sparse is not None:
-                disk.set_sparse(vol_sparse)
-            if vol_format is not None:
-                disk.set_format(vol_format)
-
-            diskArray.add_disk(disk)
-        vm.set_disks(diskArray)
-        expectedVm = deepcopy(vm)
-        expectedVm.set_template(data_st.Template(id=BLANK_TEMPLATE))
-
-    vm, status = VM_API.create(vm, positive, expectedEntity=expectedVm)
-
+    expectedVm.set_template(data_st.Template(id=BLANK_TEMPLATE))
+    vm, status = VM_API.create(newVm, positive, expectedEntity=expectedVm)
     if positive and status:
         return VM_API.waitForElemStatus(vm, "DOWN", timeout)
     return status
@@ -2573,7 +2592,7 @@ def compareDisksCountOfVm(positive, vds, vds_username, vds_password, dc_name,
 
 
 @is_action('pingVm')
-@LookUpVMIpByName('vm_ip','name_vm')
+@LookUpVMIpByName('vm_ip', 'name_vm')
 def pingVm(vm_ip=None):
     '''
     Ping VM.
