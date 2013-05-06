@@ -29,6 +29,7 @@ import os
 import re
 import sys
 from functools import wraps
+import traceback
 
 from art.test_handler.plmanagement import Component, implements, get_logger
 from art.test_handler.plmanagement.interfaces.application import ITestParser, IConfigurable
@@ -85,6 +86,11 @@ def isvital4group(f):
         return f(self, *args, **kwargs)
     return wrapper
 
+def formatExcInfo():
+    ei = sys.exc_info()
+    einfo = traceback.format_exception(*ei)
+    einfo.insert(0, einfo[-1])
+    return ''.join(einfo)
 
 class UTestCase(TestCase):
     skip_exceptios = (USkipTest, USkipTest2, SkipTest)
@@ -116,21 +122,21 @@ class UTestCase(TestCase):
                 logger.info(self.format_attr('serial'))
                 self.f()
                 self.status = self.TEST_STATUS_PASSED
-            except AssertionError as ex:
-                self.exc = ex
+            except AssertionError:
+                self.exc = formatExcInfo()
                 self.status = self.TEST_STATUS_FAILED
             except self.skip_exceptios as ex:
                 self.status = self.TEST_STATUS_SKIPPED
                 raise SkipTest(str(ex))
-            except Exception as ex:
+            except Exception:
                 self.status = self.TEST_STATUS_ERROR
-                self.exc = ex
+                self.exc = formatExcInfo()
         finally:
             logger.info("tearDown: %s", self.test_name)
             try:
                 self.t.test.tearDown()
-            except Exception as ex:
-                self.exc = ex
+            except Exception:
+                self.exc = formatExcInfo()
                 self.status = self.TEST_STATUS_FAILED
             if self.status == self.TEST_STATUS_FAILED \
                 or self.status == self.TEST_STATUS_ERROR:
@@ -158,7 +164,7 @@ class UTestGroup(TestGroup):
                 logger.error("TEST GROUP setUp ERROR: %s: %s", ex,
                              self.test_name, exc_info=True)
                 self.status = self.TEST_STATUS_ERROR
-                self.exc = ex
+                self.exc = formatExcInfo()
                 self.error += 1
                 raise StopIteration(str(ex))
             for c in self.context:
@@ -174,8 +180,8 @@ class UTestGroup(TestGroup):
             logger.info("TEST GROUP tearDown: %s", self.test_name)
             try:
                 self.context.tearDown()
-            except Exception as ex:
-                self.exc = ex
+            except Exception:
+                self.exc = formatExcInfo()
                 self.status = self.TEST_STATUS_FAILED
             logger.info(TEST_CASES_SEPARATOR)
 
@@ -200,7 +206,7 @@ class UTestSuite(TestSuite):
                 logger.error("TEST SUITE setUp ERROR: %s: %s", ex,
                              self.test_name, exc_info=True)
                 self.status = self.TEST_STATUS_ERROR
-                self.exc = ex
+                self.exc = formatExcInfo()
                 self.error += 1
                 raise StopIteration(str(ex))
             for c in self.context:
@@ -216,8 +222,8 @@ class UTestSuite(TestSuite):
             logger.info("TEST SUITE tearDown: %s", self.test_name)
             try:
                 self.context.tearDown()
-            except Exception as ex:
-                self.exc = ex
+            except Exception:
+                self.exc = formatExcInfo()
                 self.status = self.TEST_STATUS_FAILED
             logger.info(TEST_CASES_SEPARATOR)
 
