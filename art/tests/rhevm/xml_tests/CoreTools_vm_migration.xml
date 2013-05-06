@@ -449,12 +449,24 @@
 	<positive>TRUE</positive>
 	<run>forkfor({vds},{vds_password})</run>
 </test_case>
+
+<!--
 <test_case>
    <test_name>Sleep to give vdsm time to start.</test_name>
    <test_action>sleep</test_action>
    <parameters>seconds=15</parameters>
    <positive>NONE</positive>
    <run>YES</run>
+</test_case>
+-->
+
+<test_case>
+   <test_name>Wait for all hosts are UP</test_name>
+   <test_action>waitForHostsStates</test_action>
+   <parameters>names='[vds]'</parameters>
+   <positive>TRUE</positive>
+   <run>YES</run>
+   <vital>true</vital>
 </test_case>
 
 <test_case>
