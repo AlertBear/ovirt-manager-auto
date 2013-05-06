@@ -7,9 +7,11 @@ from . import ART_CONFIG
 params = ART_CONFIG['PARAMETERS']
 VM_NAME = params.get('vm_name')
 ISO_UP_CONF = params.get('iso_up_conf_file')
+LOG_COL_CONF = params.get('log_col_conf_file')
 
 rest_conn = ART_CONFIG['REST_CONNECTION']
 REST_API_PASS = rest_conn.get('password')
+REST_API_HOST = rest_conn.get('host')
 
 #MAIN_SETUP = "https://10.34.63.3:443/api"
 # workaround to skip sdk for now

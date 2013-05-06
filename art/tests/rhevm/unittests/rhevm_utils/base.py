@@ -18,7 +18,8 @@ VM_API = get_api('vm', 'vms')
 # for nose testframework, but you can use this module also for another purposes.
 try:
     # PGPASS, PREPARE_CONF should move to test conf file, once possible.
-    from unittest_conf import config, PGPASS, REST_API_PASS, ISO_UP_CONF
+    from unittest_conf import config, PGPASS, REST_API_PASS, ISO_UP_CONF, \
+       LOG_COL_CONF, REST_API_HOST
     if not config:
         raise ImportError()
 except ImportError:
@@ -212,24 +213,48 @@ class SetupManager(object):
         self.waitForMachineStatus(machine, 'down')
 
     def saveSetup(self, name, point):
+        """
+        Save machine snapshot
+        Parameters:
+         * name - machine name
+         * point - snapshot description
+        """
         machine = self.refreshMachine(self.maps[name])
         self.createSnapshotWrapper(machine.name, point)
 
     def restoreSetup(self, name, point):
+        """
+        Restores machine snapshot
+        Parameters:
+         * name - machine name
+         * point - snapshot description
+        """
         machine = self.refreshMachine(self.maps[name])
         self.restoreSnapshotWrapper(machine.name, point)
 
-    def dispatchSetup(self, name):
-        machine = self.refreshMachine(self.maps[name])
-        if machine.status.get_state() != 'up':
-            rc = VM_API.syncAction(machine, 'start', 'true')
-            self.waitForMachineStatus(machine, 'up')
-        self.waitForAgentIsUp(machine)
-        ip = self.getIp(machine)
+    def dispatchSetup(self, name, ip=None):
+        """
+        Run Setup class
+        Parameters:
+         * name - machine name
+         * ip - machine IP address
+        """
+        if ip == None:
+            machine = self.refreshMachine(self.maps[name])
+            if machine.status.get_state() != 'up':
+                rc = VM_API.syncAction(machine, 'start', 'true')
+                self.waitForMachineStatus(machine, 'up')
+            self.waitForAgentIsUp(machine)
+            ip = self.getIp(machine)
         return Setup(ip, 'root', config['testing_env']['host_pass'],
                      dbpassw=PGPASS, conf=VARS)
 
     def releaseSetup(self, name):
+        """
+        Restore machine snapshot
+        Parameters:
+         * name - machine name
+        """
         try:
             machine = self.refreshMachine(self.maps[name])
             if machine.status.get_state() == 'up':
@@ -325,51 +350,60 @@ class RHEVMUtilsTestCase(unittest.TestCase):
         network = params.get('mgmt_bridge')
         useAgent = params.get('useAgent')
 
-
-        if not prepareVmWithRhevm(True, hosts, cpuName, username, password, datacenter,
-               storage_type, cluster, data_domain_address, data_storage_domains,
-               version, type, export_domain_address, export_storage_domain,
-               export_domain_name, data_domain_name, template_name, vm_name,
-               vm_description, tested_setup_mac_address, memory_size,
-               format_export_domain, nic, nicType, lun_address, lun_target,
-               luns, disk_size, disk_type, volume_format, disk_interface,
-               bootable, wipe_after_delete, start, vm_type, cpu_socket,
-               cpu_cores, display_type, installation, os_type, vm_user,
-               vm_password, cobblerAddress, cobblerUser, cobblerPasswd, image,
-               network, useAgent):
-            logger.info("prepareVmWithRhevm failed")
-        logger.info("DEBUG: cls.utility = %s", cls.utility)
-        cls.c = config[cls.utility]
-        logger.info("DEBUG: cls.c %s", cls.c)
-        cls.manager.prepareSetup(cls.utility)
-        if cls.utility is not 'setup':
-            machine = cls.manager.dispatchSetup(cls.utility)
-            machine.install(config)
-            #cls.manager.saveSetup(cls.utility, cls.snapshot_setup_installed)
+        # Following if statment is temporary, till all tools tests will move to
+        # running on local machine, instead of on remote
+        if cls.utility in ['setup','cleanup','iso-uploader']:
+            if not prepareVmWithRhevm(True, hosts, cpuName, username, password,
+                   datacenter, storage_type, cluster, data_domain_address,
+                   data_storage_domains, version, type, export_domain_address,
+                   export_storage_domain, export_domain_name, data_domain_name,
+                   template_name, vm_name, vm_description,
+                   tested_setup_mac_address, memory_size, format_export_domain,
+                   nic, nicType, lun_address, lun_target, luns, disk_size,
+                   disk_type, volume_format, disk_interface, bootable,
+                   wipe_after_delete, start, vm_type, cpu_socket, cpu_cores,
+                   display_type, installation, os_type, vm_user, vm_password,
+                   cobblerAddress, cobblerUser, cobblerPasswd, image, network,
+                   useAgent):
+                logger.info("prepareVmWithRhevm failed")
+            logger.info("DEBUG: cls.utility = %s", cls.utility)
+            cls.c = config[cls.utility]
+            logger.info("DEBUG: cls.c %s", cls.c)
+            cls.manager.prepareSetup(cls.utility)
+            if cls.utility is not 'setup':
+                machine = cls.manager.dispatchSetup(cls.utility)
+                machine.install(config)
+                #cls.manager.saveSetup(cls.utility, cls.snapshot_setup_installed)
 
     @classmethod
     def tearDownClass(cls):
         """
         Remove all snapshosts, and relase machine
         """
-        cls.manager.releaseSetup(cls.utility)
-        logger.info("Clean Data center")
-        cleanDataCenter(True, 'nfsToolsTest')
+        if cls.utility in ['setup','cleanup','iso-uploader']:
+            cls.manager.releaseSetup(cls.utility)
+            logger.info("Clean Data center")
+            cleanDataCenter(True, 'nfsToolsTest')
 
     def setUp(self):
         """
         Fetch instance of utility for test-case
         """
-        snap = self.clear_snap if self.utility is 'setup' else self.snapshot_setup_installed
-        self.manager.saveSetup(self.utility, snap)
-        self.ut = self.utility_class(self.manager.dispatchSetup(self.utility))
+        if self.utility in ['setup','cleanup','iso-uploader']:
+            snap = self.clear_snap if self.utility is 'setup' else self.snapshot_setup_installed
+            self.manager.saveSetup(self.utility, snap)
+            ip = None
+        else:
+            ip=REST_API_HOST
+        self.ut = self.utility_class(self.manager.dispatchSetup(self.utility, ip))
 
     def tearDown(self):
         """
         Discart changes which was made by test-case
         """
-        snap = self.clear_snap if self.utility is 'setup' else self.snapshot_setup_installed
-        self.manager.restoreSetup(self.utility, snap)
+        if self.utility in ['setup','cleanup','iso-uploader']:
+            snap = self.clear_snap if self.utility is 'setup' else self.snapshot_setup_installed
+            self.manager.restoreSetup(self.utility, snap)
 
 
 
