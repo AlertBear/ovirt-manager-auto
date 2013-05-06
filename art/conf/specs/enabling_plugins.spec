@@ -1,6 +1,9 @@
 [ERROR_FETCHER]
 enabled = boolean(default=True)
 
+[PUPPET]
+enabled = boolean(default=True)
+
 [HOST_NICS_RESOLUTION]
 enabled = boolean(default=True)
 
