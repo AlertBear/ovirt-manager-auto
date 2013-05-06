@@ -1864,6 +1864,7 @@
     <test_action>removeVm</test_action>
     <parameters>vm='{vms_templates_tests}'</parameters>
     <positive>TRUE</positive>
+    <bz>915809</bz>
     <run>forkfor({vms_templates_tests})</run>
     <conf>headers={'Correlation-Id': 526}</conf>
     <exp_events>19</exp_events>
