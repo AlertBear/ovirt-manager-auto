@@ -162,24 +162,23 @@ def readTestRunOpts(path, redefs):
     rewriteConfig(config, redefs)
     config.write()
 
-
     conf = ConfigLoader(find_config_file(confFileCopyName), raise_errors=True)
     spec = ConfigLoader(find_config_file(opts['confSpec']), raise_errors=True,
-            _inspec=True)
+                        _inspec=True)
     validator = ARTConfigValidator(conf.load(), spec.load(), initPlmanager())
 
     config = validator()
 
     plmanager.configure.im_func.func_defaults = \
-            (plmanager.configure.im_func.func_defaults[0], config)
+        (plmanager.configure.im_func.func_defaults[0], config)
 
     opts['headers'] = config.get('HTTP_HEADERS', {})
 
     # Populate opts from the RUN section.
     runSection = config['RUN']
 
-    opts['elements_conf'] = ConfigObj(runSection['elements_conf'], \
-            raise_errors=True)
+    opts['elements_conf'] = ConfigObj(runSection['elements_conf'],
+                                      raise_errors=True)
 
     opts['test_file_name'] = []
     opts['tests'] = runSection.as_list('tests_file')
@@ -226,6 +225,7 @@ def readTestRunOpts(path, redefs):
     opts['cli_tool'] = cliSection['tool']
     opts['cli_log_file'] = cliSection['cli_log_file']
     opts['cli_optional_params'] = cliSection['optional_params']
+    opts['validate_cli_command'] = cliSection['validate_cli_command']
     return config
 
 

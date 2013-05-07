@@ -24,6 +24,7 @@ user_domain = domain_format()
 [CLI_CONNECTION]
 tool = option('ovirt-shell', 'rhevm-shell', default='rhevm-shell')
 cli_log_file = string(default='/tmp/cli_log.log')
+validate_cli_command = boolean(default=True)
 optional_params = string(default='')
 
 [REPORT]

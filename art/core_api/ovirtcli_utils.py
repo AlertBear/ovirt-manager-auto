@@ -16,7 +16,6 @@
 # License along with this software; if not, write to the Free
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-
 import pexpect as pe
 import re
 import threading
@@ -40,14 +39,28 @@ CONTROL_CHARS = u'[\n\r]'
 RHEVM_SHELL = 'rhevm-shell'
 TMP_FILE = '/tmp/cli_output.tmp'
 IP_FORMAT = '^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$'
+ADD_WAIVER = ['StorageDomain']
+UPDATE_WAIVER = []
+REMOVE_WAIVER = []
 
 
 def threadSafeRun(func):
     """
-    This closure will be used as decorator while calling API methods
+    Description: This closure will be used as decorator for critical section
+    Author: imeerovi
+    Parameters:
+        *  func - function that runs critical section code
+    Returns: returns apifunc wrapper for func
     """
     @wraps(func)
     def apifunc(*args, **kwargs):
+        """
+        Description: this code will run when func will be called
+        Author: imeerovi
+        Parameters:
+            *  *args, **kwargs - parameters that should be passed to func
+        Returns: result of func run
+        """
         with addlock:
             return func(*args, **kwargs)
     return apifunc
@@ -55,7 +68,10 @@ def threadSafeRun(func):
 
 class QueryResult(object):
     """
-    This class contains query result data
+    Description: This class contains query result data
+    Author: imeerovi
+    Parameters:
+        * dataDict - dictionary with query result data
     """
     def __init__(self, dataDict):
         for key, val in dataDict.iteritems():
@@ -63,6 +79,16 @@ class QueryResult(object):
 
 
 class CliConnection(object):
+    """
+    Description: Base class with basic cli functionality
+    Author: imeerovi
+    Parameters:
+        * command - connection command
+        * prompt - expected prompt
+        * timeout - maximum timeout for waiting for prompt
+        * logFile - file for cli log
+    """
+    _defaultLogFile = "/tmp/cli_log_%s.log"
     __metaclass__ = ABCMeta
 
     def __init__(self, command, prompt, timeout, logFile=None):
@@ -73,7 +99,7 @@ class CliConnection(object):
         if logFile:
             self.cliLog = logFile
         else:
-            self.cliLog = "/tmp/cli_log_%s.log" % timestamp
+            self.cliLog = self._defaultLogFile % timestamp
         self.cliConnection.logfile = open(self.cliLog, 'w')
         self._expectDict = {}
         self._illegalXMLCharsRE = re.compile(ILLEGAL_XML_CHARS)
@@ -82,12 +108,17 @@ class CliConnection(object):
     @abstractmethod
     def login(self, *args, **kwargs):
         """
-        Virtual function that should be implemented by child class.
-        Reason: Login may differ between different CLI engines
+        Description: Virtual method that should be implemented by child class.
+                     Reason: Login may differ between different CLI engines
+        Author: imeerovi
         """
 
     @property
     def expectDict(self):
+        """
+        Description: expectDict property is dictionary of prompt: action pairs
+        Author: imeerovi
+        """
         return self._expectDict
 
     @expectDict.setter
@@ -106,16 +137,17 @@ class CliConnection(object):
 
     def sendCmd(self, cmd, timeout):
         """
-        This method sends command
-        Input:
-        cmd - command to run
-        timeout - specific timeout in [sec] for this command run
-        Output: string with data from child process
+        Description: This method sends command to cli
+        Author: imeerovi
+        Parameters:
+            * cmd - command to run
+            * timeout - specific timeout in [sec] for this command run
+        Returns: string with data from child process
         """
         if not timeout:
             timeout = self.cliConnection.timeout
 
-        expectList = self. expectDict.keys()
+        expectList = self.expectDict.keys()
         expectList.insert(0, self._prompt)
         output = []
 
@@ -150,24 +182,35 @@ class CliConnection(object):
 
     def commandRun(self, cmd, timeout=''):
         """
-        Wrapper that runs command and returns validated output
-        Input:
-         - cmd - command to run
-         - timeout - timeout in [sec]. If timeout parameter is
-           not set default timeout used
+        Description: Wrapper that runs command and returns validated output
+        Author: imeerovi
+        Parameters:
+            * cmd - command to run
+            * timeout - timeout in [sec]. If timeout parameter is
+              not set default timeout used
+        Returns: validated output
         """
         return self.outputValidator(self.sendCmd(cmd, timeout))
 
     @abstractmethod
     def outputValidator(self, output):
         """
-        Virtual function that should be implemented by child class.
-        Reason:  Output validation may differ between different CLI engines
+        Description: Virtual method that should be implemented by child class.
+                     Reason: Output validation may differ between different
+                     CLI engines
+        Author: imeerovi
+        Parameters:
+            * output - output of cli command run
+        Returns: validated output
         """
 
     def outputCleaner(self, output):
         """
-        this method cleans output for special characters and align it to UTF8
+        Description: cleans special characters from output and align it to UTF8
+        Author: imeerovi
+        Parameters:
+            * output - output of cli command run
+        Returns: UTF8 alligned output
         """
         if type(output) == list:
             output = ' '.join(output)
@@ -175,15 +218,44 @@ class CliConnection(object):
         return self.escapeXMLIllegalChars(output)
 
     def escapeControlChars(self, val, replacement=''):
+        """
+        Description: replaces control characters in given string
+        Author: imeerovi
+        Parameters:
+            * val - string to work on
+            * replacement - replacement string
+        Returns: string with replaced control characters
+        """
         return self._controlCharsRE.sub(replacement, val)
 
     def escapeXMLIllegalChars(self, val, replacement=''):
+        """
+        Description: replaces UTF8 illegal characters in given string
+        Author: imeerovi
+        Parameters:
+            * val - string to work on
+            * replacement - replacement string
+        Returns: string with replaced illegal characters decoded with UTF8
+        """
         return self._illegalXMLCharsRE.sub(replacement, val).decode('utf-8')
 
 
 class RhevmCli(CliConnection):
     """
-    CLI connection implementation for rhevm-shell
+    Description: CLI connection implementation for rhevm-shell
+    Author: imeerovi
+    Parameters:
+        * logger - reference to logger
+        * uri - rhevm URI
+        * user - rhevm username
+        * userDomain - rhevm user domain
+        * password - rhevm password
+        * secure - secure connection boolean
+        * sslKeyFile - ssl key file
+        * sslCertFile - ssl certificate file
+        * sslCaFile - ssl ca file
+        * logFile - file for cli log
+        * **kwargs - additional parameters to CLI
     """
     # rhevm shell specific configs
     _query_id_re = 'id(\s+):'
@@ -203,16 +275,11 @@ class RhevmCli(CliConnection):
     _rhevmTimeout = 900
     _specialCliPrompt = {'\r\n:': ' ', '7m\(END\)': 'q'}
     _specialMatrixParamsDict = {'case-sensitive': 'case_sensitive'}
+    _cliRootCommands = ['action', 'add', 'list', 'remove', 'show', 'update']
 
     def __init__(self, logger, uri, user, userDomain, password,
                  secure, sslKeyFile, sslCertFile, sslCaFile, logFile,
                  **kwargs):
-        """
-        Input:
-         - logger - logger reference
-         - uri, user, userDomain, password - REST API Parameters
-         - additional parameters to CLI could be passed via kwargs
-        """
         self.logger = logger
         self.prepareConnectionCommand(uri, user, userDomain,
                                       secure, sslKeyFile, sslCertFile,
@@ -225,9 +292,19 @@ class RhevmCli(CliConnection):
         self.login(password)
         # updating parent dictionary for cli work
         self.expectDict = self._specialCliPrompt
+        # getting contexts for auto completion
+        self.getAutocompletionContext()
 
     @threadSafeRun
     def cliCmdRunner(self, apiCmd, apiCmdName):
+        """
+        Description: This method runs cli command
+        Author: imeerovi
+        Parameters:
+            * apiCmd - command to run
+            * apiCmdName - REST API command type
+        Returns: CLI output
+        """
         self.logger.debug("%s cli command is: %s", apiCmdName, apiCmd)
         errAndDebug = self.commandRun(apiCmd)
         out = self.readTmpFile()
@@ -237,6 +314,13 @@ class RhevmCli(CliConnection):
         return out
 
     def login(self, password):
+        """
+        Description: implementation of login for rhevm-cli
+        Author: imeerovi
+        Parameters:
+            * password - CLI password
+        Returns: nothing, Exception will be raised upon failed login
+        """
         self.expectDict = {self._rhevmLoginPrompt: password}
         self.expectDict = {self._rhevmDisconnectedPrompt: "exit"}
 
@@ -264,6 +348,20 @@ class RhevmCli(CliConnection):
     def prepareConnectionCommand(self, uri, user, userDomain,
                                  secure, sslKeyFile, sslCertFile,
                                  sslCaFile, additionalArgs):
+        """
+        Description: This method prepares CLI connection command
+        Author: imeerovi
+        Parameters:
+            * uri - rhevm URI
+            * user - rhevm username
+            * userDomain - rhevm user domain
+            * secure - secure connection boolean
+            * sslKeyFile - ssl key file
+            * sslCertFile - ssl certificate file
+            * sslCaFile - ssl ca file
+            * additionalArgs - additional parameters to CLI
+        Returns: nothing
+        """
         cliConnect = []
 
         userWithDomain = '{0}@{1}'.format(user, userDomain)
@@ -285,6 +383,13 @@ class RhevmCli(CliConnection):
         self.logger.debug('Connect: %s' % self._connectionCommand)
 
     def outputValidator(self, output):
+        """
+        Description: Implementation of outputValidator for rhevm-cli
+        Author: imeerovi
+        Parameters:
+            * output - output of cli command run
+        Returns: validated output
+        """
         # looking for error - to change to more generic map style
         tracebackMsg = self._tracebackMsgSearch in output
         errorStatusMsg = re.search(self._errorStatusMsgSearch,
@@ -315,12 +420,174 @@ class RhevmCli(CliConnection):
 
         return self.outputCleaner(output)
 
+    @threadSafeRun
+    def getAutoCompletionOptions(self, cmd=''):
+        """
+        Description: This method sends "cmd TAB" and gets
+                     autocompletion options
+        Author: imeerovi
+        Parameters:
+            * cmd - command to get autocompletion options
+        Returns: autocompletion options list
+        """
+        timeout = 10
+
+        cmd = "%s " % cmd
+        # why we need 'TAB' 'TAB EOL'? don't ask, it works
+        self.cliConnection.send(cmd)
+        self.cliConnection.send(chr(9))
+        self.cliConnection.sendline(chr(9))
+        try:
+            self.cliConnection.expect(self._prompt, timeout)
+        except pe.TIMEOUT as e:
+            raise CLITimeout(e)
+        except pe.EOF as e:
+            raise CLIError(cmd, e)
+
+        output = self.cliConnection.before
+
+        # debug case
+        if 'send:' in output:
+            return output.split('send:')[0].split()
+        # non debug case, sometimes we can get error message
+        # after autocompletion options
+        elif 'error:' in output:
+            return output.split('error:')[0].split()
+        else:
+            return output.split()
+
+    def validateCommand(self, cmd):
+        """
+        Description: This method validates add, update or remove
+                     command passed to cli vs. autocompletion options
+        Author: imeerovi
+        Parameters:
+            * cmd - command to run
+        Returns: validated command
+        """
+        validated_command = []
+        starting_position = 0
+        autocompletion_params = []
+        cmd_params = cmd.split()
+        params_len = len(cmd_params)
+        cmd_type, object_name = cmd_params[:2]
+        # getting context
+        context = self.contextDict[cmd_type][object_name]
+
+        if len(context[0]) == 0:
+            help_cmd = "{0} {1}".format(cmd_type, object_name)
+            autocompletion_params += self.getAutoCompletionOptions(help_cmd)
+        # now we check if we need to add another context
+        # add use case
+        if cmd_type == 'add':
+            if 'identifier' in cmd_params[2]:
+                context_key = cmd_params[2].replace('--', '').split('-')[0]
+                context_objects = filter(lambda x: context_key in x, context)
+                if context_objects:
+                    help_cmd = "{0} {1} {2} {3}".format(cmd_type, object_name,
+                                                        cmd_params[2],
+                                                        cmd_params[3])
+                    autocompletion_params += \
+                        self.getAutoCompletionOptions(help_cmd)
+                else:
+                    self.logger.error("Object %s is not found in context %s",
+                                      cmd_params[2], context)
+                starting_position = 4
+            else:
+                starting_position = 2
+        # update or remove usecases
+        elif cmd_type in ['update', 'remove']:
+            if params_len > 3 and 'identifier' in cmd_params[3]:
+                context_key = cmd_params[3].replace('--', '').split('-')[0]
+                context_objects = filter(lambda x: context_key in x, context)
+                if context_objects:
+                    help_cmd = "{0} {1} {2}".format(cmd_type, object_name,
+                                                    cmd_params[3])
+                    autocompletion_params += \
+                        self.getAutoCompletionOptions(help_cmd)
+                else:
+                    self.logger.error("Object %s is not found in context %s",
+                                      cmd_params[3], context)
+                starting_position = 5
+            else:
+                starting_position = 3
+
+        # remove all duplicated stuff:
+        autocompletion_params = set(autocompletion_params)
+        self.logger.debug("Autocompletion options:\n%s", autocompletion_params)
+
+        # lets validate
+        validated_command += cmd_params[:starting_position]
+
+        # passing over command and checking it
+        while starting_position < params_len:
+            needed_param = False
+            if cmd_params[starting_position].replace('--', '') in \
+                    autocompletion_params:
+                validated_command.append(cmd_params[starting_position])
+                needed_param = True
+            starting_position += 1
+
+            # collections or booleans
+            if '=' in cmd_params[starting_position] or \
+                    cmd_params[starting_position] in ['true', 'false']:
+                if needed_param:
+                    validated_command.append(cmd_params[starting_position])
+                starting_position += 1
+                continue
+            # integers
+            try:
+                int(cmd_params[starting_position], 10)
+                if needed_param:
+                    validated_command.append(cmd_params[starting_position])
+                starting_position += 1
+                continue
+            except ValueError:
+                pass
+            # strings
+            # situation like '--cpu-id', "'Intel", 'Nehalem', "Family'",
+            while not cmd_params[starting_position].endswith("'"):
+                if needed_param:
+                    validated_command.append(cmd_params[starting_position])
+                starting_position += 1
+            # string without spaces or end of big string with spaces
+            else:
+                if needed_param:
+                    validated_command.append(cmd_params[starting_position])
+                starting_position += 1
+
+        return ' '.join(validated_command)
+
+    def getAutocompletionContext(self):
+        """
+        Description: This method collects contexts for autocompletion and
+                    creates dictionary with these contexts
+        Author: imeerovi
+        """
+        self.contextDict = {}
+        for cmd in self._cliRootCommands:
+            self.contextDict[cmd] = {}
+            self.commandRun('help "%s" > %s' % (cmd, TMP_FILE), 10)
+            # getting data
+            with open('%s' % TMP_FILE) as f:
+                out = f.readlines()
+            # filtering and parsing it
+            out = filter(lambda x: 'contexts:' in x, out)
+            for line in out:
+                objectType, context = line.split('(')
+                self.contextDict[cmd][objectType.split()[1].strip()] = \
+                    eval(context.split(')')[0].split('contexts: ')[1])
+
 
 class CliUtil(RestUtil):
-    '''
-    Implements CLI APIs methods
-    Some of the methods are just inherited from Rest API
-    '''
+    """
+    Description: Implements CLI APIs methods
+                 Some of the methods are just inherited from Rest API
+    Author: edolinin
+    Parameters:
+        * element - data_structures.py style element
+        * collection - data_structures.py style collection
+    """
 
     def __init__(self, element, collection):
         super(CliUtil, self).__init__(element, collection)
@@ -384,8 +651,7 @@ class CliUtil(RestUtil):
         out = ''
         addEntity = validator.cliEntety(entity, self.element_name)
         createCmd = "add {0} {1} --expect '201-created'".\
-            format(self.cli_element_name,
-                   validator.cliEntety(entity, self.element_name))
+            format(self.cli_element_name, addEntity)
 
         if collection:
             ownerId, ownerName, entityName = \
@@ -398,6 +664,18 @@ class CliUtil(RestUtil):
         correlationId = self.getCorrelationId()
         if correlationId:
             createCmd = "%s --correlation_id %s" % (createCmd, correlationId)
+
+        if self.opts['validate_cli_command']:
+            # validating command vs cli help
+            self.logger.warning('Generated command:\n%s', createCmd)
+
+            if entity.__class__.__name__ in ADD_WAIVER:
+                self.logger.warning('Validation skipped for %s',
+                                    entity.__class__.__name__)
+            else:
+                createCmd = self.cli.validateCommand(createCmd)
+                self.logger.warning('Actual command after validation:\n%s',
+                                    createCmd)
 
         createCmd = "%s > %s" % (createCmd, TMP_FILE)
         collHref = collection
@@ -477,6 +755,18 @@ class CliUtil(RestUtil):
         if current is not None:
             updateCmd = "%s --current %s" % (updateCmd, current)
 
+        if self.opts['validate_cli_command']:
+            # validating command vs cli help
+            self.logger.warning('Generated command:\n%s', updateCmd)
+
+            if newEntity.__class__.__name__ in UPDATE_WAIVER:
+                self.logger.warning('Validation skipped for %s',
+                                    newEntity.__class__.__name__)
+            else:
+                updateCmd = self.cli.validateCommand(updateCmd)
+                self.logger.warning('Actual command after validation:\n%s',
+                                    updateCmd)
+
         updateCmd = "%s > %s" % (updateCmd, TMP_FILE)
 
         response = None
@@ -546,6 +836,18 @@ class CliUtil(RestUtil):
         correlationId = self.getCorrelationId()
         if correlationId:
             deleteCmd = "%s --correlation_id %s" % (deleteCmd, correlationId)
+
+        if self.opts['validate_cli_command']:
+            # validating command vs cli help
+            self.logger.warning('Generated command:\n%s', deleteCmd)
+
+            if entity.__class__.__name__ in REMOVE_WAIVER:
+                self.logger.warning('Validation skipped for %s',
+                                    entity.__class__.__name__)
+            else:
+                deleteCmd = self.cli.validateCommand(deleteCmd)
+                self.logger.warning('Actual command after validation:\n%s',
+                                    deleteCmd)
 
         deleteCmd = "%s > %s" % (deleteCmd, TMP_FILE)
 
