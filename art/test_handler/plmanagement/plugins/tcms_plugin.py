@@ -177,7 +177,7 @@ class TCMS(Component):
         if not tcms_data:
             return
 
-        tcms_cases = tcms_data.split(',')
+        tcms_cases = str(tcms_data).split(',')
         plan = getattr(test, TCMS_PLAN_ID, None)
         if not plan and self.tcms_plans:
             plan = self.tcms_plans[-1]
