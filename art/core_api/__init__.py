@@ -34,7 +34,7 @@ class ActionDiscoveryError(Exception):
     pass
 
 
-class ActionColision(ActionDiscoveryError):
+class ActionCollision(ActionDiscoveryError):
     pass
 
 
@@ -199,8 +199,11 @@ class ActionSetType(type):
                 if alias in val.ACTIONS:
                     if not isinstance(val.ACTIONS[alias], LazyTestAction)\
                             and ta != val.ACTIONS[alias]:
-                        raise ActionColision("%s: %s <-> %s" % \
-                                (alias, func, val.ACTIONS[alias]))
+                        raise ActionCollision("%s: %s <-> %s,"
+                                "\naction already registered <-> %s"
+                                "\nPlease check path of the test file"
+                                " - it may be wrong." % \
+                                (alias, func, val.ACTIONS[alias], ta))
                 val.ACTIONS[alias] = ta
                 break
         else:
@@ -232,7 +235,7 @@ class ActionSetType(type):
         for val in cls.SETS.values():
             for key, func in val.actions().items():
                 if key in res:
-                    raise ActionColision("%s: %s <-> %s" % (key, func, res[key]))
+                    raise ActionCollision("%s: %s <-> %s" % (key, func, res[key]))
                 res[key] = func
         return res
 
