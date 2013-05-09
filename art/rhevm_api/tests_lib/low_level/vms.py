@@ -41,7 +41,7 @@ from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils.threads import runParallel
 from art.core_api import is_action
 from art.rhevm_api.utils.name2ip import name2ip, LookUpVMIpByName
-from art.rhevm_api.tests_lib.low_level.disks import getVmDisk
+from art.rhevm_api.tests_lib.low_level.disks import getVmDisk, _prepareDiskObject
 from operator import and_
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
@@ -1019,6 +1019,28 @@ def addVmNics(positive, vm, namePrefix, networks):
         if not addNic(positive, vm, name=name, network=net):
             return False, {'vmNics': None}
     return True, {'vmNics': vm_nics}
+
+
+@is_action()
+def updateVmDisk(positive, vm, disk, **kwargs):
+    '''
+    Description: Update already existing vm disk
+    Parameters:
+      * vm - vm where disk should be updated
+      * disk - disk name that should be updated
+      * name - new name of the disk
+      * interface - IDE or virtio
+      * bootable - True or False whether disk should be bootable
+      * shareable - True or False whether disk should be sharable
+      * quota - disk quota
+    Author: omachace
+    Return: Status of the operation's result dependent on positive value
+    '''
+    disk_obj = _getVmFirstDiskByName(vm, disk)
+    new_disk = _prepareDiskObject(**kwargs)
+
+    disk, status = DISKS_API.update(disk_obj, new_disk, positive)
+    return status
 
 
 @is_action()
