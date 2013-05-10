@@ -82,7 +82,11 @@ def main():
         return RC.General
     finally:
         if plmanager is not None:
-            plmanager.application_liteners.on_application_exit()
+            for listener in plmanager.application_liteners:
+                try:
+                    listener.on_application_exit()
+                except Exception as ex:
+                    logger.error(str(ex), exc_info=True)
     return 0
 
 
