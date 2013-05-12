@@ -1159,8 +1159,8 @@
     <parameters>vm='restvm_export'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
-    <conf>headers={'Correlation-Id': 475}</conf>
-    <exp_events>2</exp_events>
+    <!-- <conf>headers={'Correlation-Id': 475}</conf>
+    <exp_events>2</exp_events> -->
   </test_case>
   <test_case>
     <id>cb8c73d6-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1866,8 +1866,15 @@
     <positive>TRUE</positive>
     <bz>915809</bz>
     <run>forkfor({vms_templates_tests})</run>
-    <conf>headers={'Correlation-Id': 526}</conf>
-    <exp_events>19</exp_events>
+    <!--<conf>headers={'Correlation-Id': 526}</conf>
+    <exp_events>19</exp_events> -->
+  </test_case>
+  <test_case>
+   <test_name>Wait for all background tasks to finish on hosts</test_name>
+   <test_action>waitForTasks</test_action>
+   <parameters>vdc='{host}', vdc_password='{password}',datacenter='DefaultRest'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
   </test_case>
   <test_case>
     <id>cb8d3492-c695-11e1-bca8-f0def10e0ce8</id>
