@@ -395,6 +395,8 @@ class MatrixTestCase(TestCase):
             elm[TestGroup.TEST_RUN] = 'yes'
         elm[TestGroup.TEST_VITAL] = get_attr_as_bool(elm,
                 TestGroup.TEST_VITAL, default='no')
+        if TestGroup.TEST_PARAMS not in elm:
+            elm[TestGroup.TEST_PARAMS] = str()
         for key, val in elm.items():
             self[key] = val
 
@@ -859,8 +861,6 @@ class MatrixBasedTestComposer(Component):
         tc[TestGroup.TEST_POSITIVE] = {'none': None, 'true': True,
                                        'false': False}[positive]
         tc[TestGroup.TEST_REPORT] = get_attr_as_bool(tc, TestGroup.TEST_REPORT)
-        if TestGroup.TEST_PARAMS not in tc:
-            tc[TestGroup.TEST_PARAMS] = str()
         if TestGroup.TEST_FETCH_OUTPUT not in tc:
             tc[TestGroup.TEST_FETCH_OUTPUT] = None
 
