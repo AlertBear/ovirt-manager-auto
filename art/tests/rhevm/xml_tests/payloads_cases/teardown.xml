@@ -22,6 +22,13 @@
    <run>yes</run>
 </test_case>
 <test_case>
+   <test_name>Wait for all background tasks to finish on hosts</test_name>
+   <test_action>waitForTasks</test_action>
+   <parameters>vdc='{host}', vdc_password='{password}', datacenter='{data_center_name}'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
    <test_name>Deactivate Master Storage Domain</test_name>
    <test_action>deactivateStorageDomain</test_action>
    <parameters>datacenter='{data_center_name}', storagedomain='{storage_domain}'</parameters>
