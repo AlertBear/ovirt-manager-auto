@@ -63,7 +63,7 @@ class AutoCpuNameResolution(Component):
             out = out.strip()
             err = err.strip()
             if rc or not out:
-                logger.error('Failed to get CPU models of {0}. '
+                logger.debug('Failed to get CPU models of {0}. '
                              'Failed running vdsClient on host. '
                              'Error message: {1} '
                              'vdsClient output: {2}'.format(name, err, out))
