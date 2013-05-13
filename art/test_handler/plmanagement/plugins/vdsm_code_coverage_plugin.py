@@ -13,41 +13,37 @@ Configuration Options:
 ----------------------
     | **[VDSM_CODE_COVERAGE]**
     | **enabled** - to enable the plugin (true/false)
-    | **vdsm_repo** - link to vdsm git repo
-    | **vdsmtests_repo** - link to vdsm tests git repo
-    | **ruth_repo** - link to ruth repo
-    | **vdsm_root_path** - vdsm path for root folder
+    | **service** - name of vdsmcodecoverage service
+    | **path_to_source** - path to coverage file on remote host
+    | **path_to_target** - path to final coverage file
 """
-
 import os
-import sys
 import shutil
-from art.test_handler.plmanagement import Component, implements, get_logger, PluginError
-from art.test_handler.plmanagement.interfaces.application import IConfigurable, IApplicationListener
+from art.test_handler.plmanagement import Component, implements, get_logger,\
+    PluginError
+from art.test_handler.plmanagement.interfaces.application import \
+    IConfigurable, IApplicationListener
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.plmanagement.interfaces.config_validator import\
-                                                    IConfigValidation
+    IConfigValidation
 from utilities.machine import Machine, LINUX
+import tempfile
 
 
 logger = get_logger("vdsm_code_coverage")
 
-COVERAGE_SECTION = 'VDSM_CODE_COVERAGE'
-VDSM_REPO = 'vdsm_repo'
-VDSM_TESTS = 'vdsmtests_repo'
-RUTH = 'ruth_repo'
-REST = 'REST_CONNECTION'
 PARAMETERS = 'PARAMETERS'
+COVERAGE_SECTION = 'VDSM_CODE_COVERAGE'
 VDS_PASSWORD = 'vds_password'
 VDS = 'vds'
-VDSM_SERVER_PATH = 'vdsm_root_path'
-
-DEBUG_CLIENT = 'debugPluginClient.py'
-VDSM_DEBUG_PLUGIN = 'vdsm-debug-plugin'
-PYTHON_COVERAGE = 'python-coverage'
-
-DEFAULT_STATE = False
+COVERAGE_SOURCE = 'path_to_source'
+COVERAGE_TARGET = 'path_to_target'
 ENABLED = 'enabled'
+SERVICE = 'service'
+
+TARGET_DEFAULT = "results/vdsm_coverage"
+SOURCE_DEFAULT = "/var/lib/vdsmcodecoverage/coverage"
+SERVICE_DEFAULT = "vdsmcodecoveraged"
 
 
 class VDSMCoverageError(PluginError):
@@ -56,114 +52,115 @@ class VDSMCoverageError(PluginError):
 
 class VDSMCodeCoverage(Component):
     """
-    Plugin enables vdsm_code_coverage functionality on hosts and fetch results.
+    Plugin enables code coverage for vdsm service on hosts and fetch results.
     """
-    implements(IConfigurable, IApplicationListener, IPackaging, IConfigValidation)
+    implements(IConfigurable, IApplicationListener, IPackaging,
+               IConfigValidation)
     name = 'VDSM code coverage'
 
     def __init__(self):
         super(VDSMCodeCoverage, self).__init__()
         self.machines = {}
-        self.path_to_vdsm = None
         self.res_dir = None
-        self.scheme = None
-        self.ruth_git = None
+        self.target_path = None
+        self.source_path = None
+        self.service = None
 
     @classmethod
     def add_options(cls, parser):
-        out = os.path.expanduser("~/results/vdsm_coverage")
         group = parser.add_argument_group(cls.name, description=cls.__doc__)
-        msg = "Specify target directory, where results will be stored (default: %(const)s)."
-        group.add_argument('--with-vdsm-code-coverage', action="store", \
-                dest='vdsm_code_coverage', help=msg, const=out, \
-                default=None, nargs='?')
+        group.add_argument('--with-vdsm-code-coverage', action="store_true",
+                           dest='vdsm_code_coverage')
 
-    def __prepare_hosts(self):
-        path_to_debug_client = os.path.join(self.path_to_vdsm, DEBUG_CLIENT)
-        for name, mobj in self.machines.items():
-            logger.info("Preparing %s for VDSM code coverage", name)
-            # install python-coverage package, it is needed by vdsmDebugClient
-            if not mobj.yum(PYTHON_COVERAGE, 'install'):
-                raise VDSMCoverageError(\
-                        "failed to install %s: %s" % (PYTHON_COVERAGE, name))
-            # install vdsm-debug-plugin
-            if not mobj.yum(VDSM_DEBUG_PLUGIN, 'install'):
-                raise VDSMCoverageError(\
-                        "failed to intall %s: %s" % (VDSM_DEBUG_PLUGIN, name))
-            # copy vdsm-debug-client
-            if not mobj.copyTo(path_to_debug_client, self.vdsm_server_path):
-                raise VDSMCoverageError(\
-                        "failed to copy debugClient to host: %s" % name)
-            if not mobj.startService('ruthAgent'):
-                raise VDSMCoverageError(\
-                        "failed to start runthAgent on host: %s" % name)
-
-
-    def __init_vdsm_agent(self, scheme):
-
-        try:
-            from agentUtils import connectAgent
-            from coverageControl import VdsmCoverageProxy
-        except ImportError:
-            logger.error("Failed to import vdsm coverage requirements, "\
-                    "please check paths to repos")
-            raise
-
-        for name, mobj in self.machines.items():
-            agent = connectAgent('%s://%s:54321' % (scheme, name))
-            mobj.vdsm_proxy = VdsmCoverageProxy(agent)
-
-    def __start(self):
+    def _start(self):
         for mobj in self.machines.values():
-            logger.info("Start VDSM code coverage on %s", mobj.host)
-            mobj.vdsm_proxy.start()
+            self._toogle(mobj, False)
+            self._clean(mobj)
+            self._toogle(mobj, True)
 
-    def __stop(self):
-        """
-        Stops monitoring and fetch results.
-        """
-        for name, mobj in self.machines.items():
-            if not hasattr(mobj, 'vdsm_proxy'):
-                continue
-            mobj.vdsm_proxy.stop()
-            path = mobj.vdsm_proxy.getLocalCopyPath()
-            if not os.path.exists(self.res_dir):
-                os.makedirs(self.res_dir)
-            target = os.path.join(self.res_dir, name) + '.tar.gz'
-            logger.info("Storing VDSM code-coverage: %s -> %s", path, target)
-            shutil.move(path, target)
-            mobj.stopService('ruthAgent')
+    def _stop(self):
+        for mobj in self.machines.values():
+            self._toogle(mobj, False)
+            self._copy(mobj)
+        if self.machines:
+            self._merge()
+
+    def _toogle(self, machine, op):
+        if op:
+            logger.info("Start VDSM code coverage on %s", machine.host)
+        else:
+            logger.info("Stop VDSM code coverage on %s", machine.host)
+        chkconfig = ["chkconfig", self.service]
+        service = ["service", self.service]
+
+        if op:
+            chkconfig.append('on')
+            service.append('start')
+        else:
+            chkconfig.append('off')
+            service.append('stop')
+
+        machine.runCmd(chkconfig)
+        machine.runCmd(service)
+
+    def _clean(self, machine):
+        logger.info("Cleaning old coverage reports: %s", self.source_path)
+        machine.removeFile(self.source_path)
+
+    def _copy(self, machine):
+        for i, mobj in enumerate(self.machines.values()):
+            name = ".coverage.%s" % mobj.host
+            target_path = os.path.join(self.res_dir, name)
+            res = mobj.copyFrom(self.source_path, target_path, exc_info=False)
+            if res:
+                logger.info("VDSM code coverage copied to: %s", target_path)
+
+    def _merge(self):
+        mobj = Machine().util(LINUX)
+        cmd = ['coverage', 'combine']
+        res, out = mobj.runCmd(cmd, runDir=self.res_dir)
+        if not res:
+            logger.error("Merge of code coverage failed: %s", out)
+        path = os.path.join(self.res_dir, '.coverage')
+        if os.path.exists(path):
+            with open(path, 'rb') as fs:
+                with open(self.target_path, 'wb') as ft:
+                    ft.write(fs.read())
+            logger.info("VDSM code coverage file was merged to %s",
+                        self.target_path)
+        else:
+            logger.warning("There is no code coverage found")
 
     def configure(self, params, conf):
-        if not params.vdsm_code_coverage:
+        if not self.is_enabled(params, conf):
             return
-        self.res_dir = params.vdsm_code_coverage
+
+        config = conf[COVERAGE_SECTION]
+
+        self.res_dir = tempfile.mkdtemp()
+        self.target_path = config[COVERAGE_TARGET]
+        self.source_path = config[COVERAGE_SOURCE]
+        self.service = config[SERVICE]
 
         vds = conf[PARAMETERS].as_list(VDS)
         vds_passwd = conf[PARAMETERS].as_list(VDS_PASSWORD)
 
-        for name, passwd in  zip(vds, vds_passwd):
+        for name, passwd in zip(vds, vds_passwd):
             self.machines[name] = Machine(name, 'root', passwd).util(LINUX)
 
-        self.path_to_vdsm = conf[COVERAGE_SECTION][VDSM_REPO]
-        self.vdsm_server_path = conf[COVERAGE_SECTION][VDSM_SERVER_PATH]
-        self.scheme = conf[REST]['scheme']
-
-        # add vdsm-things into python_path
-        paths = set(sys.path)
-        paths.add(self.path_to_vdsm)
-        paths.add(conf[COVERAGE_SECTION][VDSM_TESTS])
-        paths.add(conf[COVERAGE_SECTION][RUTH])
-        sys.path = list(paths)
-
+        target_dir = os.path.dirname(self.target_path)
+        if not os.path.exists(target_dir):
+            os.makedirs(target_dir)
 
     def on_application_exit(self):
-        self.__stop()
+        try:
+            self._stop()
+        finally:
+            if self.res_dir and os.path.exists(self.res_dir):
+                shutil.rmtree(self.res_dir, ignore_errors=True)
 
     def on_application_start(self):
-        self.__prepare_hosts()
-        self.__init_vdsm_agent(self.scheme)
-        self.__start()
+        self._start()
 
     def on_plugins_loaded(self):
         pass
@@ -181,16 +178,13 @@ class VDSMCodeCoverage(Component):
         params['author_email'] = 'lbednar@redhat.com'
         params['description'] = 'VDSM code coverage for ART'
         params['long_description'] = cls.__doc__.strip().replace('\n', ' ')
-        params['requires'] = [ 'art-utilities' ]
-        params['py_modules'] = ['art.test_handler.plmanagement.plugins.vdsm_code_coverage_plugin']
-
+        params['requires'] = ['art-utilities', 'python-coverage >= 3.5.3']
+        params['py_modules'] = ['art.test_handler.plmanagement.plugins.'
+                                'vdsm_code_coverage_plugin']
 
     def config_spec(self, spec, val_funcs):
-        section_spec = spec.get(COVERAGE_SECTION, {})
-        section_spec[ENABLED] = 'boolean(default=%s)' % DEFAULT_STATE
-        section_spec[VDSM_REPO] = 'string(default=None)'
-        section_spec[VDSM_SERVER_PATH] = 'string(default=None)'
-        section_spec[VDSM_TESTS] = 'string(default=None)'
-        section_spec[RUTH] = 'string(default=None)'
-        spec[COVERAGE_SECTION] = section_spec
-
+        section_spec = spec.setdefault(COVERAGE_SECTION, {})
+        section_spec[ENABLED] = 'boolean(default=False)'
+        section_spec[COVERAGE_TARGET] = 'string(default="%s")' % TARGET_DEFAULT
+        section_spec[COVERAGE_SOURCE] = 'string(default="%s")' % SOURCE_DEFAULT
+        section_spec[SERVICE] = 'string(default="%s")' % SERVICE_DEFAULT
