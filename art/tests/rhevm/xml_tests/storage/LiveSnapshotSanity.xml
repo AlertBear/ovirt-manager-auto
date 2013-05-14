@@ -1,4 +1,8 @@
-<input tcms_test_plan="5588">
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- vim: set ts=3 sw=3 expandtab: -->
+<?xml-stylesheet type="text/xsl" href="table.xslt"?>
+
+<input tcms_plan_id="5588">
 <test_case>
    <test_name>START_GROUP: TC_141612</test_name>
    <test_action/>
@@ -1522,18 +1526,18 @@
    <run>yes</run>
 </test_case>
 <test_case>
-   <test_name>Wait for all background tasks to finish on hosts</test_name>
-   <test_action>waitForTasks</test_action>
-   <parameters>vdc='{host}', vdc_password='{password}', datacenter='live_snapshot_dc'</parameters>
-   <positive>None</positive>
-   <run>yes</run>
-</test_case>
-<test_case>
    <test_name>Remove VM</test_name>
    <test_type>rest</test_type>
    <test_action>removeVm</test_action>
    <parameters>vm='vm_with_two_disks'</parameters>
    <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait for all background tasks to finish on hosts</test_name>
+   <test_action>waitForTasks</test_action>
+   <parameters>vdc='{host}', vdc_password='{password}', datacenter='live_snapshot_dc'</parameters>
+   <positive>None</positive>
    <run>yes</run>
 </test_case>
 <test_case>
@@ -2544,7 +2548,6 @@
    <parameters>vm='vm_testing', wait=False</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
-   <bz>879253</bz>
 </test_case>
 <test_case>
    <test_name>Create snapshot</test_name>
@@ -2553,7 +2556,6 @@
    <parameters>vm='vm_testing', description='vm_snapshot'</parameters>
    <positive>FALSe</positive>
    <run>yes</run>
-   <bz>879253</bz>
 </test_case>
 <test_case>
    <test_name>Stop VM</test_name>
