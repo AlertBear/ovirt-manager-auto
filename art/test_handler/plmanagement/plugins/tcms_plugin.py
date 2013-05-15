@@ -44,16 +44,16 @@ decorator. You can use it to decorate your functions.
 import re
 from art.test_handler.plmanagement import Component, implements, get_logger
 from art.test_handler.plmanagement.interfaces.application import \
-        IConfigurable, IApplicationListener
+    IConfigurable, IApplicationListener
 from art.test_handler.plmanagement.interfaces.tests_listener import\
-        ITestGroupHandler, ITestSuiteHandler, ITestCaseHandler
+    ITestGroupHandler, ITestCaseHandler
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.plmanagement.interfaces.config_validator import\
-                                                    IConfigValidation
+    IConfigValidation
 
 TCMS_OPTION = 'TCMS'
 PARAMETERS = 'PARAMETERS'
-TCMS_URL='https://tcms.engineering.redhat.com/xmlrpc/'
+TCMS_URL = 'https://tcms.engineering.redhat.com/xmlrpc/'
 REALM = '@REDHAT.COM'
 SENDER = 'noreply@redhat.com'
 #HEADERS = 'testName:sub_test,caseName:info,testType:str,params:text'
@@ -74,7 +74,7 @@ TCMS_SITE = 'tcms_site'
 TCMS_DEC = 'tcms'
 TCMS_TEST_CASE = 'tcms_test_case'
 TCMS_PLAN_ID = 'tcms_plan_id'
-REPORT_BZ = 'report_bz' # currently disabled due to problems in nitrate api
+REPORT_BZ = 'report_bz'  # currently disabled due to problems in nitrate api
 
 logger = get_logger('tcms_agent')
 
@@ -101,8 +101,8 @@ class TCMS(Component):
     """
     Plugin provides access to TCMS site.
     """
-    implements(IConfigurable, ITestGroupHandler, IApplicationListener, \
-                    IPackaging, ITestCaseHandler, IConfigValidation)
+    implements(IConfigurable, ITestGroupHandler, IApplicationListener,
+               IPackaging, ITestCaseHandler, IConfigValidation)
     name = "TCMS"
 
     def __init__(self):
@@ -114,12 +114,13 @@ class TCMS(Component):
     @classmethod
     def add_options(cls, parser):
         group = parser.add_argument_group(cls.name, description=cls.__doc__)
-        group.add_argument('--with-tcms', action='store_true', \
-                dest='tcms_enabled', help="enable plugin")
-        group.add_argument('--tcms-user', action="store", dest='tcms_user', \
-                help="username for TCMS")
-        group.add_argument('--tcms-gen-links', action="store_true", \
-                dest='tcms_gen_links', help="generate links to tmcs_test_cases")
+        group.add_argument('--with-tcms', action='store_true',
+                           dest='tcms_enabled', help="enable plugin")
+        group.add_argument('--tcms-user', action="store", dest='tcms_user',
+                           help="username for TCMS")
+        group.add_argument('--tcms-gen-links', action="store_true",
+                           dest='tcms_gen_links',
+                           help="generate links to tmcs_test_cases")
 
     def configure(self, params, conf):
         if not self.is_enabled(params, conf):
@@ -129,21 +130,21 @@ class TCMS(Component):
         url = tcms_cfg[TCMS_SITE]
         self.site = re.match('^(?P<site>[^/]+//[^/]+)/.*$', url).group('site')
         self.user = params.tcms_user or tcms_cfg[USER]
-        self.info = {'tcms_url': url,\
-                'placeholder_plan_type':  PLAN_TYPE,\
-                'keytab_files_location': tcms_cfg[KEYTAB_LOCATION], \
-                'redhat_email_extension': tcms_cfg[REALM_OPT], \
-                'keytab_file_extension': KT_EXT,
-                'configure_logger': False,
-                'send_result_email': tcms_cfg[SEND_MAIL],
-                'test_run_name_template': tcms_cfg[RUN_NAME_TEMPL],
-                'default_sender': SENDER,
-                'header_names': HEADERS,}
+        self.info = {'tcms_url': url,
+                     'placeholder_plan_type':  PLAN_TYPE,
+                     'keytab_files_location': tcms_cfg[KEYTAB_LOCATION],
+                     'redhat_email_extension': tcms_cfg[REALM_OPT],
+                     'keytab_file_extension': KT_EXT,
+                     'configure_logger': False,
+                     'send_result_email': tcms_cfg[SEND_MAIL],
+                     'test_run_name_template': tcms_cfg[RUN_NAME_TEMPL],
+                     'default_sender': SENDER,
+                     'header_names': HEADERS}
 
         self.version = conf[PARAMETERS]['compatibility_version']
         self.category = tcms_cfg[CATEGORY]
         self.generate_links = params.tcms_gen_links or \
-                tcms_cfg.as_bool(GENERATE_LINKS)
+            tcms_cfg.as_bool(GENERATE_LINKS)
         self.report_bz = tcms_cfg.as_bool(REPORT_BZ)
         self.__register_functions()
 
@@ -182,7 +183,7 @@ class TCMS(Component):
         if not plan and self.tcms_plans:
             plan = self.tcms_plans[-1]
 
-        assert plan, "Missing tcms_plan for test_case %s" % tcms_case
+        assert plan, "Missing tcms_plan for test_case %s" % tcms_cases
                         # NOTE: it shouldn't happen
 
         res = self.results.get(plan, {})
@@ -191,7 +192,7 @@ class TCMS(Component):
             res[case] = test
 
             if self.generate_links:
-                logger.info("TCMS link: %s/case/%s" % (self.site, case))
+                logger.info("TCMS link: %s/case/%s", self.site, case)
 
         self.results[plan] = res
 
@@ -210,13 +211,13 @@ class TCMS(Component):
 
     def __upload_plan(self, plan, cases):
         self.agent.init(test_type='Functionality',
-                    test_name='REST_API',
-                    build_name='unspecified',
-                    product_name='RHEVM',
-                    product_version=self.version,
-                    header_names=HEADERS,
-                    product_category=self.category,
-                    test_plan_id=str(plan))
+                        test_name='REST_API',
+                        build_name='unspecified',
+                        product_name='RHEVM',
+                        product_version=self.version,
+                        header_names=HEADERS,
+                        product_category=self.category,
+                        test_plan_id=str(plan))
 
         for case, test in cases.items():
             self.__fill_test_case(case, test)
@@ -230,13 +231,12 @@ class TCMS(Component):
                 bz = getattr(test, 'bz', None)
 
         self.agent.iterationInfo(sub_test_name=test.test_name,
-                            test_case_name=test.test_name,
-                            info_line = [str(test).replace("'", "\\'")],
-                            iter_number=test.serial,
-                            iter_status=status,
-                            bz_info=bz,
-                            test_case_id=str(case))
-
+                                 test_case_name=test.test_name,
+                                 info_line=[str(test).replace("'", "\\'")],
+                                 iter_number=test.serial,
+                                 iter_status=status,
+                                 bz_info=bz,
+                                 test_case_id=str(case))
 
     def on_application_start(self):
         pass
@@ -249,7 +249,6 @@ class TCMS(Component):
         conf_en = conf.get(TCMS_OPTION).as_bool(ENABLED)
         return params.tcms_enabled or conf_en
 
-
     @classmethod
     def fill_setup_params(cls, params):
         params['name'] = cls.name.lower()
@@ -258,14 +257,15 @@ class TCMS(Component):
         params['author_email'] = 'lbednar@redhat.com'
         params['description'] = 'TCMS plugin for ART'
         params['long_description'] = 'Provides connection to TCMS DB and '\
-                'reports there tests results.'
-        params['requires'] = ['python-kerberos', 'python-nitrate', \
-                'art-utilities', 'krb5-workstation']
-        params['py_modules'] = ['art.test_handler.plmanagement.plugins.tcms_plugin', \
-                'art.test_handler.plmanagement.plugins.tcmsAgent', \
-                'art.test_handler.plmanagement.plugins.tcmsEntryWrapper', \
-                'art.test_handler.plmanagement.plugins.customNitrate']
-
+            'reports there tests results.'
+        params['requires'] = ['python-kerberos', 'python-nitrate',
+                              'art-utilities', 'krb5-workstation']
+        params['py_modules'] = ['art.test_handler.plmanagement.plugins.'
+                                'tcms_plugin', 'art.test_handler.'
+                                'plmanagement.plugins.tcmsAgent',
+                                'art.test_handler.plmanagement.plugins.'
+                                'tcmsEntryWrapper', 'art.test_handler.'
+                                'plmanagement.plugins.customNitrate']
 
     def config_spec(self, spec, val_funcs):
         section_spec = spec.get(TCMS_OPTION, {})
@@ -281,4 +281,3 @@ class TCMS(Component):
         section_spec[GENERATE_LINKS] = "boolean(default=false)"
         section_spec[TCMS_SITE] = "string(default='%s')" % TCMS_URL
         spec[TCMS_OPTION] = section_spec
-
