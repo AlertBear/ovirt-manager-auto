@@ -100,9 +100,9 @@ class UTestCase(TestCase):
         self.t = t
         self.f = getattr(t.test, t.test._testMethodName)
         self.test_name = self.test_action
-        self.bz = getattr(self.f.im_func, BZ_ID, None)
-        self.tcms_plan_id = getattr(self.f.im_func, TCMS_PLAN_ID, None)
-        self.tcms_test_case = getattr(self.f.im_func, TCMS_TEST_CASE, None)
+        self.bz = getattr(self.f, BZ_ID, None)
+        self.tcms_plan_id = getattr(self.f, TCMS_PLAN_ID, None)
+        self.tcms_test_case = getattr(self.f, TCMS_TEST_CASE, None)
         setattr(self.t.test, 'vital4group', False)
         self.serial = iterNumber()
         try:

@@ -186,7 +186,7 @@ class TCMS(Component):
         assert plan, "Missing tcms_plan for test_case %s" % tcms_cases
                         # NOTE: it shouldn't happen
 
-        res = self.results.get(plan, {})
+        res = self.results.setdefault(plan, {})
 
         for case in tcms_cases:
             res[case] = test
@@ -194,20 +194,17 @@ class TCMS(Component):
             if self.generate_links:
                 logger.info("TCMS link: %s/case/%s", self.site, case)
 
-        self.results[plan] = res
-
     def on_application_exit(self):
         if self.results:
             self.__upload_results()
 
     def __upload_results(self):
         from art.test_handler.plmanagement.plugins import tcmsAgent
-        self.agent = tcmsAgent.TcmsAgent(self.user, self.info)
 
         for plan, cases in self.results.items():
+            self.agent = tcmsAgent.TcmsAgent(self.user, self.info)
             self.__upload_plan(plan, cases)
-
-        self.agent.testEnd()
+            self.agent.testEnd()
 
     def __upload_plan(self, plan, cases):
         self.agent.init(test_type='Functionality',
