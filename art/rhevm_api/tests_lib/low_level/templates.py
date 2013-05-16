@@ -40,6 +40,7 @@ SD_API = get_api('storage_domain', 'storagedomains')
 CL_API = get_api('cluster', 'clusters')
 VM_API = get_api('vm', 'vms')
 NIC_API = get_api('nic', 'nics')
+DISKS_API = get_api('disk', 'disks')
 
 Template = getDS('Template')
 Cluster = getDS('Cluster')
@@ -437,6 +438,51 @@ def importTemplate(positive, template, export_storagedomain,
     time.sleep(30)
 
     return status
+
+
+def _getTemplateDisks(template):
+    tmpObj = TEMPLATE_API.find(template)
+    disks = TEMPLATE_API.getElemFromLink(tmpObj, link_name='disks', attr='disk',
+                                         get_href=False)
+    return disks
+
+
+def _getTemplateFirstDiskByName(template, diskName, idx=0):
+    """
+    Description: Searches for template's disk by name
+                 Name is not unique!
+    Parameters
+        * template - Name of template we want disk from
+        * diskId - disk's id
+        * idx - index of found disk to return
+    Return: Disk object
+    """
+    disks = _getTemplateDisks(template)
+    found = [disk for disk in disks if disk.get_name() == diskName]
+    if not found:
+        raise DiskNotFound("Disk %s was not found in tmp's %s disk collection" %
+                           (diskName, template))
+    return found[idx]
+
+
+@is_action()
+def copyTemplateDisk(template, disk_name, target_sd):
+    """
+    Description: Copy disk of template to another storage domain
+    Parameters:
+        * template - Name of the disk's template
+        * disk_name - Name of the disk
+        * target_sd - Name of storage domain disk should be copyied to
+    Throws: DiskException if syncAction returns False (syncAction should raise
+            exception itself instead of returning False)
+    """
+    disk = _getTemplateFirstDiskByName(template, disk_name)
+    sd = SD_API.find(target_sd)
+    if not DISKS_API.syncAction(disk, 'copy', storage_domain=sd,
+                                positive=True):
+        raise errors.DiskException("Failed to move disk %s of template %s to "
+                                   " storage domain %s"
+                                   % (disk_name, template, target_sd))
 
 
 @is_action()
