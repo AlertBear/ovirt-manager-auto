@@ -1,0 +1,378 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- vim: set ts=3 sw=3 expandtab: -->
+<?xml-stylesheet type="text/xsl" href="table.xslt"?>
+
+<input tcms_plan_id="6458">
+<test_case>
+   <test_name>START_GROUP:SharedRAWDisk</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>none</positive>
+   <run>yes</run>
+   <tcms_test_case>174621</tcms_test_case>
+   <report/>
+</test_case>
+<test_case>
+   <test_name>Create data center</test_name>
+   <test_action>addDataCenter</test_action>
+   <parameters>name='shared_raw_disk', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create cluster</test_name>
+   <test_action>addCluster</test_action>
+   <parameters>name='shared_raw_disk_cl', cpu='{cpu_name}', data_center='shared_raw_disk', version='{compatibility_version}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Adding host</test_name>
+   <test_action>addHost</test_action>
+   <parameters>name='{vds}', root_password='{vds_password}', cluster='shared_raw_disk_cl', wait='true'</parameters>
+   <positive>true</positive>
+   <run>forkfor({vds},{vds_password})</run>
+   <report>yes</report>
+   <vital>TRUE</vital>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain NFS</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='master_sd', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>iSCSI discover</test_name>
+   <test_action>iscsiDiscover</test_action>
+   <parameters>host='{vds[0]}', address='{lun_address[0]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>iSCSI login</test_name>
+   <test_action>iscsiLogin</test_action>
+   <parameters>host='{vds[0]}', address='{lun_address[0]}', target='{lun_target[0]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain iSCSI</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='master_sd', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun[0]}', lun_address='{lun_address[0]}', lun_target='{lun_target[0]}', lun_port=3260</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Create data storage domain FCP</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='master_sd', type='e{storage_dom_type_data}', storage_type='e{storage_type_fcp}', host='{vds[0]}', lun='{lun[0]}', lun_port=3260</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Attach data storage domain to data center</test_name>
+   <test_action>attachStorageDomain</test_action>
+   <parameters>datacenter='shared_raw_disk', storagedomain='master_sd'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Wait for data center status up</test_name>
+   <test_action>waitForDataCenterState</test_action>
+   <parameters>name='shared_raw_disk'</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM 1</test_name>
+   <test_action>addVm</test_action>
+   <parameters>name='vm_test1', description='a', cluster='shared_raw_disk_cl', storagedomain='master_sd', os_type='e{rhel6x64}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Add virtio cow disk</test_name>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='vm_test1', size=6442450944, wait='True', storagedomain='master_sd', type='e{disk_type_data}', interface='e{interface_virtio}', format='e{format_cow}', sparse='true'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Add virtio nic</test_name>
+   <test_action>addNic</test_action>
+   <parameters>vm='vm_test1', name='nic1', network='{mgmt_bridge}', interface='e{nic_type_virtio}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Install RHEL</test_name>
+   <test_action>unattendedInstallation</test_action>
+   <parameters>vm='vm_test1', nic='nic1', image='{cobbler_profile}', cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Create VM 2</test_name>
+   <test_action>addVm</test_action>
+   <parameters>name='vm_test2', description='a', cluster='shared_raw_disk_cl', storagedomain='master_sd', os_type='e{rhel6x64}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Add virtio cow disk</test_name>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='vm_test2', size=6442450944, wait='True', storagedomain='master_sd', type='e{disk_type_data}', interface='e{interface_virtio}', format='e{format_cow}', sparse='true'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Add virtio nic</test_name>
+   <test_action>addNic</test_action>
+   <parameters>vm='vm_test2', name='nic1', network='{mgmt_bridge}', interface='e{nic_type_virtio}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Install RHEL</test_name>
+   <test_action>unattendedInstallation</test_action>
+   <parameters>vm='vm_test2', nic='nic1', image='{cobbler_profile}', cobblerAddress='{cobbler_address}', cobblerUser='{cobbler_user}', cobblerPasswd='{cobbler_passwd}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait till installation starts</test_name>
+   <test_action>sleep</test_action>
+   <parameters>seconds=120</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Get mac address</test_name>
+   <test_action>getVmMacAddress</test_action>
+   <parameters>vm='vm_test1',nic='nic1'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>no</report>
+   <fetch_output>macAddress-&gt;macAddress</fetch_output>
+</test_case>
+<test_case>
+   <test_name>Remove system from Cobbler</test_name>
+   <test_action>cobblerRemoveSystem</test_action>
+   <parameters>cobblerAddress='{cobbler_address}',cobblerUser='{cobbler_user}',cobblerPasswd='{cobbler_passwd}',mac=%macAddress%</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Get mac address</test_name>
+   <test_action>getVmMacAddress</test_action>
+   <parameters>vm='vm_test2',nic='nic1'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>no</report>
+   <fetch_output>macAddress-&gt;macAddress</fetch_output>
+</test_case>
+<test_case>
+   <test_name>Remove system from Cobbler</test_name>
+   <test_action>cobblerRemoveSystem</test_action>
+   <parameters>cobblerAddress='{cobbler_address}',cobblerUser='{cobbler_user}',cobblerPasswd='{cobbler_passwd}',mac=%macAddress%</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Wait for GuestInfo IP address 1</test_name>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='vm_test1', timeout=1800</parameters>
+   <positive>NONE</positive>
+   <run>YES</run>
+</test_case>
+<test_case>
+   <test_name>Wait for GuestInfo IP address 2</test_name>
+   <test_action>waitForIP</test_action>
+   <parameters>vm='vm_test2', timeout=1800</parameters>
+   <positive>NONE</positive>
+   <run>YES</run>
+</test_case>
+<test_case>
+   <test_name>Create shared RAW disk</test_name>
+   <test_action>addDisk</test_action>
+   <parameters>alias='shared', provisioned_size=1073741824, size=1073741824, interface='e{interface_virtio}', format='e{format_raw}', storagedomain='master_sd', shareable=True, sparse=False</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait till disk is created</test_name>
+   <test_action>waitForDisksState</test_action>
+   <parameters>disksNames='shared'</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Attach disk to VM1</test_name>
+   <test_action>attachDiskToVm</test_action>
+   <parameters>alias='shared', vmName='vm_test1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <bz>854479</bz>
+</test_case>
+<test_case>
+   <test_name>Wait till disk is active</test_name>
+   <test_action>waitForDisksState</test_action>
+   <parameters>disksNames='shared'</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Attach disk to VM2</test_name>
+   <test_action>attachDiskToVm</test_action>
+   <parameters>alias='shared', vmName='vm_test2'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <bz>854479</bz>
+</test_case>
+<test_case>
+   <test_name>Wait till disk is active</test_name>
+   <test_action>waitForDisksState</test_action>
+   <parameters>disksNames='shared'</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+</test_case>
+<!-- TODO" Inner disk testing -->
+<test_case>
+   <test_name>Stop VM</test_name>
+   <test_action>stopVms</test_action>
+   <parameters>vms='vm_test1,vm_test2'</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait till vm is down</test_name>
+   <test_action>waitForVmsStates</test_action>
+   <parameters>names='vm_test1', timeout=120, states='e{vm_state_down}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Wait till vm is down</test_name>
+   <test_action>waitForVmsStates</test_action>
+   <parameters>names='vm_test2', timeout=120, states='e{vm_state_down}'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove VM</test_name>
+   <test_action>removeVm</test_action>
+   <parameters>vm='vm_test1'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove VM</test_name>
+   <test_action>removeVm</test_action>
+   <parameters>vm='vm_test2'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove shared disk</test_name>
+   <test_action>deleteDisk</test_action>
+   <parameters>alias="shared"</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Wait until disk is gone</test_name>
+   <test_action>waitForDisksGone</test_action>
+   <parameters>disksNames="shared"</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Wait for all background tasks to finish on hosts</test_name>
+   <test_action>waitForTasks</test_action>
+   <parameters>vdc='{host}', vdc_password='{password}', datacenter='shared_raw_disk'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Deactivate master data domain</test_name>
+   <test_action>deactivateStorageDomain</test_action>
+   <parameters>datacenter='shared_raw_disk', storagedomain='master_sd'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove data centers</test_name>
+   <test_action>removeDataCenter</test_action>
+   <parameters>datacenter='shared_raw_disk'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove master storage domain</test_name>
+   <test_action>removeStorageDomain</test_action>
+   <parameters>storagedomain='master_sd', host='{vds[0]}', format='true'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <fetch_output/>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Maintenace hosts</test_name>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>true</positive>
+   <run>forkfor({vds})</run>
+   <fetch_output/>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove inactive hosts</test_name>
+   <test_action>removeHost</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>true</positive>
+   <run>forkfor({vds})</run>
+   <fetch_output/>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>Remove clusters</test_name>
+   <test_action>removeCluster</test_action>
+   <parameters>cluster='shared_raw_disk_cl'</parameters>
+   <positive>true</positive>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>END_GROUP:SharedRAWDisk</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>none</positive>
+   <run/>
+   <fetch_output/>
+   <report/>
+</test_case>
+</input>
