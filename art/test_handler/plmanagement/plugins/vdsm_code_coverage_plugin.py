@@ -81,6 +81,7 @@ class VDSMCodeCoverage(Component):
     def _stop(self):
         for mobj in self.machines.values():
             self._toogle(mobj, False)
+        for mobj in self.machines.values():
             self._copy(mobj)
         if self.machines:
             self._merge()
@@ -100,20 +101,19 @@ class VDSMCodeCoverage(Component):
             chkconfig.append('off')
             service.append('stop')
 
-        machine.runCmd(chkconfig)
         machine.runCmd(service)
+        machine.runCmd(chkconfig)
 
     def _clean(self, machine):
         logger.info("Cleaning old coverage reports: %s", self.source_path)
         machine.removeFile(self.source_path)
 
     def _copy(self, machine):
-        for i, mobj in enumerate(self.machines.values()):
-            name = ".coverage.%s" % mobj.host
-            target_path = os.path.join(self.res_dir, name)
-            res = mobj.copyFrom(self.source_path, target_path, exc_info=False)
-            if res:
-                logger.info("VDSM code coverage copied to: %s", target_path)
+        name = ".coverage.%s" % machine.host
+        target_path = os.path.join(self.res_dir, name)
+        res = machine.copyFrom(self.source_path, target_path, exc_info=False)
+        if res:
+            logger.info("VDSM code coverage copied to: %s", target_path)
 
     def _merge(self):
         mobj = Machine().util(LINUX)
@@ -149,7 +149,7 @@ class VDSMCodeCoverage(Component):
             self.machines[name] = Machine(name, 'root', passwd).util(LINUX)
 
         target_dir = os.path.dirname(self.target_path)
-        if not os.path.exists(target_dir):
+        if target_dir and not os.path.exists(target_dir):
             os.makedirs(target_dir)
 
     def on_application_exit(self):
