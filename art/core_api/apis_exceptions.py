@@ -113,3 +113,10 @@ class CLITracebackError(APIException):
 
     def prepare_traceback_message(self):
         self.error = self.error.replace('File', '\nFile')
+
+
+class CLIAutoCompletionFailure(APIException):
+    '''
+    Raised when there is some autocompletion related error
+    '''
+    pass

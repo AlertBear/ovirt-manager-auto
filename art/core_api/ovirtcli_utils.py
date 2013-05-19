@@ -27,7 +27,8 @@ from art.rhevm_api.data_struct.data_structures import *
 from art.rhevm_api.data_struct.data_structures import ClassesMapping
 from art.core_api.rest_utils import RestUtil
 from art.core_api.apis_exceptions import CLIError, CLITimeout,\
-    CLICommandFailure, UnsupportedCLIEngine, CLITracebackError
+    CLICommandFailure, UnsupportedCLIEngine, CLITracebackError,\
+    CLIAutoCompletionFailure
 from art.core_api import validator
 from utilities.utils import createCommandLineOptionFromDict
 
@@ -41,7 +42,8 @@ TMP_FILE = '/tmp/cli_output.tmp'
 IP_FORMAT = '^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$'
 ADD_WAIVER = ['StorageDomain']
 UPDATE_WAIVER = []
-REMOVE_WAIVER = []
+REMOVE_WAIVER = ['StorageDomain']
+ACTION_WAIVER = []
 
 
 def threadSafeRun(func):
@@ -276,6 +278,7 @@ class RhevmCli(CliConnection):
     _specialCliPrompt = {'\r\n:': ' ', '7m\(END\)': 'q'}
     _specialMatrixParamsDict = {'case-sensitive': 'case_sensitive'}
     _cliRootCommands = ['action', 'add', 'list', 'remove', 'show', 'update']
+    _cliTrashPattern = "[\[\]\\\?]"
 
     def __init__(self, logger, uri, user, userDomain, password,
                  secure, sslKeyFile, sslCertFile, sslCaFile, logFile,
@@ -448,13 +451,26 @@ class RhevmCli(CliConnection):
 
         # debug case
         if 'send:' in output:
-            return output.split('send:')[0].split()
+            ret = output.split('send:')[0].split()
         # non debug case, sometimes we can get error message
         # after autocompletion options
         elif 'error:' in output:
-            return output.split('error:')[0].split()
+            ret = output.split('error:')[0].split()
         else:
-            return output.split()
+            ret = output.split()
+
+        # cleaning from cli trash
+        pattern = re.compile(self._cliTrashPattern)
+        ret = filter(lambda x: not pattern.search(x), ret)
+
+        if len(ret):
+            return ret
+        # case with single autocompletion parameter
+        else:
+            out = self.sendCmd("help %s" % cmd, 10).split('\n')
+            ret = [x.split('--')[1].split(':')[0]
+                   for x in filter(lambda x: '[--' in x and '*' not in x, out)]
+        return ret
 
     def validateCommand(self, cmd):
         """
@@ -472,13 +488,19 @@ class RhevmCli(CliConnection):
         params_len = len(cmd_params)
         cmd_type, object_name = cmd_params[:2]
         # getting context
-        context = self.contextDict[cmd_type][object_name]
+        try:
+            context = self.contextDict[cmd_type][object_name]
+        except KeyError:
+            msg = "First level key {0} or second level key {1} are missing \
+in Context dictionary:\n{2}".format(cmd_type, object_name, self.contextDict)
+            raise CLIAutoCompletionFailure(msg)
 
         if len(context[0]) == 0:
             help_cmd = "{0} {1}".format(cmd_type, object_name)
             autocompletion_params += self.getAutoCompletionOptions(help_cmd)
         # now we check if we need to add another context
-        # add use case
+        # add usecase
+        # add <type> [parent identifiers] [command options]
         if cmd_type == 'add':
             if 'identifier' in cmd_params[2]:
                 context_key = cmd_params[2].replace('--', '').split('-')[0]
@@ -496,6 +518,8 @@ class RhevmCli(CliConnection):
             else:
                 starting_position = 2
         # update or remove usecases
+        # update <type> <id> [parent identifiers] [command options]
+        # remove <type> <id> [parent identifiers] [command options]
         elif cmd_type in ['update', 'remove']:
             if params_len > 3 and 'identifier' in cmd_params[3]:
                 context_key = cmd_params[3].replace('--', '').split('-')[0]
@@ -511,6 +535,28 @@ class RhevmCli(CliConnection):
                 starting_position = 5
             else:
                 starting_position = 3
+        # action <type> <id> <action> [parent identifiers] [command options]
+        elif cmd_type == 'action':
+            object_type = cmd_params[1]
+            object_name = cmd_params[2]
+            action = cmd_params[3]
+            if params_len > 4 and 'identifier' in cmd_params[4]:
+                context_key = cmd_params[4].replace('--', '').split('-')[0]
+                context_objects = filter(lambda x: context_key in x, context)
+                if context_objects:
+                    help_cmd = "{0} {1} {2} {3} {4}".format(cmd_type,
+                                                            object_type,
+                                                            object_name,
+                                                            action,
+                                                            cmd_params[4])
+                    autocompletion_params += \
+                        self.getAutoCompletionOptions(help_cmd)
+                else:
+                    self.logger.error("Object %s is not found in context %s",
+                                      cmd_params[2], context)
+                starting_position = 6
+            else:
+                starting_position = 4
 
         # remove all duplicated stuff:
         autocompletion_params = set(autocompletion_params)
@@ -622,6 +668,7 @@ class CliUtil(RestUtil):
             except pe.ExceptionPexpect as e:
                 self.logger.error('Pexpect Connection Error: %s ' % e.value)
                 exit(2)
+
             cliInit = self.cli
         else:
             self.cli = cliInit
@@ -960,6 +1007,18 @@ class CliUtil(RestUtil):
             actionCmd = "action {0} '{1}' {2} --{3}-identifier '{4}' {5}".\
                         format(entityName, entity.id, action, ownerName,
                                ownerId, addParams)
+
+        if self.opts['validate_cli_command']:
+            # validating command vs cli help
+            self.logger.warning('Generated command:\n%s', actionCmd)
+
+            if entity.__class__.__name__ in ACTION_WAIVER:
+                self.logger.warning('Validation skipped for %s',
+                                    entity.__class__.__name__)
+            else:
+                createCmd = self.cli.validateCommand(actionCmd)
+                self.logger.warning('Actual command after validation:\n%s',
+                                    createCmd)
 
         actionCmd = "%s > %s" % (actionCmd, TMP_FILE)
         try:
