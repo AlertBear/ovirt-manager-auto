@@ -219,6 +219,7 @@ def readTestRunOpts(path, redefs):
     opts['urisuffix'] = ''
     opts['uri'] = '%(scheme)s://%(host)s:%(port)s/%(entry_point)'\
                       's%(urisuffix)s/' % opts
+    opts['persistent_auth'] = restSection['persistent_auth']
 
     # Populate opts from the CLI section.
     cliSection = config['CLI_CONNECTION']

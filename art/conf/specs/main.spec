@@ -20,6 +20,7 @@ user = string()
 password = string()
 entry_point = string(default='api')
 user_domain = domain_format()
+persistent_auth = boolean(default=True)
 
 [CLI_CONNECTION]
 tool = option('ovirt-shell', 'rhevm-shell', default='rhevm-shell')

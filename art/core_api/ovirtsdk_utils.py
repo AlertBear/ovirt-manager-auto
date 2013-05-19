@@ -47,12 +47,18 @@ class SdkUtil(APIUtil):
             user_with_domain = '{0}@{1}'.format(self.opts['user'],
                                         self.opts['user_domain'])
             if not self.opts['secure']:
-                self.api = sdkApi.API(self.opts['uri'], user_with_domain,
-                    self.opts['password'], insecure=True)
+                self.api = \
+                    sdkApi.API(self.opts['uri'], user_with_domain,
+                               self.opts['password'], insecure=True,
+                               persistent_auth=self.opts['persistent_auth'])
             else:
-                self.api = sdkApi.API(self.opts['uri'], user_with_domain,
-                        self.opts['password'], self.opts['ssl_key_file'],
-                        self.opts['ssl_cert_file'], self.opts['ssl_ca_file'])
+                self.api = \
+                    sdkApi.API(self.opts['uri'], user_with_domain,
+                               self.opts['password'],
+                               self.opts['ssl_key_file'],
+                               self.opts['ssl_cert_file'],
+                               self.opts['ssl_ca_file'],
+                               persistent_auth=self.opts['persistent_auth'])
             sdkInit = self.api
         else:
             self.api = sdkInit
