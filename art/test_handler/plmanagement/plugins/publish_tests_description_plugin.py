@@ -37,7 +37,6 @@ from art.test_handler.plmanagement.interfaces.tests_listener import\
      ITestSuiteHandler, ITestGroupHandler, ITestCaseHandler
 from art.test_handler import find_test_file
 
-
 logger = get_logger('publish_test_desc')
 
 CONF_SECTION = "PUBLISH_TEST_DESC"
@@ -180,7 +179,7 @@ class AttributeDispatcher(object):
         return AttributeDispatcher(type_, var_name, ttype)
 
 
-class PulishTestDesc(Component):
+class PublishTestDesc(Component):
     """
     This plugin publishes tests description.
     """
@@ -188,9 +187,10 @@ class PulishTestDesc(Component):
             ITestSuiteHandler, ITestGroupHandler, ITestCaseHandler)
 
     name = "Test description publisher"
+    priority = 12000  # should be run last
 
     def __init__(self, *args, **kwargs):
-        super(PulishTestDesc, self).__init__(*args, **kwargs)
+        super(PublishTestDesc, self).__init__(*args, **kwargs)
         self.test_elm_attrs = {}
         self.data = {}
         self.resources = {}
