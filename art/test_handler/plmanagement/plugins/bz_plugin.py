@@ -48,14 +48,14 @@ import re
 import copy
 from art.test_handler.exceptions import SkipTest
 from art.test_handler.plmanagement import Component, implements, get_logger,\
-     PluginError
+    PluginError
 from art.test_handler.plmanagement.interfaces.application import\
-     IConfigurable, IApplicationListener
+    IConfigurable, IApplicationListener
 from art.test_handler.plmanagement.interfaces.tests_listener import\
-     ITestCaseHandler, ITestGroupHandler, ITestSkipper
+    ITestCaseHandler, ITestGroupHandler, ITestSkipper
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.plmanagement.interfaces.config_validator import\
-              IConfigValidation
+    IConfigValidation
 
 
 from utilities.machine import Machine, LINUX
@@ -201,7 +201,7 @@ class Bugzilla(Component):
         self.url = params.bz_host or bz_cfg.get('url')
         self.user = params.bz_user or bz_cfg.get('user')
         self.passwd = params.bz_pass or bz_cfg.get('password')
-        self.bugzilla = bugzilla.RHBugzilla(url=self.url)
+        self.bugzilla = bugzilla.Bugzilla44(url=self.url)
         self.bugzilla.login(self.user, self.passwd)
 
         self.const_list = bz_cfg.get('constant_list', "Closed, Verified")
