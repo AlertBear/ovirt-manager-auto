@@ -18,7 +18,7 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 import logging
-logger = logging.getLogger(__package__ + __name__)
+logger = logging.getLogger(__name__)
 DEAFULT_HOST_NICS_NUM = 4
 
 
