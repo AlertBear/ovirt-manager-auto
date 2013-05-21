@@ -11,40 +11,43 @@
 <test_case>
    <test_name>Create data center</test_name>
    <test_action>addDataCenter</test_action>
-   <parameters>name='SpmDC', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <parameters>name='test_136167', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <test_description/>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create cluster with default parameters</test_name>
    <test_action>addCluster</test_action>
-   <parameters>name='SpmCluster', cpu='{cpu_name}', data_center='SpmDC', version='{compatibility_version}'</parameters>
+   <parameters>name='test_136167_cl', cpu='{cpu_name}', data_center='test_136167', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create hosts</test_name>
    <test_action>addHost</test_action>
-   <parameters>name='{vds}', root_password='{vds_password}', cluster='SpmCluster', wait=False</parameters>
+   <parameters>name='{vds}', root_password='{vds_password}', cluster='test_136167_cl', wait=False</parameters>
    <positive>TRUE</positive>
    <run>loop({vds},{vds_password})</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Wait until all hosts are up</test_name>
-   <test_type>rest</test_type>
    <test_action>waitForHostsStates</test_action>
    <parameters>names='{vds[0]}, {vds[1]}, {vds[2]}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create NFS data storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>iSCSI discover</test_name>
@@ -53,6 +56,7 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>iSCSI login</test_name>
@@ -61,6 +65,7 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create iSCSI data storage domain</test_name>
@@ -69,6 +74,7 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create FCP data storage domain</test_name>
@@ -77,26 +83,26 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Attach data storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>attachStorageDomain</test_action>
-   <parameters>storagedomain='DataDomain', datacenter='SpmDC'</parameters>
+   <parameters>storagedomain='DataDomain', datacenter='test_136167'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Set SPM priorities</test_name>
-   <test_type>rest</test_type>
    <test_action>setSPMPriority</test_action>
    <parameters>hostName='{vds}', spmPriority='{spms_136167}'</parameters>
    <positive>TRUE</positive>
    <run>loop({vds},{spms_136167})</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Set hosts to maintenance</test_name>
-   <test_type>rest</test_type>
    <test_action>deactivateHosts</test_action>
    <parameters>hosts='[vds]'</parameters>
    <positive>TRUE</positive>
@@ -104,7 +110,6 @@
 </test_case>
 <test_case>
    <test_name>Activate hosts</test_name>
-   <test_type>rest</test_type>
    <test_action>activateHost</test_action>
    <parameters>host='{vds}'</parameters>
    <positive>TRUE</positive>
@@ -112,23 +117,20 @@
 </test_case>
 <test_case>
    <test_name>Set first host to maintenance</test_name>
-   <test_type>rest</test_type>
    <test_action>deactivateHost</test_action>
    <parameters>host='{vds[0]}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
-   <test_name>Sleep for SPM election</test_name>
-   <test_type>rest</test_type>
-   <test_action>sleep</test_action>
-   <parameters>seconds=45</parameters>
-   <positive>NONE</positive>
+   <test_name>Wait until datacenter is up</test_name>
+   <test_action>waitForDataCenterState</test_action>
+   <parameters>name='test_136167'</parameters>
+   <positive>none</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Check hosts for SPM</test_name>
-   <test_type>rest</test_type>
    <test_action>checkHostsForSPM</test_action>
    <parameters>hosts='[vds]', expected_spm_host='{vds[2]}'</parameters>
    <positive>TRUE</positive>
@@ -136,23 +138,20 @@
 </test_case>
 <test_case>
    <test_name>Set the third host to maintenance</test_name>
-   <test_type>rest</test_type>
    <test_action>deactivateHost</test_action>
    <parameters>host='{vds[2]}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
-   <test_name>Sleep for enabling the second host to become SPM</test_name>
-   <test_type>rest</test_type>
-   <test_action>sleep</test_action>
-   <parameters>seconds=45</parameters>
-   <positive>NONE</positive>
+   <test_name>Wait until datacenter is up</test_name>
+   <test_action>waitForDataCenterState</test_action>
+   <parameters>name='test_136167'</parameters>
+   <positive>none</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Activate the first host</test_name>
-   <test_type>rest</test_type>
    <test_action>activateHost</test_action>
    <parameters>host='{vds[0]}'</parameters>
    <positive>TRUE</positive>
@@ -160,7 +159,6 @@
 </test_case>
 <test_case>
    <test_name>Activate the third host</test_name>
-   <test_type>rest</test_type>
    <test_action>activateHost</test_action>
    <parameters>host='{vds[2]}'</parameters>
    <positive>TRUE</positive>
@@ -168,23 +166,20 @@
 </test_case>
 <test_case>
    <test_name>Set the second host to maintenance</test_name>
-   <test_type>rest</test_type>
    <test_action>deactivateHost</test_action>
    <parameters>host='{vds[1]}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
-   <test_name>Sleep for SPM election</test_name>
-   <test_type>rest</test_type>
-   <test_action>sleep</test_action>
-   <parameters>seconds=45</parameters>
-   <positive>NONE</positive>
+   <test_name>Wait until datacenter is up</test_name>
+   <test_action>waitForDataCenterState</test_action>
+   <parameters>name='test_136167'</parameters>
+   <positive>none</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Check hosts for SPM</test_name>
-   <test_type>rest</test_type>
    <test_action>checkHostsForSPM</test_action>
    <parameters>hosts='[vds]', expected_spm_host='{vds[2]}'</parameters>
    <positive>TRUE</positive>
@@ -192,23 +187,20 @@
 </test_case>
 <test_case>
    <test_name>Deactivate storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>deactivateStorageDomain</test_action>
-   <parameters>datacenter='SpmDC', storagedomain='DataDomain'</parameters>
+   <parameters>datacenter='test_136167', storagedomain='DataDomain'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Remove data center</test_name>
-   <test_type>rest</test_type>
    <test_action>removeDataCenters</test_action>
-   <parameters>datacenters='SpmDC'</parameters>
+   <parameters>datacenters='test_136167'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Remove storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>removeStorageDomain</test_action>
    <parameters>storagedomain='DataDomain', host='{vds[2]}'</parameters>
    <positive>TRUE</positive>
@@ -216,7 +208,6 @@
 </test_case>
 <test_case>
    <test_name>Set the first host to maintenance</test_name>
-   <test_type>rest</test_type>
    <test_action>deactivateHost</test_action>
    <parameters>host='{vds[0]}'</parameters>
    <positive>TRUE</positive>
@@ -224,7 +215,6 @@
 </test_case>
 <test_case>
    <test_name>Set the third host to maintenance</test_name>
-   <test_type>rest</test_type>
    <test_action>deactivateHost</test_action>
    <parameters>host='{vds[2]}'</parameters>
    <positive>TRUE</positive>
@@ -232,7 +222,6 @@
 </test_case>
 <test_case>
    <test_name>Remove hosts</test_name>
-   <test_type>rest</test_type>
    <test_action>removeHost</test_action>
    <parameters>host='{vds}'</parameters>
    <positive>TRUE</positive>
@@ -240,9 +229,8 @@
 </test_case>
 <test_case>
    <test_name>Remove cluster</test_name>
-   <test_type>rest</test_type>
    <test_action>removeClusters</test_action>
-   <parameters>clusters='SpmCluster'</parameters>
+   <parameters>clusters='test_136167_cl'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
@@ -265,42 +253,44 @@
 </test_case>
 <test_case>
    <test_name>Create data center</test_name>
-   <test_type></test_type>
    <test_action>addDataCenter</test_action>
-   <parameters>name='SpmDC', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <parameters>name='test_136169', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <test_description/>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create cluster with default parameters</test_name>
    <test_action>addCluster</test_action>
-   <parameters>name='SpmCluster', cpu='{cpu_name}', data_center='SpmDC', version='{compatibility_version}'</parameters>
+   <parameters>name='test_136169_cl', cpu='{cpu_name}', data_center='test_136169', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create hosts</test_name>
    <test_action>addHost</test_action>
-   <parameters>name='{vds}', root_password='{vds_password}', cluster='SpmCluster', wait=False</parameters>
+   <parameters>name='{vds}', root_password='{vds_password}', cluster='test_136169_cl', wait=False</parameters>
    <positive>TRUE</positive>
    <run>loop({vds},{vds_password})</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Wait until all hosts are up</test_name>
-   <test_type>rest</test_type>
    <test_action>waitForHostsStates</test_action>
    <parameters>names='{vds[0]}, {vds[1]}, {vds[2]}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create NFS data storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>iSCSI discover</test_name>
@@ -309,6 +299,7 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>iSCSI login</test_name>
@@ -317,6 +308,7 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create iSCSI data storage domain</test_name>
@@ -325,6 +317,7 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create FCP data storage domain</test_name>
@@ -333,26 +326,26 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Attach data storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>attachStorageDomain</test_action>
-   <parameters>storagedomain='DataDomain', datacenter='SpmDC'</parameters>
+   <parameters>storagedomain='DataDomain', datacenter='test_136169'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Set SPM priorities</test_name>
-   <test_type>rest</test_type>
    <test_action>setSPMPriority</test_action>
    <parameters>hostName='{vds}', spmPriority='{spms_136169}'</parameters>
    <positive>TRUE</positive>
    <run>loop({vds},{spms_136169})</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Set hosts to maintenance</test_name>
-   <test_type>rest</test_type>
    <test_action>deactivateHosts</test_action>
    <parameters>hosts='[vds]'</parameters>
    <positive>TRUE</positive>
@@ -360,7 +353,6 @@
 </test_case>
 <test_case>
    <test_name>Activate hosts</test_name>
-   <test_type>rest</test_type>
    <test_action>activateHost</test_action>
    <parameters>host='{vds}'</parameters>
    <positive>TRUE</positive>
@@ -376,7 +368,6 @@
 </test_case>
 <test_case>
    <test_name>Check hosts for SPM</test_name>
-   <test_type>rest</test_type>
    <test_action>checkSPMPresence</test_action>
    <parameters>hosts='[vds]'</parameters>
    <positive>FALSE</positive>
@@ -384,39 +375,34 @@
 </test_case>
 <test_case>
    <test_name>Set SPM priority to remove storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>setSPMPriority</test_action>
    <parameters>hostName='{vds[0]}', spmPriority='5'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
-   <test_name>Sleep for SPM election</test_name>
-   <test_type>rest</test_type>
-   <test_action>sleep</test_action>
-   <parameters>seconds=45</parameters>
-   <positive>NONE</positive>
+   <test_name>Wait until datacenter is up</test_name>
+   <test_action>waitForDataCenterState</test_action>
+   <parameters>name='test_136169'</parameters>
+   <positive>none</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Deactivate storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>deactivateStorageDomain</test_action>
-   <parameters>datacenter='SpmDC', storagedomain='DataDomain'</parameters>
+   <parameters>datacenter='test_136169', storagedomain='DataDomain'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Remove data center</test_name>
-   <test_type>rest</test_type>
    <test_action>removeDataCenters</test_action>
-   <parameters>datacenters='SpmDC'</parameters>
+   <parameters>datacenters='test_136169'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Remove storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>removeStorageDomain</test_action>
    <parameters>storagedomain='DataDomain', host='{vds[0]}'</parameters>
    <positive>TRUE</positive>
@@ -424,7 +410,6 @@
 </test_case>
 <test_case>
    <test_name>Set hosts to maintenance</test_name>
-   <test_type>rest</test_type>
    <test_action>deactivateHosts</test_action>
    <parameters>hosts='[vds]'</parameters>
    <positive>TRUE</positive>
@@ -432,7 +417,6 @@
 </test_case>
 <test_case>
    <test_name>Remove hosts</test_name>
-   <test_type>rest</test_type>
    <test_action>removeHost</test_action>
    <parameters>host='{vds}'</parameters>
    <positive>TRUE</positive>
@@ -440,9 +424,8 @@
 </test_case>
 <test_case>
    <test_name>Remove cluster</test_name>
-   <test_type>rest</test_type>
    <test_action>removeClusters</test_action>
-   <parameters>clusters='SpmCluster'</parameters>
+   <parameters>clusters='test_136169_cl'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
@@ -465,42 +448,44 @@
 </test_case>
 <test_case>
    <test_name>Create data center</test_name>
-   <test_type></test_type>
    <test_action>addDataCenter</test_action>
-   <parameters>name='SpmDC', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <parameters>name='test_136171', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <test_description/>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create cluster with default parameters</test_name>
    <test_action>addCluster</test_action>
-   <parameters>name='SpmCluster', cpu='{cpu_name}', data_center='SpmDC', version='{compatibility_version}'</parameters>
+   <parameters>name='test_136171_cl', cpu='{cpu_name}', data_center='test_136171', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create hosts</test_name>
    <test_action>addHost</test_action>
-   <parameters>name='{vds}', root_password='{vds_password}', cluster='SpmCluster', wait=False</parameters>
+   <parameters>name='{vds}', root_password='{vds_password}', cluster='test_136171_cl', wait=False</parameters>
    <positive>TRUE</positive>
    <run>loop({vds},{vds_password})</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Wait until all hosts are up</test_name>
-   <test_type>rest</test_type>
    <test_action>waitForHostsStates</test_action>
    <parameters>names='{vds[0]}, {vds[1]}, {vds[2]}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create NFS data storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>iSCSI discover</test_name>
@@ -509,6 +494,7 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>iSCSI login</test_name>
@@ -517,6 +503,7 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create iSCSI data storage domain</test_name>
@@ -525,6 +512,7 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create FCP data storage domain</test_name>
@@ -533,26 +521,26 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Attach data storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>attachStorageDomain</test_action>
-   <parameters>storagedomain='DataDomain', datacenter='SpmDC'</parameters>
+   <parameters>storagedomain='DataDomain', datacenter='test_136171'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Set SPM priorities</test_name>
-   <test_type>rest</test_type>
    <test_action>setSPMPriority</test_action>
    <parameters>hostName='{vds}', spmPriority='{spms_136171}'</parameters>
    <positive>TRUE</positive>
    <run>loop({vds},{spms_136171})</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Set hosts to maintenance</test_name>
-   <test_type>rest</test_type>
    <test_action>deactivateHosts</test_action>
    <parameters>hosts='[vds]'</parameters>
    <positive>TRUE</positive>
@@ -560,7 +548,6 @@
 </test_case>
 <test_case>
    <test_name>Activate hosts</test_name>
-   <test_type>rest</test_type>
    <test_action>activateHost</test_action>
    <parameters>host='{vds}'</parameters>
    <positive>TRUE</positive>
@@ -568,23 +555,20 @@
 </test_case>
 <test_case>
    <test_name>Set first host to maintenance</test_name>
-   <test_type>rest</test_type>
    <test_action>deactivateHost</test_action>
    <parameters>host='{vds[0]}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
-   <test_name>Sleep for SPM election</test_name>
-   <test_type>rest</test_type>
-   <test_action>sleep</test_action>
-   <parameters>seconds=45</parameters>
-   <positive>NONE</positive>
+   <test_name>Wait until datacenter is up</test_name>
+   <test_action>waitForDataCenterState</test_action>
+   <parameters>name='test_136171'</parameters>
+   <positive>none</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Check hosts for SPM</test_name>
-   <test_type>rest</test_type>
    <test_action>checkHostsForSPM</test_action>
    <parameters>hosts='[vds]', expected_spm_host='{vds[2]}'</parameters>
    <positive>TRUE</positive>
@@ -592,7 +576,6 @@
 </test_case>
 <test_case>
    <test_name>Activate host</test_name>
-   <test_type>rest</test_type>
    <test_action>activateHost</test_action>
    <parameters>host='{vds[0]}'</parameters>
    <positive>TRUE</positive>
@@ -600,23 +583,20 @@
 </test_case>
 <test_case>
    <test_name>Set the third host to maintenance</test_name>
-   <test_type>rest</test_type>
    <test_action>deactivateHost</test_action>
    <parameters>host='{vds[2]}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
-   <test_name>Sleep for SPM election</test_name>
-   <test_type>rest</test_type>
-   <test_action>sleep</test_action>
-   <parameters>seconds=45</parameters>
-   <positive>NONE</positive>
+   <test_name>Wait until datacenter is up</test_name>
+   <test_action>waitForDataCenterState</test_action>
+   <parameters>name='test_136171'</parameters>
+   <positive>none</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Check hosts for SPM</test_name>
-   <test_type>rest</test_type>
    <test_action>checkHostsForSPM</test_action>
    <parameters>hosts='[vds]', expected_spm_host='{vds[1]}'</parameters>
    <positive>TRUE</positive>
@@ -624,7 +604,6 @@
 </test_case>
 <test_case>
    <test_name>Activate host</test_name>
-   <test_type>rest</test_type>
    <test_action>activateHost</test_action>
    <parameters>host='{vds[2]}'</parameters>
    <positive>TRUE</positive>
@@ -632,23 +611,20 @@
 </test_case>
 <test_case>
    <test_name>Set the second host to maintenance</test_name>
-   <test_type>rest</test_type>
    <test_action>deactivateHost</test_action>
    <parameters>host='{vds[1]}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
-   <test_name>Sleep for SPM election</test_name>
-   <test_type>rest</test_type>
-   <test_action>sleep</test_action>
-   <parameters>seconds=45</parameters>
-   <positive>NONE</positive>
+   <test_name>Wait until datacenter is up</test_name>
+   <test_action>waitForDataCenterState</test_action>
+   <parameters>name='test_136171'</parameters>
+   <positive>none</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Check hosts for SPM</test_name>
-   <test_type>rest</test_type>
    <test_action>checkHostsForSPM</test_action>
    <parameters>hosts='[vds]', expected_spm_host='{vds[2]}'</parameters>
    <positive>TRUE</positive>
@@ -656,23 +632,20 @@
 </test_case>
 <test_case>
    <test_name>Deactivate storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>deactivateStorageDomain</test_action>
-   <parameters>datacenter='SpmDC', storagedomain='DataDomain'</parameters>
+   <parameters>datacenter='test_136171', storagedomain='DataDomain'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Remove data center</test_name>
-   <test_type>rest</test_type>
    <test_action>removeDataCenters</test_action>
-   <parameters>datacenters='SpmDC'</parameters>
+   <parameters>datacenters='test_136171'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Remove storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>removeStorageDomain</test_action>
    <parameters>storagedomain='DataDomain', host='{vds[2]}'</parameters>
    <positive>TRUE</positive>
@@ -680,7 +653,6 @@
 </test_case>
 <test_case>
    <test_name>Set the first host to maintenance</test_name>
-   <test_type>rest</test_type>
    <test_action>deactivateHost</test_action>
    <parameters>host='{vds[0]}'</parameters>
    <positive>TRUE</positive>
@@ -688,7 +660,6 @@
 </test_case>
 <test_case>
    <test_name>Set the third host to maintenance</test_name>
-   <test_type>rest</test_type>
    <test_action>deactivateHost</test_action>
    <parameters>host='{vds[2]}'</parameters>
    <positive>TRUE</positive>
@@ -696,7 +667,6 @@
 </test_case>
 <test_case>
    <test_name>Remove hosts</test_name>
-   <test_type>rest</test_type>
    <test_action>removeHost</test_action>
    <parameters>host='{vds}'</parameters>
    <positive>TRUE</positive>
@@ -704,9 +674,8 @@
 </test_case>
 <test_case>
    <test_name>Remove cluster</test_name>
-   <test_type>rest</test_type>
    <test_action>removeClusters</test_action>
-   <parameters>clusters='SpmCluster'</parameters>
+   <parameters>clusters='test_136171_cl'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
@@ -729,42 +698,44 @@
 </test_case>
 <test_case>
    <test_name>Create data center</test_name>
-   <test_type></test_type>
    <test_action>addDataCenter</test_action>
-   <parameters>name='SpmDC', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <parameters>name='test_136449', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <test_description/>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create cluster with default parameters</test_name>
    <test_action>addCluster</test_action>
-   <parameters>name='SpmCluster', cpu='{cpu_name}', data_center='SpmDC', version='{compatibility_version}'</parameters>
+   <parameters>name='test_136449_cl', cpu='{cpu_name}', data_center='test_136449', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create host</test_name>
    <test_action>addHost</test_action>
-   <parameters>name='{vds[0]}', root_password='{vds_password[0]}', cluster='SpmCluster', wait=False</parameters>
+   <parameters>name='{vds[0]}', root_password='{vds_password[0]}', cluster='test_136449_cl', wait=False</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Wait until host is up</test_name>
-   <test_type>rest</test_type>
    <test_action>waitForHostsStates</test_action>
    <parameters>names='{vds[0]}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create NFS data storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>iSCSI discover</test_name>
@@ -773,6 +744,7 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>iSCSI login</test_name>
@@ -781,6 +753,7 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create iSCSI data storage domain</test_name>
@@ -789,6 +762,7 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create FCP data storage domain</test_name>
@@ -797,18 +771,18 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Attach data storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>attachStorageDomain</test_action>
-   <parameters>storagedomain='DataDomain', datacenter='SpmDC'</parameters>
+   <parameters>storagedomain='DataDomain', datacenter='test_136449'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Check default SPM priority on host</test_name>
-   <test_type>rest</test_type>
    <test_action>checkSPMPriority</test_action>
    <parameters>hostName='{vds[0]}', expectedPriority='5'</parameters>
    <positive>TRUE</positive>
@@ -816,23 +790,20 @@
 </test_case>
 <test_case>
    <test_name>Deactivate storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>deactivateStorageDomain</test_action>
-   <parameters>datacenter='SpmDC', storagedomain='DataDomain'</parameters>
+   <parameters>datacenter='test_136449', storagedomain='DataDomain'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Remove data center</test_name>
-   <test_type>rest</test_type>
    <test_action>removeDataCenters</test_action>
-   <parameters>datacenters='SpmDC'</parameters>
+   <parameters>datacenters='test_136449'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Remove storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>removeStorageDomain</test_action>
    <parameters>storagedomain='DataDomain', host='{vds[0]}'</parameters>
    <positive>TRUE</positive>
@@ -840,7 +811,6 @@
 </test_case>
 <test_case>
    <test_name>Set host to maintenance</test_name>
-   <test_type>rest</test_type>
    <test_action>deactivateHost</test_action>
    <parameters>host='{vds[0]}'</parameters>
    <positive>TRUE</positive>
@@ -848,7 +818,6 @@
 </test_case>
 <test_case>
    <test_name>Remove host</test_name>
-   <test_type>rest</test_type>
    <test_action>removeHost</test_action>
    <parameters>host='{vds[0]}'</parameters>
    <positive>TRUE</positive>
@@ -856,9 +825,8 @@
 </test_case>
 <test_case>
    <test_name>Remove cluster</test_name>
-   <test_type>rest</test_type>
    <test_action>removeClusters</test_action>
-   <parameters>clusters='SpmCluster'</parameters>
+   <parameters>clusters='test_136449_cl'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
@@ -881,38 +849,39 @@
 </test_case>
 <test_case>
    <test_name>Create data center</test_name>
-   <test_type></test_type>
    <test_action>addDataCenter</test_action>
-   <parameters>name='SpmDC', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <parameters>name='test_136454', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <test_description/>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create cluster with default parameters</test_name>
    <test_action>addCluster</test_action>
-   <parameters>name='SpmCluster', cpu='{cpu_name}', data_center='SpmDC', version='{compatibility_version}'</parameters>
+   <parameters>name='test_136454_cl', cpu='{cpu_name}', data_center='test_136454', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create host</test_name>
    <test_action>addHost</test_action>
-   <parameters>name='{vds[0]}', root_password='{vds_password[0]}', cluster='SpmCluster', wait=False</parameters>
+   <parameters>name='{vds[0]}', root_password='{vds_password[0]}', cluster='test_136454_cl', wait=False</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Wait until host is up</test_name>
-   <test_type>rest</test_type>
    <test_action>waitForHostsStates</test_action>
    <parameters>names='{vds[0]}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Set SPM priority to 11</test_name>
-   <test_type>rest</test_type>
    <test_action>setSPMPriorityInDB</test_action>
    <parameters>hostName='{vds[0]}', spm_priority='11', ip='{host}', user='root', password='{password}'</parameters>
    <positive>FALSE</positive>
@@ -920,7 +889,6 @@
 </test_case>
 <test_case>
    <test_name>Set SPM priority to -2</test_name>
-   <test_type>rest</test_type>
    <test_action>setSPMPriorityInDB</test_action>
    <parameters>hostName='{vds[0]}', spm_priority='-2', ip='{host}', user='root', password='{password}'</parameters>
    <positive>FALSE</positive>
@@ -928,15 +896,13 @@
 </test_case>
 <test_case>
    <test_name>Remove data center</test_name>
-   <test_type>rest</test_type>
    <test_action>removeDataCenters</test_action>
-   <parameters>datacenters='SpmDC'</parameters>
+   <parameters>datacenters='test_136454'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Set host to maintenance</test_name>
-   <test_type>rest</test_type>
    <test_action>deactivateHost</test_action>
    <parameters>host='{vds[0]}'</parameters>
    <positive>TRUE</positive>
@@ -944,7 +910,6 @@
 </test_case>
 <test_case>
    <test_name>Remove host</test_name>
-   <test_type>rest</test_type>
    <test_action>removeHost</test_action>
    <parameters>host='{vds[0]}'</parameters>
    <positive>TRUE</positive>
@@ -952,9 +917,8 @@
 </test_case>
 <test_case>
    <test_name>Remove cluster</test_name>
-   <test_type>rest</test_type>
    <test_action>removeClusters</test_action>
-   <parameters>clusters='SpmCluster'</parameters>
+   <parameters>clusters='test_136454_cl'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
@@ -977,42 +941,44 @@
 </test_case>
 <test_case>
    <test_name>Create data center</test_name>
-   <test_type></test_type>
    <test_action>addDataCenter</test_action>
-   <parameters>name='SpmDC', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <parameters>name='test_136466', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <test_description/>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create cluster with default parameters</test_name>
    <test_action>addCluster</test_action>
-   <parameters>name='SpmCluster', cpu='{cpu_name}', data_center='SpmDC', version='{compatibility_version}'</parameters>
+   <parameters>name='test_136466_cl', cpu='{cpu_name}', data_center='test_136466', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create hosts</test_name>
    <test_action>addHost</test_action>
-   <parameters>name='{vds}', root_password='{vds_password}', cluster='SpmCluster', wait=False</parameters>
+   <parameters>name='{vds}', root_password='{vds_password}', cluster='test_136466_cl', wait=False</parameters>
    <positive>TRUE</positive>
    <run>loop({vds},{vds_password})</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Wait until all hosts are up</test_name>
-   <test_type>rest</test_type>
    <test_action>waitForHostsStates</test_action>
    <parameters>names='{vds[0]}, {vds[1]}, {vds[2]}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create NFS data storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>iSCSI discover</test_name>
@@ -1021,6 +987,7 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>iSCSI login</test_name>
@@ -1029,6 +996,7 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create iSCSI data storage domain</test_name>
@@ -1037,6 +1005,7 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create FCP data storage domain</test_name>
@@ -1045,18 +1014,18 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Attach data storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>attachStorageDomain</test_action>
-   <parameters>storagedomain='DataDomain', datacenter='SpmDC'</parameters>
+   <parameters>storagedomain='DataDomain', datacenter='test_136466'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Check randomness of SPM election</test_name>
-   <test_type>rest</test_type>
    <test_action>checkSPMElectionRandomness</test_action>
    <parameters>hosts='[vds]', spm_priority='1'</parameters>
    <positive>TRUE</positive>
@@ -1064,39 +1033,34 @@
 </test_case>
 <test_case>
    <test_name>Activate the first host</test_name>
-   <test_type>rest</test_type>
    <test_action>activateHost</test_action>
    <parameters>host='{vds[0]}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
-   <test_name>Sleep for SPM election</test_name>
-   <test_type>rest</test_type>
-   <test_action>sleep</test_action>
-   <parameters>seconds=45</parameters>
-   <positive>NONE</positive>
+   <test_name>Wait until datacenter is up</test_name>
+   <test_action>waitForDataCenterState</test_action>
+   <parameters>name='test_136466'</parameters>
+   <positive>none</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Deactivate storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>deactivateStorageDomain</test_action>
-   <parameters>datacenter='SpmDC', storagedomain='DataDomain'</parameters>
+   <parameters>datacenter='test_136466', storagedomain='DataDomain'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Remove data center</test_name>
-   <test_type>rest</test_type>
    <test_action>removeDataCenters</test_action>
-   <parameters>datacenters='SpmDC'</parameters>
+   <parameters>datacenters='test_136466'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Remove storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>removeStorageDomain</test_action>
    <parameters>storagedomain='DataDomain', host='{vds[2]}'</parameters>
    <positive>TRUE</positive>
@@ -1104,7 +1068,6 @@
 </test_case>
 <test_case>
    <test_name>Set the first host to maintenance</test_name>
-   <test_type>rest</test_type>
    <test_action>deactivateHost</test_action>
    <parameters>host='{vds[0]}'</parameters>
    <positive>TRUE</positive>
@@ -1112,7 +1075,6 @@
 </test_case>
 <test_case>
    <test_name>Remove hosts</test_name>
-   <test_type>rest</test_type>
    <test_action>removeHost</test_action>
    <parameters>host='{vds}'</parameters>
    <positive>TRUE</positive>
@@ -1120,9 +1082,8 @@
 </test_case>
 <test_case>
    <test_name>Remove cluster</test_name>
-   <test_type>rest</test_type>
    <test_action>removeClusters</test_action>
-   <parameters>clusters='SpmCluster'</parameters>
+   <parameters>clusters='test_136466_cl'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
@@ -1139,49 +1100,50 @@
    <test_action/>
    <parameters/>
    <positive>NONE</positive>
-<!-- BZ 843798 -->
-   <run>no</run>
+   <run>yes</run>
    <tcms_test_case>136468</tcms_test_case>
    <report/>
 </test_case>
 <test_case>
    <test_name>Create data center</test_name>
-   <test_type></test_type>
    <test_action>addDataCenter</test_action>
-   <parameters>name='SpmDC', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <parameters>name='test_136468', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
    <test_description/>
 </test_case>
 <test_case>
    <test_name>Create cluster with default parameters</test_name>
    <test_action>addCluster</test_action>
-   <parameters>name='SpmCluster', cpu='{cpu_name}', data_center='SpmDC', version='{compatibility_version}'</parameters>
+   <parameters>name='test_136468_cl', cpu='{cpu_name}', data_center='test_136468', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
+   <vital>TRUE</vital>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Create hosts</test_name>
    <test_action>addHost</test_action>
-   <parameters>name='{vds}', root_password='{vds_password}', cluster='SpmCluster', wait=False</parameters>
+   <parameters>name='{vds}', root_password='{vds_password}', cluster='test_136468_cl', wait=False</parameters>
    <positive>TRUE</positive>
    <run>loop({vds},{vds_password})</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Wait until all hosts are up</test_name>
-   <test_type>rest</test_type>
    <test_action>waitForHostsStates</test_action>
    <parameters>names='{vds[0]}, {vds[1]}, {vds[2]}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create NFS data storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>iSCSI discover</test_name>
@@ -1190,6 +1152,7 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>iSCSI login</test_name>
@@ -1198,6 +1161,7 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create iSCSI data storage domain</test_name>
@@ -1206,6 +1170,7 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create FCP data storage domain</test_name>
@@ -1214,26 +1179,26 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Attach data storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>attachStorageDomain</test_action>
-   <parameters>storagedomain='DataDomain', datacenter='SpmDC'</parameters>
+   <parameters>storagedomain='DataDomain', datacenter='test_136468'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Set SPM priorities</test_name>
-   <test_type>rest</test_type>
    <test_action>setSPMPriority</test_action>
    <parameters>hostName='{vds}', spmPriority='{spms_ninth_tc}'</parameters>
    <positive>TRUE</positive>
    <run>loop({vds},{spms_ninth_tc})</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Set hosts to maintenance</test_name>
-   <test_type>rest</test_type>
    <test_action>deactivateHosts</test_action>
    <parameters>hosts='[vds]'</parameters>
    <positive>TRUE</positive>
@@ -1241,31 +1206,34 @@
 </test_case>
 <test_case>
    <test_name>Activate hosts</test_name>
-   <test_type>rest</test_type>
    <test_action>activateHost</test_action>
    <parameters>host='{vds}'</parameters>
    <positive>TRUE</positive>
    <run>loop({vds})</run>
 </test_case>
 <test_case>
-   <test_name>Sleep for SPM election</test_name>
-   <test_type>rest</test_type>
-   <test_action>sleep</test_action>
-   <parameters>seconds=45</parameters>
-   <positive>NONE</positive>
+   <test_name>Wait until datacenter is up</test_name>
+   <test_action>waitForDataCenterState</test_action>
+   <parameters>name='test_136468'</parameters>
+   <positive>none</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Check hosts for SPM</test_name>
-   <test_type>rest</test_type>
    <test_action>checkHostsForSPM</test_action>
    <parameters>hosts='[vds]', expected_spm_host='{vds[2]}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
+   <test_name>Deactivate third host {vds[2]}</test_name>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds[2]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
    <test_name>Set SPM priority to -1 in DB for the third host</test_name>
-   <test_type>rest</test_type>
    <test_action>setSPMPriorityInDB</test_action>
    <parameters>hostName='{vds[2]}', spm_priority='-1', ip='{host}', user='root', password='{password}'</parameters>
    <positive>TRUE</positive>
@@ -1273,9 +1241,15 @@
 </test_case>
 <test_case>
    <test_name>Restart vdsm service on the third host</test_name>
-   <test_type>rest</test_type>
    <test_action>toggleServiceOnHost</test_action>
    <parameters>host='{vds[2]}', user='root', password='{vds_password[2]}', service='vdsmd', action='restart'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Activate third host</test_name>
+   <test_action>activateHost</test_action>
+   <parameters>host='{vds[2]}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
@@ -1289,7 +1263,6 @@
 </test_case>
 <test_case>
    <test_name>Check hosts for SPM</test_name>
-   <test_type>rest</test_type>
    <test_action>checkSPMPresence</test_action>
    <parameters>hosts='[vds]'</parameters>
    <positive>FALSE</positive>
@@ -1297,7 +1270,6 @@
 </test_case>
 <test_case>
    <test_name>Set SPM priority to 2 in DB for the first host</test_name>
-   <test_type>rest</test_type>
    <test_action>setSPMPriorityInDB</test_action>
    <parameters>hostName='{vds[0]}', spm_priority='2', ip='{host}', user='root', password='{password}'</parameters>
    <positive>TRUE</positive>
@@ -1305,23 +1277,20 @@
 </test_case>
 <test_case>
    <test_name>Restart vdsm service on the third host</test_name>
-   <test_type>rest</test_type>
    <test_action>toggleServiceOnHost</test_action>
    <parameters>host='{vds[0]}', user='root', password='{vds_password[0]}', service='vdsmd', action='restart'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
-   <test_name>Sleep for SPM election</test_name>
-   <test_type>rest</test_type>
-   <test_action>sleep</test_action>
-   <parameters>seconds=45</parameters>
-   <positive>NONE</positive>
+   <test_name>Wait until datacenter is up</test_name>
+   <test_action>waitForDataCenterState</test_action>
+   <parameters>name='test_136468'</parameters>
+   <positive>none</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Check hosts for SPM</test_name>
-   <test_type>rest</test_type>
    <test_action>checkHostsForSPM</test_action>
    <parameters>hosts='[vds]', expected_spm_host='{vds[0]}'</parameters>
    <positive>TRUE</positive>
@@ -1329,23 +1298,20 @@
 </test_case>
 <test_case>
    <test_name>Deactivate storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>deactivateStorageDomain</test_action>
-   <parameters>datacenter='SpmDC', storagedomain='DataDomain'</parameters>
+   <parameters>datacenter='test_136468', storagedomain='DataDomain'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Remove data center</test_name>
-   <test_type>rest</test_type>
    <test_action>removeDataCenters</test_action>
-   <parameters>datacenters='SpmDC'</parameters>
+   <parameters>datacenters='test_136468'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Remove storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>removeStorageDomain</test_action>
    <parameters>storagedomain='DataDomain', host='{vds[2]}'</parameters>
    <positive>TRUE</positive>
@@ -1353,7 +1319,6 @@
 </test_case>
 <test_case>
    <test_name>Set hosts to maintenance</test_name>
-   <test_type>rest</test_type>
    <test_action>deactivateHosts</test_action>
    <parameters>hosts='[vds]'</parameters>
    <positive>TRUE</positive>
@@ -1361,7 +1326,6 @@
 </test_case>
 <test_case>
    <test_name>Remove hosts</test_name>
-   <test_type>rest</test_type>
    <test_action>removeHost</test_action>
    <parameters>host='{vds}'</parameters>
    <positive>TRUE</positive>
@@ -1369,9 +1333,8 @@
 </test_case>
 <test_case>
    <test_name>Remove cluster</test_name>
-   <test_type>rest</test_type>
    <test_action>removeClusters</test_action>
-   <parameters>clusters='SpmCluster'</parameters>
+   <parameters>clusters='test_136468_cl'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
@@ -1388,49 +1351,51 @@
    <test_action/>
    <parameters/>
    <positive>NONE</positive>
-<!--   BZ 845302 -->
+   <!--   BZ 845302 -->
    <run>no</run>
    <tcms_test_case>136477</tcms_test_case>
    <report/>
 </test_case>
 <test_case>
    <test_name>Create data center</test_name>
-   <test_type></test_type>
    <test_action>addDataCenter</test_action>
-   <parameters>name='SpmDC', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <parameters>name='test_136477', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
    <test_description/>
 </test_case>
 <test_case>
    <test_name>Create cluster with default parameters</test_name>
    <test_action>addCluster</test_action>
-   <parameters>name='SpmCluster', cpu='{cpu_name}', data_center='SpmDC', version='{compatibility_version}'</parameters>
+   <parameters>name='test_136477_cl', cpu='{cpu_name}', data_center='test_136477', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create hosts</test_name>
    <test_action>addHost</test_action>
-   <parameters>name='{vds}', root_password='{vds_password}', cluster='SpmCluster', wait=False</parameters>
+   <parameters>name='{vds}', root_password='{vds_password}', cluster='test_136477_cl', wait=False</parameters>
    <positive>TRUE</positive>
    <run>loop({vds},{vds_password})</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Wait until all hosts are up</test_name>
-   <test_type>rest</test_type>
    <test_action>waitForHostsStates</test_action>
    <parameters>names='{vds[0]}, {vds[1]}, {vds[2]}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create NFS data storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>iSCSI discover</test_name>
@@ -1439,6 +1404,7 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>iSCSI login</test_name>
@@ -1447,6 +1413,7 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create iSCSI data storage domain</test_name>
@@ -1455,6 +1422,7 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create FCP data storage domain</test_name>
@@ -1463,18 +1431,18 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Attach data storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>attachStorageDomain</test_action>
-   <parameters>storagedomain='DataDomain', datacenter='SpmDC'</parameters>
+   <parameters>storagedomain='DataDomain', datacenter='test_136477'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Set IPMI to the third host</test_name>
-   <test_type>rest</test_type>
    <test_action>updateHost</test_action>
    <parameters>host='{vds[2]}', pm='true', pm_type='{pm_type}', pm_address='{pm_address}', pm_username='{pm_user}', pm_password='{pm_password}'</parameters>
    <positive>TRUE</positive>
@@ -1482,7 +1450,6 @@
 </test_case>
 <test_case>
    <test_name>Set SPM priorities</test_name>
-   <test_type>rest</test_type>
    <test_action>setSPMPriority</test_action>
    <parameters>hostName='{vds}', spmPriority='{spms_fencing}'</parameters>
    <positive>TRUE</positive>
@@ -1490,7 +1457,6 @@
 </test_case>
 <test_case>
    <test_name>Deactivate hosts</test_name>
-   <test_type>rest</test_type>
    <test_action>deactivateHosts</test_action>
    <parameters>hosts='[vds]'</parameters>
    <positive>TRUE</positive>
@@ -1498,7 +1464,6 @@
 </test_case>
 <test_case>
    <test_name>Activate the third host</test_name>
-   <test_type>rest</test_type>
    <test_action>activateHost</test_action>
    <parameters>host='{vds[2]}'</parameters>
    <positive>TRUE</positive>
@@ -1506,7 +1471,6 @@
 </test_case>
 <test_case>
    <test_name>Activate the second host</test_name>
-   <test_type>rest</test_type>
    <test_action>activateHost</test_action>
    <parameters>host='{vds[1]}'</parameters>
    <positive>TRUE</positive>
@@ -1514,7 +1478,6 @@
 </test_case>
 <test_case>
    <test_name>Activate the first host</test_name>
-   <test_type>rest</test_type>
    <test_action>activateHost</test_action>
    <parameters>host='{vds[0]}'</parameters>
    <positive>TRUE</positive>
@@ -1522,23 +1485,20 @@
 </test_case>
 <test_case>
    <test_name>Fence the third host</test_name>
-   <test_type>rest</test_type>
    <test_action>fenceHost</test_action>
    <parameters>host='{vds[2]}', fence_type='restart'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
-   <test_name>Sleep for SPM election</test_name>
-   <test_type>rest</test_type>
-   <test_action>sleep</test_action>
-   <parameters>seconds=45</parameters>
-   <positive>NONE</positive>
+   <test_name>Wait until datacenter is up</test_name>
+   <test_action>waitForDataCenterState</test_action>
+   <parameters>name='test_136477'</parameters>
+   <positive>none</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Check hosts for SPM</test_name>
-   <test_type>rest</test_type>
    <test_action>checkHostsForSPM</test_action>
    <parameters>hosts='[vds]', expected_spm_host='{vds[1]}'</parameters>
    <positive>TRUE</positive>
@@ -1546,23 +1506,20 @@
 </test_case>
 <test_case>
    <test_name>Deactivate storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>deactivateStorageDomain</test_action>
-   <parameters>datacenter='SpmDC', storagedomain='DataDomain'</parameters>
+   <parameters>datacenter='test_136477', storagedomain='DataDomain'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Remove data center</test_name>
-   <test_type>rest</test_type>
    <test_action>removeDataCenters</test_action>
-   <parameters>datacenters='SpmDC'</parameters>
+   <parameters>datacenters='test_136477'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Remove storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>removeStorageDomain</test_action>
    <parameters>storagedomain='DataDomain', host='{vds[2]}'</parameters>
    <positive>TRUE</positive>
@@ -1570,7 +1527,6 @@
 </test_case>
 <test_case>
    <test_name>Set hosts to maintenance</test_name>
-   <test_type>rest</test_type>
    <test_action>deactivateHosts</test_action>
    <parameters>hosts='[vds]'</parameters>
    <positive>TRUE</positive>
@@ -1578,7 +1534,6 @@
 </test_case>
 <test_case>
    <test_name>Remove hosts</test_name>
-   <test_type>rest</test_type>
    <test_action>removeHost</test_action>
    <parameters>host='{vds}'</parameters>
    <positive>TRUE</positive>
@@ -1586,9 +1541,8 @@
 </test_case>
 <test_case>
    <test_name>Remove cluster</test_name>
-   <test_type>rest</test_type>
    <test_action>removeClusters</test_action>
-   <parameters>clusters='SpmCluster'</parameters>
+   <parameters>clusters='test_136477_cl'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
@@ -1611,42 +1565,44 @@
 </test_case>
 <test_case>
    <test_name>Create data center</test_name>
-   <test_type></test_type>
    <test_action>addDataCenter</test_action>
-   <parameters>name='SpmDC', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <parameters>name='test_138270', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <test_description/>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create cluster with default parameters</test_name>
    <test_action>addCluster</test_action>
-   <parameters>name='SpmCluster', cpu='{cpu_name}', data_center='SpmDC', version='{compatibility_version}'</parameters>
+   <parameters>name='test_138270_cl', cpu='{cpu_name}', data_center='test_138270', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create host</test_name>
    <test_action>addHost</test_action>
-   <parameters>name='{vds[0]}', root_password='{vds_password[0]}', cluster='SpmCluster', wait=False</parameters>
+   <parameters>name='{vds[0]}', root_password='{vds_password[0]}', cluster='test_138270_cl', wait=False</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Wait until host is up</test_name>
-   <test_type>rest</test_type>
    <test_action>waitForHostsStates</test_action>
    <parameters>names='{vds[0]}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create NFS data storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>addStorageDomain</test_action>
    <parameters>name='DataDomain', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>iSCSI discover</test_name>
@@ -1655,6 +1611,7 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>iSCSI login</test_name>
@@ -1663,6 +1620,7 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create iSCSI data storage domain</test_name>
@@ -1671,6 +1629,7 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create FCP data storage domain</test_name>
@@ -1679,18 +1638,18 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Attach data storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>attachStorageDomain</test_action>
-   <parameters>storagedomain='DataDomain', datacenter='SpmDC'</parameters>
+   <parameters>storagedomain='DataDomain', datacenter='test_138270'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Set SPM priority for host to -1</test_name>
-   <test_type>rest</test_type>
    <test_action>setSPMPriority</test_action>
    <parameters>hostName='{vds[0]}', spmPriority='-1'</parameters>
    <positive>TRUE</positive>
@@ -1698,7 +1657,6 @@
 </test_case>
 <test_case>
    <test_name>Reactivate host</test_name>
-   <test_type>rest</test_type>
    <test_action>reactivateHost</test_action>
    <parameters>host='{vds[0]}'</parameters>
    <positive>TRUE</positive>
@@ -1714,7 +1672,6 @@
 </test_case>
 <test_case>
    <test_name>Check host for SPM</test_name>
-   <test_type>rest</test_type>
    <test_action>checkSPMPresence</test_action>
    <parameters>hosts='{vds[0]}'</parameters>
    <positive>FALSE</positive>
@@ -1722,7 +1679,6 @@
 </test_case>
 <test_case>
    <test_name>Reactivate host</test_name>
-   <test_type>rest</test_type>
    <test_action>reactivateHost</test_action>
    <parameters>host='{vds[0]}'</parameters>
    <positive>TRUE</positive>
@@ -1738,7 +1694,6 @@
 </test_case>
 <test_case>
    <test_name>Check host for SPM</test_name>
-   <test_type>rest</test_type>
    <test_action>checkSPMPresence</test_action>
    <parameters>hosts='{vds[0]}'</parameters>
    <positive>FALSE</positive>
@@ -1746,7 +1701,6 @@
 </test_case>
 <test_case>
 <test_name>Reactivate host</test_name>
-   <test_type>rest</test_type>
    <test_action>reactivateHost</test_action>
    <parameters>host='{vds[0]}'</parameters>
    <positive>TRUE</positive>
@@ -1762,7 +1716,6 @@
 </test_case>
 <test_case>
    <test_name>Check host for SPM</test_name>
-   <test_type>rest</test_type>
    <test_action>checkSPMPresence</test_action>
    <parameters>hosts='{vds[0]}'</parameters>
    <positive>FALSE</positive>
@@ -1770,7 +1723,6 @@
 </test_case>
 <test_case>
    <test_name>Restart vdsm service on host</test_name>
-   <test_type>rest</test_type>
    <test_action>toggleServiceOnHost</test_action>
    <parameters>host='{vds[0]}', user='root', password='{vds_password[0]}', service='vdsmd', action='restart'</parameters>
    <positive>TRUE</positive>
@@ -1786,7 +1738,6 @@
 </test_case>
 <test_case>
    <test_name>Check host for SPM</test_name>
-   <test_type>rest</test_type>
    <test_action>checkSPMPresence</test_action>
    <parameters>hosts='{vds[0]}'</parameters>
    <positive>FALSE</positive>
@@ -1794,55 +1745,48 @@
 </test_case>
 <test_case>
    <test_name>Set SPM priority in order to remove storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>setSPMPriority</test_action>
    <parameters>hostName='{vds[0]}', spmPriority='1'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
-   <test_name>Sleep for SPM election</test_name>
-   <test_type>rest</test_type>
-   <test_action>sleep</test_action>
-   <parameters>seconds=45</parameters>
-   <positive>NONE</positive>
+   <test_name>Wait until datacenter is up</test_name>
+   <test_action>waitForDataCenterState</test_action>
+   <parameters>name='test_138270'</parameters>
+   <positive>none</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Reactivate host</test_name>
-   <test_type>rest</test_type>
    <test_action>reactivateHost</test_action>
    <parameters>host='{vds[0]}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
-   <test_name>Sleep for SPM election</test_name>
-   <test_type>rest</test_type>
-   <test_action>sleep</test_action>
-   <parameters>seconds=45</parameters>
-   <positive>NONE</positive>
+   <test_name>Wait until datacenter is up</test_name>
+   <test_action>waitForDataCenterState</test_action>
+   <parameters>name='test_138270'</parameters>
+   <positive>none</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Deactivate storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>deactivateStorageDomain</test_action>
-   <parameters>datacenter='SpmDC', storagedomain='DataDomain'</parameters>
+   <parameters>datacenter='test_138270', storagedomain='DataDomain'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Remove data center</test_name>
-   <test_type>rest</test_type>
    <test_action>removeDataCenters</test_action>
-   <parameters>datacenters='SpmDC'</parameters>
+   <parameters>datacenters='test_138270'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Remove storage domain</test_name>
-   <test_type>rest</test_type>
    <test_action>removeStorageDomain</test_action>
    <parameters>storagedomain='DataDomain', host='{vds[0]}'</parameters>
    <positive>TRUE</positive>
@@ -1850,7 +1794,6 @@
 </test_case>
 <test_case>
    <test_name>Set host to maintenance</test_name>
-   <test_type>rest</test_type>
    <test_action>deactivateHost</test_action>
    <parameters>host='{vds[0]}'</parameters>
    <positive>TRUE</positive>
@@ -1858,7 +1801,6 @@
 </test_case>
 <test_case>
    <test_name>Remove host</test_name>
-   <test_type>rest</test_type>
    <test_action>removeHost</test_action>
    <parameters>host='{vds[0]}'</parameters>
    <positive>TRUE</positive>
@@ -1866,9 +1808,8 @@
 </test_case>
 <test_case>
    <test_name>Remove cluster</test_name>
-   <test_type>rest</test_type>
    <test_action>removeClusters</test_action>
-   <parameters>clusters='SpmCluster'</parameters>
+   <parameters>clusters='test_138270_cl'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
