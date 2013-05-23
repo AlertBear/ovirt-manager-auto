@@ -137,7 +137,7 @@ class ProtectedVm_Case1(TestCase):
         if not vms.createVm(positive=True, vmName=cls.vm_name,
                             vmDescription="Delete protected VM",
                             cluster=config.cluster_name,
-                            storageDomainName=config.data_name,
+                            storageDomainName=config.data_name[0],
                             size=DISK_SIZE, nic='nic1', protected=True):
             raise errors.VMException("Cannot create vm %s" % cls.vm_name)
         logger.info("Successfully created a delete protected VM.")
@@ -183,7 +183,7 @@ class ProtectedVm_Case2(TestCase):
         if not vms.createVm(positive=True, vmName=cls.vm_name,
                             vmDescription="Delete protected VM",
                             cluster=config.cluster_name,
-                            storageDomainName=config.data_name,
+                            storageDomainName=config.data_name[0],
                             size=DISK_SIZE, nic='nic1', protected=True):
             raise errors.VMException("Cannot create vm %s" % cls.vm_name)
         logger.info("Successfully created a delete protected VM.")
@@ -230,7 +230,7 @@ class CPUHost_Case1(TestCase):
         if not vms.createVm(positive=True, vmName=cls.vm_name,
                             vmDescription="CPU Host VM",
                             cluster=config.cluster_name,
-                            storageDomainName=config.data_name,
+                            storageDomainName=config.data_name[0],
                             size=DISK_SIZE, nic='nic1'):
             raise errors.VMException("Cannot create vm %s" % cls.vm_name)
         logger.info("Successfully created VM.")
@@ -272,7 +272,7 @@ class CPUHost_Case2(TestCase):
         if not vms.createVm(positive=True, vmName=cls.vm_name,
                             vmDescription="CPU Host VM",
                             cluster=config.cluster_name,
-                            storageDomainName=config.data_name,
+                            storageDomainName=config.data_name[0],
                             size=DISK_SIZE, nic='nic1'):
             raise errors.VMException("Cannot create vm %s" % cls.vm_name)
         logger.info("Successfully created a user migratable VM.")
@@ -317,7 +317,7 @@ class CPUHost_Case3(TestCase):
         if not vms.createVm(positive=True, vmName=cls.vm_name,
                             vmDescription="CPU Host VM",
                             cluster=config.cluster_name,
-                            storageDomainName=config.data_name,
+                            storageDomainName=config.data_name[0],
                             size=DISK_SIZE, nic='nic1',
                             placement_affinity=PINNED,
                             placement_host=config.hosts[0],
@@ -365,7 +365,7 @@ class CPUHost_Case4(TestCase):
         if not vms.createVm(positive=True, vmName=cls.vm_name,
                             vmDescription="CPU Host VM",
                             cluster=config.cluster_name,
-                            storageDomainName=config.data_name,
+                            storageDomainName=config.data_name[0],
                             size=DISK_SIZE, nic='nic1',
                             placement_affinity=PINNED,
                             placement_host=config.hosts[0],
@@ -414,7 +414,7 @@ class CPUHost_Case5(TestCase):
         if not vms.createVm(positive=True, vmName=cls.vm_name,
                             vmDescription="CPU Host VM",
                             cluster=config.cluster_name,
-                            storageDomainName=config.data_name,
+                            storageDomainName=config.data_name[0],
                             size=DISK_SIZE, nic='nic1',
                             placement_affinity=PINNED,
                             placement_host=config.hosts[0],
@@ -463,7 +463,7 @@ class CPUHost_Case6(TestCase):
         if not vms.createVm(positive=True, vmName=cls.vm_name,
                             vmDescription="CPU Host VM",
                             cluster=config.cluster_name,
-                            storageDomainName=config.data_name,
+                            storageDomainName=config.data_name[0],
                             size=DISK_SIZE, nic='nic1',
                             placement_affinity=USER_MIGRATABLE,
                             cpu_mode='host_passthrough'):
@@ -520,7 +520,7 @@ class Threads_Case1(TestCase):
         if not vms.createVm(positive=True, vmName=cls.vm_name,
                             vmDescription="CPU Host VM",
                             cluster=config.cluster_name,
-                            storageDomainName=config.data_name,
+                            storageDomainName=config.data_name[0],
                             size=DISK_SIZE, nic='nic1'):
             raise errors.VMException("Cannot create vm %s" % cls.vm_name)
         logger.info("Successfully created VM.")
@@ -657,7 +657,7 @@ class CPUPin_Case1(TestCase):
         if not vms.createVm(positive=True, vmName=cls.vm_name,
                             vmDescription="CPU Host VM",
                             cluster=config.cluster_name,
-                            storageDomainName=config.data_name,
+                            storageDomainName=config.data_name[0],
                             size=DISK_SIZE, nic='nic1',
                             placement_affinity=PINNED,
                             placement_host=config.hosts[0]):
@@ -929,7 +929,7 @@ class CPUPin_Case2(TestCase):
         if not vms.createVm(positive=True, vmName=cls.vm_name,
                             vmDescription="CPU pin VM",
                             cluster=config.cluster_name,
-                            storageDomainName=config.data_name,
+                            storageDomainName=config.data_name[0],
                             size=DISK_SIZE, nic='nic1'):
             raise errors.VMException("Cannot create vm %s" % cls.vm_name)
         logger.info("Successfully created VM.")
@@ -971,7 +971,7 @@ class CPUPin_Case3(TestCase):
         if not vms.createVm(positive=True, vmName=cls.vm_name,
                             vmDescription="CPU pin VM",
                             cluster=config.cluster_name,
-                            storageDomainName=config.data_name,
+                            storageDomainName=config.data_name[0],
                             size=DISK_SIZE, nic='nic1',
                             placement_affinity=PINNED,
                             placement_host=config.hosts[0],
@@ -1019,7 +1019,7 @@ class CPUPin_Case4(TestCase):
         if not vms.createVm(positive=True, vmName=cls.vm_name,
                             vmDescription="CPU pin VM",
                             cluster=config.cluster_name,
-                            storageDomainName=config.data_name,
+                            storageDomainName=config.data_name[0],
                             placement_affinity=USER_MIGRATABLE,
                             size=DISK_SIZE, nic='nic1'):
             raise errors.VMException("Cannot create vm %s" % cls.vm_name)
@@ -1066,7 +1066,7 @@ class CPUPin_Case5(TestCase):
         if not vms.createVm(positive=True, vmName=cls.vm_name,
                             vmDescription="CPU pin VM",
                             cluster=config.cluster_name,
-                            storageDomainName=config.data_name,
+                            storageDomainName=config.data_name[0],
                             size=DISK_SIZE, nic='nic1',
                             placement_affinity=PINNED,
                             placement_host=config.hosts[0],
@@ -1118,7 +1118,7 @@ class CPUPin_Case6(TestCase):
         if not vms.createVm(positive=True, vmName=cls.vm_name,
                             vmDescription="CPU pin VM",
                             cluster=config.cluster_name,
-                            storageDomainName=config.data_name,
+                            storageDomainName=config.data_name[0],
                             size=DISK_SIZE, nic='nic1',
                             placement_affinity=PINNED,
                             placement_host=config.hosts[0],
@@ -1205,7 +1205,7 @@ class CPUPin_Case7(TestCase):
         if not vms.createVm(positive=True, vmName=cls.vm_name,
                             vmDescription="CPU pin VM",
                             cluster=config.cluster_name,
-                            storageDomainName=config.data_name,
+                            storageDomainName=config.data_name[0],
                             size=DISK_SIZE, nic='nic1',
                             cpu_socket=sockets, cpu_cores=cores,
                             placement_affinity=PINNED,
@@ -1271,7 +1271,7 @@ class CPUPin_Case8(TestCase):
         if not vms.createVm(positive=True, vmName=cls.vm_name,
                             vmDescription="CPU pin VM",
                             cluster=config.cluster_name,
-                            storageDomainName=config.data_name,
+                            storageDomainName=config.data_name[0],
                             size=DISK_SIZE, nic='nic1'):
             raise errors.VMException("Cannot create vm %s" % cls.vm_name)
         logger.info("Successfully created VM.")
