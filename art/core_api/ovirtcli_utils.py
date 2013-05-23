@@ -44,6 +44,7 @@ ADD_WAIVER = ['StorageDomain']
 UPDATE_WAIVER = []
 REMOVE_WAIVER = ['StorageDomain']
 ACTION_WAIVER = []
+COMPLEX_TO_BASE_CLASSES_DICT = {'HostNIC': 'nic'}
 
 
 def threadSafeRun(func):
@@ -297,6 +298,23 @@ class RhevmCli(CliConnection):
         self.expectDict = self._specialCliPrompt
         # getting contexts for auto completion
         self.getAutocompletionContext()
+
+    def convertComplexNameToBaseEntityName(self, entity, cmd):
+        """
+        Description: This method replaces complex name like hostnic to cli
+                     valid name (entity name)
+        Author: imeerovi
+        Parameters:
+            * entity - entity passed to cli command run
+            * cmd - cli command
+        Returns: cli command with replaced name if entity actually is broker
+        """
+        entity_name = entity.__class__.__name__
+        base_name = \
+            COMPLEX_TO_BASE_CLASSES_DICT.get(entity_name, None)
+        if base_name:
+            return cmd.replace(entity_name.lower(), base_name, 1)
+        return cmd
 
     @threadSafeRun
     def cliCmdRunner(self, apiCmd, apiCmdName):
@@ -712,6 +730,10 @@ class CliUtil(RestUtil):
         if correlationId:
             createCmd = "%s --correlation_id %s" % (createCmd, correlationId)
 
+        # checking if we have legal entity name
+        createCmd = self.cli.convertComplexNameToBaseEntityName(entity,
+                                                                createCmd)
+
         if self.opts['validate_cli_command']:
             # validating command vs cli help
             self.logger.warning('Generated command:\n%s', createCmd)
@@ -802,6 +824,10 @@ class CliUtil(RestUtil):
         if current is not None:
             updateCmd = "%s --current %s" % (updateCmd, current)
 
+        # checking if we have legal entity name
+        updateCmd = self.cli.convertComplexNameToBaseEntityName(newEntity,
+                                                                updateCmd)
+
         if self.opts['validate_cli_command']:
             # validating command vs cli help
             self.logger.warning('Generated command:\n%s', updateCmd)
@@ -883,6 +909,10 @@ class CliUtil(RestUtil):
         correlationId = self.getCorrelationId()
         if correlationId:
             deleteCmd = "%s --correlation_id %s" % (deleteCmd, correlationId)
+
+        # checking if we have legal entity name
+        deleteCmd = self.cli.convertComplexNameToBaseEntityName(entity,
+                                                                deleteCmd)
 
         if self.opts['validate_cli_command']:
             # validating command vs cli help
@@ -1019,6 +1049,10 @@ class CliUtil(RestUtil):
                 createCmd = self.cli.validateCommand(actionCmd)
                 self.logger.warning('Actual command after validation:\n%s',
                                     createCmd)
+
+        # checking if we have legal entity name
+        actionCmd = self.cli.convertComplexNameToBaseEntityName(entity,
+                                                                actionCmd)
 
         actionCmd = "%s > %s" % (actionCmd, TMP_FILE)
         try:
