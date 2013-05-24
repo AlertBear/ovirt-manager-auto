@@ -29,6 +29,7 @@ Configuration File Options
     | **password**  Equivalent to bz-pass CLI option
     | **url**  Equivalent to bz-host CLI option
     | **constant_list**  List of bug states which should be not skipped
+    | **path_to_issuedb** Path to file where are you can map bugs to cases
 
 Usage
 -----
@@ -42,6 +43,15 @@ From unittest suite
 +++++++++++++++++++
 In art.test_handler.tools module is defined bz(*bz_ids) decorator. You can
 decorate your functions and pass as many ids as you need.
+
+Issues DB syntax
+++++++++++++++++
+<issues>
+  <issue ids="xx,yy">
+    <case_name>regex</case_name>
+    <config_name>regex</config_name>
+  </issue>
+</issues>
 """
 
 import re
@@ -56,11 +66,12 @@ from art.test_handler.plmanagement.interfaces.tests_listener import\
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.plmanagement.interfaces.config_validator import\
     IConfigValidation
+from utilities.issuesdb import IssuesDB
+from art.rhevm_api.tests_lib.low_level.general import getSystemVersion
 
-
-from utilities.machine import Machine, LINUX
 
 logger = get_logger('bugzilla')
+
 
 RUN = 'RUN'
 REST = 'REST_CONNECTION'
@@ -68,6 +79,7 @@ PARAMETERS = 'PARAMETERS'
 BZ_OPTION = 'BUGZILLA'
 ENGINE = 'engine'
 PRODUCT = 'product'
+PATH_TO_ISSUEDB = 'path_to_issuedb'
 
 DEFAULT_URL = 'https://bugzilla.redhat.com/xmlrpc.cgi'
 DEFAULT_USER = 'bugzilla-qe-tlv@redhat.com'
@@ -77,8 +89,8 @@ DEFAULT_STATE = False
 RHEVM_RPM = 'rhevm'
 OVIRT_RPM = 'ovirt-engine'
 
-INFO_TAGS = ('version', 'build_id', 'bug_status', 'product', 'short_desc', \
-        'component')
+INFO_TAGS = ('version', 'build_id', 'bug_status', 'product', 'short_desc',
+             'component')
 
 CLI = 'cli'
 SDK = 'sdk'
@@ -156,11 +168,7 @@ class Version(object):
         return '.'.join([str(x) for x in self.ver])
 
     def __contains__(self, ver):
-        for a, b in zip(self.ver, ver.ver):
-            d = a - b
-            if d != 0:
-                return False
-        return True
+        return self.__cmp__(ver) == 0
 
 
 class Bugzilla(Component):
@@ -180,19 +188,21 @@ class Bugzilla(Component):
         self.version = None
         self.build_id = None  # where should I get it
         self.cache = {}
+        self.issuedb = None
+        self.config_name = None
         self.__register_functions()
 
     @classmethod
     def add_options(cls, parser):
         group = parser.add_argument_group(cls.name, description=cls.__doc__)
-        group.add_argument('--with-bz', action='store_true', \
-                dest='bz_enabled', help="eniable plugin")
-        group.add_argument('--bz-user', action="store", dest='bz_user', \
-                help="username for bugzilla")
-        group.add_argument('--bz-pass', action="store", dest='bz_pass', \
-                help="password for bugzilla")
-        group.add_argument('--bz-host', action="store", dest='bz_host', \
-                help="url address for bugzilla")
+        group.add_argument('--with-bz', action='store_true',
+                           dest='bz_enabled', help="eniable plugin")
+        group.add_argument('--bz-user', action="store", dest='bz_user',
+                           help="username for bugzilla")
+        group.add_argument('--bz-pass', action="store", dest='bz_pass',
+                           help="password for bugzilla")
+        group.add_argument('--bz-host', action="store", dest='bz_host',
+                           help="url address for bugzilla")
 
     def configure(self, params, conf):
         if not self.is_enabled(params, conf):
@@ -206,17 +216,23 @@ class Bugzilla(Component):
         self.bugzilla.login(self.user, self.passwd)
 
         self.const_list = bz_cfg.get('constant_list', "Closed, Verified")
-        self.const_list = set(self.const_list.upper().replace(',', ' ').\
+        self.const_list = set(self.const_list.upper().replace(',', ' ').
                               split())
-
-        #self.machine = Machine(conf[PARAMETERS]['vdc'], 'root', \
-        #        conf[PARAMETERS]['vdc_root_password']).util(LINUX)
 
         self.build_id = None  # where should I get it
         self.comp = conf[RUN][ENGINE].lower()
         self.product = bz_cfg[PRODUCT]
 
         self.url = URL_RE.match(self.url).group(0)
+
+        self.config_name = getattr(conf, 'filename', None)
+
+        try:
+            if bz_cfg[PATH_TO_ISSUEDB]:
+                self.issuedb = IssuesDB(bz_cfg[PATH_TO_ISSUEDB])
+        except Exception as ex:
+            logger.warn("Failed to load issue db %s: %s",
+                        bz_cfg[PATH_TO_ISSUEDB], ex)
 
         from art.test_handler.test_runner import TestGroup
         TestGroup.add_elm_attribute('TEST_BZ_ID', BZ_ID)
@@ -249,8 +265,8 @@ class Bugzilla(Component):
             self.cache[bz_id] = bug
         else:
             bug = self.cache[bz_id]
-        msg = "BUG<%s> info: %s" % (bz_id, dict((x, getattr(bug, x)) for x in \
-                INFO_TAGS if hasattr(bug, x)))
+        msg = "BUG<%s> info: %s" % (bz_id, dict((x, getattr(bug, x)) for x in
+                                    INFO_TAGS if hasattr(bug, x)))
         logger.info(msg)
         return bug
 
@@ -304,7 +320,6 @@ class Bugzilla(Component):
             comp = ''
 
         if self.version is None:
-            from art.rhevm_api.tests_lib.low_level.general import getSystemVersion
             self.version = Version("%d.%d" % getSystemVersion())
 
         if 'ovirt-engine' in comp:
@@ -337,8 +352,14 @@ class Bugzilla(Component):
 
     def _should_be_skipped(self, test):
         if not getattr(test, 'bz', False):
-            return
-        for bz_id in test.bz.replace(',', ' ').split():
+            bz_ids = []
+        else:
+            bz_ids = test.bz.replace(',', ' ').split()
+
+        if self.issuedb:
+            bz_ids += self.issuedb.lookup(test.test_name, self.config_name)
+
+        for bz_id in bz_ids:
             try:
                 bz = self.bz(bz_id)
             except Exception as ex:
@@ -407,17 +428,19 @@ class Bugzilla(Component):
         params['author_email'] = 'lbednar@redhat.com'
         params['description'] = 'Bugzilla plugin for ART'
         params['long_description'] = 'Plugin for ART. '\
-                                'Provides connection to Bugzilla DB. '\
-                                'Tests could be skipped according to BZ state.'
-        params['requires'] = ['python-bugzilla >= 0.8.0', 'art-utilities']
-        params['py_modules'] = ['art.test_handler.plmanagement.plugins.bz_plugin']
+            'Provides connection to Bugzilla DB. '\
+            'Tests could be skipped according to BZ state.'
+        params['requires'] = ['python-bugzilla >= 0.8.0', 'art-utilities',
+                              'art-tests-rhevm-api']
+        params['py_modules'] = ['art.test_handler.plmanagement.plugins.'
+                                'bz_plugin']
 
     def config_spec(self, spec, val_funcs):
-        section_spec = spec.get(BZ_OPTION, {})
+        section_spec = spec.setdefault(BZ_OPTION, {})
         section_spec['user'] = "string(default='%s')" % DEFAULT_USER
         section_spec['password'] = "string(default='%s')" % DEFAULT_PASSWD
         section_spec['enabled'] = 'boolean(default=%s)' % DEFAULT_STATE
         section_spec['url'] = "is_url_alive(default='%s')" % DEFAULT_URL
-        section_spec[PRODUCT] = "option('%s', '%s', default='%s')" % \
-                (RHEVM_PRODUCT, OVIRT_PRODUCT, RHEVM_PRODUCT)
-        spec[BZ_OPTION] = section_spec
+        section_spec[PRODUCT] = "option('%s', '%s', default='%s')" % (
+            RHEVM_PRODUCT, OVIRT_PRODUCT, RHEVM_PRODUCT)
+        section_spec[PATH_TO_ISSUEDB] = "string(default=None)"
