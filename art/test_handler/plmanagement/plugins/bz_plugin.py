@@ -409,7 +409,7 @@ class Bugzilla(Component):
         params['long_description'] = 'Plugin for ART. '\
                                 'Provides connection to Bugzilla DB. '\
                                 'Tests could be skipped according to BZ state.'
-        params['requires'] = ['python-bugzilla', 'art-utilities']
+        params['requires'] = ['python-bugzilla >= 0.8.0', 'art-utilities']
         params['py_modules'] = ['art.test_handler.plmanagement.plugins.bz_plugin']
 
     def config_spec(self, spec, val_funcs):
