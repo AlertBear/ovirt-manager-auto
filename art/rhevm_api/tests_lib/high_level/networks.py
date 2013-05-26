@@ -146,16 +146,18 @@ def removeMultiNetworks(positive, networks):
     return True
 
 
-def createAndAttachNetworkSN(data_center, cluster, host=None, auto_nics=[],
+def createAndAttachNetworkSN(data_center, cluster, host=[], auto_nics=[],
                              network_dict={}):
     '''
         Function that creates and attach the network to the:
-        a) DC, b) Cluster, c) Host with SetupNetworks
+        a) DC, b) Cluster, c) Hosts with SetupNetworks
         Author: gcheresh
         Parameters:
         * data_center - DC name
         * cluster - Cluster name
-        * host - remote machine ip address or fqdn
+        * host - remote machine ip address or fqdn (Can also take a list of
+                 hosts if you want to apply the same network setup on multiple
+                 hosts.)
         * auto_nics - a list of nics
         * network_dict - dictionary of dictionaries for the following
           net parameters:
@@ -171,6 +173,8 @@ def createAndAttachNetworkSN(data_center, cluster, host=None, auto_nics=[],
         Return: True value if succeeded in creating and adding network list
                 to DC/Cluster and Host
     '''
+    # Makes sure host_list is always a list
+    host_list = [host] if isinstance(host, basestring) else host
 
     net_obj = []
     for key in network_dict.keys():
@@ -189,6 +193,7 @@ def createAndAttachNetworkSN(data_center, cluster, host=None, auto_nics=[],
                                    get('required')):
             logger.error("Cannot add network to Cluster")
             return False
+
         if host:
             if not bond:
                 logger.info("Generating network object for SetupNetwork ")
@@ -209,12 +214,19 @@ def createAndAttachNetworkSN(data_center, cluster, host=None, auto_nics=[],
                     logger.error("Cannot generate network object ")
                     return False
                 net_obj.append(out['host_nic'])
-    if host:
-        if not sendSNRequest(True, host=host, nics=net_obj,
-                             auto_nics=auto_nics, check_connectivity='true',
+
+    for host in host_list:
+        logger.info("Sending SN request to host %s" % host)
+        if not sendSNRequest(True,
+                             host=host,
+                             nics=net_obj[:],  # net_obj must be copied since
+                                               # sendSNRequest modifies it
+                             auto_nics=auto_nics,
+                             check_connectivity='true',
                              connectivity_timeout=60, force='false'):
-            logger.error("SendSNRequest failed")
+            logger.error("Failed to send SN request to host %s" % host)
             return False
+
     return True
 
 
