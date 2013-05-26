@@ -391,6 +391,8 @@ def addHost(positive, name, wait=True, vdcPort=None, rhel_like=True,
             True if host not added and test isn't positive,
             False otherwise.
     '''
+
+#TODO: This function needs serious refactoring. (talayan)
     cluster = kwargs.pop('cluster', 'Default')
 
     if _check_hypervisor(positive, name, cluster):
@@ -418,10 +420,13 @@ def addHost(positive, name, wait=True, vdcPort=None, rhel_like=True,
     if osType.lower().find('hypervisor') == -1 or rhel_like:
         host = Host(name=name, cluster=hostCl, address=host_address,
                     reboot_after_installation=reboot, **kwargs)
+        if reboot is False:
+            cleanHostStorageSession(hostObj)
         host, status = HOST_API.create(host, positive)
 
         if not wait:
             return status and positive
+
         if hasattr(host, 'href'):
             return status and HOST_API.waitForElemStatus(host, "up", 800)
         else:
@@ -2125,3 +2130,34 @@ def getKSMStats(positive, host, host_user, host_passwd, vm_num, mem_ovrcmt,
     vm_load = int(vm_load / MEGABYTE + 0.5)
     return True, {'vm_mem': vm_mem, 'vm_load': vm_load,
                   'pool_size': pool_size}
+
+
+def cleanHostStorageSession(hostObj, **kwargs):
+    '''
+    Description: Runs few commands on a given host to clean storage related
+                 session and dev maps.
+    **Author**: talayan
+    **Parameters**:
+      **hostObj* - Object represnts the hostObj
+    '''
+#   check if there is an active session
+    check_iscsi_active_session = ['iscsiadm', '-m', 'session']
+    HOST_API.logger.info("Run %s to check if there are active iscsi sessions"
+                         % " ".join(check_iscsi_active_session))
+    res, out = hostObj.runCmd(check_iscsi_active_session)
+    if not res:
+        HOST_API.logger.info("Run %s Res: %s",
+                             " ".join(check_iscsi_active_session), out)
+        return
+
+    HOST_API.logger.info("There are active session, perform clean and logout")
+
+    commands = [['iscsiadm', '-m', 'session', '-u'],
+                ['multipath', '-F'],
+                ['dmsetup', 'remove_all']]
+
+    for cmd in commands:
+        HOST_API.logger.info("Run %s" % " ".join(cmd))
+        res, out = hostObj.runCmd(cmd)
+        if not res:
+            HOST_API.logger.info(str(out))
