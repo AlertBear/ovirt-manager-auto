@@ -111,7 +111,7 @@ class ReproduceSystemState(Component):
 
     @classmethod
     def fill_setup_params(cls, params):
-        params['name'] = cls.name.lower()
+        params['name'] = cls.name.lower().replace(' ', '-')
         params['version'] = '1.0'
         params['author'] = 'Ilia Meerovich'
         params['author_email'] = 'imeerovi@redhat.com'
@@ -119,8 +119,8 @@ class ReproduceSystemState(Component):
         params['long_description'] = 'Plugin for ART. '\
             'Provides reproduction of needed system state.'
         params['requires'] = []
-        params['py_modules'] = \
-            ['art.test_handler.plmanagement.plugins.reproduce_system_state']
+        params['py_modules'] = ['art.test_handler.plmanagement.plugins.'
+                                'reproduce_system_state_plugin']
 
     def config_spec(self, spec, val_funcs):
         section_spec = spec.setdefault(REPRO_OPTION, {})
