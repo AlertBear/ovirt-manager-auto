@@ -72,6 +72,7 @@ REST_CONNECTION = 'REST_CONNECTION'
 BZ_ID = 'bz' # TODO: should be removed
 TCMS_PLAN_ID = 'tcms_plan_id' # TODO: should be removed
 TCMS_TEST_CASE = 'tcms_test_case' # TODO: should be removed
+CLI_VALIDATION = 'cli_validation' # TODO: should be removed
 
 ITER_NUM = 0
 
@@ -95,6 +96,7 @@ def formatExcInfo():
 
 class UTestCase(TestCase):
     skip_exceptios = (USkipTest, USkipTest2, SkipTest)
+
     def __init__(self, t):
         super(UTestCase, self).__init__()
         self.mod_name, self.test_action = t.address()[1:]
@@ -104,6 +106,7 @@ class UTestCase(TestCase):
         self.bz = getattr(self.f, BZ_ID, None)
         self.tcms_plan_id = getattr(self.f, TCMS_PLAN_ID, None)
         self.tcms_test_case = getattr(self.f, TCMS_TEST_CASE, None)
+        self.cli_validation = getattr(self.f, CLI_VALIDATION, None)
         setattr(self.t.test, 'vital4group', False)
         self.serial = iterNumber()
         try:

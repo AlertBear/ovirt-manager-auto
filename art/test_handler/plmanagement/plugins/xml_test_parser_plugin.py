@@ -18,6 +18,7 @@ TEST_CASE_TAG = 'test_case'
 
 priority = 10000
 
+
 class XMLTestFile(mr.TestFile):
     """
     Parses XML test file and provides an iteration of test elements.
@@ -65,15 +66,12 @@ class XMLTestFile(mr.TestFile):
         return self.__iter__()
 
     def __iter__(self):
-        from art.test_handler.test_runner import TestGroup
-        smembers = [x[1] for x in inspect.getmembers(TestGroup,
-                    lambda x: not(inspect.isroutine(x)))]
-        for line, elm in enumerate(self.tree.getiterator(tag=TEST_CASE_TAG), 1):
+        for line, elm in enumerate(self.tree.getiterator(tag=TEST_CASE_TAG),
+                                   1):
             if self.lines and line not in self.lines:
                 continue
             elm = dict((x.tag, x.text) for x in elm.getchildren()
-                       if x.text is not None and isinstance(x.tag, str)
-                       and x.tag in smembers)
+                       if x.text is not None and isinstance(x.tag, str))
             yield elm
         raise StopIteration()
 
