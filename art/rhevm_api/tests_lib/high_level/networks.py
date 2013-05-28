@@ -146,7 +146,7 @@ def removeMultiNetworks(positive, networks):
     return True
 
 
-def createAndAttachNetworkSN(data_center, cluster, host, auto_nics=[],
+def createAndAttachNetworkSN(data_center, cluster, host=None, auto_nics=[],
                              network_dict={}):
     '''
         Function that creates and attach the network to the:
@@ -189,33 +189,32 @@ def createAndAttachNetworkSN(data_center, cluster, host, auto_nics=[],
                                    get('required')):
             logger.error("Cannot add network to Cluster")
             return False
-
-        if not bond:
-            logger.info("Generating network object for SetupNetwork ")
-            rc, out = genSNNic(nic=network_dict[key]['nic'],
-                               network=key,
-                               vlan=network_dict[key].get('vlan_id', 0))
-            if not rc:
-                logger.error("Cannot generate network object")
-                return False
-            net_obj.append(out['host_nic'])
-        if bond:
-            logger.info("Generating network object for bond ")
-            rc, out = genSNBond(name=network_dict[key]['bond'],
-                                network=key,
-                                slaves=network_dict[key].get('slaves'),
-                                mode=network_dict[key].get('mode'))
-            if not rc:
-                logger.error("Cannot generate network object ")
-                return False
-            net_obj.append(out['host_nic'])
-    try:
-        sendSNRequest(True, host=host, nics=net_obj,
-                      auto_nics=auto_nics, check_connectivity='true',
-                      connectivity_timeout=60, force='false')
-    except Exception as ex:
-        logger.error("SendSNRequest failed %s", ex)
-        return False
+        if host:
+            if not bond:
+                logger.info("Generating network object for SetupNetwork ")
+                rc, out = genSNNic(nic=network_dict[key]['nic'],
+                                   network=key,
+                                   vlan=network_dict[key].get('vlan_id', 0))
+                if not rc:
+                    logger.error("Cannot generate network object")
+                    return False
+                net_obj.append(out['host_nic'])
+            if bond:
+                logger.info("Generating network object for bond ")
+                rc, out = genSNBond(name=network_dict[key]['bond'],
+                                    network=key,
+                                    slaves=network_dict[key].get('slaves'),
+                                    mode=network_dict[key].get('mode'))
+                if not rc:
+                    logger.error("Cannot generate network object ")
+                    return False
+                net_obj.append(out['host_nic'])
+    if host:
+        if not sendSNRequest(True, host=host, nics=net_obj,
+                             auto_nics=auto_nics, check_connectivity='true',
+                             connectivity_timeout=60, force='false'):
+            logger.error("SendSNRequest failed")
+            return False
     return True
 
 
