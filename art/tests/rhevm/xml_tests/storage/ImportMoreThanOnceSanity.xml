@@ -208,10 +208,10 @@
    <vital>TRUE</vital>
 </test_case>
 <test_case>
-   <test_name>Remove udev rules and ifcfg</test_name>
-   <test_action>runMachineCommand</test_action>
-   <parameters>ip=%ipAddress%, user='{vm_linux_user}', password='{vm_linux_password}', cmd='rm -f /etc/sysconfig/network-scripts/ifcfg-eth0 /etc/udev/rules.d/70-persistent-net.rules'</parameters>
-   <positive>true</positive>
+   <test_name>Remove persistent NIC associations from the VM</test_name>
+   <test_action>setPersistentNetwork</test_action>
+   <parameters>host=%ipAddress%, password='{vm_linux_password}'</parameters>
+   <positive>NONE</positive>
    <run>yes</run>
    <report>yes</report>
 </test_case>
