@@ -39,6 +39,7 @@ Roles = getDS('Roles')
 Role = getDS('Role')
 Tag = getDS('Tag')
 
+
 @is_action()
 def addUser(positive, **kwargs):
     '''
@@ -85,14 +86,17 @@ def addRoleToUser(positive, user, role):
 
 
 @is_action()
-def removeUser(positive, user):
+def removeUser(positive, user, domain=None):
     '''
     Description: remove existed user
     Parameters:
        * user - name of user that should be removed
     Return: status (True if user was removed properly, False otherwise)
     '''
-    userObj = util.find(user)
+    if domain is not None:
+        userObj = util.find('%s@%s' % (user, domain), attribute='user_name')
+    else:
+        userObj = util.find(user)
     return util.delete(userObj, positive)
 
 
@@ -224,3 +228,14 @@ def loginAsUser(user, domain, password, filter):
     opts['user_domain'] = domain
     opts['password'] = password
     util.logger.info(msg % (user, domain, filter))
+
+
+def fetchUserGroups(positive, user_name):
+    '''
+    Description: Fetch groups of user
+    Parameters:
+       * user_name - name of the user
+    Return: list of Group objects
+    '''
+    userObj = util.find(user_name, attribute='user_name')
+    return userObj.get_groups().group

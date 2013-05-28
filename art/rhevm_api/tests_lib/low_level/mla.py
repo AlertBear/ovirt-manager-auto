@@ -200,9 +200,12 @@ def removeRole(positive, role):
     return util.delete(roleObj, positive)
 
 
-def addPermitsToUser(positive, user, role, obj, attr):
+def addPermitsToUser(positive, user, domain, role, obj, attr):
 
-    userObj = userUtil.find(user)
+    if domain is not None:
+        userObj = userUtil.find('%s@%s' % (user, domain), attribute='user_name')
+    else:
+        userObj = userUtil.find(user)
     roleObj = util.find(role)
 
     permit = Permission()
@@ -229,7 +232,8 @@ def addPermitsToGroup(positive, group, role, obj, attr):
 
 
 @is_action()
-def addVMPermissionsToUser(positive, user, vm, role=ENUMS['role_name_user_vm_manager']):
+def addVMPermissionsToUser(positive, user, vm, role=ENUMS['role_name_user_vm_manager'],
+                           domain=None):
     '''
     Description: add vm permissios to user
     Author: edolinin
@@ -237,15 +241,17 @@ def addVMPermissionsToUser(positive, user, vm, role=ENUMS['role_name_user_vm_man
        * user - name of user
        * vm - name of vm
        * role - role to add
+       * domain - domain of user
     Return: status (True if permission was added properly, False otherwise)
     '''
 
     vmObj = vmUtil.find(vm)
-    return addPermitsToUser(positive, user, role, vmObj, 'vm')
+    return addPermitsToUser(positive, user, domain, role, vmObj, 'vm')
 
 
 @is_action()
-def addHostPermissionsToUser(positive, user, host, role="HostAdmin"):
+def addHostPermissionsToUser(positive, user, host, role="HostAdmin",
+                             domain=None):
     '''
     Description: add host permissios to user
     Author: edolinin
@@ -253,15 +259,17 @@ def addHostPermissionsToUser(positive, user, host, role="HostAdmin"):
        * user - name of user
        * host - name of host
        * role - role to add
+       * domain - domain of user
     Return: status (True if permission was added properly, False otherwise)
     '''
 
     hostObj = hostUtil.find(host)
-    return addPermitsToUser(positive, user, role, hostObj, 'host')
+    return addPermitsToUser(positive, user, domain, role, hostObj, 'host')
 
 
 @is_action()
-def addStoragePermissionsToUser(positive, user, storage, role="StorageAdmin"):
+def addStoragePermissionsToUser(positive, user, storage, role="StorageAdmin",
+                                domain=None):
     '''
     Description: add storage domain permissios to user
     Author: edolinin
@@ -269,15 +277,17 @@ def addStoragePermissionsToUser(positive, user, storage, role="StorageAdmin"):
        * user - name of user
        * storage - name of storage domain
        * role - role to add
+       * domain - domain of user
     Return: status (True if permission was added properly, False otherwise)
     '''
 
     sdObj = sdUtil.find(storage)
-    return addPermitsToUser(positive, user, role, sdObj, 'storage_domain')
+    return addPermitsToUser(positive, user, domain, role, sdObj, 'storage_domain')
 
 
 @is_action()
-def addClusterPermissionsToUser(positive, user, cluster, role="ClusterAdmin"):
+def addClusterPermissionsToUser(positive, user, cluster, role="ClusterAdmin",
+                                domain=None):
     '''
     Description: add cluster permissios to user
     Author: edolinin
@@ -285,11 +295,12 @@ def addClusterPermissionsToUser(positive, user, cluster, role="ClusterAdmin"):
        * user - name of user
        * cluster - name of cluster
        * role - role to add
+       * domain - domain of user
     Return: status (True if permission was added properly, False otherwise)
     '''
 
     clObj = clUtil.find(cluster)
-    return addPermitsToUser(positive, user, role, clObj, 'cluster')
+    return addPermitsToUser(positive, user, domain, role, clObj, 'cluster')
 
 
 @is_action()
@@ -301,10 +312,11 @@ def addClusterPermissionsToGroup(positive, group, cluster, role="ClusterAdmin"):
        * group - name of the group
        * cluster - name of cluster
        * role - role to add
+       * domain - domain of user
     Return: status (True if permission was added properly, False otherwise)
     '''
 
-    clusterObj = util.find(cluster)
+    clusterObj = clUtil.find(cluster)
     return addPermitsToGroup(positive, group, role, clusterObj, 'cluster')
 
 
@@ -423,7 +435,7 @@ def removeAllPermissionsFromUser(positive, user):
 
 
 @is_action()
-def addVmPoolPermissionToUser(positive, user, vmpool, role):
+def addVmPoolPermissionToUser(positive, user, vmpool, role, domain=None):
     '''
     Description: add permission to the user for specified vm pool object
     Author: jvorcak
@@ -431,11 +443,12 @@ def addVmPoolPermissionToUser(positive, user, vmpool, role):
        * user - user name
        * vmpool - vmpool name
        * role - role name
+       * domain - domain of user
     Return: status (True if permission has been granted, False otherwise)
     '''
 
     poolObj = poolUtil.find(vmpool)
-    return addPermitsToUser(positive, user, role, poolObj, 'vmpool')
+    return addPermitsToUser(positive, user, domain, role, poolObj, 'vmpool')
 
 
 def removeUsersPermissionsFromObject(positive, obj, user_names):
