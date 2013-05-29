@@ -19,7 +19,7 @@ VM_API = get_api('vm', 'vms')
 try:
     # PGPASS, PREPARE_CONF should move to test conf file, once possible.
     from unittest_conf import config, PGPASS, REST_API_PASS, ISO_UP_CONF, \
-       LOG_COL_CONF, REST_API_HOST
+       LOG_COL_CONF, REST_API_HOST, ISO_DOMAIN_NAME
     if not config:
         raise ImportError()
 except ImportError:
@@ -297,6 +297,8 @@ class RHEVMUtilsTestCase(unittest.TestCase):
         lun_address = None
         lun_target = None
         luns = None
+        iso_domain_path = None
+        iso_domain_address = None
 
         hosts = params.get('vds')
         cpuName = params.get('cpu_name')
@@ -349,6 +351,9 @@ class RHEVMUtilsTestCase(unittest.TestCase):
         image = params.get('cobbler_profile')
         network = params.get('mgmt_bridge')
         useAgent = params.get('useAgent')
+        if cls.utility == 'iso-uploader':
+            iso_domain_path = params.get('iso_domain_path')
+            iso_domain_address = params.get('iso_domain_address')
 
         # Following if statment is temporary, till all tools tests will move to
         # running on local machine, instead of on remote
@@ -364,9 +369,10 @@ class RHEVMUtilsTestCase(unittest.TestCase):
                    wipe_after_delete, start, vm_type, cpu_socket, cpu_cores,
                    display_type, installation, os_type, vm_user, vm_password,
                    cobblerAddress, cobblerUser, cobblerPasswd, image, network,
-                   useAgent):
+                   useAgent, iso_domain_path, iso_domain_address, ISO_DOMAIN_NAME):
                 logger.info("prepareVmWithRhevm failed")
             logger.info("DEBUG: cls.utility = %s", cls.utility)
+        if cls.utility in ['setup','cleanup']:
             cls.c = config[cls.utility]
             logger.info("DEBUG: cls.c %s", cls.c)
             cls.manager.prepareSetup(cls.utility)
@@ -380,8 +386,9 @@ class RHEVMUtilsTestCase(unittest.TestCase):
         """
         Remove all snapshosts, and relase machine
         """
-        if cls.utility in ['setup','cleanup','iso-uploader']:
+        if cls.utility in ['setup','cleanup']:
             cls.manager.releaseSetup(cls.utility)
+        if cls.utility in ['setup','cleanup','iso-uploader']:
             logger.info("Clean Data center")
             cleanDataCenter(True, 'nfsToolsTest', 'true', 'false',
                    REST_API_HOST, REST_API_PASS)
@@ -390,7 +397,7 @@ class RHEVMUtilsTestCase(unittest.TestCase):
         """
         Fetch instance of utility for test-case
         """
-        if self.utility in ['setup','cleanup','iso-uploader']:
+        if self.utility in ['setup','cleanup']:
             snap = self.clear_snap if self.utility is 'setup' else self.snapshot_setup_installed
             self.manager.saveSetup(self.utility, snap)
             ip = None
@@ -402,7 +409,7 @@ class RHEVMUtilsTestCase(unittest.TestCase):
         """
         Discart changes which was made by test-case
         """
-        if self.utility in ['setup','cleanup','iso-uploader']:
+        if self.utility in ['setup','cleanup']:
             snap = self.clear_snap if self.utility is 'setup' else self.snapshot_setup_installed
             self.manager.restoreSetup(self.utility, snap)
 

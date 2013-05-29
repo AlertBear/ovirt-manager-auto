@@ -1349,7 +1349,8 @@ def prepareVmWithRhevm(positive, hosts, cpuName, username, password, datacenter,
                bootable, wipe_after_delete, start, vm_type, cpu_socket,
                cpu_cores, display_type, installation, os_type, vm_user,
                vm_password, cobblerAddress, cobblerUser, cobblerPasswd, image,
-               network, useAgent):
+               network, useAgent, iso_domain_path, iso_domain_address,
+               iso_domain_name):
 
     util.logger.info("prepareVmWithRhevm function arguments: %s" % locals())
     # Create Data Center
@@ -1361,22 +1362,35 @@ def prepareVmWithRhevm(positive, hosts, cpuName, username, password, datacenter,
                      lun_target=lun_target, luns=luns, lun_port=3260):
         return False
 
-    # Create VM and install it
-    if not createVm(True, vmName=vm_name, vmDescription=vm_description, cluster=cluster,
-                   mac_address=tested_setup_mac_address,
-                   nic=nic, nicType=nicType, storageDomainName=data_domain_name,
-                   size=disk_size, diskType=disk_type, volumeFormat=volume_format,
-                   diskInterface=disk_interface, bootable=bootable,
-                   wipe_after_delete=wipe_after_delete, start=start, type=vm_type,
-                   memory=memory_size, cpu_socket=cpu_socket,
-                   cpu_cores=cpu_cores, display_type=display_type,
-                   installation=True, os_type=os_type, user=vm_user,
-                   password=vm_password, cobblerAddress=cobblerAddress,
-                   cobblerUser=cobblerUser, cobblerPasswd=cobblerPasswd,
-                   image=image, network=network, useAgent=useAgent):
-        return False
-    return True
+    if iso_domain_address:
+        # Add iso domain
+        if not addStorageDomain(positive=positive, name=iso_domain_name,
+                type=ENUMS['storage_dom_type_iso'],
+                storage_type=ENUMS['storage_type_nfs'],
+                path=iso_domain_path, address=iso_domain_address,
+                host=hosts):
+            return False
 
+        # Attach iso domain
+        if not attachStorageDomain(positive=positive, datacenter=datacenter,
+                     storagedomain=iso_domain_name):
+            return False
+
+    # Create VM and install it
+    if installation == 'true':
+        return createVm(True, vmName=vm_name, vmDescription=vm_description, cluster=cluster,
+                       mac_address=tested_setup_mac_address,
+                       nic=nic, nicType=nicType, storageDomainName=data_domain_name,
+                       size=disk_size, diskType=disk_type, volumeFormat=volume_format,
+                       diskInterface=disk_interface, bootable=bootable,
+                       wipe_after_delete=wipe_after_delete, start=start,type=vm_type,
+                       memory=memory_size, cpu_socket=cpu_socket,
+                       cpu_cores=cpu_cores, display_type=display_type,
+                       installation=True, os_type=os_type, user=vm_user,
+                       password=vm_password, cobblerAddress=cobblerAddress,
+                       cobblerUser=cobblerUser, cobblerPasswd=cobblerPasswd,
+                       image=image,network=network,useAgent=useAgent)
+    return True
 
 @is_action("isStorageDomainActive")
 def is_storage_domain_active(datacenter, domain):

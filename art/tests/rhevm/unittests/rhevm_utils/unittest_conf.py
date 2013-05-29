@@ -19,6 +19,7 @@ MAIN_SETUP = "https://lilach-rhel.qa.lab.tlv.redhat.com:443/api"
 PGPASS = "123456"
 HOST_PASS = "qum5net"
 
+ISO_DOMAIN_NAME = 'ISO_DOMAIN'
 DEFAULT = {
         'def_vm_name': VM_NAME,         # name
         'wait_timeout': 2400,# wait for VM state change. Total install: ~40min
