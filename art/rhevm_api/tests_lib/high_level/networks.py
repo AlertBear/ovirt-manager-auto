@@ -257,7 +257,8 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
                  os_type='RHEL6x64', image='rhel6.4-agent3.2',
                  nic='nic1', size=DISK_SIZE, useAgent=True,
                  template_name='tempTest1', attempt=ATTEMPTS,
-                 interval=INTERVAL, vm_flag=True, template_flag=True):
+                 interval=INTERVAL, placement_host=None,
+                 vm_flag=True, template_flag=True):
     '''
         Function that creates DC, Cluster, Storage, Hosts
         It creates VM and Template if flag is on:
@@ -298,6 +299,7 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
             *  *template_name* - name of the template to create
             *  *attempt*- attempts to connect after installation
             *  *inerval* - interval between attempts
+            *  *placement_host* - the host that will hold VM
             *  *vm_flag* - Set to true, if desired VM
             *  *template_flag* - set to true if desired template
         **Returns**: True if creation of the setup succeeded, otherwise False
@@ -337,7 +339,8 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
                         cobblerUser=cobblerUser,
                         cobblerPasswd=cobblerPasswd, network='rhevm',
                         useAgent=True, diskType=diskType,
-                        attempt=attempt, interval=interval):
+                        attempt=attempt, interval=interval,
+                        placement_host=placement_host):
             logger.error("Cannot create VM")
             return False
     if template_flag:
