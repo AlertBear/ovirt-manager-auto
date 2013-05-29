@@ -383,7 +383,8 @@ class RHEVMUtilsTestCase(unittest.TestCase):
         if cls.utility in ['setup','cleanup','iso-uploader']:
             cls.manager.releaseSetup(cls.utility)
             logger.info("Clean Data center")
-            cleanDataCenter(True, 'nfsToolsTest')
+            cleanDataCenter(True, 'nfsToolsTest', 'true', 'false',
+                   REST_API_HOST, REST_API_PASS)
 
     def setUp(self):
         """
