@@ -40,6 +40,7 @@ from art.test_handler.plmanagement.interfaces.tests_listener \
 from art.test_handler.test_runner import TestCase, TestSuite, TestGroup,\
     TestResult, TEST_CASES_SEPARATOR
 from art.test_handler.exceptions import SkipTest
+from art.test_handler import find_test_file
 import art
 
 logger = get_logger("unittest_loader")
@@ -255,10 +256,7 @@ class UnittestLoader(Component):
         self.__check_deps()
         self.mod_path = m.group('mod_path')
         self.root_path = m.group('root_path')
-        if not os.path.exists(self.root_path):
-            self.root_path = os.path.join(os.path.dirname(art.__file__), self.root_path)
-            if not os.path.exists(self.root_path):
-                raise IOError(self.root_path)
+        self.root_path = find_test_file(self.root_path)
         return True
 
     def next_test_object(self):
