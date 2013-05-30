@@ -65,8 +65,8 @@ DATA_FILES = common.expand_paths(TEST_DATA_PATH, *DATA_FILES)
 
 SCRIPT = """\
 find /opt/art/rhevm_api -type f -regex '.*[.]py$' -exec sed -i 's/art[.]rhevm_api/rhevm_api/g' '{}' \; &> /dev/null
-find /opt/art/unittest_lib -type f -regex '.*[.]py$' -exec sed -i 's/art[.]\(rhevm_api\|unittest_lib\)/\1/g' '{}' \; &> /dev/null
-find /opt/art/tests/rhevm -type f -regex '.*[.]py$' -exec sed -i 's/art[.]\(rhevm_api\|unittest_lib\)/\1/g' '{}' \; &> /dev/null
+find /opt/art/unittest_lib -type f -regex '.*[.]py$' -exec sed -i 's/art[.]\(rhevm_api\|unittest_lib\)/\\1/g' '{}' \; &> /dev/null
+find /opt/art/tests/rhevm -type f -regex '.*[.]py$' -exec sed -i 's/art[.]\(rhevm_api\|unittest_lib\)/\\1/g' '{}' \; &> /dev/null
 chmod -R ugo+rw /opt/art/rhevm_api &> /dev/null
 
 """
