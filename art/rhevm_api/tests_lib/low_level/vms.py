@@ -1491,7 +1491,7 @@ def shutdownVm(positive, vm, async='true'):
 
 
 @is_action()
-def migrateVm(positive, vm, host=None, wait=True):
+def migrateVm(positive, vm, host=None, wait=True, force=False):
     '''
     Migrate the VM.
 
@@ -1523,6 +1523,9 @@ def migrateVm(positive, vm, host=None, wait=True):
     if host:
         destHostObj = HOST_API.find(host)
         actionParams['host'] = data_st.Host(id=destHostObj.id)
+
+    if force:
+        actionParams['force'] = True
 
     if not VM_API.syncAction(vmObj, "migrate", positive, **actionParams):
         return False
