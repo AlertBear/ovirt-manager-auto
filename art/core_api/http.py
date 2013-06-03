@@ -83,8 +83,8 @@ class HTTPProxy():
         self.cookie = response['Set-Cookie']
         self.last_active_user = self.__get_user()
 
-
-    def __do_request(self, method, url, body=None, get_header=None, conn=None):
+    def __do_request(self, method, url, body=None, get_header=None, conn=None,
+                     retry_counter=2):
         '''
         Run HTTP request
         Parameters:
@@ -101,12 +101,11 @@ class HTTPProxy():
         try:
             headers = self.basic_headers()
 
-
             if body:
                 headers['Content-type'] = self.type
 
             # run http request
-            conn.request(method, url, body, headers = headers)
+            conn.request(method, url, body, headers=headers)
             # get response
             resp = conn.getresponse()
 
@@ -116,7 +115,7 @@ class HTTPProxy():
             #Workaround lxml issue with unicode strings having declarations
             resp_body = re.sub(r'^\s*<\?xml\s+.*?\?>', '', resp_body)
 
-            ret = { 'status' : resp.status, 'body' : resp_body }
+            ret = {'status': resp.status, 'body': resp_body}
 
             if headers.get('Authorization', None):
                 self.cookie = resp.getheader('Set-Cookie')
@@ -134,15 +133,19 @@ class HTTPProxy():
 
             return ret
 
-        except (httplib.CannotSendRequest, httplib.BadStatusLine):
-            add_conn = self.add_connection()
-            self.connect(add_conn)
-
-            return self.__do_request(method, url, body=body,
-                        get_header=get_header, conn=add_conn)
+        except (httplib.CannotSendRequest, httplib.BadStatusLine), ex:
+            if retry_counter:
+                add_conn = self.add_connection()
+                self.connect(add_conn)
+                retry_counter -= retry_counter
+                return self.__do_request(method, url, body=body,
+                                         get_header=get_header, conn=add_conn,
+                                         retry_counter=retry_counter)
+            logger.exception("HTTP connection problem: %s", ex)
+            raise
 
         except SocketError:
-            logger.exception("Socket connection problem for " + url)
+            logger.exception("Socket connection problem for %s", url)
             raise
 
 
