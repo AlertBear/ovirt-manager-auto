@@ -248,7 +248,32 @@ class TimeoutingSampler(object):
             self.last_sample_time = time.time()
             yield self.func(*self.func_args, **self.func_kwargs)
             if self.timeout < (time.time() - self.start_time):
-                raise self.timeout_exc_cls(
-                        *self.timeout_exc_args,
-                        **self.timeout_exc_kwargs)
+                raise self.timeout_exc_cls(*self.timeout_exc_args,
+                                           **self.timeout_exc_kwargs)
             time.sleep(self.sleep)
+
+    def waitForFuncStatus(self, result):
+        '''
+    Description: Get function and run it for given time until success or
+                 timeout. (using __iter__ function)
+    **Author**: myakove
+    **Parameters**:
+        * *result* - Expected result from func (True or False), for
+                     positive/negative tests
+    Example (calling updateNic function)::
+    sample = TimeoutingSampler(timeout=60, sleep=1,
+                               func=updateNic, positive=True,
+                               vm=config.VM_NAME[0], nic=nic_name,
+                               plugged='true')
+            if not sample.waitForFuncStatus(result=True):
+                raise NetworkException("Couldn't update NIC to be plugged")
+        '''
+
+        try:
+            for res in self:
+                if result == res:
+                    return True
+        except APITimeout:
+            logger.error("(%s) return incorrect status after timeout"
+                         % self.func.__name__)
+            return False
