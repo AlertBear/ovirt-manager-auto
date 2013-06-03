@@ -36,7 +36,8 @@ DS_CLASS_MAPPER = {
                 'ClusterNetwork': 'Network',
                 'VMCdRom': 'CdRom',
                 'RolePermits': 'Permits',
-                'HostNicStatistics': 'Statistics'
+                'HostNicStatistics': 'Statistics',
+                'DiskStatistics': 'Statistics'
 }
 
 
@@ -182,7 +183,7 @@ def compareResponseCode(resp, expected, logger):
         return True
     except AssertionError:
         logger.error("Response code is not valid, expected is:"
-                     " %(exp)s, actual is: %(act)s " %\
+                     " %(exp)s, actual is: %(act)s " % \
                      {'exp': expected, 'act': resp['status']})
         return False
 
@@ -194,7 +195,7 @@ def compareActionStatus(status, expected, logger):
         return True
     except AssertionError:
         logger.error("Action status is not valid, expected is:"
-                     " %(exp)s, actual is: %(act)s " %\
+                     " %(exp)s, actual is: %(act)s " % \
                      {'exp': expected, 'act': status})
         return False
 
@@ -207,12 +208,12 @@ def compareCollectionSize(collection, expectedSize, logger):
                 assert len(collection) in expectedSize
             else:
                 assert len(collection) == expectedSize
-            logger.debug("Collection size is correct: %(exp)s " %\
+            logger.debug("Collection size is correct: %(exp)s " % \
                          {'exp': expectedSize})
             return True
         except AssertionError:
             logger.error("Collection size is wrong, expected is:"
-                         " %(exp)s, actual is: %(act)s " %\
+                         " %(exp)s, actual is: %(act)s " % \
                          {'exp': expectedSize, 'act': len(collection)})
             return False
     else:
@@ -302,7 +303,7 @@ def compareElements(expElm, actElm, logger, root, equal=True):
                         if attr in VALS_IGNORE_DICT:
                             ignoreVals = filter(lambda x: x not in attrExpVal \
                                  and x in VALS_IGNORE_DICT[attr], attrActVal)
-                            attrActVal = list(set(attrActVal) -\
+                            attrActVal = list(set(attrActVal) - \
                                               set(ignoreVals))
 
                 if re.search('boolean', attrType):
