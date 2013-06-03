@@ -110,6 +110,7 @@ class TCMS(Component):
         self.plan_id = None
         self.results = {}
         self.tcms_plans = []
+        self.__register_functions()
 
     @classmethod
     def add_options(cls, parser):
@@ -146,7 +147,6 @@ class TCMS(Component):
         self.generate_links = params.tcms_gen_links or \
             tcms_cfg.as_bool(GENERATE_LINKS)
         self.report_bz = tcms_cfg.as_bool(REPORT_BZ)
-        self.__register_functions()
 
         from art.test_handler.test_runner import TestGroup
         TestGroup.add_elm_attribute('TEST_TCMS_CASE_ID', TCMS_TEST_CASE)

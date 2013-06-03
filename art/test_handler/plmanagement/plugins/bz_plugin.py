@@ -180,6 +180,7 @@ class Bugzilla(Component):
         self.version = None
         self.build_id = None  # where should I get it
         self.cache = {}
+        self.__register_functions()
 
     @classmethod
     def add_options(cls, parser):
@@ -214,7 +215,6 @@ class Bugzilla(Component):
         self.build_id = None  # where should I get it
         self.comp = conf[RUN][ENGINE].lower()
         self.product = bz_cfg[PRODUCT]
-        self.__register_functions()
 
         self.url = URL_RE.match(self.url).group(0)
 
