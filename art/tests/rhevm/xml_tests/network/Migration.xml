@@ -264,7 +264,7 @@
    <run>yes</run>
    <fetch_output/>
    <report>NO</report>
-   <vital>FALSE</vital>
+   <vital>TRUE</vital>
    <test_description/>
 </test_case>
 <test_case>
