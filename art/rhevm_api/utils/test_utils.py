@@ -34,13 +34,14 @@ import string
 from functools import wraps
 import art.test_handler.settings as settings
 from art.core_api.validator import compareCollectionSize
-from utilities.utils import readConfFile, calculateTemplateUuid,\
+from art.core_api.apis_utils import TimeoutingSampler
+from utilities.utils import readConfFile, calculateTemplateUuid, \
 convertMacToIp, pingToVms, getIpAddressByHostName, createDirTree
 from utilities.machine import Machine, eServiceAction, LINUX
 from utilities.cobblerApi import Cobbler
 from art.core_api.apis_exceptions import APITimeout, EntityNotFound
 from utilities.tools import updateGuestTools, isToolsInstalledOnGuest, \
-    removeToolsFromGuest, waitForGuestReboot,installAutoUpgraderCD, \
+    removeToolsFromGuest, waitForGuestReboot, installAutoUpgraderCD, \
     installToolsFromDir, verifyToolsFilesExist
 #from upgradeSetup.prepSetup import Rhevm
 from art.rhevm_api.utils.threads import CreateThread, ThreadSafeDict
@@ -119,7 +120,7 @@ def getStat(name, elm_name, collection_name, stat_types):
     values = {}
     for stat in statistics:
         if stat.get_name() in stat_types:
-            datum =  stat.get_values().get_value()[0].get_datum()
+            datum = stat.get_values().get_value()[0].get_datum()
             if stat.get_values().get_type() == "INTEGER":
                 values[stat.get_name()] = int(float(datum))
                 #return int(stat.values.value.datum)
@@ -128,7 +129,7 @@ def getStat(name, elm_name, collection_name, stat_types):
     return values
 
 
-def lookingForIpAdressByEntityName(entity, ipVar="ip", nameVar="vmName", expTime=60*10, cache=ThreadSafeDict()):
+def lookingForIpAdressByEntityName(entity, ipVar="ip", nameVar="vmName", expTime=60 * 10, cache=ThreadSafeDict()):
     """
     Description: Decorator replaces non-defined ipVar parameter.
                  Result is cached until expTime, for continuous calling
@@ -329,7 +330,7 @@ def updateVmStatusInDatabase(vmName, status, vdc, vdc_pass,
     machine = Machine(vdc, 'root', vdc_pass).util('linux')
     cmd = ["psql", "-U", psql_username, psql_db, "-c",
             r'"UPDATE vm_dynamic SET status=%d WHERE vm_guid=\'%s\'"' %
-            (status,vm.get_id())]
+            (status, vm.get_id())]
 
     return machine.runCmd(cmd)
 
@@ -367,7 +368,7 @@ def installRhevm(host_fqdn, root_pass, mac_range, override_iptables='yes',
         * iso_domain_name - default iso domain name
     Retuen: True in case of success, False otherwise.
     '''
-    ROOT='root'
+    ROOT = 'root'
     address = getIpAddressByHostName(host_fqdn)
     if not address:
         logger.error('%s is not resolvable' % host_fqdn)
@@ -400,7 +401,7 @@ def removeRhevm(host_fqdn, root_pass):
         * root_pass - login as root so need a root password
     Retuen: True in case of success, False otherwise.
     '''
-    ROOT='root'
+    ROOT = 'root'
     address = getIpAddressByHostName(host_fqdn)
     if not address:
         logger.error('%s is not resolvable' % host_fqdn)
@@ -420,7 +421,7 @@ def upgradeRhevm(host_fqdn, root_pass, rollback=True):
         * rollback - whether supporting upgrade rollback or not
     Retuen: True in case of success, False otherwise.
     '''
-    ROOT='root'
+    ROOT = 'root'
     address = getIpAddressByHostName(host_fqdn)
     if not address:
         logger.error('%s is not resolvable' % host_fqdn)
@@ -493,21 +494,21 @@ def rhevmConfig(positive, setup, user, passwd, dbuser, dbpasswd, dbname, \
 @is_action()
 def isToolsOnGuest(positive, ip, user, password, packs, toolsVersion, attempts=1):
     '''Wrapper for isToolsInstalledOnGuest'''
-    return isToolsInstalledOnGuest( ip, user, password, toolsVersion,  packs, attempts)
+    return isToolsInstalledOnGuest(ip, user, password, toolsVersion, packs, attempts)
 
 
 @is_action()
-def removeTools(positive, ip, user, password,toolsVersion,packs='desktop', attempts=1):
+def removeTools(positive, ip, user, password, toolsVersion, packs='desktop', attempts=1):
     ''''Wrapper for removeToolsFromGuest'''
     try:
         toolsFound = removeToolsFromGuest(ip, user, password, toolsVersion, packs=packs, attempts=attempts)
     except Exception as err:
-        return False,{'packagesFound' : err}
+        return False, {'packagesFound' : err}
 
     if toolsFound:
         toolsFound = ' '.join(toolsFound)
-        return False,{'packagesFound' : toolsFound}
-    return  True,{'packagesFound' : 'NONE'}
+        return False, {'packagesFound' : toolsFound}
+    return  True, {'packagesFound' : 'NONE'}
 
 
 @is_action()
@@ -707,11 +708,11 @@ def reportParallelGuestTools(positive, resultsAfterInstall, resultsAfterUninstal
         if statusResult is False:
             status = False
             break;
-    return reportDB(positive, status, 'os', osList[index],'missingTools',resultsAfterInstall[index],'packageFoundAferUninstall',resultsAfterUninstall[index][1]['packagesFound'],'missingToolsAfterAPT',resultsAfterAPT[index],'missingOldTools',resultsOldTools[index],'missingToolsAfterAptUpgrade',resultsAptUpgrade[index],'missingToolsAfterManualUpgrade',resultsManualUpgrade[index])
+    return reportDB(positive, status, 'os', osList[index], 'missingTools', resultsAfterInstall[index], 'packageFoundAferUninstall', resultsAfterUninstall[index][1]['packagesFound'], 'missingToolsAfterAPT', resultsAfterAPT[index], 'missingOldTools', resultsOldTools[index], 'missingToolsAfterAptUpgrade', resultsAptUpgrade[index], 'missingToolsAfterManualUpgrade', resultsManualUpgrade[index])
 
 
 @is_action()
-def calculateElapsedTime(positive, state='start', measureUnit='sec',startTime=1):
+def calculateElapsedTime(positive, state='start', measureUnit='sec', startTime=1):
     '''
     Description: function calculate elapsed time, need to call to func twice: start time and end time.
     Author: Tomer
@@ -726,15 +727,15 @@ def calculateElapsedTime(positive, state='start', measureUnit='sec',startTime=1)
     '''
     if state == 'start':
         return True, {'calculateTime' : time.time()}
-    elif state =='end':
-        measureDict ={'sec' : 1 ,'min' : 60 ,'hour' : 3600}
+    elif state == 'end':
+        measureDict = {'sec' : 1 , 'min' : 60 , 'hour' : 3600}
         if not measureDict.has_key(measureUnit):
             logger.error('Invalid parameter measureUnit, Should be sec/min/hour')
-            return False, {'calculateTime' : -1}
-        return True, {'calculateTime' : int((time.time() - (startTime))/measureDict[measureUnit])}
+            return False, {'calculateTime' :-1}
+        return True, {'calculateTime' : int((time.time() - (startTime)) / measureDict[measureUnit])}
     else:
         logger.error('Invalid state param, should be start/end')
-        return False, {'calculateTime' : -1}
+        return False, {'calculateTime' :-1}
 
 
 @is_action()
@@ -762,12 +763,12 @@ def convertOsNameToOsTypeElement(positive, osName):
     '''
     if re.search('win', osName, re.I):
         return True, {'osTypeElement': osName.replace(' ', '')}
-    elif re.search('Linux',osName,re.I):
-        version = re.search('Linux\s+(\d+)',osName,re.I)
-        newOsName = 'RHEL' +version.group(1)
-        if re.search('x64',osName,re.I):
+    elif re.search('Linux', osName, re.I):
+        version = re.search('Linux\s+(\d+)', osName, re.I)
+        newOsName = 'RHEL' + version.group(1)
+        if re.search('x64', osName, re.I):
             newOsName = newOsName + 'x64'
-        if re.search('rhevm',osName,re.I):
+        if re.search('rhevm', osName, re.I):
             newOsName = newOsName + '_RHEVM'
         return True, {'osTypeElement': newOsName}
     else:
@@ -819,7 +820,7 @@ def cobblerSetLinuxHostName(cobblerAddress, cobblerUser, cobblerPasswd, name, ho
 
 
 @is_action()
-def getImageByOsType(positive, osType, slim = False):
+def getImageByOsType(positive, osType, slim=False):
     '''
     Function get osTypeElement and return image from action.conf file.
     in case os windows: return cdrom_image and unattended floppy.
@@ -835,10 +836,10 @@ def getImageByOsType(positive, osType, slim = False):
         supportedOs = settings.opts['elements_conf'][osType]
     except Exception as err:
         logger.error(err)
-        return False, {'osBoot' : None,'floppy' : None}
+        return False, {'osBoot' : None, 'floppy' : None}
 
     if re.search('rhel', osType, re.I):
-        return True, {'osBoot' : supportedOs['profile'],'floppy' : None}
+        return True, {'osBoot' : supportedOs['profile'], 'floppy' : None}
     elif re.search('win', osType, re.I):
         return True, {'osBoot' : supportedOs['cdrom_image'], 'floppy' : supportedOs['floppy_image']}
 
@@ -929,9 +930,9 @@ def reportDB(positive, *args):
     Return Values status and Dictionary to report
     '''
     dict = {}
-    if len(args) >= 3 and (args[0] == True or args[0] == False) and len(args)%2 == 1:
+    if len(args) >= 3 and (args[0] == True or args[0] == False) and len(args) % 2 == 1:
         for i in range(1, len(args), 2):
-            dict[args[i]] = str(args[i+1])
+            dict[args[i]] = str(args[i + 1])
         return args[0], dict
     else:
         logger.error('invalid params')
@@ -939,7 +940,7 @@ def reportDB(positive, *args):
 
 
 @is_action()
-def calculateTemplateGuid(positive, storageDomainType, os, architecture, templateType, osRelease = None, driverType = None):
+def calculateTemplateGuid(positive, storageDomainType, os, architecture, templateType, osRelease=None, driverType=None):
     """Wrapper for CalculateTemplateUuid"""
     uuid = calculateTemplateUuid(storageDomainType, os, architecture, templateType, osRelease, driverType)
     if uuid:
@@ -948,10 +949,10 @@ def calculateTemplateGuid(positive, storageDomainType, os, architecture, templat
 
 
 @is_action()
-def convertMacToIpAddress(positive, mac, subnetClassB = '10.35', vlan=0):
+def convertMacToIpAddress(positive, mac, subnetClassB='10.35', vlan=0):
     """Wrapper for convertMacToIp"""
     ip = convertMacToIp(mac, subnetClassB, vlan)
-    logger.info('MAC: %s with VLAN: %s converted to IP: %s' % (mac,vlan,str(ip)))
+    logger.info('MAC: %s with VLAN: %s converted to IP: %s' % (mac, vlan, str(ip)))
     if ip:
         return True, {'ip' :ip}
     return False, {'ip' : None}
@@ -984,7 +985,7 @@ def searchElement(positive, element, collection, keyName, searchValue):
 
 
 @is_action()
-def checkHostConnectivity(positive, ip, user, password,osType, attempt=1, interval=1, remoteAgent=None):
+def checkHostConnectivity(positive, ip, user, password, osType, attempt=1, interval=1, remoteAgent=None):
     '''wrapper function check if windows server up and running
        indication to server up and running if wmi query return SystemArchitecture and elapsed time'''
     try:
@@ -995,11 +996,11 @@ def checkHostConnectivity(positive, ip, user, password,osType, attempt=1, interv
         else:
             status = machine.isConnective(attempt, interval, True)
         t2 = time.time()
-        logger.info('Host: %s, Connectivity Status: %s, Elapsed Time: %d' % (ip,status,int(t2-t1)))
+        logger.info('Host: %s, Connectivity Status: %s, Elapsed Time: %d' % (ip, status, int(t2 - t1)))
         return status, {'elapsedTime' : int(t2 - t1)}
     except Exception as err:
         logger.error(str(err))
-        return False, {'elapsedTime' : -1}
+        return False, {'elapsedTime' :-1}
 
 
 @is_action()
@@ -1070,7 +1071,7 @@ def removeDirOnHost(positive, ip, dirname, user='root',
 
 
 def searchForObj(util, query_key, query_val, key_name,
-                        max=-1, case_sensitive=True,
+                        max= -1, case_sensitive=True,
                         expected_count=None):
     '''
     Description: search for an object by desired property
@@ -1101,7 +1102,7 @@ def searchForObj(util, query_key, query_val, key_name,
             if re.match(pattern, objProperty):
                 expected_count += 1
 
-        if max>0:
+        if max > 0:
             expected_count = min(expected_count, max)
 
     contsraint = "{0}={1}".format(query_key, query_val)
@@ -1324,7 +1325,7 @@ def getAllImages(vds, vds_username, vds_password, spool_id, domain_id,
     return [disk.attrib[attrib].split('/', 1)[0] for disk in disks_elements]
 
 @is_action()
-def checkSpoofingFilterRuleByVer(host,user,passwd,target_version='3.2'):
+def checkSpoofingFilterRuleByVer(host, user, passwd, target_version='3.2'):
     '''
     Description: Check if NetworkFilter (nwfilter) rule is enabled/disabled for a requested
     version
@@ -1336,7 +1337,7 @@ def checkSpoofingFilterRuleByVer(host,user,passwd,target_version='3.2'):
       * target_version - the lower veriosn that nwfilter is enabled
     Return True for version >= 3.2 and False for <=3.1
      '''
-    host_obj = Machine(host,user,passwd).util('linux')
+    host_obj = Machine(host, user, passwd).util('linux')
     cmd = ['engine-config', '-g', 'EnableMACAntiSpoofingFilterRules']
     rc, output = host_obj.runCmd(cmd)
     ERR_MSG = 'Version {0} has incorrect nwfilter value: {1}'
@@ -1367,13 +1368,13 @@ def setNetworkFilterStatus(enable, host, user, passwd, version):
     return: True if network filtering is disabled, False otherwise
     '''
     cmd = ["rhevm-config", "-s", "EnableMACAntiSpoofingFilterRules=%s" \
-                    %enable.lower(), "--cver=%s" %version]
+                    % enable.lower(), "--cver=%s" % version]
 
-    host_obj = Machine(host,user,passwd).util('linux')
+    host_obj = Machine(host, user, passwd).util('linux')
     if not host_obj.runCmd(cmd)[0]:
         logger.error("Operation failed")
         return False
-    return restartOvirtEngine(host_obj,5,25,70)
+    return restartOvirtEngine(host_obj, 5, 25, 70)
 
 @is_action()
 def restartOvirtEngine(host_obj, interval, attemts, timeout):
@@ -1390,7 +1391,7 @@ def restartOvirtEngine(host_obj, interval, attemts, timeout):
     if not host_obj.restartService("ovirt-engine"):
         logger.error("restarting ovirt-engine failed")
         return False
-    for attempt in range(1,attemts):
+    for attempt in range(1, attemts):
         sleep(int(interval))
         if host_obj.runCmd(["curl", "http://localhost/OvirtEngineWeb/HealthStatus"]) \
                     [1].count("Welcome") == 1:
@@ -1694,3 +1695,26 @@ def checkTraffic(machine, user, password, nic, src, dst, **kwargs):
     logger.info('The traffic that was searched for was not found in tcpdump '
                 'output')
     return False
+
+
+def waitUntilGone(positive, names, api, timeout, samplingPeriod):
+    '''
+    Wait for objects to disappear from the setup. This function will block up
+    to `timeout` seconds, sampling the given API every `samplingPeriod`
+    seconds, until no object specified by names in `names` exists.
+
+    Parameters:
+        * names - comma (and no space) separated string of names
+        * timeout - Time in seconds for the objects to disappear
+        * samplingPeriod - Time in seconds for sampling the objects list
+        * api - API to query (get with get_api(ELEMENT, COLLECTION))
+    '''
+    query = ' or '.join(['name="%s"' % templ for templ in split(names)])
+    sampler = TimeoutingSampler(timeout, samplingPeriod, api.query, query)
+
+    sampler.timeout_exc_args = "Objects didn't disappear in %d secs" % timeout,
+
+    for sample in sampler:
+        if not sample:
+            logger.info("All %s are gone.", names)
+            return positive

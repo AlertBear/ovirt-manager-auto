@@ -18,11 +18,12 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 import os
+import logging
 import time
 
 from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api.apis_utils import getDS, data_st
-from art.rhevm_api.utils.test_utils import get_api, split
+from art.rhevm_api.utils.test_utils import get_api, split, waitUntilGone
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from art.rhevm_api.tests_lib.low_level.networks import getClusterNetwork
 from art.test_handler.settings import opts
@@ -52,6 +53,8 @@ VM = getDS('VM')
 ENUMS = opts['elements_conf']['RHEVM Enums']
 
 xpathMatch = is_action('xpathTemplates', id_name='xpathMatch')(XPathMatch(TEMPLATE_API))
+
+logger = logging.getLogger(__package__ + __name__)
 
 
 def _prepareTemplateObject(**kwargs):
@@ -403,7 +406,8 @@ def exportTemplate(positive, template, storagedomain, exclusive='false',
 
 @is_action()
 def importTemplate(positive, template, export_storagedomain,
-                   import_storagedomain, cluster, name=None):
+                   import_storagedomain, cluster, name=None,
+                   async=False):
     '''
     Description: import template
     Author: edolinin
@@ -422,7 +426,7 @@ def importTemplate(positive, template, export_storagedomain,
     sd = StorageDomain(name=import_storagedomain)
     cl = Cluster(name=cluster)
 
-    actionParams = dict(storage_domain=sd, cluster=cl)
+    actionParams = dict(storage_domain=sd, cluster=cl, async=async)
 
     actionName = 'import'
     if opts['engine'] in ('cli', 'sdk'):
@@ -435,7 +439,8 @@ def importTemplate(positive, template, export_storagedomain,
 
     status = TEMPLATE_API.syncAction(templObj, actionName, positive,
                                      **actionParams)
-    time.sleep(30)
+    if not async:
+        time.sleep(30)
 
     return status
 
@@ -504,3 +509,18 @@ def waitForTemplatesStates(names, state=ENUMS['template_state_ok'],
                     template in names])
 
     return TEMPLATE_API.waitForQuery(query, timeout=timeout, sleep=sleep)
+
+
+def waitForTemplatesGone(positive, templates, timeout=600, samplingPeriod=10):
+    '''
+    Wait for templates to disappear from the setup. This function will block up
+    to `timeout` seconds, sampling the templates list every `samplingPeriod`
+    seconds, until no template specified by names in `templates` exists.
+
+    Parameters:
+        * templates - comma (and no space) separated string of template names
+        * timeout - Time in seconds for the templates to disappear
+        * samplingPeriod - Time in seconds for sampling the templates list
+    '''
+    return waitUntilGone(
+        positive, templates, TEMPLATE_API, timeout, samplingPeriod)

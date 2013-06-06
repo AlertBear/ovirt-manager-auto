@@ -36,7 +36,7 @@ from utilities.machine import Machine
 from art.rhevm_api.utils.test_utils import searchForObj, getImageByOsType, \
     convertMacToIpAddress, checkHostConnectivity, updateVmStatusInDatabase, \
     get_api, cobblerAddNewSystem, cobblerSetLinuxHostName, cobblerRemoveSystem, \
-    split, getAllImages, waitUntilPingable, restoringRandomState
+    split, getAllImages, waitUntilPingable, restoringRandomState, waitUntilGone
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils.threads import runParallel
 from art.core_api import is_action
@@ -474,28 +474,16 @@ def removeVms(positive, vms, stop='false'):
 
 def waitForVmsGone(positive, vms, timeout=60, samplingPeriod=10):
     '''
-    Wait for VMs to disappear from the setup. This function will block up to `timeout`
-    seconds, sampling the VMs list every `samplingPeriod` seconds, until no VMs
-    specified by names in `vms` exists.
+    Wait for VMs to disappear from the setup. This function will block up to
+    `timeout` seconds, sampling the VMs list every `samplingPeriod` seconds,
+    until no VMs specified by names in `vms` exists.
 
     Parameters:
         * vms - comma (and no space) separated string of VM names to wait for.
         * timeout - Time in seconds for the vms to disapear.
         * samplingPeriod - Time in seconds for sampling the vms list.
     '''
-    t_start = time.time()
-    vmsList = split(vms)
-    QUERY = ' or '.join(['name="%s"' % vm for vm in vmsList])
-    while time.time() - t_start < timeout and 0 < timeout:
-        foundVms = VM_API.query(QUERY)
-        if not len(foundVms):
-            logger.info("All %d VMs are gone.", len(vmsList))
-            return positive
-        time.sleep(samplingPeriod)
-
-    remainingVmsNames = [vm.name for vm in foundVms]
-    logger.error("VMs %s didn't disappear until timeout." % remainingVmsNames)
-    return not positive
+    return waitUntilGone(positive, vms, VM_API, timeout, samplingPeriod)
 
 
 @is_action()
@@ -1651,7 +1639,7 @@ def exportVm(positive, vm, storagedomain, exclusive='false',
 
 @is_action()
 def importVm(positive, vm, export_storagedomain, import_storagedomain,
-             cluster, name=None):
+             cluster, name=None, async=False):
     '''
     Description: import vm
     Author: edolinin
@@ -1675,7 +1663,8 @@ def importVm(positive, vm, export_storagedomain, import_storagedomain,
 
     actionParams = {
         'storage_domain': sd,
-        'cluster': cl
+        'cluster': cl,
+        'async': async
     }
 
     actionName = 'import'
@@ -1691,6 +1680,9 @@ def importVm(positive, vm, export_storagedomain, import_storagedomain,
         actionParams['vm'] = newVm
 
     status = VM_API.syncAction(vmObj, actionName, positive, **actionParams)
+
+    if async:
+        return status
 
     #TODO: replac sleep with true diagnostic
     time.sleep(30)
