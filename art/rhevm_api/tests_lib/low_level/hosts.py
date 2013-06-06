@@ -41,6 +41,7 @@ from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.test_handler import settings
 from art.core_api import is_action
 from art.rhevm_api.utils.guest import runLoadOnGuests, runLoadOnGuest
+from random import choice
 
 ELEMENT = 'host'
 COLLECTION = 'hosts'
@@ -50,6 +51,7 @@ DC_API = get_api('data_center', 'datacenters')
 TAG_API = get_api('tag', 'tags')
 HOST_NICS_API = get_api('host_nic', 'host_nics')
 VM_API = get_api('vm', 'vms')
+CAP_API = get_api('version', 'capabilities')
 
 xpathMatch = is_action('xpathHosts', id_name='xpathMatch')(XPathMatch(HOST_API))
 xpathHostsLinks = is_action('xpathLinksHosts', id_name='xpathHostsLinks')(XPathLinks(HOST_API))
@@ -78,6 +80,33 @@ IP_PATTERN = '10.35.*'
 
 virsh_cmd = ['nwfilter-dumpxml', 'vdsm-no-mac-spoofing']
 search_for = ["<filterref filter='no-mac-spoofing'/>","<filterref filter='no-arp-mac-spoofing'/>"]
+
+@is_action()
+def getRandPM(positive, cluster, size):
+    '''
+    Description: get all power management types, and create random list of given size.
+    Author: alukiano
+    Parameters:
+      * positive - True
+      * cluster -  name of the cluster
+      * size - size of list
+    Return: Random list with types of power management by given size
+    '''
+    pm_list = list()
+    rand_list = list()
+    cluster_obj = CL_API.find(cluster)
+    minor_v = cluster_obj.get_version().get_minor()
+    major_v = cluster_obj.get_version().get_major()
+    cap = CAP_API.get(absLink=False)
+    version = [v for v in cap if v.get_major() == major_v and v.get_minor() == minor_v][0]
+    for power_manager in version.get_power_managers().get_power_management():
+        pm_list.append(power_manager.get_type())
+    for i in range(size):
+        rand_list.append(choice(pm_list))
+    if rand_list:
+        return True, {'pmList': rand_list}
+    else:
+        return False, {'pmList': None}
 
 
 @is_action()

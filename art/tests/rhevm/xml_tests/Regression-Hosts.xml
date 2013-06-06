@@ -91,10 +91,18 @@
     <conf>headers={'Correlation-Id': 102}</conf>
   </test_case>
   <test_case>
+    <test_name>Create random list of pm types</test_name>
+    <test_action>getRandPM</test_action>
+    <parameters>cluster='RestCluster1', size=3</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <fetch_output>pmList-&gt;pmList</fetch_output>
+  </test_case>
+  <test_case>
     <id>ba3de4f2-c695-11e1-bc9c-f0def10e0ce8</id>
     <test_name>Add power management</test_name>
     <test_action>updateHost</test_action>
-    <parameters>host='{vds[0]}', pm='true', pm_type='bladecenter', pm_address='10.35.35.35', pm_username='user', pm_password='password', pm_slot='1', pm_secure='false'</parameters>
+    <parameters>host='{vds[0]}', pm='true', pm_type=%pmList%[0], pm_address='10.35.35.35', pm_username='user', pm_password='password', pm_slot='1', pm_secure='false'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
     <tcms_test_case>275955</tcms_test_case>
@@ -105,7 +113,7 @@
     <id>ba3de6dc-c695-11e1-bc9c-f0def10e0ce8</id>
     <test_name>Update power management type</test_name>
     <test_action>updateHost</test_action>
-    <parameters>host='{vds[0]}', pm='true', pm_type='rsa'</parameters>
+    <parameters>host='{vds[0]}', pm='true', pm_type=%pmList%[1]</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
     <tcms_test_case>275956</tcms_test_case>
@@ -126,7 +134,7 @@
     <id>ba3deaba-c695-11e1-bc9c-f0def10e0ce8</id>
     <test_name>Remove power management from host</test_name>
     <test_action>updateHost</test_action>
-    <parameters>host='{vds[0]}', pm='false', pm_type='rsa'</parameters>
+    <parameters>host='{vds[0]}', pm='false', pm_type=%pmList%[1]</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
     <tcms_test_case>275958</tcms_test_case>
@@ -387,7 +395,7 @@
     <id>ba3e28a4-c695-11e1-bc9c-f0def10e0ce8</id>
     <test_name>Add power management to host</test_name>
     <test_action>updateHost</test_action>
-    <parameters>host='{vds[0]}', pm='true', pm_type='apc', pm_address='10.10.10.10', pm_username='qa', pm_password='111', pm_port='4444', pm_secure='true'</parameters>
+    <parameters>host='{vds[0]}', pm='true', pm_type=%pmList%[2], pm_address='10.10.10.10', pm_username='qa', pm_password='111', pm_port='4444', pm_secure='true'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
     <tcms_test_case>275955</tcms_test_case>
@@ -398,7 +406,7 @@
     <id>ba3e2a8e-c695-11e1-bc9c-f0def10e0ce8</id>
     <test_name>Disable power management</test_name>
     <test_action>updateHost</test_action>
-    <parameters>host='{vds[0]}', pm='false', pm_type='apc', pm_address=' ', pm_username=' ', pm_password=' ', pm_port=' ', pm_secure='false'</parameters>
+    <parameters>host='{vds[0]}', pm='false', pm_type=%pmList%[2], pm_address=' ', pm_username=' ', pm_password=' ', pm_port=' ', pm_secure='false'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
     <tcms_test_case>275958</tcms_test_case>
