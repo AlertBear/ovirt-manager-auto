@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <!-- vim: set ts=3 sw=3 expandtab: -->
 <?xml-stylesheet type="text/xsl" href="table.xslt"?>
-<input>
+<input tcms_plan_id="9608">
   <!-- <span style="display:none" >TEST_DESCRIPTION</span>
     Regression tests of host functionality.
     Includes add/udate/modify host and pm of host
@@ -68,6 +68,7 @@
     <parameters>host='{vds[0]}'</parameters>
     <positive>FALSE</positive>
     <run>yes</run>
+    <tcms_test_case>275952</tcms_test_case>
   </test_case>
   <test_case>
     <id>ba3de11e-c695-11e1-bc9c-f0def10e0ce8</id>
@@ -76,6 +77,7 @@
     <parameters>host='{vds[0]}', name='myresttest'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <tcms_test_case>275953</tcms_test_case>
     <conf>headers={'Correlation-Id': 101}</conf>
   </test_case>
   <test_case>
@@ -85,6 +87,7 @@
     <parameters>host='myresttest', name='{vds[0]}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <tcms_test_case>275953</tcms_test_case>
     <conf>headers={'Correlation-Id': 102}</conf>
   </test_case>
   <test_case>
@@ -94,6 +97,7 @@
     <parameters>host='{vds[0]}', pm='true', pm_type='bladecenter', pm_address='10.35.35.35', pm_username='user', pm_password='password', pm_slot='1', pm_secure='false'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <tcms_test_case>275955</tcms_test_case>
     <test_description>pwr_mngmt</test_description>
     <conf>headers={'Correlation-Id': 103}</conf>
   </test_case>
@@ -104,6 +108,7 @@
     <parameters>host='{vds[0]}', pm='true', pm_type='rsa'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <tcms_test_case>275956</tcms_test_case>
     <test_description>pwr_mngmt</test_description>
     <conf>headers={'Correlation-Id': 104}</conf>
   </test_case>
@@ -114,6 +119,7 @@
     <parameters>host='{vds[0]}', pm='true', pm_type='to_type'</parameters>
     <positive>FALSE</positive>
     <run>yes</run>
+    <tcms_test_case>275957</tcms_test_case>
     <test_description>pwr_mngmt</test_description>
   </test_case>
   <test_case>
@@ -123,6 +129,7 @@
     <parameters>host='{vds[0]}', pm='false', pm_type='rsa'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <tcms_test_case>275958</tcms_test_case>
     <test_description>pwr_mngmt</test_description>
     <conf>headers={'Correlation-Id': 105}</conf>
   </test_case>
@@ -133,6 +140,7 @@
     <parameters>host='{vds[0]}', address='10.1.1.1'</parameters>
     <positive>FALSE</positive>
     <run>yes</run>
+    <tcms_test_case>275959</tcms_test_case>
   </test_case>
   <test_case>
     <id>ba3dee8e-c695-11e1-bc9c-f0def10e0ce8</id>
@@ -141,6 +149,7 @@
     <parameters>host='{vds[0]}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <tcms_test_case>275960</tcms_test_case>
     <conf>headers={'Correlation-Id': 106}</conf>
   </test_case>
   <test_case>
@@ -150,6 +159,7 @@
     <parameters>host='{vds[0]}', root_password='{vds_password[0]}'</parameters>
     <positive>TRUE</positive>
     <run>if(not('{rhevh}' == 'True'))</run>
+    <tcms_test_case>275961</tcms_test_case>
     <!-- <vital>TRUE</vital> -->
     <conf>headers={'Correlation-Id': 107}</conf>
     <exp_events>24</exp_events>
@@ -161,6 +171,7 @@
     <parameters>host='{vds[0]}'</parameters>
     <positive>TRUE</positive>
     <run>if(not('{rhevh}' == 'True'))</run>
+    <tcms_test_case>275960</tcms_test_case>
     <conf>headers={'Correlation-Id': 108}</conf>
   </test_case>
   <test_case>
@@ -178,6 +189,7 @@
     <parameters>host='{vds[0]}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <tcms_test_case>275963</tcms_test_case>
     <conf>headers={'Correlation-Id': 109}</conf>
   </test_case>
   <test_case>
@@ -187,6 +199,7 @@
     <parameters>host='{vds[0]}', root_password='{vds_password[0]}'</parameters>
     <positive>FALSE</positive>
     <run>if(not('{rhevh}' == 'True'))</run>
+    <tcms_test_case>275964</tcms_test_case>
   </test_case>
   <test_case>
     <id>ba3df884-c695-11e1-bc9c-f0def10e0ce8</id>
@@ -195,6 +208,7 @@
     <parameters>name='{vds[0]}', address='10.1.1.256', root_password='{vds_password[0]}'</parameters>
     <positive>FALSE</positive>
     <run>yes</run>
+    <tcms_test_case>275965</tcms_test_case>
   </test_case>
   <test_case>
     <id>ba3dfa78-c695-11e1-bc9c-f0def10e0ce8</id>
@@ -203,6 +217,7 @@
     <parameters>name='nohost', address='10.2.2.2'</parameters>
     <positive>FALSE</positive>
     <run>yes</run>
+    <tcms_test_case>275966</tcms_test_case>
   </test_case>
   <test_case>
     <id>ba3dfc62-c695-11e1-bc9c-f0def10e0ce8</id>
@@ -211,6 +226,7 @@
     <parameters>host='{vds[0]}'</parameters>
     <positive>FALSE</positive>
     <run>yes</run>
+    <tcms_test_case>275967</tcms_test_case>
   </test_case>
   <test_case>
     <id>ba3dfe4c-c695-11e1-bc9c-f0def10e0ce8</id>
@@ -219,6 +235,7 @@
     <parameters>query_key='name', query_val='{vds[0]}', key_name='name'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <tcms_test_case>275968</tcms_test_case>
   </test_case>
   <!-- ////////////////////////////////////////////////////////////////////// -->
   <!-- //////////////////////////// NETWORK ///////////////////////////////// -->
@@ -239,6 +256,7 @@
     <parameters>name='testrest1', data_center='DefaultRest'</parameters>
     <positive>FALSE</positive>
     <run>yes</run>
+    <tcms_test_case>275969</tcms_test_case>
   </test_case>
   <test_case>
     <id>ba3e1396-c695-11e1-bc9c-f0def10e0ce8</id>
@@ -247,6 +265,7 @@
     <parameters>name='testrest2', data_center='DefaultRest', address='1.1.1.10', netmask='255.255.0.0', gateway='10.10.10.10'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <tcms_test_case>275970</tcms_test_case>
     <conf>headers={'Correlation-Id': 111}</conf>
   </test_case>
   <test_case>
@@ -256,6 +275,7 @@
     <parameters>network='testrest2', name='testrest3', description='Test Desciption'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <tcms_test_case>275971</tcms_test_case>
   </test_case>
   <test_case>
     <id>ba3e18a0-c695-11e1-bc9c-f0def10e0ce8</id>
@@ -264,6 +284,7 @@
     <parameters>network='testrest3'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <tcms_test_case>275976</tcms_test_case>
     <conf>headers={'Correlation-Id': 113}</conf>
   </test_case>
   <test_case>
@@ -273,6 +294,7 @@
     <parameters>network='testrest1', cluster='RestCluster1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <tcms_test_case>275974</tcms_test_case>
     <conf>headers={'Correlation-Id': 114}</conf>
   </test_case>
   <test_case>
@@ -292,6 +314,7 @@
     <parameters>host='{vds[0]}', nic=%freeNic%, network='testrest1'</parameters>
     <positive>TRUE</positive>
     <run>if(1&lt;len('[host_nics]'.split(',')))</run>
+    <tcms_test_case>275975</tcms_test_case>
     <conf>headers={'Correlation-Id': 115}</conf>
   </test_case>
   <test_case>
@@ -301,6 +324,7 @@
     <parameters>network='testrest1', cluster='RestCluster1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <tcms_test_case>275976</tcms_test_case>
     <conf>headers={'Correlation-Id': 116}</conf>
   </test_case>
   <test_case>
@@ -310,6 +334,7 @@
     <parameters>host='{vds[0]}', nic=%freeNic%, network='testrest1'</parameters>
     <positive>TRUE</positive>
     <run>if(1&lt;len('[host_nics]'.split(',')))</run>
+    <tcms_test_case>275977</tcms_test_case>
     <conf>headers={'Correlation-Id': 117}</conf>
   </test_case>
   <test_case>
@@ -319,6 +344,7 @@
     <parameters>network='testrest1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <tcms_test_case>275976</tcms_test_case>
     <conf>headers={'Correlation-Id': 118}</conf>
   </test_case>
   <test_case>
@@ -328,6 +354,7 @@
     <parameters>host='{vds[0]}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <tcms_test_case>275979</tcms_test_case>
   </test_case>
   <!-- ////////////////////////////////////////////////////////////////////// -->
   <!-- /////////////////////// POWER MANAGEMENT ///////////////////////////// -->
@@ -339,6 +366,7 @@
     <parameters>host='{vds[0]}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <tcms_test_case>275960</tcms_test_case>
   </test_case>
   <test_case>
     <id>ba3e28a4-c695-11e1-bc9c-f0def10e0ce8</id>
@@ -347,6 +375,7 @@
     <parameters>host='{vds[0]}', pm='true', pm_type='apc', pm_address='10.10.10.10', pm_username='qa', pm_password='111', pm_port='4444', pm_secure='true'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <tcms_test_case>275955</tcms_test_case>
     <test_description>pwr_mngmt</test_description>
     <conf>headers={'Correlation-Id': 120}</conf>
   </test_case>
@@ -357,6 +386,7 @@
     <parameters>host='{vds[0]}', pm='false', pm_type='apc', pm_address=' ', pm_username=' ', pm_password=' ', pm_port=' ', pm_secure='false'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <tcms_test_case>275958</tcms_test_case>
     <test_description>pwr_mngmt</test_description>
     <conf>headers={'Correlation-Id': 121}</conf>
   </test_case>
@@ -367,6 +397,7 @@
     <parameters>host='{vds[0]}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <tcms_test_case>275963</tcms_test_case>
     <conf>headers={'Correlation-Id': 122}</conf>
   </test_case>
   <test_case>
@@ -375,6 +406,7 @@
     <test_action>checkHostStatistics</test_action>
     <parameters>host='{vds[0]}'</parameters>
     <positive>TRUE</positive>
+    <tcms_test_case>275996</tcms_test_case>
     <run>yes</run>
   </test_case>
   <test_case>
@@ -384,6 +416,7 @@
     <parameters>'hosts', xpath='count(/hosts/host/transparent_hugepages/enabled)'</parameters>
     <positive>TRUE</positive>
     <run>if('{compatibility_version}'.startswith('3.'))</run>
+    <tcms_test_case>275997</tcms_test_case>
   </test_case>
   <test_case>
     <id>ba3e322c-c695-11e1-bc9c-f0def10e0ce8</id>
@@ -392,6 +425,7 @@
     <parameters>'hosts', xpath='count(/hosts/host/ksm/enabled)'</parameters>
     <positive>TRUE</positive>
     <run>if('{compatibility_version}'.startswith('3.'))</run>
+    <tcms_test_case>275998</tcms_test_case>
   </test_case>
   <test_case>
     <id>ba3e3420-c695-11e1-bc9c-f0def10e0ce8</id>
@@ -400,6 +434,7 @@
     <parameters>host='{vds[0]}', element_path='iscsi.initiator'</parameters>
     <positive>TRUE</positive>
     <run>if('{compatibility_version}'.startswith('3.'))</run>
+    <tcms_test_case>275999</tcms_test_case>
   </test_case>
   <!-- ////////////////////////// TEARDOWN /////////////////////////////// -->
   <test_case>
