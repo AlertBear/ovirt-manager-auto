@@ -2192,7 +2192,7 @@ def waitForVmDiskStatus(vm, active, diskAlias=None, diskId=None,
 
 @is_action()
 def checkVMConnectivity(positive, vm, osType, attempt=1, interval=1,
-                        nic='nic1', user=None, password=None, ip=False):
+                        nic='nic1', user=None, password=None, ip=False,):
     '''
     Description: check VM Connectivity
     Author: tomer
@@ -2211,23 +2211,27 @@ def checkVMConnectivity(positive, vm, osType, attempt=1, interval=1,
     elif re.search('win', osType, re.I):
         osType = 'windows'
     else:
-        VM_API.logger.error('Wrong value for osType: Should be rhel or windows ')
+        VM_API.logger.error('Wrong value for osType: Should be rhel or '
+                            'windows ')
         return False
 
     if not ip:
-        status, mac = getVmMacAddress(positive, vm, nic=nic)
-        if not status:
-            return False
-        status, vlan = getVmNicVlanId(vm, nic)
-        status, ip = convertMacToIpAddress(positive, mac=mac['macAddress'],
-                                           vlan=vlan['vlan_id'])
-        if not status:
-            return False
+        agent_status, ip = waitForIP(vm)
+        if not agent_status:
+            status, mac = getVmMacAddress(positive, vm, nic=nic)
+            if not status:
+                return False
+            status, vlan = getVmNicVlanId(vm, nic)
+            status, ip = convertMacToIpAddress(positive, mac=mac['macAddress'],
+                                               vlan=vlan['vlan_id'])
+            if not status:
+                return False
         ip = ip['ip']
+
     status, res = checkHostConnectivity(positive, ip,
-                                       user=user, password=password,
-                                       osType=osType, attempt=attempt,
-                                       interval=interval)
+                                        user=user, password=password,
+                                        osType=osType, attempt=attempt,
+                                        interval=interval)
     VM_API.logger.info('VM: %s TYPE: %s, IP: %s, VLAN: %s, NIC: %s \
                 Connectivity Status: %s' % (vm, osType, ip, vlan, nic, status))
     return status
