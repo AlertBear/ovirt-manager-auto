@@ -75,21 +75,10 @@
    <test_description/>
 </test_case>
 <test_case>
-   <test_name>Get MAC address</test_name>
-   <test_action>getVmMacAddress</test_action>
-   <parameters>vm='{vm_name[0]}',nic='nic1'</parameters>
-   <positive>TRUE</positive>
-   <run>YES</run>
-   <fetch_output>macAddress-&gt;macAddress</fetch_output>
-   <report>NO</report>
-   <vital>TRUE</vital>
-   <test_description/>
-</test_case>
-<test_case>
    <test_name>Get IP address</test_name>
-   <test_action>convertMacToIpAddress</test_action>
-   <parameters>mac=%macAddress%</parameters>
-   <positive>TRUE</positive>
+   <test_action>waitForIP</test_action>
+   <parameters>'{vm_name[0]}'</parameters>
+   <positive>NONE</positive>
    <run>YES</run>
    <fetch_output>ip-&gt;ipAddress</fetch_output>
    <report>NO</report>
