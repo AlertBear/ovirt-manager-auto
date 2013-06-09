@@ -477,10 +477,9 @@ def updateHost(positive, host, **kwargs):
         cl = CL_API.find(kwargs.pop('cluster', 'Default'))
         hostUpd.set_cluster(cl)
 
-    if 'storage_manager_priority' or 'storage_manager' in kwargs:
-        value = kwargs.pop('storage_manager', hostObj.storage_manager.valueOf_)
-        priority_ = kwargs.pop('storage_manager_priority', hostObj.storage_manager.priority)
-        sm = StorageManager(priority=priority_, valueOf_=value)
+    if 'storage_manager_priority' in kwargs:
+        new_priority = kwargs.pop('storage_manager_priority')
+        sm = StorageManager(new_priority, hostObj.storage_manager.valueOf_)
         hostUpd.set_storage_manager(sm)
 
     if 'pm' in kwargs:

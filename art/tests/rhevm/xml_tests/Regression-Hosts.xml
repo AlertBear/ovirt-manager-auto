@@ -134,6 +134,21 @@
     <conf>headers={'Correlation-Id': 105}</conf>
   </test_case>
   <test_case>
+    <test_name>Set SPM to low</test_name>
+    <test_action>updateHost</test_action>
+    <parameters>host='{vds[0]}', storage_manager_priority=2</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <tcms_test_case>280721</tcms_test_case>
+  </test_case>
+  <test_case>
+    <test_name>Set SPM to normal</test_name>
+    <test_action>updateHost</test_action>
+    <parameters>host='{vds[0]}', storage_manager_priority=5</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+  </test_case>
+  <test_case>
     <id>ba3deca4-c695-11e1-bc9c-f0def10e0ce8</id>
     <test_name>Update IP of active host</test_name>
     <test_action>updateHost</test_action>
