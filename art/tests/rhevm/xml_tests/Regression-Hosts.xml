@@ -188,6 +188,14 @@
     <conf>headers={'Correlation-Id': 108}</conf>
   </test_case>
   <test_case>
+    <test_name>Manual fence for host</test_name>
+    <test_action>fenceHost</test_action>
+    <parameters>host='{vds[0]}', fence_type='manual'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <tcms_test_case>280727</tcms_test_case>
+  </test_case>
+  <test_case>
     <id>ba3df4b0-c695-11e1-bc9c-f0def10e0ce8</id>
     <test_name>Activate inactive host</test_name>
     <test_action>activateHost</test_action>
