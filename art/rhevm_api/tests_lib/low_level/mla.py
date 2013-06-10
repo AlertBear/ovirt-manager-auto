@@ -84,7 +84,7 @@ def checkSystemPermits(positive):
             confPermits.remove(permit.get_name())
 
     if confPermits:
-        util.logger.error("The following permissions don't appear: {1}" \
+        util.logger.error("The following permissions don't appear: {0}" \
                     .format(confPermits))
         status = False
 
