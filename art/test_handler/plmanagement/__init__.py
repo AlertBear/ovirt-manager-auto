@@ -297,6 +297,10 @@ class ThreadScope(object):
         key = "%s-%s" % (th.ident, th.name)
         return key
 
+    @property
+    def th_id(self):
+        return self.__th_key()
+
     def __getattribute__(self, key):
         try:
             return super(ThreadScope, self).__getattribute__(key)
@@ -331,3 +335,7 @@ class ThreadScope(object):
             except KeyError:
                 pass
 
+    def destroy(self):
+        th = self.th_id
+        if th in self._val:
+            del self._val[th]

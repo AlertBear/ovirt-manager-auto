@@ -2,10 +2,8 @@
 
 import sys
 import os
-import argparse
 import art.test_handler.plmanagement as core
 from art.test_handler.plmanagement import logger
-from art.test_handler.plmanagement import implements
 from interfaces import application, report_formatter, \
         tests_listener, time_measurement, config_validator
 from art.test_handler.exceptions import VitalTestFailed
@@ -76,5 +74,3 @@ class PluginManager(core.ComponentManager, core.Component):
                 self.disable_component(config_able)
 
         self.configured = True
-
-
