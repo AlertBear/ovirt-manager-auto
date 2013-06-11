@@ -55,7 +55,6 @@ xpathMatch = is_action('xpathHosts', id_name='xpathMatch')(XPathMatch(HOST_API))
 xpathHostsLinks = is_action('xpathLinksHosts', id_name='xpathHostsLinks')(XPathLinks(HOST_API))
 
 Host = getDS('Host')
-Display = getDS('Display')
 Options = getDS('Options')
 Option = getDS('Option')
 PowerManagement = getDS('PowerManagement')
@@ -483,11 +482,6 @@ def updateHost(positive, host, **kwargs):
         priority_ = kwargs.pop('storage_manager_priority', hostObj.storage_manager.priority)
         sm = StorageManager(priority=priority_, valueOf_=value)
         hostUpd.set_storage_manager(sm)
-
-    if 'display_address' in kwargs:
-        display = Display()
-        display.set_address(kwargs.pop('display_address'))
-        hostUpd.set_display(display)
 
     if 'pm' in kwargs:
         pm_address = kwargs.get('pm_address')

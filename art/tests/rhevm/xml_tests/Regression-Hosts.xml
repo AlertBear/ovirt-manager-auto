@@ -88,30 +88,6 @@
     <conf>headers={'Correlation-Id': 102}</conf>
   </test_case>
   <test_case>
-    <test_name>Set custom display address</test_name>
-    <test_action>updateHost</test_action>
-    <parameters>host='{vds[0]}', display_address='10.10.10.10'</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-    <tcms_test_case>280705</tcms_test_case>
-  </test_case>
-  <test_case>
-    <test_name>Set wrong display address</test_name>
-    <test_action>updateHost</test_action>
-    <parameters>host='{vds[0]}', display_address='10.10.10'</parameters>
-    <positive>FALSE</positive>
-    <run>yes</run>
-    <tcms_test_case>280707</tcms_test_case>
-  </test_case>
-  <test_case>
-    <test_name>Remove custom display address</test_name>
-    <test_action>updateHost</test_action>
-    <parameters>host='{vds[0]}', display_address=''</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-    <tcms_test_case>280708</tcms_test_case>
-  </test_case>
-  <test_case>
     <id>ba3de4f2-c695-11e1-bc9c-f0def10e0ce8</id>
     <test_name>Add power management</test_name>
     <test_action>updateHost</test_action>
