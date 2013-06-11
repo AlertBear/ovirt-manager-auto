@@ -28,6 +28,7 @@ from art.test_handler import settings
 
 DEF_TIMEOUT = 900 # default timeout
 DEF_SLEEP = 10 # default sleep
+NEGATIVE_CODES = [400, 409, 500]
 
 restInit = None
 
@@ -150,8 +151,10 @@ class RestUtil(APIUtil):
 
 
     def create(self, entity, positive,
-                expected_pos_status=[200, 201, 202], expected_neg_status=[500, 400],
-                expectedEntity=None, incrementBy=1, async=False, collection=None,
+                expected_pos_status=[200, 201, 202],
+                expected_neg_status=NEGATIVE_CODES,
+                expectedEntity=None, incrementBy=1,
+                async=False, collection=None,
                 coll_elm_name = None, current=None):
         '''
         Description: implements POST method and verify the response
@@ -228,8 +231,10 @@ class RestUtil(APIUtil):
         return parse(ret['body']), True
 
 
-    def update(self, origEntity, newEntity, positive, expected_pos_status=[200, 201],
-                                expected_neg_status=[500, 400], current=None):
+    def update(self, origEntity, newEntity, positive,
+                        expected_pos_status=[200, 201],
+                        expected_neg_status=NEGATIVE_CODES,
+                        current=None):
         '''
         Description: implements PUT method and verify the response
         Author: edolinin
@@ -275,7 +280,8 @@ class RestUtil(APIUtil):
 
 
     def delete(self, entity, positive, body=None, element_name=None,
-                expected_pos_status=[200, 202, 204], expected_neg_status=[500, 400]):
+                                expected_pos_status=[200, 202, 204],
+                                expected_neg_status=NEGATIVE_CODES):
         '''
         Description: implements DELETE method and verify the reponse
         Author: edolinin
@@ -402,7 +408,7 @@ class RestUtil(APIUtil):
 
     def syncAction(self, entity, action, positive, async=False,
                 positive_async_stat=[200, 202], positive_sync_stat=[200,201],
-                negative_stat=[500, 400], **params):
+                negative_stat=NEGATIVE_CODES, **params):
         '''
         Description: run synchronic action
         Author: edolinin
