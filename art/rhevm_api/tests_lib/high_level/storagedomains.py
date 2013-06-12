@@ -458,17 +458,20 @@ def __create_posixfs_storages(datacenter, host, storage_conf):
         * host - host that will create storage domains
         * storage_conf - storage configuration section
     """
-    gluster_domain_paths = storage_conf.as_list("gluster_domain_path")
-    gluster_domain_addresses = storage_conf.as_list("gluster_domain_address")
     vfs_type = storage_conf["vfs_type"]
+    prefix = 'gluster'
+    if vfs_type == 'nfs':
+        prefix = 'data'
+    domain_paths = storage_conf.as_list("%s_domain_path" % prefix)
+    domain_addresses = storage_conf.as_list("%s_domain_address" % prefix)
     for index, (path, address) in enumerate(
-                        zip(gluster_domain_paths, gluster_domain_addresses)):
+            zip(domain_paths, domain_addresses)):
         name = "posixfs_%s" % index
         if not addPosixfsDataDomain(
-                        host, name, datacenter, address, path, vfs_type):
+                host, name, datacenter, address, path, vfs_type):
             raise errors.StorageDomainException(
                 "addPosixfsDataDomain(%s, %s, %s, %s, %s, %s) failed!" % (
-                            host, name, datacenter, address, path, vfs_type))
+                host, name, datacenter, address, path, vfs_type))
         logging.info("posixfs data domain %s created successfully", name)
 
 
