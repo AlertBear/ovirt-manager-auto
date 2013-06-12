@@ -53,6 +53,7 @@ LOAD_BALANCING_RANDOM = 'random'
 
 logger = logging.getLogger(__name__)
 
+
 def createStorageManager(ips, type, conf):
     for i in range(0, len(ips)):
         try:
@@ -62,9 +63,23 @@ def createStorageManager(ips, type, conf):
             logger.warning(ex)
     raise
 
+
 def getStorageServers(storageType='none'):
+    """
+    Description: This closure will be used as decorator for getting storage
+                 server information that will be used by decorated function
+    Author: lustalov
+    Parameters:
+        *  storageType - storage type, in case of none passed, storageType
+                         will be selected between nfs and gluster according to
+                         data_center_type that passed to decorated function
+    It is:
+        - adding corresponding storage api object to self.storages[storageType]
+        - adding corresponding storage provider ip to corresponding data type.
+    """
     def outwrap(f):
         setattr(f, 'storageType', storageType)
+
         @wraps(f)
         def wrapper(self, *args, **kwargs):
             if self.load_balancing:
@@ -95,6 +110,7 @@ def getStorageServers(storageType='none'):
             return f(self, *args, **kwargs)
         return wrapper
     return outwrap
+
 
 def processConfList(confList):
     '''
@@ -177,6 +193,7 @@ def createHostGroupName(vdc):
     except Exception as e:
         raise CreateHostGroupNameException(e)
 
+
 def getStorageServer(type, load_balancing, conf=None, servers=None):
     '''
     Get less used storage server(less used disk space + cpu load)
@@ -222,7 +239,7 @@ class StorageUtils:
         self.load_balancing = False
         self.serverPool = None
         self.storageConfigFile = storageConfig
-
+        self.vfs_type = config['PARAMETERS']['vfs_type']
         self.storages = {'gluster': {},
                          'nfs':     {},
                          'iscsi':   {},
@@ -239,7 +256,7 @@ class StorageUtils:
         numOfVds = len(vdsServers)
         numOfPassw = len(vdsPasswords)
         if numOfPassw < numOfVds:
-            addPasswords = [vdsPasswords[0]] * (numOfVds-numOfPassw)
+            addPasswords = [vdsPasswords[0]] * (numOfVds - numOfPassw)
             vdsPasswords.extend(addPasswords)
 
         if self.data_center_type == 'iscsi' or self.data_center_type == 'none':
@@ -418,9 +435,16 @@ class StorageUtils:
             self._storageSetupSAN()
             self._storageSetupDAS()
 
-        elif self.data_center_type == 'nfs' or\
-           self.data_center_type == 'posixfs':
+        elif self.data_center_type == 'nfs':
             self._storageSetupNAS(self.data_center_type)
+
+        elif self.data_center_type == 'posixfs' and self.vfs_type == 'nfs':
+            self._storageSetupNAS('posixfs')
+            self._storageSetupNAS('nfs')
+
+        elif self.data_center_type == 'posixfs' and \
+                self.vfs_type == 'glusterfs':
+            self._storageSetupNAS('posixfs')
 
         elif self.data_center_type == 'iscsi':
             self._storageSetupSAN()
