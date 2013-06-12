@@ -155,26 +155,28 @@ class SetupManager(object):
         return machine
 
     def createSnapshotWrapper(self, vm_name, snapshot_desc):
-	"""
-	Creates snapshot of machine
-	Parameters:
-	* vm_name - VM name
-	* snapshot_desc - name of snapshot
-	"""
+        """
+        Creates snapshot of machine
+        Parameters:
+         * vm_name - VM name
+         * snapshot_desc - name of snapshot
+        """
         rc = addSnapshot(True, vm_name, snapshot_desc, True)
         if not rc:
-            raise errors.AddSnapshotFailure("Create snapshot %s from vm %s" % snapshot_desc, vm_name)
+            raise errors.AddSnapshotFailure("Create snapshot %s from vm %s" %
+                                            (snapshot_desc, vm_name))
 
     def restoreSnapshotWrapper(self, vm_name, snapshot_desc):
-	"""
-	Restores to snapshot
-	Parameters:
-	* vm_name - VM name
-	* snapshot_desc - name of snapshot
-	"""
+        """
+        Restores to snapshot
+        Parameters:
+         * vm_name - VM name
+         * snapshot_desc - name of snapshot
+        """
         rc = restoreSnapshot(True, vm_name, snapshot_desc, ensure_vm_down=True)
         if not rc:
-            raise errors.RestoreSnapshotFailure("Restore snapshot %s for vm %s" % snapshot_desc, vm_name)
+            raise errors.RestoreSnapshotFailure("Restore snapshot %s for vm %s"
+                                                % (snapshot_desc, vm_name))
 
     def getIp(self, machine):
         """
