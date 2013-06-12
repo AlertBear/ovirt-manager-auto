@@ -36,6 +36,8 @@ from art.rhevm_api.tests_lib.low_level.storagedomains import createDatacenter
 from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api import is_action
 from art.test_handler.settings import opts
+from art.rhevm_api.utils.test_utils import checkTraffic
+from utilities.jobs import Job, JobsSet
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 
@@ -474,3 +476,116 @@ def deleteDummyInterface(host, username, password):
         return False
 
     return True
+
+
+class TrafficMonitor(object):
+    '''
+    A context manager for capturing traffic while concurrently running other
+    functions. The traffic is captured using the 'checkTraffic' function
+    while running the other functions with it.
+
+    Example usage:
+
+    with TrafficMonitor(machine='navy-vds1.qa.lab.tlv.redhat.com',
+                        user='root', password='qum5net', nic='eth0',
+                        src='10.35.128.1', dst='10.35.128.2',
+                        protocol='icmp', numPackets=5) as monitor:
+
+        monitor.addTask(sendICMP, host='10.35.128.1', user='root',
+                        password='qum5net', ip='10.35.128.2')
+
+    self.assertTrue(monitor.getResult())
+
+    **Author**: tgeft
+    '''
+
+    def __init__(self, expectedRes=True, timeout=100, *args, **kwargs):
+        '''
+        Sets the parameters for capturing the traffic with the 'checkTraffic'
+        function.
+
+        **Parameters**:
+            *  *expectedRes* - A boolean to indicate if traffic is expected
+            *  *timeout* - Timeout for the total duration of the capture and
+                           the functions that run with it.
+            *  *args* - The positional arguments to be passed to 'checkTraffic'
+                        (for example: machine, user, password, nic, src, dst)
+            *  *kwargs* - The keyword arguments to be passed to 'checkTraffic'
+                          (for example: srcPort, dstPort, protocol, numPackets)
+        '''
+        # A list that will hold all the jobs that will be executed
+        self.jobs = [self._createCapturingJob(*args, **kwargs)]
+
+        # A list that will hold the expected results of all the jobs
+        self.expectedResults = [expectedRes]
+
+        self.timeout = timeout
+
+    def addTask(self, func, expectedRes=True, *args, **kwargs):
+        '''
+        Adds a function to run while traffic is being captured.
+
+        **Parameters**:
+            *  *func* - The function to run
+            *  *expectedRes* - Expected output of 'func' (True by default)
+            *  *args* - The positional arguments to be passed to 'func'
+            *  *kwargs* - The keyword arguments to be passed to 'func'
+        '''
+        self.jobs.append(Job(func, args, kwargs))
+        self.expectedResults.append(expectedRes)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        '''
+        Run all the jobs and report the results.
+        '''
+        jobSet = JobsSet()
+        jobSet.addJobs(self.jobs)
+        jobSet.start()
+        jobSet.join(self.timeout)
+
+        result = True  # Overall result of the capture
+        for job, expectedResult in zip(self.jobs, self.expectedResults):
+            if job.exception:
+                logger.error('%s raised an exception: %s', self.__jobInfo(job),
+                             job.exception)
+                result = False
+
+            elif job.result != expectedResult:
+                logger.error('%s failed - return value: %s, expected: %s',
+                             self.__jobInfo(job), job.result, expectedResult)
+                result = False
+
+            else:
+                logger.info('%s succeeded', self.__jobInfo(job))
+
+        self.result = result
+
+    def getResult(self):
+        '''
+        Get the result of the capture.
+
+        **Return**: True if all the functions returned the expected results,
+                    False otherwise.
+        '''
+        return self.result
+
+    @staticmethod
+    def _createCapturingJob(*args, **kwargs):
+        '''
+        Returns the Job object that will capture traffic when executed (can be
+        modified for extensibility)
+        '''
+        return Job(checkTraffic, args, kwargs)
+
+    @staticmethod
+    def __jobInfo(job):
+        '''
+        Returns a string representation of the function call that the job ran
+        '''
+        args = str(job.args)[1:-1]  # Strip brackets from the arguments list
+        kwargs = '**%s' % job.kwargs if job.kwargs else ''
+        return 'Func %s(%s)' % (job.target.__name__,
+                                ', '.join(filter(None, [args, kwargs])))
