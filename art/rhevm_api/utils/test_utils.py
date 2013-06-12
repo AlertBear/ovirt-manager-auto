@@ -272,7 +272,7 @@ def startVdsmd(vds, password):
        * vds - name of the host
        * password - ssh password for the host
     '''
-    machine = Machine(vds, 'root', password).util('linux')
+    machine = Machine(vds, 'root', password).util(LINUX)
     return machine.startService('vdsmd')
 
 @is_action()
@@ -284,7 +284,7 @@ def restartVdsmd(vds, password):
        * vds - name of the host
        * password - ssh password for the host
     '''
-    machine = Machine(vds, 'root', password).util('linux')
+    machine = Machine(vds, 'root', password).util(LINUX)
     return machine.restartService('vdsmd')
 
 @is_action()
@@ -296,7 +296,7 @@ def stopVdsmd(vds, password):
        * vds - name of the host
        * password - ssh password for the host
     '''
-    machine = Machine(vds, 'root', password).util('linux')
+    machine = Machine(vds, 'root', password).util(LINUX)
     return machine.stopService('vdsmd')
 
 @is_action()
@@ -308,7 +308,7 @@ def restartNetwork(vds, password):
        * vds - name of the host
        * password - ssh password for the host
     '''
-    machine = Machine(vds, 'root', password).util('linux')
+    machine = Machine(vds, 'root', password).util(LINUX)
     return machine.restartService('network')
 
 @is_action()
@@ -330,7 +330,7 @@ def updateVmStatusInDatabase(vmName, status, vdc, vdc_pass,
     '''
     util = get_api('vm', 'vms')
     vm = util.find(vmName)
-    machine = Machine(vdc, 'root', vdc_pass).util('linux')
+    machine = Machine(vdc, 'root', vdc_pass).util(LINUX)
     cmd = ["psql", "-U", psql_username, psql_db, "-c",
             r'"UPDATE vm_dynamic SET status=%d WHERE vm_guid=\'%s\'"' %
             (status, vm.get_id())]
@@ -350,7 +350,7 @@ def setSELinuxEnforce(address, password, enforce):
               should be 0/1
     Return: (True if command executed successfuly, False otherwise)
     '''
-    machine = Machine(address, 'root', password).util('linux')
+    machine = Machine(address, 'root', password).util(LINUX)
     return machine.setSELinuxEnforce(enforce)
 
 
@@ -468,7 +468,7 @@ def yum(address, password, package, action):
      * action - yum action; install/remove/update ...
     Return: True/False
     """
-    machine = Machine(address, 'root', password).util('linux')
+    machine = Machine(address, 'root', password).util(LINUX)
     return machine.yum(package, action)
 
 
@@ -485,7 +485,7 @@ def rhevmConfig(positive, setup, user, passwd, dbuser, dbpasswd, dbname, \
     Wrapper for rhevmConfig
     """
     try:
-        machine = Machine(setup, user, passwd).util('linux')
+        machine = Machine(setup, user, passwd).util(LINUX)
         return machine.rhevmConfig(dbname=dbname, dbuser=dbuser, dbpasswd=dbpasswd, \
                                     jbossRestart=jbossRestart, **kwargs)
     except Exception:
@@ -670,7 +670,7 @@ def convertOsListToOsTypeDict(positive, osList):
         if re.search('win', os, re.I):
             osTypeDict[res['osTypeElement']] = 'windows'
         elif re.search('Linux', os, re.I):
-            osTypeDict[res['osTypeElement']] = 'linux'
+            osTypeDict[res['osTypeElement']] = LINUX
         else:
             logger.error("Only windows or linux os supported")
             return False, osTypeDict
@@ -887,7 +887,7 @@ def toggleServiceOnHost(positive, host, user, password, service, action, force="
                 service is running, false otherwise
     """
     result = False
-    machine = Machine(host, user, password).util("linux")
+    machine = Machine(host, user, password).util(LINUX)
     if machine is not None:
         if action == "status":
             return machine.isServiceRunning(service)
@@ -914,7 +914,7 @@ def isServiceRunning(positive, host, user, password, service):
                 the service is running on host or not
     """
     result = False
-    machine = Machine(host, user, password).util("linux")
+    machine = Machine(host, user, password).util(LINUX)
     if machine is not None:
         result = machine.isServiceRunning(service)
 
@@ -1030,7 +1030,7 @@ def resetMapperEntityNamesToIpAddress(entity='.+', entityName='.+', expTime=None
 
 @is_action()
 def removeFileOnHost(positive, ip, filename, user='root',
-                     password='qum5net', osType='linux'):
+                     password='qum5net', osType=LINUX):
     '''
     Description: remov file on remote host
     Author: imeerovi
@@ -1051,7 +1051,7 @@ def removeFileOnHost(positive, ip, filename, user='root',
 
 @is_action()
 def removeDirOnHost(positive, ip, dirname, user='root',
-                     password='qum5net', osType='linux'):
+                     password='qum5net', osType=LINUX):
     """
     Description: Removes file on remote machine
     Author: imeerovi
@@ -1067,7 +1067,7 @@ def removeDirOnHost(positive, ip, dirname, user='root',
     machine = Machine(ip, user, password).util(osType)
     if machine == None:
         return False
-    if osType == 'linux':
+    if osType == LINUX:
         return machine.removeFile(dirname)
     elif osType == 'windows':
         return machine.removeDir(dirname)
@@ -1170,7 +1170,7 @@ def setPersistentNetwork(host, password):
        * password - password for root user
     Return: (True if command executed successfuly, False otherwise)
     '''
-    vm_obj = Machine(host, 'root', password).util('linux')
+    vm_obj = Machine(host, 'root', password).util(LINUX)
 
     persistent_rule = "/etc/udev/rules.d/70-persistent-net.rules"
     cmd = ["cat", "/dev/null", ">", persistent_rule]
@@ -1237,7 +1237,7 @@ def runSQLQueryOnSetup(vdc, vdc_pass, query,
     Returns True and a list of the records in the query output on success
             False and an empty list on failure
     """
-    setup = Machine(vdc, 'root', vdc_pass).util('linux')
+    setup = Machine(vdc, 'root', vdc_pass).util(LINUX)
     sep = '__RECORD_SEPARATOR__'
     cmd = ['psql', '-d', psql_db, '-U', psql_username, '-R', sep, '-t', '-A', '-c', query]
     passed, out = setup.runCmd(cmd, timeout=timeout, conn_timeout=timeout)
@@ -1340,7 +1340,8 @@ def checkSpoofingFilterRuleByVer(host, user, passwd, target_version='3.2'):
       * target_version - the lower veriosn that nwfilter is enabled
     Return True for version >= 3.2 and False for <=3.1
      '''
-    host_obj = Machine(host, user, passwd).util('linux')
+
+    host_obj = Machine(host,user,passwd).util(LINUX)
     cmd = ['engine-config', '-g', 'EnableMACAntiSpoofingFilterRules']
     rc, output = host_obj.runCmd(cmd)
     ERR_MSG = 'Version {0} has incorrect nwfilter value: {1}'
@@ -1373,7 +1374,7 @@ def setNetworkFilterStatus(enable, host, user, passwd, version):
     cmd = ["rhevm-config", "-s", "EnableMACAntiSpoofingFilterRules=%s" \
                     % enable.lower(), "--cver=%s" % version]
 
-    host_obj = Machine(host, user, passwd).util('linux')
+    host_obj = Machine(host,user,passwd).util(LINUX)
     if not host_obj.runCmd(cmd)[0]:
         logger.error("Operation failed")
         return False
@@ -1418,7 +1419,7 @@ def configureTempStaticIp(host, user, password, ip, nic='eth1', netmask='255.255
        * netmask - Netmask to configure on NIC
     Return: (True if command executed successfuly, False otherwise)
     '''
-    machine_obj = Machine(host, user, password).util('linux')
+    machine_obj = Machine(host, user, password).util(LINUX)
     cmd = ["ifconfig", nic, ip, "netmask", netmask]
     rc, output = machine_obj.runCmd(cmd)
     if not rc:
@@ -1525,7 +1526,7 @@ def testMTUInScriptList(host, user, password, script_list, mtu,
         Return: True value if MTU in script list is correct
     '''
     ERR_MSG = '"MTU in {0} is {1} when the expected is {2}"'
-    machine_obj = Machine(host, user, password).util('linux')
+    machine_obj = Machine(host, user, password).util(LINUX)
     for script_name in script_list:
         rc, output = machine_obj.runCmd(['cat', script_name])
         if not rc:
@@ -1560,7 +1561,7 @@ def configureTempMTU(host, user, password, mtu, nic='eth1'):
        * nic - specific NIC to configure mtu on
     Return: (True if command executed successfuly, False otherwise)
     '''
-    machine_obj = Machine(host, user, password).util('linux')
+    machine_obj = Machine(host, user, password).util(LINUX)
     cmd = ["ifconfig", nic, "mtu", mtu]
     rc, output = machine_obj.runCmd(cmd)
     if not rc:
@@ -1585,7 +1586,7 @@ def sendICMP(host, user, password, ip='', count=5, packet_size=None):
         *  *packet_size* - testing for MTU different than default
     **Return**: True value if the function execution succeeded
     '''
-    machine_obj = Machine(host, user, password).util('linux')
+    machine_obj = Machine(host, user, password).util(LINUX)
     if packet_size:
         logger.info("Sending ping with -M do parameter")
         cmd = ["ping", "-s", str(packet_size), "-M", "do", ip,
