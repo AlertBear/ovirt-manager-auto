@@ -156,13 +156,13 @@
     <id>ba3df0c8-c695-11e1-bc9c-f0def10e0ce8</id>
     <test_name>Reinstall host</test_name>
     <test_action>installHost</test_action>
-    <parameters>host='{vds[0]}', root_password='{vds_password[0]}'</parameters>
+    <parameters>host='{vds[0]}', root_password='{vds_password[0]}', iso_image='{iso_image[0]}'</parameters>
     <positive>TRUE</positive>
-    <run>if(not('{rhevh}' == 'True'))</run>
+    <run>yes</run>
     <tcms_test_case>275961</tcms_test_case>
-    <!-- <vital>TRUE</vital> -->
+    <vital>TRUE</vital>
     <conf>headers={'Correlation-Id': 107}</conf>
-    <exp_events>24</exp_events>
+    <exp_events>24,10,1</exp_events>
   </test_case>
   <test_case>
     <id>ba3df2c6-c695-11e1-bc9c-f0def10e0ce8</id>
@@ -170,7 +170,7 @@
     <test_action>deactivateHost</test_action>
     <parameters>host='{vds[0]}'</parameters>
     <positive>TRUE</positive>
-    <run>if(not('{rhevh}' == 'True'))</run>
+    <run>yes</run>
     <tcms_test_case>275960</tcms_test_case>
     <conf>headers={'Correlation-Id': 108}</conf>
   </test_case>
@@ -198,7 +198,7 @@
     <test_action>installHost</test_action>
     <parameters>host='{vds[0]}', root_password='{vds_password[0]}'</parameters>
     <positive>FALSE</positive>
-    <run>if(not('{rhevh}' == 'True'))</run>
+    <run>yes</run>
     <tcms_test_case>275964</tcms_test_case>
   </test_case>
   <test_case>

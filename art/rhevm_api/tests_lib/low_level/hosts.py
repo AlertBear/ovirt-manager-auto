@@ -615,21 +615,24 @@ def deactivateHost(positive, host, expected_status=ENUMS['host_state_maintenance
 
 
 @is_action()
-def installHost(positive, host, root_password, override_iptables='false'):
+def installHost(positive, host, root_password,
+                iso_image=None, override_iptables='false'):
     '''
     Description: run host installation
     Author: edolinin, atal
     Parameters:
        * host - name of a host to be installed
        * root_password - password of root user
+       * iso_image - iso image for rhevh installation
        * override_iptables - override iptables. gets true/false strings.
     Return: status (True if host was installed properly, False otherwise)
     '''
 
     hostObj = HOST_API.find(host)
     status = HOST_API.syncAction(hostObj, "install", positive,
-                             root_password=root_password,
-                             override_iptables=override_iptables.lower())
+                                 root_password=root_password,
+                                 image=iso_image,
+                                 override_iptables=override_iptables.lower())
     if not status:
         return False
 
@@ -1854,23 +1857,6 @@ def getOsInfo(host, root_password=''):
         return False, {'osName': None}
 
     return True, {'osName': osName}
-
-
-@is_action()
-def reinstallOvirt(positive, host, image='rhev-hypervisor.iso'):
-    '''
-    Description: get OS info wrapper.
-    Author: atal
-    Parameters:
-        * host - host name
-        * image - ovirt iso under /usr/share/rhev-hypervisor/
-    Return: True if success, False otherwise
-    '''
-    host_obj = HOST_API.find(host)
-    status = HOST_API.syncAction(host_obj, "install", positive, image=image)
-
-    testHostStatus = HOST_API.waitForElemStatus(host_obj, "up", 800)
-    return status and testHostStatus
 
 
 def getClusterCompatibilityVersion(positive, cluster):
