@@ -89,7 +89,8 @@ class TestAction(object):
             if not name:
                 name = self.name
         else:
-            raise ActionDiscoveryError("%s: %s is not callable" % (func, type(func)))
+            raise ActionDiscoveryError("%s: %s is not callable" %
+                                       (self._func, type(self._func)))
         return name
 
     def __call__(self, *args, **kwargs):
