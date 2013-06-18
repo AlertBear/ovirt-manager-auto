@@ -449,8 +449,11 @@ def addHost(positive, name, wait=True, vdcPort=None, rhel_like=True,
     if osType.lower().find('hypervisor') == -1 or rhel_like:
         host = Host(name=name, cluster=hostCl, address=host_address,
                     reboot_after_installation=reboot, **kwargs)
-        if reboot is False:
-            cleanHostStorageSession(hostObj)
+        # cleanup host storage sessions and qemus from previous runs
+        # since host are not rebooted
+        cleanHostStorageSession(hostObj)
+        killProcesses(hostObj, 'qemu')
+
         host, status = HOST_API.create(host, positive)
 
         if not wait:
@@ -2175,3 +2178,31 @@ def cleanHostStorageSession(hostObj, **kwargs):
         res, out = hostObj.runCmd(cmd)
         if not res:
             HOST_API.logger.info(str(out))
+
+def killProcesses(hostObj, procName, **kwargs):
+    '''
+    Description: pkill procName
+
+    **Author**: talayan
+    **Parameters**:
+      **hostObj* - Object represnts the hostObj
+      **procName* - process to kill
+    '''
+#   check if there is zombie qemu proccess
+    pgrep_proc = ['pgrep', procName]
+    HOST_API.logger.info("Run %s to check there are running processes.."
+                         % " ".join(pgrep_proc))
+    res, out = hostObj.runCmd(pgrep_proc)
+    if not res:
+        HOST_API.logger.info("Run %s Res: %s",
+                             " ".join(pgrep_proc), out)
+        return
+
+    HOST_API.logger.info("performing: pkill %s" % procName)
+
+    pkill_proc = ['pkill', procName]
+
+    HOST_API.logger.info("Run %s" % " ".join(pkill_proc))
+    res, out = hostObj.runCmd(pkill_proc)
+    if not res:
+        HOST_API.logger.info(str(out))
