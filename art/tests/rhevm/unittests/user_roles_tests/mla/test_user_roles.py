@@ -1,317 +1,369 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
-# Copyright (c) 2012 Red Hat, Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#           http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
 
 __test__ = True
 
 from user_roles_tests import config, common
-from user_roles_tests import states, roles
+from user_roles_tests.roles import role
 from nose.tools import istest
-from functools import wraps
-from unittest2 import SkipTest
-from ovirtsdk.xml import params
-from ovirtsdk.infrastructure import errors
+from unittest import TestCase
+
+from art.test_handler.tools import bz, tcms
+from art.rhevm_api.tests_lib.low_level import \
+    users, vms, disks, vmpools, templates, mla
 
 import logging
-import unittest2 as unittest
 
-try:
-    from art.test_handler.tools import bz
-except ImportError:
-    from user_roles_tests.common import bz
+LOGGER = logging.getLogger(__name__)
 
-try:
-    from art.test_handler.tools import tcms
-except ImportError:
-    from user_roles_tests.common import tcms
-
-LOGGER  = common.logging.getLogger(__name__)
-API     = common.API
-
-# Names of created objects. Should be removed at the end of this test module
-# and not used by any other test module.
-VM_NAME = 'user_roles__vm'
-VM_NO_DISK = 'user_roles__vm_nodisk'
-TEMPLATE_NAME = 'user_roles__template'
-TEMPLATE_NO_DISK = 'user_roles__template_nodisk'
-DISK_NAME = 'user_roles__disk'
-VMPOOL_NAME = 'user_roles__vmpool'
-
-ROLE_USER_NAME = 'user_roles__roleUserName'
-ROLE_ADMIN_NAME = 'user_roles__roleAdminName'
 INVALID_CHARS = '&^$%#*+/\\`~\"\':?!()[]}{=|><'
-
-ROLE_USER_PERMITS = API.roles.get(roles.role.UserRole).permits.list()
-ROLE_UTBVM_PERMITS = API.roles.get(roles.role.UserTemplateBasedVm).permits.list()
-ROLE_ADMIN_PERMITS = API.roles.get(roles.role.TemplateAdmin).permits.list()
-
-# Predefined role for creation of VM as non-admin user
-VM_PREDEFINED = roles.role.UserVmManager
-# Predefined role for creation of Disk as non-admin user
-DISK_PREDEFINED = roles.role.DiskOperator
-# Predefined role for creation of Template as non-admin user
-TEMPLATE_PREDEFINED = roles.role.TemplateOwner
-
 TCMS_PLAN_ID = 2597
 
-def loginAsUser(**kwargs):
-    common.loginAsUser(**kwargs)
-    global API
-    API = common.API
 
 def loginAsAdmin():
-    common.loginAsAdmin()
-    global API
-    API = common.API
+    users.loginAsUser(
+        config.OVIRT_USERNAME, config.OVIRT_DOMAIN,
+        config.OVIRT_PASSWORD, filter=False)
+
 
 def setUpModule():
-    common.addUser()
-    common.addUser(userName=config.USER_NAME2)
-    common.createVm(VM_NAME)
-    common.createVm(VM_NO_DISK, createDisk=False)
-    common.createTemplate(VM_NO_DISK, TEMPLATE_NO_DISK)
-    common.createTemplate(VM_NAME, TEMPLATE_NAME)
-    common.createVmPool(VMPOOL_NAME, TEMPLATE_NAME)
-    common.createDiskObject(DISK_NAME)
+    users.addUser(True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
+    vms.createVm(
+        True, config.VM_NO_DISK, '', cluster=config.MAIN_CLUSTER_NAME)
+    vms.createVm(
+        True, config.VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
+        storageDomainName=config.MAIN_STORAGE_NAME, size=common.GB)
+    templates.createTemplate(
+        True, vm=config.VM_NAME, name=config.TEMPLATE_NAME,
+        cluster=config.MAIN_CLUSTER_NAME)
+    templates.createTemplate(
+        True, vm=config.VM_NO_DISK, name=config.TEMPLATE_NO_DISK,
+        cluster=config.MAIN_CLUSTER_NAME)
+    vmpools.addVmPool(
+        True, name=config.VMPOOL_NAME, size=1,
+        cluster=config.MAIN_CLUSTER_NAME, template=config.TEMPLATE_NAME)
+    vms.waitForVMState('%s-%s' % (config.VMPOOL_NAME, 1), state='down')
+    disks.addDisk(
+        True, alias=config.DISK_NAME, interface='virtio', format='cow',
+        provisioned_size=common.GB, storagedomain=config.MAIN_STORAGE_NAME)
+    disks.waitForDisksState(config.DISK_NAME)
+
 
 def tearDownModule():
     loginAsAdmin()
-    common.removeVm(VM_NAME)
-    common.removeVm(VM_NO_DISK)
-    common.deleteDisk(None, alias=DISK_NAME)
-    vmpool = API.vmpools.get(VMPOOL_NAME)
-    common.removeAllVmsInPool(VMPOOL_NAME)
-    common.removeVmPool(vmpool)
-    common.removeTemplate(TEMPLATE_NAME)
-    common.removeTemplate(TEMPLATE_NO_DISK)
-    common.removeAllUsers()
+    users.removeUser(True, config.USER_NAME)
+    vms.removeVm(True, config.VM_NAME)
+    vms.removeVm(True, config.VM_NO_DISK)
+    disks.deleteDisk(True, config.DISK_NAME)
+    disks.waitForDisksGone(True, config.DISK_NAME)
+    vmpools.detachVms(True, config.VMPOOL_NAME)
+    import time;time.sleep(20)
+    vms.removeVm(True, '%s-%s' % (config.VMPOOL_NAME, 1))
+    vmpools.removeVmPool(True, config.VMPOOL_NAME)
+    templates.removeTemplate(True, config.TEMPLATE_NAME)
+    templates.removeTemplate(True, config.TEMPLATE_NO_DISK)
 
-class RolesTests(unittest.TestCase):
-    """ Tests that will be run for each role in VM_ROLES """
+
+class RoleCase54413(TestCase):
+    """
+    Check that only users which are permitted to create role, can create role.
+    """
     __test__ = True
 
-    def setUp(self):
-        loginAsAdmin()
-
-    def _checkPredefinedPermissions(self, obj, predefined):
-        """
-        Check if on object obj was created predefined permissions predefined
-
-        obj        - object to check
-        predefined - predefined permissions on object
-        """
-        b = False
-        for perm in obj.permissions.list():
-            role_name = API.roles.get(id=perm.get_role().get_id()).get_name()
-            b = b or role_name == predefined
-        return not b
-
-    # Try to clone role
-    # Clone was deleted from API
-    # So using get -> add
-    @tcms(TCMS_PLAN_ID, 54403)
-    def testCloneRole(self):
-        """ Clone role """
-        common.addRole(ROLE_USER_NAME, roles.role.UserRole)
-        common.deleteRole(ROLE_USER_NAME)
-
-    # Check that only user that has permission to perform action "creatre role"
-    # can create new role ,both Admin and User
     @tcms(TCMS_PLAN_ID, 54413)
-    def testCreateRolePerms(self):
-        """ CreateRolePermissions """
-        for role in API.roles.list():
-            if not 'login' in [p.get_name() for p in role.permits.list()]:
-                LOGGER.info("Role %s not tested because can't login." % role.get_name())
+    @istest
+    def createRolePerms(self):
+        """ Check if user can add/del role if he has permissions for it """
+        cantLogin = "Role %s not tested, because don't have login permissions."
+
+        for role in mla.util.get(absLink=False):
+            rolePermits = mla.util.getElemFromLink(
+                role, link_name='permits', attr='permit', get_href=False)
+            if not 'login' in [p.get_name() for p in rolePermits]:
+                LOGGER.info(cantLogin % role.get_name())
                 continue
 
-            common.addRoleToUser(role.get_name())
+            self.assertTrue(
+                users.addRoleToUser(True, config.USER_NAME, role.get_name()))
             LOGGER.info("Testing if role %s can add new role." % role.get_name())
-            l = [r.get_name() for r in role.get_permits().list()]
-            loginAsUser(filter_=False if role.administrative else True)
+            l = [r.get_name() for r in rolePermits]
+            users.loginAsUser(
+                config.USER_NAME, config.USER_DOMAIN, config.USER_PASSWORD,
+                filter=(False if role.administrative else True))
             if 'manipulate_roles' in l:
-                common.addRole(ROLE_USER_NAME, roles.role.UserRole)
-                common.deleteRole(ROLE_USER_NAME)
-                common.addRole(ROLE_ADMIN_NAME, roles.role.TemplateAdmin,
-                        administrative=True)
-                common.deleteRole(ROLE_ADMIN_NAME)
+                self.assertTrue(
+                    mla.addRole(True, name=config.USER_ROLE, permits='login'))
+                self.assertTrue(mla.removeRole(True, config.USER_ROLE))
+                self.assertTrue(mla.addRole(True, name=config.ADMIN_ROLE,
+                                            permits='login', administrative='true'))
+                self.assertTrue(mla.removeRole(True, config.ADMIN_ROLE))
                 LOGGER.info("%s can manipulate with roles." % role.get_name())
             else:
-                self.assertRaises(errors.RequestError,
-                        common.addRole, ROLE_USER_NAME, roles.role.UserRole)
-                self.assertRaises(errors.RequestError,
-                        common.addRole, ROLE_ADMIN_NAME, roles.role.TemplateAdmin)
+                self.assertTrue(
+                    mla.addRole(False, name=config.USER_ROLE, permits='login'))
+                self.assertTrue(
+                    mla.addRole(False, name=config.ADMIN_ROLE, permits='login'))
                 LOGGER.info("%s can't manipulate with roles." % role.get_name())
 
             loginAsAdmin()
-            common.removeAllRolesFromUser()
+            users.removeUser(True, config.USER_NAME)
+            users.addUser(
+                True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
+
+    @classmethod
+    def teardown_class(cls):
+        """ Recreate user """
+        loginAsAdmin()
+        users.removeUser(True, config.USER_NAME)
+        users.addUser(True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
+
+
+class RoleCase54401(TestCase):
+    """
+    Assign new role to users, check that role behave correctly after update.
+    """
+    __test__ = True
 
     @tcms(TCMS_PLAN_ID, 54401)
-    def testEditRole(self):
-        """ EditRole """
-        common.addRole(ROLE_USER_NAME, roles.role.UserTemplateBasedVm)
-        LOGGER.info("User role %s created" % ROLE_USER_NAME)
+    @istest
+    def editRole(self):
+        """ Try to update role and check if role is updated correctly """
+        mla.addRole(True, name=config.USER_ROLE, permits='login')
+        users.addUser(
+            True, user_name=config.USER_NAME2, domain=config.USER_DOMAIN)
 
         # 1. Edit created role.
-        common.updateRole(ROLE_USER_NAME, description=ROLE_USER_NAME)
-        LOGGER.info("'%s' was succcessfully editited" % ROLE_USER_NAME)
+        self.assertTrue(mla.updateRole(
+            True, config.USER_ROLE, description=config.USER_ROLE))
         # 2.Create several users and associate them with certain role.
-        common.addRoleToUser(ROLE_USER_NAME)
-        LOGGER.info("Added role '%s' to user '%s'" % (ROLE_USER_NAME, config.USER_NAME))
-        common.addRoleToUser(ROLE_USER_NAME, userName=config.USER_NAME2)
-        LOGGER.info("Added role '%s' to user '%s'" % (ROLE_USER_NAME, config.USER_NAME2))
+        self.assertTrue(users.addRoleToUser(
+            True, config.USER_NAME, config.USER_ROLE))
+        self.assertTrue(users.addRoleToUser(
+            True, config.USER_NAME2, config.USER_ROLE))
         # 3.Create a new user and associate it with the role.
-        common.addUser(userName=config.USER_NAME3)
-        common.addRoleToUser(ROLE_USER_NAME, userName=config.USER_NAME3)
-        LOGGER.info("Added role '%s' to newly created user '%s'" % (ROLE_USER_NAME, config.USER_NAME3))
+        self.assertTrue(users.addUser(
+            True, user_name=config.USER_NAME3, domain=config.USER_DOMAIN))
+        self.assertTrue(users.addRoleToUser(
+            True, config.USER_NAME3, config.USER_ROLE))
         # 4.Edit new user's role.
-        common.updateRole(ROLE_USER_NAME, permits=ROLE_USER_PERMITS)
-        LOGGER.info("User role %s updated" % ROLE_USER_NAME)
+        users.loginAsUser(
+            config.USER_NAME, config.USER_DOMAIN, config.USER_PASSWORD,
+            filter='true')
+        self.assertRaises(vms.EntityNotFound, vms.startVm, False, config.VM_NAME)
+
+        loginAsAdmin()
+        self.assertTrue(mla.addRolePermissions(
+            True, config.USER_ROLE, permit='vm_basic_operations'))
 
         # 5.Check that after editing(changing) a role effect will be immediate.
         # User should operate vm now
-        loginAsUser()
-        common.startVm(VM_NAME)
-        loginAsUser(userName=config.USER_NAME3)
-        common.stopVm(VM_NAME)
-        LOGGER.info("All users, which has '%s' role were updated" % ROLE_USER_NAME)
+        users.loginAsUser(
+            config.USER_NAME, config.USER_DOMAIN, config.USER_PASSWORD,
+            filter='true')
+        self.assertTrue(vms.startVm(True, config.VM_NAME))
+        users.loginAsUser(
+            config.USER_NAME3, config.USER_DOMAIN, config.USER_PASSWORD,
+            filter='true')
+        self.assertTrue(vms.stopVm(True, config.VM_NAME))
 
-        # clean up
+    @classmethod
+    def teardown_class(cls):
+        """ Recreate user """
         loginAsAdmin()
-        common.removeAllUsers()
-        common.addUser()
-        common.addUser(userName=config.USER_NAME2)
-        common.deleteRole(ROLE_USER_NAME)
+        users.removeUser(True, config.USER_NAME)
+        users.addUser(True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
+        users.removeUser(True, config.USER_NAME2)
+        users.removeUser(True, config.USER_NAME3)
+        mla.removeRole(True, config.USER_ROLE)
 
-    # For all user roles, there should be option to list all roles
+
+class RoleCase54415(TestCase):
+    """ Try to get list of roles as user and non-admin user """
+    __test__ = True
+
     @tcms(TCMS_PLAN_ID, 54415)
-    def testListOfRoles(self):
-        """ testListOfRoles """
-        size = len(API.roles.list())
-        for role in API.roles.list():
-            if not 'login' in [p.get_name() for p in role.permits.list()]:
-                LOGGER.info("Role %s not tested because can't login." %role.get_name())
-                continue
-            common.addRoleToUser(role.get_name())
+    @istest
+    def listOfRoles(self):
+        """ Check if user can see all roles in system """
+        msg = "Role %s is not tested because can't login."
+        roles = mla.util.get(absLink=False)
+        size = len(roles)
 
-            loginAsUser(filter_=False if role.administrative else True)
-            assert len(API.roles.list()) == size
-            LOGGER.info("Role %s can see all roles." % role.get_name())
+        for role in roles:
+            rolePermits = mla.util.getElemFromLink(
+                role, link_name='permits', attr='permit', get_href=False)
+            if not 'login' in [p.get_name() for p in rolePermits]:
+                LOGGER.info(msg % role.get_name())
+                continue
+
+            self.assertTrue(users.addRoleToUser(
+                True, config.USER_NAME, role.get_name()))
+            users.loginAsUser(
+                config.USER_NAME, config.USER_DOMAIN, config.USER_PASSWORD,
+                filter=(False if role.administrative else True))
+            self.assertEqual(len(mla.util.get(absLink=False)), size)
+            LOGGER.info("User with role %s can see all roles." % role.get_name())
 
             loginAsAdmin()
-            common.removeAllRolesFromUser()
+            self.assertTrue(users.removeUser(True, config.USER_NAME))
+            self.assertTrue(users.addUser(
+                True, user_name=config.USER_NAME, domain=config.USER_DOMAIN))
 
-    # Check if rhevm return still same predefined perms
-    @tcms(TCMS_PLAN_ID, 54411)
-    def testPredefinedRoles(self):
-        """ testPredefinedRoles """
-        l = len(API.roles.list())
-        assert len(API.roles.list()) == l
-        LOGGER.info("There are still same predefined roles")
 
-    # Test that pre-defined roles can not be removed.
-    @tcms(TCMS_PLAN_ID, 54540)
-    def testRemovePreDefinedRoles(self):
-        """ RemovePreDefinedRoles """
-        for role in API.roles.list():
-            LOGGER.info("Trying to delete '%s'" % role.get_name())
-            self.assertRaises(errors.RequestError, role.delete)
+class RoleCase54402(TestCase):
+    """ Try to remove role which is assigned to user and that is not assigned """
+    __test__ = True
 
     @tcms(TCMS_PLAN_ID, 54402)
-    def testRemoveRole(self):
-        """ RemoveRole """
-        common.addRole(ROLE_USER_NAME, roles.role.UserRole)
-        common.addRole(ROLE_ADMIN_NAME, roles.role.TemplateAdmin,
-                administrative=True)
+    @istest
+    def removeRole(self):
+        """ Try to remove roles which are associted to objects """
+        msg = "Role %s can't be removed. It is associated with user."
+        self.assertTrue(mla.addRole(True, name=config.USER_ROLE, permits='login'))
+        self.assertTrue(mla.addRole(
+            True, name=config.ADMIN_ROLE,
+            permits='login', administrative='true'))
 
-        common.givePermissionToVm(VM_NAME, ROLE_USER_NAME)
-        # 2,Try to remove role that has no association with users.
-        common.deleteRole(ROLE_ADMIN_NAME)
-        LOGGER.info("Role %s removed successfully" % ROLE_ADMIN_NAME)
-        # 1.Try to remove role that is associated with user ot users.
-        self.assertRaises(errors.RequestError, common.deleteRole,
-                ROLE_USER_NAME)
-        LOGGER.info("Role %s can't be removed" % ROLE_USER_NAME)
-        # clean Up
-        common.removeAllPermissionFromVm(VM_NAME)
-        common.deleteRole(ROLE_USER_NAME)
+        self.assertTrue(mla.addVMPermissionsToUser(
+            True, config.USER_NAME, config.VM_NAME, config.USER_ROLE))
+        # Try to remove role that has no association with users.
+        self.assertTrue(mla.removeRole(True, config.ADMIN_ROLE))
+        # Try to remove role that is associated with user.
+        self.assertTrue(mla.removeRole(False, config.USER_ROLE))
+        LOGGER.info(msg % config.USER_ROLE)
+        self.assertTrue(mla.removeUserPermissionsFromVm(
+            True, config.VM_NAME, config.USER1))
+        self.assertTrue(mla.removeRole(True, config.USER_ROLE))
+
+    @classmethod
+    def teardown_class(cls):
+        """ Recreate user """
+        users.removeUser(True, config.USER_NAME)
+        users.addUser(True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
+
+
+class RoleCase54366(TestCase):
+    """ Try to create role with illegal characters. """
+    __test__ = True
 
     @tcms(TCMS_PLAN_ID, 54366)
-    def testRoleCreation(self):
-        """ RoleCreation """
-        # Create user with user role, and user with admin role
-        # This aslso tests other cases, so it is not here anymore
-        # tests only invalid chars
+    @istest
+    def roleCreation(self):
+        """ Try to create role name with invalid characters """
         for char in INVALID_CHARS:
-            LOGGER.info("Tesing char '%s' in role name" % char)
-            self.assertRaises(errors.RequestError,
-                    common.addRole, char, roles.role.UserRole)
+            self.assertTrue(mla.addRole(False, name=char, permits='login'))
+            LOGGER.info("Role with char '%s' can't be created." % char)
+
+
+class RoleCase54540(TestCase):
+    """ Try to remove predefined roles """
+    __test__ = True
+
+    @tcms(TCMS_PLAN_ID, 54540)
+    @istest
+    def removePreDefinedRoles(self):
+        """ Test that pre-defined roles can not be removed. """
+        for role in mla.util.get(absLink=False):
+            self.assertTrue(mla.util.delete(role, False))
+            LOGGER.info("Predefined role %s can't be removed." % role.get_name())
+
+
+class RoleCase54411(TestCase):
+    """
+    Check there are some predefined roles. Names could change in future, so
+    test if engine returns still same roles.
+    """
+    __test__ = True
+
+    @tcms(TCMS_PLAN_ID, 54411)
+    @istest
+    def predefinedRoles(self):
+        """ Check if rhevm return still same predefined roles """
+        l = len(mla.util.get(absLink=False))
+        self.assertEqual(len(mla.util.get(absLink=False)), l)
+        LOGGER.info("There are still same predefined roles.")
+
+
+class RoleCase54403(TestCase):
+    """
+    There is no support to copy role in REST.
+    So testing copy role, as a get/add.
+    """
+    __test__ = True
+
+    @tcms(TCMS_PLAN_ID, 54403)
+    @istest
+    def cloneRole(self):
+        """ Clone role """
+        self.assertTrue(mla.addRole(True, name=config.USER_ROLE, permits='login'))
+        self.assertTrue(mla.removeRole(True, config.USER_ROLE))
+
+
+class RolesCase54412(TestCase):
+    """
+    Assigning a Role to a object, means that the role apply to all the
+    objects that are contained within object hierarchy.
+    """
+    __test__ = True
 
     @tcms(TCMS_PLAN_ID, 54412)
-    @bz(949950)
-    def testRolesHiearchy(self):
-        """ RolesHiearchy """
-        # HIEARCHY:
-        # System -> DC -> Sd      -> Disk
-        #              |
-        #              -> Cluster -> Host
-        #              |          -> Vm     -> VmDisk
-        #              |          -> VmPool
-        #              -> Template
-        #              -> Network
-        # Check if permissions are correctly inherited
+    @bz(949950, 977304)
+    @istest
+    def rolesHiearchy(self):
+        """ Check if permissions are correctly inherited from objects """
+
+        def checkIfObjectHasRole(obj, role):
+            objPermits = mla.permisUtil.getElemFromLink(obj, get_href=False)
+            roleNAid = users.rlUtil.find(role).get_id()
+            return roleNAid in [perm.get_role().get_id() for perm in objPermits]
+
         msg_f = "Object don't have inherited perms."
         msg_t = "Object have inherited perms."
-        common.removeAllPermissionFromObject(common.getUser())
-        l = { # objects
-                config.MAIN_CLUSTER_NAME: API.clusters,
-                config.MAIN_DC_NAME: API.datacenters,
-                config.MAIN_STORAGE_NAME: API.storagedomains,
-                VM_NAME : API.vms
-            }
-        h = { # Hierchy
-                config.MAIN_CLUSTER_NAME:
-                {config.MAIN_HOST_NAME: API.hosts, VM_NAME: API.vms,
-                    VMPOOL_NAME: API.vmpools, VM_NO_DISK: API.vms},
-                config.MAIN_STORAGE_NAME:
-                {DISK_NAME: API.disks},
-                config.MAIN_DC_NAME:
-                {config.MAIN_HOST_NAME: API.hosts, VM_NAME: API.vms,
-                    VMPOOL_NAME: API.vmpools, TEMPLATE_NAME: API.templates,
-                    VM_NO_DISK: API.vms, TEMPLATE_NO_DISK: API.templates},
-                VM_NAME:
-                {VM_NAME + '_Disk1' : API.vms.get(VM_NAME).disks}
-            }
+        l = {
+            config.MAIN_CLUSTER_NAME: vms.CLUSTER_API,
+            config.MAIN_DC_NAME: vms.DC_API,
+            config.MAIN_STORAGE_NAME: vms.STORAGE_DOMAIN_API,
+        }
+        h = {
+            config.MAIN_CLUSTER_NAME:
+                {
+                    config.MAIN_HOST_NAME: vms.HOST_API,
+                    config.VM_NAME: vms.VM_API,
+                    config.VMPOOL_NAME: vmpools.util,
+                    config.VM_NO_DISK: vms.VM_API
+                },
+            config.MAIN_STORAGE_NAME:
+                {
+                    config.DISK_NAME: vms.DISKS_API
+                },
+            config.MAIN_DC_NAME:
+                {
+                    config.MAIN_HOST_NAME: vms.HOST_API,
+                    config.VM_NAME: vms.VM_API,
+                    config.VMPOOL_NAME: vmpools.util,
+                    config.TEMPLATE_NAME: vms.TEMPLATE_API,
+                    config.VM_NO_DISK: vms.VM_API,
+                    config.TEMPLATE_NO_DISK: vms.TEMPLATE_API
+                }
+        }
 
         b = False
         for k in l.keys():
             LOGGER.info("Testing propagated permissions from %s" % k)
-            common.removeAllPermissionFromObject(l[k].get(k))  # Just for sure
-            common.givePermissionToObject(l[k].get(k), roles.role.UserRole)
+            mla.addUserPermitsForObj(
+                True, config.USER_NAME, role.UserRole, l[k].find(k))
             for key, val in h[k].items():
-                LOGGER.info("Checking inherited permissions for '%s'"
-                        % (val.get(key).get_name()))
-                a = self._checkPredefinedPermissions(val.get(key),
-                        roles.role.UserRole)
+                LOGGER.info("Checking inherited permissions for '%s'" % key)
+                a = not checkIfObjectHasRole(val.find(key), role.UserRole)
                 LOGGER.error(msg_f) if a else LOGGER.info(msg_t)
                 b = b or a
 
-            common.removeAllPermissionFromObject(l[k].get(k))
+            mla.removeUsersPermissionsFromObject(
+                True, l[k].find(k), [config.USER1])
 
-        common.removeUser()
-        common.addUser()
-        assert not b
+        self.assertFalse(b)
+
+    @classmethod
+    def teardown_class(cls):
+        """ Recreate user """
+        users.removeUser(True, config.USER_NAME)
+        users.addUser(True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)

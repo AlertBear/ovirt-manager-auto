@@ -2,150 +2,107 @@
 
 __test__ = False
 
-import os
-
 from . import ART_CONFIG
-from utilities.utils import readConfFile
 
-PARAMETERS = 'PARAMETERS'
+def get(lst, index, default):
+  try:
+    return lst[index]
+  except IndexError:
+    return default
 
-# server on which ovirt-engine is running.
-OVIRT_URL = '%s://%s:%s/api' % ( ART_CONFIG['REST_CONNECTION']['scheme'],
-    ART_CONFIG['REST_CONNECTION']['host'], ART_CONFIG['REST_CONNECTION']['port'])
+PARAMETERS = ART_CONFIG['PARAMETERS']
+
+OVIRT_URL = '%s://%s:%s/api' % (ART_CONFIG['REST_CONNECTION']['scheme'],
+                                ART_CONFIG['REST_CONNECTION']['host'],
+                                ART_CONFIG['REST_CONNECTION']['port'])
 OVIRT_USERNAME = str(ART_CONFIG['REST_CONNECTION']['user'])
 OVIRT_DOMAIN = str(ART_CONFIG['REST_CONNECTION']['user_domain'])
 OVIRT_PASSWORD = str(ART_CONFIG['REST_CONNECTION']['password'])
-OVIRT_VERSION = str(ART_CONFIG[PARAMETERS]['compatibility_version'])
+OVIRT_VERSION = PARAMETERS.get('compatibility_version')
 
-# main host
-HOST_ADDRESS =          str(ART_CONFIG[PARAMETERS].as_list('vds')[0])
-HOST_ROOT_PASSWORD =    str(ART_CONFIG[PARAMETERS].as_list('vds_password')[0])
-HOST_CPU_TYPE =         str(ART_CONFIG[PARAMETERS]['cpu_name'])
-HOST_NIC =              str(ART_CONFIG[PARAMETERS].as_list('host_nics')[0])
+# Hosts
+HOST_ADDRESS = get(PARAMETERS.as_list('vds'), 0, None)
+HOST_ROOT_PASSWORD = get(PARAMETERS.as_list('vds_password'), 0, None)
+HOST_CPU_TYPE = PARAMETERS.get('cpu_name')
+HOST_NIC = get(PARAMETERS.as_list('host_nics'), 0, None)
 
-# alternative host, optional for most tests
-# set to True if you want to use it
-ALT1_HOST_CPU_TYPE =      str(ART_CONFIG[PARAMETERS]['cpu_name'])
-ALT2_HOST_CPU_TYPE =      str(ART_CONFIG[PARAMETERS]['cpu_name'])
-try:
-    ALT1_HOST_ADDRESS =       str(ART_CONFIG[PARAMETERS].as_list('vds')[1])
-    ALT1_HOST_ROOT_PASSWORD = str(ART_CONFIG[PARAMETERS].as_list('vds_password')[1])
-    ALT1_HOST_AVAILABLE = True
-except IndexError:
-    ALT1_HOST_AVAILABLE = False
-    ALT1_HOST_ADDRESS = None
-    ALT1_HOST_ROOT_PASSWORD = None
+ALT1_HOST_ADDRESS = get(PARAMETERS.as_list('vds'), 1, None)
+ALT1_HOST_ROOT_PASSWORD = get(PARAMETERS.as_list('vds_password'), 1, None)
+ALT1_HOST_AVAILABLE = True
+ALT1_HOST_CPU_TYPE = PARAMETERS.get('cpu_name')
 
-try:
-    ALT2_HOST_ADDRESS =       str(ART_CONFIG[PARAMETERS].as_list('vds')[2])
-    ALT2_HOST_ROOT_PASSWORD = str(ART_CONFIG[PARAMETERS].as_list('vds_password')[2])
-    ALT2_HOST_AVAILABLE = True
-except IndexError:
-    ALT2_HOST_AVAILABLE = False
-    ALT2_HOST_ADDRESS = None
-    ALT2_HOST_ROOT_PASSWORD = None
+ALT2_HOST_ADDRESS = get(PARAMETERS.as_list('vds'), 2, None)
+ALT2_HOST_ROOT_PASSWORD = get(PARAMETERS.as_list('vds_password'), 2, None)
+ALT2_HOST_AVAILABLE = True
+ALT2_HOST_CPU_TYPE = PARAMETERS.get('cpu_name')
 
+# Networks
+NETWORK_NAME  = PARAMETERS.get('network1')
+NETWORK_NAME1 = PARAMETERS.get('network2')
+NETWORK_NAME2 = PARAMETERS.get('network3')
+NETWORK_NAME3 = PARAMETERS.get('network4')
+NETWORK_NAME4 = PARAMETERS.get('network5')
 
-# alternative data storage for some tests its needed
+# Storages
+MAIN_STORAGE_TYPE = PARAMETERS['data_center_type']
+NFS_STORAGE_ADDRESS = get(PARAMETERS.as_list('data_domain_address'), 0, None)
+NFS_STORAGE_PATH = get(PARAMETERS.as_list('data_domain_path'), 0, None)
 
-# usually 'rhevm' or 'ovirtmgmt'
-NETWORK_NAME =          'rhevm'
-NETWORK_NAME1 =          'rhevm1'
-NETWORK_NAME2 =          'rhevm2'
-NETWORK_NAME3 =          'rhevm3'
-NETWORK_NAME4 =          'rhevm4'
+ALT1_STORAGE_NAME    = PARAMETERS.get('alt1_storage_name')
+ALT1_STORAGE_ADDRESS = get(PARAMETERS.as_list('data_domain_address'), 1, None)
+ALT1_STORAGE_PATH    = get(PARAMETERS.as_list('data_domain_path'), 1, None)
+ALT1_STORAGE_AVAILABLE = True
 
-############################ STORAGE ##########################################
-# WARNING - all given storages may be formatted
+ALT2_STORAGE_NAME    = PARAMETERS.get('alt2_storage_name')
+ALT2_STORAGE_ADDRESS = get(PARAMETERS.as_list('data_domain_address'), 2, None)
+ALT2_STORAGE_PATH    = get(PARAMETERS.as_list('data_domain_path'), 2, None)
+ALT2_STORAGE_AVAILABLE = True
 
-# either NFS or iSCSI
-MAIN_STORAGE_TYPE =     'NFS'
+ISO_FILE = PARAMETERS.get('iso_file')
+ISO_ADDRESS = PARAMETERS.as_list('tests_iso_domain_address')[0]
+ISO_PATH = PARAMETERS.as_list('tests_iso_domain_path')[0]
+EXPORT_ADDRESS = PARAMETERS.as_list('export_domain_address')[0]
+EXPORT_PATH = PARAMETERS.as_list('export_domain_path')[0]
 
-# This will be used as the main storage if MAIN_STORAGE_TYPE == 'NFS'.
-# If you don't have any NFS storage, set option SKIP_NFS_TESTS to True
-# and use iSCSI only.
-# WARNING - the storage will be formatted
-NFS_STORAGE_ADDRESS = str(ART_CONFIG[PARAMETERS].as_list('data_domain_address')[0])
-NFS_STORAGE_PATH = str(ART_CONFIG[PARAMETERS].as_list('data_domain_path')[0])
+SKIP_ISCSI_TESTS = True
+LUN_ADDRESS = '10.34.63.x'
+LUN_TARGET = ''
+LUN_GUID = ''
 
-try:
-    ALT1_STORAGE_NAME    = 'user_api_tests__storage2'
-    ALT1_STORAGE_ADDRESS = str(ART_CONFIG[PARAMETERS].as_list('data_domain_address')[1])
-    ALT1_STORAGE_PATH    = str(ART_CONFIG[PARAMETERS].as_list('data_domain_path')[1])
-    ALT1_STORAGE_AVAILABLE = True
-except IndexError:
-    ALT1_STORAGE_AVAILABLE = False
-    ALT1_STORAGE_NAME    = None
-    ALT1_STORAGE_ADDRESS = None
-    ALT1_STORAGE_PATH    = None
+# Users
+USER_NAME = PARAMETERS.get('user_name')
+USER_NAME2 = PARAMETERS.get('user_name2')
+USER_NAME3 = PARAMETERS.get('user_name3')
+USER_DOMAIN = PARAMETERS.get('user_domain2')
+USER_PASSWORD = PARAMETERS.get('user_password')
 
-try:
-    ALT2_STORAGE_NAME    = 'user_api_tests__storage3'
-    ALT2_STORAGE_ADDRESS = str(ART_CONFIG[PARAMETERS].as_list('data_domain_address')[2])
-    ALT2_STORAGE_PATH    = str(ART_CONFIG[PARAMETERS].as_list('data_domain_path')[2])
-    ALT2_STORAGE_AVAILABLE = True
-except IndexError:
-    ALT2_STORAGE_AVAILABLE = False
-    ALT2_STORAGE_NAME    = None
-    ALT2_STORAGE_ADDRESS = None
-    ALT2_STORAGE_PATH    = None
+USER1 = PARAMETERS.get('user1')
+USER2 = PARAMETERS.get('user2')
+USER3 = PARAMETERS.get('user3')
+USER = USER1
 
+GROUP_USER = PARAMETERS.get('group_user')
+GROUP_NAME = PARAMETERS.get('group_name')
 
-# This will be used as the main storage if MAIN_STORAGE_TYPE == 'iSCSI'
-# If you don't have any iSCSI storage, set option SKIP_ISCSI_TESTS to True
-# and use NFS only.
-SKIP_ISCSI_TESTS =      True
-LUN_ADDRESS =           '10.34.63.x'
-LUN_TARGET =            ''
-LUN_GUID =              ''
+# Misc
+SKIP_MAIN_SETUP = False
+SKIP_MAIN_TEARDOWN = False
 
-# ISO file
-ISO_FILE = 'en_windows_xp_professional_with_service_pack_3_x86_cd_vl_x14-73974.iso'
+MAIN_DC_NAME = PARAMETERS.get('dc_name')
+MAIN_CLUSTER_NAME = PARAMETERS.get('cluster_name')
+MAIN_HOST_NAME = PARAMETERS.get('host_name')
+MAIN_STORAGE_NAME = PARAMETERS.get('storage_name')
 
-# WARNING - the storage will be formatted
-ISO_ADDRESS = str(ART_CONFIG[PARAMETERS].as_list('tests_iso_domain_address')[0])
-ISO_PATH = str(ART_CONFIG[PARAMETERS].as_list('tests_iso_domain_path')[0])
+TIMEOUT = 60*2
+HOST_INSTALL_TIMEOUT = 90*10
 
-# WARNING - the storage will be formatted
-EXPORT_ADDRESS = str(ART_CONFIG[PARAMETERS].as_list('export_domain_address')[0])
-EXPORT_PATH = str(ART_CONFIG[PARAMETERS].as_list('export_domain_path')[0])
-
-###############################################################################
-USER_NAME =             'userportal1'
-USER_NAME2 =            'userportal2'
-USER_NAME3 =            'userportal3'
-USER_DOMAIN =           'qa.lab.tlv.redhat.com'
-USER_PASSWORD =         '123456'
-
-USER = '%s@%s' %(USER_NAME, USER_DOMAIN)
-USER2 = '%s@%s' %(USER_NAME2, USER_DOMAIN)
-USER3 = '%s@%s' %(USER_NAME3, USER_DOMAIN)
-
-GROUP_USER = 'q-student'
-GROUP_NAME = 'qa.lab.tlv.redhat.com/Users/q-Students'
-
-############################ OPTIONS ##########################################
-
-# If both SKIP_MAIN_SETUP and SKIP_MAIN_TEARDOWN are False, the script will
-# create the main data center, cluster and host at the start of the test and
-# remove them at the end.
-# If both are set to True, the script will assume that the main data center,
-# cluster and host are already created with the names specified here and will
-# not remove them at the end.
-# See setUpPackage() and tearDownPackage() in __init__.py
-SKIP_MAIN_SETUP =       False
-SKIP_MAIN_TEARDOWN =    False
-
-# Names of main objects that are created at the start of the test (only once)
-# and removed at the end.
-MAIN_DC_NAME =          'user_api_tests__dc'
-MAIN_CLUSTER_NAME =     'user_api_tests__cluster'
-MAIN_HOST_NAME =        'user_api_tests__host'
-MAIN_STORAGE_NAME =     'user_api_tests__storage'
-
-# How many seconds to wait for storage or a VM to reach a state before making
-# the test fail.
-TIMEOUT =               60*2
-# How many seconds to wait for the host installation and reboot before making
-# the tests fail.
-HOST_INSTALL_TIMEOUT =  90*10
+# Objects
+DISK_NAME = PARAMETERS.get('disk_name')
+VM_NAME = PARAMETERS.get('vm_name')
+VM_NO_DISK = PARAMETERS.get('vm_no_disk')
+TEMPLATE_NAME = PARAMETERS.get('template_name')
+TEMPLATE_NO_DISK = PARAMETERS.get('template_no_disk')
+VMPOOL_NAME = PARAMETERS.get('vmpool_name')
+SNAPSHOT_DEF = PARAMETERS.get('def_snap_desc')
+USER_ROLE = PARAMETERS.get('role_user_name')
+ADMIN_ROLE = PARAMETERS.get('role_admin_name')
