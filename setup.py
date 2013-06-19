@@ -56,7 +56,7 @@ DEPS = [
         'python-tpg',
         'python-dateutil',
         'python-pip',
-        'art-utilities',
+        'art-utilities = %s' % VERSION,
         'python-configobj >= 4.7.2',
         ]
 if sys.version_info[0] == 2 and sys.version_info[1] < 7:

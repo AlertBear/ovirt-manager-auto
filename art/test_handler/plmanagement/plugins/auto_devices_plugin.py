@@ -151,6 +151,7 @@ class AutoDevices(Component):
         params['description'] = 'Storage provisioning plugin for ART'
         params['long_description'] = 'Plugin for ART which provides '\
                 'Storage provisioning functionality.'
+        # FIXME: Can not set version for art-storage-api
         params['requires'] = ['art-storage-api', 'pysnmp']
         params['py_modules'] = ['art.test_handler.plmanagement.plugins.auto_devices_plugin',
                 'art.test_handler.plmanagement.plugins.storage']

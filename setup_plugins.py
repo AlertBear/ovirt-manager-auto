@@ -47,7 +47,7 @@ def check_params(params):
         if re.match('^art$', dep):
             break
     else:
-        params['requires'].append('art')
+        params['requires'].append('art = %s' % VERSION)
     #if 'release' not in params:
     #    params['release'] = RELEASE
     # NOTE: currently we want to have same version and release for all packages

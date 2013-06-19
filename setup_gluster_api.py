@@ -4,26 +4,25 @@ import os
 from utilities.setup_utils import setup
 from utilities.setup_utils import common
 
+RELEASE = os.environ.get('RELEASE', '1')
+VERSION = os.environ.get('VERSION', "1.0.0")
+CHANGELOG = os.environ.get('CHANGELOG', None)
+
 RPM_NAME = 'art-tests-gluster-api'
 PACKAGE_NAME = 'gluster_api'
 DESCRIPTION = "TODO: put some description here"
 DEPS = [
         # REQUIRES
-        'art',
+        'art = %s' % VERSION,
         'python >= 2.6',
         'python-lxml',
         'python-pip',
-        'art-utilities',
-        'art-tests-rhevm-api',
+        'art-tests-rhevm-api = %s' % VERSION,
         ]
 
 PIP_DEPS = [
         'generateDS', # not used yet
         ]
-
-RELEASE = os.environ.get('RELEASE', '1')
-VERSION = os.environ.get('VERSION', "1.0.0")
-CHANGELOG = os.environ.get('CHANGELOG', None)
 
 SUB_MODULES = [
                 'gluster_api',
