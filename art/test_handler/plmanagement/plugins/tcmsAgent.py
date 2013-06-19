@@ -1007,32 +1007,43 @@ class TcmsAgent(object):
 
     def __handleMappedCase(self, params):
         """
-            Handle ATOM test case (iteration) which is mapped to TCMS TestCase(s).
+            Handle ATOM test case (iteration) which is mapped to TCMS
+                   TestCase(s).
             Author: mbenenso
             Parameters:
-            * params - see iterationInfo() method for detailed list of parameters
-            Return: a list with TestCase ID(s) on success, an empty list otherwise
+            * params - see iterationInfo() method for detailed list of
+                       parameters
+            Return: a list with TestCase ID(s) on success, an empty list
+                    otherwise
         """
         cases = []
+        is_automated = self._toStringWithOptions("is_automated", "2")
         for id in params['test_case_id']:
             if self.atomicTest:
                 # Check if TestCase is indeed attached to the current TestPlan
                 if self._isTestCaseAttachedToPlan(id, self.planId):
-                    cases.append(self._fromCache(eTcmsEntity.TestCase, id, 'id'))
+                    cases.append(self._fromCache(eTcmsEntity.TestCase, id,
+                                                 'id'))
+                    self._update(eTcmsEntity.TestCase, id,
+                                 self._toDictionary(is_automated))
                 else:
-                    msg = "TestCase with ID {0} is not attached to TestPlan with ID {1}"
+                    msg = "TestCase with ID {0} is not attached to"\
+                          "TestPlan with ID {1}"
                     self.logger.error(msg.format(id, self.planId))
             else:
                 if not self._fromCache(eTcmsEntity.TestCase, id):
                     # We are going to re-use an existing TestCases written by
                     # manual team to avoid TestCase duplication in TCMS,
-                    # the following line will link an existing TestCase to the current TestPlan
-                    msg = "linking an existing TestCase with ID {0} to the TestPlan with ID {1}"
+                    # the following line will link an existing TestCase to the
+                    # current TestPlan
+                    msg = "linking an existing TestCase with ID {0} to the" \
+                          "TestPlan with ID {1}"
                     self.logger.info(msg.format(id, self.planId))
                     self._runCommand("TestCase.link_plan", id, self.planId)
-                    # Update "Automated" property of the TestCase to both: "Manual" and "Auto"
+                    # Update "Automated" property of the TestCase to both:
+                    # "Manual" and "Auto"
                     self._update(eTcmsEntity.TestCase, id,
-                                self._toDictionary(self._toStringWithOptions("is_automated", "2")))
+                                 self._toDictionary(is_automated))
 
                 cases.append(id)
 
