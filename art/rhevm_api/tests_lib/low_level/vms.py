@@ -153,17 +153,23 @@ def _prepareVmObject(**kwargs):
         vm.set_cpu(cpu)
 
     # os options
+    apply_os = False
     os_type = kwargs.pop('os_type', None)
-    if os_type != None:
+    if os_type is not None:
         os_type = ENUMS.get(os_type.lower(), os_type.lower())
+        apply_os = True
     os = data_st.OperatingSystem(type_=os_type)
     for opt_name in 'kernel', 'initrd', 'cmdline':
         opt_val = kwargs.pop(opt_name, None)
-        setattr(os, opt_name, opt_val)
-    boot_seq = kwargs.pop('boot', 'hd' if add else None)
+        if opt_val:
+            apply_os = True
+            setattr(os, opt_name, opt_val)
+    boot_seq = kwargs.pop('boot', None)
     if boot_seq:
         boot_seq = boot_seq.split()
         os.set_boot([data_st.Boot(dev=boot_dev) for boot_dev in boot_seq])
+        apply_os = True
+    if apply_os:
         vm.set_os(os)
 
     # type

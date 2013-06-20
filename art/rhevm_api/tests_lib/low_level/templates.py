@@ -102,6 +102,10 @@ def _prepareTemplateObject(**kwargs):
         sd = SD_API.find(storagedomain)
         templ.set_storage_domain(StorageDomain(id=sd.get_id()))
 
+    protected = kwargs.pop('protected', None)
+    if protected is not None:
+        templ.set_delete_protected(protected)
+
     return templ
 
 
@@ -122,6 +126,7 @@ def createTemplate(positive, wait=True, timeout=CREATE_TEMPLATE_TIMEOUT, **kwarg
        * type - template type
        * wait - wait untill end of creation of template (true) or exit without waiting (false)
        * storagedomain - name of storagedomain
+       * protected - if template is delete protected
     Return: status (True if template was added properly, False otherwise)
     '''
 
@@ -148,6 +153,7 @@ def updateTemplate(positive, template, **kwargs):
        * cpu_cores - new number of cpu cores
        * boot - new template boot device
        * type - new template type
+       * protected - if template is delete protected
     Return: status (True if template was updated properly, False otherwise)
     '''
 
