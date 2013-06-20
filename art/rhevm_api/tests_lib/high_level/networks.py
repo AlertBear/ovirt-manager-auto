@@ -146,86 +146,105 @@ def removeMultiNetworks(positive, networks):
     return True
 
 
-def createAndAttachNetworkSN(data_center, cluster, host=[], auto_nics=[],
-                             network_dict={}):
+def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
+                             auto_nics=[], save_config=False, network_dict={}):
     '''
         Function that creates and attach the network to the:
         a) DC, b) Cluster, c) Hosts with SetupNetworks
-        Author: gcheresh
-        Parameters:
-        * data_center - DC name
-        * cluster - Cluster name
-        * host - remote machine ip address or fqdn (Can also take a list of
-                 hosts if you want to apply the same network setup on multiple
-                 hosts.)
-        * auto_nics - a list of nics
-        * network_dict - dictionary of dictionaries for the following
+        **Author**: gcheresh
+        **Parameters**:
+        *  *data_center* - DC name
+        *  *cluster* - Cluster name
+        *  *host* - list or string of remote machine ip addresses or fqdns
+        *  *auto_nics* - a list of nics
+        *  * save_config* - flag for saving configuration
+        *  *network_dict* - dictionary of dictionaries for the following
           net parameters:
-            * logical network name as the key for the following:
-                * nic - interface to create the network on
-                * usages - VM/non-VM or display network
-                * vlan_id - list of values, each value for specific network
-                * mtu - list of values, each value for specific network
-                * required - required/non-required network
-                * bond - bond name to create
-                * slaves - interfaces that the bond will be composed from
-                * mode - the mode of the bond
-        Return: True value if succeeded in creating and adding network list
-                to DC/Cluster and Host
+            logical network name as the key for the following:
+                *  *nic* - interface to create the network on
+                *  *usages* - vm or ''  value (for VM or non-VM network)
+                *  *cluster_usages* - migration and/or display
+                    (can be set on one network)
+                *  * vlan_id* - list of values, each value for specific network
+                *  * mtu* - list of values, each value for specific network
+                *  * required* - required/non-required network
+                *  * bond* - bond name to create
+                *  * slaves* - interfaces that the bond will be composed from
+                *  * mode* - the mode of the bond
+                *  * bootproto* - boot protocol (none, dhcp, static)
+                *  * address* - list of IP addresses of the network
+                     if boot is Static
+                *  * netmask* - list of netmasks of the  network
+                     if boot is Static
+                *  * gateway* - list of gateways of the network
+                     if boot is Static
+        **Returns**: True value if succeeded in creating and adding net list
+                to DC/Cluster and Host with all the parameters
     '''
     # Makes sure host_list is always a list
     host_list = [host] if isinstance(host, basestring) else host
 
     net_obj = []
-    for key in network_dict.keys():
-        logger.info("Adding network to DC")
-        bond = network_dict[key].get('bond')
-        if not addNetwork(True, name=key, data_center=data_center,
-                          usages=network_dict[key].get('usages', 'vm'),
-                          vlan_id=network_dict[key].get('vlan_id'),
-                          mtu=network_dict[key].get('mtu')):
-            logger.error("Cannot add network to DC")
-            return False
-
-        logger.info("Adding network to Cluster")
-        if not addNetworkToCluster(True, network=key, cluster=cluster,
-                                   required=network_dict[key].
-                                   get('required')):
-            logger.error("Cannot add network to Cluster")
-            return False
-
-        if host:
-            if not bond:
-                logger.info("Generating network object for SetupNetwork ")
-                rc, out = genSNNic(nic=network_dict[key]['nic'],
-                                   network=key,
-                                   vlan=network_dict[key].get('vlan_id', 0))
-                if not rc:
-                    logger.error("Cannot generate network object")
-                    return False
-                net_obj.append(out['host_nic'])
-            if bond:
-                logger.info("Generating network object for bond ")
-                rc, out = genSNBond(name=network_dict[key]['bond'],
-                                    network=key,
-                                    slaves=network_dict[key].get('slaves'),
-                                    mode=network_dict[key].get('mode'))
-                if not rc:
-                    logger.error("Cannot generate network object ")
-                    return False
-                net_obj.append(out['host_nic'])
+    for net, net_param in network_dict.items():
+        if data_center and net:
+            logger.info("Adding network to DC")
+            if not addNetwork(True, name=net, data_center=data_center,
+                              usages=net_param.get('usages', 'vm'),
+                              vlan_id=net_param.get('vlan_id'),
+                              mtu=net_param.get('mtu')):
+                logger.error("Cannot add network to DC")
+                return False
+        if cluster and net:
+            logger.info("Adding network to Cluster")
+            if not addNetworkToCluster(True, network=net, cluster=cluster,
+                                       required=net_param.
+                                       get('required'),
+                                       usages=net_param.
+                                       get('cluster_usages', None)):
+                logger.error("Cannot add network to Cluster")
+                return False
 
     for host in host_list:
+        net_obj = []
+        for net, net_param in network_dict.items():
+            address_list = net_param.get('address', [])
+            netmask_list = net_param.get('netmask', [])
+            gateway_list = net_param.get('gateway', [])
+            if 'vlan_id' in net_param:
+                net_param['nic'] = ("%s.%s") % (net_param['nic'],
+                                                net_param['vlan_id'])
+
+            rc, out = genSNNic(nic=net_param['nic'],
+                               network=net,
+                               slaves=net_param.get('slaves', None),
+                               mode=net_param.get('mode', None),
+                               boot_protocol=net_param.get
+                               ('bootproto', None),
+                               address=address_list.pop(0)
+                               if address_list else None,
+                               netmask=netmask_list.pop(0)
+                               if netmask_list else None,
+                               gateway=gateway_list.pop(0)
+                               if gateway_list else None)
+
+            if not rc:
+                logger.error("Cannot generate network object")
+                return False
+            net_obj.append(out['host_nic'])
+
         logger.info("Sending SN request to host %s" % host)
         if not sendSNRequest(True,
                              host=host,
-                             nics=net_obj[:],  # net_obj must be copied since
-                                               # sendSNRequest modifies it
+                             nics=net_obj[:],
                              auto_nics=auto_nics,
                              check_connectivity='true',
                              connectivity_timeout=60, force='false'):
             logger.error("Failed to send SN request to host %s" % host)
             return False
+        if save_config:
+            logger.info("Saving network configuration on host %s" % host)
+            if not commitNetConfig(True, host=host):
+                logger.error("Couldn't save network configuration")
 
     return True
 

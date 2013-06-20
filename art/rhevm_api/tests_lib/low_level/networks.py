@@ -181,7 +181,7 @@ def _prepareClusterNetworkObj(**kwargs):
     '''
     net = kwargs.get('net', data_st.Network())
 
-    if 'usages' in kwargs:
+    if kwargs.get('usages', None) is not None:
         net.set_usages(data_st.Usages(usage=kwargs.get('usages').split(',')))
 
     if 'required' in kwargs:
