@@ -6,7 +6,6 @@ __test__ = False
 
 from . import ART_CONFIG
 from art.test_handler.settings import opts
-from concurrent.futures import ThreadPoolExecutor
 
 TEST_NAME = "Jumbo"
 PARAMETERS = ART_CONFIG['PARAMETERS']
@@ -31,7 +30,7 @@ LUN = PARAMETERS.as_list('lun')[0]
 HOST_NICS = PARAMETERS.as_list('host_nics')
 NETWORKS = PARAMETERS.as_list('networks')
 VLAN_NETWORKS = PARAMETERS.as_list('vlan_networks')
-VLAN_ID = PARAMETERS.as_list('vlan_id')
+VLAN_ID = [201, 202, 203, 204, 205]
 BOND = PARAMETERS.as_list('bond')
 VM_NAME = PARAMETERS.as_list('vm_name')
 TEMPLATE_NAME = PARAMETERS['template_name']
