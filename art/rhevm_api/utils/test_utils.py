@@ -61,6 +61,9 @@ SYS_CLASS_NET_DIR = '/sys/class/net'
 MTU_DEFAULT_VALUE = 1500
 TASK_TIMEOUT = 300
 TASK_POLL = 5
+ENGINE_HEALTH_URL = "http://localhost/OvirtEngineWeb/HealthStatus"
+ENGINE_SERVICE = "ovirt-engine"
+
 
 
 def get_api(element, collection):
@@ -132,8 +135,8 @@ def getStat(name, elm_name, collection_name, stat_types):
     return values
 
 
-def lookingForIpAdressByEntityName(entity, ipVar="ip", nameVar="vmName", expTime=60 * 10, cache=ThreadSafeDict()):
-    """
+def lookingForIpAdressByEntityName(entity, ipVar="ip", nameVar="vmName", expTime=60*10, cache=ThreadSafeDict()):
+    '''
     Description: Decorator replaces non-defined ipVar parameter.
                  Result is cached until expTime, for continuous calling
     Parameters:
@@ -141,7 +144,7 @@ def lookingForIpAdressByEntityName(entity, ipVar="ip", nameVar="vmName", expTime
      * ipVar - name of variable represents IP for specific entity
      * nameVar - name of variable used to define entity name
      * expTime - expiration time (seconds)
-    """
+    '''
     def wrapper(f):
         if entity not in ('vms', 'hosts'):
             raise AttributeError("entity='%s' is not supported now" % entity)
@@ -1358,6 +1361,7 @@ def checkSpoofingFilterRuleByVer(host, user, passwd, target_version='3.2'):
             return False
     return True
 
+
 @is_action()
 def setNetworkFilterStatus(enable, host, user, passwd, version):
     '''
@@ -1372,7 +1376,7 @@ def setNetworkFilterStatus(enable, host, user, passwd, version):
     return: True if network filtering is disabled, False otherwise
     '''
     cmd = ["rhevm-config", "-s", "EnableMACAntiSpoofingFilterRules=%s" \
-                    % enable.lower(), "--cver=%s" % version]
+           % enable.lower(), "--cver=%s" % version]
 
     host_obj = Machine(host,user,passwd).util(LINUX)
     if not host_obj.runCmd(cmd)[0]:
@@ -1380,33 +1384,39 @@ def setNetworkFilterStatus(enable, host, user, passwd, version):
         return False
     return restartOvirtEngine(host_obj, 5, 25, 70)
 
+
 @is_action()
-def restartOvirtEngine(host_obj, interval, attemts, timeout):
+def restartOvirtEngine(host_obj, interval, attempts, timeout,
+                       engine_service=ENGINE_SERVICE,
+                       health_url=ENGINE_HEALTH_URL):
     '''
     Description: Restarting Ovirt engine
     Author: awinter
     Parameters:
       * host_obj - host object
-      * interval - Checking in "interval" time, sampling every "interval" seconds
-      * attemts - number of attents to check that ovirt is UP
+      * interval - Checking in "interval" time, sampling every "interval"
+                   seconds
+      * attempts - number of attempts to check that ovirt is UP
       * timeout - the amount of time to sleep after HealthPage is UP
     return: True if Ovirt engine was successfully restarted, False otherwise
     '''
-    if not host_obj.restartService("ovirt-engine"):
-        logger.error("restarting ovirt-engine failed")
+    if not host_obj.restartService(engine_service):
+        logger.error("restarting %s failed", engine_service)
         return False
-    for attempt in range(1, attemts):
+
+    for attempt in range(1, attempts):
         sleep(int(interval))
-        if host_obj.runCmd(["curl", "http://localhost/OvirtEngineWeb/HealthStatus"]) \
-                    [1].count("Welcome") == 1:
-           sleep(int(timeout))
-           logger.info("HealthPage is UP")
-           return True
-    logger.error("HealthPage was not up after %s attempts", num_of_attemts)
+        if host_obj.runCmd(["curl", health_url])[1].count("Welcome") == 1:
+            sleep(int(timeout))
+            logger.info("HealthPage is UP")
+            return True
+    logger.error("HealthPage was not up after %s attempts", attempts)
     return False
 
+
 @is_action()
-def configureTempStaticIp(host, user, password, ip, nic='eth1', netmask='255.255.255.0'):
+def configureTempStaticIp(host, user, password, ip, nic='eth1',
+                          netmask='255.255.255.0'):
     '''
     Configure static IP on specific interface
     Author: gcheresh
@@ -1423,7 +1433,8 @@ def configureTempStaticIp(host, user, password, ip, nic='eth1', netmask='255.255
     cmd = ["ifconfig", nic, ip, "netmask", netmask]
     rc, output = machine_obj.runCmd(cmd)
     if not rc:
-        logger.error("Failed to configure ip '%s' on machine '%s' and nic '%s'", ip, host, nic)
+        logger.error("Failed to configure ip '%s' on machine '%s' and nic"
+                     "'%s'", ip, host, nic)
         logger.error(output)
         return False
     return True
@@ -1543,7 +1554,7 @@ def testMTUInScriptList(host, user, password, script_list, mtu,
                 return False
         else:
             if int(output) != mtu:
-                logger.error(ERR_MSG.format(script_name, mtu_script, mtu))
+                logger.error(ERR_MSG.format(script_name, output, mtu))
                 return False
     return True
 
