@@ -2739,7 +2739,7 @@ def migrateVmsSimultaneously(positive, vm_name, range_low, range_high, hosts, us
         for vm in vmsObjs:
             if vm.href == VM_API.find(vm.name).host.href: # need to check if it works on SDK
                 MSG = 'VM is on same host as it was before migrating.'
-                raise MigrationError(MSG)
+                raise TestCaseError(MSG)
             logger.info('VM {0} migrated.'.format(vm.name))
 
         # Ping after.
