@@ -526,6 +526,8 @@ class StorageUtils:
                 for device in self.iscsi_devices[storageSection]:
                     self.__remove_iscsi_device(self.storages['iscsi'][\
                             storageSection]['ip'], device[lunId])
+                self.__unmap_iscsi_initiators(
+                            self.storages['iscsi'][storageSection]['ip'])
 
         for storageSection in self.storages['local']:
             if storageSection in self.local_devices.keys():
@@ -590,8 +592,8 @@ class StorageUtils:
         storageServer['is_specific'] = re.match('netapp|xtreamio',
                                         storageMngr.__class__.__name__, re.I)
         # linux TGT requires host IP instead of iqn for mapping
-        isTGT = re.search('TGT', storageMngr.__class__.__name__, re.I)
-        initiators = serversData.values() if not isTGT else serversData.keys()
+        initiators = serversData.values() if 'tgt' not in \
+            storageMngr.__class__.__name__.lower() else serversData.keys()
 
         for initiator in initiators:
             hostGroups = storageMngr.getInitiatorHostGroups(initiator)
@@ -600,8 +602,8 @@ class StorageUtils:
                     self.logger.info('Unmap initiator %s from host group %s' %
                                      (initiator, hg))
                     storageMngr.unmapInitiator(hg, initiator)
-        self.logger.info('Map initiators %s to host group %s' %
-                         (initiators, lunName))
+        self.logger.info('Map lun %s to host group %s, initiators: %s',
+                         lunId, lunName, initiators)
         storageMngr.mapLun(lunId, lunName, *initiators)
 
         if storageServer['is_specific']:
@@ -672,6 +674,33 @@ class StorageUtils:
         except:
             self.logger.info(FAIL_REMOVE_MSG.format('iscsi', deviceId,
                                                     traceback.format_exc()))
+
+    def __unmap_iscsi_initiators(self, storageServerIp):
+        '''
+        Description: cleanup iscsi initiator group -
+                     remove all the initiators from the group
+        Parameters:
+            * storageServerIp - IP of storage server
+        '''
+        storageMngr = self.getStorageManager('iscsi', storageServerIp)
+        initiators = self.vdsData.values() if 'tgt' not in \
+            storageMngr.__class__.__name__.lower() else self.vdsData.keys()
+        hostGroup = self.host_group
+        if initiators:
+            self.logger.info('Unmap initiators %s from host group %s',
+                         initiators, self.host_group)
+            if 'solaris' in storageMngr.__class__.__name__.lower():
+                # real host group name has suffix added to distinguish it
+                # from target group
+                hostGroups = storageMngr.getInitiatorHostGroups(initiators[0])
+                hostGroup = hostGroups[0]
+
+        for initiator in initiators:
+            try:
+                storageMngr.unmapInitiator(hostGroup, initiator)
+            except Exception as ex:
+                self.logger.error('Unmap initiator %s from host group %s: %s',
+                    initiator, self.host_group, ex)
 
     def __remove_local_device(self, server, password, path, username='root'):
         '''
