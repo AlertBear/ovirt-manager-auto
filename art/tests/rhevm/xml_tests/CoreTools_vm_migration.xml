@@ -68,7 +68,7 @@
 <test_case>
    <test_name>Create Data Storage Domain NFS</test_name>
    <test_action>addStorageDomain</test_action>
-   <parameters>name='{storagedomain1}', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', host='{vds[0]}', address='{data_domain_address}', path='{data_domain_path[0]}'</parameters>
+   <parameters>name='{storagedomain1}', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', host='{vds[0]}', address='{data_domain_address[0]}', path='{data_domain_path[0]}'</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}' == 'e{storage_type_nfs}')</run>
 </test_case>
