@@ -21,6 +21,7 @@ from art.core_api.apis_utils import getDS
 from art.rhevm_api.utils.test_utils import get_api, split
 from art.core_api.validator import compareElements, compareCollectionSize
 from art.core_api import is_action
+from art.test_handler.settings import opts
 
 ELEMENT = 'user'
 COLLECTION = 'users'
@@ -205,3 +206,21 @@ def deleteGroup(positive, group_name):
     '''
     groupObj = groupUtil.find(group_name)
     return util.delete(groupObj, positive)
+
+
+def loginAsUser(user, domain, password, filter):
+    """
+    Login as user. User will be used in next REST API call.
+    Parameters:
+     * user - name of user
+     * domain - domain of user
+     * password - password of user
+     * filter - true if user has non-admin role, false if user has admin role
+    """
+    msg = "Logged in as %s@%s(filter=%s)"
+    global opts
+    opts['headers']['Filter'] = str(filter)
+    opts['user'] = user
+    opts['user_domain'] = domain
+    opts['password'] = password
+    util.logger.info(msg % (user, domain, filter))
