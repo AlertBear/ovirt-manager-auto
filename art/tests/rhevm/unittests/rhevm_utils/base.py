@@ -358,7 +358,8 @@ class RHEVMUtilsTestCase(unittest.TestCase):
 
         # Following if statment is temporary, till all tools tests will move to
         # running on local machine, instead of on remote
-        arr = ['setup', 'cleanup', 'iso-uploader'] if cls.installation == 'true' else ['iso-uploader']
+        arr = ['setup', 'cleanup', 'iso-uploader', 'log_collector'] \
+           if cls.installation == 'true' else ['iso-uploader', 'log_collector']
         if cls.utility in arr:
             if not prepareVmWithRhevm(True, hosts, cpuName, username, password,
                    datacenter, storage_type, cluster, data_domain_address,
@@ -396,7 +397,8 @@ class RHEVMUtilsTestCase(unittest.TestCase):
             if cls.utility in ['setup', 'cleanup']:
                 cls.manager.releaseSetup(cls.utility)
 
-        arr = ['setup', 'cleanup', 'iso-uploader'] if cls.installation == 'true' else ['iso-uploader']
+        arr = ['setup', 'cleanup', 'iso-uploader', 'log_collector'] \
+           if cls.installation == 'true' else ['iso-uploader', 'log_collector']
         if cls.utility in arr:
             logger.info("Clean Data center")
             cleanDataCenter(True, 'nfsToolsTest', 'true', 'false',
