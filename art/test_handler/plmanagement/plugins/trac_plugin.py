@@ -20,22 +20,9 @@ Configuration File Options
 --------------------------
     | **[TRAC]**
     | **enabled** - True/False, enables plugin
-    | **url** - trac site URL,
-                'http(s)://[user[:pass]@]host[:port]/path/to/rpc/entry'
+    | **url** - trac site URL, 'http(s)://[user[:pass]@]host[:port]/path/to/rpc/entry'
     |        *default*: https://engineering.redhat.com/trac/automation/rpc
-    | **path_to_issuedb** Path to file where are you can map bugs to cases
 
-Usage
------
-
-Issues DB syntax
-++++++++++++++++
-<issues>
-  <issue ids="xx,yy">
-    <case_name>regex</case_name>
-    <config_name>regex</config_name>
-  </issue>
-</issues>
 """
 
 import re
@@ -43,16 +30,14 @@ import httplib
 import json
 from art.test_handler.exceptions import SkipTest
 from art.test_handler.plmanagement import Component, implements, get_logger,\
-    PluginError
+     PluginError
 from art.test_handler.plmanagement.interfaces.application import\
-    IConfigurable
+     IConfigurable, IApplicationListener
 from art.test_handler.plmanagement.interfaces.tests_listener import\
-    ITestCaseHandler, ITestGroupHandler
+     ITestCaseHandler, ITestGroupHandler, ITestSkipper
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.plmanagement.interfaces.config_validator import\
-    IConfigValidation
-from utilities.issuesdb import IssuesDB
-from art.rhevm_api.tests_lib.low_level.general import getSystemVersion
+              IConfigValidation
 
 logger = get_logger('trac')
 
@@ -60,11 +45,10 @@ CONF_SEC = 'TRAC'
 DEFAULT_STATE = False
 DEFAULT_URL = 'https://engineering.redhat.com/trac/automation/rpc'
 ENABLED = 'enabled'
-PATH_TO_ISSUEDB = 'path_to_issuedb'
 
-URL_REG = re.compile('^(?P<scheme>https?)://((?P<user>[^@:]+)'
-                     '(:(?P<pass>[^@]+)?)@)?(?P<host>[^/:]+)'
-                     '(:(?P<port>[0-9]+))?(?P<path>.+)?$')
+URL_REG = re.compile('^(?P<scheme>https?)://((?P<user>[^@:]+)'\
+        '(:(?P<pass>[^@]+)?)@)?(?P<host>[^/:]+)(:(?P<port>[0-9]+))?'\
+        '(?P<path>.+)?$')
 
 CONTENT_TYPE = 'application/json'
 TRAC_ID = 'trac'
@@ -89,50 +73,23 @@ class TracRequestFailed(TracPluginError):
     pass
 
 
-class Version(object):  # TODO: need to deduplicate
-    def __init__(self, ver):
-        self.ver = [int(x) for x in ver.split('.')]
-
-    def __cmp__(self, ver):
-        for a, b in zip(self.ver, ver.ver):
-            d = a - b
-            if d != 0:
-                return d
-        return 0
-
-    def __str__(self):
-        return '.'.join([str(x) for x in self.ver])
-
-    def __contains__(self, ver):
-        return self.__cmp__(ver) == 0
-
-
 class Trac(Component):
     """
     Plugin provides access to Trac site.
     """
-    implements(IConfigurable, ITestCaseHandler, ITestGroupHandler,
-               IConfigValidation, IPackaging)
+    implements(IConfigurable, ITestCaseHandler, ITestGroupHandler, \
+            IConfigValidation, IPackaging)
     name = "Trac"
 
     def __init__(self):
         super(Trac, self).__init__()
         self._cache = {}
-        self.config_name = None
-        self.issuedb = None
-        self._version = None
-
-    @property
-    def version(self):
-        if self._version is None:
-            self._version = Version("%d.%d" % getSystemVersion())
-        return self._version
 
     @classmethod
     def add_options(cls, parser):
         group = parser.add_argument_group(cls.name, description=cls.__doc__)
-        group.add_argument('--with-trac', action='store_true',
-                           dest='trac_enabled', help="enable plugin")
+        group.add_argument('--with-trac', action='store_true', \
+                dest='trac_enabled', help="enable plugin")
 
     def configure(self, params, conf):
         if not self.is_enabled(params, conf):
@@ -148,15 +105,14 @@ class Trac(Component):
 
         site = m.groupdict()
         if site['user'] is not None:
-            logger.warn("%s: only anonymous access is supported", site['user'])
+            logger.warn("%s: only anonymous access is supported" % site['user'])
 
         if site['scheme'] == 'http':
             self.http_class = httplib.HTTPConnection
         elif site['scheme'] == 'https':
             self.http_class = httplib.HTTPSConnection
         else:
-            assert False, "only http or https is accepted: '%s'" %\
-                site['scheme']
+            assert False, "only http or https is accepted: '%s'" % site['scheme']
 
         logger.debug("Connecting to Trac with %s", site)
         self.path = site['path'] or ""
@@ -167,36 +123,18 @@ class Trac(Component):
             self.port = int(site['site'])
         else:
             self.port = None
-        self.site_url = "%s://%s/%s" % (site['scheme'], site['host'],
-                                        site['path'].rsplit('/', 1)[0])
-
-        self.config_name = getattr(conf, 'filename', None)
-
-        try:
-            if conf[CONF_SEC][PATH_TO_ISSUEDB]:
-                self.issuedb = IssuesDB(conf[CONF_SEC][PATH_TO_ISSUEDB])
-        except Exception as ex:
-            logger.warn("Failed to load issue db %s: %s",
-                        conf[CONF_SEC][PATH_TO_ISSUEDB], ex)
+        self.site_url = "%s://%s/%s" % (site['scheme'], site['host'], \
+                site['path'].rsplit('/', 1)[0])
 
     def _should_be_skipped(self, test):
-        if not getattr(test, TRAC_ID, False):
-            ids = []
-        else:
-            ids = getattr(test, TRAC_ID).replace(',', ' ').split()
+        ids = getattr(test, TRAC_ID, "").strip()
+        if not ids:
+            return
 
-        if self.issuedb:
-            ids += self.issuedb.lookup(test.test_name, self.config_name)
-
+        ids = ids.replace(',', ' ').split(' ')
         for id_ in ids:
             ticket = self._ticket(id_)
-            try:
-                if self.version not in Version(ticket['version']):
-                    continue
-            except (TypeError, ValueError):
-                pass  # Version is not applicable here
-            logger.info("TRAC<%s> '%s': %s", id_, ticket['summary'],
-                        ticket['status'])
+            logger.info("TRAC<%s> '%s': %s", id_, ticket['summary'], ticket['status'])
             if ticket['status'].lower() != 'closed':
                 raise TracSkipTest(ticket, self.site_url)
 
@@ -268,12 +206,11 @@ class Trac(Component):
         params['author_email'] = 'lbednar@redhat.com'
         params['description'] = 'Trac plugin for ART'
         params['long_description'] = cls.__doc__
-        params['requires'] = ['art-utilities', 'art-tests-rhevm-api']
-        params['py_modules'] = ['art.test_handler.plmanagement.plugins.'
-                                'trac_plugin']
+        params['py_modules'] = ['art.test_handler.plmanagement.plugins.trac_plugin']
 
     def config_spec(self, spec, val_funcs):
-        section_spec = spec.setdefault(CONF_SEC, {})
+        section_spec = spec.get(CONF_SEC, {})
         section_spec[ENABLED] = 'boolean(default=%s)' % DEFAULT_STATE
         section_spec['url'] = "is_url_alive(default='%s')" % DEFAULT_URL
-        section_spec[PATH_TO_ISSUEDB] = "string(default=None)"
+        spec[CONF_SEC] = section_spec
+
