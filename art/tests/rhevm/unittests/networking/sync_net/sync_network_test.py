@@ -61,8 +61,7 @@ class Sync_Case1_205933(TestCase):
                                         cluster=config.CLUSTER_NAME,
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0],
-                                                   config.HOST_NICS[1]]):
+                                        auto_nics=[config.HOST_NICS[0]]):
             raise NetworkException("Cannot create and attach network")
         logger.info('Update network with VLAN')
         if not updateNetwork(True, network=config.VLAN_NETWORKS[0],
@@ -219,8 +218,7 @@ class Sync_Case3_185337(TestCase):
                                         cluster=config.CLUSTER_NAME,
                                         host=config.HOSTS[0],
                                         network_dict=dict_dc1,
-                                        auto_nics=[config.HOST_NICS[0],
-                                                   config.HOST_NICS[1]]):
+                                        auto_nics=[config.HOST_NICS[0]]):
             raise NetworkException("Cannot create and attach network")
         logger.info("Create network with MTU 5000 on DC without the host")
         if not createAndAttachNetworkSN(data_center=config.DC_NAME2,
@@ -322,8 +320,7 @@ class Sync_Case4_185370(TestCase):
                                         cluster=config.CLUSTER_NAME,
                                         host=config.HOSTS[0],
                                         network_dict=dict_dc1,
-                                        auto_nics=[config.HOST_NICS[0],
-                                                   config.HOST_NICS[1]]):
+                                        auto_nics=[config.HOST_NICS[0]]):
             raise NetworkException("Cannot create and attach network")
         logger.info("Create network with non-VM network on DC2")
         if not createAndAttachNetworkSN(data_center=config.DC_NAME2,
@@ -405,8 +402,7 @@ class Sync_Case5_185374(TestCase):
                                         cluster=config.CLUSTER_NAME,
                                         host=config.HOSTS[0],
                                         network_dict=dict_dc1,
-                                        auto_nics=[config.HOST_NICS[0],
-                                                   config.HOST_NICS[1]]):
+                                        auto_nics=[config.HOST_NICS[0]]):
             raise NetworkException("Cannot create and attach network")
         logger.info("Create network with non-VM network on DC2")
         if not createAndAttachNetworkSN(data_center=config.DC_NAME2,
@@ -478,14 +474,14 @@ class Sync_Case6_240899(TestCase):
         Create non-VM network without VLAN on DC without the host
         Deactivate host, move it to other DC and reactivate it
         """
-        dict_dc1 = {config.VLAN_NETWORKS[0]: {'bond': 'bond0',
+        dict_dc1 = {config.VLAN_NETWORKS[0]: {'nic': 'bond0',
                                               'slaves': [config.HOST_NICS[2],
                                                          config.HOST_NICS[3]],
                                               'mode': 1,
                                               'vlan_id': config.VLAN_ID[0],
                                               'required': 'false'}}
 
-        dict_dc2 = {config.VLAN_NETWORKS[0]: {'bond': 'bond0',
+        dict_dc2 = {config.VLAN_NETWORKS[0]: {'nic': 'bond0',
                                               'slaves': [config.HOST_NICS[2],
                                                          config.HOST_NICS[3]],
                                               'required': 'false',
@@ -587,9 +583,7 @@ class Sync_Case7_205919(TestCase):
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0],
-                                                   config.HOST_NICS[1],
-                                                   config.HOST_NICS[2],
-                                                   config.HOST_NICS[3]]):
+                                                   config.HOST_NICS[1]]):
             raise NetworkException("Cannot create and attach networks")
         logger.info("Update VLAN network to VLAN 10")
         if not updateNetwork(True, network=config.VLAN_NETWORKS[0],
@@ -672,8 +666,7 @@ class Sync_Case8_205932(TestCase):
                                         cluster=config.CLUSTER_NAME,
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0],
-                                                   config.HOST_NICS[1]]):
+                                        auto_nics=[config.HOST_NICS[0]]):
             raise NetworkException("Cannot create and attach networks")
         logger.info("Update VLAN network with VLAN 10")
         if not updateNetwork(True, network=config.VLAN_NETWORKS[0],
@@ -716,7 +709,7 @@ class Sync_Case8_205932(TestCase):
                            network=config.VLAN_NETWORKS[1],
                            override_configuration=True)
         if not rc:
-                raise NetworkException("Cannot generate SNNIC object")
+            raise NetworkException("Cannot generate SNNIC object")
         if not sendSNRequest(True, host=config.HOSTS[0],
                              nics=[out['host_nic']],
                              auto_nics=[config.HOST_NICS[0]],

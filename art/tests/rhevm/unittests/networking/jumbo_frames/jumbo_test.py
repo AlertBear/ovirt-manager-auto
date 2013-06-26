@@ -49,8 +49,7 @@ class JumboFrames_Case1_199743(TestCase):
                                         cluster=config.CLUSTER_NAME,
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0],
-                                                   config.HOST_NICS[1]]):
+                                        auto_nics=[config.HOST_NICS[0]]):
             raise NetworkException("Cannot create and attach network")
 
     @istest
@@ -189,7 +188,7 @@ class JumboFrames_Case3_197212(TestCase):
         '''
         Create bridged networks with MTU on DC/Cluster/Hosts over bond
         '''
-        local_dict = {config.NETWORKS[0]: {'bond': 'bond0',
+        local_dict = {config.NETWORKS[0]: {'nic': 'bond0',
                                            'slaves': [config.HOST_NICS[2],
                                                       config.HOST_NICS[3]],
                                            'mode': 1, 'mtu': 5000,
