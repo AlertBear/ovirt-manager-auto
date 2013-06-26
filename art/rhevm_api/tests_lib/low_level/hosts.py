@@ -437,9 +437,13 @@ def addHost(positive, name, wait=True, vdcPort=None, rhel_like=True,
 
     osType = 'rhel'
     root_password = kwargs.get('root_password')
-    if root_password and positive:
-        hostObj = machine.Machine(host_address,
-                                  'root', root_password).util('linux')
+
+    hostObj = None
+
+    if root_password:
+        hostObj = machine.Machine(host_address, 'root',
+                                  root_password).util('linux')
+    if positive:
         hostObj.isConnective(attempt=5, interval=5, remoteCmd=False)
         osType = hostObj.getOsInfo()
         if not osType:
@@ -451,8 +455,13 @@ def addHost(positive, name, wait=True, vdcPort=None, rhel_like=True,
                     reboot_after_installation=reboot, **kwargs)
         # cleanup host storage sessions and qemus from previous runs
         # since host are not rebooted
-        cleanHostStorageSession(hostObj)
-        killProcesses(hostObj, 'qemu')
+        if hostObj is None and root_password:
+            hostObj = machine.Machine(host_address, 'root',
+                                      root_password).util('linux')
+
+        if root_password:
+            cleanHostStorageSession(hostObj)
+            killProcesses(hostObj, 'qemu')
 
         host, status = HOST_API.create(host, positive)
 
