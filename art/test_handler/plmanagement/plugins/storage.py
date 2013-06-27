@@ -526,7 +526,8 @@ class StorageUtils:
                 for device in self.iscsi_devices[storageSection]:
                     self.__remove_iscsi_device(self.storages['iscsi'][\
                             storageSection]['ip'], device[lunId])
-                self.__unmap_iscsi_initiators(
+                if self.iscsi_devices[storageSection]:
+                    self.__unmap_iscsi_initiators(
                             self.storages['iscsi'][storageSection]['ip'])
 
         for storageSection in self.storages['local']:
