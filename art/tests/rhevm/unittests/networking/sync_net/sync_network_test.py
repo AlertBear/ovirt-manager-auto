@@ -22,7 +22,7 @@ from art.rhevm_api.tests_lib.high_level.networks import\
 from art.rhevm_api.tests_lib.low_level.networks import\
     updateNetwork
 from art.rhevm_api.tests_lib.low_level.hosts import genSNNic,\
-    sendSNRequest, genSNBond, isSyncNetwork,\
+    sendSNRequest, isSyncNetwork,\
     deactivateHost, activateHost, updateHost, waitForHostsStates
 from art.unittest_lib.network import skipBOND
 
@@ -474,16 +474,21 @@ class Sync_Case6_240899(TestCase):
         Create non-VM network without VLAN on DC without the host
         Deactivate host, move it to other DC and reactivate it
         """
-        dict_dc1 = {config.VLAN_NETWORKS[0]: {'nic': 'bond0',
-                                              'slaves': [config.HOST_NICS[2],
-                                                         config.HOST_NICS[3]],
-                                              'mode': 1,
+
+        # Create bond0 with None network as a key
+        # Bond will be created without any network
+        # The VLAN_NETWORKS[0] will be added to the empty bond
+        dict_dc1 = {None: {'nic': 'bond0', 'mode': 1,
+                           'slaves': [config.HOST_NICS[2],
+                                      config.HOST_NICS[3]]},
+                    config.VLAN_NETWORKS[0]: {'nic': 'bond0',
                                               'vlan_id': config.VLAN_ID[0],
                                               'required': 'false'}}
 
-        dict_dc2 = {config.VLAN_NETWORKS[0]: {'nic': 'bond0',
-                                              'slaves': [config.HOST_NICS[2],
-                                                         config.HOST_NICS[3]],
+        dict_dc2 = {None: {'nic': 'bond0', 'mode': 1,
+                           'slaves': [config.HOST_NICS[2],
+                                      config.HOST_NICS[3]]},
+                    config.VLAN_NETWORKS[0]: {'nic': 'bond0',
                                               'required': 'false',
                                               'usages': ''}}
         logger.info("Create network without VLAN on DC without the host")
@@ -517,11 +522,11 @@ class Sync_Case6_240899(TestCase):
         logger.info("Starting sync func for vlan network over bond")
         logger.info("Generating network object for SetupNetwork ")
         net_obj = []
-        rc, out = genSNBond(name='bond0',
-                            network=config.VLAN_NETWORKS[0],
-                            slaves=[config.HOST_NICS[2],
-                                    config.HOST_NICS[3]],
-                            mode=1, override_configuration=True)
+        rc, out = genSNNic(nic='bond0',
+                           network=config.VLAN_NETWORKS[0],
+                           slaves=[config.HOST_NICS[2],
+                                   config.HOST_NICS[3]],
+                           mode=1, override_configuration=True)
         if not rc:
             raise NetworkException("Cannot generate SNBond object")
         net_obj.append(out['host_nic'])

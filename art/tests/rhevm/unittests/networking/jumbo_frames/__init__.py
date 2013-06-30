@@ -6,7 +6,7 @@ import logging
 from art.rhevm_api.tests_lib.low_level.storagedomains import\
     createDatacenter, cleanDataCenter
 from art.rhevm_api.tests_lib.high_level.networks import prepareSetup
-from art.test_handler.exceptions import DataCenterException
+from art.test_handler.exceptions import DataCenterException, NetworkException
 
 logger = logging.getLogger("Jumbo")
 

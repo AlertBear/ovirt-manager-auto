@@ -13,7 +13,7 @@ import config
 from art.rhevm_api.tests_lib.high_level.networks import\
     createAndAttachNetworkSN, removeNetFromSetup
 from art.rhevm_api.tests_lib.low_level.hosts import genSNNic,\
-    sendSNRequest, genSNBond
+    sendSNRequest
 from art.rhevm_api.utils.test_utils import checkMTU
 
 #import pdb
@@ -188,10 +188,14 @@ class JumboFrames_Case3_197212(TestCase):
         '''
         Create bridged networks with MTU on DC/Cluster/Hosts over bond
         '''
-        local_dict = {config.NETWORKS[0]: {'nic': 'bond0',
-                                           'slaves': [config.HOST_NICS[2],
-                                                      config.HOST_NICS[3]],
-                                           'mode': 1, 'mtu': 5000,
+
+        # Create bond0 with None network as a key
+        # Bond will be created without any network
+        # The NETWORKS[0] will be added to the empty bond
+        local_dict = {None: {'nic': 'bond0', 'mode': 1,
+                             'slaves': [config.HOST_NICS[2],
+                                        config.HOST_NICS[3]]},
+                      config.NETWORKS[0]: {'nic': 'bond0', 'mtu': 5000,
                                            'vlan_id': config.VLAN_ID[0],
                                            'required': 'false'}}
         if not createAndAttachNetworkSN(data_center=config.DC_NAME,
@@ -222,9 +226,9 @@ class JumboFrames_Case3_197212(TestCase):
                                  bond_nic2=config.HOST_NICS[3],
                                  bridged=False))
         logger.info("Changing the bond mode to  mode4")
-        rc, out = genSNBond(name='bond0', network=config.NETWORKS[0],
-                            slaves=[config.HOST_NICS[2],
-                                    config.HOST_NICS[3]], mode=4)
+        rc, out = genSNNic(nic='bond0', network=config.NETWORKS[0],
+                           slaves=[config.HOST_NICS[2],
+                                   config.HOST_NICS[3]], mode=4)
 
         if not rc:
             raise NetworkException("Cannot generate network object")
