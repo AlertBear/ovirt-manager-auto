@@ -23,6 +23,7 @@ class LogCollectorTestCase(RHEVMUtilsTestCase):
     @istest
     def logCollectorCollect(self):
         """ log_collector collect"""
+        assert self.ut.setRestConnPassword(NAME, LOG_COL_CONF, REST_API_PASS)
         self.ut('collect')
         self.ut.autoTest()
 
