@@ -20,6 +20,9 @@ OVIRT_DOMAIN = str(ART_CONFIG['REST_CONNECTION']['user_domain'])
 OVIRT_PASSWORD = str(ART_CONFIG['REST_CONNECTION']['password'])
 OVIRT_VERSION = PARAMETERS.get('compatibility_version')
 
+OVIRT_IP = PARAMETERS.get('vdc')
+OVIRT_PSW = PARAMETERS.get('vdc_password')
+
 # Hosts
 HOST_ADDRESS = get(PARAMETERS.as_list('vds'), 0, None)
 HOST_ROOT_PASSWORD = get(PARAMETERS.as_list('vds_password'), 0, None)
@@ -85,9 +88,6 @@ GROUP_USER = PARAMETERS.get('group_user')
 GROUP_NAME = PARAMETERS.get('group_name')
 
 # Misc
-SKIP_MAIN_SETUP = False
-SKIP_MAIN_TEARDOWN = False
-
 MAIN_DC_NAME = PARAMETERS.get('dc_name')
 MAIN_CLUSTER_NAME = PARAMETERS.get('cluster_name')
 MAIN_HOST_NAME = PARAMETERS.get('host_name')

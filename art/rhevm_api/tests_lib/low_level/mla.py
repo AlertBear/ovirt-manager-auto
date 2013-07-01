@@ -679,6 +679,32 @@ def removeUserRoleFromDataCenter(positive, datacenter, user_name, role_name):
     return removeUserRoleFromObject(positive, dcObj, user_name, role_name)
 
 
+def removeUsersPermissionsFromSD(positive, storage_domain, user_names):
+    '''
+    Description: remove all permissions on storage domain of specified users
+    Author: omachace
+    Parameters:
+       * storage_domain - storage domain where permissions should be removed
+       * user_names - list with user names (ie.['user1@..', 'user2@..'])
+    Return: status (True if permissions was removed, False otherwise)
+    '''
+    sdObj = sdUtil.find(storage_domain)
+    return removeUsersPermissionsFromObject(positive, sdObj, user_names)
+
+
+@is_action()
+def removeUserPermissionsFromSD(positive, storage_domain, user_name):
+    '''
+    Description: remove all permissions on template of specified user
+    Author: omachace
+    Parameters:
+       * storage_domain - storage domain where permissions should be removed
+       * user_name - user name
+    Return: status (True if permissions was removed, False otherwise)
+    '''
+    return removeUsersPermissionsFromSD(positive, storage_domain, [user_name])
+
+
 @is_action()
 def checkDomainsId():
     '''
@@ -710,3 +736,22 @@ def checkDomainsId():
 
     return ret
 
+
+def hasUserPermissionsOnObject(user_name, obj, role):
+    """
+    Description: Check if user has permission on object.
+    Author: omachace
+    Parameters:
+       * user_name - user name of user
+       * obj - object which should be checked
+       * role - name of the role to search for
+    Return: True if user has permissions on object False otherwise
+    """
+    objPermits = permisUtil.getElemFromLink(obj, get_href=False)
+    roleNAid = util.find(role).get_id()
+    userId = userUtil.find(user_name, 'user_name').get_id()
+    perms = []
+    for perm in objPermits:
+        perms.append((perm.get_user().get_id(), perm.get_role().get_id()))
+
+    return (userId, roleNAid) in perms
