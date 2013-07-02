@@ -2635,4 +2635,282 @@
    <run/>
    <report/>
 </test_case>
+<test_case>
+   <test_name>START_GROUP: TC_286330</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>none</positive>
+   <run>yes</run>
+   <tcms_test_case>286330</tcms_test_case>
+   <report/>
+</test_case>
+<test_case>
+   <test_name>tc_286330 Create data center</test_name>
+   <test_type></test_type>
+   <test_action>addDataCenter</test_action>
+   <parameters>name='live_snapshot_dc', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <test_description/>
+</test_case>
+<test_case>
+   <test_name>tc_286330 Create cluster</test_name>
+   <test_action>addCluster</test_action>
+   <parameters>name='live_snapshot_cluster', cpu='{cpu_name}', data_center='live_snapshot_dc', version='{compatibility_version}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>tc_286330 Create hosts</test_name>
+   <test_action>addHost</test_action>
+   <parameters>name='{vds}', root_password='{vds_password}', cluster='live_snapshot_cluster', wait=False</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds},{vds_password})</run>
+</test_case>
+<test_case>
+   <test_name>tc_286330 Wait until all hosts are up</test_name>
+   <test_type>rest</test_type>
+   <test_action>waitForHostsStates</test_action>
+   <parameters>names='{vds[0]},{vds[1]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>tc_286330 Create NFS data storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='data_sd', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+</test_case>
+<test_case>
+   <test_name>tc_286330 iSCSI discover</test_name>
+   <test_action>iscsiDiscover</test_action>
+   <parameters>host='{vds[0]}', address='{lun_address[0]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>tc_286330 iSCSI login</test_name>
+   <test_action>iscsiLogin</test_action>
+   <parameters>host='{vds[0]}', address='{lun_address[0]}', target='{lun_target[0]}'</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>tc_286330 Create iSCSI data storage domain</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='data_sd', type='e{storage_dom_type_data}', storage_type='e{storage_type_iscsi}', host='{vds[0]}', lun='{lun[0]}', lun_address='{lun_address[0]}', lun_target='{lun_target[0]}', lun_port=3260</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>tc_286330 Create FCP data storage domain</test_name>
+   <test_action>addStorageDomain</test_action>
+   <parameters>name='data_sd', type='e{storage_dom_type_data}', storage_type='e{storage_type_fcp}', host='{vds[0]}', lun='{lun[0]}', lun_port=3260</parameters>
+   <positive>true</positive>
+   <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>tc_286330 Attach data storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>attachStorageDomain</test_action>
+   <parameters>storagedomain='data_sd', datacenter='live_snapshot_dc'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>tc_286330 Create VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>addVm</test_action>
+   <parameters>name='vm_testing', cluster='live_snapshot_cluster'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>tc_286330 Add virtio COW disk</test_name>
+   <test_type>rest</test_type>
+   <test_action>addDiskToVm</test_action>
+   <parameters>vm='vm_testing', size=3221225472, wait='True', storagedomain='data_sd', type='e{disk_type_data}', interface='e{interface_virtio}', format='e{format_cow}', sparse='true'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>tc_286330 Add virtio nic</test_name>
+   <test_type>rest</test_type>
+   <test_action>addNic</test_action>
+   <parameters>vm='vm_testing', name='nic1', network='{mgmt_bridge}', interface='e{nic_type_virtio}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>tc_286330 Create template from VM</test_name>
+   <test_action>createTemplate</test_action>
+   <parameters>vm='vm_testing', name='template_testing', cluster='live_snapshot_cluster'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>tc_286330 Remove VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeVm</test_action>
+   <parameters>vm='vm_testing'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>tc_286330 Create thin VM</test_name>
+   <test_action>addVm</test_action>
+   <parameters>name='vm_thin', description='', cluster='live_snapshot_cluster', storagedomain='data_sd', template='template_testing'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>tc_286330 Create cloned VM</test_name>
+   <test_action>addVm</test_action>
+   <parameters>name='vm_cloned', description='', cluster='live_snapshot_cluster', storagedomain='data_sd', template='template_testing', disk_clone='True'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>tc_286330 Start VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>startVm</test_action>
+   <parameters>vm='vm_thin', wait_for_status='up'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>tc_286330 Start VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>startVm</test_action>
+   <parameters>vm='vm_cloned', wait_for_status='up'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>tc_286330 Create snapshot</test_name>
+   <test_type>rest</test_type>
+   <test_action>addSnapshot</test_action>
+   <parameters>vm='vm_thin', description='thin_snapshot1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>tc_286330 Stop VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>stopVm</test_action>
+   <parameters>vm='vm_thin'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>tc_286330 Create snapshot</test_name>
+   <test_type>rest</test_type>
+   <test_action>addSnapshot</test_action>
+   <parameters>vm='vm_cloned', description='cloned_snapshot1'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>tc_286330 Stop VM</test_name>
+   <test_type>rest</test_type>
+   <test_action>stopVm</test_action>
+   <parameters>vm='vm_cloned'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>tc_286330 Remove VM</test_name>
+   <test_action>removeVm</test_action>
+   <parameters>vm='vm_thin'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>tc_286330 Remove VM</test_name>
+   <test_action>removeVm</test_action>
+   <parameters>vm='vm_cloned'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <fetch_output/>
+</test_case>
+<test_case>
+   <test_name>tc_286330 Remove template</test_name>
+   <test_action>removeTemplate</test_action>
+   <parameters>template='template_testing'</parameters>
+   <positive>true</positive>
+   <run>yes</run>
+   <report>yes</report>
+</test_case>
+<test_case>
+   <test_name>tc_286330 Wait for all background tasks to finish on hosts</test_name>
+   <test_action>waitForTasks</test_action>
+   <parameters>vdc='{host}', vdc_password='{password}', datacenter='live_snapshot_dc'</parameters>
+   <positive>None</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>tc_286330 Deactivate data storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>deactivateStorageDomain</test_action>
+   <parameters>datacenter='live_snapshot_dc', storagedomain='data_sd'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>tc_286330 Remove data center</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeDataCenters</test_action>
+   <parameters>datacenters='live_snapshot_dc'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>tc_286330 Remove data storage domain</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeStorageDomain</test_action>
+   <parameters>storagedomain='data_sd', host='{vds[0]}', format='true'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>tc_286330 Deactivate hosts</test_name>
+   <test_type>rest</test_type>
+   <test_action>deactivateHost</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds})</run>
+</test_case>
+<test_case>
+   <test_name>tc_286330 Remove hosts</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeHost</test_action>
+   <parameters>host='{vds}'</parameters>
+   <positive>TRUE</positive>
+   <run>loop({vds})</run>
+</test_case>
+<test_case>
+   <test_name>tc_286330 Remove cluster</test_name>
+   <test_type>rest</test_type>
+   <test_action>removeClusters</test_action>
+   <parameters>clusters='live_snapshot_cluster'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>END_GROUP: TC_286330</test_name>
+   <test_action/>
+   <parameters/>
+   <positive>none</positive>
+   <run/>
+   <report/>
+</test_case>
 </input>
