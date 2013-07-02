@@ -459,9 +459,12 @@ def addHost(positive, name, wait=True, vdcPort=None, rhel_like=True,
             hostObj = machine.Machine(host_address, 'root',
                                       root_password).util('linux')
 
+
         if root_password:
             cleanHostStorageSession(hostObj)
             killProcesses(hostObj, 'qemu')
+            if not hostObj.restartService('rpcbind'):
+                return not positive
 
         host, status = HOST_API.create(host, positive)
 
