@@ -71,8 +71,8 @@ def shutdown_vm_if_up(vm_name):
     return vms.waitForVMState(vm_name, state=ENUMS['vm_state_down'])
 
 
-def test_vm_migration(vm_names, orig_host, vm_user, host_password,
-                      vm_password, os_type, dest_host=None, nic=None):
+def check_vm_migration(vm_names, orig_host, vm_user, host_password,
+                       vm_password, os_type, dest_host=None, nic=None):
 
     '''
         Function that tests migration in 2 scenarios
