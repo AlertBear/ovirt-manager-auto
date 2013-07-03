@@ -51,6 +51,7 @@ from art.test_handler.plmanagement.interfaces.tests_listener import\
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.plmanagement.interfaces.config_validator import\
     IConfigValidation
+from art.test_handler import find_config_file
 from utilities.issuesdb import IssuesDB
 
 logger = get_logger('trac')
@@ -175,10 +176,11 @@ class Trac(Component):
 
         try:
             if conf[CONF_SEC][PATH_TO_ISSUEDB]:
-                self.issuedb = IssuesDB(conf[CONF_SEC][PATH_TO_ISSUEDB])
+                path = find_config_file(conf[CONF_SEC][PATH_TO_ISSUEDB])
+                self.issuedb = IssuesDB(path)
         except Exception as ex:
             logger.warn("Failed to load issue db %s: %s",
-                        conf[CONF_SEC][PATH_TO_ISSUEDB], ex)
+                        conf[CONF_SEC].get(PATH_TO_ISSUEDB), ex)
 
     def _should_be_skipped(self, test):
         if not getattr(test, TRAC_ID, False):

@@ -66,6 +66,7 @@ from art.test_handler.plmanagement.interfaces.tests_listener import\
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.plmanagement.interfaces.config_validator import\
     IConfigValidation
+from art.test_handler import find_config_file
 from utilities.issuesdb import IssuesDB
 
 
@@ -228,10 +229,11 @@ class Bugzilla(Component):
 
         try:
             if bz_cfg[PATH_TO_ISSUEDB]:
-                self.issuedb = IssuesDB(bz_cfg[PATH_TO_ISSUEDB])
+                path = find_config_file(bz_cfg[PATH_TO_ISSUEDB])
+                self.issuedb = IssuesDB(path)
         except Exception as ex:
             logger.warn("Failed to load issue db %s: %s",
-                        bz_cfg[PATH_TO_ISSUEDB], ex)
+                        bz_cfg.get(PATH_TO_ISSUEDB), ex)
 
         from art.test_handler.test_runner import TestGroup
         TestGroup.add_elm_attribute('TEST_BZ_ID', BZ_ID)
