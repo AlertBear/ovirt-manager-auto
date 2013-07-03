@@ -399,12 +399,15 @@ class RHEVMUtilsTestCase(unittest.TestCase):
             if cls.utility in ['setup', 'cleanup']:
                 cls.manager.releaseSetup(cls.utility)
 
-        arr = ['setup', 'cleanup', 'iso-uploader', 'log_collector'] \
-           if cls.installation == 'true' else ['iso-uploader', 'log_collector']
-        if cls.utility in arr:
-            logger.info("Clean Data center")
+        if cls.installation == 'true':
+            logger.info("Clean Data center with wait for aync tasks to finish")
             cleanDataCenter(True, 'nfsToolsTest', 'true', 'false',
                    REST_API_HOST, REST_API_PASS)
+        else:
+            if cls.utility in ['iso-uploader', 'log_collector']:
+                logger.info("Clean Data center")
+                cleanDataCenter(True, 'nfsToolsTest', 'true', 'false')
+
         if cls.installation != 'true':
             if cls.utility == 'setup':
                 machine = cls.manager.dispatchSetup(cls.utility, REST_API_HOST)

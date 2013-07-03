@@ -54,6 +54,7 @@ ANSWERS = {
         'override_iptables': 'yes',
         'override_httpd': 'yes',
         'override_firewall': 'iptables',
+        'application_mode': 'both',
 
 # DEFAULT KEYWORDS FOR ANSWERFILE
         'AUTH_PASS': '%(password)s',
@@ -65,12 +66,14 @@ ANSWERS = {
         'OVERRIDE_IPTABLES': '%(override_iptables)s',
         'OVERRIDE_HTTPD_CONFIG': '%(override_httpd)s',
         'OVERRIDE_FIREWALL': '%(override_firewall)s',
+        'FIREWALL_MANAGER': '%(override_firewall)s',
+        'APPLICATION_MODE': '%(application_mode)s',
 
         }
 ANSWERS['__default__'] = (
             'AUTH_PASS', 'ORG_NAME', 'DB_REMOTE_INSTALL', \
             'DB_SECURE_CONNECTION', 'DB_LOCAL_PASS', 'CONFIG_NFS', \
-            'OVERRIDE_FIREWALL', 'OVERRIDE_HTTPD_CONFIG',
+            'FIREWALL_MANAGER', 'OVERRIDE_HTTPD_CONFIG','APPLICATION_MODE',
             )
         # SPECIFY LIST OF ANSWERS WHICH NEEDS TO BE OVERWITTEN
 ANSWERS['3.1.0-32.el6ev'] = (
@@ -82,6 +85,11 @@ ANSWERS['3.2.0-10.14.beta1.el6ev'] = ( #sf-10
             'AUTH_PASS', 'ORG_NAME', 'DB_REMOTE_INSTALL', \
             'DB_SECURE_CONNECTION', 'DB_LOCAL_PASS', 'CONFIG_NFS', \
             'OVERRIDE_FIREWALL', 'OVERRIDE_HTTPD_CONFIG',
+            )
+ANSWERS['3.3.0-0.5.master.el6ev'] = ( #is3
+            'AUTH_PASS', 'ORG_NAME', 'DB_REMOTE_INSTALL', \
+            'DB_SECURE_CONNECTION', 'DB_LOCAL_PASS', 'CONFIG_NFS', \
+            'FIREWALL_MANAGER', 'OVERRIDE_HTTPD_CONFIG','APPLICATION_MODE',
             )
 SETUP = {
         'vm_name': '%(def_vm_name)s',
