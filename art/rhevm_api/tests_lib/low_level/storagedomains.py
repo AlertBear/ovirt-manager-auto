@@ -1295,8 +1295,8 @@ def checkVolume(positive, vdsName, username, passwd, dataCenter, storageDomain,
         Obj = [o for o in objCollection if o.name == name][0]
     except IndexError:
         if exists:
-            util.logger.error("%s was not found on storage domain %s" %
-                          (name, storageDomain))
+            util.logger.error("%s was not found on storage domain %s",
+                              name, storageDomain)
             return not positive
         else:
             return positive
@@ -1309,11 +1309,13 @@ def checkVolume(positive, vdsName, username, passwd, dataCenter, storageDomain,
 
     if noImages:
         if images is not []:
-            util.logger.error("There are image(-s) on domain %s!" % storageDomain)
+            util.logger.error("There are image(-s) on domain %s!",
+                              storageDomain)
             return not positive
         return positive
     elif images is []:
-        util.logger.error("There are no images on domain %s" % storageDomain)
+        util.logger.error("There are no images on domain %s",
+                          storageDomain)
         return not positive
 
     image = images[0]
@@ -1321,8 +1323,9 @@ def checkVolume(positive, vdsName, username, passwd, dataCenter, storageDomain,
         volInfo = getVolumesList(vdsName, username, passwd, dc_id, domain_id,
                                  [image])[0]
     except IndexError:
-        util.logger.error("Can't find any volume of image DC %s, SD, Image",
-                          dataCenter, storageDomain, image)
+        util.logger.error(
+            "Can't find any volume of image DC %s, SD %s, Image %s",
+            dataCenter, storageDomain, image)
         return not positive
 
     parentInfo = getVolumeInfo(vdsName, username, passwd, dc_id, domain_id,
@@ -1334,9 +1337,10 @@ def checkVolume(positive, vdsName, username, passwd, dataCenter, storageDomain,
 
     if (fake and legality != 'FAKE') or \
            (not fake and legality != 'LEGAL'):
-        util.logger.error("Template/Vm legality is wrong: %s" % legality)
+        util.logger.error("Template/Vm legality is wrong: %s", legality)
         return not positive
     return positive
+
 
 @is_action()
 def prepareVmWithRhevm(positive, hosts, cpuName, username, password, datacenter,
