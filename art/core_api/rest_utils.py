@@ -29,6 +29,7 @@ from art.test_handler import settings
 DEF_TIMEOUT = 900 # default timeout
 DEF_SLEEP = 10 # default sleep
 NEGATIVE_CODES = [400, 409, 500]
+NEGATIVE_CODES_CREATE = NEGATIVE_CODES + [404]
 
 restInit = None
 
@@ -152,7 +153,7 @@ class RestUtil(APIUtil):
 
     def create(self, entity, positive,
                 expected_pos_status=[200, 201, 202],
-                expected_neg_status=NEGATIVE_CODES,
+                expected_neg_status=NEGATIVE_CODES_CREATE,
                 expectedEntity=None, incrementBy=1,
                 async=False, collection=None,
                 coll_elm_name = None, current=None):
