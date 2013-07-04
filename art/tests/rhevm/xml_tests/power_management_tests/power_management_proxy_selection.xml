@@ -1,0 +1,383 @@
+<?xml-stylesheet type="text/xsl" href="table.xslt"?>
+<input tcms_plan_id="8155">
+<!--*************Set DC proxy to choose*************-->
+<test_case>
+    <test_name>START_GROUP: PM-PROXY-SELECTION-DC</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>NONE</positive>
+    <run>YES</run>
+</test_case>
+<test_case>
+    <test_name>Configure power management with apc_snmp</test_name>
+    <test_action>updateHost</test_action>
+    <parameters>host='{vds[1]}', pm='true', pm_type='{pm_type_apc_snmp}',
+               pm_address='{pm_address_apc_snmp}',
+               pm_username='{pm_username_apc_snmp}',
+               pm_password='{pm_password_apc_snmp}',
+               pm_slot=4,  pm_proxies=[('dc'),('cluster')],
+               agents=[('{pm_type_apc_snmp}','{pm_address_apc_snmp}','{pm_username_apc_snmp}','{pm_password_apc_snmp}',None,False,1,)]
+    </parameters>
+    <positive>True</positive>
+    <run>yes</run>
+</test_case>
+<!--*************Hosts on DC and Cluster UP, must choose host on DC*************-->
+<test_case>
+    <test_name>Check time elapsed from previous PM operation</test_name>
+    <test_action>waitForHostPmOperation</test_action>
+    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Fence host '{vds[1]}'</test_name>
+    <test_action>fenceHost</test_action>
+    <parameters>host='{vds[1]}', fence_type='e{fence_type_restart}'</parameters>
+    <positive>True</positive>
+    <vital>TRUE</vital>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Check if the fence command occur and check events</test_name>
+    <test_type>rest</test_type>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query="{vds[1]} and type=41", query="DC and type=605", expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <tcms_case_id>234141</tcms_case_id>
+</test_case>
+<test_case>
+    <test_name>Wait for host is UP</test_name>
+    <test_action>waitForHostsStates</test_action>
+    <parameters>names='{vds[1]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<!--*************Hosts on DC in maintenance and on Cluster UP, must choose host on Cluster*************-->
+<test_case>
+    <test_name>Set Active Hosts To Maintenance</test_name>
+    <test_action>deactivateHosts</test_action>
+    <parameters>hosts='{vds[2]},{vds[3]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Wait for host is in maintenance</test_name>
+    <test_action>waitForHostsStates</test_action>
+    <parameters>names='{vds[2]},{vds[3]}', states='Maintenance'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Check time elapsed from previous PM operation</test_name>
+    <test_action>waitForHostPmOperation</test_action>
+    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Fence host '{vds[1]}'</test_name>
+    <test_action>fenceHost</test_action>
+    <parameters>host='{vds[1]}', fence_type='e{fence_type_restart}'</parameters>
+    <positive>True</positive>
+    <vital>TRUE</vital>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Check if the fence command occur and check events</test_name>
+    <test_type>rest</test_type>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='\"{vds[0]} from DC was choosen as a proxy to execute Stop command\" and type=605', query="{vds[1]} and type=41", expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <tcms_case_id>234143</tcms_case_id>
+</test_case>
+<!--*************Hosts on DC and on cluster in maintenance, must choose host on DC*************-->
+<test_case>
+    <test_name>Set Active Host To Maintenance</test_name>
+    <test_action>deactivateHost</test_action>
+    <parameters>host='{vds[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Wait for host is in maintenance</test_name>
+    <test_action>waitForHostsStates</test_action>
+    <parameters>names='{vds[0]}', states='Maintenance'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Check time elapsed from previous PM operation</test_name>
+    <test_action>waitForHostPmOperation</test_action>
+    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Fence host '{vds[1]}'</test_name>
+    <test_action>fenceHost</test_action>
+    <parameters>host='{vds[1]}', fence_type='e{fence_type_restart}'</parameters>
+    <positive>True</positive>
+    <vital>TRUE</vital>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Check if the fence command occur and check events</test_name>
+    <test_type>rest</test_type>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query="{vds[1]} and type=41", query="DC and type=605", expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <tcms_case_id>234140</tcms_case_id>
+</test_case>
+<test_case>
+    <test_name>END_GROUP: PM-PROXY-SELECTION-DC</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>NONE</positive>
+    <run>YES</run>
+</test_case>
+<!--************* *************-->
+<test_case>
+    <test_name>Activate Hosts</test_name>
+    <test_action>activateHosts</test_action>
+    <parameters>hosts='{vds[0]},{vds[2]},{vds[3]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Wait for host is UP</test_name>
+    <test_action>waitForHostsStates</test_action>
+    <parameters>names='{vds[0]},{vds[2]},{vds[3]}', states='Up'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<!--*************Set CLUSTER proxy to choose*************-->
+<test_case>
+    <test_name>START_GROUP: PM-PROXY-SELECTION-CLUSTER</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>NONE</positive>
+    <run>YES</run>
+</test_case>
+<test_case>
+    <test_name>Configure power management with apc_snmp priority to cluster as proxy</test_name>
+    <test_action>updateHost</test_action>
+    <parameters>host='{vds[1]}', pm='true', pm_type='{pm_type_apc_snmp}',
+               pm_address='{pm_address_apc_snmp}',
+               pm_username='{pm_username_apc_snmp}',
+               pm_password='{pm_password_apc_snmp}',
+               pm_slot=4,  pm_proxies=[('cluster'),('dc')],
+               agents=[('{pm_type_apc_snmp}','{pm_address_apc_snmp}','{pm_username_apc_snmp}','{pm_password_apc_snmp}',None,False,1,)]
+    </parameters>
+    <positive>True</positive>
+    <run>yes</run>
+</test_case>
+<!--*************Hosts on DC and Cluster UP, must choose host on CLUSTER*************-->
+<test_case>
+    <test_name>Check time elapsed from previous PM operation</test_name>
+    <test_action>waitForHostPmOperation</test_action>
+    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Fence host</test_name>
+    <test_action>fenceHost</test_action>
+    <parameters>host='{vds[1]}', fence_type='e{fence_type_restart}'</parameters>
+    <positive>True</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Check if the fence command occur and check events</test_name>
+    <test_type>rest</test_type>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='\"{vds[0]} from CLUSTER was choosen as a proxy to execute Stop command\" and type=605', query="{vds[1]} and type=41", expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <tcms_case_id>234134</tcms_case_id>
+</test_case>
+<test_case>
+    <test_name>Wait for host is UP</test_name>
+    <test_action>waitForHostsStates</test_action>
+    <parameters>names='{vds[1]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<!--*************Host on DC up and on cluster in maintenance, must choose host on CLUSTER*************-->
+<test_case>
+    <test_name>Set Active Host To Maintenance</test_name>
+    <test_action>deactivateHost</test_action>
+    <parameters>host='{vds[0]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Wait for host is in maintenance</test_name>
+    <test_action>waitForHostsStates</test_action>
+    <parameters>names='{vds[0]}', states='Maintenance'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Check time elapsed from previous PM operation</test_name>
+    <test_action>waitForHostPmOperation</test_action>
+    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Fence host '{vds[1]}'</test_name>
+    <test_action>fenceHost</test_action>
+    <parameters>host='{vds[1]}', fence_type='e{fence_type_restart}'</parameters>
+    <positive>True</positive>
+    <vital>TRUE</vital>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Check if the fence command occur and check events</test_name>
+    <test_type>rest</test_type>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='\"{vds[0]} from CLUSTER was choosen as a proxy to execute Stop command\" and type=605', query="{vds[1]} and type=41", expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <tcms_case_id>234137</tcms_case_id>
+</test_case>
+<!--*************Host on DC and cluster in maintenance, must choose host on CLUSTER*************-->
+<test_case>
+    <test_name>Set Active Hosts To Maintenance</test_name>
+    <test_action>deactivateHosts</test_action>
+    <parameters>hosts='{vds[2]},{vds[3]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Wait for host is in maintenance</test_name>
+    <test_action>waitForHostsStates</test_action>
+    <parameters>names='{vds[2]},{vds[3]}', states='Maintenance'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Check time elapsed from previous PM operation</test_name>
+    <test_action>waitForHostPmOperation</test_action>
+    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Fence host '{vds[1]}'</test_name>
+    <test_action>fenceHost</test_action>
+    <parameters>host='{vds[1]}', fence_type='e{fence_type_restart}'</parameters>
+    <positive>True</positive>
+    <vital>TRUE</vital>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Check if the fence command occur and check events</test_name>
+    <test_type>rest</test_type>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='\"{vds[0]} from CLUSTER was choosen as a proxy to execute Stop command\" and type=605', query="{vds[1]} and type=41", expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <tcms_case_id>234138</tcms_case_id>
+</test_case>
+<test_case>
+    <test_name>END_GROUP: PM-PROXY-SELECTION-CLUSTER</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>NONE</positive>
+    <run>YES</run>
+</test_case>
+<!--************* *************-->
+<test_case>
+    <test_name>Activate Hosts</test_name>
+    <test_action>activateHosts</test_action>
+    <parameters>hosts='{vds[0]},{vds[2]},{vds[3]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Wait for host is UP</test_name>
+    <test_action>waitForHostsStates</test_action>
+    <parameters>names='{vds[0]},{vds[2]},{vds[3]}', states='Up'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<!--*************Checking proxy selection for fencing start and stop*************-->
+<test_case>
+    <test_name>Set Active Host To Maintenance</test_name>
+    <test_action>deactivateHost</test_action>
+    <parameters>host='{vds[1]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Wait for host is in maintenance</test_name>
+    <test_action>waitForHostsStates</test_action>
+    <parameters>names='{vds[1]}', states='Maintenance'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<!--************* *************-->
+<test_case>
+    <test_name>Check time elapsed from previous PM operation</test_name>
+    <test_action>waitForHostPmOperation</test_action>
+    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Fence host</test_name>
+    <test_action>fenceHost</test_action>
+    <parameters>host='{vds[1]}', fence_type='e{fence_type_stop}'</parameters>
+    <positive>True</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Check if the fence command occur and check events</test_name>
+    <test_type>rest</test_type>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='\"{vds[0]} from CLUSTER was choosen as a proxy to execute Stop command\" and type=605', query="{vds[1]} and type=21", expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Wait for host is down</test_name>
+    <test_action>waitForHostsStates</test_action>
+    <parameters>names='{vds[1]}', states='Down'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<!--************* *************-->
+<test_case>
+    <test_name>Check time elapsed from previous PM operation</test_name>
+    <test_action>waitForHostPmOperation</test_action>
+    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Fence host (start)</test_name>
+    <test_action>fenceHost</test_action>
+    <parameters>host='{vds[1]}', fence_type='e{fence_type_start}'</parameters>
+    <positive>True</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Check if the fence command occur and check events</test_name>
+    <test_type>rest</test_type>
+    <test_action>searchForRecentEvent</test_action>
+    <parameters>win_start_query='{vds[0]} and type=605', query="{vds[1]} and type=496", expected_count=1</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Wait for host is UP</test_name>
+    <test_action>waitForHostsStates</test_action>
+    <parameters>names='{vds[1]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+</input>

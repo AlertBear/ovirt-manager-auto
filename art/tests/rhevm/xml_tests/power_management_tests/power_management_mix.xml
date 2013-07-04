@@ -1,0 +1,171 @@
+<?xml-stylesheet type="text/xsl" href="table.xslt"?>
+<input tcms_plan_id="3480">
+<test_case>
+    <test_name>START_GROUP: POWER-MANAGEMENT-MIX-POSITIVE</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>NONE</positive>
+    <run>YES</run>
+</test_case>
+<test_case>
+    <test_name>Configure power management with wrong fencing device type</test_name>
+    <test_action>updateHost</test_action>
+    <parameters>host='{vds[1]}', pm='true', pm_type='wrong_type', pm_address='{pm_address_apc_snmp}', pm_username='{pm_username_apc_snmp}', pm_password='{pm_password_apc_snmp}'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+<test_name>Configure power management with no password</test_name>
+    <test_action>updateHost</test_action>
+    <parameters>host='{vds[1]}', pm='true', pm_type='{pm_type_apc_snmp}', pm_address='{pm_address_apc_snmp}', pm_username='{pm_username_apc_snmp}'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Configure power management for the host</test_name>
+    <test_action>updateHost</test_action>
+    <parameters>host='{vds[1]}', pm='true', pm_type='{pm_type_apc_snmp}', pm_address='{pm_address_apc_snmp}', pm_username='{pm_username_apc_snmp}', pm_password='{pm_password_apc_snmp}', pm_slot=4, pm_proxies=[('cluster'),('dc')], agents=[('{pm_type_apc_snmp}','{pm_address_apc_snmp}','{pm_username_apc_snmp}','{pm_password_apc_snmp}',None,False,1,)]</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Sleep 5Min; no fence operation is allowed 5 minutes after host installation</test_name>
+    <test_action>sleep</test_action>
+    <parameters>seconds=303</parameters>
+    <positive>NONE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Fence host</test_name>
+    <test_action>fenceHost</test_action>
+    <parameters>host='{vds[1]}', fence_type='e{fence_type_restart}'</parameters>
+    <positive>TRUE</positive>
+    <vital>TRUE</vital>
+    <run>yes</run>
+    <tcms_test_case>79332</tcms_test_case>
+</test_case>
+<test_case>
+    <test_name>Check time elapsed from previous PM operation</test_name>
+    <test_action>waitForHostPmOperation</test_action>
+    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Wait untill host is UP</test_name>
+    <test_action>waitForHostsStates</test_action>
+    <parameters>names='{vds[1]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Set Active Host To Maintenance</test_name>
+    <test_action>deactivateHost</test_action>
+    <parameters>host='{vds[1]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Stop host</test_name>
+    <test_action>fenceHost</test_action>
+    <parameters>host='{vds[1]}', fence_type='e{fence_type_stop}'</parameters>
+    <positive>TRUE</positive>
+   <run>yes</run>
+   <tcms_test_case>79329</tcms_test_case>
+</test_case>
+<test_case>
+    <test_name>Check time elapsed from previous PM operation</test_name>
+    <test_action>waitForHostPmOperation</test_action>
+    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Start host</test_name>
+    <test_action>fenceHost</test_action>
+    <parameters>host='{vds[1]}', fence_type='e{fence_type_start}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <tcms_test_case>286195</tcms_test_case>
+</test_case>
+<test_case>
+    <test_name>Check time elapsed from previous PM operation</test_name>
+    <test_action>waitForHostPmOperation</test_action>
+    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Set Active Host To Maintenance</test_name>
+    <test_action>deactivateHost</test_action>
+    <parameters>host='{vds[1]}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Start host</test_name>
+    <test_action>fenceHost</test_action>
+    <parameters>host='{vds[1]}', fence_type='e{fence_type_start}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+    <tcms_test_case>79326</tcms_test_case>
+</test_case>
+<test_case>
+    <test_name>Check time elapsed from previous PM operation</test_name>
+    <test_action>waitForHostPmOperation</test_action>
+    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>END_GROUP: POWER-MANAGEMENT-MIX-POSITIVE</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>NONE</positive>
+    <run>YES</run>
+</test_case>
+<test_case>
+    <test_name>START_GROUP: POWER-MANAGEMENT-MIX-NEGATIVE</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>NONE</positive>
+    <run>YES</run>
+</test_case>
+<test_case>
+    <test_name>Start host</test_name>
+    <test_action>fenceHost</test_action>
+    <parameters>host='{vds[1]}', fence_type='e{fence_type_start}'</parameters>
+    <positive>False</positive>
+    <run>yes</run>
+    <tcms_test_case>79327</tcms_test_case>
+</test_case>
+<test_case>
+    <test_name>Check time elapsed from previous PM operation</test_name>
+    <test_action>waitForHostPmOperation</test_action>
+    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Stop host</test_name>
+    <test_action>fenceHost</test_action>
+    <parameters>host='{vds[1]}', fence_type='e{fence_type_stop}'</parameters>
+    <positive>False</positive>
+    <run>yes</run>
+    <tcms_test_case>79330</tcms_test_case>
+</test_case>
+<test_case>
+    <test_name>Check time elapsed from previous PM operation</test_name>
+    <test_action>waitForHostPmOperation</test_action>
+    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>END_GROUP: POWER-MANAGEMENT-MIX-NEGATIVE</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>NONE</positive>
+    <run>YES</run>
+</test_case>
+</input>

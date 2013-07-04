@@ -536,7 +536,7 @@ def updateHost(positive, host, **kwargs):
         pmOptions = None
         pm_proxies = None
 
-        if pm_port or pm_secure:
+        if pm_port or pm_secure or pm_slot:
             pmOptions = Options()
             if pm_port and pm_port.strip():
                 op = Option(name='port', value=pm_port)
@@ -628,6 +628,25 @@ def activateHost(positive, host, wait=True):
 
     return status and testHostStatus
 
+@is_action()
+def activateHosts(positive, hosts):
+    '''
+    Description: activates the set of hosts. If host activation is not
+                 successful, waits 30 seconds before the second attempt
+                 - due to possible contending for SPM
+    Author: alukiano
+    Parameters:
+    * hosts - hosts to be activated
+    Returns: True (success) / False (failure)
+    '''
+    for host in hosts.split(','):
+        status = activateHost(bool(True), host)
+        if not status:
+            time.sleep(30)
+            status = activateHost(bool(True), host)
+            if not status:
+                return status
+    return positive
 
 @is_action()
 def deactivateHost(positive, host, expected_status=ENUMS['host_state_maintenance']):

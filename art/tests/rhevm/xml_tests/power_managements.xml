@@ -1,0 +1,7 @@
+<input xmlns:xi="http://www.w3.org/2001/XInclude">
+      <xi:include href="power_management_tests/setup.xml" />
+      <xi:include href="power_management_tests/power_management_mix.xml" />
+      <xi:include href="power_management_tests/power_management_proxy_selection.xml" />
+      <xi:include href="power_management_tests/power_management_multi_tier.xml" />
+      <xi:include href="power_management_tests/teardown.xml" />
+</input>

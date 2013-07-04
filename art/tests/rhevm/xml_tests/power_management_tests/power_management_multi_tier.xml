@@ -1,0 +1,180 @@
+<?xml-stylesheet type="text/xsl" href="table.xslt"?>
+<input tcms_plan_id="8177">
+<!--*************PM-SELECTION WITHOUT CONCURRENT************* -->
+<test_case>
+    <test_name>START_GROUP: PM-SELECTION-WITHOUT-CONCURRENT</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>NONE</positive>
+    <run>YES</run>
+</test_case>
+<test_case>
+    <test_name>Configure primary power management with two power managers</test_name>
+    <test_action>updateHost</test_action>
+    <parameters>host='{vds[1]}', pm='true', pm_type='{pm_type_apc_snmp}',
+                pm_address='{pm_address_apc_snmp}',
+                pm_username='{pm_username_apc_snmp}',
+                pm_password='{pm_password_apc_snmp}',
+                pm_slot=4,  pm_proxies=[('cluster'),('dc')],
+                agents=[('{pm_type_apc_snmp}','{pm_address_apc_snmp}','{pm_username_apc_snmp}','{pm_password_apc_snmp}',None,False,1,),
+                ('{pm_type_ipmilan}','{pm_address_ipmilan}','{pm_username_ipmilan}','{pm_password_ipmilan}',None,False,2,)]
+    </parameters>
+    <positive>True</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Check time elapsed from previous PM operation</test_name>
+    <test_action>waitForHostPmOperation</test_action>
+    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Fence host</test_name>
+    <test_action>fenceHost</test_action>
+    <parameters>host='{vds[1]}', fence_type='e{fence_type_restart}'</parameters>
+    <positive>True</positive>
+    <run>yes</run>
+    <tcms_test_case>235276</tcms_test_case>
+</test_case>
+<test_case>
+    <test_name>Check time elapsed from previous PM operation</test_name>
+    <test_action>waitForHostPmOperation</test_action>
+    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <positive>True</positive>
+    <run>yes</run>
+</test_case>
+
+<test_case>
+    <test_name>Configure primary power management with wrong parameters</test_name>
+    <test_action>updateHost</test_action>
+    <parameters>host='{vds[1]}', pm='true', pm_type='{pm_type_apc_snmp}',
+                pm_address='11.11.11.11',
+                pm_username='{pm_username_apc_snmp}',
+                pm_password='{pm_password_apc_snmp}',
+                pm_slot=4,  pm_proxies=[('cluster'),('dc')],
+                agents=[('{pm_type_apc_snmp}','11.11.11.11','{pm_username_apc_snmp}','{pm_password_apc_snmp}',None,False,1,),
+                ('{pm_type_ipmilan}','{pm_address_ipmilan}','{pm_username_ipmilan}','{pm_password_ipmilan}',None,False,2,)]
+    </parameters>
+    <positive>True</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Fence host</test_name>
+    <test_action>fenceHost</test_action>
+    <parameters>host='{vds[1]}', fence_type='e{fence_type_restart}'</parameters>
+    <positive>True</positive>
+    <run>yes</run>
+    <tcms_test_case>235277</tcms_test_case>
+</test_case>
+<test_case>
+    <test_name>Check time elapsed from previous PM operation</test_name>
+    <test_action>waitForHostPmOperation</test_action>
+    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <positive>True</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>END_GROUP: PM-SELECTION-WITHOUT-CONCURRENT</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>NONE</positive>
+    <run>YES</run>
+</test_case>
+<!--*************PM-SELECTION WITH CONCURRENT************* -->
+<test_case>
+    <test_name>START_GROUP: PM-SELECTION-WITH-CONCURRENT</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>NONE</positive>
+    <run>YES</run>
+</test_case>
+<test_case>
+    <test_name>Configure primary power management with two power managers</test_name>
+    <test_action>updateHost</test_action>
+    <parameters>host='{vds[1]}', pm='true', pm_type='{pm_type_apc_snmp}',
+                pm_address='{pm_address_apc_snmp}',
+                pm_username='{pm_username_apc_snmp}',
+                pm_password='{pm_password_apc_snmp}',
+                pm_slot=4,  pm_proxies=[('cluster'),('dc')],
+                agents=[('{pm_type_apc_snmp}','{pm_address_apc_snmp}','{pm_username_apc_snmp}','{pm_password_apc_snmp}',None,True,1,),
+                ('{pm_type_ipmilan}','{pm_address_ipmilan}','{pm_username_ipmilan}','{pm_password_ipmilan}',None,True,2,)]
+    </parameters>
+    <positive>True</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Fence host</test_name>
+    <test_action>fenceHost</test_action>
+    <parameters>host='{vds[1]}', fence_type='e{fence_type_restart}'</parameters>
+    <positive>True</positive>
+    <run>yes</run>
+    <tcms_test_case>235284</tcms_test_case>
+</test_case>
+<test_case>
+    <test_name>Check time elapsed from previous PM operation</test_name>
+    <test_action>waitForHostPmOperation</test_action>
+    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <positive>True</positive>
+    <run>yes</run>
+</test_case>
+
+<test_case>
+    <test_name>Configure primary power management with wrong parameters</test_name>
+    <test_action>updateHost</test_action>
+    <parameters>host='{vds[1]}', pm='true', pm_type='{pm_type_apc_snmp}',
+                pm_address='11.11.11.11',
+                pm_username='{pm_username_apc_snmp}',
+                pm_password='{pm_password_apc_snmp}',
+                pm_slot=4,  pm_proxies=[('cluster'),('dc')],
+                agents=[('{pm_type_apc_snmp}','11.11.11.11','{pm_username_apc_snmp}','{pm_password_apc_snmp}',None,True,1,),
+                ('{pm_type_ipmilan}','{pm_address_ipmilan}','{pm_username_ipmilan}','{pm_password_ipmilan}',None,True,2,)]
+    </parameters>
+    <positive>True</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Maintenance Host</test_name>
+    <test_action>deactivateHost</test_action>
+    <parameters>host='{vds[1]}'</parameters>
+    <positive>True</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Fence host</test_name>
+    <test_action>fenceHost</test_action>
+    <parameters>host='{vds[1]}', fence_type='e{fence_type_stop}'</parameters>
+    <positive>False</positive>
+    <run>yes</run>
+    <tcms_test_case>235289</tcms_test_case>
+</test_case>
+<test_case>
+    <test_name>Check time elapsed from previous PM operation</test_name>
+    <test_action>waitForHostPmOperation</test_action>
+    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <positive>True</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Fence host</test_name>
+    <test_action>fenceHost</test_action>
+    <parameters>host='{vds[1]}', fence_type='e{fence_type_start}'</parameters>
+    <positive>True</positive>
+    <run>yes</run>
+    <tcms_test_case>235286</tcms_test_case>
+</test_case>
+<test_case>
+    <test_name>Check time elapsed from previous PM operation</test_name>
+    <test_action>waitForHostPmOperation</test_action>
+    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <positive>True</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>END_GROUP: PM-SELECTION-WITH-CONCURRENT</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>NONE</positive>
+    <run>YES</run>
+</test_case>
+</input>
