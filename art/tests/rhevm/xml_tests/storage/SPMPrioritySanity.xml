@@ -109,11 +109,39 @@
    <run>yes</run>
 </test_case>
 <test_case>
-   <test_name>Activate hosts</test_name>
+   <test_name>Activate first host only</test_name>
    <test_action>activateHost</test_action>
-   <parameters>host='{vds}'</parameters>
+   <parameters>host='{vds[0]}'</parameters>
    <positive>TRUE</positive>
-   <run>loop({vds})</run>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Wait until datacenter is up</test_name>
+   <test_action>waitForDataCenterState</test_action>
+   <parameters>name='test_136167'</parameters>
+   <positive>none</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Ensure first host is spm</test_name>
+   <test_action>checkHostsForSPM</test_action>
+   <parameters>hosts='[vds]', expected_spm_host='{vds[0]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
+   <test_name>Activate second host</test_name>
+   <test_action>activateHost</test_action>
+   <parameters>host='{vds[1]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+ <test_case>
+   <test_name>Activate host third host</test_name>
+   <test_action>activateHost</test_action>
+   <parameters>host='{vds[2]}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Set first host to maintenance</test_name>
