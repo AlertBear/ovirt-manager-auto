@@ -2,7 +2,7 @@
 <!-- vim: set ts=3 sw=3 expandtab: -->
 <?xml-stylesheet type="text/xsl" href="table.xslt"?>
 
-<input>
+<input tcms_plan_id="9950">
 <test_case>
    <test_name>START_GROUP: ksmtest_set-up</test_name>
    <test_action/>
@@ -165,6 +165,7 @@
    <run>YES</run>
    <fetch_output>actual_thres->actual_thres</fetch_output>
    <vital>True</vital>
+   <tcms_test_case>287476</tcms_test_case>
 </test_case>
 <test_case>
    <test_name>Verify the KSM kickin point</test_name>
@@ -179,6 +180,7 @@
    <parameters>poolname='ksmtest', vm_total=%pool_size%, host='{vds[0]}', host_user='root', host_passwd='{vds_password[0]}', guest_user='{guest_user}', guest_passwd='{guest_passwd}', loadType='CPU', port={ksmtest_loadport}, load=100</parameters>
    <positive>TRUE</positive>
    <run>YES</run>
+   <tcms_test_case>287479</tcms_test_case>
 </test_case>
 <test_case>
    <test_name>END_GROUP: ksmtest_runtests</test_name>
