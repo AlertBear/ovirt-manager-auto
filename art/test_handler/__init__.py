@@ -5,7 +5,7 @@ import art
 
 def __compose_files_location(env_var):
     paths = ['.']
-    custom_paths = [ x for x in set(os.environ.get(env_var, '').split(':')) if x ]
+    custom_paths = [x for x in os.environ.get(env_var, '').split(':') if x]
     paths.extend(custom_paths)
 #    paths.append('/opt/art')
     return paths
