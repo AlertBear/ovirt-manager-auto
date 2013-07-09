@@ -307,9 +307,12 @@ class Bugzilla(Component):
             if fixed_at == NONE_VER:
                 return False
 
-            fixed_at = Version(fixed_at)
-            if fixed_at > self.version:
-                return True
+            try:
+                fixed_at = Version(fixed_at)
+                if fixed_at > self.version:
+                    return True
+            except (ValueError, TypeError):
+                logger.warn("Version '%s' is not applicable", fixed_at)
 
         return False
 
