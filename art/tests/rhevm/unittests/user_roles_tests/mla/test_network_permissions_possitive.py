@@ -278,6 +278,7 @@ class NetworkingPossitive(unittest.TestCase):
 
     @istest
     @tcms(TCMS_PLAN_ID_POS, 231830)
+    @bz(982647)
     def networkVisibilityInAPI(self):
         """ Network visibility in RestAPI """
         # Create two network in dc and assign one to cluster
