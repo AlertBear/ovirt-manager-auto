@@ -8,68 +8,154 @@ machines as defined in your configuration file.
 
 CLI Options:
 ------------
-    --cleanup   Enable the plugin and clean all (storage and network)
-    --cleanup-storage   Enable plugin and clean storage only
-    --cleanup-network   Enable plugin and clean network only
+    --with-cleanup   Enable the plugin and clean all
 """
-
-import logging
-from art.test_handler.plmanagement import logger as root_logger
-from art.test_handler.plmanagement import Component, implements
-from art.test_handler.plmanagement.interfaces.resources_listener import IResourcesListener
+from itertools import cycle, izip
+from utilities import machine
+from art.test_handler.plmanagement import PluginError
+from art.test_handler.plmanagement import Component, implements, get_logger
+from art.test_handler.plmanagement.interfaces.resources_listener import \
+    IResourcesListener
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
+from art.test_handler.plmanagement.interfaces.config_validator import\
+    IConfigValidation
 
 
-logger = logging.getLogger(root_logger.name+'.host_cleanup')
+logger = get_logger('host_cleanup')
 
 DEFAULT_STATE = False
-AD_ENABLED = 'auto_devices'
-CLEANUP = 'cleanup'
+CLEANUP = 'HOSTS_CLEANUP'
 RUN_SECTION = 'RUN'
+SERVICES = ['rpcbind']
+
+
+def cleanHostStorageSession(hostObj, **kwargs):
+    '''
+    Description: Runs few commands on a given host to clean storage related
+                 session and dev maps.
+    **Author**: talayan
+    **Parameters**:
+      **hostObj* - Object represnts the hostObj
+    '''
+#   check if there is an active session
+    check_iscsi_active_session = ['iscsiadm', '-m', 'session']
+    logger.info("Run %s to check if there are active iscsi sessions",
+                " ".join(check_iscsi_active_session))
+    res, out = hostObj.runCmd(check_iscsi_active_session)
+    if not res:
+        logger.info("Run %s Res: %s",
+                    " ".join(check_iscsi_active_session), out)
+        return
+
+    logger.info("There are active session, perform clean and logout")
+
+    commands = [['iscsiadm', '-m', 'session', '-u'],
+                ['multipath', '-F'],
+                ['dmsetup', 'remove_all']]
+
+    for cmd in commands:
+        logger.info("Run %s", " ".join(cmd))
+        res, out = hostObj.runCmd(cmd)
+        if not res:
+            logger.info(str(out))
+
+
+def killProcesses(hostObj, procName, **kwargs):
+    '''
+    Description: pkill procName
+
+    **Author**: talayan
+    **Parameters**:
+      **hostObj* - Object represents the hostObj
+      **procName* - process to kill
+    '''
+#   check if there is zombie qemu proccess
+    pgrep_proc = ['pgrep', procName]
+    logger.info("Run %s to check there are running processes..",
+                " ".join(pgrep_proc))
+    res, out = hostObj.runCmd(pgrep_proc)
+    if not res:
+        logger.info("Run %s Res: %s", " ".join(pgrep_proc), out)
+        return
+
+    logger.info("performing: pkill %s" % procName)
+
+    pkill_proc = ['pkill', procName]
+
+    logger.info("Run %s" % " ".join(pkill_proc))
+    res, out = hostObj.runCmd(pkill_proc)
+    if not res:
+        logger.info(str(out))
+
+
+def restartServices(hostObj):
+    '''
+    Description: stop and restart needed services
+
+    **Author**: imeerovi
+    **Parameters**:
+      **hostObj* - Object represents the hostObj
+    Returns: True if succeeded to stop/restart needed services
+             and False in other case
+    '''
+    logger.info("Restarting services")
+    for service in SERVICES:
+        logger.info("Restarting %s", service)
+        if not hostObj.restartService(service):
+            logger.error("Failed to restart %s", service)
+            return False
+    return True
+
+
+def hostCleanup(address, password, username='root'):
+    '''
+    Description: function that cleanup hosts
+
+    **Author**: imeerovi
+    **Parameters**:
+      **address* - host address
+      **password* - password
+      **username* - username [root]
+    Returns: True if succeeded to cleanup host and False in other case
+    '''
+    hostObj = machine.Machine(address, username, password).util('linux')
+
+    cleanHostStorageSession(hostObj)
+    killProcesses(hostObj, 'qemu')
+    if not restartServices(hostObj):
+        return False
+    return True
+
 
 class CleanUpHosts(Component):
     """
     Plugin provides cleanup procedure for hosts.
     """
-    implements(IResourcesListener, IConfigurable, IPackaging)
+    implements(IResourcesListener, IConfigurable, IConfigValidation,
+               IPackaging)
     name = "CleanUp hosts"
 
     def __init__(self):
         super(CleanUpHosts, self).__init__()
         self.cleanup = None
-        self.auto = False
         self.conf = None
 
     @classmethod
     def add_options(cls, parser):
         group = parser.add_argument_group(cls.name, description=cls.__doc__)
         group = group.add_mutually_exclusive_group()
-        group.add_argument('--cleanup', action="store_true", dest='cleanup', \
-                help="enable cleanup functionality, storage and network", \
-                default=False)
-        group.add_argument('--cleanup-storage', action="store_true", \
-                dest='cleanup_str', help="cleanup storage only", default=False)
-        group.add_argument('--cleanup-network', action="store_true", \
-                dest='cleanup_net', help="cleanup network only", default=False)
+        group.add_argument('--with-cleanup', action="store_true",
+                           dest='cleanup_enabled',
+                           help="enable cleanup functionality", default=False)
 
     def configure(self, params, conf):
         if not self.is_enabled(params, conf):
             return
-        logger.info("Configuring hosts plugin.")
-        self.auto = conf.get(RUN_SECTION).as_bool(AD_ENABLED)
-        self.conf = conf
-        if not (params.cleanup_str or params.cleanup_net):
-            self.storage, self.network = True, True
-        elif params.cleanup_str:
-            self.storage = True
-            self.network = False
-        elif params.cleanup_net:
-            self.storage = False
-            self.network = True
-        else:
-            self.storage, self.network = False, False
-            assert False, "This case shouldn't occure"
+        logger.info("Configuring hosts cleanup plugin.")
+        self._conf = conf['PARAMETERS']
+        self._hosts = self._conf.as_list('vds')
+        self._passwords = self._conf.as_list('vds_password')
 
     def on_storages_prep_request(self):
         pass
@@ -79,15 +165,17 @@ class CleanUpHosts(Component):
 
     def on_hosts_cleanup_req(self):
         logger.info('Starting hosts cleanup process...')
-        from utilities.host_utils import hostsCleanup
-        if not hostsCleanup(self.conf['PARAMETERS'], self.auto, \
-                storage=self.storage, network=self.network):
-            logger.error('Cleaning process was Failed.')
+        for host, password in izip(self._hosts, cycle(self._passwords)):
+            logger.info('Running on %s', host)
+            if not hostCleanup(host, password):
+                errMsg = 'Cleaning process was Failed on %s' % host
+                raise PluginError(errMsg)
         logger.info('Finish Cleanup process')
 
     @classmethod
     def is_enabled(cls, params, conf):
-        return any((params.cleanup, params.cleanup_str, params.cleanup_net))
+        conf_en = conf[CLEANUP].as_bool('enabled')
+        return params.cleanup_enabled or conf_en
 
     @classmethod
     def fill_setup_params(cls, params):
@@ -97,6 +185,11 @@ class CleanUpHosts(Component):
         params['author_email'] = 'lbednar@redhat.com'
         params['description'] = 'Hosts cleanup for ART'
         params['long_description'] = 'Plugin for ART which is responsible '\
-                'for clear VDS machines.'
-        params['requires'] = ['art-utilities']
-        params['py_modules'] = ['art.test_handler.plmanagement.plugins.hosts_cleanup_plugin']
+            'for clear VDS machines.'
+        params['requires'] = []
+        params['py_modules'] = \
+            ['art.test_handler.plmanagement.plugins.hosts_cleanup_plugin']
+
+    def config_spec(self, spec, val_funcs):
+        section_spec = spec.setdefault(CLEANUP, {})
+        section_spec['enabled'] = 'boolean(default=%s)' % DEFAULT_STATE

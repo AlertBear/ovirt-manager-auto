@@ -421,7 +421,6 @@ def addHost(positive, name, wait=True, vdcPort=None, rhel_like=True,
             False otherwise.
     '''
 
-#TODO: This function needs serious refactoring. (talayan)
     cluster = kwargs.pop('cluster', 'Default')
 
     if _check_hypervisor(positive, name, cluster):
@@ -453,18 +452,6 @@ def addHost(positive, name, wait=True, vdcPort=None, rhel_like=True,
     if osType.lower().find('hypervisor') == -1 or rhel_like:
         host = Host(name=name, cluster=hostCl, address=host_address,
                     reboot_after_installation=reboot, **kwargs)
-        # cleanup host storage sessions and qemus from previous runs
-        # since host are not rebooted
-        if hostObj is None and root_password:
-            hostObj = machine.Machine(host_address, 'root',
-                                      root_password).util('linux')
-
-
-        if root_password:
-            cleanHostStorageSession(hostObj)
-            killProcesses(hostObj, 'qemu')
-            if not hostObj.restartService('rpcbind'):
-                return not positive
 
         host, status = HOST_API.create(host, positive)
 
@@ -2209,6 +2196,7 @@ def cleanHostStorageSession(hostObj, **kwargs):
         res, out = hostObj.runCmd(cmd)
         if not res:
             HOST_API.logger.info(str(out))
+
 
 def killProcesses(hostObj, procName, **kwargs):
     '''
