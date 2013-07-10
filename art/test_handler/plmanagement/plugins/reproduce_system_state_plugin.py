@@ -8,19 +8,18 @@ This plugin is triggered in pre or post test case step
 
 CLI Options
 -----------
-  --with-repro Enables reproduce system state plugin
-  --test_name TEST_NAME Name of test case
-  --stop_position STOP_POSITION Position to stop ART run: could be before or
-                  after
+  --with-repro  Enables reproduce system state plugin
+  --test_name   Test name of test case
+  --stop_position   Position to stop ART run: could be before or after
 
 Configuration File Options
 --------------------------
-    |**[REPRODUCE SYSTEM STATE]**
-    |**enabled** true/false; equivalent to --with-repro CLI option
-    |**stop_position** before/after equivalent to --stop_position CLI option
-    |**test_name** string with name of the test that ART will be stopped
+    | **[REPRODUCE SYSTEM STATE]**
+    | **enabled** true/false; equivalent to --with-repro CLI option
+    | **stop_position** before/after equivalent to --stop_position CLI option
+    | **test_name** string with name of the test that ART will be stopped
     |           before or after running it equivalent to --test_name CLI option
-    |**signal** string with signal that will be passed to ART
+    | **signal** string with signal that will be passed to ART
 """
 
 import os

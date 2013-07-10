@@ -438,7 +438,7 @@ Example of definition of spec file in plugin::
 .. note:
 
     Defining Configspec files allows you to significantly reduce the size of configuration files and simplifies the creation of new ones.
-    
+
 Input Test Scenario File
 ========================
 
@@ -491,9 +491,9 @@ You can group your tests according to functionality, flows, testing
 purpose, etc. To define a custom group in the input file, add a new test
 case before the tests you want grouped. Fill the test case as follows:
 `test_name=START_GROUP: <name_of_tests_group>`. All other fields except 'run' are non-applicable and can be set as 'n/a' or skipped entirely.
-To run the group of tests you need to set the 'run' value. Possible run 
-values are 'yes' to run, and 'no' to not run the group. It can be also loop 
-or condition the statement. See possible 'run' values below (:ref:`runconditions`). All these 'run' values are applicable for test groups as well. Here's an example for 
+To run the group of tests you need to set the 'run' value. Possible run
+values are 'yes' to run, and 'no' to not run the group. It can be also loop
+or condition the statement. See possible 'run' values below (:ref:`runconditions`). All these 'run' values are applicable for test groups as well. Here's an example for
 starting group in xml file::
 
     <test_case>
@@ -635,11 +635,11 @@ run with the hostname and password relevant to the current iteration.
 Fetch Output
 ------------
 
-If your function returns values that you want to use in future tests, 
-specify them in this attribute. Your function should return additional 
-values (excluding status) in dictionary format. In this parameter you 
-need to specify the key name that relates to the desired output value, 
-as well as the location for the parameter name. The format of this 
+If your function returns values that you want to use in future tests,
+specify them in this attribute. Your function should return additional
+values (excluding status) in dictionary format. In this parameter you
+need to specify the key name that relates to the desired output value,
+as well as the location for the parameter name. The format of this
 value should be:
 ``<fetch_output_from_key_name>-><fetch_output_to_parameter_name>``
 
@@ -811,7 +811,7 @@ Object delete example
 
 ::
 
-    def removeObject(positive, object_name):    
+    def removeObject(positive, object_name):
         obj = my_api.find(object_name)
         return my_api.delete(dc, positive)
 
@@ -978,36 +978,4 @@ RHEVM Lib
     art.rhevm_api.tests_lib.high_level
     art.rhevm_api.tests_lib.low_level
 
-
-ART Plugins
-===========
-
-Here is a list of ART plugins and documentation
-
-.. toctree:: :maxdepth: 2
-
-        plugins/auto_devices_plugin
-        plugins/bz_plugin
-        plugins/cpu_name_resolution_plugin
-        plugins/csv_results_formatter_plugin
-        plugins/fetch_error_msg_from_vdc_plugin
-	plugins/generate_data_structs_plugin
-        plugins/host_nic_resolution_plugin
-        plugins/hosts_cleanup_plugin
-        plugins/log_capture_plugin
-	plugins/logstash_plugin
-	plugins/mac_converter_plugin
-        plugins/matrix_test_runner_plugin
-	plugins/puppet_plugin
-        plugins/remove_vdsm_plugin
-        plugins/rpm_version_fetcher_plugin
-	plugins/ssl_plugin
-        plugins/tcms_plugin
-        plugins/trac_plugin
-        plugins/unittest_test_runner_plugin
-	plugins/validate_events_plugin
-        plugins/vdsm_code_coverage_plugin
-        plugins/vital_disable_plugin
-        plugins/xml_results_formater_plugin
-        plugins/xunit_results_formater_plugin
-	
+.. include:: plugins.rst
