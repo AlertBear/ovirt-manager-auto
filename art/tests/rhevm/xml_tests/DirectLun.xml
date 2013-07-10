@@ -211,7 +211,7 @@
 <test_case>
    <test_name>Start suspended VM with direct lun</test_name>
    <test_action>startVm</test_action>
-   <parameters>vm='{data_center_type}TestVm', timeout=300, wait_for_status='e{vm_state_up}'</parameters>
+   <parameters>vm='{data_center_type}TestVm', timeout=600, wait_for_status='e{vm_state_up}'</parameters>
    <positive>True</positive>
    <run>yes</run>
 </test_case>
