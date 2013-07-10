@@ -3,9 +3,13 @@ from art.test_handler.plmanagement.interfaces.application import IApplicationLis
 from art.test_handler.plmanagement.interfaces.resources_listener import IResourcesListener
 
 
-class Resources(Component, IApplicationListener):
+class Resources(Component):
     implements(IApplicationListener)
     resources_listeners = ExtensionPoint(IResourcesListener)
+    name = "Resources plugin"
+
+    def on_plugins_loaded(self):
+        pass
 
     def on_application_start(self):
         #for rl in self.resources_listeners:
