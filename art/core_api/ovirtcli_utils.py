@@ -40,9 +40,9 @@ CONTROL_CHARS = u'[\n\r]'
 RHEVM_SHELL = 'rhevm-shell'
 TMP_FILE = '/tmp/cli_output.tmp'
 IP_FORMAT = '^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$'
-ADD_WAIVER = ['StorageDomain']
+ADD_WAIVER = []
 UPDATE_WAIVER = []
-REMOVE_WAIVER = ['StorageDomain']
+REMOVE_WAIVER = []
 ACTION_WAIVER = []
 COMPLEX_TO_BASE_CLASSES_DICT = {'HostNIC': 'nic'}
 
