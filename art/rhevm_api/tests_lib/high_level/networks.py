@@ -203,6 +203,10 @@ def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
                                        get('cluster_usages', None)):
                 logger.error("Cannot add network to Cluster")
                 return False
+        # creating logical interface nic.vlan when host, vlan_id are provided
+        if 'vlan_id' in net_param and host:
+                net_param['nic'] = ("%s.%s") % (net_param['nic'],
+                                                net_param['vlan_id'])
 
     for host in host_list:
         net_obj = []
@@ -210,9 +214,6 @@ def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
             address_list = net_param.get('address', [])
             netmask_list = net_param.get('netmask', [])
             gateway_list = net_param.get('gateway', [])
-            if 'vlan_id' in net_param:
-                net_param['nic'] = ("%s.%s") % (net_param['nic'],
-                                                net_param['vlan_id'])
 
             rc, out = genSNNic(nic=net_param['nic'],
                                network=net,
@@ -254,21 +255,25 @@ def removeNetFromSetup(host, auto_nics=['eth0'], network=[]):
         Function that removes networks from the host, Cluster and DC:
         Author: gcheresh
         Parameters:
-        * host - remote machine ip address or fqdn
+        * host - remote machine ip addresses or fqdns
         * auto_nics - a list of nics
         * network - list of networks to remove
-        Return: True value if succeeded in deleting network
-                from Host, Cluster DC
+        Return: True value if succeeded in deleting networks
+                from Hosts, Cluster, DC
     '''
+    host_list = [host] if isinstance(host, basestring) else host
     try:
-        sendSNRequest(True, host=host,
-                      auto_nics=auto_nics,
-                      check_connectivity='true',
-                      connectivity_timeout=CONNECTIVITY_TIMEOUT,
-                      force='false')
-        commitNetConfig(True, host=host)
         for index in range(len(network)):
             removeNetwork(True, network=network[index])
+
+        for host_i in host_list:
+            sendSNRequest(True, host=host_i,
+                          auto_nics=auto_nics,
+                          check_connectivity='true',
+                          connectivity_timeout=CONNECTIVITY_TIMEOUT,
+                          force='false')
+            commitNetConfig(True, host=host_i)
+
     except Exception as ex:
         logger.error("Remove Network from setup failed %s", ex, exc_info=True)
         return False
