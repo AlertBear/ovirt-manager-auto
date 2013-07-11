@@ -8,6 +8,8 @@ from art.test_handler.tools import tcms
 import helpers
 import config
 
+from art.test_handler.tools import bz
+
 LOGGER = logging.getLogger(__name__)
 ENUMS = helpers.ENUMS
 
@@ -127,6 +129,7 @@ class TestCase148670(helpers.TestCaseNFSOptions):
 
     @istest
     @tcms(tcms_plan_id, tcms_test_case)
+    @bz(983885)
     def test_create_nfs_storage_with_string_retrans(self):
         """ Tries to create an NFS storage domain with a string passed as
         the number of retransmissions
@@ -147,6 +150,7 @@ class TestCase148670(helpers.TestCaseNFSOptions):
 
     @istest
     @tcms(tcms_plan_id, tcms_test_case)
+    @bz(983885)
     def test_create_nfs_storage_with_string_timeout(self):
         """ Tries to create an NFS storage domain with a string passed as
         the NFS timeout
@@ -167,6 +171,7 @@ class TestCase148670(helpers.TestCaseNFSOptions):
 
     @istest
     @tcms(tcms_plan_id, tcms_test_case)
+    @bz(962442)
     def test_create_nfs_storage_with_out_of_range_retransmissions(self):
         """ Tries to create an NFS storage domain with an out of range
         retransmission number
@@ -183,6 +188,7 @@ class TestCase148670(helpers.TestCaseNFSOptions):
 
     @istest
     @tcms(tcms_plan_id, tcms_test_case)
+    @bz(962442)
     def test_create_nfs_storage_with_out_of_range_timeout(self):
         """ Tries to create an NFS storage domain with an out of range
         NFS timeout

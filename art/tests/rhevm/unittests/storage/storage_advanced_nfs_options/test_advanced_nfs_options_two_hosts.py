@@ -7,7 +7,7 @@ from art.rhevm_api.tests_lib.low_level import clusters as ll_cl
 from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_st
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms, bz
 
 import helpers
 import config
@@ -104,6 +104,7 @@ class TestCase148672(helpers.TestCaseStandardOperations):
 
     @istest
     @tcms(tcms_plan_id, tcms_test_case)
+    @bz(996146)
     def test_functionality_with_custom_nfs_options(self):
         """ Tests basic data center functionality with storage domain with
         custom NFS options
@@ -206,53 +207,6 @@ class TestCase166615(helpers.TestCaseNFSOptions):
         super(TestCase166615, cls).teardown_class()
 
 
-class TestCase148671(helpers.TestCaseNFSOptions):
-    """
-    Checks that advanced NFS options are unavailable for 3.0 datacenter
-
-    https://tcms.engineering.redhat.com/case/148671/?from_plan=5849
-
-    **Author**: Katarzyna Jachim
-    """
-    __test__ = True
-    tcms_plan_id = '5849'
-    tcms_test_case = '148671'
-    export_address = config.NFS_ADDRESS[0]
-    export_path = config.NFS_PATH[0]
-    std_name = 'test_%s' % tcms_test_case
-    nfs_version = 'v3'
-    nfs_timeout = 810
-    nfs_retrans = 8
-
-    def setUp(self):
-        """ creates 3.0 datacenter
-        """
-        self.dc_name = "test_%s_30" % self.tcms_test_case
-        self.cl_name = "test_%s_30" % self.tcms_test_case
-        self.host = config.HOST_FOR_30_DC
-        self.password = config.PASSWORDS[-1]
-        self.create_dc(helpers.VERSION_30)
-
-    @istest
-    @tcms(tcms_plan_id, tcms_test_case)
-    def test_nfs_options_in_30_dc(self):
-        """ tries to create a storage domain with custom advanced NFS
-        options in 3.0 datacenter
-        """
-        ll_st.addStorageDomain(
-            True, name=self.std_name, type=ENUMS['storage_dom_type_data'],
-            host=self.host, address=self.export_address,
-            storage_type=ENUMS['storage_type_nfs'], path=self.export_path,
-            nfs_version=self.nfs_version, nfs_retrans=self.nfs_retrans,
-            nfs_timeo=self.nfs_timeout)
-        ll_st.attachStorageDomain(False, self.dc_name, self.std_name)
-
-    def tearDown(self):
-        """ removes created 3.0 datacenter
-        """
-        helpers.clean_dc(self.dc_name, self.host, self.cl_name)
-
-
 class TestCase148697(helpers.TestCaseNFSOptions):
     """
     Tests checks that
@@ -279,17 +233,18 @@ class TestCase148697(helpers.TestCaseNFSOptions):
         """ creates storage domain with custom advanced 3.0 options
         """
         LOGGER.info("Creating storage domain with options")
+        self.dc_name = None
+        self.cl_name = None
+        self.host = config.HOST_FOR_30_DC
+        self.password = config.PASSWORDS[-1]
         hl_st.create_nfs_domain_with_options(
             self.sd_name, ENUMS['storage_dom_type_data'], config.HOSTS[0],
             self.nfs_address, self.nfs_path, retrans=self.nfs_retrans,
             version=self.nfs_version, timeo=self.nfs_timeout,
             datacenter=config.DATA_CENTER_NAME)
 
-        ll_st.detachStorageDomain(True, config.DATA_CENTER_NAME, self.sd_name)
-        self.dc_name = None
-        self.cl_name = None
-        self.host = config.HOST_FOR_30_DC
-        self.password = config.PASSWORDS[-1]
+        hl_st.detach_and_deactivate_domain(
+            config.DATA_CENTER_NAME, self.sd_name)
 
     @tcms(tcms_plan_id, tcms_test_case)
     def test_nfs_options_in_30_datacenter(self):

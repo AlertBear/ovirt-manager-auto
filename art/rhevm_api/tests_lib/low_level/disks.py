@@ -17,24 +17,22 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 import logging
-import os.path
 import time
 
-from art.core_api.apis_exceptions import EntityNotFound
-from art.core_api.apis_utils import data_st
+from art.core_api.apis_exceptions import EntityNotFound, APITimeout
+from art.core_api.apis_utils import data_st, TimeoutingSampler
 from art.rhevm_api.data_struct.data_structures import Fault
 from art.rhevm_api.utils.test_utils import get_api, split
 from art.rhevm_api.utils.xpath_utils import XPathMatch
-from utilities.utils import readConfFile
 from art.core_api import is_action
 from art.test_handler.settings import opts
 
-GBYTE = 1024**3
+GBYTE = 1024 ** 3
 ENUMS = opts['elements_conf']['RHEVM Enums']
 DEFAULT_CLUSTER = 'Default'
 NAME_ATTR = 'name'
 ID_ATTR = 'id'
-DEFAULT_DISK_TIMEOUT=180
+DEFAULT_DISK_TIMEOUT = 180
 
 VM_API = get_api('vm', 'vms')
 CLUSTER_API = get_api('cluster', 'clusters')
@@ -127,8 +125,8 @@ def _prepareDiskObject(**kwargs):
     disk = data_st.Disk(**kwargs)
 
     if storage_domain_name is not None:
-        storage_domain =  STORAGE_DOMAIN_API.find(storage_domain_name,
-                                                  NAME_ATTR)
+        storage_domain = STORAGE_DOMAIN_API.find(storage_domain_name,
+                                                 NAME_ATTR)
         storage_domains = data_st.StorageDomains()
         storage_domains.add_storage_domain(storage_domain)
         disk.storage_domains = storage_domains
@@ -148,7 +146,7 @@ def _prepareDiskObject(**kwargs):
             direct_lun.set_password(lun_creds[1])
 
         disk.set_lun_storage(data_st.Storage(logical_unit=[direct_lun],
-                                            type_=type_))
+                                             type_=type_))
 
     return disk
 
@@ -183,8 +181,8 @@ def addDisk(positive, **kwargs):
 #    kwargs.update(add=True)
     disk = _prepareDiskObject(**kwargs)
     disk, status = DISKS_API.create(disk, positive)
-    return status, { 'diskId' : disk.get_id()
-                     if disk and not isinstance(disk, Fault) else None }
+    return status, {'diskId': disk.get_id()
+                    if disk and not isinstance(disk, Fault) else None}
 
 
 @is_action()
@@ -266,11 +264,13 @@ def detachDisk(positive, alias, vmName, detach=True):
     diskObj = getVmDisk(vmName, alias)
     body = data_st.Action(detach=detach)
 
-    return DISKS_API.delete(diskObj, positive, body=body, element_name='action')
+    return DISKS_API.delete(
+        diskObj, positive, body=body, element_name='action')
 
 
 @is_action()
-def waitForDisksState(disksNames, status=ENUMS['disk_state_ok'], timeout=DEFAULT_DISK_TIMEOUT, sleep=10):
+def waitForDisksState(disksNames, status=ENUMS['disk_state_ok'],
+                      timeout=DEFAULT_DISK_TIMEOUT, sleep=10):
     """
     Description: Waits till all disks are in the given state
     Parameters:
@@ -284,9 +284,20 @@ def waitForDisksState(disksNames, status=ENUMS['disk_state_ok'], timeout=DEFAULT
     names = split(disksNames)
     [DISKS_API.find(disk) for disk in names]
 
-    query = ' and '.join(['alias="%s" and status=%s' % (name, status) for name in
-                          names])
-    return DISKS_API.waitForQuery(query, timeout=timeout, sleep=sleep)
+    sampler = TimeoutingSampler(timeout, sleep, DISKS_API.get, absLink=False)
+
+    try:
+        for sample in sampler:
+            disks_in_wrong_state = [
+                x for x in sample
+                if x.name in names and x.status.state != status]
+            if not disks_in_wrong_state:
+                return True
+    except APITimeout:
+        logger.error(
+            "Timeout when waiting for all the disks %s in %s state" % (
+                names, status))
+        return False
 
 
 @is_action()
@@ -305,7 +316,7 @@ def waitForDisksGone(positive, disksNames, timeout=DEFAULT_DISK_TIMEOUT,
     start = time.time()
     query = ' or '.join(["name=%s" % disk for disk in disks])
     while timeout > time.time() - start and timeout > 0:
-        time.sleep(sleep) # Sleep first due to rhevm slowness
+        time.sleep(sleep)  # Sleep first due to rhevm slowness
         found = DISKS_API.query(query)
         if not found:
             return positive
@@ -327,6 +338,7 @@ def compareDisksCount(name, expected_count, is_template=False):
     disks = getObjDisks(name, is_template=is_template, get_href=False)
     return len(disks) == expected_count
 
+
 @is_action()
 def checkDiskExists(positive, name):
     """
@@ -342,4 +354,3 @@ def checkDiskExists(positive, name):
     except EntityNotFound:
         return not positive
     return positive
-

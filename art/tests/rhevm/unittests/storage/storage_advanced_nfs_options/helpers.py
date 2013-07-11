@@ -11,6 +11,7 @@ import os
 from unittest import TestCase
 
 from art.rhevm_api.utils import test_utils
+from art.core_api import apis_exceptions
 from art.test_handler import exceptions
 from utilities import sshConnection
 
@@ -444,48 +445,52 @@ class TestCaseStandardOperations(TestCaseNFSOptions):
         hl_st.create_nfs_domain_with_options(
             self.sd_1, sd_type, self.host, config.NFS_ADDRESS[0],
             config.NFS_PATH[0], 'v3', 7, 700, datacenter)
-        ll_st.activateStorageDomain(True, datacenter, self.sd_1)
+        self.assertTrue(
+            ll_st.activateStorageDomain(True, datacenter, self.sd_1))
 
         hl_st.create_nfs_domain_with_options(
             self.sd_2, sd_type, self.host, config.NFS_ADDRESS[1],
             config.NFS_PATH[1], 'v3', 8, 800, datacenter)
-        ll_st.activateStorageDomain(True, datacenter, self.sd_2)
+        self.assertTrue(
+            ll_st.activateStorageDomain(True, datacenter, self.sd_2))
 
         hl_st.create_nfs_domain_with_options(
             self.sd_exp, ENUMS['storage_dom_type_export'], self.host,
             config.NFS_ADDRESS[2], config.NFS_PATH[2],
             datacenter=datacenter)
-        ll_st.activateStorageDomain(True, datacenter, self.sd_exp)
+        self.assertTrue(
+            ll_st.activateStorageDomain(True, datacenter, self.sd_exp))
 
-        ll_disks.addDisk(
+        self.assertTrue(ll_disks.addDisk(
             True, alias=self.disk_1, size=config.DISK_SIZE,
             storagedomain=self.sd_1, format=ENUMS['format_raw'],
-            interface=INTERFACE_VIRTIO, bootable=True)
+            interface=INTERFACE_VIRTIO, bootable=True))
 
-        ll_disks.addDisk(
+        self.assertTrue(ll_disks.addDisk(
             True, alias=self.disk_2, size=config.DISK_SIZE,
             storagedomain=self.sd_1, format=ENUMS['format_raw'],
-            interface=INTERFACE_VIRTIO, bootable=True)
+            interface=INTERFACE_VIRTIO, bootable=True))
 
-        ll_vms.addVm(
+        self.assertTrue(ll_vms.addVm(
             True, name=self.vm_1, storagedomain=self.sd_1,
-            cluster=config.CLUSTER_NAME)
-        ll_vms.addVm(
+            cluster=config.CLUSTER_NAME))
+        self.assertTrue(ll_vms.addVm(
             True, name=self.vm_2, storagedomain=self.sd_1,
-            cluster=config.CLUSTER_NAME)
+            cluster=config.CLUSTER_NAME))
 
-        ll_disks.waitForDisksState(",".join([self.disk_1, self.disk_2]))
+        self.assertTrue(ll_disks.waitForDisksState(
+            ",".join([self.disk_1, self.disk_2]), timeout=600))
 
-        ll_disks.attachDisk(True, self.disk_1, self.vm_1)
-        ll_disks.attachDisk(True, self.disk_2, self.vm_2)
+        self.assertTrue(ll_disks.attachDisk(True, self.disk_1, self.vm_1))
+        self.assertTrue(ll_disks.attachDisk(True, self.disk_2, self.vm_2))
 
         if config.HOST_FOR_30_DC == self.host_2:  # if we don't have more...
             hl_hosts.add_hosts(
                 [self.host_2], [config.PASSWORDS[-1]], config.CLUSTER_NAME)
 
-        ll_templ.createTemplate(
+        self.assertTrue(ll_templ.createTemplate(
             True, vm=self.vm_1, name=self.template,
-            cluster=config.CLUSTER_NAME)
+            cluster=config.CLUSTER_NAME))
 
     def perform_standard_operations(self, vm, vm_with_disk, disk, another_std,
                                     template, export_std, datacenter):
@@ -523,6 +528,7 @@ class TestCaseStandardOperations(TestCaseNFSOptions):
         LOGGER.info("Starting vm %s" % vm)
         ll_vms.startVm(True, vm)
         status, host_with_vm = ll_vms.getVmHost(vm)
+        LOGGER.info("Current host: %s" % host_with_vm)
         if not status:
             self.fail("Cannot get host with vm")
         for host in config.HOSTS:
@@ -561,13 +567,24 @@ class TestCaseStandardOperations(TestCaseNFSOptions):
     @classmethod
     def teardown_class(cls):
         """ Clears everything which won't be cleaned with basic tear down
+        Don't add asserts, in case of errors in the test some of the commands
+        may fail and it is OK.
         """
         ll_vms.stopVm(True, cls.vm_1)
         ll_vms.waitForVMState(cls.vm_1, 'down')
         ll_hosts.activateHost(True, config.HOSTS[0])
-        ll_templ.removeTemplate(True, cls.template)
-        ll_vms.removeVm(True, vm=cls.vm_1)
-        ll_vms.removeVm(True, vm=cls.vm_2)
+        try:
+            ll_templ.removeTemplate(True, cls.template)
+        except apis_exceptions.EntityNotFound:
+            pass
+        try:
+            ll_vms.removeVm(True, vm=cls.vm_1)
+        except apis_exceptions.EntityNotFound:
+            pass
+        try:
+            ll_vms.removeVm(True, vm=cls.vm_2)
+        except apis_exceptions.EntityNotFound:
+            pass
         ll_vms.waitForVmsGone(True, ",".join([cls.vm_1, cls.vm_2]))
         ll_st.activateStorageDomain(True, config.DATA_CENTER_NAME, 'nfs_0')
         ll_st.waitForStorageDomainStatus(

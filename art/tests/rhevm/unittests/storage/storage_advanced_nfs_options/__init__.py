@@ -36,4 +36,5 @@ def setup_module():
 def teardown_module():
     """ removes created datacenter, storages etc.
     """
+    import config
     ll_st.cleanDataCenter(True, config.DATA_CENTER_NAME)
