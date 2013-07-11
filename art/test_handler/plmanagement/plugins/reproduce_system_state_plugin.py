@@ -88,8 +88,8 @@ class ReproduceSystemState(Component):
         if not self.is_enabled(params, conf):
             return
         repro_cfg = conf.get(REPRO_OPTION)
-        test_name = params.test_name or repro_cfg['test_name']
-        self._test_names_list = [test.strip() for test in test_name.split(',')]
+        self._test_names_list = repro_cfg['test_name'] or \
+            [test.strip() for test in params.test_name.split(',')]
         self._stop_position = \
             params.stop_position or repro_cfg['stop_position']
         self._signal = params.signal_ or repro_cfg['signal']
