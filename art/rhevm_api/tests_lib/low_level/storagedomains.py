@@ -1345,7 +1345,7 @@ def checkVolume(positive, vdsName, username, passwd, dataCenter, storageDomain,
 @is_action()
 def prepareVmWithRhevm(positive, hosts, cpuName, username, password, datacenter,
                storage_type, cluster, data_domain_address, data_storage_domains,
-               version, type, export_domain_address, export_storage_domain,
+               version, type, export_domain_address, export_domain_path,
                export_domain_name, data_domain_name, template_name, vm_name,
                vm_description, tested_setup_mac_address, memory_size,
                format_export_domain, nic, nicType, lun_address, lun_target,
@@ -1378,6 +1378,20 @@ def prepareVmWithRhevm(positive, hosts, cpuName, username, password, datacenter,
         # Attach iso domain
         if not attachStorageDomain(positive=positive, datacenter=datacenter,
                      storagedomain=iso_domain_name):
+            return False
+
+    if export_domain_address:
+                # Add export domain
+        if not addStorageDomain(positive=positive, name=export_domain_name,
+                type=ENUMS['storage_dom_type_export'],
+                storage_type=ENUMS['storage_type_nfs'],
+                path=export_domain_path, address=export_domain_address,
+                host=hosts):
+            return False
+
+        # Attach iso domain
+        if not attachStorageDomain(positive=positive, datacenter=datacenter,
+                     storagedomain=export_domain_name):
             return False
 
     # Create VM and install it

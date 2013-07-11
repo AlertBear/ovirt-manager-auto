@@ -19,7 +19,8 @@ VM_API = get_api('vm', 'vms')
 try:
     # PGPASS, PREPARE_CONF should move to test conf file, once possible.
     from unittest_conf import config, PGPASS, REST_API_PASS, ISO_UP_CONF, \
-       LOG_COL_CONF, REST_API_HOST, ISO_DOMAIN_NAME
+       LOG_COL_CONF, IMAGE_UP_CONF, REST_API_HOST, ISO_DOMAIN_NAME, \
+       EXPORT_DOMAIN_NAME
     if not config:
         raise ImportError()
 except ImportError:
@@ -302,6 +303,8 @@ class RHEVMUtilsTestCase(unittest.TestCase):
         luns = None
         iso_domain_path = None
         iso_domain_address = None
+        export_domain_path = None
+        export_domain_address = None
 
         hosts = params.get('vds')
         cpuName = params.get('cpu_name')
@@ -321,9 +324,6 @@ class RHEVMUtilsTestCase(unittest.TestCase):
 
         version=params.get('compatibility_version')
         type = ENUMS['storage_dom_type_export']
-        export_domain_address = params.get('export_domain_address')[0]
-        export_storage_domain = params.get('export_domain_path')[0]
-        export_domain_name = params.get('export_domain_name')
         data_domain_name = params.get('data_domain_name')
         template_name = params.get('template_name')
         vm_name = params.get('vm_name')
@@ -357,16 +357,20 @@ class RHEVMUtilsTestCase(unittest.TestCase):
         if cls.utility == 'iso-uploader':
             iso_domain_path = params.get('iso_domain_path')
             iso_domain_address = params.get('iso_domain_address')
+        if cls.utility == 'image-uploader':
+            export_domain_path = params.get('export_domain_path')
+            export_domain_address = params.get('export_domain_address')
 
         # Following if statment is temporary, till all tools tests will move to
         # running on local machine, instead of on remote
         arr = ['setup', 'cleanup', 'iso-uploader', 'log_collector'] \
-           if cls.installation == 'true' else ['iso-uploader', 'log_collector']
+           if cls.installation == 'true' else ['iso-uploader', 'log_collector',
+               'image-uploader']
         if cls.utility in arr:
             if not prepareVmWithRhevm(True, hosts, cpuName, username, password,
                    datacenter, storage_type, cluster, data_domain_address,
                    data_storage_domains, version, type, export_domain_address,
-                   export_storage_domain, export_domain_name, data_domain_name,
+                   export_domain_path, EXPORT_DOMAIN_NAME, data_domain_name,
                    template_name, vm_name, vm_description,
                    tested_setup_mac_address, memory_size, format_export_domain,
                    nic, nicType, lun_address, lun_target, luns, disk_size,
@@ -374,7 +378,8 @@ class RHEVMUtilsTestCase(unittest.TestCase):
                    wipe_after_delete, start, vm_type, cpu_socket, cpu_cores,
                    display_type, cls.installation, os_type, vm_user, vm_password,
                    cobblerAddress, cobblerUser, cobblerPasswd, image, network,
-                   useAgent, iso_domain_path, iso_domain_address, ISO_DOMAIN_NAME):
+                   useAgent, iso_domain_path, iso_domain_address,
+                   ISO_DOMAIN_NAME):
                 logger.info("prepareVmWithRhevm failed")
             logger.info("DEBUG: cls.utility = %s", cls.utility)
         if cls.utility in ['setup','cleanup']:

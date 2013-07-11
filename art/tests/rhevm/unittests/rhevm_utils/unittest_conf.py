@@ -8,6 +8,7 @@ params = ART_CONFIG['PARAMETERS']
 VM_NAME = params.get('vm_name')
 ISO_UP_CONF = params.get('iso_up_conf_file')
 LOG_COL_CONF = params.get('log_col_conf_file')
+IMAGE_UP_CONF = params.get('image_up_conf_file')
 
 rest_conn = ART_CONFIG['REST_CONNECTION']
 REST_API_PASS = rest_conn.get('password')
@@ -20,6 +21,7 @@ PGPASS = "123456"
 HOST_PASS = "qum5net"
 
 ISO_DOMAIN_NAME = 'ISO_DOMAIN'
+EXPORT_DOMAIN_NAME = 'EXPORT_DOMAIN'
 DEFAULT = {
         'def_vm_name': VM_NAME,         # name
         'wait_timeout': 2400,# wait for VM state change. Total install: ~40min
@@ -118,6 +120,9 @@ LOG_COLLECTOR = {
         'vm_name': '%(def_vm_name)s',
         }
 
+IMAGE_UPLOADER = {
+        'vm_name': '%(def_vm_name)s',
+        }
 UPGRADE = {
         'vm_name': '%(def_vm_name)s',
         }
@@ -133,5 +138,6 @@ config['config'] = CONFIG
 config['manage_domains'] = MANAGE_DOMAINS
 config['iso-uploader'] = ISO_UPLOADER
 config['log_collector'] = LOG_COLLECTOR
+config['image-uploader'] = IMAGE_UPLOADER
 config['upgrade'] = UPGRADE
 
