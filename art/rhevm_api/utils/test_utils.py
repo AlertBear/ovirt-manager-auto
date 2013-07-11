@@ -1711,6 +1711,19 @@ def waitUntilGone(positive, names, api, timeout, samplingPeriod):
             return positive
 
 
+def raise_if_exception(results):
+    """
+    Description: Raises exception if any of Future object in results has
+    exception
+    Parameters:
+        * results - list of Future objects
+    """
+    for result in results:
+        if result.exception():
+            logger.error(result.exception())
+            raise result.exception()
+
+
 def process_collection_parallel(collection, func, func_args, max_workers,
                                 exc=Exception, need_result=False):
     """
