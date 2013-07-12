@@ -36,8 +36,21 @@ def add_hosts(hosts_list, passwords, cluster):
     for index, result in enumerate(results):
         if not result.result():
             raise errors.HostException("addHost of host %s failed." %
-                                        hosts_list[index])
+                                       hosts_list[index])
         LOGGER.debug("Host %s installed", hosts_list[index])
 
     if not hosts.waitForHostsStates(True, ",".join(hosts_list)):
         raise errors.HostException("Some of hosts didn't come to up status")
+
+
+@is_action()
+def switch_host_to_cluster(host, cluster):
+    """
+    Description: Puts host host into cluster cluster
+    Parameters:
+        * host - host that will be switched to different cluster
+        * cluster - cluster to which host will be placed
+    """
+    assert hosts.deactivateHost(True, host)
+    assert hosts.updateHost(True, host, cluster=cluster)
+    assert hosts.activateHost(True, host)
