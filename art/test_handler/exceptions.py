@@ -112,3 +112,7 @@ def formatExcInfo():
     einfo = traceback.format_exception(*ei)
     einfo.insert(0, einfo[-1])
     return ''.join(einfo)
+
+
+class UnkownConfigurationException(RHEVMEntityException):
+    pass

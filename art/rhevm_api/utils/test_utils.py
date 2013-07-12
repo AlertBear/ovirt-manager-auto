@@ -18,6 +18,7 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 import logging
 from lxml import etree
@@ -966,6 +967,7 @@ def checkHostConnectivity(positive, ip, user, password, osType, attempt=1, inter
        indication to server up and running if wmi query return SystemArchitecture and elapsed time'''
     try:
         t1 = time.time()
+        logger.debug("Checking %s %s host connectivity", ip, osType)
         machine = Machine(ip, user, password).util(osType)
         if remoteAgent == 'staf':
             status = machine.isConnective(attempt, interval, remoteAgent)
@@ -1707,3 +1709,28 @@ def waitUntilGone(positive, names, api, timeout, samplingPeriod):
         if not sample:
             logger.info("All %s are gone.", names)
             return positive
+
+
+def process_collection_parallel(collection, func, func_args, max_workers,
+                                exc=Exception, need_result=False):
+    """
+    Description: Calls func for each item in collection in parallel
+    Parameters:
+        * collection - collection to process
+        * func - function that processes items
+        * func_args - arguments for function
+        * exc - exception to raise
+        * max_workers - how many threads in parallel will run
+        * need_result - if this is True, every result of called function is
+                        checked and if the result is False, exception is raised
+    """
+    results = list()
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        for item in collection:
+            results.append(executor.submit(func, item, *func_args))
+    for index, result in enumerate(results):
+        if result.exception():
+            logger.error(result.exception())
+            raise result.exception()
+        if need_result and not result.result():
+            raise exc("Result %d from parallel process failed" % index)

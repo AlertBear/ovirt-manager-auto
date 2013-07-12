@@ -16,35 +16,36 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
+from concurrent.futures import ThreadPoolExecutor
+from copy import deepcopy
 import logging
-import os.path
+from operator import and_
 from Queue import Queue
+import random
 import re
 import time
-import random
-from copy import deepcopy
-
-from art.core_api.apis_exceptions import APITimeout, EntityNotFound, TestCaseError
-from art.core_api.apis_utils import data_st, TimeoutingSampler, getDS
-from art.rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
-from art.test_handler.settings import opts
-import art.test_handler.exceptions as errors
 from threading import Thread
-from utilities.jobs import Job, JobsSet
-from utilities.utils import readConfFile, pingToVms, makeVmList
-from utilities.machine import Machine
+
+from art.core_api import is_action
+from art.core_api.apis_exceptions import APITimeout, EntityNotFound, \
+    TestCaseError
+from art.core_api.apis_utils import data_st, TimeoutingSampler, getDS
+from art.rhevm_api.tests_lib.low_level.disks import _prepareDiskObject, \
+    getVmDisk
+from art.rhevm_api.utils.name2ip import LookUpVMIpByName
 from art.rhevm_api.utils.test_utils import searchForObj, getImageByOsType, \
     convertMacToIpAddress, checkHostConnectivity, updateVmStatusInDatabase, \
     get_api, split, getAllImages, waitUntilPingable, restoringRandomState, \
     waitUntilGone
+from art.rhevm_api.utils.provisioning_utils import ProvisionProvider
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils.threads import runParallel
-from art.core_api import is_action
-from art.rhevm_api.utils.name2ip import name2ip, LookUpVMIpByName
-from art.rhevm_api.tests_lib.low_level.disks import getVmDisk, \
-    _prepareDiskObject
-from art.rhevm_api.utils.provisioning_utils import ProvisionProvider
-from operator import and_
+from art.rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
+from art.test_handler.settings import opts
+from art.test_handler import exceptions
+from utilities.jobs import Job, JobsSet
+from utilities.utils import pingToVms, makeVmList
+from utilities.machine import Machine
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 DEFAULT_CLUSTER = 'Default'
@@ -60,6 +61,7 @@ BLANK_TEMPLATE = '00000000-0000-0000-0000-000000000000'
 ADD_DISK_KWARGS = ['size', 'type', 'interface', 'format', 'bootable',
                    'sparse', 'wipe_after_delete', 'propagate_errors']
 VM_WAIT_FOR_IP_TIMEOUT = 600
+SNAPSHOT_TIMEOUT = 15 * 60
 
 VM_API = get_api('vm', 'vms')
 DC_API = get_api('data_center', 'datacenters')
@@ -75,9 +77,10 @@ CDROM_API = get_api('cdrom', 'cdroms')
 NETWORK_API = get_api('network', 'networks')
 Snapshots = getDS('Snapshots')
 
-logger = logging.getLogger(__package__ + __name__)
+logger = logging.getLogger(__name__)
 xpathMatch = is_action('xpathVms', id_name='xpathMatch')(XPathMatch(VM_API))
-xpathVmsLinks = is_action('xpathVmsLinks', id_name='xpathVmsLinks')(XPathLinks(VM_API))
+xpathVmsLinks = is_action(
+    'xpathVmsLinks', id_name='xpathVmsLinks')(XPathLinks(VM_API))
 
 
 class DiskNotFound(Exception):
@@ -1278,11 +1281,14 @@ def removeSnapshot(positive, vm, description, timeout=VM_REMOVE_SNAPSHOT_TIMEOUT
 
     if timeout < 0:
         return True
-    args = vm, description
+    args = (VM_API.find(vm), snapshot.id, 'snapshots', 'snapshot')
+    kwargs = {'prop': 'id'}
     if positive:
         # Wait until snapshot disappears.
         try:
-            for ret in TimeoutingSampler(timeout, 5, _getVmSnapshot, *args):
+            for ret in TimeoutingSampler(
+                    timeout, 5, SNAPSHOT_API.getElemFromElemColl, *args,
+                    **kwargs):
                 if not ret:
                     logger.info('Snapshot %s disappeared.',
                                 snapshot.description)
@@ -1298,7 +1304,9 @@ def removeSnapshot(positive, vm, description, timeout=VM_REMOVE_SNAPSHOT_TIMEOUT
         # Check whether snapshot didn't disappear.
         logger.info('Checking whether url %s exists.', snapshot.href)
         try:
-            for ret in TimeoutingSampler(timeout, 5, _getVmSnapshot, *args):
+            for ret in TimeoutingSampler(
+                    timeout, 5, SNAPSHOT_API.getElemFromElemColl, *args,
+                    **kwargs):
                 if not ret:
                     logger.info('Snapshot %s disappeared.',
                                 snapshot.description)
@@ -1973,6 +1981,7 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
         if useAgent:
             ip = waitForIP(vmName)[1]['ip']
 
+        logger.debug("%s has ip %s", vmName, ip)
         if not checkVMConnectivity(positive, vmName, os_type,
                                    attempt=attempt, interval=interval,
                                    nic=nic, user=user, password=password,
@@ -2851,25 +2860,34 @@ def cobblerRemoveMultiSystem(positive, vms, cobblerAddress, cobblerUser,
 
 
 @is_action('moveVmDisk')
-def move_vm_disk(vm_name, disk_name, target_sd):
+def move_vm_disk(vm_name, disk_name, target_sd, wait=True,
+                 timeout=VM_IMAGE_OPT_TIMEOUT, sleep=DEF_SLEEP):
     """
     Description: Moves disk of vm to another storage domain
     Parameters:
         * vm_name - Name of the disk's vm
         * disk_name - Name of the disk
         * target_sd - Name of storage domain disk should be moved to
+        * wait - whether should wait until disk is ready
+        * timeout - timeout for waiting
+        * sleep - polling interval while waiting
     Throws: DiskException if syncAction returns False (syncAction should raise
             exception itself instead of returning False)
     """
     logger.info("Moving disk %s of vm %s to storage domain %s", disk_name,
                 vm_name, target_sd)
-    disk = getVmDisk(vm_name, disk_name)
     sd = STORAGE_DOMAIN_API.find(target_sd)
+    disk = getVmDisk(vm_name, disk_name)
     if not DISKS_API.syncAction(disk, 'move', storage_domain=sd,
                                 positive=True):
-        raise errors.DiskException("Failed to move disk %s of vm %s to "
-                                   " storage domain %s"
-                                   % (vm_name, disk_name, target_sd))
+        raise exceptions.DiskException(
+            "Failed to move disk %s of vm %s to storage domain %s" %
+            (vm_name, disk_name, target_sd))
+    if wait:
+        for disk in TimeoutingSampler(timeout, sleep, getVmDisk, vm_name,
+                                      disk_name):
+            if disk.status.state == ENUMS['disk_state_ok']:
+                return
 
 
 def wait_for_vm_states(vm_name, states=[ENUMS['vm_state_up']],
@@ -2886,3 +2904,54 @@ def wait_for_vm_states(vm_name, states=[ENUMS['vm_state_up']],
     for vm in sampler:
         if vm.status.state in states:
             break
+
+
+@is_action('startVmsParallel')
+def start_vms(vm_list, max_workers):
+    """
+    Description: Starts all vms in vm_list
+
+    Parameters:
+        * vm_list - List of vm names
+        * max_workers - In how many threads should vms start
+    """
+    results = list()
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        for machine in vm_list:
+            vm_obj = VM_API.find(machine)
+            if vm_obj.status.state == ENUMS['vm_state_down']:
+                results.append(executor.submit(startVm, True,
+                                               machine, wait_for_ip=True))
+    for machine, res in zip(vm_list, results):
+        if res.exception():
+            logger.error("Got exception while starting vm %s: %s", machine,
+                         res.exception())
+            raise res.exception()
+        if not res.result():
+            raise exceptions.VMException("Cannot start vm %s" % machine)
+
+
+@is_action('waitForVmSnapshots')
+def wait_for_vm_snapshots(vm_name, states,
+                          timeout=SNAPSHOT_TIMEOUT, sleep=DEF_SLEEP):
+    """
+    Description: Waits until all vm's snapshots are in one of given states
+    Parameters:
+        * vm_name - name of the vm
+        * states - list of desired snapshots' state
+        * timeout - maximum amount of time this operation can take
+        * sleep - polling period
+    """
+    def _get_unsatisfying_snapshots(vm_name, states):
+        """
+        Returns all snapshots that are not in any of state from states
+        """
+        snapshots = _getVmSnapshots(vm_name, False)
+        return [snapshot for snapshot in snapshots
+                if snapshot.snapshot_status not in states]
+    logger.info("Waiting untill all snapshots of %s vm are in one of following"
+                "states: %s", vm_name, states)
+    for not_wanted_snaps in TimeoutingSampler(
+            timeout, sleep, _get_unsatisfying_snapshots, vm_name, states):
+        if not not_wanted_snaps:
+            return
