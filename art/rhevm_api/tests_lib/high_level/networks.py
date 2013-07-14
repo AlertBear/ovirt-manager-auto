@@ -25,15 +25,19 @@ from utilities import machine
 from art.rhevm_api.utils.test_utils import restartVdsmd
 from art.rhevm_api.tests_lib.low_level.networks import addNetwork,\
     getClusterNetwork, removeNetwork, addNetworkToCluster, NET_API,\
-    MGMT_NETWORK, DC_API, getClusterNetworks
+    DC_API, updateNetwork, getClusterNetworks
 from art.rhevm_api.tests_lib.low_level.hosts import sendSNRequest,\
-    commitNetConfig, genSNNic
+    commitNetConfig, genSNNic, getHostNic
 from art.rhevm_api.tests_lib.low_level.templates import createTemplate
 from art.rhevm_api.tests_lib.low_level.vms import getVmMacAddress,\
     startVm, stopVm, createVm, waitForVmsStates
 from art.rhevm_api.utils.test_utils import convertMacToIpAddress,\
     setPersistentNetwork
-from art.rhevm_api.tests_lib.low_level.storagedomains import createDatacenter
+from art.rhevm_api.tests_lib.low_level.storagedomains import createDatacenter,\
+    waitForStorageDomainStatus, cleanDataCenter
+from art.rhevm_api.tests_lib.low_level.datacenters import\
+    waitForDataCenterState
+from art.test_handler.exceptions import DataCenterException
 from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api import is_action
 from art.test_handler.settings import opts
@@ -43,6 +47,7 @@ from utilities.jobs import Job, JobsSet
 ENUMS = opts['elements_conf']['RHEVM Enums']
 
 logger = logging.getLogger(__package__ + __name__)
+MGMT_NETWORK = "rhevm"
 CONNECTIVITY_TIMEOUT = 60
 DISK_SIZE = 21474836480
 LUN_PORT = 3260
@@ -51,6 +56,7 @@ ATTEMPTS = 600
 TIMEOUT = 120
 VDSM_CONF_FILE = "/etc/vdsm/vdsm.conf"
 IFCFG_FILE_PATH = "/etc/sysconfig/network-scripts/"
+HOST_NICS = ["eth0", "eth1", "eth2", "eth3", "eth4", "eth5"]
 
 
 @is_action()
@@ -289,7 +295,7 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
                  storage_type, cluster, version,
                  storageDomainName=None, lun_address='', lun_target='',
                  luns='', lun_port=LUN_PORT,
-                 diskType='system', auto_nics=['eth0'],
+                 diskType='system', auto_nics=[HOST_NICS[0]],
                  vm_user='root', vm_password=None,
                  vmName='VMTest1', vmDescription='linux vm',
                  cobblerAddress=None, cobblerUser=None,
@@ -297,8 +303,9 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
                  os_type='RHEL6x64', image='rhel6.4-agent3.2',
                  nic='nic1', size=DISK_SIZE, useAgent=True,
                  template_name='tempTest1', attempt=ATTEMPTS,
-                 interval=INTERVAL, placement_host=None, port_mirroring=None,
-                 vm_flag=True, template_flag=True):
+                 interval=INTERVAL, placement_host=None,
+                 vm_flag=True, template_flag=True, bridgeless=False,
+                 vm_network=MGMT_NETWORK):
     '''
         Function that creates DC, Cluster, Storage, Hosts
         It creates VM and Template if flag is on:
@@ -343,8 +350,17 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
             *  *port_mirroring* - network to enable port mirroring on
             *  *vm_flag* - Set to true, if desired VM
             *  *template_flag* - set to true if desired template
+            *  *bridgeless* - Set management network as bridgless,
+                MUST set management network to bridge after each job.
+            *  *vm_network* - Network for VM
         **Returns**: True if creation of the setup succeeded, otherwise False
     '''
+    if vm_flag and bridgeless:
+        if vm_network == MGMT_NETWORK:
+            logger.error("vm network name can't be %s when using"
+                         "bridgeless management network", MGMT_NETWORK)
+            return False
+
     if not createDatacenter(True, hosts=hosts, cpuName=cpuName,
                             username=username, password=password,
                             datacenter=datacenter, storage_type=storage_type,
@@ -355,18 +371,55 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
         return False
 
     hostArray = hosts.split(',')
-    for host in hostArray:
-        try:
-            sendSNRequest(True, host=host,
-                          auto_nics=auto_nics,
-                          check_connectivity='true',
-                          connectivity_timeout=CONNECTIVITY_TIMEOUT,
-                          force='false')
-            commitNetConfig(True, host=host)
-        except Exception as ex:
-            logger.error("Cleaning host interfaces failed %s", ex,
-                         exc_info=True)
+
+    if bridgeless:
+        logger.info("Updating %s to bridgeless network", MGMT_NETWORK)
+        if not updateAndSyncMgmtNetwork(datacenter=datacenter,
+                                        hosts=hostArray,
+                                        nic=HOST_NICS[0],
+                                        network=MGMT_NETWORK,
+                                        bridge=False):
+            logger.error("Failed to set %s as bridgeless network",
+                         MGMT_NETWORK)
             return False
+
+        logger.info("Waiting for StorageDomain %s state UP", storageDomainName)
+        if not waitForStorageDomainStatus(True, datacenter, storageDomainName,
+                                          "active"):
+            logger.error("StorageDomain %s state is not UP", storageDomainName)
+            return False
+
+        logger.info("Creating network for VM")
+        local_dict = {vm_network: {'nic': HOST_NICS[1],
+                                   'required': 'false'}}
+
+        logger.info("SetupNetworks: Attaching %s to %s", vm_network,
+                    hostArray)
+        if not createAndAttachNetworkSN(data_center=datacenter,
+                                        cluster=cluster,
+                                        host=hostArray,
+                                        network_dict=local_dict,
+                                        auto_nics=auto_nics,
+                                        save_config=True):
+            logger.error("Cannot create and attach network")
+            return False
+
+    if not bridgeless:
+        for host in hostArray:
+            try:
+                logger.info("Cleaning %s interfaces", host)
+                sendSNRequest(True, host=host,
+                              auto_nics=auto_nics,
+                              check_connectivity='true',
+                              connectivity_timeout=CONNECTIVITY_TIMEOUT,
+                              force='false')
+                commitNetConfig(True, host=host)
+
+            except Exception as ex:
+                logger.error("Cleaning host interfaces failed %s", ex,
+                             exc_info=True)
+                return False
+
     if vm_flag:
         if not createVm(True, vmName=vmName,
                         vmDescription='linux vm', cluster=cluster,
@@ -378,13 +431,13 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
                         password=vm_password, installation=True,
                         cobblerAddress=cobblerAddress,
                         cobblerUser=cobblerUser,
-                        cobblerPasswd=cobblerPasswd, network=MGMT_NETWORK,
+                        cobblerPasswd=cobblerPasswd, network=vm_network,
                         useAgent=True, diskType=diskType,
                         attempt=attempt, interval=interval,
-                        placement_host=placement_host,
-                        port_mirroring=port_mirroring):
+                        placement_host=placement_host):
             logger.error("Cannot create VM")
             return False
+
     if template_flag:
         try:
             rc, out = getVmMacAddress(True, vm=vmName, nic='nic1')
@@ -405,6 +458,7 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
         if not waitForVmsStates(True, names=vmName, timeout=TIMEOUT,
                                 states='up'):
             logger.error("VM status is not up in the predefined timeout")
+
     return True
 
 
@@ -480,6 +534,52 @@ def deleteDummyInterface(host, username, password):
     if not restartVdsmd(host, password, supervdsm=True):
         logger.error("Restart vdsm service failed")
         return False
+
+
+def updateAndSyncMgmtNetwork(datacenter, hosts=list(),
+                             nic=HOST_NICS[0],
+                             auto_nics=[],
+                             network=MGMT_NETWORK,
+                             bridge=True):
+    '''
+    Function that update existing network on DC and on the host, then sync it
+    using setupnetwork. This function created to enable run tests with
+    managment network as bridgeless network.
+    **Author**: myakove
+    **Parameters**:
+        *  *datacenter* - Datacenter to update the managment network.
+        *  *host* - Host to sync the managment network.
+        *  *nic* - the nic (ETH(X)) of the managment network.
+        *  *network* - The managment network.
+        *  *bridge* - Desired network mode (True for bridge,
+            False for brideless).
+        *  *auto_nics - Host nics to preserve on setupNetworks command.
+    '''
+    mgmt_net_type = "bridge" if bridge else "bridgeless"
+    network_type = "vm" if bridge else ""
+
+    logger.info("Updating %s to %s network", MGMT_NETWORK, mgmt_net_type)
+    if not updateNetwork(positive=True, network=network,
+                         data_center=datacenter, usages=network_type):
+        logger.error("Failed to set %s as %s network",
+                     MGMT_NETWORK, mgmt_net_type)
+        return False
+
+    for host in hosts:
+        host_nic = getHostNic(host=host, nic=nic)
+        host_nic.set_override_configuration(True)
+
+        logger.info("setupNetwork: syncing %s network on %s", network, host)
+        if not sendSNRequest(True, host=host, nics=[host_nic],
+                             auto_nics=auto_nics,
+                             check_connectivity='true',
+                             connectivity_timeout=CONNECTIVITY_TIMEOUT,
+                             force='false'):
+            logger.error("setupNetwork: Cannot sync %s network on %s",
+                         network, host)
+            return False
+
+        commitNetConfig(True, host=host)
 
     return True
 
@@ -634,5 +734,43 @@ def removeAllNetworks(datacenter=None, cluster=None):
     logger.info("Removing networks")
     if not removeMultiNetworks(True, networks_to_remove):
         return False
+
+    return True
+
+
+def networkTeardown(datacenter, storagedomain, hosts=list(), auto_nics=list()):
+    '''
+    Description: Network jobs teardown for unittests, set mgmt network to
+                 bridge network (default) and run cleanDataCenter function
+    **Author**: myakove
+    **Parameters**:
+        *  *datacenter* - name of the datacenter
+        *  *storagedomain* - name of the storage domain
+        *  *hosts* - list of hosts
+        *  *auto_nics* - list of host nics for setupnetwork
+        *  *bridge* - True for bridge network, False for bridgeless
+    return True/False
+    '''
+    logger.info("Updating %s network to bridge network", MGMT_NETWORK)
+    if not updateAndSyncMgmtNetwork(datacenter=datacenter, hosts=hosts,
+                                    auto_nics=auto_nics, bridge=True):
+        logger.error("Failed to set %s network as bridge", MGMT_NETWORK)
+        return False
+
+    logger.info("Wait for storage domain %s to be active", storagedomain)
+    if not waitForStorageDomainStatus(positive=True, dataCenterName=datacenter,
+                                      storageDomainName=storagedomain,
+                                      expectedStatus="active"):
+            logger.error("StorageDomain %s state is not UP", storagedomain)
+            return False
+
+    logger.info("Wait for %s to be UP", datacenter)
+    if not waitForDataCenterState(name=datacenter):
+        logger.error("%s is not in UP state")
+        return False
+
+    logger.info("Running clean Datacenter")
+    if not cleanDataCenter(positive=True, datacenter=datacenter):
+        raise DataCenterException("Cannot remove setup")
 
     return True
