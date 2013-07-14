@@ -1,3 +1,9 @@
+[REMOVE_PACKAGES]
+enabled = boolean(default=True)
+
+[HOSTS_CLEANUP]
+enabled = boolean(default=True)
+
 [ERROR_FETCHER]
 enabled = boolean(default=True)
 
