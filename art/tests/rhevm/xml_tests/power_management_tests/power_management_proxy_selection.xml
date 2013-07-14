@@ -44,6 +44,7 @@
     <parameters>win_start_query="{vds[1]} and type=41", query="DC and type=605", expected_count=1</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <tcms_plan_id>8155</tcms_plan_id>
     <tcms_case_id>234141</tcms_case_id>
 </test_case>
 <test_case>
@@ -90,6 +91,7 @@
     <parameters>win_start_query='\"{vds[0]} from DC was choosen as a proxy to execute Stop command\" and type=605', query="{vds[1]} and type=41", expected_count=1</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <tcms_plan_id>8155</tcms_plan_id>
     <tcms_case_id>234143</tcms_case_id>
 </test_case>
 <!--*************Hosts on DC and on cluster in maintenance, must choose host on DC*************-->
@@ -129,6 +131,7 @@
     <parameters>win_start_query="{vds[1]} and type=41", query="DC and type=605", expected_count=1</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <tcms_plan_id>8155</tcms_plan_id>
     <tcms_case_id>234140</tcms_case_id>
 </test_case>
 <test_case>
@@ -196,6 +199,7 @@
     <parameters>win_start_query='\"{vds[0]} from CLUSTER was choosen as a proxy to execute Stop command\" and type=605', query="{vds[1]} and type=41", expected_count=1</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <tcms_plan_id>8155</tcms_plan_id>
     <tcms_case_id>234134</tcms_case_id>
 </test_case>
 <test_case>
@@ -242,6 +246,7 @@
     <parameters>win_start_query='\"{vds[0]} from CLUSTER was choosen as a proxy to execute Stop command\" and type=605', query="{vds[1]} and type=41", expected_count=1</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <tcms_plan_id>8155</tcms_plan_id>
     <tcms_case_id>234137</tcms_case_id>
 </test_case>
 <!--*************Host on DC and cluster in maintenance, must choose host on CLUSTER*************-->
@@ -281,6 +286,7 @@
     <parameters>win_start_query='\"{vds[0]} from CLUSTER was choosen as a proxy to execute Stop command\" and type=605', query="{vds[1]} and type=41", expected_count=1</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <tcms_plan_id>8155</tcms_plan_id>
     <tcms_case_id>234138</tcms_case_id>
 </test_case>
 <test_case>

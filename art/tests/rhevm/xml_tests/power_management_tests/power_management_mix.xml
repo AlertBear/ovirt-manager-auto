@@ -1,5 +1,5 @@
 <?xml-stylesheet type="text/xsl" href="table.xslt"?>
-<input tcms_plan_id="3480">
+<input>
 <test_case>
     <test_name>START_GROUP: POWER-MANAGEMENT-MIX-POSITIVE</test_name>
     <test_action/>
@@ -42,6 +42,7 @@
     <positive>TRUE</positive>
     <vital>TRUE</vital>
     <run>yes</run>
+    <tcms_plan_id>3480</tcms_plan_id>
     <tcms_test_case>79332</tcms_test_case>
 </test_case>
 <test_case>
@@ -71,6 +72,7 @@
     <parameters>host='{vds[1]}', fence_type='e{fence_type_stop}'</parameters>
     <positive>TRUE</positive>
    <run>yes</run>
+   <tcms_plan_id>3480</tcms_plan_id>
    <tcms_test_case>79329</tcms_test_case>
 </test_case>
 <test_case>
@@ -86,6 +88,7 @@
     <parameters>host='{vds[1]}', fence_type='e{fence_type_start}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <tcms_plan_id>3480</tcms_plan_id>
     <tcms_test_case>286195</tcms_test_case>
 </test_case>
 <test_case>
@@ -108,6 +111,7 @@
     <parameters>host='{vds[1]}', fence_type='e{fence_type_start}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <tcms_plan_id>3480</tcms_plan_id>
     <tcms_test_case>79326</tcms_test_case>
 </test_case>
 <test_case>
@@ -137,6 +141,7 @@
     <parameters>host='{vds[1]}', fence_type='e{fence_type_start}'</parameters>
     <positive>False</positive>
     <run>yes</run>
+    <tcms_plan_id>3480</tcms_plan_id>
     <tcms_test_case>79327</tcms_test_case>
 </test_case>
 <test_case>
@@ -152,6 +157,7 @@
     <parameters>host='{vds[1]}', fence_type='e{fence_type_stop}'</parameters>
     <positive>False</positive>
     <run>yes</run>
+    <tcms_plan_id>3480</tcms_plan_id>
     <tcms_test_case>79330</tcms_test_case>
 </test_case>
 <test_case>

@@ -1,5 +1,5 @@
 <?xml-stylesheet type="text/xsl" href="table.xslt"?>
-<input tcms_plan_id="8177">
+<input>
 <!--*************PM-SELECTION WITHOUT CONCURRENT************* -->
 <test_case>
     <test_name>START_GROUP: PM-SELECTION-WITHOUT-CONCURRENT</test_name>
@@ -35,6 +35,7 @@
     <parameters>host='{vds[1]}', fence_type='e{fence_type_restart}'</parameters>
     <positive>True</positive>
     <run>yes</run>
+    <tcms_plan_id>8177</tcms_plan_id>
     <tcms_test_case>235276</tcms_test_case>
 </test_case>
 <test_case>
@@ -65,6 +66,7 @@
     <parameters>host='{vds[1]}', fence_type='e{fence_type_restart}'</parameters>
     <positive>True</positive>
     <run>yes</run>
+    <tcms_plan_id>8177</tcms_plan_id>
     <tcms_test_case>235277</tcms_test_case>
 </test_case>
 <test_case>
@@ -109,6 +111,7 @@
     <parameters>host='{vds[1]}', fence_type='e{fence_type_restart}'</parameters>
     <positive>True</positive>
     <run>yes</run>
+    <tcms_plan_id>8177</tcms_plan_id>
     <tcms_test_case>235284</tcms_test_case>
 </test_case>
 <test_case>
@@ -146,6 +149,7 @@
     <parameters>host='{vds[1]}', fence_type='e{fence_type_stop}'</parameters>
     <positive>False</positive>
     <run>yes</run>
+    <tcms_plan_id>8177</tcms_plan_id>
     <tcms_test_case>235289</tcms_test_case>
 </test_case>
 <test_case>
@@ -161,6 +165,7 @@
     <parameters>host='{vds[1]}', fence_type='e{fence_type_start}'</parameters>
     <positive>True</positive>
     <run>yes</run>
+    <tcms_plan_id>8177</tcms_plan_id>
     <tcms_test_case>235286</tcms_test_case>
 </test_case>
 <test_case>

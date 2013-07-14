@@ -7,6 +7,13 @@
    <run>YES</run>
 </test_case>
 <test_case>
+   <test_name>Deactivate Master Storage Domain</test_name>
+   <test_action>deactivateStorageDomain</test_action>
+   <parameters>datacenter='{data_center_name}', storagedomain='{storage_domain_name}'</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+</test_case>
+<test_case>
    <test_name>Remove Data Centers</test_name>
    <test_action>removeDataCenters</test_action>
    <parameters>datacenters='{data_center_name}'</parameters>
