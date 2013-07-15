@@ -168,7 +168,7 @@ class Version(object):
         return '.'.join([str(x) for x in self.ver])
 
     def __contains__(self, ver):
-        return self.__cmp__(ver) == 0
+        return self.__cmp__(ver) >= 0
 
 
 class Bugzilla(Component):
