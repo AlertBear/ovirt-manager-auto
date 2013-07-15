@@ -1097,6 +1097,7 @@ def genSNNic(nic, **kwargs):
 @is_action()
 def genSNBond(name, **kwargs):
     '''
+    Deprecated - use genSNNic().
     generate a host_nic element of type bond.
     Author: atal
     params:
@@ -1120,27 +1121,26 @@ def genSNBond(name, **kwargs):
 
 
 @is_action()
-def sendSNRequest(positive, host, nics=None, auto_nics=None, **kwargs):
+def sendSNRequest(positive, host, nics=[], auto_nics=[], **kwargs):
     '''
-    send a POST request for <action> after attaching all host_nic
-    Author: atal
+    Perform setupNetwork action on host with nic objects taken from 'nics' and
+    'auto_nics' lists
+    Author: atal, tgeft
     params:
-        * host - a name of the host
-        * nics - list of 'host_nic' values returned by genSN... functions.
-        * auto_nics - a list of nics to collect automatically from the element.
+        * host - the name of the host
+        * nics - a list of nic objects to be added to the host by the
+                 setupNework action
+        * auto_nics - a list of nics to preserve from the current setup
         * kwargs - a dictionary of supported options:
             check_connectivity=boolean, connectivity_timeout=int, force=boolean
     '''
-    nics = nics or []
-    auto_nics = auto_nics or []
+    current_nics_obj = HOST_API.get(href=getHostNics(host))
+    new_nics_obj = nics + [getHostNic(host, nic) for nic in auto_nics]
 
-    nics_obj = HOST_API.get(href=getHostNics(host))
-
-    for nic in auto_nics:
-        nics.append(getHostNic(host, nic))
-
-    return HOST_NICS_API.syncAction(nics_obj, "setupnetworks", positive,
-                                    host_nics=data_st.HostNics(host_nic=nics),
+    host_nics = data_st.HostNics(host_nic=new_nics_obj)
+    return HOST_NICS_API.syncAction(current_nics_obj, "setupnetworks",
+                                    positive,
+                                    host_nics=host_nics,
                                     **kwargs)
 
 

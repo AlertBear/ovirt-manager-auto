@@ -236,7 +236,7 @@ def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
         logger.info("Sending SN request to host %s" % host)
         if not sendSNRequest(True,
                              host=host,
-                             nics=net_obj[:],
+                             nics=net_obj,
                              auto_nics=auto_nics,
                              check_connectivity='true',
                              connectivity_timeout=60, force='false'):
