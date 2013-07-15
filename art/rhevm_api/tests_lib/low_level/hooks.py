@@ -29,8 +29,8 @@ logger = logging.getLogger(__package__ + __name__)
 CHMOD = "/bin/chmod"
 
 @is_action()
-def checkForFileExistenceAndContent(ip, password, filename, content=None,
-    user='root'):
+def checkForFileExistenceAndContent(positive, ip, password, filename, content=None,
+                                    user='root'):
     '''
     Checks for file existence and content on given address
     Author: jvorcak
@@ -43,12 +43,11 @@ def checkForFileExistenceAndContent(ip, password, filename, content=None,
     '''
 
     vm = Machine(ip, user, password).util('linux')
-    new_filename = tempfile.gettempdir()\
-            + os.sep + os.path.basename(filename)
+    new_filename = tempfile.gettempdir() + os.sep + os.path.basename(filename)
 
     if not vm.copyFrom(filename, new_filename):
-        logger.error("Couldn't copy filename %s from address %s" %\
-                (filename, ip))
+        logger.error("Couldn't copy filename %s from address %s" %
+                     (filename, ip))
         return False
 
     if content:
@@ -62,7 +61,7 @@ def checkForFileExistenceAndContent(ip, password, filename, content=None,
             logger.error("Actual content: %s" % file_content)
             return False
 
-    return True
+    return positive
 
 @is_action()
 def checkForFileExistenceAndContentOnVm(vmName, password, filename,

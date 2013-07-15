@@ -1,8 +1,9 @@
 <?xml version='1.0' encoding='utf-8'?>
 <?xml-stylesheet type="text/xsl" href="table.xslt"?>
 <input>
+<!--***********************Add vm with custom propertie***********************-->
 <test_case>
-    <test_name>START_GROUP: CUSTOM_PROPERTY_HOOK</test_name>
+    <test_name>START_GROUP: ADD-VM-WITH-CUSTOM-PROPERTIE</test_name>
     <test_action/>
     <parameters></parameters>
     <positive>NONE</positive>
@@ -37,11 +38,26 @@
     <run>yes</run>
 </test_case>
 <test_case>
+    <test_name>END_GROUP: ADD-VM-WITH-CUSTOM-PROPERTIE</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>NONE</positive>
+    <run>YES</run>
+</test_case>
+<test_case>
     <test_name>Stop vdsmd on the vds host</test_name>
     <test_action>stopVdsmd</test_action>
     <parameters>vds='{vds}', password='{passwd}'</parameters>
     <positive>NONE</positive>
     <run>yes</run>
+</test_case>
+<!--***********************Create small scripts for testing hooks***********************-->
+<test_case>
+    <test_name>START_GROUP: CREATE-SCRIPTS-FOR-TESTING-HOOKS</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>NONE</positive>
+    <run>YES</run>
 </test_case>
 <test_case>
     <test_name>Create auto_script.sh under /usr/libexec/vdsm/hooks/after_vdsm_stop which creates after_vdsm_stop.hook when run on /var/tmp</test_name>
@@ -68,6 +84,13 @@
     <run>yes</run>
 </test_case>
 <test_case>
+    <test_name>END_GROUP: CREATE-SCRIPTS-FOR-TESTING-HOOKS</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>NONE</positive>
+    <run>YES</run>
+</test_case>
+<test_case>
    <test_name>Now start vdsmd to be aware of the new hook scripts</test_name>
    <test_action>startVdsmd</test_action>
    <parameters>vds='{vds}', password='{passwd}'</parameters>
@@ -80,6 +103,14 @@
     <parameters>seconds=30</parameters>
     <positive>NONE</positive>
     <run>yes</run>
+</test_case>
+<!--***********************Test after_vdsm_stop hook***********************-->
+<test_case>
+    <test_name>START_GROUP: TEST-HOOKS</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>NONE</positive>
+    <run>YES</run>
 </test_case>
 <test_case>
     <test_name>Stop vdsmd on the host to invoke vdsm_stop hook</test_name>
@@ -99,9 +130,11 @@
    <test_name>Check for file created by vdsm_stop hook</test_name>
    <test_action>checkForFileExistenceAndContent</test_action>
    <parameters>ip='{vds}',password='{passwd}',filename='/var/tmp/after_vdsm_stop.hook'</parameters>
-   <positive>NONE</positive>
+   <positive>True</positive>
    <run>yes</run>
+   <tcms_test_case>289788</tcms_test_case>
 </test_case>
+<!--***********************Test before_vdsm_start hook***********************-->
 <test_case>
    <test_name>Start vdsmd on the host to invoke start_vdsm hook</test_name>
    <test_action>startVdsmd</test_action>
@@ -120,9 +153,11 @@
    <test_name>Check for file created by vdsm-start hook</test_name>
    <test_action>checkForFileExistenceAndContent</test_action>
    <parameters>ip='{vds}',password='{passwd}',filename='/var/tmp/before_vdsm_start.hook'</parameters>
-   <positive>NONE</positive>
+   <positive>True</positive>
    <run>yes</run>
+   <tcms_test_case>289789</tcms_test_case>
 </test_case>
+<!--***********************Test before_vm_start hook***********************-->
 <test_case>
     <test_name>Start VM to invoke vm-start hook</test_name>
     <test_action>startVm</test_action>
@@ -141,9 +176,11 @@
    <test_name>Check for file created by vm-start hook</test_name>
    <test_action>checkForFileExistenceAndContent</test_action>
    <parameters>ip='{vds}',password='{passwd}',filename='/var/tmp/before.vm.start.hook', content='1234'</parameters>
-   <positive>NONE</positive>
+   <positive>True</positive>
    <run>yes</run>
+   <tcms_test_case>289791</tcms_test_case>
 </test_case>
+<!--***********************Test after_vm_stop hook***********************-->
 <test_case>
    <test_name>Suspend VM to invoke vm-suspend hook</test_name>
    <test_action>suspendVm</test_action>
@@ -162,8 +199,24 @@
    <test_name>Check for file created by after_vm_pause hook</test_name>
    <test_action>checkForFileExistenceAndContent</test_action>
    <parameters>ip='{vds}',password='{passwd}',filename='/var/tmp/after.vm.pause.hook', content='1234'</parameters>
-   <positive>NONE</positive>
-   <run>yes</run>
+   <positive>True</positive>
+   <run>Yes</run>
+   <tcms_test_case>289793</tcms_test_case>
+</test_case>
+<test_case>
+    <test_name>END_GROUP: TEST-HOOKS</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>NONE</positive>
+    <run>YES</run>
+</test_case>
+<!--***********************Cleaning step***********************-->
+<test_case>
+    <test_name>START_GROUP: CLEANING</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>NONE</positive>
+    <run>YES</run>
 </test_case>
 <test_case>
     <test_name>Stop VM inorder to remove it</test_name>
@@ -215,7 +268,7 @@
     <run>yes</run>
 </test_case>
 <test_case>
-    <test_name>END_GROUP: CUSTOM_PROPERTY_HOOK</test_name>
+    <test_name>END_GROUP: CLEANING</test_name>
     <test_action/>
     <parameters></parameters>
     <positive>NONE</positive>
