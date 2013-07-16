@@ -30,6 +30,7 @@ VDC_PASSWORD = PARAMETERS.get('password', None)
 
 HOSTS = PARAMETERS.as_list('vds')
 PASSWORDS = PARAMETERS.as_list('vds_password')
+ADMINS = PARAMETERS.as_list('vds_admin')
 
 EXPORT_DOMAIN = PARAMETERS.get('export_domain_name')
 DATA_CENTER_TYPE = PARAMETERS['data_center_type']
@@ -48,6 +49,7 @@ INTERFACE_IDE = ENUMS['interface_ide']
 
 NIC_TYPE_VIRTIO = ENUMS['nic_type_virtio']
 VM_TYPE_DESKTOP = ENUMS['vm_type_desktop']
+VM_TYPE_SERVER = ENUMS['vm_type_server']
 
 CPU_SOCKET = PARAMETERS['cpu_socket']
 CPU_CORES = PARAMETERS['cpu_cores']

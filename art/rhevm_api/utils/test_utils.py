@@ -315,6 +315,20 @@ def stopVdsmd(vds, password):
     machine = Machine(vds, 'root', password).util(LINUX)
     return machine.stopService('vdsmd')
 
+
+def killVdsmd(vds, password):
+    '''
+    Kill vdsmd on the given host
+    Author: kjachim
+    Parameters:
+       * vds - name of the host
+       * password - ssh password for the host
+    '''
+    machine = Machine(vds, 'root', password).util(LINUX)
+    pid = machine.getPidByName("vdsmd")[1]
+    return machine.killProcess(pid)
+
+
 @is_action()
 def restartNetwork(vds, password):
     '''
