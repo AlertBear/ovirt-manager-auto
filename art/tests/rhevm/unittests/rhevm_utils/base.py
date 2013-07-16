@@ -363,7 +363,7 @@ class RHEVMUtilsTestCase(unittest.TestCase):
 
         # Following if statment is temporary, till all tools tests will move to
         # running on local machine, instead of on remote
-        arr = ['setup', 'cleanup', 'iso-uploader', 'log_collector'] \
+        arr = ['setup', 'cleanup', 'iso-uploader', 'log_collector', 'config'] \
            if cls.installation == 'true' else ['iso-uploader', 'log_collector',
                'image-uploader']
         if cls.utility in arr:
