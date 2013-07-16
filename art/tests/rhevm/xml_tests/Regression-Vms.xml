@@ -169,8 +169,16 @@
     <run>if(1&lt;len('[vds]'.split(',')))</run>
     <conf>headers={'Correlation-Id': 402}</conf>
     <exp_events>2</exp_events>
-  </test_case>
-  <test_case>
+ </test_case>
+
+<test_case>
+    <test_name>Check if host status is maintenance</test_name>
+    <test_action>waitForHostsStates</test_action>
+    <parameters>names='{vds[1]}', states='e{host_state_maintenance}', timeout=300</parameters>
+    <positive>TRUE</positive>
+    <run>YES</run>
+</test_case>
+<test_case>
     <id>cb8b9010-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Activate second host with new cluster</test_name>
     <test_description>neg_migr_explicit</test_description>
@@ -184,7 +192,7 @@
     <test_name>Wait for SPM election complete before negative migration tests</test_name>
     <test_description>neg_migr_explicit</test_description>
     <test_action>waitForSPM</test_action>
-    <parameters>datacenter='DefaultRest', timeout=60, sleep=5</parameters>
+    <parameters>datacenter='DefaultRest', timeout=300, sleep=5</parameters>
     <positive>NONE</positive>
     <run>if(1&lt;len('[vds]'.split(',')))</run>
   </test_case>
@@ -226,7 +234,17 @@
     <parameters>host='{vds[1]}'</parameters>
     <positive>TRUE</positive>
     <run>If(1&lt;len('[vds]'.split(',')))</run>
-  </test_case>
+ </test_case>
+
+<test_case>
+    <test_name>Check if host status is maintenance</test_name>
+    <test_action>waitForHostsStates</test_action>
+    <parameters>names='{vds[1]}', states='e{host_state_maintenance}', timeout=300</parameters>
+    <positive>TRUE</positive>
+    <run>YES</run>
+</test_case>
+
+
   <test_case>
     <id>cb8b9b6e-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Update second host cluster back</test_name>
@@ -254,8 +272,10 @@
     <parameters>vmName='restvm0'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
-  </test_case>
-  <test_case>
+ </test_case>
+
+
+<test_case>
     <id>cb8ba12c-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Stop VM after negative migrations</test_name>
     <test_action>stopVm</test_action>
@@ -263,15 +283,29 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 406}</conf>
-  </test_case>
-  <test_case>
+</test_case>
+<test_case>
+    <test_name>Wait until VM is stopped</test_name>
+    <test_action>waitForVMState</test_action>
+    <parameters>vm='restvm0', state='e{vm_state_down}'</parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Sleep before attempt to remove disk</test_name>
+    <test_action>sleep</test_action>
+    <parameters>seconds=20</parameters>
+    <positive>NONE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
     <id>cb8ba316-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Remove disks from VM</test_name>
     <test_action>removeDisks</test_action>
     <parameters>vm='restvm0', num_of_disks='1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
-  </test_case>
+</test_case>
   <!-- ////////////////////////////////////////////////////////////////////// -->
   <!-- /////////////////////// CREATING VMS ///////////////////////////////// -->
   <!-- ////////////////////////////////////////////////////////////////////// -->
@@ -886,8 +920,15 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 458}</conf>
-  </test_case>
-  <test_case>
+ </test_case>
+<test_case>
+    <test_name>Wait until VM is up</test_name>
+    <test_action>waitForVMState</test_action>
+    <parameters>vm='restvm_domain', state='e{vm_state_up}'</parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
     <id>cb8c3d6c-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Stop VM with specific domain</test_name>
     <test_action>stopVm</test_action>
@@ -895,7 +936,17 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 459}</conf>
-  </test_case>
+ </test_case>
+
+<test_case>
+    <test_name>Wait until VM is stopped</test_name>
+    <test_action>waitForVMState</test_action>
+    <parameters>vm='restvm_domain', state='e{vm_state_down}'</parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+
+
   <!-- /////////////////////////// TEMPLATES //////////////////////////////// -->
   <test_case>
     <id>cb8c3f56-c695-11e1-bca8-f0def10e0ce8</id>
@@ -964,7 +1015,17 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 465}</conf>
-  </test_case>
+ </test_case>
+
+<test_case>
+    <test_name>Wait until VM is up</test_name>
+    <test_action>waitForVMState</test_action>
+    <parameters>vm='restvm_basic_operations', state='e{vm_state_up}'</parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+
+
   <test_case>
     <id>cb8c4d34-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Retrieve VM statistics</test_name>
@@ -982,7 +1043,18 @@
     <run>yes</run>
     <bz>837003</bz>
     <conf>headers={'Correlation-Id': 466}</conf>
-  </test_case>
+ </test_case>
+
+
+ <test_case>
+    <test_name>Wait until VM is suspended</test_name>
+    <test_action>waitForVMState</test_action>
+    <parameters>vm='restvm_basic_operations', state='e{vm_state_suspended}'</parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+
+
   <test_case>
     <id>cb8c5112-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Stop suspended VM to test basic operations</test_name>
@@ -991,7 +1063,16 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 467}</conf>
-  </test_case>
+ </test_case>
+ <test_case>
+    <test_name>Wait until VM is down</test_name>
+    <test_action>waitForVMState</test_action>
+    <parameters>vm='restvm_basic_operations', state='e{vm_state_down}'</parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+
+
   <test_case>
     <id>cb8c52f2-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Ticket stopped VM</test_name>
@@ -1008,7 +1089,17 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 468}</conf>
-  </test_case>
+ </test_case>
+
+ <test_case>
+    <test_name>Wait until VM is up</test_name>
+    <test_action>waitForVMState</test_action>
+    <parameters>vm='restvm_basic_operations', state='e{vm_state_up}'</parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+
+
   <test_case>
     <id>cb8c56c6-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Ticket running VM</test_name>
@@ -1033,13 +1124,22 @@
     <parameters>host='{vds[0]}'</parameters>
     <positive>TRUE</positive>
     <run>if(1&lt;len('[vds]'.split(',')))</run>
-  </test_case>
+ </test_case>
+
+<test_case>
+    <test_name>Check if host status is maintenance</test_name>
+    <test_action>waitForHostsStates</test_action>
+    <parameters>names='{vds[0]}', states='e{host_state_maintenance}', timeout=300</parameters>
+    <positive>TRUE</positive>
+    <run>YES</run>
+</test_case>
+
   <test_case>
     <id>cb8c604e-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Wait for SPM election complete - waiting until objects from first host are migrated to second host</test_name>
     <test_description>neg_migr_implicit</test_description>
     <test_action>waitForSPM</test_action>
-    <parameters>datacenter='DefaultRest', timeout=60, sleep=5</parameters>
+    <parameters>datacenter='DefaultRest', timeout=300, sleep=5</parameters>
     <positive>NONE</positive>
     <run>if(1&lt;len('[vds]'.split(',')))</run>
   </test_case>
@@ -1052,7 +1152,16 @@
     <positive>FALSE</positive>
     <run>if(1&lt;len('[vds]'.split(',')))</run>
     <bz>756044</bz>
-  </test_case>
+ </test_case>
+
+<test_case>
+    <test_name>Check if host status is up</test_name>
+    <test_action>waitForHostsStates</test_action>
+    <parameters>names='{vds[1]}', states='e{host_state_up}', timeout=300</parameters>
+    <positive>True</positive>
+    <run>yes</run>
+</test_case>
+
     <test_case>
     <id>cb8c5a90-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Stop VM for basic operations</test_name>
@@ -1061,7 +1170,16 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 470}</conf>
-  </test_case>
+ </test_case>
+ <test_case>
+    <test_name>Wait until VM is down</test_name>
+    <test_action>waitForVMState</test_action>
+    <parameters>vm='restvm_basic_operations', state='e{vm_state_down}'</parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+
+
   <test_case>
     <id>cb8c5c7a-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Remove VMs after testing disks, snapshots, basic operations, NICs and others</test_name>
@@ -1084,7 +1202,17 @@
     <parameters>host='{vds[1]}'</parameters>
     <positive>TRUE</positive>
     <run>if(1&lt;len('[vds]'.split(',')))</run>
-  </test_case>
+ </test_case>
+
+ <test_case>
+    <test_name>Check if host status is maintenance</test_name>
+    <test_action>waitForHostsStates</test_action>
+    <parameters>names='{vds[1]}', states='e{host_state_maintenance}', timeout=300</parameters>
+    <positive>TRUE</positive>
+    <run>YES</run>
+</test_case>
+
+
   <!-- ////////////////////////////////////////////////////////////////////// -->
   <test_case>
     <id>cb8c644a-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1102,13 +1230,23 @@
     <parameters>host='{vds[1]}'</parameters>
     <positive>TRUE</positive>
     <run>if(1&lt;len('[vds]'.split(',')))</run>
-  </test_case>
+ </test_case>
+
+<test_case>
+    <test_name>Check if host status is up</test_name>
+    <test_action>waitForHostsStates</test_action>
+    <parameters>names='{vds[1]}', states='e{host_state_up}', timeout=300</parameters>
+    <positive>TRUE</positive>
+    <run>YES</run>
+</test_case>
+
+
   <test_case>
     <id>cb8c681e-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Wait for SPM election complete</test_name>
     <test_description>neg_migr_implicit</test_description>
     <test_action>waitForSPM</test_action>
-    <parameters>datacenter='DefaultRest', timeout=60, sleep=5</parameters>
+    <parameters>datacenter='DefaultRest', timeout=300, sleep=5</parameters>
     <positive>NONE</positive>
     <run>if(1&lt;len('[vds]'.split(',')))</run>
   </test_case>
@@ -1295,7 +1433,16 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 485}</conf>
-  </test_case>
+ </test_case>
+ <test_case>
+    <test_name>Wait until VM is down</test_name>
+    <test_action>waitForVMState</test_action>
+    <parameters>vm='restvm_vnc', state='e{vm_state_down}'</parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+
+
   <test_case>
     <id>cb8c9078-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Stop VM with spice display</test_name>
@@ -1304,7 +1451,19 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 486}</conf>
-  </test_case>
+ </test_case>
+
+
+<test_case>
+    <test_name>Wait until VM is down</test_name>
+    <test_action>waitForVMState</test_action>
+    <parameters>vm='restvm_spice', state='e{vm_state_down}'</parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+
+
+
   <test_case>
     <id>cb8c9262-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Remove VMs after testing export, spice, vnc and other</test_name>
@@ -1385,7 +1544,16 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 490}</conf>
-  </test_case>
+ </test_case>
+<test_case>
+    <test_name>Wait until VM is paused</test_name>
+    <test_action>waitForVMState</test_action>
+    <parameters>vm='restvm_run_once', state='e{vm_state_paused}'</parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+
+
   <test_case>
     <id>cb8ca69e-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Change CD while VM is running</test_name>
@@ -1402,7 +1570,16 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 491}</conf>
-  </test_case>
+ </test_case>
+<test_case>
+    <test_name>Wait until VM is down</test_name>
+    <test_action>waitForVMState</test_action>
+    <parameters>vm='restvm_run_once', state='e{vm_state_down}'</parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+
+
   <test_case>
     <id>cb8cac52-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Add NIC to VM for runvmonce to boot from network</test_name>
@@ -1420,7 +1597,17 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 493}</conf>
-  </test_case>
+ </test_case>
+
+<test_case>
+    <test_name>Wait until VM is paused</test_name>
+    <test_action>waitForVMState</test_action>
+    <parameters>vm='restvm_run_once', state='e{vm_state_paused}'</parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+
+
   <test_case>
     <id>cb8cb01c-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Stop VM for runvmonce to boot from floppy</test_name>
@@ -1429,8 +1616,18 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 494}</conf>
-  </test_case>
-  <test_case>
+ </test_case>
+
+<test_case>
+    <test_name>Wait until VM is down</test_name>
+    <test_action>waitForVMState</test_action>
+    <parameters>vm='restvm_run_once', state='e{vm_state_down}'</parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+
+
+<test_case>
     <id>cb8cb1fc-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Run VM once with boot from network with floppy</test_name>
     <test_action>runVmOnce</test_action>
@@ -1438,7 +1635,16 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 495}</conf>
-  </test_case>
+ </test_case>
+<test_case>
+    <test_name>Wait until VM is up</test_name>
+    <test_action>waitForVMState</test_action>
+    <parameters>vm='restvm_run_once', state='e{vm_state_paused}'</parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+
+
   <test_case>
     <id>cb8cb40e-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Stop VM for runvmonce</test_name>
@@ -1447,7 +1653,17 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 496}</conf>
-  </test_case>
+ </test_case>
+
+<test_case>
+    <test_name>Wait until VM is down</test_name>
+    <test_action>waitForVMState</test_action>
+    <parameters>vm='restvm_run_once', state='e{vm_state_down}'</parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+
+
   <test_case>
     <id>cb8cb7d8-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Deactivate ISO storage domain for runvmonce</test_name>
@@ -1794,8 +2010,8 @@
     <parameters>name='rest_testPool', size=2, template='rest_templ3', cluster='RestCluster1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
-    <conf>headers={'Correlation-Id': 523}</conf>
-    <exp_events>3,5</exp_events>
+    <!--    <conf>headers={'Correlation-Id': 523}</conf>
+    <exp_events>3,5</exp_events> -->
   </test_case>
   <test_case>
     <id>cb8d1e58-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1813,8 +2029,8 @@
     <parameters>vmpool='rest_testPool', name='rest_testPoolUpd', description='Pool Description', size=3</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
-    <conf>headers={'Correlation-Id': 525}</conf>
-    <exp_events>3</exp_events>
+    <!-- <conf>headers={'Correlation-Id': 525}</conf>
+    <exp_events>3</exp_events> -->
   </test_case>
   <test_case>
     <id>cb8d227c-c695-11e1-bca8-f0def10e0ce8</id>
@@ -1865,7 +2081,7 @@
     <parameters>vm='{vms_templates_tests}'</parameters>
     <positive>TRUE</positive>
     <bz>915809</bz>
-    <run>forkfor({vms_templates_tests})</run>
+    <run>loop({vms_templates_tests})</run>
     <!--<conf>headers={'Correlation-Id': 526}</conf>
     <exp_events>19</exp_events> -->
   </test_case>
