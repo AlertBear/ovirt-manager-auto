@@ -30,6 +30,12 @@ class ResultsCollector(Component):
         pass
 
     def add_test_result(self, test):
+        try:
+            self._add_test_result(test)
+        except Exception as ex:
+            logger.error("Failed to record result for %s: %s", test, ex)
+
+    def _add_test_result(self, test):
         if isinstance(test, TestSuite):
             res = SuiteResult()
             self.extenders.pre_suite_result_reported(res, test)
