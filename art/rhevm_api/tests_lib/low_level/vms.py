@@ -2803,3 +2803,17 @@ def move_vm_disk(vm_name, disk_name, target_sd):
                                    % (vm_name, disk_name, target_sd))
 
 
+def wait_for_vm_states(vm_name, states=[ENUMS['vm_state_up']],
+                       timeout=VM_WAIT_FOR_IP_TIMEOUT, sleep=DEF_SLEEP):
+    """
+    Description: Waits by polling API until vm is in desired state
+    Parameters:
+        * vm_name - name of the vm
+        * states - list of desired state
+    Throws:
+        APITimeout when vm won't reach desired state in time
+    """
+    sampler = TimeoutingSampler(timeout, sleep, VM_API.find, vm_name)
+    for vm in sampler:
+        if vm.status.state in states:
+            break
