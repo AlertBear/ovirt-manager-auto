@@ -712,7 +712,7 @@ def detachVm(positive, vm):
     return status
 
 
-def _getVmDisks(vm):
+def getVmDisks(vm):
     vmObj = VM_API.find(vm)
     disks = VM_API.getElemFromLink(vmObj, link_name='disks', attr='disk',
                                     get_href=False)
@@ -728,7 +728,7 @@ def _getVmDiskById(vm, diskId):
         * diskId - disk's id
     Return: Disk object
     """
-    disks = _getVmDisks(vm)
+    disks = getVmDisks(vm)
     found = [disk for disk in disks if disk.get_id() == diskId]
     if not found:
         raise DiskNotFound("Disk with id %s was not found in vm's %s disk \
@@ -750,7 +750,7 @@ def _getVmFirstDiskByName(vm, diskName, idx=0):
     """
     """
     """
-    disks = _getVmDisks(vm)
+    disks = getVmDisks(vm)
     found = [disk for disk in disks if disk.get_name() == diskName]
     if not found:
         raise DiskNotFound("Disk %s was not found in vm's %s disk collection" %
@@ -825,7 +825,7 @@ def removeDisk(positive, vm, disk, wait=True):
        * wait - wait until finish if True
     Return: True if disk was removed properly, False otherwise
     '''
-    for d in _getVmDisks(vm):
+    for d in getVmDisks(vm):
         if d.name.lower() == disk.lower():
             status = VM_API.delete(d, positive)
 
@@ -834,7 +834,7 @@ def removeDisk(positive, vm, disk, wait=True):
         startTime = time.time()
         logger.debug('Waiting for disk to be removed.')
         while diskExist:
-            disks = _getVmDisks(vm)
+            disks = getVmDisks(vm)
             if disks is None:
                 return False
             disks = filter(lambda x: x.name.lower() == disk.lower(), disks)
@@ -857,7 +857,7 @@ def removeDisks(positive, vm, num_of_disks, wait=True):
     Return: status (True if disks were removed properly, False otherwise)
     '''
     rc = True
-    disks = _getVmDisks(vm)
+    disks = getVmDisks(vm)
     if disks:
         cnt = int(num_of_disks)
         actual_cnt = len(disks)
@@ -880,7 +880,7 @@ def waitForDisksStat(vm, stat='OK', timeout=VM_IMAGE_OPT_TIMEOUT):
     Return True if all events passed, otherwize False
     '''
     status = True
-    disks = _getVmDisks(vm)
+    disks = getVmDisks(vm)
     for disk in disks:
         status = DISKS_API.waitForElemStatus(disk, stat, timeout)
     return status
@@ -2193,7 +2193,14 @@ def changeVmDiskState(positive, vm, action, diskAlias, diskId, wait):
 
     status = DISKS_API.syncAction(disk, action, positive)
     if status and wait:
-        return DISKS_API.waitForElemStatus(disk, 'ok', 300)
+        if positive:
+            # wait until the disk is really (de)activated
+            active = True if action == 'activate' else False
+            return waitForVmDiskStatus(
+                vm, active, diskAlias, diskId, 300) == positive
+        else:
+            # only wait for the disk to be again in 'ok' state
+            return DISKS_API.waitForElemStatus(disk, 'ok', 300)
     return status
 
 

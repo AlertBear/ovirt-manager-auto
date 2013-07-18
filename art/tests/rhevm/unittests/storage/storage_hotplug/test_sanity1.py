@@ -12,7 +12,7 @@ import art.test_handler.exceptions as exceptions
 from art.test_handler.tools import tcms
 from art.test_handler.settings import opts
 import common
-from common import shutdown_and_remove_vms, GB, ENUMS,\
+from common import shutdown_and_remove_vms, GB, ENUMS, \
     DISK_INTERFACES, VM_NAME_FORMAT, DISK_NAME_FORMAT, _raise_if_exception
 from concurrent.futures import ThreadPoolExecutor
 import config
@@ -166,7 +166,7 @@ class TestCase134139(unittest.TestCase):
                                                % vm_name)
             logger.info("Second disk added succesfully to vm %s" % vm_name)
 
-            non_bootable_disks = [disk for disk in vms._getVmDisks(vm_name)
+            non_bootable_disks = [disk for disk in vms.getVmDisks(vm_name)
                                   if not disk.get_bootable()]
             disk = non_bootable_disks[0]
             logger.info("Deactivating disk %s on vm %s"
@@ -199,7 +199,7 @@ class TestCase134139(unittest.TestCase):
         """
         for vm in self.vm_names:
             logger.info("Getting active non-bootable disks for vm %s" % vm)
-            active_disks = [disk for disk in vms._getVmDisks(vm) if
+            active_disks = [disk for disk in vms.getVmDisks(vm) if
                             disk.get_active() and not disk.get_bootable()]
             logger.info("Unplugging disk %s from vm %s" %
                         (active_disks[0].get_name(), vm))
@@ -218,7 +218,7 @@ class TestCase134139(unittest.TestCase):
         """
         for vm in self.vm_names:
             logger.info("Getting inactive non-bootable disks for vm %s" % vm)
-            inactive_disks = [disk for disk in vms._getVmDisks(vm) if
+            inactive_disks = [disk for disk in vms.getVmDisks(vm) if
                               not disk.get_active()]
             logger.info("Detaching disk %s from vm %s" %
                         (inactive_disks[0].get_alias(), vm))
@@ -275,13 +275,14 @@ class TestCase231521(unittest.TestCase):
                 raise exceptions.DiskException("Unable to add disk to VM %s"
                                                % vm_name)
             logger.info("Second disk added succesfully")
-            non_bootable_disks = [disk for disk in vms._getVmDisks(vm_name)
+            non_bootable_disks = [disk for disk in vms.getVmDisks(vm_name)
                                   if not disk.get_bootable()]
             disk = non_bootable_disks[0]
             logger.info("Deactivating disk %s" % disk.get_name())
+            diskAlias = disk.get_name()
             if not vms.deactivateVmDisk(positive,
                                         vm=vm_name,
-                                        diskAlias=disk.get_name(),
+                                        diskAlias=diskAlias,
                                         wait=True):
                 raise exceptions.DiskException("Unable to deactivate disk %s" %
                                                disk.get_name())
@@ -302,7 +303,7 @@ class TestCase231521(unittest.TestCase):
     def test_activate_disk(self):
         """Activate an already attached disk on a running VM"""
         for vm in self.vm_names:
-            inactive_disks = [disk for disk in vms._getVmDisks(vm)
+            inactive_disks = [disk for disk in vms.getVmDisks(vm)
                               if not disk.get_bootable() and
                               not disk.get_active()]
             disk_name = inactive_disks[0].get_name()
@@ -318,7 +319,7 @@ class TestCase231521(unittest.TestCase):
     def test_deactivate_disk(self):
         """Deactivate an already attached disk on a running VM"""
         for vm in self.vm_names:
-            active_disks = [disk for disk in vms._getVmDisks(vm)
+            active_disks = [disk for disk in vms.getVmDisks(vm)
                             if not disk.get_bootable() and
                             disk.get_active()]
             disk_name = active_disks[0].get_name()
