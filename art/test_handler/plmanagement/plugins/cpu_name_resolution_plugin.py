@@ -69,6 +69,8 @@ class AutoCpuNameResolution(Component):
                              'vdsClient output: {2}'.format(name, err, out))
                 return None
         host_cpu_models = MODEL_RE.findall(out)
+        if not host_cpu_models:
+            return None
         host_model = max(host_cpu_models,
             key=lambda m: self.cpus_model_mapping.get(m, {}).get('level', -1))
         logger.debug("{0}: cpu model is {1}".format(name, host_model))
@@ -143,7 +145,7 @@ class AutoCpuNameResolution(Component):
         for name, passwd in  zip(vds_list, vds_passwd_list):
             sel_host_cpu = self.get_cpu_model(name, passwd)
             if sel_host_cpu is None:
-                logger.warning('Falling back to cpu model:'.format(
+                logger.warning('Falling back to cpu model: {0}'.format(
                     None if fallback is None else fallback.get('name', None)
                 ))
                 selected_cpu = fallback
