@@ -66,9 +66,11 @@ def _parse_mount_output_line(line):
     True
     >>> result[4] == 'v3' or result[4]
     True
+    >>> output = 'nfsd on /proc/fs/nfsd type nfsd (rw)'
+    >>> result = _parse_mount_output_line(output)
     """
     LOGGER.debug("Parsed line: %s" % line)
-    if not 'type nfs' in line:
+    if not 'type nfs ' in line:
         return None
     parts = line.split(" ")
     address, path = parts[0].split(":")
