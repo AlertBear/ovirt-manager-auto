@@ -81,6 +81,33 @@ IP_PATTERN = '10.35.*'
 virsh_cmd = ['nwfilter-dumpxml', 'vdsm-no-mac-spoofing']
 search_for = ["<filterref filter='no-mac-spoofing'/>","<filterref filter='no-arp-mac-spoofing'/>"]
 
+@is_action('getDCHosts')
+def get_dc_hosts(datacenter, get_href=True):
+    """
+    Description: Returns all hosts for the given datacenter
+    Parameters:
+      * datacenter - name of datacenter
+      * get_href - True to get link, otherwise return object
+    Returns: list of hosts in datacenter. list contains objects or links
+    according to get_href
+    """
+    dcObj = DC_API.find(datacenter)
+    all_hosts = HOST_API.get(absLink=False)
+    dc_hosts = []
+    for host in all_hosts:
+
+        # Host object's cluster contains only ID when returned from API,
+        # get the actual cluster to have all cluster members including DC
+        cluster = CL_API.get(host.get_cluster().get_href())
+
+        # check if cluster's DC matches requested DC
+        if cluster.get_data_center().get_id() == dcObj.get_id():
+            host_to_append = host.get_href() if get_href else host
+            dc_hosts.append(host_to_append)
+
+    return dc_hosts
+
+
 @is_action()
 def getRandPM(positive, cluster, size):
     '''
@@ -1348,29 +1375,54 @@ def checkHostSpmStatus(positive, hostName):
 
 @is_action()
 def returnSPMHost(hosts):
-    '''
+    """
     Description: get SPM host from the list of hosts
-    Author: pdufek
+    Author: gickowic
     Parameters:
     * hosts - the list of hosts to be searched through
-    '''
-    for host in hosts.split(','):
-        if checkHostSpmStatus(True, host):
-            return True, {'spmHost': host}
+    """
+    if isinstance(hosts, str):
+        hosts = hosts.split(',')
+    hosts = [HOST_API.find(host) for host in hosts]
+
+    for host in hosts:
+        #TODO: remove check against string and leave as boolean when ticket
+        # https://engineering.redhat.com/trac/automation/ticket/2142 is solved
+        if host.get_storage_manager().get_valueOf_() == 'true':
+            return True, {'spmHost': host.get_name()}
     return False, {'spmHost': None}
 
 
 @is_action()
-def getAnyNonSPMHost(hosts):
-    '''
-    Description: get any not SPM host from the list of hosts
-    Author: pdufek
+def getAnyNonSPMHost(hosts, expected_states=None):
+    """
+    Description: get any not SPM host from the list of hosts in the expected
+    state
+    Author: gickowic
     Parameters:
     * hosts - the list of hosts to be searched through
-    '''
-    for host in hosts.split(','):
-        if not checkHostSpmStatus(True, host):
-            return True, {'hsmHost': host}
+    * expected_states - list of states to filter hosts by. Set to None to
+    disable filtering by host state
+    """
+    if isinstance(hosts, str):
+        hosts = hosts.split(',')
+
+    hosts = [HOST_API.find(host) for host in hosts]
+
+
+    if expected_states:
+        HOST_API.logger.info('Filtering host list for hosts in states %s',
+                             expected_states)
+        hosts = [host for host in hosts
+                 if host.get_status().get_state() in expected_states]
+        HOST_API.logger.info('New hosts list is %s',
+                             [host.get_name() for host in hosts])
+
+    for host in hosts:
+        #TODO: remove check against string and leave as boolean when ticket
+        # https://engineering.redhat.com/trac/automation/ticket/2142 is solved
+        if host.get_storage_manager().get_valueOf_() == 'false':
+            return True, {'hsmHost': host.get_name()}
     return False, {'hsmHost': None}
 
 
@@ -1589,9 +1641,9 @@ def _getSPMHostname(hosts):
     * hosts - the list of hosts to be searched through
     Returns: hostName (success) / raises EntityNotFound exception
     '''
-    for host in hosts:
-        if checkHostSpmStatus(bool(True), host):
-            return host
+    status, spmHostDict = returnSPMHost(hosts)
+    if status:
+        return spmHostDict['spmHost']
     else:
         raise EntityNotFound('SPM not found among these hosts: %s' \
                              % (str(hosts),))

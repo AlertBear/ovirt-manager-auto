@@ -1222,18 +1222,20 @@ def _getVmSnapshot(vm, snap):
 
 
 @is_action()
-def addSnapshot(positive, vm, description, wait=True):
+def addSnapshot(positive, vm, description, wait=True, persist_memory=None):
     '''
     Description: add snapshot to vm
     Author: edolinin
     Parameters:
        * vm - vm where snapshot should be added
        * description - snapshot name
-       * wait - wait untill finish when True or exist without waiting when False
+       * wait - wait until finish when True or exist without waiting when False
+       * persist_memory - True to save memory state snapshot, default is False
     Return: status (True if snapshot was added properly, False otherwise)
     '''
     snapshot = data_st.Snapshot()
     snapshot.set_description(description)
+    snapshot.set_persist_memorystate(persist_memory)
 
     vmSnapshots = _getVmSnapshots(vm)
     snapshot, status = SNAPSHOT_API.create(snapshot, positive, collection=vmSnapshots)
@@ -3028,7 +3030,8 @@ def collect_vm_logs(vm_name, root_passwd='qum5net'):
 
 
 @is_action()
-def restoreSnapshot(positive, vm, description, ensure_vm_down=False):
+def restoreSnapshot(positive, vm, description, ensure_vm_down=False,
+                    restore_memory=False):
     """
     Description: restore vm snapshot
     Author: edolinin
@@ -3038,10 +3041,12 @@ def restoreSnapshot(positive, vm, description, ensure_vm_down=False):
     Return: status (True if snapshot was restored properly, False otherwise)
     """
     return perform_snapshot_action(positive, vm, description, 'restore',
-                                   ensure_vm_down)
+                                   ensure_vm_down,
+                                   restore_memory=restore_memory)
 
 
-def preview_snapshot(positive, vm, description, ensure_vm_down=False):
+def preview_snapshot(positive, vm, description, ensure_vm_down=False,
+                     restore_memory=False):
     """
     Description: preview vm snapshot
     Author: gickowic
@@ -3051,7 +3056,8 @@ def preview_snapshot(positive, vm, description, ensure_vm_down=False):
     Return: status (True if snapshot was previewed properly, False otherwise)
     """
     return perform_snapshot_action(positive, vm, description, 'preview',
-                                   ensure_vm_down)
+                                   ensure_vm_down,
+                                   restore_memory=restore_memory)
 
 
 def undo_snapshot_preview(positive, vm, description, ensure_vm_down=False):
@@ -3067,7 +3073,8 @@ def undo_snapshot_preview(positive, vm, description, ensure_vm_down=False):
                                    ensure_vm_down)
 
 
-def commit_snapshot(positive, vm, description, ensure_vm_down=False):
+def commit_snapshot(positive, vm, description, ensure_vm_down=False,
+                    restore_memory=False):
     """
     Description: Commit a vm snapshot (must be currently in preview)
     Author: gickowic
@@ -3077,11 +3084,12 @@ def commit_snapshot(positive, vm, description, ensure_vm_down=False):
     Return: status (True if snapshot was committed properly, False otherwise)
     """
     return perform_snapshot_action(positive, vm, description, 'commit',
-                                   ensure_vm_down)
+                                   ensure_vm_down,
+                                   restore_memory=restore_memory)
 
 
 def perform_snapshot_action(positive, vm, description, action,
-                            ensure_vm_down=False):
+                            ensure_vm_down=False, restore_memory=False):
     """
     Description: Perform action on a given snapshot
     Author: gickowic
@@ -3098,9 +3106,75 @@ def perform_snapshot_action(positive, vm, description, action,
         if not checkVmState(True, vm, ENUMS['vm_state_down'], host=None):
             if not stopVm(positive, vm, async='true'):
                 return False
-    status = SNAPSHOT_API.syncAction(snapshot, action, positive)
+    status = SNAPSHOT_API.syncAction(snapshot, action, positive,
+                                     restore_memory=restore_memory)
     if status and positive:
         return VM_API.waitForElemStatus(vmObj, ENUMS['vm_state_down'],
                                         VM_ACTION_TIMEOUT)
 
     return status
+
+
+def is_snapshot_with_memory_state(vm_name, snapshot):
+    """
+    Description: Check if snapshot contains memory state (according to the
+    snapshot's information)
+    Author: gickowic
+    Parameters:
+        * vm_name - name of the vm
+        * snapshot - name of the snapshot to check
+    * returns - True iff vm contains the snapshot and it has memory state
+    """
+    snapshotObj = _getVmSnapshot(vm_name, snapshot)
+    return snapshotObj.get_persist_memorystate()
+
+
+def is_pid_running_on_vm(vm_name, pid, user, password):
+    """
+    Description: Checks if a process with given pid is running on the vm
+    Author: gickowic
+    Parameters:
+        * vm_name - name of the vm
+        * pid - pid of the process to search for
+        * user - username used to login to vm
+        * password - password for the user
+    """
+    vm_ip = LookUpVMIpByName('', '').get_ip(vm_name)
+    vm_machine_object = Machine(vm_ip, user, password).util(LINUX)
+    return vm_machine_object.isProcessExists(pid)
+
+
+@is_action()
+def check_snapshot_on_export_domain(positive, vm, snapshot,
+                                    export_storagedomain):
+    '''
+    Description: Check if snapshot exists on vm on an export domain
+    Author: gickowic
+    Parameters:
+       * vm - vm to check snapshot on
+       * snapshot - snapshot description to check if exists
+       * export_storagedomain - name of export storage domain to check on
+    Return: status (True if snapshot exists and positive or snapshot missing
+    and not positive)
+    '''
+    expStorDomObj = STORAGE_DOMAIN_API.find(export_storagedomain)
+    vmObj = VM_API.getElemFromElemColl(expStorDomObj, vm)
+    snapshot = SNAPSHOT_API.getElemFromElemColl(vmObj, snapshot, 'snapshots',
+                                                'snapshot', prop='description')
+    return (snapshot is not None) == positive
+
+
+def kill_process_by_pid_on_vm(vm_name, pid, user, password):
+    """
+    Description: Kills a process with given pid if it is running on the vm
+    Author: gickowic
+    Parameters:
+        * vm_name - name of the vm
+        * pid - pid of the process to search for
+        * user - username used to login to vm
+        * password - password for the user
+    Return
+    """
+    vm_ip = LookUpVMIpByName('', '').get_ip(vm_name)
+    vm_machine_object = Machine(vm_ip, user, password).util(LINUX)
+    return vm_machine_object.killProcess(pid)
