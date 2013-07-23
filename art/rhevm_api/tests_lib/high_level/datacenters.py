@@ -52,5 +52,6 @@ def build_setup(config, storage, storage_type, basename="testname"):
 
     hosts.add_hosts(config.as_list('vds'), config.as_list('vds_password'),
                     cluster_name)
-    return storagedomains.create_storages(storage, storage_type,
-                                   config.as_list('vds')[0], datacenter_name)
+
+    return storagedomains.create_storages(
+        storage, storage_type, config.as_list('vds')[0], datacenter_name)

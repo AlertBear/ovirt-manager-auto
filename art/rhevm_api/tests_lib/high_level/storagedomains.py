@@ -20,6 +20,7 @@
 import logging
 
 from art.rhevm_api.tests_lib.low_level import storagedomains
+from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.high_level import datastructures
 from art.core_api import is_action
 from art.test_handler.settings import opts
@@ -74,26 +75,26 @@ def addISCSIDataDomain(host, storage, data_center, lun, lun_address,
     if not _ISCSIdiscoverAndLogin(host, lun_address, lun_target):
         return False
 
-    if not storagedomains.addStorageDomain(True, host=host, name=storage,
-                                    type=ENUMS['storage_dom_type_data'],
-                                    storage_type=ENUMS['storage_type_iscsi'],
-                                    lun=lun, lun_address=lun_address,
-                                    lun_target=lun_target, lun_port=lun_port,
-                                    storage_format=storage_format):
-        logger.error('Failed to add (%s, %s, %s) to %s' % (lun_address,
-                     lun_target, lun, host))
+    if not storagedomains.addStorageDomain(
+            True, host=host, name=storage, type=ENUMS['storage_dom_type_data'],
+            storage_type=ENUMS['storage_type_iscsi'], lun=lun,
+            lun_address=lun_address, lun_target=lun_target, lun_port=lun_port,
+            storage_format=storage_format):
+        logger.error('Failed to add (%s, %s, %s) to %s' % (
+                     lun_address, lun_target, lun, host))
         return False
 
-    status = storagedomains.attachStorageDomain(True, data_center, storage,
-                                                True)
+    status = storagedomains.attachStorageDomain(
+        True, data_center, storage, True)
 
-    return status and storagedomains.activateStorageDomain(True, data_center,
-                                 storage)
+    return status and storagedomains.activateStorageDomain(
+        True, data_center, storage)
 
 
 @is_action()
-def extendISCSIDomain(storage_domain, host, extend_lun, extend_lun_address,
-                     extend_lun_target, extend_lun_port=3260):
+def extendISCSIDomain(
+        storage_domain, host, extend_lun, extend_lun_address,
+        extend_lun_target, extend_lun_port=3260):
     """
     Description:
         Extends iscsi storage domain with given lun,
@@ -112,14 +113,9 @@ def extendISCSIDomain(storage_domain, host, extend_lun, extend_lun_address,
         return False
 
     return storagedomains.extendStorageDomain(
-                True,
-                storagedomain=storage_domain,
-                lun=extend_lun,
-                lun_address=extend_lun_address,
-                lun_target=extend_lun_target,
-                lun_port=extend_lun_port,
-                host=host,
-                storage_type=ENUMS['storage_type_iscsi'])
+        True, storagedomain=storage_domain, host=host, lun=extend_lun,
+        lun_address=extend_lun_address, lun_target=extend_lun_target,
+        lun_port=extend_lun_port, storage_type=ENUMS['storage_type_iscsi'])
 
 
 @is_action()
@@ -134,11 +130,8 @@ def extendFCPDomain(storage_domain, host, lun):
     returns True in case of success, False otherwise
     """
     return storagedomains.extendStorageDomain(
-                True,
-                storagedomain=storage_domain,
-                lun=lun,
-                host=host,
-                storage_type=ENUMS['storage_type_fcp'])
+        True, storagedomain=storage_domain, lun=lun, host=host,
+        storage_type=ENUMS['storage_type_fcp'])
 
 
 @is_action()
@@ -157,18 +150,17 @@ def addNFSDomain(host, storage, data_center, address, path,
         * storage_format - storage format version (v1/v2/v3)
     return True if succeeded, False otherwise
     '''
-    if not storagedomains.addStorageDomain(True, host=host, name=storage,
-                                    type=sd_type,
-                                    storage_type=ENUMS['storage_type_nfs'],
-                                    address=address, path=path,
-                                    storage_format=storage_format):
+    if not storagedomains.addStorageDomain(
+            True, host=host, name=storage, type=sd_type,
+            storage_type=ENUMS['storage_type_nfs'], address=address, path=path,
+            storage_format=storage_format):
         logger.error('Failed to add %s:%s to %s' % (address, path, host))
         return False
 
-    status = storagedomains.attachStorageDomain(True, data_center, storage,
-                                                True)
-    return status and storagedomains.activateStorageDomain(True, data_center,
-                                 storage)
+    status = storagedomains.attachStorageDomain(
+        True, data_center, storage, True)
+    return status and storagedomains.activateStorageDomain(
+        True, data_center, storage)
 
 
 @is_action()
@@ -183,8 +175,8 @@ def addLocalDataDomain(host, storage, data_center, path):
         * path - path on the local machine
     return True if succeeded, False otherwise
     """
-    if not storagedomains.addStorageDomain(True, host=host, name=storage,
-            type=ENUMS['storage_dom_type_data'],
+    if not storagedomains.addStorageDomain(
+            True, host=host, name=storage, type=ENUMS['storage_dom_type_data'],
             storage_type=ENUMS['storage_type_local'], path=path):
         logger.error('Failed to add local storage %s to %s' % (path, host))
         return False
@@ -212,15 +204,15 @@ def addPosixfsDataDomain(host, storage, data_center, address, path, vfs_type):
         * vfs_type - ...
     return True if succeeded, False otherwise
     """
-    if not storagedomains.addStorageDomain(True, host=host, name=storage,
-            type=ENUMS['storage_dom_type_data'], address=address,
-            storage_type=ENUMS['storage_type_posixfs'], path=path,
-            vfs_type=vfs_type):
+    if not storagedomains.addStorageDomain(
+            True, host=host, name=storage, type=ENUMS['storage_dom_type_data'],
+            address=address, storage_type=ENUMS['storage_type_posixfs'],
+            path=path, vfs_type=vfs_type):
         logger.error('Failed to add posixfs storage %s to %s' % (path, host))
         return False
 
     if not storagedomains.attachStorageDomain(
-                                    True, data_center, storage, True):
+            True, data_center, storage, True):
         logger.error("Cannot attach posixfs domain %s" % storage)
         return False
 
@@ -243,8 +235,8 @@ def addFCPDataDomain(host, storage, data_center, lun):
         * lun - lun
     return True if succeeded, False otherwise
     """
-    if not storagedomains.addStorageDomain(True, host=host, name=storage,
-            type=ENUMS['storage_dom_type_data'],
+    if not storagedomains.addStorageDomain(
+            True, host=host, name=storage, type=ENUMS['storage_dom_type_data'],
             storage_type=ENUMS['storage_type_fcp'], lun=lun):
         logger.error('Failed to add fcp storage %s to %s' % (lun, storage))
         return False
@@ -289,12 +281,12 @@ def __extend_iscsi_domain(storage_domain, host, storage_conf):
     lun_addresses_list = storage_conf.as_list('extend_lun_address')
     lun_list = storage_conf.as_list('extend_lun')
     for (lun, lun_address, lun_target) in zip(
-                lun_list, lun_addresses_list, lun_targets_list):
+            lun_list, lun_addresses_list, lun_targets_list):
         if not extendISCSIDomain(
-                    storage_domain, host, lun, lun_address, lun_target):
+                storage_domain, host, lun, lun_address, lun_target):
             raise errors.StorageDomainException(
-                    "extendISCSIDomain(%s, %s, %s, %s, %s) failed.",
-                    storage_domain, host, lun, lun_address, lun_target)
+                "extendISCSIDomain(%s, %s, %s, %s, %s) failed." % (
+                storage_domain, host, lun, lun_address, lun_target))
 
 
 def __extend_fcp_domain(storage_domain, host, storage_conf):
@@ -309,8 +301,178 @@ def __extend_fcp_domain(storage_domain, host, storage_conf):
     for lun in lun_list:
         if not extendFCPDomain(storage_domain, host, lun):
             raise errors.StorageDomainException(
-                    "extendFCPDomain(%s, %s, %s) failed.",
-                    storage_domain, host, lun)
+                "extendFCPDomain(%s, %s, %s) failed." %
+                (storage_domain, host, lun))
+
+
+class StorageAdder(object):
+    """ Adds all storages defined in config file to given datacenter.
+        This is a base class, use one of the specific implementations!
+        Each implementation should define its own add_storage for adding
+        one data storage domain.
+    """
+    def __init__(self, datacenter, host, storage, export_name, iso_name):
+        """
+            Parameters:
+              * datacenter - data center name
+              * host - name of the host to use
+              * storage - storage configuration (config file section)
+              * export_name - name of export domain
+              * iso_name - name of iso domain
+        """
+        self.datacenter = datacenter
+        self.host = host
+        self.storage = storage
+        self.no_of_data_storages = 0
+        self.export_name = export_name
+        self.iso_name = iso_name
+
+    def _add_storage(self, add_func, *args):
+        if not add_func(*args):
+            raise errors.StorageDomainException(
+                "%s domain adding function with arguments %s failed" % (
+                add_func.__name__, args))
+        logging.info(
+            "%s function added storage with args %s", add_func.__name__, args)
+
+    def add_storage(self, i):
+        """ adds one data domain
+            parameters:
+             * index of the data domain in the config file
+        """
+        raise NotImplementedError("Should be implemented in subclass!")
+
+    def add_storages(self):
+        """ Adds all storages from config file.
+        """
+        created_storages = []
+        created_storages.append(self.add_storage(0))
+        hosts.waitForSPM(self.datacenter, 600, 10)
+        for i in range(1, self.no_of_data_storages):
+            created_storages.append(self.add_storage(i))
+        self.add_export_domains()
+        self.add_iso_domains()
+        return created_storages
+
+    def _add_nfs_domain(self, address, path, sd_type):
+        if address is not None and path is not None:
+            if not addNFSDomain(
+                    self.host, self.export_name, self.datacenter,
+                    address, path, sd_type):
+                raise errors.StorageDomainException(
+                    "addNFSDomain %s (%s, %s, %s) to DC %s failed." %
+                    (sd_type, address, path, self.host, self.datacenter))
+            logging.info(
+                "%s domain %s was created successfully",
+                sd_type, self.export_name)
+        else:
+            logging.info(
+                "There is no %s domain defined in config file", sd_type)
+
+    def add_export_domains(self):
+        """ Adds export domain
+        """
+        export_address = self.storage.get('export_domain_address', None)
+        export_path = self.storage.get('export_domain_path', None)
+        self._add_nfs_domain(
+            export_address, export_path, ENUMS['storage_dom_type_export'])
+
+    def add_iso_domains(self):
+        """ Adds iso domain
+        """
+        iso_address = self.storage.get('iso_domain_address', None)
+        iso_path = self.storage.get('iso_domain_path', None)
+        self._add_nfs_domain(
+            iso_address, iso_path, ENUMS['storage_dom_type_iso'])
+
+
+class NFSStorageAdder(StorageAdder):
+    def __init__(self, datacenter, host, storage, export_name, iso_name):
+        super(NFSStorageAdder, self).__init__(
+            datacenter, host, storage, export_name, iso_name)
+        self.addresses = self.storage.as_list('data_domain_address')
+        self.paths = self.storage.as_list('data_domain_path')
+        self.no_of_data_storages = len(self.paths)
+
+    def add_storage(self, i):
+        """ Adds one NFS data domain
+        """
+
+        name = "nfs_%s" % i
+        self._add_storage(
+            addNFSDomain, self.host, name, self.datacenter, self.addresses[i],
+            self.paths[i], ENUMS['storage_dom_type_data'])
+        return name
+
+
+class ISCSIStorageAdder(StorageAdder):
+    def __init__(self, datacenter, host, storage, export_name, iso_name):
+        super(ISCSIStorageAdder, self).__init__(
+            datacenter, host, storage, export_name, iso_name)
+        self.lun_targets = self.storage.as_list('lun_target')
+        self.lun_addresses = self.storage.as_list('lun_address')
+        self.luns = self.storage.as_list('lun')
+        self.no_of_data_storages = len(self.luns)
+
+    def add_storage(self, i):
+        """ Adds one iSCSI data domain
+        """
+        name = "iscsi_%d" % i
+        self._add_storage(
+            addISCSIDataDomain, self.host, name, self.datacenter, self.luns[i],
+            self.lun_addresses[i], self.lun_targets[i])
+        return name
+
+
+class FCPStorageAdder(StorageAdder):
+    def __init__(self, datacenter, host, storage, export_name, iso_name):
+        super(FCPStorageAdder, self).__init__(
+            datacenter, host, storage, export_name, iso_name)
+        self.luns = self.storage.as_list('lun')
+        self.no_of_data_storages = len(self.luns)
+
+    def add_storage(self, i):
+        """ Adds one FCP data domain
+        """
+        name = "iscsi_%d" % i
+        self._add_storage(
+            addFCPDataDomain, self.host, name, self.datacenter, self.luns[i])
+        return name
+
+
+class LocalFSStorageAdder(StorageAdder):
+    def __init__(self, datacenter, host, storage, export_name, iso_name):
+        super(LocalFSStorageAdder, self).__init__(
+            datacenter, host, storage, export_name, iso_name)
+        self.local_domain_paths = self.storage.as_list("local_domain_path")
+        self.no_of_data_storages = len(self.local_domain_paths)
+
+    def add_storage(self, i):
+        """ Adds one localfs data domain
+        """
+        name = "local_%s" % i
+        self._add_storage(
+            addLocalDataDomain, self.host, name, self.datacenter,
+            self.local_domain_paths[i])
+        return name
+
+
+class PosixFSStorageAdder(StorageAdder):
+    def __init__(self, datacenter, host, storage, export_name, iso_name):
+        super(PosixFSStorageAdder, self).__init__(
+            datacenter, host, storage, export_name, iso_name)
+        self.vfs_type = self.storage["vfs_type"]
+        self.domain_paths = self.storage.as_list("data_domain_path")
+        self.domain_addresses = self.storage.as_list("data_domain_address")
+
+    def add_storage(self, i):
+        """ Adds one posixfs data domain
+        """
+        name = "posixfs_%s" % i
+        self._add_storage(
+            addPosixfsDataDomain, self.host, name, self.datacenter,
+            self.domain_addresses[i], self.domain_paths[i], self.vfs_type)
+        return name
 
 
 def create_storages(storage, type_, host, datacenter,
@@ -324,152 +486,21 @@ def create_storages(storage, type_, host, datacenter,
         * export_name - name of export domain, if any
         * iso_name - name of iso domain, if any
     """
+    storage_types = {
+        ENUMS['storage_type_nfs']: NFSStorageAdder,
+        ENUMS['storage_type_iscsi']: ISCSIStorageAdder,
+        ENUMS['storage_type_fcp']: FCPStorageAdder,
+        ENUMS['storage_type_local']: LocalFSStorageAdder,
+        ENUMS['storage_type_posixfs']: PosixFSStorageAdder}
 
-    if type_ == ENUMS['storage_type_nfs']:
-        names = __create_nfs_storages(datacenter, host, storage)
-    elif type_ == ENUMS['storage_type_iscsi']:
-        names = __create_iscsi_storages(datacenter, host, storage)
-    elif type_ == ENUMS['storage_type_fcp']:
-        names = __create_fcp_storages(datacenter, host, storage)
-    elif type_ == ENUMS['storage_type_local']:
-        names = __create_localfs_storages(datacenter, host, storage)
-    elif type_ == ENUMS['storage_type_posixfs']:
-        names = __create_posixfs_storages(datacenter, host, storage)
+    if type_ in storage_types:
+        storage_adder = storage_types[type_](
+            datacenter, host, storage, export_name, iso_name)
     else:
-        raise errors.UnkownConfigurationException("unknown storage type: %s" %
-                                                  type_)
+        raise errors.UnkownConfigurationException(
+            "unknown storage type: %s" % type_)
 
-    export_address = storage.get('export_domain_address', None)
-    if export_address is not None:
-        export_path = storage['export_domain_path']
-
-        if not addNFSDomain(host, export_name, datacenter, export_address,
-                            export_path, ENUMS['storage_dom_type_export']):
-            raise errors.StorageDomainException(
-                "addNFSDomain export (%s, %s) to DC %s failed." %
-                (export_address, export_path, datacenter))
-        logging.info("Export domain %s was created successfully", export_name)
-
-    iso_address = storage.get('tests_iso_domain_address', None)
-    if iso_address is not None:
-        iso_path = storage['tests_iso_domain_path']
-        if not addNFSDomain(host, iso_name, datacenter,
-
-                            iso_address, iso_path,
-                            ENUMS['storage_dom_type_iso']):
-            raise errors.StorageDomainException(
-                    "addNFSDomain iso (%s, %s) to DC %s failed." %
-                    (iso_address, iso_path, datacenter))
-        logging.info("ISO domain %s was created successfully", iso_name)
-    return names
-
-
-def __create_nfs_storages(datacenter, host, storage_conf):
-    """
-    Description: Creates nfs storages
-    Parameters:
-        * datacenter - name of datacenter
-        * host - host that will create storage domains
-        * storage_conf - storage configuration section
-    """
-    data_domain_paths = storage_conf.as_list('data_domain_path')
-    names = []
-    for index, address in enumerate(
-                          storage_conf.as_list('data_domain_address')):
-        name = "nfs_%d" % index
-        path = data_domain_paths[index]
-        if not addNFSDomain(host, name, datacenter, address, path,
-                            ENUMS['storage_dom_type_data']):
-            raise errors.StorageDomainException(
-                    "addNFSDomain (%s, %s) to DC %s failed." %
-                    (address, path, datacenter))
-        logging.info("NFS data domain %s was created successfully", name)
-        names.append(name)
-    return names
-
-
-def __create_iscsi_storages(datacenter, host, storage_conf):
-    """
-    Description: Creates iscsi storages
-    Parameters:
-        * datacenter - name of datacenter
-        * host - host that will create storage domains
-        * storage_conf - storage configuration section
-    """
-    lun_targets_list = storage_conf.as_list('lun_target')
-    lun_addresses_list = storage_conf.as_list('lun_address')
-    names = []
-    for index, lun in enumerate(storage_conf.as_list('lun')):
-        lun_target = lun_targets_list[index]
-        lun_address = lun_addresses_list[index]
-        name = "iscsi_%d" % index
-        if not addISCSIDataDomain(host, name, datacenter,
-                                  lun, lun_address, lun_target):
-            raise errors.StorageDomainException(
-                    "addISCSIDomain (%s, %s, %s) to DC %s failed." %
-                    (lun_address, lun_target, lun, datacenter))
-        logging.info("iSCSI data domain %s was created successfully", name)
-        names.append(name)
-    return names
-
-
-def __create_fcp_storages(datacenter, host, storage_conf):
-    """
-    Description: Creates fcp storages
-    Author: kjachim
-    Parameters:
-        * datacenter - name of datacenter
-        * host - host that will create storage domains
-        * storage_conf - storage configuration section
-    """
-    for index, lun in enumerate(storage_conf.as_list('lun')):
-        name = "fcp_%d" % index
-        if not addFCPDataDomain(host, name, datacenter, lun):
-            raise errors.StorageDomainException(
-                "addFCPDataDomain (%s) to DC %s failed." % (lun, datacenter))
-        logging.info("FCP data domain %s was created successfully", name)
-
-
-def __create_localfs_storages(datacenter, host, storage_conf):
-    """
-    Description: Creates local storages
-    Author: kjachim
-    Parameters:
-        * datacenter - name of datacenter
-        * host - host that will create storage domains
-        * storage_conf - storage configuration section
-    """
-    local_domain_paths = storage_conf.as_list("local_domain_path")
-    for index, path in enumerate(local_domain_paths):
-        name = "local_%s" % index
-        if not addLocalDataDomain(host, name, datacenter, path):
-            raise errors.StorageDomainException(
-                "addLocalDataDomain(%s, %s, %s, %s) failed!" % (
-                                    host, name, datacenter, path))
-        logging.info("local data domain %s created successfully", name)
-
-
-def __create_posixfs_storages(datacenter, host, storage_conf):
-    """
-    Description: Creates posixfs storages
-    Author: kjachim
-    Parameters:
-        * datacenter - name of datacenter
-        * host - host that will create storage domains
-        * storage_conf - storage configuration section
-    """
-    vfs_type = storage_conf["vfs_type"]
-    domain_paths = storage_conf.as_list("data_domain_path")
-    domain_addresses = storage_conf.as_list("data_domain_address")
-    for index, (path, address) in enumerate(
-            zip(domain_paths, domain_addresses)):
-        name = "posixfs_%s" % index
-        if not addPosixfsDataDomain(
-                host, name, datacenter, address, path, vfs_type):
-            raise errors.StorageDomainException(
-                "addPosixfsDataDomain(%s, %s, %s, %s, %s, %s) failed!" % (
-                host, name, datacenter, address, path, vfs_type))
-        logging.info("posixfs data domain %s created successfully", name)
+    return storage_adder.add_storages()
 
 
 @is_action()
@@ -548,6 +579,7 @@ def create_nfs_domain_with_options(
         if not storagedomains.attachStorageDomain(True, datacenter, name):
             raise errors.StorageDomainException(
                 "Cannot attach %s to %s" % (name, datacenter))
+
 
 @is_action('attachAndActivateDomain')
 def attach_and_activate_domain(datacenter, domain):
