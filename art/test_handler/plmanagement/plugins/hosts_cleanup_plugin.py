@@ -27,7 +27,7 @@ logger = get_logger('host_cleanup')
 DEFAULT_STATE = False
 CLEANUP = 'HOSTS_CLEANUP'
 RUN_SECTION = 'RUN'
-SERVICES = ['rpcbind']
+SERVICES = ['rpcbind', 'iptables']
 
 
 def cleanHostStorageSession(hostObj, **kwargs):
