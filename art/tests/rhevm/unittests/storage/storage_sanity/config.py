@@ -3,13 +3,19 @@ Config module for storage sanity tests
 """
 __test__ = False
 
+from art.test_handler.settings import opts
 from . import ART_CONFIG
+
+ENUMS = opts['elements_conf']['RHEVM Enums']
 
 PARAMETERS = ART_CONFIG['PARAMETERS']
 
-DATA_CENTER_TYPE = PARAMETERS['data_center_type']
-
 STORAGE = ART_CONFIG['STORAGE']
+
+DATA_CENTER_TYPE = (PARAMETERS['data_center_type']).split("_")[0]
+if DATA_CENTER_TYPE == ENUMS['storage_type_posixfs']:
+    VFS_TYPE = (PARAMETERS['data_center_type']).split("_")[1]
+    PARAMETERS['vfs_type'] = VFS_TYPE
 
 EXTEND_LUN = STORAGE.get('extend_lun', None)
 

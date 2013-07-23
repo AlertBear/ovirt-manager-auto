@@ -459,11 +459,8 @@ def __create_posixfs_storages(datacenter, host, storage_conf):
         * storage_conf - storage configuration section
     """
     vfs_type = storage_conf["vfs_type"]
-    prefix = 'gluster'
-    if vfs_type == 'nfs':
-        prefix = 'data'
-    domain_paths = storage_conf.as_list("%s_domain_path" % prefix)
-    domain_addresses = storage_conf.as_list("%s_domain_address" % prefix)
+    domain_paths = storage_conf.as_list("data_domain_path")
+    domain_addresses = storage_conf.as_list("data_domain_address")
     for index, (path, address) in enumerate(
             zip(domain_paths, domain_addresses)):
         name = "posixfs_%s" % index
