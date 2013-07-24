@@ -62,7 +62,25 @@ IPA_TESTING_USER = PARAMETERS.get('ipa_testing_user', None)
 REGULAR_FORMAT1 = "%s@%s".lower() % (IPA_REGULAR_NAME, IPA_DOMAIN)
 REGULAR_FORMAT2 = "%s\%s".lower() % (IPA_DOMAIN, IPA_REGULAR_NAME)
 
+# OpenLDAP
+LDAP_DOMAIN = str(PARAMETERS.get('ldap_domain', None))
+LDAP_PASSWORD = str(PARAMETERS.get('ldap_password', None))
+
+LDAP_WITH_MANY_GROUPS_NAME = PARAMETERS.get('ldap_with_many_groups_name', None)
+LDAP_EXPIRED_PSW_NAME = PARAMETERS.get('ldap_expired_psw_name', None)
+LDAP_EXPIRED_ACC_NAME = PARAMETERS.get('ldap_expired_acc_name', None)
+LDAP_REGULAR_NAME = PARAMETERS.get('ldap_regular_name', None)
+LDAP_GROUP = PARAMETERS.get('ldap_group', None)
+LDAP_GROUP2 = PARAMETERS.get('ldap_group2', None)
+LDAP_USER_FROM_GROUP = PARAMETERS.get('ldap_user_from_group', None)
+LDAP_TESTING_USER_NAME = PARAMETERS.get('ldap_testing_user_name', None)
+
+# Misc
 MAIN_CLUSTER_NAME = PARAMETERS.get('cluster_name', None)
 
 AD_TCMS_PLAN_ID = 2112
 IPA_TCMS_PLAN_ID = 3999
+LDAP_TCMS_PLAN_ID = 9906
+
+RESTART = "service ovirt-engine restart"
+RESTART_TIMEOUT = 30

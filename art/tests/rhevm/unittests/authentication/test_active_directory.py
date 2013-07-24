@@ -2,51 +2,50 @@
 
 __test__ = True
 
+import time
 import logging
 import config
 from unittest import TestCase
 from nose.tools import istest
 from art.rhevm_api.tests_lib.low_level import mla, users, general
 from art.rhevm_api.utils.resource_utils import runMachineCommand
-from art.test_handler.tools import bz, tcms
+from art.test_handler.tools import tcms
 
 
 LOGGER = logging.getLogger(__name__)
 
+OUT = '> /dev/null 2>&1 &'
 MB = 1024 * 1024
 AUTH = 'auth'
 AUTH_CONF = 'auth-conf'
-SET_AUTH = """rhevm-config -s SASL_QOP=%s && service ovirt-engine restart && while [ "`curl -o /dev/null --silent --head --write-out '%%{http_code}\n' localhost`" != 200 ]; do sleep 1; done"""
-TCP_DUMP = 'nohup tcpdump -l -s 65535 -A -vv port 389 -w /tmp/tmp.cap > /dev/null 2>&1 &'
+SET_AUTH = """rhevm-config -s SASL_QOP=%s && service ovirt-engine restart"""
+TCP_DUMP = 'nohup tcpdump -l -s 65535 -A -vv port 389 -w /tmp/tmp.cap %s' % OUT
 CHECK_DUMP = 'tcpdump -A -r /tmp/tmp.cap 2>/dev/null | grep %s'
 CLEAN = 'rm -f /tmp/tmp.cap && kill -9 `pgrep tcpdump`'
+USERVMMANAGER = 'UserVmManager'
 
+
+def addUserWithClusterPermissions(user_name):
+    name, domain = user_name.split('@')
+    assert users.addUser(True, user_name=name, domain=domain)
+    assert mla.addClusterPermissionsToUser(True, name,
+                                           config.MAIN_CLUSTER_NAME,
+                                           role=USERVMMANAGER, domain=domain)
 
 def setUpModule():
-    assert users.addUser(True, user_name=config.AD2_USER_NAME,
-                         domain=config.AD2_DOMAIN)
-    for u in [config.AD1_USER_NAME, config.AD1_EXPIRED_PSW,
-              config.AD1_EXPIRED_USER, config.AD1_DISABLED,
-              config.AD1_USER_WITH_GROUP, config.AD1_NORMAL]:
-        assert users.addUser(True, user_name=u, domain=config.AD1_DOMAIN)
-        assert mla.addClusterPermissionsToUser(
-            True, u, config.MAIN_CLUSTER_NAME,
-            role='UserRole', domain=config.AD1_DOMAIN)
-
-    assert mla.addClusterPermissionsToUser(
-        True, config.AD2_USER_NAME, config.MAIN_CLUSTER_NAME,
-        role='UserRole', domain=config.AD2_DOMAIN)
-
+    for user in [config.AD1_USER, config.USER_EXPIRED_PSW, config.AD2_USER,
+                 config.USER_EXPIRED_USER, config.USER_DISABLED,
+                 config.USER_WITH_GROUP, config.AD1_NORMAL_USER]:
+        addUserWithClusterPermissions(user)
 
 def tearDownModule():
     users.loginAsUser(config.OVIRT_USERNAME, config.OVIRT_DOMAIN,
                       config.USER_PASSWORD, False)
-    for u in [config.AD1_EXPIRED_PSW, config.AD1_EXPIRED_USER,
-              config.AD1_DISABLED, config.AD1_USER_WITH_GROUP]:
-        assert users.removeUser(True, u)
-    assert users.removeUser(True, config.AD1_NORMAL, config.AD1_DOMAIN)
-    assert users.removeUser(True, config.AD1_USER_NAME, config.AD1_DOMAIN)
-    assert users.removeUser(True, config.AD2_USER_NAME, config.AD2_DOMAIN)
+    for username in [config.AD1_USER, config.USER_EXPIRED_PSW, config.AD2_USER,
+                     config.USER_EXPIRED_USER, config.USER_DISABLED,
+                     config.USER_WITH_GROUP, config.AD1_NORMAL_USER]:
+        user, domain = username.split('@')
+        assert users.removeUser(True, user, domain)
 
 
 def connectionTest():
@@ -101,12 +100,14 @@ class ActiveDirectory(TestCase):
         assert len(groups) > 0
 
     def _checkEnc(self, auth, result):
-        msg = "Supposed result is %s, got %s"
+        user, domain = config.AD1_NORMAL_USER.split('@')
+
         self.assertTrue(
             runMachineCommand(True, ip=config.OVIRT_ADDRESS, cmd=auth,
                               user=config.OVIRT_ROOT,
                               password=config.OVIRT_ROOT_PASSWORD)[0],
             "Run cmd %s failed." % auth)
+        time.sleep(config.RESTART_TIMEOUT)
         self.assertTrue(
             runMachineCommand(True, ip=config.OVIRT_ADDRESS,
                               cmd=TCP_DUMP,
@@ -114,10 +115,9 @@ class ActiveDirectory(TestCase):
                               password=config.OVIRT_ROOT_PASSWORD)[0],
             "Run cmd %s failed." % TCP_DUMP)
 
-        users.loginAsUser(config.AD1_NORMAL, config.AD1_DOMAIN,
-                          config.USER_PASSWORD, 'true')
+        users.loginAsUser(user, domain, config.USER_PASSWORD, 'true')
         self.assertTrue(connectionTest())
-        import time;time.sleep(10)
+        time.sleep(10)
 
         status = runMachineCommand(True, ip=config.OVIRT_ADDRESS,
                                    cmd=CHECK_DUMP % config.AD1_NORMAL,

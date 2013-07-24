@@ -7,13 +7,13 @@ import logging
 
 from unittest import TestCase
 from nose.tools import istest
-
 from art.rhevm_api.tests_lib.low_level import mla, users, general
 from art.rhevm_api.utils.resource_utils import runMachineCommand
-from art.test_handler.tools import bz, tcms
+from art.test_handler.tools import tcms
 
 LOGGER = logging.getLogger(__name__)
-UPDATE_USER = 'ipa user-mod %s --last=%s --first=%s'
+UPDATE_USER = 'kinit nonascii <<< 123456 && ipa user-mod %s --last=%s --first=%s'
+USER_ROLE = 'UserRole'
 
 
 def connectionTest():
@@ -22,14 +22,17 @@ def connectionTest():
     except AttributeError:
         return False
 
+
 def addUser(user_name):
     msg = 'Unable to add user %s to system.'
     assert users.addUser(True, user_name=user_name,
                          domain=config.IPA_DOMAIN), msg % user_name
 
+
 def loginAsUser(user_name, filter):
     users.loginAsUser(user_name, config.IPA_DOMAIN,
                       config.USER_PASSWORD, filter)
+
 
 def loginAsAdmin():
     users.loginAsUser(config.OVIRT_USERNAME, config.OVIRT_DOMAIN,
@@ -50,10 +53,10 @@ class IPACase93880(TestCase):
 
         mla.addClusterPermissionsToUser(
             True, config.IPA_EXPIRED_PSW_NAME, config.MAIN_CLUSTER_NAME,
-            role='UserRole', domain=config.IPA_DOMAIN)
+            role=USER_ROLE, domain=config.IPA_DOMAIN)
         mla.addClusterPermissionsToUser(
             True, config.IPA_DISABLED_NAME, config.MAIN_CLUSTER_NAME,
-            role='UserRole', domain=config.IPA_DOMAIN)
+            role=USER_ROLE, domain=config.IPA_DOMAIN)
 
     @istest
     @tcms(config.IPA_TCMS_PLAN_ID, 93880)
@@ -91,14 +94,13 @@ class IPACase93879(TestCase):
         addUser(config.IPA_REGULAR_NAME)
         mla.addClusterPermissionsToUser(
             True, config.IPA_REGULAR_NAME, config.MAIN_CLUSTER_NAME,
-            role='UserRole', domain=config.IPA_DOMAIN)
+            role=USER_ROLE, domain=config.IPA_DOMAIN)
         # Add user's group, and add it permissions
         users.addGroup(True, group_name=config.IPA_GROUP)
         mla.addClusterPermissionsToGroup(
-            True, config.IPA_GROUP, config.MAIN_CLUSTER_NAME, role='UserRole')
+            True, config.IPA_GROUP, config.MAIN_CLUSTER_NAME, role=USER_ROLE)
 
     @istest
-    @bz(967547)
     @tcms(config.IPA_TCMS_PLAN_ID, 93880)
     def authenticateUsers(self):
         """ Authenticate users """
@@ -127,7 +129,7 @@ class IPACase93881(TestCase):
         addUser(config.IPA_REGULAR_NAME)
         mla.addClusterPermissionsToUser(
             True, config.IPA_REGULAR_NAME, config.MAIN_CLUSTER_NAME,
-            role='UserRole', domain=config.IPA_DOMAIN)
+            role=USER_ROLE, domain=config.IPA_DOMAIN)
 
     @istest
     @tcms(config.IPA_TCMS_PLAN_ID, 93881)
@@ -154,7 +156,7 @@ class IPACase109871(TestCase):
         addUser(config.IPA_WITH_MANY_GROUPS_NAME)
         mla.addClusterPermissionsToUser(
             True, config.IPA_WITH_MANY_GROUPS_NAME, config.MAIN_CLUSTER_NAME,
-            role='UserRole', domain=config.IPA_DOMAIN)
+            role=USER_ROLE, domain=config.IPA_DOMAIN)
 
     @istest
     @tcms(config.IPA_TCMS_PLAN_ID, 109871)
@@ -180,7 +182,6 @@ class IPACase109146(TestCase):
 
     @istest
     @tcms(config.IPA_TCMS_PLAN_ID, 109146)
-    @bz(967547)
     def persistencyOfGroupRights(self):
         """ Persistency of group rights """
         loginAsUser(config.IPA_WITH_GROUP_NAME, 'false')
@@ -188,7 +189,7 @@ class IPACase109146(TestCase):
         LOGGER.info("User from group can login.")
         loginAsAdmin()
         self.assertTrue(users.removeUser(True, user=config.IPA_WITH_GROUP_NAME,
-                                domain=config.IPA_DOMAIN))
+                        domain=config.IPA_DOMAIN))
         self.assertTrue(
             users.groupExists(True, config.IPA_GROUP),
             "Group was removed with user")
@@ -207,20 +208,20 @@ class IPACase93882(TestCase):
         self.query = '/api/domains/' + domainID + '/%s?search={query}'
 
     @istest
-    @bz(975380)
     @tcms(config.IPA_TCMS_PLAN_ID, 93882)
     def search(self):
         """ Search """
         self.assertTrue(
             users.groupUtil.query('', href=self.query % 'groups') is not None)
 
-        self.assertTrue(len(users.util.query('', href=self.query % 'users')) > 0)
+        len_of_users = len(users.util.query('', href=self.query % 'users')) > 0
+        self.assertTrue(len_of_users)
         user = users.util.query("{0}={1}".format('name', 'uzivatel'),
                                 href=self.query % 'users')[0]
         self.assertTrue(user.get_name().lower() == 'uzivatel')
         user = users.util.query("{0}={1}".format('lastname', 'bezskupiny'),
                                 href=self.query % 'users')[0]
-        self.assertTrue(user.get_name().lower() == 'bezskupiny')
+        self.assertTrue(user.get_last_name().lower() == 'bezskupiny')
         LOGGER.info("Searching for users and groups works correctly.")
 
 
@@ -231,9 +232,8 @@ class IPACase93883(TestCase):
         domainID = users.domUtil.find(config.IPA_DOMAIN.lower()).get_id()
         self.query = '/api/domains/' + domainID + '/users?search={query}'
         addUser(config.IPA_TESTING_USER_NAME)
-        self.user = users.util.query("{0}={1}".format('name',
-                                                      config.IPA_TESTING_USER_NAME),
-                                     href=self.query)[0]
+        name_search = "{0}={1}".format('name', config.IPA_TESTING_USER_NAME)
+        self.user = users.util.query(name_search, href=self.query)[0]
 
     @istest
     @tcms(config.IPA_TCMS_PLAN_ID, 93883)
