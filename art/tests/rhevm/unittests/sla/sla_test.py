@@ -1,5 +1,6 @@
 """
-SLA test
+General test of some SLA features: CPU pinning, CPU host, delete protection,
+count threads as cores and placement policy
 """
 
 from nose.tools import istest
