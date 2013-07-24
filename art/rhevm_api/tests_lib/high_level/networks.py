@@ -17,15 +17,16 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-import os
 import logging
 import re
+import os
 
+from utilities import machine
+from art.rhevm_api.utils.test_utils import restartVdsmd
 from art.rhevm_api.tests_lib.low_level.networks import addNetwork,\
-    getClusterNetwork, DC_API, removeNetwork, addNetwork,\
-    addNetworkToCluster
+    getClusterNetwork, DC_API, removeNetwork, addNetworkToCluster
 from art.rhevm_api.tests_lib.low_level.hosts import sendSNRequest,\
-    commitNetConfig, genSNNic, genSNBond
+    commitNetConfig, genSNNic
 from art.rhevm_api.tests_lib.low_level.templates import createTemplate
 from art.rhevm_api.tests_lib.low_level.vms import getVmMacAddress,\
     startVm, stopVm, createVm, waitForVmsStates
@@ -33,7 +34,6 @@ from art.rhevm_api.utils.test_utils import convertMacToIpAddress,\
     setPersistentNetwork
 from art.rhevm_api.tests_lib.low_level.storagedomains import createDatacenter
 from art.core_api.apis_exceptions import EntityNotFound
-from utilities.utils import readConfFile
 from art.core_api import is_action
 from art.test_handler.settings import opts
 
@@ -46,6 +46,8 @@ LUN_PORT = 3260
 INTERVAL = 2
 ATTEMPTS = 600
 TIMEOUT = 120
+VDSM_CONF_FILE = "/etc/vdsm/vdsm.conf"
+IFCFG_FILE_PATH = "/etc/sysconfig/network-scripts/"
 
 
 @is_action()
@@ -399,4 +401,82 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
         if not waitForVmsStates(True, names=vmName, timeout=TIMEOUT,
                                 states='up'):
             logger.error("VM status is not up in the predefined timeout")
+    return True
+
+
+def createDummyInterface(host, username, password, num_dummy=1):
+    '''
+    Description: create (X) dummy network interfaces on host
+    **Author**: myakove
+    **Parameters**:
+        *  *host* - IP or FDQN of the host
+        *  *username* - host username
+        *  *password* - host password
+        *  *num_dummy* - number of dummy interfaces to create
+    '''
+
+    host_obj = machine.Machine(host, username, password).util(machine.LINUX)
+
+    dummy_list = ["numdummies=" + str(num_dummy)]
+    create_dummy_interface = ["modprobe", "dummy"]
+    create_dummy_interface.extend(dummy_list)
+    rc, out = host_obj.runCmd(create_dummy_interface)
+    if not rc:
+        logger.error("Create dummy interfaces failed. ERR: %s", out)
+        return False
+
+    rc, out = host_obj.runCmd(["sed", "-i", "'$afake_nics=dummy*'",
+                               VDSM_CONF_FILE])
+    if not rc:
+        logger.error("Add dummy support to VDSM conf file failed. ERR: %s",
+                     out)
+        return False
+
+    for n in range(0, num_dummy):
+        ifcfg_file_name = "dummy%s" % n
+        if not host_obj.addNicConfFile(nic=ifcfg_file_name):
+            return False
+
+    if not restartVdsmd(host, password, supervdsm=True):
+        logger.error("Restart vdsm service failed")
+        return False
+
+    return True
+
+
+def deleteDummyInterface(host, username, password):
+    '''
+    Description: Delete dummy network interfaces on host
+    **Author**: myakove
+    **Parameters**:
+        *  *host* - IP or FDQN of the host
+        *  *username* - host username
+        *  *password* - host password
+    '''
+    host_obj = machine.Machine(host, username, password).util(machine.LINUX)
+
+    rc, out = host_obj.runCmd(["sed", "-i", "'/^fake_nics/d'",
+                               VDSM_CONF_FILE])
+    if not rc:
+        logger.error("Clean VDSM conf file failed. ERR: %s", out)
+        return False
+
+    unload_dummy = ["modprobe", "-r", "dummy"]
+    rc, out = host_obj.runCmd(unload_dummy)
+    if not rc:
+        logger.error("Unload dummy driver failed. ERR: %s", out)
+        return False
+
+    delete_dummy_ifcfg = ["rm", "-f"]
+    path = os.path.join(IFCFG_FILE_PATH, "ifcfg-dummy*")
+    delete_dummy_ifcfg.append(path)
+    rc, out = host_obj.runCmd(delete_dummy_ifcfg)
+    if not rc:
+        logger.error("Delete dummy ifcfg file failed. ERR: %s", out)
+        return False
+
+    if not restartVdsmd(host, password, supervdsm=True):
+        logger.error("Restart vdsm service failed")
+        return False
+
     return True

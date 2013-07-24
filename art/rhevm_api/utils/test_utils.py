@@ -63,7 +63,7 @@ TASK_TIMEOUT = 300
 TASK_POLL = 5
 ENGINE_HEALTH_URL = "http://localhost/OvirtEngineWeb/HealthStatus"
 ENGINE_SERVICE = "ovirt-engine"
-
+SUPERVDSMD = "supervdsmd"
 
 
 def get_api(element, collection):
@@ -279,15 +279,22 @@ def startVdsmd(vds, password):
     return machine.startService('vdsmd')
 
 @is_action()
-def restartVdsmd(vds, password):
+def restartVdsmd(vds, password, supervdsm=False):
     '''
-    Restart vdsmd on the given host
-    Author: gcheresh
+    **Description**:Restart vdsmd on the given host
+    **Author**: gcheresh
     Parameters:
-       * vds - name of the host
-       * password - ssh password for the host
+       *  *vds* - name of the host
+       *  *password* - ssh password for the host
+       *  *supervdsm* - flag to stop supervdsm service (start vdsm also start
+           supervdsm)
     '''
     machine = Machine(vds, 'root', password).util(LINUX)
+    if supervdsm:
+        if not machine.stopService(SUPERVDSMD):
+            logger.error("Stop supervdsm service failed")
+            return False
+
     return machine.restartService('vdsmd')
 
 @is_action()
