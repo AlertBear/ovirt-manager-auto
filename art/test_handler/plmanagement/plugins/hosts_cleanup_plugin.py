@@ -132,6 +132,26 @@ def checkIfProcessIsRunning(hostObj):
             logger.info("Process '%s' is not running", process)
 
 
+def unmountRhevmMounts(hostObj):
+    '''
+    Description: unmount rhev mounts
+    **Author**: imeerovi
+    **Parameters**:
+        **hostObj* - Object represents the hostObj
+    Returns: True if succeeded to unmount all mounts, else in other case
+    '''
+    rc = True
+    _, out = hostObj.runCmd(['mount'])
+    for mountPoint in [x.split()[0] for x in out.splitlines() if 'rhev' in x]:
+        logger.info("Unmounting %s", mountPoint)
+        rc, out = hostObj.runCmd(['umount', '-l', mountPoint])
+        if not rc:
+            logger.error("Failed to unmount %s with error: %s", mountPoint,
+                         out)
+            rc = False
+    return rc
+
+
 def hostCleanup(address, password, username='root'):
     '''
     Description: function that cleanup hosts
@@ -148,9 +168,7 @@ def hostCleanup(address, password, username='root'):
     cleanHostStorageSession(hostObj)
     killProcesses(hostObj, 'qemu')
     checkIfProcessIsRunning(hostObj)
-    if not restartServices(hostObj):
-        return False
-    return True
+    return unmountRhevmMounts(hostObj) and restartServices(hostObj)
 
 
 class CleanUpHosts(Component):
