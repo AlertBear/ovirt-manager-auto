@@ -25,15 +25,16 @@ should look like.
 
 """
 
-import os
 import re
 import sys
 from functools import wraps
 import traceback
 
 from art.test_handler.plmanagement import Component, implements, get_logger
-from art.test_handler.plmanagement.interfaces.application import ITestParser, IConfigurable
-from art.test_handler.plmanagement.interfaces.report_formatter import IResultExtension
+from art.test_handler.plmanagement.interfaces.application import ITestParser,\
+    IConfigurable
+from art.test_handler.plmanagement.interfaces.report_formatter \
+    import IResultExtension
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.plmanagement.interfaces.tests_listener \
     import ITestGroupHandler
@@ -41,7 +42,6 @@ from art.test_handler.test_runner import TestCase, TestSuite, TestGroup,\
     TestResult, TEST_CASES_SEPARATOR
 from art.test_handler.exceptions import SkipTest
 from art.test_handler import find_test_file
-import art
 
 logger = get_logger("unittest_loader")
 
@@ -51,17 +51,18 @@ try:
     from nose.suite import ContextSuite
     from nose.case import Test
 except ImportError as ex:
-    ContextSuite = Test = None # this is required
+    ContextSuite = Test = None  # this is required
     DEPS_INSTALLED = ex
 
 try:
     from unittest import SkipTest as USkipTest
-except ImportError as ex: # py2.6 doesn't contain this class
+except ImportError as ex:  # py2.6 doesn't contain this class
     USkipTest = None
 try:
     from unittest2 import SkipTest as USkipTest2
 except ImportError as ex:
-    logger.warning("unittest2 module is not installed") # it can work without it
+    # it can work without it
+    logger.warning("unittest2 module is not installed")
     USkipTest2 = None
 
 RUN_SEC = 'RUN'
@@ -69,17 +70,21 @@ TESTS_FILE = 'tests_file'
 CONFIG_PARAMS = 'PARAMETERS'
 REST_CONNECTION = 'REST_CONNECTION'
 
-BZ_ID = 'bz' # TODO: should be removed
-TCMS_PLAN_ID = 'tcms_plan_id' # TODO: should be removed
-TCMS_TEST_CASE = 'tcms_test_case' # TODO: should be removed
-CLI_VALIDATION = 'cli_validation' # TODO: should be removed
+BZ_ID = 'bz'  # TODO: should be removed
+TCMS_PLAN_ID = 'tcms_plan_id'  # TODO: should be removed
+TCMS_TEST_CASE = 'tcms_test_case'  # TODO: should be removed
+CLI_VALIDATION = 'cli_validation'  # TODO: should be removed
 
 ITER_NUM = 0
 
+
 def iterNumber():
+    # FIXME: this will not work in parallel, use serial from test_runner.py
+    # instead.
     global ITER_NUM
     ITER_NUM += 1
     return ITER_NUM
+
 
 def isvital4group(f):
     @wraps(f)
@@ -88,11 +93,13 @@ def isvital4group(f):
         return f(self, *args, **kwargs)
     return wrapper
 
+
 def formatExcInfo():
     ei = sys.exc_info()
     einfo = traceback.format_exception(*ei)
     einfo.insert(0, einfo[-1])
     return ''.join(einfo)
+
 
 class UTestCase(TestCase):
     skip_exceptios = (USkipTest, USkipTest2, SkipTest)
@@ -142,13 +149,14 @@ class UTestCase(TestCase):
             except Exception:
                 self.exc = formatExcInfo()
                 self.status = self.TEST_STATUS_FAILED
-            if self.status == self.TEST_STATUS_FAILED \
-                or self.status == self.TEST_STATUS_ERROR:
-                    if self.t.test.vital4group:
-                        self.vital4group = True
+            if self.status in (self.TEST_STATUS_FAILED,
+                               self.TEST_STATUS_ERROR):
+                if self.t.test.vital4group:
+                    self.vital4group = True
 
     def __str__(self):
-        return "Test Action: %s; Test Name: %s" % (self.test_action, self.test_name)
+        return "Test Action: %s; Test Name: %s" % (self.test_action,
+                                                   self.test_name)
 
 
 class UTestGroup(TestGroup):
@@ -251,7 +259,6 @@ class UnittestLoader(Component):
         if DEPS_INSTALLED is not None:
             raise DEPS_INSTALLED
 
-
     def is_able_to_run(self, ti):
         m = re.match('unittest://((?P<root_path>[^:]+):)?(?P<mod_path>.+)', ti)
         if not m:
@@ -259,7 +266,8 @@ class UnittestLoader(Component):
         self.__check_deps()
         self.mod_path = m.group('mod_path')
         self.root_path = m.group('root_path')
-        self.root_path = find_test_file(self.root_path)
+        if self.root_path:
+            self.root_path = find_test_file(self.root_path)
         return True
 
     def next_test_object(self):
@@ -270,13 +278,14 @@ class UnittestLoader(Component):
             self.suites = []
             modules = []
             description = {}
-            if self.root_path is not None:
+            if self.root_path:
                 sys.path.insert(0, self.root_path)
 
             from nose.loader import TestLoader
             for mod_path in self.mod_path.split(':'):
 
-                m = re.match("(?P<module>.+?)((\.(?P<name>[A-Z].+))|$)", mod_path)
+                m = re.match("(?P<module>.+?)((\.(?P<name>[A-Z].+))|$)",
+                             mod_path)
                 if not m:
                     return None
                 module = m.group('module')
@@ -289,17 +298,18 @@ class UnittestLoader(Component):
                 description[mod.__name__] = mod.__doc__
                 modules.append([name, mod])
 
-            loader = TestLoader()
+            loader = TestLoader(workingDir=self.root_path)
             for m in modules:
                 if m[0] is not None:
-                    suite = UTestSuite(loader.loadTestsFromName(module=m[1], name=m[0]))
+                    tests = loader.loadTestsFromName(module=m[1], name=m[0])
+                    suite = UTestSuite(tests)
                 else:
                     tests = loader.loadTestsFromModule(m[1])
                     suite = UTestSuite(tests)
                     for t in [t for t in tests.factory.context]:
                         if t.context.__name__ == 'Failure':
                             logger.error("Failed to load test: %s",
-                                t._get_tests().next().__str__())
+                                         t._get_tests().next().__str__())
                 suite.description = description[m[1].__name__]
                 self.suites.append(suite)
         try:
@@ -313,16 +323,14 @@ class UnittestLoader(Component):
 
         self.__check_deps()
 
-        # FIXME: why this is done in both matrix_runner and here ? it should be somewhere else.
+        # FIXME: why this is done in both matrix_runner and here ?
+        # it should be somewhere else.
         self.conf = conf
         self.conf[CONFIG_PARAMS].merge(self.conf[REST_CONNECTION])
 
-        TestResult.ATTRIBUTES['module_name'] = \
-                ('mod_name', None, None)
-        TestResult.ATTRIBUTES['test_action'] = \
-                ('test_action', None, None)
-        TestResult.ATTRIBUTES['iter_num'] = \
-                ('serial', None, None)
+        TestResult.ATTRIBUTES['module_name'] = ('mod_name', None, None)
+        TestResult.ATTRIBUTES['test_action'] = ('test_action', None, None)
+        TestResult.ATTRIBUTES['iter_num'] = ('serial', None, None)
 
     @classmethod
     def add_options(cls, parser):
@@ -388,5 +396,5 @@ class UnittestLoader(Component):
         params['long_description'] = cls.__doc__
         params['requires'] = ['python-nose', 'python-unittest2']
 #        params['pip_deps'] = ['unittest2']
-        params['py_modules'] = ['art.test_handler.plmanagement.plugins.unittest_test_runner_plugin']
-
+        params['py_modules'] = ['art.test_handler.plmanagement.plugins.'
+                                'unittest_test_runner_plugin']
