@@ -99,3 +99,7 @@ class UnkownConfigurationException(RHEVMEntityException):
 
 class NetworkException(RHEVMEntityException):
     pass
+
+
+class JobsException(RHEVMEntityException):
+    pass
