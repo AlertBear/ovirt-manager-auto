@@ -75,7 +75,7 @@
 <test_case>
    <test_name>Sleep to give hosts time to add the storage.</test_name>
    <test_action>sleep</test_action>
-   <parameters>seconds=5</parameters>
+   <parameters>seconds=10</parameters>
    <positive>NONE</positive>
    <run>YES</run>
 </test_case>
@@ -143,7 +143,7 @@
    <test_action>waitUntilVmQuery</test_action>
    <parameters>vm='Migrations_VM-#loop_index', query='ip!=""', timeout=2400, sleep=10</parameters>
    <positive>NONE</positive>
-   <run>forkfor(5)</run>
+   <run>loop(5)</run>
 </test_case>
 <test_case>
    <test_name>END_GROUP: migrations_set-up</test_name>
@@ -152,7 +152,7 @@
    <positive>NONE</positive>
    <run/>
 </test_case>
-
+<!--####################################################################### -->
 <test_case>
    <test_name>START_GROUP: migration_negative_tests</test_name>
    <test_action/>
@@ -271,11 +271,11 @@
 
 
 <test_case>
-   <test_name>Create host overloading VMs</test_name>
+   <test_name>Create Migrations_VM-5-15 to overload host</test_name>
    <test_action>createVm</test_action>
    <parameters>vmName='Migrations_VM-#loop_index', vmDescription='host overloading VM-#loop_index', cluster='{cluster1_name}', storageDomainName='{storagedomain1}', size=3221225472, nic='nic1', memory=536870912, cpu_cores={cpu_cores}, cpu_socket={cpu_socket}, display_type='{display_type}'</parameters>
    <positive>TRUE</positive>
-   <run>forkfor(5-15)</run>
+   <run>loop(5-15)</run>
 </test_case>
 <test_case>
    <test_name>Start New VMs</test_name>
@@ -284,32 +284,60 @@
    <positive>TRUE</positive>
    <run>loop(5-15)</run>
 </test_case>
+
+<test_case>
+    <test_name>Wait until VMs are UP</test_name>
+    <test_action>waitForVMState</test_action>
+    <parameters>vm='Migrations_VM-#loop_index', state='e{vm_state_up}'</parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+
 <test_case>
    <test_name>Set Host To Maintenance</test_name>
    <test_action>deactivateHost</test_action>
-   <parameters>host='{vds[1]}', expected_status='e{host_state_preparing_for_maintenance}'</parameters>
+   <parameters>host='{vds[1]}', expected_status='e{host_state_maintenance}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
 
+
+
+ <test_case>
+        <test_name>Check if host status is maintenance</test_name>
+        <test_action>waitForHostsStates</test_action>
+        <parameters>names='{vds[0]}', states='e{host_state_maintenance}', timeout=300</parameters>
+        <positive>TRUE</positive>
+        <run>yes</run>
+    </test_case>
 <test_case>
    <test_name>Wait for all VMs up</test_name>
    <test_action>waitUntilVmQuery</test_action>
    <parameters>vm='Migrations_VM-#loop_index', query='status="e{vm_state_up}"', timeout=2400, sleep=10</parameters>
    <positive>NONE</positive>
-   <run>forkfor(5-15)</run>
+   <run>loop(5-15)</run>
    <bz>773276</bz>
 </test_case>
 
 <test_case>
-   <test_name>Stop host overloading VMs</test_name>
+   <test_name>Stop VMS on the overloaded hosts</test_name>
    <test_action>stopVm</test_action>
    <parameters>vm='Migrations_VM-#loop_index'</parameters>
    <positive>TRUE</positive>
-   <run>forkfor(5-15)</run>
+   <run>loop(5-15)</run>
 </test_case>
+
 <test_case>
-   <test_name>Wait for tasks to complete</test_name>
+   <test_name>Wait for all VMs down</test_name>
+   <test_action>waitUntilVmQuery</test_action>
+   <parameters>vm='Migrations_VM-#loop_index', query='status="e{vm_state_down}"', timeout=2400, sleep=10</parameters>
+   <positive>NONE</positive>
+   <run>loop(5-15)</run>
+</test_case>
+
+
+<test_case>
+   <test_name>Sleep and wait for tasks to complete</test_name>
    <test_action>sleep</test_action>
    <parameters>seconds=20</parameters>
    <positive>NONE</positive>
@@ -317,10 +345,10 @@
 </test_case>
 <test_case>
    <test_name>Remove VMs</test_name>
-   <test_action>removeVms</test_action>
-   <parameters>vms='Migrations_VM-5  Migrations_VM-6  Migrations_VM-7  Migrations_VM-8  Migrations_VM-9 Migrations_VM-10 Migrations_VM-11 Migrations_VM-12 Migrations_VM-13 Migrations_VM-14 Migrations_VM-15'</parameters>
+   <test_action>removeVm</test_action>
+   <parameters>vm='Migrations_VM-#loop_index'</parameters>
    <positive>TRUE</positive>
-   <run>YES</run>
+   <run>loop(5-15)</run>
 </test_case>
 <test_case>
    <test_name>Switch first host to UP to undo host_state_preparing_for_maintenance</test_name>
@@ -336,7 +364,7 @@
    <positive>NONE</positive>
    <run>YES</run>
 </test_case>
-
+<!-- #####################################################################  -->
 <test_case>
    <test_name>START_GROUP: host_to_maintenance_migrations</test_name>
    <test_description>
@@ -403,18 +431,45 @@
 
 <test_case>
    <test_name>Suspend VM</test_name>
-   <test_action>suspendVms</test_action>
-   <parameters>vms='Migrations_VM-0 Migrations_VM-1 Migrations_VM-2 Migrations_VM-3 Migrations_VM-4'</parameters>
-   <positive>NONE</positive>
-   <run>YES</run>
+   <test_action>suspendVm</test_action>
+   <parameters>vm='Migrations_VM-#loop_index'</parameters>
+   <positive>True</positive>
+   <run>loop(0-4)</run>
 </test_case>
+ <test_case>
+    <test_name>Wait until VMs are suspended</test_name>
+    <test_action>waitForVMState</test_action>
+    <parameters>vm='Migrations_VM-#loop_index', state='e{vm_state_suspended}'</parameters>
+    <positive>None</positive>
+    <run>loop(0-4)</run>
+</test_case>
+
+
+<test_case>
+   <test_name>Wait for tasks to complete before resuming</test_name>
+   <test_action>sleep</test_action>
+   <parameters>seconds=60</parameters>
+   <positive>NONE</positive>
+   <run>yes</run>
+</test_case>
+
+
+
 <test_case>
    <test_name>Resume VM</test_name>
-   <test_action>startVms</test_action>
-   <parameters>vms='Migrations_VM-0 Migrations_VM-1 Migrations_VM-2 Migrations_VM-3 Migrations_VM-4', wait_for_status='e{vm_state_up}'</parameters>
-   <positive>NONE</positive>
-   <run>YES</run>
+   <test_action>startVm</test_action>
+   <parameters>vm='Migrations_VM-#loop_index'</parameters>
+   <positive>True</positive>
+   <run>loop(0-4)</run>
 </test_case>
+ <test_case>
+    <test_name>Wait until VMs are up</test_name>
+    <test_action>waitForVMState</test_action>
+    <parameters>vm='Migrations_VM-#loop_index', state='e{vm_state_up}'</parameters>
+    <positive>None</positive>
+    <run>loop(0-4)</run>
+</test_case>
+
 
 <test_case>
    <test_name>Ping resumed Vms</test_name>
@@ -432,7 +487,7 @@
    <positive>NONE</positive>
    <run/>
 </test_case>
-
+<!-- ###################################################################### -->
 <test_case>
    <test_name>START_GROUP: pinged_online_migrations</test_name>
    <test_action/>
@@ -449,16 +504,6 @@
 	<positive>TRUE</positive>
 	<run>forkfor({vds},{vds_password})</run>
 </test_case>
-
-<!--
-<test_case>
-   <test_name>Sleep to give vdsm time to start.</test_name>
-   <test_action>sleep</test_action>
-   <parameters>seconds=15</parameters>
-   <positive>NONE</positive>
-   <run>YES</run>
-</test_case>
--->
 
 <test_case>
    <test_name>Wait for all hosts are UP</test_name>
@@ -566,7 +611,7 @@
    <positive>NONE</positive>
    <run>YES</run>
 </test_case>
-
+<!-- ###################################################################### -->
 <test_case>
    <test_name>START_GROUP: migrations_tear-down</test_name>
    <test_action/>
@@ -602,15 +647,15 @@
 </test_case>
 <test_case>
    <test_name>Remove VMs</test_name>
-   <test_action>removeVms</test_action>
-   <parameters>vms='Migrations_VM-0 Migrations_VM-1 Migrations_VM-2 Migrations_VM-3 Migrations_VM-4'</parameters>
+   <test_action>removeVm</test_action>
+   <parameters>vm='Migrations_VM-#loop_index'</parameters>
    <positive>TRUE</positive>
-   <run>YES</run>
+   <run>loop(0-4)</run>
 </test_case>
 <test_case>
    <test_name>Wait for VM remove tasks to complete</test_name>
    <test_action>sleep</test_action>
-   <parameters>seconds=15</parameters>
+   <parameters>seconds=20</parameters>
    <positive>NONE</positive>
    <run>YES</run>
 </test_case>
