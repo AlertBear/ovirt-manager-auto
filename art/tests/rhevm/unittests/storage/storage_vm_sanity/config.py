@@ -30,8 +30,8 @@ DISK_SIZE = int(PARAMETERS['disk_size'])
 
 TEMPLATE_NAME = PARAMETERS['template_name']
 
-OS_TYPE = test_utils.convertOsNameToOsTypeElement(True,
-                            PARAMETERS['vm_os'])[1]['osTypeElement']
+OS_TYPE = test_utils.convertOsNameToOsTypeElement(
+    True, PARAMETERS['vm_os'])[1]['osTypeElement']
 
 CPU_SOCKET = PARAMETERS['cpu_socket']
 CPU_CORES = PARAMETERS['cpu_cores']
