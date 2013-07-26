@@ -11,8 +11,6 @@ from . import ART_CONFIG
 TESTNAME = "storage_domain_upgrade"
 
 PARAMETERS = ART_CONFIG['PARAMETERS']
-#NFS = ART_CONFIG['NFS']
-#ISCSI = ART_CONFIG['ISCSI']
 
 # Workers for thread pool
 MAX_WORKERS = PARAMETERS.get('max_workers', 16)
@@ -28,3 +26,6 @@ DC_TYPE = PARAMETERS['data_center_type']
 
 VDC = PARAMETERS.get('host', None)
 VDC_PASSWORD = PARAMETERS.get('password', None)
+
+SETUP_ADDRESS = ART_CONFIG['REST_CONNECTION']['host']
+SETUP_PASSWORD = PARAMETERS['vdc_root_password']

@@ -8,13 +8,14 @@ from nose.tools import istest
 from sys import modules
 from unittest import TestCase
 
-import art.rhevm_api.tests_lib.low_level.clusters        as llclusters
-import art.rhevm_api.tests_lib.low_level.datacenters     as lldatacenters
-import art.rhevm_api.tests_lib.low_level.hosts           as llhosts
+import art.rhevm_api.tests_lib.low_level.clusters as llclusters
+import art.rhevm_api.tests_lib.low_level.datacenters as lldatacenters
+import art.rhevm_api.tests_lib.low_level.hosts as llhosts
 import art.rhevm_api.tests_lib.low_level.storagedomains  as llstoragedomains
-import art.rhevm_api.tests_lib.low_level.vms             as llvms
+import art.rhevm_api.tests_lib.low_level.vms as llvms
 import art.rhevm_api.tests_lib.high_level.storagedomains as hlstoragedomains
-from art.rhevm_api.utils.test_utils import get_api, cobblerRemoveSystem, wait_for_tasks
+from art.rhevm_api.utils.test_utils import get_api, cobblerRemoveSystem, \
+    wait_for_tasks
 import config
 
 __THIS_MODULE = modules[__name__]
@@ -25,6 +26,7 @@ DC_API = get_api('data_center', 'datacenters')
 HOST_API = get_api('host', 'hosts')
 VM_API = get_api('vm', 'vms')
 SD_API = get_api('storage_domain', 'storagedomains')
+CLUSTER_API = get_api('cluster', 'clusters')
 
 GB = 1024 ** 3
 TEN_GB = 10 * GB
@@ -38,6 +40,11 @@ def put_host_to_cluster(host, cluster):
         * cluster - target cluster
     """
     host_obj = HOST_API.find(host)
+    host_cluster_obj = CLUSTER_API.find(host_obj.cluster.id, 'id')
+    if host_cluster_obj.data_center is not None:
+        dc_obj = DC_API.find(host_cluster_obj.data_center.id, 'id')
+        wait_for_tasks(config.SETUP_ADDRESS, config.SETUP_PASSWORD,
+                       dc_obj.name)
     if host_obj.status.state != config.ENUMS['host_state_maintenance']:
         assert llhosts.deactivateHost(True, host)
     assert llhosts.updateHost(True, host, cluster=cluster)
