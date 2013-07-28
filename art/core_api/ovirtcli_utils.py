@@ -276,7 +276,7 @@ class RhevmCli(CliConnection):
     _rhevmPrompt = '\[RHEVM shell \(connected\)\]# '
     _rhevmDisconnectedPrompt = '\[RHEVM shell \(disconnected\)\]# '
     _rhevmTimeout = 900
-    _specialCliPrompt = {'\r\n:': ' ', '7m\(END\)': 'q'}
+    _specialCliPrompt = {'\r\n:': ' ', '7m\(END\)': 'q', '--More--': '\n'}
     _specialMatrixParamsDict = {'case-sensitive': 'case_sensitive'}
     _cliRootCommands = ['action', 'add', 'list', 'remove', 'show', 'update']
     _cliTrashPattern = "[\[\]\\\?]"
@@ -453,19 +453,16 @@ class RhevmCli(CliConnection):
         """
         timeout = 10
 
-        cmd = "%s " % cmd
-        # why we need 'TAB' 'TAB EOL'? don't ask, it works
-        self.cliConnection.send(cmd)
-        self.cliConnection.send(chr(9))
-        self.cliConnection.sendline(chr(9))
+        # why we need 'TAB' 'TAB EOL' ? don't ask, it works
+        cmd = "%s %s%s" % (cmd, chr(9), chr(9))
+
+        output = self.sendCmd(cmd, timeout)
         try:
-            self.cliConnection.expect(self._prompt, timeout)
+            output = self.sendCmd(cmd, timeout)
         except pe.TIMEOUT as e:
             raise CLITimeout(e)
         except pe.EOF as e:
             raise CLIError(cmd, e)
-
-        output = self.cliConnection.before
 
         # debug case
         if 'send:' in output:
