@@ -774,9 +774,9 @@ element:%(elm)s " % {'col': self.collection_name,
             translator_to_java(entity, java_entity)
             # getting correlation id and running
             correlation_id = self.getCorrelationId()
-            # WA for Bug 979737
-            # expect = "201-created"
-            expect = None
+
+            # setting expect status
+            expect = "201-created"
 
             if correlation_id:
                 correlation_id = str(correlation_id)
