@@ -804,7 +804,7 @@ class MatrixBasedTestComposer(Component):
         TestResult.add_result_attribute('module_name', 'mod_name',
                                         'Module name')
         TestResult.add_result_attribute('iter_num', 'serial',
-                                        'Iteration number')
+                                        'Iteration Number')
         TestResult.add_result_attribute('parameters', 'parameters',
                                         'Test parameters')
         TestResult.add_result_attribute('positive', 'positive',
