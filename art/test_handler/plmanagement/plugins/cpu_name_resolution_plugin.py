@@ -20,11 +20,11 @@ Configuration File Options:
 import re
 
 from art.test_handler.plmanagement import (Component, implements, get_logger,
-                                                                PluginError)
+                                           PluginError)
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
-from art.test_handler.plmanagement.interfaces.config_validator import\
-                                                    IConfigValidation
+from art.test_handler.plmanagement.interfaces.config_validator import \
+    IConfigValidation
 from utilities.machine import Machine, LINUX
 
 logger = get_logger('cpu_name_resolution')
@@ -41,11 +41,16 @@ VITAL = 'vital'
 DEFAULT_VITAL = True
 
 MODEL_RE = re.compile(r'model_[A-Za-z_1-9]+')
-MIN_INTEL="model_Conroe"
-MIN_AMD="model_Opteron_G1"
+MIN_MODEL = {'Intel': "model_Conroe", 'AMD': "model_Opteron_G1"}
+
 
 class CpuNameResolutionFailed(PluginError):
     pass
+
+
+class CpuPluginError(Exception):
+    pass
+
 
 class AutoCpuNameResolution(Component):
     """
@@ -56,6 +61,8 @@ class AutoCpuNameResolution(Component):
     name = "Auto CPU name resolution"
 
     def get_cpu_model(self, name, passwd):
+        """Get the cpu model of the host"""
+
         m = Machine(name, 'root', passwd).util(LINUX)
         logger.debug("Running vdsClient on {0}".format(name))
         with m.ssh as ssh:
@@ -63,64 +70,54 @@ class AutoCpuNameResolution(Component):
             out = out.strip()
             err = err.strip()
             if rc or not out:
-                logger.debug('Failed to get CPU models of {0}. '
-                             'Failed running vdsClient on host. '
-                             'Error message: {1} '
-                             'vdsClient output: {2}'.format(name, err, out))
-                return None
+                raise CpuPluginError('Failed to get CPU models of {0}. '
+                                     'Failed running vdsClient on host. '
+                                     'Error message: {1} '
+                                     'vdsClient output: {2}'.format(name, err,
+                                                                    out))
         host_cpu_models = MODEL_RE.findall(out)
         if not host_cpu_models:
-            return None
+            raise CpuPluginError('Failed to get CPU models of {0}'
+                                 ' vdsClient output: {1}'.format(name, out))
         host_model = max(host_cpu_models,
-            key=lambda m: self.cpus_model_mapping.get(m, {}).get('level', -1))
+                         key=lambda m: self.cpus_model_mapping.get(m, {}).get(
+                             'level', -1))
         logger.debug("{0}: cpu model is {1}".format(name, host_model))
-        sel_host_cpu  = self.cpus_model_mapping.get(host_model)
+        sel_host_cpu = self.cpus_model_mapping.get(host_model)
         if sel_host_cpu is None:
-            logger.warning('Unknown CPU of host {0}'.format(name))
+            raise CpuPluginError(
+                'Unknown CPU of {0}'.format(name))
         return sel_host_cpu
 
     def get_vendor_fallback(self, name, passwd):
-        #Getting CPU vendor
+        """Getting CPU vendor's fallback"""
+
         m = Machine(name, 'root', passwd).util(LINUX)
         with m.ssh as ssh:
             rc, out, err = ssh.runCmd(['cat', '/proc/cpuinfo', '|',
-                                        'grep', 'vendor_id', '|', 'uniq'])
+                                       'grep', 'vendor_id', '|', 'uniq'])
             out = out.strip()
             err = err.strip()
             if rc or not out:
                 return None
+
+        vendor = None
         if 'Intel' in out:
-            return self.cpus_model_mapping[MIN_INTEL]
+            vendor = 'Intel'
         elif 'AMD' in out:
-            return self.cpus_model_mapping[MIN_AMD]
-        else:
-            return None
+            vendor = 'AMD'
+        fallback = self.cpus_model_mapping.get(MIN_MODEL.get(vendor))
+        if not fallback:
+            logger.debug(
+                "couldn't get vendor of cpu. Output was: %s".format(out))
+            raise CpuNameResolutionFailed("failed to get vendor fallback.")
+        return fallback
 
+    def build_mapping(self, cpus):
+        """Build mapping between api response to vdsClient output"""
 
-    def configure(self, params, conf):
-        if not self.is_enabled(params, conf):
-            return
-
-        from art.rhevm_api.utils.test_utils import get_api
-        #getting cpu information from API
-        compatibility_version = conf[PARAMETERS][COMPATIBILITY_VERSION]
-        compatibility_version = compatibility_version.split('.')
-        util = get_api('version', 'capabilities')
-        versions = util.get(absLink=False)
-        version = None
-        for ver in versions:
-            if (ver.get_major() == int(compatibility_version[0]) and
-                ver.get_minor() == int(compatibility_version[1])):
-                version = ver
-                break
-        if version is None:
-            logger.warning('compatibility_version invalid')
-            return
-
-        cpus = version.get_cpus().get_cpu()
         self.cpus_model_mapping = dict()
         for cpu in cpus:
-            #building a mapping from model_ to a dict
             name = cpu.get_id()
             level = cpu.get_level()
             model_name = 'model_'
@@ -131,45 +128,73 @@ class AutoCpuNameResolution(Component):
                 model_name += name[4:].replace(' ', '_')
                 vendor = 'AMD'
             else:
-                raise CpuNameResolutionFailed('Unknown vendor of %s' % name)
-            self.cpus_model_mapping[model_name] = {'name' : name, 'level' : level,
-                                              'vendor' : vendor}
+                raise CpuPluginError('Unknown vendor of %s' % name)
+            self.cpus_model_mapping[model_name] = {'name': name,
+                                                   'level': level,
+                                                   'vendor': vendor}
 
+    def get_cpus_from_api(self, compatibility_version):
+        """Get the supported cpus from api"""
 
-        #processing the hosts, looking for compatible cpu
+        from art.rhevm_api.utils.test_utils import get_api
+
+        util = get_api('version', 'capabilities')
+        versions = util.get(absLink=False)
+        version = None
+        for ver in versions:
+            if (ver.get_major() == int(compatibility_version[0]) and
+                        ver.get_minor() == int(compatibility_version[1])):
+                version = ver
+                break
+        else:
+            raise CpuPluginError(
+                'compatibility_version invalid')
+        cpus = version.get_cpus().get_cpu()
+        return cpus
+
+    def configure(self, params, conf):
+        if not self.is_enabled(params, conf):
+            return
+
+        #getting cpu information from API
+        compatibility_version = conf[PARAMETERS][COMPATIBILITY_VERSION]
+        compatibility_version = compatibility_version.split('.')
+
+        try:
+            cpus = self.get_cpus_from_api(compatibility_version)
+            self.build_mapping(cpus)
+        except CpuPluginError as ex:
+            logger.warning(ex.message)
+            return
+
         vds_list = conf[PARAMETERS].as_list(VDS)
         vds_passwd_list = conf[PARAMETERS].as_list(VDS_PASSWORD)
 
         selected_cpu = None
-        fallback = self.get_vendor_fallback(vds_list[0], vds_passwd_list[0])
-        for name, passwd in  zip(vds_list, vds_passwd_list):
-            sel_host_cpu = self.get_cpu_model(name, passwd)
-            if sel_host_cpu is None:
-                logger.warning('Falling back to cpu model: {0}'.format(
-                    None if fallback is None else fallback.get('name', None)
-                ))
-                selected_cpu = fallback
-                break
-            if (selected_cpu is None or
-                        (sel_host_cpu['vendor'] == selected_cpu['vendor'] and
-                        sel_host_cpu['level'] < selected_cpu['level'])):
-                selected_cpu = sel_host_cpu
-
-        if selected_cpu is None:
-            logger.warning('Failed to find compatible cpu')
-            return
+        try:
+            for name, passwd in zip(vds_list, vds_passwd_list):
+                host_cpu = self.get_cpu_model(name, passwd)
+                if (selected_cpu is None or
+                        (host_cpu['vendor'] == selected_cpu['vendor'] and
+                                 host_cpu['level'] < selected_cpu[
+                                 'level'])):
+                    selected_cpu = host_cpu
+        except CpuPluginError as ex:
+            logger.warning(ex.message)
+            selected_cpu = self.get_vendor_fallback(vds_list[0],
+                                                    vds_passwd_list[0])
         par = conf.get(PARAMETERS, {})
         par[CPU_NAME] = selected_cpu['name']
         conf[PARAMETERS] = par
         logger.info("Updated config %s.%s = %s",
-                PARAMETERS, CPU_NAME, par[CPU_NAME])
+                    PARAMETERS, CPU_NAME, par[CPU_NAME])
 
     @classmethod
     def add_options(cls, parser):
         group = parser.add_argument_group(cls.name, description=cls.__doc__)
         group.add_argument('--with-cpu-name-resolution',
-                action='store_true', dest='cpu_name_enabled',
-                help='enable plugin')
+                           action='store_true', dest='cpu_name_enabled',
+                           help='enable plugin')
 
     @classmethod
     def is_enabled(cls, params, conf):
@@ -188,7 +213,8 @@ class AutoCpuNameResolution(Component):
         params['author_email'] = 'gleibovi@redhat.com'
         params['description'] = 'Automatic CPU name resolution'
         params['long_description'] = "Plugin for ART, " \
-                "which resolves compatible cpu_name of VDS machines."
+                                     "which resolves compatible cpu_name of " \
+                                     "VDS machines."
         params['requires'] = ['art-utilities']
         params['py_modules'] = ['art.test_handler.plmanagement.plugins.'
                                 'cpu_name_resolution_plugin']
