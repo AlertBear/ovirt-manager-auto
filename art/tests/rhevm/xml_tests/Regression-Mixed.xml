@@ -508,7 +508,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 318}</conf>
-    <exp_events>3</exp_events>
+    <exp_events>1,3</exp_events>
   </test_case>
   <test_case>
     <id>d75a1b6e-c695-11e1-a578-f0def10e0ce8</id>
@@ -689,7 +689,7 @@
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 334}</conf>
-    <exp_events>3</exp_events>
+    <exp_events>2,3</exp_events>
   </test_case>
   <test_case>
     <id>d75a3e5a-c695-11e1-a578-f0def10e0ce8</id>
