@@ -911,14 +911,14 @@
 <test_case>
    <test_name>Set SPM priority to 11</test_name>
    <test_action>setSPMPriorityInDB</test_action>
-   <parameters>hostName='{vds[0]}', spm_priority='11', ip='{host}', user='root', password='{password}'</parameters>
+   <parameters>hostName='{vds[0]}', spm_priority='11', ip='{host}', user='root', password='{password}', db_user='{db_user}'</parameters>
    <positive>FALSE</positive>
    <run>yes</run>
 </test_case>
 <test_case>
    <test_name>Set SPM priority to -2</test_name>
    <test_action>setSPMPriorityInDB</test_action>
-   <parameters>hostName='{vds[0]}', spm_priority='-2', ip='{host}', user='root', password='{password}'</parameters>
+   <parameters>hostName='{vds[0]}', spm_priority='-2', ip='{host}', user='root', password='{password}', db_user='{db_user}'</parameters>
    <positive>FALSE</positive>
    <run>yes</run>
 </test_case>
@@ -1263,7 +1263,7 @@
 <test_case>
    <test_name>Set SPM priority to -1 in DB for the third host</test_name>
    <test_action>setSPMPriorityInDB</test_action>
-   <parameters>hostName='{vds[2]}', spm_priority='-1', ip='{host}', user='root', password='{password}'</parameters>
+   <parameters>hostName='{vds[2]}', spm_priority='-1', ip='{host}', user='root', password='{password}', db_user='{db_user}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
@@ -1299,7 +1299,7 @@
 <test_case>
    <test_name>Set SPM priority to 2 in DB for the first host</test_name>
    <test_action>setSPMPriorityInDB</test_action>
-   <parameters>hostName='{vds[0]}', spm_priority='2', ip='{host}', user='root', password='{password}'</parameters>
+   <parameters>hostName='{vds[0]}', spm_priority='2', ip='{host}', user='root', password='{password}', db_user='{db_user}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>

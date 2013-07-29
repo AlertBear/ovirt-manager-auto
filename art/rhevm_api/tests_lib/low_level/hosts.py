@@ -1427,11 +1427,12 @@ def setSPMPriority(positive, hostName, spmPriority):
     HOST_API.logger.info("setSPMPriority - SPM Value of host %s is set to %s",
                      hostName, new_priority)
 
-    return  new_priority == int(spmPriority)
+    return new_priority == int(spmPriority)
 
 
 @is_action()
-def setSPMPriorityInDB(positive, hostName, spm_priority, ip, user, password):
+def setSPMPriorityInDB(
+        positive, hostName, spm_priority, ip, user, password, db_user):
     '''
     Description: set SPM priority for host in DB
     Author: pdufek
@@ -1443,14 +1444,14 @@ def setSPMPriorityInDB(positive, hostName, spm_priority, ip, user, password):
     * password - password for remote access
     Returns: True (successfully set) / False (failure)
     '''
-    cmd = 'psql engine postgres -c \"UPDATE vds_static SET ' \
+    cmd = 'psql engine %s -c \"UPDATE vds_static SET ' \
           'vds_spm_priority=\'%s\' WHERE vds_name=\'%s\';\"' \
-          % (spm_priority, hostName)
+          % (db_user, spm_priority, hostName)
     status = runMachineCommand(bool(True), ip=ip, user=user, password=password,
                                cmd=cmd)
     if not status[0]:
-        log_fce = HOST_API.logger.error if (positive is not None) and positive \
-                                        else HOST_API.logger.info
+        log_fce = HOST_API.logger.error if (positive is not None) and \
+            positive else HOST_API.logger.info
         log_fce('Command \'%s\' failed: %s' % (cmd, status[1]['out']))
     return status[0] == positive
 

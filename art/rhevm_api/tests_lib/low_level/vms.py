@@ -2531,7 +2531,7 @@ def removeVmFromExportDomain(positive, vm, datacenter,
 
 
 @is_action()
-def lockVm(positive, vm_name, ip, user, password, unlock=False):
+def lockVm(positive, vm_name, ip, user, password, db_user, unlock=False):
     '''
     Description: locks VM in DB
     Author: pdufek
@@ -2543,14 +2543,14 @@ def lockVm(positive, vm_name, ip, user, password, unlock=False):
     * unlock - unlock VM instead of lock
     Returns: True (successfully set) / False (failure)
     '''
-    cmd = 'psql engine postgres -c \"UPDATE vm_dynamic SET status=%d WHERE '\
+    cmd = 'psql engine %s -c \"UPDATE vm_dynamic SET status=%d WHERE '\
           'vm_guid=(SELECT vm_guid FROM vm_static WHERE vm_name=\'%s\');\"' \
-          % (0 if (unlock is not None) and unlock else 15, vm_name)
+          % (db_user, 0 if (unlock is not None) and unlock else 15, vm_name)
     status = runMachineCommand(positive, ip=ip, user=user, password=password,
                                cmd=cmd)
     if not status[0]:
         log_fce = VM_API.logger.error if (positive is not None) and positive \
-                                        else VM_API.logger.info
+            else VM_API.logger.info
         log_fce('Command \'%s\' failed: %s' % (cmd, status[1]['out']))
     return status[0] == positive
 

@@ -340,7 +340,7 @@
    <test_name>Lock VM</test_name>
    <test_type>rest</test_type>
    <test_action>lockVm</test_action>
-   <parameters>vm_name='vm_for_snapshot', ip='{host}', user='root', password='{password}'</parameters>
+   <parameters>vm_name='vm_for_snapshot', ip='{host}', user='root', password='{password}', db_user='{db_user}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
@@ -356,7 +356,7 @@
    <test_name>Unlock VM</test_name>
    <test_type>rest</test_type>
    <test_action>lockVm</test_action>
-   <parameters>vm_name='vm_for_snapshot', ip='{host}', user='root', password='{password}', unlock=True</parameters>
+   <parameters>vm_name='vm_for_snapshot', ip='{host}', user='root', password='{password}', db_user='{db_user}', unlock=True</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
