@@ -28,6 +28,7 @@ DEFAULT_STATE = False
 CLEANUP = 'HOSTS_CLEANUP'
 RUN_SECTION = 'RUN'
 SERVICES = ['rpcbind', 'iptables']
+PROCESSES = ['yum']
 
 
 def cleanHostStorageSession(hostObj, **kwargs):
@@ -108,6 +109,29 @@ def restartServices(hostObj):
     return True
 
 
+def checkIfProcessIsRunning(hostObj):
+    '''
+    Description: checking if specific processes are running and print to log
+    **Author**: imeerovi
+    **Parameters**:
+      **hostObj* - Object represents the hostObj
+    Returns: None
+    '''
+    logger.info("checking for running processes")
+    _, process_status = hostObj.runCmd(['ps', 'xt'])
+    process_status_list = process_status.split('\r\n')
+    logger.debug("Dumping 'ps xt' command output:\n%s",
+                 '\n'.join(process_status_list))
+
+    for process in PROCESSES:
+        process_status = filter(lambda x: process in x, process_status_list)
+        if len(process_status):
+            logger.info("Process '%s' status:\n%s", process,
+                        '\n'.join(process_status))
+        else:
+            logger.info("Process '%s' is not running", process)
+
+
 def hostCleanup(address, password, username='root'):
     '''
     Description: function that cleanup hosts
@@ -123,6 +147,7 @@ def hostCleanup(address, password, username='root'):
 
     cleanHostStorageSession(hostObj)
     killProcesses(hostObj, 'qemu')
+    checkIfProcessIsRunning(hostObj)
     if not restartServices(hostObj):
         return False
     return True
