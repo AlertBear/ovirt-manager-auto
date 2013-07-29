@@ -141,7 +141,7 @@ def getFromMainConfSection(config, key, mainSection=MAIN_SECTION, asList=True):
 
 
 def setConfValueByKeyPath(config, targetPath, keyValue, keyExtension='',
-                          backwardCompatibilityCheck=False):
+                          backwardCompatibilityCheck=False, cleanUpConf=False):
     '''
     Description: set value in configuration file by given key path
     Author: edolinin
@@ -152,6 +152,7 @@ def setConfValueByKeyPath(config, targetPath, keyValue, keyExtension='',
            * kyeExtension - extension to add to key name
            * backwardCompatibilityCheck - checks and converts list with one
                                     parameter to string and updates conf file
+           * cleanUpConf - erases existing conf data with empty list
     Return: None
     '''
     targetConfSection, targetConfKey = targetPath.split('.')
@@ -163,9 +164,14 @@ def setConfValueByKeyPath(config, targetPath, keyValue, keyExtension='',
         if len(data) == 1:
             cfg[stKey] = data[0]
     else:
+        # if key doesn't exists or None create list value for it
         if cfg.get(stKey, None) is None:
             cfg[stKey] = []
-        cfg[stKey].extend(keyValue)
+        # cleanup existing data
+        if cleanUpConf:
+            cfg[stKey] = []
+        else:
+            cfg[stKey].extend(keyValue)
         logger.debug("dynamic storage: filling variable: %s.%s = %s",
                      targetConfSection, stKey, keyValue)
     config[targetConfSection] = cfg
@@ -494,17 +500,20 @@ class StorageUtils:
         Parameters: None
         Return: None
         '''
-
+        self._updateConfFile(cleanUpConf=True)
         self._updateConfFile()
-        self._updateConfFile(True)
+        self._updateConfFile(backwardCompatibilityCheck=True)
 
-    def _updateConfFile(self, backwardCompatibilityCheck=False):
+    def _updateConfFile(self, backwardCompatibilityCheck=False,
+                        cleanUpConf=False):
         '''
         Description: update settings.conf with created devices data
         Author: edolinin
         Parameters:
             * backwardCompatibilityCheck - checks and converts list with one
                                     parameter to string and updates conf file
+            * cleanUpConf - if set, all existing storage data in conf file will
+                            replaced with empty lists
         Return: None
         '''
         for type_, devices in dict(gluster=self.gluster_devices,
@@ -516,31 +525,35 @@ class StorageUtils:
                 targetData = self.storages[type_][target]
                 address = [targetData['ip']] * targetData['total']
                 setConfValueByKeyPath(self.config, target, address, '_address',
-                                      backwardCompatibilityCheck)
+                                      backwardCompatibilityCheck, cleanUpConf)
                 if type_ is not 'iscsi':
                     path = devices[target]
                     setConfValueByKeyPath(self.config, target, path, '_path',
-                                          backwardCompatibilityCheck)
+                                          backwardCompatibilityCheck,
+                                          cleanUpConf)
                     if type_ not in ['iso', 'export']:
                         storage_types = [type_] * targetData['total']
                         setConfValueByKeyPath(self.config, target,
                                               storage_types,
                                               '_real_storage_type',
-                                              backwardCompatibilityCheck)
+                                              backwardCompatibilityCheck,
+                                              cleanUpConf)
                 else:
                     iscsiTarget = map(lambda x: x['target'], devices[target])
                     setConfValueByKeyPath(self.config, target, iscsiTarget,
                                           '_target',
-                                          backwardCompatibilityCheck)
+                                          backwardCompatibilityCheck,
+                                          cleanUpConf)
                     iscsiLun = map(lambda x: x['uuid'], devices[target])
                     setConfValueByKeyPath(self.config, target, iscsiLun, '',
-                                          backwardCompatibilityCheck)
+                                          backwardCompatibilityCheck,
+                                          cleanUpConf)
 
         # Local domain
         for target in filterNonEmptyDicts(self.local_devices):
             path = self.local_devices[target]
             setConfValueByKeyPath(self.config, target, path, '_path',
-                                  backwardCompatibilityCheck)
+                                  backwardCompatibilityCheck, cleanUpConf)
 
         self.config.write()
 
