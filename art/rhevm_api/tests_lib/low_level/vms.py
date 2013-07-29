@@ -322,6 +322,7 @@ def addVm(positive, wait=True, **kwargs):
        * disk parameters - same as in addDisk function
        * domainName = sys.prep domain name
        * quota - vm quota
+       * snapshot - description of snapshot to use. Causes error if not unique
     Return: status (True if vm was added properly, False otherwise)
     '''
     kwargs.update(add=True)
