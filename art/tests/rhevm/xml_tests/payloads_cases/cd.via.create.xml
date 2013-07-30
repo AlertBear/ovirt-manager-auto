@@ -40,7 +40,7 @@
     <test_name>Verify file existence and content in the VM</test_name>
     <test_action>checkForFileExistenceAndContent</test_action>
     <parameters>ip=%guest_ip%, password='{vm_password}', filename='/tmp/cdrom_payload/file.cd',content='payload cdrom!',user='{vm_username}'</parameters>
-    <positive>NONE</positive>
+    <positive>True</positive>
     <run>yes</run>
 </test_case>
 <test_case>

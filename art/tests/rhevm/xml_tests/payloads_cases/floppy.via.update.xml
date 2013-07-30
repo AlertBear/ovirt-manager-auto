@@ -60,7 +60,7 @@
     <test_name>Check is file exists in the payload</test_name>
     <test_action>checkForFileExistenceAndContent</test_action>
     <parameters>ip=%guest_ip%,password='{vm_password}',filename='/tmp/floppy_payload/file.floppy',content='floppy update!',user='{vm_username}'</parameters>
-    <positive>NONE</positive>
+    <positive>True</positive>
     <BZ>875720</BZ>
     <run>yes</run>
 </test_case>

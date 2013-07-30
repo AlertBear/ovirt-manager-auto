@@ -40,7 +40,7 @@
     <test_name>Verify file content and existence on the VM (floppy success)</test_name>
     <test_action>checkForFileExistenceAndContent</test_action>
     <parameters>ip=%guest_ip%,password='{vm_password}',filename='/tmp/floppy_payload/file.create.floppy',content='floppy create payload!',user='{vm_username}'</parameters>
-    <positive>NONE</positive>
+    <positive>True</positive>
     <run>yes</run>
 </test_case>
 <test_case>
