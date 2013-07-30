@@ -66,6 +66,10 @@ ENGINE_SERVICE = "ovirt-engine"
 SUPERVDSMD = "supervdsmd"
 
 
+class PSQLException(Exception):
+    pass
+
+
 def get_api(element, collection):
     '''
     Fetch proper API instance based on engine type
@@ -1266,11 +1270,12 @@ def get_running_tasks(vdc, vdc_pass, sp_id):
         * vdc_pass - root password for rhevm machine
         * sp_id - storage pool id
     """
-    query = "select task_id, task_params_class " \
-            "from async_tasks where storage_pool_id = '%s'" % sp_id
+    query = "select task_id, vdsm_task_id, task_params_class from " \
+            "async_tasks where storage_pool_id = '%s'" % sp_id
     status, tasks = runSQLQueryOnSetup(vdc, vdc_pass, query)
     if not status:
-        raise Exception("runSQLQueryOnSetup returned False")
+        raise PSQLException("runSQLQueryOnSetup returned False")
+    logger.debug("Query %s returned list: %s", query, tasks)
     return tasks
 
 
@@ -1282,26 +1287,22 @@ def wait_for_tasks(vdc, vdc_password, datacenter, timeout=TASK_TIMEOUT,
     Parameters:
         * vdc - ip or hostname of rhevm
         * vdc_password - root password for rhevm machine
-        * datacenter - name of datacenter that has running tasks
+        * datacenter - name of the datacenter that has running tasks
+        * timeout - max seconds to wait
+        * sleep - polling interval
     """
     dc_util = get_api('data_center', 'datacenters')
-    dc = dc_util.find(datacenter)
-    tasks = get_running_tasks(vdc, vdc_password, dc.id)
-    start_time = time.time()
-    while tasks and time.time() - start_time < timeout:
-        logger.debug("There are %d running tasks in datacenter %s",
-                          len(tasks), datacenter)
-        time.sleep(sleep)
-        tasks = get_running_tasks(vdc, vdc_password, dc.id)
-    if tasks:
-        raise Exception(
-                "There are still %s tasks on datacenter %s" %
-                          (tasks, datacenter))
-    logger.info("All tasks on datacenter %s are gone", datacenter)
+    sp_id = dc_util.find(datacenter).id
+    sampler = TimeoutingSampler(
+        timeout, sleep, get_running_tasks, vdc, vdc_password, sp_id)
+    for tasks in sampler:
+        if not tasks:
+            logger.info("All tasks are gone")
+            return
 
 
 def getAllImages(vds, vds_username, vds_password, spool_id, domain_id,
-                        object_id):
+                 object_id):
     """
     Description: Searches for volumes and images on storage domain
     Parameters:
