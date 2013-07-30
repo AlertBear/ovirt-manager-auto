@@ -109,8 +109,8 @@ class AutoCpuNameResolution(Component):
         fallback = self.cpus_model_mapping.get(MIN_MODEL.get(vendor))
         if not fallback:
             logger.debug(
-                "couldn't get vendor of cpu. Output was: %s".format(out))
-            raise CpuNameResolutionFailed("failed to get vendor fallback.")
+                "Couldn't get vendor of cpu. Output was: %s".format(out))
+            raise CpuNameResolutionFailed("Failed to get vendor fallback.")
         return fallback
 
     def build_mapping(self, cpus):
@@ -180,7 +180,9 @@ class AutoCpuNameResolution(Component):
                                  'level'])):
                     selected_cpu = host_cpu
         except CpuPluginError as ex:
-            logger.warning(ex.message)
+            logger.debug(ex.message)
+            logger.warning("Failed to resolve cpu name. "
+                           "Falling back to vendor default...")
             selected_cpu = self.get_vendor_fallback(vds_list[0],
                                                     vds_passwd_list[0])
         par = conf.get(PARAMETERS, {})
