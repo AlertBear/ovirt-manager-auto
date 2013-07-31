@@ -93,16 +93,30 @@ MAIN_CLUSTER_NAME = PARAMETERS.get('cluster_name')
 MAIN_HOST_NAME = PARAMETERS.get('host_name')
 MAIN_STORAGE_NAME = PARAMETERS.get('storage_name')
 
+ALT_CLUSTER_NAME = PARAMETERS.get('alt_cluster_name')
+DC_NAME_B = PARAMETERS.get('dc_name_b')
+CLUSTER_NAME_B = PARAMETERS.get('cluster_name_b')
+
 TIMEOUT = 60*2
 HOST_INSTALL_TIMEOUT = 90*10
 
 # Objects
 DISK_NAME = PARAMETERS.get('disk_name')
 VM_NAME = PARAMETERS.get('vm_name')
+VM_NAME1 = PARAMETERS.get('vm_name1')
+VM_NAME2 = PARAMETERS.get('vm_name2')
+VM_NAME3 = PARAMETERS.get('vm_name3')
+VM_NAME4 = PARAMETERS.get('vm_name4')
 VM_NO_DISK = PARAMETERS.get('vm_no_disk')
 TEMPLATE_NAME = PARAMETERS.get('template_name')
+TEMPLATE_NAME2 = PARAMETERS.get('template_name2')
+TEMPLATE_NAME3 = PARAMETERS.get('template_name3')
+TEMPLATE_NAME4 = PARAMETERS.get('template_name4')
 TEMPLATE_NO_DISK = PARAMETERS.get('template_no_disk')
 VMPOOL_NAME = PARAMETERS.get('vmpool_name')
 SNAPSHOT_DEF = PARAMETERS.get('def_snap_desc')
 USER_ROLE = PARAMETERS.get('role_user_name')
 ADMIN_ROLE = PARAMETERS.get('role_admin_name')
+
+MB = 1024*1024
+GB = 1024*MB

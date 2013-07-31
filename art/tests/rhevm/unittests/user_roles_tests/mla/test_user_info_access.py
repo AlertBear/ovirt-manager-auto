@@ -1,163 +1,162 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
-# Copyright (c) 2012 Red Hat, Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#           http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
 
 __test__ = True
 
 from user_roles_tests import config
-from user_roles_tests import common
-from user_roles_tests import states
-from user_roles_tests import roles
+from user_roles_tests.roles import role
 from nose.tools import istest
-from functools import wraps
-from ovirtsdk.xml import params
-from ovirtsdk.infrastructure import errors
-
-import unittest2 as unittest
 import logging
+from art.test_handler.tools import bz, tcms
+from art.rhevm_api.tests_lib.low_level import \
+    users, vms, disks, vmpools, templates, mla, clusters, datacenters, hosts,\
+    storagedomains, networks, events
+from art.rhevm_api.tests_lib.high_level import storagedomains as h_storagedomains
+from unittest import TestCase
 
-try:
-    from art.test_handler.tools import bz
-except ImportError:
-    from user_roles_tests.common import bz
-
-try:
-    from art.test_handler.tools import tcms
-except ImportError:
-    from user_roles_tests.common import tcms
-
-LOGGER  = common.logging.getLogger(__name__)
-API     = common.API
-
-# Names of created objects. Should be removed at the end of this test module
-# and not used by any other test module.
-ALT_CLUSTER_NAME = 'user_info_access__cluster'
-
-DC_NAME_B = 'user_info_access__dc_b'
-CLUSTER_NAME_B = 'user_info_access__cluster_b'
-VM_NAME_B = 'user_info_access__vm_b'
-
-VM1_NAME = 'user_info_access__vm1'
-VM2_NAME = 'user_info_access__vm2'
-VM3_NAME = 'user_info_access__vm3'
-VM4_NAME = 'user_info_access__vm4'
-TEMPLATE_NAME = 'user_info_access__template'
-TEMPLATE2_NAME = 'user_info_access__template2'
-ADMIN_TEMPLATE = 'template1admin'
-ALT_HOST_ID = None
+from art.core_api.apis_exceptions import EntityNotFound
 
 TCMS_PLAN_ID = 6283
+LOGGER  = logging.getLogger(__name__)
+ALT_HOST_ID = None
+
 
 def setUpModule():
-    common.addUser()
-    common.createVm(VM1_NAME)
-    common.createVm(VM2_NAME)
+    users.addUser(True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
+    clusters.addCluster(
+        True, name=config.ALT_CLUSTER_NAME, cpu=config.PARAMETERS.get('cpu_name'),
+        data_center=config.MAIN_DC_NAME,
+        version=config.PARAMETERS.get('compatibility_version'))
 
-    common.createCluster(ALT_CLUSTER_NAME, config.MAIN_DC_NAME)
+    datacenters.addDataCenter(
+        True, name=config.DC_NAME_B, storage_type=config.MAIN_STORAGE_TYPE,
+        version=config.PARAMETERS.get('compatibility_version'))
+    clusters.addCluster(
+        True, name=config.CLUSTER_NAME_B, cpu=config.PARAMETERS.get('cpu_name'),
+        data_center=config.DC_NAME_B,
+        version=config.PARAMETERS.get('compatibility_version'))
+    hosts.addHost(
+        True, config.ALT1_HOST_ADDRESS, root_password=config.ALT1_HOST_ROOT_PASSWORD,
+        address=config.ALT1_HOST_ADDRESS, cluster=config.CLUSTER_NAME_B)
+    h_storagedomains.addNFSDomain(
+        config.ALT1_HOST_ADDRESS, config.ALT1_STORAGE_NAME,
+        config.DC_NAME_B, config.ALT1_STORAGE_ADDRESS,
+        config.ALT1_STORAGE_PATH)
+    global ALT_HOST_ID
+    ALT_HOST_ID = hosts.HOST_API.find(config.ALT1_HOST_ADDRESS).get_id()
 
-    if config.ALT1_HOST_AVAILABLE:
-        common.createDataCenter(DC_NAME_B)
-        common.createCluster(CLUSTER_NAME_B, DC_NAME_B)
-        common.createHost(CLUSTER_NAME_B, hostName=config.ALT1_HOST_ADDRESS,
-                          hostAddress=config.ALT1_HOST_ADDRESS,
-                          hostPassword=config.ALT1_HOST_ROOT_PASSWORD)
-        common.createNfsStorage(storageName=config.ALT1_STORAGE_NAME,
-                                address=config.ALT1_STORAGE_ADDRESS,
-                                path=config.ALT1_STORAGE_PATH,
-                                datacenter=DC_NAME_B,
-                                host=config.ALT1_HOST_ADDRESS)
-        common.attachActivateStorage(config.ALT1_STORAGE_NAME,
-                                datacenter=DC_NAME_B, isMaster=True)
-        global ALT_HOST_ID
-        ALT_HOST_ID = API.hosts.get(config.ALT1_HOST_ADDRESS).get_id()
 
 def tearDownModule():
-    common.removeVm(VM1_NAME)
-    common.removeVm(VM2_NAME)
-    common.removeUser()
-    common.removeCluster(ALT_CLUSTER_NAME)
+    users.removeUser(True, config.USER_NAME)
+    clusters.removeCluster(True, config.ALT_CLUSTER_NAME)
+    storagedomains.cleanDataCenter(True, config.DC_NAME_B)
 
-    if config.ALT1_HOST_ADDRESS:
-        common.removeMasterStorage(storageName=config.ALT1_STORAGE_NAME,
-                                   datacenter=DC_NAME_B,
-                                   host=config.ALT1_HOST_ADDRESS)
-        common.removeHost(hostName=config.ALT1_HOST_ADDRESS)
-        common.removeCluster(CLUSTER_NAME_B)
-        common.removeDataCenter(DC_NAME_B)
 
 def loginAsUser(**kwargs):
-    common.loginAsUser(**kwargs)
-    global API
-    API = common.API
+    users.loginAsUser(
+        config.USER_NAME, config.USER_DOMAIN, config.USER_PASSWORD,
+        filter=True)
+
 
 def loginAsAdmin():
-    common.loginAsAdmin()
-    global API
-    API = common.API
+    users.loginAsUser(
+        config.OVIRT_USERNAME, config.OVIRT_DOMAIN,
+        config.OVIRT_PASSWORD, filter=False)
 
-class VmUserInfoTests(unittest.TestCase):
-    """ Tests that will be run for each role in VM_ROLES """
+
+class VmUserInfoTests(TestCase):
+    """ Test if user can see correct events """
     __test__ = True
+
+    vms_api = '/api/vms/%s'
+    sd_api = '/api/storagedomains/%s'
+    cl_api = '/api/clusters/%s'
+    dc_api = '/api/datacenters/%s'
+    host_api = '/api/hosts/%s'
+    tmp_api = '/api/templates/%s'
 
     @classmethod
     def setUpClass(self):
-        self.role = roles.role.UserRole
-        self.filter_ = True
-        common.givePermissionToVm(VM1_NAME, self.role)
+        vms.createVm(
+            True, config.VM_NAME1, '', cluster=config.MAIN_CLUSTER_NAME,
+            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB)
+        vms.createVm(
+            True, config.VM_NAME2, '', cluster=config.CLUSTER_NAME_B)
+        templates.createTemplate(
+            True, vm=config.VM_NAME2, name=config.TEMPLATE_NAME2,
+            cluster=config.CLUSTER_NAME_B)
+        mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME1,
+                                   role.UserRole)
+        loginAsUser()
 
     @classmethod
     def tearDownClass(self):
         loginAsAdmin()
-        common.removeAllPermissionFromVm(VM1_NAME)
+        vms.removeVm(True, config.VM_NAME2)
+        vms.removeVm(True, config.VM_NAME1)
+        templates.removeTemplate(True, config.TEMPLATE_NAME2)
+
+    @istest
+    @tcms(TCMS_PLAN_ID, 171856)
+    def eventFilter_parentObjectEvents(self):
+        """ testEventFilter_parentObjectEvents """
+        msgBlind = "User cannot see events for %s where he has permissions"
+        msgVisible = "User can see events for %s where he has no permissions." + \
+                        "Can see %s"
+        for e in events.util.get(absLink=False):
+            if e is None:
+                continue
+            LOGGER.info(e.get_description())
+            vm = e.get_vm()
+            sd = e.get_storage_domain()
+            cl = e.get_cluster()
+            dc = e.get_data_center()
+            host = e.get_host()
+            tmp = e.get_template()
+            if vm and vms.VM_API.get(href=self.vms_api % vm.get_id()):
+                assert vms.VM_API.get(href=self.vms_api % vm.get_id()).get_name() != config.VM_NAME2
+            if sd and storagedomains.util.get(href=self.sd_api % sd.get_id()):
+                assert storagedomains.util.get(href=self.sd_api % sd.get_id()).get_name() != config.ALT1_STORAGE_NAME
+            if cl and clusters.util.get(self.cl_api % cl.get_id()):
+                assert clusters.util.get(self.cl_api % cl.get_id()).get_name() != config.CLUSTER_NAME_B
+            if dc and datacenters.util.get(self.dc_api % dc.get_id()):
+                assert datacenters.util.get(self.dc_api % dc.get_id()).get_name() != config.DC_NAME_B
+            if host:
+                assert host.get_id() != ALT_HOST_ID
+            if tmp and templates.TEMPLATE_API.get(href=self.tmp_api % tmp.get_id()):
+                assert templates.TEMPLATE_API.get(href=self.tmp_api % tmp.get_id()).get_name() != config.TEMPLATE_NAME2
+
+
+class VmUserInfoTests2(TestCase):
+    """ Test if user can see correct objects """
+    __test__ = True
+
+    @classmethod
+    def setUpClass(self):
+        vms.createVm(
+            True, config.VM_NAME1, '', cluster=config.MAIN_CLUSTER_NAME,
+            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB)
+        vms.createVm(
+            True, config.VM_NAME2, '', cluster=config.MAIN_CLUSTER_NAME,
+            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB)
+        mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME1,
+                                   role.UserRole)
+
+        self.id1 = vms.VM_API.find(config.VM_NAME1).get_id()
+        self.id2 = vms.VM_API.find(config.VM_NAME2).get_id()
+
+    @classmethod
+    def tearDownClass(self):
+        loginAsAdmin()
+        vms.removeVm(True, config.VM_NAME1)
+        vms.removeVm(True, config.VM_NAME2)
 
     def setUp(self):
-        loginAsUser(filter_=self.filter_)
+        loginAsUser()
 
-    @tcms(TCMS_PLAN_ID, 171076)
-    def testFilter_vms(self):
-        """ testFilter_vms """
-        msgBlind = "The user can't see VM '%s' where he has permissions" \
-                        % VM1_NAME
-        msgVisible = "The user can see a VM he has no permissions for"
-
-        vm1 = common.getObjectByName(API.vms, VM1_NAME)
-        self.assertTrue(vm1 is not None, msgBlind)
-        vm2 = common.getObjectByName(API.vms, VM2_NAME)
-        self.assertTrue(vm2 is None, msgVisible)
-        vms = API.vms.list()
-        self.assertEqual(len(vms), 1, msgVisible)
-        LOGGER.info("User can see only VM, he has permissions for.")
-
-        loginAsAdmin()
-        common.removeAllPermissionFromVm(VM1_NAME)
-
-        loginAsUser(filter_=self.filter_)
-        vms = API.vms.list()
-        self.assertEqual(len(vms), 0, msgVisible)
-        vm1 = common.getObjectByName(API.vms, VM1_NAME)
-        self.assertTrue(vm1 is None, msgVisible)
-        LOGGER.info("After deleting permissions from VM, he cant see it anymore")
-
-        loginAsAdmin()
-        common.givePermissionToVm(VM1_NAME, self.role)
-
+    @istest
     @tcms(TCMS_PLAN_ID, 171878)
-    def testFilter_parentObjects(self):
-        """ testFilter_parentObjects """
+    def filter_parentObjects(self):
+        """ filter_parentObjects """
         # TODO: Extend with /templates, /storagedomains, /users, ...
         # Consulted what should be visible to users
         DC = config.MAIN_DC_NAME
@@ -166,378 +165,452 @@ class VmUserInfoTests(unittest.TestCase):
         msgBlind   = "User cannot see %s '%s' where he has permission."
         msgVisible = "User can see %s where he has no permissions. Can see %s"
 
-        datacenters = API.datacenters.list()
-        clusters = API.clusters.list()
+        dcs = datacenters.util.get(absLink=False)
+        cls = clusters.util.get(absLink=False)
 
         # can user see parent objects of the one with permission?
-        dc = common.getObjectByName(API.datacenters, config.MAIN_DC_NAME)
+        dc = datacenters.util.find(DC)
         assert dc is not None, msgBlind % ('datacenter', DC)
-        cluster = common.getObjectByName(API.clusters, config.MAIN_CLUSTER_NAME)
+        cluster = clusters.util.find(CLUSTER)
         assert cluster is not None, msgBlind % ('cluster', CLUSTER)
         LOGGER.info("User can see object where he has permissions.")
 
         # is user forbidden to see other objects?
-        altDc = common.getObjectByName(API.datacenters, DC_NAME_B)
-        assert altDc is None, msgVisible % ('datacenter', DC_NAME_B)
-        altCluster = common.getObjectByName(API.clusters, ALT_CLUSTER_NAME)
-        assert altCluster is None, msgVisible % ('cluster', ALT_CLUSTER_NAME)
+        self.assertRaises(EntityNotFound, datacenters.util.find, config.DC_NAME_B)
+        self.assertRaises(EntityNotFound, clusters.util.find, config.ALT_CLUSTER_NAME)
         LOGGER.info("User can't see object where he has permissions.")
 
-        assert len(datacenters) == 1, \
-            msgVisible % ('datacenters', niceList(datacenters))
-        assert len(clusters) == 1, msgVisible % ('clusters', niceList(datacenters))
+        assert len(dcs) == 1, \
+            msgVisible % ('datacenters', dcs)
+        assert len(cls) == 1, msgVisible % ('clusters', cls)
 
-        # User roles can't see any host
-        self.assertRaises(errors.RequestError, API.hosts.list)
-        LOGGER.info("User can't access /hosts.")
+    @istest
+    @tcms(TCMS_PLAN_ID, 171076)
+    def filter_vms(self):
+        """ testFilter_vms """
+        msgBlind = "The user can't see VM '%s' where he has permissions" \
+                        % config.VM_NAME1
+        msgVisible = "The user can see a VM he has no permissions for"
 
+        vm1 = vms.VM_API.find(config.VM_NAME1)
+        self.assertTrue(vm1 is not None, msgBlind)
+        self.assertRaises(EntityNotFound, vms.VM_API.find, config.VM_NAME2)
+        myvms = vms.VM_API.get(absLink=False)
+        self.assertEqual(len(myvms), 1, msgVisible)
+        LOGGER.info(msgVisible)
+
+        loginAsAdmin()
+        mla.removeUserPermissionsFromVm(True, config.VM_NAME1, config.USER1)
+
+        loginAsUser()
+        myvms = vms.VM_API.get(absLink=False)
+        self.assertRaises(EntityNotFound, vms.VM_API.find, config.VM_NAME1)
+        self.assertEqual(myvms, None, msgVisible)
+        LOGGER.info("After deleting permissions from VM, he can't see it anymore")
+
+        loginAsAdmin()
+        mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME1,
+                                   role.UserRole)
+
+    @istest
+    @bz(968961)
     @tcms(TCMS_PLAN_ID, 171077)
-    def testEventFilter_vmEvents(self):
+    def eventFilter_vmEvents(self):
         """ testEventFilter_vmEvents """
         msgBlind = "User cannot see VM events where he has permissions"
-        msgVisible = "User can see VM events where he has no permissions." + \
-                "Can see %s"
+        msgVissible = "User can see VM events where he's no permissions. See %s"
 
         loginAsAdmin()
-        common.startStopVm(VM1_NAME)
-        common.startStopVm(VM2_NAME)
-        vm1_id = API.vms.get(VM1_NAME).get_id()
-        vm2_id = API.vms.get(VM2_NAME).get_id()
+        vms.startVm(True, config.VM_NAME1)
+        vms.startVm(True, config.VM_NAME2)
+        vms.stopVm(True, config.VM_NAME1)
+        vms.stopVm(True, config.VM_NAME2)
         LOGGER.info("Events on VMs generated")
 
-        loginAsUser(filter_=self.filter_)
-        lst_of_vms = []
-        for e in API.events.list():
+        loginAsUser()
+        lst_of_vms = set()
+        for e in events.util.get(absLink=False):
             if e.get_vm():
-                lst_of_vms.append(e.get_vm().get_id())
+                lst_of_vms.add(e.get_vm().get_id())
 
-        assert vm1_id in lst_of_vms, msgBlind
-        LOGGER.info("User can see events from VM he has permissions for.")
+        assert self.id1 in lst_of_vms, msgBlind
+        LOGGER.info(msgVissible % lst_of_vms)
 
-        assert vm2_id not in lst_of_vms
-        LOGGER.info("User can't see events from VM he has not permissions for.")
+        assert self.id2 not in lst_of_vms, msgVissible % lst_of_vms
+        LOGGER.info(msgBlind)
 
-    @tcms(TCMS_PLAN_ID, 171856)
-    def testEventFilter_parentObjectEvents(self):
-        """ testEventFilter_parentObjectEvents """
-        msgBlind = "User cannot see events for %s where he has permissions"
-        msgVisible = "User can see events for %s where he has no permissions." + \
-                        "Can see %s"
-        loginAsAdmin()
-        TEMPLATE_NAME_B = 'template_b'
-        VM_NAME_B = 'vm_b'
-
-        common.createVm(VM_NAME_B, createDisk=False, cluster=CLUSTER_NAME_B)
-        common.createTemplate(VM_NAME_B, TEMPLATE_NAME_B)
-
-        loginAsUser(filter_=self.filter_)
-        try:
-            for e in API.events.list():
-                if e is None:
-                    continue
-                if e.get_vm() and API.vms.get(id=e.get_vm().get_id()):
-                    assert API.vms.get(id=e.get_vm().get_id()).get_name() != VM_NAME_B
-                if e.get_storage_domain() and API.storagedomains.get(id=e.get_storage_domain().get_id()):
-                    assert API.storagedomains.get(id=e.get_storage_domain().get_id()).get_name() != config.ALT1_STORAGE_NAME
-                if e.get_cluster() and API.clusters.get(id=e.get_cluster().get_id()):
-                    assert API.clusters.get(id=e.get_cluster().get_id()).get_name() != CLUSTER_NAME_B
-                if e.get_data_center() and API.datacenters.get(id=e.get_data_center().get_id()):
-                    assert API.datacenters.get(id=e.get_data_center().get_id()).get_name() != DC_NAME_B
-                if e.get_host():
-                    assert e.get_host().get_id() != ALT_HOST_ID
-                if e.get_template() and API.templates.get(id=e.get_template().get_id()):
-                    assert API.templates.get(id=e.get_template().get_id()).get_name() != TEMPLATE_NAME_B
-        finally:
-            loginAsAdmin()
-            common.removeVm(VM_NAME_B)
-            common.removeTemplate(TEMPLATE_NAME_B)
-
+    @istest
     @tcms(TCMS_PLAN_ID, 171079)
-    def testSpecificId(self):
+    def specificId(self):
         """ testSpecificId """
         msgBlind = "User cannot see VM where he has permmissions"
         msgVissible = "User can see VM where he has no permission. Can See '%s'"
+        vms_api = '/api/vms/%s'
 
-        loginAsAdmin()
-        id1 = API.vms.get(VM1_NAME).get_id()
-        id2 = API.vms.get(VM2_NAME).get_id()
+        assert vms.VM_API.get(href=vms_api % self.id1) is not None, msgBlind
+        LOGGER.info(msgVissible)
 
-        loginAsUser()
-        assert API.vms.get(id=id1) is not None, msgBlind
-        LOGGER.info("User can see VM, where he have permissions")
+        assert vms.VM_API.get(href=vms_api % self.id2) is None, msgVissible
+        LOGGER.info(msgBlind)
 
-        assert API.vms.get(id=id2) is None, msgBlind
-        LOGGER.info("User can't see VM, where he have permissions")
-
-    # Is consulted, dont know exactly hiearchy what should be seen or not
+    @istest
     @tcms(TCMS_PLAN_ID, 168714)
-    def testAccessDenied(self):
+    def accessDenied(self):
         """ testAccessDenied """
         msg = "User can see %s where he has no permissions. Can see %s"
 
-        storages = API.storagedomains.list()
-        templates = API.templates.list()
-        networks = API.networks.list()
+        storages = [s.get_name() for s in storagedomains.util.get(absLink=False)]
+        tmps = [t.get_name() for t in templates.TEMPLATE_API.get(absLink=False)]
+        nets = [n.get_name() for n in networks.NET_API.get(absLink=False)]
 
         # User should see network, cause every user have NetworkUser perms
-        assert len(networks) == 3, msg %('networks', niceList(networks))
+        assert len(nets) == 3, msg %('networks', nets)
         # User should see SD, which is attach to sd, in which is his VM
-        assert len(storages) == 1, msg %('storages', niceList(storages))
+        assert len(storages) == 1, msg %('storages', storages)
         # User should se Blank template
-        assert len(templates) == 1, msg %('templates', niceList(templates))
+        assert len(tmps) == 1, msg %('templates', tmps)
         LOGGER.info("User see and don't see resources he can/can't.")
 
+    @istest
     @tcms(TCMS_PLAN_ID, 175445)
-    def testHostInfo(self):
+    def hostInfo(self):
         """ testHostPowerManagementInfo """
-        self.assertRaises(errors.RequestError, API.hosts.get, config.MAIN_HOST_NAME)
+        self.assertRaises(EntityNotFound, hosts.HOST_API.find,
+                          config.MAIN_HOST_NAME)
         LOGGER.info("User can't see any host info")
-        self.assertRaises(errors.RequestError, API.hosts.list)
-        LOGGER.info("User can't see any hosts info")
-        vm = common.getObjectByName(API.vms, VM1_NAME)
-        vm.start()
-        LOGGER.info("Starting vm to check host info in vm")
-        common.waitForState(vm, states.vm.up)
+        vms.startVm(True, config.VM_NAME1)
+        vm = vms.VM_API.find(config.VM_NAME1)
         assert vm.get_host() == None
         LOGGER.info("User can't see any host info in /api/vms")
         assert vm.get_placement_policy() == None
         LOGGER.info("User can't see any placement_policy info in /api/vms")
-        vm.stop()
-        common.waitForState(vm, states.vm.down)
-        LOGGER.info("Stopping vm")
+        vms.stopVm(True, config.VM_NAME1)
 
-class ViewviewChildrenInfoTests(unittest.TestCase):
+
+class ViewviewChildrenInfoTests(TestCase):
     """ Tests if roles that are not able to view childrens, really dont view it. """
     __test__ = True
 
     # Could change in the future, probably no way how to get it from API.
     # So should be changed if behaviour will change.
-    roles_cant = [roles.role.PowerUserRole,
-                roles.role.TemplateCreator,
-                roles.role.VmCreator,
-                roles.role.DiskCreator]
-    roles_can = [roles.role.UserRole,
-                roles.role.UserVmManager,
-                roles.role.DiskOperator,
-                roles.role.TemplateOwner]
+    roles_cant = [role.PowerUserRole,
+                  role.TemplateCreator,
+                  role.VmCreator,
+                  role.DiskCreator]
+    roles_can = [role.UserRole,
+                 role.UserVmManager,
+                 role.DiskOperator,
+                 role.TemplateOwner]
 
+    @classmethod
+    def setUpClass(self):
+        vms.createVm(
+            True, config.VM_NAME1, '', cluster=config.MAIN_CLUSTER_NAME)
+
+    @classmethod
+    def tearDownClass(self):
+        loginAsAdmin()
+        vms.removeVm(True, config.VM_NAME1)
+
+    @istest
     @tcms(TCMS_PLAN_ID, 230017)
-    def testCanViewChildren(self):
+    def canViewChildren(self):
         """ CanViewChildren """
         for role in self.roles_can:
             LOGGER.info("Testing role: %s", role)
-            common.givePermissionToCluster(config.MAIN_CLUSTER_NAME, role)
+            mla.addClusterPermissionsToUser(True, config.USER_NAME,
+                                            config.MAIN_CLUSTER_NAME,
+                                            role)
             loginAsUser()
-            assert len(API.vms.list()) > 0, "User can't see vms"
+            assert len(vms.VM_API.get(absLink=False)) == 1, "User can't see vms"
             loginAsAdmin()
-            common.removeAllPermissionFromCluster(config.MAIN_CLUSTER_NAME)
+            mla.removeUserPermissionsFromCluster(True, config.MAIN_CLUSTER_NAME,
+                                                 config.USER1)
             LOGGER.info("%s can see children", role)
 
+    @istest
     @tcms(TCMS_PLAN_ID, 230018)
-    def testCantViewChildren(self):
+    def cantViewChildren(self):
         """ CantViewChildren """
         for role in self.roles_cant:
             LOGGER.info("Testing role: %s", role)
-            common.givePermissionToCluster(config.MAIN_CLUSTER_NAME, role)
+            mla.addClusterPermissionsToUser(True, config.USER_NAME,
+                                            config.MAIN_CLUSTER_NAME,
+                                            role)
             loginAsUser()
-            assert len(API.vms.list()) == 0, "User can see vms"
+            assert len(vms.VM_API.get(absLink=False)) == 0, "User can see vms"
             loginAsAdmin()
-            common.removeAllPermissionFromCluster(config.MAIN_CLUSTER_NAME)
+            mla.removeUserPermissionsFromCluster(True, config.MAIN_CLUSTER_NAME,
+                                                 config.USER1)
             LOGGER.info("%s can see children", role)
 
-class VmCreatorInfoTests(unittest.TestCase):
-    """ Test for VMcreator role """
+
+class VmCreatorClusterAdminInfoTests(TestCase):
+    """ Test for VMcreator and cluster admin role """
     __test__ = True
+
+    @classmethod
+    def setUpClass(self):
+        mla.addClusterPermissionsToUser(True, config.USER_NAME,
+                                        config.MAIN_CLUSTER_NAME, role.UserRole)
+        mla.addClusterPermissionsToUser(True, config.USER_NAME,
+                                        config.MAIN_CLUSTER_NAME, role.VmCreator)
+        vms.createVm(
+            True, config.VM_NAME1, '', cluster=config.MAIN_CLUSTER_NAME)
+        vms.createVm(
+            True, config.VM_NAME2, '', cluster=config.MAIN_CLUSTER_NAME)
+        vms.createVm(
+            True, config.VM_NAME3, '', cluster=config.ALT_CLUSTER_NAME)
+        vms.createVm(
+            True, config.VM_NAME4, '', cluster=config.ALT_CLUSTER_NAME)
+
+    @classmethod
+    def tearDownClass(self):
+        loginAsAdmin()
+        vms.removeVm(True, config.VM_NAME1)
+        vms.removeVm(True, config.VM_NAME2)
+        vms.removeVm(True, config.VM_NAME3)
+        vms.removeVm(True, config.VM_NAME4)
+        mla.removeUserPermissionsFromCluster(True, config.MAIN_CLUSTER_NAME,
+                                             config.USER1)
 
     @istest
     @tcms(TCMS_PLAN_ID, 174404)
     def vmCreatorClusterAdmin_filter_vms(self):
         """ vmCreatorClusterAdmin_filter_vms """
-        loginAsAdmin()
-        common.givePermissionToCluster(config.MAIN_CLUSTER_NAME, roles.role.UserRole)
-        common.givePermissionToCluster(config.MAIN_CLUSTER_NAME, roles.role.VmCreator)
-        common.createVm(VM3_NAME, createDisk=False, cluster=ALT_CLUSTER_NAME)
-        common.createVm(VM4_NAME, createDisk=False, cluster=ALT_CLUSTER_NAME)
-
         loginAsUser()
-        LOGGER.info("Checking right permission on vms")
-        vms = [vm.get_name() for vm in API.vms.list()]
-        assert VM1_NAME in vms, "User can't see " + VM1_NAME
-        assert VM2_NAME in vms, "User can't see " + VM2_NAME
-        assert VM3_NAME not in vms, "User can see " + VM3_NAME
-        assert VM4_NAME not in vms, "User can see " + VM4_NAME
+        LOGGER.info("Checking right permission on vms.")
+        myvms = [vm.get_name() for vm in vms.VM_API.get(absLink=False)]
+        assert config.VM_NAME1 in myvms, "User can't see %s" % config.VM_NAME1
+        assert config.VM_NAME2 in myvms, "User can't see %s" % config.VM_NAME2
+        assert config.VM_NAME3 not in myvms, "User can see %s" % config.VM_NAME3
+        assert config.VM_NAME4 not in myvms, "User can see %s" % config.VM_NAME4
 
+
+class VmCreatorInfoTests(TestCase):
+    """ Test for VMcreator role """
+    __test__ = True
+
+    @classmethod
+    def setUpClass(self):
+        mla.addClusterPermissionsToUser(True, config.USER_NAME,
+                                        config.MAIN_CLUSTER_NAME, role.VmCreator)
+        vms.createVm(
+            True, config.VM_NAME1, '', cluster=config.MAIN_CLUSTER_NAME)
+
+    @classmethod
+    def tearDownClass(self):
         loginAsAdmin()
-        common.removeVm(VM3_NAME)
-        common.removeVm(VM4_NAME)
-        common.removeAllPermissionFromCluster(config.MAIN_CLUSTER_NAME)
+        vms.removeVm(True, config.VM_NAME1)
+        vms.removeVm(True, config.VM_NAME2)
+        mla.removeUserPermissionsFromCluster(True, config.MAIN_CLUSTER_NAME,
+                                             config.USER1)
 
     @istest
     @tcms(TCMS_PLAN_ID, 171080)
     def vmCreator_filter_vms(self):
         """ vmCreator_filter_vms """
         msg = "User can see vms where he has no permissions. Can see %s"
-        loginAsAdmin()
-        common.givePermissionToCluster(config.MAIN_CLUSTER_NAME, roles.role.VmCreator)
 
         loginAsUser()
-        vms = API.vms.list()
-        assert len(vms) == 0, msg % (niceList(vms))
-        LOGGER.info("User can't see vms where he has not perms.")
+        myvms = [vm.get_name() for vm in vms.VM_API.get(absLink=False)]
+        assert len(myvms) == 0, msg % myvms
+        LOGGER.info("User can't see vms where he has not perms. %s" % myvms)
 
-        common.createVm(VM3_NAME, createDisk=False)
-        vms = API.vms.list()
-        assert len(vms) == 1, msg % (niceList(vms))
-        LOGGER.info("User can see only his vms")
-
-        common.removeVm(VM3_NAME)
-        loginAsAdmin()
-        common.removeAllPermissionFromCluster(config.MAIN_CLUSTER_NAME)
+        vms.createVm(
+            True, config.VM_NAME2, '', cluster=config.MAIN_CLUSTER_NAME)
+        myvms = [vm.get_name() for vm in vms.VM_API.get(absLink=False)]
+        assert len(myvms) == 1, msg % myvms
+        LOGGER.info("User can see only his vms %s" % myvms)
 
 
-class TemplateCreatorInfoTests(unittest.TestCase):
-    """ Test for VMcreator role """
+class TemplateCreatorInfoTests(TestCase):
+    """ Test combination of roles with TemplateCreator role """
     __test__ = True
 
     @classmethod
     def setUpClass(self):
-        self.role = roles.role.TemplateCreator
+        vms.createVm(
+            True, config.VM_NAME1, '', cluster=config.MAIN_CLUSTER_NAME)
+        vms.createVm(
+            True, config.VM_NAME2, '', cluster=config.MAIN_CLUSTER_NAME)
+        mla.addPermissionsForDataCenter(True, config.USER_NAME,
+                                        config.MAIN_DC_NAME, role.TemplateCreator)
+        mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME1,
+                                   role.UserRole)
+        templates.createTemplate(
+            True, vm=config.VM_NAME2, name=config.TEMPLATE_NAME,
+            cluster=config.MAIN_CLUSTER_NAME)
+        templates.createTemplate(
+            True, vm=config.VM_NAME1, name=config.TEMPLATE_NAME2,
+            cluster=config.MAIN_CLUSTER_NAME)
 
     @classmethod
     def tearDownClass(self):
-        common.removeAllPermissionFromVm(VM1_NAME)
-
-    def setUp(self):
-        loginAsUser()
-
-    def tearDown(self):
         loginAsAdmin()
+        vms.removeVm(True, config.VM_NAME1)
+        vms.removeVm(True, config.VM_NAME2)
+        templates.removeTemplate(True, config.TEMPLATE_NAME)
+        templates.removeTemplate(True, config.TEMPLATE_NAME2)
+        templates.removeTemplate(True, config.TEMPLATE_NAME3)
+        mla.removeUserPermissionsFromDatacenter(
+            True, config.MAIN_DC_NAME, config.USER1)
 
     @istest
     @tcms(TCMS_PLAN_ID, 174403)
     def templateCreator_filter_templatesAndVms(self):
-        """ templateCreator_filter_templatesAndVms """
+        """ Template creator with user role filter template and vms """
         msgCant =  "User can't see %s '%s' which should see"
         msgCan = "User can see %s '%s' which shouldn't see"
 
-        loginAsAdmin()
-        common.givePermissionToDc(config.MAIN_DC_NAME, roles.role.TemplateCreator)
-        common.givePermissionToVm(VM1_NAME, roles.role.UserRole)
-
-        common.createTemplate(VM2_NAME, TEMPLATE_NAME)
-        common.createTemplate(VM1_NAME, ADMIN_TEMPLATE)
-
         loginAsUser()
-        LOGGER.info("Cheking right permissions for all vms")
-        vms = [vm.get_name() for vm in API.vms.list()]
-        assert VM1_NAME in vms, msgCant % ('VM', VM1_NAME)
-        assert VM2_NAME not in vms, msgCan % ('VM', VM2_NAME)
+        LOGGER.info("Checking right permissions for all vms")
 
-        LOGGER.info("Cheking right permissions for all templates")
-        tmps = [tmp.get_name() for tmp in API.templates.list()]
-        assert TEMPLATE_NAME not in tmps, msgCan % ('Template', TEMPLATE_NAME)
-        assert ADMIN_TEMPLATE not in tmps, msgCan % ('Template', ADMIN_TEMPLATE)
+        myvms = [vm.get_name() for vm in vms.VM_API.get(absLink=False)]
+        assert config.VM_NAME1 in myvms, msgCant % ('VM', config.VM_NAME1)
+        assert config.VM_NAME2 not in myvms, msgCan % ('VM', config.VM_NAME2)
+        LOGGER.info("User can see %s" % myvms)
 
-        common.createTemplate(VM1_NAME, TEMPLATE2_NAME)
-        LOGGER.info("Cheking right permissions for " + TEMPLATE2_NAME)
-        tmps = [tmp.get_name() for tmp in API.templates.list()]
+        LOGGER.info("Checking right permissions for all templates")
+        tmps = [tmp.get_name() for tmp in templates.TEMPLATE_API.get(absLink=False)]
+        assert config.TEMPLATE_NAME not in tmps, msgCan % ('Template', config.TEMPLATE_NAME)
+        assert config.TEMPLATE_NAME2 not in tmps, msgCan % ('Template', config.TEMPLATE_NAME2)
+        LOGGER.info("User can see %s" % tmps)
+
+        templates.createTemplate(
+            True, vm=config.VM_NAME1, name=config.TEMPLATE_NAME3,
+            cluster=config.MAIN_CLUSTER_NAME)
+        LOGGER.info("Checking right permissions for %s" % config.TEMPLATE_NAME3)
+        tmps = [tmp.get_name() for tmp in templates.TEMPLATE_API.get(absLink=False)]
         # tmps == 2(blank + newly created)
-        assert TEMPLATE2_NAME in tmps and len(tmps) == 2, msgCan % ('Templates', niceList(tmps))
+        assert config.TEMPLATE_NAME3 in tmps and len(tmps) == 2, msgCan % ('Templates', tmps)
+        LOGGER.info("User can see %s" % tmps)
 
+
+# Create some templates in Datacenter1.
+# Create user and give him both roles TemplateCreator and DataCenterAdmin for Datacenter1
+# Create some templates in Datacenter2.
+# - Check /api/templates
+# Should see all templates in Datacenter1, but none in Datacenter2.
+class TemplateCreatorAndDCAdminInfoTest(TestCase):
+    __test__ = True
+
+    @classmethod
+    def setUpClass(self):
+        vms.createVm(
+                True, config.VM_NAME1, '', cluster=config.MAIN_CLUSTER_NAME)
+        templates.createTemplate(
+            True, vm=config.VM_NAME1, name=config.TEMPLATE_NAME,
+            cluster=config.MAIN_CLUSTER_NAME)
+        mla.addPermissionsForDataCenter(True, config.USER_NAME,
+            config.MAIN_DC_NAME, role.TemplateCreator)
+        mla.addPermissionsForDataCenter(True, config.USER_NAME,
+            config.MAIN_DC_NAME, role.TemplateOwner)
+        vms.createVm(True, config.VM_NAME2, '', cluster=config.CLUSTER_NAME_B)
+        templates.createTemplate(
+            True, vm=config.VM_NAME2, name=config.TEMPLATE_NAME2,
+            cluster=config.CLUSTER_NAME_B)
+
+    @classmethod
+    def tearDownClass(self):
         loginAsAdmin()
-        common.removeAllPermissionFromVm(VM1_NAME)
-        common.removeAllPermissionFromDc(config.MAIN_DC_NAME)
-        common.removeTemplate(TEMPLATE_NAME)
-        common.removeTemplate(TEMPLATE2_NAME)
-        common.removeTemplate(ADMIN_TEMPLATE)
+        vms.removeVm(True, config.VM_NAME2)
+        vms.removeVm(True, config.VM_NAME1)
+        templates.removeTemplate(True, config.TEMPLATE_NAME)
+        templates.removeTemplate(True, config.TEMPLATE_NAME2)
+        mla.removeUserPermissionsFromDatacenter(
+            True, config.MAIN_DC_NAME, config.USER1)
 
-    # Create some templates in Datacenter1.
-    # Create user and give him both roles TemplateCreator and DataCenterAdmin for Datacenter1
-    # Create some templates in Datacenter2.
-    # - Check /api/templates
-    # Should see all templates in Datacenter1, but none in Datacenter2.
     @istest
     @tcms(TCMS_PLAN_ID, 174405)
     def templateCreatorDataCenterAdmin_filter_templates(self):
-        """ templateCreatorDataCenterAdmin_filter_templates """
-        loginAsAdmin()
-        common.createTemplate(VM1_NAME, TEMPLATE_NAME)
-        common.givePermissionToDc(config.MAIN_DC_NAME, roles.role.TemplateCreator)
-        common.givePermissionToDc(config.MAIN_DC_NAME, roles.role.TemplateOwner)
-
-        common.createVm(VM_NAME_B, createDisk=False, cluster=CLUSTER_NAME_B)
-        common.createTemplate(VM_NAME_B, TEMPLATE2_NAME)
-
+        """ Template creator with datacenter admin filter templates """
         loginAsUser()
-        try:
-            assert common.getObjectByName(API.templates, TEMPLATE_NAME) is not None
-            assert common.getObjectByName(API.templates, TEMPLATE2_NAME) is None
-        finally:
-            loginAsAdmin()
-            common.removeVm(VM_NAME_B)
-            common.removeTemplate(TEMPLATE_NAME)
-            common.removeTemplate(TEMPLATE2_NAME)
-            common.removeAllPermissionFromDc(config.MAIN_DC_NAME)
+        templates.TEMPLATE_API.find(config.TEMPLATE_NAME)
+        self.assertRaises(EntityNotFound, templates.TEMPLATE_API.find,
+                          config.TEMPLATE_NAME2)
 
-class CompolexCombinationTests(unittest.TestCase):
+
+class ComplexCombinationTest(TestCase):
+    """ Test that user can see correct object regargin its permissions """
     __test__ = True
+
+    @classmethod
+    def setUpClass(self):
+        vms.createVm(
+            True, config.VM_NAME1, '', cluster=config.MAIN_CLUSTER_NAME,
+            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB)
+        vms.createVm(
+            True, config.VM_NAME2, '', cluster=config.MAIN_CLUSTER_NAME,
+            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB)
+        templates.createTemplate(
+            True, vm=config.VM_NAME1, name=config.TEMPLATE_NAME,
+            cluster=config.MAIN_CLUSTER_NAME)
+        templates.createTemplate(
+            True, vm=config.VM_NAME2, name=config.TEMPLATE_NAME2,
+            cluster=config.MAIN_CLUSTER_NAME)
+        vms.createVm( # tmp_vm_2
+            True, config.VM_NAME3, '', cluster=config.CLUSTER_NAME_B,
+            storageDomainName=config.ALT1_STORAGE_NAME, size=config.GB)
+        vms.createVm( # tmp_vm_3
+            True, config.VM_NAME4, '', cluster=config.ALT_CLUSTER_NAME,
+            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB)
+        templates.createTemplate( # tmp_template_2
+            True, vm=config.VM_NAME3, name=config.TEMPLATE_NAME3,
+            cluster=config.CLUSTER_NAME_B)
+        templates.createTemplate( # tmp_template_3
+            True, vm=config.VM_NAME4, name=config.TEMPLATE_NAME4,
+            cluster=config.ALT_CLUSTER_NAME)
+
+        mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME1,
+            role.UserRole)
+        mla.addPermissionsForTemplate(True, config.USER_NAME,
+            config.TEMPLATE_NAME2)
+        mla.addClusterPermissionsToUser(True, config.USER_NAME,
+            config.CLUSTER_NAME_B, role.VmCreator)
+        mla.addPermissionsForDataCenter(True, config.USER_NAME,
+            config.DC_NAME_B, role.TemplateCreator)
+        mla.addClusterPermissionsToUser(True, config.USER_NAME,
+            config.ALT_CLUSTER_NAME, role.ClusterAdmin)
 
     # Check BZ 881109 - behaviour could be changed in future.
     @istest
     @tcms(TCMS_PLAN_ID, 174406)
     def complexCombination1_filter_templatesAndVms(self):
-        """ complexCombination1_filter_templatesAndVms """
-        tmp_vm_2 = 'VM_TEMP_2'
-        tmp_vm_3 = 'VM_TEMP_3'
-        tmp_template_2 = 'TEMPLATE_TEMP_2'
-        tmp_template_3 = 'TEMPLATE_TEMP_3'
-
-        loginAsAdmin()
-        common.createTemplate(VM1_NAME, TEMPLATE_NAME)
-        common.createTemplate(VM2_NAME, TEMPLATE2_NAME)
-
-        common.createVm(tmp_vm_2, cluster=CLUSTER_NAME_B,
-                storage=config.ALT1_STORAGE_NAME)
-        common.createVm(tmp_vm_3, cluster=ALT_CLUSTER_NAME,
-                storage=config.MAIN_STORAGE_NAME)
-        common.createTemplate(tmp_vm_2, tmp_template_2)
-        common.createTemplate(tmp_vm_3, tmp_template_3)
-
-        common.givePermissionToVm(VM1_NAME, roles.role.UserRole)
-        common.givePermissionToTemplate(TEMPLATE2_NAME, roles.role.TemplateAdmin)
-        common.givePermissionToCluster(CLUSTER_NAME_B, roles.role.VmCreator)
-        common.givePermissionToDc(DC_NAME_B, roles.role.TemplateCreator)
-        common.givePermissionToCluster(ALT_CLUSTER_NAME, roles.role.ClusterAdmin)
-
+        """ ComplexCombination filter templatesAndVms """
+        # TODO: extend, there could be tested more than this
         loginAsUser()
-        try:
-            # TODO: extend, there could be tested more than this
-            assert common.getObjectByName(API.vms, VM1_NAME) is not None
-            assert common.getObjectByName(API.vms, VM2_NAME) is None
-            assert common.getObjectByName(API.vms, tmp_vm_2) is None
-            assert common.getObjectByName(API.vms, tmp_vm_3) is None
+        vms.VM_API.find(config.VM_NAME1) # MUST SEE
+        self.assertRaises(EntityNotFound, vms.VM_API.find, config.VM_NAME2)
+        self.assertRaises(EntityNotFound, vms.VM_API.find, config.VM_NAME3)
+        self.assertRaises(EntityNotFound, vms.VM_API.find, config.VM_NAME4)
+        LOGGER.info("User can see %s" % config.VM_NAME1)
+        LOGGER.info("User can't see %s, %s, %s" % (config.VM_NAME1,
+                    config.VM_NAME2, config.VM_NAME3))
 
-            assert common.getObjectByName(API.templates, TEMPLATE2_NAME) is None
-            assert common.getObjectByName(API.templates, tmp_template_3) is None
-            assert common.getObjectByName(API.templates, TEMPLATE_NAME)  is None
-            assert common.getObjectByName(API.templates, tmp_template_2) is None
-        except Exception as e:
-            raise e
-        finally:
-            loginAsAdmin()
-            common.removeVm(tmp_vm_2)
-            common.removeVm(tmp_vm_3)
-            common.removeTemplate(TEMPLATE_NAME)
-            common.removeTemplate(TEMPLATE2_NAME)
-            common.removeTemplate(tmp_template_2)
-            common.removeTemplate(tmp_template_3)
-            common.removeAllPermissionFromVm(VM1_NAME)
-            common.removeAllPermissionFromCluster(CLUSTER_NAME_B)
-            common.removeAllPermissionFromCluster(ALT_CLUSTER_NAME)
-            common.removeAllPermissionFromDc(DC_NAME_B)
+        self.assertRaises(EntityNotFound, templates.TEMPLATE_API.find,
+                          config.TEMPLATE_NAME)
+        self.assertRaises(EntityNotFound, templates.TEMPLATE_API.find,
+                          config.TEMPLATE_NAME2)
+        self.assertRaises(EntityNotFound, templates.TEMPLATE_API.find,
+                          config.TEMPLATE_NAME3)
+        self.assertRaises(EntityNotFound, templates.TEMPLATE_API.find,
+                          config.TEMPLATE_NAME4)
+        LOGGER.info("User can't see %s, %s, %s, %s" % (config.TEMPLATE_NAME,
+                    config.TEMPLATE_NAME2, config.TEMPLATE_NAME3,
+                    config.TEMPLATE_NAME4))
 
-def niceList(theList):
-    return ", ".join([l.name for l in theList])
+    @classmethod
+    def tearDownClass(self):
+        loginAsAdmin()
+        vms.removeVm(True, config.VM_NAME1)
+        vms.removeVm(True, config.VM_NAME2)
+        vms.removeVm(True, config.VM_NAME3)
+        vms.removeVm(True, config.VM_NAME4)
+        templates.removeTemplate(True, config.TEMPLATE_NAME)
+        templates.removeTemplate(True, config.TEMPLATE_NAME2)
+        templates.removeTemplate(True, config.TEMPLATE_NAME3)
+        templates.removeTemplate(True, config.TEMPLATE_NAME4)
+        users.removeUser(True, config.USER_NAME)
+        users.addUser(True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
 
-def niceEventList(theList):
-    return '\n[' + ',\n'.join([l.get_description() for l in theList]) + ']'
