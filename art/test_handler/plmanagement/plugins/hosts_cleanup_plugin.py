@@ -153,8 +153,8 @@ def unmountRhevmMounts(hostObj):
     _, out = hostObj.runCmd(['mount'])
     for mountPoint in [x.split()[0] for x in out.splitlines() if 'rhev' in x]:
         logger.info("Unmounting %s", mountPoint)
-        rc, out = hostObj.runCmd(['umount', '-l', mountPoint])
-        if not rc:
+        cmdRc, out = hostObj.runCmd(['umount', '-l', mountPoint])
+        if not cmdRc:
             logger.error("Failed to unmount %s with error: %s", mountPoint,
                          out)
             rc = False
