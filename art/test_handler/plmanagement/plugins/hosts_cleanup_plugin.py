@@ -102,6 +102,15 @@ def restartServices(hostObj):
     '''
     logger.info("Restarting services")
     for service in SERVICES:
+        # iptables issue
+        if service == 'iptables':
+            if not hostObj.runCmd(['[', '-e', '/etc/sysconfig/iptables',
+                                   ']'])[0]:
+                logger.warning("Skipping restart of %s", service)
+                logger.info("Flushing possible 'manually added' rules"
+                            " with '%s -F'", service)
+                hostObj.runCmd(['iptables', '-F'])
+                continue
         logger.info("Restarting %s", service)
         if not hostObj.restartService(service):
             logger.error("Failed to restart %s", service)
