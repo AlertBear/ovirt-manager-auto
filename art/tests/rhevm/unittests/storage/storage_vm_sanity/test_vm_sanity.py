@@ -141,6 +141,7 @@ class TestCase248132(TestCase):
 
     @classmethod
     def setup_class(cls):
+        results = list()
         with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
             for sparse in (True, False):
                 for vol_format in (ENUMS['format_cow'], ENUMS['format_raw']):
@@ -149,8 +150,14 @@ class TestCase248132(TestCase):
                     if (config.DATA_CENTER_TYPE != ENUMS['storage_type_nfs']
                             and sparse and vol_format == ENUMS['format_raw']):
                         continue
-                    executor.submit(
-                        _prepare_data, sparse, vol_format, cls.template_names)
+                    results.append(executor.submit(
+                        _prepare_data, sparse, vol_format, cls.template_names))
+        # TODO: test_utils.raise_if_exception(results) after gerrit 8896
+        # is  merged
+        for result in results:
+            if result.exception():
+                LOGGER.error(result.exception())
+                raise result.exception()
 
     def setUp(self):
         self.vm_names = []
