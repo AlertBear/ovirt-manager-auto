@@ -24,6 +24,7 @@ Configuration Options:
     | **test_run_name_template** - test run template name, for an example:
     |       "Auto Run for {0} TestPlan"
     | **category** - test category name (should be compatible with TCMS category)
+    | **build_id** - build id
 
 Usage
 -----
@@ -75,6 +76,7 @@ TCMS_DEC = 'tcms'
 TCMS_TEST_CASE = 'tcms_test_case'
 TCMS_PLAN_ID = 'tcms_plan_id'
 REPORT_BZ = 'report_bz'  # currently disabled due to problems in nitrate api
+BUILD_ID = 'build_id'
 
 logger = get_logger('tcms_agent')
 
@@ -111,6 +113,7 @@ class TCMS(Component):
         self.results = {}
         self.tcms_plans = []
         self.__register_functions()
+        self.build_id = None
 
     @classmethod
     def add_options(cls, parser):
@@ -147,6 +150,7 @@ class TCMS(Component):
         self.generate_links = params.tcms_gen_links or \
             tcms_cfg.as_bool(GENERATE_LINKS)
         self.report_bz = tcms_cfg.as_bool(REPORT_BZ)
+        self.build_id = tcms_cfg[BUILD_ID]
 
         from art.test_handler.test_runner import TestGroup
         TestGroup.add_elm_attribute('TEST_TCMS_CASE_ID', TCMS_TEST_CASE)
@@ -209,7 +213,7 @@ class TCMS(Component):
     def __upload_plan(self, plan, cases):
         self.agent.init(test_type='Functionality',
                         test_name='REST_API',
-                        build_name='unspecified',
+                        build_name=self.build_id,
                         product_name='RHEVM',
                         product_version=self.version,
                         header_names=HEADERS,
@@ -265,7 +269,7 @@ class TCMS(Component):
                                 'plmanagement.plugins.customNitrate']
 
     def config_spec(self, spec, val_funcs):
-        section_spec = spec.get(TCMS_OPTION, {})
+        section_spec = spec.setdefault(TCMS_OPTION, {})
         section_spec[ENABLED] = 'boolean(default=%s)' % DEFAULT_STATE
         section_spec[USER] = "string(default=None)"
         section_spec[KEYTAB_LOCATION] = "string(default=None)"
@@ -277,4 +281,4 @@ class TCMS(Component):
             "string(default='Auto TestRun for {0} TestPlan')"
         section_spec[GENERATE_LINKS] = "boolean(default=false)"
         section_spec[TCMS_SITE] = "string(default='%s')" % TCMS_URL
-        spec[TCMS_OPTION] = section_spec
+        section_spec[BUILD_ID] = "string(default='unspecified')"
