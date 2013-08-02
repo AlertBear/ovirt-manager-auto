@@ -126,11 +126,7 @@ def getNetworkConfig(positive, cluster, network, datacenter=None, tag=None):
 @is_action()
 def validateNetwork(positive, cluster, network, tag, val):
     status, output = getNetworkConfig(positive, cluster, network, tag=tag)
-    if not status:
-        return False
-    if str(output['value']).lower() != str(val).lower():
-        return False
-    return True
+    return bool(status and str(output['value']).lower() == str(val).lower())
 
 
 @is_action()
@@ -207,8 +203,8 @@ def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
                 return False
         # creating logical interface nic.vlan when host, vlan_id are provided
         if 'vlan_id' in net_param and host:
-                net_param['nic'] = ("%s.%s") % (net_param['nic'],
-                                                net_param['vlan_id'])
+                net_param['nic'] = "%s.%s" % (net_param['nic'],
+                                              net_param['vlan_id'])
 
     for host in host_list:
         net_obj = []
@@ -384,9 +380,9 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
     if template_flag:
         try:
             rc, out = getVmMacAddress(True, vm=vmName, nic='nic1')
-            mac_addr = out['macAddress']
+            mac_addr = out['macAddress'] if rc else None
             rc, out = convertMacToIpAddress(True, mac_addr)
-            ip_addr = out['ip']
+            ip_addr = out['ip'] if rc else None
             setPersistentNetwork(host=ip_addr, password=vm_password)
             stopVm(True, vm=vmName)
             createTemplate(True, vm=vmName, cluster=cluster,
@@ -417,22 +413,20 @@ def createDummyInterface(host, username, password, num_dummy=1):
 
     host_obj = machine.Machine(host, username, password).util(machine.LINUX)
 
-    dummy_list = ["numdummies=" + str(num_dummy)]
-    create_dummy_interface = ["modprobe", "dummy"]
-    create_dummy_interface.extend(dummy_list)
-    rc, out = host_obj.runCmd(create_dummy_interface)
+    dummy_list = ['modprobe', 'dummy', 'numdummies=' + str(num_dummy)]
+    rc, out = host_obj.runCmd(dummy_list)
     if not rc:
         logger.error("Create dummy interfaces failed. ERR: %s", out)
         return False
 
-    rc, out = host_obj.runCmd(["sed", "-i", "'$afake_nics=dummy*'",
+    rc, out = host_obj.runCmd(["/bin/sed", "-i", "'$afake_nics=dummy*'",
                                VDSM_CONF_FILE])
     if not rc:
         logger.error("Add dummy support to VDSM conf file failed. ERR: %s",
                      out)
         return False
 
-    for n in range(0, num_dummy):
+    for n in range(num_dummy):
         ifcfg_file_name = "dummy%s" % n
         if not host_obj.addNicConfFile(nic=ifcfg_file_name):
             return False
@@ -455,19 +449,19 @@ def deleteDummyInterface(host, username, password):
     '''
     host_obj = machine.Machine(host, username, password).util(machine.LINUX)
 
-    rc, out = host_obj.runCmd(["sed", "-i", "'/^fake_nics/d'",
+    rc, out = host_obj.runCmd(["/bin/sed", "-i", "'/^fake_nics/d'",
                                VDSM_CONF_FILE])
     if not rc:
         logger.error("Clean VDSM conf file failed. ERR: %s", out)
         return False
 
-    unload_dummy = ["modprobe", "-r", "dummy"]
+    unload_dummy = ["/sbin/modprobe", "-r", "dummy"]
     rc, out = host_obj.runCmd(unload_dummy)
     if not rc:
         logger.error("Unload dummy driver failed. ERR: %s", out)
         return False
 
-    delete_dummy_ifcfg = ["rm", "-f"]
+    delete_dummy_ifcfg = ["/bin/rm", "-f"]
     path = os.path.join(IFCFG_FILE_PATH, "ifcfg-dummy*")
     delete_dummy_ifcfg.append(path)
     rc, out = host_obj.runCmd(delete_dummy_ifcfg)

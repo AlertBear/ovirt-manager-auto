@@ -50,18 +50,11 @@ def _prepareNetworkObject(**kwargs):
         dc = kwargs.get('data_center')
         net.set_data_center(DC_API.find(dc))
 
-    address = kwargs.get('address')
-    netmask = kwargs.get('netmask')
-    gateway = kwargs.get('gateway')
-    if (address or netmask or gateway) is not None:
-        ip = {}
-        if address is not None:
-            ip['address'] = address
-        if netmask is not None:
-            ip['netmask'] = netmask
-        if gateway is not None:
-            ip['gateway'] = gateway
-        net.set_ip(data_st.IP(**ip))
+    ip = {}
+    for k in ['address', 'netmask', 'gateway']:
+        if k in kwargs:
+            ip[k] = kwargs.get(k)
+    ip and net.set_ip(data_st.IP(**ip))
 
     if 'vlan_id' in kwargs:
         net.set_vlan(data_st.VLAN(id=kwargs.get('vlan_id')))
@@ -93,7 +86,7 @@ def addNetwork(positive, **kwargs):
        * gateway - network ip gateway
        * stp - support stp true/false (note: true/false as a strings)
        * vlan_id - network vlan id
-       * usages - a string contain list of usages separated by commas 'VM,DIPLAY'.
+       * usages - a string contain list of comma-separated usages 'VM,DIPLAY'.
        * mtu - and integer to overrule mtu on the related host nic..
     Return: status (True if network was added properly, False otherwise)
     '''
@@ -117,9 +110,9 @@ def updateNetwork(positive, network, **kwargs):
        * netmask - network ip netmask
        * gateway - network ip gateway
        * description - new network description (if relevant)
-       * stp - new network support stp (if relevant). (note: true/false as a strings)
+       * stp - new network support stp (if relevant). (true/false string)
        * vlan_id - new network vlan id (if relevant)
-       * usages - a string contain list of usages separated by commas 'VM,DIPLAY'.
+       * usages - a string contain list of comma-separated usages 'VM,DIPLAY'.
                     should contain all usages every update.
                     a missing usage will be deleted!
        * mtu - and integer to overrule mtu on the related host nic..
@@ -166,7 +159,7 @@ def findNetwork(network, data_center=None):
         nets = NET_API.get(absLink=False)
         for net in nets:
             if net.get_data_center().get_id() == dc_obj.get_id() and \
-            net.get_name().lower() == network.lower():
+                    net.get_name().lower() == network.lower():
                 return net
         raise EntityNotFound('%s network does not exists!' % network)
     else:
@@ -196,13 +189,19 @@ def _prepareClusterNetworkObj(**kwargs):
 def getClusterNetwork(cluster, network):
 
     clusterObj = CL_API.find(cluster)
-    return CL_API.getElemFromElemColl(clusterObj, network, 'networks', 'network')
+    return CL_API.getElemFromElemColl(clusterObj,
+                                      network,
+                                      'networks',
+                                      'network')
 
 
 def getClusterNetworks(cluster):
 
     clusterObj = CL_API.find(cluster)
-    return CL_API.getElemFromLink(clusterObj, link_name='networks', attr='network', get_href=True)
+    return CL_API.getElemFromLink(clusterObj,
+                                  link_name='networks',
+                                  attr='network',
+                                  get_href=True)
 
 
 def findNetworkByCluster(network, cluster):
@@ -222,7 +221,7 @@ def findNetworkByCluster(network, cluster):
 
     for net in nets:
         if cluster_dc_id == net.get_data_center().get_id() and \
-        network == net.get_name():
+                network == net.get_name():
             return net
     raise EntityNotFound('%s network does not exists!' % network)
 
@@ -246,8 +245,9 @@ def addNetworkToCluster(positive, network, cluster, **kwargs):
     kwargs.update(net=findNetworkByCluster(network, cluster))
     net = _prepareClusterNetworkObj(**kwargs)
     cluster_nets = getClusterNetworks(cluster)
-    res, status = NET_API.create(net, positive,
-                                     collection=cluster_nets)
+    res, status = NET_API.create(net,
+                                 positive,
+                                 collection=cluster_nets)
 
     return status
 
@@ -339,7 +339,10 @@ def addNetworksVlans(positive, prefix, vlans, data_center):
     for vlan in vlans.split(','):
         nics.append(prefix + str(vlan))
         net_name = prefix + str(vlan)
-        if not addNetwork(positive, name=net_name, data_center=data_center, vlan_id=vlan):
+        if not addNetwork(positive,
+                          name=net_name,
+                          data_center=data_center,
+                          vlan_id=vlan):
             return False, {'nets': None}
     return True, {'nets': nics}
 
