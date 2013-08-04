@@ -92,15 +92,11 @@ def check_vm_migration(vm_names, orig_host, vm_user, host_password,
         **Returns**: True if vm migration succeeded, otherwise False
     '''
 
+    # Anyone using this function should take care of checking that all the VMs
+    # are located on the same physical host before the test
+
     #support vm_names parameter received as list or string
     vm_names = [vm_names] if isinstance(vm_names, basestring) else vm_names
-
-    # checks location of VMs on original host for both cases
-    for vm in vm_names:
-        rc, out = vms.getVmHost(vm)
-        if out['vmHoster'] != orig_host:
-            LOGGER.error("VM %s is not located on %s", vm, orig_host)
-            return False
 
     # causes VM migration by turning down NIC with required network
     if nic:
