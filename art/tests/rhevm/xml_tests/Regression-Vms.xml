@@ -81,6 +81,7 @@
     <parameters>name='DataDomainRest', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <vital>TRUE</vital>
   </test_case>
   <test_case>
     <id>cb8b7c88-c695-11e1-bca8-f0def10e0ce8</id>
@@ -89,6 +90,7 @@
     <parameters>datacenter='DefaultRest', storagedomain='DataDomainRest'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <vital>TRUE</vital>
   </test_case>
   <test_case>
     <id>cb8b7e68-c695-11e1-bca8-f0def10e0ce8</id>
@@ -97,6 +99,7 @@
     <parameters>name='ExportDomainRest', type='e{storage_dom_type_export}', storage_type='e{storage_type_nfs}', address='{export_domain_address}', host='{vds[0]}', path='{export_domain_path}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <vital>TRUE</vital>
   </test_case>
   <test_case>
     <id>cb8b8052-c695-11e1-bca8-f0def10e0ce8</id>
@@ -105,6 +108,7 @@
     <parameters>datacenter='DefaultRest', storagedomain='ExportDomainRest'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
+    <vital>TRUE</vital>
   </test_case>
   <test_case>
     <id>cb8b82aa-c695-11e1-bca8-f0def10e0ce8</id>
@@ -206,7 +210,16 @@
     <run>yes</run>
     <conf>headers={'Correlation-Id': 403}</conf>
     <exp_events>2</exp_events>
-  </test_case>
+ </test_case>
+ <test_case>
+        <test_name>Wait for disks status</test_name>
+        <test_action>waitForDisksStat</test_action>
+        <parameters>vm='restvm0'</parameters>
+        <positive>NONE</positive>
+        <run>YES</run>
+     </test_case>
+
+
   <test_case>
     <id>cb8b95ba-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Start VM to test negative migrations</test_name>
@@ -762,7 +775,17 @@
     <run>yes</run>
     <conf>headers={'Correlation-Id': 444}</conf>
     <exp_events>2</exp_events>
-  </test_case>
+ </test_case>
+
+ <test_case>
+        <test_name>Wait for disks status</test_name>
+        <test_action>waitForDisksStat</test_action>
+        <parameters>vm='restvm_domain'</parameters>
+        <positive>NONE</positive>
+        <run>YES</run>
+     </test_case>
+
+
   <test_case>
     <id>cb8c0f0e-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Create VM to test adding multiple disks</test_name>
@@ -830,7 +853,17 @@
     <run>yes</run>
     <conf>headers={'Correlation-Id': 450}</conf>
     <exp_events>2</exp_events>
-  </test_case>
+ </test_case>
+
+ <test_case>
+        <test_name>Wait for disks status</test_name>
+        <test_action>waitForDisksStat</test_action>
+        <parameters>vm='restvm_multiple_disks'</parameters>
+        <positive>NONE</positive>
+        <run>YES</run>
+     </test_case>
+
+
   <test_case>
     <id>cb8c208e-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Remove multiple disks from VM</test_name>
@@ -860,7 +893,17 @@
     <run>yes</run>
     <conf>headers={'Correlation-Id': 452}</conf>
     <exp_events>2</exp_events>
-  </test_case>
+ </test_case>
+
+ <test_case>
+        <test_name>Wait for disks status</test_name>
+        <test_action>waitForDisksStat</test_action>
+        <parameters>vm='restvm_snapshots'</parameters>
+        <positive>NONE</positive>
+        <run>YES</run>
+     </test_case>
+
+
   <test_case>
     <id>cb8c2674-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Create VM snapshot1</test_name>
@@ -1115,7 +1158,16 @@
     <parameters>vm='restvm_basic_operations', name='notempl'</parameters>
     <positive>FALSE</positive>
     <run>yes</run>
-  </test_case>
+ </test_case>
+
+<test_case>
+    <test_name>Sleep to give time for template creation!</test_name>
+    <test_action>sleep</test_action>
+    <parameters>seconds=60</parameters>
+    <positive>NONE</positive>
+    <run>yes</run>
+</test_case>
+
   <test_case>
     <id>cb8c5e64-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Set first host to maintenance so that active objects are migrated to second host</test_name>
@@ -1269,7 +1321,19 @@
     <run>yes</run>
     <conf>headers={'Correlation-Id': 472}</conf>
     <exp_events>2</exp_events>
-  </test_case>
+ </test_case>
+
+
+
+ <test_case>
+        <test_name>Wait for disks status</test_name>
+        <test_action>waitForDisksStat</test_action>
+        <parameters>vm='restvm_export'</parameters>
+        <positive>NONE</positive>
+        <run>YES</run>
+     </test_case>
+
+
   <test_case>
     <id>cb8c6e22-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Export VM</test_name>
@@ -1535,7 +1599,18 @@
     <run>yes</run>
     <conf>headers={'Correlation-Id': 489}</conf>
     <exp_events>2</exp_events>
-  </test_case>
+ </test_case>
+
+ <test_case>
+        <test_name>Wait for disks status</test_name>
+        <test_action>waitForDisksStat</test_action>
+        <parameters>vm='restvm_run_once'</parameters>
+        <positive>NONE</positive>
+        <run>YES</run>
+     </test_case>
+
+
+
   <test_case>
     <id>cb8ca4be-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Run VM once with boot from cdrom</test_name>
@@ -1734,7 +1809,15 @@
     <parameters>names='restvm_migration',timeout=180, sleep=1</parameters>
     <positive>TRUE</positive>
     <run>If(1&lt;len('[vds]'.split(',')))</run>
-  </test_case>
+ </test_case>
+<test_case>
+    <test_name>Wait until VM is in status up</test_name>
+    <test_action>waitForVMState</test_action>
+    <parameters>vm='restvm_migration', state='e{vm_state_up}'</parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+
   <test_case>
     <id>cb8cc7be-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Migrate diskless VM to second host</test_name>
@@ -1742,6 +1825,7 @@
     <parameters>vm='restvm_migration', host='{vds[1]}'</parameters>
     <positive>TRUE</positive>
     <run>If(1&lt;len('[vds]'.split(',')))</run>
+    <!--  <run>no</run> -->
     <bz>756044</bz>
     <conf>headers={'Correlation-Id': 501}</conf>
   </test_case>
@@ -1753,7 +1837,15 @@
     <positive>TRUE</positive>
     <run>If(1&lt;len('[vds]'.split(',')))</run>
     <conf>headers={'Correlation-Id': 502}</conf>
-  </test_case>
+ </test_case>
+<test_case>
+    <test_name>Wait until VM is stopped</test_name>
+    <test_action>waitForVMState</test_action>
+    <parameters>vm='restvm_migration', state='e{vm_state_down}'</parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+
   <test_case>
     <id>cb8cd34e-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Add raw ide system disk to VM not preallocated</test_name>
@@ -1763,7 +1855,17 @@
     <run>if(1&lt;len('[vds]'.split(',')))</run>
     <conf>headers={'Correlation-Id': 503}</conf>
     <exp_events>2</exp_events>
-  </test_case>
+ </test_case>
+
+ <test_case>
+        <test_name>Wait for disks status</test_name>
+        <test_action>waitForDisksStat</test_action>
+        <parameters>vm='restvm_migration'</parameters>
+        <positive>NONE</positive>
+        <run>YES</run>
+     </test_case>
+
+
   <test_case>
     <id>cb8cd538-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Start migration VM</test_name>
@@ -1814,7 +1916,17 @@
     <run>yes</run>
     <conf>headers={'Correlation-Id': 508}</conf>
     <exp_events>2</exp_events>
-  </test_case>
+ </test_case>
+
+ <test_case>
+        <test_name>Wait for disks status</test_name>
+        <test_action>waitForDisksStat</test_action>
+        <parameters>vm='restvm_templates'</parameters>
+        <positive>NONE</positive>
+        <run>YES</run>
+     </test_case>
+
+
   <test_case>
     <id>cb8ce6b8-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Create template with default parameters</test_name>
