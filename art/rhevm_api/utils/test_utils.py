@@ -1688,9 +1688,8 @@ def checkTraffic(machine, user, password, nic, src, dst, **kwargs):
                        be numeric like 'srcPort'
         *  *protocol* - protocol by which traffic will be received
         *  *numPackets* - number of packets to be received (10 by default)
-    **Return**: Returns true if traffic according to the parameters was
-                received, false otherwise (or the opposite if the test is
-                negative).
+    **Return**: Returns True if traffic according to the parameters was
+                received, False otherwise.
     '''
     rc, tcpDumpOutput = runTcpDumpCmd(machine, user, password, nic,
                                       src=src, dst=dst, **kwargs)
@@ -1715,8 +1714,8 @@ def checkTraffic(machine, user, password, nic, src, dst, **kwargs):
                         'line: ' + line)
             return True
 
-    logger.info('The traffic that was searched for was not found in tcpdump '
-                'output')
+    logger.warning('The traffic that was searched for was not found in tcpdump'
+                   ' output')
     return False
 
 
