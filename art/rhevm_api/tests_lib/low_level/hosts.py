@@ -1502,6 +1502,7 @@ def checkHostsForSPM(positive, hosts, expected_spm_host):
     for host in hosts.split(','):
         if checkHostSpmStatus(bool(True), host):
             return (host == expected_spm_host) == positive
+    return not positive
 
 
 @is_action()
