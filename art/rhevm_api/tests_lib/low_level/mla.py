@@ -50,6 +50,8 @@ poolUtil = get_api('vmpool', 'vmpools')
 domUtil = get_api('domain', 'domains')
 groupUtil = get_api('group', 'groups')
 permisUtil = get_api('permission', 'permissions')
+diskUtil = get_api('disk', 'disks')
+
 try:
     versionCaps = permitUtil.get(absLink=False)
     if isinstance(versionCaps, list):
@@ -351,6 +353,21 @@ def addPermissionsForNetwork(positive, user, network, data_center, role="Network
 
 
 @is_action()
+def addPermissionsForDisk(positive, user, disk, role="DiskOperator"):
+    '''
+    Description: add disk permissios to user
+    Author: omachace
+    Parameters:
+       * user - name of user
+       * disk - name(alias) of disk
+       * role - role to add
+    Return: status (True if permission was added properly, False otherwise)
+    '''
+    diskObj = diskUtil.find(disk)
+    return addUserPermitsForObj(positive, user, role, diskObj)
+
+
+@is_action()
 def addPermissionsForTemplate(positive, user, template, role="TemplateAdmin"):
     '''
     Description: add template permissios to user
@@ -449,6 +466,29 @@ def addVmPoolPermissionToUser(positive, user, vmpool, role, domain=None):
 
     poolObj = poolUtil.find(vmpool)
     return addPermitsToUser(positive, user, domain, role, poolObj, 'vmpool')
+
+
+def removeUserRoleFromObject(positive, obj, user_name, role_name):
+    '''
+    Description: remove user's role from object
+    Parameters:
+      * obj - object where permissions should be removed
+      * user_names - user name
+      * role_name - role which should be removed
+    '''
+    status = True
+    role_id = util.find(role_name).get_id()
+    permits = permisUtil.getElemFromLink(obj, get_href=False)
+    user_id = userUtil.find(user_name, attribute='user_name').get_id()
+
+    for perm in permits:
+        print perm.get_role().get_id()
+        if perm.get_user().get_id() == user_id and \
+                perm.get_role().get_id() == role_id and \
+                not permisUtil.delete(perm, positive):
+                    status = False
+
+    return status
 
 
 def removeUsersPermissionsFromObject(positive, obj, user_names):
@@ -609,6 +649,34 @@ def removeUserPermissionsFromTemplate(positive, template, user_name):
     Return: status (True if permissions was removed, False otherwise)
     '''
     return removeUsersPermissionsFromTemplate(positive, template, [user_name])
+
+
+@is_action()
+def removeUserPermissionsFromDisk(positive, disk, user_name):
+    '''
+    Description: remove all permissions on disk of specified user
+    Author: omachace
+    Parameters:
+       * disk - disk where permissions should be removed
+       * user_name - user name
+    Return: status (True if permissions was removed, False otherwise)
+    '''
+    diskObj = diskUtil.find(disk)
+    return removeUsersPermissionsFromObject(positive, diskObj, [user_name])
+
+
+@is_action()
+def removeUserRoleFromDataCenter(positive, datacenter, user_name, role_name):
+    '''
+    Description: remove specific user's role from datacenter
+    Parameters:
+      * datacenter - datacenter where user's role should be removed
+      * user_name - user name
+      * role_name - name of role to be removed
+    Return: status (True if permissions was removed, False otherwise)
+    '''
+    dcObj = dcUtil.find(datacenter)
+    return removeUserRoleFromObject(positive, dcObj, user_name, role_name)
 
 
 @is_action()

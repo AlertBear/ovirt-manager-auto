@@ -19,11 +19,9 @@
 
 from art.core_api.apis_utils import getDS
 from art.rhevm_api.utils.test_utils import get_api
-import re
 from art.core_api.validator import compareCollectionSize
 from vms import detachVm, startVm, stopVm, removeVms
 import time
-import re
 from utilities.jobs import Job, JobsSet
 from art.rhevm_api.utils.test_utils import searchForObj
 from art.core_api import is_action
@@ -89,7 +87,7 @@ def addVmPool(positive, **kwargs):
     pool, status = util.create(pool, positive)
 
     if not pool:
-        return positive == False
+        return positive is False
 
     time.sleep(int(size)*3)
 
@@ -251,7 +249,7 @@ def removeVmPool(positive, vmpool):
     '''
 
     pool = util.find(vmpool)
-    status = util.delete(pool,positive)
+    status = util.delete(pool, positive)
 
     return status
 
@@ -270,3 +268,14 @@ def searchForVmPool(positive, query_key, query_val, key_name, **kwargs):
 
     return searchForObj(util, query_key, query_val, key_name, **kwargs)
 
+
+def allocateVmFromPool(positive, vmpool):
+    '''
+    Description: Allocate vm from pool
+    Parameters:
+      * vmpool - name of pool, where vm should be allocated
+    Returns: True if operation was successful, false otherwise.
+    '''
+    pool = util.find(vmpool)
+
+    return util.syncAction(pool, 'allocatevm', positive)

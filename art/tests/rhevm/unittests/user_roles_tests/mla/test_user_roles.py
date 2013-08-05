@@ -125,6 +125,7 @@ class RoleCase54401(TestCase):
 
     @tcms(TCMS_PLAN_ID, 54401)
     @istest
+    @bz(990985)
     def editRole(self):
         """ Try to update role and check if role is updated correctly """
         mla.addRole(True, name=config.USER_ROLE, permits='login')
@@ -160,9 +161,11 @@ class RoleCase54401(TestCase):
             config.USER_NAME, config.USER_DOMAIN, config.USER_PASSWORD,
             filter='true')
         self.assertTrue(vms.startVm(True, config.VM_NAME))
+        self.assertTrue(vms.stopVm(True, config.VM_NAME))
         users.loginAsUser(
             config.USER_NAME3, config.USER_DOMAIN, config.USER_PASSWORD,
             filter='true')
+        self.assertTrue(vms.startVm(True, config.VM_NAME))
         self.assertTrue(vms.stopVm(True, config.VM_NAME))
 
     @classmethod

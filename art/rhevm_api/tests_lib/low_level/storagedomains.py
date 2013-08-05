@@ -391,7 +391,8 @@ def teardownStorageDomain(positive, storagedomain, host):
 
 
 @is_action()
-def removeStorageDomain(positive, storagedomain, host, format='false'):
+def removeStorageDomain(positive, storagedomain, host, format='false',
+                        destroy=False):
     '''
     Description: remove storage domain
     Author: edolinin
@@ -409,6 +410,8 @@ def removeStorageDomain(positive, storagedomain, host, format='false'):
     stHost = Host(id=hostObj.get_id())
 
     st = StorageDomain(host=stHost)
+    if destroy:
+        st.set_destroy(True)
 
     # Format domain if explicitly asked or
     # in case of data domain during a positive flow
