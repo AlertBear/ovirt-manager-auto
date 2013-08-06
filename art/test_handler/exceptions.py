@@ -1,3 +1,5 @@
+import sys
+import traceback
 
 class VitalTestFailed(Exception):
     '''
@@ -103,3 +105,10 @@ class NetworkException(RHEVMEntityException):
 
 class JobsException(RHEVMEntityException):
     pass
+
+
+def formatExcInfo():
+    ei = sys.exc_info()
+    einfo = traceback.format_exception(*ei)
+    einfo.insert(0, einfo[-1])
+    return ''.join(einfo)

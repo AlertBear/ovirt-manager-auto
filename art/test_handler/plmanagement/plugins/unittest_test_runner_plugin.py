@@ -28,7 +28,6 @@ should look like.
 import re
 import sys
 from functools import wraps
-import traceback
 
 from art.test_handler.plmanagement import Component, implements, get_logger
 from art.test_handler.plmanagement.interfaces.application import ITestParser,\
@@ -40,7 +39,7 @@ from art.test_handler.plmanagement.interfaces.tests_listener \
     import ITestGroupHandler
 from art.test_handler.test_runner import TestCase, TestSuite, TestGroup,\
     TestResult, TEST_CASES_SEPARATOR
-from art.test_handler.exceptions import SkipTest
+from art.test_handler.exceptions import SkipTest, formatExcInfo
 from art.test_handler import find_test_file
 
 logger = get_logger("unittest_loader")
@@ -92,13 +91,6 @@ def isvital4group(f):
         self.vital4group = True
         return f(self, *args, **kwargs)
     return wrapper
-
-
-def formatExcInfo():
-    ei = sys.exc_info()
-    einfo = traceback.format_exception(*ei)
-    einfo.insert(0, einfo[-1])
-    return ''.join(einfo)
 
 
 class UTestCase(TestCase):

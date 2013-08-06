@@ -487,17 +487,16 @@ class MatrixTestCase(TestCase):
         except self.expected_exc as ex:
             logger.info("Handled expected exception: %s", ex)
             self.status = self.TEST_STATUS_PASSED
-        except NO_TB_EXCEPTIONS as ex:
+        except NO_TB_EXCEPTIONS:
             self.status = self.TEST_STATUS_FAILED
-            self.exc = ex
+            self.exc = errors.formatExcInfo()
         except SocketError, errors.SkipTest:
             raise
         except EngineTypeError as ex:
             raise errors.SkipTest(str(ex))
-        except Exception as ex:
+        except Exception:
             self.status = self.TEST_STATUS_ERROR
-            self.exc = ex
-            logger.error("Test Case exception info", exc_info=True)
+            self.exc = errors.formatExcInfo()
         else:
             if self.expected_exc:
                 self.status = self.TEST_STATUS_FAILED
@@ -512,7 +511,7 @@ class MatrixTestCase(TestCase):
 
         if not res[0]:
             self.status = self.TEST_STATUS_FAILED
-            self.exc = Exception("Test returned False")
+            self.exc = Exception("There is no Exception.Test returned False.")
 
         if self.fetch_output:
             for fetch in self.fetch_output.split(','):
