@@ -9,6 +9,7 @@
    <parameters/>
    <positive>none</positive>
    <run>if(len('[vds]'.split(','))&gt;1)</run>
+   <tcms_test_case>174611</tcms_test_case>
    <report/>
 </test_case>
 <test_case>
