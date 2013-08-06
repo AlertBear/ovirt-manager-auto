@@ -505,6 +505,9 @@ class MatrixTestCase(TestCase):
                 self.exc = Exception(msg)
 
         if res is None:
+            if self.positive is not None:
+                raise Exception("Test case with positive defined has to "
+                                "return True/False, but got None")
             return
         if not isinstance(res, tuple):
             res = (res, {})
