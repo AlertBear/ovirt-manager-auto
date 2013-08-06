@@ -4,9 +4,9 @@ Storage domain upgrade
 from concurrent.futures import ThreadPoolExecutor
 import logging
 
-import art.rhevm_api.tests_lib.low_level.clusters       as llclusters
-import art.rhevm_api.tests_lib.low_level.datacenters    as lldatacenters
-import art.rhevm_api.tests_lib.low_level.hosts          as llhosts
+import art.rhevm_api.tests_lib.low_level.clusters as llclusters
+import art.rhevm_api.tests_lib.low_level.datacenters as lldatacenters
+import art.rhevm_api.tests_lib.low_level.hosts as llhosts
 import art.rhevm_api.tests_lib.low_level.storagedomains as llstoragedomains
 from art.rhevm_api.utils.test_utils import get_api
 from art.test_handler import exceptions
@@ -24,12 +24,12 @@ def setup_package():
     """
     import config
     LOGGER.info("Running package setup")
-    assert lldatacenters.addDataCenter(True, name='temp_dc',
-                                storage_type=config.ENUMS['storage_type_nfs'],
-                                version='3.2')
-    assert llclusters.addCluster(True, name=config.TMP_CLUSTER_NAME,
-                                 cpu=config.PARAMETERS['cpu_name'],
-                                 data_center='temp_dc', version='3.2')
+    assert lldatacenters.addDataCenter(
+        True, name='temp_dc', storage_type=config.ENUMS['storage_type_nfs'],
+        version='3.2')
+    assert llclusters.addCluster(
+        True, name=config.TMP_CLUSTER_NAME, cpu=config.PARAMETERS['cpu_name'],
+        data_center='temp_dc', version='3.2')
     host_install_results = list()
     with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
         for host, pwd in zip(config.PARAMETERS.as_list('vds'),
@@ -44,8 +44,9 @@ def setup_package():
         if result.exception():
             raise result.exception()
         if not result.result():
-            raise exceptions.HostException("Failed to install host %s" %
-                                    config.PARAMETERS.as_list('vds')[index])
+            raise exceptions.HostException(
+                "Failed to install host %s" %
+                config.PARAMETERS.as_list('vds')[index])
     LOGGER.info("Package setup finished")
 
 
