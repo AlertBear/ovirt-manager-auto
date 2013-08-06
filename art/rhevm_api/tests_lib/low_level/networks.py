@@ -21,12 +21,18 @@ from art.core_api.apis_utils import data_st
 from art.rhevm_api.utils.test_utils import get_api
 from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api import is_action
+from utilities.machine import Machine, LINUX
+import logging
+
+import re
 
 ELEMENT = 'network'
 COLLECTION = 'networks'
 NET_API = get_api(ELEMENT, COLLECTION)
 DC_API = get_api('data_center', 'datacenters')
 CL_API = get_api('cluster', 'clusters')
+
+logger = logging.getLogger('networks')
 
 
 def _prepareNetworkObject(**kwargs):
@@ -375,3 +381,24 @@ def isVMNetwork(network, cluster):
     net_obj = getClusterNetwork(cluster, network)
     usages = net_obj.get_usages()
     return 'vm' in usages.usage
+
+
+def checkIPRule(host, user, password, subnet):
+    '''
+    Check occurence of specific ip in 'ip rule' command output
+    Author: gcheresh
+    Parameters:
+        *  *host* - remote machine ip address or fqdn
+        *  *user* - root user on the machine
+        *  *password* - password for the root user
+        *  *subnet* - subnet to search for
+    return True/False
+    '''
+    machine = Machine(host, user, password).util(LINUX)
+    cmd = ["ip", "rule"]
+    rc, out = machine.runCmd(cmd)
+    logger.info("The output of ip rule command is:\n %s", out)
+    if not rc:
+        logger.error("Failed to run ip rule command")
+        return False
+    return len(re.findall(subnet.replace('.', '[.]'), out)) == 2
