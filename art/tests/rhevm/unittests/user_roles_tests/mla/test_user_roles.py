@@ -2,7 +2,7 @@
 
 __test__ = True
 
-from user_roles_tests import config, common
+from user_roles_tests import config
 from user_roles_tests.roles import role
 from nose.tools import istest
 from unittest import TestCase
@@ -31,7 +31,7 @@ def setUpModule():
         True, config.VM_NO_DISK, '', cluster=config.MAIN_CLUSTER_NAME)
     vms.createVm(
         True, config.VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
-        storageDomainName=config.MAIN_STORAGE_NAME, size=common.GB)
+        storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB)
     templates.createTemplate(
         True, vm=config.VM_NAME, name=config.TEMPLATE_NAME,
         cluster=config.MAIN_CLUSTER_NAME)
@@ -44,7 +44,7 @@ def setUpModule():
     vms.waitForVMState('%s-%s' % (config.VMPOOL_NAME, 1), state='down')
     disks.addDisk(
         True, alias=config.DISK_NAME, interface='virtio', format='cow',
-        provisioned_size=common.GB, storagedomain=config.MAIN_STORAGE_NAME)
+        provisioned_size=config.GB, storagedomain=config.MAIN_STORAGE_NAME)
     disks.waitForDisksState(config.DISK_NAME)
 
 

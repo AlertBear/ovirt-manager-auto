@@ -519,7 +519,6 @@ def removeUserRoleFromObject(positive, obj, user_name, role_name):
     user_id = userUtil.find(user_name, attribute='user_name').get_id()
 
     for perm in permits:
-        print perm.get_role().get_id()
         if perm.get_user().get_id() == user_id and \
                 perm.get_role().get_id() == role_id and \
                 not permisUtil.delete(perm, positive):
@@ -774,6 +773,20 @@ def removeUserPermissionsFromSD(positive, storage_domain, user_name):
     Return: status (True if permissions was removed, False otherwise)
     '''
     return removeUsersPermissionsFromSD(positive, storage_domain, [user_name])
+
+
+@is_action()
+def removeUserRoleFromVm(positive, vm, user_name, role_name):
+    '''
+    Description: remove specific user's role from vm
+    Parameters:
+      * vm - vm where user's role should be removed
+      * user_name - user name
+      * role_name - name of role to be removed
+    Return: status (True if permissions was removed, False otherwise)
+    '''
+    vmObj = vmUtil.find(vm)
+    return removeUserRoleFromObject(positive, vmObj, user_name, role_name)
 
 
 @is_action()

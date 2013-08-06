@@ -20,12 +20,14 @@
 import os
 import logging
 import time
+import art.test_handler.exceptions as errors
 
 from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api.apis_utils import getDS, data_st
 from art.rhevm_api.utils.test_utils import get_api, split, waitUntilGone
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from art.rhevm_api.tests_lib.low_level.networks import getClusterNetwork
+from art.rhevm_api.tests_lib.low_level.vms import DiskNotFound
 from art.test_handler.settings import opts
 from utilities.jobs import Job, JobsSet
 from utilities.utils import readConfFile
@@ -475,11 +477,11 @@ def _getTemplateFirstDiskByName(template, diskName, idx=0):
         * idx - index of found disk to return
     Return: Disk object
     """
+    disk_not_found_msg = "Disk %s was not found in tmp's %s disk collection"
     disks = _getTemplateDisks(template)
     found = [disk for disk in disks if disk.get_name() == diskName]
     if not found:
-        raise DiskNotFound("Disk %s was not found in tmp's %s disk collection" %
-                           (diskName, template))
+        raise DiskNotFound(disk_not_found_msg % (diskName, template))
     return found[idx]
 
 

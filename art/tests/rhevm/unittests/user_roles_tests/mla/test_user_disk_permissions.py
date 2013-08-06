@@ -5,7 +5,7 @@ import logging
 import time
 import art.test_handler.exceptions as errors
 
-from user_roles_tests import config, common
+from user_roles_tests import config
 from user_roles_tests.roles import role
 from nose.tools import istest
 from unittest import TestCase
@@ -45,7 +45,7 @@ class DPCase147121(TestCase):
 
     def setUp(self):
         disks.addDisk(True, alias=config.DISK_NAME, interface='virtio',
-                      format='cow', provisioned_size=common.GB,
+                      format='cow', provisioned_size=config.GB,
                       storagedomain=config.MAIN_STORAGE_NAME)
         disks.waitForDisksState(config.DISK_NAME)
         mla.addStoragePermissionsToUser(True, config.USER_NAME,
@@ -68,7 +68,7 @@ class DPCase147121(TestCase):
         # Check inheritance from vm
         disk_name = "%s%s" % (config.VM_NO_DISK, '_Disk1')
         self.assertTrue(vms.addDisk(
-            True, config.VM_NO_DISK, common.GB,
+            True, config.VM_NO_DISK, config.GB,
             storagedomain=config.MAIN_STORAGE_NAME,
             interface='virtio', format='cow'), "Unable to attach disk to vm.")
         self.assertTrue(
@@ -109,7 +109,7 @@ class DPCase14722_2(TestCase):
         # Check if user has not StorageAdmin perms on SD he can't create Disk
         self.assertTrue(
             disks.addDisk(False, alias=config.DISK_NAME, interface='virtio',
-                          format='cow', provisioned_size=common.GB,
+                          format='cow', provisioned_size=config.GB,
                           storagedomain=config.MAIN_STORAGE_NAME),
             "User without StorageAdmin permissions can create disk.")
         LOGGER.info("User without StorageAdmin perms on SD can't create disk.")
@@ -149,7 +149,7 @@ class DPCase147122(TestCase):
         # Check if user has StorageAdmin perms on SD he can create Disk
         self.assertTrue(
             disks.addDisk(True, alias=config.DISK_NAME, interface='virtio',
-                          format='cow', provisioned_size=common.GB,
+                          format='cow', provisioned_size=config.GB,
                           storagedomain=config.MAIN_STORAGE_NAME),
             "User with StorageAdmin permissions can't create disk.")
         disks.waitForDisksState(config.DISK_NAME)
@@ -170,7 +170,7 @@ class DPCase147123(TestCase):
 
     def setUp(self):
         disks.addDisk(True, alias=config.DISK_NAME, interface='virtio',
-                      format='cow', provisioned_size=common.GB,
+                      format='cow', provisioned_size=config.GB,
                       storagedomain=config.MAIN_STORAGE_NAME)
         disks.waitForDisksState(config.DISK_NAME)
         mla.addStoragePermissionsToUser(True, config.USER_NAME,
@@ -245,7 +245,7 @@ class DPCase147124(TestCase):
     def setUp(self):
         vms.createVm(
             True, config.VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
-            storageDomainName=config.MAIN_STORAGE_NAME, size=common.GB)
+            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB)
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME,
                                    role=self.tested_role)
 
@@ -295,7 +295,7 @@ class DPCase147125(TestCase):
     def setUp(self):
         vms.createVm(
             True, config.VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
-            storageDomainName=config.MAIN_STORAGE_NAME, size=common.GB)
+            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB)
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME)
 
     @istest
@@ -327,7 +327,7 @@ class DPCase147126(TestCase):
 
     def setUp(self):
         disks.addDisk(True, alias=config.DISK_NAME, interface='virtio',
-                      format='cow', provisioned_size=common.GB,
+                      format='cow', provisioned_size=config.GB,
                       storagedomain=config.MAIN_STORAGE_NAME)
         disks.waitForDisksState(config.DISK_NAME)
         mla.addStoragePermissionsToUser(True, config.USER_NAME,
@@ -374,7 +374,7 @@ class DPCase147127(TestCase):
     def setUp(self):
         vms.createVm(
             True, config.VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
-            storageDomainName=config.MAIN_STORAGE_NAME, size=common.GB)
+            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB)
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME)
 
     @tcms(TCMS_PLAN_ID, 147127)
@@ -403,7 +403,7 @@ class DPCase147128(TestCase):
     def setUp(self):
         vms.createVm(
             True, config.VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
-            storageDomainName=config.MAIN_STORAGE_NAME, size=common.GB)
+            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB)
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME,
                                    role=role.StorageAdmin)
         storagedomains.addNFSDomain(
@@ -486,7 +486,7 @@ class DPCase147129(TestCase):
         users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
                           config.USER_PASSWORD, filter='true')
         self.assertTrue(vms.addDisk(
-            False, config.VM_NO_DISK, common.GB,
+            False, config.VM_NO_DISK, config.GB,
             storagedomain=config.MAIN_STORAGE_NAME,
             interface='virtio', format='cow'), "UserRole can add disk to vm.")
         LOGGER.info("User without permissions on vm, can't add disk to vm.")
@@ -498,7 +498,7 @@ class DPCase147129(TestCase):
                           config.USER_PASSWORD, filter='true')
         self.assertTrue(
             vms.addDisk(
-                False, config.VM_NO_DISK, common.GB,
+                False, config.VM_NO_DISK, config.GB,
                 storagedomain=config.MAIN_STORAGE_NAME,
                 interface='virtio', format='cow'),
             "User without permissions on sd can add disk to vm.")
@@ -513,7 +513,7 @@ class DPCase147129(TestCase):
                           config.USER_PASSWORD, filter='true')
         self.assertTrue(
             vms.addDisk(
-                True, config.VM_NO_DISK, common.GB,
+                True, config.VM_NO_DISK, config.GB,
                 storagedomain=config.MAIN_STORAGE_NAME,
                 interface='virtio', format='cow'),
             "User with permissions on sd and vm can't add disk to vm.")
@@ -536,7 +536,7 @@ class DPCase147130(TestCase):
     def setUp(self):
         vms.createVm(
             True, config.VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
-            storageDomainName=config.MAIN_STORAGE_NAME, size=common.GB)
+            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB)
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME,
                                    role=role.DiskOperator)
         mla.addClusterPermissionsToUser(True, config.USER_NAME,
@@ -579,7 +579,7 @@ class DPCase147137(TestCase):
 
     def setUp(self):
         disks.addDisk(True, alias=config.DISK_NAME, interface='virtio',
-                      format='raw', provisioned_size=common.GB,
+                      format='raw', provisioned_size=config.GB,
                       storagedomain=config.MAIN_STORAGE_NAME,
                       shareable=True)
         disks.waitForDisksState(config.DISK_NAME)

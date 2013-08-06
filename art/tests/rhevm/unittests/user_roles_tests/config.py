@@ -1,23 +1,38 @@
 """ Test configuration - login data to the servers and test setup options.  """
-
 __test__ = False
 
-from . import ART_CONFIG
+
+class FakeObject():
+    def get(self, arg):
+        pass
+
+    def as_list(self, arg):
+        return self
+
+    def __getitem__(self, key):
+        pass
+
+try:
+    from . import ART_CONFIG
+except ImportError:
+    ART_CONFIG = {'PARAMETERS': FakeObject(), 'REST_CONNECTION': FakeObject()}
+
 
 def get(lst, index, default):
-  try:
-    return lst[index]
-  except IndexError:
-    return default
+    try:
+        return lst[index]
+    except IndexError:
+        return default
+
 
 PARAMETERS = ART_CONFIG['PARAMETERS']
-
-OVIRT_URL = '%s://%s:%s/api' % (ART_CONFIG['REST_CONNECTION']['scheme'],
-                                ART_CONFIG['REST_CONNECTION']['host'],
-                                ART_CONFIG['REST_CONNECTION']['port'])
-OVIRT_USERNAME = str(ART_CONFIG['REST_CONNECTION']['user'])
-OVIRT_DOMAIN = str(ART_CONFIG['REST_CONNECTION']['user_domain'])
-OVIRT_PASSWORD = str(ART_CONFIG['REST_CONNECTION']['password'])
+REST_CONNECTION = ART_CONFIG['REST_CONNECTION']
+OVIRT_URL = '%s://%s:%s/api' % (REST_CONNECTION.get('scheme'),
+                                REST_CONNECTION.get('host'),
+                                REST_CONNECTION.get('port'))
+OVIRT_USERNAME = str(REST_CONNECTION.get('user'))
+OVIRT_DOMAIN = str(REST_CONNECTION.get('user_domain'))
+OVIRT_PASSWORD = str(REST_CONNECTION.get('password'))
 OVIRT_VERSION = PARAMETERS.get('compatibility_version')
 
 OVIRT_IP = PARAMETERS.get('vdc')
@@ -40,31 +55,32 @@ ALT2_HOST_AVAILABLE = True
 ALT2_HOST_CPU_TYPE = PARAMETERS.get('cpu_name')
 
 # Networks
-NETWORK_NAME  = PARAMETERS.get('network1')
+NETWORK_NAME = PARAMETERS.get('network1')
 NETWORK_NAME1 = PARAMETERS.get('network2')
 NETWORK_NAME2 = PARAMETERS.get('network3')
 NETWORK_NAME3 = PARAMETERS.get('network4')
 NETWORK_NAME4 = PARAMETERS.get('network5')
 
 # Storages
-MAIN_STORAGE_TYPE = PARAMETERS['data_center_type']
+MAIN_STORAGE_TYPE = PARAMETERS.get('data_center_type')
 NFS_STORAGE_ADDRESS = get(PARAMETERS.as_list('data_domain_address'), 0, None)
 NFS_STORAGE_PATH = get(PARAMETERS.as_list('data_domain_path'), 0, None)
 
-ALT1_STORAGE_NAME    = PARAMETERS.get('alt1_storage_name')
+ALT1_STORAGE_NAME = PARAMETERS.get('alt1_storage_name')
 ALT1_STORAGE_ADDRESS = get(PARAMETERS.as_list('data_domain_address'), 1, None)
-ALT1_STORAGE_PATH    = get(PARAMETERS.as_list('data_domain_path'), 1, None)
+ALT1_STORAGE_PATH = get(PARAMETERS.as_list('data_domain_path'), 1, None)
 ALT1_STORAGE_AVAILABLE = True
 
-ALT2_STORAGE_NAME    = PARAMETERS.get('alt2_storage_name')
+ALT2_STORAGE_NAME = PARAMETERS.get('alt2_storage_name')
 ALT2_STORAGE_ADDRESS = get(PARAMETERS.as_list('data_domain_address'), 2, None)
-ALT2_STORAGE_PATH    = get(PARAMETERS.as_list('data_domain_path'), 2, None)
+ALT2_STORAGE_PATH = get(PARAMETERS.as_list('data_domain_path'), 2, None)
 ALT2_STORAGE_AVAILABLE = True
 
 ISO_FILE = PARAMETERS.get('iso_file')
 ISO_ADDRESS = PARAMETERS.as_list('tests_iso_domain_address')[0]
 ISO_PATH = PARAMETERS.as_list('tests_iso_domain_path')[0]
 EXPORT_ADDRESS = PARAMETERS.as_list('export_domain_address')[0]
+EXPORT_NAME = 'export_domain_name'
 EXPORT_PATH = PARAMETERS.as_list('export_domain_path')[0]
 
 SKIP_ISCSI_TESTS = True
