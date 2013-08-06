@@ -23,8 +23,9 @@ def setup_module():
 def teardown_module():
     """ removes created datacenter, storages etc.
     """
-    ll_st_domains.cleanDataCenter(True, config.DATA_CENTER_NAME,
-                            vdc=config.VDC, vdc_password=config.VDC_PASSWORD)
+    ll_st_domains.cleanDataCenter(
+        True, config.DATA_CENTER_NAME, vdc=config.VDC,
+        vdc_password=config.VDC_PASSWORD)
 
 
 class TestCase94947(TestCase):
@@ -41,7 +42,7 @@ class TestCase94947(TestCase):
         """ extends master storage domain
         """
         found, master_domain = ll_st_domains.findMasterStorageDomain(
-                True, config.DATA_CENTER_NAME)
+            True, config.DATA_CENTER_NAME)
         self.assertTrue(found, "Master domain not found!")
 
         master_domain_name = master_domain['masterDomain']
@@ -120,7 +121,7 @@ class TestCase94954(TestCase):
         """ test checks if changing master domain works correctly
         """
         found, master_domain = ll_st_domains.findMasterStorageDomain(
-                True, config.DATA_CENTER_NAME)
+            True, config.DATA_CENTER_NAME)
         self.assertTrue(found, "Master domain not found!")
 
         old_master_domain_name = master_domain['masterDomain']
@@ -133,7 +134,7 @@ class TestCase94954(TestCase):
 
         logger.info("Finding new master domain")
         found, new_master = ll_st_domains.findMasterStorageDomain(
-                True, config.DATA_CENTER_NAME)
+            True, config.DATA_CENTER_NAME)
         logger.info("New master: %s" % new_master)
         self.assertTrue(found, "New master domain not found")
 
