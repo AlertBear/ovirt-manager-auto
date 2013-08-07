@@ -26,11 +26,10 @@ import logging
 
 import re
 
-ELEMENT = 'network'
-COLLECTION = 'networks'
-NET_API = get_api(ELEMENT, COLLECTION)
-DC_API = get_api('data_center', 'datacenters')
-CL_API = get_api('cluster', 'clusters')
+NET_API = get_api("network", "networks")
+CL_API = get_api("cluster", "clusters")
+DC_API = get_api("data_center", "datacenters")
+MGMT_NETWORK = "rhevm"
 
 logger = logging.getLogger('networks')
 
