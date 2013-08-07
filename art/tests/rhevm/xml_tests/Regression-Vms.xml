@@ -1161,7 +1161,7 @@
  </test_case>
 
 <test_case>
-    <test_name>Sleep to give time for template creation!</test_name>
+    <test_name>Sleep to give time for async tasks!</test_name>
     <test_action>sleep</test_action>
     <parameters>seconds=60</parameters>
     <positive>NONE</positive>
@@ -1176,6 +1176,8 @@
     <parameters>host='{vds[0]}'</parameters>
     <positive>TRUE</positive>
     <run>if(1&lt;len('[vds]'.split(',')))</run>
+    <bz>986961</bz>
+    <vital>True</vital>
  </test_case>
 
 <test_case>
