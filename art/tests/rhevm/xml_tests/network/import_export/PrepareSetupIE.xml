@@ -238,18 +238,6 @@
    <test_description/>
 </test_case>
 <test_case>
-   <test_name>Get RHEL boot Os</test_name>
-   <test_action>getImageByOsType</test_action>
-   <parameters>osType=%osTypeElement%,slim=True</parameters>
-   <positive>TRUE</positive>
-   <run>if(re.search('RHEL',%osTypeElement%))</run>
-   <fetch_output>osBoot-&gt;osBoot</fetch_output>
-   <report>NO</report>
-   <vital>False</vital>
-   <test_description/>
-</test_case>
-
-<test_case>
    <test_name>Create Linux VMs with 3 NICs for '{cluster}0' and '{cluster}1'</test_name>
    <test_action>createVm</test_action>
    <parameters>vmName='{vm_name[#loop_index]}',vmDescription='linux vm',cluster='{cluster}#loop_index',nic='nic1',nicType='e{nic_type_virtio}',storageDomainName='{storage}#loop_index',size=21474836480,diskType='e{disk_type_system}',display_type='e{display_type_spice}',cobblerAddress='{cobbler_address}',cobblerUser='{cobbler_user}',cobblerPasswd='{cobbler_passwd}'</parameters>

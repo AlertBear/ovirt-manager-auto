@@ -22,18 +22,7 @@
   <test_description/>
 </test_case>
 <test_case>
-  <test_name>Get boot Os</test_name>
-  <test_action>getImageByOsType</test_action>
-  <parameters>osType=%osTypeElement%,slim=True</parameters>
-  <positive>TRUE</positive>
-  <run>yes</run>
-  <fetch_output>osBoot-&gt;osBoot,floppy-&gt;floppy</fetch_output>
-  <report>NO</report>
-  <vital>TRUE</vital>
-  <test_description/>
-</test_case>
-<test_case>
-<test_name>Create sw1 networks with VLAN</test_name>
+  <test_name>Create sw1 networks with VLAN</test_name>
   <test_action>addNetwork</test_action>
   <parameters>name='{networks[0]}',data_center='{datacenter}',vlan_id='{vlan_id[0]}'</parameters>
   <positive>TRUE</positive>
@@ -342,18 +331,7 @@
   <test_description/>
 </test_case>
 <test_case>
-  <test_name>Get boot Os</test_name>
-  <test_action>getImageByOsType</test_action>
-  <parameters>osType=%osTypeElement%,slim=True</parameters>
-  <positive>TRUE</positive>
-  <run>yes</run>
-  <fetch_output>osBoot-&gt;osBoot,floppy-&gt;floppy</fetch_output>
-  <report>NO</report>
-  <vital>TRUE</vital>
-  <test_description/>
-</test_case>
-<test_case>
-<test_name>Create sw1 networks with VLAN</test_name>
+  <test_name>Create sw1 networks with VLAN</test_name>
   <test_action>addNetwork</test_action>
   <parameters>name='{networks[0]}',data_center='{datacenter}',vlan_id='{vlan_id[0]}'</parameters>
   <positive>TRUE</positive>

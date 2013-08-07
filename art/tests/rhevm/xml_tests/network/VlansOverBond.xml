@@ -33,17 +33,6 @@
    <test_description/>
 </test_case>
 <test_case>
-   <test_name>Get boot OS</test_name>
-   <test_action>getImageByOsType</test_action>
-   <parameters>osType=%osTypeElement%,slim=True</parameters>
-   <positive>TRUE</positive>
-   <run>yes</run>
-   <fetch_output>osBoot-&gt;osBoot,floppy-&gt;floppy</fetch_output>
-   <report>NO</report>
-   <vital>TRUE</vital>
-   <test_description/>
-</test_case>
-<test_case>
    <test_name>Create multiple bridged networks with VLAN</test_name>
    <test_action>addMultipleVlanedNetworks</test_action>
    <parameters>networks={vlan_networks},data_center='{datacenter}'</parameters>

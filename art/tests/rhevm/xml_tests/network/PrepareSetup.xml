@@ -55,13 +55,13 @@
    <test_description>Prepare linux VM template</test_description>
 </test_case>
 <test_case>
-   <test_name>Convert Os name to Os type element </test_name>
-   <test_action>convertOsNameToOsTypeElement</test_action>
-   <parameters>osName='{vm_os}'</parameters>
-   <positive>TRUE</positive>
-   <run>YES</run>
-   <report>NO</report>
-   <fetch_output>osTypeElement-&gt;osTypeElement</fetch_output>
+    <test_name>Convert Os name to Os type element </test_name>
+	<test_action>convertOsNameToOsTypeElement</test_action>
+	<parameters>osName='{vm_os}'</parameters>
+	<positive>TRUE</positive>
+	<run>YES</run>
+	<report>NO</report>
+	<fetch_output>osTypeElement-&gt;osTypeElement</fetch_output>
 </test_case>
 <test_case>
    <test_name>Create Linux Vm</test_name>
