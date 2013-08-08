@@ -20,7 +20,7 @@ MAIN_SETUP = "https://lilach-rhel.qa.lab.tlv.redhat.com:443/api"
 PGPASS = "123456"
 HOST_PASS = "qum5net"
 
-ISO_DOMAIN_NAME = 'ISO_DOMAIN'
+ISO_DOMAIN_NAME = 'ISO_UPLOADER_TEST_DOMAIN'
 EXPORT_DOMAIN_NAME = 'EXPORT_DOMAIN'
 DEFAULT = {
         'def_vm_name': VM_NAME,         # name
