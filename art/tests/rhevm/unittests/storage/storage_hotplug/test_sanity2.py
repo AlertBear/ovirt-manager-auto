@@ -9,6 +9,7 @@ Author: Gadi Ickowicz
 
 from art.rhevm_api.tests_lib.low_level import disks, vms
 import art.test_handler.exceptions as exceptions
+from art.test_handler.tools import tcms
 from art.test_handler.settings import opts
 import common
 from common import shutdown_and_remove_vms, GB, ENUMS,\
@@ -63,8 +64,8 @@ class TestCase139348(unittest.TestCase):
     """Hotplug floating disk (shareable and non-shareable)"""
 
     __test__ = True
-    tcms_plan_id = 5291
-    tcms_test_case = 139348
+    tcms_plan_id = '5291'
+    tcms_test_case = '139348'
 
     vm_names = []
 
@@ -77,7 +78,7 @@ class TestCase139348(unittest.TestCase):
             vm_name = common.clone_vm_for_test(template, cls.__name__)
             logger.info("Starting vm %s" % vm_name)
             if not vms.startVm(positive, vm_name, wait_for_ip=True):
-                raise VMException("Unable to start VM %s" % vm_name)
+                raise exceptions.VMException("Unable to start VM %s" % vm_name)
             logger.info("VM %s started successfully" % vm_name)
             cls.vm_names.append(vm_name)
 
@@ -89,6 +90,7 @@ class TestCase139348(unittest.TestCase):
         _raise_if_exception(results)
 
     @istest
+    @tcms(tcms_plan_id, tcms_test_case)
     def test_plug_floating_disk(self):
         """
         Hotplug floating disk (shareable/non-shareable) to vm
@@ -126,8 +128,8 @@ class TestCase244310(unittest.TestCase):
     """
 
     __test__ = True
-    tcms_plan_id = 5291
-    tcms_test_case = 244310
+    tcms_plan_id = '5291'
+    tcms_test_case = '244310'
 
     vm_pairs = []
 
@@ -161,6 +163,7 @@ class TestCase244310(unittest.TestCase):
         _raise_if_exception(results)
 
     @istest
+    @tcms(tcms_plan_id, tcms_test_case)
     def test_plug_shared_disk_to_2_vms_same(self):
         """
         plug same disk into 2 vms simultaneously
@@ -198,8 +201,8 @@ class TestCase244314(unittest.TestCase):
     """
 
     __test__ = True
-    tcms_plan_id = 5291
-    tcms_test_case = 244314
+    tcms_plan_id = '5291'
+    tcms_test_case = '244314'
 
     vm_pairs = []
 
@@ -216,7 +219,7 @@ class TestCase244314(unittest.TestCase):
             new_name = vm_name + "1"
             logger.info("renaming vm %s to %s" % (vm_name, new_name))
             if not vms.updateVm(positive, vm=vm_name, name=new_name):
-                raise VMException("Unable to rename vm %s to %s" %
+                raise exceptions.VMException("Unable to rename vm %s to %s" %
                                   (vm_name, new_name))
             vm_name = common.clone_vm_for_test(template, cls.__name__)
             vm_pair = (vm_name, new_name)
@@ -242,6 +245,7 @@ class TestCase244314(unittest.TestCase):
         _raise_if_exception(results)
 
     @istest
+    @tcms(tcms_plan_id, tcms_test_case)
     def test_unplug_shared_disk(self):
         """
         Unplug shared disk from a single VM while it is still plugged to

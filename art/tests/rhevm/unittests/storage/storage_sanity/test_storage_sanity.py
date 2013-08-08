@@ -4,6 +4,7 @@ from nose.tools import istest
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.high_level import storagedomains
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st_domains
+from art.test_handler.tools import tcms
 import config
 
 logger = logging.getLogger(__name__)
@@ -38,6 +39,7 @@ class TestCase94947(TestCase):
     tcms_test_case = '94947'
 
     @istest
+    @tcms(tcms_plan_id, tcms_test_case)
     def create_remove_data_center_test(self):
         """ extends master storage domain
         """
@@ -66,6 +68,7 @@ class TestCase94950(TestCase):
     tcms_test_case = '94950'
 
     @istest
+    @tcms(tcms_plan_id, tcms_test_case)
     def change_domain_status_test(self):
         """ test checks if detaching/attaching storage domains works properly
         including that it is impossible to detach active domain
@@ -117,6 +120,7 @@ class TestCase94954(TestCase):
     tcms_test_case = '94954'
 
     @istest
+    @tcms(tcms_plan_id, tcms_test_case)
     def change_master_domain_test(self):
         """ test checks if changing master domain works correctly
         """

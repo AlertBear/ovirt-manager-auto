@@ -15,6 +15,7 @@ from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import disks
 from art.rhevm_api.tests_lib.low_level import storagedomains
+from art.test_handler.tools import tcms
 
 import config
 
@@ -59,6 +60,7 @@ class TestCase275816(TestCase):
     disk_size = 1 * GB
 
     @istest
+    @tcms(tcms_plan_id, tcms_test_case)
     def several_vms_with_same_shared_disk_on_one_host_test(self):
         """ tests if running a few VMs with the same shared disk on the same
             host works correctly

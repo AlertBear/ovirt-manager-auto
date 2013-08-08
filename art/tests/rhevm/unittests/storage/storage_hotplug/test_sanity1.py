@@ -9,6 +9,7 @@ Author: Gadi Ickowicz
 
 from art.rhevm_api.tests_lib.low_level import disks, vms
 import art.test_handler.exceptions as exceptions
+from art.test_handler.tools import tcms
 from art.test_handler.settings import opts
 import common
 from common import shutdown_and_remove_vms, GB, ENUMS,\
@@ -63,10 +64,11 @@ class TestCase134134(unittest.TestCase):
     """Plug in disk while OS is running (virtIO on supported OS type only)"""
 
     __test__ = True
-    tcms_plan_id = 5291
-    tcms_test_case = 134134
 
     vm_names = []
+    tcms_plan_id = '5291'
+    tcms_test_case = '134134'
+
 
     @classmethod
     def setup_class(cls):
@@ -93,6 +95,7 @@ class TestCase134134(unittest.TestCase):
         _raise_if_exception(results)
 
     @istest
+    @tcms(tcms_plan_id, tcms_test_case)
     def test_plug_virtio_disk(self):
         """
         Try to plug in a new virtIO disk while OS is running
@@ -123,8 +126,8 @@ class TestCase134139(unittest.TestCase):
     __test__ = True
 
     vm_names = []
-    tcms_plan_id = 5291
-    tcms_test_case = 134139
+    tcms_plan_id = '5291'
+    tcms_test_case = '134139'
 
     @classmethod
     def setup_class(cls):
@@ -189,6 +192,7 @@ class TestCase134139(unittest.TestCase):
         _raise_if_exception(results)
 
     @istest
+    @tcms(tcms_plan_id, tcms_test_case)
     def test_unplug_disk(self):
         """
         Attempt to unplug (deactivate) active disk from a VM with OS running
@@ -207,6 +211,7 @@ class TestCase134139(unittest.TestCase):
             self.assertTrue(result)
 
     @istest
+    @tcms(tcms_plan_id, tcms_test_case)
     def test_detach_disk(self):
         """
         Attempt to detach inactive disk from a VM with OS running
@@ -238,8 +243,8 @@ class TestCase231521(unittest.TestCase):
     __test__ = True
 
     vm_names = []
-    tcms_plan_id = 5291
-    tcms_test_case = 231521
+    tcms_plan_id = '5291'
+    tcms_test_case = '231521'
 
     @classmethod
     def setup_class(cls):
@@ -279,7 +284,7 @@ class TestCase231521(unittest.TestCase):
                                         diskAlias=disk.get_name(),
                                         wait=True):
                 raise exceptions.DiskException("Unable to deactivate disk %s" %
-                                               diskAlias)
+                                               disk.get_name())
             if not vms.startVm(positive, vm=vm_name, wait_for_ip=True):
                 raise exceptions.VMException("Unable to start VM %s" % vm_name)
 
@@ -293,6 +298,7 @@ class TestCase231521(unittest.TestCase):
         _raise_if_exception(results)
 
     @istest
+    @tcms(tcms_plan_id, tcms_test_case)
     def test_activate_disk(self):
         """Activate an already attached disk on a running VM"""
         for vm in self.vm_names:
@@ -308,6 +314,7 @@ class TestCase231521(unittest.TestCase):
             self.assertTrue(status)
 
     @istest
+    @tcms(tcms_plan_id, tcms_test_case)
     def test_deactivate_disk(self):
         """Deactivate an already attached disk on a running VM"""
         for vm in self.vm_names:

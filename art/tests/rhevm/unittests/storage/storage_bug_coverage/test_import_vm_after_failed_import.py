@@ -15,6 +15,7 @@ from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import disks
 from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.low_level import storagedomains
+from art.test_handler.tools import tcms
 
 import config
 
@@ -96,6 +97,7 @@ class TestCase281163(TestCase):
             assert disks.attachDisk(True, disk_name, self.vm_name)
 
     @istest
+    @tcms(tcms_plan_id, tcms_test_case)
     def import_vm_after_failed_import_test(self):
         """
         * exports the VM

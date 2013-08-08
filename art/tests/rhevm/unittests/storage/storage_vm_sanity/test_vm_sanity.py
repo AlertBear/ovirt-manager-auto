@@ -16,6 +16,7 @@ from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import templates
 from art.rhevm_api.tests_lib.low_level import storagedomains
+from art.test_handler.tools import tcms
 
 import config
 
@@ -76,6 +77,7 @@ class TestCase248112(TestCase):
     tcms_test_case = '248112'
 
     @istest
+    @tcms(tcms_plan_id, tcms_test_case)
     def create_and_remove_vm_test(self):
         """ creates and removes vm
         """
@@ -162,6 +164,7 @@ class TestCase248132(TestCase):
     def setUp(self):
         self.vm_names = []
 
+    @tcms(tcms_plan_id, tcms_test_case)
     def create_vm_from_template_validate_disks(
             self, name, template_name, sparse, vol_format):
         vm_name = "%s_%s_clone_%s" % (
@@ -197,6 +200,7 @@ class TestCase248132(TestCase):
             name, template_name, False, ENUMS['format_raw'])
 
     @istest
+    @tcms(tcms_plan_id, tcms_test_case)
     def disk_conv_from_sparse_cow_test(self):
         """ creates vms from template with sparse cow disk
         """
@@ -204,6 +208,7 @@ class TestCase248132(TestCase):
             True, ENUMS['format_cow'], 'from_sparse_cow')
 
     @istest
+    @tcms(tcms_plan_id, tcms_test_case)
     def disk_conv_from_sparse_raw_test(self):
         """ creates vms from template with sparse raw disk
         """
@@ -212,6 +217,7 @@ class TestCase248132(TestCase):
                 True, ENUMS['format_raw'], 'from_sparse_raw')
 
     @istest
+    @tcms(tcms_plan_id, tcms_test_case)
     def disk_conv_from_preallocated_raw_test(self):
         """ creates vms from templates with preallocated cow disk
         """
@@ -329,6 +335,7 @@ class TestCase248138(TestCase):
         self._verify_data_on_vm(expected_data)
 
     @istest
+    @tcms(tcms_plan_id, tcms_test_case)
     def delete_snapshots_test(self):
         """ Deleting snapshots
         """

@@ -7,6 +7,7 @@ from art.rhevm_api.tests_lib.low_level import clusters as ll_cl
 from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_st
+from art.test_handler.tools import tcms
 
 import helpers
 import config
@@ -48,6 +49,7 @@ class TestCase166613(helpers.TestCaseStandardOperations):
         super(TestCase166613, self).setUp()
 
     @istest
+    @tcms(tcms_plan_id, tcms_test_case)
     def test_change_vdsm_conf_and_perform_standard_operations(self):
         """ Changes vdsm.conf and checks that datacenter works correctly
         afterwards.
@@ -101,6 +103,7 @@ class TestCase148672(helpers.TestCaseStandardOperations):
     template = 'templ_%s' % tcms_test_case
 
     @istest
+    @tcms(tcms_plan_id, tcms_test_case)
     def test_functionality_with_custom_nfs_options(self):
         """ Tests basic data center functionality with storage domain with
         custom NFS options
@@ -152,6 +155,7 @@ class TestCase166615(helpers.TestCaseNFSOptions):
         hl_hosts.add_hosts([cls.host], [cls.password], cls.cl_name)
 
     @istest
+    @tcms(tcms_plan_id, tcms_test_case)
     def test_upgrade_datacenter(self):
         """ Creates NFS storage domain in 3.0 data center. Upgrades data center
         to 3.1. Checks that storage domain is still mounted with default
@@ -230,6 +234,7 @@ class TestCase148671(helpers.TestCaseNFSOptions):
         self.create_dc(helpers.VERSION_30)
 
     @istest
+    @tcms(tcms_plan_id, tcms_test_case)
     def test_nfs_options_in_30_dc(self):
         """ tries to create a storage domain with custom advanced NFS
         options in 3.0 datacenter
@@ -286,6 +291,7 @@ class TestCase148697(helpers.TestCaseNFSOptions):
         self.host = config.HOST_FOR_30_DC
         self.password = config.PASSWORDS[-1]
 
+    @tcms(tcms_plan_id, tcms_test_case)
     def test_nfs_options_in_30_datacenter(self):
         """ Checks that storage domain with custom NFS options cannot be
         added to 3.0 datacenter
@@ -297,6 +303,7 @@ class TestCase148697(helpers.TestCaseNFSOptions):
             self.fail("It should be impossible to attach storage domain with "
                       "custom nfs options to 3.0 datacenter")
 
+    @tcms(tcms_plan_id, tcms_test_case)
     def test_nfs_options_in_31_datacenter(self):
         """ Adds storage domain with custom nfs options to 3.1 datacenter
         """

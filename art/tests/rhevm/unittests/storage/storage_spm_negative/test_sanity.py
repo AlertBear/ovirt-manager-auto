@@ -19,6 +19,7 @@ from art.rhevm_api.utils.storage_api import generateSDMetadataCorruption, \
     restoreSDOriginalMetadata, blockOutgoingConnection, \
     unblockOutgoingConnection
 from art.test_handler.settings import plmanager
+from art.test_handler.tools import tcms
 import config
 
 # Automatic setup and teardown on failure
@@ -275,11 +276,12 @@ class CorruptMetadata(DataCenterWithSD):
     Trigger a corruption in the metadata, for example "echo 1 > metadata".
     """
     __test__ = IS_ISCSI_TEST or BZ_967749_FIXED
-    tcms_plan_id = 2461
-    tcms_test_case = 87133
+    tcms_plan_id = '2461'
+    tcms_test_case = '87133'
     vm_name = None
 
     @istest
+    @tcms(tcms_plan_id, tcms_test_case)
     def test_metadata_corruption(self):
         """
         Makes metadata corruption, checks states of objects and restores
@@ -345,10 +347,11 @@ class WrongMasterVersion(DataCenterWithSD):
     Delete the checksum.
     """
     __test__ = IS_ISCSI_TEST or BZ_967749_FIXED
-    tcms_plan_id = 2461
-    tcms_test_case = 87245
+    tcms_plan_id = '2461'
+    tcms_test_case = '87245'
     vm_name = None
 
+    @tcms(tcms_plan_id, tcms_test_case)
     def test_changed_master_version(self):
         """
         Changes master version, checks states and gets state back
@@ -416,9 +419,10 @@ class FailedReconstructWith2Domains(DataCenterWithSD):
     Verify that data center is Up.
     """
     __test__ = IS_ISCSI_TEST or BZ_967749_FIXED
-    tcms_plan_id = 2461
-    tcms_test_case = 87241
+    tcms_plan_id = '2461'
+    tcms_test_case = '87241'
 
+    @tcms(tcms_plan_id, tcms_test_case)
     def test_reconstruct(self):
         """
         Corrupts metadata, waits for reconstruction and restarts vdsm - that
@@ -475,8 +479,8 @@ class ReconstructWith2UnreachableDomainsAnd1ReachableDomain(DataCenterWithSD):
     """
 
     __test__ = BZ_958044_FIXED
-    tcms_plan_id = 2461
-    tcms_test_case = 87244
+    tcms_plan_id = '2461'
+    tcms_test_case = '87244'
     is_blocked = False
 
     @classmethod
@@ -535,6 +539,7 @@ class ReconstructWith2UnreachableDomainsAnd1ReachableDomain(DataCenterWithSD):
         assert storagedomains.detachStorageDomain(True, config.DC_NAME,
                                                   non_master.name)
 
+    @tcms(tcms_plan_id, tcms_test_case)
     def test_reconstruct_on_third_domain(self):
         """
         Block connection to master domain and one non-master domain.
@@ -627,8 +632,8 @@ class FailedReconstructWith1Domain(DataCenterWithSD):
     """
 
     __test__ = True
-    tcms_plan_id = 2461
-    tcms_test_case = 50031
+    tcms_plan_id = '2461'
+    tcms_test_case = '50031'
     is_blocked = False
 
     @classmethod
@@ -652,6 +657,7 @@ class FailedReconstructWith1Domain(DataCenterWithSD):
         LOGGER.info("Removing vm %s", cls.vm_name)
         assert vms.removeVm(True, vm=cls.vm_name, stopVM='true')
 
+    @tcms(tcms_plan_id, tcms_test_case)
     def test_failed_reconstruct(self):
         """
         Blocks the connection from host to master storage domain, host should
@@ -727,8 +733,8 @@ class SPMStopsResponding(DataCenterWithSD):
     Verify that host is fenced after to the configured timeout.
     """
 
-    tcms_plan_id = 2347
-    tcms_test_case = 68535
+    tcms_plan_id = '2347'
+    tcms_test_case = '68535'
     is_blocked = False
 
     @classmethod
@@ -753,6 +759,7 @@ class SPMStopsResponding(DataCenterWithSD):
         LOGGER.info("Removing vm %s", cls.vm_name)
         assert vms.removeVm(True, vm=cls.vm_name, stopVM='true')
 
+    @tcms(tcms_plan_id, tcms_test_case)
     def test_spm_stops_responding(self):
         """
         Stops vdsm daemon on SPM. It should go to non-responsive due to broken

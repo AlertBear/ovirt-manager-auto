@@ -11,6 +11,7 @@ from unittest import TestCase
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.tests_lib.low_level import disks
+from art.test_handler.tools import tcms
 
 import config
 
@@ -46,6 +47,7 @@ class TestCase276003(TestCase):
     tcms_test_case = '284324'
 
     @istest
+    @tcms(tcms_plan_id, tcms_test_case)
     def create_raw_disk_without_sparse_tag_test(self):
         """
         Tries to create a raw disk via REST API without specifying 'sparse'

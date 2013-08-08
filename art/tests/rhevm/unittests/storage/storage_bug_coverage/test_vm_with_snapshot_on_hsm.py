@@ -14,6 +14,7 @@ from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.low_level import storagedomains
+from art.test_handler.tools import tcms
 
 import config
 
@@ -57,6 +58,7 @@ class TestCase276003(TestCase):
     snap_name = "snap_%s" % tcms_test_case
 
     @istest
+    @tcms(tcms_plan_id, tcms_test_case)
     def merge_snapshots_on_hsm_test(self):
         """
         checks that a VM with a snapshot, which where created when the VM was
