@@ -43,7 +43,7 @@ def teardown_module():
     storagedomains.cleanDataCenter(True, config.DATA_CENTER_NAME)
 
 
-class TestCase281163(TestCase):
+class TestCase281164(TestCase):
     """
     test exposing https://bugzilla.redhat.com/show_bug.cgi?id=908327
     scenario:

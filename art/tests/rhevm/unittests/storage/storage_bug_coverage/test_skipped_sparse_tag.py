@@ -36,7 +36,7 @@ def teardown_module():
     storagedomains.cleanDataCenter(True, config.DATA_CENTER_NAME)
 
 
-class TestCase276003(TestCase):
+class TestCase284324(TestCase):
     """ Test exposing https://bugzilla.redhat.com/show_bug.cgi?id=960430
     Tries to create a disk via REST API without specifying 'sparse' tag.
 
