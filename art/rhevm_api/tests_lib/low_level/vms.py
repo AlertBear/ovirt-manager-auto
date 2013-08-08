@@ -89,6 +89,8 @@ SNAPSHOT_API = get_api('snapshot', 'snapshots')
 TAG_API = get_api('tag', 'tags')
 CDROM_API = get_api('cdrom', 'cdroms')
 NETWORK_API = get_api('network', 'networks')
+WATCHDOG_API = get_api('watchdog', 'watchdogs')
+CAP_API = get_api('version', 'capabilities')
 Snapshots = getDS('Snapshots')
 
 logger = logging.getLogger(__name__)
@@ -274,7 +276,6 @@ def _prepareVmObject(**kwargs):
             payload_files.add_file(payload_file)
             payload = data_st.Payload(payload_type, payload_files)
             payload_array.append(payload)
-
         payloads = data_st.Payloads(payload_array)
         vm.set_payloads(payloads)
 
@@ -418,11 +419,20 @@ def updateVm(positive, vm, **kwargs):
        * placement_host - host that the affinity holds for
        * quota - vm quota
        * protected - true if vm is delete protected
+       * watchdog_model - model of watchdog card (ib6300)
+       * watchdog_action - action of watchdog card
     Return: status (True if vm was updated properly, False otherwise)
     '''
     vmObj = VM_API.find(vm)
     vmNewObj = _prepareVmObject(**kwargs)
     vmNewObj, status = VM_API.update(vmObj, vmNewObj, positive)
+
+    watchdog_model = kwargs.pop('watchdog_model', None)
+    watchdog_action = kwargs.pop('watchdog_action', None)
+
+    if status and watchdog_model is not None:
+        status = updateWatchdog(vm, watchdog_model, watchdog_action)
+
     return status
 
 
@@ -2062,7 +2072,8 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
              placement_affinity=None, placement_host=None, vcpu_pinning=None,
              highly_available=None, availablity_priority=None, vm_quota=None,
              disk_quota=None, plugged='true', linked='true', protected=None,
-             copy_permissions=False, custom_properties=None):
+             copy_permissions=False, custom_properties=None,
+             watchdog_model=None, watchdog_action=None):
     '''
     Description: The function createStartVm adding new vm with nic,disk
                  and started new created vm.
@@ -2110,8 +2121,10 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
                   from the network's profiles).
         vnic_profile - The VNIC profile to set on the VM's VNIC. (It should be
                        for the network specified above).
-    return values : Boolean value (True/False ) True in case of success
-                    otherwise False
+        watchdog_model - model of watchdog card
+        watchdog_action - action of watchdog card
+    return values : Boolean value (True/False )
+                    True in case of success otherwise False
     '''
     ip = False
     if not addVm(positive, name=vmName, description=vmDescription,
@@ -2143,6 +2156,10 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
                        bootable=bootable, quota=disk_quota,
                        wipe_after_delete=wipe_after_delete,
                        active=diskActive):
+            return False
+
+    if watchdog_action and watchdog_model:
+        if not addWatchdog(vmName, watchdog_model, watchdog_action):
             return False
 
     if installation:
@@ -3848,3 +3865,143 @@ def remove_vm_disks(vm_name, disk_name=None):
     if disk_name:
         vm_disks = [disk for disk in vm_disks if disk.get_name() == disk_name]
     return delete_disks(vm_disks)
+
+
+def _prepareWatchdogObj(watchdog_model, watchdog_action):
+
+    watchdogObj = data_st.WatchDog()
+
+    watchdogObj.set_action(watchdog_action)
+    watchdogObj.set_model(watchdog_model)
+
+    return watchdogObj
+
+
+@is_action()
+def getWatchdogModels(name, vm_flag):
+    '''
+    Description: get all available watchdog models
+    Author: lsvaty
+    Parameters:
+      * name -  name of vm or template
+      * vm_flag - True  if first parameter contains the name of vm
+                  False if first parameter contains the name of template
+    Return: List of available  models in current version of cluster
+    '''
+    models = list()
+    obj = None
+    if vm_flag:
+        obj = VM_API.find(name)
+    else:
+        obj = TEMPLATE_API.find(name)
+
+    clust_version = obj.get_cluster().get_version()
+    cap = CAP_API.get(absLink=False)
+
+    # default for 3.3DC (first watchdog)
+    mn, mj = 3, 3
+
+    if clust_version:
+        mn = clust_version.get_minor()
+        mj = clust_version.get_version().get_major()
+
+    versions = [v for v in cap if v.get_major() == mj and v.get_minor() == mn]
+    for watchdog_model in versions[0].get_watchdog_models().get_model():
+        models.append(watchdog_model)
+    if models:
+        return True, {'watchdog_models': models}
+    else:
+        return False, {'watchdog_models': None}
+
+
+@is_action()
+def addWatchdog(vm, watchdog_model, watchdog_action):
+    """
+    Description: Add watchdog card to VM
+    Parameters:
+        * vm_name - Name of the watchdog's vm
+        * watchdog_model - model of watchdog card
+        * watchdog_action - action of watchdog card
+    Return: status (True if watchdog card added successfully. False otherwise)
+    """
+    vmObj = VM_API.find(vm)
+    status = False
+
+    if watchdog_action and watchdog_model:
+        vmWatchdog = VM_API.getElemFromLink(vmObj, link_name='watchdogs',
+                                            get_href=True)
+
+        watchdogObj = _prepareWatchdogObj(watchdog_model, watchdog_action)
+        watchdogObj, status = WATCHDOG_API.create(watchdogObj, True,
+                                                  collection=vmWatchdog)
+
+    return status
+
+
+@is_action()
+def updateWatchdog(vm, watchdog_model, watchdog_action):
+    """
+    Description: Add watchdog card to VM
+    Parameters:
+        * vm_name - Name of the watchdog's vm
+        * watchdog_model - model of watchdog card
+        * watchdog_action - action of watchdog card
+    Return: status (True if watchdog card added successfully. False otherwise)
+    """
+    vmObj = VM_API.find(vm)
+    vmWatchdog = VM_API.getElemFromLink(vmObj, link_name='watchdogs',
+                                        attr='watchdog', get_href=False)
+
+    status, models = getWatchdogModels(vm, True)
+    if not status:
+        return False
+
+    if watchdog_model in models['watchdog_models']:
+        if not vmWatchdog:
+            return addWatchdog(vm, watchdog_model, watchdog_action)
+        else:
+            watchdogObj = _prepareWatchdogObj(watchdog_model,
+                                              watchdog_action)
+            return WATCHDOG_API.update(vmWatchdog[0],
+                                       watchdogObj,
+                                       True)[1]
+    if vmWatchdog:
+        return VM_API.delete(vmWatchdog[0], True)
+    return True
+
+
+def get_vm_machine(vm_name, user, password):
+    '''
+    Obtain VM machine from vm name for LINUX machine
+    Author: lsvaty
+    Parameters:
+        * vm - vm name
+        * user - user of vm
+        * password - password for user
+    Return value: vm machine
+    '''
+    status, got_ip = waitForIP(vm_name, timeout=7200, sleep=10)
+    if not status:
+        status, mac = getVmMacAddress(True, vm_name,
+                                      nic='nic1')
+        if not status:
+            return False
+        status, vlan = getVmNicVlanId(vm_name, 'nic1')
+        status, got_ip = convertMacToIpAddress(True, mac=mac['macAddress'],
+                                               vlan=vlan['vlan_id'])
+        if not status:
+            return False
+    return Machine(got_ip['ip'], user, password).util(LINUX)
+
+
+def rebootVm(positive, vm):
+    '''
+    Atomic Reboot VM (stop && start)
+    Author: lsvaty
+    Parameters:
+        * vm - name of VM
+    Return: False if VM failed to start.
+    '''
+    if not stopVm(positive=True, vm=vm):
+        logger.warning("VM was already down before reboot, starting VM")
+    return startVm(positive=True, vm=vm)

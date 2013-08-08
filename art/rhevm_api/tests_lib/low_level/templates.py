@@ -26,15 +26,14 @@ from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api.apis_utils import getDS, data_st
 from art.rhevm_api.utils.test_utils import get_api, split, waitUntilGone
 from art.rhevm_api.utils.xpath_utils import XPathMatch
-from art.rhevm_api.tests_lib.low_level.networks import getClusterNetwork,\
-    getVnicProfileObj, VNIC_PROFILE_API
-from art.rhevm_api.tests_lib.low_level.vms import DiskNotFound
+from art.rhevm_api.tests_lib.low_level.networks import getVnicProfileObj, \
+    VNIC_PROFILE_API
+from art.rhevm_api.tests_lib.low_level.vms import DiskNotFound, \
+    _prepareWatchdogObj, getWatchdogModels
 from art.test_handler.settings import opts
 from utilities.jobs import Job, JobsSet
-from utilities.utils import readConfFile
 from art.rhevm_api.utils.test_utils import searchForObj
 from art.core_api import is_action
-from art.test_handler.settings import opts
 
 CREATE_TEMPLATE_TIMEOUT = 900
 ELEMENT = 'template'
@@ -45,6 +44,7 @@ CL_API = get_api('cluster', 'clusters')
 VM_API = get_api('vm', 'vms')
 NIC_API = get_api('nic', 'nics')
 DISKS_API = get_api('disk', 'disks')
+WATCHDOG_API = get_api('watchdog', 'watchdogs')
 
 Template = getDS('Template')
 Cluster = getDS('Cluster')
@@ -168,6 +168,8 @@ def updateTemplate(positive, template, **kwargs):
        * boot - new template boot device
        * type - new template type
        * protected - if template is delete protected
+       * watchdog_model - model of watchdog card
+       * watchdog_action - action to perform when watchdog is triggered
     Return: status (True if template was updated properly, False otherwise)
     '''
 
@@ -177,6 +179,14 @@ def updateTemplate(positive, template, **kwargs):
 
     # FIXME: check if polling instead of sleep
     time.sleep(40)
+
+    watchdog_model = kwargs.pop('watchdog_model', None)
+    watchdog_action = kwargs.pop('watchdog_action', None)
+
+    if status and watchdog_model is not None:
+        status = updateTemplateWatchdog(template,
+                                        watchdog_model,
+                                        watchdog_action)
 
     return status
 
@@ -319,6 +329,46 @@ def addTemplateNic(positive, template, **kwargs):
     res, status = NIC_API.create(nic_obj, positive, collection=nics_coll)
 
     return status
+
+
+@is_action()
+def updateTemplateWatchdog(template, watchdog_model, watchdog_action):
+    """
+    Description: Add watchdog card to Template
+    Parameters:
+        * template - Name of the watchdog's template
+        * watchdog_model - model of watchdog card-ib6300esb or empty string
+        * watchdog_action - action of watchdog card
+    Return: status (True if watchdog card added successfully. False otherwise)
+    """
+    templateObj = TEMPLATE_API.find(template)
+    templateWatchdog = VM_API.getElemFromLink(templateObj,
+                                              link_name='watchdogs',
+                                              attr='watchdog',
+                                              get_href=False)
+    status, models = getWatchdogModels(template, False)
+    if not status:
+        return False
+
+    if watchdog_model in models['watchdog_models']:
+        watchdogObj = _prepareWatchdogObj(watchdog_model, watchdog_action)
+        if not templateWatchdog:
+            if not (watchdog_action and watchdog_model):
+                return False
+            vmWatchdog = TEMPLATE_API.getElemFromLink(
+                templateObj,
+                link_name='watchdogs',
+                get_href=True)
+
+            return WATCHDOG_API.create(watchdogObj, True,
+                                       collection=vmWatchdog)[1]
+
+        return WATCHDOG_API.update(templateWatchdog[0],
+                                   watchdogObj,
+                                   True)[1]
+    if templateWatchdog:
+        return TEMPLATE_API.delete(templateWatchdog[0], True)
+    return True
 
 
 @is_action()

@@ -56,6 +56,7 @@ DATA_FILES = [
         'art/tests/rhevm/unittests/quota_tests/*.py',
         'art/tests/rhevm/unittests/sla/*.py',
         'art/tests/rhevm/unittests/reg_hosts/*.py',
+        'art/tests/rhevm/unittests/watchdog/*.py',
         'art/tests/rhevm/unittests/rhevm_utils/*.py',
         'art/tests/rhevm/unittests/rhevm_utils/lc_reports_content/*.xml',
         'art/tests/rhevm/unittests/storage/storage_*/*.py',
