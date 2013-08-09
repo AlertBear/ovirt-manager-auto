@@ -7,11 +7,13 @@ import logging
 import time
 from unittest import TestCase
 
+import art.rhevm_api.tests_lib.high_level.hosts as hi_hosts
 from art.rhevm_api.tests_lib.low_level import datacenters
 from art.rhevm_api.tests_lib.low_level import hosts
-from art.rhevm_api.utils.test_utils import get_api
+from art.rhevm_api.utils.test_utils import get_api, toggleServiceOnHost
 from art.test_handler.settings import opts
 from art.test_handler import exceptions
+from art.test_handler.tools import tcms
 from art.unittest_lib.common import is_bz_state
 import config
 
@@ -22,13 +24,50 @@ HOST_API = get_api('host', 'hosts')
 
 BZ986961_NOT_FIXED = not is_bz_state('986961')
 
+TCMS_PLAN_ID = '5299'
+TMP_CLUSTER = "Default"
+SPM_TIMEOUT = 300
+POLLING_INTERVAL = 10
+DEFAULT_SPM_PRIORITY = '5'
+
+
+def raise_if_false(results, collection, message, exc):
+    """
+    Raises exception if False occurs in results. Message must contain one
+    placeholder for string which will be items from collection on which place
+    False is
+    """
+    if False in results:
+        failed = [collection[i] for i, result in enumerate(results)
+                  if not result]
+        raise exc(message % failed)
+
+
+def set_spm_priority_in_db(positive, host, priority):
+    """
+    Changes spm priority value in DB for the host
+    """
+    assert hosts.setSPMPriorityInDB(
+        positive, hostName=host, spm_priority=priority,
+        ip=config.DB_HOST, user=config.DB_HOST_USER,
+        password=config.DB_HOST_PASSWORD, db_user=config.DB_USER)
+
+
+def restart_vdsm(host_index):
+    """
+    Restarts vdsm on the host given by index
+    """
+    assert toggleServiceOnHost(
+        True, host=config.HOSTS[host_index], user='root',
+        password=config.HOSTS_PWD[host_index], service='vdsmd',
+        action='restart')
 
 class BaseTestCase(TestCase):
     """
     This class implements setup and teardowns of common things
     """
     __test__ = False
-    tcms_plan_id = '5299'
+    tcms_plan_id = TCMS_PLAN_ID
     tcms_test_case = "-1"
     STRING_HOSTS = ",".join(config.HOSTS)
 
@@ -42,10 +81,9 @@ class BaseTestCase(TestCase):
         for pri, host in zip(priorities, config.HOSTS):
             LOGGER.debug("Setting SPM priority of host %s to %s", host, pri)
             res.append(hosts.setSPMPriority(True, host, pri))
-        if False in res:
-            fhosts = [config.HOSTS[i] for i, result in res if not result]
-            raise exceptions.HostException(
-                "Setting SPM priority failed on hosts %s", fhosts)
+        raise_if_false(
+            res, config.HOSTS, "Setting SPM priority failed on hosts %s",
+            exceptions.HostException)
 
     def _check_host_for_spm(self, host):
         """
@@ -69,7 +107,7 @@ class BaseTestCase(TestCase):
         if BZ986961_NOT_FIXED:
             LOGGER.info("Due to BZ#986961 waiting until one of hosts is "
                         "selected as SPM")
-            assert hosts.waitForSPM(config.DC_NAME, 600, 10)
+            assert hosts.waitForSPM(config.DC_NAME, 600, POLLING_INTERVAL)
 
     def _get_new_spm(self, spm, expected):
         """
@@ -114,6 +152,28 @@ class AllHostsUp(BaseTestCase):
             if host_obj.status.state == ENUMS['host_state_maintenance']:
                 assert hosts.activateHost(True, host_name)
 
+    def _check_no_spm(self):
+        """
+        Checks there was no SPM selected
+        """
+        LOGGER.info("Sleeping for %d seconds in order to make sure no SPM was"
+                    " selected", config.SLEEP_AMOUNT)
+        time.sleep(config.SLEEP_AMOUNT)
+        self.assertTrue(hosts.checkSPMPresence(False, self.STRING_HOSTS))
+        LOGGER.info("No SPM was selected, that's correct")
+
+
+class DCUp(AllHostsUp):
+    """
+    All hosts and DC are up
+    """
+
+    @classmethod
+    def setup_class(cls):
+        super(DCUp, cls).setup_class()
+        assert hosts.waitForSPM(config.DC_NAME, SPM_TIMEOUT, POLLING_INTERVAL)
+
+
 
 class TwoHostsAndOneWithHigherPriority(BaseTestCase):
     """
@@ -128,6 +188,7 @@ class TwoHostsAndOneWithHigherPriority(BaseTestCase):
     __test__ = True
     tcms_test_case = '136167'
 
+    @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_priority(self):
         """
         Ensure that host with highest priority is always chosen as SPM
@@ -159,26 +220,26 @@ class SPMPriorityMinusOne(AllHostsUp):
     __test__ = True
     tcms_test_case = '136169'
 
+    @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_priority(self):
         """
         Ensure that hosts with -1 value as spm priority won't be selected as
         SPM
         """
-        time.sleep(config.PARAMETERS.as_float('sleep_amount'))
-        self.assertTrue(hosts.checkSPMPresence(False, self.STRING_HOSTS))
-        LOGGER.info("No SPM was selected, that's correct")
+        self._check_no_spm()
 
     @classmethod
     def teardown_class(cls):
         """
         Set some SPM in order to clean up
         """
-        assert hosts.setSPMPriority(True, config.HOSTS[0], '5')
+        assert hosts.setSPMPriority(
+            True, config.HOSTS[0], DEFAULT_SPM_PRIORITY)
         assert datacenters.waitForDataCenterState(config.DC_NAME)
         super(SPMPriorityMinusOne, cls).teardown_class()
 
 
-class SeveralHosts(AllHostsUp):
+class SeveralHosts(DCUp):
     """
     Several hosts with different SPM priority
 
@@ -187,6 +248,7 @@ class SeveralHosts(AllHostsUp):
     __test__ = True
     tcms_test_case = '136171'
 
+    @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_priority(self):
         """
         SPM host is always the host with the highest SPM Priority value.
@@ -194,3 +256,177 @@ class SeveralHosts(AllHostsUp):
         self._get_new_spm(config.HOSTS[0], config.HOSTS[2])
         self._get_new_spm(config.HOSTS[2], config.HOSTS[1])
         self._get_new_spm(config.HOSTS[1], config.HOSTS[2])
+
+
+class PriorityOutOfRange(SPMPriorityMinusOne):
+    """
+    Change the SPM priority value in the DataBase (negative test)
+
+    https://tcms.engineering.redhat.com/case/136454
+    """
+    __test__ = True
+    tcms_test_case = '136454'
+    host = config.HOSTS[0]
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Do nothing
+        """
+        pass
+
+    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    def test_priority(self):
+        """
+        Test edge values
+        """
+        for value in (
+                config.MAX_VALUE, config.MAX_VALUE - 1, config.MIN_VALUE,
+                config.MIN_VALUE + 1):
+            set_spm_priority_in_db(True, self.host, value)
+
+    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    def test_priority_greater_than_range(self):
+        """
+        Test that greater value than defined maximum cannot be set even in
+        database
+        """
+        set_spm_priority_in_db(False, self.host, config.MAX_VALUE + 1)
+
+    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    def test_priority_lesser_than_range(self):
+        """
+        Test that lesser value than defined minimum cannot be set even in
+        database
+        """
+        set_spm_priority_in_db(False, self.host, config.MIN_VALUE - 1)
+
+
+class ADefaultSPMPriority(BaseTestCase):
+    """
+    Default SPM priority value
+
+    https://tcms.engineering.redhat.com/case/136449/
+    """
+    __test__ = True
+    tcms_test_case = '136449'
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Don't do anything
+        """
+        pass
+
+    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    def test_priority(self):
+        """
+        Check that all hosts have default priority 5
+        """
+        priorities = list()
+        for host in config.HOSTS:
+            priorities.append(hosts.checkSPMPriority(True, host, '5'))
+        raise_if_false(
+            priorities, config.HOSTS, "Hosts %s doesn't have default priority",
+            exceptions.HostException)
+
+
+class RandomSelection(DCUp):
+    """
+    Random SPM selection when all hosts have the same priority
+
+    https://tcms.engineering.redhat.com/case/136466/
+    """
+    __test__ = True
+    tcms_test_case = '136466'
+    iteration_number = 5
+
+    def _select_new_spm(self):
+        """
+        Moves old SPM to maintenance, waits for new SPM and checks that new SPM
+        is the same as before. All hosts should have the same SPM priority
+        """
+        former_spm = hosts._getSPMHostname(config.HOSTS)
+        self._maintenance_and_wait_for_dc(former_spm)
+        assert hosts.activateHost(True, former_spm)
+        new_spm = hosts._getSPMHostname(config.HOSTS)
+        self.assertTrue(
+            former_spm != new_spm,
+            "Selected the same SPM - former spm: %s, current spm: %s" %
+            (former_spm, new_spm))
+
+    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    def test_priority(self):
+        """
+        Test several times that new SPM is selected each time former SPM is
+        moved to maintenance
+        """
+        for _ in range(self.iteration_number):
+            self._select_new_spm()
+
+
+class RestartVdsm(DCUp):
+    """
+    Restart/Stop VDSM
+
+    https://tcms.engineering.redhat.com/case/136468/
+    """
+    __test__ = True
+    tcms_test_case = '136468'
+
+    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    def test_restart_vdsm(self):
+        """
+        Ensure that after vdsm is restarted, priority change is not ignored
+        """
+        assert hosts.checkHostSpmStatus(True, config.HOSTS[2])
+        assert hosts.deactivateHost(True, config.HOSTS[2])
+        set_spm_priority_in_db(True, config.HOSTS[2], '-1')
+        restart_vdsm(2)
+        assert hosts.activateHost(True, config.HOSTS[2])
+        self._check_no_spm()
+        set_spm_priority_in_db(True, config.HOSTS[0], '2')
+        restart_vdsm(0)
+        assert hosts.waitForSPM(config.DC_NAME, SPM_TIMEOUT, POLLING_INTERVAL)
+        self._check_host_for_spm(config.HOSTS[0])
+
+
+class SingleHost(AllHostsUp):
+    """
+    Host that has priority -1 is not chosen, even if it is the only host
+
+    https://tcms.engineering.redhat.com/case/138270/
+    """
+    __test__ = True
+    tcms_test_case = '138270'
+    iteration_number = 5
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Puts two hosts into default cluster
+        """
+        hi_hosts.switch_host_to_cluster(config.HOSTS[1], TMP_CLUSTER)
+        hi_hosts.switch_host_to_cluster(config.HOSTS[2], TMP_CLUSTER)
+        assert hosts.setSPMPriority(True, config.HOSTS[0], '-1')
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Moves two hosts back from default cluster
+        """
+        assert hosts.setSPMPriority(
+            True, config.HOSTS[0], DEFAULT_SPM_PRIORITY)
+        hi_hosts.switch_host_to_cluster(config.HOSTS[1], config.CLUSTER_NAME)
+        hi_hosts.switch_host_to_cluster(config.HOSTS[2], config.CLUSTER_NAME)
+        super(SingleHost, cls).teardown_class()
+
+    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    def test_single_host(self):
+        """
+        Maintenace host several times and make sure it was not selected as SPM
+        """
+        for _ in range(self.iteration_number):
+            assert hosts.deactivateHost(True, config.HOSTS[0])
+            assert hosts.activateHost(True, config.HOSTS[0])
+            self._check_no_spm()
