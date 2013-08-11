@@ -207,7 +207,7 @@ def checkSummary(positive, domain):
             except AttributeError:
                 pass
 
-     if not validator.compareCollectionSize(storageDomains, sumSDActive, util.logger):
+     if not validator.compareCollectionSize(sdActive, sumSDActive, util.logger):
         status = False
 
      return status
