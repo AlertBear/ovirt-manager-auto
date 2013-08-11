@@ -46,9 +46,9 @@ VM_NAME = PARAMETERS.as_list('vm_name')
 TEMPLATE_NAME = PARAMETERS['template_name']
 VM_OS = PARAMETERS['vm_os']
 
-COBBLER_ADDRESS = PARAMETERS['cobbler_address']
-COBBLER_USER = PARAMETERS['cobbler_user']
-COBBLER_PASSWORD = PARAMETERS['cobbler_passwd']
+COBBLER_ADDRESS = PARAMETERS.get('cobbler_address', None)
+COBBLER_USER = PARAMETERS.get('cobbler_user', None)
+COBBLER_PASSWORD = PARAMETERS.get('cobbler_passwd', None)
 
 DISK_TYPE = ENUMS['disk_type_system']
 DISPLAY_TYPE = ENUMS['display_type_spice']
