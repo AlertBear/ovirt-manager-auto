@@ -161,6 +161,32 @@ def unmountRhevmMounts(hostObj):
     return rc
 
 
+def cleanCorruptedISCSIDBFiles(hostObj):
+    '''
+    Description: WA for bug #915747, it cleans iscsi db files with size 0
+    **Author**: imeerovi
+    **Parameters**:
+        **hostObj* - Object represents the hostObj
+    Returns: True if succeeded to remove corrupted files, else in other case
+    '''
+    rc = True
+    logger.info("Checking for corrupted ISCSI files (WA for bug #915747)")
+    _, out = hostObj.runCmd(['ls', '-ls',  '/var/lib/iscsi/nodes/'])
+    for line in [x.split() for x in out.splitlines() if 'iqn' in x]:
+        file_size = line[5]
+        file_name = line[-1]
+        if file_size == '0':
+            logger.info("Erasing empty file %s", file_name)
+            cmdRc, out = hostObj.runCmd(['echo', 'y', '|', 'rm', '-rf',
+                                         '/var/lib/iscsi/nodes/%s' %
+                                         file_name])
+            if not cmdRc:
+                logger.error("Failed to remove %s with error: %s", file_name,
+                             out)
+                rc = False
+    return rc
+
+
 def hostCleanup(address, password, username='root'):
     '''
     Description: function that cleanup hosts
@@ -177,7 +203,8 @@ def hostCleanup(address, password, username='root'):
     cleanHostStorageSession(hostObj)
     killProcesses(hostObj, 'qemu')
     checkIfProcessIsRunning(hostObj)
-    return unmountRhevmMounts(hostObj) and restartServices(hostObj)
+    return unmountRhevmMounts(hostObj) and restartServices(hostObj) \
+        and cleanCorruptedISCSIDBFiles(hostObj)
 
 
 class CleanUpHosts(Component):
