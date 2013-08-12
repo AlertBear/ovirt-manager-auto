@@ -293,7 +293,7 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
                  os_type='RHEL6x64', image='rhel6.4-agent3.2',
                  nic='nic1', size=DISK_SIZE, useAgent=True,
                  template_name='tempTest1', attempt=ATTEMPTS,
-                 interval=INTERVAL, placement_host=None,
+                 interval=INTERVAL, placement_host=None, port_mirroring=None,
                  vm_flag=True, template_flag=True):
     '''
         Function that creates DC, Cluster, Storage, Hosts
@@ -336,6 +336,7 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
             *  *attempt*- attempts to connect after installation
             *  *inerval* - interval between attempts
             *  *placement_host* - the host that will hold VM
+            *  *port_mirroring* - network to enable port mirroring on
             *  *vm_flag* - Set to true, if desired VM
             *  *template_flag* - set to true if desired template
         **Returns**: True if creation of the setup succeeded, otherwise False
@@ -376,7 +377,8 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
                         cobblerPasswd=cobblerPasswd, network='rhevm',
                         useAgent=True, diskType=diskType,
                         attempt=attempt, interval=interval,
-                        placement_host=placement_host):
+                        placement_host=placement_host,
+                        port_mirroring=port_mirroring):
             logger.error("Cannot create VM")
             return False
     if template_flag:
