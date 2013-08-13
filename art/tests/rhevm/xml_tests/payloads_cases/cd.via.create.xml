@@ -12,6 +12,8 @@
     <test_action>addVm</test_action>
     <parameters>name='cd-payload', description='payload test', cluster='{cluster_name}', template= 'payload-template-for-test', display_type='{display_type}', payloads=[('cdrom','file.cd','payload cdrom!')]</parameters>
     <positive>TRUE</positive>
+    <bz>985008</bz>
+    <vital>True</vital>
     <run>yes</run>
 </test_case>
 <test_case>
