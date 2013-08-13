@@ -65,6 +65,8 @@ ENGINE_HEALTH_URL = "http://localhost/OvirtEngineWeb/HealthStatus"
 ENGINE_SERVICE = "ovirt-engine"
 SUPERVDSMD = "supervdsmd"
 
+RHEVM_UTILS_ENUMS = settings.opts['elements_conf']['RHEVM Utilities']
+
 
 class PSQLException(Exception):
     pass
@@ -1261,7 +1263,7 @@ def runSQLQueryOnSetup(vdc, vdc_pass, query,
     return True, [a.strip().split('|') for a in out.strip().split(sep) if a.strip()]
 
 
-def get_running_tasks(vdc, vdc_pass, sp_id):
+def get_running_tasks(vdc, vdc_pass, sp_id, db_name, db_user):
     """
     Description: Gets tuple (task_id, storage_pool_id) for all tasks running
                  in rhevm
@@ -1269,10 +1271,12 @@ def get_running_tasks(vdc, vdc_pass, sp_id):
         * vdc - ip or hostname of rhevm
         * vdc_pass - root password for rhevm machine
         * sp_id - storage pool id
+        * db_name - name of the rhevm database
+        * db_user - name of the user of database
     """
     query = "select task_id, vdsm_task_id, task_params_class from " \
             "async_tasks where storage_pool_id = '%s'" % sp_id
-    status, tasks = runSQLQueryOnSetup(vdc, vdc_pass, query)
+    status, tasks = runSQLQueryOnSetup(vdc, vdc_pass, query, db_user, db_name)
     if not status:
         raise PSQLException("runSQLQueryOnSetup returned False")
     logger.debug("Query %s returned list: %s", query, tasks)
@@ -1280,21 +1284,27 @@ def get_running_tasks(vdc, vdc_pass, sp_id):
 
 
 @is_action("waitForTasks")
-def wait_for_tasks(vdc, vdc_password, datacenter, timeout=TASK_TIMEOUT,
-                   sleep=TASK_POLL):
+def wait_for_tasks(
+        vdc, vdc_password, datacenter,
+        db_name=RHEVM_UTILS_ENUMS['RHEVM_DB_NAME'],
+        db_user=RHEVM_UTILS_ENUMS['RHEVM_DB_USER'], timeout=TASK_TIMEOUT,
+        sleep=TASK_POLL):
     """
     Description: Waits until all tasks in data-center are finished
     Parameters:
         * vdc - ip or hostname of rhevm
         * vdc_password - root password for rhevm machine
         * datacenter - name of the datacenter that has running tasks
+        * db_name - name of the rhevm database
+        * db_user - name of the user of database
         * timeout - max seconds to wait
         * sleep - polling interval
     """
     dc_util = get_api('data_center', 'datacenters')
     sp_id = dc_util.find(datacenter).id
     sampler = TimeoutingSampler(
-        timeout, sleep, get_running_tasks, vdc, vdc_password, sp_id)
+        timeout, sleep, get_running_tasks, vdc, vdc_password, sp_id, db_name,
+        db_user)
     for tasks in sampler:
         if not tasks:
             logger.info("All tasks are gone")

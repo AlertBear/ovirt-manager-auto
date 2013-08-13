@@ -48,6 +48,7 @@ from art.test_handler.settings import opts
 
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
+RHEVM_UTILS_ENUMS = opts['elements_conf']['RHEVM Utilities']
 
 StorageDomain = getDS('StorageDomain')
 IscsiDetails = getDS('IscsiDetails')
@@ -681,13 +682,17 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
 
 
 @is_action()
-def cleanDataCenter(positive, datacenter, formatIsoStorage='false',
-                    formatExpStorage='false', vdc=None, vdc_password=None):
+def cleanDataCenter(
+        positive, datacenter, db_name=RHEVM_UTILS_ENUMS['RHEVM_DB_NAME'],
+        db_user=RHEVM_UTILS_ENUMS['RHEVM_DB_USER'], formatIsoStorage='false',
+        formatExpStorage='false', vdc=None, vdc_password=None):
     '''
     Description: Remove all elements in data center: dataCenter, storage domains, hosts & cluster.
     Author: istein
     Parameters:
        * datacenter - data center name
+       * db_name - name of the rhevm database
+       * db_user - name of the rhevm database user
        * formatIsoStorage - Determine if ISO storage domain will be formatted or not (true/false).
     '''
 
@@ -731,7 +736,7 @@ def cleanDataCenter(positive, datacenter, formatIsoStorage='false',
     if vdc is not None and vdc_password is not None:
         util.logger.info('Waiting for vms to be removed')
         wait_for_tasks(vdc=vdc, vdc_password=vdc_password,
-                       datacenter=datacenter)
+                       datacenter=datacenter, db_name=db_name, db_user=db_user)
 
     util.logger.info('Remove Templates, if any, connected to cluster')
     templObjList = templUtil.get(absLink=False)
@@ -750,7 +755,7 @@ def cleanDataCenter(positive, datacenter, formatIsoStorage='false',
     if vdc is not None and vdc_password is not None:
         util.logger.info('Waiting for templates to be removed')
         wait_for_tasks(vdc=vdc, vdc_password=vdc_password,
-                       datacenter=datacenter)
+                       datacenter=datacenter, db_name=db_name, db_user=db_user)
 
     sdObjList = getDCStorages(datacenter, False)
 
@@ -777,7 +782,7 @@ def cleanDataCenter(positive, datacenter, formatIsoStorage='false',
     if vdc is not None and vdc_password is not None:
         util.logger.info('Waiting for disks to be removed')
         wait_for_tasks(vdc=vdc, vdc_password=vdc_password,
-                       datacenter=datacenter)
+                       datacenter=datacenter, db_name=db_name, db_user=db_user)
 
     util.logger.info("Find all non master storage domains")
 
