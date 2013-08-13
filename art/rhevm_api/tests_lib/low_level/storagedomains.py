@@ -857,7 +857,9 @@ def cleanDataCenter(
     hostObjList = hostUtil.get(absLink=False)
     hostsConnectedToCluster = filter(lambda hostObj: hostObj.get_cluster().get_id() == clId, hostObjList)
     if hostsConnectedToCluster:
-        nonMaintHosts = filter(lambda hostObj: hostObj.get_status().get_state() != "MAINTENANCE", hostsConnectedToCluster)
+        nonMaintHosts = [
+            host_obj for host_obj in hostsConnectedToCluster
+            if host_obj.status.state != ENUMS['host_state_maintenance']]
         if nonMaintHosts:
             for hostObj in nonMaintHosts:
                 if not deactivateHost(positive, hostObj.get_name()):
