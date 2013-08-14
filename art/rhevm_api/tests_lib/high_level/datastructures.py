@@ -3,25 +3,16 @@ import copy
 from art.rhevm_api.data_struct import data_structures
 
 
-# name must be the same, otherwise validator fails
-class Storage(data_structures.Storage):
-    member_data_items_ = copy.copy(data_structures.Storage.member_data_items_)
-    member_data_items_['nfs_timeo'] = data_structures.MemberSpec_(
-                                                'nfs_timeo', 'xs:string', 0)
-
-    member_data_items_['nfs_retrans'] = data_structures.MemberSpec_(
-                                                'nfs_retrans', 'xs:string', 0)
-
+class BaseClass(object):
     def _format_string(self, value, input_name):
         return self.gds_format_string(
-                data_structures.quote_xml(value).encode(
-                                            data_structures.ExternalEncoding),
-                input_name=input_name)
+            data_structures.quote_xml(value).encode(
+                data_structures.ExternalEncoding),
+            input_name=input_name)
 
     def _format_boolean(self, value, input_name):
         return self.gds_format_boolean(
-                    self.gds_str_lower(str(value)),
-                    input_name=input_name)
+            self.gds_str_lower(str(value)), input_name=input_name)
 
     def _write_one_member(
             self, member, outfile, level, namespace_, entity_name):
@@ -36,14 +27,12 @@ class Storage(data_structures.Storage):
                 '<%(ns)s%(ent)s>%(value)s</%(ent)s%(ns)s>\n' % {
                     'ns': namespace_, 'ent': entity_name,
                     'value': format_function(
-                                self.__getattribute__(member),
-                                entity_name)})
+                        self.__getattribute__(member),
+                        entity_name)})
 
-    def exportChildren(self, outfile, level, namespace_='', name_='Storage',
-                       fromsubclass_=False):
-        super(data_structures.Storage, self).exportChildren(
-                                    outfile, level, namespace_, name_, True)
-
+    def exportChildren(
+            self, outfile, level, namespace_='', name_='',
+            fromsubclass_=False):
         for member_name, member_spec in self.member_data_items_.iteritems():
             if member_spec.data_type in ['xs:string', 'xs:boolean']:
                 self._write_one_member(member_name, outfile, level, namespace_,
@@ -53,13 +42,13 @@ class Storage(data_structures.Storage):
                     item.export(outfile, level, namespace_, name_=member_name)
             elif self.__getattribute__(member_name) is not None:
                 self.__getattribute__(member_name).export(
-                                outfile, level, namespace_, name_=member_name)
+                    outfile, level, namespace_, name_=member_name)
 
     def _get_python_format_function(self, member_name):
         value = self.__getattribute__(member_name)
         if self.member_data_items_[member_name].data_type == 'xs:string':
             return data_structures.quote_python(value).encode(
-                                            data_structures.ExternalEncoding)
+                data_structures.ExternalEncoding)
         if self.member_data_items_[member_name].data_type == 'xs:boolean':
             return str(value)
 
@@ -94,9 +83,6 @@ class Storage(data_structures.Storage):
             outfile.write('),\n')
 
     def exportLiteralChildren(self, outfile, level, name_):
-        super(data_structures.Storage, self).exportLiteralChildren(
-                                                        outfile, level, name_)
-
         for member_name, member_spec in self.member_data_items_.iteritems():
             if member_spec.data_type in ['xs:string', 'xs:boolean']:
                 self._export_literal_child(outfile, level, member_name)
@@ -133,12 +119,126 @@ class Storage(data_structures.Storage):
         if nodeName_ in ['type', 'float', 'build']:
             nodeName_ = nodeName_ + "_"
         if self.member_data_items_[nodeName_].data_type in [
-                                                'xs:string', 'xs:boolean']:
+                'xs:string', 'xs:boolean']:
             self._build_child(child_, nodeName_, node)
         elif self.member_data_items_[nodeName_].container:
             self._build_collection(child_, nodeName_)
         else:
             self._build_object(child_, nodeName_)
 
+
+# name must be the same, otherwise validator fails
+class Storage(data_structures.Storage, BaseClass):
+    member_data_items_ = copy.copy(data_structures.Storage.member_data_items_)
+    member_data_items_['nfs_timeo'] = data_structures.MemberSpec_(
+        'nfs_timeo', 'xs:string', 0)
+    member_data_items_['nfs_retrans'] = data_structures.MemberSpec_(
+        'nfs_retrans', 'xs:string', 0)
+
+    def _format_string(self, value, input_name):
+        return BaseClass._format_string(self, value, input_name)
+
+    def _format_boolean(self, value, input_name):
+        return BaseClass._format_boolean(self, value, input_name)
+
+    def _write_one_member(
+            self, member, outfile, level, namespace_, entity_name):
+        return BaseClass._write_one_member(
+            self, member, outfile, level, namespace_, entity_name)
+
+    def exportChildren(
+            self, outfile, level, namespace_='', name_='Storage',
+            fromsubclass_=False):
+        super(data_structures.Storage, self).exportChildren(
+            outfile, level, namespace_, name_, True)
+        BaseClass.exportChildren(
+            self, outfile, level, namespace_, name_, True)
+
+    def _get_python_format_function(self, member_name):
+        return BaseClass._get_python_format_function(self, member_name)
+
+    def _export_literal_child(self, outfile, level, child_name):
+        BaseClass._export_literal_child(self, outfile, level, child_name)
+
+    def _export_collection(self, outfile, level, member_name):
+        BaseClass._export_collection(self, outfile, level, member_name)
+
+    def _export_object(self, outfile, level, member_name):
+        BaseClass._export_object(self, outfile, level, member_name)
+
+    def exportLiteralChildren(self, outfile, level, name_):
+        super(data_structures.Storage, self).exportLiteralChildren(
+            outfile, level, name_)
+        BaseClass.exportLiteralChildren(self, outfile, level, name_)
+
+    def _build_child(self, child, name, node):
+        BaseClass._build_child(self, child, name, node)
+
+    def _build_collection(self, child, name):
+        BaseClass._build_collection(self, child, name)
+
+    def _build_object(self, child, name):
+        BaseClass._build_object(self, child, name)
+
+    def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
+        BaseClass.buildChildren(self, child_, node, nodeName_, fromsubclass_)
         super(data_structures.Storage, self).buildChildren(
-                                            child_, node, nodeName_, True)
+            child_, node, nodeName_, True)
+
+
+# name must be the same, otherwise validator fails
+class StorageConnection(data_structures.StorageConnection, BaseClass):
+    member_data_items_ = copy.copy(
+        data_structures.StorageConnection.member_data_items_)
+    member_data_items_['port'] = data_structures.MemberSpec_(
+        'port', 'xs:string', 0)
+
+    def _format_string(self, value, input_name):
+        return BaseClass._format_string(self, value, input_name)
+
+    def _format_boolean(self, value, input_name):
+        return BaseClass._format_boolean(self, value, input_name)
+
+    def _write_one_member(
+            self, member, outfile, level, namespace_, entity_name):
+        return BaseClass._write_one_member(
+            self, member, outfile, level, namespace_, entity_name)
+
+    def exportChildren(
+            self, outfile, level, namespace_='', name_='Storage',
+            fromsubclass_=False):
+        super(data_structures.StorageConnection, self).exportChildren(
+            outfile, level, namespace_, name_, True)
+        BaseClass.exportChildren(
+            self, outfile, level, namespace_, name_, True)
+
+    def _get_python_format_function(self, member_name):
+        return BaseClass._get_python_format_function(self, member_name)
+
+    def _export_literal_child(self, outfile, level, child_name):
+        BaseClass._export_literal_child(self, outfile, level, child_name)
+
+    def _export_collection(self, outfile, level, member_name):
+        BaseClass._export_collection(self, outfile, level, member_name)
+
+    def _export_object(self, outfile, level, member_name):
+        BaseClass._export_object(self, outfile, level, member_name)
+
+    def exportLiteralChildren(self, outfile, level, name_):
+        super(data_structures.StorageConnection, self).exportLiteralChildren(
+            outfile, level, name_)
+        BaseClass.exportLiteralChildren(self, outfile, level, name_)
+
+    def _build_child(self, child, name, node):
+        BaseClass._build_child(self, child, name, node)
+
+    def _build_collection(self, child, name):
+        BaseClass._build_collection(self, child, name)
+
+    def _build_object(self, child, name):
+        BaseClass._build_object(self, child, name)
+
+    def buildChildren(self, child_, node, nodeName_, fromsubclass_=False):
+        BaseClass.buildChildren(self, child_, node, nodeName_, fromsubclass_)
+        super(data_structures.StorageConnection, self).buildChildren(
+            child_, node, nodeName_, True)

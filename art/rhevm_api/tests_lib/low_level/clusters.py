@@ -370,6 +370,7 @@ def connectClusterToDataCenter(positive, cluster, datacenter):
     # Search for datacenter
     try:
         dcId = dcUtil.find(datacenter).get_id()
+        util.logger.info("Looking for cluster %s" % cluster)
         clusterObj = util.find(cluster)
     except EntityNotFound:
         return not positive

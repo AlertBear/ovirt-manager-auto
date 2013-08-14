@@ -23,26 +23,25 @@ import re
 from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api.apis_utils import getDS
 from art.core_api.validator import compareCollectionSize
-from art.rhevm_api.tests_lib.low_level.clusters import addCluster, removeCluster, \
-                         isHostAttachedToCluster, attachHostToCluster, \
-                         connectClusterToDataCenter
-from art.rhevm_api.tests_lib.low_level.datacenters import addDataCenter, removeDataCenter
+from art.rhevm_api.tests_lib.low_level.clusters import addCluster, \
+    removeCluster, isHostAttachedToCluster, attachHostToCluster, \
+    connectClusterToDataCenter
+from art.rhevm_api.tests_lib.low_level.datacenters import addDataCenter, \
+    removeDataCenter
 from art.rhevm_api.tests_lib.low_level.disks import getStorageDomainDisks, \
-                                                    deleteDisk, \
-                                                    waitForDisksGone
-from art.rhevm_api.tests_lib.low_level.hosts import deactivateHost, removeHost, \
-                                                    getHostCompatibilityVersion
+    deleteDisk, waitForDisksGone
+from art.rhevm_api.tests_lib.low_level.hosts import deactivateHost, \
+    removeHost, getHostCompatibilityVersion
 from art.rhevm_api.tests_lib.low_level.hosts import addHost, \
-                                    waitForHostsStates, getHost
+    waitForHostsStates, getHost
 from art.rhevm_api.tests_lib.low_level.vms import removeVms, stopVms, createVm
-from art.rhevm_api.tests_lib.low_level.templates import removeTemplates, importTemplate
+from art.rhevm_api.tests_lib.low_level.templates import removeTemplates
 from art.rhevm_api.utils.storage_api import getVmsInfo, getImagesList, \
-                                    getVolumeInfo, getVolumesList
+    getVolumeInfo, getVolumesList
 from art.rhevm_api.utils.test_utils import validateElementStatus, get_api, \
-                                    searchForObj, getImageAndVolumeID, \
-                                    getAllImages, wait_for_tasks
+    searchForObj, getImageAndVolumeID, getAllImages, wait_for_tasks
 from art.rhevm_api.utils.xpath_utils import XPathMatch
-from utilities.utils import getIpAddressByHostName, readConfFile
+from utilities.utils import getIpAddressByHostName
 from art.core_api import is_action
 from art.test_handler.settings import opts
 
@@ -67,8 +66,10 @@ vmUtil = get_api('vm', 'vms')
 clUtil = get_api('cluster', 'clusters')
 fileUtil = get_api('file', 'files')
 diskUtil = get_api('disk', 'disks')
+connUtil = get_api('storage_connection', 'storageconnections')
 
-xpathMatch = is_action('xpathStoragedomains', id_name='xpathMatch')(XPathMatch(util))
+xpathMatch = is_action(
+    'xpathStoragedomains', id_name='xpathMatch')(XPathMatch(util))
 
 
 def _prepareStorageDomainObject(positive, **kwargs):
@@ -79,9 +80,9 @@ def _prepareStorageDomainObject(positive, **kwargs):
     if name:
         sd.set_name(name)
 
-    type = kwargs.pop('type', None)
-    if type:
-        sd.set_type(type)
+    type_ = kwargs.pop('type', None)
+    if type_:
+        sd.set_type(type_)
 
     host = kwargs.pop('host', None)
     if host:
@@ -90,38 +91,47 @@ def _prepareStorageDomainObject(positive, **kwargs):
 
     storage_type = kwargs.pop('storage_type', None)
 
-    if storage_type == ENUMS['storage_type_local']:
-        sd.set_storage(Storage(type_=storage_type, path=kwargs.pop('path', None)))
+    if 'storage_connection' in kwargs:
+        storage = Storage()
+        storage.id = kwargs.pop('storage_connection')
+        sd.set_storage(storage)
+    elif storage_type == ENUMS['storage_type_local']:
+        sd.set_storage(Storage(
+            type_=storage_type, path=kwargs.pop('path', None)))
     elif storage_type == ENUMS['storage_type_nfs']:
         storage_format = kwargs.pop('storage_format', None)
         if storage_format is None:
             status, hostCompVer = getHostCompatibilityVersion(positive, host)
-            if type and type.lower() == 'data':
+            if type_ and type_.lower() == ENUMS['storage_dom_type_data']:
                 if hostCompVer['hostCompatibilityVersion'] in ['2.2', '3.0']:
                     storage_format = ENUMS['storage_format_version_v1']
                 else:
                     storage_format = ENUMS['storage_format_version_v3']
-        sd.set_storage(Storage(type_=storage_type, path=kwargs.pop('path', None),
-                            address=kwargs.pop('address', None),
-                            nfs_version=kwargs.pop('nfs_version', None),
-                            nfs_retrans=kwargs.pop('nfs_retrans', None),
-                            nfs_timeo=kwargs.pop('nfs_timeo', None),
-                            mount_options=kwargs.pop('mount_options', None)))
+        sd.set_storage(
+            Storage(
+                type_=storage_type, path=kwargs.pop('path', None),
+                address=kwargs.pop('address', None),
+                nfs_version=kwargs.pop('nfs_version', None),
+                nfs_retrans=kwargs.pop('nfs_retrans', None),
+                nfs_timeo=kwargs.pop('nfs_timeo', None),
+                mount_options=kwargs.pop('mount_options', None)))
         sd.set_storage_format(storage_format)
     elif storage_type == ENUMS['storage_type_iscsi']:
         lun = kwargs.pop('lun', None)
         lun_address = getIpAddressByHostName(kwargs.pop('lun_address', None))
         lun_target = kwargs.pop('lun_target', None)
         lun_port = kwargs.pop('lun_port', None)
-        logical_unit = LogicalUnit(id=lun, address=lun_address,
-                        target=lun_target, port=lun_port)
-        sd.set_storage(Storage(type_=storage_type, logical_unit=[logical_unit]))
+        logical_unit = LogicalUnit(
+            id=lun, address=lun_address, target=lun_target, port=lun_port)
+        sd.set_storage(
+            Storage(type_=storage_type, logical_unit=[logical_unit]))
 
-        if type and type.lower() == 'data':
+        if type_ and type_.lower() == ENUMS['storage_dom_type_data']:
             if 'storage_format' in kwargs:
                 sd.set_storage_format(kwargs.pop('storage_format'))
             elif host:
-                status, hostCompVer = getHostCompatibilityVersion(positive, host)
+                status, hostCompVer = getHostCompatibilityVersion(
+                    positive, host)
                 if not status:
                     util.logger.error("Can't determine storage domain version")
                     return False
@@ -135,9 +145,11 @@ def _prepareStorageDomainObject(positive, **kwargs):
         logical_unit = LogicalUnit(id=kwargs.pop('lun', None))
         sd.set_storage(Storage(logical_unit=logical_unit))
     elif storage_type == ENUMS['storage_type_posixfs']:
-        sd.set_storage(Storage(type_=storage_type, path=kwargs.pop('path', None),
-                               address=kwargs.pop('address', None),
-                               vfs_type=kwargs.pop('vfs_type', None)))
+        sd.set_storage(
+            Storage(
+                type_=storage_type, path=kwargs.pop('path', None),
+                address=kwargs.pop('address', None),
+                vfs_type=kwargs.pop('vfs_type', None)))
         storage_format = ENUMS['storage_format_version_v3']
         sd.set_storage_format(storage_format)
 
@@ -167,6 +179,8 @@ def addStorageDomain(positive, wait=True, **kwargs):
        * nfs_retrans - the number of times the NFS client retries a request
        * nfs_timeo - time before client retries NFS request
        * mount_options - custom mount options
+       * storage_connection - id of the storage connection which should be used
+            (it will override all connection params like address, lun or path)
        * wait - if True, wait for the action to complete
     Return: status (True if storage domain was added properly,
                     False otherwise)
@@ -229,7 +243,8 @@ def searchForStorageDomain(positive, query_key, query_val, key_name, **kwargs):
        * query_key - name of property to search for
        * query_val - value of the property to search for
        * key_name - name of the property in object equivalent to query_key
-    Return: status (True if expected number is equal to found by search, False otherwise)
+    Return: status (True if expected number is equal to found by search,
+                    False otherwise)
     '''
 
     return searchForObj(util, query_key, query_val, key_name, **kwargs)
@@ -1409,19 +1424,20 @@ def prepareVmWithRhevm(positive, hosts, cpuName, username, password, datacenter,
 
     # Create VM and install it
     if installation == 'true':
-        return createVm(True, vmName=vm_name, vmDescription=vm_description, cluster=cluster,
-                       mac_address=tested_setup_mac_address,
-                       nic=nic, nicType=nicType, storageDomainName=data_domain_name,
-                       size=disk_size, diskType=disk_type, volumeFormat=volume_format,
-                       diskInterface=disk_interface, bootable=bootable,
-                       wipe_after_delete=wipe_after_delete, start=start,type=vm_type,
-                       memory=memory_size, cpu_socket=cpu_socket,
-                       cpu_cores=cpu_cores, display_type=display_type,
-                       installation=True, os_type=os_type, user=vm_user,
-                       password=vm_password, cobblerAddress=cobblerAddress,
-                       cobblerUser=cobblerUser, cobblerPasswd=cobblerPasswd,
-                       image=image,network=network,useAgent=useAgent)
+        return createVm(
+            True, vmName=vm_name, vmDescription=vm_description,
+            cluster=cluster, mac_address=tested_setup_mac_address, nic=nic,
+            nicType=nicType, storageDomainName=data_domain_name,
+            size=disk_size, diskType=disk_type, volumeFormat=volume_format,
+            diskInterface=disk_interface, bootable=bootable,
+            wipe_after_delete=wipe_after_delete, start=start, type=vm_type,
+            memory=memory_size, cpu_socket=cpu_socket, cpu_cores=cpu_cores,
+            display_type=display_type, installation=True, os_type=os_type,
+            user=vm_user, password=vm_password, cobblerAddress=cobblerAddress,
+            cobblerUser=cobblerUser, cobblerPasswd=cobblerPasswd, image=image,
+            network=network, useAgent=useAgent)
     return True
+
 
 @is_action("isStorageDomainActive")
 def is_storage_domain_active(datacenter, domain):
@@ -1437,3 +1453,57 @@ def is_storage_domain_active(datacenter, domain):
     sdObj = getDCStorage(datacenter, domain)
     active = sdObj.get_status().get_state()
     return active == ENUMS['storage_domain_state_active']
+
+
+@is_action()
+def getConnectionsForStorageDomain(storagedomain):
+    """
+    Description: Returns all connections added to a storage domain
+    Author: kjachim
+    Parameters:
+        * storagedomain - storage domain name
+    Returns: List of Connection objects
+    """
+    sdObj = util.find(storagedomain)
+    return connUtil.getElemFromLink(sdObj)
+
+
+@is_action()
+def addConnectionToStorageDomain(storagedomain, conn_id):
+    """
+    Description: Adds a connection to a storage domain
+    Author: kjachim
+    Parameters:
+        * storagedomain - storage domain name
+        * conn_id - id of the connection
+    Returns: true if operation succeeded
+    """
+    sdObj = util.find(storagedomain)
+    connObj = connUtil.find(conn_id, attribute='id')
+    conn_objs = util.getElemFromLink(
+        sdObj, link_name='storageconnections', attr='storage_connection',
+        get_href=True)
+    _, status = connUtil.create(
+        connObj, True, collection=conn_objs, async=True)
+    return status
+
+
+@is_action()
+def detachConnectionFromStorageDomain(storagedomain, conn_id):
+    """
+    Description: Detach a connection from a storage domain
+    Author: kjachim
+    Parameters:
+        * storagedomain - storage domain name
+        * conn_id - id of the connection
+    Returns: true if operation succeeded
+    """
+    sdObj = util.find(storagedomain)
+    conn_objs = util.getElemFromLink(
+        sdObj, link_name='storageconnections', attr='storage_connection')
+    for conn in conn_objs:
+        if conn.id == conn_id:
+            # conn.href == "/api/storageconnections/[conn_id]" ...
+            conn.href = "%s/storageconnections/%s" % (sdObj.href, conn_id)
+            return util.delete(conn, True)
+    return False

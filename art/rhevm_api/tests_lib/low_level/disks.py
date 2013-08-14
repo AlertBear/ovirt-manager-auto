@@ -44,6 +44,7 @@ NIC_API = get_api('nic', 'nics')
 SNAPSHOT_API = get_api('snapshot', 'snapshots')
 TAG_API = get_api('tag', 'tags')
 CDROM_API = get_api('cdrom', 'cdroms')
+CONN_API = get_api('storage_connection', 'storageconnections')
 
 logger = logging.getLogger(__package__ + __name__)
 xpathMatch = is_action('xpathMatch')(XPathMatch(VM_API))
@@ -109,6 +110,9 @@ def _prepareDiskObject(**kwargs):
                               deletion
         * storagedomain - name of storage domain where disk will reside
         * quota - disk quota
+        * storage_connection - in case of direct LUN - existing storage
+                               connection to use instead of creating a new one
+        You cannot set both storage_connection and lun_* in one call!
     Author: jlibosva
     Return: Disk object
     """
@@ -122,7 +126,19 @@ def _prepareDiskObject(**kwargs):
                  kwargs.pop('lun_password', None))
     type_ = kwargs.pop('type_', None)
 
+    storage_connection = kwargs.pop('storage_connection', None)
+
+    if lun != (None, None, None, 3260) and storage_connection:
+        logger.error(
+            "You cannot set storage connection id and LUN params in one call!")
+        return None
+
     disk = data_st.Disk(**kwargs)
+
+    if storage_connection is not None:
+        storage = data_st.Storage()
+        storage.id = storage_connection
+        disk.set_lun_storage(storage)
 
     if storage_domain_name is not None:
         storage_domain = STORAGE_DOMAIN_API.find(storage_domain_name,
@@ -173,6 +189,9 @@ def addDisk(positive, **kwargs):
         * lun_target - iscsi target for direct lun
         * lun_id - direct lun's id
         * quota - disk quota
+        * storage_connection - in case of direct LUN - existing storage
+                               connection to use instead of creating a new one
+        You cannot set both storage_connection and lun_* in one call!
     Author: jlibosva
     Return: True - if positive and successfully added or not positive and not
                    added successfully
@@ -205,6 +224,9 @@ def updateDisk(positive, **kwargs):
                               deletion
         * storagedomain - name of storage domain where disk will reside
         * quota - disk quota
+        * storage_connection - in case of direct LUN - existing storage
+                               connection to use instead of creating a new one
+        You cannot set both storage_connection and lun_* in one call!
     Author: jlibosva
     Return: Status of the operation's result dependent on positive value
     """
