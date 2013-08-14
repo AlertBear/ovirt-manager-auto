@@ -1824,9 +1824,9 @@
     <test_action>migrateVm</test_action>
     <parameters>vm='restvm_migration', host='{vds[1]}'</parameters>
     <positive>TRUE</positive>
-    <run>If(1&lt;len('[vds]'.split(',')))</run>
+     <run>If(1&lt;len('[vds]'.split(',')))</run>
     <!--  <run>no</run> -->
-    <bz>756044</bz>
+    <bz>996146</bz>
     <conf>headers={'Correlation-Id': 501}</conf>
   </test_case>
   <test_case>
@@ -1884,7 +1884,7 @@
     <positive>TRUE</positive>
     <run>if(1&lt;len('[vds]'.split(',')))</run>
     <conf>headers={'Correlation-Id': 505}</conf>
-    <bz>756044</bz>
+    <bz>996146</bz>
   </test_case>
   <test_case>
     <id>cb8cd902-c695-11e1-bca8-f0def10e0ce8</id>
