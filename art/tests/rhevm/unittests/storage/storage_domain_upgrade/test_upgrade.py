@@ -14,8 +14,7 @@ import art.rhevm_api.tests_lib.low_level.hosts as llhosts
 import art.rhevm_api.tests_lib.low_level.storagedomains as llstoragedomains
 import art.rhevm_api.tests_lib.low_level.vms as llvms
 import art.rhevm_api.tests_lib.high_level.storagedomains as hlstoragedomains
-from art.rhevm_api.utils.test_utils import get_api, cobblerRemoveSystem, \
-    wait_for_tasks
+from art.rhevm_api.utils.test_utils import get_api, wait_for_tasks
 import config
 
 __THIS_MODULE = modules[__name__]
@@ -140,21 +139,16 @@ class TestUpgrade(TestCase):
             display_type=config.ENUMS['display_type_spice'],
             network=config.PARAMETERS['mgmt_bridge'])
         assert llvms.unattendedInstallation(
-            True, self.vm_name,
-            config.PARAMETERS['cobbler_address'],
-            config.PARAMETERS['cobbler_user'],
-            config.PARAMETERS['cobbler_passwd'],
-            config.PARAMETERS['cobbler_profile'],
-            nic=nic)
+            True, self.vm_name, config.PARAMETERS['cobbler_profile'], nic=nic,
+            cobblerAddress=config.PARAMETERS.get('cobbler_address', None),
+            cobblerUser=config.PARAMETERS.get('cobbler_user', None),
+            cobblerPasswd=config.PARAMETERS.get('cobbler_passwd', None))
         assert llvms.waitForVMState(self.vm_name)
         # getVmMacAddress returns (bool, dict(macAddress=<desired_mac>))
         mac = llvms.getVmMacAddress(True, self.vm_name, nic=nic)[1]
         mac = mac['macAddress']
         LOGGER.debug("Got mac of vm %s: %s", self.vm_name, mac)
-        assert cobblerRemoveSystem(
-            config.PARAMETERS['cobbler_address'],
-            config.PARAMETERS['cobbler_user'],
-            config.PARAMETERS['cobbler_passwd'], mac)
+        assert llvms.removeSystem(mac)
 
         LOGGER.info("Upgrading data-center %s from version %s to version %s ",
                     self.dc_name, self.dc_version, self.dc_upgraded_version)

@@ -39,10 +39,10 @@ DISPLAY_TYPE = PARAMETERS['display_type']
 VM_LINUX_USER = PARAMETERS['vm_linux_user']
 VM_LINUX_PASSWORD = PARAMETERS['vm_linux_password']
 
-COBBLER_ADDRESS = PARAMETERS['cobbler_address']
-COBBLER_USER = PARAMETERS['cobbler_user']
-COBBLER_PASSWORD = PARAMETERS['cobbler_passwd']
-COBBLER_PROFILE = PARAMETERS['cobbler_profile']
+COBBLER_ADDRESS = PARAMETERS.get('cobbler_address', None)
+COBBLER_USER = PARAMETERS.get('cobbler_user', None)
+COBBLER_PASSWORD = PARAMETERS.get('cobbler_passwd', None)
+COBBLER_PROFILE = PARAMETERS.get('cobbler_profile', None)
 
 MGMT_BRIDGE = PARAMETERS['mgmt_bridge']
 

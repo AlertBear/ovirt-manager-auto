@@ -14,9 +14,10 @@ STORAGE_DOMAIN_NAME = "%s_%d" % (STORAGE_TYPE.lower(), 0)
 TESTNAME = 'hotplug'
 
 # cobbler related settings
-COBBLER_ADDRESS = PARAMETERS['cobbler_address']
-COBBLER_USER = PARAMETERS['cobbler_user']
-COBBLER_PASSWORD = PARAMETERS['cobbler_passwd']
+COBBLER_ADDRESS = PARAMETERS.get('cobbler_address', None)
+COBBLER_USER = PARAMETERS.get('cobbler_user', None)
+COBBLER_PASSWORD = PARAMETERS.get('cobbler_passwd', None)
+COBBLER_PROFILE = PARAMETERS.get('cobbler_profile', None)
 
 MAX_WORKERS = PARAMETERS.get('max_workers', 10)
 
