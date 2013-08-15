@@ -15,7 +15,8 @@ LOGGER = logging.getLogger(__name__)
 
 USER1_VM_ROLES = [role.UserRole, role.PowerUserRole]
 USER2_VM_ROLES = [role.TemplateAdmin]
-USER1_TEMPLATE_ROLES = [role.UserRole, role.TemplateUser, role.TemplateAdmin]
+USER1_TEMPLATE_ROLES = [role.UserRole, role.UserTemplateBasedVm,
+                        role.TemplateAdmin]
 USER2_TEMPLATE_ROLES = [role.TemplateOwner, role.DiskCreator]
 
 
@@ -39,9 +40,9 @@ def setUpModule():
     # Add UserRole on vm to user1 (should be copied)
     mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME,
                                role=role.UserRole)
-    # Add TemplateUser on vm to user1 (should be copied)
+    # Add UserTemplateBasedVm on vm to user1 (should be copied)
     mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME,
-                               role=role.TemplateUser)
+                               role=role.UserTemplateBasedVm)
     # Add TemplateAdmin on vm to user1 (should be copied)
     mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME,
                                role=role.TemplateAdmin)
@@ -63,9 +64,9 @@ def setUpModule():
     mla.addPermissionsForTemplate(True, config.USER_NAME2,
                                   config.TEMPLATE_NAME,
                                   role=role.TemplateAdmin)
-    # TemplateUser on template to user1 (should not be copied)
+    # UserTemplateBasedVm on template to user1 (should not be copied)
     mla.addPermissionsForTemplate(True, config.USER_NAME, config.TEMPLATE_NAME,
-                                  role=role.TemplateUser)
+                                  role=role.UserTemplateBasedVm)
     # TemplateOwner on template to user2 (should not be copied)
     mla.addPermissionsForTemplate(True, config.USER_NAME2,
                                   config.TEMPLATE_NAME,

@@ -522,7 +522,8 @@ class PermissionsCase111082(TestCase):
         storagedomains.removeStorageDomain(
             True, config.ALT1_STORAGE_NAME,
             config.MAIN_HOST_NAME, destroy=True)
-        vms.removeVm(True, config.VM_NAME1)
+        # When destroying SD, then also vm is destroyed
+        #vms.removeVm(True, config.VM_NAME1)
 
         userVmManagerId = users.rlUtil.find(role.UserVmManager).get_id()
         templateOwnerId = users.rlUtil.find(role.TemplateOwner).get_id()

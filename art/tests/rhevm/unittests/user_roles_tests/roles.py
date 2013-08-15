@@ -30,7 +30,7 @@ role = Enum([
     "UserRole",
     "UserVmManager",
     "TemplateAdmin",
-    "TemplateUser",
+    "UserTemplateBasedVm",
     "SuperUser",
     "ClusterAdmin",
     "DataCenterAdmin",
@@ -46,6 +46,6 @@ role = Enum([
     "TemplateOwner",
     "GlusterAdmin",
     "PowerUserRole",
-    "NetworkUser",
+    "VnicProfileUser",
     "ExternalEventsCreator"
     ])

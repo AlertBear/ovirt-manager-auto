@@ -539,6 +539,14 @@ class DPCase147130(TestCase):
             storageDomainName=config.MAIN_STORAGE_NAME, size=common.GB)
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME,
                                    role=role.DiskOperator)
+        mla.addClusterPermissionsToUser(True, config.USER_NAME,
+                                        config.MAIN_CLUSTER_NAME,
+                                        role=role.UserRole)
+
+    def tearDown(self):
+        loginAsAdmin()
+        mla.removeUserPermissionsFromCluster(True, config.MAIN_CLUSTER_NAME,
+                                             config.USER1)
 
     @tcms(TCMS_PLAN_ID, 147130)
     @istest
@@ -561,9 +569,6 @@ class DPCase147130(TestCase):
             vms.removeVm(True, config.VM_NAME),
             "User can't remove vm as DiskOperator and UserVmManager on vm.")
         LOGGER.info("User can remove vm as UserVmManager, DiskOperator on vm")
-
-    def tearDown(self):
-        loginAsAdmin()
 
 
 class DPCase147137(TestCase):
