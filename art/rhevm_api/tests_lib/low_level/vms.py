@@ -268,6 +268,13 @@ def _prepareVmObject(**kwargs):
     if protected is not None:
         vm.set_delete_protected(protected)
 
+    # copy_permissions
+    copy_permissions = kwargs.pop('copy_permissions', None)
+    if copy_permissions:
+        perms = data_st.Permissions()
+        perms.set_clone(True)
+        vm.set_permissions(perms)
+
     return vm
 
 
@@ -324,6 +331,7 @@ def addVm(positive, wait=True, **kwargs):
        * domainName = sys.prep domain name
        * quota - vm quota
        * snapshot - description of snapshot to use. Causes error if not unique
+       * copy_permissions - True if perms should be copied from template
     Return: status (True if vm was added properly, False otherwise)
     '''
     kwargs.update(add=True)
@@ -1886,7 +1894,8 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
              network='rhevm', useAgent=False, placement_affinity=None,
              placement_host=None, vcpu_pinning=None, highly_available=None,
              availablity_priority=None, port_mirroring=None, vm_quota=None,
-             disk_quota=None, plugged='true', linked='true', protected=None):
+             disk_quota=None, plugged='true', linked='true', protected=None,
+             copy_permissions=False):
     '''
     Description: The function createStartVm adding new vm with nic,disk
                  and started new created vm.
@@ -1942,7 +1951,8 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
                  placement_host=placement_host, vcpu_pinning=vcpu_pinning,
                  highly_available=highly_available,
                  availablity_priority=availablity_priority, quota=vm_quota,
-                 protected=protected, cpu_mode=cpu_mode):
+                 protected=protected, cpu_mode=cpu_mode,
+                 copy_permissions=copy_permissions):
         return False
 
     if nic:

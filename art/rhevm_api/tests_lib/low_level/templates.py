@@ -106,6 +106,12 @@ def _prepareTemplateObject(**kwargs):
     if protected is not None:
         templ.set_delete_protected(protected)
 
+    copy_permissions = kwargs.pop('copy_permissions', None)
+    if copy_permissions:
+        perms = data_st.Permissions()
+        perms.set_clone(True)
+        templ.set_permissions(perms)
+
     return templ
 
 
@@ -127,6 +133,7 @@ def createTemplate(positive, wait=True, timeout=CREATE_TEMPLATE_TIMEOUT, **kwarg
        * wait - wait untill end of creation of template (true) or exit without waiting (false)
        * storagedomain - name of storagedomain
        * protected - if template is delete protected
+       * copy_permissions - True if perms from vm to template should be copied
     Return: status (True if template was added properly, False otherwise)
     '''
 

@@ -1356,7 +1356,7 @@ def removeRoleFromUser(roleName, userName=config.USER_NAME, domainName=config.US
     role = user.roles.get(roleName)
     assert role is None, "Unable to remove role '%s'" % roleName
 
-def givePermissionsToGroup(templateName, roleName='UserTemplateBasedVm', group="Everyone"):
+def givePermissionsToGroup(templateName, roleName='TemplateUser', group="Everyone"):
     """
     Give permission to group.
     Parameters:

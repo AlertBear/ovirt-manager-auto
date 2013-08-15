@@ -30,7 +30,7 @@ role = Enum([
     "UserRole",
     "UserVmManager",
     "TemplateAdmin",
-    "UserTemplateBasedVm",
+    "TemplateUser",
     "SuperUser",
     "ClusterAdmin",
     "DataCenterAdmin",
