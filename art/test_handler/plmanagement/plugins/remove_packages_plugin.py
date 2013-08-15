@@ -34,7 +34,8 @@ ENABLED = 'enabled'
 PACKAGES = 'packages'
 VDS = 'vds'
 VDS_PASSWORD = 'vds_password'
-DEFAULT_PACKAGES = ['vdsm', 'vdsm-cli', 'vdsm-python', 'vdsm-xmlrpc']
+DEFAULT_PACKAGES = ['vdsm', 'vdsm-cli', 'vdsm-python', 'vdsm-xmlrpc',
+                    'vdsm-python-cpopen']
 DEFAULT_STATE = False
 
 
