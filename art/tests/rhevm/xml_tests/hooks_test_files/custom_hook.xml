@@ -3,46 +3,11 @@
 <input>
 <!--***********************Add vm with custom propertie***********************-->
 <test_case>
-    <test_name>START_GROUP: ADD-VM-WITH-CUSTOM-PROPERTIE</test_name>
-    <test_action/>
-    <parameters></parameters>
-    <positive>NONE</positive>
-    <run>YES</run>
-</test_case>
-<test_case>
-    <test_name>Define a custom property for 3.1: custom_hook=^[0-9]+$</test_name>
-    <test_action>runMachineCommand</test_action>
-    <parameters>ip='{vdc}', user='{username}', password='{passwd}', cmd="rhevm-config -s UserDefinedVMProperties='auto_custom_hook=^[0-9]+$' --cver="+'{compatibility_version}'</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-</test_case>
-<test_case>
-    <test_name>Restart ovirt_engine to make custom_hook available</test_name>
-    <test_action>runMachineCommand</test_action>
-    <parameters>ip='{vdc}', user='{username}', password='{passwd}', cmd="service ovirt-engine restart"</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-</test_case>
-<test_case>
-    <test_name>Sleep to let Ovirt reboots</test_name>
-    <test_action>sleep</test_action>
-    <parameters>seconds=30</parameters>
-    <positive>NONE</positive>
-    <run>yes</run>
-</test_case>
-<test_case>
     <test_name>Create VM to test custom hook</test_name>
     <test_action>addVm</test_action>
     <parameters>name='{vm_prefix}', description='hook test', cluster='{cluster_prefix}', display_type='{display_type}',template='{vm_template_for_test}' ,custom_properties='auto_custom_hook=1234'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
-</test_case>
-<test_case>
-    <test_name>END_GROUP: ADD-VM-WITH-CUSTOM-PROPERTIE</test_name>
-    <test_action/>
-    <parameters></parameters>
-    <positive>NONE</positive>
-    <run>YES</run>
 </test_case>
 <test_case>
     <test_name>Stop vdsmd on the vds host</test_name>
@@ -132,6 +97,7 @@
    <parameters>ip='{vds}',password='{passwd}',filename='/var/tmp/after_vdsm_stop.hook'</parameters>
    <positive>True</positive>
    <run>yes</run>
+   <tcms_plan_id>10054</tcms_plan_id>
    <tcms_test_case>289788</tcms_test_case>
 </test_case>
 <!--***********************Test before_vdsm_start hook***********************-->
@@ -155,6 +121,7 @@
    <parameters>ip='{vds}',password='{passwd}',filename='/var/tmp/before_vdsm_start.hook'</parameters>
    <positive>True</positive>
    <run>yes</run>
+   <tcms_plan_id>10054</tcms_plan_id>
    <tcms_test_case>289789</tcms_test_case>
 </test_case>
 <!--***********************Test before_vm_start hook***********************-->
@@ -178,6 +145,7 @@
    <parameters>ip='{vds}',password='{passwd}',filename='/var/tmp/before.vm.start.hook', content='1234'</parameters>
    <positive>True</positive>
    <run>yes</run>
+   <tcms_plan_id>10054</tcms_plan_id>
    <tcms_test_case>289791</tcms_test_case>
 </test_case>
 <!--***********************Test after_vm_stop hook***********************-->
@@ -201,6 +169,7 @@
    <parameters>ip='{vds}',password='{passwd}',filename='/var/tmp/after.vm.pause.hook', content='1234'</parameters>
    <positive>True</positive>
    <run>Yes</run>
+   <tcms_plan_id>10054</tcms_plan_id>
    <tcms_test_case>289793</tcms_test_case>
 </test_case>
 <test_case>

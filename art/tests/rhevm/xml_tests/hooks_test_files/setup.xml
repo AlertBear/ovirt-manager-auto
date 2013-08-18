@@ -129,4 +129,47 @@
     <positive>NONE</positive>
     <run>YES</run>
 </test_case>
+<test_case>
+    <test_name>START_GROUP: DEFINE-CUSTOM-PROPERTIES</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>NONE</positive>
+    <run>YES</run>
+</test_case>
+<test_case>
+    <test_name>Define a custom property: custom_hook=^[0-9]+$</test_name>
+    <test_action>runMachineCommand</test_action>
+    <parameters>ip='{vdc}', user='{username}', password='{passwd}', cmd="rhevm-config -s UserDefinedVMProperties='auto_custom_hook=^[0-9]+$' --cver="+'{compatibility_version}'</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Add custom properties for vnics</test_name>
+    <test_action>runMachineCommand</test_action>
+    <parameters>ip='{vdc}', user='{username}', password='{passwd}',
+    cmd='engine-config -s CustomDeviceProperties="{type=interface;prop={speed=^([0-9]{1,5})$;port_mirroring=^(True|False)$;bandwidth=^([0-9]{1,5})$}}" --cver='+'{compatibility_version}', cmd_list=False</parameters>
+    <positive>True</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Restart ovirt_engine to make custom_hook available</test_name>
+    <test_action>runMachineCommand</test_action>
+    <parameters>ip='{vdc}', user='{username}', password='{passwd}', cmd="service ovirt-engine restart"</parameters>
+    <positive>TRUE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Sleep to let Ovirt reboots</test_name>
+    <test_action>sleep</test_action>
+    <parameters>seconds=30</parameters>
+    <positive>NONE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>END_GROUP: DEFINE-CUSTOM-PROPERTIES</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>NONE</positive>
+    <run>YES</run>
+</test_case>
 </input>

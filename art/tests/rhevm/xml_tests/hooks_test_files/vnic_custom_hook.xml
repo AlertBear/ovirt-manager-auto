@@ -1,0 +1,372 @@
+<?xml version='1.0' encoding='utf-8'?>
+<?xml-stylesheet type="text/xsl" href="table.xslt"?>
+<input>
+<!--**********Add custom properties for vnics to rhevm**********-->
+<test_case>
+    <test_name>Create VM for testing vnic hooks</test_name>
+    <test_action>addVm</test_action>
+    <parameters>name='{vm_prefix}', description='hook test', cluster='{cluster_prefix}', display_type='{display_type}',template='{vm_template_for_test}'</parameters>
+    <positive>True</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Start vm</test_name>
+    <test_action>startVm</test_action>
+    <parameters>vm='{vm_prefix}', wait_for_status='e{vm_state_up}'</parameters>
+    <positive>True</positive>
+    <run>yes</run>
+</test_case>
+<!--**********Add two vnic profiles with different parameters to network**********-->
+<test_case>
+    <test_name>START_GROUP: ADD-DIFFERENT-VNIC-PROFILES</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Add vnic profile A with correct parameters</test_name>
+    <test_action>add_vnic_profile</test_action>
+    <parameters>name='{vnic_profile_name}_A', cluster_name='{cluster_prefix}', custom_properties='speed=1000;port_mirroring=True;bandwidth=10000'</parameters>
+    <positive>True</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Add vnic profile B with correct parameters</test_name>
+    <test_action>add_vnic_profile</test_action>
+    <parameters>name='{vnic_profile_name}_B', cluster_name='{cluster_prefix}', custom_properties='port_mirroring=True;bandwidth=10000'</parameters>
+    <positive>True</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>END_GROUP: ADD-DIFFERENT-VNIC-PROFILES</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+<!--**********Try to add vnic profile with not correct custom properies**********-->
+<test_case>
+    <test_name>Add vnic profile with incorrect parameters</test_name>
+    <test_action>add_vnic_profile</test_action>
+    <parameters>name='{vnic_profile_name}_C', cluster_name='{cluster_prefix}', custom_properties='test=250'</parameters>
+    <positive>False</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Add vnic profile with incorrect value of parameter</test_name>
+    <test_action>add_vnic_profile</test_action>
+    <parameters>name='{vnic_profile_name}_D', cluster_name='{cluster_prefix}', custom_properties='speed=abc'</parameters>
+    <positive>False</positive>
+    <tcms_plan_id>10167</tcms_plan_id>
+    <tcms_test_case>294993</tcms_test_case>
+    <run>yes</run>
+</test_case>
+<!--**********Add scripts to hooks directories**********-->
+<test_case>
+    <test_name>START_GROUP: CREATE-SCRIPTS-FOR-TESTING-HOOKS</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Create after_nic_hotplug.py under /usr/libexec/vdsm/hooks/after_nic_hotplug which creates after_nic_hotplug.hook when run on /var/tmp</test_name>
+    <test_action>createPythonScriptToVerifyCustomHook</test_action>
+    <parameters>ip='{vds}', password='{passwd}', scriptName='after_nic_hotplug.py', customHook='speed', target='/usr/libexec/vdsm/hooks/after_nic_hotplug', outputFile='/var/tmp/after_nic_hotplug.hook'</parameters>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Create before_nic_hotplug.sh under /usr/libexec/vdsm/hooks/before_nic_hotplug which creates before_nic_hotplug.hook when run on /var/tmp</test_name>
+    <test_action>createOneLineShellScript</test_action>
+    <parameters>ip='{vds}', password='{passwd}', scriptName='before_nic_hotplug.sh', command='touch', arguments= '/var/tmp/before_nic_hotplug.hook', target='/usr/libexec/vdsm/hooks/before_nic_hotplug'</parameters>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Create after_nic_hotunplug.py under /usr/libexec/vdsm/hooks/after_nic_hotunplug which creates after_nic_hotunplug.hook when run on /var/tmp</test_name>
+    <test_action>createPythonScriptToVerifyCustomHook</test_action>
+    <parameters>ip='{vds}', password='{passwd}', scriptName='after_nic_hotunplug.py', customHook='speed', target='/usr/libexec/vdsm/hooks/after_nic_hotunplug', outputFile='/var/tmp/after_nic_hotunplug.hook'</parameters>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Create before_nic_hotunplug.sh under /usr/libexec/vdsm/hooks/before_nic_hotunplug which creates before_nic_hotunplug.hook when run on /var/tmp</test_name>
+    <test_action>createOneLineShellScript</test_action>
+    <parameters>ip='{vds}', password='{passwd}', scriptName='before_nic_hotplug.sh', command='touch', arguments= '/var/tmp/before_nic_hotunplug.hook', target='/usr/libexec/vdsm/hooks/before_nic_hotunplug'</parameters>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Create after_update_device.py under /usr/libexec/vdsm/hooks/after_update_device which creates after_update_device.hook when run on /var/tmp</test_name>
+    <test_action>createPythonScriptToVerifyCustomHook</test_action>
+    <parameters>ip='{vds}', password='{passwd}', scriptName='after_update_device.py', customHook='speed', target='/usr/libexec/vdsm/hooks/after_update_device', outputFile= '/var/tmp/after_update_device.hook'</parameters>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Create before_update_device.py under /usr/libexec/vdsm/hooks/before_update_device which creates before_update_device.hook when run on /var/tmp</test_name>
+    <test_action>createPythonScriptToVerifyCustomHook</test_action>
+    <parameters>ip='{vds}', password='{passwd}', scriptName='before_update_device.py', customHook='speed', target='/usr/libexec/vdsm/hooks/before_update_device', outputFile= '/var/tmp/before_update_device.hook'</parameters>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Create after_update_device_fail.sh under /usr/libexec/vdsm/hooks/after_update_device_fail which creates after_update_device_fail.hook when run on /var/tmp</test_name>
+    <test_action>createOneLineShellScript</test_action>
+    <parameters>ip='{vds}', password='{passwd}', scriptName='after_update_device_fail.sh', command='touch', arguments= '/var/tmp/after_update_device_fail.hook', target='/usr/libexec/vdsm/hooks/after_update_device_fail'</parameters>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>END_GROUP: CREATE-SCRIPTS-FOR-TESTING-HOOKS</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+<!--**********Hotplug nic hooks**********-->
+<test_case>
+    <test_name>START_GROUP: HOTPLUG-NIC-HOOK</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Add new nic to vm</test_name>
+    <test_action>addNic</test_action>
+    <parameters>vm='{vm_prefix}', name='nic2', network='rhevm', vnic_profile='{vnic_profile_name}_A'</parameters>
+    <positive>True</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Check for file created by before_nic_hotplug hook</test_name>
+    <test_action>checkForFileExistenceAndContent</test_action>
+    <parameters>ip='{vds}',password='{passwd}',filename='/var/tmp/before_nic_hotplug.hook'</parameters>
+    <positive>True</positive>
+    <vital>True</vital>
+    <tcms_plan_id>10167</tcms_plan_id>
+    <tcms_test_case>295122</tcms_test_case>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Check for file created by after_nic_hotplug hook</test_name>
+    <test_action>checkForFileExistenceAndContent</test_action>
+    <parameters>ip='{vds}',password='{passwd}',filename='/var/tmp/after_nic_hotplug.hook', content='1000'</parameters>
+    <positive>True</positive>
+    <vital>True</vital>
+    <tcms_plan_id>10167</tcms_plan_id>
+    <tcms_test_case>295122</tcms_test_case>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Sleep to let nic receive network stats</test_name>
+    <test_action>sleep</test_action>
+    <parameters>seconds=15</parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>END_GROUP: HOTPLUG-NIC-HOOK</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+<!--**********Update device failed hook**********-->
+<test_case>
+    <test_name>START_GROUP: UPDATE-DEVICE-FAILED-HOOK</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Update first vnic(deviceUpdate hook failed and run after_update_device_fail hook)</test_name>
+    <test_action>updateNic</test_action>
+    <parameters>vm='{vm_prefix}', nic='nic1', linked='False'</parameters>
+    <positive>False</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Check for file created by after_update_device_fail hook</test_name>
+    <test_action>checkForFileExistenceAndContent</test_action>
+    <parameters>ip='{vds}',password='{passwd}',filename='/var/tmp/after_update_device_fail.hook'</parameters>
+    <positive>True</positive>
+    <vital>True</vital>
+    <tcms_plan_id>10167</tcms_plan_id>
+    <tcms_test_case>295174</tcms_test_case>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>END_GROUP: UPDATE-DEVICE-FAILED-HOOK</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+<!--**********Update device hooks**********-->
+<test_case>
+    <test_name>START_GROUP: UPDATE-DEVICE-HOOK</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Update second nic linked state</test_name>
+    <test_action>updateNic</test_action>
+    <parameters>vm='{vm_prefix}', nic='nic2', linked=False, network='rhevm'</parameters>
+    <positive>True</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Check for file created by before_update_device hook</test_name>
+    <test_action>checkForFileExistenceAndContent</test_action>
+    <parameters>ip='{vds}',password='{passwd}',filename='/var/tmp/before_update_device.hook', content='1000'</parameters>
+    <positive>True</positive>
+    <vital>True</vital>
+    <tcms_plan_id>10167</tcms_plan_id>
+    <tcms_test_case>295144</tcms_test_case>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Check for file created by after_update_device hook</test_name>
+    <test_action>checkForFileExistenceAndContent</test_action>
+    <parameters>ip='{vds}',password='{passwd}',filename='/var/tmp/after_update_device.hook', content='1000'</parameters>
+    <positive>True</positive>
+    <vital>True</vital>
+    <tcms_plan_id>10167</tcms_plan_id>
+    <tcms_test_case>295144</tcms_test_case>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>END_GROUP: UPDATE-DEVICE-HOOK</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+<!--**********Hotunplug hook**********-->
+<test_case>
+    <test_name>START_GROUP: HOTUNPLUG-NIC-HOOK</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Unplug second vnic</test_name>
+    <test_action>hotUnplugNic</test_action>
+    <parameters>vm='{vm_prefix}', nic='nic2'</parameters>
+    <positive>True</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Check for file created by before_nic_hotunplug hook</test_name>
+    <test_action>checkForFileExistenceAndContent</test_action>
+    <parameters>ip='{vds}',password='{passwd}',filename='/var/tmp/before_nic_hotunplug.hook'</parameters>
+    <positive>True</positive>
+    <vital>True</vital>
+    <tcms_plan_id>10167</tcms_plan_id>
+    <tcms_test_case>295128</tcms_test_case>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Check for file created by after_nic_hotunplug hook</test_name>
+    <test_action>checkForFileExistenceAndContent</test_action>
+    <parameters>ip='{vds}',password='{passwd}',filename='/var/tmp/after_nic_hotunplug.hook', content='1000'</parameters>
+    <positive>True</positive>
+    <vital>True</vital>
+    <tcms_plan_id>10167</tcms_plan_id>
+    <tcms_test_case>295128</tcms_test_case>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>END_GROUP: HOTUNPLUG-NIC-HOOK</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+<!--**********CLEANING STAGE**********-->
+<test_case>
+    <test_name>START_GROUP: CLEANING</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Stop VM inorder to remove it</test_name>
+    <test_action>stopVm</test_action>
+    <parameters>vm='{vm_prefix}'</parameters>
+    <positive>True</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>remove file created by after_nic_hotplug hook</test_name>
+    <test_action>removeFileOnHost</test_action>
+    <parameters>positive=True, ip='{vds}',password='{passwd}',filename='/usr/libexec/vdsm/hooks/after_nic_hotplug/after_nic_hotplug.py'</parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>remove file created by before_nic_hotplug hook</test_name>
+    <test_action>removeFileOnHost</test_action>
+    <parameters>positive=True, ip='{vds}',password='{passwd}',filename='/usr/libexec/vdsm/hooks/before_nic_hotplug/before_nic_hotplug.sh'</parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>remove file created by after_nic_hotunplug hook</test_name>
+    <test_action>removeFileOnHost</test_action>
+    <parameters>positive=True, ip='{vds}',password='{passwd}',filename='/usr/libexec/vdsm/hooks/after_nic_hotunplug/after_nic_hotunplug.py'</parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>remove file created by before_nic_hotunplug hook</test_name>
+    <test_action>removeFileOnHost</test_action>
+    <parameters>positive=True, ip='{vds}',password='{passwd}',filename='/usr/libexec/vdsm/hooks/before_nic_hotunplug/before_nic_hotunplug.sh'</parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>remove file created by after_update_device hook</test_name>
+    <test_action>removeFileOnHost</test_action>
+    <parameters>positive=True, ip='{vds}',password='{passwd}',filename='/usr/libexec/vdsm/hooks/after_update_device/after_update_device.py'</parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>remove file created by before_update_device hook</test_name>
+    <test_action>removeFileOnHost</test_action>
+    <parameters>positive=True, ip='{vds}',password='{passwd}',filename='/usr/libexec/vdsm/hooks/before_update_device/before_update_device.py'</parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>remove file created by after_update_device_fail hook</test_name>
+    <test_action>removeFileOnHost</test_action>
+    <parameters>positive=True, ip='{vds}',password='{passwd}',filename='/usr/libexec/vdsm/hooks/after_update_device_fail/after_update_device_fail.sh'</parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>remove *.hook files under /var/tmp</test_name>
+    <test_action>runMachineCommand</test_action>
+    <parameters>ip='{vds}', user='{username}', password='{passwd}', cmd="rm -f /var/tmp/*.hook"</parameters>
+    <positive>True</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Remove Vm</test_name>
+    <test_action>removeVm</test_action>
+    <parameters>vm='{vm_prefix}', stopVM='true'</parameters>
+    <positive>True</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>END_GROUP: CLEANING</test_name>
+    <test_action/>
+    <parameters></parameters>
+    <positive>None</positive>
+    <run>Yes</run>
+</test_case>
+</input>

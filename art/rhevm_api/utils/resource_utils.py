@@ -11,21 +11,24 @@ from art.rhevm_api.utils.name2ip import name2ip, LookUpVMIpByName
 
 logger = logging.getLogger('test_utils')
 
+
 @is_action('runMachineCommand', id_name='runMachineCommand')
 @name2ip("ip", "vmName")
-def runMachineCommand(positive, ip=None, user=None, password=None, type='linux', cmd='', **kwargs):
+def runMachineCommand(positive, ip=None, user=None, password=None,
+                      type='linux', cmd='', **kwargs):
     '''
     wrapper for runCmd
     '''
-    cmd = shlex.split(cmd)
+    if 'cmd_list' not in kwargs:
+        cmd = shlex.split(cmd)
     try:
         if not ip:
             machine = Machine().util()
         else:
             machine = Machine(ip, user, password).util(type)
         ecode, out = machine.runCmd(cmd, **kwargs)
-        logger.debug('%s: runcmd : %s, result: %s, out: %s',\
-                machine.host, cmd, ecode, out)
+        logger.debug('%s: runcmd : %s, result: %s,'' out: %s',
+                     machine.host, cmd, ecode, out)
         return positive == ecode, {'out': out}
     except Exception as ex:
         logger.error("Failed to run command : %s : %s", cmd, ex)

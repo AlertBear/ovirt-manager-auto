@@ -22,6 +22,7 @@ from art.rhevm_api.utils.test_utils import get_api
 from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api import is_action
 from utilities.machine import Machine, LINUX
+import art.rhevm_api.tests_lib.low_level.vms as vms
 import logging
 
 import re
@@ -29,6 +30,7 @@ import re
 NET_API = get_api("network", "networks")
 CL_API = get_api("cluster", "clusters")
 DC_API = get_api("data_center", "datacenters")
+VNIC_PROFILES = get_api('vnic_profile', 'vnicprofiles')
 MGMT_NETWORK = "rhevm"
 
 logger = logging.getLogger('networks')
@@ -401,3 +403,67 @@ def checkIPRule(host, user, password, subnet):
         logger.error("Failed to run ip rule command")
         return False
     return len(re.findall(subnet.replace('.', '[.]'), out)) == 2
+
+
+# noinspection PyUnusedLocal
+@is_action()
+def add_vnic_profile(positive, name, cluster_name,
+                     port_mirroring=False, **kwargs):
+    '''
+    Description: Add new vnic profile to network in cluster with cluster_name
+    Author: alukiano
+      * positive - True or False(needs for xml format tests)
+      * name - name of vnic profile
+      * cluster_name - name of cluster to know to what network
+        add vnic profile
+      * port_mirroring - by default False
+      * custom_properties(in kwargs) - you can add custom properties to vnic
+        profile, that was defined by engineConfig in CustomDeviceProperties
+      * description(in kwargs) - description of vnic profile
+    Return: True, if adding vnic profile was success, False else
+    '''
+    vnic_profile_obj = data_st.VnicProfile()
+    network_obj = CL_API.get(getClusterNetworks(
+        cluster_name)).get_network()[0]
+    if not network_obj:
+        logger.error("No network defined")
+        return False
+    if not name:
+        logger.error("Name not defined")
+        return False
+    logger.info("Add name")
+    vnic_profile_obj.set_name(name)
+    logger.info("Add network")
+    vnic_profile_obj.set_network(network_obj)
+    logger.info("Add port mirroring")
+    vnic_profile_obj.set_port_mirroring(port_mirroring)
+    if 'description' in kwargs:
+        logger.info("Add description")
+        vnic_profile_obj.set_description(kwargs.get('description'))
+    if 'custom_properties' in kwargs:
+        logger.info("Add custom properties")
+        vnic_profile_obj.set_custom_properties(
+            vms.createCustomPropertiesFromArg(
+                kwargs.get('custom_properties')))
+    res, status = VNIC_PROFILES.create(vnic_profile_obj, positive)
+    return status
+
+
+@is_action()
+def remove_vnic_profiles(positive, vnic_profile_names):
+    '''
+    Description: Remove vnic profiles with given names
+    Author: alukiano
+      * positive - True or False(needs for xml format tests)
+      * vnic_profile_names - names of vnic profile divide by ","
+    Return: True, if removing vnic profiles was success, False else
+    '''
+    list_vnic_profile_name = vnic_profile_names.split(",")
+    for vnic_profile_name in list_vnic_profile_name:
+        vnic_obj = VNIC_PROFILES.find(vnic_profile_name)
+        logger.info("Trying to remove vnic profile %s", vnic_profile_name)
+        status = VNIC_PROFILES.delete(vnic_obj, positive)
+        if not status:
+            logger.error("Removing profile %s was failed", vnic_profile_name)
+            return status
+    return True

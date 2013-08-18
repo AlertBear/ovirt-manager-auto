@@ -64,6 +64,7 @@ VM_WAIT_FOR_IP_TIMEOUT = 600
 SNAPSHOT_TIMEOUT = 15 * 60
 
 VM_API = get_api('vm', 'vms')
+VNIC_PROFILE_API = get_api('vnic_profile', 'vnicprofiles')
 DC_API = get_api('data_center', 'datacenters')
 CLUSTER_API = get_api('cluster', 'clusters')
 TEMPLATE_API = get_api('template', 'templates')
@@ -139,7 +140,8 @@ def _prepareVmObject(**kwargs):
     cpu_cores = kwargs.pop('cpu_cores', None)
     vcpu_pinning = kwargs.pop('vcpu_pinning', None)
     cpu_mode = kwargs.pop('cpu_mode', None)
-    if cpu_socket or cpu_cores or vcpu_pinning is not None or cpu_mode is not None:
+    if cpu_socket or cpu_cores or vcpu_pinning is not None or \
+       cpu_mode is not None:
         cpu = data_st.CPU()
         if cpu_socket or cpu_cores:
             cpu.set_topology(topology=data_st.CpuTopology(sockets=cpu_socket,
@@ -147,10 +149,10 @@ def _prepareVmObject(**kwargs):
         if vcpu_pinning is not None and vcpu_pinning == "":
             cpu.set_cpu_tune(data_st.CpuTune())
         elif vcpu_pinning:
-            cpu.set_cpu_tune(data_st.CpuTune([data_st.VCpuPin(vcpu, cpu_set) \
-                                              for vcpu, cpu_set in \
-                                              vcpu_pinning.iteritems()]))
-
+            cpu.set_cpu_tune(
+                data_st.CpuTune([data_st.VCpuPin(vcpu, cpu_set)
+                                 for vcpu, cpu_set
+                                 in vcpu_pinning.iteritems()]))
         if cpu_mode is not None and cpu_mode == "":
             cpu.set_mode("CUSTOM")
         elif cpu_mode:
@@ -184,7 +186,8 @@ def _prepareVmObject(**kwargs):
     display_type = kwargs.pop('display_type', None)
     display_monitors = kwargs.pop('display_monitors', None)
     if display_monitors or display_type:
-        vm.set_display(data_st.Display(type_=display_type, monitors=display_monitors))
+        vm.set_display(data_st.Display(type_=display_type,
+                                       monitors=display_monitors))
 
     # stateless
     vm.set_stateless(kwargs.pop('stateless', None))
@@ -193,13 +196,14 @@ def _prepareVmObject(**kwargs):
     ha = kwargs.pop('highly_available', None)
     ha_priority = kwargs.pop('availablity_priority', None)
     if ha or ha_priority:
-        vm.set_high_availability(data_st.HighAvailability(enabled=ha,
-            priority=ha_priority))
+        vm.set_high_availability(
+            data_st.HighAvailability(enabled=ha,
+                                     priority=ha_priority))
 
     # custom properties
     custom_prop = kwargs.pop('custom_properties', None)
     if custom_prop:
-        vm.set_custom_properties(_createCustomPropertiesFromArg(custom_prop))
+        vm.set_custom_properties(createCustomPropertiesFromArg(custom_prop))
 
     # memory policy memory_guaranteed
     guaranteed = kwargs.pop('memory_guaranteed', None)
@@ -250,7 +254,8 @@ def _prepareVmObject(**kwargs):
     if payloads:
         payload_array = []
         for payload_type, payload_fname, payload_file_content in payloads:
-            payload_file = data_st.PayloadFile(payload_fname, payload_file_content)
+            payload_file = data_st.PayloadFile(payload_fname,
+                                               payload_file_content)
             payload = data_st.Payload(payload_type, payload_file)
             payload_array.append(payload)
 
@@ -264,7 +269,8 @@ def _prepareVmObject(**kwargs):
 
     return vm
 
-def _createCustomPropertiesFromArg(prop_arg):
+
+def createCustomPropertiesFromArg(prop_arg):
     cps = data_st.CustomProperties()
     props = prop_arg.split(';')
     for prop in props:
@@ -274,7 +280,8 @@ def _createCustomPropertiesFromArg(prop_arg):
             E = "Custom Properties should be in form " \
                 "'name1=value1;name2=value2'. Got '%s' instead."
             raise Exception(E % prop_arg)
-        cps.add_custom_property(data_st.CustomProperty(name=name, value=value))
+        cps.add_custom_property(data_st.CustomProperty(name=name,
+                                                       value=value))
     return cps
 
 
@@ -933,6 +940,10 @@ def _prepareNicObj(**kwargs):
     if 'linked' in kwargs:
         nic_obj.set_linked(kwargs.get('linked'))
 
+    if 'vnic_profile' in kwargs:
+        nic_obj.set_vnic_profile(
+            VNIC_PROFILE_API.find(kwargs.get('vnic_profile')))
+
     if 'port_mirroring' in kwargs:
         port_mirror = kwargs.get('port_mirroring')
         networks_obj = None
@@ -941,7 +952,8 @@ def _prepareNicObj(**kwargs):
             networks = port_mirror.split(',')
             for network in networks:
                 networks_obj.add_network(data_st.Network(name=network))
-        nic_obj.set_port_mirroring(data_st.PortMirroring(networks=networks_obj))
+        nic_obj.set_port_mirroring(
+            data_st.PortMirroring(networks=networks_obj))
 
     return nic_obj
 
@@ -950,7 +962,10 @@ def _prepareNicObj(**kwargs):
 def getVmNics(vm):
 
     vm_obj = VM_API.find(vm)
-    return VM_API.getElemFromLink(vm_obj, link_name='nics', attr='vm_nic', get_href=True)
+    return VM_API.getElemFromLink(vm_obj,
+                                  link_name='nics',
+                                  attr='vm_nic',
+                                  get_href=True)
 
 
 def getVmNic(vm, nic):
@@ -990,7 +1005,9 @@ def addNic(positive, vm, **kwargs):
     # TODO: remove wait section. func need to be atomic. wait can be done
     # externally!
     if positive and status:
-        return VM_API.waitForElemStatus(vm_obj, expectedStatus, VM_ACTION_TIMEOUT)
+        return VM_API.waitForElemStatus(vm_obj,
+                                        expectedStatus,
+                                        VM_ACTION_TIMEOUT)
     return status
 
 
@@ -1073,6 +1090,7 @@ def updateNic(positive, vm, nic, **kwargs):
          which we'd like to listen to
        * plugged - shows if VNIC is plugged/unplugged
        * linked - shows if VNIC is linked or not
+       * vnic_profile - choose one of profile from network profiles
     Return: status (True if nic was updated properly, False otherwise)
     '''
 
