@@ -72,7 +72,8 @@ class TestCase275816(TestCase):
                 True, vm_name, vm_name, config.CLUSTER_NAME, nic=nic,
                 placement_host=config.HOSTS[0])
             self.vm_names.append(vm_name)
-        storage_domain_name = STORAGE_DOMAIN_API.get(absLink=False)[0].name
+        storage_domain_name = storagedomains.getDCStorages(
+            config.DEFAULT_DATA_CENTER_NAME, False)[0].name
         self.disk_name = 'disk_%s' % self.tcms_test_case
         LOGGER.info("Creating disk")
         assert disks.addDisk(
