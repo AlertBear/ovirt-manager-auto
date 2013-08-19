@@ -38,6 +38,7 @@ def _main(plmanager):
 
     plmanager.configure()
     runner = TestRunner(suitable_parser)
+    plmanager.configurators.configure_app(config)
     plmanager.application_liteners.on_application_start()
     runner.run()
 

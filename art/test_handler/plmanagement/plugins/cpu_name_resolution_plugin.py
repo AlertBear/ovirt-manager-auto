@@ -25,6 +25,7 @@ from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.plmanagement.interfaces.config_validator import \
     IConfigValidation
+from art.test_handler.plmanagement.interfaces.configurator import IConfigurator
 from utilities.machine import Machine, LINUX
 
 logger = get_logger('cpu_name_resolution')
@@ -57,7 +58,7 @@ class AutoCpuNameResolution(Component):
     Plugin adjusts config section for cpu_name attribute.
     It finds the maximum compatible cpu_name to use for the vds configured.
     """
-    implements(IConfigurable, IPackaging, IConfigValidation)
+    implements(IConfigurable, IPackaging, IConfigValidation, IConfigurator)
     name = "Auto CPU name resolution"
 
     def get_cpu_model(self, name, passwd):
@@ -167,12 +168,13 @@ class AutoCpuNameResolution(Component):
             logger.warning(ex)
             return
 
-        vds_list = conf[PARAMETERS].as_list(VDS)
-        vds_passwd_list = conf[PARAMETERS].as_list(VDS_PASSWORD)
+        self.vds_list = conf[PARAMETERS].as_list(VDS)
+        self.vds_passwd_list = conf[PARAMETERS].as_list(VDS_PASSWORD)
 
+    def configure_app(self, conf):
         selected_cpu = None
         try:
-            for name, passwd in zip(vds_list, vds_passwd_list):
+            for name, passwd in zip(self.vds_list, self.vds_passwd_list):
                 host_cpu = self.get_cpu_model(name, passwd)
                 if (selected_cpu is None or
                         (host_cpu['vendor'] == selected_cpu['vendor'] and
@@ -183,8 +185,8 @@ class AutoCpuNameResolution(Component):
             logger.debug(ex)
             logger.warning("Failed to resolve cpu name. "
                            "Falling back to vendor default...")
-            selected_cpu = self.get_vendor_fallback(vds_list[0],
-                                                    vds_passwd_list[0])
+            selected_cpu = self.get_vendor_fallback(self.vds_list[0],
+                                                    self.vds_passwd_list[0])
         par = conf.get(PARAMETERS, {})
         par[CPU_NAME] = selected_cpu['name']
         conf[PARAMETERS] = par

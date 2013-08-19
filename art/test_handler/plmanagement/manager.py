@@ -4,8 +4,8 @@ import sys
 import os
 import art.test_handler.plmanagement as core
 from art.test_handler.plmanagement import logger
-from interfaces import application, report_formatter, \
-        tests_listener, time_measurement, config_validator
+from interfaces import (application, report_formatter, tests_listener,
+                        time_measurement, config_validator, configurator)
 from art.test_handler.exceptions import VitalTestFailed
 
 DEFAULT_PATH = os.path.join(os.path.dirname(__file__), 'plugins')
@@ -24,6 +24,7 @@ class PluginManager(core.ComponentManager, core.Component):
     test_skippers = core.ExtensionPoint(tests_listener.ITestSkipper)
     time_measurement = core.ExtensionPoint(time_measurement.ITimeMeasurement)
     conf_validators = core.ExtensionPoint(config_validator.IConfigValidation)
+    configurators = core.ExtensionPoint(configurator.IConfigurator)
 
     def __init__(self):
         core.ComponentManager.__init__(self)
