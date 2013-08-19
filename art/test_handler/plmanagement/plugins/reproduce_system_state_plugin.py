@@ -20,6 +20,7 @@ Configuration File Options
     | **test_name** string with name of the test that ART will be stopped
     |           before or after running it equivalent to --test_name CLI option
     | **signal** string with signal that will be passed to ART
+    | **stop_on_fail** true/false; if true, stop only if the test failed.
 """
 
 import os
@@ -42,6 +43,7 @@ DEFAULT_SIGNAL = 'SIGSTOP'
 DEFAULT_STOP_POSITION = 'after'
 SIGNAL_OPTIONS = ['SIGSTOP', 'SIGTERM', 'SIGKILL']
 STOP_POSITION_OPTIONS = ['before', 'after']
+DEFAULT_STOP_ON_FAIL = False
 
 
 class ReproduceSystemState(Component):
@@ -59,7 +61,10 @@ class ReproduceSystemState(Component):
 
     def _stop_art_run(self, stop_position, test_case):
         if self._stop_position == stop_position and \
-                test_case.test_name in self._test_names_list:
+                test_case.test_name in self._test_names_list and \
+                (not self._stop_fail or test_case.status in
+                    [test_case.TEST_STATUS_FAILED,
+                     test_case. TEST_STATUS_ERROR]):
             msg = "ART stopped {0} '{1}' with {2}, system is ready for debug".\
                 format(self._stop_position, test_case.test_name, self._signal)
             logger.warning(msg)
@@ -83,6 +88,9 @@ class ReproduceSystemState(Component):
                            choices=SIGNAL_OPTIONS, default=DEFAULT_SIGNAL,
                            help="signal that will be passed "
                            " to ART")
+        group.add_argument('--stop-on-fail', action='store',
+                           dest='stop_on_fail', default=DEFAULT_STOP_ON_FAIL,
+                           help="Stop only if test failed")
 
     def configure(self, params, conf):
         if not self.is_enabled(params, conf):
@@ -93,6 +101,7 @@ class ReproduceSystemState(Component):
         self._stop_position = \
             params.stop_position or repro_cfg['stop_position']
         self._signal = params.signal_ or repro_cfg['signal']
+        self._stop_fail = params.stop_on_fail or repro_cfg['stop_on_fail']
 
     def pre_test_case(self, test_case):
         self._stop_art_run('before', test_case)
@@ -130,3 +139,5 @@ class ReproduceSystemState(Component):
         section_spec['enabled'] = 'boolean(default=%s)' % DEFAULT_STATE
         section_spec['signal'] = 'option({0}, default="{1}")'.\
             format(re.sub('[\[\]]', '', str(SIGNAL_OPTIONS)), DEFAULT_SIGNAL)
+        section_spec['stop_on_fail'] = 'boolean(default={0})'.\
+            format(DEFAULT_STOP_ON_FAIL)
