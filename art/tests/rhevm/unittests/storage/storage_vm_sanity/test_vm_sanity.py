@@ -50,7 +50,8 @@ def _create_vm(vm_name, vm_description, disk_interface,
     from the configuration file)
     """
     LOGGER.info("Creating VM %s" % vm_name)
-    storage_domain_name = STORAGE_DOMAIN_API.get(absLink=False)[0].name
+    storage_domain_name = storagedomains.getDCStorages(
+        config.DEFAULT_DATA_CENTER_NAME, False)[0].name
     LOGGER.info("storage domain: %s" % storage_domain_name)
     return vms.createVm(
         True, vm_name, vm_description, cluster=config.CLUSTER_NAME,
