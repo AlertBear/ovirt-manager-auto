@@ -2,7 +2,7 @@
 <!-- vim: set ts=3 sw=3 expandtab: -->
 <?xml-stylesheet type="text/xsl" href="table.xslt"?>
 
-<input pydocs="/home/jhenner/work/rest-api-tests/html_editor/docs.txt">
+<input tcms_plan_id="10421">
 <!-- <span style="display:none" >TEST_DESCRIPTION</span>
    Tests of migration functionality.
    Including manual migration, maintained host, cluster policies, migration between clusters and negative tests
@@ -129,7 +129,6 @@
    <positive>TRUE</positive>
    <run>forkfor(5)</run>
 </test_case>
-
 <test_case>
    <test_name>Wait for all vms are UP</test_name>
    <test_action>waitForVmsStates</test_action>
@@ -181,7 +180,6 @@
    <positive>TRUE</positive>
    <run>YES</run>
 </test_case>
-
 <test_case>
    <test_name>Set Host To Maintenance for Migrate VM to different Cluster</test_name>
    <test_action>deactivateHost</test_action>
@@ -209,8 +207,8 @@
    <parameters>vm='Migrations_VM-0', host='{vds[1]}'</parameters>
    <positive>FALSE</positive>
    <run>TRUE</run>
+   <tcms_test_case>301654</tcms_test_case>
 </test_case>
-
 <test_case>
    <test_name>Set Host To Maintenance for Migrate VM to different Datacenter</test_name>
    <test_action>deactivateHost</test_action>
@@ -238,6 +236,7 @@
    <parameters>vm='Migrations_VM-0', host='{vds[1]}'</parameters>
    <positive>FALSE</positive>
    <run>TRUE</run>
+   <tcms_test_case>301655</tcms_test_case>
 </test_case>
 <test_case>
    <test_name>Migrate VM to same host as it is</test_name>
@@ -245,8 +244,8 @@
    <parameters>vm='Migrations_VM-0', host='{vds[0]}'</parameters>
    <positive>FALSE</positive>
    <run>TRUE</run>
+   <tcms_test_case>301656</tcms_test_case>
 </test_case>
-
 <test_case>
    <test_name>Set Host To Maintenance to switch back to original cluster.</test_name>
    <test_action>deactivateHost</test_action>
@@ -268,8 +267,6 @@
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
-
-
 <test_case>
    <test_name>Create Migrations_VM-5-15 to overload host</test_name>
    <test_action>createVm</test_action>
@@ -284,7 +281,6 @@
    <positive>TRUE</positive>
    <run>loop(5-15)</run>
 </test_case>
-
 <test_case>
     <test_name>Wait until VMs are UP</test_name>
     <test_action>waitForVMState</test_action>
@@ -292,21 +288,22 @@
     <positive>None</positive>
     <run>yes</run>
 </test_case>
-
 <test_case>
    <test_name>Set host to maintenance to invoke migration which will fail because destination host cannot run all vms</test_name>
    <test_action>deactivateHost</test_action>
-   <parameters>host='{vds[1]}', expected_status='e{host_state_preparing_for_maintenance}'</parameters>
+   <parameters>host='{vds[0]}', expected_status='e{host_state_preparing_for_maintenance}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
  <test_case>
-        <test_name>Check if host status is preparing for maintenance</test_name>
-        <test_action>waitForHostsStates</test_action>
-        <parameters>names='{vds[1]}', states='e{host_state_preparing_for_maintenance}', timeout=300</parameters>
-        <positive>TRUE</positive>
-        <run>yes</run>
-    </test_case>
+
+   <test_name>Check if host status is preparing for maintenance</test_name>
+   <test_action>waitForHostsStates</test_action>
+   <parameters>names='{vds[0]}', states='e{host_state_maintenance}', timeout=300</parameters>
+   <positive>TRUE</positive>
+   <run>yes</run>
+   <tcms_test_case>301659</tcms_test_case>
+</test_case>
 <test_case>
    <test_name>Wait for all VMs up</test_name>
    <test_action>waitUntilVmQuery</test_action>
@@ -315,7 +312,6 @@
    <run>loop(5-15)</run>
    <bz>773276</bz>
 </test_case>
-
 <test_case>
    <test_name>Stop VMS on the overloaded hosts</test_name>
    <test_action>stopVm</test_action>
@@ -401,6 +397,7 @@
    <parameters>host='{vds[1]}'</parameters>
    <positive>TRUE</positive>
    <run>YES</run>
+   <tcms_test_case>301661</tcms_test_case>
 </test_case>
 <test_case>
    <test_name>END_GROUP: host_to_maintenance_migrations</test_name>
@@ -416,8 +413,8 @@
    <parameters></parameters>
    <positive>NONE</positive>
    <run>loop(2)</run>
+   <tcms_test_case>301663</tcms_test_case>
 </test_case>
-
 <test_case>
    <test_name>Wait for tasks to complete before pinged_offline_migrations.</test_name>
    <test_action>sleep</test_action>
@@ -425,7 +422,6 @@
    <positive>NONE</positive>
    <run>YES</run>
 </test_case>
-
 <test_case>
    <test_name>Suspend VM</test_name>
    <test_action>suspendVm</test_action>
@@ -440,8 +436,6 @@
     <positive>None</positive>
     <run>loop(0-4)</run>
 </test_case>
-
-
 <test_case>
    <test_name>Wait for tasks to complete before resuming</test_name>
    <test_action>sleep</test_action>
@@ -449,9 +443,6 @@
    <positive>NONE</positive>
    <run>yes</run>
 </test_case>
-
-
-
 <test_case>
    <test_name>Resume VM</test_name>
    <test_action>startVm</test_action>
@@ -466,8 +457,6 @@
     <positive>None</positive>
     <run>loop(0-4)</run>
 </test_case>
-
-
 <test_case>
    <test_name>Ping resumed Vms</test_name>
    <test_action>pingVm</test_action>
@@ -476,7 +465,6 @@
    <bz>871616</bz>
    <run>forkfor(5)</run>
 </test_case>
-
 <test_case>
    <test_name>END_GROUP: pinged_offline_migrations</test_name>
    <test_action/>
@@ -525,6 +513,7 @@
    <positive>TRUE</positive>
    <bz>871616</bz>
    <run>loop(2)</run>
+   <tcms_test_case>301664</tcms_test_case>
 </test_case>
 <test_case>
    <test_name>END_GROUP: pinged_online_migrations</test_name>
@@ -600,6 +589,7 @@
    <parameters>query='type=63', win_start_query='{cluster1_name} type=811'</parameters>
    <positive>NONE</positive>
    <run>yes</run>
+   <tcms_test_case>302117</tcms_test_case>
 </test_case>
 <test_case>
    <test_name>END_GROUP: cluster_policies_based_migrations</test_name>
