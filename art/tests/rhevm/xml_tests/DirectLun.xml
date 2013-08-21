@@ -223,13 +223,6 @@
    <run>yes</run>
 </test_case>
 <test_case>
-   <test_name>Wait due to bz#952603</test_name>
-   <test_action>sleep</test_action>
-   <parameters>seconds=5</parameters>
-   <positive>None</positive>
-   <run>yes</run>
-</test_case>
-<test_case>
    <test_name>Stop VM with direct lun, that was resumed from suspended state</test_name>
    <test_action>stopVm</test_action>
    <parameters>vm='{data_center_type}TestVm'</parameters>
