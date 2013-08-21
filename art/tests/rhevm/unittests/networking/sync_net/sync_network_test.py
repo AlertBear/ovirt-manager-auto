@@ -781,6 +781,7 @@ class Sync_Case9_276007(TestCase):
         """
         Sync only 1 of 2 unsync network
         """
+        unsync_elem = '.'.join([config.HOST_NICS[1], config.VLAN_ID[1]])
         logger.info("Sync only VLAN network out of 2 networks")
         net_obj = []
         rc, out = genSNNic(nic=config.HOST_NICS[1],
@@ -791,8 +792,7 @@ class Sync_Case9_276007(TestCase):
         net_obj.append(out['host_nic'])
         logger.info('Sending one sync and one unsync element to SN')
         if not sendSNRequest(True, host=config.HOSTS[0], nics=net_obj,
-                             auto_nics=[config.HOST_NICS[0],
-                                        'eth1.163'],
+                             auto_nics=[config.HOST_NICS[0], unsync_elem],
                              check_connectivity='true',
                              connectivity_timeout=60, force='false'):
             raise NetworkException("Couldn't SN sync and unsync networks")
