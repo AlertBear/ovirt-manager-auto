@@ -1,0 +1,9 @@
+<input xmlns:xi="http://www.w3.org/2001/XInclude">
+<!-- <span style="display:none" >TEST_DESCRIPTION</span>
+     Tests for vm migration.
+     Test have 2 hosts, put one host to maintaince to invoke migrations
+-->
+	<xi:include href="migration_tests/setup.xml" />
+	<xi:include href="migration_tests/host_to_maintenance_migrations.xml" />
+	<xi:include href="migration_tests/teardown.xml" />
+</input>
