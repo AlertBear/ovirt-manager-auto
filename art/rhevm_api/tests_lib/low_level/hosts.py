@@ -537,7 +537,15 @@ def updateHost(positive, host, **kwargs):
 
     if 'storage_manager_priority' in kwargs:
         new_priority = kwargs.pop('storage_manager_priority')
-        sm = StorageManager(new_priority, hostObj.storage_manager.get_valueOf_())
+        class StorageManagerHack(StorageManager):
+            def __init__(self, priority=None, valueOf_=None):
+                self.priority = priority
+                self.valueOf_ = valueOf_
+
+        try:
+            sm = StorageManager(new_priority, hostObj.storage_manager.get_valueOf_())
+        except (ValueError, TypeError):
+            sm = StorageManagerHack(new_priority, hostObj.storage_manager.get_valueOf_())
         hostUpd.set_storage_manager(sm)
 
     if 'pm' in kwargs:
@@ -642,6 +650,27 @@ def activateHost(positive, host, wait=True):
 
     return status and testHostStatus
 
+def _sort_hosts_by_priority(hosts, reverse=True):
+    '''
+    Description: Set hosts by priorities, default is DESC order
+    Author: mbourvin
+    Parameters:
+    * hosts - hosts to be sorted
+    Returns: A list of hosts, order by priority (default: DESC)
+    '''
+    if type(hosts) == str:
+        hosts = hosts.split(',')
+
+    hosts_priorities_dic = {}
+    for host in hosts:
+        spm_priority = getSPMPriority(host)
+        hosts_priorities_dic[host] = spm_priority
+
+    sorted_dic = sorted(hosts_priorities_dic, key=hosts_priorities_dic.get,
+                  reverse=reverse)
+
+    return [k for k, v in sorted_dic.iteritems()]
+
 @is_action()
 def activateHosts(positive, hosts):
     '''
@@ -653,7 +682,9 @@ def activateHosts(positive, hosts):
     * hosts - hosts to be activated
     Returns: True (success) / False (failure)
     '''
-    for host in hosts.split(','):
+    sorted_hosts = _sort_hosts_by_priority(hosts)
+
+    for host in sorted_hosts:
         status = activateHost(bool(True), host)
         if not status:
             time.sleep(30)
@@ -1427,15 +1458,13 @@ def getAnyNonSPMHost(hosts, expected_states=None):
 
 
 @is_action()
-def checkSPMPriority(positive, hostName, expectedPriority):
+def getSPMPriority(hostName):
     '''
-    Description: check SPM priority of host
-    Author: imeerovi
+    Description: Get SPM priority of host
+    Author: mbourvin
     Parameters:
     * hostName - name/ip of host
-    * expectedPriority - expecded value of SPM priority on host
-    Return: True if SPM priority value is equal to expected value.
-            False in other case.
+    Return: The SPM priority of the host.
     '''
 
     attribute = 'storage_manager'
@@ -1449,6 +1478,22 @@ def checkSPMPriority(positive, hostName, expectedPriority):
     spmPriority = hostObj.get_storage_manager().get_priority()
     HOST_API.logger.info("checkSPMPriority - SPM Value of host %s is %s",
                      hostName, spmPriority)
+    return spmPriority
+
+
+@is_action()
+def checkSPMPriority(positive, hostName, expectedPriority):
+    '''
+    Description: check SPM priority of host
+    Author: imeerovi
+    Parameters:
+    * hostName - name/ip of host
+    * expected priority - expected value of SPM priority on host
+    Return: True if SPM priority value is equal to expected value.
+            False in other case.
+    '''
+    spmPriority = getSPMPriority(hostName)
+
     return (str(spmPriority) == expectedPriority)
 
 
@@ -1660,8 +1705,10 @@ def deactivateHosts(positive, hosts):
     * hosts - hosts to be deactivated
     Returns: True (success) / False (failure)
     '''
-    for host in hosts.split(','):
-        status = deactivateHost(bool(True), host)
+    sorted_hosts = _sort_hosts_by_priority(hosts, False)
+
+    for host in sorted_hosts:
+        status = deactivateHost(True, host)
         if not status:
             time.sleep(30)
             status2 = deactivateHost(bool(True), host)
@@ -1679,7 +1726,7 @@ def reactivateHost(positive, host):
     * host - the name of the host to be reactivated
     Returns: True (success) / False (failure)
     '''
-    status = deactivateHost(bool(True), host)
+    status = deactivateHost(True, host)
     if status:
         status = activateHost(bool(True), host)
     return status == positive
