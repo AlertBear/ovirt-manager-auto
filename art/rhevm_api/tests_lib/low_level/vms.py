@@ -2805,14 +2805,15 @@ def migrateVmsSimultaneously(positive, vm_name, range_low, range_high, hosts, us
         logger.info('Succeed to migrate all the VMs.')
         return True
 
+
 @is_action()
-def cobblerRemoveMultiSystem(positive, vms, cobblerAddress, cobblerUser,
-                             cobblerPasswd, nic='nic1'):
+def provisioningRemoveMultiSystem(positive, vms, nic='nic1'):
     '''
-    Description: Remove Multi systems from cobbler.
-    Author: Tomer
+    Description: Remove Multi systems from provisioning tool.
+    Author: imeerovi
     Parameters:
        * vms - string of VMs seperate by comma or space.
+       * nic - vm nic
     Return: status (True if all systems removed, False otherwise).
     '''
     if not isinstance(vms, str):
@@ -2822,11 +2823,25 @@ def cobblerRemoveMultiSystem(positive, vms, cobblerAddress, cobblerUser,
 
     for vm in vmsList:
         status, mac = getVmMacAddress(positive, vm, nic=nic)
-        wasRemoved = cobblerRemoveSystem(cobblerAddress, cobblerUser,
-                                         cobblerPasswd, mac['macAddress'])
+        wasRemoved = removeSystem(mac['macAddress'])
         if not (wasRemoved and status):
             return False
     return True
+
+
+@is_action()
+def cobblerRemoveMultiSystem(positive, vms, cobblerAddress, cobblerUser,
+                             cobblerPasswd, nic='nic1'):
+    '''
+    ***Depricated, used for 3.1 compatibility***
+    Description: Remove Multi systems from cobbler.
+    Author: Tomer
+    Parameters:
+       * vms - string of VMs seperate by comma or space.
+    Return: status (True if all systems removed, False otherwise).
+    '''
+    return provisioningRemoveMultiSystem(positive, vms, nic)
+
 
 @is_action('moveVmDisk')
 def move_vm_disk(vm_name, disk_name, target_sd):
