@@ -1233,7 +1233,7 @@ def get_running_tasks(vdc, vdc_pass, sp_id, db_name, db_user):
         * db_name - name of the rhevm database
         * db_user - name of the user of database
     """
-    query = "select task_id, vdsm_task_id, task_params_class from " \
+    query = "select task_id, task_params_class from " \
             "async_tasks where storage_pool_id = '%s'" % sp_id
     status, tasks = runSQLQueryOnSetup(vdc, vdc_pass, query, db_user, db_name)
     if not status:
