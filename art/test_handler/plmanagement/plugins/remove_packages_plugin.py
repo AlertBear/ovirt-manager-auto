@@ -20,11 +20,14 @@ Configuration Options:
 import logging
 from art.test_handler.plmanagement import logger as root_logger
 from art.test_handler.plmanagement import Component, implements
-from art.test_handler.plmanagement.interfaces.application import IConfigurable
+from art.test_handler.plmanagement.interfaces.application import (
+    IConfigurable, IApplicationListener)
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.plmanagement.interfaces.config_validator import\
     IConfigValidation
 from utilities.machine import Machine, LINUX
+from art.test_handler.plmanagement.interfaces.resources_listener import \
+    IResourcesListener
 
 logger = logging.getLogger('%s.remove_packages' % root_logger.name)
 
@@ -43,7 +46,8 @@ class PackagesRemoval(Component):
     """
     Removes packages from hosts.
     """
-    implements(IConfigurable, IPackaging, IConfigValidation)
+    implements(IConfigurable, IPackaging, IConfigValidation,
+               IResourcesListener)
 
     name = "Remove packages"
     priority = 1000
@@ -63,20 +67,28 @@ class PackagesRemoval(Component):
             return
         logger.info("Configuring remove-packages plugin.")
 
-        vds = conf[PARAMETERS].as_list(VDS)
-        vds_passwd = conf[PARAMETERS].as_list(VDS_PASSWORD)
-        user = 'root'
-        packages = conf[PKG_SECTION].as_list(PACKAGES) if PKG_SECTION in conf \
+        self.vds = conf[PARAMETERS].as_list(VDS)
+        self.vds_passwd = conf[PARAMETERS].as_list(VDS_PASSWORD)
+        self.user = 'root'
+        self.packages = conf[PKG_SECTION].as_list(PACKAGES) if PKG_SECTION in conf \
             else DEFAULT_PACKAGES
 
-        logger.info('Removing packages... %s', ', '.join(packages))
-        for name, passwd in zip(vds, vds_passwd):
-            m = Machine(name, user, passwd).util(LINUX)
-            for pkg in packages:
+
+    def on_hosts_cleanup_req(self):
+        logger.info('Removing packages... %s', ', '.join(self.packages))
+        for name, passwd in zip(self.vds, self.vds_passwd):
+            m = Machine(name, self.user, passwd).util(LINUX)
+            for pkg in self.packages:
                 if m.checkRpm(pkg):
                     if not m.removeRpm(pkg, True):
                         logger.error('Failed to remove package %s from %s',
                                      pkg, name)
+
+    def on_storages_prep_request(self):
+        pass
+
+    def on_storages_cleanup_request(self):
+        pass
 
     @classmethod
     def is_enabled(cls, params, conf):

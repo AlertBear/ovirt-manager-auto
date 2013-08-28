@@ -214,6 +214,7 @@ class CleanUpHosts(Component):
     implements(IResourcesListener, IConfigurable, IConfigValidation,
                IPackaging)
     name = "CleanUp hosts"
+    priority = 1001
 
     def __init__(self):
         super(CleanUpHosts, self).__init__()
