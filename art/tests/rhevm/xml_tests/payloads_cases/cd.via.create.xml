@@ -5,7 +5,8 @@
     <test_action/>
     <parameters></parameters>
     <positive>NONE</positive>
-    <run>YES</run>
+    <run>yes</run>
+    <tcms_test_case>222049</tcms_test_case>
 </test_case>
 <test_case>
     <test_name>Create VM from template to test payload type CDROM via CREATE</test_name>
@@ -71,6 +72,6 @@
     <test_action/>
     <parameters></parameters>
     <positive>NONE</positive>
-    <run>YES</run>
+    <run>yes</run>
 </test_case>
 </input>

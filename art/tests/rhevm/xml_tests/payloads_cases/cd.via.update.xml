@@ -5,7 +5,8 @@
     <test_action/>
     <parameters></parameters>
     <positive>NONE</positive>
-    <run>NO</run>
+    <run>yes</run>
+    <tcms_test_case>222050</tcms_test_case>
 </test_case>
 <test_case>
     <test_name>Create VM from template to test both payload via UPDATE</test_name>
@@ -93,6 +94,6 @@
     <test_action/>
     <parameters></parameters>
     <positive>NONE</positive>
-    <run>NO</run>
+    <run>yes</run>
 </test_case>
 </input>

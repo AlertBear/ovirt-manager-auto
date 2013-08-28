@@ -5,7 +5,8 @@
     <test_action/>
     <parameters></parameters>
     <positive>NONE</positive>
-    <run>NO</run>
+    <run>yes</run>
+    <tcms_test_case>304571</tcms_test_case>
 </test_case>
 <test_case>
     <test_name>Create VM from template to test both payload via UPDATE</test_name>
@@ -16,7 +17,7 @@
     <run>yes</run>
 </test_case>
 <test_case>
-    <test_name>update with payload floppy</test_name>
+    <test_name>update with payload cdrom</test_name>
     <test_action>updateVm</test_action>
     <parameters>vm='cd-content',payloads=[('cdrom','file.newlines.cdrom','cdrom update!\nline 2\nline 3\n')]</parameters>
     <positive>TRUE</positive>
@@ -93,6 +94,6 @@
     <test_action/>
     <parameters></parameters>
     <positive>NONE</positive>
-    <run>NO</run>
+    <run>yes</run>
 </test_case>
 </input>
