@@ -185,7 +185,7 @@
     <tcms_test_case>275961</tcms_test_case>
     <vital>TRUE</vital>
     <conf>headers={'Correlation-Id': 107}</conf>
-    <exp_events>24,22,10</exp_events>
+    <exp_events>23,22,10</exp_events>
   </test_case>
   <test_case>
     <id>ba3df2c6-c695-11e1-bc9c-f0def10e0ce8</id>
