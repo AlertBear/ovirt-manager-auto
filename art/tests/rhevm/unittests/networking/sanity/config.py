@@ -45,6 +45,7 @@ BOND = PARAMETERS.as_list('bond')
 VM_NAME = PARAMETERS.as_list('vm_name')
 TEMPLATE_NAME = PARAMETERS['template_name']
 VM_OS = PARAMETERS['vm_os']
+VNIC_PROFILE = PARAMETERS['vnic_profile']
 
 COBBLER_ADDRESS = PARAMETERS.get('cobbler_address', None)
 COBBLER_USER = PARAMETERS.get('cobbler_user', None)

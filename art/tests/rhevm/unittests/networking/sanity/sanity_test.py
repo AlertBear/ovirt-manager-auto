@@ -16,18 +16,17 @@ from art.rhevm_api.tests_lib.high_level.networks import\
 from art.rhevm_api.tests_lib.low_level.hosts import \
     checkNetworkFilteringDumpxml, genSNNic, sendSNRequest
 from art.rhevm_api.tests_lib.low_level.vms import addNic,\
-    getVmNicPortMirroring, removeNic, startVm,\
+    removeNic, startVm,\
     checkVMConnectivity, waitForVmsStates, importVm, removeVm,\
     exportVm, shutdownVm, removeVmFromExportDomain, getVmNicLinked,\
     getVmNicPlugged, updateNic
 from art.rhevm_api.tests_lib.low_level.networks import \
     updateClusterNetwork, isVMNetwork, isNetworkRequired,\
-    updateNetwork
+    updateNetwork, addVnicProfile, removeVnicProfile
 from art.rhevm_api.utils.test_utils import checkMTU,\
     checkSpoofingFilterRuleByVer
 from art.rhevm_api.tests_lib.low_level.storagedomains import\
-    removeStorageDomain, addStorageDomain, detachStorageDomain,\
-    deactivateStorageDomain, attachStorageDomain, activateStorageDomain
+    removeStorageDomain, detachStorageDomain, deactivateStorageDomain
 from art.unittest_lib.network import skipBOND
 
 
@@ -46,16 +45,16 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 
 
 class SanityCase01_CheckManagment(TestCase):
-    '''
+    """
     Validate that MANAGEMENT is Required by default
-    '''
+    """
     __test__ = True
 
     @istest
     def validateMGMT(self):
-        '''
+        """
         Check that MGMT is required
-        '''
+        """
         logger.info("Checking that rhevm network is required by default")
         self.assertTrue(isNetworkRequired(network='rhevm',
                                           cluster=config.CLUSTER_NAME),
@@ -67,18 +66,18 @@ class SanityCase01_CheckManagment(TestCase):
 
 
 class SanityCase02_CheckStaticIPHost(TestCase):
-    '''
+    """
     Check static ip:
     Creating network (sw162) with static ip, Attaching it to eth1,
     and finally, remove the network.
-    '''
+    """
     __test__ = True
 
     @istest
     def checkStaticIP(self):
-        '''
+        """
         Create vlan sw162 with static ip (1.1.1.1) on eth1
-        '''
+        """
         logger.info("Create network and attach it to the host")
         local_dict = {config.VLAN_NETWORKS[0]: {'vlan_id': config.VLAN_ID[0],
                                                 'nic': config.HOST_NICS[1],
@@ -97,9 +96,9 @@ class SanityCase02_CheckStaticIPHost(TestCase):
 
     @classmethod
     def teardown_class(cls):
-        '''
+        """
         Remove network sw162 from the setup
-        '''
+        """
         logger.info("Starting the teardown_class")
         if not (removeNetFromSetup(host=config.HOSTS[0],
                                    auto_nics=[config.HOST_NICS[0]],
@@ -112,21 +111,21 @@ class SanityCase02_CheckStaticIPHost(TestCase):
 
 
 class SanityCase03_CheckingVMNetworks_vlan(TestCase):
-    '''
+    """
     Check VM network & NON_VM network (vlan test):
     Creating two networks (sw162 & sw163) on eth1 while one is VM network
     and the other is NON_VM network. Then, Check that the creation of the
     networks created a proper networks (VM & NON_VM).
     Finally, removing the networks.
-    '''
+    """
     __test__ = True
 
     @classmethod
     def setup_class(cls):
-        '''
+        """
         Create vm network sw162 & non-vm network sw163
         Attach to the host as multi-networks with vlan (eth1)
-        '''
+        """
         logger.info("Create networks and attach them to the host")
         local_dict = {config.VLAN_NETWORKS[0]: {'vlan_id': config.VLAN_ID[0],
                                                 'nic': config.HOST_NICS[1],
@@ -146,9 +145,9 @@ class SanityCase03_CheckingVMNetworks_vlan(TestCase):
 
     @istest
     def checkNetworksUsages(self):
-        '''
+        """
         Checking that sw162 is a vm network & sw163 is a non-vm network
-        '''
+        """
         logger.info("Checking bridged network %s", config.VLAN_NETWORKS[0])
         self.assertTrue(isVMNetwork(network=config.VLAN_NETWORKS[0],
                                     cluster=config.CLUSTER_NAME),
@@ -161,9 +160,9 @@ class SanityCase03_CheckingVMNetworks_vlan(TestCase):
 
     @classmethod
     def teardown_class(cls):
-        '''
+        """
         Removing networks from the setup
-        '''
+        """
         logger.info("Starting the teardown_class")
         if not (removeNetFromSetup(host=config.HOSTS[0],
                                    auto_nics=[config.HOST_NICS[0]],
@@ -177,22 +176,22 @@ class SanityCase03_CheckingVMNetworks_vlan(TestCase):
 
 
 class SanityCase04_CheckingVMNetworks_bond(TestCase):
-    '''
+    """
     Check VM network & NON_VM network (bond test):
     Creating network sw164 on bond, composed of eth2 & eth3 as VM network than:
     1. Check that the creation of the network created a proper network (VM).
     2. Update sw164 to be NON_VM
     3. Check that the update of the network is proper (NON_VM).
     Finally, removing the networks.
-    '''
+    """
     __test__ = True
 
     @classmethod
     def setup_class(cls):
-        '''
+        """
         Create vm network sw164
         Attach to the host as vlan over bond (eth2 & eth3)
-        '''
+        """
         logger.info("Create network and attach it to the host")
         local_dict = {None: {'nic': config.BOND[0], 'mode': 1,
                              'slaves': [config.HOST_NICS[2],
@@ -210,10 +209,10 @@ class SanityCase04_CheckingVMNetworks_bond(TestCase):
 
     @istest
     def checkNetworksUsages(self):
-        '''
+        """
         Checking that sw164 is a vm network, Changing it to non_vm network
         and checking that it is not non_vm
-        '''
+        """
         logger.info("Checking bridged network %s", config.VLAN_NETWORKS[2])
         self.assertTrue(isVMNetwork(network=config.VLAN_NETWORKS[2],
                                     cluster=config.CLUSTER_NAME),
@@ -238,9 +237,9 @@ class SanityCase04_CheckingVMNetworks_bond(TestCase):
 
     @classmethod
     def teardown_class(cls):
-        '''
+        """
         Removing sw164 network from the setup
-        '''
+        """
         logger.info("Starting the teardown_class")
         if not (removeNetFromSetup(host=config.HOSTS[0],
                                    auto_nics=[config.HOST_NICS[0]],
@@ -253,21 +252,21 @@ class SanityCase04_CheckingVMNetworks_bond(TestCase):
 
 
 class SanityCase05_CheckingPortMirroring_vlan(TestCase):
-    '''
+    """
     Checking Port Mirroring (vlan test):
-    Creating network sw162 and attaching it to eth1. Then doing:
-    1. Adding nic2 with network sw162 with port mirroring
-    2. Verifying that nic2 is configured with port mirroring
+    Creating vnic profile with network sw162 and port mirroring enabled,
+    attaching it to eth1.
     Finally, remove nic and network
-    '''
+    """
     __test__ = True
 
     @classmethod
     def setup_class(cls):
-        '''
+        """
         Creating sw162, adding to the to host and adding nic2 with this network
-        '''
-        logger.info("Create network and attach it to the host")
+        """
+        logger.info("Create profile with network sw162 and port mirroring"
+                    "enabled and attach it to the host")
         local_dict = {config.VLAN_NETWORKS[0]: {'vlan_id': config.VLAN_ID[0],
                                                 'nic': config.HOST_NICS[1],
                                                 'required': 'false'}}
@@ -280,27 +279,32 @@ class SanityCase05_CheckingPortMirroring_vlan(TestCase):
                                                    config.HOST_NICS[1]]):
             raise NetworkException("Cannot create and attach network")
 
+        logger.info("Create profile with %s network and port mirroring"
+                    "enabled",
+                    config.VLAN_NETWORKS[0])
+        if not addVnicProfile(positive=True, name=config.VNIC_PROFILE[0],
+                              cluster=config.CLUSTER_NAME,
+                              network=config.VLAN_NETWORKS[0],
+                              port_mirroring=True):
+            logger.error("Failed to add %s profile with %s network to %s",
+                         config.VNIC_PROFILE[0], config.VLAN_NETWORKS[0],
+                         config.CLUSTER_NAME)
+
+    @istest
+    def attachVnicToVm(self):
+        """
+        Attaching vnic to VM
+        """
         if not addNic(positive=True, vm=config.VM_NAME[0], name='nic2',
-                      network=config.VLAN_NETWORKS[0],
-                      port_mirroring=config.VLAN_NETWORKS[0]):
+                      network=config.VLAN_NETWORKS[0]):
             logger.error("Adding nic2 failed")
             return False
 
-    @istest
-    def checkPortMirroring(self):
-        '''
-        Verifying that the nic configured with port mirroring
-        '''
-        self.assertTrue(getVmNicPortMirroring(positive=True,
-                                              vm=config.VM_NAME[0],
-                                              nic='nic2'),
-                        "nic2 is not configured to be port mirroring")
-
     @classmethod
     def teardown_class(cls):
-        '''
+        """
         Remove nic and network from the setup
-        '''
+        """
         logger.info("Starting the teardown_class")
         if not updateNic(positive=True,
                          vm=config.VM_NAME[0],
@@ -318,80 +322,10 @@ class SanityCase05_CheckingPortMirroring_vlan(TestCase):
                                    network=[config.VLAN_NETWORKS[0]])):
             raise NetworkException("Cannot remove network from setup")
 
-########################################################################
-
-########################################################################
-
-
-class SanityCase06_CheckingPortMirroring_bond(TestCase):
-    '''
-    Checking Port Mirroring (bond test):
-    Creating network sw163 and attaching it to eth2 & eth3. Then doing:
-    1. Adding nic2 with network sw163 with port mirroring
-    2. Verifying that nic2 is configured with port mirroring
-    Finally, remove nic and network
-    '''
-    __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        '''
-        Creating network sw163 and attaching it to the host. then, creating
-        nic2 with network sw163
-        '''
-        logger.info("Create network and attach it to the host")
-        local_dict = {None: {'nic': config.BOND[0],
-                             'mode': 1,
-                             'slaves': [config.HOST_NICS[2],
-                                        config.HOST_NICS[3]]},
-                      config.VLAN_NETWORKS[1]: {'nic': config.BOND[0],
-                                                'vlan_id': config.VLAN_ID[1],
-                                                'required': 'false'}}
-
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
-                                        host=config.HOSTS[0],
-                                        network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0]]):
-            raise NetworkException("Cannot create and attach network")
-
-        if not addNic(positive=True, vm=config.VM_NAME[0], name='nic2',
-                      network=config.VLAN_NETWORKS[1],
-                      port_mirroring=config.VLAN_NETWORKS[1]):
-            logger.error("Adding nic2 failed")
-            return False
-
-    @istest
-    def checkPortMirroring(self):
-        '''
-        Testing that nic2 is configured to be port mirroring on bond
-        '''
-        self.assertTrue(getVmNicPortMirroring(positive=True,
-                                              vm=config.VM_NAME[0],
-                                              nic='nic2'),
-                        "nic2 is not configured to be port mirroring")
-
-    @classmethod
-    def teardown_class(cls):
-        '''
-        Remove nic2 and network from the setup
-        '''
-        logger.info("Starting the teardown_class")
-        if not updateNic(positive=True,
-                         vm=config.VM_NAME[0],
-                         nic='nic2',
-                         plugged=False):
-            logger.error("Unplug nic2 failed")
-            return False
-
-        if not removeNic(positive=True, vm=config.VM_NAME[0], nic='nic2'):
-            logger.error("Removing nic2 failed")
-            return False
-
-        if not (removeNetFromSetup(host=config.HOSTS[0],
-                                   auto_nics=[config.HOST_NICS[0]],
-                                   network=[config.VLAN_NETWORKS[1]])):
-            raise NetworkException("Cannot remove network from setup")
+        if not removeVnicProfile(positive=True,
+                                 vnic_profile_name=config.VNIC_PROFILE[0],
+                                 network=config.VLAN_NETWORKS[0]):
+            logger.error("Failed to remove %s profile", config.VNIC_PROFILE[0])
 
 ########################################################################
 
@@ -399,7 +333,7 @@ class SanityCase06_CheckingPortMirroring_bond(TestCase):
 
 
 class SanityCase07_CheckingRequiredNetwork_vlan(TestCase):
-    '''
+    """
     Checking required network (vlan test):
     Creating network sw162 as required and attaching it to the host(eth1),
     then:
@@ -407,14 +341,14 @@ class SanityCase07_CheckingRequiredNetwork_vlan(TestCase):
     2. Updating network to be not required
     3. Checking that the network is non-required
     Finally, removing the network from the setup.
-    '''
+    """
     __test__ = True
 
     @classmethod
     def setup_class(cls):
-        '''
+        """
         Creating network sw162 as required and attaching it to the host
-        '''
+        """
         logger.info("Create network and attach it to the host")
         local_dict = {config.VLAN_NETWORKS[0]: {'vlan_id': config.VLAN_ID[0],
                                                 'nic': config.HOST_NICS[1],
@@ -430,11 +364,11 @@ class SanityCase07_CheckingRequiredNetwork_vlan(TestCase):
 
     @istest
     def checkRequired(self):
-        '''
+        """
         Verifying that the network is required,
         updating network to be not required and checking
         that the network is non-required
-        '''
+        """
         logger.info("network = %s, cluster = %s", config.VLAN_NETWORKS[0],
                     config.CLUSTER_NAME)
         self.assertTrue(isNetworkRequired(network=config.VLAN_NETWORKS[0],
@@ -459,9 +393,9 @@ class SanityCase07_CheckingRequiredNetwork_vlan(TestCase):
 
     @classmethod
     def teardown_class(cls):
-        '''
+        """
         Remove network from the setup
-        '''
+        """
         logger.info("Starting the teardown_class")
         if not (removeNetFromSetup(host=config.HOSTS[0],
                                    auto_nics=[config.HOST_NICS[0]],
@@ -475,7 +409,7 @@ class SanityCase07_CheckingRequiredNetwork_vlan(TestCase):
 
 
 class SanityCase08_CheckingRequiredNetwork_bond(TestCase):
-    '''
+    """
     Checking required network (bond test):
     Creating network sw163 as required and attaching it to the host
     (eth2 & eth3), then:
@@ -483,7 +417,7 @@ class SanityCase08_CheckingRequiredNetwork_bond(TestCase):
     2. Updating network to be not required
     3. Checking that the network is non-required
     Finally, removing the network from the setup.
-    '''
+    """
     __test__ = True
 
     @classmethod
@@ -506,10 +440,10 @@ class SanityCase08_CheckingRequiredNetwork_bond(TestCase):
 
     @istest
     def checkRequired(self):
-        '''
+        """
         Verifying that the network is required, updating network to be
         not required and then checking that the network is non-required
-        '''
+        """
         logger.info("network = %s, cluster = %s", config.VLAN_NETWORKS[1],
                     config.CLUSTER_NAME)
         self.assertTrue(isNetworkRequired(network=config.VLAN_NETWORKS[1],
@@ -534,9 +468,9 @@ class SanityCase08_CheckingRequiredNetwork_bond(TestCase):
 
     @classmethod
     def teardown_class(cls):
-        '''
+        """
         Removing the network from the setup.
-        '''
+        """
         logger.info("Starting the teardown_class")
         if not (removeNetFromSetup(host=config.HOSTS[0],
                                    auto_nics=[config.HOST_NICS[0]],
@@ -549,7 +483,7 @@ class SanityCase08_CheckingRequiredNetwork_bond(TestCase):
 ########################################################################
 
 class SanityCase09_CheckingJumboFrames_vlan(TestCase):
-    '''
+    """
     Checking Jumbo Frame (vlan test):
     Creating and adding sw162 (MTU 9000) & sw163 (MTU 3500) to the host
     on eth1, then:
@@ -557,15 +491,15 @@ class SanityCase09_CheckingJumboFrames_vlan(TestCase):
     2. Updating sw163's MTU to 1500
     2. Check that MTU on sw163 is really 1500
     Finally, removing sw162 & sw163 from the setup
-    '''
+    """
     __test__ = True
 
     @classmethod
     def setup_class(cls):
-        '''
+        """
         Creating and adding sw162 (MTU 9000) & sw163 (MTU 3500)to the host
         on eth1
-        '''
+        """
         logger.info("Create networks and attach them to the host")
         local_dict = {config.VLAN_NETWORKS[0]: {'vlan_id': config.VLAN_ID[0],
                                                 'nic': config.HOST_NICS[1],
@@ -586,9 +520,9 @@ class SanityCase09_CheckingJumboFrames_vlan(TestCase):
 
     @istest
     def checkMTU(self):
-        '''
+        """
         Check that MTU on sw162 and sw163 is really 9000 & 1500
-        '''
+        """
         self.assertTrue(checkMTU(host=config.HOSTS[0],
                                  user=config.HOSTS_USER,
                                  password=config.HOSTS_PW,
@@ -632,9 +566,9 @@ class SanityCase09_CheckingJumboFrames_vlan(TestCase):
 
     @classmethod
     def teardown_class(cls):
-        '''
+        """
         Removing sw162 & sw163 from the setup
-        '''
+        """
         logger.info("Starting the teardown_class")
         if not (removeNetFromSetup(host=config.HOSTS[0],
                                    auto_nics=[config.HOST_NICS[0]],
@@ -648,19 +582,19 @@ class SanityCase09_CheckingJumboFrames_vlan(TestCase):
 
 
 class SanityCase10_CheckingJumboFrames_bond(TestCase):
-    '''
+    """
     Checking Jumbo Frame (vlan test):
     Creating and adding sw162 (MTU 7000) to the host
     on eth2 & eth3, then checking that MTU on sw162 is really 7000
     Finally, removing sw162 from the setup
-    '''
+    """
     __test__ = True
 
     @classmethod
     def setup_class(cls):
-        '''
+        """
         Creating and adding sw162 (MTU 7000) to the host on eth2 & eth3
-        '''
+        """
         logger.info("Create network and attach it to the host")
         local_dict = {None: {'nic': config.BOND[0],
                              'mode': 1,
@@ -680,9 +614,9 @@ class SanityCase10_CheckingJumboFrames_bond(TestCase):
 
     @istest
     def checkMTU(self):
-        '''
+        """
         Check that MTU on sw162 is really 7000
-        '''
+        """
         logger.info("Checking that %s was created with mtu = 7000"
                     % config.VLAN_NETWORKS[0])
         self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
@@ -696,9 +630,9 @@ class SanityCase10_CheckingJumboFrames_bond(TestCase):
 
     @classmethod
     def teardown_class(cls):
-        '''
+        """
         Remove network from the setup
-        '''
+        """
         logger.info("Starting the teardown_class")
         if not (removeNetFromSetup(host=config.HOSTS[0],
                                    auto_nics=[config.HOST_NICS[0]],
@@ -711,7 +645,7 @@ class SanityCase10_CheckingJumboFrames_bond(TestCase):
 
 
 class SanityCase11_CheckingNetworkFilter_vlan(TestCase):
-    '''
+    """
     Checking Network Filter (vlan test):
     Creating network sw162 and adding it to the host on eth1, then:
     test #1:
@@ -721,14 +655,14 @@ class SanityCase11_CheckingNetworkFilter_vlan(TestCase):
     1. Checking that network spoofing filter is enabled on the vm via
        dumpxml
     Finally, Removing nic2 and sw162
-    '''
+    """
     __test__ = True
 
     @classmethod
     def setup_class(cls):
-        '''
+        """
         Creating network sw162 and adding it to the host on eth1
-        '''
+        """
         logger.info("Create network and attach it to the host")
         local_dict = {config.VLAN_NETWORKS[0]: {'vlan_id': config.VLAN_ID[0],
                                                 'nic': config.HOST_NICS[1],
@@ -744,10 +678,10 @@ class SanityCase11_CheckingNetworkFilter_vlan(TestCase):
 
     @istest
     def checkNwfilterOnRhevm(self):
-        '''
+        """
         Checking that network spoofing filter is enabled according to
         the rhevm's version.
-        '''
+        """
         logger.info("Checking that spoofing filter is enabled")
         self.assertTrue(checkSpoofingFilterRuleByVer(
             host=config.RHEVM_NAME,
@@ -757,9 +691,9 @@ class SanityCase11_CheckingNetworkFilter_vlan(TestCase):
 
     @istest
     def checkNwfilterOnVM(self):
-        '''
+        """
         Checking that network spoofing filter is enabled on the vm
-        '''
+        """
         logger.info("Checking that spoofing filter is enabled via dumpxml")
         self.assertTrue(checkNetworkFilteringDumpxml(
             positive=True,
@@ -786,9 +720,9 @@ class SanityCase11_CheckingNetworkFilter_vlan(TestCase):
 
     @classmethod
     def teardown_class(cls):
-        '''
+        """
         Remove nic2 and sw162 from the setup
-        '''
+        """
         logger.info("Starting the teardown_class")
         if not updateNic(positive=True,
                          vm=config.VM_NAME[0],
@@ -812,23 +746,23 @@ class SanityCase11_CheckingNetworkFilter_vlan(TestCase):
 
 
 class SanityCase12_CheckingLinking_vlan(TestCase):
-    '''
+    """
     Checking Linking Nic (vlan test):
     Creating 4 networks (sw162, sw163, sw164 & sw165) and adding them to
     the host. Then creating vnics (with all permutations of plugged & linked)
     and attaching them to the vm, then:
     1. Checking that all the permutations of plugged & linked are correct
     Finally, Removing the nics and networks.
-    '''
+    """
     __test__ = True
 
     @classmethod
     def setup_class(cls):
-        '''
+        """
         Creating 4 networks (sw162, sw163, sw164 & sw165) and adding them to
         the host. Then creating vnics (with all permutations of
         plugged & linked) and attaching them to the vm
-        '''
+        """
         logger.info("Create networks and attach them to the host")
         local_dict = {config.VLAN_NETWORKS[0]: {'vlan_id': config.VLAN_ID[0],
                                                 'nic': config.HOST_NICS[1],
@@ -863,9 +797,9 @@ class SanityCase12_CheckingLinking_vlan(TestCase):
 
     @istest
     def checkCombinationPluggedLinkedValues(self):
-        '''
+        """
         Check all permutation for the Plugged/Linked options on VNIC
-        '''
+        """
         logger.info("Checking Linked on nic2, nic4 is True")
         for nic_name in ('nic2', 'nic4'):
             self.assertTrue(getVmNicLinked(config.VM_NAME[0], nic=nic_name))
@@ -881,9 +815,9 @@ class SanityCase12_CheckingLinking_vlan(TestCase):
 
     @classmethod
     def teardown_class(cls):
-        '''
+        """
         Removing the nics and networks.
-        '''
+        """
         logger.info("Starting the teardown_class")
         logger.info("Updating all the networks beside rhevm to unplugged")
         for nic_name in ('nic2', 'nic3'):
@@ -907,23 +841,23 @@ class SanityCase12_CheckingLinking_vlan(TestCase):
 
 
 class SanityCase13_CheckingLinking_bond(TestCase):
-    '''
+    """
     Checking Linking Nic (bond test):
     Creating 4 networks (sw162, sw163, sw164 & sw165) and adding them to
     the host. Then creating vnics (with all permutations of plugged & linked)
     and attaching them to the vm, then:
     1. Checking that all the permutations of plugged & linked are correct
     Finally, Removing the nics and networks.
-    '''
+    """
     __test__ = True
 
     @classmethod
     def setup_class(cls):
-        '''
+        """
         Creating 4 networks (sw162, sw163, sw164 & sw165) and adding them to
         the host. Then creating vnics (with all permutations of plugged
         & linked) and attaching them to the vm
-        '''
+        """
         logger.info("Create network and attach it to the host")
         local_dict = {None: {'nic': config.BOND[0],
                              'mode': 1,
@@ -962,9 +896,9 @@ class SanityCase13_CheckingLinking_bond(TestCase):
 
     @istest
     def checkCombinationPluggedLinkedValues(self):
-        '''
+        """
         Checking that all the permutations of plugged & linked are correct
-        '''
+        """
         logger.info("Checking Linked on nic2, nic4 is True")
         for nic_name in ('nic2', 'nic4'):
             self.assertTrue(getVmNicLinked(config.VM_NAME[0], nic=nic_name))
@@ -980,9 +914,9 @@ class SanityCase13_CheckingLinking_bond(TestCase):
 
     @classmethod
     def teardown_class(cls):
-        '''
+        """
         Removing the nics and networks
-        '''
+        """
         logger.info("Starting the teardown_class")
         logger.info("Updating all the networks beside rhevm to unplugged")
         for nic_name in ('nic2', 'nic3'):
@@ -1006,7 +940,7 @@ class SanityCase13_CheckingLinking_bond(TestCase):
 
 
 class SanityCase14_CheckingImportExport_vlan(TestCase):
-    '''
+    """
     Checking import/export (vlan test):
     Creating and adding:
         Network: Create and attach sw162 to the host
@@ -1020,16 +954,16 @@ class SanityCase14_CheckingImportExport_vlan(TestCase):
     6. Starting vm
     7. Checking connectivity to vm
     Finally, Removing import/ export domain & network sw162
-    '''
+    """
     __test__ = True
 
     @classmethod
     def setup_class(cls):
-        '''
+        """
         Creating and adding:
             Network: Create and attach network sw162 to the host
             Storage: Adding import/export domain
-        '''
+        """
         logger.info("Create network and attach it to the host")
         local_dict = {config.VLAN_NETWORKS[0]: {'vlan_id': config.VLAN_ID[0],
                                                 'nic': config.HOST_NICS[1],
@@ -1054,12 +988,12 @@ class SanityCase14_CheckingImportExport_vlan(TestCase):
 
     @istest
     def checkImportExportVM(self):
-        '''
+        """
         We check connectivity to the vm, shutting it down, exporting it to
         import/ export domain, removing it from the rhevm, importing the vm
         from the import/ export domain, starting vm and then checking
         connectivity to vm
-        '''
+        """
         logger.info("Checking connectivity with %s", config.VM_NAME[0])
         self.assertTrue(checkVMConnectivity(positive=True,
                                             vm=config.VM_NAME[0],
@@ -1138,9 +1072,9 @@ class SanityCase14_CheckingImportExport_vlan(TestCase):
 
     @classmethod
     def teardown_class(cls):
-        '''
+        """
         Removing import/ export domain & network sw162
-        '''
+        """
         logger.info("Starting the teardown_class")
         logger.info("Removing %s from export domain", config.VM_NAME[0])
         if not removeVmFromExportDomain(positive=True,
@@ -1182,7 +1116,6 @@ class SanityCase14_CheckingImportExport_vlan(TestCase):
 
 
 skipBOND([SanityCase04_CheckingVMNetworks_bond,
-          SanityCase06_CheckingPortMirroring_bond,
           SanityCase08_CheckingRequiredNetwork_bond,
           SanityCase10_CheckingJumboFrames_bond,
           SanityCase13_CheckingLinking_bond], config.HOST_NICS)

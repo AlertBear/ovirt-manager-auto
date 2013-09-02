@@ -11,6 +11,7 @@ vlan_networks = force_list(default=list('sw162', 'sw163', 'sw164', 'sw165','sw16
 vm_name = force_list(default=list('VMTest1', 'VMTest2', 'VMTest3', 'VMTest4', 'VMTest5'))
 template_name = string(default='tempTest1')
 vm_os = option('Red Hat Enterprise Linux 6.x x64', 'Windows 7 x64', 'Windows 2008 R2 x64', 'Windows XP', default='Red Hat Enterprise Linux 6.x x64')
+vnic_profile = force_list(default=list('vnic_profile1', 'vnic_profile2', 'vnic_profile3', 'vnic_profile4', 'vnic_profile5', 'vnic_profile6', 'vnic_profile7', 'vnic_profile8'))
 
 #Running arguments
 vm_network = boolean(default=False)

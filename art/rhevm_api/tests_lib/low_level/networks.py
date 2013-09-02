@@ -407,63 +407,76 @@ def checkIPRule(host, user, password, subnet):
 
 # noinspection PyUnusedLocal
 @is_action()
-def add_vnic_profile(positive, name, cluster_name,
-                     port_mirroring=False, **kwargs):
+def addVnicProfile(positive, name, cluster, network=MGMT_NETWORK,
+                   port_mirroring=False, custom_properties=None,
+                   description=""):
     '''
     Description: Add new vnic profile to network in cluster with cluster_name
-    Author: alukiano
-      * positive - True or False(needs for xml format tests)
-      * name - name of vnic profile
-      * cluster_name - name of cluster to know to what network
-        add vnic profile
-      * port_mirroring - by default False
-      * custom_properties(in kwargs) - you can add custom properties to vnic
-        profile, that was defined by engineConfig in CustomDeviceProperties
-      * description(in kwargs) - description of vnic profile
+    **Author**: alukiano
+    **Parameters**:
+        *  *positive* - Expected result
+        *  *name* - name of vnic profile
+        *  *network* - Network name to be used by profile
+        *  *cluster_name* - name of cluster to know to what network
+                            add vnic profile
+        *  *port_mirroring* - Enable port mirroring for profile
+        *  *custom_properties* - Custom properties for the profile
+        *  *description* - Description of vnic profile
     Return: True, if adding vnic profile was success, False else
     '''
     vnic_profile_obj = data_st.VnicProfile()
-    network_obj = CL_API.get(getClusterNetworks(
-        cluster_name)).get_network()[0]
-    if not network_obj:
-        logger.error("No network defined")
-        return False
-    if not name:
-        logger.error("Name not defined")
-        return False
-    logger.info("Add name")
+    network_obj = getClusterNetwork(cluster=cluster, network=network)
+    logger.info("\n"
+                "Creating vnic profile:\n"
+                "                      name: %s\n"
+                "                      Network: %s\n"
+                "                      Port mirroring: %s\n"
+                "                      Custom properties: %s\n"
+                "                      Description: %s",
+                name, network, port_mirroring, custom_properties, description)
     vnic_profile_obj.set_name(name)
-    logger.info("Add network")
     vnic_profile_obj.set_network(network_obj)
-    logger.info("Add port mirroring")
-    vnic_profile_obj.set_port_mirroring(port_mirroring)
-    if 'description' in kwargs:
-        logger.info("Add description")
-        vnic_profile_obj.set_description(kwargs.get('description'))
-    if 'custom_properties' in kwargs:
-        logger.info("Add custom properties")
+
+    if port_mirroring:
+        vnic_profile_obj.set_port_mirroring(port_mirroring)
+
+    if description:
+        vnic_profile_obj.set_description(description)
+
+    if custom_properties:
         vnic_profile_obj.set_custom_properties(
-            vms.createCustomPropertiesFromArg(
-                kwargs.get('custom_properties')))
-    res, status = VNIC_PROFILES.create(vnic_profile_obj, positive)
-    return status
+            vms.createCustomPropertiesFromArg(custom_properties))
+
+    if not VNIC_PROFILES.create(vnic_profile_obj, positive)[1]:
+        logger.error("Creating %s profile failed", name)
+        return False
+
+    return True
 
 
 @is_action()
-def remove_vnic_profiles(positive, vnic_profile_names):
+def removeVnicProfile(positive, vnic_profile_name, network, datacenter=None):
     '''
     Description: Remove vnic profiles with given names
-    Author: alukiano
-      * positive - True or False(needs for xml format tests)
-      * vnic_profile_names - names of vnic profile divide by ","
-    Return: True, if removing vnic profiles was success, False else
+    **Author**: alukiano
+    **Parameters**:
+        *  *positive* - Expected result
+        *  *vnic_profile_name* -Vnic profile name
+        *  *network* - Network name used by profile
+        *  *datacenter* - Datacenter the network reside on,
+                          None for all datacenters
+    Return: True if action succeeded, Flase otherwise
     '''
-    list_vnic_profile_name = vnic_profile_names.split(",")
-    for vnic_profile_name in list_vnic_profile_name:
-        vnic_obj = VNIC_PROFILES.find(vnic_profile_name)
-        logger.info("Trying to remove vnic profile %s", vnic_profile_name)
-        status = VNIC_PROFILES.delete(vnic_obj, positive)
-        if not status:
-            logger.error("Removing profile %s was failed", vnic_profile_name)
-            return status
+    net_obj_id = findNetwork(network=network, data_center=datacenter).get_id()
+    all_vnic_profiles = VNIC_PROFILES.get(absLink=False)
+    for profile in all_vnic_profiles:
+        if profile.get_name() == vnic_profile_name:
+            active_profile_id = profile.get_network().get_id()
+            if active_profile_id == net_obj_id:
+                logger.info("Trying to remove vnic profile %s",
+                            vnic_profile_name)
+                if not VNIC_PROFILES.delete(profile, positive):
+                    logger.error("Expected result was %s, got the opposite",
+                                 positive)
+                    return False
     return True

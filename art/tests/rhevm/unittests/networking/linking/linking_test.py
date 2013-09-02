@@ -15,11 +15,10 @@ from art.test_handler.exceptions import\
 from art.rhevm_api.tests_lib.high_level.networks import\
     removeNetwork
 from art.rhevm_api.tests_lib.low_level.networks import\
-    addNetwork, addNetworkToCluster
+    addNetwork, addNetworkToCluster, addVnicProfile, removeVnicProfile
 from art.rhevm_api.tests_lib.low_level.vms import\
     addNic, getVmNicLinked, getVmNicPlugged, removeNic,\
-    updateNic, getVmNicNetwork, startVm, getVmNicPortMirroring,\
-    waitForVmsStates, stopVm
+    updateNic, getVmNicNetwork, startVm, waitForVmsStates, stopVm
 
 HOST_API = get_api('host', 'hosts')
 VM_API = get_api('vm', 'vms')
@@ -45,9 +44,9 @@ class Linked_Case1_231692_236620_231710(TestCase):
 
     @classmethod
     def setup_class(cls):
-        '''
+        """
         Create 5 VNICs on VM with different params for plugged/linked
-        '''
+        """
         logger.info("Create VNICs with different plugged/linked permutations")
         plug_link_param_list = [('true', 'true'), ('true', 'false'),
                                 ('false', 'true'), ('false', 'false')]
@@ -84,9 +83,9 @@ class Linked_Case1_231692_236620_231710(TestCase):
 
     @classmethod
     def teardown_class(cls):
-        '''
+        """
         Remove networks from the setup.
-        '''
+        """
         logger.info("Starting the teardown_class")
         logger.info("Updating all the networks beside rhevm to unplugged")
         for nic_name in ('nic2', 'nic3', 'nic6'):
@@ -108,9 +107,9 @@ class Linked_Case2_231696(TestCase):
 
     @classmethod
     def setup_class(cls):
-        '''
+        """
         Create 1 VNIC on stopped VM with default plugged/linked states
-        '''
+        """
         logger.info("Creating VNICs with default plugged/linked states")
         if not addNic(True, config.VM_NAME[1], name='nic2',
                       network=config.VLAN_NETWORKS[0]):
@@ -129,9 +128,9 @@ class Linked_Case2_231696(TestCase):
 
     @classmethod
     def teardown_class(cls):
-        '''
+        """
         Remove networks from the setup.
-        '''
+        """
         logger.info("Starting the teardown_class")
         logger.info("Updating the network on nic2 to unplugged")
         if not updateNic(True, config.VM_NAME[1], 'nic2', plugged='false'):
@@ -150,9 +149,9 @@ class Linked_Case3_231698_231697(TestCase):
 
     @classmethod
     def setup_class(cls):
-        '''
+        """
         Create 2 VNICs on stopped VM with different nic type for plugged/linked
-        '''
+        """
         logger.info("Creating VNICs with different nic types for stopped VM")
         if not addNic(True, config.VM_NAME[1], name='nic2',
                       network=config.VLAN_NETWORKS[0],
@@ -236,9 +235,9 @@ class Linked_Case3_231698_231697(TestCase):
 
     @classmethod
     def teardown_class(cls):
-        '''
+        """
         Remove networks from the setup.
-        '''
+        """
         logger.info("Starting the teardown_class")
         logger.info("Updating all the nics besides with rhevm to unplugged")
         for nic_name in ('nic3', 'nic2'):
@@ -261,9 +260,9 @@ class Linked_Case4_231691(TestCase):
 
     @classmethod
     def setup_class(cls):
-        '''
+        """
         Create network on DC/Cluster and add it to VM
-        '''
+        """
         logger.info("Creating network on DC, Cluster")
         if not addNetwork(True, name=config.NETWORKS[0],
                           data_center=config.DC_NAME):
@@ -283,15 +282,19 @@ class Linked_Case4_231691(TestCase):
         """
         Try to start VM when there is no network on the host
         """
-        logger.info("Try to start VM with network that is not present" +
-                    "on the host in the Cluster")
-        self.assertTrue(startVm(False, config.VM_NAME[1]))
+        logger.info("Try to start VM with network that is not present " +
+                    "on the host in the Cluster. NIC: nic6, Network: %s",
+                    config.VLAN_NETWORKS[0])
+        startVm(True, config.VM_NAME[1], None)
+        query = "name=%s and status=down" % config.VM_NAME[1]
+        self.assertTrue(VM_API.waitForQuery(query, timeout=60, sleep=1),
+                        "%s is up, should be down" % config.VM_NAME[1])
 
     @classmethod
     def teardown_class(cls):
-        '''
+        """
         Remove networks from the setup.
-        '''
+        """
         logger.info("Starting the teardown_class")
         logger.info("Updating all the nics beside with rhevm to unplugged")
         if not updateNic(True, config.VM_NAME[1], "nic6", plugged='false'):
@@ -311,14 +314,21 @@ class Linked_Case5_239344(TestCase):
 
     @classmethod
     def setup_class(cls):
-        '''
+        """
         Create 1 plugged/linked VNIC with port mirroring enabled
         on running VM
-        '''
+        """
+        if not addVnicProfile(positive=True, name=config.VNIC_PROFILE[0],
+                              cluster=config.CLUSTER_NAME,
+                              network=config.VLAN_NETWORKS[0],
+                              port_mirroring=True):
+            logger.error("Failed to add %s profile with %s network to %s",
+                         config.VNIC_PROFILE[0], config.VLAN_NETWORKS[0],
+                         config.CLUSTER_NAME)
+
         logger.info("Creating plugged/linked VNIC with port mirroring on sw1")
         if not addNic(True, vm=config.VM_NAME[0], name='nic2',
-                      network=config.VLAN_NETWORKS[0],
-                      port_mirroring=config.VLAN_NETWORKS[0]):
+                      vnic_profile=config.VNIC_PROFILE[0]):
             raise VMException("Cannot add VNIC to VM")
 
     @istest
@@ -327,30 +337,21 @@ class Linked_Case5_239344(TestCase):
         """
         Check scenarios for port mirroring network
         """
-        logger.info("Check port mirroring is enabled")
-        self.assertTrue(getVmNicPortMirroring(True, config.VM_NAME[0], "nic2"))
         logger.info("Try to switch link down ")
         self.assertTrue(updateNic(False, config.VM_NAME[0], "nic2",
                                   linked='false'))
-        logger.info("Try to switch port mirroring off")
-        self.assertTrue(updateNic(False, config.VM_NAME[0], "nic2",
-                                  port_mirroring=None))
         logger.info("Unplug VNIC")
         self.assertTrue(updateNic(True, config.VM_NAME[0], "nic2",
                                   plugged='false'))
-        logger.info("Check port mirroring is enabled")
-        self.assertTrue(getVmNicPortMirroring(True, config.VM_NAME[0], "nic2"))
         logger.info("Plugging VNIC back")
         self.assertTrue(updateNic(True, config.VM_NAME[0], "nic2",
                                   plugged='true'))
-        logger.info("Check port mirroring is enabled")
-        self.assertTrue(getVmNicPortMirroring(True, config.VM_NAME[0], "nic2"))
 
     @classmethod
     def teardown_class(cls):
-        '''
+        """
         Remove networks from the setup.
-        '''
+        """
         logger.info("Starting the teardown_class")
         logger.info("Updating the nics beside with rhevm to unplugged")
         if not updateNic(True, config.VM_NAME[0], "nic2", plugged='false'):
@@ -358,6 +359,11 @@ class Linked_Case5_239344(TestCase):
         logger.info("Removing all the VNICs beside rhevm")
         if not removeNic(True, config.VM_NAME[0], "nic2"):
             raise NetworkException("Cannot remove nic from setup")
+        logger.info("Removing vnic profile")
+        if not removeVnicProfile(positive=True,
+                                 vnic_profile_name=config.VNIC_PROFILE[0],
+                                 network=config.VLAN_NETWORKS[0]):
+            logger.error("Failed to remove %s profile", config.VNIC_PROFILE[0])
 
 
 class Linked_Case6_239348(TestCase):
@@ -371,9 +377,9 @@ class Linked_Case6_239348(TestCase):
 
     @classmethod
     def setup_class(cls):
-        '''
+        """
         Create 2 VNICs on running VM with different linked states for VNICs
-        '''
+        """
         logger.info("Creating VNICs with different link states on running VM")
         link_param_list = ['true', 'false']
         for i in range(len(link_param_list)):
@@ -465,9 +471,9 @@ class Linked_Case6_239348(TestCase):
 
     @classmethod
     def teardown_class(cls):
-        '''
+        """
         Remove networks from the setup.
-        '''
+        """
         logger.info("Starting the teardown_class")
         logger.info("Updating all the networks beside rhevm to unplugged")
         for nic_name in ('nic3', 'nic2'):
@@ -480,77 +486,7 @@ class Linked_Case6_239348(TestCase):
                 raise NetworkException("Cannot remove nic from setup")
 
 
-class Linked_Case7_239346(TestCase):
-    """
-    Editing plugged VNIC with port mirroring enabled on running VM
-    """
-    __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        '''
-        Create 1 unplugged/linked VNIC with port mirroring enabled
-        on running VM
-        '''
-        logger.info("Creating unplugged/linked VNIC with port mirroring")
-        if not addNic(True, vm=config.VM_NAME[0], name='nic2',
-                      network=config.VLAN_NETWORKS[0],
-                      port_mirroring=config.VLAN_NETWORKS[0],
-                      plugged='false'):
-            raise VMException("Cannot add VNIC to VM")
-
-    @istest
-    @tcms(8046, 239346)
-    def checkPortMirroringNetwork(self):
-        """
-        Check scenarios for port mirroring network
-        """
-        logger.info("Check port mirroring is enabled")
-        self.assertTrue(getVmNicPortMirroring(True, config.VM_NAME[0], "nic2"))
-
-        logger.info("Try to update  NIC with empty network")
-        self.assertTrue(updateNic(False, config.VM_NAME[0], 'nic2',
-                                  network=None,
-                                  port_mirroring=config.VLAN_NETWORKS[0]))
-        logger.info("Changing the NIC type parameter")
-        if not updateNic(True, config.VM_NAME[0], "nic2",
-                         interface=config.NIC_TYPE_E1000, plugged='false'):
-            raise NetworkException("Couldn't change the NIC type parameter")
-
-        logger.info("Switch port mirroring off")
-        self.assertTrue(updateNic(True, config.VM_NAME[0], "nic2",
-                                  port_mirroring=None))
-        logger.info("Check port mirroring is disabled")
-        self.assertTrue(getVmNicPortMirroring(False, config.VM_NAME[0],
-                                              'nic2'))
-        logger.info("Switch port mirroring on")
-        self.assertTrue(updateNic(True, config.VM_NAME[0], "nic2",
-                                  network=config.VLAN_NETWORKS[0],
-                                  port_mirroring=config.VLAN_NETWORKS[0]))
-
-        logger.info("Check port mirroring is enabled")
-        self.assertTrue(getVmNicPortMirroring(True, config.VM_NAME[0], "nic2"))
-        logger.info("Plugging VNIC ")
-        self.assertTrue(updateNic(True, config.VM_NAME[0], "nic2",
-                                  plugged='true'))
-        logger.info("Check port mirroring is enabled")
-        self.assertTrue(getVmNicPortMirroring(True, config.VM_NAME[0], "nic2"))
-
-    @classmethod
-    def teardown_class(cls):
-        '''
-        Remove networks from the setup.
-        '''
-        logger.info("Starting the teardown_class")
-        logger.info("Updating the nics beside with rhevm to unplugged")
-        if not updateNic(True, config.VM_NAME[0], "nic2", plugged='false'):
-            raise NetworkException("Couldn't update nics to be unplugged")
-        logger.info("Removing all the VNICs beside rhevm")
-        if not removeNic(True, config.VM_NAME[0], "nic2"):
-            raise NetworkException("Cannot remove nic from setup")
-
-
-class Linked_Case8_239368(TestCase):
+class Linked_Case7_239368(TestCase):
     """
     Changing several network parameters at once on non-running VM
     """
@@ -558,9 +494,9 @@ class Linked_Case8_239368(TestCase):
 
     @classmethod
     def setup_class(cls):
-        '''
+        """
         Create 1 VNIC on non-running VM
-        '''
+        """
         logger.info("Creating VNICs on non-running VM")
         if not addNic(True, config.VM_NAME[1], name='nic2',
                       network=config.VLAN_NETWORKS[0],
@@ -617,9 +553,9 @@ class Linked_Case8_239368(TestCase):
 
     @classmethod
     def teardown_class(cls):
-        '''
+        """
         Remove networks from the setup.
-        '''
+        """
         logger.info("Starting the teardown_class")
         logger.info("Updating all the nics beside with rhevm to unplugged")
         if not updateNic(True, config.VM_NAME[1], 'nic2', plugged='false'):
