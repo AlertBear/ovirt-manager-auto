@@ -22,6 +22,7 @@ import logging
 from operator import and_
 from Queue import Queue
 import random
+import os
 import re
 import time
 from threading import Thread
@@ -45,7 +46,7 @@ from art.test_handler.settings import opts
 from art.test_handler import exceptions
 from utilities.jobs import Job, JobsSet
 from utilities.utils import pingToVms, makeVmList
-from utilities.machine import Machine
+from utilities.machine import Machine, LINUX
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 DEFAULT_CLUSTER = 'Default'
@@ -651,6 +652,7 @@ def stopVm(positive, vm, async='false'):
        * async - stop VM asynchronously if 'true' ('false' by default)
     Return: status (True if vm was stopped properly, False otherwise)
     '''
+    collect_vm_logs(vm)
     return changeVMStatus(positive, vm, 'stop', 'DOWN', async)
 
 
@@ -1522,6 +1524,7 @@ def shutdownVm(positive, vm, async='true'):
        * async - if false, wait for VM to shutdown
     Return: status (True if vm was stopped properly, False otherwise)
     '''
+    collect_vm_logs(vm)
     return changeVMStatus(positive, vm, 'shutdown', 'down', async=async)
 
 
@@ -2974,3 +2977,25 @@ def wait_for_vm_snapshots(vm_name, states,
             timeout, sleep, _get_unsatisfying_snapshots, vm_name, states):
         if not not_wanted_snaps:
             return
+
+def collect_vm_logs(vm_name, root_passwd='qum5net'):
+    """
+    Collects /var/log/messages from vm
+    and put it in logdir
+
+    Parameters:
+        * *vm_name* - name of the vm
+        * *root_passwd* - password of root user of the vm
+
+    **Returns**: True/False whether succeed in collecting the logs
+    """
+    vm_ip = LookUpVMIpByName('','').get_ip(vm_name)
+    if vm_ip is None:
+        logger.debug("failed to get vm logs from vm %s: No IP found", vm_name)
+        return False
+    m = Machine(vm_ip, 'root', root_passwd).util(LINUX)
+    log_dest = os.path.join(opts['logdir'], '{0}-messages.log'.format(vm_name))
+    if not m.copyFrom('/var/log/messages', log_dest):
+        logger.debug("failed to copy logs from vm logs from vm %s", vm_name)
+        return False
+    return True
