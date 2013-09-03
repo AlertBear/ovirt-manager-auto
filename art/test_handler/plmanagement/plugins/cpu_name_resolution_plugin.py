@@ -164,7 +164,7 @@ class AutoCpuNameResolution(Component):
             cpus = self.get_cpus_from_api(compatibility_version)
             self.build_mapping(cpus)
         except CpuPluginError as ex:
-            logger.warning(ex.message)
+            logger.warning(ex)
             return
 
         vds_list = conf[PARAMETERS].as_list(VDS)
@@ -180,7 +180,7 @@ class AutoCpuNameResolution(Component):
                                  'level'])):
                     selected_cpu = host_cpu
         except CpuPluginError as ex:
-            logger.debug(ex.message)
+            logger.debug(ex)
             logger.warning("Failed to resolve cpu name. "
                            "Falling back to vendor default...")
             selected_cpu = self.get_vendor_fallback(vds_list[0],
