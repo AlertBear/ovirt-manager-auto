@@ -32,6 +32,8 @@ HOSTS = PARAMETERS.as_list('vds')
 PASSWORDS = PARAMETERS.as_list('vds_password')
 
 EXPORT_DOMAIN = PARAMETERS.get('export_domain_name')
+DATA_CENTER_TYPE = PARAMETERS['data_center_type']
+DOMAIN_NAME_1 = '%s_0' % DATA_CENTER_TYPE
 
 CLUSTER_NAME = PARAMETERS.setdefault("cluster_name", DEFAULT_CLUSTER_NAME)
 
