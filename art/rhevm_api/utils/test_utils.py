@@ -1691,7 +1691,7 @@ def runTcpDumpCmd(machine, user, password, nic, **kwargs):
     **Return**: Returns tcpdump's output and return code.
     '''
     paramPrefix = {'src': 'src', 'srcPort': 'src port', 'dst': 'dst',
-                   'dstPort': 'dst port', 'protocol': ''}
+                   'dstPort': 'dst port', 'protocol': None}
 
     cmd = ['tcpdump', '-i', nic, '-c', str(kwargs.pop('numPackets', '10')),
            '-nn']
@@ -1701,13 +1701,14 @@ def runTcpDumpCmd(machine, user, password, nic, **kwargs):
             cmd.extend([paramPrefix[k], str(v), 'and'])
 
         cmd.pop()  # Removes unneccesary 'and'
+        cmd = filter(None, cmd)
 
     logger.info('TcpDump command to be sent: %s', cmd)
 
     machineObj = Machine(machine, user, password).util('linux')
     rc, output = machineObj.runCmd(cmd)
 
-    logger.debug('TcpDump output: ' + output)
+    logger.debug('TcpDump output:\n%s', output)
 
     if not rc:
         if 'timeout' in output:
@@ -1719,7 +1720,8 @@ def runTcpDumpCmd(machine, user, password, nic, **kwargs):
     return rc, output
 
 
-def checkTraffic(machine, user, password, nic, src, dst, **kwargs):
+def checkTraffic(machine, user, password, nic, src, dst, dupCheck=False,
+                 **kwargs):
     '''
     Desciption: Runs tcpdump on the given machine and verifies its output to
                 check if traffic was received according to the parameters.
@@ -1731,6 +1733,7 @@ def checkTraffic(machine, user, password, nic, src, dst, **kwargs):
         *  *nic* - interface on which traffic will be monitored
         *  *src* - source IP by which to filter packets
         *  *dst* - destination IP by which to filter packets
+        *  *dupCheck* - check that no duplicate traffic is received
         *  *srcPort* - source port by which to filter packets, should be
                        numeric (e.g. 80 instead of 'HTTP')
         *  *dstPort* - destination port by which to filter packets, should
@@ -1749,23 +1752,39 @@ def checkTraffic(machine, user, password, nic, src, dst, **kwargs):
     pattern = '(.*)'.join([src, str(kwargs.get('srcPort', '')), dst,
                            str(kwargs.get('dstPort', ''))])
 
-    logger.info('Checking TcpDump output. RE Pattern: ' + pattern)
+    logger.info('Checking TcpDump output. RE Pattern: %s', pattern)
 
     '''
     If the protocol is ICMP, we check that 'ICMP' shows up in the output. For
     other protocols, the protocol name is displayed on a different line from
     the source and destination IP's, so the check is not done for them.
     '''
+    found = False
+    prevLine = None
+
     for line in tcpDumpOutput.splitlines():
         if re.search(pattern, line) and ('ICMP' in line.upper() or
                                          kwargs.get('protocol', '') != 'icmp'):
-            logger.info('Found match in tcpdump output in the following '
-                        'line: ' + line)
-            return True
+            if not found:  # We enter the block on the first line matched
+                logger.info('Found match in tcpdump output in the following '
+                            'line: %s', line)
+                found = True
 
-    logger.warning('The traffic that was searched for was not found in tcpdump'
-                   ' output')
-    return False
+                if not dupCheck:
+                    return True
+
+            # Check if a duplicate packet was found
+            strippedLine = line.partition(' ')[2]  # Strip timestamp from line
+            if prevLine == strippedLine:
+                logger.error('Found duplicate packet.')
+                return False
+
+            prevLine = strippedLine
+
+    if not found:
+        logger.warning('The traffic that was searched for was not found in '
+                       'tcpdump output')
+    return found
 
 
 def waitUntilGone(positive, names, api, timeout, samplingPeriod):
