@@ -40,10 +40,15 @@ COVERAGE_SOURCE = 'path_to_source'
 COVERAGE_TARGET = 'path_to_target'
 ENABLED = 'enabled'
 SERVICE = 'service'
+PATH_TO_COV_CONF = "path_to_cov_conf"
+PATH_TO_VDSM_CONF = "path_to_vdsm_conf"
 
 TARGET_DEFAULT = "results/vdsm_coverage"
 SOURCE_DEFAULT = "/var/lib/vdsmcodecoverage/coverage"
-SERVICE_DEFAULT = "vdsmcodecoveraged"
+SERVICE_DEFAULT = "vdsmd"
+COVCONF_PATH_DEFAULT = "/var/lib/vdsmcodecoverage/coveragerc"
+VDSM_CONF_DEFAULT = "/etc/sysconfig/vdsm"
+ROOT_USER = "root"
 
 
 class VDSMCoverageError(PluginError):
@@ -65,6 +70,9 @@ class VDSMCodeCoverage(Component):
         self.target_path = None
         self.source_path = None
         self.service = None
+        self.config_content = None
+        self.cov_config_path = None
+        self.vdsm_config_path = None
 
     @classmethod
     def add_options(cls, parser):
@@ -76,36 +84,46 @@ class VDSMCodeCoverage(Component):
         for mobj in self.machines.values():
             self._toogle(mobj, False)
             self._clean(mobj)
+            if not mobj.isFileExists(self.cov_config_path):
+                logger.warning("%s: coverage config doesn't exists %s",
+                               mobj.host, self.cov_config_path)
+                continue
+            logger.info("%s: Configure VDSM: %s, using %s", mobj.host,
+                        self.vdsm_config_path, self.cov_config_path)
+            logger.debug("%s: VDSM config content: %s", mobj.host,
+                         self.config_content)
+            rc, out = mobj.runCmd(['echo', '-e', self.config_content, '>',
+                                   self.vdsm_config_path])
             self._toogle(mobj, True)
 
     def _stop(self):
         for mobj in self.machines.values():
             self._toogle(mobj, False)
-        for mobj in self.machines.values():
+            mobj.removeFile(self.vdsm_config_path)
             self._copy(mobj)
+
         if self.machines:
             self._merge()
 
     def _toogle(self, machine, op):
-        if op:
-            logger.info("Start VDSM code coverage on %s", machine.host)
-        else:
-            logger.info("Stop VDSM code coverage on %s", machine.host)
-        chkconfig = ["chkconfig", self.service]
         service = ["service", self.service]
+        msg = "VDSM service"
 
         if op:
-            chkconfig.append('on')
+            logger.info("%s: Start %s", machine.host, msg)
             service.append('start')
         else:
-            chkconfig.append('off')
+            logger.info("%s: Stop %s", machine.host, msg)
             service.append('stop')
 
         machine.runCmd(service)
-        machine.runCmd(chkconfig)
 
     def _clean(self, machine):
-        logger.info("Cleaning old coverage reports: %s", self.source_path)
+        logger.info("%s: Cleaning vdsm config file: %s", machine.host,
+                    self.vdsm_config_path)
+        machine.removeFile(self.vdsm_config_path)
+        logger.info("%s: Cleaning old coverage reports: %s", machine.host,
+                    self.source_path)
         machine.removeFile(self.source_path)
 
     def _copy(self, machine):
@@ -113,7 +131,10 @@ class VDSMCodeCoverage(Component):
         target_path = os.path.join(self.res_dir, name)
         res = machine.copyFrom(self.source_path, target_path, exc_info=False)
         if res:
-            logger.info("VDSM code coverage copied to: %s", target_path)
+            logger.info("%s: VDSM code coverage copied to: %s", machine.host,
+                        target_path)
+        else:
+            logger.warning("%s: VDSM code coverage not found", machine.host)
 
     def _merge(self):
         mobj = Machine().util(LINUX)
@@ -129,7 +150,7 @@ class VDSMCodeCoverage(Component):
             logger.info("VDSM code coverage file was merged to %s",
                         self.target_path)
         else:
-            logger.warning("There is no code coverage found")
+            logger.warning("There is no VDSM code coverage found")
 
     def configure(self, params, conf):
         if not self.is_enabled(params, conf):
@@ -146,11 +167,16 @@ class VDSMCodeCoverage(Component):
         vds_passwd = conf[PARAMETERS].as_list(VDS_PASSWORD)
 
         for name, passwd in zip(vds, vds_passwd):
-            self.machines[name] = Machine(name, 'root', passwd).util(LINUX)
+            self.machines[name] = Machine(name, ROOT_USER, passwd).util(LINUX)
 
         target_dir = os.path.dirname(self.target_path)
         if target_dir and not os.path.exists(target_dir):
             os.makedirs(target_dir)
+
+        self.vdsm_config_path = config[PATH_TO_VDSM_CONF]
+        self.cov_config_path = config[PATH_TO_COV_CONF]
+        self.config_content = \
+            "export COVERAGE_PROCESS_START=%s\\n" % self.cov_config_path
 
     def on_application_exit(self):
         try:
@@ -188,3 +214,7 @@ class VDSMCodeCoverage(Component):
         section_spec[COVERAGE_TARGET] = 'string(default="%s")' % TARGET_DEFAULT
         section_spec[COVERAGE_SOURCE] = 'string(default="%s")' % SOURCE_DEFAULT
         section_spec[SERVICE] = 'string(default="%s")' % SERVICE_DEFAULT
+        section_spec[PATH_TO_COV_CONF] = \
+            'string(default="%s")' % COVCONF_PATH_DEFAULT
+        section_spec[PATH_TO_VDSM_CONF] = \
+            'string(default="%s")' % VDSM_CONF_DEFAULT
