@@ -5,9 +5,19 @@ class TcmsEntryWrapper(object):
         Parameters: none
         Return: none
     """
+    encoding = 'utf8'  # FIXME: it is not good
+    on_errors = 'replace'
+
     def __init__(self, objectInfo):
         for key, value in objectInfo.iteritems():
-            setattr(self, key, str(value).lower())
+            if not isinstance(value, basestring):
+                value = str(value)  # this can produce non-ascii as well
+
+            if not isinstance(value, unicode):
+                value = unicode(value, self.encoding, errors=self.on_errors)
+
+            value = value.encode("ascii", self.on_errors)
+            setattr(self, key, value.lower())
 
 
 class TestPlanWrapper(TcmsEntryWrapper):
