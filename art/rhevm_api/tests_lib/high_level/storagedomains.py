@@ -345,6 +345,8 @@ class StorageAdder(object):
     def add_storages(self):
         """ Adds all storages from config file.
         """
+        if not self.no_of_data_storages:
+            return []
         created_storages = []
         created_storages.append(self.add_storage(0))
         hosts.waitForSPM(self.datacenter, 600, 10)
