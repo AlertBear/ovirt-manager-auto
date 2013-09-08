@@ -2978,6 +2978,7 @@ def wait_for_vm_snapshots(vm_name, states,
         if not not_wanted_snaps:
             return
 
+
 def collect_vm_logs(vm_name, root_passwd='qum5net'):
     """
     Collects /var/log/messages from vm
@@ -2989,13 +2990,38 @@ def collect_vm_logs(vm_name, root_passwd='qum5net'):
 
     **Returns**: True/False whether succeed in collecting the logs
     """
-    vm_ip = LookUpVMIpByName('','').get_ip(vm_name)
+    vm = VM_API.find(vm_name)
+    os_type = vm.get_os().get_type().lower()
+    if not ('linux' in os_type or 'rhel' in os_type):
+        #no logs from non-linux machines
+        return False
+
+    vm_ip = LookUpVMIpByName('', '').get_ip(vm_name)
     if vm_ip is None:
         logger.debug("failed to get vm logs from vm %s: No IP found", vm_name)
         return False
     m = Machine(vm_ip, 'root', root_passwd).util(LINUX)
     log_dest = os.path.join(opts['logdir'], '{0}-messages.log'.format(vm_name))
-    if not m.copyFrom('/var/log/messages', log_dest):
-        logger.debug("failed to copy logs from vm logs from vm %s", vm_name)
+
+    #hack, to be fixed when moving to logging.config
+    #logging the error in debug instead of error
+    class tempfilter(logging.Filter):
+        def filter(self, record):
+            if record.msg == '%s: failed copy %s from %s, err: %s':
+                logger.warning("failed to copy logs from vm logs from vm %s",
+                               vm_name)
+                logger.debug(record.getMessage())
+                return False
+            return True
+
+    tmpfilter = tempfilter()
+    util_logger = logging.getLogger('util')
+    util_logger.addFilter(tmpfilter)
+
+    success = m.copyFrom('/var/log/messages', log_dest)
+
+    util_logger.removeFilter(tmpfilter)
+    if not success:
+        logger.warning("failed to copy logs from vm logs from vm %s", vm_name)
         return False
     return True
