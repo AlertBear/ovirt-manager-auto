@@ -1,5 +1,5 @@
 <?xml-stylesheet type="text/xsl" href="table.xslt"?>
-<input tcms_plan_id="8155">
+<input>
 <!--*************Set DC proxy to choose*************-->
 <test_case>
     <test_name>START_GROUP: PM-PROXY-SELECTION-DC</test_name>
@@ -9,14 +9,14 @@
     <run>YES</run>
 </test_case>
 <test_case>
-    <test_name>Configure power management with apc_snmp</test_name>
+    <test_name>Configure power management with priority to dc as proxy</test_name>
     <test_action>updateHost</test_action>
-    <parameters>host='{vds[1]}', pm='true', pm_type='{pm_type_apc_snmp}',
-               pm_address='{pm_address_apc_snmp}',
-               pm_username='{pm_username_apc_snmp}',
-               pm_password='{pm_password_apc_snmp}',
-               pm_slot=4,  pm_proxies=[('dc'),('cluster')],
-               agents=[('{pm_type_apc_snmp}','{pm_address_apc_snmp}','{pm_username_apc_snmp}','{pm_password_apc_snmp}',None,False,1,)]
+    <parameters>host='{vds[1]}', pm='true', pm_type='{pm_type_ipmilan}',
+               pm_address='{pm_address_ipmilan}',
+               pm_username='{pm_username_ipmilan}',
+               pm_password='{pm_password_ipmilan}',
+               pm_slot='{pm_slot}',  pm_proxies=[('dc'),('cluster')],
+               agents=[('{pm_type_ipmilan}','{pm_address_ipmilan}','{pm_username_ipmilan}','{pm_password_ipmilan}',None,False,1,)]
     </parameters>
     <positive>True</positive>
     <run>yes</run>
@@ -25,7 +25,7 @@
 <test_case>
     <test_name>Check time elapsed from previous PM operation</test_name>
     <test_action>waitForHostPmOperation</test_action>
-    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <parameters>host='{vds[1]}', dbuser='{db_user}', dbpassword='{db_password}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
 </test_case>
@@ -41,7 +41,7 @@
     <test_name>Check if the fence command occur and check events</test_name>
     <test_type>rest</test_type>
     <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query="{vds[1]} and type=41", query="DC and type=605", expected_count=1</parameters>
+    <parameters>win_start_query='\"data center {data_center_name} was choosen as a proxy to execute Start command\" and type=605', query="{vds[1]} and type=41", expected_count=1</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
     <tcms_plan_id>8155</tcms_plan_id>
@@ -72,7 +72,7 @@
 <test_case>
     <test_name>Check time elapsed from previous PM operation</test_name>
     <test_action>waitForHostPmOperation</test_action>
-    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <parameters>host='{vds[1]}', dbuser='{db_user}', dbpassword='{db_password}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
 </test_case>
@@ -88,7 +88,7 @@
     <test_name>Check if the fence command occur and check events</test_name>
     <test_type>rest</test_type>
     <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='\"{vds[0]} from DC was choosen as a proxy to execute Stop command\" and type=605', query="{vds[1]} and type=41", expected_count=1</parameters>
+    <parameters>win_start_query='\"{vds[0]} from data center {data_center_name} was choosen as a proxy to execute Start command\" and type=605', query="{vds[1]} and type=41", expected_count=1</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
     <tcms_plan_id>8155</tcms_plan_id>
@@ -112,7 +112,7 @@
 <test_case>
     <test_name>Check time elapsed from previous PM operation</test_name>
     <test_action>waitForHostPmOperation</test_action>
-    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <parameters>host='{vds[1]}', dbuser='{db_user}', dbpassword='{db_password}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
 </test_case>
@@ -128,7 +128,7 @@
     <test_name>Check if the fence command occur and check events</test_name>
     <test_type>rest</test_type>
     <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query="{vds[1]} and type=41", query="DC and type=605", expected_count=1</parameters>
+    <parameters>win_start_query='\"data center {data_center_name} was choosen as a proxy to execute Start command\" and type=605', query="{vds[1]} and type=41", expected_count=1</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
     <tcms_plan_id>8155</tcms_plan_id>
@@ -165,14 +165,14 @@
     <run>YES</run>
 </test_case>
 <test_case>
-    <test_name>Configure power management with apc_snmp priority to cluster as proxy</test_name>
+    <test_name>Configure power management with priority to cluster as proxy</test_name>
     <test_action>updateHost</test_action>
-    <parameters>host='{vds[1]}', pm='true', pm_type='{pm_type_apc_snmp}',
-               pm_address='{pm_address_apc_snmp}',
-               pm_username='{pm_username_apc_snmp}',
-               pm_password='{pm_password_apc_snmp}',
-               pm_slot=4,  pm_proxies=[('cluster'),('dc')],
-               agents=[('{pm_type_apc_snmp}','{pm_address_apc_snmp}','{pm_username_apc_snmp}','{pm_password_apc_snmp}',None,False,1,)]
+    <parameters>host='{vds[1]}', pm='true', pm_type='{pm_type_ipmilan}',
+               pm_address='{pm_address_ipmilan}',
+               pm_username='{pm_username_ipmilan}',
+               pm_password='{pm_password_ipmilan}',
+               pm_slot='{pm_slot}',  pm_proxies=[('cluster'),('dc')],
+               agents=[('{pm_type_ipmilan}','{pm_address_ipmilan}','{pm_username_ipmilan}','{pm_password_ipmilan}',None,False,1,)]
     </parameters>
     <positive>True</positive>
     <run>yes</run>
@@ -181,7 +181,7 @@
 <test_case>
     <test_name>Check time elapsed from previous PM operation</test_name>
     <test_action>waitForHostPmOperation</test_action>
-    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <parameters>host='{vds[1]}', dbuser='{db_user}', dbpassword='{db_password}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
 </test_case>
@@ -196,7 +196,7 @@
     <test_name>Check if the fence command occur and check events</test_name>
     <test_type>rest</test_type>
     <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='\"{vds[0]} from CLUSTER was choosen as a proxy to execute Stop command\" and type=605', query="{vds[1]} and type=41", expected_count=1</parameters>
+    <parameters>win_start_query='\"{vds[0]} from cluster {cluster_name}_0 was choosen as a proxy to execute Start command\" and type=605', query="{vds[1]} and type=41", expected_count=1</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
     <tcms_plan_id>8155</tcms_plan_id>
@@ -227,7 +227,7 @@
 <test_case>
     <test_name>Check time elapsed from previous PM operation</test_name>
     <test_action>waitForHostPmOperation</test_action>
-    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <parameters>host='{vds[1]}', dbuser='{db_user}', dbpassword='{db_password}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
 </test_case>
@@ -243,7 +243,7 @@
     <test_name>Check if the fence command occur and check events</test_name>
     <test_type>rest</test_type>
     <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='\"{vds[0]} from CLUSTER was choosen as a proxy to execute Stop command\" and type=605', query="{vds[1]} and type=41", expected_count=1</parameters>
+    <parameters>win_start_query='\"{vds[0]} from cluster {cluster_name}_0 was choosen as a proxy to execute Start command\" and type=605', query="{vds[1]} and type=41", expected_count=1</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
     <tcms_plan_id>8155</tcms_plan_id>
@@ -267,7 +267,7 @@
 <test_case>
     <test_name>Check time elapsed from previous PM operation</test_name>
     <test_action>waitForHostPmOperation</test_action>
-    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <parameters>host='{vds[1]}', dbuser='{db_user}', dbpassword='{db_password}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
 </test_case>
@@ -283,7 +283,7 @@
     <test_name>Check if the fence command occur and check events</test_name>
     <test_type>rest</test_type>
     <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='\"{vds[0]} from CLUSTER was choosen as a proxy to execute Stop command\" and type=605', query="{vds[1]} and type=41", expected_count=1</parameters>
+    <parameters>win_start_query='\"{vds[0]} from cluster {cluster_name}_0 was choosen as a proxy to execute Start command\" and type=605', query="{vds[1]} and type=41", expected_count=1</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
     <tcms_plan_id>8155</tcms_plan_id>
@@ -330,7 +330,7 @@
 <test_case>
     <test_name>Check time elapsed from previous PM operation</test_name>
     <test_action>waitForHostPmOperation</test_action>
-    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <parameters>host='{vds[1]}', dbuser='{db_user}', dbpassword='{db_password}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
 </test_case>
@@ -345,7 +345,7 @@
     <test_name>Check if the fence command occur and check events</test_name>
     <test_type>rest</test_type>
     <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='\"{vds[0]} from CLUSTER was choosen as a proxy to execute Stop command\" and type=605', query="{vds[1]} and type=21", expected_count=1</parameters>
+    <parameters>win_start_query='\"{vds[0]} from cluster {cluster_name}\" and type=605', query="{vds[1]} and type=21", expected_count=1</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
 </test_case>
@@ -360,7 +360,7 @@
 <test_case>
     <test_name>Check time elapsed from previous PM operation</test_name>
     <test_action>waitForHostPmOperation</test_action>
-    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <parameters>host='{vds[1]}', dbuser='{db_user}', dbpassword='{db_password}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
 </test_case>

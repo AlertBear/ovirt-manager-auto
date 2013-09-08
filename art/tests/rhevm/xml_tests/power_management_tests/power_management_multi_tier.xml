@@ -15,7 +15,7 @@
                 pm_address='{pm_address_apc_snmp}',
                 pm_username='{pm_username_apc_snmp}',
                 pm_password='{pm_password_apc_snmp}',
-                pm_slot=4,  pm_proxies=[('cluster'),('dc')],
+                pm_slot='{pm_slot}',  pm_proxies=[('cluster'),('dc')],
                 agents=[('{pm_type_apc_snmp}','{pm_address_apc_snmp}','{pm_username_apc_snmp}','{pm_password_apc_snmp}',None,False,1,),
                 ('{pm_type_ipmilan}','{pm_address_ipmilan}','{pm_username_ipmilan}','{pm_password_ipmilan}',None,False,2,)]
     </parameters>
@@ -25,7 +25,7 @@
 <test_case>
     <test_name>Check time elapsed from previous PM operation</test_name>
     <test_action>waitForHostPmOperation</test_action>
-    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <parameters>host='{vds[1]}', dbuser='{db_user}', dbpassword='{db_password}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
 </test_case>
@@ -34,6 +34,7 @@
     <test_action>fenceHost</test_action>
     <parameters>host='{vds[1]}', fence_type='e{fence_type_restart}'</parameters>
     <positive>True</positive>
+    <bz>982266</bz>
     <run>yes</run>
     <tcms_plan_id>8177</tcms_plan_id>
     <tcms_test_case>235276</tcms_test_case>
@@ -41,7 +42,7 @@
 <test_case>
     <test_name>Check time elapsed from previous PM operation</test_name>
     <test_action>waitForHostPmOperation</test_action>
-    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <parameters>host='{vds[1]}', dbuser='{db_user}', dbpassword='{db_password}'</parameters>
     <positive>True</positive>
     <run>yes</run>
 </test_case>
@@ -53,7 +54,7 @@
                 pm_address='11.11.11.11',
                 pm_username='{pm_username_apc_snmp}',
                 pm_password='{pm_password_apc_snmp}',
-                pm_slot=4,  pm_proxies=[('cluster'),('dc')],
+                pm_slot='{pm_slot}',  pm_proxies=[('cluster'),('dc')],
                 agents=[('{pm_type_apc_snmp}','11.11.11.11','{pm_username_apc_snmp}','{pm_password_apc_snmp}',None,False,1,),
                 ('{pm_type_ipmilan}','{pm_address_ipmilan}','{pm_username_ipmilan}','{pm_password_ipmilan}',None,False,2,)]
     </parameters>
@@ -65,6 +66,7 @@
     <test_action>fenceHost</test_action>
     <parameters>host='{vds[1]}', fence_type='e{fence_type_restart}'</parameters>
     <positive>True</positive>
+    <bz>982604</bz>
     <run>yes</run>
     <tcms_plan_id>8177</tcms_plan_id>
     <tcms_test_case>235277</tcms_test_case>
@@ -72,7 +74,7 @@
 <test_case>
     <test_name>Check time elapsed from previous PM operation</test_name>
     <test_action>waitForHostPmOperation</test_action>
-    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <parameters>host='{vds[1]}', dbuser='{db_user}', dbpassword='{db_password}'</parameters>
     <positive>True</positive>
     <run>yes</run>
 </test_case>
@@ -94,12 +96,12 @@
 <test_case>
     <test_name>Configure primary power management with two power managers</test_name>
     <test_action>updateHost</test_action>
-    <parameters>host='{vds[1]}', pm='true', pm_type='{pm_type_apc_snmp}',
-                pm_address='{pm_address_apc_snmp}',
-                pm_username='{pm_username_apc_snmp}',
-                pm_password='{pm_password_apc_snmp}',
-                pm_slot=4,  pm_proxies=[('cluster'),('dc')],
-                agents=[('{pm_type_apc_snmp}','{pm_address_apc_snmp}','{pm_username_apc_snmp}','{pm_password_apc_snmp}',None,True,1,),
+    <parameters>host='{vds[1]}', pm='true', pm_type='{pm_type_ipmilan}',
+                pm_address='{pm_address_ipmilan}',
+                pm_username='{pm_username_ipmilan}',
+                pm_password='{pm_password_ipmilan}',
+                pm_proxies=[('cluster'),('dc')],
+                agents=[('{pm_type_ipmilan}','{pm_address_ipmilan}','{pm_username_ipmilan}','{pm_password_ipmilan}',None,True,1,),
                 ('{pm_type_ipmilan}','{pm_address_ipmilan}','{pm_username_ipmilan}','{pm_password_ipmilan}',None,True,2,)]
     </parameters>
     <positive>True</positive>
@@ -117,7 +119,7 @@
 <test_case>
     <test_name>Check time elapsed from previous PM operation</test_name>
     <test_action>waitForHostPmOperation</test_action>
-    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <parameters>host='{vds[1]}', dbuser='{db_user}', dbpassword='{db_password}'</parameters>
     <positive>True</positive>
     <run>yes</run>
 </test_case>
@@ -129,7 +131,7 @@
                 pm_address='11.11.11.11',
                 pm_username='{pm_username_apc_snmp}',
                 pm_password='{pm_password_apc_snmp}',
-                pm_slot=4,  pm_proxies=[('cluster'),('dc')],
+                pm_slot='{pm_slot}',  pm_proxies=[('cluster'),('dc')],
                 agents=[('{pm_type_apc_snmp}','11.11.11.11','{pm_username_apc_snmp}','{pm_password_apc_snmp}',None,True,1,),
                 ('{pm_type_ipmilan}','{pm_address_ipmilan}','{pm_username_ipmilan}','{pm_password_ipmilan}',None,True,2,)]
     </parameters>
@@ -155,7 +157,7 @@
 <test_case>
     <test_name>Check time elapsed from previous PM operation</test_name>
     <test_action>waitForHostPmOperation</test_action>
-    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <parameters>host='{vds[1]}', dbuser='{db_user}', dbpassword='{db_password}'</parameters>
     <positive>True</positive>
     <run>yes</run>
 </test_case>
@@ -171,7 +173,7 @@
 <test_case>
     <test_name>Check time elapsed from previous PM operation</test_name>
     <test_action>waitForHostPmOperation</test_action>
-    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <parameters>host='{vds[1]}', dbuser='{db_user}', dbpassword='{db_password}'</parameters>
     <positive>True</positive>
     <run>yes</run>
 </test_case>

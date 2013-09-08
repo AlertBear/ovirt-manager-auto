@@ -1242,7 +1242,7 @@ def get_running_tasks(vdc, vdc_pass, sp_id, db_name, db_user):
     return tasks
 
 
-@is_action("waitForTasks")
+@is_action("    waitForTasks")
 def wait_for_tasks(
         vdc, vdc_password, datacenter,
         db_name=RHEVM_UTILS_ENUMS['RHEVM_DB_NAME'],

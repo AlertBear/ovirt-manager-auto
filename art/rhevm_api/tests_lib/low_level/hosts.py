@@ -1930,7 +1930,7 @@ def getClusterCompatibilityVersion(positive, cluster):
 
 @is_action()
 def waitForHostPmOperation(positive, host, vdc='localhost', dbuser='postgres',
-                        dbpassword='postgres', dbname='engine'):
+                           dbpassword='postgres', dbname='engine'):
     '''
     Description: Wait for next PM operation availability
     Author: lustalov
@@ -1943,7 +1943,8 @@ def waitForHostPmOperation(positive, host, vdc='localhost', dbuser='postgres',
     '''
     timeToWait = 0
     returnVal = True
-    dbConn = psql.Postgresql(host=vdc, user=dbuser, password=dbpassword, dbname=dbname)
+    dbConn = psql.Postgresql(host=vdc, user=dbuser,
+                             password=dbpassword, dbname=dbname)
     try:
         dbConn.connect()
         sql = "select option_value from vdc_options \

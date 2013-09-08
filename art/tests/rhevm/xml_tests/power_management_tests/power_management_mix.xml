@@ -24,7 +24,7 @@
 <test_case>
     <test_name>Configure power management for the host</test_name>
     <test_action>updateHost</test_action>
-    <parameters>host='{vds[1]}', pm='true', pm_type='{pm_type_apc_snmp}', pm_address='{pm_address_apc_snmp}', pm_username='{pm_username_apc_snmp}', pm_password='{pm_password_apc_snmp}', pm_slot=4, pm_proxies=[('cluster'),('dc')], agents=[('{pm_type_apc_snmp}','{pm_address_apc_snmp}','{pm_username_apc_snmp}','{pm_password_apc_snmp}',None,False,1,)]</parameters>
+    <parameters>host='{vds[1]}', pm='true', pm_type='{pm_type_ipmilan}', pm_address='{pm_address_ipmilan}', pm_username='{pm_username_ipmilan}', pm_password='{pm_password_ipmilan}', pm_proxies=[('cluster'),('dc')], agents=[('{pm_type_ipmilan}','{pm_address_ipmilan}','{pm_username_ipmilan}','{pm_password_ipmilan}',None,False,1,)]</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
 </test_case>
@@ -48,7 +48,7 @@
 <test_case>
     <test_name>Check time elapsed from previous PM operation</test_name>
     <test_action>waitForHostPmOperation</test_action>
-    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <parameters>host='{vds[1]}', dbuser='{db_user}', dbpassword='{db_password}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
 </test_case>
@@ -78,7 +78,7 @@
 <test_case>
     <test_name>Check time elapsed from previous PM operation</test_name>
     <test_action>waitForHostPmOperation</test_action>
-    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <parameters>host='{vds[1]}', dbuser='{db_user}', dbpassword='{db_password}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
 </test_case>
@@ -94,7 +94,7 @@
 <test_case>
     <test_name>Check time elapsed from previous PM operation</test_name>
     <test_action>waitForHostPmOperation</test_action>
-    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <parameters>host='{vds[1]}', dbuser='{db_user}', dbpassword='{db_password}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
 </test_case>
@@ -117,7 +117,7 @@
 <test_case>
     <test_name>Check time elapsed from previous PM operation</test_name>
     <test_action>waitForHostPmOperation</test_action>
-    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <parameters>host='{vds[1]}', dbuser='{db_user}', dbpassword='{db_password}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
 </test_case>
@@ -147,7 +147,7 @@
 <test_case>
     <test_name>Check time elapsed from previous PM operation</test_name>
     <test_action>waitForHostPmOperation</test_action>
-    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <parameters>host='{vds[1]}', dbuser='{db_user}', dbpassword='{db_password}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
 </test_case>
@@ -163,7 +163,7 @@
 <test_case>
     <test_name>Check time elapsed from previous PM operation</test_name>
     <test_action>waitForHostPmOperation</test_action>
-    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <parameters>host='{vds[1]}', dbuser='{db_user}', dbpassword='{db_password}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
 </test_case>

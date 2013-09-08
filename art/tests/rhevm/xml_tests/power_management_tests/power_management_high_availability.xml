@@ -96,7 +96,7 @@
 <test_case>
     <test_name>Check time elapsed from previous PM operation</test_name>
     <test_action>waitForHostPmOperation</test_action>
-    <parameters>host='{vds[1]}', dbpassword='{db_password}'</parameters>
+    <parameters>host='{vds[1]}', dbuser='{db_user}', dbpassword='{db_password}'</parameters>
     <positive>True</positive>
     <run>yes</run>
 </test_case>
