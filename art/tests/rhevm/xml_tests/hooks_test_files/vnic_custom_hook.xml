@@ -26,15 +26,15 @@
 </test_case>
 <test_case>
     <test_name>Add vnic profile A with correct parameters</test_name>
-    <test_action>add_vnic_profile</test_action>
-    <parameters>name='{vnic_profile_name}_A', cluster_name='{cluster_prefix}', custom_properties='speed=1000;port_mirroring=True;bandwidth=10000'</parameters>
+    <test_action>addVnicProfile</test_action>
+    <parameters>name='{vnic_profile_name}_A', cluster='{cluster_prefix}', network='rhevm', custom_properties='speed=1000;port_mirroring=True;bandwidth=10000'</parameters>
     <positive>True</positive>
     <run>yes</run>
 </test_case>
 <test_case>
     <test_name>Add vnic profile B with correct parameters</test_name>
-    <test_action>add_vnic_profile</test_action>
-    <parameters>name='{vnic_profile_name}_B', cluster_name='{cluster_prefix}', custom_properties='port_mirroring=True;bandwidth=10000'</parameters>
+    <test_action>addVnicProfile</test_action>
+    <parameters>name='{vnic_profile_name}_B', cluster='{cluster_prefix}', network='rhevm', custom_properties='port_mirroring=True;bandwidth=10000'</parameters>
     <positive>True</positive>
     <run>yes</run>
 </test_case>
@@ -48,15 +48,15 @@
 <!--**********Try to add vnic profile with not correct custom properies**********-->
 <test_case>
     <test_name>Add vnic profile with incorrect parameters</test_name>
-    <test_action>add_vnic_profile</test_action>
-    <parameters>name='{vnic_profile_name}_C', cluster_name='{cluster_prefix}', custom_properties='test=250'</parameters>
+    <test_action>addVnicProfile</test_action>
+    <parameters>name='{vnic_profile_name}_C', cluster='{cluster_prefix}', network='rhevm', custom_properties='test=250'</parameters>
     <positive>False</positive>
     <run>yes</run>
 </test_case>
 <test_case>
     <test_name>Add vnic profile with incorrect value of parameter</test_name>
-    <test_action>add_vnic_profile</test_action>
-    <parameters>name='{vnic_profile_name}_D', cluster_name='{cluster_prefix}', custom_properties='speed=abc'</parameters>
+    <test_action>addVnicProfile</test_action>
+    <parameters>name='{vnic_profile_name}_D', cluster='{cluster_prefix}', network='rhevm', custom_properties='speed=abc'</parameters>
     <positive>False</positive>
     <tcms_plan_id>10167</tcms_plan_id>
     <tcms_test_case>294993</tcms_test_case>

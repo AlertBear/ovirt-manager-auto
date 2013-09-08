@@ -21,11 +21,11 @@
     <positive>NONE</positive>
     <run>YES</run>
 </test_case>
-<test_case>
+<!--<test_case>
     <test_name>Check xsd schema validations</test_name>
     <test_action>checkResponsesAreXsdValid</test_action>
     <parameters/>
     <positive>NONE</positive>
     <run>yes</run>
-</test_case>
+</test_case>-->
 </input>
