@@ -20,6 +20,7 @@
    <positive>TRUE</positive>
    <run>yes</run>
    <test_description/>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create cluster</test_name>
@@ -27,6 +28,7 @@
    <parameters>name='live_snapshot_cluster', cpu='{cpu_name}', data_center='live_snapshot_dc', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create hosts</test_name>
@@ -34,6 +36,7 @@
    <parameters>name='{vds}', root_password='{vds_password}', cluster='live_snapshot_cluster', wait=False</parameters>
    <positive>TRUE</positive>
    <run>loop({vds},{vds_password})</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Wait until all hosts are up</test_name>
@@ -42,6 +45,7 @@
    <parameters>names='{vds[0]},{vds[1]}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create NFS data storage domain</test_name>
@@ -50,6 +54,7 @@
    <parameters>name='data_sd', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>iSCSI discover</test_name>
@@ -74,6 +79,7 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create FCP data storage domain</test_name>
@@ -82,6 +88,7 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Attach data storage domain</test_name>
@@ -90,6 +97,7 @@
    <parameters>storagedomain='data_sd', datacenter='live_snapshot_dc'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Wait for SPM</test_name>
@@ -98,6 +106,7 @@
    <parameters>datacenter='live_snapshot_dc', timeout=100, sleep=10</parameters>
    <positive>NONE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Get SPM host</test_name>

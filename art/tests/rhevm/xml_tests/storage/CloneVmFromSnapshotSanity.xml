@@ -18,6 +18,7 @@
    <positive>TRUE</positive>
    <run>yes</run>
    <test_description/>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create cluster</test_name>
@@ -25,6 +26,7 @@
    <parameters>name='clone_cluster', cpu='{cpu_name}', data_center='clone_dc', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create hosts</test_name>
@@ -33,6 +35,7 @@
    <parameters>name='{vds}', root_password='{vds_password}', cluster='clone_cluster', wait=True</parameters>
    <positive>TRUE</positive>
    <run>loop({vds},{vds_password})</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create NFS data storage domain</test_name>
@@ -41,6 +44,7 @@
    <parameters>name='data_sd', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[0]}', host='{vds[0]}', path='{data_domain_path[0]}'</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>iSCSI discover</test_name>
@@ -65,6 +69,7 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create FCP data storage domain</test_name>
@@ -73,6 +78,7 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Attach data storage domain</test_name>
@@ -81,6 +87,7 @@
    <parameters>storagedomain='data_sd', datacenter='clone_dc'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create the second NFS data storage domain</test_name>
@@ -89,6 +96,7 @@
    <parameters>name='data_sd2', type='e{storage_dom_type_data}', storage_type='e{storage_type_nfs}', address='{data_domain_address[1]}', host='{vds[0]}', path='{data_domain_path[1]}'</parameters>
    <positive>TRUE</positive>
    <run>if('{data_center_type}'=='e{storage_type_nfs}')</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>iSCSI discover</test_name>
@@ -113,6 +121,7 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_iscsi}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create the second FCP data storage domain</test_name>
@@ -121,6 +130,7 @@
    <positive>true</positive>
    <run>if('{data_center_type}'=='e{storage_type_fcp}')</run>
    <report>yes</report>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Attach the second data storage domain</test_name>
@@ -129,6 +139,7 @@
    <parameters>storagedomain='data_sd2', datacenter='clone_dc'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Activate the second data storage domain</test_name>
@@ -137,6 +148,7 @@
    <parameters>storagedomain='data_sd2', datacenter='clone_dc'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create VM for testing VM cloning</test_name>
@@ -145,6 +157,7 @@
    <parameters>name='vm_for_snapshot', cluster='clone_cluster', description='for creating snapshot'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Add virtio COW disk</test_name>
@@ -153,6 +166,7 @@
    <parameters>vm='vm_for_snapshot', size=6442450944, wait='True', storagedomain='data_sd', type='e{disk_type_data}', interface='e{interface_ide}', format='e{format_cow}', sparse='true'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Add virtio nic</test_name>
@@ -161,6 +175,7 @@
    <parameters>vm='vm_for_snapshot', name='nic1', network='{mgmt_bridge}', interface='e{nic_type_virtio}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>Create snapshot from VM</test_name>
@@ -169,6 +184,7 @@
    <parameters>vm='vm_for_snapshot', description='vm_snapshot1'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
+   <vital>TRUE</vital>
 </test_case>
 <test_case>
    <test_name>END_GROUP: SETUP</test_name>
