@@ -55,7 +55,7 @@ class TestCase94947(TestCase):
                 master_domain_name,
                 config.DATA_CENTER_TYPE,
                 config.FIRST_HOST,
-                config.STORAGE)
+                config.PARAMETERS)
 
 
 class TestCase94950(TestCase):

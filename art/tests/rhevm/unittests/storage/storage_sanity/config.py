@@ -17,7 +17,7 @@ if DATA_CENTER_TYPE == ENUMS['storage_type_posixfs']:
     VFS_TYPE = (PARAMETERS['data_center_type']).split("_")[1]
     PARAMETERS['vfs_type'] = VFS_TYPE
 
-EXTEND_LUN = STORAGE.get('extend_lun', None)
+EXTEND_LUN = PARAMETERS.get('extend_lun', None)
 
 FIRST_HOST = PARAMETERS.as_list('vds')[0]
 
