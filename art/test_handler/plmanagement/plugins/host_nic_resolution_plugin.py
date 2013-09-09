@@ -18,6 +18,7 @@ Configuration Options:
 
 from art.test_handler.plmanagement import Component, implements, get_logger, PluginError
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
+from art.test_handler.plmanagement.interfaces.configurator import IConfigurator
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.plmanagement.interfaces.config_validator import IConfigValidation
 from utilities.machine import Machine, LINUX
@@ -41,24 +42,25 @@ class AutoHostNicsResolution(Component):
     """
     Plugin adjusts config section for host_nics attribute.
     """
-    implements(IConfigurable, IPackaging, IConfigValidation)
+    implements(IConfigurable, IPackaging, IConfigValidation, IConfigurator)
     name = "Auto-host nics resolution"
 
     def configure(self, params, conf):
         if not self.is_enabled(params, conf):
             return
 
-        vds = conf[PARAMETERS].as_list(VDS)
-        vds_passwd = conf[PARAMETERS].as_list(VDS_PASSWORD)
+        self.vds = conf[PARAMETERS].as_list(VDS)
+        self.vds_passwd = conf[PARAMETERS].as_list(VDS_PASSWORD)
 
-
-        # FIXME: what if there will be two hosts host1: em[0-9], host2: eth[0-9]
+    def configure_app(self, conf):
+        # FIXME: what if there will be two hosts host1: em[0-9], host2: eth[
+        # 0-9]
         nics = set()
-        for name, passwd in  zip(vds, vds_passwd):
+        for name, passwd in zip(self.vds, self.vds_passwd):
             m = Machine(name, 'root', passwd).util(LINUX)
-            rc, out = m.runCmd(['ls', '-la', '/sys/class/net', '|', \
-                    'grep', "'pci'", '|', \
-                    'grep', '-o', "'[^/]*$'"])
+            rc, out = m.runCmd(
+                ['ls', '-la', '/sys/class/net', '|', 'grep', "'pci'", '|',
+                 'grep', '-o', "'[^/]*$'"])
             out = out.strip()
             if not rc or not out:
                 raise NicResolutionFailed(out)
@@ -70,8 +72,9 @@ class AutoHostNicsResolution(Component):
         par = conf.get(PARAMETERS, {})
         par[HOST_NICS] = sorted(nics)
         conf[PARAMETERS] = par
-        logger.info("updated config %s.%s = %s", \
-                PARAMETERS, HOST_NICS, par[HOST_NICS])
+        logger.info("updated config %s.%s = %s", PARAMETERS, HOST_NICS,
+                    par[HOST_NICS])
+
 
     @classmethod
     def add_options(cls, parser):
