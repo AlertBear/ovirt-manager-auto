@@ -196,7 +196,7 @@ def print_java_error(java_error, op_code, logger):
         extra_details = False
         # extracting message
         for line in filter(lambda x: len(x) > 0,
-                           java_error.message.toString().split('\n')):
+                           java_error.args[0].toString().splitlines()):
             if extra_details is False:
                 name, value = line.split(':', 1)
             else:
@@ -211,7 +211,7 @@ def print_java_error(java_error, op_code, logger):
 
         # getting traceback
         java_traceback = '\n\t'.join([trace.toString() for trace
-                                      in java_error.message.stackTrace])
+                                      in java_error.args[0].stackTrace])
         #printing it
         errorMsg = "\nFailed to {0} a new element:\n\tStatus: {1}\n\t\
 Reason: {2}\n\tDetail: {3}\nTraceback:\n\t{4}"
