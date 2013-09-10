@@ -1239,30 +1239,6 @@ def addSnapshot(positive, vm, description, wait=True):
 
 
 @is_action()
-def restoreSnapshot(positive, vm, description, ensure_vm_down=False):
-    '''
-    Description: restore vm snapshot
-    Author: edolinin
-    Parameters:
-       * vm - vm where snapshot should be restored
-       * description - snapshot name
-    Return: status (True if snapshot was restored properly, False otherwise)
-    '''
-
-    vmObj = VM_API.find(vm)
-    snapshot = _getVmSnapshot(vm, description)
-    if ensure_vm_down:
-        if not checkVmState(True, vm, ENUMS['vm_state_down'], host=None):
-            if not stopVm(positive, vm, async='true'):
-                return False
-    status = SNAPSHOT_API.syncAction(snapshot, "restore", positive)
-    if status and positive:
-        return VM_API.waitForElemStatus(vmObj, ENUMS['vm_state_down'], VM_ACTION_TIMEOUT)
-
-    return status
-
-
-@is_action()
 def validateSnapshot(positive, vm, snapshot):
     '''
     Description: Validate snapshot if exist
@@ -3025,3 +3001,82 @@ def collect_vm_logs(vm_name, root_passwd='qum5net'):
         logger.warning("failed to copy logs from vm logs from vm %s", vm_name)
         return False
     return True
+
+
+@is_action()
+def restoreSnapshot(positive, vm, description, ensure_vm_down=False):
+    """
+    Description: restore vm snapshot
+    Author: edolinin
+    Parameters:
+       * vm - vm where snapshot should be restored
+       * description - snapshot name
+    Return: status (True if snapshot was restored properly, False otherwise)
+    """
+    return perform_snapshot_action(positive, vm, description, 'restore',
+                                   ensure_vm_down)
+
+
+def preview_snapshot(positive, vm, description, ensure_vm_down=False):
+    """
+    Description: preview vm snapshot
+    Author: gickowic
+    Parameters:
+       * vm - vm where snapshot should be previewed
+       * description - snapshot name
+    Return: status (True if snapshot was previewed properly, False otherwise)
+    """
+    return perform_snapshot_action(positive, vm, description, 'preview',
+                                   ensure_vm_down)
+
+
+def undo_snapshot_preview(positive, vm, description, ensure_vm_down=False):
+    """
+    Description: Undo a snapshot preview
+    Author: gickowic
+    Parameters:
+       * vm - vm where snapshot preview should be undone
+       * description - snapshot name that is currently previewed
+    Return: status (True if snapshot preview was undone, False otherwise)
+    """
+    return perform_snapshot_action(positive, vm, description, 'undo',
+                                   ensure_vm_down)
+
+
+def commit_snapshot(positive, vm, description, ensure_vm_down=False):
+    """
+    Description: Commit a vm snapshot (must be currently in preview)
+    Author: gickowic
+    Parameters:
+       * vm - vm where snapshot should be commited
+       * description - snapshot name that is currently previewed
+    Return: status (True if snapshot was committed properly, False otherwise)
+    """
+    return perform_snapshot_action(positive, vm, description, 'commit',
+                                   ensure_vm_down)
+
+
+def perform_snapshot_action(positive, vm, description, action,
+                            ensure_vm_down=False):
+    """
+    Description: Perform action on a given snapshot
+    Author: gickowic
+    Parameters:
+       * vm - vm where snapshot should be previewed
+       * description - snapshot description
+       * action - action to perform, as a string. One of:
+         [restore, preview, undo, commit]
+    Return: status (True if action was performed successfully, False otherwise)
+    """
+    vmObj = VM_API.find(vm)
+    snapshot = _getVmSnapshot(vm, description)
+    if ensure_vm_down:
+        if not checkVmState(True, vm, ENUMS['vm_state_down'], host=None):
+            if not stopVm(positive, vm, async='true'):
+                return False
+    status = SNAPSHOT_API.syncAction(snapshot, action, positive)
+    if status and positive:
+        return VM_API.waitForElemStatus(vmObj, ENUMS['vm_state_down'],
+                                        VM_ACTION_TIMEOUT)
+
+    return status

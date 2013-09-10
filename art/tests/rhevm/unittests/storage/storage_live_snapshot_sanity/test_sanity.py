@@ -7,7 +7,8 @@ from concurrent.futures import ThreadPoolExecutor
 import logging
 from unittest import TestCase
 
-from art.rhevm_api.tests_lib.high_level.vms import restore_snapshot
+from art.rhevm_api.tests_lib.high_level.vms import restore_snapshot, \
+    shutdown_vm_if_up
 from art.rhevm_api.tests_lib.high_level.hosts import switch_host_to_cluster
 from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.low_level import templates
@@ -342,7 +343,7 @@ class PreviewSnapshot(BaseTestCase):
     Verify that the snapshot being presented is the correct one (check that
     disk number VM can see is correct)
     """
-    __test__ = False  # BZ#983481 fixed in is6
+    __test__ = True
     tcms_test_case = '141644'
 
     def test_preview(self):
@@ -368,14 +369,25 @@ class PreviewSnapshot(BaseTestCase):
         assert vms.stopVm(True, vm=VM_ON_SPM)
         LOGGER.info("Waiting until all snapshots are ok on vm %s", VM_ON_SPM)
         vms.wait_for_vm_snapshots(VM_ON_SPM, states=['ok'])
-        LOGGER.info("Restoring snapshot %s on vm %s", SNAP_1, VM_ON_SPM)
-        assert vms.restoreSnapshot(True, vm=VM_ON_SPM, description=SNAP_1)
+        LOGGER.info("Previewing snapshot %s on vm %s", SNAP_1, VM_ON_SPM)
+        assert vms.preview_snapshot(True, vm=VM_ON_SPM, description=SNAP_1)
         assert vms.startVm(
             True, vm=VM_ON_SPM, wait_for_status=ENUMS['vm_state_up'])
         assert vms.waitForIP(vm=VM_ON_SPM)
         LOGGER.info("Checking that files in %s on vm %s no longer exists",
                     data_path, VM_ON_SPM)
         self.assertTrue(verify_data_on_vm(True, VM_ON_SPM, data_path))
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Undo preview of snapshot, then continue with teardown
+        """
+        LOGGER.info('shutting down vm')
+        shutdown_vm_if_up(VM_ON_SPM)
+        LOGGER.info('Undo snapshot preview for snapshot %s', SNAP_1)
+        assert vms.undo_snapshot_preview(True, VM_ON_SPM, SNAP_1)
+        super(PreviewSnapshot, cls).teardown_class()
 
 
 class MultipleStorageDomainDisks(BaseTestCase):
