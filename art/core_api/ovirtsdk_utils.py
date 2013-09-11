@@ -58,7 +58,8 @@ class SdkUtil(APIUtil):
                                self.opts['ssl_key_file'],
                                self.opts['ssl_cert_file'],
                                self.opts['ssl_ca_file'],
-                               persistent_auth=self.opts['persistent_auth'])
+                               persistent_auth=self.opts['persistent_auth'],
+                               session_timeout=self.opts['session_timeout'])
             sdkInit = self.api
         else:
             self.api = sdkInit

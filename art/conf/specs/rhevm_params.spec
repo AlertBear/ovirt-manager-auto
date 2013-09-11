@@ -3,6 +3,7 @@ data_struct_mod = string(default='art.rhevm_api.data_struct.data_structures')
 
 [HTTP_HEADERS]
 Prefer = string(default='persistent-auth')
+Session-TTL = integer(default=3600)
 
 [PARAMETERS]
 # general

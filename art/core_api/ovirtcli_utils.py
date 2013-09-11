@@ -283,11 +283,12 @@ class RhevmCli(CliConnection):
 
     def __init__(self, logger, uri, user, userDomain, password,
                  secure, sslKeyFile, sslCertFile, sslCaFile, logFile,
-                 **kwargs):
+                 session_timeout, **kwargs):
         self.logger = logger
         self.prepareConnectionCommand(uri, user, userDomain,
                                       secure, sslKeyFile, sslCertFile,
-                                      sslCaFile, additionalArgs=kwargs)
+                                      sslCaFile, session_timeout,
+                                      additionalArgs=kwargs)
         super(RhevmCli, self).__init__(self._connectionCommand,
                                        prompt=self._rhevmPrompt,
                                        timeout=self._rhevmTimeout,
@@ -368,7 +369,7 @@ class RhevmCli(CliConnection):
 
     def prepareConnectionCommand(self, uri, user, userDomain,
                                  secure, sslKeyFile, sslCertFile,
-                                 sslCaFile, additionalArgs):
+                                 sslCaFile, session_timeout, additionalArgs):
         """
         Description: This method prepares CLI connection command
         Author: imeerovi
@@ -396,6 +397,10 @@ class RhevmCli(CliConnection):
                               format(sslKeyFile, sslCertFile, sslCaFile))
         else:
             cliConnect.append('-I')
+
+        # session timeout
+        cliConnect.append('-S {0}'.format(session_timeout))
+
         # optional params
         for key in additionalArgs.keys():
             cliConnect.append(str(additionalArgs[key]))
@@ -673,6 +678,8 @@ class CliUtil(RestUtil):
                                         sslCaFile=self.opts.get('ssl_ca_file',
                                                                 None),
                                         logFile=self.opts['cli_log_file'],
+                                        session_timeout=self.opts[
+                                            'session_timeout'],
                                         optionalParms=self.opts[
                                             'cli_optional_params'],
                                         )
