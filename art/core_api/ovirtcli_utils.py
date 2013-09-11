@@ -154,6 +154,8 @@ class CliConnection(object):
         expectList.insert(0, self._prompt)
         output = []
 
+        # cleaning the buffer
+        self.cliConnection.buffer = ''
         self.cliConnection.sendline(cmd)
         try:
             i = self.cliConnection.expect(expectList, timeout)
@@ -180,6 +182,8 @@ class CliConnection(object):
         self.cliConnection.expect([self._prompt, pe.TIMEOUT], timeout=0.1)
         if type(self.cliConnection.before) == str:
             output.append(self.cliConnection.before)
+        # cleaning the buffer
+        self.cliConnection.buffer = ''
 
         return "\n".join(output)
 
@@ -461,7 +465,6 @@ class RhevmCli(CliConnection):
         # why we need 'TAB' 'TAB EOL' ? don't ask, it works
         cmd = "%s %s%s" % (cmd, chr(9), chr(9))
 
-        output = self.sendCmd(cmd, timeout)
         try:
             output = self.sendCmd(cmd, timeout)
         except pe.TIMEOUT as e:
@@ -737,7 +740,6 @@ class CliUtil(RestUtil):
         # checking if we have legal entity name
         createCmd = self.cli.convertComplexNameToBaseEntityName(entity,
                                                                 createCmd)
-
         if self.opts['validate_cli_command']:
             # validating command vs cli help
             self.logger.warning('Generated command:\n%s', createCmd)
