@@ -29,6 +29,7 @@ CLEANUP = 'HOSTS_CLEANUP'
 RUN_SECTION = 'RUN'
 SERVICES = ['rpcbind', 'iptables']
 PROCESSES = ['yum']
+DC_DIR = '/rhev/data-center'
 
 
 def cleanHostStorageSession(hostObj, **kwargs):
@@ -141,6 +142,37 @@ def checkIfProcessIsRunning(hostObj):
             logger.info("Process '%s' is not running", process)
 
 
+def cleanupDatacenters(hostObj):
+    '''
+    Description: cleanup old datacenters data
+    **Author**: imeerovi
+    **Parameters**:
+        **hostObj* - Object represents the hostObj
+    Returns: True if succeeded to remove old data, else in other case
+    '''
+    logger.info("Cleaning {0}/* if {0} exists".format(DC_DIR))
+    if hostObj.runCmd("[ '-d' '{0}' ]".format(DC_DIR), cmd_list=False)[0]:
+        out = hostObj.runCmd("ls -ls {0}/".format(DC_DIR), cmd_list=False)[1]
+        if 'total 0' in out:
+            logger.info("No cleanup was done since {0}/ {1}".format(DC_DIR,
+                        "is empty"))
+            return True
+
+        logger.info('ls -ls {0}/ output:\n{1}'.format(DC_DIR, out))
+        logger.info("Cleaning {0}/".format(DC_DIR))
+        cmd = 'rm -rf {0}/*'.format(DC_DIR)
+        rc, out = hostObj.runCmd(cmd, cmd_list=False)
+        if not rc:
+            logger.error("Failed to run %s with error: %s", cmd, out)
+            return False
+
+        logger.info("{0}/ was successfully cleaned".format(DC_DIR))
+        return True
+
+    logger.info("No cleanup was done since {0} doesn't exists".format(DC_DIR))
+    return True
+
+
 def unmountRhevmMounts(hostObj):
     '''
     Description: unmount rhev mounts
@@ -204,7 +236,7 @@ def hostCleanup(address, password, username='root'):
     killProcesses(hostObj, 'qemu')
     checkIfProcessIsRunning(hostObj)
     return unmountRhevmMounts(hostObj) and restartServices(hostObj) \
-        and cleanCorruptedISCSIDBFiles(hostObj)
+        and cleanCorruptedISCSIDBFiles(hostObj) and cleanupDatacenters(hostObj)
 
 
 class CleanUpHosts(Component):
