@@ -257,6 +257,50 @@ def python_primitives_converter(java_datatype, data):
     return data
 
 
+def get_java_setters_datatypes(java_object):
+    """
+    Description: function that creates setter: expected datatype dictionary
+                 for java object. we need it in order to know what to pass to
+                 setter
+    Author: imeerovi
+    Parameters:
+        * java_object - java SDK object
+    Returns:  setter: expected datatype dictionary
+    """
+    # getting java methods signatures
+    java_setters_signatures = \
+        filter(lambda x: 'set' in x,
+               [str(m) for m in java_object.getClass().getMethods()])
+
+    # creating dictionary of setter:type, like 'setAction': 'java.lang.Boolean'
+    java_setters_datatypes_dict = \
+        dict([(k.split('.')[-1], v.strip(')'))
+              for k, v in map(lambda x: x.split('('),
+                              java_setters_signatures)])
+    return java_setters_datatypes_dict
+
+
+def get_java_object_name_by_getter_name(python_getter):
+    """
+    Description: function that gets java object name from python getter name
+    Author: imeerovi
+    Parameters:
+        * python_getter - python getter
+    Returns: java entity name
+    """
+    # we need to add relevant object first so we find its name
+    suggested_name = ''.join(python_getter.split('get_')[1:])
+    # looking for it
+    try:
+        return get_object_name_from_ds(suggested_name)
+    except Exception:
+        err_msg = "Entity '%s' is missing in \
+org.ovirt.engine.sdk.entities %s" % (suggested_name,
+                                     dir(org.ovirt.engine.sdk.entities))
+        logger.error(err_msg)
+        raise APIException(err_msg)
+
+
 def translator_to_java(python_object, java_object):
     """
     Description: translator to java from python
@@ -276,16 +320,9 @@ def translator_to_java(python_object, java_object):
     # creating lowercase to java methods mapping of java_getters
     java_getters = dict([(getter.lower(), getter) for getter in java_getters])
 
-    # getting java methods signatures
-    java_setters_signatures = \
-        filter(lambda x: 'set' in x,
-               [str(m) for m in java_object.getClass().getMethods()])
-
     # creating dictionary of setter:type, like 'setAction': 'java.lang.Boolean'
-    java_setters_datatypes_dict = \
-        dict([(k.split('.')[-1], v.strip(')'))
-              for k, v in map(lambda x: x.split('('),
-                              java_setters_signatures)])
+    java_setters_datatypes_dict = get_java_setters_datatypes(java_object)
+
     # translate
     for getter in python_getters:
 
@@ -312,23 +349,27 @@ def translator_to_java(python_object, java_object):
 '%s' of '%s' doesn't exists in:\n%s\ntrying another setter", setter_name,
                              get_object_name(java_object), java_setters)
         if not java_setter_found:
+            logger.debug("translator to java from python:\n"
+                         "No suitable java setter found for 's%s' in %s",
+                         getter[1:], java_object)
             continue
 
         java_getter = java_getters.get('get%s' % java_setter[3:].lower(),
                                        None)
 
         if java_getter is None:
-            logger.debug("translator to java from python:\n\
-'%s' of '%s' doesn't exists in:\n%s", 'get%s' % java_setter[3:],
-                         get_object_name(java_object), java_setters)
+            logger.debug("translator to java from python:\n"
+                         "No suitable java getter found for '%s' in %s",
+                         getter, java_object)
             continue
+
+        logger.debug("Found Java getter %s that matches Python getter %s",
+                     java_getter, getter)
+        logger.debug("Found expected Java setter %s", java_setter)
 
         # checking data
         # this way i'm finding relevant objects also when
         # list of objects is passed
-        # TODO: possible bug if mixed list will be passed (python objects
-        #       and JavaTranslator objects, but it shouldn't happen
-        #       since I'm taking care of it in other places
         if 'brokers' in str(data):
             logger.warning("broker case - shouldn't get there,"
                            "if we are here it means python SDK is"
@@ -346,28 +387,35 @@ def translator_to_java(python_object, java_object):
                     if getattr(java_object, java_getter)():
                         getattr(java_object, java_getter)().clear()
                         java_list_already_set = True
-                    # we already got java list
+                    container = []
+                    # taking care of mixed list (python,
+                    # javatranslator objects)
+                    # TODO: redesign all this stuff
+                    for entity in data:
+                        if isinstance(entity, JavaTranslator):
+                            container.append(entity.java_object)
+                        else:
+                            # we need to add relevant object first
+                            real_object_name = \
+                                get_java_object_name_by_getter_name(getter)
+                            # creating empty object
+                            java_entity = \
+                                getattr(org.ovirt.engine.sdk.entities,
+                                        real_object_name)()
+                            # filling it with data from python
+                            translator_to_java(entity, java_entity)
+                            # adding it to container
+                            container.append(java_entity)
+                    # adding to existing empty java container
                     if java_list_already_set:
-                        for entity in data:
-                            func = getattr(java_object, java_getter)()
-                            func.add(entity.java_object)
-                    # we are passing list to setter
+                        for obj in container:
+                            getattr(java_object, java_getter)().add(obj)
                     else:
-                        func = getattr(java_object, java_setter)
-                        func([entity.java_object for entity in data])
+                        getattr(java_object, java_setter)(container)
                 continue
 
             # we need to add relevant object first so we find its name
-            suggested_name = ''.join(getter.split('get_')[1:])
-            # looking for it
-            try:
-                real_object_name = get_object_name_from_ds(suggested_name)
-            except Exception:
-                err_msg = "Entity '%s' is missing in \
-org.ovirt.engine.sdk.entities %s" % (suggested_name,
-                                     dir(org.ovirt.engine.sdk.entities))
-                logger.error(err_msg)
-                raise APIException(err_msg)
+            real_object_name = get_java_object_name_by_getter_name(getter)
 
             # ready to dig one layer in
             if isinstance(data, list):
@@ -446,6 +494,10 @@ class JavaTranslator(object):
         java_object_methods = getters + setters
         # setting references to java_object methods
         [self.referense_maker(method) for method in java_object_methods]
+        # for rare case when test will do set on java object instead of
+        # creating new object and than do update (translator_to_java path)
+        self._java_setters_datatypes_dict = \
+            get_java_setters_datatypes(java_object)
 
     @jvm_thread_care
     def __getattr__(self, name):
@@ -478,11 +530,13 @@ class JavaTranslator(object):
             # potential getters
             potential_getter_names = \
                 [lower_case_getter_name, "%ss" % lower_case_getter_name,
-                 lower_case_getter_name.replace('get', 'is', 1)]
+                 lower_case_getter_name.replace('get', 'is', 1),
+                 'get%s%s' % (get_object_name(self.java_object).lower(), name)]
             for getter_name in potential_getter_names:
                 try:
                     getter = \
                         self.python_decorator(self._refs_dict[getter_name])
+                    logger.debug("getter %s found for %s", getter, name)
                     break
                 except KeyError:
                     logger.debug("%s is not method of %s, \
@@ -506,7 +560,17 @@ trying another getter", getter_name, self.java_object)
             return getter
 
         else:
-            return object.__getattribute__(self, name)
+            try:
+                setter_name = self._refs_dict[name.replace('_', '').lower()]
+                logger.debug("Setter %s is a method of %s", setter_name,
+                             self.java_object)
+            except KeyError:
+                    logger.debug("%s is not method of %s", setter_name,
+                                 self.java_object)
+                    return object.__getattribute__(self, name)
+
+            setter = self.python_decorator(setter_name)
+            return setter
 
     def referense_maker(self, method):
         """
@@ -547,36 +611,54 @@ trying another getter", getter_name, self.java_object)
                     JavaTranslator object/list if getter returns
                     entity/collection
             """
-            data = None
-            # getting data
-            if isinstance(java_func, types.BuiltinMethodType):
-                data = java_func(*args, **kwargs)
+#java_func.__class__
+#<type 'builtin_function_or_method'>
+            # getter path
+            if not java_func.__name__.lower().startswith('set'):
+                data = None
+                # getting data
+                if isinstance(java_func, types.BuiltinMethodType):
+                    data = java_func(*args, **kwargs)
+                else:
+                    data = java_func
+
+                # taking care about SDK objects
+                try:
+                    if 'decorators' in str(data) or 'entities' in str(data) \
+                            or 'JavaTranslator' in str(data):
+                        # list case (collection)
+                        if isinstance(data, java.util.List) or \
+                                isinstance(data, list):
+                            return [JavaTranslator(entity)
+                                    if not isinstance(entity, JavaTranslator)
+                                    else entity.java_object for entity in data]
+                        # single object
+                        if isinstance(data, JavaTranslator):
+                            return JavaTranslator(data.java_object)
+                        return JavaTranslator(data)
+                except UnicodeEncodeError:
+                    pass
+
+                # primitives and lists of primitives
+                #list
+                if isinstance(data, java.util.List):
+                    # consider data conversion inside list
+                    return [self.java_datatypes_converter(d) for d in data]
+                return self.java_datatypes_converter(data)
+            # setter path
             else:
-                data = java_func
-
-            # taking care about SDK objects
-            try:
-                if 'decorators' in str(data) or 'entities' in str(data) \
-                        or 'JavaTranslator' in str(data):
-                    # list case (collection)
-                    if isinstance(data, java.util.List) or isinstance(data,
-                                                                      list):
-                        return [JavaTranslator(entity)
-                                if not isinstance(entity, JavaTranslator)
-                                else entity.java_object for entity in data]
-                    # single object
-                    if isinstance(data, JavaTranslator):
-                        return JavaTranslator(data.java_object)
-                    return JavaTranslator(data)
-            except UnicodeEncodeError:
-                pass
-
-            # primitives and lists of primitives
-            #list
-            if isinstance(data, java.util.List):
-                # consider data conversion inside list
-                return [self.java_datatypes_converter(d) for d in data]
-            return self.java_datatypes_converter(data)
+                # primitive case
+                logger.debug("Setting with setter: %s, data: %s", java_func,
+                             args)
+                java_datatype = \
+                    self._java_setters_datatypes_dict[java_func.__name__]
+                java_primitive = \
+                    python_primitives_converter(java_datatype, *args)
+                java_func(java_primitive)
+                # TODO: maybe need to take care on object case
+                # in such case we can use translator_to_java and get relevant
+                # empty java object by using datatype from
+                # self._java_setters_datatypes_dict
 
         return wrapper
 
