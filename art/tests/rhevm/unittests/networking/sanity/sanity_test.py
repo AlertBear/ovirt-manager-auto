@@ -16,7 +16,8 @@ from art.rhevm_api.tests_lib.high_level.networks import\
     createAndAttachNetworkSN, removeNetFromSetup, createDummyInterface,\
     deleteDummyInterface
 from art.rhevm_api.tests_lib.low_level.hosts import \
-    checkNetworkFilteringDumpxml, genSNNic, sendSNRequest, waitForHostsStates
+    checkNetworkFilteringDumpxml, genSNNic, sendSNRequest, waitForHostsStates,\
+    waitForSPM
 from art.rhevm_api.tests_lib.low_level.vms import addNic,\
     removeNic, startVm,\
     checkVMConnectivity, waitForVmsStates, importVm, removeVm,\
@@ -710,8 +711,7 @@ class SanityCase11_CheckingNetworkFilter_vlan(TestCase):
 
         # Add nic is part of the test.
         if not addNic(positive=True, vm=config.VM_NAME[0], name='nic2',
-                      network=config.VLAN_NETWORKS[0],
-                      port_mirroring=config.VLAN_NETWORKS[0]):
+                      network=config.VLAN_NETWORKS[0]):
             logger.error("Adding nic2 failed")
             return False
 
@@ -1380,7 +1380,6 @@ class SanityCase20_275813_MoreThen5BONDS(TestCase):
         """
         Create 10 BONDS using dummy interfaces
         """
-
         logger.info("Generating bond object with 2 dummy interfaces")
         net_obj = []
         idx = 0
@@ -1410,7 +1409,7 @@ class SanityCase20_275813_MoreThen5BONDS(TestCase):
     @classmethod
     def teardown_class(cls):
         """
-        Delete all dummy interfaces
+        Delete all bonds and dummy interfaces
         """
         if not deleteDummyInterface(host=config.HOSTS[0],
                                     username=config.HOSTS_USER,
@@ -1421,6 +1420,10 @@ class SanityCase20_275813_MoreThen5BONDS(TestCase):
         if not waitForHostsStates(True, config.HOSTS[0], states='up',
                                   timeout=600):
             logger.error("%s is not in UP state", config.HOSTS[0])
+
+        if not waitForSPM(config.DC_NAME, 600, 30):
+            logger.error("No SPM in %s", config.DC_NAME)
+            return False
 
 ########################################################################
 

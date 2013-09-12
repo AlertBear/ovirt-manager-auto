@@ -3,8 +3,7 @@ Sanity Test
 """
 
 import logging
-from art.rhevm_api.tests_lib.low_level.storagedomains import\
-    cleanDataCenter
+from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 from art.rhevm_api.tests_lib.high_level.networks import prepareSetup
 from art.test_handler.exceptions import DataCenterException
 from art.test_handler.exceptions import NetworkException
@@ -44,8 +43,6 @@ def teardown_package():
     Cleans the environment
     '''
     import config
-    if not cleanDataCenter(positive=True,
-                           datacenter=config.DC_NAME,
-                           vdc=config.VDC,
-                           vdc_password=config.VDC_PASSWORD):
+    if not cleanDataCenter(positive=True, datacenter=config.DC_NAME,):
         raise DataCenterException("Cannot remove setup")
+

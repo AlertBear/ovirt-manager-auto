@@ -25,7 +25,7 @@ from utilities import machine
 from art.rhevm_api.utils.test_utils import restartVdsmd
 from art.rhevm_api.tests_lib.low_level.networks import addNetwork,\
     getClusterNetwork, removeNetwork, addNetworkToCluster, NET_API,\
-    DC_API, updateNetwork, getClusterNetworks
+    updateNetwork, getClusterNetworks, MGMT_NETWORK, DC_API
 from art.rhevm_api.tests_lib.low_level.hosts import sendSNRequest,\
     commitNetConfig, genSNNic, getHostNic
 from art.rhevm_api.tests_lib.low_level.templates import createTemplate
@@ -47,7 +47,6 @@ from utilities.jobs import Job, JobsSet
 ENUMS = opts['elements_conf']['RHEVM Enums']
 
 logger = logging.getLogger(__package__ + __name__)
-MGMT_NETWORK = "rhevm"
 CONNECTIVITY_TIMEOUT = 60
 DISK_SIZE = 21474836480
 LUN_PORT = 3260
@@ -308,7 +307,8 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
                  vm_network=MGMT_NETWORK):
     '''
         Function that creates DC, Cluster, Storage, Hosts
-        It creates VM and Template if flag is on:
+        It creates VM with a NIC connected to default network and Template if
+        flag is on:
         **Author**: gcheresh
         **Parameters**:
             *  *hosts* - host\s name\s or ip\s.
@@ -347,7 +347,6 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
             *  *attempt*- attempts to connect after installation
             *  *inerval* - interval between attempts
             *  *placement_host* - the host that will hold VM
-            *  *port_mirroring* - network to enable port mirroring on
             *  *vm_flag* - Set to true, if desired VM
             *  *template_flag* - set to true if desired template
             *  *bridgeless* - Set management network as bridgless,
@@ -534,6 +533,8 @@ def deleteDummyInterface(host, username, password):
     if not restartVdsmd(host, password, supervdsm=True):
         logger.error("Restart vdsm service failed")
         return False
+
+    return True
 
 
 def updateAndSyncMgmtNetwork(datacenter, hosts=list(),

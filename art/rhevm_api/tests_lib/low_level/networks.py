@@ -22,7 +22,6 @@ from art.rhevm_api.utils.test_utils import get_api
 from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api import is_action
 from utilities.machine import Machine, LINUX
-import art.rhevm_api.tests_lib.low_level.vms as vms
 import logging
 
 import re
@@ -30,7 +29,7 @@ import re
 NET_API = get_api("network", "networks")
 CL_API = get_api("cluster", "clusters")
 DC_API = get_api("data_center", "datacenters")
-VNIC_PROFILES = get_api('vnic_profile', 'vnicprofiles')
+VNIC_PROFILE_API = get_api('vnic_profile', 'vnicprofiles')
 MGMT_NETWORK = "rhevm"
 
 logger = logging.getLogger('networks')
@@ -148,29 +147,34 @@ def removeNetwork(positive, network, data_center=None):
     return NET_API.delete(net, positive)
 
 
-def findNetwork(network, data_center=None):
+def findNetwork(network, data_center=None, cluster=None):
     '''
-    Description: Find desired network among other networks with same name
-    findNetwork is needed due to BZ#741111.
-    Author: atal
-    Parameters:
-        * network - network name
-        * data_center - DC which given network is a member of.
-        note: DC isn't mandatory in order not to break API
-    return: network object in case of succeed, raise EntityNotFound in case
-    of Failure
+    Description: Find desired network using cluster or data center as an option
+                 to narrow down the search when multiple networks with the same
+                 name exist (needed due to BZ#741111). The network is retrieved
+                 at the data center level unless only the network name is
+                 passed, in which case a search is done among all the networks
+                 in the environment.
+    **Author**: atal, tgeft
+    **Parameters**:
+        *  *name* - Name of the network to find.
+        *  *cluster* - Name of the cluster in which the network is located.
+        *  *data_center* - Name of the data center in which the network is
+                           located.
+    **Return**: Returns the desired network object in case of success,
+                otherwise raises EntityNotFound
     '''
+    kwargs = {}
 
-    if data_center is not None:
-        dc_obj = DC_API.find(data_center)
-        nets = NET_API.get(absLink=False)
-        for net in nets:
-            if net.get_data_center().get_id() == dc_obj.get_id() and \
-                    net.get_name().lower() == network.lower():
-                return net
-        raise EntityNotFound('%s network does not exists!' % network)
-    else:
-        return NET_API.find(network)
+    if data_center:
+        dc_id = DC_API.find(data_center).get_id()
+        kwargs = {'data_center.id': dc_id}
+
+    elif cluster:
+        dc_id = CL_API.find(cluster).get_data_center().get_id()
+        kwargs = {'data_center.id': dc_id}
+
+    return NET_API.find(network, **kwargs)
 
 
 def _prepareClusterNetworkObj(**kwargs):
@@ -194,7 +198,15 @@ def _prepareClusterNetworkObj(**kwargs):
 
 
 def getClusterNetwork(cluster, network):
-
+    '''
+    Find a network by cluster (along with the network properties that are
+    specific to the cluster).
+    **Parameters**:
+        *  *cluster* - Name of the cluster in which the network is located.
+        *  *network* - Name of the network.
+    **Return**: Returns the network object if it's found or raises
+                EntityNotFound exception if it's not.
+    '''
     clusterObj = CL_API.find(cluster)
     return CL_API.getElemFromElemColl(clusterObj,
                                       network,
@@ -203,34 +215,17 @@ def getClusterNetwork(cluster, network):
 
 
 def getClusterNetworks(cluster):
-
+    '''
+    Get href of the cluster's networks.
+    **Parameters**:
+        *  *cluster* - Name of the cluster.
+    **Return**: Returns the href that links to the cluster's networks.
+    '''
     clusterObj = CL_API.find(cluster)
     return CL_API.getElemFromLink(clusterObj,
                                   link_name='networks',
                                   attr='network',
                                   get_href=True)
-
-
-def findNetworkByCluster(network, cluster):
-    '''
-    Design to compare cluster DC with network DC in order to
-    workaround BZ#741111
-    Author: atal
-    Parameters:
-        * network - network name
-        * cluster - cluster name
-    return: network object in case of success, raise EntityNotFound in case
-    of Failure
-    '''
-    nets = NET_API.get(absLink=False)
-    cluster_obj = CL_API.find(cluster)
-    cluster_dc_id = cluster_obj.get_data_center().get_id()
-
-    for net in nets:
-        if cluster_dc_id == net.get_data_center().get_id() and \
-                network == net.get_name():
-            return net
-    raise EntityNotFound('%s network does not exists!' % network)
 
 
 @is_action()
@@ -248,8 +243,7 @@ def addNetworkToCluster(positive, network, cluster, **kwargs):
        * display - deprecated. boolean, a spice display network.
     Return: status (True if network was attached properly, False otherwise)
     '''
-
-    kwargs.update(net=findNetworkByCluster(network, cluster))
+    kwargs.update(net=findNetwork(network, cluster=cluster))
     net = _prepareClusterNetworkObj(**kwargs)
     cluster_nets = getClusterNetworks(cluster)
     res, status = NET_API.create(net,
@@ -405,10 +399,51 @@ def checkIPRule(host, user, password, subnet):
     return len(re.findall(subnet.replace('.', '[.]'), out)) == 2
 
 
+def getNetworkVnicProfiles(network, cluster=None, data_center=None):
+    '''
+    Returns all the VNIC profiles that belong to a certain network
+    **Author**: tgeft
+    **Parameters**:
+        *  *network* - Name of the network.
+        *  *cluster* - Name of the cluster in which the network is located.
+        *  *data_center* - Name of the data center in which the network is
+                           located.
+    **Return**: Returns a list of VNIC profile objects that belong to the
+                provided network.
+    '''
+    netObj = findNetwork(network, data_center, cluster)
+    return NET_API.getElemFromLink(netObj, link_name='vnicprofiles',
+                                   attr='vnic_profile', get_href=False)
+
+
+def getVnicProfileObj(name, network, cluster=None, data_center=None):
+    '''
+    Finds the VNIC profile object.
+    **Author**: tgeft
+    **Parameters**:
+        *  *name* - Name of the VNIC profile to find.
+        *  *network* - Name of the network used by the VNIC profile.
+        *  *cluster* - Name of the cluster in which the network is located.
+        *  *data_center* - Name of the data center in which the network
+                           is located.
+    **Return**: Returns the VNIC profile object if it's found or raises
+                EntityNotFound exception if it's not.
+    '''
+    matching_profiles = filter(lambda profile: profile.get_name() == name,
+                               getNetworkVnicProfiles(network, cluster,
+                                                      data_center))
+    if matching_profiles:
+        return matching_profiles[0]
+    else:
+        raise EntityNotFound('VNIC profile %s was not found among the profiles'
+                             ' of network %s' % (name, network))
+
+
 # noinspection PyUnusedLocal
 @is_action()
-def addVnicProfile(positive, name, cluster, network=MGMT_NETWORK,
-                   port_mirroring=False, custom_properties=None,
+def addVnicProfile(positive, name, cluster=None, data_center=None,
+                   network=MGMT_NETWORK, port_mirroring=False,
+                   custom_properties=None,
                    description=""):
     '''
     Description: Add new vnic profile to network in cluster with cluster_name
@@ -417,15 +452,16 @@ def addVnicProfile(positive, name, cluster, network=MGMT_NETWORK,
         *  *positive* - Expected result
         *  *name* - name of vnic profile
         *  *network* - Network name to be used by profile
-        *  *cluster_name* - name of cluster to know to what network
-                            add vnic profile
+        *  *cluster* - name of cluster in which the network is located
+        *  *data_center* - name of the data center in which the network
+                           is located
         *  *port_mirroring* - Enable port mirroring for profile
         *  *custom_properties* - Custom properties for the profile
         *  *description* - Description of vnic profile
-    Return: True, if adding vnic profile was success, False else
+    **Return**: True, if adding vnic profile was success, False else
     '''
     vnic_profile_obj = data_st.VnicProfile()
-    network_obj = getClusterNetwork(cluster=cluster, network=network)
+    network_obj = findNetwork(network, data_center, cluster)
     logger.info("\n"
                 "Creating vnic profile:\n"
                 "                      name: %s\n"
@@ -444,10 +480,12 @@ def addVnicProfile(positive, name, cluster, network=MGMT_NETWORK,
         vnic_profile_obj.set_description(description)
 
     if custom_properties:
+        from art.rhevm_api.tests_lib.low_level.vms import \
+            createCustomPropertiesFromArg
         vnic_profile_obj.set_custom_properties(
-            vms.createCustomPropertiesFromArg(custom_properties))
+            createCustomPropertiesFromArg(custom_properties))
 
-    if not VNIC_PROFILES.create(vnic_profile_obj, positive)[1]:
+    if not VNIC_PROFILE_API.create(vnic_profile_obj, positive)[1]:
         logger.error("Creating %s profile failed", name)
         return False
 
@@ -455,7 +493,8 @@ def addVnicProfile(positive, name, cluster, network=MGMT_NETWORK,
 
 
 @is_action()
-def removeVnicProfile(positive, vnic_profile_name, network, datacenter=None):
+def removeVnicProfile(positive, vnic_profile_name, network, cluster=None,
+                      data_center=None):
     '''
     Description: Remove vnic profiles with given names
     **Author**: alukiano
@@ -463,20 +502,18 @@ def removeVnicProfile(positive, vnic_profile_name, network, datacenter=None):
         *  *positive* - Expected result
         *  *vnic_profile_name* -Vnic profile name
         *  *network* - Network name used by profile
-        *  *datacenter* - Datacenter the network reside on,
-                          None for all datacenters
-    Return: True if action succeeded, Flase otherwise
+        *  *cluster* - name of the cluster the network reside on (None for all
+                       clusters)
+        *  *data_center* - Name of the data center in which the network
+                           is located (None for all data centers)
+    **Return**: True if action succeeded, Flase otherwise
     '''
-    net_obj_id = findNetwork(network=network, data_center=datacenter).get_id()
-    all_vnic_profiles = VNIC_PROFILES.get(absLink=False)
-    for profile in all_vnic_profiles:
-        if profile.get_name() == vnic_profile_name:
-            active_profile_id = profile.get_network().get_id()
-            if active_profile_id == net_obj_id:
-                logger.info("Trying to remove vnic profile %s",
-                            vnic_profile_name)
-                if not VNIC_PROFILES.delete(profile, positive):
-                    logger.error("Expected result was %s, got the opposite",
-                                 positive)
-                    return False
+    profileObj = getVnicProfileObj(vnic_profile_name, network, cluster,
+                                   data_center)
+    logger.info("Trying to remove vnic profile %s", vnic_profile_name)
+
+    if not VNIC_PROFILE_API.delete(profileObj, positive):
+        logger.error("Expected result was %s, got the opposite", positive)
+        return False
+
     return True

@@ -336,7 +336,8 @@ class RestUtil(APIUtil):
            * val - name of entity to look for
            * attribute - attribute name for searching
            * absLink - absolute link or just a  suffix
-           * **kwargs - additional search attribute=val pairs
+           * **kwargs - additional search attribute=val pairs (the attribute
+                        can be a chain attribute such as 'attr_x.attr_y')
         Return: found entity or exception EntityNotFound
         '''
 
@@ -353,12 +354,14 @@ class RestUtil(APIUtil):
         results = filter(lambda r: getattr(r, attribute) == val,
                          collection)
 
-        for key in kwargs:
-            results = filter(lambda r: getattr(r, key) == kwargs[key], results)
+        for attr, value in kwargs.iteritems():
+            results = filter(lambda r: reduce(getattr,
+                                              attr.split('.'), r) == value,
+                             results)
 
         if not results:
-            raise EntityNotFound("Entity %s not found on url '%s'." %\
-                                     (val, href))
+            raise EntityNotFound("Entity %s not found on url '%s'." %
+                                 (val, href))
         if len(results) > 1:
             raise EntityNotFound("More than one Entities found for %s\
                                   on url '%s'." % (val, href))

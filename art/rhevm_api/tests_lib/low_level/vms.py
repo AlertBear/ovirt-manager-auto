@@ -33,6 +33,8 @@ from art.core_api.apis_exceptions import APITimeout, EntityNotFound, \
 from art.core_api.apis_utils import data_st, TimeoutingSampler, getDS
 from art.rhevm_api.tests_lib.low_level.disks import _prepareDiskObject, \
     getVmDisk
+from art.rhevm_api.tests_lib.low_level.networks import getVnicProfileObj, \
+    MGMT_NETWORK
 from art.rhevm_api.utils.name2ip import LookUpVMIpByName
 from art.rhevm_api.utils.test_utils import searchForObj, getImageByOsType, \
     convertMacToIpAddress, checkHostConnectivity, updateVmStatusInDatabase, \
@@ -43,6 +45,7 @@ from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils.threads import runParallel
 from art.rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
 from art.test_handler.settings import opts
+from art.test_handler.exceptions import NetworkException
 from art.test_handler import exceptions
 from utilities.jobs import Job, JobsSet
 from utilities.utils import pingToVms, makeVmList
@@ -296,7 +299,7 @@ def createCustomPropertiesFromArg(prop_arg):
 @is_action()
 def addVm(positive, wait=True, **kwargs):
     '''
-    Description: add new vm
+    Description: add new vm (without starting it)
     Parameters:
        * name - name of a new vm
        * description - vm description
@@ -951,20 +954,25 @@ def _prepareNicObj(**kwargs):
     if 'linked' in kwargs:
         nic_obj.set_linked(kwargs.get('linked'))
 
-    if 'vnic_profile' in kwargs:
-        nic_obj.set_vnic_profile(
-            VNIC_PROFILE_API.find(kwargs.get('vnic_profile')))
+    if kwargs.get('vnic_profile'):  # Ignore None if passed
+        if not 'network' in kwargs:
+            raise NetworkException('Missing mandatory network parameter when '
+                                   'trying to locate VNIC profile')
+        if not 'vm' in kwargs:
+            raise NetworkException('Missing mandatory vm parameter when '
+                                   'trying to locate VNIC profile')
 
-    if 'port_mirroring' in kwargs:
-        port_mirror = kwargs.get('port_mirroring')
-        networks_obj = None
-        if port_mirror:
-            networks_obj = data_st.Networks()
-            networks = port_mirror.split(',')
-            for network in networks:
-                networks_obj.add_network(data_st.Network(name=network))
-        nic_obj.set_port_mirroring(
-            data_st.PortMirroring(networks=networks_obj))
+        # Find the cluster in which the VM is located
+        vm_obj = VM_API.find(kwargs['vm'])
+        cluster_id = vm_obj.get_cluster().get_id()
+        cluster_obj = CLUSTER_API.find(cluster_id, attribute='id')
+
+        # Locate VNIC profile using network and cluser
+        vnic_profile_obj = getVnicProfileObj(kwargs['vnic_profile'],
+                                             kwargs['network'],
+                                             cluster_obj.get_name())
+
+        nic_obj.set_vnic_profile(vnic_profile_obj)
 
     return nic_obj
 
@@ -994,12 +1002,11 @@ def addNic(positive, vm, **kwargs):
        * vm - vm where nic should be added
        * name - nic name
        * network - network name
+       * vnic_profile - the VNIC profile that will be selected for the NIC
        * interface - nic type. available types: virtio, rtl8139 and e1000
                      (for 2.2 also rtl8139_virtio)
        * mac_address - nic mac address
        * active - Boolean attribute which present nic hostplug state
-       * port_mirroring - string of networks separated by comma and include
-         which we'd like to listen to
        * plugged - shows if VNIC is plugged/unplugged
        * linked - shows if VNIC is linked or not
     Return: status (True if nic was added properly, False otherwise)
@@ -1008,7 +1015,7 @@ def addNic(positive, vm, **kwargs):
     vm_obj = VM_API.find(vm)
     expectedStatus = vm_obj.get_status().get_state()
 
-    nic_obj = _prepareNicObj(**kwargs)
+    nic_obj = _prepareNicObj(vm=vm, **kwargs)
     nics_coll = getVmNics(vm)
 
     res, status = NIC_API.create(nic_obj, positive, collection=nics_coll)
@@ -1095,19 +1102,17 @@ def updateNic(positive, vm, nic, **kwargs):
        * nic - nic name that should be updated
        * name - new nic name
        * network - network name
+       * vnic_profile - the VNIC profile that will be selected for the NIC
        * interface - nic type. available types: virtio, rtl8139 and e1000
                      (for 2.2 also rtl8139_virio)
        * mac_address - nic mac address
        * active - Boolean attribute which present nic hostplug state
-       * port_mirroring - string of networks separated by comma and include
-         which we'd like to listen to
        * plugged - shows if VNIC is plugged/unplugged
        * linked - shows if VNIC is linked or not
-       * vnic_profile - choose one of profile from network profiles
     Return: status (True if nic was updated properly, False otherwise)
     '''
 
-    nic_new = _prepareNicObj(**kwargs)
+    nic_new = _prepareNicObj(vm=vm, **kwargs)
     nic_obj = getVmNic(vm, nic)
 
     nic, status = NIC_API.update(nic_obj, nic_new, positive)
@@ -1177,7 +1182,8 @@ def hotUnplugNic(positive, vm, nic):
 
 
 @is_action()
-def removeLockedVm(vm, vdc, vdc_pass, psql_username='postgres', psql_db='rhevm'):
+def removeLockedVm(vm, vdc, vdc_pass, psql_username='postgres',
+                   psql_db='rhevm'):
     '''
     Remove locked vm with flag force=true
     Make sure that vm no longer exists, otherwise set it's status to down,
@@ -1891,9 +1897,9 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
              installation=False, slim=False, user=None, password=None,
              attempt=60, interval=60, cobblerAddress=None, cobblerUser=None,
              cobblerPasswd=None, image=None, async=False, hostname=None,
-             network='rhevm', useAgent=False, placement_affinity=None,
-             placement_host=None, vcpu_pinning=None, highly_available=None,
-             availablity_priority=None, port_mirroring=None, vm_quota=None,
+             network=MGMT_NETWORK, vnic_profile=None, useAgent=False,
+             placement_affinity=None, placement_host=None, vcpu_pinning=None,
+             highly_available=None, availablity_priority=None, vm_quota=None,
              disk_quota=None, plugged='true', linked='true', protected=None,
              copy_permissions=False):
     '''
@@ -1929,7 +1935,6 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
         placement_affinity - vm to host affinity
         placement_host - host that the affinity holds for
         vcpu_pinning - vcpu pinning affinity (dictionary)
-        port_mirroring - port_mirroring on specific network of NIC
         vm_quota - quota for vm
         disk_quota - quota for vm disk
         plugged - shows if specific VNIC is plugged/unplugged
@@ -1938,6 +1943,12 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
         cpu_mode - cpu mode
         cobbler* - backward compatibility with cobbler provisioning,
                    should be removed
+        network - The network that the VM's VNIC will be attached to. (If
+                  'vnic_profile' is not specified as well, a profile without
+                  port mirroring will be selected for the VNIC arbitrarily
+                  from the network's profiles).
+        vnic_profile - The VNIC profile to set on the VM's VNIC. (It should be
+                       for the network specified above).
     return values : Boolean value (True/False ) True in case of success
                     otherwise False
     '''
@@ -1957,17 +1968,17 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
 
     if nic:
         if not addNic(positive, vm=vmName, name=nic, interface=nicType,
-                      mac_address=mac_address, network=network,
-                      port_mirroring=port_mirroring, plugged=plugged,
-                      linked=linked):
+                      mac_address=mac_address,
+                      network=network, vnic_profile=vnic_profile,
+                      plugged=plugged, linked=linked):
             return False
 
     if template == 'Blank' and storageDomainName and templateUuid == None:
         if not addDisk(positive, vm=vmName, size=size, type=diskType,
-                            storagedomain=storageDomainName, sparse=volumeType,
-                            interface=diskInterface, format=volumeFormat,
-                            bootable=bootable, quota=disk_quota,
-                            wipe_after_delete=wipe_after_delete):
+                       storagedomain=storageDomainName, sparse=volumeType,
+                       interface=diskInterface, format=volumeFormat,
+                       bootable=bootable, quota=disk_quota,
+                       wipe_after_delete=wipe_after_delete):
             return False
 
     if installation == True:
@@ -2445,6 +2456,7 @@ def getVmHost(vm):
     except EntityNotFound:
         return False, {'vmHoster': None}
     return True, {'vmHoster': host_obj.get_name()}
+
 
 @is_action()
 def getVmNicPortMirroring(positive, vm, nic='nic1'):

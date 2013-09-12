@@ -198,8 +198,10 @@ class Linked_Case3_231698_231697(TestCase):
         logger.info("Updating both NICs with its original networks " +
                     "and unplugging them")
         for i in range(2):
-            if not updateNic(True, config.VM_NAME[1], "nic"+str(i+2),
-                             network=config.VLAN_NETWORKS[i], plugged='false'):
+            if not updateNic(True, config.VM_NAME[1], "nic%s" % (i + 2),
+                             network=config.VLAN_NETWORKS[i],
+                             vnic_profile=config.VLAN_NETWORKS[i],
+                             plugged='false'):
                 raise NetworkException("Couldn't update nic with original " +
                                        "network or couldn't unplug nic")
 
@@ -285,7 +287,7 @@ class Linked_Case4_231691(TestCase):
         logger.info("Try to start VM with network that is not present " +
                     "on the host in the Cluster. NIC: nic6, Network: %s",
                     config.VLAN_NETWORKS[0])
-        startVm(True, config.VM_NAME[1], None)
+        startVm(positive=None, vm=config.VM_NAME[1])
         query = "name=%s and status=down" % config.VM_NAME[1]
         self.assertTrue(VM_API.waitForQuery(query, timeout=60, sleep=1),
                         "%s is up, should be down" % config.VM_NAME[1])
@@ -328,7 +330,8 @@ class Linked_Case5_239344(TestCase):
 
         logger.info("Creating plugged/linked VNIC with port mirroring on sw1")
         if not addNic(True, vm=config.VM_NAME[0], name='nic2',
-                      vnic_profile=config.VNIC_PROFILE[0]):
+                      vnic_profile=config.VNIC_PROFILE[0],
+                      network=config.VLAN_NETWORKS[0]):
             raise VMException("Cannot add VNIC to VM")
 
     @istest
@@ -402,15 +405,16 @@ class Linked_Case6_239348(TestCase):
         self.assertFalse(getVmNicLinked(config.VM_NAME[0], nic='nic3'))
         logger.info("Changing the NICs names and Updating opposite link state")
         for i in range(2):
-            if not updateNic(True, config.VM_NAME[0], "nic"+str(i+2),
-                             name='vnic'+str(i+2)):
+            if not updateNic(True, config.VM_NAME[0], "nic%s" % (i + 2),
+                             name="vnic%s" % (i + 2)):
                 logger.error("Couldn't update the NICs name")
         for i in range(2):
             sample = TimeoutingSampler(timeout=60, sleep=1,
                                        func=updateNic, positive=True,
                                        vm=config.VM_NAME[0],
-                                       nic="vnic"+str(i+2),
+                                       nic="vnic%s" % (i + 2),
                                        network=config.VLAN_NETWORKS[0],
+                                       vnic_profile=config.VLAN_NETWORKS[0],
                                        linked=link_param_list[i])
             if not sample.waitForFuncStatus(result=True):
                 raise NetworkException("Couldn't update correct linked state")
@@ -430,9 +434,13 @@ class Linked_Case6_239348(TestCase):
         logger.info("Updating both NICs with its original networks " +
                     "and unplugging them")
         if not (updateNic(True, config.VM_NAME[0], "vnic3",
-                          network=config.VLAN_NETWORKS[1], plugged='false') and
+                          network=config.VLAN_NETWORKS[1],
+                          vnic_profile=config.VLAN_NETWORKS[1],
+                          plugged='false') and
                 updateNic(True, config.VM_NAME[0], "vnic2",
-                          network=config.VLAN_NETWORKS[0], plugged='false')):
+                          network=config.VLAN_NETWORKS[0],
+                          vnic_profile=config.VLAN_NETWORKS[0],
+                          plugged='false')):
             logger.error("Couldn't update NICs with original network" +
                          "and couldn't unplug them")
 
@@ -503,6 +511,15 @@ class Linked_Case7_239368(TestCase):
                       plugged='true', linked='true'):
             raise VMException("Cannot add VNIC to VM")
 
+        if not addVnicProfile(positive=True, name=config.VNIC_PROFILE[0],
+                              cluster=config.CLUSTER_NAME,
+                              network=config.VLAN_NETWORKS[1],
+                              port_mirroring=True):
+            raise NetworkException("Failed to add %s profile with %s network"
+                                   "to %s" % (config.VNIC_PROFILE[0],
+                                              config.VLAN_NETWORKS[1],
+                                              config.CLUSTER_NAME))
+
     @istest
     @tcms(8046, 239368)
     def changeNetParamValues(self):
@@ -512,17 +529,21 @@ class Linked_Case7_239368(TestCase):
         logger.info("Changing nic2 plugged, network and name params")
 
         if not updateNic(True, config.VM_NAME[1], "nic2", name='vnic2',
-                         network=config.VLAN_NETWORKS[1], plugged='false'):
-            raise NetworkException("Couldn't update nic with  " +
-                                   "plugged, network and name params")
+                         network=config.VLAN_NETWORKS[1],
+                         vnic_profile=config.VLAN_NETWORKS[1],
+                         plugged='false'):
+            raise NetworkException("Couldn't update nic with plugged, network "
+                                   "and name params")
         logger.info(" Checking plugged state on nic2 to be False")
         self.assertFalse(getVmNicPlugged(config.VM_NAME[1], nic='vnic2'))
         print "Add here check for network name"
         logger.info("Changing nic2 linked, network and name params")
         if not updateNic(True, config.VM_NAME[1], "vnic2", name='nic2',
-                         network=config.VLAN_NETWORKS[0], linked='false'):
-            raise NetworkException("Couldn't update nic with " +
-                                   "linked, network and name params")
+                         network=config.VLAN_NETWORKS[0],
+                         vnic_profile=config.VLAN_NETWORKS[0],
+                         linked='false'):
+            raise NetworkException("Couldn't update nic with linked, network "
+                                   "and name params")
         self.assertFalse(getVmNicLinked(config.VM_NAME[1], nic='nic2'))
 
         if not startVm(True, vm=config.VM_NAME[1]):
@@ -533,9 +554,9 @@ class Linked_Case7_239368(TestCase):
         logger.info("Changing linked and plugged to True ")
         logger.info("Changing network and turning on port mirroring")
         if not updateNic(True, config.VM_NAME[1], "nic2",
-                         network=config.VLAN_NETWORKS[1], linked='true',
-                         plugged='true',
-                         port_mirroring=config.VLAN_NETWORKS[1]):
+                         linked='true', plugged='true',
+                         network=config.VLAN_NETWORKS[1],
+                         vnic_profile=config.VNIC_PROFILE[0]):
             raise NetworkException("Cannot change net and turn pm on")
         logger.info("Try updating nic with new mac and interface type:")
         logger.info("Test should fail updating")
@@ -543,8 +564,9 @@ class Linked_Case7_239368(TestCase):
                                   interface=config.NIC_TYPE_RTL8139,
                                   mac_address='11:22:33:44:55:66'))
         if not updateNic(True, config.VM_NAME[1], "nic2",
-                         network=config.VLAN_NETWORKS[1], linked='false',
-                         plugged='false'):
+                         network=config.VLAN_NETWORKS[1],
+                         vnic_profile=config.VLAN_NETWORKS[1],
+                         linked='false', plugged='false'):
             raise NetworkException("Cannot update linked state")
         logger.info("Updating nic with new mac and interface type")
         self.assertTrue(updateNic(True, config.VM_NAME[1], "nic2",
@@ -563,5 +585,9 @@ class Linked_Case7_239368(TestCase):
         logger.info("Removing all the VNICs beside rhevm")
         if not removeNic(True, config.VM_NAME[1], "nic2"):
             raise NetworkException("Cannot remove nic from setup")
+        if not removeVnicProfile(positive=True,
+                                 vnic_profile_name=config.VNIC_PROFILE[0],
+                                 network=config.VLAN_NETWORKS[0]):
+            raise NetworkException("Cannot remove VNIC profile.")
         if not stopVm(True, vm=config.VM_NAME[1]):
             raise VMException("Cannot stop VM")
