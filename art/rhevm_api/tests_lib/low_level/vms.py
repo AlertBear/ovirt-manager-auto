@@ -1025,7 +1025,9 @@ def isVmNicActive(positive, vm, nic):
     return: True if nic is active, False otherwise.
     '''
     nic_obj = getVmNic(vm, nic)
-
+    if not nic_obj:
+        logger.error("%s does not exist on %s", nic, vm)
+        return False
     return nic_obj.get_active() == positive
 
 
