@@ -510,7 +510,7 @@ def updateHost(positive, host, **kwargs):
 
     if 'storage_manager_priority' in kwargs:
         new_priority = kwargs.pop('storage_manager_priority')
-        sm = StorageManager(new_priority, hostObj.storage_manager.valueOf_)
+        sm = StorageManager(new_priority, hostObj.storage_manager.get_valueOf_())
         hostUpd.set_storage_manager(sm)
 
     if 'pm' in kwargs:
@@ -1334,7 +1334,7 @@ def checkHostSpmStatus(positive, hostName):
         HOST_API.logger.error("Element host" + hostName + " doesn't have attribute " + attribute)
         return False
 
-    spmStatus = hostObj.get_storage_manager().valueOf_
+    spmStatus = hostObj.get_storage_manager().get_valueOf_()
     HOST_API.logger.info("checkHostSpmStatus - SPM Status of host " + hostName + \
                     " is: " + spmStatus)
 
