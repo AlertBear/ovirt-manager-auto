@@ -679,8 +679,14 @@ class JavaSdkUtil(APIUtil):
                 collection_methods)
 
         # take first method with 2 or more parameters and go with it
-        sorted_method_args_list = filter(lambda x: len(x) > 1,
-                                         methods_args_list)[0]
+        if opcode != 'update':
+            sorted_method_args_list = filter(lambda x: len(x) > 1,
+                                             methods_args_list)[0]
+        # in case of update: take first method with 1 or more parameters and
+        # go with it
+        else:
+            sorted_method_args_list = filter(lambda x: len(x) >= 1,
+                                             methods_args_list)[0]
         return len(sorted_method_args_list), sorted_method_args_list
 
     @jvm_thread_care
@@ -841,7 +847,8 @@ element:%(elm)s " % {'col': self.collection_name,
         getattr(entity, setter)(property_value)
 
     @jvm_thread_care
-    def update(self, origEntity, newEntity, positive, current=None):
+    def update(self, origEntity, newEntity, positive, current=None,
+               async=False):
         '''
         Description: update an element
         Author: imeerovi
@@ -864,9 +871,27 @@ element:%(elm)s " % {'col': self.collection_name,
         self.logger.debug("UPDATE api content is --  collection :%(col)s \
 element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
 
+        # getting correlation id and running
+        correlation_id = self.getCorrelationId()
+
         try:
             if positive:
-                response = java_entity.update()
+                if correlation_id is not None:
+                    correlation_id = str(correlation_id)
+                    upd_method_args_length, sorted_upd_method_args_list = \
+                        self.__java_method_selector(java_entity, 'update')
+                    if upd_method_args_length == 1:
+                        response = java_entity.update(correlation_id)
+                    elif upd_method_args_length == 2:
+                        response = java_entity.update(async, correlation_id)
+                    else:
+                        msg = "We shouldn't get here, unknown update signatur"\
+                            "e: update(%s)" % sorted_upd_method_args_list
+                        self.logger.error(msg)
+                        raise Exception(msg)
+                else:
+                    response = java_entity.update()
+
                 # translating of result to python
                 python_response = JavaTranslator(response)
                 #response = \
