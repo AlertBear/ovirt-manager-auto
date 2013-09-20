@@ -466,6 +466,7 @@ class PosixFSStorageAdder(StorageAdder):
         self.vfs_type = self.storage["vfs_type"]
         self.domain_paths = self.storage.as_list("data_domain_path")
         self.domain_addresses = self.storage.as_list("data_domain_address")
+        self.no_of_data_storages = len(self.domain_paths)
 
     def add_storage(self, i):
         """ Adds one posixfs data domain
