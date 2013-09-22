@@ -12,9 +12,9 @@ def setup_package():
     import config
 
     luns = config.PARAMETERS.as_list('lun')
-    domain_address = config.PARAMETERS.as_list('data_domain_address')
+    domain_path = config.PARAMETERS.as_list('data_domain_path')
     config.PARAMETERS['lun'] = list()
-    config.PARAMETERS['data_domain_address'] = list()
+    config.PARAMETERS['data_domain_path'] = list()
     LOGGER.info("Preparing datacenter %s with hosts %s",
                 config.DATA_CENTER_NAME, config.VDC)
     build_setup(config=config.PARAMETERS, storage=config.PARAMETERS,
@@ -22,7 +22,7 @@ def setup_package():
                 basename=config.BASENAME)
 
     config.PARAMETERS['lun'] = luns
-    config.PARAMETERS['data_domain_address'] = domain_address
+    config.PARAMETERS['data_domain_path'] = domain_path
 
     sd_args1 = {
         'name' : config.ST_NAME,
