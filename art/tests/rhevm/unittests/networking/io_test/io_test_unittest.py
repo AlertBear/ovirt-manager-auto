@@ -101,17 +101,28 @@ class Test02_checkInvalidIPs(TestCase):
         Negative: Trying to create networks with invalid IPs
         (Creation should fail)
         """
-        invalid_ips = ["1.1.1.260", "1.1.260.1", "1.260.1.1", "260.1.1.1"]
-        for i in range(0, 4):
+        invalid_ips = [["1.1.1.260"],
+                       ["1.1.260.1"],
+                       ["1.260.1.1"],
+                       ["260.1.1.1"]]
+
+        for i in range(4):
             logger.info("Trying to create a network with invalid ip %s",
                         invalid_ips[i])
-            self.assertFalse(addNetwork(positive=True,
-                                        name='invalid_ip%s' % i,
-                                        address=invalid_ips[i],
-                                        netmask='255.255.255.0',
-                                        data_center=config.DC_NAME),
-                             "Network with invalid ip (%s) was"
-                             " created" % invalid_ips[i])
+
+            local_dict = {'invalid_ips': {'nic': config.HOST_NICS[1],
+                                          'bootproto': 'static',
+                                          'address': invalid_ips[i],
+                                          'netmask': ['255.255.255.0'],
+                                          'required': 'false'}}
+
+            self.assertFalse(
+                createAndAttachNetworkSN(data_center=config.DC_NAME,
+                                         cluster=config.CLUSTER_NAME,
+                                         host=config.HOSTS[0],
+                                         network_dict=local_dict,
+                                         auto_nics=[config.HOST_NICS[0]]),
+                "Network with invalid ip (%s) was created" % invalid_ips[i])
 
 
 class Test03_checkInvalidNetmask(TestCase):
@@ -125,20 +136,29 @@ class Test03_checkInvalidNetmask(TestCase):
         """
         Negative: Trying to create networks with invalid netmasks
         """
-        invalid_netmasks = ["255.255.255.260",
-                            "255.255.260.0",
-                            "255.260.255.0",
-                            "260.255.255.0"]
-        for i in range(0, 4):
+        invalid_netmasks = [["255.255.255.260"],
+                            ["255.255.260.0"],
+                            ["255.260.255.0"],
+                            ["260.255.255.0"]]
+
+        for i in range(4):
             logger.info("Trying to create a network with netmask %s",
                         invalid_netmasks[i])
-            self.assertFalse(addNetwork(positive=True,
-                                        name='invalid_netmask',
-                                        address='1.1.1.1',
-                                        netmask=invalid_netmasks[i],
-                                        data_center=config.DC_NAME),
-                             "Network invalid_netmask with invalid"
-                             "ip (%s) was created" % invalid_netmasks[i])
+
+            local_dict = {'invalid_netmask': {'nic': config.HOST_NICS[1],
+                                              'bootproto': 'static',
+                                              'address': ['1.1.1.1'],
+                                              'netmask': invalid_netmasks[i],
+                                              'required': 'false'}}
+
+            self.assertFalse(
+                createAndAttachNetworkSN(data_center=config.DC_NAME,
+                                         cluster=config.CLUSTER_NAME,
+                                         host=config.HOSTS[0],
+                                         network_dict=local_dict,
+                                         auto_nics=[config.HOST_NICS[0]]),
+                "Network invalid_netmask with invalid ip (%s) was created"
+                % invalid_netmasks[i])
 
 
 class Test04_checkNetmaskWithoutIp(TestCase):
