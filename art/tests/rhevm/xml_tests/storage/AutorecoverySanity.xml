@@ -453,7 +453,7 @@
    <parameters/>
    <positive>none</positive>
    <!-- This feature has been dropped for 3.1 -->
-   <run>no</run>
+   <run>yes</run>
    <tcms_test_case>174613</tcms_test_case>
    <report/>
 </test_case>
