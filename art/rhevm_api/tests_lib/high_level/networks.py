@@ -252,21 +252,23 @@ def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
     return True
 
 
-def removeNetFromSetup(host, auto_nics=['eth0'], network=[]):
+def removeNetFromSetup(host, auto_nics=['eth0'], network=[], data_center=None):
     '''
         Function that removes networks from the host, Cluster and DC:
-        Author: gcheresh
-        Parameters:
-        * host - remote machine ip addresses or fqdns
-        * auto_nics - a list of nics
-        * network - list of networks to remove
+        **Author**: gcheresh
+        **Parameters**:
+        *  *host* - remote machine ip addresses or fqdns
+        *  *auto_nics* - a list of nics
+        *  *network* - list of networks to remove
+        *  *data_center* - DC where the network is
         Return: True value if succeeded in deleting networks
                 from Hosts, Cluster, DC
     '''
     host_list = [host] if isinstance(host, basestring) else host
     try:
         for index in range(len(network)):
-            removeNetwork(True, network=network[index])
+            removeNetwork(True, network=network[index],
+                          data_center=data_center)
 
         for host_i in host_list:
             sendSNRequest(True, host=host_i,

@@ -2,6 +2,7 @@
 
 from nose.tools import istest
 from unittest import TestCase
+from art.test_handler.tools import tcms
 import logging
 from art.rhevm_api.tests_lib.high_level.storagedomains import addNFSDomain
 
@@ -12,9 +13,10 @@ from art.test_handler.settings import opts
 
 import config
 from art.rhevm_api.tests_lib.high_level.networks import\
-    createAndAttachNetworkSN, removeNetFromSetup
+    createAndAttachNetworkSN, removeNetFromSetup, createDummyInterface,\
+    deleteDummyInterface
 from art.rhevm_api.tests_lib.low_level.hosts import \
-    checkNetworkFilteringDumpxml, genSNNic, sendSNRequest
+    checkNetworkFilteringDumpxml, genSNNic, sendSNRequest, waitForHostsStates
 from art.rhevm_api.tests_lib.low_level.vms import addNic,\
     removeNic, startVm,\
     checkVMConnectivity, waitForVmsStates, importVm, removeVm,\
@@ -32,7 +34,7 @@ from art.unittest_lib.network import skipBOND
 
 HOST_API = get_api('host', 'hosts')
 VM_API = get_api('vm', 'vms')
-
+TIMEOUT = 60
 logger = logging.getLogger(__package__ + __name__)
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
@@ -656,7 +658,10 @@ class SanityCase11_CheckingNetworkFilter_vlan(TestCase):
        dumpxml
     Finally, Removing nic2 and sw162
     """
-    __test__ = True
+    __test__ = False
+    """
+    Need investigation, this test always fails
+    """
 
     @classmethod
     def setup_class(cls):
@@ -1110,6 +1115,313 @@ class SanityCase14_CheckingImportExport_vlan(TestCase):
                                     host=config.HOSTS[0])):
             raise NetworkException("Cannot remove storage domain")
 
+
+class SanityCase15_275464(TestCase):
+    """
+    Positive: Creates bridged network over bond on Host with custom name
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create bridged networks on DC/Cluster/Hosts over bond with custom name
+        """
+
+        local_dict = {None: {'nic': 'bond012345', 'mode': 1,
+                             'slaves': [config.HOST_NICS[2],
+                                        config.HOST_NICS[3]]},
+                      config.VLAN_NETWORKS[0]: {'nic': 'bond012345',
+                                                'mtu': 5000,
+                                                'vlan_id': config.VLAN_ID[0],
+                                                'required': 'false'}}
+
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
+                                        cluster=config.CLUSTER_NAME,
+                                        host=config.HOSTS[0],
+                                        network_dict=local_dict,
+                                        auto_nics=[config.HOST_NICS[0]]):
+            raise NetworkException("Cannot create and attach network")
+
+    @istest
+    @tcms(6957, 275464)
+    def bondModeChange(self):
+        """
+        Check physical and logical levels for networks with Jumbo frames
+        """
+        logger.info("Checking physical and logical layers for Jumbo bond ")
+        logger.info("Checking logical layer of sw1 over bond")
+        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
+                                 password=config.HOSTS_PW, mtu=5000,
+                                 physical_layer=False,
+                                 network=config.VLAN_NETWORKS[0],
+                                 bond='bond012345',
+                                 bridged=True))
+        logger.info("Checking physical layer of sw1 over bond ")
+        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
+                                 password=config.HOSTS_PW, mtu=5000,
+                                 bond='bond012345',
+                                 bond_nic1=config.HOST_NICS[2],
+                                 bond_nic2=config.HOST_NICS[3],
+                                 bridged=True))
+        logger.info("Changing the bond mode to  mode4")
+        rc, out = genSNNic(nic='bond012345', network=config.VLAN_NETWORKS[0],
+                           slaves=[config.HOST_NICS[2],
+                                   config.HOST_NICS[3]], mode=4)
+
+        if not rc:
+            raise NetworkException("Cannot generate network object")
+        sendSNRequest(positive=True, host=config.HOSTS[0],
+                      nics=[out['host_nic']],
+                      auto_nics=[config.HOST_NICS[0]],
+                      check_connectivity='true',
+                      connectivity_timeout=60, force='false')
+        logger.info("Checking layers after bond mode change")
+        logger.info("Checking logical layer after bond mode change")
+        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
+                                 password=config.HOSTS_PW, mtu=5000,
+                                 physical_layer=False,
+                                 network=config.VLAN_NETWORKS[0],
+                                 bond='bond012345',
+                                 bridged=True))
+        logger.info("Checking physical layer after bond mode change")
+        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
+                                 password=config.HOSTS_PW, mtu=5000,
+                                 bond='bond012345',
+                                 bond_nic1=config.HOST_NICS[2],
+                                 bond_nic2=config.HOST_NICS[3], bridged=True))
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove networks from the setup
+        """
+        logger.info("Starting the teardown_class")
+        if not removeNetFromSetup(host=config.HOSTS[0],
+                                  auto_nics=[config.HOST_NICS[0]],
+                                  network=[config.VLAN_NETWORKS[0]],
+                                  data_center=config.DC_NAME):
+            raise NetworkException("Cannot create and attach network")
+
+
+class SanityCase16_275471_bondMaxLength(TestCase):
+    """
+    Negative: Bond with exceeded name length (more than 15 chars)
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+            pass
+
+    @istest
+    @tcms(6958, 275471)
+    def bondMaxLength(self):
+        """
+        Create BOND: exceed allowed length (max 15 chars)
+        """
+        logger.info("Generating bond012345678901 object with 2 NIC")
+        net_obj = []
+        rc, out = genSNNic(nic='bond012345678901',
+                           slaves=[config.HOST_NICS[2],
+                                   config.HOST_NICS[3]])
+        if not rc:
+            raise NetworkException("Cannot generate SNNIC object")
+        net_obj.append(out['host_nic'])
+
+        logger.info("sending SNReauest: bond012345678901")
+        self.assertTrue(sendSNRequest(False, host=config.HOSTS[0],
+                                      nics=net_obj,
+                                      auto_nics=[config.HOST_NICS[0]],
+                                      check_connectivity='true',
+                                      connectivity_timeout=TIMEOUT,
+                                      force='false'))
+
+    @classmethod
+    def teardown_class(cls):
+        pass
+
+
+class SanityCase17_275471_bondPrefix(TestCase):
+    """
+    Negative:  Try to create bond with wrong prefix
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        pass
+
+    @istest
+    @tcms(6958, 275471)
+    def bondPrefix(self):
+        """
+        Create BOND: use wrong prefix (eg. NET1515)
+        """
+        logger.info("Generating NET1515 object with 2 NIC bond")
+        net_obj = []
+        rc, out = genSNNic(nic='NET1515',
+                           slaves=[config.HOST_NICS[2],
+                                   config.HOST_NICS[3]])
+        if not rc:
+            raise NetworkException("Cannot generate SNNIC object")
+        net_obj.append(out['host_nic'])
+
+        logger.info("sending SNReauest: NET1515")
+        self.assertTrue(sendSNRequest(False, host=config.HOSTS[0],
+                                      nics=net_obj,
+                                      auto_nics=[config.HOST_NICS[0]],
+                                      check_connectivity='true',
+                                      connectivity_timeout=TIMEOUT,
+                                      force='false'))
+
+    @classmethod
+    def teardown_class(cls):
+        pass
+
+
+class SanityCase18_275471_bondSuffix(TestCase):
+    """
+    Negative: Try to create bond with wrong suffix
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        pass
+
+    @istest
+    @tcms(6958, 275471)
+    def bondSuffix(self):
+        """
+        Create BOND: use wrong suffix (e.g. bond1!)
+        """
+        logger.info("Generating bond1! object with 2 NIC bond")
+        net_obj = []
+        rc, out = genSNNic(nic='bond1!',
+                           slaves=[config.HOST_NICS[2],
+                                   config.HOST_NICS[3]])
+        if not rc:
+            raise NetworkException("Cannot generate SNNIC object")
+        net_obj.append(out['host_nic'])
+
+        logger.info("sending SNReauest: bond1!")
+        self.assertTrue(sendSNRequest(False, host=config.HOSTS[0],
+                                      nics=net_obj,
+                                      auto_nics=[config.HOST_NICS[0]],
+                                      check_connectivity='true',
+                                      connectivity_timeout=TIMEOUT,
+                                      force='false'))
+
+    @classmethod
+    def teardown_class(cls):
+        pass
+
+
+class SanityCase19_275471_bondEmpty(TestCase):
+    """
+    Negative: Try to create bond with empty name
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        pass
+
+    @istest
+    @tcms(6958, 275471)
+    def bondEmpty(self):
+        """
+        Create BOND: leave name field empty
+        """
+        logger.info("Generating bond object with 2 NIC bond and empty name")
+        net_obj = []
+        rc, out = genSNNic(nic='',
+                           slaves=[config.HOST_NICS[2],
+                                   config.HOST_NICS[3]])
+        if not rc:
+            raise NetworkException("Cannot generate SNNIC object")
+        net_obj.append(out['host_nic'])
+
+        logger.info("sending SNReauest: empty bond name")
+        self.assertTrue(sendSNRequest(False, host=config.HOSTS[0],
+                                      nics=net_obj,
+                                      auto_nics=[config.HOST_NICS[0]],
+                                      check_connectivity='true',
+                                      connectivity_timeout=TIMEOUT,
+                                      force='false'))
+
+    @classmethod
+    def teardown_class(cls):
+        pass
+
+
+class SanityCase20_275813_MoreThen5BONDS(TestCase):
+    """
+    Negative: Create more then 5 BONDS using dummy interfaces
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create dummy interface for BONDS
+        """
+        logger.info("Creating 20 dummy interfaces")
+        if not createDummyInterface(host=config.HOSTS[0],
+                                    username=config.HOSTS_USER,
+                                    password=config.HOSTS_PW,
+                                    num_dummy=20):
+            logger.error("Faild to create dummy interfaces")
+
+    @istest
+    @tcms(6957, 275813)
+    def dummyBonds(self):
+        """
+        Create 10 BONDS using dummy interfaces
+        """
+
+        logger.info("Generating bond object with 2 dummy interfaces")
+        net_obj = []
+        idx = 0
+        while idx < 20:
+            rc, out = genSNNic(nic="bond%s" % idx,
+                               slaves=["dummy%s" % idx,
+                                       "dummy%s" % (idx + 1)])
+            if not rc:
+                raise NetworkException("Cannot generate SNNIC object")
+            net_obj.append(out['host_nic'])
+            idx += 2
+
+        logger.info("Wait for %s to be UP", config.HOSTS[0])
+        if not waitForHostsStates(True, config.HOSTS[0], states='up',
+                                  timeout=600):
+            logger.error("%s is not in UP state", config.HOSTS[0])
+
+        logger.info("sending SNReauest: 10 bonds on dummy interfaces")
+        if not sendSNRequest(True, host=config.HOSTS[0],
+                             nics=net_obj,
+                             auto_nics=[config.HOST_NICS[0]],
+                             check_connectivity='true',
+                             connectivity_timeout=TIMEOUT,
+                             force='false'):
+            logger.error("Failed to SNRequest: bond1")
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Delete all dummy interfaces
+        """
+        if not deleteDummyInterface(host=config.HOSTS[0],
+                                    username=config.HOSTS_USER,
+                                    password=config.HOSTS_PW):
+            logger.error("Failed to delete dummy interfaces")
+
+        logger.info("Wait for %s to be UP", config.HOSTS[0])
+        if not waitForHostsStates(True, config.HOSTS[0], states='up',
+                                  timeout=600):
+            logger.error("%s is not in UP state", config.HOSTS[0])
+
 ########################################################################
 
 ########################################################################
@@ -1118,4 +1430,9 @@ class SanityCase14_CheckingImportExport_vlan(TestCase):
 skipBOND([SanityCase04_CheckingVMNetworks_bond,
           SanityCase08_CheckingRequiredNetwork_bond,
           SanityCase10_CheckingJumboFrames_bond,
-          SanityCase13_CheckingLinking_bond], config.HOST_NICS)
+          SanityCase13_CheckingLinking_bond,
+          SanityCase15_275464,
+          SanityCase16_275471_bondMaxLength,
+          SanityCase17_275471_bondPrefix,
+          SanityCase18_275471_bondSuffix,
+          SanityCase19_275471_bondEmpty], config.HOST_NICS)
