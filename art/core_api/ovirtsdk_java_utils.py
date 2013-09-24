@@ -53,6 +53,10 @@ DEF_SLEEP = 10
 STYLE_EXCEPTIONS_JAVA_COLLECTIONS = {'vms': 'vMs'}
 JAVA_IGNORE_LIST = ['getClass', 'getLinks']
 PYTHON_IGNORE_LIST = ['get_link']
+STYLE_EXCEPTIONS_PYTHON_JAVA_METHODS = \
+    {'get_valueOf_': 'isValue',
+     'get_power_management': 'getPowerManagers',
+     'get_host_nic': 'getSlaves'}
 
 
 def jvm_thread_care(func):
@@ -334,38 +338,47 @@ def translator_to_java(python_object, java_object):
             continue
 
         # finding needed java getter and setter
-        lower_case_setter = ''.join(['s', getter[1:]]).replace('_', '')
+        # sometimes there are mismatches and typos in api.xsd so in one place
+        # name is correct and it is not correct in another
+        if getter in STYLE_EXCEPTIONS_PYTHON_JAVA_METHODS and \
+                hasattr(java_object,
+                        STYLE_EXCEPTIONS_PYTHON_JAVA_METHODS[getter]):
+            java_getter = STYLE_EXCEPTIONS_PYTHON_JAVA_METHODS[getter]
+        else:
+            lower_case_getter = getter.lower().replace('_', '')
+            potential_lower_case_getter_names = [lower_case_getter,
+                                                 "%ss" % lower_case_getter]
 
-        java_setter_found = False
-        potential_lower_case_setter_names = [lower_case_setter,
-                                             "%ss" % lower_case_setter]
-        for setter_name in potential_lower_case_setter_names:
-            if setter_name in java_setters:
-                java_setter = java_setters[setter_name]
-                java_setter_found = True
-                break
+            for getter_name in potential_lower_case_getter_names:
+                if getter_name in java_getters:
+                    java_getter = java_getters[getter_name]
+                    break
+                else:
+                    logger.debug("translator to java from python: %s:"
+                                 "'%s' of '%s' doesn't exists in: %s"
+                                 " trying another getter", java_object,
+                                 getter_name, get_object_name(java_object),
+                                 java_getters)
             else:
-                logger.debug("translator to java from python:\n\
-'%s' of '%s' doesn't exists in:\n%s\ntrying another setter", setter_name,
-                             get_object_name(java_object), java_setters)
-        if not java_setter_found:
-            logger.debug("translator to java from python:\n"
-                         "No suitable java setter found for 's%s' in %s",
-                         getter[1:], java_object)
+                logger.debug("translator to java from python: %s: "
+                             " No java getter found for '%s' of '%s'",
+                             java_object, getter, python_object)
+                continue
+
+        java_setter = java_setters.get('set%s' % java_getter[3:].lower(), None)
+
+        if java_setter is None:
+            logger.debug("translator to java from python: %s: "
+                         "'set%s' of '%s' doesn't exists in:\n%s", java_object,
+                         java_getter[3:], get_object_name(java_object),
+                         java_setters)
             continue
 
-        java_getter = java_getters.get('get%s' % java_setter[3:].lower(),
-                                       None)
-
-        if java_getter is None:
-            logger.debug("translator to java from python:\n"
-                         "No suitable java getter found for '%s' in %s",
-                         getter, java_object)
-            continue
-
-        logger.debug("Found Java getter %s that matches Python getter %s",
-                     java_getter, getter)
-        logger.debug("Found expected Java setter %s", java_setter)
+        logger.debug("translator to java from python: %s:"
+                     "Found Java getter %s that matches Python getter %s",
+                     java_object, java_getter, getter)
+        logger.debug("translator to java from python: %s:"
+                     "Found expected Java setter %s", java_object, java_setter)
 
         # checking data
         # this way i'm finding relevant objects also when
@@ -466,13 +479,15 @@ def translator_to_java(python_object, java_object):
             # actually it will work as it with string and int
             if isinstance(data, list):
                 for item in data:
-                    logger.debug('list case, Setting %s with %s',
+                    logger.debug('translator to java from python: %s: '
+                                 'list case, Setting %s with %s', java_object,
                                  getattr(java_object, java_setter), item)
                     getattr(java_object, java_setter).add(item)
             else:
                 java_datatype = java_setters_datatypes_dict[java_setter]
                 java_data = python_primitives_converter(java_datatype, data)
-                logger.debug('Setting %s with %s',
+                logger.debug('translator to java from python: %s: Setting'
+                             ' %s with %s', java_object,
                              getattr(java_object, java_setter), java_data)
                 getattr(java_object, java_setter)(java_data)
 
@@ -525,6 +540,15 @@ class JavaTranslator(object):
                     lower_case_getter_name.replace('_', '')
                 run_func_call = True
             else:
+                # sometimes there are mismatches and typos in api.xsd so in one
+                # place name is correct and it is not correct in another
+                if name in STYLE_EXCEPTIONS_PYTHON_JAVA_METHODS and \
+                    hasattr(self.java_object,
+                            STYLE_EXCEPTIONS_PYTHON_JAVA_METHODS[name]):
+                    return self.python_decorator(
+                        getattr(self.java_object,
+                                STYLE_EXCEPTIONS_PYTHON_JAVA_METHODS[name]))
+
                 lower_case_getter_name = name.replace('_', '').lower()
 
             # potential getters
@@ -536,22 +560,27 @@ class JavaTranslator(object):
                 try:
                     getter = \
                         self.python_decorator(self._refs_dict[getter_name])
-                    logger.debug("getter %s found for %s", getter, name)
+                    logger.debug("JavaTranslator: %s: getter %s found for %s",
+                                 self.java_object, getter, name)
                     break
                 except KeyError:
-                    logger.debug("%s is not method of %s, \
-trying another getter", getter_name, self.java_object)
+                    logger.debug("JavaTranslator: %s is not method of %s, "
+                                 "trying another getter", getter_name,
+                                 self.java_object)
             # ok, we passed over all options and didn't find needed getter
             else:
                 # in case of direct access try by user lets try to do it
                 if run_func_call:
-                    logger.debug("No getter for %s, trying access it directly",
-                                 name)
+                    logger.debug("JavaTranslator: %s: "
+                                 "No getter for %s, trying access it directly",
+                                 self.java_object, name)
                     getter = \
                         self.python_decorator(getattr(self.java_object, name))
                 else:
-                    raise AttributeError("No suitable getter for %s in %s" %
-                                         (name, str(potential_getter_names)))
+                    raise AttributeError("JavaTranslator: %s: "
+                                         "No suitable getter for %s in %s" %
+                                         (self.java_object, name,
+                                          str(potential_getter_names)))
 
             # in this case I need to call getter
             if run_func_call:
@@ -562,11 +591,11 @@ trying another getter", getter_name, self.java_object)
         else:
             try:
                 setter_name = self._refs_dict[name.replace('_', '').lower()]
-                logger.debug("Setter %s is a method of %s", setter_name,
-                             self.java_object)
+                logger.debug("JavaTranslator: Setter %s is a method of %s",
+                             setter_name, self.java_object)
             except KeyError:
-                    logger.debug("%s is not method of %s", setter_name,
-                                 self.java_object)
+                    logger.debug("JavaTranslator: %s is not method of %s",
+                                 setter_name, self.java_object)
                     return object.__getattribute__(self, name)
 
             setter = self.python_decorator(setter_name)
@@ -621,6 +650,10 @@ trying another getter", getter_name, self.java_object)
                     data = java_func(*args, **kwargs)
                 else:
                     data = java_func
+
+                logger.debug("JavaTranslator: %s returns %s (before"
+                             " converting to python datatype)", java_func,
+                             data)
 
                 # taking care about SDK objects
                 try:
@@ -682,7 +715,10 @@ trying another getter", getter_name, self.java_object)
             python_data = data.toString()
         # boolean
         elif isinstance(data, java.lang.Boolean):
-            python_data = True if data.toString() == 'true' else False
+            python_data = data.toString()
+        # jboolean case:
+        elif isinstance(data, bool):
+            python_data = 'true' if data is True else 'false'
         # assuming that this is string
         elif data is not None:
             python_data = data.encode('utf8')
@@ -859,7 +895,7 @@ element:%(elm)s " % {'col': self.collection_name,
                 # translating to java
                 java_entity = getattr(org.ovirt.engine.sdk.entities,
                                       entity_name)()
-            translator_to_java(entity, java_entity)
+                translator_to_java(entity, java_entity)
             # getting correlation id and running
             correlation_id = self.getCorrelationId()
 
@@ -1199,7 +1235,7 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
                                          java_action_entity_name)()
             translator_to_java(act, java_action_entity)
             act = getattr(java_entity, action)(java_action_entity,
-                                               self.getCorrelationId())
+                                               str(self.getCorrelationId()))
         except java_sdk.JavaError as e:
             print_java_error(e, 'syncAction', self.logger)
             if positive:
