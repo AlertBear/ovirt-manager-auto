@@ -4,6 +4,8 @@ global config
 config = ConfigObj(raise_errors=True)
 
 from . import ART_CONFIG
+import socket
+
 params = ART_CONFIG['PARAMETERS']
 VM_NAME = params.get('vm_name')
 ISO_UP_CONF = params.get('iso_up_conf_file')
@@ -23,110 +25,166 @@ HOST_PASS = "qum5net"
 ISO_DOMAIN_NAME = 'ISO_UPLOADER_TEST_DOMAIN'
 EXPORT_DOMAIN_NAME = 'EXPORT_DOMAIN'
 DEFAULT = {
-        'def_vm_name': VM_NAME,         # name
-        'wait_timeout': 2400,# wait for VM state change. Total install: ~40min
-        'install_timeout': 1800,        # wait for RHEVM installation
-        '_password_host': HOST_PASS,
-        '_password': REST_API_PASS,          # default password
-        '_password_db': PGPASS,        # default db password
-        '_organization': 'Nice Testing Org. Name', # organization name for certs
-        }
+    'def_vm_name': VM_NAME,  # name
+    'wait_timeout': 2400,  # wait for VM state change. Total install: ~40min
+    'install_timeout': 1800,  # wait for RHEVM installation
+    '_password_host': HOST_PASS,
+    '_password': REST_API_PASS,  # default password
+    '_password_db': PGPASS,  # default db password
+    '_organization': 'Nice Testing Org. Name',  # organization name for certs
+}
 
 SDK = {
-        'address' : MAIN_SETUP,
-        'user' : "vdcadmin@rhev.lab.eng.brq.redhat.com",
-        'password': '%(_password)s'
-    }
+    'address': MAIN_SETUP,
+    'user': "vdcadmin@rhev.lab.eng.brq.redhat.com",
+    'password': '%(_password)s'
+}
 
 TESTING_ENV = {
-        'password': '%(_password)s',
-        'host_pass': '%(_password_host)s',
-        'repo': '...',
-        'user': 'admin',
-        'db_pass': '%(_password_db)s',
-        'organization': '%(_organization)s',
-        }
+    'password': '%(_password)s',
+    'host_pass': '%(_password_host)s',
+    'repo': '...',
+    'user': 'admin',
+    'db_pass': '%(_password_db)s',
+    'organization': '%(_organization)s',
+}
 
 ANSWERS = {
-# DEFAULT ANSWERS FOR ANSWERFILE
-        'password': "%(_password)s",
-        'db_pass': "%(_password_db)s",
-        'db_user': 'postgres',
-        'organization': '%(_organization)s',
-        'override_iptables': 'yes',
-        'override_httpd': 'yes',
-        'override_firewall': 'iptables',
-        'application_mode': 'both',
+    #KEYWORDS FOR OTOPI ANSWERFILE
+    'OSETUP_RPMDISTRO/enableUpgrade': 'none:None',
+    'OVESETUP_CORE/engineStop': 'none:None',
+    'OVESETUP_DIALOG/confirmSettings': 'bool:True',
+    'OVESETUP_DB/database': 'str:engine',
+    'OVESETUP_DB/secured': 'bool:False',
+    'OVESETUP_DB/securedHostValidation': 'bool:False',
+    'OVESETUP_DB/host': 'str:localhost',
+    'OVESETUP_DB/fixDbViolations': 'none:None',
+    'OVESETUP_DB/user': 'str:engine',
+    'OVESETUP_DB/password': 'str:123456',
+    'OVESETUP_DB/port': 'int:5432',
+    'OVESETUP_SYSTEM/nfsConfigEnabled': 'bool:True',
+    'OVESETUP_SYSTEM/memCheckEnabled': 'bool:False',
+    'OVESETUP_SYSTEM/redhatSupportProxyEnabled': 'bool:False',
+    'OVESETUP_PKI/organization': 'str:tlv.redhat.com',
+    'OVESETUP_CONFIG/isoDomainName': 'str:ISO_DOMAIN',
+    'OVESETUP_CONFIG/isoDomainMountPoint': 'str:/var/lib/exports/iso',
+    'OVESETUP_CONFIG/adminPassword': 'str:123456',
+    'OVESETUP_CONFIG/applicationMode': 'str:both',
+    'OVESETUP_CONFIG/firewallManager': 'str:iptables',
+    'OVESETUP_CONFIG/fqdn': 'str:' + REST_API_HOST,
+    'OVESETUP_CONFIG/storageType': 'str:nfs',
+    'OVESETUP_CONFIG/websocketProxyConfig': 'bool:True',
+    'OVESETUP_PROVISIONING/postgresProvisioningEnabled': 'bool:False',
+    'OVESETUP_APACHE/configureRootRedirection': 'bool:True',
+    'OVESETUP_APACHE/configureSsl': 'bool:True',
+    'OVESETUP_AIO/configure': 'none:None',
+    'OVESETUP_AIO/storageDomainDir': 'none:None'
+}
 
-# DEFAULT KEYWORDS FOR ANSWERFILE
-        'AUTH_PASS': '%(password)s',
-        'ORG_NAME': '%(organization)s',
-        'DB_REMOTE_INSTALL': 'local',
-        'DB_SECURE_CONNECTION': 'no',
-        'DB_LOCAL_PASS': '%(db_pass)s',
-        'CONFIG_NFS': 'no',
-        'OVERRIDE_IPTABLES': '%(override_iptables)s',
-        'OVERRIDE_HTTPD_CONFIG': '%(override_httpd)s',
-        'OVERRIDE_FIREWALL': '%(override_firewall)s',
-        'FIREWALL_MANAGER': '%(override_firewall)s',
-        'APPLICATION_MODE': '%(application_mode)s',
 
-        }
 ANSWERS['__default__'] = (
-            'AUTH_PASS', 'ORG_NAME', 'DB_REMOTE_INSTALL', \
-            'DB_SECURE_CONNECTION', 'DB_LOCAL_PASS', 'CONFIG_NFS', \
-            'FIREWALL_MANAGER', 'OVERRIDE_HTTPD_CONFIG','APPLICATION_MODE',
-            )
-        # SPECIFY LIST OF ANSWERS WHICH NEEDS TO BE OVERWITTEN
-ANSWERS['3.1.0-32.el6ev'] = (
-            'AUTH_PASS', 'ORG_NAME', 'DB_REMOTE_INSTALL', \
-            'DB_SECURE_CONNECTION', 'DB_LOCAL_PASS', 'CONFIG_NFS', \
-            'OVERRIDE_IPTABLES', 'OVERRIDE_HTTPD_CONFIG',
-            )
-ANSWERS['3.2.0-10.14.beta1.el6ev'] = ( #sf-10
-            'AUTH_PASS', 'ORG_NAME', 'DB_REMOTE_INSTALL', \
-            'DB_SECURE_CONNECTION', 'DB_LOCAL_PASS', 'CONFIG_NFS', \
-            'OVERRIDE_FIREWALL', 'OVERRIDE_HTTPD_CONFIG',
-            )
-ANSWERS['3.3.0-0.5.master.el6ev'] = ( #is3
-            'AUTH_PASS', 'ORG_NAME', 'DB_REMOTE_INSTALL', \
-            'DB_SECURE_CONNECTION', 'DB_LOCAL_PASS', 'CONFIG_NFS', \
-            'FIREWALL_MANAGER', 'OVERRIDE_HTTPD_CONFIG','APPLICATION_MODE',
-            )
+    'OSETUP_RPMDISTRO/enableUpgrade',
+    'OVESETUP_CORE/engineStop',
+    'OVESETUP_DIALOG/confirmSettings',
+    'OVESETUP_DB/database',
+    'OVESETUP_DB/secured',
+    'OVESETUP_DB/securedHostValidation',
+    'OVESETUP_DB/host',
+    'OVESETUP_DB/user',
+    'OVESETUP_DB/password',
+    'OVESETUP_DB/port',
+    'OVESETUP_DB/fixDbViolations',
+    'OVESETUP_SYSTEM/nfsConfigEnabled',
+    'OVESETUP_SYSTEM/memCheckEnabled',
+    'OVESETUP_SYSTEM/redhatSupportProxyEnabled',
+    'OVESETUP_PKI/organization',
+    'OVESETUP_CONFIG/isoDomainName',
+    'OVESETUP_CONFIG/isoDomainMountPoint',
+    'OVESETUP_CONFIG/adminPassword',
+    'OVESETUP_CONFIG/applicationMode',
+    'OVESETUP_CONFIG/firewallManager',
+    'OVESETUP_CONFIG/fqdn',
+    'OVESETUP_CONFIG/storageType',
+    'OVESETUP_CONFIG/websocketProxyConfig',
+    'OVESETUP_PROVISIONING/postgresProvisioningEnabled',
+    'OVESETUP_APACHE/configureRootRedirection',
+    'OVESETUP_APACHE/configureSsl',
+    'OVESETUP_AIO/configure',
+    'OVESETUP_AIO/storageDomainDir',
+)
+
+
+CLEANUP_ANSWERS = {
+    # DEFAULT ANSWERS FOR ANSWERFILE - OTOPI
+    'OVESETUP_CORE/engineStop': 'bool:True',
+    'OVESETUP_CORE/remove': 'bool:True',
+    'OVESETUP_CORE/uninstallEnabledFileGroups': 'str:exportfs,ca_pki,'
+                                                'iso_domain,versionlock,'
+                                                'iso_images,ca_config',
+    'OVESETUP_CORE/confirmUninstallGroups': 'bool:False',
+    'OVESETUP_DB/database': 'str:engine',
+    'OVESETUP_DB/secured': 'bool:False',
+    'OVESETUP_DB/host': 'str:localhost',
+    'OVESETUP_DB/user': 'str:engine',
+    'OVESETUP_DB/securedHostValidation': 'bool:False',
+    'OVESETUP_DB/password': 'str:123456',
+    'OVESETUP_DB/cleanupRemove': 'bool:True',
+    'OVESETUP_DB/port': 'str:5432',
+    'OVESETUP_REMOVE/removeAll': 'bool:True',
+}
+
+CLEANUP_ANSWERS['__default__'] = (
+    'OVESETUP_CORE/engineStop',
+    'OVESETUP_CORE/remove',
+    'OVESETUP_CORE/uninstallEnabledFileGroups',
+    'OVESETUP_CORE/confirmUninstallGroups',
+    'OVESETUP_DB/database',
+    'OVESETUP_DB/secured',
+    'OVESETUP_DB/host',
+    'OVESETUP_DB/user',
+    'OVESETUP_DB/securedHostValidation',
+    'OVESETUP_DB/password',
+    'OVESETUP_DB/cleanupRemove',
+    'OVESETUP_DB/port',
+    'OVESETUP_REMOVE/removeAll',
+)
+
 SETUP = {
-        'vm_name': '%(def_vm_name)s',
-        'answer_file': '/tmp/answer_file',
-        'organization': '%(_organization)s',
-        'db_pass': '123456',
-        }
+    'vm_name': '%(def_vm_name)s',
+    'answer_file': '/tmp/answer_file',
+    'new_ans_file': '/tmp/new_ans_file',
+    'organization': '%(_organization)s',
+    'db_pass': '123456',
+}
 
 CLEANUP = {
-        'vm_name': '%(def_vm_name)s',
-        }
+    'vm_name': '%(def_vm_name)s',
+    'cleanup_answer_file': '/tmp/cleanup_answer_file',
+    'new_cleanup_ans_file': '/tmp/new_cleanup_ans_file'
+}
 
 CONFIG = {
-        'vm_name': '%(def_vm_name)s',
-        }
+    'vm_name': '%(def_vm_name)s',
+}
 
 MANAGE_DOMAINS = {
-        'vm_name': '%(def_vm_name)s',
-        }
+    'vm_name': '%(def_vm_name)s',
+}
 
 ISO_UPLOADER = {
-        'vm_name': '%(def_vm_name)s',
-        }
+    'vm_name': '%(def_vm_name)s',
+}
 
 LOG_COLLECTOR = {
-        'vm_name': '%(def_vm_name)s',
-        }
+    'vm_name': '%(def_vm_name)s',
+}
 
 IMAGE_UPLOADER = {
-        'vm_name': '%(def_vm_name)s',
-        }
+    'vm_name': '%(def_vm_name)s',
+}
 UPGRADE = {
-        'vm_name': '%(def_vm_name)s',
-        }
-
+    'vm_name': '%(def_vm_name)s',
+}
 
 config.update(DEFAULT)
 config['SDK'] = SDK
@@ -140,4 +198,4 @@ config['iso-uploader'] = ISO_UPLOADER
 config['log_collector'] = LOG_COLLECTOR
 config['image-uploader'] = IMAGE_UPLOADER
 config['upgrade'] = UPGRADE
-
+config['CLEANUP_ANSWERS'] = CLEANUP_ANSWERS

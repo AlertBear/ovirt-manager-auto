@@ -15,12 +15,19 @@ from art.rhevm_api.utils.test_utils import get_api
 VM_API = get_api('vm', 'vms')
 
 # Folowing 'try-except' blocks are here because this modules are needed only
-# for nose testframework, but you can use this module also for another purposes.
+# for nose test framework, but you can use this module
+# also for another purposes.
 try:
     # PGPASS, PREPARE_CONF should move to test conf file, once possible.
-    from unittest_conf import config, PGPASS, REST_API_PASS, ISO_UP_CONF, \
-       LOG_COL_CONF, IMAGE_UP_CONF, REST_API_HOST, ISO_DOMAIN_NAME, \
-       EXPORT_DOMAIN_NAME
+    from unittest_conf import (config,
+                               PGPASS,
+                               REST_API_PASS,
+                               ISO_UP_CONF,
+                               LOG_COL_CONF,
+                               IMAGE_UP_CONF,
+                               REST_API_HOST,
+                               ISO_DOMAIN_NAME,
+                               EXPORT_DOMAIN_NAME)
     if not config:
         raise ImportError()
 except ImportError:
@@ -131,7 +138,8 @@ class SetupManager(object):
         vm_name = config[name]['vm_name']
         machine = VM_API.find(vm_name)
         if not machine:
-            raise errors.SetupsManagerError("can't find testing machine: %s" % vm_name)
+            raise errors.SetupsManagerError("can't find testing machine: %s"
+                                            % vm_name)
         self.maps[name] = machine
         return machine
 
@@ -152,7 +160,8 @@ class SetupManager(object):
         name = machine.get_name()
         machine = VM_API.find(name)
         if not machine:
-            raise errors.SetupsManagerError("can't find testing machine: %s" % name)
+            raise errors.SetupsManagerError("can't find testing machine: %s"
+                                            % name)
         return machine
 
     def createSnapshotWrapper(self, vm_name, snapshot_desc):
@@ -197,23 +206,7 @@ class SetupManager(object):
 
     def prepareSetup(self, name):
         machine = self.popMachine(name)
-        #sn_list = [ x.description for x in machine.snapshots.list()]
-        #if self.BASE_SNAPSHOT in sn_list:
-        #    if self.BASE_SNAPSHOT == sn_list[-1]:
-        #        return
-        #    else:
-        #        self.restoreSnapshot(machine, self.BASE_SNAPSHOT)
         self.createSnapshotWrapper(machine.name, self.BASE_SNAPSHOT)
-
-    def startSetup(self, name):
-        machine = self.maps[name]
-        rc = VM_API.syncAction(machine, 'start', 'true')
-        self.waitForMachineStatus(machine, 'up')
-
-    def stopSetup(self, name):
-        machine = self.maps[name]
-        rc = VM_API.syncAction(machine, 'stop', 'true')
-        self.waitForMachineStatus(machine, 'down')
 
     def saveSetup(self, name, point):
         """
@@ -242,7 +235,7 @@ class SetupManager(object):
          * name - machine name
          * ip - machine IP address
         """
-        if ip == None:
+        if not ip:
             machine = self.refreshMachine(self.maps[name])
             if machine.status.get_state() != 'up':
                 rc = VM_API.syncAction(machine, 'start', 'true')
@@ -267,17 +260,14 @@ class SetupManager(object):
         finally:
             self.releaseMachine(name)
 
-    def installSetup(self, name):
-        m = self.dispatchSetup(name)
-        # TODO: install
-
 
 _multiprocess_can_split_ = True
+
 
 class RHEVMUtilsTestCase(unittest.TestCase):
     """
     Base class for test plan. It contains general setUp and tearDown class
-    which are suiteable for most of RHEVM utilities
+    which are suitable for most of RHEVM utilities
     """
     __test__ = False
     utility = None
@@ -311,7 +301,7 @@ class RHEVMUtilsTestCase(unittest.TestCase):
         username = 'root'
         password = params.get('vds_password')[0]
         data_center_type = params.get('data_center_type')
-        datacenter ='%sToolsTest' % data_center_type
+        datacenter = '%sToolsTest' % data_center_type
         storage_type = data_center_type
         cluster = '%sToolsTest' % data_center_type
         if data_center_type.lower() == ENUMS['storage_type_nfs']:
@@ -322,7 +312,7 @@ class RHEVMUtilsTestCase(unittest.TestCase):
             lun_target = params.as_list('lun_target')[0]
             luns = params.as_list('lun')[0]
 
-        version=params.get('compatibility_version')
+        version = params.get('compatibility_version')
         type = ENUMS['storage_dom_type_export']
         data_domain_name = params.get('data_domain_name')
         template_name = params.get('template_name')
@@ -360,64 +350,65 @@ class RHEVMUtilsTestCase(unittest.TestCase):
         if cls.utility == 'image-uploader':
             export_domain_path = params.get('export_domain_path')
             export_domain_address = params.get('export_domain_address')
-
-        # Following if statment is temporary, till all tools tests will move to
-        # running on local machine, instead of on remote
-        arr = ['setup', 'cleanup', 'iso-uploader', 'log_collector', 'config'] \
-           if cls.installation == 'true' else ['iso-uploader', 'log_collector',
-               'image-uploader']
+        if cls.installation == 'true':
+            arr = ['setup', 'cleanup', 'iso-uploader', 'log_collector',
+                   'config']
+        else:
+            arr = ['iso-uploader', 'log_collector', 'image-uploader']
         if cls.utility in arr:
-            if not prepareVmWithRhevm(True, hosts, cpuName, username, password,
-                   datacenter, storage_type, cluster, data_domain_address,
-                   data_storage_domains, version, type, export_domain_address,
-                   export_domain_path, EXPORT_DOMAIN_NAME, data_domain_name,
-                   template_name, vm_name, vm_description,
-                   tested_setup_mac_address, memory_size, format_export_domain,
-                   nic, nicType, lun_address, lun_target, luns, disk_size,
-                   disk_type, volume_format, disk_interface, bootable,
-                   wipe_after_delete, start, vm_type, cpu_socket, cpu_cores,
-                   display_type, cls.installation, os_type, vm_user, vm_password,
-                   cobblerAddress, cobblerUser, cobblerPasswd, image, network,
-                   useAgent, iso_domain_path, iso_domain_address,
-                   ISO_DOMAIN_NAME):
+            if not prepareVmWithRhevm(True, hosts, cpuName, username,
+                                      password, datacenter, storage_type,
+                                      cluster, data_domain_address,
+                                      data_storage_domains, version, type,
+                                      export_domain_address,
+                                      export_domain_path,
+                                      EXPORT_DOMAIN_NAME, data_domain_name,
+                                      template_name, vm_name, vm_description,
+                                      tested_setup_mac_address, memory_size,
+                                      format_export_domain, nic, nicType,
+                                      lun_address, lun_target, luns, disk_size,
+                                      disk_type, volume_format, disk_interface,
+                                      bootable, wipe_after_delete, start,
+                                      vm_type, cpu_socket, cpu_cores,
+                                      display_type, cls.installation,
+                                      os_type, vm_user, vm_password,
+                                      cobblerAddress, cobblerUser,
+                                      cobblerPasswd, image, network,
+                                      useAgent, iso_domain_path,
+                                      iso_domain_address, ISO_DOMAIN_NAME):
                 logger.info("prepareVmWithRhevm failed")
             logger.info("DEBUG: cls.utility = %s", cls.utility)
-        if cls.utility in ['setup','cleanup']:
+        if cls.utility in ['setup', 'cleanup']:
             cls.c = config[cls.utility]
             logger.info("DEBUG: cls.c %s", cls.c)
-            if cls.installation == 'true':
-                cls.manager.prepareSetup(cls.utility)
-                if cls.utility == 'cleanup':
-                    machine = cls.manager.dispatchSetup(cls.utility)
-                    machine.install(config)
-            else:
+            if cls.installation != 'true':
                 if cls.utility == 'setup':
-                    machine = cls.manager.dispatchSetup(cls.utility, REST_API_HOST)
-                    machine.clean()
+                    machine = cls.manager.dispatchSetup(cls.utility,
+                                                        REST_API_HOST)
+                    machine.clean(config)
 
     @classmethod
     def tearDownClass(cls):
         """
-        Remove all snapshosts, and relase machine
+        Remove all snapshots, and release machine
         """
         if cls.installation == 'true':
             if cls.utility in ['setup', 'cleanup']:
                 cls.manager.releaseSetup(cls.utility)
 
         if cls.installation == 'true':
-            logger.info("Clean Data center with wait for aync tasks to finish")
+            logger.info("Clean Data center with wait for async"
+                        " tasks to finish")
             cleanDataCenter(True, 'nfsToolsTest', 'true', 'false',
-                   REST_API_HOST, REST_API_PASS)
+                            REST_API_HOST, REST_API_PASS)
         else:
             if cls.utility in ['iso-uploader', 'log_collector']:
                 logger.info("Clean Data center")
                 cleanDataCenter(True, 'nfsToolsTest', 'true', 'false')
-
         if cls.installation != 'true':
             if cls.utility == 'setup':
                 machine = cls.manager.dispatchSetup(cls.utility, REST_API_HOST)
-                machine.clean()
-
+                machine.clean(config)
 
     def setUp(self):
         """
@@ -425,22 +416,25 @@ class RHEVMUtilsTestCase(unittest.TestCase):
         """
         if self.installation == 'true':
             if self.utility in ['setup', 'cleanup']:
-                snap = self.clear_snap if self.utility == 'setup' else self.snapshot_setup_installed
+                snap = self.clear_snap if self.utility == 'setup' \
+                    else self.snapshot_setup_installed
                 self.manager.saveSetup(self.utility, snap)
-                ip = None
         else:
-            ip=REST_API_HOST
-            self.ut = self.utility_class(self.manager.dispatchSetup(self.utility, ip))
+            ip = REST_API_HOST
+            self.ut = self.utility_class(self.manager.dispatchSetup(
+                self.utility, ip))
 
     def tearDown(self):
         """
-        Discart changes which was made by test-case
+        Discard changes which was made by test-case
         """
         if self.installation == 'true':
             if self.utility in ['setup', 'cleanup']:
-                snap = self.clear_snap if self.utility == 'setup' else self.snapshot_setup_installed
+                snap = self.clear_snap if self.utility == 'setup' \
+                    else self.snapshot_setup_installed
                 self.manager.restoreSetup(self.utility, snap)
         else:
             if self.utility == 'cleanup':
-                machine = self.manager.dispatchSetup(self.utility, REST_API_HOST)
+                machine = self.manager.dispatchSetup(self.utility,
+                                                     REST_API_HOST)
                 machine.install(config)
