@@ -1705,6 +1705,9 @@ def deactivateHosts(positive, hosts):
     * hosts - hosts to be deactivated
     Returns: True (success) / False (failure)
     '''
+    if isinstance(hosts, str):
+        hosts = hosts.split(',')
+
     sorted_hosts = _sort_hosts_by_priority(hosts, False)
 
     for host in sorted_hosts:
@@ -2332,3 +2335,26 @@ def killProcesses(hostObj, procName, **kwargs):
     res, out = hostObj.runCmd(pkill_proc)
     if not res:
         HOST_API.logger.info(str(out))
+
+@is_action()
+def select_host_as_spm(positive, host, datacenter,
+                       timeout=HOST_STATE_TIMEOUT, sleep=10, wait=True):
+    '''
+    Description: Selects the host to be spm
+    Author: gickowic
+    Parameters:
+       * host - name of a host to be selected as spm
+       * wait - True to wait for spm election to be completed before returning
+    Return: status (True if host was elected as spm properly, False otherwise)
+    '''
+    hostObj = HOST_API.find(host)
+    HOST_API.logger.info('Selecting host %s as spm', host)
+    status = HOST_API.syncAction(hostObj, "forceselectspm", positive)
+
+    if status == positive:
+        if wait:
+            waitForSPM(datacenter, timeout=timeout, sleep=sleep)
+            return checkHostSpmStatus(True, host)
+        else:
+            return True
+    return False
