@@ -21,13 +21,13 @@ from art.core_api.apis_utils import data_st
 from art.rhevm_api.utils.test_utils import get_api, SYS_CLASS_NET_DIR
 import art.rhevm_api.tests_lib.low_level as ll
 from art.core_api.apis_exceptions import EntityNotFound
-from art.test_handler.exceptions import NetworkException
 from art.core_api import is_action
 from utilities.machine import Machine, LINUX
+from art.test_handler.exceptions import NetworkException
 import logging
 import re
 import os
-
+import netaddr
 
 NET_API = get_api("network", "networks")
 CL_API = get_api("cluster", "clusters")
@@ -41,11 +41,11 @@ logger = logging.getLogger('networks')
 
 
 def _prepareNetworkObject(**kwargs):
-    '''
+    """
     preparing logical network object
     Author: edolinin, atal
     return: logical network data structure object
-    '''
+    """
     net = data_st.Network()
 
     if 'name' in kwargs:
@@ -88,7 +88,7 @@ def _prepareNetworkObject(**kwargs):
 
 @is_action()
 def addNetwork(positive, **kwargs):
-    '''
+    """
     Description: add network to a data center
     Author: edolinin
     Parameters:
@@ -104,7 +104,7 @@ def addNetwork(positive, **kwargs):
        * mtu - and integer to overrule mtu on the related host nic..
        * profile_required - flag to create or not VNIC profile for the network
     Return: status (True if network was added properly, False otherwise)
-    '''
+    """
 
     net_obj = _prepareNetworkObject(**kwargs)
     res, status = NET_API.create(net_obj, positive)
@@ -114,7 +114,7 @@ def addNetwork(positive, **kwargs):
 
 @is_action()
 def updateNetwork(positive, network, **kwargs):
-    '''
+    """
     Description: update existing network
     Author: edolinin, atal
     Parameters:
@@ -132,7 +132,7 @@ def updateNetwork(positive, network, **kwargs):
                     a missing usage will be deleted!
        * mtu - and integer to overrule mtu on the related host nic..
     Return: status (True if network was updated properly, False otherwise)
-    '''
+    """
 
     net = findNetwork(network, kwargs.get('data_center'))
     net_update = _prepareNetworkObject(**kwargs)
@@ -143,21 +143,21 @@ def updateNetwork(positive, network, **kwargs):
 
 @is_action()
 def removeNetwork(positive, network, data_center=None):
-    '''
+    """
     Description: remove existing network
     Author: edolinin, atal
     Parameters:
        * network - name of a network that should be removed
        * data_center - In case more then one network with the same name exists.
     Return: status (True if network was removed properly, False otherwise)
-    '''
+    """
 
     net = findNetwork(network, data_center)
     return NET_API.delete(net, positive)
 
 
 def findNetwork(network, data_center=None, cluster=None):
-    '''
+    """
     Description: Find desired network using cluster or data center as an option
                  to narrow down the search when multiple networks with the same
                  name exist (needed due to BZ#741111). The network is retrieved
@@ -172,7 +172,7 @@ def findNetwork(network, data_center=None, cluster=None):
                            located.
     **Return**: Returns the desired network object in case of success,
                 otherwise raises EntityNotFound
-    '''
+    """
     if data_center:
         dc_obj = DC_API.find(data_center)
         nets = NET_API.get(absLink=False)
@@ -188,7 +188,7 @@ def findNetwork(network, data_center=None, cluster=None):
 
 
 def findNetworkByCluster(network, cluster):
-    '''
+    """
     Description:Design to compare cluster DC with network DC in order to
                 workaround BZ#741111
     **Author**: atal
@@ -197,7 +197,7 @@ def findNetworkByCluster(network, cluster):
         *  *cluster* - cluster name
     **return**: network object in case of success, raise EntityNotFound in case
                 of Failure
-    '''
+    """
     nets = NET_API.get(absLink=False)
     cluster_obj = CL_API.find(cluster)
     cluster_dc_id = cluster_obj.get_data_center().get_id()
@@ -209,11 +209,11 @@ def findNetworkByCluster(network, cluster):
 
 
 def _prepareClusterNetworkObj(**kwargs):
-    '''
+    """
     preparing cluster network object
     Author: edolinin, atal
     return: logical network data structure object for cluster
-    '''
+    """
     net = kwargs.get('net', data_st.Network())
 
     if kwargs.get('usages', None) is not None:
@@ -229,7 +229,7 @@ def _prepareClusterNetworkObj(**kwargs):
 
 
 def getClusterNetwork(cluster, network):
-    '''
+    """
     Find a network by cluster (along with the network properties that are
     specific to the cluster).
     **Parameters**:
@@ -237,7 +237,7 @@ def getClusterNetwork(cluster, network):
         *  *network* - Name of the network.
     **Return**: Returns the network object if it's found or raises
                 EntityNotFound exception if it's not.
-    '''
+    """
     clusterObj = CL_API.find(cluster)
     return CL_API.getElemFromElemColl(clusterObj,
                                       network,
@@ -246,12 +246,12 @@ def getClusterNetwork(cluster, network):
 
 
 def getClusterNetworks(cluster):
-    '''
+    """
     Get href of the cluster's networks.
     **Parameters**:
         *  *cluster* - Name of the cluster.
     **Return**: Returns the href that links to the cluster's networks.
-    '''
+    """
     clusterObj = CL_API.find(cluster)
     return CL_API.getElemFromLink(clusterObj,
                                   link_name='networks',
@@ -261,7 +261,7 @@ def getClusterNetworks(cluster):
 
 @is_action()
 def addNetworkToCluster(positive, network, cluster, **kwargs):
-    '''
+    """
     Description: attach network to cluster
     Author: atal
     Parameters:
@@ -273,7 +273,7 @@ def addNetworkToCluster(positive, network, cluster, **kwargs):
        a missing usage will be deleted!
        * display - deprecated. boolean, a spice display network.
     Return: status (True if network was attached properly, False otherwise)
-    '''
+    """
     kwargs.update(net=findNetwork(network, cluster=cluster))
     net = _prepareClusterNetworkObj(**kwargs)
     cluster_nets = getClusterNetworks(cluster)
@@ -286,7 +286,7 @@ def addNetworkToCluster(positive, network, cluster, **kwargs):
 
 @is_action()
 def updateClusterNetwork(positive, cluster, network, **kwargs):
-    '''
+    """
     Description: update network to cluster
     Author: atal
     Parameters:
@@ -298,7 +298,7 @@ def updateClusterNetwork(positive, cluster, network, **kwargs):
        a missing usage will be deleted!
        * display - deprecated. boolean, a spice display network.
     Return: status (True if network was attached properly, False otherwise)
-    '''
+    """
 
     net = getClusterNetwork(cluster, network)
     net_update = _prepareClusterNetworkObj(**kwargs)
@@ -309,14 +309,14 @@ def updateClusterNetwork(positive, cluster, network, **kwargs):
 
 @is_action()
 def removeNetworkFromCluster(positive, network, cluster):
-    '''
+    """
     Description: detach network from cluster
     Author: edolinin, atal
     Parameters:
        * network - name of a network that should be detached
        * cluster - name of a cluster to detach from
     Return: status (True if network was detached properly, False otherwise)
-    '''
+    """
 
     net_obj = getClusterNetwork(cluster, network)
 
@@ -325,14 +325,14 @@ def removeNetworkFromCluster(positive, network, cluster):
 
 @is_action()
 def addMultiNetworksToCluster(positive, networks, cluster):
-    '''
+    """
     Adding multiple networks to cluster
     Author: atal
     Parameters:
         * networks - list of networks name
         * cluster - cluster name
     return True/False
-    '''
+    """
     for net in networks:
         if not addNetworkToCluster(positive, net, cluster):
             return False
@@ -341,14 +341,14 @@ def addMultiNetworksToCluster(positive, networks, cluster):
 
 @is_action()
 def removeMultiNetworksFromCluster(positive, networks, cluster):
-    '''
+    """
     Remove multiple networks to cluster
     Author: atal
     Parameters:
         * networks - list of networks name
         * cluster - cluster name
     return True/False
-    '''
+    """
     for net in networks:
         if not removeNetworkFromCluster(positive, net, cluster):
             return False
@@ -358,7 +358,7 @@ def removeMultiNetworksFromCluster(positive, networks, cluster):
 # FIXME: change to use conf file for vlan networks name
 @is_action()
 def addNetworksVlans(positive, prefix, vlans, data_center):
-    '''
+    """
     Adding multiple networks with vlan according to the given prefix and range
     Author: atal
     Parameters:
@@ -366,7 +366,7 @@ def addNetworksVlans(positive, prefix, vlans, data_center):
         * vlans - a list vlan ids
         * date_center - the DataCenter name
     return True with new nics name list or False with empty list
-    '''
+    """
     nics = []
     for vlan in vlans.split(','):
         nics.append(prefix + str(vlan))
@@ -381,14 +381,14 @@ def addNetworksVlans(positive, prefix, vlans, data_center):
 
 @is_action()
 def isNetworkRequired(network, cluster):
-    '''
+    """
     Description: Check if Network is required
     Author: atal
     Parameters:
         * network - logical network name
         * cluster = cluster name
     return: True if network is required, False otherwise.
-    '''
+    """
     net_obj = getClusterNetwork(cluster, network)
 
     return net_obj.get_required()
@@ -396,21 +396,21 @@ def isNetworkRequired(network, cluster):
 
 @is_action()
 def isVMNetwork(network, cluster):
-    '''
+    """
     Description: Check if Network is VM network
     Author: atal
     Parameters:
         * network - logical network name
         * cluster = cluster name
     return: True if network is VM network, False otherwise.
-    '''
+    """
     net_obj = getClusterNetwork(cluster, network)
     usages = net_obj.get_usages()
     return 'vm' in usages.usage
 
 
 def checkIPRule(host, user, password, subnet):
-    '''
+    """
     Check occurence of specific ip in 'ip rule' command output
     Author: gcheresh
     Parameters:
@@ -419,7 +419,7 @@ def checkIPRule(host, user, password, subnet):
         *  *password* - password for the root user
         *  *subnet* - subnet to search for
     return True/False
-    '''
+    """
     machine = Machine(host, user, password).util(LINUX)
     cmd = ["ip", "rule"]
     rc, out = machine.runCmd(cmd)
@@ -482,7 +482,7 @@ def updateVnicProfile(name, network, cluster=None, data_center=None,
 
 
 def getNetworkVnicProfiles(network, cluster=None, data_center=None):
-    '''
+    """
     Returns all the VNIC profiles that belong to a certain network
     **Author**: tgeft
     **Parameters**:
@@ -492,14 +492,14 @@ def getNetworkVnicProfiles(network, cluster=None, data_center=None):
                            located.
     **Return**: Returns a list of VNIC profile objects that belong to the
                 provided network.
-    '''
+    """
     netObj = findNetwork(network, data_center, cluster)
     return NET_API.getElemFromLink(netObj, link_name='vnicprofiles',
                                    attr='vnic_profile', get_href=False)
 
 
 def getVnicProfileObj(name, network, cluster=None, data_center=None):
-    '''
+    """
     Finds the VNIC profile object.
     **Author**: tgeft
     **Parameters**:
@@ -510,7 +510,7 @@ def getVnicProfileObj(name, network, cluster=None, data_center=None):
                            is located.
     **Return**: Returns the VNIC profile object if it's found or raises
                 EntityNotFound exception if it's not.
-    '''
+    """
     matching_profiles = filter(lambda profile: profile.get_name() == name,
                                getNetworkVnicProfiles(network, cluster,
                                                       data_center))
@@ -523,7 +523,7 @@ def getVnicProfileObj(name, network, cluster=None, data_center=None):
 
 def getVnicProfileAttr(name, network, cluster=None, data_center=None,
                        attr_list=[]):
-    '''
+    """
     Finds the VNIC profile object.
     **Author**: gcheresh
     **Parameters**:
@@ -541,7 +541,7 @@ def getVnicProfileAttr(name, network, cluster=None, data_center=None,
                 name
 
     **Return**: Returns the dictionary of VNIC profile attributes
-    '''
+    """
 
     vnic_profile_obj = getVnicProfileObj(name=name, network=network,
                                          cluster=cluster,
@@ -571,7 +571,7 @@ def addVnicProfile(positive, name, cluster=None, data_center=None,
                    network=MGMT_NETWORK, port_mirroring=False,
                    custom_properties=None,
                    description=""):
-    '''
+    """
     Description: Add new vnic profile to network in cluster with cluster_name
     **Author**: alukiano
     **Parameters**:
@@ -585,7 +585,7 @@ def addVnicProfile(positive, name, cluster=None, data_center=None,
         *  *custom_properties* - Custom properties for the profile
         *  *description* - Description of vnic profile
     **Return**: True, if adding vnic profile was success, otherwise False
-    '''
+    """
     vnic_profile_obj = data_st.VnicProfile()
     network_obj = findNetwork(network, data_center, cluster)
     logger.info("\n"
@@ -621,7 +621,7 @@ def addVnicProfile(positive, name, cluster=None, data_center=None,
 @is_action()
 def removeVnicProfile(positive, vnic_profile_name, network, cluster=None,
                       data_center=None):
-    '''
+    """
     Description: Remove vnic profiles with given names
     **Author**: alukiano
     **Parameters**:
@@ -633,7 +633,7 @@ def removeVnicProfile(positive, vnic_profile_name, network, cluster=None,
         *  *data_center* - Name of the data center in which the network
                            is located (None for all data centers)
     **Return**: True if action succeeded, otherwise False
-    '''
+    """
     profileObj = getVnicProfileObj(vnic_profile_name, network, cluster,
                                    data_center)
     logger.info("Trying to remove vnic profile %s", vnic_profile_name)
@@ -646,13 +646,13 @@ def removeVnicProfile(positive, vnic_profile_name, network, cluster=None,
 
 
 def findVnicProfile(vnic_profile_name):
-    '''
+    """
     Description: Find specific VNIC profile on the setup
     **Author**: gcheresh
     **Parameters**:
         *  *vnic_profile_name* -VNIC profile name
     **Return**: True if action succeeded, otherwise False
-    '''
+    """
     logger.info("Searching for Vnic profile %s among all the profile on setup",
                 vnic_profile_name)
     all_profiles = VNIC_PROFILE_API.get(absLink=False)
@@ -756,7 +756,6 @@ def updateNetworkInDataCenter(positive, network, datacenter, **kwargs):
 
 
 def isVmHostNetwork(host, user, password, net_name, conn_timeout=40):
-
     """
     Check if network that resides on Host is VM or non-VM
     **Author**: gcheresh
@@ -881,3 +880,125 @@ def check_network_on_nic(network, host, nic):
         logger.error(e)
         return False
     return nic_obj_id == net_obj_id
+
+
+class NetworkInfoDispatcher(object):
+    """
+    Description: get host network info.
+                 Object of this class is created with machine object:
+                 Machine(host, user, password).util(LINUX)
+                 It can get IP/interface/gateway/bridge and default gw from
+                 the machine.
+    Example usage:
+    machine_obj = Machine(<host_name>, <user>, <password>).util(LINUX)
+        host_info = NetworkInfoDispatcher(machine_obj).get_host_net_info()
+    **Author**: myakove
+    """
+    def __init__(self, machine):
+        self._m = machine
+
+    def _cmd(self, cmd):
+        rc, out = self._m.runCmd(cmd)
+
+        if not rc:
+            cmd_out = " ".join(cmd)
+            raise NetworkException("Fail to run command %s: %s" % (cmd_out,
+                                                                   out))
+        return out
+
+    def find_host_default_gw(self):
+        """
+        Description: Find host default gateway
+        """
+        out = self._cmd(["ip", "route"]).splitlines()
+        for i in out:
+            if re.search("default", i):
+                default_gw = re.findall(r'[0-9]+(?:\.[0-9]+){3}', i)
+                if netaddr.valid_ipv4(default_gw[0]):
+                    return default_gw[0]
+        return None
+
+    def find_host_ips(self):
+        """
+        Description: Find host IPs
+        """
+        ips = []
+        ip_and_netmask = []
+        out = self._cmd(["ip", "addr"]).splitlines()
+        for i in out:
+            cidr = re.findall(r'[0-9]+(?:\.[0-9]+){3}[/]+[0-9]{2}', i)
+            if cidr:
+                ip_and_netmask.append(cidr[0])
+                ip = cidr[0].split("/")
+                if netaddr.valid_ipv4(ip[0]):
+                    ips.append(ip[0])
+        return ips, ip_and_netmask
+
+    def findIp_by_default_gw(self, default_gw, ips_and_mask):
+        """
+        Description: Find IP by default gateway
+            **Parameters**:
+            *  *default_gw* - default gw of the host
+            *  *ips_and_mask* - list of host ips with mask x.x.x.x/xx
+        """
+        dgw = netaddr.IPAddress(default_gw)
+        for ip_mask in ips_and_mask:
+            ipnet = netaddr.IPNetwork(ip_mask)
+            if dgw in ipnet:
+                ip = ip_mask.split("/")[0]
+                return ip
+        return None
+
+    def find_int_by_ip(self, ip):
+        """
+        Description: Find host interface or bridge by IP
+            ** Parameters **:
+            *  *ip* - ip of the interface to find
+        """
+        out = self._cmd(["ip", "addr", "show", "to", ip])
+        return out.split(":")[1].strip()
+
+    def find_ip_by_int(self, interface):
+        """
+        Description: Find host interface by interface or Bridge name
+            **Parameters**:
+            *  *interface* - interface to get ip from
+        """
+        out = self._cmd(["ip", "addr", "show", interface])
+        interface_ip = (re.search(r'[0-9]+(?:\.[0-9]+){3}', out)).group()
+        if netaddr.valid_ipv4(interface_ip):
+            return interface_ip
+        return None
+
+    def find_int_by_bridge(self, bridge):
+        """
+        Description: Find host interface by Bridge name
+            **Parameters**:
+            *  *bridge* - bridge to get ip from
+        """
+        out = self._cmd(["brctl", "show", "|", "grep", bridge])
+        return out.split()[3]
+
+    def get_host_net_info(self):
+        """
+        Get network info for host, return info for main IP.
+        """
+        net_info = {}
+        gateway = self.find_host_default_gw()
+        net_info["gateway"] = gateway
+        ips, ips_and_mask = self.find_host_ips()
+        if gateway is not None:
+            ip = self.findIp_by_default_gw(gateway, ips_and_mask)
+            net_info["ip"] = ip
+            if ip is not None:
+                interface = self.find_int_by_ip(ip)
+
+                if interface == MGMT_NETWORK:
+                    net_info["bridge"] = MGMT_NETWORK
+                    interface = self.find_int_by_bridge(MGMT_NETWORK)
+                    net_info["interface"] = interface
+                else:
+                    net_info["bridge"] = "N/A"
+                    net_info["interface"] = interface
+
+        return net_info

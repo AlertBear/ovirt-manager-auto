@@ -25,7 +25,7 @@ from utilities import machine
 from art.rhevm_api.utils.test_utils import restartVdsmd, sendICMP
 from art.rhevm_api.tests_lib.low_level.networks import addNetwork,\
     getClusterNetwork, removeNetwork, addNetworkToCluster, NET_API,\
-    updateNetwork, getClusterNetworks, MGMT_NETWORK, DC_API
+    DC_API, updateNetwork, getClusterNetworks, MGMT_NETWORK
 from art.rhevm_api.tests_lib.low_level.hosts import sendSNRequest,\
     commitNetConfig, genSNNic, getHostNic
 from art.rhevm_api.tests_lib.low_level.templates import createTemplate
