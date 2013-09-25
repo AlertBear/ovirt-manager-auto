@@ -44,6 +44,7 @@ USER_DISABLED = PARAMETERS.get('ad1_disabled', None)
 IPA_DOMAIN = str(PARAMETERS.get('ipa_domain', None)).upper()
 IPA_PASSWORD = '123456'
 
+# TODO ADD expired_acc_name if none skip?
 IPA_WITH_MANY_GROUPS_NAME = PARAMETERS.get('ipa_with_many_groups_name', None)
 IPA_EXPIRED_PSW_NAME = PARAMETERS.get('ipa_expired_psw_name', None)
 IPA_DISABLED_NAME = PARAMETERS.get('ipa_disabled_name', None)
@@ -75,11 +76,49 @@ LDAP_GROUP2 = PARAMETERS.get('ldap_group2', None)
 LDAP_USER_FROM_GROUP = PARAMETERS.get('ldap_user_from_group', None)
 LDAP_TESTING_USER_NAME = PARAMETERS.get('ldap_testing_user_name', None)
 
-# Misc
-MAIN_CLUSTER_NAME = PARAMETERS.get('cluster_name', None)
+# RHDS
+RHDS_DOMAIN = str(PARAMETERS.get('rhds_domain', None))
 
+# Common
+DOMAINS = {RHDS_DOMAIN: 'rhds', IPA_DOMAIN: 'ipa', AD1_DOMAIN: 'ad1'}
+
+
+def getParamFromDomain(param, domain_name):
+    try:
+        return PARAMETERS.get('%s_%s' % (DOMAINS[domain_name], param))
+    except KeyError:
+        raise KeyError("%s domain is not configured, please configure it"
+                       % domain_name)
+
+
+def GROUP(domain):
+    return getParamFromDomain('group', domain)
+
+
+def REGULAR_NAME(domain):
+    return getParamFromDomain('regular_name', domain)
+
+
+def USER_FROM_GROUP(domain):
+    return getParamFromDomain('user_from_group', domain)
+
+
+def EXPIRED_ACC_NAME(domain):
+    return getParamFromDomain('expired_acc_name', domain)
+
+
+def EXPIRED_PSW_NAME(domain):
+    return getParamFromDomain('expired_psw_name', domain)
+
+
+def WITH_MANY_GROUPS_NAME(domain):
+    return getParamFromDomain('with_many_groups_name', domain)
+
+
+MAIN_CLUSTER_NAME = PARAMETERS.get('cluster_name', None)
 AD_TCMS_PLAN_ID = 2112
 IPA_TCMS_PLAN_ID = 3999
+RHDS_TCMS_PLAN_ID = 5859
 LDAP_TCMS_PLAN_ID = 9906
 
 RESTART = "service ovirt-engine restart"
