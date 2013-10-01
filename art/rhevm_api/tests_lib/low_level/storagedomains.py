@@ -901,7 +901,7 @@ def execOnNonMasterDomains(positive, datacenter, operation, type):
     Author: istein
     Parameters:
        * datacenter - datacenter name
-       * operation  - 'activate' \ 'deactivate' \ 'detach' \ 'attach'
+       * operation  - 'activate' \ 'deactivate' \ 'detach'
        * type - storage domain type ('all', ENUMS[storage_dom_type_data], ENUMS[storage_dom_type_export], ENUMS[storage_dom_type_iso])
     Return: status (True if opearation suceeded, False otherwise)
     '''
@@ -921,7 +921,6 @@ def execOnNonMasterDomains(positive, datacenter, operation, type):
         'activate' : activateStorageDomain,
         'deactivate' : deactivateStorageDomain,
         'detach' : detachStorageDomain,
-        'attach' : attachStorageDomain
     }
 
     # Get the right function to perform the operation.

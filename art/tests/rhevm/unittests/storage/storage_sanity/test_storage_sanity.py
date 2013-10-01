@@ -70,12 +70,15 @@ class TestCase94950(TestCase):
     tcms_plan_id = '4038'
     tcms_test_case = '94950'
 
+
     @istest
     @tcms(tcms_plan_id, tcms_test_case)
     def change_domain_status_test(self):
         """ test checks if detaching/attaching storage domains works properly
         including that it is impossible to detach active domain
         """
+        found, non_master_storages = ll_st_domains.findNonMasterStorageDomains(
+            True, config.DATA_CENTER_NAME)
         logger.info("Detaching active domain - should fail")
         self.assertTrue(
             ll_st_domains.execOnNonMasterDomains(
@@ -107,16 +110,22 @@ class TestCase94950(TestCase):
             "Detaching non-master domains failed")
 
         logger.info("Attaching non-master domains")
-        self.assertTrue(
-            ll_st_domains.execOnNonMasterDomains(
-                True, config.DATA_CENTER_NAME, 'attach', 'all'),
-            "Attaching non-master domains failed")
-
-        logger.info("Activating non-master domains")
-        self.assertTrue(
-            ll_st_domains.execOnNonMasterDomains(
-                True, config.DATA_CENTER_NAME, 'activate', 'all'),
-            "Activating non-master domains failed")
+        for storage in non_master_storages['nonMasterDomains']:
+            self.assertTrue(
+                ll_st_domains.attachStorageDomain(True,
+                    config.DATA_CENTER_NAME, storage),
+                "Attaching non-master domain failed")
+        if config.COMPATIBILITY_VERSION != "3.3":
+            logger.info("Activating non-master domains")
+            self.assertTrue(
+                ll_st_domains.execOnNonMasterDomains(
+                    True, config.DATA_CENTER_NAME, 'activate', 'all'),
+                "Activating non-master domains failed")
+        for storage in non_master_storages['nonMasterDomains']:
+            self.assertTrue(
+                ll_st_domains.waitForStorageDomainStatus(True,
+                   config.DATA_CENTER_NAME, storage, 'active', timeOut=60),
+                "non-master domains didn't become active")
 
 
 class TestCase94954(TestCase):

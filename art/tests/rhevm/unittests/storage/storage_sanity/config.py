@@ -33,3 +33,5 @@ HOSTS = PARAMETERS.as_list('vds')
 
 HOST_NONOPERATIONAL = ENUMS["search_host_state_non_operational"]
 HOST_NONRESPONSIVE = ENUMS["search_host_state_non_responsive"]
+
+COMPATIBILITY_VERSION = PARAMETERS['compatibility_version']
