@@ -6,8 +6,10 @@ import os
 
 from . import ART_CONFIG
 from utilities.utils import readConfFile
+from art.test_handler.settings import opts
 
 PARAMETERS = 'PARAMETERS'
+RHEVM_UTILS_ENUMS = opts['elements_conf']['RHEVM Utilities']
 
 # server on which ovirt-engine is running.
 OVIRT_ADDRESS = ART_CONFIG['REST_CONNECTION']['host']
@@ -20,7 +22,8 @@ OVIRT_DOMAIN = str(ART_CONFIG['REST_CONNECTION']['user_domain'])
 OVIRT_PASSWORD = str(ART_CONFIG['REST_CONNECTION']['password'])
 OVIRT_VERSION = str(ART_CONFIG[PARAMETERS]['compatibility_version'])
 
-DB_NAME = {'RHEVM_DB_NAME': ART_CONFIG[PARAMETERS]['db_name']}
+DB_NAME = {'RHEVM_DB_NAME': RHEVM_UTILS_ENUMS['RHEVM_DB_NAME'],
+           'OVIRT_DB_NAME': RHEVM_UTILS_ENUMS['OVIRT_DB_NAME']}
 
 # main host
 HOST_ADDRESS =          str(ART_CONFIG[PARAMETERS].as_list('vds')[0])
