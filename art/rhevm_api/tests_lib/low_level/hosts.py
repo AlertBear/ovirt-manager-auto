@@ -1322,21 +1322,26 @@ def checkHostStatistics(positive, host):
 @is_action()
 def checkHostSpmStatus(positive, hostName):
     '''
-    The function checkHostSpmStatus checking Storage Pool Manager (SPM) status of the host.
-        hostName - the host name
-    return value : 1) True when the host is SPM and positive also True ,otherwise return False
-                   2) True when host is not SPM and positive equal to False ,otherwise return False
+    Description: The function checkHostSpmStatus checking Storage Pool Manager
+                 (SPM) status of the host.
+    Parameters:
+    * hostName - the host name
+    Returns: 1) True when the host is SPM and positive also True,
+                otherwise return False.
+             2) True when host is not SPM and positive equal to False,
+                otherwise return False.
     '''
     attribute = 'storage_manager'
     hostObj = HOST_API.find(hostName)
 
     if not hasattr(hostObj, attribute):
-        HOST_API.logger.error("Element host" + hostName + " doesn't have attribute " + attribute)
+        HOST_API.logger.error("Element host %s doesn't have attribute %s",
+                              hostName, attribute)
         return False
 
     spmStatus = hostObj.get_storage_manager().get_valueOf_()
-    HOST_API.logger.info("checkHostSpmStatus - SPM Status of host " + hostName + \
-                    " is: " + spmStatus)
+    HOST_API.logger.info("checkHostSpmStatus - SPM Status of host %s is: %s",
+                         hostName, spmStatus)
 
     return (spmStatus == 'true') == positive
 
