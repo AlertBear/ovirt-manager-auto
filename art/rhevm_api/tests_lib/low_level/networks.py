@@ -164,17 +164,39 @@ def findNetwork(network, data_center=None, cluster=None):
     **Return**: Returns the desired network object in case of success,
                 otherwise raises EntityNotFound
     '''
-    kwargs = {}
-
     if data_center:
-        dc_id = DC_API.find(data_center).get_id()
-        kwargs = {'data_center.id': dc_id}
-
+        dc_obj = DC_API.find(data_center)
+        nets = NET_API.get(absLink=False)
+        for net in nets:
+            if net.get_data_center().get_id() == dc_obj.get_id() and \
+                    net.get_name().lower() == network.lower():
+                return net
+        raise EntityNotFound('%s network does not exists!' % network)
     elif cluster:
-        dc_id = CL_API.find(cluster).get_data_center().get_id()
-        kwargs = {'data_center.id': dc_id}
+        return findNetworkByCluster(network, cluster)
+    else:
+        return NET_API.find(network)
 
-    return NET_API.find(network, **kwargs)
+
+def findNetworkByCluster(network, cluster):
+    '''
+    Description:Design to compare cluster DC with network DC in order to
+                workaround BZ#741111
+    **Author**: atal
+    **Parameters**:
+        *  *network* - network name
+        *  *cluster* - cluster name
+    **return**: network object in case of success, raise EntityNotFound in case
+                of Failure
+    '''
+    nets = NET_API.get(absLink=False)
+    cluster_obj = CL_API.find(cluster)
+    cluster_dc_id = cluster_obj.get_data_center().get_id()
+    for net in nets:
+        if cluster_dc_id == net.get_data_center().get_id() and \
+                network == net.get_name():
+            return net
+    raise EntityNotFound('%s network does not exists!' % network)
 
 
 def _prepareClusterNetworkObj(**kwargs):
