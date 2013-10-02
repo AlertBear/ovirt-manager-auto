@@ -969,6 +969,7 @@ def findNonMasterStorageDomains(positive, datacenter):
         return positive, {'nonMasterDomains' : nonMasterDomains}
     return not positive, {'nonMasterDomains' : ''}
 
+
 @is_action()
 def findMasterStorageDomain(positive, datacenter):
     '''
@@ -983,12 +984,14 @@ def findMasterStorageDomain(positive, datacenter):
 
     # Find the master DATA storage domain.
     masterResult = filter(lambda sdObj: sdObj.get_type() == \
-        ENUMS['storage_dom_type_data'] and sdObj.get_master(), sdObjList)
+        ENUMS['storage_dom_type_data'] and \
+        sdObj.get_master() in [True, 'true'], sdObjList)
     masterCount = len(masterResult)
     if masterCount == 1:
-        return True, {'masterDomain' : masterResult[0].get_name()}
-    util.logger.error("Found %d master data domains, while one was expected." % masterCount)
-    return False, {'masterDomain' : ' '}
+        return True, {'masterDomain': masterResult[0].get_name()}
+    util.logger.error("Found %d master data domains, while one was expected.",
+                      masterCount)
+    return False, {'masterDomain': ' '}
 
 
 @is_action()
