@@ -213,8 +213,9 @@ class TestCase287249(helpers.HotplugHookTest):
 
 class TestCase287481(helpers.HotplugHookTest):
     """
-    Check that vdsm will not fail if after_disk_hotplug is a binary, executable
-    file
+    Check that activation will fail if after_disk_hotplug is a binary,
+    executable file. Check that after removing the hook it will be possible
+    to activate the disk.
 
     https://tcms.engineering.redhat.com/case/287481/?from_plan=9940
     """
@@ -224,14 +225,21 @@ class TestCase287481(helpers.HotplugHookTest):
     use_disks = DISKS_TO_PLUG[4:5]
     hooks = {'after_disk_hotplug': [helpers.HOOKJPEG]}
 
+    def perform_action(self):
+        LOGGER.info("Activate should fail")
+        assert not vms.activateVmDisk(True, VM_NAME, self.use_disks[0])
+        self.clear_hooks()
+        assert vms.activateVmDisk(True, VM_NAME, self.use_disks[0])
+
     def verify_hook_called(self):
         LOGGER.info("Hooks shouldn't have been called")
         assert not self.get_hooks_result_file()
 
-    @bz(988050)
     @tcms(9940, 287481)
+    @bz(1003649)
     def test_after_disk_hotplug_binary_executable_hook_file(self):
-        """ check that vdsm skip a hook file if it is binary and executable
+        """ check that activate fail if hook is binary executable file
+            check that after removing the hook file activation works
         """
         self.perform_action_and_verify_hook_called()
 
