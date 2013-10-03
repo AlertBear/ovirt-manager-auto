@@ -719,6 +719,9 @@ class JavaTranslator(object):
         # jboolean case:
         elif isinstance(data, bool):
             python_data = 'true' if data is True else 'false'
+        # BigDecimal case
+        elif isinstance(data, java.math.BigDecimal):
+            python_data = int(data.toString())
         # assuming that this is string
         elif data is not None:
             python_data = data.encode('utf8')
