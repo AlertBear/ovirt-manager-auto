@@ -22,7 +22,7 @@ class LoadAgent(object):
     """
     Class designed for system load management.
     """
-    def __init__(self, machine, nameVM=None):
+    def __init__(self, machine, nameVM=None, skip_alive_check=True):
         """
         Description: Init. 
         Author: pnovotny
@@ -32,7 +32,7 @@ class LoadAgent(object):
               Machine on which system load will ran.
             * nameVM - name of machine
         """
-        if not machine.isAlive(5):
+        if skip_alive_check and not machine.isAlive(5):
             raise IOError("Host %s is not responding to ping request!" % machine.host)
         self.__machine = machine
         self.__loadGenerators = {}

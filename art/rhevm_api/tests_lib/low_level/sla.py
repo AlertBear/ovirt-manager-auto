@@ -16,20 +16,21 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
+import os
 import logging
 import re
 import random
-import os
 from utilities import machine
-from utilities.utils import readConfFile
 from art.core_api import is_action
-from vms import updateVm, startVm, stopVm, createVm, removeVm
+from vms import updateVm, startVm, stopVm
 from art.rhevm_api.utils.test_utils import get_api
 from art.test_handler.settings import opts
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 HOST_API = get_api('host', 'hosts')
 VM_API = get_api('vm', 'vms')
+LOAD_SCRIPT_NAME = "load_host.sh"
+LOAD_SCRIPT_DIR = "/tmp"
 
 logger = logging.getLogger(__package__ + __name__)
 
@@ -176,3 +177,129 @@ def testPinningLoad(positive, host, host_user, host_pwd, vm):
         VM_API.logger.error("Could not stop VM.")
         return not positive
     return positive
+
+
+@is_action()
+def get_num_of_cpus(host, host_user, host_passwd):
+    """
+    Return number of physical cpus on host
+    **Author**: alukiano
+
+    **Parameters**:
+        * *host* - name of host
+        * *host_user - user for connection to host
+        * *host_passwd - password for connection to host
+
+    **Returns**: number of physical cpu's
+    """
+    host_machine = machine.Machine(host, host_user,
+                                   host_passwd).util(machine.LINUX)
+    logger.debug("Run lscpu command on host %s", host)
+    rc, output = host_machine.runCmd(['lscpu'])
+    num_of_cpus = re.findall(r'CPU\(s\):\s*\d+', output)
+    num_of_cpus = num_of_cpus[0].split(':')[1].strip()
+    return int(num_of_cpus)
+
+
+@is_action()
+def cpu_load_script(num_of_cpus, script_name, target,
+                    host, host_user, host_passwd):
+    """
+    Create bash script for loading cpu's on host
+    **Author**: alukiano
+
+    **Parameters**:
+        * *num_of_cpus* - number of cpu's to load
+        * *script_name* - name of script to create
+        * *target* - directory on host to copy script
+        * *host* - name of host
+        * *host_user* - user for connection to host
+        * *host_passwd* - password for connection to host
+
+    **Returns**: True, if script was created, else False
+    """
+    host_machine = machine.Machine(host, host_user,
+                                   host_passwd).util(machine.LINUX)
+    with open(script_name, 'w+') as fd:
+        fd.write("#!/bin/bash\n"
+                 "for i in `seq 1 %d`;\n"
+                 "do while :\n do :\n done &\n done" % num_of_cpus)
+    try:
+        host_machine.copyTo(script_name, target, 300)
+    except IOError as error:
+        logger.error("Copy data to %s : %s" % (host, error))
+    except Exception as error:
+        logger.error("%s\nConnecting or copying data to %s", host, error)
+    cmd = ["chmod", "755", os.path.join(target, script_name)]
+    rc, out = host_machine.runCmd(cmd)
+    if rc == -1:
+        logger.error("Running command %s on host %s failed",
+                     " ".join(cmd), host)
+        return False
+    if out:
+        logger.info("Output of command %s: %s", " ".join(cmd), out)
+    return True
+
+
+@is_action()
+def load_cpu(host, host_user, host_passwd, load,
+             name_of_script=LOAD_SCRIPT_NAME,
+             dir_of_script=LOAD_SCRIPT_DIR):
+    """
+    Load cpu on given host
+    **Author**: alukiano
+
+    **Parameters**:
+        * *host* - name or ip of host
+        * *host_user* - user for connection to host
+        * *host_passwd* - password for connection to host
+        * *load* - number of CPU's to load
+        * *name_of_script* - name of loading script(by default load_host.sh)
+        * *dir_of_script* - directory where to put script(by default /tmp)
+    **Returns**: True, if method was succeeded, else False
+    """
+    if not cpu_load_script(load, name_of_script, dir_of_script,
+                           host, host_user, host_passwd):
+        logger.info("Creating loading script failed")
+        return False
+    host_machine = machine.Machine(host, host_user,
+                                   host_passwd).util(machine.LINUX)
+    cmd = ["sh", os.path.join(dir_of_script, name_of_script)]
+    rc, out = host_machine.runCmd(cmd)
+    if rc == -1:
+        logger.error("Running command %s on host %s failed",
+                     " ".join(cmd), host)
+        return False
+    if out:
+        logger.info("Output of command %s: %s", " ".join(cmd), out)
+    return True
+
+
+@is_action()
+def stop_loading_cpu(host, host_user, host_passwd,
+                     name_of_script=LOAD_SCRIPT_NAME,
+                     dir_of_script=LOAD_SCRIPT_DIR):
+    """
+    Stop loading cpu on host
+    **Author**: alukiano
+
+    **Parameters**:
+        * *host* - name or ip of host
+        * *host_user* - user for connection to host
+        * *host_passwd* - password for connection to host
+        * *name_of_script* - name of loading script(by default load_host.sh)
+        * *dir_of_script* - directory where to put script(by default /tmp)
+    """
+    host_machine = machine.Machine(host, host_user,
+                                   host_passwd).util(machine.LINUX)
+    cmd = ["kill", "$(pidof", "sh",
+           os.path.join(dir_of_script, name_of_script)+")"]
+    logger.info("Running command %s on host %s", " ".join(cmd), host)
+    rc, out = host_machine.runCmd(cmd)
+    if rc == -1:
+        logger.error("Running command %s on host %s failed",
+                     " ".join(cmd), host)
+        return False
+    if out:
+        logger.info("Output of command %s: %s", " ".join(cmd), out)
+    return True

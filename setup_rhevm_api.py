@@ -60,6 +60,7 @@ DATA_FILES = [
         'art/tests/rhevm/unittests/storage/storage_*/*.py',
         'art/tests/rhevm/unittests/networking/*/*.py',
         'art/tests/rhevm/unittests/templates/*.py',
+        'art/tests/rhevm/unittests/scheduler_tests/*/*.py',
         'art/rhevm_api/data_struct/api.xsd',
         'art/tests/rhevm/xml_tests/migration_tests/*.xml',
         ]

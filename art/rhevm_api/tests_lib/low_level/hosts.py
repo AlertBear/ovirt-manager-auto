@@ -2449,3 +2449,27 @@ def setHostToNonOperational(orig_host, host_password, nic):
                               timeout=TIMEOUT):
         return False
     return True
+
+
+@is_action()
+def open_host_port(hosts, user, passwd, port, protocol='tcp', chain='INPUT'):
+    """
+    Open given port on all hosts
+    **Author**: alukiano
+
+    **Parameters**:
+        * *hosts* - list of hosts
+        * *port* - port to open
+    **Returns**: True, if opening was success, False else
+    """
+    add_port = ['iptables', '-I', chain, '-p', protocol,
+                '--dport', port, '-j', 'ACCEPT']
+    for host in hosts:
+        HOST_API.logger.info("Run %s command on host %s",
+                             " ".join(add_port), host)
+        host_obj = machine.Machine(host, user, passwd).util(machine.LINUX)
+        res, out = host_obj.runCmd(add_port)
+        if not res:
+            HOST_API.logger.info("Run command failed")
+            return False
+    return True

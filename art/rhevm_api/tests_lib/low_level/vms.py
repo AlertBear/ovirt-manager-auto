@@ -3247,3 +3247,96 @@ def get_vm_state(vm_name):
     """
     vm_obj = VM_API.find(vm_name)
     return vm_obj.get_status().get_state()
+
+
+def wait_for_vm_migrate(vm, host, **kwargs):
+    """
+    Wait until vm migrate on given host
+    **Author**: alukiano
+
+    **Parameters**:
+        * *vm* - vm name
+        * *host* - host name
+    **Returns**: True if event passed, otherwise False
+    """
+    query = "name={0} and host={1}".format(vm, host.lower().strip())
+    return VM_API.waitForQuery(query, **kwargs)
+
+
+def check_vm_migration(vm, host, time_to_wait):
+        """
+        Check if vm migrated on given host in defined time
+        **Author**: alukiano
+
+        **Parameters**:
+            * *vm* - vm for migration name
+            * *host* - destination host name
+            * *time_to_wait - migration waiting time
+        **Returns**: True, migration_duration if event passed,
+         otherwise False, migration_duration
+        """
+        start_time = time.time()
+        logger.info("Wait until vm %s will migrate on host %s", vm, host)
+        result = wait_for_vm_migrate(vm, host, timeout=time_to_wait)
+        migration_duration = time.time() - start_time
+        if not result:
+            logger.error("Process of migration failed")
+            return False, None
+        logger.info("Process of migration takes %f seconds",
+                    migration_duration)
+        return True, migration_duration
+
+
+def no_vm_migration(vm, host, time_to_wait):
+        """
+        Check that no migration happened
+        **Author**: alukiano
+
+        **Parameters**:
+            * *vm* - vm for migration name
+            * *host* - source host name
+            * *time_to_wait - migration waiting time
+        **Returns**: True, host if no migration occurred,
+         otherwise False, host
+        """
+        logger.info("Wait %f seconds", time_to_wait)
+        time.sleep(time_to_wait)
+        logger.info("Check if vm %s still on old host %s", vm, host)
+        result, vm_host = getVmHost(vm)
+        if not result:
+            logger.error("Failed to get vm %s host", vm)
+            return False
+        if vm_host.get("vmHoster") != host:
+            logger.error("Vm %s migrated on host %s",
+                         vm, vm_host.get("vmHoster"))
+            return False
+        logger.info("After %s seconds, vm %s still on old host %s",
+                    time_to_wait, vm, host)
+        return True
+
+
+def maintenance_vm_migration(vm, src_host, dst_host):
+        """
+        Put source host to maintenance, and check if host migrated to
+        destination host
+        **Author**: alukiano
+
+        **Parameters**:
+            * *vm* - vm for migration name
+            * *src_host* - source host name
+            * *dst_host - destination host
+        **Returns**: True if vm migrated on destination host,
+         otherwise False
+        """
+        import hosts
+        logger.info("Put host %s to maintenance mode", src_host)
+        if not hosts.deactivateHost(True, src_host):
+            logger.error("Deactivation of host %s failed", src_host)
+            return False
+        logger.info("Check to which host vm %s was migrated", vm)
+        result, vm_host = getVmHost(vm)
+        if vm_host.get("vmHoster") != dst_host:
+            logger.error("Vm %s migrated on host %s and not on host %s",
+                         vm, vm_host.get("vmHoster"), dst_host)
+            return False
+        return True
