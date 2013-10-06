@@ -19,10 +19,11 @@
 import pexpect as pe
 import re
 import threading
+import subprocess
 from functools import wraps
 from sys import exit
 from abc import ABCMeta, abstractmethod
-from time import strftime
+from time import strftime, sleep
 from art.rhevm_api.data_struct.data_structures import *
 from art.rhevm_api.data_struct.data_structures import ClassesMapping
 from art.core_api.rest_utils import RestUtil
@@ -31,6 +32,7 @@ from art.core_api.apis_exceptions import CLIError, CLITimeout,\
     CLIAutoCompletionFailure
 from art.core_api import validator
 from utilities.utils import createCommandLineOptionFromDict
+
 
 cliInit = False
 addlock = threading.Lock()
@@ -45,6 +47,8 @@ UPDATE_WAIVER = []
 REMOVE_WAIVER = []
 ACTION_WAIVER = []
 COMPLEX_TO_BASE_CLASSES_DICT = {'HostNIC': 'nic'}
+MAX_TIMEOUT_FOR_FILE_READ = 10
+POLLING_TIMEOUT_FOR_FILE_READ = 0.5
 
 
 def threadSafeRun(func):
@@ -135,6 +139,29 @@ class CliConnection(object):
         del(self._expectDict)
 
     def readTmpFile(self):
+        """
+        Description: This method checks if write finished to TMP_FILE and than
+                     reads it
+        Author: imeerovi
+        Parameters:
+        Returns: string with data from TMP_FILE
+        """
+        timeout = MAX_TIMEOUT_FOR_FILE_READ
+        size = 0
+        new_size = 0
+
+        while new_size == 0 or new_size != size:
+            size = new_size
+            sleep(POLLING_TIMEOUT_FOR_FILE_READ)
+            timeout -= POLLING_TIMEOUT_FOR_FILE_READ
+            if timeout == 0:
+                raise CLICommandFailure("Read of cli command output from file"
+                                        " failed due to timeout in writing/"
+                                        "flushing of this file")
+            new_size = int(subprocess.Popen(["wc", "-c", TMP_FILE],
+                                            stdout=subprocess.PIPE).
+                           communicate()[0].split()[0])
+
         with open(TMP_FILE) as f:
             return f.read()
 
