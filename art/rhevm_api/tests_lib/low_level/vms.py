@@ -3145,28 +3145,9 @@ def is_pid_running_on_vm(vm_name, pid, user, password):
         * password - password for the user
     """
     vm_ip = LookUpVMIpByName('', '').get_ip(vm_name)
+    logger.debug('Got ip %s for vm %s', vm_ip, vm_name)
     vm_machine_object = Machine(vm_ip, user, password).util(LINUX)
     return vm_machine_object.isProcessExists(pid)
-
-
-@is_action()
-def check_snapshot_on_export_domain(positive, vm, snapshot,
-                                    export_storagedomain):
-    '''
-    Description: Check if snapshot exists on vm on an export domain
-    Author: gickowic
-    Parameters:
-       * vm - vm to check snapshot on
-       * snapshot - snapshot description to check if exists
-       * export_storagedomain - name of export storage domain to check on
-    Return: status (True if snapshot exists and positive or snapshot missing
-    and not positive)
-    '''
-    expStorDomObj = STORAGE_DOMAIN_API.find(export_storagedomain)
-    vmObj = VM_API.getElemFromElemColl(expStorDomObj, vm)
-    snapshot = SNAPSHOT_API.getElemFromElemColl(vmObj, snapshot, 'snapshots',
-                                                'snapshot', prop='description')
-    return (snapshot is not None) == positive
 
 
 def kill_process_by_pid_on_vm(vm_name, pid, user, password):

@@ -38,21 +38,39 @@ def start_cat_process_on_vm(vm_name, src):
         return False, None
 
     output = out['out']
-    logger.info('output is %s', output.splitlines())
+    logger.debug('output is %s', output.splitlines())
     pid = output.splitlines()[-1]
     logger.info('Last cat pid found: %s' % pid)
 
     return True, pid
 
 
-def is_pid_running_on_vm(vm_name, pid):
+def is_pid_running_on_vm(vm_name, pid, cmd):
     """
-    Helper function wrapping is_pid_running_on_vm from vms.py with call using
-    common parameters for this test
+    Helper function to ensure a process with the given pid is running on the
+    vm. The process' actual cmdline is then checked to ensure that it is the
+    expected process and not another process with the pid of the expected one
+    to prevent false positives.
     """
     logger.info('Checking if process with pid %s is running on vm %s', pid,
                 vm_name)
-    return vms.is_pid_running_on_vm(vm_name=vm_name,
-                                    pid=pid,
+    if not vms.is_pid_running_on_vm(vm_name=vm_name, pid=pid,
                                     user=config.VM_USER,
-                                    password=config.VM_PASSWORD)
+                                    password=config.VM_PASSWORD):
+        logger.info('Process with pid %s is not running on vm %s', pid, vm_name)
+        return False
+
+    vm_ip = LookUpVMIpByName('', '').get_ip(vm_name)
+    logger.info('Checking cmdline of process %s on vm %s', pid, vm_name)
+    command = 'cat /proc/%s/cmdline' % pid
+    rc, out = runMachineCommand(True, ip=vm_ip, user=config.VM_USER,
+                                password=config.VM_PASSWORD, cmd=command)
+
+    if not rc:
+        logger.info('Unable to check cmdline of process %s on vm %s', pid,
+                    vm_name)
+        return False
+
+    cmdline = out['out'].replace('\x00', ' ').strip()
+    logger.info('cmdline for pid %s on vm %s is: %s', pid, vm_name, cmdline)
+    return cmdline.endswith(cmd)
