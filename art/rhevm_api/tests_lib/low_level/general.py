@@ -67,20 +67,22 @@ def checkSystemVersionTag(positive):
     Return:
         bool
             * True iff error not detected
-            * False if test is not positive, or if some violation from the above
-              found.
+            * False if test is not positive, or if some violation from the
+              above found.
     '''
     # Check whether positive is sane for this test case.
     assert positive
 
-    system_version = util.get(href='', absLink=False).get_product_info().get_version()
+    system_version = util.get(href='',
+                              absLink=False).get_product_info().get_version()
     system_major = system_version.get_major()
     system_minor = system_version.get_minor()
     system_revision = system_version.get_revision()
     system_build = system_version.get_build()
 
     if not system_version:
-        ERR = "The tag product_info->version is either not unique or is not present."
+        ERR = "The tag product_info->version is either not unique or is not"
+        " present."
         util.logger.error(ERR)
         return False
     MSG = "The tag product_info->version is unique and present."
@@ -92,21 +94,26 @@ def checkSystemVersionTag(positive):
     if not isinstance(versionCaps, list):
         version_caps = versionCaps.get_version()
     for version in version_caps:
-        if version.get_current():
+        if version.get_current() in [True, 'true']:
             major = version.get_major()
             minor = version.get_minor()
 
-            ERR1 = "Current {0}: '{1}' in not the same as in capabilitites: {2}"
+            ERR1 = "Current {0}: '{1}' in not the same as in capabilities: {2}"
             ERR2 = "'{0}' not found in product info"
-            if system_major != major or not convToInt(system_major, 'major version'):
-                util.logger.error(ERR1.format('major version', system_major, major))
+            if system_major != major or not convToInt(system_major,
+                                                      'major version'):
+                util.logger.error(ERR1.format('major version', system_major,
+                                              major))
                 error_found = True
 
-            if system_minor != minor or not convToInt(system_minor, 'minor version'):
-                util.logger.error(ERR1.format('minor version', system_minor, minor))
+            if system_minor != minor or not convToInt(system_minor,
+                                                      'minor version'):
+                util.logger.error(ERR1.format('minor version', system_minor,
+                                              minor))
                 error_found = True
 
-            if system_revision is None or not convToInt(system_revision, 'revision'):
+            if system_revision is None or not convToInt(system_revision,
+                                                        'revision'):
                 util.logger.error(ERR2.format('revision'))
                 error_found = True
 
