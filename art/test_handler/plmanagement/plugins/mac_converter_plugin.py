@@ -31,6 +31,7 @@ from threading import Thread
 from subprocess import list2cmdline
 from utilities.sshConnection import SSHSession
 from utilities.machine import Machine, LINUX
+from art.test_handler.exceptions import CanNotFindIP
 
 from art.test_handler.plmanagement import Component, implements, get_logger,\
     PluginError
@@ -64,7 +65,7 @@ class MacToIpConverterError(PluginError):
     pass
 
 
-class CanNotTranslateMacToIP(MacToIpConverterError):
+class CanNotTranslateMacToIP(CanNotFindIP):
     pass
 
 

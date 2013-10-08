@@ -1,5 +1,7 @@
 import sys
 import traceback
+from art.test_handler.plmanagement import PluginError
+
 
 class VitalTestFailed(Exception):
     '''
@@ -119,4 +121,23 @@ def formatExcInfo():
 
 
 class UnkownConfigurationException(RHEVMEntityException):
+    pass
+
+
+class ResourceError(RHEVMEntityException):
+    """
+    Base class for plugin- or other exceptions that must be caught inside ART
+    to inherit.
+    This is needed due to the way ART imports the plugins - they are not
+    imported from art.test_handler.plmanagement.plugins, rather from
+    art.test_handler.tools.
+    To catch the exceptions either have the plugin exception inherit this as
+    well as Plugin error, or create a more specific class here that inherits
+    both of them and have the plugin exception inherit that, and then catch
+    the more general exception.
+    """
+    pass
+
+
+class CanNotFindIP(ResourceError, PluginError):
     pass

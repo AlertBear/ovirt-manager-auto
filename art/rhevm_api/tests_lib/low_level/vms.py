@@ -45,7 +45,7 @@ from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils.threads import runParallel
 from art.rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
 from art.test_handler.settings import opts
-from art.test_handler.exceptions import NetworkException
+from art.test_handler.exceptions import NetworkException, CanNotFindIP
 from art.test_handler import exceptions
 from utilities.jobs import Job, JobsSet
 from utilities.utils import pingToVms, makeVmList
@@ -2998,10 +2998,15 @@ def collect_vm_logs(vm_name, root_passwd='qum5net'):
         #no logs from non-linux machines
         return False
 
-    vm_ip = LookUpVMIpByName('', '').get_ip(vm_name)
-    if vm_ip is None:
-        logger.debug("failed to get vm logs from vm %s: No IP found", vm_name)
+    vm_ip = None
+
+    try:
+        vm_ip = LookUpVMIpByName('', '').get_ip(vm_name)
+        logger.info('Got ip %s', vm_ip)
+    except CanNotFindIP:
+        logger.warning("failed to get vm logs from vm %s: No IP found", vm_name)
         return False
+
     m = Machine(vm_ip, 'root', root_passwd).util(LINUX)
     log_dest = os.path.join(opts['logdir'], '{0}-messages.log'.format(vm_name))
 
