@@ -50,13 +50,20 @@ sdk_init = None
 DEF_TIMEOUT = 900
 # default sleep
 DEF_SLEEP = 10
-STYLE_EXCEPTIONS_JAVA_COLLECTIONS = {'vms': 'vMs'}
+STYLE_EXCEPTIONS_JAVA_COLLECTIONS = {'vms': 'vMs', 'vmpools': 'vmPools'}
 JAVA_IGNORE_LIST = ['getClass', 'getLinks']
 PYTHON_IGNORE_LIST = ['get_link']
 STYLE_EXCEPTIONS_PYTHON_JAVA_METHODS = \
     {'get_valueOf_': 'isValue',
      'get_power_management': 'getPowerManagers',
-     'get_host_nic': 'getSlaves'}
+     'get_host_nic': 'getSlaves'
+     }
+ACTION_EXCEPTIONS_PYTHON_JAVA_METHODS = \
+    {'VM': {'export': 'exportVm'},
+     'Template': {'export': 'exportTemplate'},
+     'StorageDomainVM': {'import': 'importVm'},
+     'StorageDomainTemplate': {'import': 'importTemplate'}
+     }
 
 
 def jvm_thread_care(func):
@@ -1223,6 +1230,13 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
                                     entity))
         except Exception:
             pass
+
+        # taking care on language specific differences in action name:
+        obj_name = get_object_name(entity)
+        if get_object_name(entity) in ACTION_EXCEPTIONS_PYTHON_JAVA_METHODS:
+            action = \
+                ACTION_EXCEPTIONS_PYTHON_JAVA_METHODS[obj_name].get(action,
+                                                                    action)
 
         if isinstance(entity, JavaTranslator):
             java_entity = entity.java_object
