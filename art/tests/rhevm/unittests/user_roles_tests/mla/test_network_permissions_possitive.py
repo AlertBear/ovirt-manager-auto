@@ -1,208 +1,167 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
-# Copyright (c) 2012 Red Hat, Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#           http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# limitations under the License.
-#
-
 __test__ = True
 
 import logging
-from user_roles_tests import config
+from user_roles_tests import config as cfg
 from user_roles_tests.roles import role
 from nose.tools import istest
-from unittest import TestCase
-
-from art.rhevm_api.tests_lib.low_level import mla, networks, users, vms
-from art.rhevm_api.tests_lib.low_level import templates
+from art.test_handler.tools import tcms, bz
 from art.core_api.apis_exceptions import EntityNotFound
-from art.test_handler.tools import bz, tcms
+from test_network_permissions_negative import (ignoreAllExceptions,
+                                               loginAsUser, loginAsAdmin,
+                                               NetworkingNegative)
+from art.rhevm_api.tests_lib.low_level import (mla, networks, users, vms,
+                                               templates, datacenters)
+
 
 LOGGER = logging.getLogger(__name__)
-VM_NAME = 'permissions_vm'
-TEMPLATE_NAME = 'perms_template'
+VM_NAME = cfg.VM_NAME
+TEMPLATE_NAME = cfg.TEMPLATE_NAME
 NIC_NAME = 'nic1'
 NIC_NAME2 = 'nic2'
 NIC_NAME3 = 'nic3'
 NIC_NAME4 = 'nic4'
 ROLE_NAME = '_NetworkCreator'
 TCMS_PLAN_ID_POS = 10639
-
-
-def loginAsUser(userName=config.USER_NAME, filter_=True):
-    users.loginAsUser(
-        userName, config.USER_DOMAIN, config.USER_PASSWORD, filter_)
-
-
-def loginAsAdmin():
-    users.loginAsUser(config.OVIRT_USERNAME, config.OVIRT_DOMAIN,
-                      config.OVIRT_PASSWORD, filter=False)
+EVERYONE = 'Everyone'
 
 
 def setUpModule():
-    assert users.addUser(True, user_name=config.USER_NAME,
-                         domain=config.USER_DOMAIN)
-    assert users.addUser(True, user_name=config.USER_NAME2,
-                         domain=config.USER_DOMAIN)
-    assert users.addUser(True, user_name=config.USER_NAME3,
-                         domain=config.USER_DOMAIN)
+    for user in [cfg.USER_NAME, cfg.USER_NAME2, cfg.USER_NAME3]:
+        assert users.addUser(True, user_name=user, domain=cfg.USER_DOMAIN)
 
 
 def tearDownModule():
+    return
     loginAsAdmin()
-    assert users.removeUser(True, config.USER_NAME)
-    assert users.removeUser(True, config.USER_NAME2)
-    assert users.removeUser(True, config.USER_NAME3)
+    for user in [cfg.USER_NAME, cfg.USER_NAME2, cfg.USER_NAME3]:
+        assert users.removeUser(True, user)
 
 
-def ignoreAllExceptions(method, **kwargs):
-    """ Run method and ignore all exceptions. """
-    try:
-        method(**kwargs)
-    except:
-        pass
+class NetworkingPossitive(NetworkingNegative):
+    __test__ = False
+
+    def tearDown(self):
+        super(NetworkingPossitive, self).tearDown()
+        ignoreAllExceptions(mla.removeRole, positive=True, role=ROLE_NAME)
 
 
-class NetworkingPossitive(TestCase):
-    """ https://tcms.engineering.redhat.com/plan/7995 """
+class PositiveNetworkPermissions231821(NetworkingPossitive):
     __test__ = True
 
     def setUp(self):
-        loginAsAdmin()
-
-    def tearDown(self):
-        # CleanUp
-        loginAsAdmin()
-        ignoreAllExceptions(vms.removeVm, positive=True, vm=VM_NAME)
-        ignoreAllExceptions(templates.removeTemplate, positive=True,
-                            template=TEMPLATE_NAME)
-
-        for network in [config.NETWORK_NAME1, config.NETWORK_NAME2,
-                        config.NETWORK_NAME3, config.NETWORK_NAME4]:
-            ignoreAllExceptions(networks.removeNetwork, positive=True,
-                                network=network,
-                                data_center=config.MAIN_DC_NAME)
-
-        mla.removeUsersPermissionsFromDatacenter(
-            True, config.MAIN_DC_NAME,
-            [config.USER, config.USER2, config.USER3])
-        mla.removeUsersPermissionsFromCluster(
-            True, config.MAIN_CLUSTER_NAME,
-            [config.USER, config.USER2, config.USER3])
-        ignoreAllExceptions(mla.removeRole, positive=True, role=ROLE_NAME)
+        assert mla.addPermissionsForDataCenter(
+            True, cfg.USER_NAME, cfg.MAIN_DC_NAME, role=role.SuperUser)
+        assert mla.addPermissionsForDataCenter(
+            True, cfg.USER_NAME2,
+            cfg.MAIN_DC_NAME, role=role.DataCenterAdmin)
+        assert mla.addPermissionsForDataCenter(
+            True, cfg.USER_NAME3,
+            cfg.MAIN_DC_NAME, role=role.NetworkAdmin)
 
     @istest
     @tcms(TCMS_PLAN_ID_POS, 231821)
     def createNetworkInDC(self):
         """ CreateNetworkInDc """
-        # Setup
-        assert mla.addPermissionsForDataCenter(
-            True, config.USER_NAME, config.MAIN_DC_NAME, role=role.SuperUser)
-        assert mla.addPermissionsForDataCenter(
-            True, config.USER_NAME2,
-            config.MAIN_DC_NAME, role=role.DataCenterAdmin)
-        assert mla.addPermissionsForDataCenter(
-            True, config.USER_NAME3,
-            config.MAIN_DC_NAME, role=role.NetworkAdmin)
-
-        # Actions
-        for u in [config.USER_NAME, config.USER_NAME2, config.USER_NAME3]:
+        for u in [cfg.USER_NAME, cfg.USER_NAME2, cfg.USER_NAME3]:
             loginAsUser(userName=u, filter_=False)
-            assert networks.addNetwork(True, name=config.NETWORK_NAME1,
-                                       data_center=config.MAIN_DC_NAME)
+            assert networks.addNetwork(True, name=cfg.NETWORK_NAME1,
+                                       data_center=cfg.MAIN_DC_NAME)
             loginAsAdmin()
-            assert networks.removeNetwork(True, network=config.NETWORK_NAME1,
-                                          data_center=config.MAIN_DC_NAME)
+            assert networks.removeNetwork(True, network=cfg.NETWORK_NAME1,
+                                          data_center=cfg.MAIN_DC_NAME)
+
+
+class PositiveNetworkPermissions231822(NetworkingPossitive):
+    __test__ = True
+
+    def setUp(self):
+        assert networks.addNetwork(True, name=cfg.NETWORK_NAME1,
+                                   data_center=cfg.MAIN_DC_NAME)
+        assert mla.addPermissionsForNetwork(
+            True, cfg.USER_NAME, cfg.NETWORK_NAME1,
+            data_center=cfg.MAIN_DC_NAME, role=role.DataCenterAdmin)
+        assert mla.addPermissionsForNetwork(
+            True, cfg.USER_NAME2, cfg.NETWORK_NAME1,
+            data_center=cfg.MAIN_DC_NAME, role=role.NetworkAdmin)
 
     @istest
     @tcms(TCMS_PLAN_ID_POS, 231822)
     def editNetworkInDC(self):
         """ Edit network in DC """
-        # Setup
-        assert networks.addNetwork(True, name=config.NETWORK_NAME1,
-                                   data_center=config.MAIN_DC_NAME)
-        assert mla.addPermissionsForNetwork(
-            True, config.USER_NAME, config.NETWORK_NAME1,
-            data_center=config.MAIN_DC_NAME, role=role.DataCenterAdmin)
-        assert mla.addPermissionsForNetwork(
-            True, config.USER_NAME2, config.NETWORK_NAME1,
-            data_center=config.MAIN_DC_NAME, role=role.NetworkAdmin)
-
-        # Actions
         mtu = 800
         stp = True
-        for uName in [config.USER_NAME, config.USER_NAME2]:
+        for uName in [cfg.USER_NAME, cfg.USER_NAME2]:
             loginAsUser(userName=uName, filter_=False)
-            assert networks.updateNetwork(True, config.NETWORK_NAME1,
-                                          data_center=config.MAIN_DC_NAME,
+            assert networks.updateNetwork(True, cfg.NETWORK_NAME1,
+                                          data_center=cfg.MAIN_DC_NAME,
                                           mtu=mtu, stp=str(stp).lower())
             mtu += 100
             stp = not stp
+
+
+class PositiveNetworkPermissions231823(NetworkingPossitive):
+    __test__ = True
+
+    def setUp(self):
+        assert networks.addNetwork(True, name=cfg.NETWORK_NAME1,
+                                   data_center=cfg.MAIN_DC_NAME)
+        assert mla.addPermissionsForNetwork(
+            True, cfg.USER_NAME, cfg.NETWORK_NAME1,
+            data_center=cfg.MAIN_DC_NAME, role=role.NetworkAdmin)
+        assert mla.addClusterPermissionsToUser(
+            True, cfg.USER_NAME2, cluster=cfg.MAIN_CLUSTER_NAME)
 
     @istest
     @tcms(TCMS_PLAN_ID_POS, 231823)
     def attachingNetworkToCluster(self):
         """ Attaching network to cluster """
-        # Setup
-        assert networks.addNetwork(True, name=config.NETWORK_NAME1,
-                                   data_center=config.MAIN_DC_NAME)
-        assert mla.addPermissionsForNetwork(
-            True, config.USER_NAME, config.NETWORK_NAME1,
-            data_center=config.MAIN_DC_NAME, role=role.NetworkAdmin)
-        assert mla.addClusterPermissionsToUser(
-            True, config.USER_NAME2, cluster=config.MAIN_CLUSTER_NAME)
-
-        # Actions
         loginAsUser(filter_=False)
-        assert networks.addNetworkToCluster(True, config.NETWORK_NAME1,
-                                            config.MAIN_CLUSTER_NAME)
+        assert networks.addNetworkToCluster(True, cfg.NETWORK_NAME1,
+                                            cfg.MAIN_CLUSTER_NAME)
         assert networks.removeNetworkFromCluster(
-            True, config.NETWORK_NAME1, config.MAIN_CLUSTER_NAME)
+            True, cfg.NETWORK_NAME1, cfg.MAIN_CLUSTER_NAME)
 
-        loginAsUser(userName=config.USER_NAME2, filter_=False)
-        assert networks.addNetworkToCluster(False, config.NETWORK_NAME1,
-                                            config.MAIN_CLUSTER_NAME)
+        loginAsUser(userName=cfg.USER_NAME2, filter_=False)
+        assert networks.addNetworkToCluster(False, cfg.NETWORK_NAME1,
+                                            cfg.MAIN_CLUSTER_NAME)
         LOGGER.info("ClusterAdmin can't attach network to cluster.")
 
-    def _testSwitchingDisplayAndRequired(self, required=None, display=None):
-        ''' '''
-        # Setup
-        assert networks.addNetwork(True, name=config.NETWORK_NAME1,
-                                   data_center=config.MAIN_DC_NAME)
-        assert mla.addClusterPermissionsToUser(
-            True, config.USER_NAME, cluster=config.MAIN_CLUSTER_NAME)
-        assert mla.addPermissionsForNetwork(
-            True, config.USER_NAME2, config.NETWORK_NAME1,
-            data_center=config.MAIN_DC_NAME, role=role.NetworkAdmin)
-        assert networks.addNetworkToCluster(
-            True, config.NETWORK_NAME1, config.MAIN_CLUSTER_NAME)
 
+class TestSwitching(NetworkingPossitive):
+    __test__ = True
+
+    def setUp(self):
+        assert networks.addNetwork(True, name=cfg.NETWORK_NAME1,
+                                   data_center=cfg.MAIN_DC_NAME)
+        assert mla.addClusterPermissionsToUser(
+            True, cfg.USER_NAME, cluster=cfg.MAIN_CLUSTER_NAME)
+        assert mla.addPermissionsForNetwork(
+            True, cfg.USER_NAME2, cfg.NETWORK_NAME1,
+            data_center=cfg.MAIN_DC_NAME, role=role.NetworkAdmin)
+        assert networks.addNetworkToCluster(
+            True, cfg.NETWORK_NAME1, cfg.MAIN_CLUSTER_NAME)
+
+    def _testSwitchingDisplayAndRequired(self, required=None, display=None):
         assert networks.updateClusterNetwork(
-            True, config.MAIN_CLUSTER_NAME, config.NETWORK_NAME1,
+            True, cfg.MAIN_CLUSTER_NAME, cfg.NETWORK_NAME1,
             required=None if required is None else required,
             display=None if display is None else display)
 
-        # Actions
-        for uName in [config.USER_NAME, config.USER_NAME2]:
+        for uName in [cfg.USER_NAME, cfg.USER_NAME2]:
             loginAsUser(userName=uName, filter_=False)
             assert networks.updateClusterNetwork(
-                True, config.MAIN_CLUSTER_NAME, config.NETWORK_NAME1,
+                True, cfg.MAIN_CLUSTER_NAME, cfg.NETWORK_NAME1,
                 required=None if required is None else not required,
                 display=None if display is None else not display)
             assert networks.updateClusterNetwork(
-                True, config.MAIN_CLUSTER_NAME, config.NETWORK_NAME1,
+                True, cfg.MAIN_CLUSTER_NAME, cfg.NETWORK_NAME1,
                 required=None if required is None else required,
                 display=None if display is None else display)
+
+
+class PositiveNetworkPermissions231824(TestSwitching):
+    __test__ = True
 
     @istest
     @tcms(TCMS_PLAN_ID_POS, 231824)
@@ -210,411 +169,562 @@ class NetworkingPossitive(TestCase):
         """ Required to non-required and vice versa """
         self._testSwitchingDisplayAndRequired(required=True)
 
+
+class PositiveNetworkPermissions236073(TestSwitching):
+    __test__ = True
+
     @istest
     @tcms(TCMS_PLAN_ID_POS, 236073)
     def displayNetwork(self):
         """ Display network """
         self._testSwitchingDisplayAndRequired(display=True)
 
-    # NEED UPDATE
-    #@istest
+
+class PositiveNetworkPermissions231826(NetworkingPossitive):
+    __test__ = True
+
+    def setUp(self):
+        assert vms.createVm(True, VM_NAME, '', cluster=cfg.MAIN_CLUSTER_NAME,
+                            storageDomainName=cfg.MAIN_STORAGE_NAME,
+                            size=cfg.GB)
+        assert mla.addVMPermissionsToUser(True, cfg.USER_NAME, VM_NAME)
+        assert networks.addNetwork(True, name=cfg.NETWORK_NAME1,
+                                   data_center=cfg.MAIN_DC_NAME)
+        assert networks.addNetworkToCluster(True, cfg.NETWORK_NAME1,
+                                            cfg.MAIN_CLUSTER_NAME)
+        assert mla.addPermissionsForVnicProfile(
+            True, cfg.USER_NAME, cfg.NETWORK_NAME1, cfg.NETWORK_NAME1,
+            cfg.MAIN_DC_NAME, role=role.VnicProfileUser)
+
+    @istest
     @tcms(TCMS_PLAN_ID_POS, 231826)
     def attachDetachNetworkToVM(self):
         """ Attach/Detach a network to VM  """
-        # Setup
-        assert vms.createVm(
-            True, VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
-            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB)
-        assert mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME)
-
-        # Actions
         loginAsUser()
         assert vms.addNic(True, VM_NAME, name=NIC_NAME,
-                          network=config.NETWORK_NAME, interface='virtio')
+                          network=cfg.NETWORK_NAME, interface='virtio')
         assert vms.removeNic(True, VM_NAME, NIC_NAME)
 
-    # NEED UPDATE
-    #@istest
+
+class PositiveNetworkPermissions231827(NetworkingPossitive):
+    __test__ = True
+
+    def setUp(self):
+        # Not possible to create public vnicprofile, just add Everyone perms
+        for net in [cfg.NETWORK_NAME1, cfg.NETWORK_NAME2,
+                    cfg.NETWORK_NAME3, cfg.NETWORK_NAME4]:
+            assert networks.addNetwork(True, name=net,
+                                       data_center=cfg.MAIN_DC_NAME)
+            assert mla.addVnicProfilePermissionsToGroup(
+                True, EVERYONE, net, net, cfg.MAIN_DC_NAME)
+            assert networks.addNetworkToCluster(True, net,
+                                                cfg.MAIN_CLUSTER_NAME)
+
+        assert vms.createVm(True, VM_NAME, '', cluster=cfg.MAIN_CLUSTER_NAME)
+        assert mla.addVMPermissionsToUser(True, cfg.USER_NAME, VM_NAME)
+        assert vms.addNic(True, VM_NAME, name=NIC_NAME,
+                          network=cfg.NETWORK_NAME1, interface='virtio')
+
+    @istest
     @tcms(TCMS_PLAN_ID_POS, 231827)
     def visibleNetworksAndManipulations(self):
         """ Visible networks and manipulations """
-        # Setup
-        for num in ['1', '2', '3', '4']:  # Add networks 1,2,3,4 and assign 'em
-            assert networks.addNetwork(
-                True, name=config.NETWORK_NAME + num,
-                data_center=config.MAIN_DC_NAME)
-            assert mla.addPermissionsForNetwork(
-                True, config.USER_NAME, config.NETWORK_NAME + num,
-                data_center=config.MAIN_DC_NAME, role=role.VnicProfileUser)
-            assert networks.addNetworkToCluster(
-                True, config.NETWORK_NAME + num, config.MAIN_CLUSTER_NAME)
-
-        assert vms.createVm(True, VM_NAME, '',
-                            cluster=config.MAIN_CLUSTER_NAME)
-        assert mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME)
-        assert vms.addNic(True, VM_NAME, name=NIC_NAME,
-                          network=config.NETWORK_NAME1, interface='virtio')
-
-        # Actions
         loginAsUser()
-        assert vms.addNic(True, VM_NAME, name=NIC_NAME2,
-                          network=config.NETWORK_NAME1, interface='virtio')
-        assert vms.addNic(True, VM_NAME, name=NIC_NAME3,
-                          network=config.NETWORK_NAME1, interface='virtio')
-        assert vms.updateNic(True, VM_NAME, NIC_NAME2, name='abc1')
-        assert vms.updateNic(True, VM_NAME, NIC_NAME3, name='abc2')
+        for net in [cfg.NETWORK_NAME1, cfg.NETWORK_NAME2,
+                    cfg.NETWORK_NAME3, cfg.NETWORK_NAME4]:
+            assert vms.addNic(True, VM_NAME, name=net,
+                              network=net, interface='virtio')
+            assert vms.updateNic(True, VM_NAME, net, name='%s-x' % net)
         nets = [n.get_name() for n in networks.NET_API.get(absLink=False)]
         LOGGER.info("User can see networks: '%s'" % nets)
         assert len(nets) == 6
         assert vms.removeNic(True, VM_NAME, NIC_NAME)
 
-    # NEED UPDATE
-    #@istest
+
+class PositiveNetworkPermissions231830(NetworkingPossitive):
+    __test__ = True
+
+    def setUp(self):
+        assert networks.addNetwork(True, name=cfg.NETWORK_NAME1,
+                                   data_center=cfg.MAIN_DC_NAME)
+        assert networks.addNetwork(True, name=cfg.NETWORK_NAME2,
+                                   data_center=cfg.MAIN_DC_NAME)
+        for net in [cfg.NETWORK_NAME1, cfg.NETWORK_NAME2]:
+            assert networks.addNetworkToCluster(True, net,
+                                                cfg.MAIN_CLUSTER_NAME)
+        assert vms.createVm(True, VM_NAME, '', cluster=cfg.MAIN_CLUSTER_NAME)
+        assert vms.addNic(True, VM_NAME, name=NIC_NAME,
+                          network=cfg.NETWORK_NAME1, interface='virtio')
+        assert templates.createTemplate(True, vm=VM_NAME, name=TEMPLATE_NAME,
+                                        cluster=cfg.MAIN_CLUSTER_NAME)
+
+    def canSee(self, net1, net2, vnic1, vnic2):
+        for net in [net1, net2, vnic1, vnic2]:
+            if net['filt']:
+                self.assertTrue(net['func'](net['name']) is not None)
+            else:
+                self.assertRaises(EntityNotFound, net['func'], net['name'])
+
+    def filterNet(self, name, filt, func):
+        return {'name': name, 'filt': filt, 'func': func}
+
+    def _testWrap(self, p1, p2, p3, p4, filter_=True):
+        """ wrap assert """
+        net1 = cfg.NETWORK_NAME1
+        net2 = cfg.NETWORK_NAME2
+        loginAsUser(filter_=filter_)
+        self.canSee(self.filterNet(net1, p1, networks.findNetwork),
+                    self.filterNet(net2, p2, networks.findNetwork),
+                    self.filterNet(net1, p3, networks.VNIC_PROFILE_API.find),
+                    self.filterNet(net2, p4, networks.VNIC_PROFILE_API.find))
+        loginAsAdmin()
+
+    def _testPermissionsOnVnicProfile(self):
+        mla.addPermissionsForVnicProfile(True, cfg.USER_NAME,
+                                         cfg.NETWORK_NAME1, cfg.NETWORK_NAME1,
+                                         cfg.MAIN_DC_NAME,
+                                         role=role.VnicProfileUser)
+        self._testWrap(True, False, True, False)
+        mla.removeUserPermissionsFromVnicProfile(True, cfg.NETWORK_NAME1,
+                                                 cfg.NETWORK_NAME1,
+                                                 cfg.MAIN_DC_NAME, cfg.USER)
+
+    def _testPermissionsOnVM(self):
+        mla.addVMPermissionsToUser(True, cfg.USER_NAME, cfg.VM_NAME)
+        self._testWrap(True, False, True, False)
+        mla.removeUserPermissionsFromVm(True, cfg.VM_NAME, cfg.USER)
+
+    def _testPermissionsOnTemplate(self):
+        mla.addPermissionsForTemplate(True, cfg.USER_NAME, cfg.TEMPLATE_NAME)
+        self._testWrap(True, False, True, False)
+        mla.removeUserPermissionsFromTemplate(True, cfg.TEMPLATE_NAME,
+                                              cfg.USER)
+
+    def _testPermissionsOnDC(self):
+        mla.addPermissionsForDataCenter(True, cfg.USER_NAME, cfg.MAIN_DC_NAME)
+        self._testWrap(True, True, True, True, False)
+        mla.removeUserPermissionsFromDatacenter(True, cfg.MAIN_DC_NAME,
+                                                cfg.USER)
+
+    def _testPermissionsOnCluster(self):
+        mla.addClusterPermissionsToUser(True, cfg.USER_NAME,
+                                        cfg.MAIN_CLUSTER_NAME)
+        self._testWrap(True, True, True, True, False)
+        mla.removeUserPermissionsFromCluster(True, cfg.MAIN_CLUSTER_NAME,
+                                             cfg.USER)
+
+    def _testPermissionsOnSystem(self):
+        users.addRoleToUser(True, cfg.USER_NAME, role.UserRole)
+        self._testWrap(True, True, True, True)
+        users.removeUser(True, cfg.USER_NAME)
+        users.addUser(True, user_name=cfg.USER_NAME, domain=cfg.USER_DOMAIN)
+
+    def _testPermissionsOnNetwork(self):
+        mla.addPermissionsForNetwork(True, cfg.USER_NAME, cfg.NETWORK_NAME1,
+                                     cfg.MAIN_DC_NAME, role.VnicProfileUser)
+        self._testWrap(True, False, True, False)
+        mla.removeUserPermissionsFromNetwork(True, cfg.NETWORK_NAME1,
+                                             cfg.MAIN_DC_NAME, cfg.USER)
+
+    @istest
     @tcms(TCMS_PLAN_ID_POS, 231830)
-    @bz(982647)
     def networkVisibilityInAPI(self):
         """ Network visibility in RestAPI """
-        # Create two network in dc and assign one to cluster
-        # Create vm and template and add nics with network1
-        assert networks.addNetwork(True, name=config.NETWORK_NAME1,
-                                   data_center=config.MAIN_DC_NAME)
-        assert networks.addNetwork(True, name=config.NETWORK_NAME2,
-                                   data_center=config.MAIN_DC_NAME)
-        assert networks.addNetworkToCluster(True, config.NETWORK_NAME1,
-                                            config.MAIN_CLUSTER_NAME)
+        self._testPermissionsOnVnicProfile()
+        self._testPermissionsOnVM()
+        self._testPermissionsOnTemplate()
+        self._testPermissionsOnDC()
+        self._testPermissionsOnCluster()
+        self._testPermissionsOnNetwork()
+        self._testPermissionsOnSystem()
 
-        assert vms.createVm(True, VM_NAME, '',
-                            cluster=config.MAIN_CLUSTER_NAME,
-                            storageDomainName=config.MAIN_STORAGE_NAME,
-                            size=config.GB)
-        assert vms.addNic(True, VM_NAME, name=NIC_NAME,
-                          network=config.NETWORK_NAME1, interface='virtio')
-        assert templates.createTemplate(
-            True, vm=VM_NAME, name=TEMPLATE_NAME,
-            cluster=config.MAIN_CLUSTER_NAME)
-        # a)
-        # Should see only network where he has permissions
-        assert mla.addPermissionsForNetwork(
-            True, config.USER_NAME, config.NETWORK_NAME1,
-            data_center=config.MAIN_DC_NAME, role=role.VnicProfileUser)
-        loginAsUser()
-        assert networks.findNetwork(config.NETWORK_NAME1) is not None
-        self.assertRaises(EntityNotFound, networks.findNetwork,
-                          config.NETWORK_NAME2)
-        loginAsAdmin()
-        assert mla.removeUserPermissionsFromNetwork(
-            True, config.NETWORK_NAME1, config.MAIN_DC_NAME, config.USER)
 
-        # b)
-        # Should see all networks in dc
-        assert mla.addPermissionsForDataCenter(
-            True, config.USER_NAME, config.MAIN_DC_NAME, role.VnicProfileUser)
-        loginAsUser()
-        assert networks.findNetwork(config.NETWORK_NAME1) is not None
-        assert networks.findNetwork(config.NETWORK_NAME2) is not None
-        loginAsAdmin()
-        assert mla.removeUserPermissionsFromDatacenter(
-            True, config.MAIN_DC_NAME, config.USER)
+class PositiveNetworkPermissions231832(NetworkingPossitive):
+    __test__ = True
 
-        # c)
-        # Should see only assigned networks
-        assert mla.addClusterPermissionsToUser(
-            True, config.USER_NAME, config.MAIN_CLUSTER_NAME,
-            role.VnicProfileUser)
-        loginAsUser()
-        assert networks.findNetwork(config.NETWORK_NAME1) is not None
-        self.assertRaises(EntityNotFound, networks.findNetwork,
-                          config.NETWORK_NAME2)
-        loginAsAdmin()
-        assert mla.removeUserPermissionsFromCluster(
-            True, config.MAIN_CLUSTER_NAME, config.USER)
+    def setUp(self):
+        assert networks.addNetwork(True, name=cfg.NETWORK_NAME1,
+                                   data_center=cfg.MAIN_DC_NAME)
+        assert networks.addNetwork(True, name=cfg.NETWORK_NAME2,
+                                   data_center=cfg.MAIN_DC_NAME)
+        assert networks.updateVnicProfile(cfg.NETWORK_NAME1, cfg.NETWORK_NAME1,
+                                          cluster=cfg.MAIN_CLUSTER_NAME,
+                                          data_center=cfg.MAIN_DC_NAME,
+                                          port_mirroring=True)
+        for user in [{'user': cfg.USER_NAME, 'role': role.NetworkAdmin},
+                     {'user': cfg.USER_NAME2, 'role': role.VnicProfileUser}]:
+            assert mla.addPermissionsForVnicProfile(
+                True, user['user'], cfg.NETWORK_NAME2, cfg.NETWORK_NAME2,
+                cfg.MAIN_DC_NAME, role=user['role'])
+            assert mla.addPermissionsForVnicProfile(
+                True, user['user'], cfg.NETWORK_NAME1, cfg.NETWORK_NAME1,
+                cfg.MAIN_DC_NAME, role=user['role'])
+        assert mla.addPermissionsForDataCenter(True, cfg.USER_NAME2,
+                                               cfg.MAIN_DC_NAME, role.UserRole)
+        for net in [cfg.NETWORK_NAME1, cfg.NETWORK_NAME2]:
+            assert networks.addNetworkToCluster(True, net,
+                                                cfg.MAIN_CLUSTER_NAME)
 
-        # d)
-        # Should see only networks which are attached to nics of vm
-        assert mla.addVMPermissionsToUser(
-            True, config.USER_NAME, VM_NAME, role=role.VnicProfileUser)
-        loginAsUser()
-        assert networks.findNetwork(config.NETWORK_NAME1) is not None
-        self.assertRaises(EntityNotFound, networks.findNetwork,
-                          config.NETWORK_NAME2)
-        loginAsAdmin()
-        assert mla.removeUserPermissionsFromVm(True, VM_NAME, config.USER)
-
-        # e)
-        # Should see only networks which are attached to nics of template
-        assert mla.addPermissionsForTemplate(
-            True, config.USER_NAME, TEMPLATE_NAME, role=role.VnicProfileUser)
-        loginAsUser()
-        assert networks.findNetwork(config.NETWORK_NAME1) is not None
-        self.assertRaises(EntityNotFound, networks.findNetwork,
-                          config.NETWORK_NAME2)
-        loginAsAdmin()
-        assert mla.removeUserPermissionsFromTemplate(True, TEMPLATE_NAME,
-                                                     config.USER)
-
-        # f)
-        # VnicProfileUser on system can't view all networks
-        # it can't be fixed because 878812 - can change in future
-        assert users.addRoleToUser(True, config.USER_NAME,
-                                   role.VnicProfileUser)
-        loginAsUser()
-        self.assertRaises(EntityNotFound, networks.findNetwork,
-                          config.NETWORK_NAME1)
-        self.assertRaises(EntityNotFound, networks.findNetwork,
-                          config.NETWORK_NAME2)
-        loginAsAdmin()
-        assert users.removeUser(True, config.USER_NAME)
-        assert users.addUser(True, user_name=config.USER_NAME,
-                             domain=config.USER_DOMAIN)
-
-    # NEED UPDATE
-    #@istest
+    @istest
     @tcms(TCMS_PLAN_ID_POS, 231832)
     def portMirroring(self):
         """ Port mirroring """
-        # Setup
-        assert vms.createVm(True, VM_NAME, '',
-                            cluster=config.MAIN_CLUSTER_NAME)
-        assert networks.addNetwork(True, name=config.NETWORK_NAME1,
-                                   data_center=config.MAIN_DC_NAME)
-        assert networks.addNetwork(True, name=config.NETWORK_NAME2,
-                                   data_center=config.MAIN_DC_NAME)
-
-        assert mla.addPermissionsForNetwork(True, config.USER_NAME,
-                                            config.NETWORK_NAME1,
-                                            data_center=config.MAIN_DC_NAME)
-        assert mla.addPermissionsForNetwork(True, config.USER_NAME,
-                                            config.NETWORK_NAME2,
-                                            data_center=config.MAIN_DC_NAME)
-
-        assert mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME)
-        assert mla.addVMPermissionsToUser(True, config.USER_NAME2, VM_NAME)
-
-        assert networks.addNetworkToCluster(True, config.NETWORK_NAME1,
-                                            config.MAIN_CLUSTER_NAME)
-        assert networks.addNetworkToCluster(True, config.NETWORK_NAME2,
-                                            config.MAIN_CLUSTER_NAME)
-        assert vms.addNic(True, VM_NAME, name=NIC_NAME,
-                          network=config.NETWORK_NAME2, interface='virtio')
-
-        # Actions
+        loginAsUser(userName=cfg.USER_NAME2)
+        assert not networks.updateVnicProfile(
+            cfg.NETWORK_NAME1, cfg.NETWORK_NAME1, port_mirroring=False,
+            cluster=cfg.MAIN_CLUSTER_NAME, data_center=cfg.MAIN_DC_NAME)
+        assert not networks.updateVnicProfile(
+            cfg.NETWORK_NAME2, cfg.NETWORK_NAME2, port_mirroring=True,
+            cluster=cfg.MAIN_CLUSTER_NAME, data_center=cfg.MAIN_DC_NAME)
         loginAsUser(filter_=False)
-        assert vms.addNic(True, VM_NAME, name=NIC_NAME2,
-                          network=config.NETWORK_NAME1, interface='virtio',
-                          port_mirroring=config.NETWORK_NAME1)
-        assert vms.updateNic(True, VM_NAME, NIC_NAME2,
-                             network=config.NETWORK_NAME1,
-                             port_mirroring='')
-        assert vms.updateNic(True, VM_NAME, NIC_NAME,
-                             network=config.NETWORK_NAME2,
-                             port_mirroring=config.NETWORK_NAME2)
+        assert networks.updateVnicProfile(cfg.NETWORK_NAME1, cfg.NETWORK_NAME1,
+                                          cluster=cfg.MAIN_CLUSTER_NAME,
+                                          data_center=cfg.MAIN_DC_NAME,
+                                          port_mirroring=False)
+        assert networks.updateVnicProfile(cfg.NETWORK_NAME2, cfg.NETWORK_NAME2,
+                                          cluster=cfg.MAIN_CLUSTER_NAME,
+                                          data_center=cfg.MAIN_DC_NAME,
+                                          port_mirroring=True)
 
-        loginAsUser(userName=config.USER_NAME2)
-        assert vms.updateNic(True, VM_NAME, NIC_NAME,
-                             network=config.NETWORK_NAME2,
-                             port_mirroring='')
 
-    # NEED UPDATE
-    #@istest
+class PositiveNetworkPermissions236367(NetworkingPossitive):
+    __test__ = True
+
+    def setUp(self):
+        assert vms.createVm(True, VM_NAME, '', cluster=cfg.MAIN_CLUSTER_NAME)
+        assert networks.addNetwork(True, name=cfg.NETWORK_NAME1,
+                                   data_center=cfg.MAIN_DC_NAME)
+        assert mla.addPermissionsForVnicProfile(
+            True, cfg.USER_NAME, cfg.NETWORK_NAME1, cfg.NETWORK_NAME1,
+            cfg.MAIN_DC_NAME, role=role.VnicProfileUser)
+
+        assert mla.addVMPermissionsToUser(True, cfg.USER_NAME, VM_NAME)
+        assert mla.addVMPermissionsToUser(True, cfg.USER_NAME2, VM_NAME)
+
+        assert networks.addNetworkToCluster(True, cfg.NETWORK_NAME1,
+                                            cfg.MAIN_CLUSTER_NAME)
+
+    @istest
     @tcms(TCMS_PLAN_ID_POS, 236367)
     def addVNICToVM(self):
         """ Add a VNIC to VM  """
-        # Setup
-        assert vms.createVm(True, VM_NAME, '',
-                            cluster=config.MAIN_CLUSTER_NAME)
-        assert networks.addNetwork(True, name=config.NETWORK_NAME1,
-                                   data_center=config.MAIN_DC_NAME)
-        assert mla.addPermissionsForNetwork(True, config.USER_NAME,
-                                            config.NETWORK_NAME1,
-                                            data_center=config.MAIN_DC_NAME,
-                                            role=role.VnicProfileUser)
-
-        assert mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME)
-        assert mla.addVMPermissionsToUser(True, config.USER_NAME2, VM_NAME)
-
-        assert networks.addNetworkToCluster(True, config.NETWORK_NAME1,
-                                            config.MAIN_CLUSTER_NAME)
-
-        # Actions
         loginAsUser()
         assert vms.addNic(True, VM_NAME, name=NIC_NAME,
                           network=None, interface='virtio')
         assert vms.addNic(True, VM_NAME, name=NIC_NAME2,
-                          network=config.NETWORK_NAME1, interface='virtio')
-        loginAsUser(userName=config.USER_NAME2)
+                          network=cfg.NETWORK_NAME1, interface='virtio')
+        loginAsUser(userName=cfg.USER_NAME2)
         assert vms.addNic(True, VM_NAME, name=NIC_NAME3,
                           network=None, interface='virtio')
 
-    # NEED UPDATE
-    #@istest
+
+class PositiveNetworkPermissions236406(NetworkingPossitive):
+    __test__ = True
+
+    def setUp(self):
+        assert vms.createVm(True, VM_NAME, '', cluster=cfg.MAIN_CLUSTER_NAME)
+        assert networks.addNetwork(True, name=cfg.NETWORK_NAME1,
+                                   data_center=cfg.MAIN_DC_NAME)
+        assert mla.addPermissionsForVnicProfile(
+            True, cfg.USER_NAME, cfg.NETWORK_NAME1, cfg.NETWORK_NAME1,
+            cfg.MAIN_DC_NAME, role=role.VnicProfileUser)
+
+        assert mla.addVMPermissionsToUser(True, cfg.USER_NAME, VM_NAME)
+        assert mla.addVMPermissionsToUser(True, cfg.USER_NAME2, VM_NAME)
+
+        assert networks.addNetworkToCluster(True, cfg.NETWORK_NAME1,
+                                            cfg.MAIN_CLUSTER_NAME)
+
+        assert vms.addNic(True, VM_NAME, name=NIC_NAME,
+                          network=cfg.NETWORK_NAME1, interface='virtio')
+
+    @istest
     @tcms(TCMS_PLAN_ID_POS, 236406)
     def updateVNICOnVM(self):
         """ Update a VNIC on VM """
-        # Setup
-        assert vms.createVm(True, VM_NAME, '',
-                            cluster=config.MAIN_CLUSTER_NAME)
-        assert networks.addNetwork(True, name=config.NETWORK_NAME1,
-                                   data_center=config.MAIN_DC_NAME)
-        assert mla.addPermissionsForNetwork(True, config.USER_NAME,
-                                            config.NETWORK_NAME1,
-                                            data_center=config.MAIN_DC_NAME,
-                                            role=role.VnicProfileUser)
-
-        assert mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME)
-        assert mla.addVMPermissionsToUser(True, config.USER_NAME2, VM_NAME)
-
-        assert networks.addNetworkToCluster(True, config.NETWORK_NAME1,
-                                            config.MAIN_CLUSTER_NAME)
-
-        assert vms.addNic(True, VM_NAME, name=NIC_NAME,
-                          network=config.NETWORK_NAME1, interface='virtio')
-
-        # Actions
         loginAsUser()
         assert vms.updateNic(True, VM_NAME, NIC_NAME, network=None)
         assert vms.updateNic(True, VM_NAME, NIC_NAME,
-                             network=config.NETWORK_NAME1)
-        loginAsUser(userName=config.USER_NAME2)
+                             network=cfg.NETWORK_NAME1)
+        loginAsUser(userName=cfg.USER_NAME2)
         assert vms.updateNic(True, VM_NAME, NIC_NAME, network=None)
 
-    # NEED UPDATE
-    #@istest
+
+class PositiveNetworkPermissions236408(NetworkingPossitive):
+    __test__ = True
+
+    def setUp(self):
+        assert vms.createVm(True, VM_NAME, '', cluster=cfg.MAIN_CLUSTER_NAME,
+                            storageDomainName=cfg.MAIN_STORAGE_NAME,
+                            size=cfg.GB)
+        assert networks.addNetwork(True, name=cfg.NETWORK_NAME1,
+                                   data_center=cfg.MAIN_DC_NAME)
+        assert mla.addPermissionsForVnicProfile(
+            True, cfg.USER_NAME, cfg.NETWORK_NAME1, cfg.NETWORK_NAME1,
+            cfg.MAIN_DC_NAME, role=role.VnicProfileUser)
+        assert mla.addVMPermissionsToUser(True, cfg.USER_NAME, VM_NAME)
+        assert mla.addPermissionsForDataCenter(True, cfg.USER_NAME,
+                                               cfg.MAIN_DC_NAME,
+                                               role.TemplateCreator)
+
+        assert mla.addVMPermissionsToUser(True, cfg.USER_NAME2, VM_NAME)
+        assert mla.addPermissionsForDataCenter(True, cfg.USER_NAME2,
+                                               cfg.MAIN_DC_NAME,
+                                               role.TemplateOwner)
+        assert networks.addNetworkToCluster(True, cfg.NETWORK_NAME1,
+                                            cfg.MAIN_CLUSTER_NAME)
+
+    @istest
     @tcms(TCMS_PLAN_ID_POS, 236408)
     def addVNICToTemplate(self):
         """ Add a VNIC to template """
-        # Setup
-        assert vms.createVm(True, VM_NAME, '',
-                            cluster=config.MAIN_CLUSTER_NAME,
-                            storageDomainName=config.MAIN_STORAGE_NAME,
-                            size=config.GB)
-        assert networks.addNetwork(True, name=config.NETWORK_NAME1,
-                                   data_center=config.MAIN_DC_NAME)
-        assert mla.addPermissionsForNetwork(True, config.USER_NAME,
-                                            config.NETWORK_NAME1,
-                                            data_center=config.MAIN_DC_NAME,
-                                            role=role.VnicProfileUser)
-
-        assert mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME)
-        assert mla.addPermissionsForDataCenter(True, config.USER_NAME,
-                                               config.MAIN_DC_NAME,
-                                               role.TemplateCreator)
-
-        assert mla.addVMPermissionsToUser(True, config.USER_NAME2, VM_NAME)
-        assert mla.addPermissionsForDataCenter(True, config.USER_NAME2,
-                                               config.MAIN_DC_NAME,
-                                               role.TemplateOwner)
-
-        assert networks.addNetworkToCluster(True, config.NETWORK_NAME1,
-                                            config.MAIN_CLUSTER_NAME)
-
-        # Actions
         loginAsUser()
         assert templates.createTemplate(True, vm=VM_NAME, name=TEMPLATE_NAME,
-                                        cluster=config.MAIN_CLUSTER_NAME)
+                                        cluster=cfg.MAIN_CLUSTER_NAME)
         assert templates.addTemplateNic(True, TEMPLATE_NAME, name=NIC_NAME,
                                         network=None)
         assert templates.addTemplateNic(True, TEMPLATE_NAME, name=NIC_NAME2,
-                                        network=config.NETWORK_NAME1)
+                                        network=cfg.NETWORK_NAME1)
 
-        loginAsUser(userName=config.USER_NAME2)
+        loginAsUser(userName=cfg.USER_NAME2)
         assert templates.addTemplateNic(True, TEMPLATE_NAME, name=NIC_NAME3,
                                         network=None)
 
-    # NEED UPDATE
-    #@istest
+
+class PositiveNetworkPermissions236409(NetworkingPossitive):
+    __test__ = True
+
+    def setUp(self):
+        assert networks.addNetwork(True, name=cfg.NETWORK_NAME1,
+                                   data_center=cfg.MAIN_DC_NAME)
+        assert networks.addNetworkToCluster(True, cfg.NETWORK_NAME1,
+                                            cfg.MAIN_CLUSTER_NAME)
+        assert mla.addPermissionsForVnicProfile(
+            True, cfg.USER_NAME, cfg.NETWORK_NAME1, cfg.NETWORK_NAME1,
+            cfg.MAIN_DC_NAME, role=role.VnicProfileUser)
+        assert vms.createVm(True, VM_NAME, '', cluster=cfg.MAIN_CLUSTER_NAME,
+                            storageDomainName=cfg.MAIN_STORAGE_NAME,
+                            size=cfg.GB)
+        assert vms.addNic(True, VM_NAME, name=NIC_NAME,
+                          network=cfg.NETWORK_NAME1, interface='virtio')
+        assert mla.addVMPermissionsToUser(True, cfg.USER_NAME, VM_NAME)
+        assert mla.addVMPermissionsToUser(True, cfg.USER_NAME2, VM_NAME)
+        assert templates.createTemplate(True, vm=VM_NAME, name=TEMPLATE_NAME,
+                                        cluster=cfg.MAIN_CLUSTER_NAME)
+        assert mla.addPermissionsForTemplate(True, cfg.USER_NAME,
+                                             TEMPLATE_NAME,
+                                             role=role.TemplateOwner)
+        assert mla.addPermissionsForTemplate(True, cfg.USER_NAME2,
+                                             TEMPLATE_NAME,
+                                             role=role.TemplateOwner)
+
+    @istest
     @tcms(TCMS_PLAN_ID_POS, 236409)
     def updateVNICOnTemplate(self):
         """ Update a VNIC on the template """
-        # Setup
-        assert networks.addNetwork(True, name=config.NETWORK_NAME1,
-                                   data_center=config.MAIN_DC_NAME)
-        assert mla.addPermissionsForNetwork(True, config.USER_NAME,
-                                            config.NETWORK_NAME1,
-                                            data_center=config.MAIN_DC_NAME,
-                                            role=role.VnicProfileUser)
-        assert networks.addNetworkToCluster(True, config.NETWORK_NAME1,
-                                            config.MAIN_CLUSTER_NAME)
-
-        assert vms.createVm(True, VM_NAME, '',
-                            cluster=config.MAIN_CLUSTER_NAME,
-                            storageDomainName=config.MAIN_STORAGE_NAME,
-                            size=config.GB)
-        assert mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME)
-        assert mla.addVMPermissionsToUser(True, config.USER_NAME2, VM_NAME)
-        assert vms.addNic(True, VM_NAME, name=NIC_NAME,
-                          network=config.NETWORK_NAME1, interface='virtio')
-
-        assert templates.createTemplate(True, vm=VM_NAME, name=TEMPLATE_NAME,
-                                        cluster=config.MAIN_CLUSTER_NAME)
-        assert mla.addPermissionsForTemplate(True, config.USER_NAME,
-                                             TEMPLATE_NAME,
-                                             role=role.TemplateOwner)
-        assert mla.addPermissionsForTemplate(True, config.USER_NAME2,
-                                             TEMPLATE_NAME,
-                                             role=role.TemplateOwner)
-
-        # Actions
         loginAsUser()
         assert templates.updateTemplateNic(True, TEMPLATE_NAME, NIC_NAME,
                                            network=None)
         assert templates.updateTemplateNic(True, TEMPLATE_NAME, NIC_NAME,
-                                           network=config.NETWORK_NAME1)
+                                           network=cfg.NETWORK_NAME1)
         assert templates.updateTemplateNic(True, TEMPLATE_NAME, NIC_NAME,
                                            name='_')
         assert templates.updateTemplateNic(True, TEMPLATE_NAME, '_',
                                            name=NIC_NAME)
-        loginAsUser(userName=config.USER_NAME2)
+        loginAsUser(userName=cfg.USER_NAME2)
         assert templates.updateTemplateNic(True, TEMPLATE_NAME, NIC_NAME,
                                            network=None)
         assert templates.updateTemplateNic(True, TEMPLATE_NAME, NIC_NAME,
                                            name='_')
+
+
+class PositiveNetworkPermissions236577(NetworkingPossitive):
+    __test__ = True
+
+    def setUp(self):
+        assert mla.addPermissionsForDataCenter(True, cfg.USER_NAME,
+                                               cfg.MAIN_DC_NAME,
+                                               role.NetworkAdmin)
 
     @istest
     @tcms(TCMS_PLAN_ID_POS, 236577)
     def removeNetworkFromDC(self):
         """ RemoveNetwokFromDC """
         msg = "NetworkAdmin role wasn't removed after network %s was removed."
-        # Setup
-        assert mla.addPermissionsForDataCenter(True, config.USER_NAME,
-                                               config.MAIN_DC_NAME,
-                                               role.NetworkAdmin)
-
-        # Actions
         loginAsUser(filter_=False)
-        assert networks.addNetwork(True, name=config.NETWORK_NAME1,
-                                   data_center=config.MAIN_DC_NAME)
-        assert networks.removeNetwork(True, network=config.NETWORK_NAME1,
-                                      data_center=config.MAIN_DC_NAME)
+        assert networks.addNetwork(True, name=cfg.NETWORK_NAME1,
+                                   data_center=cfg.MAIN_DC_NAME)
+        assert networks.removeNetwork(True, network=cfg.NETWORK_NAME1,
+                                      data_center=cfg.MAIN_DC_NAME)
 
         loginAsAdmin()
-        assert mla.removeUserPermissionsFromDatacenter(True,
-                                                       config.MAIN_DC_NAME,
-                                                       config.USER)
+        assert mla.removeUserPermissionsFromDatacenter(True, cfg.MAIN_DC_NAME,
+                                                       cfg.USER)
 
         # Check if permissions was removed
         perm_persist = False
-        obj = mla.userUtil.find(config.USER_NAME)
+        obj = mla.userUtil.find(cfg.USER_NAME)
         objPermits = mla.permisUtil.getElemFromLink(obj, get_href=False)
         roleNAid = users.rlUtil.find(role.NetworkAdmin).get_id()
         for perm in objPermits:
             perm_persist = perm_persist or perm.get_role().get_id() == roleNAid
-        assert not perm_persist, msg % config.NETWORK_NAME1
+        assert not perm_persist, msg % cfg.NETWORK_NAME1
+
+
+class PositiveNetworkPermissions236664(NetworkingPossitive):
+    __test__ = True
+
+    def setUp(self):
+        assert mla.addRole(True, name=ROLE_NAME, administrative='true',
+                           permits='login create_storage_pool_network')
+        assert mla.addPermissionsForDataCenter(True, cfg.USER_NAME,
+                                               cfg.MAIN_DC_NAME, ROLE_NAME)
 
     @istest
     @tcms(TCMS_PLAN_ID_POS, 236664)
     def customRole(self):
         """ Custom Role """
-        # Setup
-        assert mla.addRole(True, name=ROLE_NAME, administrative='true',
-                           permits='login create_storage_pool_network')
-        assert mla.addPermissionsForDataCenter(True, config.USER_NAME,
-                                               config.MAIN_DC_NAME, ROLE_NAME)
-
-        # Actions
         loginAsUser(filter_=False)
-        assert networks.addNetwork(True, name=config.NETWORK_NAME1,
-                                   data_center=config.MAIN_DC_NAME)
-        assert networks.updateNetwork(True, config.NETWORK_NAME1, mtu=1405,
-                                      data_center=config.MAIN_DC_NAME)
-        assert networks.removeNetwork(True, network=config.NETWORK_NAME1,
-                                      data_center=config.MAIN_DC_NAME)
+        assert networks.addNetwork(True, name=cfg.NETWORK_NAME1,
+                                   data_center=cfg.MAIN_DC_NAME)
+        assert networks.updateNetwork(True, cfg.NETWORK_NAME1, mtu=1405,
+                                      data_center=cfg.MAIN_DC_NAME)
+        assert networks.removeNetwork(True, network=cfg.NETWORK_NAME1,
+                                      data_center=cfg.MAIN_DC_NAME)
+
+
+class PositiveNetworkPermissions317269(NetworkingPossitive):
+    __test__ = True
+    dc_name = 'rand_dc_name'
+
+    def setUp(self):
+        cv = 'compatibility_version'
+        assert datacenters.addDataCenter(True, name=self.dc_name,
+                                         storage_type=cfg.MAIN_STORAGE_TYPE,
+                                         version=cfg.PARAMETERS.get(cv))
+
+    def tearDown(self):
+        super(PositiveNetworkPermissions317269, self).tearDown()
+        datacenters.removeDataCenter(True, self.dc_name)
+
+    @istest
+    @tcms(TCMS_PLAN_ID_POS, 317269)
+    def automaticCreateionOfPermissions(self):
+        """ Check auto permission creation on new datacenter """
+        # newly created dc, vnicprofile has VnicProfileUser role on Everyone
+        self.assertTrue(
+            mla.hasGroupPermissionsOnObject(
+                'Everyone', mla.groupUtil.find('Everyone'),
+                role=role.VnicProfileUser),
+            "Permission was not created at datacenter for Everyone.")
+
+
+class PositiveNetworkPermissions317133(NetworkingPossitive):
+    __test__ = True
+    dc_name = 'rand_dc_name'
+
+    def setUp(self):
+        users.addRoleToUser(True, cfg.USER_NAME, role.DataCenterAdmin)
+        loginAsUser(filter_=False)
+        cv = 'compatibility_version'
+        assert datacenters.addDataCenter(True, name=self.dc_name,
+                                         storage_type=cfg.MAIN_STORAGE_TYPE,
+                                         version=cfg.PARAMETERS.get(cv))
+
+    def tearDown(self):
+        super(PositiveNetworkPermissions317133, self).tearDown()
+        datacenters.removeDataCenter(True, self.dc_name)
+
+    @istest
+    @bz(1014985)
+    @tcms(TCMS_PLAN_ID_POS, 317133)
+    def automaticCreationToUser(self):
+        """ Check that networkadmin permissions are added automatically  """
+        loginAsAdmin()
+        vnic = networks.getVnicProfileObj(networks.MGMT_NETWORK,
+                                          networks.MGMT_NETWORK,
+                                          cfg.MAIN_CLUSTER_NAME, self.dc_name)
+        net = networks.findNetwork(networks.MGMT_NETWORK,
+                                   data_center=self.dc_name,
+                                   cluster=cfg.MAIN_CLUSTER_NAME)
+        self.assertTrue(
+            mla.hasUserPermissionsOnObject(cfg.USER1, net,
+                                           role=role.NetworkAdmin),
+            "Permission was not created at datacenter for network.")
+        self.assertTrue(
+            mla.hasUserPermissionsOnObject(cfg.USER1, vnic,
+                                           role=role.NetworkAdmin),
+            "Permission was not created at datacenter for vnicprofile.")
+
+
+class PositiveNetworkPermissions320610(NetworkingPossitive):
+    __test__ = True
+
+    def setUp(self):
+        networks.addNetwork(True, name=cfg.NETWORK_NAME1,
+                            data_center=cfg.MAIN_DC_NAME)
+        networks.addNetworkToCluster(True, cfg.NETWORK_NAME1,
+                                     cfg.MAIN_CLUSTER_NAME)
+        networks.addVnicProfile(True, cfg.NETWORK_NAME2,
+                                cluster=cfg.MAIN_CLUSTER_NAME,
+                                data_center=cfg.MAIN_DC_NAME,
+                                network=cfg.NETWORK_NAME1)
+        mla.addPermissionsForVnicProfile(True, cfg.USER_NAME,
+                                         cfg.NETWORK_NAME1, cfg.NETWORK_NAME1,
+                                         cfg.MAIN_DC_NAME,
+                                         role=role.VnicProfileUser)
+        mla.addPermissionsForNetwork(True, cfg.USER_NAME, cfg.NETWORK_NAME1,
+                                     data_center=cfg.MAIN_DC_NAME,
+                                     role=role.VnicProfileUser)
+        vms.createVm(True, VM_NAME, '', cluster=cfg.MAIN_CLUSTER_NAME,
+                     storageDomainName=cfg.MAIN_STORAGE_NAME, size=cfg.GB)
+        mla.addVMPermissionsToUser(True, cfg.USER_NAME, VM_NAME)
+
+    @istest
+    @tcms(TCMS_PLAN_ID_POS, 320610)
+    def vnicPermisAreRestrictedToSpecificProfile(self):
+        """
+        vnicProfile perms on vNIC profile are restricted to specific profile
+        """
+        loginAsUser()
+        self.assertTrue(vms.addNic(True, VM_NAME, name=NIC_NAME,
+                                   vnic_profile=cfg.NETWORK_NAME1,
+                                   network=cfg.NETWORK_NAME1,
+                                   interface='virtio'))
+        self.assertRaises(EntityNotFound,
+                          lambda: vms.addNic(False, VM_NAME, name=NIC_NAME,
+                                             vnic_profile=cfg.NETWORK_NAME2,
+                                             network=cfg.NETWORK_NAME1,
+                                             interface='virtio'))
+
+
+class PositiveNetworkPermissions317270(NetworkingPossitive):
+    __test__ = True
+
+    def setUp(self):
+        assert networks.addNetwork(True, name=cfg.NETWORK_NAME1,
+                                   data_center=cfg.MAIN_DC_NAME, usages='vm')
+        assert mla.addPermissionsForVnicProfile(True, cfg.USER_NAME,
+                                                cfg.NETWORK_NAME1,
+                                                cfg.NETWORK_NAME1,
+                                                cfg.MAIN_DC_NAME,
+                                                role=role.UserRole)
+
+    @istest
+    @bz(1014985)
+    @tcms(TCMS_PLAN_ID_POS, 317270)
+    def nonVmToVmNetwork(self):
+        """ When network is switched to nonvm permissions should be removed """
+        vnic = networks.getVnicProfileObj(cfg.NETWORK_NAME1, cfg.NETWORK_NAME1,
+                                          cfg.MAIN_CLUSTER_NAME,
+                                          cfg.MAIN_DC_NAME)
+        self.assertTrue(
+            mla.hasUserPermissionsOnObject(cfg.USER1, vnic,
+                                           role=role.UserRole))
+        self.assertTrue(networks.updateNetwork(True, network=cfg.NETWORK_NAME1,
+                                               data_center=cfg.MAIN_DC_NAME,
+                                               usages=''))
+        self.assertFalse(
+            mla.hasUserPermissionsOnObject(cfg.USER1, vnic,
+                                           role=role.UserRole),
+            "Permission persists on vnicprofile after swtiched to nonvm.")
