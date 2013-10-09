@@ -921,7 +921,7 @@ element:%(elm)s " % {'col': self.collection_name,
                 if add_method_args_length == 2:
                     response = collection.add(java_entity, correlation_id)
                 elif add_method_args_length == 3:
-                    if 'vms' in collection_name.lower():
+                    if 'vms' == collection_name.lower():
                         response = collection.add(java_entity, correlation_id,
                                                   expect)
                     else:
