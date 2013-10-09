@@ -634,6 +634,7 @@ class JavaTranslator(object):
         * java_func - java SDK method
         Return: returns wrapper
         """
+
         @wraps(java_func)
         def wrapper(*args, **kwargs):
             """
@@ -700,7 +701,7 @@ class JavaTranslator(object):
                 # empty java object by using datatype from
                 # self._java_setters_datatypes_dict
 
-        return wrapper
+        return jvm_thread_care(wrapper)
 
     def java_datatypes_converter(self, data):
         """
