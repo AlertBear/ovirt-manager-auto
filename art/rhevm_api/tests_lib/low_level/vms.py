@@ -3164,3 +3164,21 @@ def kill_process_by_pid_on_vm(vm_name, pid, user, password):
     vm_ip = LookUpVMIpByName('', '').get_ip(vm_name)
     vm_machine_object = Machine(vm_ip, user, password).util(LINUX)
     return vm_machine_object.killProcess(pid)
+
+
+@is_action('runCmdOnVm')
+def run_cmd_on_vm(vm_name, cmd, user, password, timeout=15):
+    """
+    Description: Runs given command on given VM
+    Parameters:
+        * vm_name - VM name in RHEV-M
+        * cmd - command to run - should be a string, not a list of tokens,
+                for example 'ps -A', not ['ps', '-A']
+        * user - username used to login to vm
+        * password - password for the user
+    """
+    vm_ip = LookUpVMIpByName('', '').get_ip(vm_name)
+    rc, out = runMachineCommand(
+        True, ip=vm_ip, user=user, password=password, cmd=cmd, timeout=timeout)
+    logger.debug("cmd output: %s, exit code: %s", out, rc)
+    return rc, out
