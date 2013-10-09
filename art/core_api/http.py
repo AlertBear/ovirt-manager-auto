@@ -186,7 +186,7 @@ class HTTPProxy():
             user += '@%s' % self.opts['user_domain']
         credentials = base64.encodestring('%s:%s' \
                 %  (user, self.opts['password']))[:-1]
-        return "Basic %s" % credentials
+        return "Basic %s" % credentials.replace('\n', '')
 
 
     def basic_headers(self):
