@@ -688,18 +688,39 @@ class JavaTranslator(object):
                 return self.java_datatypes_converter(data)
             # setter path
             else:
+                param_to_set = args[0]
+                # taking care about data_structures.py or JavaTranslator
+                # objects
+                if 'object' in str(param_to_set) or \
+                        'JavaTranslator' in str(param_to_set):
+                    # single object
+                    if not isinstance(param_to_set, list):
+                        if isinstance(param_to_set, JavaTranslator):
+                            java_func(param_to_set.java_object)
+                        else:
+                            # getting entity name
+                            entity_name = get_object_name(param_to_set)
+                            # translating to java
+                            java_entity = \
+                                getattr(org.ovirt.engine.sdk.entities,
+                                        entity_name)()
+                            translator_to_java(param_to_set, java_entity)
+                            # setting
+                            java_func(java_entity)
+                    # TODO: to take care on collection case
+                    else:
+                        logger.error("JavaTranslator: Collection setting is"
+                                     " not supported yet")
                 # primitive case
-                logger.debug("Setting with setter: %s, data: %s", java_func,
-                             args)
-                java_datatype = \
-                    self._java_setters_datatypes_dict[java_func.__name__]
-                java_primitive = \
-                    python_primitives_converter(java_datatype, *args)
-                java_func(java_primitive)
-                # TODO: maybe need to take care on object case
-                # in such case we can use translator_to_java and get relevant
-                # empty java object by using datatype from
-                # self._java_setters_datatypes_dict
+                else:
+                    logger.debug("Setting with setter: %s, data: %s",
+                                 java_func, args)
+                    java_datatype = \
+                        self._java_setters_datatypes_dict[java_func.__name__]
+                    java_primitive = \
+                        python_primitives_converter(java_datatype,
+                                                    param_to_set)
+                    java_func(java_primitive)
 
         return jvm_thread_care(wrapper)
 
@@ -803,9 +824,12 @@ class JavaSdkUtil(APIUtil):
         collection_methods = \
             filter(lambda x: opcode in x, [str(m) for m in
                    collection.getClass().getMethods()])
+        # getting methods declarations
         methods_args_list = \
             map(lambda x: x[(x.find('(') + 1):x.find(')')].split(','),
                 collection_methods)
+        # filtering empty declarations
+        methods_args_list = filter(lambda x: len(x[0]) > 0, methods_args_list)
 
         # take first method with 2 or more parameters and go with it
         if opcode != 'update':
