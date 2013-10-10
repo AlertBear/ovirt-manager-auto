@@ -112,6 +112,12 @@ def restartServices(hostObj):
                             " with '%s -F'", service)
                 hostObj.runCmd(['iptables', '-F'])
                 continue
+
+        if service == 'rpcbind' and not hostObj.checkRpm(service):
+            logger.warning("{0} is not installed, Skipping restart of {0}".
+                           format(service))
+            continue
+
         logger.info("Restarting %s", service)
         if not hostObj.restartService(service):
             logger.error("Failed to restart %s", service)
