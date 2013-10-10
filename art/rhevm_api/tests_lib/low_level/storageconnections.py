@@ -37,8 +37,12 @@ LOGGER = logging.getLogger(__name__)
 def _prepare_connection_object(**kwargs):
     conn = StorageConnection()
 
-    type_ = kwargs.pop('type')
+    type_ = kwargs.pop('type', None)
     conn.set_type(type_)
+    host = kwargs.pop('host', None)
+    if host:
+        hostObj = hostApi.find(host)
+        conn.set_host(Host(name=hostObj.get_name()))
 
     if type_ == ENUMS['storage_type_iscsi']:
         address = kwargs.pop('lun_address', None)
@@ -90,6 +94,9 @@ def add_connection(wait=True, **kwargs):
        * wait - if True, wait for the action to complete
        * password - password for iSCSI
        * username - username for iSCSI
+       * host - "Passing host id/name is optional. Providing it will lead to
+                 attempt to connect to the storage via the host. Not providing
+                 host will lead to just persisting storage details in db."
     Return: status of the operation
     """
     conn = _prepare_connection_object(**kwargs)
@@ -117,6 +124,9 @@ def update_connection(conn_id, **kwargs):
        * mount_options - custom mount options
        * password - password for iSCSI
        * username - username for iSCSI
+       * host - "Specifying host (vdsm) will lead the host to attempt to
+                 connect to the newly specified storage details. Not specifying
+                 host will lead to just update the details in engine db."
     Return: status of the operation
     """
     LOGGER.info("Changing connection %s" % conn_id)
