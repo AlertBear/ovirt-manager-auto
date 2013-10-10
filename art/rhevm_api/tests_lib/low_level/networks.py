@@ -421,6 +421,47 @@ def checkIPRule(host, user, password, subnet):
     return len(re.findall(subnet.replace('.', '[.]'), out)) == 2
 
 
+def updateVnicProfile(name, network, cluster=None, data_center=None,
+                      new_name=None, port_mirroring=None, description=None):
+    '''
+    Description: Update VNIC profile with provided parameters in kwargs
+    **Author**: gcheresh
+    **Parameters**:
+        *  *name* - name of VNIC profile to update
+        *  *network* - network name used by profile to be updated
+        *  *cluster* - name of cluster in which the network is located
+        *  *data_center* - name of the data center in which the network
+                           is located
+        *  *new_name* - new name for the VNIC profile
+        *  *port_mirroring* - Enable/Disable port mirroring for profile
+        *  *description* - New description of vnic profile
+    **Return**: True, if adding vnic profile was success, otherwise False
+    '''
+
+    vnic_profile_obj = getVnicProfileObj(name=name, network=network,
+                                         cluster=cluster,
+                                         data_center=data_center)
+    new_vnic_profile_obj = vnic_profile_obj
+
+    logger.info("Updating VNIC profile with new parameters")
+
+    if new_name:
+        new_vnic_profile_obj.set_name(new_name)
+
+    if port_mirroring is not None:
+        new_vnic_profile_obj.set_port_mirroring(port_mirroring)
+
+    if description:
+        new_vnic_profile_obj.set_description(description)
+
+    if not VNIC_PROFILE_API.update(vnic_profile_obj, new_vnic_profile_obj,
+                                   True):
+        logger.error("Updating %s profile failed", name)
+        return False
+
+    return True
+
+
 def getNetworkVnicProfiles(network, cluster=None, data_center=None):
     '''
     Returns all the VNIC profiles that belong to a certain network
@@ -480,7 +521,7 @@ def addVnicProfile(positive, name, cluster=None, data_center=None,
         *  *port_mirroring* - Enable port mirroring for profile
         *  *custom_properties* - Custom properties for the profile
         *  *description* - Description of vnic profile
-    **Return**: True, if adding vnic profile was success, False else
+    **Return**: True, if adding vnic profile was success, otherwise False
     '''
     vnic_profile_obj = data_st.VnicProfile()
     network_obj = findNetwork(network, data_center, cluster)
@@ -528,7 +569,7 @@ def removeVnicProfile(positive, vnic_profile_name, network, cluster=None,
                        clusters)
         *  *data_center* - Name of the data center in which the network
                            is located (None for all data centers)
-    **Return**: True if action succeeded, Flase otherwise
+    **Return**: True if action succeeded, otherwise False
     '''
     profileObj = getVnicProfileObj(vnic_profile_name, network, cluster,
                                    data_center)
