@@ -27,3 +27,9 @@ DATA_CENTER_NAME = 'datacenter_%s' % BASENAME
 
 VDC = PARAMETERS.get('host', None)
 VDC_PASSWORD = PARAMETERS.get('password', None)
+VDS_PASSWORD = PARAMETERS.get('vds_password', None)
+
+HOSTS = PARAMETERS.as_list('vds')
+
+HOST_NONOPERATIONAL = ENUMS["search_host_state_non_operational"]
+HOST_NONRESPONSIVE = ENUMS["search_host_state_non_responsive"]
