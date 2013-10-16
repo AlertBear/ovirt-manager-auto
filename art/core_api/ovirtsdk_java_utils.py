@@ -225,7 +225,7 @@ def print_java_error(java_error, op_code, logger):
                                       in java_error.args[0].stackTrace])
         #printing it
         errorMsg = "\nFailed to {0} a new element:\n\tStatus: {1}\n\t\
-Reason: {2}\n\tDetail: {3}\nTraceback:\n\t{4}"
+Reason: {2}\n\tDetail: {3}\nTrace:\n\t{4}"
         logger.error(errorMsg.format(op_code, code, reason, detail,
                                      java_traceback))
     except Exception:
