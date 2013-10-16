@@ -481,15 +481,17 @@ def translator_to_java(python_object, java_object):
                                    java_object_to_fill)
         # primitives and lists of primitives cases
         else:
-            # i didn't faced such case yet, but it could be exists so
-            # when I will face it I will add java_datatype support
-            # actually it will work as it with string and int
             if isinstance(data, list):
+                # will work ok with string, bool, int
+                # TODO: to add long and more complex datatypes support if
+                # needed
                 for item in data:
                     logger.debug('translator to java from python: %s: '
-                                 'list case, Setting %s with %s', java_object,
-                                 getattr(java_object, java_setter), item)
-                    getattr(java_object, java_setter).add(item)
+                                 'list case, Setting %s().add(%s)',
+                                 java_object, getattr(java_object,
+                                                      java_getter),
+                                 item)
+                    getattr(java_object, java_getter)().add(item)
             else:
                 java_datatype = java_setters_datatypes_dict[java_setter]
                 java_data = python_primitives_converter(java_datatype, data)
