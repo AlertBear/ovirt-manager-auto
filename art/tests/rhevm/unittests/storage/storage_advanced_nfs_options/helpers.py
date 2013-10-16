@@ -528,6 +528,7 @@ class TestCaseStandardOperations(TestCaseNFSOptions):
         LOGGER.info("Starting vm %s" % vm)
         ll_vms.startVm(True, vm)
         status, host_with_vm = ll_vms.getVmHost(vm)
+        host_with_vm = host_with_vm['vmHoster']
         LOGGER.info("Current host: %s" % host_with_vm)
         if not status:
             self.fail("Cannot get host with vm")
