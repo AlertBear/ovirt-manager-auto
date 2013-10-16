@@ -30,7 +30,10 @@ VDC_PASSWORD = PARAMETERS.get('password', None)
 
 HOSTS = PARAMETERS.as_list('vds')
 PASSWORDS = PARAMETERS.as_list('vds_password')
-ADMINS = PARAMETERS.as_list('vds_admin')
+if PARAMETERS.get('vds_admin', None) is not None:
+    ADMINS = PARAMETERS.as_list('vds_admin')
+else:
+    ADMINS = ['root'] * len(PASSWORDS)
 
 EXPORT_DOMAIN = PARAMETERS.get('export_domain_name')
 DATA_CENTER_TYPE = PARAMETERS['data_center_type']
