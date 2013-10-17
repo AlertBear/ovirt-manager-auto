@@ -172,19 +172,21 @@ def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
                 *  *usages* - vm or ''  value (for VM or non-VM network)
                 *  *cluster_usages* - migration and/or display
                     (can be set on one network)
-                *  * vlan_id* - list of values, each value for specific network
-                *  * mtu* - list of values, each value for specific network
-                *  * required* - required/non-required network
-                *  * bond* - bond name to create
-                *  * slaves* - interfaces that the bond will be composed from
-                *  * mode* - the mode of the bond
-                *  * bootproto* - boot protocol (none, dhcp, static)
-                *  * address* - list of IP addresses of the network
-                     if boot is Static
-                *  * netmask* - list of netmasks of the  network
-                     if boot is Static
-                *  * gateway* - list of gateways of the network
-                     if boot is Static
+                *  *vlan_id* - list of values, each value for specific network
+                *  *mtu* - list of values, each value for specific network
+                *  *required* - required/non-required network
+                *  *bond* - bond name to create
+                *  *slaves* - interfaces that the bond will be composed from
+                *  *mode* - the mode of the bond
+                *  *bootproto* - boot protocol (none, dhcp, static)
+                *  *address* - list of IP addresses of the network
+                    if boot is Static
+                *  *netmask* - list of netmasks of the  network
+                    if boot is Static
+                *  *gateway* - list of gateways of the network
+                    if boot is Static
+                *  *profile_required* - flag to create or not VNIC profile
+                    for the network
         **Returns**: True value if succeeded in creating and adding net list
                 to DC/Cluster and Host with all the parameters
     '''
@@ -198,7 +200,9 @@ def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
             if not addNetwork(True, name=net, data_center=data_center,
                               usages=net_param.get('usages', 'vm'),
                               vlan_id=net_param.get('vlan_id'),
-                              mtu=net_param.get('mtu')):
+                              mtu=net_param.get('mtu'),
+                              profile_required=net_param.get(
+                                  'profile_required')):
                 logger.error("Cannot add network to DC")
                 return False
         if cluster and net:

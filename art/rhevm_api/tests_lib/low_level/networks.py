@@ -75,6 +75,9 @@ def _prepareNetworkObject(**kwargs):
     if 'mtu' in kwargs:
         net.set_mtu(kwargs.get('mtu'))
 
+    if 'profile_required' in kwargs:
+        net.set_profile_required(kwargs.get('profile_required'))
+
     return net
 
 
@@ -94,6 +97,7 @@ def addNetwork(positive, **kwargs):
        * vlan_id - network vlan id
        * usages - a string contain list of comma-separated usages 'VM,DIPLAY'.
        * mtu - and integer to overrule mtu on the related host nic..
+       * profile_required - flag to create or not VNIC profile for the network
     Return: status (True if network was added properly, False otherwise)
     '''
 
