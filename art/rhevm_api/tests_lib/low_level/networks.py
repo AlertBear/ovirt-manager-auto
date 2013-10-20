@@ -584,3 +584,20 @@ def removeVnicProfile(positive, vnic_profile_name, network, cluster=None,
         return False
 
     return True
+
+
+def findVnicProfile(vnic_profile_name):
+    '''
+    Description: Find specific VNIC profile on the setup
+    **Author**: gcheresh
+    **Parameters**:
+        *  *vnic_profile_name* -VNIC profile name
+    **Return**: True if action succeeded, otherwise False
+    '''
+    logger.info("Searching for Vnic profile %s among all the profile on setup",
+                vnic_profile_name)
+    all_profiles = VNIC_PROFILE_API.get(absLink=False)
+    for profile in all_profiles:
+        if profile.get_name() == vnic_profile_name:
+            return True
+    return False
