@@ -1,14 +1,19 @@
 import logging
+from time import sleep
 import unittest
 from art.rhevm_api.tests_lib.high_level.datacenters import build_setup
+from art.rhevm_api.tests_lib.low_level.datacenters import waitForDataCenterState
 from art.rhevm_api.tests_lib.low_level.storagedomains import \
-    findMasterStorageDomain, findNonMasterStorageDomains, cleanDataCenter
+    findMasterStorageDomain, findNonMasterStorageDomains, cleanDataCenter, \
+    getDomainAddress, deactivateStorageDomain, activateStorageDomain
 import config
 from nose.tools import istest
 from art.rhevm_api.tests_lib.low_level.hosts import select_host_as_spm, \
-    getSPMHost, checkSPMPriority, deactivateHosts, setSPMPriority
-from art.rhevm_api.utils.storage_api import blockOutgoingConnection
-from art.test_handler.tools import tcms
+    getSPMHost, checkSPMPriority, deactivateHosts, setSPMPriority, waitForSPM, \
+    checkHostSpmStatus, activateHosts, deactivateHost, activateHost
+from art.rhevm_api.utils.storage_api import blockOutgoingConnection, \
+    unblockOutgoingConnection
+from art.test_handler.tools import tcms, bz
 
 logger = logging.getLogger(__name__)
 
@@ -22,13 +27,17 @@ def setup_module():
     build_setup(config=config.PARAMETERS, storage=config.PARAMETERS,
                 storage_type=config.DATA_CENTER_TYPE, basename=config.BASENAME)
 
+    assert deactivateHosts(True, config.HOSTS)
+
 
 def teardown_module():
     """
     Clean datacenter
     """
+    assert activateHosts(True, config.HOSTS)
     cleanDataCenter(True, config.DATA_CENTER_NAME, vdc=config.VDC,
                     vdc_password=config.VDC_PASSWORD)
+
 
 class DCUp(unittest.TestCase):
     """
@@ -37,6 +46,8 @@ class DCUp(unittest.TestCase):
     """
 
     __test__ = False
+
+    spm_priorities = []
 
     spm_host = None
     hsm_hosts = []
@@ -48,12 +59,24 @@ class DCUp(unittest.TestCase):
     @classmethod
     def setup_class(cls):
         """
-        * Check that all entities for DC are up (hosts, SDs)
-        * All hosts SPM priorities should be default (Normal)
+        * Set hosts' spm priorities according to spm_priorities list
         * SPM should be elected
-
-        #TODO: If conditions do not hold remove everything and rebuild
+        * Check that all entities for DC are up (hosts, SDs)
         """
+        if not cls.spm_priorities:
+            cls.spm_priorities = [config.DEFAULT_SPM_PRIORITY] * \
+                len(config.HOSTS)
+
+        logger.info('Setting spm priorities for hosts: %s', cls.spm_priorities)
+        for host, priority in zip(config.HOSTS, cls.spm_priorities):
+            assert setSPMPriority(True, host, priority)
+
+        logger.info('Reactivating all hosts')
+        assert activateHosts(True, config.HOSTS)
+
+        logger.info('Waiting for spm to be elected')
+        assert waitForSPM(config.DATA_CENTER_NAME, 120, 60)
+
         logger.info('Getting spm host')
         cls.spm_host = getSPMHost(config.HOSTS)
         cls.hsm_hosts = [host for host in config.HOSTS if host != cls.spm_host]
@@ -72,17 +95,28 @@ class DCUp(unittest.TestCase):
         assert rc
 
         cls.master_domain = master_dom['masterDomain']
-        cls.nonmaster_domain = nonmaster_dom['nonMasterDomains']
-
-        assert cls.master_domain and cls.nonmaster_domain
+        cls.nonmaster_domain = nonmaster_dom['nonMasterDomains'][0]
 
         logger.info('Found master domain: %s, nonmaster domain: %s',
                     cls.master_domain, cls.nonmaster_domain)
 
-        logger.info('Ensuring spm priority is default (%s) for all hosts')
-        for host in config.HOSTS:
-            assert checkSPMPriority(True, host, config.DEFAULT_SPM_PRIORITY)
+        rc, master_address = getDomainAddress(True, cls.master_domain)
 
+        assert rc
+
+        rc, nonmaster_address = getDomainAddress(True, cls.nonmaster_domain)
+
+        assert rc
+
+        cls.master_address = master_address['address']
+        cls.nonmaster_address = nonmaster_address['address']
+
+        logger.info('Found master domain address: %s, nonmaster domain '
+                    'address: %s', cls.master_address, cls.nonmaster_address)
+
+        logger.info('Ensuring spm priority is for all hosts')
+        for host, priority in zip(config.HOSTS, cls.spm_priorities):
+            assert checkSPMPriority(True, host, priority)
 
     @classmethod
     def teardown_class(cls):
@@ -93,9 +127,10 @@ class DCUp(unittest.TestCase):
         logger.info('Setting all hosts to maintenance')
         assert deactivateHosts(True, config.HOSTS)
 
-        logger.info('Setting spm priority to %s for all hosts')
-        for host in config.HOSTS:
-            assert setSPMPriority(True, host, config.DEFAULT_SPM_PRIORITY)
+        logger.info('Resetting spm priority to %s for all hosts',
+                    cls.spm_priorities)
+        for host, priority in zip(config.HOSTS, cls.spm_priorities):
+            assert setSPMPriority(True, host, priority)
 
 
 class TestCase288461(DCUp):
@@ -115,3 +150,272 @@ class TestCase288461(DCUp):
         self.assertTrue(select_host_as_spm(True, self.hsm_hosts[0],
                                            config.DATA_CENTER_NAME),
                         'Unable to set host %s as spm' % self.hsm_hosts[0])
+
+
+class SelectNewSPMDuringSPMElection(DCUp):
+    """
+    Class that Begins spm selection, then selects a second host as spm during
+    the original spm selection expecting the second action to succeed
+    """
+
+    __test__ = False
+    first_spm = None
+    second_spm = None
+
+    def select_new_spm_during_selection(self):
+        """
+        First select first_spm then second_spm
+        """
+        logger.info('Selecting %s as spm', self.first_spm)
+        self.assertTrue(select_host_as_spm(True, self.first_spm,
+                                           config.DATA_CENTER_NAME,
+                                           wait=False))
+
+        logger.info('Attempting to select %s as spm', self.second_spm)
+        self.assertTrue(select_host_as_spm(True, self.second_spm,
+                                           config.DATA_CENTER_NAME,
+                                           wait=False))
+
+        logger.info('Waiting for spm selection to complete')
+        self.assertTrue(waitForSPM(config.DATA_CENTER_NAME, 120, 10))
+
+        self.assertTrue(checkHostSpmStatus(True, self.second_spm))
+        logger.info('SPM selected successfully')
+
+
+class TestCase288463(SelectNewSPMDuringSPMElection):
+    """
+    TCMS Test Case 288463 - Set new host as spm during spm election
+    """
+    # Case disabled due to failing on race condition sometimes - fails
+    # to select second host as spm with CanDoAction on engine. Unable to
+    # reproduce consistently, should be solved later.
+    __test__ = False
+    tcms_test_case = '288463'
+
+    @istest
+    @tcms(TCMS_TEST_PLAN, tcms_test_case)
+    def test_select_new_host_as_spm(self):
+        """
+        * Start spm election
+        * Select new host as spm during election
+        """
+        self.first_spm = self.hsm_hosts[0]
+        self.second_spm = self.hsm_hosts[1]
+        self.select_new_spm_during_selection()
+
+
+class TestCase293727(SelectNewSPMDuringSPMElection):
+    """
+    TCMS Test Case 288463 - Set previous spm host as spm during new spm
+    election
+    """
+    # Case disabled due to failing on race condition sometimes - fails
+    # to select second host as spm with CanDoAction on engine. Unable to
+    # reproduce consistently, should be solved later.
+    __test__ = False
+    tcms_test_case = '293727'
+
+    @istest
+    @tcms(TCMS_TEST_PLAN, tcms_test_case)
+    def test_select_new_host_as_spm(self):
+        """
+        * Start spm election
+        * Select host that was spm before as spm during election
+        """
+        self.first_spm = self.hsm_hosts[0]
+        self.second_spm = self.spm_host
+        self.select_new_spm_during_selection()
+
+
+class TestCase289886(DCUp):
+    """
+    TCMS Test Case 289886 - Reassign spm to lower priority host
+    """
+
+    __test__ = True
+    tcms_plan_id = '289886'
+    low_priority_host = None
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Set one host to have lower spm priority than the others
+        """
+        cls.spm_priorities = [config.DEFAULT_SPM_PRIORITY,
+                              config.DEFAULT_SPM_PRIORITY,
+                              config.LOW_SPM_PRIORITY]
+        cls.low_priority_host = config.HOSTS[-1]
+        super(TestCase289886, cls).setup_class()
+
+    @istest
+    @tcms(TCMS_TEST_PLAN, tcms_plan_id)
+    def test_select_spm_with_lower_priority(self):
+        """
+        Set spm to maintenance and then select host with lowest priority to
+        be spm
+        """
+        logger.info('Moving spm host (%s) to maintenance', self.spm_host)
+        self.assertTrue(deactivateHost(True, self.spm_host))
+
+        logger.info('Selecting host with low priority as spm %s',
+                    self.low_priority_host)
+        self.assertTrue(select_host_as_spm(True, self.low_priority_host,
+                                           config.DATA_CENTER_NAME))
+
+        logger.info('Waiting for spm to be selected')
+        self.assertTrue(waitForSPM(config.DATA_CENTER_NAME, 120, 10))
+
+        logger.info('Ensuring host %s is spm', self.low_priority_host)
+        self.assertTrue(checkHostSpmStatus(True, self.low_priority_host))
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Reactivate host that was moved to maintenance
+        """
+        logger.info('Reactivating host %s', cls.spm_host)
+        assert activateHost(True, cls.spm_host)
+
+        super(TestCase289886, cls).teardown_class()
+
+
+class ReassignSPMWithStorageBlocked(DCUp):
+    """
+    Block connection between specified hosts and specified domain and try to
+    reassign spm
+    """
+
+    __test__ = False
+    domain_blocked = []
+    domain_to_block = None
+    hosts_to_block = []
+    wait_for_dc_status = None
+
+    def block_connection_and_reassign_spm(self):
+        for host in self.hosts_to_block:
+            logger.info('Blocking connection between %s and %s', host,
+                        self.domain_to_block)
+            self.assertTrue(blockOutgoingConnection(host,
+                                                    config.HOST_USER,
+                                                    config.HOST_PASSWORD[0],
+                                                    self.domain_to_block),
+                            'Unable to block connection between %s and %s'
+                            % (self.spm_host, self.domain_to_block))
+            self.domain_blocked.append(host)
+
+        if self.wait_for_dc_status:
+            logger.info('Waiting for status %s on datacenter %s',
+                        self.wait_for_dc_status, config.DATA_CENTER_NAME)
+            self.assertTrue(waitForDataCenterState(config.DATA_CENTER_NAME,
+                                                   self.wait_for_dc_status,
+                                                   timeout=360))
+
+        logger.info('Setting host %s to be new spm', self.hsm_hosts[0])
+        self.assertTrue(select_host_as_spm(True, self.hsm_hosts[0],
+                                           config.DATA_CENTER_NAME),
+                        'Unable to set host %s as spm' % self.hsm_hosts[0])
+
+        logger.info('Ensuring new host (%s) is spm', self.hsm_hosts[0])
+        self.assertTrue(checkHostSpmStatus(True, self.hsm_hosts[0]))
+
+    def tearDown(self):
+        """
+        Remove iptables block from original spm host and non-master storage
+        """
+        logger.info('Domain %s is blocked: %s', self.domain_to_block,
+                    self.domain_blocked)
+        for host in self.domain_blocked:
+            logger.info('Unblocking connection between %s and %s',
+                        host,
+                        self.domain_to_block)
+            assert unblockOutgoingConnection(host,
+                                             config.HOST_USER,
+                                             config.HOST_PASSWORD[0],
+                                             self.domain_to_block)
+
+
+class TestCase289887(ReassignSPMWithStorageBlocked):
+    """
+    TCMS Test Case 289887 - Resign SPM when host cannot see non-master domain
+    """
+    __test__ = True
+    tcms_test_case = '289887'
+
+    @istest
+    @tcms(TCMS_TEST_PLAN, tcms_test_case)
+    def test_set_spm_with_blocked_nonmaster_domain(self):
+        """
+        * Block connection between spm and non-master domain
+        * Set HSM host as SPM
+        """
+        self.domain_to_block = self.nonmaster_address
+        self.hosts_to_block.append(self.spm_host)
+        self.block_connection_and_reassign_spm()
+
+
+class TestCase289888(ReassignSPMWithStorageBlocked):
+    """
+    TCMS Test Case 289888 - Resign SPM when host cannot see master domain
+    """
+    __test__ = True
+    tcms_test_case = '289888'
+
+    @istest
+    @tcms(TCMS_TEST_PLAN, tcms_test_case)
+    @bz('999493')
+    def test_set_spm_with_blocked_nonmaster_domain(self):
+        """
+        * Block connection between spm and non-master domain
+        * Set HSM host as SPM
+        """
+        self.domain_to_block = self.master_address
+        self.hosts_to_block = config.HOSTS
+        self.wait_for_dc_status = config.DATA_CENTER_NONOPERATIONAL
+        self.block_connection_and_reassign_spm()
+
+
+class TestCase289890(DCUp):
+    """
+    TCMS Test Case 289890 - Reassign spm during storage domain deactivation
+    """
+
+    __test__ = True
+    tcms_test_case = '289890'
+
+    @classmethod
+    def setup_class(cls):
+        """
+        deactivate non master domain
+        """
+        super(TestCase289890, cls).setup_class()
+        logger.info('deactivating non-master domain %s', cls.nonmaster_domain)
+        assert deactivateStorageDomain(True, config.DATA_CENTER_NAME,
+                                       cls.nonmaster_domain)
+
+    @istest
+    @tcms(TCMS_TEST_PLAN, tcms_test_case)
+    def test_reassign_spm_during_deactivate_domain(self):
+        """
+        Deactivate domain and select new spm during deactivate process
+        """
+        logger.info('Deactivating storage domain %s', self.master_domain)
+
+        self.assertTrue(deactivateStorageDomain(True,
+                                                config.DATA_CENTER_NAME,
+                                                self.master_domain))
+
+        logger.info('Trying to select host %s as new spm', self.hsm_hosts[0])
+        self.assertTrue(select_host_as_spm(False, self.hsm_hosts[0],
+                                           config.DATA_CENTER_NAME))
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Reactivate storage domain
+        """
+        for domain in (cls.master_domain, cls.nonmaster_domain):
+            logger.info('Reactivating domain %s', domain)
+            assert activateStorageDomain(True, config.DATA_CENTER_NAME,
+                                         domain)
+        super(TestCase289890, cls).teardown_class()

@@ -666,10 +666,10 @@ def _sort_hosts_by_priority(hosts, reverse=True):
         spm_priority = getSPMPriority(host)
         hosts_priorities_dic[host] = spm_priority
 
-    sorted_dic = sorted(hosts_priorities_dic, key=hosts_priorities_dic.get,
+    sorted_list = sorted(hosts_priorities_dic, key=hosts_priorities_dic.get,
                   reverse=reverse)
-
-    return [k for k, v in sorted_dic.iteritems()]
+    HOST_API.logger.info('Sorted hosts list: %s', sorted_list)
+    return sorted_list
 
 @is_action()
 def activateHosts(positive, hosts):
@@ -2345,14 +2345,16 @@ def select_host_as_spm(positive, host, datacenter,
     Parameters:
        * host - name of a host to be selected as spm
        * wait - True to wait for spm election to be completed before returning
+       (only waits if positive and wait are both true)
     Return: status (True if host was elected as spm properly, False otherwise)
     '''
     hostObj = HOST_API.find(host)
     HOST_API.logger.info('Selecting host %s as spm', host)
     status = HOST_API.syncAction(hostObj, "forceselectspm", positive)
 
-    if status == positive:
-        if wait:
+    if status:
+        # only wait for spm election if action is expected to succeed
+        if wait and positive:
             waitForSPM(datacenter, timeout=timeout, sleep=sleep)
             return checkHostSpmStatus(True, host)
         else:
