@@ -779,3 +779,20 @@ def networkTeardown(datacenter, storagedomain, hosts=list(), auto_nics=list()):
         raise DataCenterException("Cannot remove setup")
 
     return True
+
+
+def getIpOnHostNic(host, nic):
+    '''
+    Description: Get IP on host NIC
+    **Author**: myakove
+    **Parameters**:
+        *  *host* - IP or FDQN of the host
+        *  *nic* - NIC to get IP from, execpted NICs:
+                   eth(x) - Non VLAN nic
+                   eth(x).(xxx) - VLAN NIC
+                   bond(x) - BOND NIC
+                   bond(x).(xxx) - VLAN BOND NIC
+    **Return**: IP or None
+    '''
+    host_nic = getHostNic(host=host, nic=nic)
+    return host_nic.get_ip().get_address()

@@ -23,7 +23,6 @@ from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api import is_action
 from utilities.machine import Machine, LINUX
 import logging
-
 import re
 
 NET_API = get_api("network", "networks")
