@@ -23,7 +23,7 @@ from utilities.utils import readConfFile
 from art.rhevm_api.utils.test_utils import get_api, split
 from art.core_api import is_action
 from art.test_handler.settings import opts
-from networks import findNetwork
+from networks import findNetwork, getVnicProfileObj
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 CONF_PERMITS = opts['elements_conf']['RHEVM Permits']
@@ -51,6 +51,7 @@ domUtil = get_api('domain', 'domains')
 groupUtil = get_api('group', 'groups')
 permisUtil = get_api('permission', 'permissions')
 diskUtil = get_api('disk', 'disks')
+vnicUtil = get_api('vnic_profile', 'vnicprofiles')
 
 try:
     versionCaps = permitUtil.get(absLink=False)
@@ -337,7 +338,28 @@ def addUserPermitsForObj(positive, user, role, obj, group=False):
 
 
 @is_action()
-def addPermissionsForNetwork(positive, user, network, data_center, role="NetworkAdmin"):
+def addPermissionsForVnicProfile(positive, user, vnicprofile, network,
+                                 data_center, role='VnicProfileUser'):
+    '''
+    Description: add permissions for user on vnicprofile
+    Author: omachace
+    Parameters:
+      * user - name of user
+      * vnicprofile - name of vnic profile
+      * network - network name
+      * data_center - name of datacenter of network
+      * role - role to add
+    Return: status (True if permission was added properly, False otherwise)
+    '''
+    #after bz 1014985 is resolved use this to prevent colision in names
+    #vnicObj = getVnicProfileObj(vnicprofile, network, data_center=data_center)
+    vnicObj = vnicUtil.find(vnicprofile)
+    return addUserPermitsForObj(positive, user, role, vnicObj)
+
+
+@is_action()
+def addPermissionsForNetwork(positive, user, network, data_center,
+                             role="NetworkAdmin"):
     '''
     Description: add permissions for user on network
     Author: omachace
@@ -381,6 +403,21 @@ def addPermissionsForTemplate(positive, user, template, role="TemplateAdmin"):
 
     templObj = templUtil.find(template)
     return addUserPermitsForObj(positive, user, role, templObj)
+
+
+@is_action()
+def addVnicProfilePermissionsToGroup(positive, group, vnicprofile, network,
+                                     data_center, role='VnicProfileUser'):
+    '''
+    Description: add vnicprofile permissions to group
+    Parameters:
+       * group - name of group
+       * vnicprofile - name of vnicprofile
+       * role - role to add
+    Return: status (True if permission was added properly, False otherwise)
+    '''
+    vnicObj = vnicUtil.find(vnicprofile)
+    return addUserPermitsForObj(positive, group, role, vnicObj, True)
 
 
 @is_action()
@@ -511,6 +548,40 @@ def removeUsersPermissionsFromObject(positive, obj, user_names):
                     status = False
 
     return status
+
+
+@is_action()
+def removeUsersPermissionsFromVnicProfile(positive, vnicprofile, network,
+                                          data_center, user_names):
+    '''
+    Description: remove all permissions from vnicprofile of specified users
+    Author: omachace
+    Parameters:
+       * vnicprofile - vnicprofile where permissions should be removed
+       * network - network which is associated with vnicprofile
+       * data_center - name of datacenter of network/vnicprofile
+       * user_names - list with user names (ie.['user1@..', 'user2@..'])
+    Return: status (True if permissions was removed, False otherwise)
+    '''
+    vnicProfObj = vnicUtil.find(vnicprofile)
+    return removeUsersPermissionsFromObject(positive, vnicProfObj, user_names)
+
+
+@is_action()
+def removeUserPermissionsFromVnicProfile(positive, vnicprofile, network,
+                                         data_center, user_name):
+    '''
+    Description: remove all permissions from vnicprofile of specified user
+    Author: omachace
+    Parameters:
+       * vnicprofile - vnicprofile where permissions should be removed
+       * network - network which is associated with vnicprofile
+       * data_center - name of datacenter of network/vnicprofile
+       * user_name - user name
+    Return: status (True if permissions was removed, False otherwise)
+    '''
+    return removeUsersPermissionsFromNetwork(positive, network,
+            data_center, [user_name])
 
 
 @is_action()
@@ -737,6 +808,37 @@ def checkDomainsId():
     return ret
 
 
+def hasUserOrGroupPermissionsOnObject(name, obj, role, group=False):
+    def getGroupOrUser(perm):
+        return perm.get_group().get_id() if group else perm.get_user().get_id()
+
+    objPermits = permisUtil.getElemFromLink(obj, get_href=False)
+    roleNAid = util.find(role).get_id()
+    if group:
+        userId = groupUtil.find(name).get_id()
+    else:
+        userId = userUtil.find(name, 'user_name').get_id()
+
+    perms = []
+    for perm in objPermits:
+        perms.append((getGroupOrUser(perm), perm.get_role().get_id()))
+
+    return (userId, roleNAid) in perms
+
+
+def hasGroupPermissionsOnObject(group_name, obj, role):
+    """
+    Description: Check if group has permission on object.
+    Author: omachace
+    Parameters:
+       * group_name - name of group
+       * obj - object which should be checked
+       * role - name of the role to search for
+    Return: True if user has permissions on object False otherwise
+    """
+    return hasUserOrGroupPermissionsOnObject(group_name, obj, role, True)
+
+
 def hasUserPermissionsOnObject(user_name, obj, role):
     """
     Description: Check if user has permission on object.
@@ -747,11 +849,4 @@ def hasUserPermissionsOnObject(user_name, obj, role):
        * role - name of the role to search for
     Return: True if user has permissions on object False otherwise
     """
-    objPermits = permisUtil.getElemFromLink(obj, get_href=False)
-    roleNAid = util.find(role).get_id()
-    userId = userUtil.find(user_name, 'user_name').get_id()
-    perms = []
-    for perm in objPermits:
-        perms.append((perm.get_user().get_id(), perm.get_role().get_id()))
-
-    return (userId, roleNAid) in perms
+    return hasUserOrGroupPermissionsOnObject(user_name, obj, role)
