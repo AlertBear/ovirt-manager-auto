@@ -236,7 +236,7 @@ class TestCase287481(helpers.HotplugHookTest):
         assert not self.get_hooks_result_file()
 
     @tcms(9940, 287481)
-    @bz(1003649)
+    @bz(1015171)
     def test_after_disk_hotplug_binary_executable_hook_file(self):
         """ check that activate fail if hook is binary executable file
             check that after removing the hook file activation works
