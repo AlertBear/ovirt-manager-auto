@@ -2,9 +2,9 @@ import logging
 from contextlib import contextmanager
 from abc import ABCMeta, abstractmethod
 
+from utilities.utils import generateShortGuid
 from utilities.cobblerApi import Cobbler
-from utilities.utils import convertMacToIp
-from foreman_api_actions.host_provision import HostProvision as Foreman
+from utilities.foremanApi import ForemanActions
 from art.test_handler.settings import opts
 
 logger = logging.getLogger(__name__)
@@ -70,7 +70,8 @@ class ForemanProvisioning(ProvisioningAPI):
             * api_passwd - password
         Returns: Foreman API handle
         """
-        return Foreman(uri=api_access_point, user=api_user, passwd=api_passwd)
+        return ForemanActions(uri=api_access_point, user=api_user,
+                              passwd=api_passwd)
 
     @staticmethod
     def add_system(api, mac, common_parameters, provisioning_profile):
@@ -84,14 +85,10 @@ class ForemanProvisioning(ProvisioningAPI):
             * provisioning_profile - Foreman profile for specific OS image
         Returns: status of Foreman host provision create_host method
         """
-        profile = dict(common_parameters.items() +
-                       provisioning_profile.items())
-        profile['mac'] = mac
-        ip = convertMacToIp(mac)
-        profile['ip'] = ip
-        profile['name'] = 'foo'
-        profile['subnet'] = '{0}.x'.format(ip.rsplit('.', 1)[0])
-        return api.create_host(**profile)
+        name = 'ART-test-vm-%s' % generateShortGuid()
+        return api.create_host(
+            name, mac, hostgroup=provisioning_profile['hostgroup'],
+            common_parameters=common_parameters)
 
     @staticmethod
     def remove_system(api, mac):
@@ -102,10 +99,7 @@ class ForemanProvisioning(ProvisioningAPI):
             * mac - mac of vm to remove
         Returns: status of Foreman host provision remove_host method
         """
-        # TODO: get host id by mac via foreman api
-        host = api.index_hosts(search="mac=%s" % mac)
-        name = host['host']['name']
-        return api.remove_host(name)
+        return api.remove_host(mac)
 
     @staticmethod
     def set_host_name(*args, **kwargs):
@@ -319,7 +313,3 @@ class ProvisionProvider(object):
                                 kwargs) as api:
             return getattr(cls.provisioning_tool,
                            'set_host_name')(api, args, kwargs)
-
-if __name__ == "__main__":
-    foo = ProvisionProvider.add_system('goo', 'moo')
-    boo = ProvisionProvider.remove_system('goo')

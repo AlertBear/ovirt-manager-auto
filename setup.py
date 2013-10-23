@@ -58,7 +58,6 @@ DEPS = [
         'python-pip',
         'art-utilities = %s' % VERSION,
         'python-configobj >= 4.7.2',
-        'foreman_api_actions',
         'python-jinja2,'
         ]
 if sys.version_info[0] == 2 and sys.version_info[1] < 7:
