@@ -960,7 +960,7 @@ class SanityCase14_CheckingImportExport_vlan(TestCase):
     7. Checking connectivity to vm
     Finally, Removing import/ export domain & network sw162
     """
-    __test__ = True
+    __test__ = False
 
     @classmethod
     def setup_class(cls):
