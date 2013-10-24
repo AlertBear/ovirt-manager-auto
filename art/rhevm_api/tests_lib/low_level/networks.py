@@ -458,7 +458,7 @@ def updateVnicProfile(name, network, cluster=None, data_center=None,
         new_vnic_profile_obj.set_description(description)
 
     if not VNIC_PROFILE_API.update(vnic_profile_obj, new_vnic_profile_obj,
-                                   True):
+                                   True)[1]:
         logger.error("Updating %s profile failed", name)
         return False
 
