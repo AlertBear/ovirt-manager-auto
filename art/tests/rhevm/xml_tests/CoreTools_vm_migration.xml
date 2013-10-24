@@ -571,7 +571,7 @@
 <test_case>
    <test_name>Set cluster SP to power_saving</test_name>
    <test_action>updateCluster</test_action>
-   <parameters>cluster='{cluster1_name}',scheduling_policy='e{scheduling_policy_power_saving}', thrhld_low='50', thrhld_high='90', duration='60'</parameters>
+   <parameters>cluster='{cluster1_name}',scheduling_policy='e{scheduling_policy_power_saving}', thrhld_low='49', thrhld_high='90', duration='60'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
 </test_case>
