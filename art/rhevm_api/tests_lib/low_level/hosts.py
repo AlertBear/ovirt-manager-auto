@@ -300,6 +300,35 @@ def isHostSaturated(host, max_cpu=95, max_mem=95):
     return False
 
 
+def getHostState(host):
+    """
+    Description: Returns a host's state
+    Author: cmestreg
+    Parameters:
+        * host - host to check
+    Return: Returns the host's states [str] or EntityNotFound
+    """
+    return HOST_API.find(host).get_status().get_state()
+
+
+def isHostUp(positive, host):
+    """
+    Description: Checks if host is up
+    Author: cmestreg
+    Parameters:
+        * host - host to check
+    Return: positive if host is up, False otherwise
+    """
+    try:
+        host_status = getHostState(host)
+    except EntityNotFound:
+        return False
+
+    if (host_status == ENUMS['host_state_up']) == positive:
+        return True
+    return False
+
+
 @is_action()
 def saturateHost(positive, poolname, vm_total, host, host_user,
                  host_passwd, guest_user, guest_passwd, loadType, port,
