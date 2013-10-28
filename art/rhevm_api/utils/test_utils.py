@@ -1589,18 +1589,14 @@ def sendICMP(host, user, password, ip='', count=5, packet_size=None):
     **Return**: True value if the function execution succeeded
     '''
     machine_obj = Machine(host, user, password).util(LINUX)
+    # for jumbo frames disable fragmentation
     if packet_size:
-        logger.info("Sending ping with -M do parameter")
         cmd = ["ping", "-s", str(packet_size), "-M", "do", ip,
                "-c", str(count)]
-        logger.info(cmd)
     else:
-        logger.info("Sending ping command with count number of packets")
         cmd = ["ping", ip, "-c", str(count)]
-        logger.info(cmd)
     rc, output = machine_obj.runCmd(cmd)
     if not rc:
-        logger.error('Failed to start sending ICMP traffic: %s', output)
         return False
     return True
 

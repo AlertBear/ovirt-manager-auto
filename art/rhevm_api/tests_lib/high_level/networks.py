@@ -22,7 +22,7 @@ import re
 import os
 
 from utilities import machine
-from art.rhevm_api.utils.test_utils import restartVdsmd
+from art.rhevm_api.utils.test_utils import restartVdsmd, sendICMP
 from art.rhevm_api.tests_lib.low_level.networks import addNetwork,\
     getClusterNetwork, removeNetwork, addNetworkToCluster, NET_API,\
     updateNetwork, getClusterNetworks, MGMT_NETWORK, DC_API
@@ -53,6 +53,7 @@ LUN_PORT = 3260
 INTERVAL = 2
 ATTEMPTS = 600
 TIMEOUT = 120
+MAX_COUNTER = 60
 VDSM_CONF_FILE = "/etc/vdsm/vdsm.conf"
 IFCFG_FILE_PATH = "/etc/sysconfig/network-scripts/"
 HOST_NICS = ["eth0", "eth1", "eth2", "eth3", "eth4", "eth5"]
@@ -796,3 +797,24 @@ def getIpOnHostNic(host, nic):
     '''
     host_nic = getHostNic(host=host, nic=nic)
     return host_nic.get_ip().get_address()
+
+
+def checkICMPConnectivity(host, user, password, ip, max_counter=MAX_COUNTER):
+    '''
+    Description: Checks ICMP connectivity till max_counter time expires
+    **Author**: gcheresh
+    **Parameters**:
+        *  *host* - IP or FDQN of the host originating ICMP traffic
+        *  *username* - host username
+        *  *password* - host password
+        *  *ip* - distination IP address for ICMP traffic
+        *  *max_counter* - max number of calls for sendICMP command
+    **Returns**: True if ICMP connectivity was established, otherwise False
+    '''
+    while (max_counter):
+        if not sendICMP(host=host, user=user, password=password,
+                        ip=ip, count=1):
+            max_counter -= 1
+        else:
+            return True
+    return False
