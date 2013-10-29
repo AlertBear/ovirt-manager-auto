@@ -30,6 +30,7 @@ domUtil = get_api('domain', 'domains')
 rlUtil = get_api('role', 'roles')
 taglUtil = get_api('tag', 'tags')
 groupUtil = get_api('group', 'groups')
+permsUtil = get_api('permission', 'permissions')
 
 User = getDS('User')
 Domain = getDS('Domain')
@@ -38,6 +39,7 @@ Group = getDS('Group')
 Roles = getDS('Roles')
 Role = getDS('Role')
 Tag = getDS('Tag')
+Permission = getDS('Permission')
 
 
 @is_action()
@@ -80,8 +82,12 @@ def addRoleToUser(positive, user, role):
     '''
     userObj = util.find(user)
     roleObj = rlUtil.find(role)
-    usersRoles = util.getElemFromLink(userObj, link_name='roles', attr='role', get_href=True)
-    role, status = rlUtil.create(roleObj, positive, collection=usersRoles)
+
+    permit = Permission()
+    permit.set_role(roleObj)
+    permit.set_user(userObj)
+    permit, status = permsUtil.create(permit, positive)
+
     return status
 
 
