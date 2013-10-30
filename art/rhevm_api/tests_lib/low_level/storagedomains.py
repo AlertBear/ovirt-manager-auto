@@ -1507,3 +1507,31 @@ def detachConnectionFromStorageDomain(storagedomain, conn_id):
             conn.href = "%s/storageconnections/%s" % (sdObj.href, conn_id)
             return util.delete(conn, True)
     return False
+
+
+@is_action()
+def get_allocated_size(storagedomain):
+    """
+    Description: Get the allocated space for vms in the storage domain
+    Allocated space calculates size of thin provision disks according to
+    their virtual size, not actual size currently on disk
+    Author: gickowic
+    Parameters:
+        * storagedomain - name of the storage domain
+    Returns: allocated space on the storagedomain in bytes
+    """
+    sdObj = util.find(storagedomain)
+    return sdObj.get_committed()
+
+
+@is_action()
+def get_total_size(storagedomain):
+    """
+    Description: Gets the total size of the storage domain (available + used)
+    Author: gickowic
+    Parameters:
+        * storagedomain - name of the storage domain
+    Returns: total size of the storage domain in bytes
+    """
+    sdObj = util.find(storagedomain)
+    return sdObj.get_available() + sdObj.get_used()

@@ -25,6 +25,7 @@ from art.rhevm_api.data_struct.data_structures import Fault
 from art.rhevm_api.utils.test_utils import get_api, split
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from art.core_api import is_action
+from art.test_handler.exceptions import DiskException
 from art.test_handler.settings import opts
 
 GBYTE = 1024 ** 3
@@ -303,8 +304,10 @@ def waitForDisksState(disksNames, status=ENUMS['disk_state_ok'],
     Author: jlibosva
     Return: True if state was reached on all disks, False otherwise
     """
-    names = split(disksNames)
-    [DISKS_API.find(disk) for disk in names]
+    if isinstance(disksNames, str):
+        disksNames = split(disksNames)
+
+    [DISKS_API.find(disk) for disk in disksNames]
 
     sampler = TimeoutingSampler(timeout, sleep, DISKS_API.get, absLink=False)
 
@@ -312,13 +315,13 @@ def waitForDisksState(disksNames, status=ENUMS['disk_state_ok'],
         for sample in sampler:
             disks_in_wrong_state = [
                 x for x in sample
-                if x.name in names and x.status.state != status]
+                if x.name in disksNames and x.status.state != status]
             if not disks_in_wrong_state:
                 return True
     except APITimeout:
         logger.error(
             "Timeout when waiting for all the disks %s in %s state" % (
-                names, status))
+                disksNames, status))
         return False
 
 
@@ -376,3 +379,35 @@ def checkDiskExists(positive, name):
     except EntityNotFound:
         return not positive
     return positive
+
+@is_action()
+def move_disk(disk_name, source_domain, target_domain, wait=True,
+              timeout=DEFAULT_DISK_TIMEOUT, sleep=10):
+    """
+    Description: Moves disk from source_domain to target_domain
+    WARNING: does not work at the moment - remove this comment once it works
+    Author: gickowic
+    Parameters:
+        * disk_name - name of disk to move
+        * source domain - name of the domain disk is currently on
+        * target_domain - name of the domain to move the disk to
+        * wait - wait for disk to be status 'ok' before returning
+        * timeout - how long to wait for disk status (if wait=True)
+        * sleep - how long to wait between checks when waiting for disk status
+    """
+    #TODO: This feature does not work, being implemented, BZ#911348
+    sd = STORAGE_DOMAIN_API.find(target_domain)
+    disk = DISKS_API.find(disk_name)
+    DISKS_API.logger.info('Disk found: %s', disk)
+
+    if not DISKS_API.syncAction(disk, 'move', storage_domain=sd,
+                                positive=True):
+        raise DiskException(
+            "Failed to move disk %s from domain %s to storage domain %s" %
+            (source_domain, disk_name, target_domain))
+    if wait:
+        for disk in TimeoutingSampler(timeout, sleep, getStorageDomainDisks,
+                                      target_domain):
+            if disk.name == disk_name and \
+                            disk.status.state == ENUMS['disk_state_ok']:
+                return
