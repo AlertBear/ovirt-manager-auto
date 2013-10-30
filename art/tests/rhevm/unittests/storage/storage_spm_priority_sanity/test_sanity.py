@@ -538,35 +538,6 @@ class TwoHost(AllHostsUp):
         self._check_host_for_spm(config.HOSTS[0])
 
 
-class FenceSPM(DCUp):
-    """
-    Reboot the spm and make sure that the new spm is the host with the
-    highest priority
-
-    https://tcms.engineering.redhat.com/case/144502/
-    """
-    __test__ = True
-    tcms_test_case = '144502'
-    iteration_number = 5
-
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
-    def test_fence_spm(self):
-        """
-        Reboot spm
-        """
-        for _ in range(self.iteration_number):
-            self._maintenance_and_activate_all_hosts()
-
-            # Make sure that the host with the highest priority is the spm
-            self._check_host_for_spm(config.HOSTS[2])
-
-            # Fence spm host (reboot)
-            hosts.fenceHost(True, config.HOSTS[2], 'restart')
-
-            # Make sure the the new spm is the host with the highest priority
-            self._check_host_for_spm(config.HOSTS[1])
-
-
 class SingleHostChangePriority(DCUp):
     """
     Make sure that spm priority changes correctly
