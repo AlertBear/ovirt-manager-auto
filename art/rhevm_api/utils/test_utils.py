@@ -93,6 +93,25 @@ def get_api(element, collection):
     return api
 
 
+def raise_if_false(results, collection, message, exc):
+    """
+    Raises exception if False occurs in results. Message must contain one
+    placeholder for string which will be items from collection on which place
+    False is.
+
+    Parameters:
+      * results - list of boolean
+      * collection - set/list of items (e.g. hosts, vms ,...)
+      * message - a message that describe the item that cause the False in
+        results
+      * exc - exception in case of False in results
+    """
+    if False in results:
+        failed = [collection[i] for i, result in enumerate(results)
+                  if not result]
+        raise exc(message % failed)
+
+
 def split(s):
     '''
     Split `s` by comma and/or by whitespace.

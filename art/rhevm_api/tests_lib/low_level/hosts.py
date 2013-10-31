@@ -575,7 +575,11 @@ def updateHost(positive, host, **kwargs):
         try:
             sm = StorageManager(new_priority, hostObj.storage_manager.get_valueOf_())
         except (ValueError, TypeError):
+
             sm = StorageManagerHack(new_priority, hostObj.storage_manager.get_valueOf_())
+
+            sm.gds_format_integer = lambda input_data, input_name='': '%s' % input_data
+
         hostUpd.set_storage_manager(sm)
 
     if 'pm' in kwargs:
@@ -641,7 +645,6 @@ def updateHost(positive, host, **kwargs):
                                     , options=pmOptions)
 
         hostUpd.set_power_management(hostPm)
-
     hostObj, status = HOST_API.update(hostObj, hostUpd, positive)
 
     return status

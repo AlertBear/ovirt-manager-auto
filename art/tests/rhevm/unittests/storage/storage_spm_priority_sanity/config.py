@@ -25,7 +25,6 @@ CLUSTER_NAME = 'cluster_%s' % TESTNAME
 # Storage domain names
 SD_NAME = "%s_0" % STORAGE_TYPE
 
-SLEEP_AMOUNT = PARAMETERS.as_float('sleep_amount')
 
 # Hosts settings
 HOSTS = PARAMETERS.as_list('vds')
