@@ -1261,7 +1261,11 @@ def validateSnapshot(positive, vm, snapshot):
        * snapshot - snapshot name
     Return: status (True if snapshot exist, False otherwise)
     '''
-    return _getVmSnapshot(vm, snapshot) is not None
+    try:
+        _getVmSnapshot(vm, snapshot)
+        return True
+    except EntityNotFound:
+        return False
 
 
 @is_action()
@@ -1471,6 +1475,7 @@ def suspendVm(positive, vm, wait=True):
         return False
     if wait and positive:
         return VM_API.waitForElemStatus(vmObj, 'suspended', VM_ACTION_TIMEOUT)
+    return True
 
 
 @is_action()
@@ -1814,7 +1819,7 @@ def _createVmForClone(name, template, cluster, clone, vol_sparse, vol_format):
 @is_action()
 def cloneVmFromTemplate(positive, name, template, cluster,
                         timeout=VM_IMAGE_OPT_TIMEOUT, clone='true',
-                        vol_sparse=None, vol_format=None):
+                        vol_sparse=None, vol_format=None, wait=True):
     '''
     Description: clone vm from a pre-defined template
     Author: edolinin
@@ -1837,7 +1842,7 @@ def cloneVmFromTemplate(positive, name, template, cluster,
 
     expectedVm.set_template(data_st.Template(id=BLANK_TEMPLATE))
     vm, status = VM_API.create(newVm, positive, expectedEntity=expectedVm)
-    if positive and status:
+    if positive and status and wait:
         return VM_API.waitForElemStatus(vm, "DOWN", timeout)
     return status
 
