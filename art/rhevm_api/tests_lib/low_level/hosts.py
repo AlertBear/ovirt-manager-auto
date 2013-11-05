@@ -77,6 +77,7 @@ HOST_STATE_TIMEOUT=1000
 KSMTUNED_CONF = '/etc/ksmtuned.conf'
 MEGABYTE = 1024 ** 2
 IP_PATTERN = '10.35.*'
+TIMEOUT = 120
 
 virsh_cmd = ['nwfilter-dumpxml', 'vdsm-no-mac-spoofing']
 search_for = ["<filterref filter='no-mac-spoofing'/>","<filterref filter='no-arp-mac-spoofing'/>"]
@@ -2360,3 +2361,28 @@ def select_host_as_spm(positive, host, datacenter,
         else:
             return True
     return False
+
+
+def setHostToNonOperational(orig_host, host_password, nic):
+    '''
+    Helper Function for check_vm_migration.
+    It puts the NIC with required network down and causes the Host
+    to become non-operational
+    **Author**: gcheresh
+        **Parameters**:
+            *  *orig_host* - host to make non-operational
+            *  *host_password* - password for the host machine
+            *  *nic* - NIC with required network.
+                Will start the migration when turned down
+        **Returns**: True if Host became non-operational by putting NIC down,
+                     otherwise False
+    '''
+    if not ifdownNic(host=orig_host, root_password=host_password,
+                     nic=nic):
+        return False
+
+    if not waitForHostsStates(True, names=orig_host,
+                              states='nonoperational',
+                              timeout=TIMEOUT):
+        return False
+    return True

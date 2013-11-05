@@ -72,8 +72,8 @@ def shutdown_vm_if_up(vm_name):
 
 
 def check_vm_migration(vm_names, orig_host, vm_user, host_password,
-                       vm_password, os_type, dest_host=None, nic=None):
-
+                       vm_password, os_type, dest_host=None, nic=None,
+                       nic_down=True):
     '''
         Function that tests migration in 2 scenarios
         1) By turning down NIC with required network
@@ -88,6 +88,7 @@ def check_vm_migration(vm_names, orig_host, vm_user, host_password,
             *  *vm_password* - password for the vm machine
             *  *os_type* - type of the OS of VM (for example 'rhel')
             *  *nic* - NIC with required network.
+            *  *nic_down* -flag for calling helper setHostToNonOperational
                 Will start the migration when turned down
         **Returns**: True if vm migration succeeded, otherwise False
     '''
@@ -100,20 +101,13 @@ def check_vm_migration(vm_names, orig_host, vm_user, host_password,
 
     # causes VM migration by turning down NIC with required network
     if nic:
-        LOGGER.info("Turn down the required Network NIC to start migration")
-        if not hosts.ifdownNic(host=orig_host, root_password=host_password,
-                               nic=nic):
-            LOGGER.error("Coudn't disconnect the NIC %s ", nic)
-            return False
-
-        LOGGER.info("Check that Host has become NON_OPERATIONAL")
-        if not hosts.waitForHostsStates(True, names=orig_host,
-                                        states='nonoperational',
-                                        timeout=TIMEOUT):
-            LOGGER.error("Host %s is not in non-operational state", orig_host)
-            return False
-
-        LOGGER.info("Wait till VM/VMs come UP after migration")
+        if nic_down:
+            if not hosts.setHostToNonOperational(orig_host=orig_host,
+                                                 host_password=host_password,
+                                                 nic=nic):
+                LOGGER.error("Coudn't start migration by disconnecting the NIC"
+                             " with required network on  it")
+            LOGGER.info("Wait till VM/VMs come UP after migration")
         for vm in vm_names:
             if not vms.waitForVMState(vm=vm, state='up', sleep=INTERVAL,
                                       timeout=TIMEOUT):
