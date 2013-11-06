@@ -240,9 +240,9 @@ class DPCase147124(TestCase):
     General case for detach disk
     """
     __test__ = False
-    disk_name = '%s%s' % (config.VM_NAME, '_Disk1')
 
     def setUp(self):
+        self.disk_name = '%s%s' % (config.VM_NAME, '_Disk1')
         vms.createVm(
             True, config.VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
             storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB)
@@ -290,9 +290,9 @@ class DPCase147125(TestCase):
     To activate/deactivate user must have an manipulate permissions on VM.
     """
     __test__ = True
-    disk_name = '%s%s' % (config.VM_NAME, '_Disk1')
 
     def setUp(self):
+        self.disk_name = '%s%s' % (config.VM_NAME, '_Disk1')
         vms.createVm(
             True, config.VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
             storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB)
@@ -369,9 +369,9 @@ class DPCase147127(TestCase):
     User has to have edit_disk_properties action group in order to remove disk.
     """
     __test__ = True
-    disk_name = '%s%s' % (config.VM_NAME, '_Disk1')
 
     def setUp(self):
+        self.disk_name = '%s%s' % (config.VM_NAME, '_Disk1')
         vms.createVm(
             True, config.VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
             storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB)
@@ -398,9 +398,9 @@ class DPCase147128(TestCase):
     Move or copy disk requires permissions on the disk and on the target sd.
     """
     __test__ = True
-    disk_name = '%s%s' % (config.VM_NAME, '_Disk1')
 
     def setUp(self):
+        self.disk_name = '%s%s' % (config.VM_NAME, '_Disk1')
         vms.createVm(
             True, config.VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
             storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB)

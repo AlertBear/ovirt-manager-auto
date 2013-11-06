@@ -823,7 +823,7 @@ def checkDomainsId():
 
 def hasUserOrGroupPermissionsOnObject(name, obj, role, group=False):
     def getGroupOrUser(perm):
-        return perm.get_group().get_id() if group else perm.get_user().get_id()
+        return perm.get_group() if group else perm.get_user()
 
     objPermits = permisUtil.getElemFromLink(obj, get_href=False)
     roleNAid = util.find(role).get_id()
@@ -834,7 +834,9 @@ def hasUserOrGroupPermissionsOnObject(name, obj, role, group=False):
 
     perms = []
     for perm in objPermits:
-        perms.append((getGroupOrUser(perm), perm.get_role().get_id()))
+        mlaObj = getGroupOrUser(perm)
+        if mlaObj is not None:
+            perms.append((mlaObj.get_id(), perm.get_role().get_id()))
 
     return (userId, roleNAid) in perms
 

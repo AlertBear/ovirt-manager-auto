@@ -14,19 +14,7 @@ from art.rhevm_api.tests_lib.low_level import \
 import logging
 
 LOGGER = logging.getLogger(__name__)
-
-# Test these object for adding/removing/viewving perms on it
-OBJS = {config.VM_NAME: vms.VM_API,
-        config.TEMPLATE_NAME: templates.TEMPLATE_API,
-        config.DISK_NAME: disks.DISKS_API,
-        config.VMPOOL_NAME: vmpools.util,
-        config.MAIN_CLUSTER_NAME: clusters.util,
-        config.MAIN_DC_NAME: datacenters.util,
-        config.MAIN_HOST_NAME: hosts.HOST_API,
-        config.MAIN_STORAGE_NAME: storagedomains.util}
-
 TCMS_PLAN_ID = 2602
-
 # Predefined role for creation of VM as non-admin user
 VM_PREDEFINED = role.UserVmManager
 # Predefined role for creation of Disk as non-admin user
@@ -87,6 +75,18 @@ class PermissionsCase54408(TestCase):
     """ objects and user permissions """
     __test__ = True
 
+    @classmethod
+    def setUpClass(cls):
+        # Test these object for adding/removing/viewving perms on it
+        cls.OBJS = {config.VM_NAME: vms.VM_API,
+                    config.TEMPLATE_NAME: templates.TEMPLATE_API,
+                    config.DISK_NAME: disks.DISKS_API,
+                    config.VMPOOL_NAME: vmpools.util,
+                    config.MAIN_CLUSTER_NAME: clusters.util,
+                    config.MAIN_DC_NAME: datacenters.util,
+                    config.MAIN_HOST_NAME: hosts.HOST_API,
+                    config.MAIN_STORAGE_NAME: storagedomains.util}
+
     # Check that there are two types of Permissions sub-tabs in the system:
     # for objects on which you can define permissions and for users.
     @istest
@@ -95,10 +95,10 @@ class PermissionsCase54408(TestCase):
         """ objects and user permissions """
         msg = '%s has permissions subcollection.'
 
-        for k in OBJS.keys():
-            obj = OBJS[k].find(k)
+        for k in self.OBJS.keys():
+            obj = self.OBJS[k].find(k)
             href = '%s/permissions' % obj.get_href()
-            assert OBJS[k].get(href=href) is not None
+            assert self.OBJS[k].get(href=href) is not None
             LOGGER.info(msg % obj.get_name())
 
 

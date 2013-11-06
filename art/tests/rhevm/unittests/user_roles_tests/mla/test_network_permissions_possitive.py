@@ -27,12 +27,15 @@ EVERYONE = 'Everyone'
 
 
 def setUpModule():
+    global VM_NAME
+    global TEMPLATE_NAME
+    VM_NAME = cfg.VM_NAME
+    TEMPLATE_NAME = cfg.TEMPLATE_NAME
     for user in [cfg.USER_NAME, cfg.USER_NAME2, cfg.USER_NAME3]:
         assert users.addUser(True, user_name=user, domain=cfg.USER_DOMAIN)
 
 
 def tearDownModule():
-    return
     loginAsAdmin()
     for user in [cfg.USER_NAME, cfg.USER_NAME2, cfg.USER_NAME3]:
         assert users.removeUser(True, user)
@@ -116,7 +119,7 @@ class PositiveNetworkPermissions231823(NetworkingPossitive):
     @tcms(TCMS_PLAN_ID_POS, 231823)
     def attachingNetworkToCluster(self):
         """ Attaching network to cluster """
-        loginAsUser(filter_=False)
+        loginAsUser(cfg.USER_NAME, filter_=False)
         assert networks.addNetworkToCluster(True, cfg.NETWORK_NAME1,
                                             cfg.MAIN_CLUSTER_NAME)
         assert networks.removeNetworkFromCluster(
@@ -200,7 +203,7 @@ class PositiveNetworkPermissions231826(NetworkingPossitive):
     @tcms(TCMS_PLAN_ID_POS, 231826)
     def attachDetachNetworkToVM(self):
         """ Attach/Detach a network to VM  """
-        loginAsUser()
+        loginAsUser(cfg.USER_NAME)
         assert vms.addNic(True, VM_NAME, name=NIC_NAME,
                           network=cfg.NETWORK_NAME, interface='virtio')
         assert vms.removeNic(True, VM_NAME, NIC_NAME)
@@ -229,7 +232,7 @@ class PositiveNetworkPermissions231827(NetworkingPossitive):
     @tcms(TCMS_PLAN_ID_POS, 231827)
     def visibleNetworksAndManipulations(self):
         """ Visible networks and manipulations """
-        loginAsUser()
+        loginAsUser(cfg.USER_NAME)
         for net in [cfg.NETWORK_NAME1, cfg.NETWORK_NAME2,
                     cfg.NETWORK_NAME3, cfg.NETWORK_NAME4]:
             assert vms.addNic(True, VM_NAME, name=net,
@@ -272,7 +275,7 @@ class PositiveNetworkPermissions231830(NetworkingPossitive):
         """ wrap assert """
         net1 = cfg.NETWORK_NAME1
         net2 = cfg.NETWORK_NAME2
-        loginAsUser(filter_=filter_)
+        loginAsUser(cfg.USER_NAME, filter_=filter_)
         self.canSee(self.filterNet(net1, p1, networks.findNetwork),
                     self.filterNet(net2, p2, networks.findNetwork),
                     self.filterNet(net1, p3, networks.VNIC_PROFILE_API.find),
@@ -376,7 +379,7 @@ class PositiveNetworkPermissions231832(NetworkingPossitive):
         assert not networks.updateVnicProfile(
             cfg.NETWORK_NAME2, cfg.NETWORK_NAME2, port_mirroring=True,
             cluster=cfg.MAIN_CLUSTER_NAME, data_center=cfg.MAIN_DC_NAME)
-        loginAsUser(filter_=False)
+        loginAsUser(cfg.USER_NAME, filter_=False)
         assert networks.updateVnicProfile(cfg.NETWORK_NAME1, cfg.NETWORK_NAME1,
                                           cluster=cfg.MAIN_CLUSTER_NAME,
                                           data_center=cfg.MAIN_DC_NAME,
@@ -408,7 +411,7 @@ class PositiveNetworkPermissions236367(NetworkingPossitive):
     @tcms(TCMS_PLAN_ID_POS, 236367)
     def addVNICToVM(self):
         """ Add a VNIC to VM  """
-        loginAsUser()
+        loginAsUser(cfg.USER_NAME)
         assert vms.addNic(True, VM_NAME, name=NIC_NAME,
                           network=None, interface='virtio')
         assert vms.addNic(True, VM_NAME, name=NIC_NAME2,
@@ -442,7 +445,7 @@ class PositiveNetworkPermissions236406(NetworkingPossitive):
     @tcms(TCMS_PLAN_ID_POS, 236406)
     def updateVNICOnVM(self):
         """ Update a VNIC on VM """
-        loginAsUser()
+        loginAsUser(cfg.USER_NAME)
         assert vms.updateNic(True, VM_NAME, NIC_NAME, network=None)
         assert vms.updateNic(True, VM_NAME, NIC_NAME,
                              network=cfg.NETWORK_NAME1)
@@ -478,7 +481,7 @@ class PositiveNetworkPermissions236408(NetworkingPossitive):
     @tcms(TCMS_PLAN_ID_POS, 236408)
     def addVNICToTemplate(self):
         """ Add a VNIC to template """
-        loginAsUser()
+        loginAsUser(cfg.USER_NAME)
         assert templates.createTemplate(True, vm=VM_NAME, name=TEMPLATE_NAME,
                                         cluster=cfg.MAIN_CLUSTER_NAME)
         assert templates.addTemplateNic(True, TEMPLATE_NAME, name=NIC_NAME,
@@ -522,7 +525,7 @@ class PositiveNetworkPermissions236409(NetworkingPossitive):
     @tcms(TCMS_PLAN_ID_POS, 236409)
     def updateVNICOnTemplate(self):
         """ Update a VNIC on the template """
-        loginAsUser()
+        loginAsUser(cfg.USER_NAME)
         assert templates.updateTemplateNic(True, TEMPLATE_NAME, NIC_NAME,
                                            network=None)
         assert templates.updateTemplateNic(True, TEMPLATE_NAME, NIC_NAME,
@@ -551,7 +554,7 @@ class PositiveNetworkPermissions236577(NetworkingPossitive):
     def removeNetworkFromDC(self):
         """ RemoveNetwokFromDC """
         msg = "NetworkAdmin role wasn't removed after network %s was removed."
-        loginAsUser(filter_=False)
+        loginAsUser(cfg.USER_NAME, filter_=False)
         assert networks.addNetwork(True, name=cfg.NETWORK_NAME1,
                                    data_center=cfg.MAIN_DC_NAME)
         assert networks.removeNetwork(True, network=cfg.NETWORK_NAME1,
@@ -584,7 +587,7 @@ class PositiveNetworkPermissions236664(NetworkingPossitive):
     @tcms(TCMS_PLAN_ID_POS, 236664)
     def customRole(self):
         """ Custom Role """
-        loginAsUser(filter_=False)
+        loginAsUser(cfg.USER_NAME, filter_=False)
         assert networks.addNetwork(True, name=cfg.NETWORK_NAME1,
                                    data_center=cfg.MAIN_DC_NAME)
         assert networks.updateNetwork(True, cfg.NETWORK_NAME1, mtu=1405,
@@ -625,7 +628,7 @@ class PositiveNetworkPermissions317133(NetworkingPossitive):
 
     def setUp(self):
         users.addRoleToUser(True, cfg.USER_NAME, role.DataCenterAdmin)
-        loginAsUser(filter_=False)
+        loginAsUser(cfg.USER_NAME, filter_=False)
         cv = 'compatibility_version'
         assert datacenters.addDataCenter(True, name=self.dc_name,
                                          storage_type=cfg.MAIN_STORAGE_TYPE,
@@ -686,7 +689,7 @@ class PositiveNetworkPermissions320610(NetworkingPossitive):
         """
         vnicProfile perms on vNIC profile are restricted to specific profile
         """
-        loginAsUser()
+        loginAsUser(cfg.USER_NAME)
         self.assertTrue(vms.addNic(True, VM_NAME, name=NIC_NAME,
                                    vnic_profile=cfg.NETWORK_NAME1,
                                    network=cfg.NETWORK_NAME1,

@@ -20,7 +20,7 @@ NIC_NAME3 = 'nic3'
 TCMS_PLAN_ID_NEG = 10640
 
 
-def loginAsUser(userName=config.USER_NAME, filter_=True):
+def loginAsUser(userName, filter_=True):
     users.loginAsUser(userName, config.USER_DOMAIN,
                       config.USER_PASSWORD, filter_)
 
@@ -31,6 +31,10 @@ def loginAsAdmin():
 
 
 def setUpModule():
+    global VM_NAME
+    global TEMPLATE_NAME
+    VM_NAME = config.VM_NAME
+    TEMPLATE_NAME = config.TEMPLATE_NAME
     for user in [config.USER_NAME, config.USER_NAME2, config.USER_NAME3]:
         assert users.addUser(True, user_name=user, domain=config.USER_DOMAIN)
 
@@ -87,7 +91,7 @@ class NegativeNetworkPermissions231915(NetworkingNegative):
     def createDeleteNetworkinDC(self):
         """ Create/Delete network in DC """
         msg = "User %s with %s can't add/remove network."
-        loginAsUser(filter_=False)
+        loginAsUser(config.USER_NAME, filter_=False)
         assert networks.addNetwork(False, name=config.NETWORK_NAME2,
                                    data_center=config.MAIN_DC_NAME)
         assert networks.removeNetwork(False, network=config.NETWORK_NAME1,
@@ -109,7 +113,7 @@ class NegativeNetworkPermissions231916(NetworkingNegative):
     def editNetworkInDC(self):
         """  Edit network in DC """
         msg = "User %s with %s can't update network."
-        loginAsUser(filter_=False)
+        loginAsUser(config.USER_NAME, filter_=False)
         assert networks.updateNetwork(
             False, network=config.NETWORK_NAME1,
             data_center=config.MAIN_DC_NAME, mtu=1502)
@@ -194,7 +198,7 @@ class NegativeNetworkPermissions231918(NetworkingNegative):
     @tcms(TCMS_PLAN_ID_NEG, 231918)
     def networkRequiredToNonRequiredAndViceVersa(self):
         """ Network required to non-required and vice versa """
-        loginAsUser(filter_=False)
+        loginAsUser(config.USER_NAME, filter_=False)
         assert networks.updateClusterNetwork(
             False, config.MAIN_CLUSTER_NAME,
             config.NETWORK_NAME1, required=False)
@@ -221,7 +225,7 @@ class NegativeNetworkPermissions231919(NetworkingNegative):
     @tcms(TCMS_PLAN_ID_NEG, 231919)
     def attachingVNICToVM(self):
         """ Attaching VNIC to VM """
-        loginAsUser(filter_=False)
+        loginAsUser(config.USER_NAME, filter_=False)
         assert vms.addNic(False, VM_NAME, name=NIC_NAME2,
                           network=config.NETWORK_NAME, interface='virtio')
         assert vms.removeNic(False, VM_NAME, NIC_NAME)
@@ -246,7 +250,7 @@ class NegativeNetworkPermissions234215(NetworkingNegative):
     @tcms(TCMS_PLAN_ID_NEG, 234215)
     def attachVNICToTemplate(self):
         """ Attach VNIC to Template """
-        loginAsUser(filter_=False)
+        loginAsUser(config.USER_NAME, filter_=False)
         assert templates.addTemplateNic(False, TEMPLATE_NAME, name=NIC_NAME2,
                                         network=config.NETWORK_NAME)
         assert templates.removeTemplateNic(False, TEMPLATE_NAME, NIC_NAME)
@@ -276,7 +280,7 @@ class NegativeNetworkPermissions236686(NetworkingNegative):
     @tcms(TCMS_PLAN_ID_NEG, 236686)
     def attachNetworkToVM(self):
         """ Attach a network to VM """
-        loginAsUser()
+        loginAsUser(config.USER_NAME)
         assert vms.addNic(False, VM_NAME, name=NIC_NAME3,
                           network=config.NETWORK_NAME1, interface='virtio')
         assert vms.updateNic(False, VM_NAME, NIC_NAME,
@@ -313,7 +317,7 @@ class NegativeNetworkPermissions236736(NetworkingNegative):
     @tcms(TCMS_PLAN_ID_NEG, 236736)
     def visibleNetworksAndManipulation(self):
         """ Visible networks and manipulation """
-        loginAsUser()
+        loginAsUser(config.USER_NAME)
         assert vms.addNic(False, VM_NAME, name=NIC_NAME3,
                           network=config.NETWORK_NAME1, interface='virtio')
         assert vms.updateNic(False, VM_NAME, NIC_NAME2,
