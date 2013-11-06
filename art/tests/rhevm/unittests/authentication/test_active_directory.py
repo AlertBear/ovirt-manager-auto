@@ -117,7 +117,7 @@ class ActiveDirectory(TestCase):
 
         users.loginAsUser(user, domain, config.USER_PASSWORD, 'true')
         self.assertTrue(connectionTest())
-        time.sleep(10)
+        time.sleep(20)
 
         status = runMachineCommand(True, ip=config.OVIRT_ADDRESS,
                                    cmd=CHECK_DUMP % config.AD1_NORMAL,

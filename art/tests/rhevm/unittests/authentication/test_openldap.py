@@ -140,7 +140,7 @@ class LDAPCase289069(TestCase):
         self.query = '/api/domains/' + domainID + '/%s?search={query}'
 
     @istest
-    @bz(975380)
+    @bz(1027284)
     @tcms(config.LDAP_TCMS_PLAN_ID, 289069)
     def searchForUsersAndGroups(self):
         """ Search within domain for users and groups """
