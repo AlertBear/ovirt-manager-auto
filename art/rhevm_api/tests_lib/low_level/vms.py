@@ -3006,6 +3006,10 @@ def collect_vm_logs(vm_name, root_passwd='qum5net'):
     except CanNotFindIP:
         logger.warning("failed to get vm logs from vm %s: No IP found", vm_name)
         return False
+    except Exception, e:
+        logger.error('Could not get vm logs from vm %s - unexpected exception '
+                     'encountered: %s', vm_name, e.message)
+        return False
 
     m = Machine(vm_ip, 'root', root_passwd).util(LINUX)
     log_dest = os.path.join(opts['logdir'], '{0}-messages.log'.format(vm_name))
