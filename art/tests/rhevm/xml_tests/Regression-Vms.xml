@@ -1429,7 +1429,7 @@
     <id>cb8c833a-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Run the VNC VM once for checking the display tag</test_name>
     <test_action>runVmOnce</test_action>
-    <parameters>vm='restvm_vnc', pause='true', display_type='e{display_type_vnc}', boot_dev='network'</parameters>
+    <parameters>vm='restvm_vnc', display_type='e{display_type_vnc}', boot_dev='network'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 483}</conf>
@@ -1438,7 +1438,7 @@
     <id>cb8c851a-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Run the spice VM once for checking the display tag</test_name>
     <test_action>runVmOnce</test_action>
-    <parameters>vm='restvm_spice', pause='true', display_type='e{display_type_spice}', boot_dev='network'</parameters>
+    <parameters>vm='restvm_spice', display_type='e{display_type_spice}', boot_dev='network'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 484}</conf>
