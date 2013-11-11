@@ -1,7 +1,8 @@
 <input xmlns:xi="http://www.w3.org/2001/XInclude">
 <!-- <span style="display:none" >TEST_DESCRIPTION</span>
        	Tests of payload functionality.
-       	Includes create/update vm with mount floopy/cdrom/unknown device
+       	Includes create/update vm with mount floopy/cdrom/unknown device.
+        https://tcms.engineering.redhat.com/plan/7775/rhevmvm-payloads
 -->
 	<xi:include href="payloads_cases/setup.xml" />
 	<xi:include href="payloads_cases/cd.via.create.xml" />

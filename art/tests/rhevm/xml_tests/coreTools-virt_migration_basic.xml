@@ -1,7 +1,8 @@
 <input xmlns:xi="http://www.w3.org/2001/XInclude">
 <!-- <span style="display:none" >TEST_DESCRIPTION</span>
      Tests for vm migration.
-     Test have 2 hosts, put one host to maintaince to invoke migrations
+     Test have 2 hosts, put one host to maintaince to invoke migrations.
+     https://tcms.engineering.redhat.com/case/301661/?from_plan=10421
 -->
 	<xi:include href="migration_tests/setup.xml" />
 	<xi:include href="migration_tests/host_to_maintenance_migrations.xml" />

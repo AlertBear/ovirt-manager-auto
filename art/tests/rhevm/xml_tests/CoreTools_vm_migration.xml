@@ -6,7 +6,8 @@
 <!-- <span style="display:none" >TEST_DESCRIPTION</span>
    Tests of migration functionality.
    Including manual migration, maintained host, cluster policies, migration between clusters and negative tests
-   Requirements: 2 hosts, 16 macs(vms)
+   Requirements: 2 hosts, 16 macs(vms).
+   https://tcms.engineering.redhat.com/plan/10421/rhevmvirtcoretools_vm_migration
 -->
 <test_case>
    <test_name>START_GROUP: migrations_set-up</test_name>
