@@ -1,4 +1,9 @@
-#! /usr/bin/python
+'''
+Testing Linking/Plugging feature.
+1 DC, 1 Cluster, 1 Hosts and 2 VMs will be created for testing.
+Linking/Plugging will be tested for untagged, tagged, bond scenarios.
+It will cover scenarios for different states of VNIC on stopped/running VM.
+'''
 
 from nose.tools import istest
 from unittest import TestCase

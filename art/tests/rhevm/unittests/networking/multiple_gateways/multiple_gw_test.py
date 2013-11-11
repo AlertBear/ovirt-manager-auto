@@ -1,4 +1,10 @@
-#! /usr/bin/python
+'''
+Testing Multiple Gateways feature.
+1 DC, 1 Cluster, 1 Host will be created for testing.
+"Multiple Gateway will be tested for untagged, tagged, bond scenarios.
+It will cover scenarios for VM/non-VM networks.
+Only static IP configuration is tested.
+'''
 
 from nose.tools import istest
 from unittest import TestCase

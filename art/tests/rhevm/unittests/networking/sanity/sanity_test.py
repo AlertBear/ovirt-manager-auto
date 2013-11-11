@@ -1,4 +1,9 @@
-#! /usr/bin/python
+'''
+Testing Sanity for the network features.
+1 DC, 1 Cluster, 1 Hosts and 1 VM will be created for testing.
+Sanity will test untagged, tagged, bond scenarios.
+It will cover scenarios for VM/non-VM networks.
+'''
 
 from nose.tools import istest
 from unittest import TestCase

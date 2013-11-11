@@ -1,4 +1,9 @@
-#! /usr/bin/python
+'''
+Testing Jumbo frames feature.
+1 DC, 1 Cluster, 2 Hosts and 2 VMs will be created for testing.
+Jubmo frames will be tested for untagged, tagged, bond scenarios.
+It will cover scenarios for VM/non-VM networks.
+'''
 from unittest import TestCase
 import logging
 

@@ -1,5 +1,10 @@
 
-#! /usr/bin/python
+"""
+Testing Input/Output feature.
+1 DC, 1 Cluster, 1 Host will be created for testing.
+Positive and negative cases for creating/editing networks
+with valid/invalid names, IPs, netmask, VLAN, usages.
+"""
 from nose.tools import istest
 from unittest import TestCase
 import logging

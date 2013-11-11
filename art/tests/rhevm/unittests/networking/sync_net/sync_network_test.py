@@ -1,4 +1,9 @@
-#! /usr/bin/python
+'''
+Testing Sync Network feature.
+2 DCs, 2 Clusters, 1 Host will be created for testing.
+Sync Network will be tested for untagged, tagged, bond scenarios.
+It will cover scenarios for VM/non-VM networks.
+'''
 
 from concurrent.futures import ThreadPoolExecutor
 from nose.tools import istest
