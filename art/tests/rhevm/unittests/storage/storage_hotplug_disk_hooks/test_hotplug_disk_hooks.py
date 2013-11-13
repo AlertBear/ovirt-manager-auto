@@ -194,7 +194,15 @@ class TestCase287249(helpers.HotplugHookTest):
     hooks = {'before_disk_hotplug': [helpers.HOOKFILENAME]}
 
     def perform_action(self):
-        assert disks.attachDisk(True, self.use_disks[0], VM_NAME)
+        if ll_dc.waitForDataCenterState(config.DATA_CENTER_NAME):
+            vm_disks = vms.getVmDisks(VM_NAME)
+            disk_names = [disk.get_name() for disk in vm_disks]
+            if not self.use_disks[0] in disk_names:
+                self.assertTrue(disks.attachDisk(True,
+                                                 self.use_disks[0],
+                                                 VM_NAME),
+                                "Failed to attach disk %s to vm %s"
+                                % (self.use_disks[0], VM_NAME))
 
     def put_disks_in_correct_state(self):
         pass
@@ -207,15 +215,17 @@ class TestCase287249(helpers.HotplugHookTest):
 
     def tearDown(self):
         super(TestCase287249, self).tearDown()
-        if self.use_disks[0] in vms.getVmDisks(VM_NAME):
+        vm_disks = vms.getVmDisks(VM_NAME)
+        disk_names = [disk.get_name() for disk in vm_disks]
+        if self.use_disks[0] in disk_names:
             disks.detachDisk(True, self.use_disks[0], VM_NAME)
 
 
 class TestCase287481(helpers.HotplugHookTest):
     """
-    Check that activation will fail if after_disk_hotplug is a binary,
-    executable file. Check that after removing the hook it will be possible
-    to activate the disk.
+    Check that activation will succeed and the hook will fail if
+    after_disk_hotplug is a binary, executable file.
+    Check that after removing the hook everything act normal
 
     https://tcms.engineering.redhat.com/case/287481/?from_plan=9940
     """
@@ -226,8 +236,24 @@ class TestCase287481(helpers.HotplugHookTest):
     hooks = {'after_disk_hotplug': [helpers.HOOKJPEG]}
 
     def perform_action(self):
-        LOGGER.info("Activate should fail")
-        assert not vms.activateVmDisk(True, VM_NAME, self.use_disks[0])
+        LOGGER.info("Activating new HW - %s", self.use_disks[0])
+
+        vm_disks = vms.getVmDisks(VM_NAME)
+        disk_names = [disk.get_name() for disk in vm_disks]
+
+        LOGGER.info("Attached disks - %s", disk_names)
+        if not self.use_disks[0] in disk_names:
+            self.assertTrue(disks.attachDisk(True, self.use_disks[0],
+                                             VM_NAME, False),
+                            "Attaching disk %s to vm %s - fails"
+                            % (self.use_disks[0], VM_NAME))
+
+        self.assertTrue(vms.activateVmDisk(True, VM_NAME, self.use_disks[0]),
+                        "Activation of VM disk %s should have succeed"
+                        % self.use_disks[0])
+
+        vms.deactivateVmDisk(True, VM_NAME, self.use_disks[0])
+
         self.clear_hooks()
         assert vms.activateVmDisk(True, VM_NAME, self.use_disks[0])
 
@@ -238,8 +264,8 @@ class TestCase287481(helpers.HotplugHookTest):
     @tcms(9940, 287481)
     @bz(1015171)
     def test_after_disk_hotplug_binary_executable_hook_file(self):
-        """ check that activate fail if hook is binary executable file
-            check that after removing the hook file activation works
+        """ check that activate succeed and hook fails if hook is binary
+            executable file
         """
         self.perform_action_and_verify_hook_called()
 
