@@ -157,11 +157,17 @@ class UTestGroup(TestGroup):
         self.context = c
         self.tcms_plan_id = getattr(c.context, TCMS_PLAN_ID, None)
         self.test_name = self.context.context.__name__
+        try:
+            self.description = self.context.context.__doc__.strip()
+        except AttributeError:
+            logger.error("Test class %s has missing documentation string!",
+                         self.test_name)
 
     def __iter__(self):
         try:
             logger.info(TEST_CASES_SEPARATOR)
             logger.info("TEST GROUP setUp: %s", self.test_name)
+            logger.info('Group description: %s', self.description)
             try:
                 self.context.setUp()
             except Exception as ex:
