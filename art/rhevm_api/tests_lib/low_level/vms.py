@@ -942,7 +942,7 @@ def _prepareNicObj(**kwargs):
     if 'mac_address' in kwargs:
         nic_obj.set_mac(data_st.MAC(address=kwargs.get('mac_address')))
 
-    if 'network' in kwargs:
+    if 'network' in kwargs and 'vnic_profile' not in kwargs:
         nic_obj.set_network(data_st.Network(name=kwargs.get('network')))
 
     if 'active' in kwargs:
@@ -954,25 +954,29 @@ def _prepareNicObj(**kwargs):
     if 'linked' in kwargs:
         nic_obj.set_linked(kwargs.get('linked'))
 
-    if kwargs.get('vnic_profile'):  # Ignore None if passed
-        if not 'network' in kwargs:
-            raise NetworkException('Missing mandatory network parameter when '
-                                   'trying to locate VNIC profile')
-        if not 'vm' in kwargs:
-            raise NetworkException('Missing mandatory vm parameter when '
-                                   'trying to locate VNIC profile')
+    if 'vnic_profile' in kwargs:  # Ignore None if passed
+        if kwargs.get('vnic_profile') == kwargs.get('network'):
+            nic_obj.set_network(data_st.Network(name=kwargs.get('network')))
 
-        # Find the cluster in which the VM is located
-        vm_obj = VM_API.find(kwargs['vm'])
-        cluster_id = vm_obj.get_cluster().get_id()
-        cluster_obj = CLUSTER_API.find(cluster_id, attribute='id')
+        else:
+            if not 'network' in kwargs:
+                raise NetworkException('Missing mandatory network parameter '
+                                       'when trying to locate VNIC profile')
+            if not 'vm' in kwargs:
+                raise NetworkException('Missing mandatory vm parameter when '
+                                       'trying to locate VNIC profile')
 
-        # Locate VNIC profile using network and cluser
-        vnic_profile_obj = getVnicProfileObj(kwargs['vnic_profile'],
-                                             kwargs['network'],
-                                             cluster_obj.get_name())
+            # Find the cluster in which the VM is located
+            vm_obj = VM_API.find(kwargs['vm'])
+            cluster_id = vm_obj.get_cluster().get_id()
+            cluster_obj = CLUSTER_API.find(cluster_id, attribute='id')
 
-        nic_obj.set_vnic_profile(vnic_profile_obj)
+            # Locate VNIC profile using network and cluser
+            vnic_profile_obj = getVnicProfileObj(kwargs['vnic_profile'],
+                                                 kwargs['network'],
+                                                 cluster_obj.get_name())
+
+            nic_obj.set_vnic_profile(vnic_profile_obj)
 
     return nic_obj
 
@@ -1899,7 +1903,7 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
              installation=False, slim=False, user=None, password=None,
              attempt=60, interval=60, cobblerAddress=None, cobblerUser=None,
              cobblerPasswd=None, image=None, async=False, hostname=None,
-             network=MGMT_NETWORK, vnic_profile=None, useAgent=False,
+             network=MGMT_NETWORK, vnic_profile=MGMT_NETWORK, useAgent=False,
              placement_affinity=None, placement_host=None, vcpu_pinning=None,
              highly_available=None, availablity_priority=None, vm_quota=None,
              disk_quota=None, plugged='true', linked='true', protected=None,

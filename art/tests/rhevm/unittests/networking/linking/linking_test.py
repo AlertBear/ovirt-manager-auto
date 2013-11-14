@@ -576,7 +576,7 @@ class Linked_Case7_239368(TestCase):
         logger.info("Updating nic with new mac and interface type")
         self.assertTrue(updateNic(True, config.VM_NAME[1], "nic2",
                                   interface=config.NIC_TYPE_RTL8139,
-                                  mac_address='11:22:33:44:55:66'))
+                                  mac_address='00:22:33:44:55:66'))
 
     @classmethod
     def teardown_class(cls):
