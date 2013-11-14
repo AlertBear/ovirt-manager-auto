@@ -13,7 +13,7 @@ from art.rhevm_api.utils import resource_utils
 from art.test_handler import exceptions
 
 from art.rhevm_api.tests_lib.high_level import datacenters
-from art.rhevm_api.tests_lib.low_level import vms
+from art.rhevm_api.tests_lib.low_level import vms, disks
 from art.rhevm_api.tests_lib.low_level import templates
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.test_handler.tools import tcms
@@ -390,4 +390,126 @@ class TestCase248138(TestCase):
             # we don't need try-except, as cleanupData uses
             # rmtree(path, ignore_errors=True)
             test_utils.cleanupData(data_path)
+        vms.removeVm(True, vm=cls.vm_name, stopVM='true')
+
+
+class TestCase300867(TestCase):
+    """
+    storage vm sanity test, creates 2 snapshots and removes them.
+    Check that actual disk size became the same it was
+    before snapshots were made.
+    https://tcms.engineering.redhat.com/case/248138/?from_plan=8676
+    """
+    __test__ = True
+    tcms_plan_id = '1892'
+    tcms_test_case = '300867'
+    data_for_vm = []
+    vms_ip_address = None
+    vm_name = '%s_%s_snap' % (config.VM_BASE_NAME, config.DATA_CENTER_TYPE)
+    snapShot1_name = "%s_snapshot1" % config.VM_BASE_NAME
+    snapShot2_name = "%s_snapshot2" % config.VM_BASE_NAME
+    snapshots = [snapShot1_name, snapShot2_name]
+    alias = "%s_Disk1" % vm_name
+    disk_size_before = 0
+    disk_size_after = 0
+
+    @classmethod
+    def setup_class(cls):
+        vm_description = '%s_%s_snap' % (
+            config.VM_BASE_NAME, config.DATA_CENTER_TYPE)
+        # create vm with thin provision disk
+        if not _create_vm(cls.vm_name, vm_description,  config.INTERFACE_IDE,
+                          sparse=False, volume_format=ENUMS['format_raw']):
+            raise exceptions.VMException(
+                "Creation of VM %s failed!" % cls.vm_name)
+        LOGGER.info("Waiting for vm %s state 'up'" % cls.vm_name)
+        if not vms.waitForVMState(cls.vm_name):
+            raise exceptions.VMException(
+                "Waiting for VM %s status 'up' failed" % cls.vm_name)
+        LOGGER.info("Getting IP of vm %s" % cls.vm_name)
+        status, vm_ip = vms.waitForIP(cls.vm_name)
+        if not status:
+            raise exceptions.VMException("Can't get IP of vm %s" % cls.vm_name)
+        cls.vms_ip_address = vm_ip['ip']
+        LOGGER.info("setup finished with success")
+
+    def _make_snapshots(self):
+
+        LOGGER.info("Stopping VM %s" % self.vm_name)
+        self.assertTrue(
+            vms.stopVm(True, self.vm_name),
+            "Stopping vm %s failed!" % self.vm_name)
+
+        for snapshot in self.snapshots:
+
+            LOGGER.info("Creating snapshot %s" % snapshot)
+            self.assertTrue(
+                vms.addSnapshot(True, self.vm_name, description=snapshot),
+                "Creating snapshot of vm %s failed!" % self.vm_name)
+            LOGGER.info("successfully created snapshot %s" % snapshot)
+
+        LOGGER.info("Starting VM %s" % self.vm_name)
+        self.assertTrue(vms.startVm(True,
+                                    self.vm_name,
+                                    wait_for_status='up',
+                                    wait_for_ip=False),
+                        "Starting vm %s failed!" % self.vm_name)
+        LOGGER.info("successfully started vm %s" % self.vm_name)
+
+    def _remove_snapshots(self):
+        LOGGER.info("Stopping VM %s" % self.vm_name)
+        self.assertTrue(
+            vms.stopVm(True, vm=self.vm_name),
+            "Stopping vm %s failed!" % self.vm_name)
+
+        for snapshot in self.snapshots:
+            LOGGER.info("Removing snapshot %s" % snapshot)
+            self.assertTrue(
+                vms.removeSnapshot(
+                    True, vm=self.vm_name, description=snapshot,
+                    timeout=2100),
+                "Removing snapshot %s failed!" % snapshot)
+
+        LOGGER.info(
+            "Starting VM %s and waiting for status 'up'" % self.vm_name)
+        self.assertTrue(
+            vms.startVm(True,
+                        vm=self.vm_name,
+                        wait_for_status='up',
+                        wait_for_ip=False),
+            "Starting vm %s failed!" % self.vm_name)
+
+    @tcms(tcms_plan_id, tcms_test_case)
+    def test_auto_shrink_qcow_volumes(self):
+        """
+        Create 2 snapshot, Deleting them and Check that actual disk
+        size became the same it was before snapshots were made.
+        """
+        diskObj = disks.getVmDisk(self.vm_name, self.alias)
+        self.disk_size_before = diskObj.get_actual_size()
+        LOGGER.info("Disk %s size - %s before snapshot creation",
+                    self.alias,
+                    self.disk_size_before)
+
+        self._make_snapshots()
+
+        diskObj = disks.getVmDisk(self.vm_name, self.alias)
+        LOGGER.info("Disk %s size - %s after snapshot",
+                    self.alias,
+                    diskObj.get_actual_size())
+
+        self._remove_snapshots()
+
+        diskObj = disks.getVmDisk(self.vm_name, self.alias)
+        self.disk_size_after = diskObj.get_actual_size()
+        LOGGER.info("Disk %s size - %s after snapshot deletion",
+                    self.alias,
+                    self.disk_size_after)
+
+        self.assertTrue(self.disk_size_after == self.disk_size_before,
+                        "Failed to auto shrink qcow volumes on merge "
+                        "of block volumes")
+
+    @classmethod
+    def teardown_class(cls):
         vms.removeVm(True, vm=cls.vm_name, stopVM='true')
