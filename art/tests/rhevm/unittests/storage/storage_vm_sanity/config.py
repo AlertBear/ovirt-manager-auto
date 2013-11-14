@@ -59,8 +59,10 @@ INTERFACE_IDE = ENUMS['interface_ide']
 
 NIC_TYPE_VIRTIO = ENUMS['nic_type_virtio']
 VM_TYPE_DESKTOP = ENUMS['vm_type_desktop']
+VM_TYPE_SERVER = ENUMS['vm_type_server']
 
 MAX_WORKERS = 4
 
 VDC = PARAMETERS.get('host', None)
 VDC_PASSWORD = PARAMETERS.get('password', None)
+VDC_ROOT_PASSWORD = PARAMETERS.get('vdc_root_password', None)

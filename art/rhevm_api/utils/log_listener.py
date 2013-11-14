@@ -42,6 +42,8 @@ class LogListener():
         self.ssh = None
         self.channel = None
         self.machine = None
+        logger.info("Trying to open a channel to ip: %s with username %s "
+                    "and password %s" % (ip_for_files, username, password))
         if not self.set_connection_for_remote(ip_for_files, username,
                                               password):
             raise Exception("No Channel opened")

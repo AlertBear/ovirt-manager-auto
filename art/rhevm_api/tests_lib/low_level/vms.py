@@ -437,7 +437,7 @@ def removeVm(positive, vm, **kwargs):
     return status
 
 
-def removeVmAsynch(positive, tasksQ, resultsQ, stopVm=False):
+def removeVmAsynch(positive, tasksQ, resultsQ, stopVmBool=False):
     '''
     Removes the cluster. It's supposed to be a worker of Thread.
     Author: jhenner
@@ -450,7 +450,7 @@ def removeVmAsynch(positive, tasksQ, resultsQ, stopVm=False):
     status = False
     try:
         vmObj = VM_API.find(vm)
-        if stopVm and vmObj.status.state.lower() != 'down':
+        if stopVmBool and vmObj.status.state.lower() != 'down':
             if not stopVm(positive, vm):
                 logger.error("failed to stop vm %s before async removal", vm)
                 return

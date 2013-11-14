@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 import logging
 from nose.tools import istest
 from unittest import TestCase
+import time
 
 from art.rhevm_api.utils import test_utils
 from art.rhevm_api.utils import resource_utils
@@ -16,6 +17,7 @@ from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import vms, disks
 from art.rhevm_api.tests_lib.low_level import templates
 from art.rhevm_api.tests_lib.low_level import storagedomains
+from art.rhevm_api.utils import log_listener
 from art.test_handler.tools import tcms
 
 import config
@@ -45,7 +47,8 @@ def teardown_module():
 
 
 def _create_vm(vm_name, vm_description, disk_interface,
-               sparse=True, volume_format=ENUMS['format_cow']):
+               sparse=True, volume_format=ENUMS['format_cow'],
+               vm_type=config.VM_TYPE_DESKTOP):
     """ helper function for creating vm (passes common arguments, mostly taken
     from the configuration file)
     """
@@ -62,7 +65,7 @@ def _create_vm(vm_name, vm_description, disk_interface,
         cpu_cores=config.CPU_CORES, nicType=config.NIC_TYPE_VIRTIO,
         display_type=config.DISPLAY_TYPE, os_type=config.OS_TYPE,
         user=config.VM_LINUX_USER, password=config.VM_LINUX_PASSWORD,
-        type=config.VM_TYPE_DESKTOP, installation=True, slim=True,
+        type=vm_type, installation=True, slim=True,
         cobblerAddress=config.COBBLER_ADDRESS, cobblerUser=config.COBBLER_USER,
         cobblerPasswd=config.COBBLER_PASSWORD, image=config.COBBLER_PROFILE,
         network=config.MGMT_BRIDGE, useAgent=config.USE_AGENT)
@@ -513,3 +516,120 @@ class TestCase300867(TestCase):
     @classmethod
     def teardown_class(cls):
         vms.removeVm(True, vm=cls.vm_name, stopVM='true')
+
+class TestReadLock(TestCase):
+    """
+    Create a template from a VM, then start to create 2 VMs from
+    this template at once.
+    """
+    __test__ = False
+    tcms_plan_id = '8040'
+    tcms_test_case = None
+    vm_type = None
+    vm_name = None
+    template_name = None
+    vm_name_1 = '%s_1' % (config.VM_BASE_NAME)
+    vm_name_2 = '%s_2' % (config.VM_BASE_NAME)
+    SLEEP_AMOUNT = 5
+
+    @classmethod
+    def setup_class(cls):
+        cls.vm_name = '%s_%s' % (config.VM_BASE_NAME, cls.vm_type)
+        cls.template_name = "template_%s" % (cls.vm_name)
+        if not _create_vm(cls.vm_name, cls.vm_name, config.INTERFACE_IDE,
+                         vm_type=cls.vm_type):
+           raise exceptions.VMException(
+               "Creation of VM %s failed!" % cls.vm_name)
+        LOGGER.info("Waiting for vm %s state 'up'" % cls.vm_name)
+        if not vms.waitForVMState(cls.vm_name):
+            raise exceptions.VMException(
+                "Waiting for VM %s status 'up' failed" % cls.vm_name)
+        LOGGER.info("Shutting down %s" % cls.vm_name)
+        if not vms.shutdownVm(True, cls.vm_name, async='false'):
+            raise exceptions.VMException("Can't shut down vm %s" %
+                                         cls.vm_name)
+        LOGGER.info("Creating template %s from VM %s" % (cls.template_name,
+                                                         cls.vm_name))
+        template_args = {
+            "vm": cls.vm_name,
+            "name": cls.template_name,
+            "cluster": config.CLUSTER_NAME
+        }
+        if not templates.createTemplate(True, **template_args):
+            raise exceptions.TemplateException("Failed creating template %s" %
+                                               cls.template_name)
+
+    def create_two_vms_simultaneously(self):
+        """
+        Start creating a VM from template
+        Wait until template is locked
+        Start creating another VM from the same template
+        """
+        LOGGER.info("Creating first vm %s from template %s" %
+                    (self.vm_name_1, self.template_name))
+        assert vms.createVm(True, self.vm_name_1, self.vm_name_1,
+                            template=self.template_name,
+                            cluster=config.CLUSTER_NAME)
+        LOGGER.info("Waiting for createVolume command in engine.log")
+        log_listener.watch_logs('/var/log/ovirt-engine/engine.log',
+                                'createVolume',
+                                '',
+                                time_out=60,
+                                ip_for_files=config.VDC,
+                                username='root',
+                                password=config.VDC_ROOT_PASSWORD)
+        LOGGER.info("Starting to create vm %s from template %s" %
+                    (self.vm_name_2, self.template_name))
+        assert vms.createVm(True, self.vm_name_2, self.vm_name_2,
+                            template=self.template_name,
+                            cluster=config.CLUSTER_NAME)
+        LOGGER.info("Starting VMs")
+        assert vms.startVm(True, self.vm_name_1,
+                           wait_for_status=ENUMS['vm_state_up'])
+        assert vms.startVm(True, self.vm_name_2,
+                           wait_for_status=ENUMS['vm_state_up'])
+
+    @classmethod
+    def teardown_class(cls):
+        vms_list = ','.join([cls.vm_name, cls.vm_name_1, cls.vm_name_2])
+        LOGGER.info("Removing VMs %s" % vms_list)
+        if not vms.removeVms(True, vms_list, stop='true'):
+            raise exceptions.VMException("Failed removing vms %s" % vms_list)
+        LOGGER.info("Removing template")
+        if not templates.removeTemplate(True, cls.template_name):
+            raise exceptions.TemplateException("Failed removing template %s"
+                                               % cls.template_name)
+
+class TestCase320224(TestReadLock):
+    """
+    TCMS Test Case 320224 - Run on desktop
+    """
+    __test__ = True
+    tcms_test_case = '320224'
+    vm_type = config.VM_TYPE_DESKTOP
+
+    @tcms(TestReadLock.tcms_plan_id, tcms_test_case)
+    def test_create_vms(self):
+        """
+        Start creating a VM from template (desktop)
+        Wait until template is locked
+        Start creating another VM from the same template
+        """
+        self.create_two_vms_simultaneously()
+
+class TestCase320225(TestReadLock):
+    """
+    TCMS Test Case 320225 - Run on server
+    """
+    __test__ = True
+    tcms_test_case = '320225'
+    vm_type = config.VM_TYPE_SERVER
+
+    @tcms(TestReadLock.tcms_plan_id, tcms_test_case)
+    def test_create_vms(self):
+        """
+        Start creating a VM from template (server)
+        Wait until template is locked
+        Start creating another VM from the same template
+        """
+        self.create_two_vms_simultaneously()
