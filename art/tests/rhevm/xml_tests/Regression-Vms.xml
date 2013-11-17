@@ -331,14 +331,6 @@
     <run>yes</run>
   </test_case>
   <test_case>
-    <id>cb8ba6ea-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Create VM with wrong memory size</test_name>
-    <test_action>addVm</test_action>
-    <parameters>name='novm', memory=214748, cluster='RestCluster1'</parameters>
-    <positive>FALSE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
     <id>cb8ba9a6-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Create VM with wrong number of monitors</test_name>
     <test_action>addVm</test_action>
@@ -644,14 +636,6 @@
     <test_name>Update VM name to existing name</test_name>
     <test_action>updateVm</test_action>
     <parameters>vm='restvm_update', name='restvm_domain'</parameters>
-    <positive>FALSE</positive>
-    <run>yes</run>
-  </test_case>
-  <test_case>
-    <id>cb8beab0-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Update VM to use wrong (too small) memory size</test_name>
-    <test_action>updateVm</test_action>
-    <parameters>vm='restvm_update', memory=214748</parameters>
     <positive>FALSE</positive>
     <run>yes</run>
   </test_case>
