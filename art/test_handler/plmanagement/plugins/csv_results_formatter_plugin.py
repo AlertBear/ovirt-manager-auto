@@ -21,7 +21,6 @@ Configuration File Options:
 import os
 import csv
 import time
-from contextlib import contextmanager
 from threading import Lock
 from art.test_handler.plmanagement import Component, implements, get_logger, ThreadScope
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
@@ -44,13 +43,14 @@ I_ID = 'id'
 I_MODULE_NAME = 'module_name'
 I_TEST_NAME = 'test_name'
 I_START_TIME = 'start_time'
+I_METHOD_NAME = 'method_name'
 I_REQ_ELAPSED_TIME = 'req_elapsed_time'
 I_TEST_STATUS = 'test_status'
 I_DEBUG_INFO = 'captured_log'
 
 
 DEFAULT_PRECISSION = '5'
-DEFAULT_ORDER = I_ID, I_MODULE_NAME, I_START_TIME, \
+DEFAULT_ORDER = I_ID, I_MODULE_NAME, I_START_TIME, I_METHOD_NAME, \
             I_REQ_ELAPSED_TIME, I_TEST_STATUS, \
             I_DEBUG_INFO
 
@@ -79,7 +79,8 @@ class CSVFormatter(Component):
 
     @classmethod
     def add_options(cls, parser):
-        out = os.path.abspath("results/%s" % cls.default_file_name)
+        tstamp = time.strftime('%Y%m%d_%H%M%S')
+        out = os.path.abspath("results/%s%s" % (tstamp, cls.default_file_name))
         parser.add_argument('--rf-csv', action="store", dest='rf_csv', \
                 help=cls.__doc__, const=out, default=None, nargs='?')
 
@@ -101,40 +102,38 @@ class CSVFormatter(Component):
             self.fh.close()
 
     def add_test_result(self, kwargs, test_case):
-        items = []
-        for i in self.order:
-            if i == I_ID:
-                id_item = ''
-                t_id = getattr(kwargs, 'id', None)
-                t_it = getattr(kwargs, 'iter_num', None)
-                if t_id is not None:
-                    id_item += str(t_id)
-                if t_it is not None:
-                    if id_item:
-                        id_item += ':'
-                    id_item += str(t_it)
-                items.append(id_item)
-            elif i == I_MODULE_NAME:
-                items.append(getattr(kwargs, 'module_name', None))
-            elif i == I_TEST_NAME:
-                items.append(getattr(kwargs, 'test_name', None))
-            elif i == I_START_TIME:
-                items.append(getattr(kwargs, 'start_time', None))
-            elif i == I_REQ_ELAPSED_TIME:
-                measure = float('nan')
-                if self.th_scope.measures:
-                    if len(self.th_scope.measures) != 1:
-                        logger.warn("Got more measure_time records, "\
-                                "then expected: %s", self.th_scope.measures)
-                    measure = self.format_str % self.th_scope.measures.pop()
-                items.append(measure)
-            elif i == I_TEST_STATUS:
-                items.append(getattr(kwargs, 'status', None))
-            elif i in kwargs:
-                items.append(getattr(test_case, i, None))
+        for m in range(0, len(self.th_scope.measures)):
+            measure = self.th_scope.measures.pop()
+            items = []
+            for i in self.order:
+                if i == I_ID:
+                    id_item = ''
+                    t_id = getattr(kwargs, 'id', None)
+                    t_it = getattr(kwargs, 'iter_num', None)
+                    if t_id is not None:
+                        id_item += str(t_id)
+                    if t_it is not None:
+                        if id_item:
+                            id_item += ':'
+                        id_item += str(t_it)
+                    items.append(id_item)
+                elif i == I_MODULE_NAME:
+                    items.append(getattr(kwargs, 'module_name', None))
+                elif i == I_TEST_NAME:
+                    items.append(getattr(kwargs, 'test_name', None))
+                elif i == I_START_TIME:
+                    items.append(getattr(kwargs, 'start_time', None))
+                elif i == I_METHOD_NAME:
+                    items.append(measure[0])
+                elif i == I_REQ_ELAPSED_TIME:
+                    items.append(self.format_str % measure[1])
+                elif i == I_TEST_STATUS:
+                    items.append(getattr(kwargs, 'status', None))
+                elif i in kwargs:
+                    items.append(getattr(test_case, i, None))
 
-        with self.lock:
-            self.csv.writerow(items)
+            with self.lock:
+                self.csv.writerow(items)
 
     def add_group_result(self, res, tg):
         pass
@@ -154,9 +153,9 @@ class CSVFormatter(Component):
     def on_start_measure(self):
         pass
 
-    def on_stop_measure(self, t):
+    def on_stop_measure(self, method, time):
         if self.th_scope.measures is not None:
-            self.th_scope.measures.append(t)
+            self.th_scope.measures.append([method, time])
 
     @classmethod
     def is_enabled(cls, params, conf):
