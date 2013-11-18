@@ -54,14 +54,8 @@ class ResourceMonitor(object):
                 if res:
                     m = line.split(',')
                     member = m[0]
-#                    if m[0] in (ENGINE, ENGINE_REPORTS, DB, TOTAL):
-#                        member = m[0]
-#                        if len(m) < 2:
-#                            continue
-#                    else:
-#                        member = '%s.%s' % (member, m[0])
-                    valid_data = [float(v) for v in m[4:] if v != 'None'
-                                  and v != 'None\n']
+                    valid_data = [float(v) for v in m[4:]
+                                  if v != 'None' and v != 'None\n']
                     if len(valid_data) >= (len(m[4:]) / 2):
                         LOGGER.warning(
                             "Too much of non-valid data from url %s", url)
@@ -82,7 +76,8 @@ class ResourceMonitor(object):
         header = url_data.keys()
         try:
             return [header,
-                    [url_data[header[k]]['avg'] for k in range(len(header))]]
+                    [round(url_data[header[k]]['avg'], 2)
+                     for k in range(len(header))]]
         except Exception as ex:
             LOGGER.error("Failed to prepare average data for template: %s", ex)
             return []
@@ -102,8 +97,10 @@ class ResourceMonitor(object):
                     continue
                 if 'None\n' in step_data:
                     break
-                step_data_adj = [float(step_data[j]) for j in range(len(step_data))]
-                step_data_adj.insert(0, self.formatted_time(start_time + time_step * i))
+                step_data_adj = [round(float(step_data[j]), 2)
+                                 for j in range(len(step_data))]
+                step_data_adj.insert(0, self.formatted_time(
+                                     start_time + time_step * i))
                 template_data.append(step_data_adj)
             header.insert(0, 'Time')
             template_data.insert(0, header)
@@ -190,8 +187,12 @@ class IOMonitor(ResourceMonitor):
         super(IOMonitor, self).__init__()
         self.data = {
                         ENGINE: {},
+                        ENGINE_REPORTS: {},
+                        DB: {},
+                        TOTAL: {},
         }
-        self.patt = re.compile('{0}'.format(ENGINE), re.I)
+        self.patt = re.compile('{0}|{1}|{2}|{3}'.format(ENGINE,
+            ENGINE_REPORTS, DB, TOTAL), re.I)
 
 
 class ResourcesTemplate(object):
