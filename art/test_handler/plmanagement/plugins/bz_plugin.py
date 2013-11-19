@@ -446,7 +446,7 @@ class Bugzilla(Component):
         section_spec['user'] = "string(default='%s')" % DEFAULT_USER
         section_spec['password'] = "string(default='%s')" % DEFAULT_PASSWD
         section_spec['enabled'] = 'boolean(default=%s)' % DEFAULT_STATE
-        section_spec['url'] = "is_url_alive(default='%s')" % DEFAULT_URL
+        section_spec['url'] = "string(default='%s')" % DEFAULT_URL
         section_spec[PRODUCT] = "option('%s', '%s', default='%s')" % (
             RHEVM_PRODUCT, OVIRT_PRODUCT, RHEVM_PRODUCT)
         section_spec[PATH_TO_ISSUEDB] = "string(default=None)"

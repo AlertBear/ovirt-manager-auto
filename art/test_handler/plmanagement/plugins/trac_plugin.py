@@ -278,5 +278,5 @@ class Trac(Component):
     def config_spec(self, spec, val_funcs):
         section_spec = spec.setdefault(CONF_SEC, {})
         section_spec[ENABLED] = 'boolean(default=%s)' % DEFAULT_STATE
-        section_spec['url'] = "is_url_alive(default='%s')" % DEFAULT_URL
+        section_spec['url'] = "string(default='%s')" % DEFAULT_URL
         section_spec[PATH_TO_ISSUEDB] = "string(default=None)"
