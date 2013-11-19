@@ -257,10 +257,12 @@ def _prepareVmObject(**kwargs):
     payloads = kwargs.pop('payloads', None)
     if payloads:
         payload_array = []
+        payload_files = data_st.Files()
         for payload_type, payload_fname, payload_file_content in payloads:
-            payload_file = data_st.PayloadFile(payload_fname,
-                                               payload_file_content)
-            payload = data_st.Payload(payload_type, payload_file)
+            payload_file = data_st.File(name=payload_fname,
+                                        content=payload_file_content)
+            payload_files.add_file(payload_file)
+            payload = data_st.Payload(payload_type, payload_files)
             payload_array.append(payload)
 
         payloads = data_st.Payloads(payload_array)
