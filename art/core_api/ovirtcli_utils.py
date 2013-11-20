@@ -157,7 +157,9 @@ class CliConnection(object):
             if timeout == 0:
                 raise CLICommandFailure("Read of cli command output from file"
                                         " failed due to timeout in writing/"
-                                        "flushing of this file")
+                                        "flushing of this file.\n"
+                                        "It can also happen if cli doesn't "
+                                        "return any stdout (in case of error")
             new_size = int(subprocess.Popen(["wc", "-c", TMP_FILE],
                                             stdout=subprocess.PIPE).
                            communicate()[0].split()[0])
@@ -193,11 +195,9 @@ class CliConnection(object):
 
                 # WA for trash in buffer (END issue)
                 try:
-                    i = self.cliConnection.expect(self._prompt,
-                                                  timeout=0.001)
+                    i = self.cliConnection.expect(self._prompt, timeout=0.1)
                 except pe.TIMEOUT:
-                    i = self.cliConnection.expect(expectList,
-                                                  timeout)
+                    i = self.cliConnection.expect(expectList, timeout)
 
             output.append(self.cliConnection.before)
         except pe.TIMEOUT as e:
@@ -360,9 +360,9 @@ class RhevmCli(CliConnection):
         """
         self.logger.debug("%s cli command is: %s", apiCmdName, apiCmd)
         errAndDebug = self.commandRun(apiCmd)
-        out = self.readTmpFile()
         self.logger.debug("%s cli command Debug and Error output: %s",
                           apiCmdName, errAndDebug)
+        out = self.readTmpFile()
         self.logger.debug("%s cli command output: %s", apiCmdName, out)
         return out
 
