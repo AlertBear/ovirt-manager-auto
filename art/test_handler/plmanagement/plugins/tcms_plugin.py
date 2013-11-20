@@ -54,6 +54,7 @@ from art.test_handler.plmanagement.interfaces.config_validator import\
 
 TCMS_OPTION = 'TCMS'
 PARAMETERS = 'PARAMETERS'
+RUN = 'RUN'
 TCMS_URL = 'https://tcms.engineering.redhat.com/xmlrpc/'
 REALM = '@REDHAT.COM'
 SENDER = 'noreply@redhat.com'
@@ -134,6 +135,9 @@ class TCMS(Component):
         url = tcms_cfg[TCMS_SITE]
         self.site = re.match('^(?P<site>[^/]+//[^/]+)/.*$', url).group('site')
         self.user = params.tcms_user or tcms_cfg[USER]
+        test_run_smr_temlate = "%s - %s" % (tcms_cfg[RUN_NAME_TEMPL], \
+                                conf[RUN]['engine'].upper())
+
         self.info = {'tcms_url': url,
                      'placeholder_plan_type':  PLAN_TYPE,
                      'keytab_files_location': tcms_cfg[KEYTAB_LOCATION],
@@ -141,7 +145,7 @@ class TCMS(Component):
                      'keytab_file_extension': KT_EXT,
                      'configure_logger': False,
                      'send_result_email': tcms_cfg[SEND_MAIL],
-                     'test_run_name_template': tcms_cfg[RUN_NAME_TEMPL],
+                     'test_run_name_template': test_run_smr_temlate,
                      'default_sender': SENDER,
                      'header_names': HEADERS}
 
@@ -278,7 +282,7 @@ class TCMS(Component):
         section_spec[REPORT_BZ] = 'boolean(default=false)'
         section_spec[REALM_OPT] = 'string(default=%s)' % REALM
         section_spec[RUN_NAME_TEMPL] =\
-            "string(default='Auto TestRun for {0} TestPlan')"
+            "string(default='Auto TestRun for {0}')"
         section_spec[GENERATE_LINKS] = "boolean(default=false)"
         section_spec[TCMS_SITE] = "string(default='%s')" % TCMS_URL
         section_spec[BUILD_ID] = "string(default='unspecified')"
