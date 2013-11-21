@@ -40,9 +40,9 @@ from utilities.utils import readConfFile, calculateTemplateUuid, \
 convertMacToIp, pingToVms, getIpAddressByHostName, createDirTree
 from utilities.machine import Machine, eServiceAction, LINUX
 from art.core_api.apis_exceptions import APITimeout, EntityNotFound
-from utilities.tools import updateGuestTools, verifyToolsFilesExist, \
-    removeToolsFromGuest, waitForGuestReboot, GuestToolsMachine, \
-    installToolsFromDir
+from utilities.tools import updateGuestTools, isToolsInstalledOnGuest, \
+    removeToolsFromGuest, waitForGuestReboot, installAutoUpgraderCD, \
+    installToolsFromDir, verifyToolsFilesExist
 #from upgradeSetup.prepSetup import Rhevm
 from art.rhevm_api.utils.threads import CreateThread, ThreadSafeDict
 from art.core_api import is_action
@@ -550,9 +550,17 @@ def isToolsOnGuest(positive, ip, user, password, packs, toolsVersion, attempts=1
 
 
 @is_action()
-def removeTools(positive, machine, timeout=500, packs='desktop'):
+def removeTools(positive, ip, user, password, toolsVersion, packs='desktop', attempts=1):
     ''''Wrapper for removeToolsFromGuest'''
-    return machine.removeToolsFromGuest(timeout, packs)
+    try:
+        toolsFound = removeToolsFromGuest(ip, user, password, toolsVersion, packs=packs, attempts=attempts)
+    except Exception as err:
+        return False, {'packagesFound' : err}
+
+    if toolsFound:
+        toolsFound = ' '.join(toolsFound)
+        return False, {'packagesFound' : toolsFound}
+    return  True, {'packagesFound' : 'NONE'}
 
 
 @is_action()
@@ -564,44 +572,11 @@ def waitForReboot(positive, ip, user, password, attempts):
 
 
 @is_action()
-def createMachine(positive, host, ip, os, platf, **kwargs):
-    '''
-    'Wrapper for GuestToolsMachine
-    '''
-    return GuestToolsMachine(host, ip, os, platf, **kwargs)
-
-
-@is_action()
-def isGtMachineReady(positive, machine, timeout=300, interval=10):
-    '''
-    'Wrapper for waitForMachineReady
-    '''
-    return machine.waitForMachineReady(timeout, interval)
-
-
-@is_action()
-def areToolsAreCorrectlyInstalled(positive, machine):
-    '''
-    'Wrapper for areToolsAreCorrectlyInstalled
-    '''
-    return machine.areToolsAreCorrectlyInstalled()
-
-
-@is_action()
-def installAPT(positive, machine, toollist, wait=True, timeout=300):
+def installAPT(positive, server, ip, user, password, toolsVersion, clusterVersion, wait=True, attempts=0):
     '''
     wrapper for installAutoUpgraderCD
     '''
-    return machine.installAutoUpgraderCD(toollist, wait, timeout)
-
-
-@is_action()
-def installGuestToolsFromDir(positive, ip, user, password,
-                             build, onlyExtract=False):
-    '''
-    wrapper for installToolsFromDir
-    '''
-    return installToolsFromDir(ip, user, password, build, onlyExtract)
+    return installAutoUpgraderCD(getIpAddressByHostName(server), ip, user, password, toolsVersion, buildName=clusterVersion, wait=wait, attempts=attempts)
 
 
 @is_action()
@@ -618,6 +593,7 @@ def verifyGuestToolsFilesExist(ip, packs='desktop'):
     wrapper for verifyToolsFilesExist
     '''
     return verifyToolsFilesExist(ip, packs=packs)
+
 
 @is_action()
 def prepareDataForVm(root_dir='/tmp', root_name_prefix='', dir_cnt=1, file_cnt=1):
