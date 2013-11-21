@@ -191,7 +191,7 @@ class RestUtil(APIUtil):
         self.logger.debug("CREATE request content is --  url:%(uri)s body:%(body)s " \
                             % {'uri': post_url, 'body': entity })
 
-        with measure_time():
+        with measure_time('POST'):
             ret = self.api.POST(post_url, entity)
 
         if not self.opts['validate']:
@@ -254,7 +254,7 @@ class RestUtil(APIUtil):
         self.logger.debug("PUT request content is --  url:%(uri)s body:%(body)s " \
                                     % {'uri': put_url, 'body': entity })
 
-        with measure_time():
+        with measure_time('PUT'):
             ret = self.api.PUT(put_url, entity)
 
         if not self.opts['validate']:
@@ -303,12 +303,12 @@ class RestUtil(APIUtil):
             self.logger.debug("DELETE request content is --  url:%(uri)s body:%(body)s " \
                                                         % {'uri': entity.href, 'body': body })
 
-            with measure_time():
+            with measure_time('DELETE'):
                 ret = self.api.DELETE(entity.href, body)
         else:
             self.logger.debug("DELETE request content is --  url:%(uri)s" \
                                                             % {'uri': entity.href})
-            with measure_time():
+            with measure_time('DELETE'):
                 ret = self.api.DELETE(entity.href)
 
         if not self.opts['validate']:
@@ -397,7 +397,7 @@ class RestUtil(APIUtil):
 
         self.logger.debug("SEARCH request content is --  url:%(uri)s" % {'uri': qhref})
 
-        with measure_time():
+        with measure_time('GET'):
             ret = self.api.GET(qhref)
 
         self.logger.debug("Response body for QUERY request is: %s " % ret['body'])
@@ -441,7 +441,7 @@ class RestUtil(APIUtil):
         self.logger.debug("Action request content is --  url:%(uri)s body:%(body)s " \
                                      % {'uri': actionHref, 'body': actionBody })
 
-        with measure_time():
+        with measure_time('POST'):
             ret = self.api.POST(actionHref, actionBody)
 
         if not self.opts['validate']:

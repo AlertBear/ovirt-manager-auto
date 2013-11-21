@@ -14,7 +14,7 @@ logger = logging.getLogger('core_api')
 
 
 @contextmanager
-def measure_time(): # should be some appropiate params
+def measure_time(method_name):
     '''
     Context manager to log request response time
     '''
@@ -26,8 +26,9 @@ def measure_time(): # should be some appropiate params
         yield
     finally:
         responseTime = time.clock() - st
-        plmanager.time_measurement.on_stop_measure(responseTime)
-        logger.debug("Request response time: %0.3f" % (responseTime))
+        plmanager.time_measurement.on_stop_measure(method_name, responseTime)
+        logger.debug("Request %s response time: %0.3f",
+                     method_name, responseTime)
 
 
 class ActionDiscoveryError(Exception):
