@@ -129,7 +129,9 @@ class AutoCpuNameResolution(Component):
                 model_name += name[4:].replace(' ', '_')
                 vendor = 'AMD'
             else:
-                raise CpuPluginError('Unknown vendor of %s' % name)
+#                raise CpuPluginError('Unknown vendor of %s' % name)
+                logger.warning('Unknown vendor of %s' % name)
+                continue
             self.cpus_model_mapping[model_name] = {'name': name,
                                                    'level': level,
                                                    'vendor': vendor}
@@ -161,12 +163,8 @@ class AutoCpuNameResolution(Component):
         compatibility_version = conf[PARAMETERS][COMPATIBILITY_VERSION]
         compatibility_version = compatibility_version.split('.')
 
-        try:
-            cpus = self.get_cpus_from_api(compatibility_version)
-            self.build_mapping(cpus)
-        except CpuPluginError as ex:
-            logger.warning(ex)
-            return
+        cpus = self.get_cpus_from_api(compatibility_version)
+        self.build_mapping(cpus)
 
         self.vds_list = conf[PARAMETERS].as_list(VDS)
         self.vds_passwd_list = conf[PARAMETERS].as_list(VDS_PASSWORD)
