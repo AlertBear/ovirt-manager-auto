@@ -28,13 +28,23 @@ LUN_ADDRESS = PARAMETERS.as_list('lun_address')[0]
 LUN = PARAMETERS.as_list('lun')[0]
 
 HOST_NICS = PARAMETERS.as_list('host_nics')
+VM_NICS = ['eth0', 'eth1', 'eth2', 'eth3']
+VM_NIC_NAMES = ['nic1', 'nic2', 'nic3']
+BONDS = PARAMETERS.as_list('bond')
 NETWORKS = PARAMETERS.as_list('networks')
-VLAN_NETWORKS = PARAMETERS.as_list('vlan_networks')
-VLAN_ID = [201, 202, 203, 204, 205]
-BOND = PARAMETERS.as_list('bond')
-VM_NAME = PARAMETERS.as_list('vm_name')
+VLAN_NETWORKS = ['sw201', 'sw202', 'sw203', 'sw204', 'sw205']
+VLAN_ID = ['201', '202', '203', '204', '205']
+VM_NAME = [TEST_NAME + "_" + elm for elm in PARAMETERS.as_list('vm_name')]
 TEMPLATE_NAME = PARAMETERS['template_name']
 VM_OS = PARAMETERS['vm_os']
+INTER_SUBNET = '3.3.3.'
+IPS = ['3.3.3.1', '3.3.3.2']
+MTU = [5000, 9000, 2000, 1500]
+SEND_MTU = [4500, 8500, 1500, 1000]
+NETMASK = ['255.255.255.0']
+GATEWAY = ['3.3.3.254']
+TRAFFIC_TIMEOUT = 120
+CONNECT_TIMEOUT = 60
 
 COBBLER_ADDRESS = PARAMETERS.get('cobbler_address', None)
 COBBLER_USER = PARAMETERS.get('cobbler_user', None)

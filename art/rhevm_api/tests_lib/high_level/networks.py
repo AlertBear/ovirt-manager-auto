@@ -54,6 +54,7 @@ INTERVAL = 2
 ATTEMPTS = 600
 TIMEOUT = 120
 MAX_COUNTER = 60
+DEFAULT_MTU = 1500
 VDSM_CONF_FILE = "/etc/vdsm/vdsm.conf"
 IFCFG_FILE_PATH = "/etc/sysconfig/network-scripts/"
 HOST_NICS = ["eth0", "eth1", "eth2", "eth3", "eth4", "eth5"]
@@ -204,7 +205,7 @@ def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
                               mtu=net_param.get('mtu'),
                               profile_required=net_param.get(
                                   'profile_required')):
-                logger.error("Cannot add network to DC")
+                logger.info("Cannot add network to DC")
                 return False
         if cluster and net:
             logger.info("Adding network to Cluster")
@@ -213,7 +214,7 @@ def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
                                        get('required'),
                                        usages=net_param.
                                        get('cluster_usages', None)):
-                logger.error("Cannot add network to Cluster")
+                logger.info("Cannot add network to Cluster")
                 return False
         # creating logical interface nic.vlan when host, vlan_id are provided
         if 'vlan_id' in net_param and host:
@@ -252,7 +253,7 @@ def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
                              auto_nics=auto_nics,
                              check_connectivity='true',
                              connectivity_timeout=60, force='false'):
-            logger.error("Failed to send SN request to host %s" % host)
+            logger.info("Failed to send SN request to host %s" % host)
             return False
         if save_config:
             logger.info("Saving network configuration on host %s" % host)
@@ -799,7 +800,8 @@ def getIpOnHostNic(host, nic):
     return host_nic.get_ip().get_address()
 
 
-def checkICMPConnectivity(host, user, password, ip, max_counter=MAX_COUNTER):
+def checkICMPConnectivity(host, user, password, ip, max_counter=MAX_COUNTER,
+                          packet_size=None):
     '''
     Description: Checks ICMP connectivity till max_counter time expires
     **Author**: gcheresh
@@ -809,11 +811,12 @@ def checkICMPConnectivity(host, user, password, ip, max_counter=MAX_COUNTER):
         *  *password* - host password
         *  *ip* - distination IP address for ICMP traffic
         *  *max_counter* - max number of calls for sendICMP command
+        *  *packet_size* - size of packet to send
     **Returns**: True if ICMP connectivity was established, otherwise False
     '''
     while (max_counter):
         if not sendICMP(host=host, user=user, password=password,
-                        ip=ip, count=1):
+                        ip=ip, count=1, packet_size=packet_size):
             max_counter -= 1
         else:
             return True

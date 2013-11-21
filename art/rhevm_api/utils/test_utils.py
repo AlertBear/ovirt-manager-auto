@@ -1516,10 +1516,37 @@ def buildListFilesMtu(physical_layer=True, network=None, nic=None,
 
 
 @is_action()
+def checkConfiguredMTU(host, user, password, mtu, inter_or_net):
+    """
+    Description: Checking on host if the mtu is configured on an
+    interface or network using ifconfig command
+    **Author**: awinter
+    **Parameters**:
+        *  *host* - The requested host
+        *  *user* - The username for the host
+        *  *password* - The password for the host
+        *  *mtu* - expected MTU for the network/interface
+        *  *inter_or_net* - interface's name or network's name
+    **Returns**: True value if MTU is equal to "mtu", False otherwise.
+    """
+    mtu = "MTU:%s" % mtu
+    machine_obj = Machine(host, user, password).util(LINUX)
+    cmd = ["ifconfig", inter_or_net, "|", "grep", mtu]
+    rc, output = machine_obj.runCmd(cmd)
+    if not rc:
+        logger.error("ifconfig command failed: %s", output)
+        return False
+    if output.find(mtu) == -1:
+        logger.error("MTU is not configured correctly: %s", output)
+        return False
+    return True
+
+
+@is_action()
 def checkMTU(host, user, password, mtu, physical_layer=True, network=None,
              nic=None, vlan=None, bond=None, bond_nic1='eth3',
              bond_nic2='eth2', bridged=True):
-    '''
+    """
         Check MTU for all files provided from buildListFilesMtu function
         Uses helper testMTUInScriptList function to do it
         Author: gcheresh
@@ -1537,7 +1564,7 @@ def checkMTU(host, user, password, mtu, physical_layer=True, network=None,
         * bond_nic2 - name of the second nic of the bond
         * bridged - flag, to differentiate bridged and non_bridged network
         Return: True value if MTU in script files is correct
-    '''
+    """
     ifcfg_script_list, sys_class_net_list = buildListFilesMtu(physical_layer,
                                                               network, nic,
                                                               vlan, bond,
