@@ -471,32 +471,42 @@ def removeStorageDomains(positive, storagedomains, host, format='true'):
     Description: remove storage domains
     Author: edolinin
     Parameters:
-       * storagedomains - comma-separated list of storage domain names
+       * storagedomains - comma-separated string or python list of storage
+       domain names
        * host - host name/IP address to use
        * format - format the content of storage domain ('true' by default)
-    Return: status (True if storage domains were removed properly, False otherwise)
+    Return: status (True if storage domains were removed properly,
+    False otherwise)
     '''
     status = True
-    sdList = storagedomains.split(',')
+    detach_status = False
+    if isinstance(storagedomains, basestring):
+        storagedomains = storagedomains.split(',')
     for dc in dcUtil.get(absLink=False):
-        sds = util.getElemFromLink(dc, get_href=True)
+        sds = util.getElemFromLink(dc, get_href=False)
         # detach and remove non master domains
         for sd in sds:
-            if sd.get_name() in sdList:
-                #   if hasattr(sd, "master"):
+            if sd.get_name() in storagedomains:
                 if sd.get_master():
                         continue
                 else:
-                    deactivateStatus = deactivateStorageDomain(positive,
-                                            dc.get_name(), sd.get_name())
-                    detachStatus = detachStorageDomain(positive,
-                                    dc.get_name(), sd.get_name())
-                    if not detachStatus:
+                    deactivate_status = deactivateStorageDomain(positive,
+                                                                dc.get_name(),
+                                                                sd.get_name())
+                    if deactivate_status:
+                        detach_status = detachStorageDomain(positive,
+                                                            dc.get_name(),
+                                                            sd.get_name())
+                    else:
                         status = False
 
-    for sdlisted in util.get(absLink=False):
-        if sdlisted.name in sdList:
-            removeStatus = removeStorageDomain(positive, sdlisted.get_name(), host, format)
+                    if not detach_status:
+                        status = False
+
+    for sd_listed in util.get(absLink=False):
+        if sd_listed.get_name() in storagedomains:
+            removeStatus = removeStorageDomain(positive, sd_listed.get_name(),
+                                               host, format)
             if not removeStatus:
                 status = False
 
@@ -1652,3 +1662,71 @@ def get_mounted_nfs_resources(host, password):
     for (address, path, timeo, retrans, nfsvers) in mounted:
         result[(address, path)] = (timeo, retrans, nfsvers)
     return result
+
+
+@is_action()
+def _verify_one_option(real, expected):
+    """ helper function for verification of one option
+    """
+    return expected is None or expected == real
+
+
+@is_action()
+def verify_nfs_options(
+        expected_timeout, expected_retrans, expected_nfsvers,
+        real_timeo, real_retrans, real_nfsvers):
+    """
+    Verifies that the real nfs options are as expected.
+
+    **Author**: Katarzyna Jachim
+
+    **Parameters**:
+        * *expected_timeout*: expected NFS timeout
+        * *expected_retrans*: expected # of retransmissions
+        * *expected_nfsvers*: expected NFS protocol version
+        * *real_timeo*: NFS timeout returned by 'mount' command
+        * *real_retrans*: # of retransmissions returned by 'mount' command
+        * *real_nfsvers*: NFS protocol version returned by 'mount' command
+
+    **Returns**: None in case of success or tuple (param_name, expected, real)
+    """
+    if not _verify_one_option(real_timeo, expected_timeout):
+        return ("timeo", expected_timeout, real_timeo)
+    if not _verify_one_option(real_retrans, expected_retrans):
+        return ("retrans", expected_retrans, real_retrans)
+    if not _verify_one_option(real_nfsvers, expected_nfsvers):
+        return ("nfsvers", expected_nfsvers, real_nfsvers)
+
+
+@is_action()
+class NFSStorage(object):
+    """ Helper class - one object represents one NFS storage domain.
+
+    **Attributes**:
+        * *name*: name of the storage domain in RHEV-M
+        * *address*: address of the NFS server
+        * *path*: path to the NFS resource on the NFS server
+        * *timeout_to_set*: value of the NFS timeout which should be passed to
+                        RHEV-M when storage domain is created
+        * *retrans_to_set*: # of retransmissions as above
+        * *vers_to_set*: NFS protocol version as above
+        * *expected_timeout*: value of the NFS timeout which should be used by
+                          RHEV-M when NFS resource is mounted on the host
+        * *expected_retrans*: # of retransmissions as above
+        * *expected_vers*: NFS protocol version as above
+        * *sd_type*: one of ENUMS['storage_dom_type_data'],
+             ENUMS['storage_dom_type_iso'], ENUMS['storage_dom_type_export']
+
+        Actually, the X_to_set and expected_X values are different only when
+        X_to_set is None, which means that the default value should be used.
+    """
+    __allowed = ("name", "address", "path", "sd_type",
+                 "timeout_to_set", "retrans_to_set", "vers_to_set",
+                 "expected_timeout", "expected_retrans", "expected_vers")
+
+    def __init__(self, **kwargs):
+        self.sd_type = ENUMS['storage_dom_type_data']
+        for k, v in kwargs.iteritems():
+            assert (k in self.__allowed)
+            setattr(self, k, v)
+
