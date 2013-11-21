@@ -1,4 +1,9 @@
-#!/usr/bin/env python
+'''
+Testing disk permissions feauture.
+1 Host, 1 DC, 1 Cluster, 1 SD will be created.
+Testing if permissions are correctly assigned/removed/viewed on disks.
+'''
+
 __test__ = True
 
 import logging

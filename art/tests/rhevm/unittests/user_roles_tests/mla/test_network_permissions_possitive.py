@@ -1,4 +1,10 @@
-#!/usr/bin/env python
+'''
+Testing network permissions feature. Possitive cases.
+1 Host, 1 SD, 1 DC, 1 cluster will be created for test.
+It will cover scenarios for creating/deleting/viewing networks and vnicprofiles
+if user is permittied for it.
+'''
+
 __test__ = True
 
 import logging

@@ -1,4 +1,8 @@
-#!/usr/bin/env python
+'''
+Testing authentication of users from OpenLDAP.
+Nothing is created using default DC and default cluster.
+Authentication of expired users, users from group and correct users.
+'''
 
 __test__ = True
 

@@ -1,4 +1,9 @@
-#!/usr/bin/env python
+'''
+Testing copy permissions feauture.
+1 Host, 1 DC, 1 Cluster, 1 SD will be created.
+Every case create vm/template and check if permissions from it are/aren't
+copied, when copy_permissions flag is/isn't provided.
+'''
 
 __test__ = True
 

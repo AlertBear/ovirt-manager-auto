@@ -1,4 +1,9 @@
-#!/usr/bin/env python
+'''
+Testing if user can access only his objects.
+1 Host, 1 DC, 1 Cluster, 1 SD will be created.
+Tests if user can access object which he has permissions for and not see,
+if he has not permissions.
+'''
 
 __test__ = True
 

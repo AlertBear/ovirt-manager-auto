@@ -1,3 +1,9 @@
+'''
+Sanity testing of upgrade.
+1 DC, 1 Cluster, 1 host, 1 SD and 1 VM will be created.
+Test will create and run VM on 3.2 setup then upgrade to 3.3 and try the same.
+'''
+
 import config as cfg
 import logging
 from art.rhevm_api.tests_lib.low_level import vms

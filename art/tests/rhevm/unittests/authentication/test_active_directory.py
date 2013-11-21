@@ -1,4 +1,9 @@
-#!/usr/bin/env python
+'''
+Testing authentication of users from active directory.
+Nothing is created using default DC and default cluster.
+Authentication of users expiredPw/expiredAcc/disabled is tested.
+Testing authentication user from groups and users from 2 AD.
+'''
 
 __test__ = True
 

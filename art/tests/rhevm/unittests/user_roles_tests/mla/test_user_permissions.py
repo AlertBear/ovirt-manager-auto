@@ -1,4 +1,8 @@
-#!/usr/bin/env python
+'''
+Testing working with permissions.
+1 Host, 1 DC, 1 Cluster, 1 SD will be created.
+Tests if permissions are correctly inherited/viewed/assigned/removed.
+'''
 
 __test__ = True
 

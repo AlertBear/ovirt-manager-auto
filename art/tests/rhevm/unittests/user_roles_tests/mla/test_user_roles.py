@@ -1,4 +1,8 @@
-#!/usr/bin/env python
+'''
+Testing rhevm roles.
+1 Host, 1 SD, 1 DC, 1 cluster will be created for test.
+This will cover scenario for create/remove/editin/using roles.
+'''
 
 __test__ = True
 
