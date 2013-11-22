@@ -284,6 +284,7 @@ def detachDisk(positive, alias, vmName, detach=True):
         * vmName - vm from which disk will be detached
     Author: jlibosva
     Return: Status of the operation dependent on positive value
+    Exceptions: EntityNotFound when disk is not found
     """
     diskObj = getVmDisk(vmName, alias)
     body = data_st.Action(detach=detach)
@@ -381,6 +382,7 @@ def checkDiskExists(positive, name):
         return not positive
     return positive
 
+
 @is_action()
 def move_disk(disk_name, source_domain, target_domain, wait=True,
               timeout=DEFAULT_DISK_TIMEOUT, sleep=10):
@@ -410,5 +412,5 @@ def move_disk(disk_name, source_domain, target_domain, wait=True,
         for disk in TimeoutingSampler(timeout, sleep, getStorageDomainDisks,
                                       target_domain):
             if disk.name == disk_name and \
-                            disk.status.state == ENUMS['disk_state_ok']:
+                    disk.status.state == ENUMS['disk_state_ok']:
                 return

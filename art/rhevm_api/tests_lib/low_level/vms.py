@@ -465,31 +465,39 @@ def removeVmAsynch(positive, tasksQ, resultsQ, stopVmBool=False):
         resultsQ.put((vm, status))
         tasksQ.task_done()
 
+
 @is_action()
-def removeVms(positive, vms, stop='false'):
+def removeVms(positive, vms, stop='false', timeout=180):
     '''
     Removes the VMs specified by `vms` commas separated list of VM names.
     Author: jhenner
     Parameters:
-        * vms - Comma (no space) separated list of VM names.
+        * vms - a list or a string list separated by comma of vms
         * stop - will attempt to stop VMs if 'true' ('false' by default)
+        * timeout -in secs, used for waitForVmsGone
     '''
     assert positive
     tasksQ = Queue()
     resultsQ = Queue()
     threads = set()
-    vmsList = split(vms)
-    num_worker_threads = len(vmsList)
-    for i in range(num_worker_threads):
+    if isinstance(vms, basestring):
+        # 'vm1, vm2' -> [vm1, vm2]
+        vmsList = split(vms)
+    else:
+        vmsList = vms
+    if not vmsList:
+        raise ValueError("vms cannot be empty")
+    for i in vmsList:
         t = Thread(target=removeVmAsynch, name='VM removing',
-                args=(positive, tasksQ, resultsQ, (stop.lower() == 'true')))
+                   args=(positive, tasksQ, resultsQ, (stop.lower() == 'true')))
         threads.add(t)
         t.daemon = False
         t.start()
 
     for vm in vmsList:
         tasksQ.put(vm)
-    tasksQ.join() # block until all tasks are done
+
+    tasksQ.join()  # block until all tasks are done
     logger.info(threads)
     for t in threads:
         t.join()
@@ -502,7 +510,7 @@ def removeVms(positive, vms, stop='false'):
         else:
             logger.error("Failed to asynchronously remove VM '%s'." % vm)
         status = status and removalOK
-    return waitForVmsGone(positive, vms) and status
+    return waitForVmsGone(positive, vmsList, timeout=timeout) and status
 
 
 def waitForVmsGone(positive, vms, timeout=60, samplingPeriod=10):
@@ -512,7 +520,8 @@ def waitForVmsGone(positive, vms, timeout=60, samplingPeriod=10):
     until no VMs specified by names in `vms` exists.
 
     Parameters:
-        * vms - comma (and no space) separated string of VM names to wait for.
+        * vms - comma (and no space) separated string of VM names to wait for
+                or list of names
         * timeout - Time in seconds for the vms to disapear.
         * samplingPeriod - Time in seconds for sampling the vms list.
     '''
@@ -2960,7 +2969,7 @@ def wait_for_vm_states(vm_name, states=[ENUMS['vm_state_up']],
 
 
 @is_action('startVmsParallel')
-def start_vms(vm_list, max_workers):
+def start_vms(vm_list, max_workers, wait_for_ip=True):
     """
     Description: Starts all vms in vm_list
 
@@ -2973,8 +2982,10 @@ def start_vms(vm_list, max_workers):
         for machine in vm_list:
             vm_obj = VM_API.find(machine)
             if vm_obj.status.state == ENUMS['vm_state_down']:
+                logger.info("Starting vm %s", machine)
                 results.append(executor.submit(startVm, True,
-                                               machine, wait_for_ip=True))
+                                               machine,
+                                               wait_for_ip=wait_for_ip))
     for machine, res in zip(vm_list, results):
         if res.exception():
             logger.error("Got exception while starting vm %s: %s", machine,

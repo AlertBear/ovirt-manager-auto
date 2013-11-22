@@ -1794,12 +1794,16 @@ def waitUntilGone(positive, names, api, timeout, samplingPeriod):
     seconds, until no object specified by names in `names` exists.
 
     Parameters:
-        * names - comma (and no space) separated string of names
+        * names - comma (and no space) separated string or list of names
         * timeout - Time in seconds for the objects to disappear
         * samplingPeriod - Time in seconds for sampling the objects list
         * api - API to query (get with get_api(ELEMENT, COLLECTION))
     '''
-    query = ' or '.join(['name="%s"' % templ for templ in split(names)])
+    if isinstance(names, basestring):
+        objlist = split(names)
+    else:
+        objlist = names
+    query = ' or '.join(['name="%s"' % templ for templ in objlist])
     sampler = TimeoutingSampler(timeout, samplingPeriod, api.query, query)
 
     sampler.timeout_exc_args = "Objects didn't disappear in %d secs" % timeout,
