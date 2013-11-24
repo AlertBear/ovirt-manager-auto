@@ -61,7 +61,8 @@ def _create_vm(vm_name, vm_description, disk_interface,
         nic=config.HOST_NICS[0], storageDomainName=storage_domain_name,
         size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
         volumeType=sparse, volumeFormat=volume_format,
-        diskInterface=disk_interface, memory=GB, cpu_socket=config.CPU_SOCKET,
+        diskInterface=disk_interface, memory=GB,
+        cpu_socket=config.CPU_SOCKET,
         cpu_cores=config.CPU_CORES, nicType=config.NIC_TYPE_VIRTIO,
         display_type=config.DISPLAY_TYPE, os_type=config.OS_TYPE,
         user=config.VM_LINUX_USER, password=config.VM_LINUX_PASSWORD,
@@ -401,7 +402,7 @@ class TestCase300867(TestCase):
     storage vm sanity test, creates 2 snapshots and removes them.
     Check that actual disk size became the same it was
     before snapshots were made.
-    https://tcms.engineering.redhat.com/case/248138/?from_plan=8676
+    https://tcms.engineering.redhat.com/case/300867/?from_plan=1892
     """
     __test__ = True
     tcms_plan_id = '1892'
@@ -422,7 +423,7 @@ class TestCase300867(TestCase):
             config.VM_BASE_NAME, config.DATA_CENTER_TYPE)
         # create vm with thin provision disk
         if not _create_vm(cls.vm_name, vm_description,  config.INTERFACE_IDE,
-                          sparse=False, volume_format=ENUMS['format_raw']):
+                          sparse=True, volume_format=ENUMS['format_cow']):
             raise exceptions.VMException(
                 "Creation of VM %s failed!" % cls.vm_name)
         LOGGER.info("Waiting for vm %s state 'up'" % cls.vm_name)
@@ -434,37 +435,19 @@ class TestCase300867(TestCase):
         if not status:
             raise exceptions.VMException("Can't get IP of vm %s" % cls.vm_name)
         cls.vms_ip_address = vm_ip['ip']
+        LOGGER.info("Stopping VM %s" % cls.vm_name)
+        vms.shutdownVm(True, cls.vm_name)
         LOGGER.info("setup finished with success")
 
     def _make_snapshots(self):
-
-        LOGGER.info("Stopping VM %s" % self.vm_name)
-        self.assertTrue(
-            vms.stopVm(True, self.vm_name),
-            "Stopping vm %s failed!" % self.vm_name)
-
         for snapshot in self.snapshots:
-
             LOGGER.info("Creating snapshot %s" % snapshot)
             self.assertTrue(
                 vms.addSnapshot(True, self.vm_name, description=snapshot),
                 "Creating snapshot of vm %s failed!" % self.vm_name)
             LOGGER.info("successfully created snapshot %s" % snapshot)
 
-        LOGGER.info("Starting VM %s" % self.vm_name)
-        self.assertTrue(vms.startVm(True,
-                                    self.vm_name,
-                                    wait_for_status='up',
-                                    wait_for_ip=False),
-                        "Starting vm %s failed!" % self.vm_name)
-        LOGGER.info("successfully started vm %s" % self.vm_name)
-
     def _remove_snapshots(self):
-        LOGGER.info("Stopping VM %s" % self.vm_name)
-        self.assertTrue(
-            vms.stopVm(True, vm=self.vm_name),
-            "Stopping vm %s failed!" % self.vm_name)
-
         for snapshot in self.snapshots:
             LOGGER.info("Removing snapshot %s" % snapshot)
             self.assertTrue(
@@ -472,15 +455,6 @@ class TestCase300867(TestCase):
                     True, vm=self.vm_name, description=snapshot,
                     timeout=2100),
                 "Removing snapshot %s failed!" % snapshot)
-
-        LOGGER.info(
-            "Starting VM %s and waiting for status 'up'" % self.vm_name)
-        self.assertTrue(
-            vms.startVm(True,
-                        vm=self.vm_name,
-                        wait_for_status='up',
-                        wait_for_ip=False),
-            "Starting vm %s failed!" % self.vm_name)
 
     @tcms(tcms_plan_id, tcms_test_case)
     def test_auto_shrink_qcow_volumes(self):
@@ -509,13 +483,15 @@ class TestCase300867(TestCase):
                     self.alias,
                     self.disk_size_after)
 
-        self.assertTrue(self.disk_size_after == self.disk_size_before,
-                        "Failed to auto shrink qcow volumes on merge "
-                        "of block volumes")
+        # VDSM allocates more 1 extent for metadata
+        self.assertTrue(
+            self.disk_size_after - self.disk_size_before <= config.EXTENT_SIZE,
+            "Failed to auto shrink qcow volumes on merge of block volumes")
 
     @classmethod
     def teardown_class(cls):
         vms.removeVm(True, vm=cls.vm_name, stopVM='true')
+
 
 class TestReadLock(TestCase):
     """
@@ -537,9 +513,9 @@ class TestReadLock(TestCase):
         cls.vm_name = '%s_%s' % (config.VM_BASE_NAME, cls.vm_type)
         cls.template_name = "template_%s" % (cls.vm_name)
         if not _create_vm(cls.vm_name, cls.vm_name, config.INTERFACE_IDE,
-                         vm_type=cls.vm_type):
-           raise exceptions.VMException(
-               "Creation of VM %s failed!" % cls.vm_name)
+                          vm_type=cls.vm_type):
+            raise exceptions.VMException(
+                "Creation of VM %s failed!" % cls.vm_name)
         LOGGER.info("Waiting for vm %s state 'up'" % cls.vm_name)
         if not vms.waitForVMState(cls.vm_name):
             raise exceptions.VMException(
@@ -600,6 +576,7 @@ class TestReadLock(TestCase):
             raise exceptions.TemplateException("Failed removing template %s"
                                                % cls.template_name)
 
+
 class TestCase320224(TestReadLock):
     """
     TCMS Test Case 320224 - Run on desktop
@@ -616,6 +593,7 @@ class TestCase320224(TestReadLock):
         Start creating another VM from the same template
         """
         self.create_two_vms_simultaneously()
+
 
 class TestCase320225(TestReadLock):
     """
