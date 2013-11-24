@@ -46,6 +46,7 @@ class RestUtil(APIUtil):
 
         super(RestUtil, self).__init__(element, collection, **kwargs)
 
+        self.entry_point = settings.opts.get('entry_point', 'api')
         standalone = self.opts.get('standalone', False)
         global restInit
 
@@ -432,8 +433,8 @@ class RestUtil(APIUtil):
             return results[0].get_href()
 
         actionHref = getActionHref(entity.actions, action)
-        if re.search('^/api/.*', actionHref) is None:
-            actionHref = '{0}{1}'.format('/api', actionHref)
+        if re.search('^/{0}/.*'.format(self.entry_point), actionHref) is None:
+            actionHref = '/{0}{1}'.format(self.entry_point, actionHref)
 
         actionBody = validator.dump_entity(self.makeAction(async, 10, **params),
                                     'action')
