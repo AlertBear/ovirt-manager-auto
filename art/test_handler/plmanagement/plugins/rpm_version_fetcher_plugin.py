@@ -17,16 +17,15 @@ Configuration Options:
     | **vds**       list of rpms to check on VDS machine
 """
 
-import re
 from art.test_handler.plmanagement import Component, implements, get_logger
 from art.test_handler.plmanagement.interfaces.application import \
-        IConfigurable, IApplicationListener
+    IConfigurable, IApplicationListener
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
-from art.test_handler.plmanagement.interfaces.config_validator import\
-                                                    IConfigValidation
+from art.test_handler.plmanagement.interfaces.config_validator import \
+    IConfigValidation
 from utilities.machine import Machine, LINUX
 
-logger = get_logger('validate_events')
+logger = get_logger('rpm_version_fetcher')
 CONFIG_SECTION = 'VERSION_FETCHER'
 ENABLED = 'enabled'
 VDC_PARAMS = 'REST_CONNECTION'
@@ -42,7 +41,7 @@ class VersionFetcher(Component):
     Plugin easilly connect to machines and fetch relevant rpm's versions.
     """
     implements(IConfigurable, IApplicationListener, IPackaging,
-            IConfigValidation)
+               IConfigValidation)
     name = "Version fetcher"
 
     def __init__(self):
@@ -54,8 +53,9 @@ class VersionFetcher(Component):
     @classmethod
     def add_options(cls, parser):
         group = parser.add_argument_group(cls.name, description=cls.__doc__)
-        group.add_argument('--version-fetcher', action='store_true', \
-                dest='version_fetcher', help="enable plugin", default=False)
+        group.add_argument('--version-fetcher', action='store_true',
+                           dest='version_fetcher', help="enable plugin",
+                           default=False)
 
     @classmethod
     def is_enabled(cls, params, conf):
@@ -78,7 +78,7 @@ class VersionFetcher(Component):
 
         self.vdc = Machine(vdc, user, vdc_passwd).util(LINUX)
 
-        for name, passwd in  zip(vds, vds_passwd):
+        for name, passwd in zip(vds, vds_passwd):
             self.vds.append(Machine(name, user, passwd).util(LINUX))
 
         self.vdc_rpms = conf.get(CONFIG_SECTION).as_list(VDC)
@@ -93,9 +93,8 @@ class VersionFetcher(Component):
         params['author'] = 'Lukas Bednar'
         params['author_email'] = 'lbednar@redhat.com'
         params['description'] = cls.__doc__.strip().replace('\n', ' ')
-        params['py_modules'] = ['art.test_handler.plmanagement.plugins.'\
-                'rpm_version_fetcher_plugin']
-
+        params['py_modules'] = ['art.test_handler.plmanagement.plugins.'
+                                'rpm_version_fetcher_plugin']
 
     def config_spec(self, spec, val_funcs):
         section_spec = spec.setdefault(CONFIG_SECTION, {})
@@ -132,7 +131,7 @@ class VersionFetcher(Component):
     def __get_version_info(self, machine, *rpms):
         names = set()
         msg = "%s: Can not fetch rpm version %s: %s"
-        with machine.ssh  as ssh:
+        with machine.ssh as ssh:
             for rpm_name in rpms:
                 cmd = ['rpm', '-qa', rpm_name]
                 try:
@@ -143,6 +142,9 @@ class VersionFetcher(Component):
                     out = out.strip()
                     if out:
                         names.add(out)
+                    else:
+                        logger.error(msg, machine.host, rpm_name,
+                                     "not installed")
         return names
 
     def __print_versions(self, prefix, rpms):
