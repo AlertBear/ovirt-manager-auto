@@ -408,40 +408,29 @@ def waitForOvirtAppearance(positive, host, attempts=10, interval=3):
 
 
 @is_action()
-def waitForHostsStates(positive, names, states='up', 
-		       timeout=HOST_STATE_TIMEOUT,
-                       stop_states=[ENUMS['host_state_install_failed']]):
+def waitForHostsStates(positive, names, states='up', timeout=HOST_STATE_TIMEOUT):
     '''
     Wait until all of the hosts identified by names exist and have the desired
-    status declared in states.
+    status.
     Parameters:
         * names - A comma separated names of the hosts with status to wait for.
         * states - A state of the hosts to wait for.
-    Author: talayan
+    Author: jhenner
     '''
     names = split(names)
-    [HOST_API.find(host) for host in names]
-    number_of_hosts = len(names)
+    for host in names:
+        try:
+            HOST_API.find(host)
+        except EntityNotFound:
+            HOST_API.logger.warn("Host %s hasn't been found in system", host)
+            return False
+        query_host = "name={0} and status={1}".format(host, states)
 
-    sampler = TimeoutingSampler(timeout, 10, HOST_API.get, absLink=False)
+        if not HOST_API.waitForQuery(query_host, timeout=timeout):
+            return False
 
-    try:
-        for sample in sampler:
-            ok = 0
-            for host in sample:
-                if host.status.state in stop_states:
-                    HOST_API.logger.error("Host state: %s", host.status.state)
-                    return False
-                elif host.status.state == states:
-                    ok += 1
+    return True
 
-            if ok == number_of_hosts:
-                return True
-
-    except APITimeout:
-        HOST_API.logger.error("Timeout waiting for all hosts in state %s",
-                               states)
-        return False
 
 def _check_hypervisor(positive, host, cluster):
     """
