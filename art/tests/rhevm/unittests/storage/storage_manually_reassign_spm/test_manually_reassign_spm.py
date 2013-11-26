@@ -9,8 +9,8 @@ from art.rhevm_api.tests_lib.low_level.storagedomains import \
 import config
 from nose.tools import istest
 from art.rhevm_api.tests_lib.low_level.hosts import select_host_as_spm, \
-    getSPMHost, checkSPMPriority, deactivateHosts, setSPMPriority, waitForSPM, \
-    checkHostSpmStatus, activateHosts, deactivateHost, activateHost
+    getSPMHost, checkSPMPriority, deactivateHosts, setSPMPriority, \
+    waitForSPM, checkHostSpmStatus, activateHosts, isHostUp
 from art.rhevm_api.utils.storage_api import blockOutgoingConnection, \
     unblockOutgoingConnection
 from art.test_handler.tools import tcms, bz
@@ -71,8 +71,10 @@ class DCUp(unittest.TestCase):
         for host, priority in zip(config.HOSTS, cls.spm_priorities):
             assert setSPMPriority(True, host, priority)
 
-        logger.info('Reactivating all hosts')
-        assert activateHosts(True, config.HOSTS)
+        hosts_to_activate = [host for host in config.HOSTS if not
+                             isHostUp(True, host)]
+        logger.info('Reactivating hosts: %s', hosts_to_activate)
+        assert activateHosts(True, hosts_to_activate)
 
         logger.info('Waiting for spm to be elected')
         assert waitForSPM(config.DATA_CENTER_NAME, 120, 60)
@@ -228,58 +230,6 @@ class TestCase293727(SelectNewSPMDuringSPMElection):
         self.select_new_spm_during_selection()
 
 
-class TestCase289886(DCUp):
-    """
-    TCMS Test Case 289886 - Reassign spm to lower priority host
-    """
-
-    __test__ = True
-    tcms_plan_id = '289886'
-    low_priority_host = None
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Set one host to have lower spm priority than the others
-        """
-        cls.spm_priorities = [config.DEFAULT_SPM_PRIORITY,
-                              config.DEFAULT_SPM_PRIORITY,
-                              config.LOW_SPM_PRIORITY]
-        cls.low_priority_host = config.HOSTS[-1]
-        super(TestCase289886, cls).setup_class()
-
-    @istest
-    @tcms(TCMS_TEST_PLAN, tcms_plan_id)
-    def test_select_spm_with_lower_priority(self):
-        """
-        Set spm to maintenance and then select host with lowest priority to
-        be spm
-        """
-        logger.info('Moving spm host (%s) to maintenance', self.spm_host)
-        self.assertTrue(deactivateHost(True, self.spm_host))
-
-        logger.info('Selecting host with low priority as spm %s',
-                    self.low_priority_host)
-        self.assertTrue(select_host_as_spm(True, self.low_priority_host,
-                                           config.DATA_CENTER_NAME))
-
-        logger.info('Waiting for spm to be selected')
-        self.assertTrue(waitForSPM(config.DATA_CENTER_NAME, 120, 10))
-
-        logger.info('Ensuring host %s is spm', self.low_priority_host)
-        self.assertTrue(checkHostSpmStatus(True, self.low_priority_host))
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Reactivate host that was moved to maintenance
-        """
-        logger.info('Reactivating host %s', cls.spm_host)
-        assert activateHost(True, cls.spm_host)
-
-        super(TestCase289886, cls).teardown_class()
-
-
 class ReassignSPMWithStorageBlocked(DCUp):
     """
     Block connection between specified hosts and specified domain and try to
@@ -293,6 +243,7 @@ class ReassignSPMWithStorageBlocked(DCUp):
     wait_for_dc_status = None
 
     def block_connection_and_reassign_spm(self):
+        self.domain_blocked = []
         for host in self.hosts_to_block:
             logger.info('Blocking connection between %s and %s', host,
                         self.domain_to_block)
@@ -371,7 +322,7 @@ class TestCase289888(ReassignSPMWithStorageBlocked):
         """
         self.domain_to_block = self.master_address
         self.hosts_to_block = config.HOSTS
-        self.wait_for_dc_status = config.DATA_CENTER_NONOPERATIONAL
+        self.wait_for_dc_status = config.DATA_CENTER_PROBLEMATIC
         self.block_connection_and_reassign_spm()
 
 
