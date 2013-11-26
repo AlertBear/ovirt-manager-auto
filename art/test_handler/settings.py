@@ -206,6 +206,7 @@ def readTestRunOpts(path, redefs):
     opts['iteration'] = 0
 
     opts['debug'] = runSection['debug'] == "yes"
+    opts['max_collection'] = runSection.get('max_collection', None)
 
     # Populate opts from the REST section.
     restSection = config['REST_CONNECTION']

@@ -65,6 +65,8 @@ class RestUtil(APIUtil):
             xsd_schema = etree.parse(settings.opts.get('api_xsd'))
             self.xsd = etree.XMLSchema(xsd_schema)
 
+        self.max_collection = settings.opts.get('max_collection')
+
 
     def validateResponseViaXSD(self, href, ret):
         '''
@@ -179,6 +181,9 @@ class RestUtil(APIUtil):
         href = collection
         if not href:
             href = self.links[self.collection_name]
+
+        if self.max_collection is not None:
+            href = '{0};max={1}'.format(href, self.max_collection)
 
         if not coll_elm_name:
             coll_elm_name = self.element_name
@@ -345,6 +350,9 @@ class RestUtil(APIUtil):
         href = self.collection_name
         if absLink:
             href = self.links[self.collection_name]
+
+        if self.max_collection is not None:
+            href = '{0};max={1}'.format(href, self.max_collection)
 
         if not collection:
             collection = self.get(href, listOnly=True)
