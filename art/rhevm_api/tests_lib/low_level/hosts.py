@@ -567,18 +567,8 @@ def updateHost(positive, host, **kwargs):
 
     if 'storage_manager_priority' in kwargs:
         new_priority = kwargs.pop('storage_manager_priority')
-        class StorageManagerHack(StorageManager):
-            def __init__(self, priority=None, valueOf_=None):
-                self.priority = priority
-                self.valueOf_ = valueOf_
-
-        try:
-            sm = StorageManager(new_priority, hostObj.storage_manager.get_valueOf_())
-        except (ValueError, TypeError):
-
-            sm = StorageManagerHack(new_priority, hostObj.storage_manager.get_valueOf_())
-
-            sm.gds_format_integer = lambda input_data, input_name='': '%s' % input_data
+        sm = StorageManager(new_priority,
+                            hostObj.storage_manager.get_valueOf_())
 
         hostUpd.set_storage_manager(sm)
 
@@ -1551,7 +1541,8 @@ def setSPMPriority(positive, hostName, spmPriority):
         return False
 
     # Update host
-    HOST_API.logger.info("Updating Host %s priority to %s", hostName, spmPriority)
+    HOST_API.logger.info("Updating Host %s priority to %s", hostName,
+                         spmPriority)
     updateStat = updateHost(positive=positive, host=hostName,
                             storage_manager_priority=spmPriority)
     if not updateStat:
