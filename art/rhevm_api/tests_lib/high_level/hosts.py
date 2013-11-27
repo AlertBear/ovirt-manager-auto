@@ -54,3 +54,43 @@ def switch_host_to_cluster(host, cluster):
     assert hosts.deactivateHost(True, host)
     assert hosts.updateHost(True, host, cluster=cluster)
     assert hosts.activateHost(True, host)
+
+
+@is_action()
+def deactivate_host_if_up(host):
+    """
+    Description: Deactivate host if it's not in maintenance
+    Author: ratamir
+    Parameters:
+        * host - name of the host to deactivate
+    Return: status (True if host was deactivated properly and positive,
+                    False otherwise)
+    """
+    if not hosts.isHostInMaintenance(True, host):
+        if not hosts.deactivateHost(True, host):
+            return False
+    return True
+
+
+@is_action()
+def deactivate_hosts_if_up(hosts_list):
+    """
+    Description: Deactivate hosts that are in status up
+    Author: ratamir
+    Parameters:
+    * hosts_list - List or string of hosts to be deactivated
+    Returns: True (success) / False (failure)
+    """
+    if isinstance(hosts_list, str):
+        hosts_list = hosts_list.split(',')
+    spm = hosts.getSPMHost(hosts_list)
+    logging.info("spm host - %s", spm)
+    sorted_hosts = hosts._sort_hosts_by_priority(hosts_list, False)
+    sorted_hosts.remove(spm)
+    sorted_hosts.append(spm)
+
+    for host in sorted_hosts:
+        status = deactivate_host_if_up(host)
+        if not status:
+            return status
+    return True

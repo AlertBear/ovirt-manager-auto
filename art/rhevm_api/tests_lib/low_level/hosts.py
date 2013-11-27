@@ -728,32 +728,62 @@ def activateHosts(positive, hosts):
                 return status
     return positive
 
+
+def isHostInMaintenance(positive, host):
+    """
+    Description: Checks if host is in maintenance state
+    Author: ratamir
+    Parameters:
+        * host - name of host to check
+    Return: positive if host is up, False otherwise
+    """
+    try:
+        host_status = getHostState(host)
+    except EntityNotFound:
+        return False
+
+    return (host_status == ENUMS['host_state_maintenance']) == positive
+
+
 @is_action()
-def deactivateHost(positive, host, expected_status=ENUMS['host_state_maintenance']):
+def deactivateHost(positive, host,
+                   expected_status=ENUMS['host_state_maintenance'],
+                   timeout=300):
     '''
-    Description: deactivate host (set status to MAINTENANCE)
+    Description: check host state for SPM role, for 'timeout' seconds, and
+    deactivate it if it is not contending to SPM.
+
+    (set status to MAINTENANCE)
     Author: jhenner
     Parameters:
        * host - the name of a host to be deactivated.
        * host_state_maintenance - the state to expect the host to remain in.
-    Return: status (True if host was deactivated properly and postive,
+       * timeout - time interval for checking if the state is changed
+    Return: status (True if host was deactivated properly and positive,
                     False otherwise)
     '''
-
     hostObj = HOST_API.find(host)
-    if not HOST_API.syncAction(hostObj, "deactivate", positive):
-        return False
+    sampler = TimeoutingSampler(
+        timeout, 1, lambda x: x.get_storage_manager().get_valueOf_(), hostObj)
+    for sample in sampler:
+        if not sample == ENUMS['spm_state_contending']:
+            if not HOST_API.syncAction(hostObj, "deactivate", positive):
+                return False
 
-    # If state got changed, it may be transitional state so we may want to wait
-    # for the final one. If it didn't, we certainly may return immediately.
-    hostState = hostObj.get_status().get_state()
-    getHostStateAgain = HOST_API.find(host).get_status().get_state()
-    state_changed = hostState != getHostStateAgain
-    if state_changed:
-        testHostStatus = HOST_API.waitForElemStatus(hostObj, expected_status, 180)
-        return testHostStatus and positive
-    else:
-        return not positive
+            # If state got changed, it may be transitional
+            # state so we may want to wait
+            # for the final one. If it didn't, we certainly can
+            # return immediately.
+            hostState = hostObj.get_status().get_state()
+            getHostStateAgain = HOST_API.find(host).get_status().get_state()
+            state_changed = hostState != getHostStateAgain
+            if state_changed:
+                testHostStatus = HOST_API.waitForElemStatus(hostObj,
+                                                            expected_status,
+                                                            180)
+                return testHostStatus and positive
+            else:
+                return not positive
 
 
 @is_action()
@@ -1706,8 +1736,8 @@ def checkSPMElectionRandomness(positive, hosts, attempt_number=5, spm_priority='
     status = True
     for spms in hosts_pairs.keys():
         if not len(set(spms)) > 1:
-            logger.warning("SPM randomness test failed, but due to the nature" \
-                           "of this test, there's a small chance of that" \
+            logger.warning("SPM randomness test failed, but due to the nature"
+                           "of this test, there's a small chance of that"
                            "happening at every run")
             status = False
 
@@ -1749,9 +1779,7 @@ def deactivateHosts(positive, hosts):
     for host in sorted_hosts:
         status = deactivateHost(True, host)
         if not status:
-            time.sleep(30)
-            status2 = deactivateHost(bool(True), host)
-            return status2 == positive
+            return status == positive
     return True == positive
 
 
