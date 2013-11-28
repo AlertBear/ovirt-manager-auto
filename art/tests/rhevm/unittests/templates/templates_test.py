@@ -1,5 +1,8 @@
 """
-Templates: testing inheritance between VM's and templates
+Testing inheritance between VMs and templates.
+Prerequisites: 1 DC, 1 host, 1 SD (NFS).
+Every test case creates new template from a VM of given type (Server/Desktop).
+Then new VM from this template is checked, if it matches the template type.
 """
 
 from nose.tools import istest
