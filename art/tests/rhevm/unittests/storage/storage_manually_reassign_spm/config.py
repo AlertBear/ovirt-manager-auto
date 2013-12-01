@@ -40,6 +40,6 @@ if DATA_CENTER_TYPE == ENUMS['storage_type_iscsi']:
 elif DATA_CENTER_TYPE == ENUMS['storage_type_nfs']:
     PARAMETERS['data_domain_path'] = [PARAMETERS['data_domain_path'],
                                       PARAMETERS['another_data_domain_path']]
-    PARAMETERS['data_domain_server'] = [PARAMETERS['data_domain_server'],
-                                        PARAMETERS[
-                                            'another_data_domain_server']]
+    PARAMETERS['data_domain_address'] = [PARAMETERS['data_domain_address'],
+                                         PARAMETERS[
+                                             'another_data_domain_address']]
