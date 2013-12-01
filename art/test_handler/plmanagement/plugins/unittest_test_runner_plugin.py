@@ -122,7 +122,7 @@ class UTestCase(TestCase):
                 self.t.test.setUp()
                 logger.info(self.format_attr('test_name'))
                 logger.info('Test description: %s', self.description)
-                logger.info(self.format_attr('serial'))
+                logger.debug(self.format_attr('serial'))
                 self.f()
                 self.status = self.TEST_STATUS_PASSED
             except AssertionError:

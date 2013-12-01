@@ -817,7 +817,7 @@ class CliUtil(RestUtil):
                         expEntity, response, self.logger, self.element_name):
                     return response, False
 
-                self.logger.info("New entity was added successfully")
+                self.logger.debug("New entity was added successfully")
         return response, True
 
     def update(self, origEntity, newEntity, positive, current=None):

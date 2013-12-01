@@ -181,7 +181,7 @@ class APIUtil(object):
         '''
 
         MSG = 'Waiting for query `%s` and event_id %s up to %d seconds, sampling every %d second.'
-        self.logger.info(MSG % (query, event_id, timeout, sleep))
+        self.logger.debug(MSG % (query, event_id, timeout, sleep))
         sampler = TimeoutingSampler(timeout, sleep, self.query)
         TIMEOUT_MSG_TMPL = "Timeout when waiting for query '{0}' on '{1}'"\
                                         .format(query, self.collection_name)

@@ -972,7 +972,7 @@ element:%(elm)s " % {'col': self.collection_name,
                 self.find(response.id, 'id', collection=collection.list(),
                           pythonic=False)
 
-            self.logger.info("New entity was added successfully")
+            self.logger.debug("New entity was added successfully")
             exp_entity = entity if not expectedEntity else expectedEntity
             if not validator.compareElementsJava(exp_entity, python_response,
                                                  self.logger,
@@ -1052,7 +1052,7 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
                 python_response = JavaTranslator(response)
                 #response = \
                 #    origEntity.update(**self.getReqMatrixParams(current))
-                self.logger.info("%s was updated", self.element_name)
+                self.logger.debug("%s was updated", self.element_name)
 
                 if not validator.compareElementsJava(newEntity,
                                                      python_response,
@@ -1253,9 +1253,9 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
         act = self.makeAction(async, 10, **params)
 
         try:
-            self.logger.info("Running action {0} on {1}".
-                             format(validator.dump_entity(action, 'action'),
-                                    entity))
+            self.logger.debug("Running action {0} on {1}".
+                              format(validator.dump_entity(action, 'action'),
+                                     entity))
         except Exception:
             pass
 
@@ -1338,11 +1338,11 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
             try:
                 python_element = JavaTranslator(java_element)
                 # reporting
-                self.logger.info("Element {0} Waiting for the status {1}".
-                                 format(validator.
-                                        dump_entity(python_element,
-                                                    self.element_name),
-                                        status))
+                self.logger.debug("Element {0} Waiting for the status {1}".
+                                  format(validator.
+                                         dump_entity(python_element,
+                                                     self.element_name),
+                                         status))
             except Exception as ex:
                 self.logger.debug(ex)
 
@@ -1353,8 +1353,8 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
                 return False
 
             if element_status in status.lower().split():
-                self.logger.info("%s status is '%s'", self.element_name,
-                                 element_status)
+                self.logger.debug("%s status is '%s'", self.element_name,
+                                  element_status)
                 return True
             elif element_status.find("fail") != -1 and not ignoreFinalStates:
                 self.logger.error("%s status is '%s'", self.element_name,

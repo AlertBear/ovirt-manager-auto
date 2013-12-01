@@ -128,7 +128,7 @@ class SdkUtil(APIUtil):
             if not async:
                 self.find(response.id, 'id', collection=collection.list())
 
-            self.logger.info("New entity was added successfully")
+            self.logger.debug("New entity was added successfully")
             expEntity = entity if not expectedEntity else expectedEntity
             if not validator.compareElements(expEntity, response,
                                 self.logger, self.element_name):
@@ -182,7 +182,7 @@ class SdkUtil(APIUtil):
         try:
             if positive:
                 response = origEntity.update(**self.getReqMatrixParams(current))
-                self.logger.info(self.element_name + " was updated")
+                self.logger.debug(self.element_name + " was updated")
 
                 if not validator.compareElements(newEntity, response,
                                     self.logger, self.element_name):
@@ -311,7 +311,7 @@ class SdkUtil(APIUtil):
         act = self.makeAction(async, 10, **params)
 
         try:
-            self.logger.info("Running action {0} on {1}"\
+            self.logger.debug("Running action {0} on {1}"\
             .format(validator.dump_entity(act, 'action'), entity))
         except Exception:
             pass
@@ -375,7 +375,7 @@ class SdkUtil(APIUtil):
                 return False
 
             try:
-                self.logger.info("Element {0} Waiting for the status {1}".\
+                self.logger.debug("Element {0} Waiting for the status {1}".\
                 format(validator.dump_entity(elm, self.element_name), status))
             except Exception:
                 pass
@@ -386,7 +386,7 @@ class SdkUtil(APIUtil):
                 return False
 
             if elemStat in status.lower().split():
-                self.logger.info("%s status is '%s'" \
+                self.logger.debug("%s status is '%s'" \
                                 % (self.element_name, elemStat))
                 return True
             elif elemStat.find("fail") != -1 and not ignoreFinalStates:
