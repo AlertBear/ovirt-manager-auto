@@ -18,6 +18,7 @@
 
 import logging
 import time
+import types
 
 from art.core_api.apis_exceptions import EntityNotFound, APITimeout
 from art.core_api.apis_utils import data_st, TimeoutingSampler
@@ -304,7 +305,7 @@ def waitForDisksState(disksNames, status=ENUMS['disk_state_ok'],
     Author: jlibosva
     Return: True if state was reached on all disks, False otherwise
     """
-    if isinstance(disksNames, str):
+    if isinstance(disksNames, types.StringTypes):
         disksNames = split(disksNames)
 
     [DISKS_API.find(disk) for disk in disksNames]
