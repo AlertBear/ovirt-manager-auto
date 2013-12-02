@@ -189,7 +189,7 @@ class TestCase166615(helpers.TestCaseNFSOptions):
                 True, self.dc_v30_name, version=helpers.VERSION_31):
             self.fail("Upgrading 3.0 datacenter to 3.1 failed!")
 
-        result = helpers.get_options_of_resource(
+        result = ll_st.get_options_of_resource(
             self.host, self.password, address, path)
         if not result:
             self.fail("Resource is not mounted!")
@@ -272,11 +272,11 @@ class TestCase148697(helpers.TestCaseNFSOptions):
                 True, self.dc_name, self.sd_name, 'active'):
             self.fail("Storage domain is still not active")
         LOGGER.info("Verifying that the NFS options are as expected")
-        options = helpers.get_options_of_resource(
+        options = ll_st.get_options_of_resource(
             self.host, self.password, self.nfs_address, self.nfs_path)
         if options is None:
-            self.fail("%:%s is not mounted on %s" % (
-                self.nf_address, self.nfs_path, self.host))
+            self.fail("%s:%s is not mounted on %s" % (
+                self.nfs_address, self.nfs_path, self.host))
         (timeo, retrans, nfsvers) = options
         result = helpers.verify_nfs_options(
             self.nfs_timeout, self.nfs_retrans, self.nfs_version,

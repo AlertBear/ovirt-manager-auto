@@ -39,118 +39,6 @@ DEFAULT_NFS_RETRANS = 6
 DEFAULT_NFS_TIMEOUT = 600
 
 
-def _parse_mount_output_line(line):
-    """
-    Parses one line of mount output
-
-    **Author**: Katarzyna Jachim
-
-    **Parameters**:
-        * *line*: one line of 'mount' output
-
-    **Returns**:
-        * (address, path, timeo, retrans, nfsvers) in case it is nfs resource
-        * None otherwise
-
-    >>> output = "10.34.63.202:/mnt/export/nfs/lv2/kjachim/nfs01 on "
-    >>> output += "/rhev/data-center/mnt/10.34.63.202:_mnt_export_nfs_lv2_kjac"
-    >>> output += " type nfs (rw,soft,nosharecache,timeo=600,retrans=6"
-    >>> output += ",nfsvers=3,addr=10.34.63.202)"
-    >>> result = _parse_mount_output_line(output)
-    >>> result[0] == '10.34.63.202' or result[0]
-    True
-    >>> result[1] == '/mnt/export/nfs/lv2/kjachim/nfs01' or result[1]
-    True
-    >>> result[2] == 600 or result[2]
-    True
-    >>> result[3] == 6 or result[3]
-    True
-    >>> result[4] == 'v3' or result[4]
-    True
-    >>> output = 'nfsd on /proc/fs/nfsd type nfsd (rw)'
-    >>> result = _parse_mount_output_line(output)
-    """
-    LOGGER.debug("Parsed line: %s" % line)
-    if not 'type nfs ' in line:
-        return None
-    parts = line.split(" ")
-    address, path = parts[0].split(":")
-    options = parts[-1][1:-1]  # skip brackets
-    options = options.split(",")
-    nfs_options = {}
-    for option in options:
-        if "=" in option:
-            name, value = option.split("=")
-            nfs_options[name] = value
-    return (address, path, int(nfs_options['timeo']),
-            int(nfs_options['retrans']), 'v' + nfs_options['nfsvers'])
-
-
-def _parse_mount_output(output):
-    """
-    Parses mount output
-
-    **Author**: Katarzyna Jachim
-
-    **Parameters**:
-        * *output*: 'mount' output
-
-    **Returns**: list of tuples (address, path, timeo, retrans, nfsvers),
-                 one tuple for each found nfs mount
-    """
-    result = []
-    for line in output.split("\n"):
-        parsed = _parse_mount_output_line(line)
-        if parsed is not None:
-            result.append(parsed)
-    return result
-
-
-def get_options_of_resource(host, password, address, path):
-    """
-    Calls mount on given host and returns options of given nfs resource
-
-    **Author**: Katarzyna Jachim
-
-    **Parameters**:
-        * *host*: host on which 'mount' should be called
-        * *password*: root password on this host
-        * *address*: address of the NFS server
-        * *path*: path to the NFS resource on the NFS server
-
-    **Returns**:  tuple (timeo, retrans, nfsvers)
-                  or None if there is no such nfs mount
-    """
-    nfs_mounts = get_mounted_nfs_resources(host, password)
-    return nfs_mounts.get((address, path), None)
-
-
-def get_mounted_nfs_resources(host, password):
-    """
-    Gets info about all NFS resource mounted on specified host
-
-    **Author**: Katarzyna Jachim
-
-    **Parameters**:
-        * *host*: host on which 'mount' should be called
-        * *password*: root password on this host
-
-    **Returns**: dict: (address, path) ->  (timeo, retrans, nfsvers)
-    """
-    ssh_session = sshConnection.SSHSession(
-        hostname=host, username='root', password=password)
-    rc, out, err = ssh_session.runCmd('mount')
-    if rc:
-        raise exceptions.TestException(
-            'mount failed with non-zero err code: %s stdout: %s stderr: %s' %
-            (rc, out, err))
-    mounted = _parse_mount_output(out)
-    result = {}
-    for (address, path, timeo, retrans, nfsvers) in mounted:
-        result[(address, path)] = (timeo, retrans, nfsvers)
-    return result
-
-
 def _verify_one_option(real, expected):
     """ helper function for verification of one option
     """
@@ -371,7 +259,7 @@ class TestCaseNFSOptions(TestCase):
                 datacenter=datacenter)
 
         LOGGER.info("Getting info about mounted resources")
-        mounted_resources = get_mounted_nfs_resources(host, password)
+        mounted_resources = ll_st.get_mounted_nfs_resources(host, password)
 
         LOGGER.info("verifying nfs options")
         for domain in domain_list:

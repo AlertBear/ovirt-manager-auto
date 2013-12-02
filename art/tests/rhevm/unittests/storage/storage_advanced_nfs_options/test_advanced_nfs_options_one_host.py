@@ -61,7 +61,7 @@ class TestCase232975(helpers.TestCaseNFSOptions):
         ll_st.importStorageDomain(
             True, sd_type, helpers.NFS, self.export_address, self.export_path,
             self.host, self.nfs_version, self.nfs_retrans, self.nfs_timeout)
-        result = helpers.get_options_of_resource(
+        result = ll_st.get_options_of_resource(
             self.host, self.password, self.export_address, self.export_path)
         if result is None:
             self.fail("Resource %s:%s is not mounted on %s!" % (
@@ -398,7 +398,7 @@ class TestCase166534(helpers.TestCaseNFSOptions):
         ll_st.attachStorageDomain(True, datacenter, name)
 
         LOGGER.info("Getting mount options")
-        options = helpers.get_options_of_resource(
+        options = ll_st.get_options_of_resource(
             host, password, address, path)
         if options is None:
             self.fail("Storage domain is not mounted!")
