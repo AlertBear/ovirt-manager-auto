@@ -46,21 +46,21 @@ class SoftFencing(TestCase):
         logger.info("Stop %s to host %s", service, host)
         if not runDelayedControlService(True, host, config.host_user,
                                         config.host_password,
-                                        service=service, command='stop'):
+                                        service=service, command='stop'):#STOPS SERVICE e.g vdsmd ON HOST
             raise errors.HostException("Trying to stop %s "
                                        "on host %s failed", service, host)
         logger.info("Check if host %s in connecting state", host)
-        if not waitForHostsStates(True, host, states=HOST_CONNECTING):
+        if not waitForHostsStates(True, host, states=HOST_CONNECTING):#checks if host in state connecting
             raise errors.HostException("Host %s not in connecting state",
                                        host)
-        if not waitForHostsStates(True, host):
+        if not waitForHostsStates(True, host):#checks if host in state up
             raise errors.HostException("Host %s not in up state", host)
         status, job, job_time = check_recent_job(True,
                                                  description=config.
                                                  job_description,
-                                                 job_status=job_status)
+                                                 job_status=job_status)#check if ssh soft fencing job was created and return the last job
         if not status:
-            raise errors.JobsException("No job with given description")
+            raise errors.JobException("No job with given description")
         self.assertTrue(job_time[0] >= ts.hour
                         and job_time[1] >= ts.minute
                         and job_time[2] >= ts.second)
@@ -135,6 +135,7 @@ class CheckVmAfterSoftFencing(TestCase):
                             cluster=config.cluster_name,
                             storageDomainName=config.data_name[0],
                             size=DISK_SIZE, nic='nic1',
+                            diskInterface=ENUMS['interface_virtio'],
                             placement_host=config.host_with_pm,
                             placement_affinity=PINNED):
             raise errors.VMException("Cannot create vm")
@@ -176,7 +177,7 @@ class CheckVmAfterSoftFencing(TestCase):
                 job_time[0] >= ts.hour and
                 job_time[1] >= ts.minute and
                 job_time[2] >= ts.second):
-            raise errors.JobsException("No job with given "
+            raise errors.JobException("No job with given "
                                        "description in recent time")
         logger.info("Check VM state")
         self.assertTrue(checkVmState(True, self.vm_test,
