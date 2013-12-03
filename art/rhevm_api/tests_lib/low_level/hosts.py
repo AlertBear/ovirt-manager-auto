@@ -419,9 +419,10 @@ def waitForHostsStates(positive, names, states='up',
         * states - A state of the hosts to wait for.
     Author: talayan
     '''
-    names = split(names)
-    [HOST_API.find(host) for host in names]
-    number_of_hosts = len(names)
+
+    list_names = split(names)
+    [HOST_API.find(host) for host in list_names]
+    number_of_hosts = len(list_names)
 
     sampler = TimeoutingSampler(timeout, 10, HOST_API.get, absLink=False)
 
@@ -429,19 +430,19 @@ def waitForHostsStates(positive, names, states='up',
         for sample in sampler:
             ok = 0
             for host in sample:
-                if host.status.state in stop_states:
-                    HOST_API.logger.error("Host state: %s", host.status.state)
-                    return False
-                elif host.status.state == states:
-                    ok += 1
-                if ok == number_of_hosts:
-                    return True
+                if host.name in names:
+                    if host.status.state in stop_states:
+                        HOST_API.logger.error("Host state: %s", host.status.state)
+                        return False
+                    elif host.status.state == states:
+                        ok += 1
+                    if ok == number_of_hosts:
+                        return True
 
     except APITimeout:
         HOST_API.logger.error("Timeout waiting for all hosts in state %s",
                               states)
         return False
-
 
 def _check_hypervisor(positive, host, cluster):
     """
@@ -2416,7 +2417,7 @@ def setHostToNonOperational(orig_host, host_password, nic):
         return False
 
     if not waitForHostsStates(True, names=orig_host,
-                              states='nonoperational',
+                              states='non_operational',
                               timeout=TIMEOUT):
         return False
     return True
