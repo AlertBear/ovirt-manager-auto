@@ -1072,6 +1072,10 @@ class CliUtil(RestUtil):
                         format(entityName, entity.id, action, ownerName,
                                ownerId, addParams)
 
+        correlationId = self.getCorrelationId()
+        if correlationId:
+            actionCmd = "%s --correlation_id %s" % (actionCmd, correlationId)
+
         if self.opts['validate_cli_command']:
             # validating command vs cli help
             self.logger.warning('Generated command:\n%s', actionCmd)
