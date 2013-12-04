@@ -17,12 +17,12 @@ Test Case Configuration
 
 CLI Options
 -----------
-  --with-validation Enables CLI command validation plugin
+  --with-no-validation Enables CLI command validation plugin
 
 Configuration File Options
 --------------------------
     |**[CLI_COMMAND_VALIDATION]**
-    |**enabled** true/false; equivalent to --with-validation CLI option
+    |**enabled** true/false; equivalent to --with-no-validation CLI option
 
 
 From XML test sheet
