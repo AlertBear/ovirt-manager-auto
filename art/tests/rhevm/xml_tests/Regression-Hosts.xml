@@ -416,6 +416,7 @@
     <test_action>updateHost</test_action>
     <parameters>host='{vds[0]}', pm='false', pm_type=%pmList%[2], pm_address=' ', pm_username=' ', pm_password=' ', pm_port=' ', pm_secure='false'</parameters>
     <positive>TRUE</positive>
+    <cli_validation>False</cli_validation>
     <run>yes</run>
     <tcms_test_case>275958</tcms_test_case>
     <test_description>pwr_mngmt</test_description>
