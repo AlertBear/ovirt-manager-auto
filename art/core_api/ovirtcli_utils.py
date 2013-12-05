@@ -33,7 +33,6 @@ from art.core_api.apis_exceptions import CLIError, CLITimeout,\
 from art.core_api import validator
 from utilities.utils import createCommandLineOptionFromDict
 
-
 cliInit = False
 addlock = threading.Lock()
 
@@ -307,7 +306,7 @@ class RhevmCli(CliConnection):
     _rhevmPrompt = '\[RHEVM shell \(connected\)\]# '
     _rhevmDisconnectedPrompt = '\[RHEVM shell \(disconnected\)\]# '
     _rhevmTimeout = 900
-    _specialCliPrompt = {'\r\n:': ' ', '7m\(END\)': 'q', '--More--': '\n'}
+    _specialCliPrompt = {'\r\n:': ' ', '7m\(END\)': 'q', '--More--': ' '}
     _specialMatrixParamsDict = {'case-sensitive': 'case_sensitive'}
     _cliRootCommands = ['action', 'add', 'list', 'remove', 'show', 'update']
     _cliTrashPattern = "[\[\]\\\?]"
