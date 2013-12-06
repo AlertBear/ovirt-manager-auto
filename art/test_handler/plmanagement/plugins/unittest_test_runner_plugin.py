@@ -43,7 +43,7 @@ from art.test_handler.plmanagement.interfaces.tests_listener \
     import ITestGroupHandler
 from art.test_handler.test_runner import TestCase, TestSuite, TestGroup,\
     TestResult, TEST_CASES_SEPARATOR
-from art.test_handler.exceptions import SkipTest, formatExcInfo
+from art.test_handler.exceptions import SkipTest
 from art.test_handler import find_test_file
 
 logger = get_logger("unittest_loader")
@@ -104,7 +104,7 @@ def isvital4group(f):
 
 
 class UTestCase(TestCase):
-    skip_exceptios = (USkipTest, USkipTest2, SkipTest)
+    skip_exceptions = (USkipTest, USkipTest2, SkipTest)
 
     def __init__(self, t):
         super(UTestCase, self).__init__()
@@ -136,20 +136,20 @@ class UTestCase(TestCase):
                 self.f()
                 self.status = self.TEST_STATUS_PASSED
             except AssertionError:
-                self.exc = formatExcInfo()
+                self.incr_exc()
                 self.status = self.TEST_STATUS_FAILED
-            except self.skip_exceptios as ex:
+            except self.skip_exceptions as ex:
                 self.status = self.TEST_STATUS_SKIPPED
                 raise SkipTest(str(ex))
             except Exception:
                 self.status = self.TEST_STATUS_ERROR
-                self.exc = formatExcInfo()
+                self.incr_exc()
         finally:
             logger.info("tearDown: %s", self.test_name)
             try:
                 self.t.test.tearDown()
             except Exception:
-                self.exc = formatExcInfo()
+                self.incr_exc()
                 self.status = self.TEST_STATUS_FAILED
             if self.status in (self.TEST_STATUS_FAILED,
                                self.TEST_STATUS_ERROR):
@@ -184,7 +184,7 @@ class UTestGroup(TestGroup):
                 logger.error("TEST GROUP setUp ERROR: %s: %s", ex,
                              self.test_name, exc_info=True)
                 self.status = self.TEST_STATUS_ERROR
-                self.exc = formatExcInfo()
+                self.incr_exc()
                 self.error += 1
                 raise StopIteration(str(ex))
             for c in self.context:
@@ -203,7 +203,7 @@ class UTestGroup(TestGroup):
             try:
                 self.context.tearDown()
             except Exception:
-                self.exc = formatExcInfo()
+                self.incr_exc()
                 self.status = self.TEST_STATUS_FAILED
             logger.info(TEST_CASES_SEPARATOR)
 
@@ -230,7 +230,7 @@ class UTestSuite(TestSuite):
                 logger.error("TEST SUITE setUp ERROR: %s: %s", ex,
                              self.test_name, exc_info=True)
                 self.status = self.TEST_STATUS_ERROR
-                self.exc = formatExcInfo()
+                self.incr_exc()
                 self.error += 1
                 raise StopIteration(str(ex))
             for c in self.context:
@@ -249,7 +249,7 @@ class UTestSuite(TestSuite):
             try:
                 self.context.tearDown()
             except Exception:
-                self.exc = formatExcInfo()
+                self.incr_exc()
                 self.status = self.TEST_STATUS_FAILED
             logger.info(TEST_CASES_SEPARATOR)
 

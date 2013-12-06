@@ -9,7 +9,7 @@ import threading
 import copy
 from art.test_handler.settings import initPlmanager
 from art.test_handler.exceptions import VitalTestFailed, \
-                        Vital4GroupTestFailed, SkipTest
+    Vital4GroupTestFailed, SkipTest, formatExcInfo
 from utilities.jobs import JobsSet, Job
 # TODO: consider to use
 # http://docs.python.org/dev/library/concurrent.futures.html instead
@@ -22,6 +22,7 @@ from utilities.jobs import JobsSet, Job
 logger = logging.getLogger('test_runner')
 
 TEST_CASES_SEPARATOR = '\n' + '=' * 80
+
 
 def serial_generator(start=0, end=None, step=1):
     lock = threading.Lock()
@@ -70,6 +71,7 @@ class _DictLikeObject(dict):
         else:
             self[key] = val
 
+
 class Result(_DictLikeObject):
     ATTRIBUTES = {}
 
@@ -83,22 +85,23 @@ class Result(_DictLikeObject):
                              default=None):
         cls.ATTRIBUTES[attr_name] = (e_name, nice_name, default)
 
+
 class TestResult(Result):
     # result.attr_name: (test_elm.name, 'nice_name', 'default_value')
     ATTRIBUTES = {
-            'id': ('id', 'Test ID', 'NaN'),
-            'test_name': ('test_name', 'Test Name', 'Unknown name'),
-            'test_description': ('test_description', 'Description', ''),
-            'start_time': ('start_time', 'Start Time', None),
-            'end_time': ('end_time', 'End Time', None),
-            'status': ('status', 'Status', None),
-            }
+        'id': ('id', 'Test ID', 'NaN'),
+        'test_name': ('test_name', 'Test Name', 'Unknown name'),
+        'test_description': ('test_description', 'Description', ''),
+        'start_time': ('start_time', 'Start Time', None),
+        'end_time': ('end_time', 'End Time', None),
+        'status': ('status', 'Status', None),
+    }
 
     def result_from_test_case(self, test_case):
         for r_name, attrs in self.ATTRIBUTES.items():
             setattr(self, r_name, getattr(test_case, attrs[0], attrs[2]))
             if r_name == 'iter_num':
-                self.iter_num =  "%03d" % self.iter_num
+                self.iter_num = "%03d" % self.iter_num
         return self
 
     def formated_attribute(self, attr_name):
@@ -147,9 +150,16 @@ class _TestElm(_DictLikeObject):
         self.end_time = None
         self.parent = None
 
+    def incr_exc(self):
+        if self.exc is None:
+            self.exc = formatExcInfo()
+        else:
+            self.exc += formatExcInfo()
+
     def format_attr(self, name):
         try:
-            form = [x for x, y in TestResult.ATTRIBUTES.items() if y[0] == name][0]
+            form = [x for x, y in TestResult.ATTRIBUTES.items() if
+                    y[0] == name][0]
         except IndexError:
             raise KeyError(name)
         return TestResult.format_attrib(form, self.get(name, None))
@@ -235,7 +245,7 @@ class TestRunner(object):
 
     def _run_test_suite(self, test_suite):
         assert isinstance(test_suite, TestSuite), \
-                "test_elm must be TestSuite, not %s" % type(test_suite)
+            "test_elm must be TestSuite, not %s" % type(test_suite)
         try:
             self.plmanager.test_suites.pre_test_suite(test_suite)
             self._run_test_elm(test_suite)
@@ -249,11 +259,11 @@ class TestRunner(object):
             self._run_test_case(test_elm)
         else:
             assert False, "Test Element must be TestCase or "\
-                    "TestGroup not %s" % type(test_elm)
+                "TestGroup not %s" % type(test_elm)
 
     def _run_test_case(self, test_case):
         assert isinstance(test_case, TestCase), \
-                "test_elm must be TestCase, not %s" % type(test_case)
+            "test_elm must be TestCase, not %s" % type(test_case)
         test_case.start_time = datetime.now(tzutc())
         logger.info(TEST_CASES_SEPARATOR)
         try:
@@ -363,4 +373,3 @@ class TestRunner(object):
             if isinstance(job.exception, VitalTestFailed):
                 raise job.exception
         # TODO: check whether something finished with exception
-
