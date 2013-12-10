@@ -944,9 +944,6 @@ def _prepareNicObj(**kwargs):
     if 'mac_address' in kwargs:
         nic_obj.set_mac(data_st.MAC(address=kwargs.get('mac_address')))
 
-    if 'network' in kwargs and 'vnic_profile' not in kwargs:
-        nic_obj.set_network(data_st.Network(name=kwargs.get('network')))
-
     if 'active' in kwargs:
         nic_obj.set_active(kwargs.get('active'))
 
@@ -956,26 +953,19 @@ def _prepareNicObj(**kwargs):
     if 'linked' in kwargs:
         nic_obj.set_linked(kwargs.get('linked'))
 
-    if 'vnic_profile' in kwargs:  # Ignore None if passed
-        if kwargs.get('vnic_profile') == kwargs.get('network'):
-            nic_obj.set_network(data_st.Network(name=kwargs.get('network')))
+    if 'network' in kwargs:
+        vm_obj = VM_API.find(kwargs['vm'])
+        cluster_id = vm_obj.get_cluster().get_id()
+        cluster_obj = CLUSTER_API.find(cluster_id, attribute='id')
 
+        if kwargs.get('network') is None:
+            nic_obj.set_vnic_profile(None)
         else:
-            if not 'network' in kwargs:
-                raise NetworkException('Missing mandatory network parameter '
-                                       'when trying to locate VNIC profile')
-            if not 'vm' in kwargs:
-                raise NetworkException('Missing mandatory vm parameter when '
-                                       'trying to locate VNIC profile')
-
-            # Find the cluster in which the VM is located
-            vm_obj = VM_API.find(kwargs['vm'])
-            cluster_id = vm_obj.get_cluster().get_id()
-            cluster_obj = CLUSTER_API.find(cluster_id, attribute='id')
-
-            # Locate VNIC profile using network and cluser
-            vnic_profile_obj = getVnicProfileObj(kwargs['vnic_profile'],
-                                                 kwargs['network'],
+            vnic_profile_obj = getVnicProfileObj(kwargs.get('vnic_profile')
+                                                 if 'vnic_profile' in kwargs
+                                                 else
+                                                 kwargs.get('network'),
+                                                 kwargs.get('network'),
                                                  cluster_obj.get_name())
 
             nic_obj.set_vnic_profile(vnic_profile_obj)
