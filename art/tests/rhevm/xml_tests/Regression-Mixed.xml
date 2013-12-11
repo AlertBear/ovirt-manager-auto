@@ -813,15 +813,6 @@
     <run>yes</run>
   </test_case>
   <test_case>
-    <id>d75a66f0-c695-11e1-a578-f0def10e0ce8</id>
-    <test_name>Add role to user</test_name>
-    <test_action>addRoleToUser</test_action>
-    <parameters>user='{new_user}', role='e{role_name_power_user_role}'</parameters>
-    <positive>TRUE</positive>
-    <run>yes</run>
-    <conf>headers={'Correlation-Id': 342}</conf>
-  </test_case>
-  <test_case>
     <id>d75a68da-c695-11e1-a578-f0def10e0ce8</id>
     <test_name>Create user with no roles</test_name>
     <test_action>addUser</test_action>
