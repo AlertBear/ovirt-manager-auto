@@ -16,12 +16,16 @@ ENUMS = config.ENUMS
 
 
 def create_vm(vm_name, sd_name, template_name=config.TEMPLATE_NAME,
-              res_queue=None):
+              is_install=False, res_queue=None):
     """
         Create VM with option to perform it asynchronously
+        Parameters:
+            * sd_name - storage doamin name
+            * template_name - vm template name
+            * is_install - to install vm or not
+            * res_queue - queue to save result in
     """
     LOGGER.info("Creating VM %s from template %s", vm_name, template_name)
-    is_install = True if template_name == 'Blank' else False
     try:
         res = vms.createVm(
             True, vm_name, vm_name, cluster=config.CLUSTER_NAME,
@@ -49,6 +53,9 @@ def create_vm(vm_name, sd_name, template_name=config.TEMPLATE_NAME,
 def create_fake_host(vm_name, res_queue=None):
     """
         Create fake host with option to perform it asynchronously
+        Parameters:
+            * vm_name - vm name
+            * res_queue - queue to save result in
     """
     fake_host_name = 'host_%s' % vm_name
     try:
@@ -68,6 +75,9 @@ def create_fake_host(vm_name, res_queue=None):
 def remove_fake_host(fake_host_name, res_queue=None):
     """
         Remove fake host with option to perform it asynchronously
+        Parameters:
+            * fake_host_name - fake host name
+            * res_queue - queue to save result in
     """
     try:
         hosts.HOST_API.find(fake_host_name)
@@ -84,6 +94,9 @@ def remove_fake_host(fake_host_name, res_queue=None):
 def run_concurrent(target, param_list):
     """
         Run target function concurrently for each set of parameters
+        Parameters:
+            * target - target function
+            * param_list - function parameters
     """
     threads = set()
     i = 0
@@ -98,9 +111,14 @@ def run_concurrent(target, param_list):
         thr.join()
 
 
-def create_vms(vm_names, template_name=config.TEMPLATE_NAME):
+def create_vms(vm_names, template_name=config.TEMPLATE_NAME,
+               is_install=False):
     """
         Create number of VMs concurrently
+        Parameters:
+            * vm_names - list of vm names
+            * template_name - vm template name
+            * is_install - to install vm or not
     """
     sd_name = None
     for sd in storagedomains.getDCStorages(config.DATA_CENTER_NAME, False):
@@ -116,7 +134,7 @@ def create_vms(vm_names, template_name=config.TEMPLATE_NAME):
         thr_cnt = config.MAX_WORKERS if vm_cnt >= config.MAX_WORKERS \
                   else vm_cnt
         res_queue = Queue.Queue()
-        param_list = [(vm_name, sd_name, template_name, res_queue)
+        param_list = [(vm_name, sd_name, template_name, is_install, res_queue)
                       for vm_name in vm_names_[:thr_cnt]]
         run_concurrent(create_vm, param_list)
 
@@ -135,6 +153,8 @@ def create_vms(vm_names, template_name=config.TEMPLATE_NAME):
 def create_fake_hosts(vm_names):
     """
         Create number of fake hosts concurrently
+        Parameters:
+            * vm_names - list of vm names
     """
     LOGGER.info("Creating fake hosts")
     status = True
@@ -161,6 +181,8 @@ def create_fake_hosts(vm_names):
 def remove_fake_hosts(fake_host_names):
     """
         Remove number of fake hosts concurrently
+        Parameters:
+            * fake_host_names - list of fake host names
     """
     LOGGER.info("Removing fake hosts")
     status = True
@@ -187,6 +209,8 @@ def remove_fake_hosts(fake_host_names):
 def toggle_dwh_service(action='start'):
     """
         Start/stop rhevm reporting process
+        Parameters:
+            * action - service action to perform
     """
     status = toggleServiceOnHost(
         True, host=config.VDC, user='root',

@@ -37,12 +37,20 @@ class ResourceMonitor(object):
     def formatted_time(self, time_sec):
         """
             Format time from seconds to readable hour:min string
+            Parameters:
+                * time_sec - time in seconds since the epoch
+            Return:
+                string in the format hour:min
         """
         return time.strftime('%H:%M', time.localtime(time_sec))
 
     def _get_data_from_url(self, url, patt, result):
         """
-            Get resource data from url
+            Get data specified by pattern from url
+            Parameters:
+                * url - URL to data in text format
+                * patt - pattern to search
+                * dictionary to save data
         """
         try:
             fh = urllib.urlopen(url)
@@ -66,13 +74,21 @@ class ResourceMonitor(object):
                                           data=m[4:], avg=avg)
             if not member:
                 raise Exception("Failed to parse url data, wrong content type")
-        except urllib2.URLError:
+        except IOError:
             LOGGER.error("Failed to open url %s", url)
         except Exception as ex:
             LOGGER.error("Failed to get data from url %s, error: %s",
                          url, ex)
 
     def _prepare_avg_data(self, url_data):
+        """
+            Format average data
+            Parameters:
+                * url_data - dictionary containing data
+                * patt - pattern to search
+            Return:
+                list of average values
+        """
         header = url_data.keys()
         try:
             return [header,
@@ -83,6 +99,13 @@ class ResourceMonitor(object):
             return []
 
     def _prepare_data_for_template(self, url_data):
+        """
+            Format data for html tamplate
+            Parameters:
+                * url_data - dictionary containing data
+            Return:
+                dictionary of processed data
+        """
         template_data = []
         try:
             header = url_data.keys()
@@ -112,11 +135,17 @@ class ResourceMonitor(object):
         return all_data
 
     def get_data_from_url(self):
+        """
+        Get resource data from url
+        """
         self._get_data_from_url(self.URL, self.patt, self.data)
         return self._prepare_data_for_template(self.data)
 
 
 class CPUMonitor(ResourceMonitor):
+    """
+    Class responsible for collecting of CPU measurements.
+    """
 
     URL = config.CPU_URL
 
@@ -134,6 +163,10 @@ class CPUMonitor(ResourceMonitor):
 
 
 class MemoryMonitor(ResourceMonitor):
+    """
+    Class responsible for collecting of memory -
+    physical and shared - measurements.
+    """
 
     URL = config.MEMORY_URL
 
@@ -157,6 +190,9 @@ class MemoryMonitor(ResourceMonitor):
 
 
 class NetworkMonitor(ResourceMonitor):
+    """
+    Class responsible for collecting of network measurements.
+    """
 
     URL = config.NETWORK_URL
 
@@ -180,6 +216,9 @@ class NetworkMonitor(ResourceMonitor):
 
 
 class IOMonitor(ResourceMonitor):
+    """
+    Class responsible for collecting of disk I/O measurements.
+    """
 
     URL = config.IO_URL
 
@@ -196,6 +235,10 @@ class IOMonitor(ResourceMonitor):
 
 
 class ResourcesTemplate(object):
+    """
+    Create resource monitoring report in html format
+    using template engine jinja2
+    """
 
     def __init__(self):
         self.template_path = os.path.join(os.path.dirname(__file__),
@@ -204,10 +247,16 @@ class ResourcesTemplate(object):
         self.data = {}
 
     def _create_out_file(self):
+        """
+        Format out file name
+        """
         tstamp = time.strftime('%Y%m%d_%H%M%S')
         return '{0}_{1}.html'.format(self.out_file, tstamp)
 
     def collect_data(self):
+        """
+        collect all the data resources
+        """
         try:
             self.data.update(dict(CPU=CPUMonitor().get_data_from_url()))
             self.data.update(dict(MEMORY=MemoryMonitor().get_data_from_url()))
@@ -217,6 +266,11 @@ class ResourcesTemplate(object):
             LOGGER.error("Failed to collect data from URLs: %s", ex)
 
     def create_report(self, title):
+        """
+        Create html report
+        Parameters:
+            * title - report title
+        """
         self.collect_data()
         try:
             from jinja2 import Environment, FileSystemLoader

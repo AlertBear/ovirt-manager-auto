@@ -37,7 +37,9 @@ class TestCaseCreateVms(TestCase):
     __test__ = True
 
     def setUp(self):
-        self.vm_names = list()
+        self.vm_cnt = int(config.VM_CNT)
+        self.vm_names = ['%s_%s' % (config.VM_BASE_NAME, ind)
+                         for ind in range(self.vm_cnt)]
 
     @istest
     def test_create_vms(self):
@@ -46,21 +48,22 @@ class TestCaseCreateVms(TestCase):
         """
         monitor = resource_monitor.ResourcesTemplate()
         monitor.create_report('system idle')
-        vm_cnt = int(config.VM_CNT)
-        bulk_cnt = int(config.BULK_VM_CNT)
-        self.vm_names = ['%s_%s' % (config.VM_BASE_NAME, ind)
-                         for ind in range(vm_cnt)]
+
         status = True
+        bulk_cnt = int(config.BULK_VM_CNT)
         template = 'Blank'
+        is_install = True if config.IS_INSTALL_VM in ['true', 'True'] \
+            else False
         start = 0
-        while vm_cnt:
-            cnt = bulk_cnt if vm_cnt > bulk_cnt else vm_cnt
+        while self.vm_cnt:
+            cnt = bulk_cnt if self.vm_cnt > bulk_cnt else self.vm_cnt
             LOGGER.info("Create VMs: %s", self.vm_names[start:start + cnt])
             status = common.create_vms(
-                self.vm_names[start:start + cnt], template) and status
+                self.vm_names[start:start + cnt], template, is_install) \
+                and status
             monitor.create_report('%s running VMs' % (start + cnt))
             start += bulk_cnt
-            vm_cnt -= cnt
+            self.vm_cnt -= cnt
 
         LOGGER.info("Stop dwh service")
         common.toggle_dwh_service('stop')

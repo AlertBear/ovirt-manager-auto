@@ -42,6 +42,7 @@ DISPLAY_TYPE = PARAMETERS['display_type']
 VM_LINUX_USER = PARAMETERS['vm_linux_user']
 VM_LINUX_PASSWORD = PARAMETERS['vm_linux_password']
 
+IS_INSTALL_VM = PARAMETERS.get('is_install_vm', None)
 COBBLER_ADDRESS = PARAMETERS.get('cobbler_address', None)
 COBBLER_USER = PARAMETERS.get('cobbler_user', None)
 COBBLER_PASSWORD = PARAMETERS.get('cobbler_passwd', None)

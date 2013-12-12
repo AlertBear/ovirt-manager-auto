@@ -35,25 +35,23 @@ class TestCaseCreateFakeHosts(TestCase):
     __test__ = True
 
     def setUp(self):
-        self.vm_names = list()
+        self.vm_cnt = int(config.VM_CNT)
+        self.vm_names = ['%s_fake_%s' % (config.VM_BASE_NAME, ind)
+                         for ind in range(self.vm_cnt)]
 
     @istest
     def test_create_fake_hosts(self):
         """
             Create VMs and fake hosts
         """
-        vm_cnt = int(config.VM_CNT)
-        bulk_cnt = int(config.BULK_VM_CNT)
-        self.vm_names = ['%s_fake_%s' % (config.VM_BASE_NAME, ind)
-                         for ind in range(vm_cnt)]
-
         monitor = resource_monitor.ResourcesTemplate()
         monitor.create_report('system idle')
 
         status = True
+        bulk_cnt = int(config.BULK_VM_CNT)
         start = 0
-        while vm_cnt:
-            cnt = bulk_cnt if vm_cnt > bulk_cnt else vm_cnt
+        while self.vm_cnt:
+            cnt = bulk_cnt if self.vm_cnt > bulk_cnt else self.vm_cnt
             LOGGER.info("Create %s VMs as a source for fake hosts", cnt)
             status = common.create_vms(self.vm_names[start:start + cnt]) \
                 and status
@@ -63,7 +61,7 @@ class TestCaseCreateFakeHosts(TestCase):
                 self.vm_names[start:start + cnt]) and status
             monitor.create_report('%s running fake hosts' % cnt)
             start += bulk_cnt
-            vm_cnt -= cnt
+            self.vm_cnt -= cnt
 
         assert(status)
 
