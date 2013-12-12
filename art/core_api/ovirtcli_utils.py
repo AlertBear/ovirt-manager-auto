@@ -533,7 +533,11 @@ class RhevmCli(CliConnection):
         validated_command = []
         starting_position = 0
         autocompletion_params = []
-        cmd_params = cmd.split()
+        # taking care of '', ' ', '  ', ... stuff
+        spaces_regex = re.compile("'\s*'")
+        spaces = iter(spaces_regex.findall(cmd))
+        cmd_params = map(lambda x: spaces.next() if x == 'SPACE' else x,
+                         re.sub("'\s*'", 'SPACE', cmd).split())
         params_len = len(cmd_params)
         cmd_type, object_name = cmd_params[:2]
         # getting context
