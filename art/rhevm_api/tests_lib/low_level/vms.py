@@ -2040,6 +2040,7 @@ def waitForIP(vm, timeout=600, sleep=DEF_SLEEP):
     Return: Tupple ( True/False whether it obtained the IP,
                      IP if fetched or None)
     '''
+    guest_info = None
     start_time = time.time()
     while time.time() - start_time < timeout:
         time.sleep(sleep)
@@ -2047,9 +2048,12 @@ def waitForIP(vm, timeout=600, sleep=DEF_SLEEP):
         if guest_info is not None:
             ip = guest_info.get_ips().get_ip()[0].get_address()
             VM_API.logger.debug("Got IP: %s", ip)
-            return True, { 'ip' : ip }
+            return True, {'ip': ip}
 
-    return False, { 'ip' : None }
+    if guest_info is None:
+        logger.error("rhevm-quest-agent wasn't installed or it is stopped")
+
+    return False, {'ip': None}
 
 
 #TODO: replace with generic "async create requests" mechanism
