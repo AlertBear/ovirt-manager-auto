@@ -32,10 +32,9 @@ def setup_package():
                         cobblerUser=config.COBBLER_USER,
                         cobblerPasswd=config.COBBLER_PASSWORD,
                         vm_password=config.HOSTS_PW,
-                        vm_flag=False,
-                        template_flag=False):
+                        vm_flag=False, template_flag=False,
+                        auto_nics=[config.HOST_NICS[0]]):
         raise NetworkException("Cannot create setup")
-
 
 
 def teardown_package():

@@ -187,7 +187,8 @@ class Sync_Case2_185336(TestCase):
         if not removeNetwork(True, config.VLAN_NETWORKS[0],
                              data_center=config.DC_NAME):
             raise NetworkException("Remove network from DC1 failed")
-        if not removeNetFromSetup(host=config.HOSTS[0], auto_nics=['eth0'],
+        if not removeNetFromSetup(host=config.HOSTS[0],
+                                  auto_nics=[config.HOST_NICS[0]],
                                   network=[config.VLAN_NETWORKS[0]]):
             raise NetworkException("Remove network from DC2/CL2/Host failed")
         logger.info("Put the host on the DC1")
@@ -290,7 +291,8 @@ class Sync_Case3_185337(TestCase):
         if not removeNetwork(True, config.NETWORKS[0],
                              data_center=config.DC_NAME):
             raise NetworkException("Remove network from DC1 failed")
-        if not removeNetFromSetup(host=config.HOSTS[0], auto_nics=['eth0'],
+        if not removeNetFromSetup(host=config.HOSTS[0],
+                                  auto_nics=[config.HOST_NICS[0]],
                                   network=[config.NETWORKS[0]]):
             raise NetworkException("Remove network from DC2/CL2/Host failed")
         logger.info("Put the host on the DC1")
@@ -372,7 +374,8 @@ class Sync_Case4_185370(TestCase):
         if not removeNetwork(True, config.NETWORKS[0],
                              data_center=config.DC_NAME):
             raise NetworkException("Remove network from DC1 failed")
-        if not removeNetFromSetup(host=config.HOSTS[0], auto_nics=['eth0'],
+        if not removeNetFromSetup(host=config.HOSTS[0],
+                                  auto_nics=[config.HOST_NICS[0]],
                                   network=[config.NETWORKS[0]]):
             raise NetworkException("Remove network from DC2/CL2/Host failed")
         logger.info("Put the host on the DC1")
@@ -454,7 +457,8 @@ class Sync_Case5_185374(TestCase):
         if not removeNetwork(True, config.NETWORKS[0],
                              data_center=config.DC_NAME):
             raise NetworkException("Remove network from DC1 failed")
-        if not removeNetFromSetup(host=config.HOSTS[0], auto_nics=['eth0'],
+        if not removeNetFromSetup(host=config.HOSTS[0],
+                                  auto_nics=[config.HOST_NICS[0]],
                                   network=[config.NETWORKS[0]]):
             raise NetworkException("Remove network from DC2/CL2/Host failed")
         logger.info("Put the host on the DC1")
@@ -551,7 +555,8 @@ class Sync_Case6_240899(TestCase):
         if not removeNetwork(True, config.VLAN_NETWORKS[0],
                              data_center=config.DC_NAME):
             raise NetworkException("Remove network from DC1 failed")
-        if not removeNetFromSetup(host=config.HOSTS[0], auto_nics=['eth0'],
+        if not removeNetFromSetup(host=config.HOSTS[0],
+                                  auto_nics=[config.HOST_NICS[0]],
                                   network=[config.VLAN_NETWORKS[0]]):
             raise NetworkException("Remove network from DC2/CL2/Host failed")
         logger.info("Put the host on the DC1")

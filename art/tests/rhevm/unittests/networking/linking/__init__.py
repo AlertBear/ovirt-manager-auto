@@ -52,7 +52,8 @@ def setup_package():
                         cobblerAddress=config.COBBLER_ADDRESS,
                         cobblerUser=config.COBBLER_USER,
                         cobblerPasswd=config.COBBLER_PASSWORD,
-                        vm_password=config.HOSTS_PW):
+                        vm_password=config.HOSTS_PW,
+                        auto_nics=[config.HOST_NICS[0]]):
         raise NetworkException("Cannot create setup")
     if not createAndAttachNetworkSN(data_center=config.DC_NAME,
                                     cluster=config.CLUSTER_NAME,
