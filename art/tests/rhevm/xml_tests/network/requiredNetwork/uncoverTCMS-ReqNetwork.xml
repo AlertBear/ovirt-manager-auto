@@ -138,7 +138,7 @@
 <test_case>
   <test_name>Check that Host is NON-OPERATIONAL within 80 sec</test_name>
   <test_action>waitForHostsStates</test_action>
-  <parameters>names='{vds[0]}', states='nonoperational',timeout=80</parameters>
+  <parameters>names='{vds[0]}', states='non_operational',timeout=80</parameters>
   <positive>TRUE</positive>
   <run>yes</run>
   <fetch_output/>
@@ -418,7 +418,7 @@
 <test_case>
   <test_name>Check that Host is NON-OPERATIONAL within 80 sec</test_name>
   <test_action>waitForHostsStates</test_action>
-  <parameters>names='{vds[0]}', states='nonoperational', timeout=80</parameters>
+  <parameters>names='{vds[0]}', states='non_operational', timeout=80</parameters>
   <positive>TRUE</positive>
   <run>yes</run>
   <fetch_output/>
