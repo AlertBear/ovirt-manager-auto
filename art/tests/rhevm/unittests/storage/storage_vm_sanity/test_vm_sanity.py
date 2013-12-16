@@ -437,6 +437,9 @@ class TestCase300867(TestCase):
         cls.vms_ip_address = vm_ip['ip']
         LOGGER.info("Stopping VM %s" % cls.vm_name)
         vms.shutdownVm(True, cls.vm_name)
+        if not vms.waitForVmsStates(True, cls.vm_name,
+                                    states=ENUMS['vm_state_down']):
+            vms.stopVm(True, cls.vm_name)
         LOGGER.info("setup finished with success")
 
     def _make_snapshots(self):
