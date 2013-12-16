@@ -23,6 +23,7 @@ import types
 from functools import wraps
 import threading
 import thread
+from decimal import Decimal
 
 from art.core_api import validator
 from art.core_api.apis_exceptions import EntityNotFound
@@ -752,7 +753,7 @@ class JavaTranslator(object):
             python_data = 'true' if data is True else 'false'
         # BigDecimal case
         elif isinstance(data, java.math.BigDecimal):
-            python_data = int(data.toString())
+            python_data = Decimal(data.toString())
         # assuming that this is string
         elif data is not None:
             python_data = data.encode('utf8')
