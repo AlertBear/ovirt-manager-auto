@@ -302,15 +302,14 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
                  luns='', lun_port=LUN_PORT,
                  diskType='system', auto_nics=[HOST_NICS[0]],
                  vm_user='root', vm_password=None,
-                 vmName='VMTest1', vmDescription='linux vm',
+                 vmName=None, vmDescription='linux vm',
                  cobblerAddress=None, cobblerUser=None,
                  cobblerPasswd=None, nicType='virtio', display_type='spice',
                  os_type='RHEL6x64', image='rhel6.4-agent3.2',
                  nic='nic1', size=DISK_SIZE, useAgent=True,
-                 template_name='tempTest1', attempt=ATTEMPTS,
+                 template_name=None, attempt=ATTEMPTS,
                  interval=INTERVAL, placement_host=None,
-                 vm_flag=True, template_flag=True, bridgeless=False,
-                 vm_network=MGMT_NETWORK):
+                 bridgeless=False, vm_network=MGMT_NETWORK):
     '''
         Function that creates DC, Cluster, Storage, Hosts
         It creates VM with a NIC connected to default network and Template if
@@ -336,7 +335,7 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
             *  *vm_user* - user name for the VM
             *  *vm_password* - password for the VM
             *  *auto_nics* - a list of nics
-            *  *vmName* - VM name
+            *  *vmName* - VM name, if not None create VM
             *  *vmDescription* - Decription of VM
             *  *cobblerAddress* - IP or hostname of cobbler server
             *  *cobblerUser* - username for cobbler
@@ -349,18 +348,17 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
             *  *size* - the size of the disk
             *  *useAgent* - Set to 'true', if desired to read the ip from VM.
                 Agent exist on VM
-            *  *template_name* - name of the template to create
+            *  *template_name* - name of the template, if not None create
+                template.
             *  *attempt*- attempts to connect after installation
             *  *inerval* - interval between attempts
             *  *placement_host* - the host that will hold VM
-            *  *vm_flag* - Set to true, if desired VM
-            *  *template_flag* - set to true if desired template
             *  *bridgeless* - Set management network as bridgless,
                 MUST set management network to bridge after each job.
             *  *vm_network* - Network for VM
         **Returns**: True if creation of the setup succeeded, otherwise False
     '''
-    if vm_flag and bridgeless:
+    if vmName and bridgeless:
         if vm_network == MGMT_NETWORK:
             logger.error("vm network name can't be %s when using"
                          "bridgeless management network", MGMT_NETWORK)
@@ -425,7 +423,7 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
                              exc_info=True)
                 return False
 
-    if vm_flag:
+    if vmName:
         if not createVm(True, vmName=vmName,
                         vmDescription='linux vm', cluster=cluster,
                         nic=nic, storageDomainName=storageDomainName,
@@ -443,7 +441,7 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
             logger.error("Cannot create VM")
             return False
 
-    if template_flag:
+    if template_name:
         try:
             rc, out = getVmMacAddress(True, vm=vmName, nic='nic1')
             mac_addr = out['macAddress'] if rc else None

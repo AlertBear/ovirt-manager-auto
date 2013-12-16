@@ -6,15 +6,12 @@ import logging
 from art.rhevm_api.tests_lib.low_level.storagedomains import\
     cleanDataCenter
 
-from art.test_handler.exceptions import\
-    DataCenterException, VMException, NetworkException, ClusterException
-from art.rhevm_api.tests_lib.low_level.vms import addVm
+from art.test_handler.exceptions import DataCenterException, NetworkException
 from art.rhevm_api.tests_lib.low_level.datacenters import\
     addDataCenter, removeDataCenter
 from art.rhevm_api.tests_lib.low_level.clusters import\
     addCluster, removeCluster
-from art.rhevm_api.tests_lib.high_level.networks import\
-    createAndAttachNetworkSN, prepareSetup
+from art.rhevm_api.tests_lib.high_level.networks import prepareSetup
 logger = logging.getLogger("Sync")
 
 #################################################
@@ -37,8 +34,8 @@ def setup_package():
                         cobblerAddress=config.COBBLER_ADDRESS,
                         cobblerUser=config.COBBLER_USER,
                         cobblerPasswd=config.COBBLER_PASSWORD,
-                        vm_password=config.HOSTS_PW, vm_flag=False,
-                        template_flag=False, auto_nics=[config.HOST_NICS[0]]):
+                        vm_password=config.HOSTS_PW,
+                        auto_nics=[config.HOST_NICS[0]]):
         raise NetworkException("Cannot create setup")
 
     if not (addDataCenter(positive=True, name=config.DC_NAME2,

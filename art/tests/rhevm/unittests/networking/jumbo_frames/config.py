@@ -12,11 +12,10 @@ PARAMETERS = ART_CONFIG['PARAMETERS']
 ENUMS = opts['elements_conf']['RHEVM Enums']
 STORAGE_TYPE = PARAMETERS['data_center_type']
 
-basename = PARAMETERS.get('TEST_NAME', 'test')
-DC_NAME = PARAMETERS.get('dc_name', '%s_DC' % basename)
-CLUSTER_NAME = PARAMETERS.get('cluster_name', '%s_Cluster' % basename)
+DC_NAME = PARAMETERS.get('dc_name', '%s_DC' % TEST_NAME)
+CLUSTER_NAME = PARAMETERS.get('cluster_name', '%s_Cluster' % TEST_NAME)
 CPU_NAME = PARAMETERS['cpu_name']
-DATA_NAME = PARAMETERS.get('data_domain_name', '%s_storage' % basename)
+DATA_NAME = PARAMETERS.get('data_domain_name', '%s_storage' % TEST_NAME)
 DATA_PATHS = PARAMETERS.as_list('data_domain_path')
 DATA_ADDRESSES = PARAMETERS.as_list('data_domain_address')
 VERSION = PARAMETERS['compatibility_version']
@@ -34,8 +33,9 @@ BONDS = PARAMETERS.as_list('bond')
 NETWORKS = PARAMETERS.as_list('networks')
 VLAN_NETWORKS = ['sw201', 'sw202', 'sw203', 'sw204', 'sw205']
 VLAN_ID = ['201', '202', '203', '204', '205']
-VM_NAME = [TEST_NAME + "_" + elm for elm in PARAMETERS.as_list('vm_name')]
-TEMPLATE_NAME = PARAMETERS['template_name']
+VM_NAME = ["".join([TEST_NAME, '_', elm]) for elm in
+           PARAMETERS.as_list('vm_name')]
+TEMPLATE_NAME = "".join(['%s_', PARAMETERS['template_name']]) % TEST_NAME
 VM_OS = PARAMETERS['vm_os']
 INTER_SUBNET = '3.3.3.'
 IPS = ['3.3.3.1', '3.3.3.2']

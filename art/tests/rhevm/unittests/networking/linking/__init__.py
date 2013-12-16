@@ -52,6 +52,8 @@ def setup_package():
                         cobblerAddress=config.COBBLER_ADDRESS,
                         cobblerUser=config.COBBLER_USER,
                         cobblerPasswd=config.COBBLER_PASSWORD,
+                        vmName=config.VM_NAME[0],
+                        template_name=config.TEMPLATE_NAME,
                         vm_password=config.HOSTS_PW,
                         auto_nics=[config.HOST_NICS[0]]):
         raise NetworkException("Cannot create setup")
