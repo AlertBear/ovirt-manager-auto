@@ -41,7 +41,7 @@
     <test_name>Check if the fence command occur and check events</test_name>
     <test_type>rest</test_type>
     <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='\"data center {data_center_name} was choosen as a proxy to execute Start command\" and type=605', query="{vds[1]} and type=41", expected_count=1</parameters>
+    <parameters>win_start_query='\"data center {data_center_name} was choosen as a proxy to execute Start command\" and type=605', query="{vds[1]} and type=41", expected_count=2</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
     <tcms_plan_id>8155</tcms_plan_id>
@@ -65,7 +65,7 @@
 <test_case>
     <test_name>Wait for host is in maintenance</test_name>
     <test_action>waitForHostsStates</test_action>
-    <parameters>names='{vds[2]},{vds[3]}', states='Maintenance'</parameters>
+    <parameters>names='{vds[2]},{vds[3]}', states='e{host_state_maintenance}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
 </test_case>
@@ -88,7 +88,7 @@
     <test_name>Check if the fence command occur and check events</test_name>
     <test_type>rest</test_type>
     <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='\"{vds[0]} from data center {data_center_name} was choosen as a proxy to execute Start command\" and type=605', query="{vds[1]} and type=41", expected_count=1</parameters>
+    <parameters>win_start_query='\"{vds[0]} from data center {data_center_name} was choosen as a proxy to execute Start command\" and type=605', query="{vds[1]} and type=41", expected_count=3</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
     <tcms_plan_id>8155</tcms_plan_id>
@@ -105,7 +105,7 @@
 <test_case>
     <test_name>Wait for host is in maintenance</test_name>
     <test_action>waitForHostsStates</test_action>
-    <parameters>names='{vds[0]}', states='Maintenance'</parameters>
+    <parameters>names='{vds[0]}', states='e{host_state_maintenance}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
 </test_case>
@@ -128,7 +128,7 @@
     <test_name>Check if the fence command occur and check events</test_name>
     <test_type>rest</test_type>
     <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='\"data center {data_center_name} was choosen as a proxy to execute Start command\" and type=605', query="{vds[1]} and type=41", expected_count=1</parameters>
+    <parameters>win_start_query='\"data center {data_center_name} was choosen as a proxy to execute Start command\" and type=605', query="{vds[1]} and type=41", expected_count=4</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
     <tcms_plan_id>8155</tcms_plan_id>
@@ -152,7 +152,7 @@
 <test_case>
     <test_name>Wait for host is UP</test_name>
     <test_action>waitForHostsStates</test_action>
-    <parameters>names='{vds[0]},{vds[2]},{vds[3]}', states='Up'</parameters>
+    <parameters>names='{vds[0]},{vds[2]},{vds[3]}', states='e{host_state_up}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
 </test_case>
@@ -196,7 +196,7 @@
     <test_name>Check if the fence command occur and check events</test_name>
     <test_type>rest</test_type>
     <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='\"{vds[0]} from cluster {cluster_name}_0 was choosen as a proxy to execute Start command\" and type=605', query="{vds[1]} and type=41", expected_count=1</parameters>
+    <parameters>win_start_query='\"{vds[0]} from cluster {cluster_name}_0 was choosen as a proxy to execute Start command\" and type=605', query="{vds[1]} and type=41", expected_count=5</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
     <tcms_plan_id>8155</tcms_plan_id>
@@ -220,7 +220,7 @@
 <test_case>
     <test_name>Wait for host is in maintenance</test_name>
     <test_action>waitForHostsStates</test_action>
-    <parameters>names='{vds[0]}', states='Maintenance'</parameters>
+    <parameters>names='{vds[0]}', states='e{host_state_maintenance}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
 </test_case>
@@ -243,7 +243,7 @@
     <test_name>Check if the fence command occur and check events</test_name>
     <test_type>rest</test_type>
     <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='\"{vds[0]} from cluster {cluster_name}_0 was choosen as a proxy to execute Start command\" and type=605', query="{vds[1]} and type=41", expected_count=1</parameters>
+    <parameters>win_start_query='\"{vds[0]} from cluster {cluster_name}_0 was choosen as a proxy to execute Start command\" and type=605', query="{vds[1]} and type=41", expected_count=6</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
     <tcms_plan_id>8155</tcms_plan_id>
@@ -260,7 +260,7 @@
 <test_case>
     <test_name>Wait for host is in maintenance</test_name>
     <test_action>waitForHostsStates</test_action>
-    <parameters>names='{vds[2]},{vds[3]}', states='Maintenance'</parameters>
+    <parameters>names='{vds[2]},{vds[3]}', states='e{host_state_maintenance}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
 </test_case>
@@ -283,7 +283,7 @@
     <test_name>Check if the fence command occur and check events</test_name>
     <test_type>rest</test_type>
     <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='\"{vds[0]} from cluster {cluster_name}_0 was choosen as a proxy to execute Start command\" and type=605', query="{vds[1]} and type=41", expected_count=1</parameters>
+    <parameters>win_start_query='\"{vds[0]} from cluster {cluster_name}_0 was choosen as a proxy to execute Start command\" and type=605', query="{vds[1]} and type=41", expected_count=7</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
     <tcms_plan_id>8155</tcms_plan_id>
@@ -307,7 +307,7 @@
 <test_case>
     <test_name>Wait for host is UP</test_name>
     <test_action>waitForHostsStates</test_action>
-    <parameters>names='{vds[0]},{vds[2]},{vds[3]}', states='Up'</parameters>
+    <parameters>names='{vds[0]},{vds[2]},{vds[3]}', states='e{host_state_up}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
 </test_case>
@@ -322,7 +322,7 @@
 <test_case>
     <test_name>Wait for host is in maintenance</test_name>
     <test_action>waitForHostsStates</test_action>
-    <parameters>names='{vds[1]}', states='Maintenance'</parameters>
+    <parameters>names='{vds[1]}', states='e{host_state_maintenance}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
 </test_case>
@@ -345,14 +345,14 @@
     <test_name>Check if the fence command occur and check events</test_name>
     <test_type>rest</test_type>
     <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='\"{vds[0]} from cluster {cluster_name}\" and type=605', query="{vds[1]} and type=21", expected_count=1</parameters>
+    <parameters>win_start_query='\"{vds[0]} from cluster {cluster_name}\" and type=605', query="{vds[1]} and type=21", expected_count=9</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
 </test_case>
 <test_case>
     <test_name>Wait for host is down</test_name>
     <test_action>waitForHostsStates</test_action>
-    <parameters>names='{vds[1]}', states='Down'</parameters>
+    <parameters>names='{vds[1]}', states='e{host_state_down}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
 </test_case>
@@ -375,7 +375,7 @@
     <test_name>Check if the fence command occur and check events</test_name>
     <test_type>rest</test_type>
     <test_action>searchForRecentEvent</test_action>
-    <parameters>win_start_query='{vds[0]} and type=605', query="{vds[1]} and type=496", expected_count=1</parameters>
+    <parameters>win_start_query='{vds[0]} and type=605', query="{vds[1]} and type=496", expected_count=10</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
 </test_case>

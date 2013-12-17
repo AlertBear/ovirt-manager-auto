@@ -25,21 +25,21 @@
 <test_case>
     <test_name>Create VM With High Availibility</test_name>
     <test_action>addVm</test_action>
-    <parameters>name='restvm_high', cluster='{cluster_name}_0', type='e{vm_type_server}', highly_available='true', placement_affinity='migratable', placement_host='{vds[1]}'</parameters>
+    <parameters>name='restvmhigh', cluster='{cluster_name}_0', type='e{vm_type_server}', highly_available='true', placement_affinity='migratable', placement_host='{vds[1]}'</parameters>
     <positive>True</positive>
     <run>yes</run>
 </test_case>
 <test_case>
     <test_name>Create VM With Default Parameters</test_name>
     <test_action>addVm</test_action>
-    <parameters>name='restvm', cluster='{cluster_name}_0', placement_affinity='migratable', placement_host='{vds[1]}'</parameters>
+    <parameters>name='restvm', cluster='{cluster_name}_0', type='e{vm_type_server}', placement_affinity='migratable', placement_host='{vds[1]}'</parameters>
     <positive>True</positive>
     <run>yes</run>
 </test_case>
 <test_case>
     <test_name>Add RAW IDE System Disk To VM not preallocated</test_name>
     <test_action>addDiskToVm</test_action>
-    <parameters>vm='restvm_high', size=2147483648, type='e{disk_type_system}', format='e{format_raw}', interface='e{interface_ide}', sparse='true', storagedomain='{storage_domain_name}',bootable='true'</parameters>
+    <parameters>vm='restvmhigh', size=2147483648, type='e{disk_type_system}', format='e{format_raw}', interface='e{interface_ide}', sparse='true', storagedomain='{storage_domain_name}',bootable='true'</parameters>
     <positive>True</positive>
     <run>if(1&lt;len('[vds]'.split(',')))</run>
 </test_case>
@@ -53,7 +53,7 @@
 <test_case>
     <test_name>Add NIC to VM to allow boot</test_name>
     <test_action>addNic</test_action>
-    <parameters>vm='restvm_high', name='nic1', network='rhevm'</parameters>
+    <parameters>vm='restvmhigh', name='nic1', network='rhevm'</parameters>
     <positive>True</positive>
     <run>yes</run>
 </test_case>
@@ -67,7 +67,7 @@
 <test_case>
     <test_name>Start VM</test_name>
     <test_action>startVm</test_action>
-    <parameters>vm='restvm_high', wait_for_status='e{vm_state_up}'</parameters>
+    <parameters>vm='restvmhigh', wait_for_status='e{vm_state_up}'</parameters>
     <positive>True</positive>
     <run>If(1&lt;len('[vds]'.split(',')))</run>
 </test_case>
@@ -100,6 +100,13 @@
     <positive>True</positive>
     <run>yes</run>
 </test_case>
+    <test_case>
+    <test_name>Sleep after restarting host</test_name>
+    <test_action>sleep</test_action>
+    <parameters>seconds=30</parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
 <test_case>
     <test_name>Fence host</test_name>
     <test_action>fenceHost</test_action>
@@ -109,19 +116,26 @@
     <run>yes</run>
 </test_case>
 <test_case>
-    <test_name>Check for status of highly available vm</test_name>
-    <test_action>checkVmState</test_action>
-    <parameters>vmName='restvm_high', host='{vds[0]}', state='e{vm_state_up}'</parameters>
-    <positive>True</positive>
+    <test_name>Sleep after restarting host</test_name>
+    <test_action>sleep</test_action>
+    <parameters>seconds=30</parameters>
+    <positive>None</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
+    <test_name>Check for status of highly available vm - should be up</test_name>
+    <test_action>waitUntilVmQuery</test_action>
+    <parameters>vm='restvmhigh', query='status="e{vm_state_up}"', timeout=900, sleep=10</parameters>
+    <positive>NONE</positive>
     <run>yes</run>
     <tcms_plan_id>9988</tcms_plan_id>
     <tcms_test_case>289119</tcms_test_case>
 </test_case>
 <test_case>
-    <test_name>Check for status of vm</test_name>
-    <test_action>checkVmState</test_action>
-    <parameters>vmName='restvm', state='e{vm_state_down}'</parameters>
-    <positive>True</positive>
+    <test_name>Check for status of vm should be down</test_name>
+    <test_action>waitUntilVmQuery</test_action>
+    <parameters>vm='restvm', query='status="e{vm_state_down}"', timeout=900, sleep=10</parameters>
+    <positive>NONE</positive>
     <run>yes</run>
 </test_case>
 <test_case>
@@ -149,9 +163,16 @@
 <test_case>
     <test_name>Migrate VM</test_name>
     <test_action>migrateVm</test_action>
-    <parameters>vm='restvm_high', host='{vds[1]}'</parameters>
+    <parameters>vm='restvmhigh', host='{vds[1]}'</parameters>
     <positive>True</positive>
     <run>If(1&lt;len('[vds]'.split(',')))</run>
+</test_case>
+    <test_case>
+    <test_name>Check for status of highly available vm should be UP</test_name>
+    <test_action>waitUntilVmQuery</test_action>
+    <parameters>vm='restvmhigh', query='status="e{vm_state_up}"', timeout=900, sleep=10</parameters>
+    <positive>NONE</positive>
+    <run>yes</run>
 </test_case>
 <test_case>
     <test_name>Stop network on host</test_name>
@@ -163,7 +184,7 @@
 <test_case>
     <test_name>Wait until host connecting</test_name>
     <test_action>waitForHostsStates</test_action>
-    <parameters>names='{vds[1]}', states='connecting'</parameters>
+    <parameters>names='{vds[1]}', states='e{host_state_connecting}'</parameters>
     <positive>True</positive>
     <run>yes</run>
 </test_case>
@@ -175,17 +196,17 @@
     <run>yes</run>
 </test_case>
 <test_case>
-    <test_name>Check for status of normal vm</test_name>
-    <test_action>checkVmState</test_action>
-    <parameters>vmName='restvm', state='e{vm_state_down}'</parameters>
-    <positive>True</positive>
+    <test_name>Check for status of normal vm - should be down</test_name>
+    <test_action>waitUntilVmQuery</test_action>
+    <parameters>vm='restvm', query='status="e{vm_state_down}"', timeout=900, sleep=10</parameters>
+    <positive>NONE</positive>
     <run>yes</run>
 </test_case>
 <test_case>
-    <test_name>Check for status of highly available vm</test_name>
-    <test_action>checkVmState</test_action>
-    <parameters>vmName='restvm_high', state='e{vm_state_up}'</parameters>
-    <positive>True</positive>
+    <test_name>Check for status of highly available vm - should be up</test_name>
+    <test_action>waitUntilVmQuery</test_action>
+    <parameters>vm='restvmhigh', query='status="e{vm_state_up}"', timeout=900, sleep=10</parameters>
+    <positive>NONE</positive>
     <run>yes</run>
     <tcms_plan_id>9988</tcms_plan_id>
     <tcms_test_case>289120</tcms_test_case>
@@ -201,14 +222,21 @@
 <test_case>
    <test_name>Stop VM</test_name>
    <test_action>stopVm</test_action>
-   <parameters>vm='restvm_high'</parameters>
+   <parameters>vm='restvmhigh'</parameters>
    <positive>True</positive>
    <run>yes</run>
 </test_case>
 <test_case>
+    <test_name>Check for status of normal vm - should be down</test_name>
+    <test_action>waitUntilVmQuery</test_action>
+    <parameters>vm='restvmhigh', query='status="e{vm_state_down}"', timeout=900, sleep=10</parameters>
+    <positive>NONE</positive>
+    <run>yes</run>
+</test_case>
+<test_case>
    <test_name>Remove Vms</test_name>
    <test_action>removeVms</test_action>
-   <parameters>vms='restvm,restvm_high'</parameters>
+   <parameters>vms='restvm,restvmhigh'</parameters>
    <positive>True</positive>
    <run>yes</run>
 </test_case>
