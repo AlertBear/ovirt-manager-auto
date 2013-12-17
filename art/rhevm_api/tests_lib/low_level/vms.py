@@ -932,8 +932,8 @@ def checkVmHasCdromAttached(positive, vmName):
 
 
 def _prepareNicObj(**kwargs):
-
     nic_obj = data_st.NIC()
+    vnic_profile_obj = data_st.VnicProfile()
 
     if 'name' in kwargs:
         nic_obj.set_name(kwargs.get('name'))
@@ -959,7 +959,7 @@ def _prepareNicObj(**kwargs):
         cluster_obj = CLUSTER_API.find(cluster_id, attribute='id')
 
         if kwargs.get('network') is None:
-            nic_obj.set_vnic_profile(None)
+            nic_obj.set_vnic_profile(vnic_profile_obj)
         else:
             vnic_profile_obj = getVnicProfileObj(kwargs.get('vnic_profile')
                                                  if 'vnic_profile' in kwargs
@@ -1107,7 +1107,6 @@ def updateNic(positive, vm, nic, **kwargs):
        * linked - shows if VNIC is linked or not
     Return: status (True if nic was updated properly, False otherwise)
     '''
-
     nic_new = _prepareNicObj(vm=vm, **kwargs)
     nic_obj = getVmNic(vm, nic)
 
