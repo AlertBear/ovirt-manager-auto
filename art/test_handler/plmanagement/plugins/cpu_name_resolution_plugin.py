@@ -42,7 +42,8 @@ VITAL = 'vital'
 DEFAULT_VITAL = True
 
 MODEL_RE = re.compile(r'model_[A-Za-z_1-9]+')
-MIN_MODEL = {'Intel': "model_Conroe", 'AMD': "model_Opteron_G1"}
+MIN_MODEL = {'Intel': "model_Conroe", 'AMD': "model_Opteron_G1",
+             'IBM POWER': 'model_POWER7_v2.0'}
 
 
 class CpuNameResolutionFailed(PluginError):
@@ -107,6 +108,8 @@ class AutoCpuNameResolution(Component):
             vendor = 'Intel'
         elif 'AMD' in out:
             vendor = 'AMD'
+        elif 'POWER' in out:
+            vendor = 'IBM POWER'
         fallback = self.cpus_model_mapping.get(MIN_MODEL.get(vendor))
         if not fallback:
             logger.debug(
@@ -128,6 +131,9 @@ class AutoCpuNameResolution(Component):
             elif 'AMD' in name:
                 model_name += name[4:].replace(' ', '_')
                 vendor = 'AMD'
+            elif 'IBM POWER' in name:
+                model_name += "%s%s_%s" % tuple(name.split()[1:])
+                vendor = 'IBM POWER'
             else:
 #                raise CpuPluginError('Unknown vendor of %s' % name)
                 logger.warning('Unknown vendor of %s' % name)
@@ -146,7 +152,7 @@ class AutoCpuNameResolution(Component):
         version = None
         for ver in versions:
             if (ver.get_major() == int(compatibility_version[0]) and
-                        ver.get_minor() == int(compatibility_version[1])):
+                    ver.get_minor() == int(compatibility_version[1])):
                 version = ver
                 break
         else:
@@ -176,8 +182,7 @@ class AutoCpuNameResolution(Component):
                 host_cpu = self.get_cpu_model(name, passwd)
                 if (selected_cpu is None or
                         (host_cpu['vendor'] == selected_cpu['vendor'] and
-                                 host_cpu['level'] < selected_cpu[
-                                 'level'])):
+                         host_cpu['level'] < selected_cpu['level'])):
                     selected_cpu = host_cpu
         except CpuPluginError as ex:
             logger.debug(ex)
