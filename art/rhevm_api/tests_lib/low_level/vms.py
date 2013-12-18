@@ -2045,7 +2045,7 @@ def waitForIP(vm, timeout=600, sleep=DEF_SLEEP):
             return True, {'ip': ip}
 
     if guest_info is None:
-        logger.error("rhevm-quest-agent wasn't installed or it is stopped")
+        logger.error("rhevm-guest-agent wasn't installed or it is stopped")
 
     return False, {'ip': None}
 
