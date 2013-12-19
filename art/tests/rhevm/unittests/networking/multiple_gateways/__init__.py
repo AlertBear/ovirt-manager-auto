@@ -25,7 +25,7 @@ def setup_package():
     if not prepareSetup(hosts=config.HOSTS[0], cpuName=config.CPU_NAME,
                         username=config.HOSTS_USER, password=config.HOSTS_PW,
                         datacenter=config.DC_NAME,
-                        storageDomainName=config.DC_NAME + '_data_domain0',
+                        storageDomainName=config.STORAGE_NAME,
                         storage_type=config.STORAGE_TYPE,
                         cluster=config.CLUSTER_NAME,
                         lun_address=config.LUN_ADDRESS,
