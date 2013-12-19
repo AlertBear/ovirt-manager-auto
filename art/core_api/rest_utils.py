@@ -212,7 +212,7 @@ class RestUtil(APIUtil):
                 return None, False
 
             if ret['body']:
-                self.logger.debug("New entity was added")
+                self.logger.info("New entity was added")
                 actlEntity = validator.dump_entity(parse(ret['body']),
                                                     self.element_name)
 
@@ -272,7 +272,7 @@ class RestUtil(APIUtil):
             if not validator.compareResponseCode(ret, expected_pos_status, self.logger):
                 return None, False
 
-            self.logger.debug(self.element_name + " was updated")
+            self.logger.info(self.element_name + " was updated")
 
             if not validator.compareElements(parse(entity),
             parse(ret['body']), self.logger, self.element_name):
@@ -556,7 +556,7 @@ class RestUtil(APIUtil):
                 return False
 
             if elemStat in status.lower().split():
-                self.logger.debug("%s status is '%s'" \
+                self.logger.info("%s status is '%s'" \
                                 % (self.element_name, elemStat))
                 return True
             elif elemStat.find("fail") != -1 and not ignoreFinalStates:

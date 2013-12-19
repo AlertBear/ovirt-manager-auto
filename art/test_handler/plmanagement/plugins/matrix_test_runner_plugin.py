@@ -449,18 +449,18 @@ class MatrixTestCase(TestCase):
 
         self.test_name = self.tc.resolve_place_holders(self.test_name, self.local_scope)
         logger.info(self.format_attr(self.TEST_NAME))
-        logger.debug(self.format_attr(self.TEST_SERIAL))
-        logger.debug(self.format_attr(self.TEST_ID))
+        logger.info(self.format_attr(self.TEST_SERIAL))
+        logger.info(self.format_attr(self.TEST_ID))
         self.parameters = self.tc.resolve_place_holders(self.parameters, self.local_scope)
 
         if self.positive is not None:
             self.parameters = "%s, %s" % (self.positive, self.parameters)
-        logger.debug(self.format_attr(self.TEST_POSITIVE))
+        logger.info(self.format_attr(self.TEST_POSITIVE))
 
         func = self.tc.resolve_func_path(self.test_action)
         self.test_action = func.name
-        logger.debug(self.format_attr(self.TEST_ACTION))
-        logger.debug(self.format_attr(self.TEST_PARAMS))
+        logger.info(self.format_attr(self.TEST_ACTION))
+        logger.info(self.format_attr(self.TEST_PARAMS))
         self.mod_name = self.group_name
         if not self.mod_name:
             self.mod_name = func.module.split('.')[-1]
@@ -480,12 +480,12 @@ class MatrixTestCase(TestCase):
         scope['fetch_output'] = self.tc.f
         scope[self.test_action] = func
         try:
-            logger.debug("Running command: %s", cmd)
+            logger.info("Running command: %s", cmd)
             res = eval(cmd, scope)
             #res = (True, {})
             self.status = self.TEST_STATUS_PASSED
         except self.expected_exc as ex:
-            logger.debug("Handled expected exception: %s", ex)
+            logger.info("Handled expected exception: %s", ex)
             self.status = self.TEST_STATUS_PASSED
         except NO_TB_EXCEPTIONS:
             self.status = self.TEST_STATUS_FAILED
@@ -522,7 +522,7 @@ class MatrixTestCase(TestCase):
         fetch_output = fetch_output.strip().split('->')
         res = results.get(fetch_output[0], None)
         self.tc.f[fetch_output[1]] = res
-        logger.debug("Fetch output: %s->%s : %s", fetch_output[0], fetch_output[1], res)
+        logger.info("Fetch output: %s->%s : %s", fetch_output[0], fetch_output[1], res)
 
     @classmethod
     @contextmanager
@@ -868,7 +868,7 @@ class MatrixBasedTestComposer(Component):
             if tc.status == tc.TEST_STATUS_SKIPPED and isinstance(tc.exc, DoNotRun):
                 tc.report = False
                 tc.status = tc.TEST_STATUS_PASSED
-                logger.debug("Test case '%s' will be not executed: %s", tc.test_name, tc.exc)
+                logger.info("Test case '%s' will be not executed: %s", tc.test_name, tc.exc)
 
     def test_group_skipped(self, tg):
         pass

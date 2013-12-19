@@ -312,7 +312,7 @@ def compareElements(expElm, actElm, logger, root, equal=True):
 
                 if str(attrExpVal) == str(attrActVal):
                     MSG = "Property '{0}->{1}' has correct value: {2}"
-                    logger.debug(MSG.format(root, attr, attrExpVal))
+                    logger.info(MSG.format(root, attr, attrExpVal))
                 else:
                     equal = False
                     MSG = "Property '{0}->{1}' has wrong value, " \
@@ -419,7 +419,7 @@ and java decorator object")
 
                 if str(attrExpVal) == str(attrActVal):
                     MSG = "Property '{0}->{1}' has correct value: {2}"
-                    logger.debug(MSG.format(root, attr, attrExpVal))
+                    logger.info(MSG.format(root, attr, attrExpVal))
                 else:
                     equal = False
                     MSG = "Property '{0}->{1}' has wrong value, " \

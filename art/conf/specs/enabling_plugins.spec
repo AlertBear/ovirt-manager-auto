@@ -21,7 +21,6 @@ enabled = boolean(default=True)
 
 [LOG_CAPTURE]
 enabled = boolean(default=True)
-level = string(default=info)
 fmt = string(default='#(asctime)s - #(threadName)s - #(name)s - #(levelname)s - #(message)s')
 
 [BUGZILLA]

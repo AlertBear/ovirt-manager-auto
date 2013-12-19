@@ -255,7 +255,7 @@ class TestRunner(object):
         assert isinstance(test_case, TestCase), \
                 "test_elm must be TestCase, not %s" % type(test_case)
         test_case.start_time = datetime.now(tzutc())
-        logger.debug(TEST_CASES_SEPARATOR)
+        logger.info(TEST_CASES_SEPARATOR)
         try:
             self.plmanager.test_cases.pre_test_case(test_case)
             self.plmanager.test_skippers.should_be_test_case_skipped(test_case)
@@ -291,8 +291,8 @@ class TestRunner(object):
         test_group.start_time = datetime.now(tzutc())
         try:
             self.plmanager.test_groups.pre_test_group(test_group)
-            logger.debug(TEST_CASES_SEPARATOR)
-            logger.debug("Starting %s", test_group)
+            logger.info(TEST_CASES_SEPARATOR)
+            logger.info("Starting %s", test_group)
             self.plmanager.test_skippers.should_be_test_group_skipped(test_group)
             if test_group.workers == 1:
                 for test_elm in test_group:
@@ -329,8 +329,8 @@ class TestRunner(object):
         finally:
             test_group.end_time = datetime.now(tzutc())
             self.plmanager.test_groups.post_test_group(test_group)
-            logger.debug("Finishing %s", test_group)
-            logger.debug(TEST_CASES_SEPARATOR)
+            logger.info("Finishing %s", test_group)
+            logger.info(TEST_CASES_SEPARATOR)
 
         self.plmanager.results_collector.add_test_result(test_group)
 

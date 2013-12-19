@@ -110,7 +110,7 @@ class LogStash(Component):
     def __log_results(self, title, st, et):
         links = self.__generate_links(st, et)
         for name, link in links.items():
-            logger.debug("%s -> %s: %s\n", title, name, link)
+            logger.info("%s -> %s: %s\n", title, name, link)
 
     def __generate_links(self, st, et):
         et = self.__format_time(et)
