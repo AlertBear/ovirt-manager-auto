@@ -4,7 +4,6 @@ A collection of wrappers which allow the usage of general utils functions and st
 import logging
 import os
 
-import storageapi.storageManagerWrapper as sm
 import utilities.utils as utils
 import utilities.VDS4 as vds4
 from utilities import machine
@@ -78,97 +77,6 @@ def flushIptables(host, userName, password, chain='', persistently=False):
     """Warpper for utilities.machine.flushIptables() method."""
     hostObj = machine.Machine(host, userName, password).util('linux')
     return hostObj.flushIptables(chain, persistently)
-
-@is_action()
-def getStorageManager(ip, storageType):
-    """
-        Wrapper for retrieving an instance of any sub-class
-        of storageManagement.StorageManager base class.
-        Author: mbenenso
-        Parameters:
-         * ip - IP address of storage server
-         * storageType - storage protocol type
-        Return: True and dictionary with instance of StorageManager class on success,
-                (False, {'mgr': None}) otherwise
-    """
-    retDict = {'mgr': None}
-    retDict['mgr'] = sm.StorageManagerWrapper(ip, storageType).manager
-
-    return (retDict['mgr'] is not None), retDict
-
-
-@is_action()
-def createLuns(mgr, name, size, sparse=True, cnt=1, \
-               addToExisting=False, targetName=None):
-    """
-        Create LUN storage.
-        Author: mbenenso
-        Parameters:
-         * mgr - concrete storage manager instance
-         * name - logical name (setup name)
-         * size - LUN size in GB
-         * sparse - thin provision by default (preallocated if False)
-         * cnt - amount of LUNs to create (1 by default)
-         * addToExisting - create LUN and attach to existing target (False by default)
-         * targetName - optional name for the target (None by default)
-        Return: True and LUN details dictionary on successful LUN creation,
-                (False, an empty dictionary) otherwise
-    """
-    keys = ('lunId', 'targetName')
-    if mgr is not None:
-        lunId, tName = mgr.createLuns(name, size, sparse, cnt, \
-                                      addToExisting, targetName)
-        return True, dict(zip(keys, [lunId, tName]))
-
-    return False, dict()
-
-
-@is_action()
-def mapLuns(mgr, lunGuids, name, *initiators):
-    """
-        Map LUN storages.
-        Author: mbenenso
-        Parameters:
-         * mgr - concrete storage manager instance
-         * lunGuids - list of LUN uuids
-         * name - logical name (setup name)
-         * *initiators - variable-length argument list of initiator iqns
-                         in case of NetApp and OpenSolaris,
-                         or list of IP addresses in case of Linux TGT
-        Return: None
-    """
-    mgr.mapLuns(lunGuids, name, *initiators)
-
-
-@is_action()
-def unmapLuns(mgr, lunGuids, name, *initiators):
-    """
-        Unmap LUN storages.
-        Author: mbenenso
-        Parameters:
-         * mgr - concrete storage manager instance
-         * lunGuids - list of LUN uuids
-         * name - logical name (setup name)
-         * *initiators - variable-length argument list of initiator iqns
-                         in case of NetApp and OpenSolaris,
-                         or list of IP addresses in case of Linux TGT
-        Return: None
-    """
-    mgr.unmapLuns(lunGuids, name, *initiators)
-
-
-@is_action()
-def removeLuns(mgr, lunGuids, force=True):
-    """
-        Remove LUN storages.
-        Author: mbenenso
-        Parameters:
-         * mgr - concrete storage manager instance
-         * lunGuids - list of LUN uuids
-         * force - force removal (True by default)
-        Return: None
-    """
-    mgr.removeLuns(lunGuids, force)
 
 
 @is_action()
