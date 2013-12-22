@@ -2521,6 +2521,29 @@ def getVmNicNetwork(vm, nic='nic1'):
     return bool(nic_obj.get_network())
 
 
+def checkVmNicProfile(vm, vnic_profile_name, nic='nic1'):
+    '''
+    Check if VNIC profile 'vnic_profile_name' exist on the given VNIC
+    **Author**: gcheresh
+    **Parameters**:
+        *  *vm* - vm name
+        *  *vnic_profile_name - name of the vnic_profile to test
+        *  *nic* - nic name
+    **Returns**: True if vnic_profile_name exists on nic,
+                 False otherwise
+    '''
+    nic_obj = getVmNic(vm, nic)
+    if vnic_profile_name is None:
+        if nic_obj.get_vnic_profile():
+            return False
+        return True
+
+    all_profiles = VNIC_PROFILE_API.get(absLink=False)
+    for profile in all_profiles:
+        if profile.get_name() == vnic_profile_name:
+            return profile.get_id() == nic_obj.get_vnic_profile().get_id()
+
+
 @is_action()
 def getVmNicVlanId(vm, nic='nic1'):
     '''

@@ -26,7 +26,8 @@ from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api.apis_utils import getDS, data_st
 from art.rhevm_api.utils.test_utils import get_api, split, waitUntilGone
 from art.rhevm_api.utils.xpath_utils import XPathMatch
-from art.rhevm_api.tests_lib.low_level.networks import getClusterNetwork
+from art.rhevm_api.tests_lib.low_level.networks import getClusterNetwork,\
+    getVnicProfileObj
 from art.rhevm_api.tests_lib.low_level.vms import DiskNotFound
 from art.test_handler.settings import opts
 from utilities.jobs import Job, JobsSet
@@ -244,6 +245,7 @@ def searchForTemplate(positive, query_key, query_val, key_name, **kwargs):
 def _prepareNicObj(**kwargs):
 
     nic_obj = data_st.NIC()
+    vnic_profile_obj = data_st.VnicProfile()
 
     if 'name' in kwargs:
         nic_obj.set_name(kwargs.get('name'))
@@ -255,10 +257,18 @@ def _prepareNicObj(**kwargs):
         if kwargs.get('network'):
             cluster = kwargs.get('cluster')
             cl_obj = CL_API.find(cluster, 'id')
-            cl_net = getClusterNetwork(cl_obj.name, kwargs.get('network'))
-            nic_obj.set_network(cl_net)
+
+        if kwargs.get('network') is None:
+            nic_obj.set_vnic_profile(vnic_profile_obj)
         else:
-            nic_obj.set_network(data_st.Network(name=None))
+            vnic_profile_obj = getVnicProfileObj(kwargs.get('vnic_profile')
+                                                 if 'vnic_profile' in kwargs
+                                                 else
+                                                 kwargs.get('network'),
+                                                 kwargs.get('network'),
+                                                 cl_obj.get_name())
+
+            nic_obj.set_vnic_profile(vnic_profile_obj)
 
     if 'active' in kwargs:
         nic_obj.set_active(kwargs.get('active'))
