@@ -37,12 +37,15 @@ VM_NAME = ["".join([TEST_NAME, '_', elm]) for elm in
            PARAMETERS.as_list('vm_name')]
 TEMPLATE_NAME = "".join(['%s_', PARAMETERS['template_name']]) % TEST_NAME
 VM_OS = PARAMETERS['vm_os']
+NUM_PACKETS = 1000
 INTER_SUBNET = '3.3.3.'
 IPS = ['3.3.3.1', '3.3.3.2']
 MTU = [5000, 9000, 2000, 1500]
 SEND_MTU = [4500, 8500, 1500, 1000]
-NETMASK = ['255.255.255.0']
-GATEWAY = ['3.3.3.254']
+SOURCE_IP = '1.1.1.1'
+DEST_IP = '1.1.1.2'
+NETMASK = '255.255.255.0'
+GATEWAY = '3.3.3.254'
 TRAFFIC_TIMEOUT = 120
 CONNECT_TIMEOUT = 60
 

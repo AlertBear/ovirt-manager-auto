@@ -10,7 +10,6 @@ import logging
 from unittest import TestCase
 from nose.tools import istest
 from art.test_handler.tools import tcms
-from art.test_handler.settings import opts
 from art.rhevm_api.utils.test_utils import checkMTU
 from art.unittest_lib.network import skipBOND
 from art.rhevm_api.tests_lib.low_level.hosts import genSNNic, sendSNRequest
@@ -28,13 +27,8 @@ from art.rhevm_api.tests_lib.high_level.networks import \
 HOST_API = get_api('host', 'hosts')
 VM_API = get_api('vm', 'vms')
 
-logger = logging.getLogger(__package__ + __name__)
+logger = logging.getLogger(__name__)
 
-ENUMS = opts['elements_conf']['RHEVM Enums']
-NUM_PACKETS = 1000
-SOURCE_IP = '1.1.1.1'
-DEST_IP = '1.1.1.2'
-NETMASK = '255.255.255.0'
 
 ########################################################################
 
@@ -1068,10 +1062,9 @@ class JumboFrames_Case11_148668(TestCase):
                                                 'bootproto': 'static',
                                                 'address': [config.IPS[0],
                                                             config.IPS[1]],
-                                                'netmask': [config.NETMASK[0],
-                                                            config.NETMASK[0]],
-                                                'gateway': [config.GATEWAY[0],
-                                                            config.NETMASK[0]],
+                                                'netmask': [config.NETMASK,
+                                                            config.NETMASK],
+                                                'gateway': [config.GATEWAY],
                                                 'vlan_id': config.VLAN_ID[0],
                                                 'required': 'false'}}
 
@@ -1297,8 +1290,8 @@ class JumboFrames_Case13_325544(TestCase):
                                                 'mtu': config.MTU[1],
                                                 'bootproto': 'static',
                                                 'address': [config.IPS[0]],
-                                                'netmask': [config.NETMASK[0]],
-                                                'gateway': [config.GATEWAY[0]],
+                                                'netmask': [config.NETMASK],
+                                                'gateway': [config.GATEWAY],
                                                 'vlan_id': config.VLAN_ID[1],
                                                 'required': 'false'},
                       config.VLAN_NETWORKS[2]: {'nic': config.BONDS[0],
@@ -1361,8 +1354,8 @@ class JumboFrames_Case13_325544(TestCase):
                                                 'mtu': config.MTU[1],
                                                 'bootproto': 'static',
                                                 'address': [config.IPS[1]],
-                                                'netmask': [config.NETMASK[0]],
-                                                'gateway': [config.GATEWAY[0]],
+                                                'netmask': [config.NETMASK],
+                                                'gateway': [config.GATEWAY],
                                                 'vlan_id': config.VLAN_ID[1],
                                                 'required': 'false'},
                       config.VLAN_NETWORKS[2]: {'nic': config.BONDS[0],
@@ -1651,10 +1644,9 @@ class JumboFrames_Case15_167554(TestCase):
 
 class JumboFrames_Case16_260611(TestCase):
     """
-    Test is false till it will run on specific hosts with configured MTU
     Verify dedicated regular tagged network migration over Bond with MTU 9000
     """
-    __test__ = False
+    __test__ = True
 
     @classmethod
     def setup_class(cls):
@@ -1671,10 +1663,10 @@ class JumboFrames_Case16_260611(TestCase):
                                                 'required': 'true',
                                                 'cluster_usages': 'migration',
                                                 'bootproto': 'static',
-                                                'address': [SOURCE_IP,
-                                                            DEST_IP],
-                                                'netmask': [NETMASK,
-                                                            NETMASK]},
+                                                'address': [config.SOURCE_IP,
+                                                            config.DEST_IP],
+                                                'netmask': [config.NETMASK,
+                                                            config.NETMASK]},
                       config.NETWORKS[1]: {'nic': config.HOST_NICS[1],
                                            'required': 'true'}}
         if not createAndAttachNetworkSN(data_center=config.DC_NAME,
@@ -1696,18 +1688,19 @@ class JumboFrames_Case16_260611(TestCase):
                            host_list=config.HOSTS,
                            nic='.'.join([config.BONDS[0], config.VLAN_ID[0]]))
         if not checkICMPConnectivity(host=orig_host, user=config.HOSTS_USER,
-                                     password=config.HOSTS_PW[0], ip=dst):
+                                     password=config.HOSTS_PW, ip=dst):
             logger.error("ICMP wasn't established")
         with TrafficMonitor(machine=orig_host, user=config.HOSTS_USER,
-                            password=config.HOSTS_PW[0],
+                            password=config.HOSTS_PW,
                             nic='.'.join([config.BONDS[0], config.VLAN_ID[0]]),
                             src=src, dst=dst,
-                            protocol='tcp', numPackets=NUM_PACKETS) as monitor:
+                            protocol='tcp',
+                            numPackets=config.NUM_PACKETS) as monitor:
             monitor.addTask(check_vm_migration,
                             vm_names=config.VM_NAME[0],
                             orig_host=orig_host, vm_user=config.HOSTS_USER,
-                            host_password=config.HOSTS_PW[0],
-                            vm_password=config.HOSTS_PW[0],
+                            host_password=config.HOSTS_PW,
+                            vm_password=config.HOSTS_PW,
                             os_type='rhel')
         self.assertTrue(monitor.getResult())
 
