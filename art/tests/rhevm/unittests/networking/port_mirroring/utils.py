@@ -13,7 +13,7 @@ import config
 
 def sendAndCaptureTraffic(srcVM, srcIP, dstIP,
                           listenVM=config.VM_NAME[0], nic='eth1',
-                          expectTraffic=True):
+                          expectTraffic=True, dupCheck=True):
     '''
     A function that sends ICMP traffic from 'srcIP' to 'dstIP' while capturing
     traffic on 'listeningVM' to check if mirroring is happening.
@@ -36,7 +36,7 @@ def sendAndCaptureTraffic(srcVM, srcIP, dstIP,
                         machine=config.RHEVM_IPS[listenVmIndex],
                         user=config.VM_LINUX_USER,
                         password=config.VM_LINUX_PASSWORD,
-                        nic=nic, src=srcIP, dst=dstIP, dupCheck=True,
+                        nic=nic, src=srcIP, dst=dstIP, dupCheck=dupCheck,
                         protocol='icmp', numPackets=3, ) as monitor:
             monitor.addTask(sendICMP, host=srcVM, user=config.VM_LINUX_USER,
                             password=config.VM_LINUX_PASSWORD, ip=dstIP)

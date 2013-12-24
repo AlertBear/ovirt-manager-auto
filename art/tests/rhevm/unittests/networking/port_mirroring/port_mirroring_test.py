@@ -7,14 +7,13 @@ import logging
 from art.test_handler.exceptions import VMException
 from art.test_handler.settings import opts
 from art.test_handler.tools import tcms
-
 from art.rhevm_api.tests_lib.low_level.vms import updateNic, migrateVm,\
     getVmNicPortMirroring
 from art.rhevm_api.utils.test_utils import configureTempStaticIp,\
     restartVdsmd, restartNetwork
-
 from utils import sendAndCaptureTraffic, setPortMirroring,\
     returnVmsToOriginalHost
+from art.rhevm_api.tests_lib.low_level.hosts import waitForHostsStates
 
 import config
 
@@ -353,11 +352,18 @@ class PortMirroring_Case6_302106(TestCase):
         Check that mirroring still occurs after restarting networking
         on the host
         """
+        logger.info("Restart network service on %s", config.HOSTS[0])
         self.assertTrue(restartNetwork(config.HOSTS[0], config.HOSTS_PW[0]))
 
+        logger.info("Check that %s is UP", config.HOSTS[0])
+        if not waitForHostsStates(positive=True, names=config.HOSTS[0]):
+            logger.error("%s status isn't UP", config.HOSTS[0])
+
+        logger.info("Check port mirroring traffic")
         self.assertTrue(sendAndCaptureTraffic(srcVM=RHEVM_IPS[1],
                                               srcIP=NET1_IPS[1],
-                                              dstIP=NET1_IPS[2]))
+                                              dstIP=NET1_IPS[2],
+                                              dupCheck=False))
 
     @classmethod
     def teardown_class(cls):
