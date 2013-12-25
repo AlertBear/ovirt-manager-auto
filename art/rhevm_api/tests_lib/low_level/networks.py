@@ -425,7 +425,8 @@ def checkIPRule(host, user, password, subnet):
 
 
 def updateVnicProfile(name, network, cluster=None, data_center=None,
-                      new_name=None, port_mirroring=None, description=None):
+                      new_name=None, port_mirroring=None, description=None,
+                      new_network=None):
     '''
     Description: Update VNIC profile with provided parameters in kwargs
     **Author**: gcheresh
@@ -438,6 +439,7 @@ def updateVnicProfile(name, network, cluster=None, data_center=None,
         *  *new_name* - new name for the VNIC profile
         *  *port_mirroring* - Enable/Disable port mirroring for profile
         *  *description* - New description of vnic profile
+        *  *new_network - new network for VNIC profile (for negative case)
     **Return**: True, if adding vnic profile was success, otherwise False
     '''
 
@@ -456,6 +458,10 @@ def updateVnicProfile(name, network, cluster=None, data_center=None,
 
     if description:
         new_vnic_profile_obj.set_description(description)
+
+    if new_network:
+        net_obj = getClusterNetwork(cluster, new_network)
+        new_vnic_profile_obj.set_network(net_obj)
 
     if not VNIC_PROFILE_API.update(vnic_profile_obj, new_vnic_profile_obj,
                                    True)[1]:
@@ -503,6 +509,50 @@ def getVnicProfileObj(name, network, cluster=None, data_center=None):
     else:
         raise EntityNotFound('VNIC profile %s was not found among the profiles'
                              ' of network %s' % (name, network))
+
+
+def getVnicProfileAttr(name, network, cluster=None, data_center=None,
+                       attr_list=[]):
+    '''
+    Finds the VNIC profile object.
+    **Author**: gcheresh
+    **Parameters**:
+        *  *name* - Name of the VNIC profile to find.
+        *  *network* - Name of the network used by the VNIC profile.
+        *  *cluster* - Name of the cluster in which the network is located.
+        *  *data_center* - Name of the data center in which the network
+                           is located.
+        *   *attr_list - attributes of VNIC profile to get:
+                port_mirroring
+                description
+                id
+                custom_properties
+                network_obj
+                name
+
+    **Return**: Returns the dictionary of VNIC profile attributes
+    '''
+
+    vnic_profile_obj = getVnicProfileObj(name=name, network=network,
+                                         cluster=cluster,
+                                         data_center=data_center)
+    attr_dict = {}
+    for arg in attr_list:
+        if arg == "port_mirroring":
+            attr_dict["port_mirroring"] = vnic_profile_obj.get_port_mirroring()
+        elif arg == "description":
+            attr_dict["description"] = vnic_profile_obj.get_description()
+        elif arg == "id":
+            attr_dict["id"] = vnic_profile_obj.get_id()
+        elif arg == "custom_properties":
+            attr_dict["custom_properties"] =\
+                vnic_profile_obj.get_custom_properties()
+        elif arg == "name":
+            attr_dict["name"] = vnic_profile_obj.get_name()
+        elif arg == "network_obj":
+            attr_dict["network_obj"] = vnic_profile_obj.get_network()
+
+    return attr_dict
 
 
 # noinspection PyUnusedLocal
