@@ -37,7 +37,8 @@ DS_CLASS_MAPPER = {
                 'VMCdRom': 'CdRom',
                 'RolePermits': 'Permits',
                 'HostNicStatistics': 'Statistics',
-                'DiskStatistics': 'Statistics'
+                'DiskStatistics': 'Statistics',
+                'NetworkVnicProfile': 'VnicProfile'
 }
 
 
