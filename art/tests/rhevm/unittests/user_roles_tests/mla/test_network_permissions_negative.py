@@ -13,6 +13,7 @@ from user_roles_tests.roles import role
 from nose.tools import istest
 from unittest import TestCase
 from art.test_handler.tools import tcms
+from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.tests_lib.low_level import (mla, networks, users, vms,
                                                templates)
 
@@ -265,6 +266,7 @@ class NegativeNetworkPermissions234215(NetworkingNegative):
 
 
 class NegativeNetworkPermissions236686(NetworkingNegative):
+    """ Attach a network to VM """
     __test__ = True
 
     def setUp(self):
@@ -287,13 +289,15 @@ class NegativeNetworkPermissions236686(NetworkingNegative):
     def attachNetworkToVM(self):
         """ Attach a network to VM """
         loginAsUser(config.USER_NAME)
-        assert vms.addNic(False, VM_NAME, name=NIC_NAME3,
-                          network=config.NETWORK_NAME1, interface='virtio')
-        assert vms.updateNic(False, VM_NAME, NIC_NAME,
-                             network=config.NETWORK_NAME1)
+        self.assertRaises(EntityNotFound, vms.addNic, False, VM_NAME,
+                          name=NIC_NAME3, network=config.NETWORK_NAME1,
+                          interface='virtio')
+        self.assertRaises(EntityNotFound, vms.updateNic, False, VM_NAME,
+                          NIC_NAME, network=config.NETWORK_NAME1)
 
 
 class NegativeNetworkPermissions236736(NetworkingNegative):
+    """ Visible networks and manipulation """
     __test__ = True
 
     def setUp(self):
@@ -329,8 +333,9 @@ class NegativeNetworkPermissions236736(NetworkingNegative):
         assert vms.updateNic(False, VM_NAME, NIC_NAME2,
                              network=config.NETWORK_NAME1)
         assert vms.removeNic(True, VM_NAME, NIC_NAME)
-        assert vms.addNic(False, VM_NAME, name=NIC_NAME,
-                          network=config.NETWORK_NAME1, interface='virtio')
+        self.assertRaises(EntityNotFound, vms.addNic, False, VM_NAME,
+                          name=NIC_NAME, network=config.NETWORK_NAME1,
+                          interface='virtio')
         nets = [n.get_name() for n in networks.NET_API.get(absLink=False)]
         LOGGER.info("User can see networks: '%s'", nets)
         # User can see network2 and default rhevm network, because has
@@ -338,5 +343,5 @@ class NegativeNetworkPermissions236736(NetworkingNegative):
         # (is not shown in /api/networks) + Default DC
         assert len(nets) == 3
         assert vms.updateNic(True, VM_NAME, NIC_NAME2, network=None)
-        assert vms.updateNic(False, VM_NAME, NIC_NAME2,
-                             network=config.NETWORK_NAME2)
+        self.assertRaises(EntityNotFound, vms.updateNic, False, VM_NAME,
+                          NIC_NAME2, network=config.NETWORK_NAME2)
