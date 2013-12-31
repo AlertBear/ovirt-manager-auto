@@ -2489,7 +2489,10 @@ def getVmNicPlugged(vm, nic='nic1'):
     **Returns**: True if NIC is plugged, otherwise False
     '''
     nic_obj = getVmNic(vm, nic)
-    return nic_obj.get_plugged()
+    res = nic_obj.get_plugged()
+    if isinstance(res, basestring):
+        return res.lower() == "true"
+    return res
 
 
 @is_action()
@@ -2503,7 +2506,10 @@ def getVmNicLinked(vm, nic='nic1'):
     **Returns**: True if NIC is linked, otherwise False
     '''
     nic_obj = getVmNic(vm, nic)
-    return nic_obj.get_linked()
+    res = nic_obj.get_linked()
+    if isinstance(res, basestring):
+        return res.lower() == "true"
+    return res
 
 
 def getVmNicNetwork(vm, nic='nic1'):
