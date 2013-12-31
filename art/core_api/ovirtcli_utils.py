@@ -1087,9 +1087,9 @@ class CliUtil(RestUtil):
                 self.logger.warning('Validation skipped for %s',
                                     entity.__class__.__name__)
             else:
-                actionCmd = self.cli.validateCommand(actionCmd)
+                createCmd = self.cli.validateCommand(actionCmd)
                 self.logger.warning('Actual command after validation:\n%s',
-                                    actionCmd)
+                                    createCmd)
 
         # checking if we have legal entity name
         actionCmd = self.cli.convertComplexNameToBaseEntityName(entity,
