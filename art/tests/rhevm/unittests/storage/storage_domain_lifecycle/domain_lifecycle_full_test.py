@@ -11,6 +11,8 @@ from art.rhevm_api.tests_lib.high_level import datacenters, storagedomains
 from utilities.utils import getIpAddressByHostName
 from art.test_handler.tools import tcms, bz
 import art.rhevm_api.utils.storage_api as st_api
+import art.rhevm_api.utils.iptables as ip_action
+
 from art.rhevm_api.utils.test_utils import get_api, wait_for_tasks
 
 from art.test_handler import exceptions
@@ -125,81 +127,6 @@ class BaseTestCase(TestCase):
 
         cls.engine_ip = getIpAddressByHostName(config.VDC)
 
-    def _perform_iptables_action_and_wait(self, action, source,
-                                          s_user, s_pass,
-                                          destination, wait_for_entity,
-                                          expected_state):
-        """
-        block/unblock connection from source to destination,
-        and wait_for_entity state to change to expected_state
-        Parameters:
-            * action - the action that need to preform (block/unblock)
-            * source - block/unblock connection from this ip or fdqn
-            * s_user - user name for this machine
-            * s_pass - password for this machine
-            * destination - block/unblock connection to this ip or fqdn
-            * wait_for_entity - the ip or fdqn of the machine that we wait
-                                for its state
-            * expected_state - the state that we wait for
-        """
-        action_string = 'blocking' if action.__name__ == \
-            st_api.blockOutgoingConnection.__name__ else 'unblocking'
-        logger.info("%s connection from %s to %s", action_string, source,
-                    destination)
-
-        success = action(source, s_user, s_pass, destination)
-        self.assertTrue(success, "%s connection to %s failed."
-                                 "result was %s." %
-                                 (action_string, destination, success))
-
-        logger.info("wait for state : '%s' ", expected_state)
-        response = hosts.waitForHostsStates(True, wait_for_entity,
-                                            states=expected_state)
-
-        host_state = hosts.getHostState(wait_for_entity)
-        self.assertTrue(response, "Host should be in status %s but it's "
-                                  "in status %s"
-                                  % (expected_state, host_state))
-
-    def block_and_wait(self, source, s_user, s_pass, destination,
-                       wait_for_entity,
-                       expected_state=config.HOST_NONOPERATIONAL):
-        """
-        block connection from source to destination, and wait_for_entity
-        state to change to expected_state
-        Parameters:
-            * source - block connection from this ip or fdqn
-            * s_user - user name for this machine
-            * s_pass - password for this machine
-            * destination - block connection to this ip or fqdn
-            * wait_for_entity - the ip or fdqn of the machine that we wait
-                                for its state
-            * expected_state - the state that we wait for
-        """
-        self._perform_iptables_action_and_wait(
-            st_api.blockOutgoingConnection, source, s_user, s_pass,
-            destination, wait_for_entity, expected_state)
-
-    def unblock_and_wait(self, source, s_user, s_pass, destination,
-                         wait_for_entity,
-                         expected_state=config.HOST_UP):
-        """
-        unblock connection from source to destination, and wait_for_entity
-        state to change to expected_state
-        Parameters:
-            * source - unblock connection from this ip or fdqn
-            * s_user - user name for this machine
-            * s_pass - password for this machine
-            * destination - unblock connection to this ip or fqdn
-            * wait_for_entity - the ip or fdqn of the machine that we wait
-                                for its state
-            * expected_state - the state that we wait for
-        """
-
-        self._perform_iptables_action_and_wait(
-            st_api.unblockOutgoingConnection, source, s_user, s_pass,
-            destination, wait_for_entity, expected_state)
-
 
 def _create_sds():
     """
@@ -253,49 +180,6 @@ def _create_vm(vm_name, vm_description, disk_interface,
         useAgent=config.USE_AGENT)
 
 
-class TestCase174611(BaseTestCase):
-    """
-    * Block connection from one host to storage server.
-    * Wait until host goes to non-operational.
-    * Unblock connection.
-    * Check that the host is UP again.
-    https://tcms.engineering.redhat.com/case/174611/?from_plan=6458
-    """
-    __test__ = True
-    tcms_test_case = '174611'
-
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
-    @bz('842257')
-    def test_disconnect_host_from_storage(self):
-        """
-        Block connection from one host to storage server.
-        Wait until host goes to non-operational.
-        Unblock connection.
-        Check that the host is UP again.
-        """
-        self.block_and_wait(config.FIRST_HOST, config.VDS_USER[0],
-                            config.VDS_PASSWORD[0], self.master_domain_ip,
-                            config.FIRST_HOST)
-
-        self.unblock_and_wait(config.FIRST_HOST, config.VDS_USER[0],
-                              config.VDS_PASSWORD[0], self.master_domain_ip,
-                              config.FIRST_HOST)
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        unblock all connections that were blocked during the test
-        """
-        logger.info('Unblocking connections')
-        try:
-            st_api.unblockOutgoingConnection(config.FIRST_HOST,
-                                             config.VDS_USER[0],
-                                             config.VDS_PASSWORD[0],
-                                             cls.master_domain_ip)
-        except exceptions.NetworkException, msg:
-            logging.info("Connection already unblocked. reason: %s", msg)
-
-
 class TestCase174610(BaseTestCase):
     """
     * Block connection from engine to host.
@@ -315,14 +199,14 @@ class TestCase174610(BaseTestCase):
         Unblock connection.
         Check that the host is UP again.
         """
-        self.block_and_wait(self.engine_ip, config.VDS_USER[0],
-                            config.VDS_PASSWORD[0], config.FIRST_HOST,
-                            config.FIRST_HOST,
-                            config.HOST_NONRESPONSIVE)
+        ip_action.block_and_wait(self.engine_ip, config.VDS_USER[0],
+                                 config.VDS_PASSWORD[0], config.FIRST_HOST,
+                                 config.FIRST_HOST,
+                                 config.HOST_NONRESPONSIVE)
 
-        self.unblock_and_wait(self.engine_ip, config.VDS_USER[0],
-                              config.VDS_PASSWORD[0], config.FIRST_HOST,
-                              config.FIRST_HOST)
+        ip_action.unblock_and_wait(self.engine_ip, config.VDS_USER[0],
+                                   config.VDS_PASSWORD[0], config.FIRST_HOST,
+                                   config.FIRST_HOST)
 
     @classmethod
     def teardown_class(cls):
@@ -538,7 +422,7 @@ class TestUpgrade(TestCase):
     dc_upgraded_version = None
     storage_format = None
     upgraded_storage_format = None
-    cluster_version = "3.2"
+    cluster_version = "3.3"
     host = config.FIRST_HOST
     vm_name = 'vm_test'
     domain_kw = None
