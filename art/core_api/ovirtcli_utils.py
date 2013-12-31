@@ -595,21 +595,30 @@ in Context dictionary:\n{2}".format(cmd_type, object_name, self.contextDict)
             object_type = cmd_params[1]
             object_name = cmd_params[2]
             action = cmd_params[3]
-            if params_len > 4 and 'identifier' in cmd_params[4]:
-                context_key = cmd_params[4].replace('--', '').split('-')[0]
-                context_objects = filter(lambda x: context_key in x, context)
-                if context_objects:
-                    help_cmd = "{0} {1} {2} {3} {4}".format(cmd_type,
-                                                            object_type,
-                                                            object_name,
-                                                            action,
-                                                            cmd_params[4])
+            if params_len > 4:
+                if 'identifier' in cmd_params[4]:
+                    context_key = cmd_params[4].replace('--', '').split('-')[0]
+                    context_objects = filter(lambda x: context_key in x,
+                                             context)
+                    if context_objects:
+                        help_cmd = "{0} {1} {2} {3} {4}".format(cmd_type,
+                                                                object_type,
+                                                                object_name,
+                                                                action,
+                                                                cmd_params[4])
+                        autocompletion_params += \
+                            self.getAutoCompletionOptions(help_cmd)
+                    else:
+                        self.logger.error(
+                            "Object %s is not found in context %s",
+                            cmd_params[2], context)
+                    starting_position = 6
+                else:
+                    help_cmd = "{0} {1} {2} {3}".format(cmd_type, object_type,
+                                                        object_name, action)
                     autocompletion_params += \
                         self.getAutoCompletionOptions(help_cmd)
-                else:
-                    self.logger.error("Object %s is not found in context %s",
-                                      cmd_params[2], context)
-                starting_position = 6
+                    starting_position = 4
             else:
                 starting_position = 4
 
@@ -623,8 +632,9 @@ in Context dictionary:\n{2}".format(cmd_type, object_name, self.contextDict)
         # passing over command and checking it
         while starting_position < params_len:
             needed_param = False
-            if cmd_params[starting_position].replace('--', '') in \
-                    autocompletion_params:
+            if (cmd_params[starting_position].replace('--', '') in
+                autocompletion_params) or (cmd_params[starting_position] in
+                                           autocompletion_params):
                 validated_command.append(cmd_params[starting_position])
                 needed_param = True
             starting_position += 1
@@ -1154,9 +1164,9 @@ class CliUtil(RestUtil):
                 self.logger.warning('Validation skipped for %s',
                                     entity.__class__.__name__)
             else:
-                createCmd = self.cli.validateCommand(actionCmd)
+                actionCmd = self.cli.validateCommand(actionCmd)
                 self.logger.warning('Actual command after validation:\n%s',
-                                    createCmd)
+                                    actionCmd)
 
         # checking if we have legal entity name
         actionCmd = self.cli.convertComplexNameToBaseEntityName(entity,
