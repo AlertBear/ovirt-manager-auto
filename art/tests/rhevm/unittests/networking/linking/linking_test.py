@@ -75,16 +75,20 @@ class Linked_Case1_231692_236620_231710(TestCase):
         """
         logger.info("Checking Linked on nic2, nic4, nic6 is True")
         for nic_name in ('nic2', 'nic4', 'nic6'):
-            self.assertTrue(getVmNicLinked(config.VM_NAME[0], nic=nic_name))
+            self.assertTrue(getVmNicLinked(config.VM_NAME[0], nic=nic_name),
+                            "NIC %s is not linked but should be" % nic_name)
         logger.info("Checking Plugged on nic2, nic3, nic6 is True")
         for nic_name in ('nic2', 'nic3', 'nic6'):
-            self.assertTrue(getVmNicPlugged(config.VM_NAME[0], nic=nic_name))
+            self.assertTrue(getVmNicPlugged(config.VM_NAME[0], nic=nic_name),
+                            "NIC %s is not plugged but should be" % nic_name)
         logger.info("Checking Linked on nic3, nic5 is False")
         for nic_name in ('nic3', 'nic5'):
-            self.assertFalse(getVmNicLinked(config.VM_NAME[0], nic=nic_name))
+            self.assertFalse(getVmNicLinked(config.VM_NAME[0], nic=nic_name),
+                             "NIC %s is linked but shouldn't be" % nic_name)
         logger.info("Checking Plugged on nic5, nic4 is False")
         for nic_name in ('nic4', 'nic5'):
-            self.assertFalse(getVmNicPlugged(config.VM_NAME[0], nic=nic_name))
+            self.assertFalse(getVmNicPlugged(config.VM_NAME[0], nic=nic_name),
+                             "NIC %s is plugged but shouldn't be" % nic_name)
 
     @classmethod
     def teardown_class(cls):
@@ -127,9 +131,11 @@ class Linked_Case2_231696(TestCase):
         Check the default values for the Plugged/Linked options on VNIC
         """
         logger.info(" Checking linked state of nic2 to be True")
-        self.assertTrue(getVmNicLinked(config.VM_NAME[1], nic='nic2'))
+        self.assertTrue(getVmNicLinked(config.VM_NAME[1], nic='nic2'),
+                        "NIC2 is not linked but should be")
         logger.info("Checking Plugged state on nic2 to be True")
-        self.assertTrue(getVmNicPlugged(config.VM_NAME[1], nic='nic2'))
+        self.assertTrue(getVmNicPlugged(config.VM_NAME[1], nic='nic2'),
+                        "NIC2 is not plugged but should be")
 
     @classmethod
     def teardown_class(cls):
@@ -177,19 +183,23 @@ class Linked_Case3_231698_231697(TestCase):
         """
         logger.info(" Checking linked state of nic3 is False" +
                     " and Updating its state to True")
-        self.assertFalse(getVmNicLinked(config.VM_NAME[1], nic='nic3'))
+        self.assertFalse(getVmNicLinked(config.VM_NAME[1], nic='nic3'),
+                         "NIC3 is linked, but shouldn't be")
         if not updateNic(True, config.VM_NAME[1], "nic3", linked='true'):
             raise NetworkException("Couldn't update linked to True")
 
         logger.info(" Checking linked state on nic2 is True" +
                     " and Updating its state to False")
-        self.assertTrue(getVmNicLinked(config.VM_NAME[1], nic='nic2'))
+        self.assertTrue(getVmNicLinked(config.VM_NAME[1], nic='nic2'),
+                        "NIC2 is not linked, but should be")
         if not updateNic(True, config.VM_NAME[1], "nic2", linked='false'):
             raise NetworkException("Couldn't update linked to false")
 
         logger.info("Checking that linked state on nics was correctly updated")
-        self.assertFalse(getVmNicLinked(config.VM_NAME[1], nic='nic2'))
-        self.assertTrue(getVmNicLinked(config.VM_NAME[1], nic='nic3'))
+        self.assertFalse(getVmNicLinked(config.VM_NAME[1], nic='nic2'),
+                         "NIC2 is linked, but it shouldn't be")
+        self.assertTrue(getVmNicLinked(config.VM_NAME[1], nic='nic3'),
+                        "NIC3 is not linked, but it shold be")
 
         logger.info("Updating both NICs with empty networks")
         for nic_name in ('nic3', 'nic2'):
@@ -198,7 +208,8 @@ class Linked_Case3_231698_231697(TestCase):
 
         logger.info("Testing that update nics with empty networks succeeded")
         for nic_name in ('nic3', 'nic2'):
-            self.assertFalse(getVmNicNetwork(config.VM_NAME[1], nic=nic_name))
+            self.assertFalse(getVmNicNetwork(config.VM_NAME[1], nic=nic_name),
+                             "Update NIC %s with empty Net failed" % nic_name)
 
         logger.info("Updating both NICs with its original networks " +
                     "and unplugging them")
@@ -213,11 +224,13 @@ class Linked_Case3_231698_231697(TestCase):
         logger.info("Testing that update nics with non-empty " +
                     "networks succeeded")
         for nic_name in ('nic3', 'nic2'):
-            self.assertTrue(getVmNicNetwork(config.VM_NAME[1], nic=nic_name))
+            self.assertTrue(getVmNicNetwork(config.VM_NAME[1], nic=nic_name),
+                            "Update %s with non-empty Net failed" % nic_name)
 
         logger.info("Checking that plugged state on NICs was updated")
         for nic_name in ('nic3', 'nic2'):
-            self.assertFalse(getVmNicPlugged(config.VM_NAME[1], nic=nic_name))
+            self.assertFalse(getVmNicPlugged(config.VM_NAME[1], nic=nic_name),
+                             "NIC %s is plugged but shouldn't" % nic_name)
 
         logger.info("Updating both NICs with empty networks")
         for nic_name in ('nic3', 'nic2'):
@@ -226,7 +239,8 @@ class Linked_Case3_231698_231697(TestCase):
 
         logger.info("Testing that update nics with empty networks succeeded")
         for nic_name in ('nic3', 'nic2'):
-            self.assertFalse(getVmNicNetwork(config.VM_NAME[1], nic=nic_name))
+            self.assertFalse(getVmNicNetwork(config.VM_NAME[1], nic=nic_name),
+                             "Update %s with empty Net failed" % nic_name)
 
         logger.info("Updating both NICs with its original networks " +
                     "and plugging them")
@@ -238,7 +252,8 @@ class Linked_Case3_231698_231697(TestCase):
 
         logger.info("Checking that plugged state on NICs was updated")
         for nic_name in ('nic3', 'nic2'):
-            self.assertTrue(getVmNicPlugged(config.VM_NAME[1], nic=nic_name))
+            self.assertTrue(getVmNicPlugged(config.VM_NAME[1], nic=nic_name),
+                            "NIC %s isn't plugged but should be" % nic_name)
 
     @classmethod
     def teardown_class(cls):
@@ -347,13 +362,13 @@ class Linked_Case5_239344(TestCase):
         """
         logger.info("Try to switch link down ")
         self.assertTrue(updateNic(False, config.VM_NAME[0], "nic2",
-                                  linked='false'))
+                                  linked='false'), "Unlink NIC2 failed")
         logger.info("Unplug VNIC")
         self.assertTrue(updateNic(True, config.VM_NAME[0], "nic2",
-                                  plugged='false'))
+                                  plugged='false'), "Unplug NIC2 failed")
         logger.info("Plugging VNIC back")
         self.assertTrue(updateNic(True, config.VM_NAME[0], "nic2",
-                                  plugged='true'))
+                                  plugged='true'), "Plug NIC2 failed")
 
     @classmethod
     def teardown_class(cls):
@@ -406,8 +421,10 @@ class Linked_Case6_239348(TestCase):
         """
         link_param_list = ['false', 'true']
         logger.info("Checking linked state of nic2/nic3 to be True/False")
-        self.assertTrue(getVmNicLinked(config.VM_NAME[0], nic='nic2'))
-        self.assertFalse(getVmNicLinked(config.VM_NAME[0], nic='nic3'))
+        self.assertTrue(getVmNicLinked(config.VM_NAME[0], nic='nic2'),
+                        "NIC2  isn't linked but should be")
+        self.assertFalse(getVmNicLinked(config.VM_NAME[0], nic='nic3'),
+                         "NIC3 is linked but shouldn't be")
         logger.info("Changing the NICs names and Updating opposite link state")
         for i in range(2):
             if not updateNic(True, config.VM_NAME[0], "nic%s" % (i + 2),
@@ -425,8 +442,10 @@ class Linked_Case6_239348(TestCase):
                 raise NetworkException("Couldn't update correct linked state")
 
         logger.info(" Checking linked state on vnic2/vnic3 to be False/True")
-        self.assertTrue(getVmNicLinked(config.VM_NAME[0], nic='vnic3'))
-        self.assertFalse(getVmNicLinked(config.VM_NAME[0], nic='vnic2'))
+        self.assertTrue(getVmNicLinked(config.VM_NAME[0], nic='vnic3'),
+                        "VNIC3 isn't linked but should be")
+        self.assertFalse(getVmNicLinked(config.VM_NAME[0], nic='vnic2'),
+                         "VNIC2 is linked but shouldn't be")
 
         logger.info("Updating both NICs with empty networks")
         for nic_name in ('vnic3', 'vnic2'):
@@ -435,7 +454,8 @@ class Linked_Case6_239348(TestCase):
 
         logger.info("Testing that update nics with empty networks succeeded")
         for nic_name in ('vnic3', 'vnic2'):
-            self.assertFalse(getVmNicNetwork(config.VM_NAME[0], nic=nic_name))
+            self.assertFalse(getVmNicNetwork(config.VM_NAME[0], nic=nic_name),
+                             "Update %s with empty Net failed" % nic_name)
         logger.info("Updating both NICs with its original networks " +
                     "and unplugging them")
         if not (updateNic(True, config.VM_NAME[0], "vnic3",
@@ -452,11 +472,13 @@ class Linked_Case6_239348(TestCase):
         logger.info("Testing that update nics with non-empty " +
                     "networks succeeded")
         for nic_name in ('vnic3', 'vnic2'):
-            self.assertTrue(getVmNicNetwork(config.VM_NAME[0], nic=nic_name))
+            self.assertTrue(getVmNicNetwork(config.VM_NAME[0], nic=nic_name),
+                            "Update %s with non-empty Net failed" % nic_name)
 
         logger.info("Checking that plugged state on NICs was updated")
         for nic_name in ('vnic3', 'vnic2'):
-            self.assertFalse(getVmNicPlugged(config.VM_NAME[0], nic=nic_name))
+            self.assertFalse(getVmNicPlugged(config.VM_NAME[0], nic=nic_name),
+                             "%s is plugged, but shouldn't be" % nic_name)
 
         logger.info(" Changing the NICs names to the original ones")
         if not (updateNic(True, config.VM_NAME[0], "vnic3", name='nic3') and
@@ -470,7 +492,8 @@ class Linked_Case6_239348(TestCase):
 
         logger.info("Testing that update nics with empty networks succeeded")
         for nic_name in ('nic3', 'nic2'):
-            self.assertFalse(getVmNicNetwork(config.VM_NAME[0], nic=nic_name))
+            self.assertFalse(getVmNicNetwork(config.VM_NAME[0], nic=nic_name),
+                             "Update %s with empty Net failed" % nic_name)
 
         logger.info("Updating both NICs to be plugged")
         for nic_name in ('nic3', 'nic2'):
@@ -480,7 +503,8 @@ class Linked_Case6_239348(TestCase):
 
         logger.info("Checking that plugged state on NICs was updated")
         for nic_name in ('nic3', 'nic2'):
-            self.assertTrue(getVmNicPlugged(config.VM_NAME[0], nic=nic_name))
+            self.assertTrue(getVmNicPlugged(config.VM_NAME[0], nic=nic_name),
+                            "%s is not plugged, but should be" % nic_name)
 
     @classmethod
     def teardown_class(cls):
@@ -540,7 +564,8 @@ class Linked_Case7_239368(TestCase):
             raise NetworkException("Couldn't update nic with plugged, network "
                                    "and name params")
         logger.info(" Checking plugged state on nic2 to be False")
-        self.assertFalse(getVmNicPlugged(config.VM_NAME[1], nic='vnic2'))
+        self.assertFalse(getVmNicPlugged(config.VM_NAME[1], nic='vnic2'),
+                         "VNIC2 is plugged, but shouldn't be")
         print "Add here check for network name"
         logger.info("Changing nic2 linked, network and name params")
         if not updateNic(True, config.VM_NAME[1], "vnic2", name='nic2',
@@ -549,7 +574,8 @@ class Linked_Case7_239368(TestCase):
                          linked='false'):
             raise NetworkException("Couldn't update nic with linked, network "
                                    "and name params")
-        self.assertFalse(getVmNicLinked(config.VM_NAME[1], nic='nic2'))
+        self.assertFalse(getVmNicLinked(config.VM_NAME[1], nic='nic2'),
+                         "NIC2 is linked, but shouldn't be")
 
         if not startVm(True, vm=config.VM_NAME[1]):
             raise VMException("Can't start VM")
@@ -567,7 +593,8 @@ class Linked_Case7_239368(TestCase):
         logger.info("Test should fail updating")
         self.assertTrue(updateNic(False, config.VM_NAME[1], "nic2",
                                   interface=config.NIC_TYPE_RTL8139,
-                                  mac_address='11:22:33:44:55:66'))
+                                  mac_address='11:22:33:44:55:66'),
+                        "Updating NIC with new MAC and int type succeded")
         if not updateNic(True, config.VM_NAME[1], "nic2",
                          network=config.VLAN_NETWORKS[1],
                          vnic_profile=config.VLAN_NETWORKS[1],
@@ -576,7 +603,8 @@ class Linked_Case7_239368(TestCase):
         logger.info("Updating nic with new mac and interface type")
         self.assertTrue(updateNic(True, config.VM_NAME[1], "nic2",
                                   interface=config.NIC_TYPE_RTL8139,
-                                  mac_address='00:22:33:44:55:66'))
+                                  mac_address='00:22:33:44:55:66'),
+                        "Updating NIC2 with new MAC and int type failed")
 
     @classmethod
     def teardown_class(cls):
