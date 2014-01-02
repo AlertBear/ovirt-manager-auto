@@ -1032,7 +1032,7 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
 
         try:
             if positive:
-                if correlation_id is not None:
+                if correlation_id is not None or current is not None or async:
                     correlation_id = str(correlation_id)
                     upd_method_args_length, sorted_upd_method_args_list = \
                         self.__java_method_selector(java_entity, 'update')
@@ -1040,6 +1040,9 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
                         response = java_entity.update(correlation_id)
                     elif upd_method_args_length == 2:
                         response = java_entity.update(async, correlation_id)
+                    elif upd_method_args_length == 3:
+                        response = java_entity.update(async, current,
+                                                      correlation_id)
                     else:
                         msg = "We shouldn't get here, unknown update signatur"\
                             "e: update(%s)" % sorted_upd_method_args_list
