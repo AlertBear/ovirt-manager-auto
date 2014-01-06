@@ -227,9 +227,10 @@ class TestCase174613(TestCase):
     """
     test check if creating storage domain with defined values
     is working properly
-    https://tcms.engineering.redhat.com/case/174613/?from_plan=6458
+    https://tcms.engineering.redhat.com/case/174613/?from_plan=12050
     """
     __test__ = (dc_type == ENUMS['storage_type_nfs'])
+    tcms_plan_id = '12050'
     tcms_test_case = '174613'
     nfs_retrans = 4
     nfs_timeout = 900
@@ -237,7 +238,7 @@ class TestCase174613(TestCase):
     sd_names = config.SD_NAMES_LIST[1:]
 
     @istest
-    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @tcms(tcms_plan_id, tcms_test_case)
     def test_create_sd_with_defined_values(self):
         """
         test checks if creating NFS SD with defined values work fine
