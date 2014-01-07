@@ -2489,10 +2489,7 @@ def getVmNicPlugged(vm, nic='nic1'):
     **Returns**: True if NIC is plugged, otherwise False
     '''
     nic_obj = getVmNic(vm, nic)
-    res = nic_obj.get_plugged()
-    if isinstance(res, basestring):
-        return res.lower() == "true"
-    return res
+    return nic_obj.get_plugged()
 
 
 @is_action()
@@ -2506,10 +2503,7 @@ def getVmNicLinked(vm, nic='nic1'):
     **Returns**: True if NIC is linked, otherwise False
     '''
     nic_obj = getVmNic(vm, nic)
-    res = nic_obj.get_linked()
-    if isinstance(res, basestring):
-        return res.lower() == "true"
-    return res
+    return nic_obj.get_linked()
 
 
 def getVmNicNetwork(vm, nic='nic1'):
@@ -3219,3 +3213,36 @@ def run_cmd_on_vm(vm_name, cmd, user, password, timeout=15):
         True, ip=vm_ip, user=user, password=password, cmd=cmd, timeout=timeout)
     logger.debug("cmd output: %s, exit code: %s", out, rc)
     return rc, out
+
+
+@is_action()
+def check_VM_disk_state(vm_name, disk_alias):
+    """
+    Description: Check disk state
+    Parameters:
+        * vm_name - string containing vm name
+        * disk_alias - string containing disk name
+    Author: ratamir
+    Return: True if the disk is active, False otherwise
+    """
+
+    disks = getVmDisks(vm_name)
+    disks = [disk for disk in disks if disk.get_alias() == disk_alias]
+    if not disks:
+        raise DiskNotFound('Disk %s not found in vm %s' %
+                           (disk_alias, vm_name))
+    disk = disks[0]
+    return disk.get_active()
+
+
+@is_action()
+def get_vm_state(vm_name):
+    """
+    Description: Get vm state
+    Parameters:
+        * vm_name - string containing vm name
+    Author: ratamir
+    Return: state of vm
+    """
+    vm_obj = VM_API.find(vm_name)
+    return vm_obj.get_status().get_state()
