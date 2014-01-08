@@ -864,7 +864,7 @@ def checkHostNicParameters(host, nic, **kwargs):
 
     if kwargs.get("mtu"):
         mtu = host_nic.get_mtu()
-        if kwargs.get("mtu") != str(mtu):
+        if int(kwargs.get("mtu")) != mtu:
             logger.error("MTU value on %s is %s, expected is %s", nic, mtu,
                          kwargs.get("mtu"))
             res = False

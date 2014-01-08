@@ -754,7 +754,8 @@ def updateNetworkInDataCenter(positive, network, datacenter, **kwargs):
     return NET_API.update(net, net_update, positive)
 
 
-def isVmNetwork(host, user, password, net_name, conn_timeout=40):
+def isVmHostNetwork(host, user, password, net_name, conn_timeout=40):
+
     """
     Check if network that resides on Host is VM or non-VM
     **Author**: gcheresh
@@ -781,7 +782,7 @@ def checkVlanNet(host, user, password, interface, vlan):
         *  *user* - root user on the  machine
         *  *password* - password for the user
         *  *interface* - name of the phy interface
-        *  *vlan* - the value to check on the host (int)
+        *  *vlan* - the value to check on the host (str)
     **Return**: True if VLAN on the host == provided VLAN, False otherwise
     """
     machine_obj = Machine(host, user, password).util(LINUX)
@@ -793,7 +794,7 @@ def checkVlanNet(host, user, password, interface, vlan):
         return False
     match_obj = re.search("VID: ([0-9]+)", output)
     if match_obj:
-        vid = int(match_obj.group(1))
+        vid = match_obj.group(1)
     return vid == vlan
 
 

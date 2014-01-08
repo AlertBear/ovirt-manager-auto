@@ -1,0 +1,1415 @@
+"""
+Testing MultiHost feature.
+1 DC, 1 Cluster, 2 Hosts and 2 VMs will be created for testing.
+MultiHost will be tested for untagged, tagged, MTU, VM/non-VM and bond
+scenarios.
+"""
+
+from nose.tools import istest
+from art.rhevm_api.tests_lib.low_level.clusters import addCluster,\
+    removeCluster
+from art.unittest_lib import BaseTestCase as TestCase
+import logging
+import config
+
+from art.rhevm_api.utils.test_utils import get_api, checkMTU
+from art.test_handler.exceptions import NetworkException
+from art.test_handler.settings import opts
+from art.test_handler.tools import tcms
+from art.core_api.apis_utils import TimeoutingSampler
+
+from art.rhevm_api.tests_lib.high_level.networks import\
+    createAndAttachNetworkSN, removeNetFromSetup, checkHostNicParameters
+from art.rhevm_api.tests_lib.low_level.networks import\
+    updateNetwork, checkVlanNet, isVmHostNetwork
+from art.rhevm_api.tests_lib.low_level.hosts import sendSNRequest, \
+    deactivateHost, updateHost, activateHost
+from art.rhevm_api.tests_lib.low_level.vms import addNic, removeNic, updateNic
+from art.rhevm_api.tests_lib.low_level.templates import addTemplateNic,\
+    removeTemplateNic
+
+logger = logging.getLogger(__name__)
+
+########################################################################
+
+########################################################################
+#                             Test Cases                               #
+########################################################################
+
+
+class MultiHost_Case1_331894(TestCase):
+    """
+    Update untagged network with VLAN
+    Update tagged network with another VLAN
+    Update tagged network to be untagged
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create untagged network on DC/Cluster/Host
+        """
+        local_dict = {config.VLAN_NETWORKS[0]: {"nic": config.HOST_NICS[1],
+                                                "required": "false"}}
+
+        logger.info("Attach network to DC/Cluster and Host")
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
+                                        cluster=config.CLUSTER_NAME,
+                                        host=config.HOSTS[0],
+                                        network_dict=local_dict,
+                                        auto_nics=[config.HOST_NICS[0]]):
+            raise NetworkException("Cannot create and attach network")
+
+    @istest
+    @tcms(12030, 331894)
+    def update_with_VLAN(self):
+        """
+        1) Update network with VLAN 162
+        2) Check that the Host was updated with VLAN 162
+        3) Update network with VLAN 163
+        4) Check that the Host was updated with VLAN 163
+        5) Update network with VLAN 163 to be untagged
+        6) Check that the Host was updated as well
+        """
+        vlan_dict1 = {"vlan_id": config.VLAN_ID[0]}
+        vlan_dict2 = {"vlan_id": config.VLAN_ID[1]}
+
+        logger.info("Update network with VLAN %s", config.VLAN_ID[0])
+        if not updateNetwork(True, network=config.VLAN_NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             vlan_id=config.VLAN_ID[0]):
+            raise NetworkException("Cannot update network to be tagged with "
+                                   "VLAN %s" % config.VLAN_ID[0])
+
+        logger.info("Wait till the Host is updated with the change")
+        sample1 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
+                                    func=checkHostNicParameters,
+                                    host=config.HOSTS[0],
+                                    nic=config.HOST_NICS[1],
+                                    **vlan_dict1)
+        if not sample1.waitForFuncStatus(result=True):
+            raise NetworkException("Couldn't get correct VLAN interface on "
+                                   "host")
+
+        logger.info("Check that the change is reflected to Host")
+        if not checkVlanNet(host=config.HOSTS[0], user=config.HOSTS_USER,
+                            password=config.HOSTS_PW,
+                            interface=config.HOST_NICS[1],
+                            vlan=config.VLAN_ID[0]):
+            raise NetworkException("Host %s was not updated with correct "
+                                   "VLAN %s" % (config.HOSTS[0],
+                                                config.VLAN_ID[0]))
+
+        logger.info("Update network with VLAN %s", config.VLAN_ID[1])
+        if not updateNetwork(True, network=config.VLAN_NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             vlan_id=config.VLAN_ID[1]):
+            raise NetworkException("Cannot update network to be tagged with "
+                                   "VLAN %s" % config.VLAN_ID[1])
+
+        logger.info("Wait till the Host is updated with the change")
+        sample2 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
+                                    func=checkHostNicParameters,
+                                    host=config.HOSTS[0],
+                                    nic=config.HOST_NICS[1],
+                                    **vlan_dict2)
+        if not sample2.waitForFuncStatus(result=True):
+            raise NetworkException("Couldn't get correct vlan interface on "
+                                   "host")
+
+        logger.info("Check that the change is reflected to Host")
+        if not checkVlanNet(host=config.HOSTS[0], user=config.HOSTS_USER,
+                            password=config.HOSTS_PW,
+                            interface=config.HOST_NICS[1],
+                            vlan=config.VLAN_ID[1]):
+            raise NetworkException("Host %s was not updated with correct "
+                                   "VLAN %s" % (config.HOSTS[0],
+                                                config.VLAN_ID[1]))
+
+        logger.info("Update network to be untagged")
+        if not updateNetwork(True, network=config.VLAN_NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             vlan_id=None):
+            raise NetworkException("Cannot update network to be untagged")
+
+        logger.info("Wait till the Host is updated with the change")
+        if not sample2.waitForFuncStatus(result=False):
+            raise NetworkException("Could get VLAN interface on host but "
+                                   "shouldn't")
+
+        logger.info("Check that the change is reflected to Host")
+        if checkVlanNet(host=config.HOSTS[0], user=config.HOSTS_USER,
+                        password=config.HOSTS_PW,
+                        interface=config.HOST_NICS[1],
+                        vlan=config.VLAN_ID[1]):
+            raise NetworkException("Network on Host %s was not updated to be "
+                                   "untagged" % config.HOSTS[0])
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove network from the setup.
+        """
+        logger.info("Remove networks from setup")
+        if not removeNetFromSetup(host=config.HOSTS[0],
+                                  auto_nics=[config.HOST_NICS[0]],
+                                  network=[config.VLAN_NETWORKS[0]]):
+            raise NetworkException("Cannot remove network from setup")
+
+
+class MultiHost_Case2_331895(TestCase):
+    """
+    Update network with the default MTU to the MTU of 9000
+    Update network to have default MTU value
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create and attach network on DC, Cluster and the host
+        """
+        dict_dc1 = {config.NETWORKS[0]: {"nic": config.HOST_NICS[1],
+                                         "required": "false"}}
+
+        logger.info("Attach network to DC/Cluster/Host")
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
+                                        cluster=config.CLUSTER_NAME,
+                                        host=config.HOSTS[0],
+                                        network_dict=dict_dc1,
+                                        auto_nics=[config.HOST_NICS[0]]):
+            raise NetworkException("Cannot create and attach network")
+
+    @istest
+    @tcms(12030, 331895)
+    def update_with_MTU(self):
+        """
+        1) Update network with MTU 9000
+        2) Check that the Host was updated with MTU 9000
+        3) Update network with MTU 1500
+        4) Check that the Host was updated with MTU 1500
+        """
+        mtu_dict1 = {"mtu": config.MTU[0]}
+        mtu_dict2 = {"mtu": config.MTU[1]}
+
+        logger.info("Update network with MTU %s", config.MTU[0])
+        if not updateNetwork(True, network=config.NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             mtu=config.MTU[0]):
+            raise NetworkException("Cannot update  network with  MTU %s" %
+                                   config.MTU[0])
+
+        logger.info("Wait till the Host is updated with the change")
+        sample1 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
+                                    func=checkHostNicParameters,
+                                    host=config.HOSTS[0],
+                                    nic=config.HOST_NICS[1],
+                                    **mtu_dict1)
+        if not sample1.waitForFuncStatus(result=True):
+            raise NetworkException("Couldn't get correct MTU on host")
+
+        logger.info("Check that the change is reflected to Host")
+        logger.info("Checking logical layer of bridged network %s on host %s",
+                    config.NETWORKS[0], config.HOSTS[0])
+        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
+                                 password=config.HOSTS_PW, mtu=config.MTU[0],
+                                 physical_layer=False,
+                                 network=config.NETWORKS[0],
+                                 nic=config.HOST_NICS[1]))
+
+        logger.info("Checking physical layer of bridged network %s on host "
+                    "%s", config.NETWORKS[0], config.HOSTS[0])
+        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
+                                 password=config.HOSTS_PW, mtu=config.MTU[0],
+                                 nic=config.HOST_NICS[1]))
+
+        logger.info("Update MTU network with MTU %s", config.MTU[1])
+        if not updateNetwork(True, network=config.NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             mtu=config.MTU[1]):
+            raise NetworkException("Cannot update network with MTU %s" %
+                                   config.MTU[1])
+
+        logger.info("Wait till the Host is updated with the change")
+        sample2 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
+                                    func=checkHostNicParameters,
+                                    host=config.HOSTS[0],
+                                    nic=config.HOST_NICS[1],
+                                    **mtu_dict2)
+        if not sample2.waitForFuncStatus(result=True):
+            raise NetworkException("Couldn't get correct MTU on host")
+
+        logger.info("Check that the change is reflected to Host")
+        logger.info("Checking logical layer of bridged network %s on host "
+                    "%s", config.NETWORKS[0], config.HOSTS[0])
+        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
+                                 password=config.HOSTS_PW, mtu=config.MTU[1],
+                                 physical_layer=False,
+                                 network=config.NETWORKS[0],
+                                 nic=config.HOST_NICS[1]))
+
+        logger.info("Checking physical layer of bridged network %s on host %s"
+                    % (config.NETWORKS[0], config.HOSTS[0]))
+        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
+                                 password=config.HOSTS_PW, mtu=config.MTU[1],
+                                 nic=config.HOST_NICS[1]))
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove network from the setup.
+        """
+        logger.info("Remove network from setup")
+        if not removeNetFromSetup(host=config.HOSTS[0],
+                                  auto_nics=[config.HOST_NICS[0]],
+                                  network=[config.NETWORKS[0]]):
+            raise NetworkException("Cannot remove network from setup")
+
+
+class MultiHost_Case3_331911(TestCase):
+    """
+    Update VM network to be non-VM network
+    Update non-VM network to be VM network
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create and attach network on DC, Cluster and the host
+        """
+
+        dict_dc1 = {config.NETWORKS[0]: {"nic": config.HOST_NICS[1],
+                                         "required": "false"}}
+
+        logger.info("Attach network to DC/Cluster/Host")
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
+                                        cluster=config.CLUSTER_NAME,
+                                        host=config.HOSTS[0],
+                                        network_dict=dict_dc1,
+                                        auto_nics=[config.HOST_NICS[0]]):
+            raise NetworkException("Cannot create and attach network")
+
+    @istest
+    @tcms(12030, 331911)
+    def update_with_non_VM_nonVm(self):
+        """
+        1) Update network to be non-VM network
+        2) Check that the Host was updated accordingly
+        3) Update network to be VM network
+        4) Check that the Host was updated accordingly
+        """
+        bridge_dict1 = {"bridge": False}
+        bridge_dict2 = {"bridge": True}
+
+        logger.info("Update network %s to be non-VM network",
+                    config.NETWORKS[0])
+        if not updateNetwork(True, network=config.NETWORKS[0],
+                             data_center=config.DC_NAME, usages=''):
+            raise NetworkException("Cannot update network to be non-VM "
+                                   "network")
+
+        logger.info("Wait till the Host is updated with the change")
+        sample1 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
+                                    func=checkHostNicParameters,
+                                    host=config.HOSTS[0],
+                                    nic=config.HOST_NICS[1],
+                                    **bridge_dict1)
+        if not sample1.waitForFuncStatus(result=True):
+            raise NetworkException("Network is VM network and should be "
+                                   "Non-VM")
+
+        logger.info("Check that the change is reflected to Host")
+        if isVmHostNetwork(host=config.HOSTS[0], user=config.HOSTS_USER,
+                           password=config.HOSTS_PW,
+                           net_name=config.NETWORKS[0], conn_timeout=45):
+            raise NetworkException("Network on host %s was not updated to be "
+                                   "non-VM network" % config.HOSTS[0])
+
+        logger.info("Update network %s to be VM network", config.NETWORKS[0])
+        if not updateNetwork(True, network=config.NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             usages='vm'):
+            raise NetworkException("Cannot update network to be VM network")
+
+        logger.info("Wait till the Host is updated with the change")
+        sample2 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
+                                    func=checkHostNicParameters,
+                                    host=config.HOSTS[0],
+                                    nic=config.HOST_NICS[1],
+                                    **bridge_dict2)
+        if not sample2.waitForFuncStatus(result=True):
+            raise NetworkException("Network is not a VM network but should be")
+
+        logger.info("Check that the change is reflected to Host")
+        if not isVmHostNetwork(host=config.HOSTS[0], user=config.HOSTS_USER,
+                               password=config.HOSTS_PW,
+                               net_name=config.NETWORKS[0]):
+            raise NetworkException("Network on host %s was not updated to be "
+                                   "VM network" % config.HOSTS[0])
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove network from the setup.
+        """
+        logger.info("Remove network from setup")
+        if not removeNetFromSetup(host=config.HOSTS[0],
+                                  auto_nics=[config.HOST_NICS[0]],
+                                  network=[config.NETWORKS[0]]):
+            raise NetworkException("Cannot remove network from setup")
+
+
+class MultiHost_Case4_331896(TestCase):
+    """
+    Update network name:
+    1) Negative when host is using it
+    2) Negative when VM is using it (even non-running one)
+    3) Negative when template is using it
+    4) Positive when only DC/Cluster are using it
+    Update non-VM network to be VM network
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create and attach network on DC, Cluster and the host
+        """
+
+        dict_dc1 = {config.NETWORKS[0]: {"nic": config.HOST_NICS[1],
+                                         "required": "false"}}
+
+        logger.info("Attach network to DC/Cluster/Host")
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
+                                        cluster=config.CLUSTER_NAME,
+                                        host=config.HOSTS[0],
+                                        network_dict=dict_dc1,
+                                        auto_nics=[config.HOST_NICS[0]]):
+            raise NetworkException("Cannot create and attach network")
+
+    @istest
+    @tcms(12030, 331896)
+    def update_net_name(self):
+        """
+        1) Try to update network name when the network resides on the Host
+        2) Try to update network name when the network resides on VM
+        3) Try to update network name when the network resides on Template
+        All cases should fail being negative cases
+        4) Update network name when the network resides only on DC and Cluster
+        Test should succeed
+        """
+
+        logger.info("Try to update network name when network resides on host")
+        if not updateNetwork(False, network=config.NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             name=config.NETWORKS[1]):
+            raise NetworkException("Could update network name when shouldn't")
+
+        logger.info("Remove network from the Host")
+        if not sendSNRequest(True, host=config.HOSTS[0],
+                             auto_nics=[config.HOST_NICS[0]],
+                             check_connectivity='true',
+                             connectivity_timeout=config.TIMEOUT,
+                             force='false'):
+            raise NetworkException("Cannot remove Network from Host")
+
+        logger.info("Add network to the non-running VM")
+        if not addNic(True, config.VM_NAME[1], name='nic2',
+                      network=config.NETWORKS[0]):
+            raise NetworkException("Cannot add VNIC to VM")
+
+        logger.info("Try to update network name when network resides on VM")
+        if not updateNetwork(False, network=config.NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             name=config.NETWORKS[1]):
+            raise NetworkException("Could update network name when shouldn't")
+
+        logger.info("Remove network from VM")
+        if not removeNic(True, config.VM_NAME[1], "nic2"):
+            raise NetworkException("Cannot remove NIC from VM")
+
+        logger.info("Put network on the Template")
+        if not addTemplateNic(True, config.TEMPLATE_NAME, name="nic2",
+                              data_center=config.DC_NAME,
+                              network=config.NETWORKS[0]):
+            raise NetworkException("Cannot add NIC to Template")
+
+        logger.info("Try to update network name when network resides on "
+                    "Template")
+        if not updateNetwork(False, network=config.NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             name=config.NETWORKS[1]):
+            raise NetworkException("Could update network name when shouldn't")
+
+        logger.info("Remove network from Template")
+        if not removeTemplateNic(True, config.TEMPLATE_NAME, 'nic2'):
+            raise NetworkException("Cannot remove nic from Template")
+
+        logger.info("Update network name when network resides only on "
+                    "DC and Cluster")
+        if not updateNetwork(True, network=config.NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             name=config.NETWORKS[1]):
+            raise NetworkException("Couldn't update network name when should")
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove network from the setup.
+        """
+        logger.info("Remove network from setup")
+        if not removeNetFromSetup(host=config.HOSTS[0],
+                                  auto_nics=[config.HOST_NICS[0]],
+                                  network=[config.NETWORKS[1]]):
+            raise NetworkException("Cannot remove network from setup")
+
+
+class MultiHost_Case5_331909(TestCase):
+    """
+    Update network on running/non-running VM:
+    1) Negative: Try to change MTU on net when running VM is using it
+    2) Negative: Try to change VLAN on net when running VM is using it
+    3) Positive: Try to change MTU on net when non-running VM is using it
+    4) Positive: Try to change VLAN on net when non-running VM is using it
+    5) Negative: Update non-VM network to be VM network used by non-running VM
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create and attach network on DC, Cluster,Host, running and
+        non-running VMs
+        """
+
+        dict_dc1 = {config.NETWORKS[0]: {"nic": config.HOST_NICS[1],
+                                         "required": "false"}}
+
+        logger.info("Attach network to DC/Cluster/Host")
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
+                                        cluster=config.CLUSTER_NAME,
+                                        host=config.HOSTS[0],
+                                        network_dict=dict_dc1,
+                                        auto_nics=[config.HOST_NICS[0]]):
+            raise NetworkException("Cannot create and attach network")
+
+        logger.info("Add network to running and non-running VMs")
+        for i in range(2):
+            if not addNic(True, config.VM_NAME[i], name='nic2',
+                          network=config.NETWORKS[0]):
+                raise NetworkException("Cannot add VNIC %s for network to "
+                                       "VM %s " % (config.NETWORKS[0],
+                                                   config.VM_NAME[i]))
+
+    @istest
+    @tcms(12030, 331909)
+    def update_net_on_VM(self):
+        """
+        1) Negative: Try to change MTU on net when running VM is using it
+        2) Negative: Try to change VLAN on net when running VM is using it
+        3) Positive: Try to change MTU on net when non-running VM is using it
+        4) Positive: Try to change VLAN on net when non-running VM is using it
+        5) Negative: Update non-VM network to be VM network used by
+        non-running VM
+        """
+
+        mtu_dict1 = {"mtu": config.MTU[0]}
+        vlan_dict1 = {"vlan_id": config.VLAN_ID[0]}
+        bridge_dict1 = {"bridge": False}
+
+        logger.info("Update MTU network with MTU %s", config.MTU[0])
+        if not updateNetwork(False, network=config.NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             mtu=config.MTU[0]):
+            raise NetworkException("Could update  network with MTU %s "
+                                   "when running VM is using the network" %
+                                   config.MTU[0])
+
+        logger.info('Update network with VLAN %s', config.VLAN_ID[0])
+        if not updateNetwork(False, network=config.NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             vlan_id=config.VLAN_ID[0]):
+            raise NetworkException("Could update network to be tagged with "
+                                   "VLAN %s when running VM is using the"
+                                   " network" % config.VLAN_ID[0])
+
+        logger.info("Unplugging NIC with the network in order "
+                    "to be able to update the Network that reside on that NIC")
+        if not updateNic(True, config.VM_NAME[0], 'nic2',
+                         plugged='false'):
+            raise NetworkException("Couldn't unplug NIC")
+
+        logger.info("Update MTU network with MTU %s", config.MTU[0])
+        if not updateNetwork(True, network=config.NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             mtu=config.MTU[0]):
+            raise NetworkException("Couldn't update  network (with MTU 9000) "
+                                   "when Network resides on non-running VM "
+                                   "and unplugged NIC of running VM")
+
+        logger.info("Wait till the Host is updated with the change")
+        sample1 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
+                                    func=checkHostNicParameters,
+                                    host=config.HOSTS[0],
+                                    nic=config.HOST_NICS[1],
+                                    **mtu_dict1)
+        if not sample1.waitForFuncStatus(result=True):
+            raise NetworkException("Couldn't get correct MTU on host")
+
+        logger.info("Check that the change is reflected to Host")
+        logger.info("Checking logical layer of bridged network %s on host %s",
+                    config.NETWORKS[0], config.HOSTS[0])
+
+        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
+                                 password=config.HOSTS_PW, mtu=config.MTU[0],
+                                 physical_layer=False,
+                                 network=config.NETWORKS[0],
+                                 nic=config.HOST_NICS[1]))
+
+        logger.info("Checking physical layer of bridged network %s on host "
+                    "%s", config.NETWORKS[0], config.HOSTS[0])
+        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
+                                 password=config.HOSTS_PW, mtu=config.MTU[0],
+                                 nic=config.HOST_NICS[1]))
+
+        logger.info('Update network with VLAN %s', config.VLAN_ID[0])
+        if not updateNetwork(True, network=config.NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             vlan_id=config.VLAN_ID[0]):
+            raise NetworkException("Couldn't update network (to be tagged "
+                                   "with VLAN %s) when Network resides on "
+                                   "non-running VM and/or unplugged NIC of"
+                                   "running VM" % config.VLAN_ID[0])
+
+        logger.info("Wait till the Host is updated with the change")
+        sample1 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
+                                    func=checkHostNicParameters,
+                                    host=config.HOSTS[0],
+                                    nic=config.HOST_NICS[1],
+                                    **vlan_dict1)
+        if not sample1.waitForFuncStatus(result=True):
+            raise NetworkException("Couldn't get correct VLAN interface on "
+                                   "host")
+
+        logger.info("Check that the change is reflected to Host")
+        if not checkVlanNet(host=config.HOSTS[0], user=config.HOSTS_USER,
+                            password=config.HOSTS_PW,
+                            interface=config.HOST_NICS[1],
+                            vlan=config.VLAN_ID[0]):
+            raise NetworkException("Host %s was not updated with correct "
+                                   "VLAN %s" % (config.HOSTS[0],
+                                                config.VLAN_ID[0]))
+
+        logger.info('Update network %s to be non-VM network',
+                    config.NETWORKS[0])
+        if not updateNetwork(False, network=config.NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             usages=''):
+            raise NetworkException("Could update network to be non-VM net "
+                                   "though it's attached to VM")
+
+        logger.info("Check that the change is reflected to Host")
+        if not isVmHostNetwork(host=config.HOSTS[0], user=config.HOSTS_USER,
+                               password=config.HOSTS_PW,
+                               net_name=config.NETWORKS[0]):
+            raise NetworkException("Network on host %s was not updated to be "
+                                   "non-VM network" % config.HOSTS[0])
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove network from the setup.
+        """
+        mtu_dict1 = {"mtu": config.MTU[1]}
+
+        logger.info("Update MTU network with MTU %s", config.MTU[1])
+        if not updateNetwork(True, network=config.NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             mtu=config.MTU[1]):
+            raise NetworkException("Couldn't update  network with MTU %s " %
+                                   config.MTU[1])
+
+        logger.info("Wait till the Host is updated with the change")
+        sample1 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
+                                    func=checkHostNicParameters,
+                                    host=config.HOSTS[0],
+                                    nic=config.HOST_NICS[1],
+                                    **mtu_dict1)
+        if not sample1.waitForFuncStatus(result=True):
+            raise NetworkException("Couldn't update with correct MTU on host")
+
+        logger.info("Remove network from VMs")
+        for i in range(2):
+            if not removeNic(True, config.VM_NAME[i], "nic2"):
+                raise NetworkException("Cannot remove NIC from VM %s " %
+                                       config.VM_NAME[i])
+
+        logger.info("Remove network from setup")
+        if not removeNetFromSetup(host=config.HOSTS[0],
+                                  auto_nics=[config.HOST_NICS[0]],
+                                  network=[config.NETWORKS[0]]):
+            raise NetworkException("Cannot remove network from setup")
+
+
+class MultiHost_Case6_331910(TestCase):
+    """
+    Update network when template is using it:
+    1) Negative: Try to update network from VM to non-VM
+    2) Positive: Try to change MTU on net when template is using it
+    3) Positive: Try to change VLAN on net when template is using it
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create and attach network on DC, Cluster,Host and Template
+        """
+
+        dict_dc1 = {config.NETWORKS[0]: {"nic": config.HOST_NICS[1],
+                                         "required": "false"}}
+
+        logger.info("Attach network to DC/Cluster/Host")
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
+                                        cluster=config.CLUSTER_NAME,
+                                        host=config.HOSTS[0],
+                                        network_dict=dict_dc1,
+                                        auto_nics=[config.HOST_NICS[0]]):
+            raise NetworkException("Cannot create and attach network")
+
+        logger.info("Attach NIC to the Template")
+        if not addTemplateNic(True, config.TEMPLATE_NAME, name='nic2',
+                              data_center=config.DC_NAME,
+                              network=config.NETWORKS[0]):
+            raise NetworkException("Cannot add NIC to Template")
+
+    @istest
+    @tcms(12030, 331910)
+    def update_net_on_template(self):
+        """
+        1) Negative: Try to update network from VM to non-VM
+        2) Positive: Try to change MTU on net when template is using it
+        3) Positive: Try to change VLAN on net when template is using it
+        """
+        mtu_dict1 = {"mtu": config.MTU[0]}
+        vlan_dict1 = {"vlan_id": config.VLAN_ID[0]}
+
+        logger.info("Try to update network from VM to non-VM "
+                    "when network resides on Template")
+        if not updateNetwork(False, network=config.NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             usages=''):
+            raise NetworkException("Could update network to be non-VM net "
+                                   "though it's attached to Template")
+
+        logger.info("Update network with MTU %s", config.MTU[0])
+        if not updateNetwork(True, network=config.NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             mtu=config.MTU[0]):
+            raise NetworkException("Couldn't update  network with MTU %s "
+                                   "when network resides on Template" %
+                                   config.MTU[0])
+
+        logger.info("Wait till the Host is updated with the change")
+        sample1 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
+                                    func=checkHostNicParameters,
+                                    host=config.HOSTS[0],
+                                    nic=config.HOST_NICS[1],
+                                    **mtu_dict1)
+        if not sample1.waitForFuncStatus(result=True):
+            raise NetworkException("Couldn't get correct MTU on host")
+
+        logger.info("Check that the change is reflected to Host")
+        logger.info("Checking logical layer of bridged network %s on host %s"
+                    % (config.NETWORKS[0], config.HOSTS[0]))
+
+        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
+                                 password=config.HOSTS_PW, mtu=config.MTU[0],
+                                 physical_layer=False,
+                                 network=config.NETWORKS[0],
+                                 nic=config.HOST_NICS[1]))
+
+        logger.info("Checking physical layer of bridged network %s on host "
+                    "%s", config.NETWORKS[0], config.HOSTS[0])
+        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
+                                 password=config.HOSTS_PW, mtu=config.MTU[0],
+                                 nic=config.HOST_NICS[1]))
+
+        logger.info('Update network with VLAN %s', config.VLAN_ID[0])
+        if not updateNetwork(True, network=config.NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             vlan_id=config.VLAN_ID[0]):
+            raise NetworkException("Couldn't update network to be tagged  "
+                                   "with VLAN %s when network resides on "
+                                   "Template" % config.VLAN_ID[0])
+
+        logger.info("Wait till the Host is updated with the change")
+        sample1 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
+                                    func=checkHostNicParameters,
+                                    host=config.HOSTS[0],
+                                    nic=config.HOST_NICS[1],
+                                    **vlan_dict1)
+        if not sample1.waitForFuncStatus(result=True):
+            raise NetworkException("Couldn't get correct VLAN interface on "
+                                   "host")
+
+        logger.info("Check that the change is reflected to Host")
+        if not checkVlanNet(host=config.HOSTS[0], user=config.HOSTS_USER,
+                            password=config.HOSTS_PW,
+                            interface=config.HOST_NICS[1],
+                            vlan=config.VLAN_ID[0]):
+            raise NetworkException("Host %s was not updated with correct "
+                                   "VLAN %s" % (config.HOSTS[0],
+                                                config.VLAN_ID[0]))
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove network from the setup.
+        """
+        mtu_dict1 = {"mtu": config.MTU[1]}
+
+        logger.info("Update MTU network with MTU %s", config.MTU[1])
+        if not updateNetwork(True, network=config.NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             mtu=config.MTU[1]):
+            raise NetworkException("Couldn't update  network with MTU %s " %
+                                   config.MTU[1])
+
+        logger.info("Wait till the Host is updated with the change")
+        sample1 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
+                                    func=checkHostNicParameters,
+                                    host=config.HOSTS[0],
+                                    nic=config.HOST_NICS[1],
+                                    **mtu_dict1)
+        if not sample1.waitForFuncStatus(result=True):
+            raise NetworkException("Couldn't update with correct MTU on host")
+
+        logger.info("Remove NIC from Template")
+        if not removeTemplateNic(positive=True, template=config.TEMPLATE_NAME,
+                                 nic=config.VM_NIC[0]):
+            raise NetworkException("NIC %s wasn't removed from Template %s" %
+                                   (config.VM_NIC[0], config.TEMPLATE_NAME))
+
+        logger.info("Remove network from setup")
+        if not removeNetFromSetup(host=config.HOSTS[0],
+                                  auto_nics=[config.HOST_NICS[0]],
+                                  network=[config.NETWORKS[0]]):
+            raise NetworkException("Cannot remove network from setup")
+
+
+class MultiHost_Case7_331897(TestCase):
+    """
+    Update untagged network with VLAN and MTU when several hosts reside under
+    the same DC/Cluster
+    Make sure all the changes exist on both Hosts
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create network on DC/Cluster/Hosts
+        """
+
+        local_dict = {config.VLAN_NETWORKS[0]: {"nic": config.HOST_NICS[1],
+                                                "required": "false"}}
+
+        logger.info("Attach network to DC/Cluster and 2 Hosts")
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
+                                        cluster=config.CLUSTER_NAME,
+                                        host=config.HOSTS,
+                                        network_dict=local_dict,
+                                        auto_nics=[config.HOST_NICS[0]]):
+            raise NetworkException("Cannot create and attach network")
+
+    @istest
+    @tcms(12030, 331897)
+    def update_with_VLAN_MTU(self):
+        """
+        1) Update network with VLAN 162
+        3) Update network with MTU 9000
+        4) Check that the both Hosts were updated with VLAN 162 and MTU 9000
+        """
+
+        mtu_dict1 = {"mtu": config.MTU[0]}
+        sample1 = []
+
+        logger.info("Update network with VLAN %s and MTU %s ",
+                    config.VLAN_ID[0], config.MTU[0])
+        if not updateNetwork(True, network=config.VLAN_NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             vlan_id=config.VLAN_ID[0], mtu=config.MTU[0]):
+            raise NetworkException("Cannot update network to be tagged "
+                                   "and to have MTU in one action")
+
+        logger.info("Check that both Hosts are updated with correct MTU "
+                    "value")
+        for host in config.HOSTS:
+            sample1.append(TimeoutingSampler(timeout=config.TIMEOUT,
+                                             sleep=1,
+                                             func=checkHostNicParameters,
+                                             host=host,
+                                             nic=config.HOST_NICS[1],
+                                             **mtu_dict1))
+        for i in range(2):
+            if not sample1[i].waitForFuncStatus(result=True):
+                raise NetworkException("Couldn't get correct MTU on host")
+
+        logger.info("Check that the MTU change is reflected to both Hosts")
+        for host in config.HOSTS:
+            logger.info("Checking logical layer of bridged network %s on host"
+                        "%s" % (config.VLAN_NETWORKS[0], host))
+
+            self.assertTrue(checkMTU(host=host, user=config.HOSTS_USER,
+                                     password=config.HOSTS_PW,
+                                     mtu=config.MTU[0],
+                                     physical_layer=False,
+                                     network=config.VLAN_NETWORKS[0],
+                                     nic=config.HOST_NICS[1]))
+
+            logger.info("Checking physical layer of bridged network %s on host"
+                        " %s" % (config.NETWORKS[0], host))
+            self.assertTrue(checkMTU(host=host, user=config.HOSTS_USER,
+                                     password=config.HOSTS_PW,
+                                     mtu=config.MTU[0],
+                                     nic=config.HOST_NICS[1]))
+
+        logger.info("Check that the VLAN change is reflected to both Hosts")
+        for host in config.HOSTS:
+            if not checkVlanNet(host=host, user=config.HOSTS_USER,
+                                password=config.HOSTS_PW,
+                                interface=config.HOST_NICS[1],
+                                vlan=config.VLAN_ID[0]):
+                raise NetworkException("Host %s was not updated with correct "
+                                       "VLAN %s" % (host, config.VLAN_ID[0]))
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove network from the setup.
+        """
+        mtu_dict1 = {"mtu": config.MTU[1]}
+        sample1 = []
+
+        logger.info("Update MTU network with MTU %s", config.MTU[1])
+        if not updateNetwork(True, network=config.VLAN_NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             mtu=config.MTU[1]):
+            raise NetworkException("Couldn't update  network with MTU %s " %
+                                   config.MTU[1])
+
+        logger.info("Check correct MTU on both Hosts")
+        for host in config.HOSTS:
+            sample1.append(TimeoutingSampler(timeout=config.TIMEOUT,
+                                             sleep=1,
+                                             func=checkHostNicParameters,
+                                             host=host,
+                                             nic=config.HOST_NICS[1],
+                                             **mtu_dict1))
+        for i in range(2):
+            if not sample1[i].waitForFuncStatus(result=True):
+                raise NetworkException("Couldn't get correct MTU on host")
+
+        if not removeNetFromSetup(host=config.HOSTS,
+                                  auto_nics=[config.HOST_NICS[0]],
+                                  network=[config.VLAN_NETWORKS[0]]):
+            raise NetworkException("Cannot remove network from setup")
+
+
+class MultiHost_Case8_331903(TestCase):
+    """
+    Update untagged network with VLAN and MTU when several hosts reside under
+    the same DC, but under different Clusters of the same DC
+    Make sure all the changes exist on both Hosts
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Move the second Host to different Cluster under the same DC
+        Create network on DC/Clusters/Hosts
+        """
+
+        logger .info("Add additional Cluster %s under DC %s ",
+                     config.CLUSTER_NAME2, config.DC_NAME)
+        if not addCluster(positive=True, name=config.CLUSTER_NAME2,
+                          cpu=config.CPU_NAME, data_center=config.DC_NAME,
+                          version=config.VERSION):
+            raise NetworkException("Cannot add Cluster %s under DC %s " %
+                                   (config.CLUSTER_NAME2, config.DC_NAME))
+
+        logger.info("Deactivate host %s, move it to other Cluster and "
+                    "reactivate it", config.HOSTS[1])
+        assert (deactivateHost(True, host=config.HOSTS[1]))
+        if not updateHost(True, host=config.HOSTS[1],
+                          cluster=config.CLUSTER_NAME2):
+            raise NetworkException("Cannot move host to another Cluster")
+        assert (activateHost(True, host=config.HOSTS[1]))
+
+        local_dict = {config.VLAN_NETWORKS[0]: {"nic": config.HOST_NICS[1],
+                                                "required": "false"}}
+
+        logger.info("Attach network to DC/Cluster and 2 Hosts")
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
+                                        cluster=config.CLUSTER_NAME,
+                                        host=config.HOSTS[0],
+                                        network_dict=local_dict,
+                                        auto_nics=[config.HOST_NICS[0]]):
+            raise NetworkException("Cannot create and attach network")
+        if not createAndAttachNetworkSN(cluster=config.CLUSTER_NAME2,
+                                        host=config.HOSTS[1],
+                                        network_dict=local_dict,
+                                        auto_nics=[config.HOST_NICS[0]]):
+            raise NetworkException("Cannot create and attach network")
+
+    @istest
+    @tcms(12030, 331903)
+    def update_with_VLAN_MTU(self):
+        """
+        1) Update network with VLAN 162
+        3) Update network with MTU 9000
+        4) Check that the both Hosts were updated with VLAN 162 and MTU 9000
+        """
+
+        mtu_dict1 = {"mtu": config.MTU[0]}
+        sample1 = []
+
+        logger.info("Update network with VLAN %s and MTU %s ",
+                    config.VLAN_ID[0], config.MTU[0])
+        if not updateNetwork(True, network=config.VLAN_NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             vlan_id=config.VLAN_ID[0], mtu=config.MTU[0]):
+            raise NetworkException("Cannot update network to be tagged "
+                                   "and to have MTU in one action")
+
+        logger.info("Check that both Hosts are updated with correct MTU "
+                    "value")
+        for host in config.HOSTS:
+            sample1.append(TimeoutingSampler(timeout=config.TIMEOUT,
+                                             sleep=1,
+                                             func=checkHostNicParameters,
+                                             host=host,
+                                             nic=config.HOST_NICS[1],
+                                             **mtu_dict1))
+        for i in range(2):
+            if not sample1[i].waitForFuncStatus(result=True):
+                raise NetworkException("Couldn't get correct MTU on host")
+
+        logger.info("Check that the MTU change is reflected to both Hosts")
+        for host in config.HOSTS:
+            logger.info("Checking logical layer of bridged network %s on host"
+                        "%s" % (config.VLAN_NETWORKS[0], host))
+            self.assertTrue(checkMTU(host=host, user=config.HOSTS_USER,
+                                     password=config.HOSTS_PW,
+                                     mtu=config.MTU[0],
+                                     physical_layer=False,
+                                     network=config.VLAN_NETWORKS[0],
+                                     nic=config.HOST_NICS[1]))
+
+            logger.info("Checking physical layer of bridged network %s on host"
+                        " %s" % (config.NETWORKS[0], host))
+            self.assertTrue(checkMTU(host=host, user=config.HOSTS_USER,
+                                     password=config.HOSTS_PW,
+                                     mtu=config.MTU[0],
+                                     nic=config.HOST_NICS[1]))
+
+        logger.info("Check that the VLAN change is reflected to both Hosts")
+        for host in config.HOSTS:
+            if not checkVlanNet(host=host, user=config.HOSTS_USER,
+                                password=config.HOSTS_PW,
+                                interface=config.HOST_NICS[1],
+                                vlan=config.VLAN_ID[0]):
+                raise NetworkException("Host %s was not updated with correct "
+                                       "VLAN %s" % (host, config.VLAN_ID[0]))
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove network from the setup.
+        """
+
+        mtu_dict1 = {"mtu": config.MTU[1]}
+        sample1 = []
+
+        logger.info("Update network %s with MTU %s", config.VLAN_NETWORKS[0],
+                    config.MTU[1])
+        if not updateNetwork(True, network=config.VLAN_NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             mtu=config.MTU[1]):
+            raise NetworkException("Couldn't update  network with MTU %s ",
+                                   config.MTU[1])
+
+        logger.info("Check correct MTU on both Hosts")
+        for host in config.HOSTS:
+            sample1.append(TimeoutingSampler(timeout=config.TIMEOUT,
+                                             sleep=1,
+                                             func=checkHostNicParameters,
+                                             host=host,
+                                             nic=config.HOST_NICS[1],
+                                             **mtu_dict1))
+        for i in range(2):
+            if not sample1[i].waitForFuncStatus(result=True):
+                raise NetworkException("Couldn't get correct MTU on host")
+
+        logger.info("Remove network %s from setup", config.VLAN_NETWORKS[0])
+        if not removeNetFromSetup(host=config.HOSTS,
+                                  auto_nics=[config.HOST_NICS[0]],
+                                  network=[config.VLAN_NETWORKS[0]]):
+            raise NetworkException("Cannot remove network from setup")
+
+        logger.info("Deactivate host, move it to original Cluster and "
+                    "reactivate it")
+        assert (deactivateHost(True, host=config.HOSTS[1]))
+        if not updateHost(True, host=config.HOSTS[1],
+                          cluster=config.CLUSTER_NAME):
+            raise NetworkException("Cannot move host to another Cluster")
+        assert (activateHost(True, host=config.HOSTS[1]))
+
+        logger.info("Remove cluster %s from setup", config.CLUSTER_NAME2)
+        if not removeCluster(True, config.CLUSTER_NAME2):
+            raise NetworkException("Cannot remove Cluster %s from setup" %
+                                   config.CLUSTER_NAME2)
+
+
+class MultiHost_Case9_355193(TestCase):
+    """
+    Update untagged network with VLAN when that network is attached to
+    the Host bond
+    Update tagged network with another VLAN when that network is attached to
+    the Host bond
+    Update tagged network to be untagged when that network is attached to
+    the Host bond
+    """
+    __test__ = False
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create untagged network on DC/Cluster/Host
+        """
+        local_dict = {config.VLAN_NETWORKS[0]: {"nic": "bond0",
+                                                "slaves":
+                                                [config.HOST_NICS[2],
+                                                 config.HOST_NICS[3]],
+                                                "required": "false"}}
+
+        logger.info("Attach network to DC/Cluster and bond on Host")
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
+                                        cluster=config.CLUSTER_NAME,
+                                        host=config.HOSTS[0],
+                                        network_dict=local_dict,
+                                        auto_nics=[config.HOST_NICS[0]]):
+            raise NetworkException("Cannot create and attach network")
+
+    @istest
+    @tcms(12030, 355193)
+    def update_with_VLAN(self):
+        """
+        There is a bz for updating network to be tagged - 1081489
+
+        1) Update network with VLAN 162
+        2) Check that the Host was updated with VLAN 162
+        3) Update network with VLAN 163
+        4) Check that the Host was updated with VLAN 163
+        5) Update network with VLAN 163 to be untagged
+        6) Check that the Host was updated as well
+        """
+        vlan_dict1 = {"vlan_id": config.VLAN_ID[0]}
+        vlan_dict2 = {"vlan_id": config.VLAN_ID[1]}
+
+        logger.info("Update network with VLAN %s", config.VLAN_ID[0])
+        if not updateNetwork(True, network=config.VLAN_NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             vlan_id=config.VLAN_ID[0]):
+            raise NetworkException("Cannot update network to be tagged with "
+                                   "VLAN %s" % config.VLAN_ID[0])
+
+        logger.info("Wait till the Host is updated with the change")
+        sample1 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
+                                    func=checkHostNicParameters,
+                                    host=config.HOSTS[0],
+                                    nic="bond0",
+                                    **vlan_dict1)
+        if not sample1.waitForFuncStatus(result=True):
+            raise NetworkException("Couldn't get correct vlan interface on "
+                                   "host")
+
+        logger.info("Check that the change is reflected to Host")
+        if not checkVlanNet(host=config.HOSTS[0], user=config.HOSTS_USER,
+                            password=config.HOSTS_PW,
+                            interface="bond0",
+                            vlan=config.VLAN_ID[0]):
+            raise NetworkException("Host %s was not updated with correct "
+                                   "VLAN %s" % (config.HOSTS[0],
+                                                config.VLAN_ID[0]))
+
+        logger.info("Update network with VLAN %s", config.VLAN_ID[1])
+        if not updateNetwork(True, network=config.VLAN_NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             vlan_id=config.VLAN_ID[1]):
+            raise NetworkException("Cannot update network to be tagged with "
+                                   "VLAN %s" % config.VLAN_ID[1])
+
+        logger.info("Wait till the Host is updated with the change")
+        sample2 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
+                                    func=checkHostNicParameters,
+                                    host=config.HOSTS[0],
+                                    nic="bond0",
+                                    **vlan_dict2)
+        if not sample2.waitForFuncStatus(result=True):
+            raise NetworkException("Couldn't get correct vlan interface on "
+                                   "host")
+
+        logger.info("Check that the change is reflected to Host")
+        if not checkVlanNet(host=config.HOSTS[0], user=config.HOSTS_USER,
+                            password=config.HOSTS_PW,
+                            interface="bond0",
+                            vlan=config.VLAN_ID[1]):
+            raise NetworkException("Host %s was not updated with correct "
+                                   "VLAN %s" % (config.HOSTS[0],
+                                                config.VLAN_ID[1]))
+
+        logger.info("Update network to be untagged")
+        if not updateNetwork(True, network=config.VLAN_NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             vlan_id=None):
+            raise NetworkException("Cannot update network to be untagged")
+
+        logger.info("Wait till the Host is updated with the change")
+        if not sample1.waitForFuncStatus(result=False):
+            raise NetworkException("Could get vlan interface on host but "
+                                   "shouldn't")
+
+        logger.info("Check that the change is reflected to Host")
+        if checkVlanNet(host=config.HOSTS[0], user=config.HOSTS_USER,
+                        password=config.HOSTS_PW,
+                        interface='bond0',
+                        vlan=config.VLAN_ID[1]):
+            raise NetworkException("Network on Host %s was not updated to be "
+                                   "untagged" % config.HOSTS[0])
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove network from the setup.
+        """
+        logger.info("Remove networks from setup")
+        if not removeNetFromSetup(host=config.HOSTS[0],
+                                  auto_nics=[config.HOST_NICS[0]],
+                                  network=[config.VLAN_NETWORKS[0]]):
+            raise NetworkException("Cannot remove network from setup")
+
+
+class MultiHost_Case10_355194(TestCase):
+    """
+    Update network with the default MTU to the new MTU when that network
+    is attached to the Host bond
+    Update network with another MTU value when that network is attached to
+    the Host bond
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create and attach network on DC, Cluster and the host
+        """
+        local_dict = {config.NETWORKS[0]: {"nic": "bond0",
+                                           "slaves": [config.HOST_NICS[2],
+                                                      config.HOST_NICS[3]],
+                                           "required": "false"}}
+
+        logger.info("Attach network to DC/Cluster/Host")
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
+                                        cluster=config.CLUSTER_NAME,
+                                        host=config.HOSTS[0],
+                                        network_dict=local_dict,
+                                        auto_nics=[config.HOST_NICS[0]]):
+            raise NetworkException("Cannot create and attach network")
+
+    @istest
+    @tcms(12030, 355194)
+    def update_with_MTU(self):
+        """
+        1) Update network with MTU 9000
+        2) Check that the Host was updated with MTU 9000
+        3) Update network with MTU 1500
+        4) Check that the Host was updated with MTU 1500
+        """
+        mtu_dict1 = {"mtu": config.MTU[0]}
+        mtu_dict2 = {"mtu": config.MTU[1]}
+
+        logger.info("Update network with MTU %s", config.MTU[0])
+        if not updateNetwork(True, network=config.NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             mtu=config.MTU[0]):
+            raise NetworkException("Cannot update  network with  MTU %s" %
+                                   config.MTU[0])
+
+        logger.info("Wait till the Host is updated with the change")
+        sample1 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
+                                    func=checkHostNicParameters,
+                                    host=config.HOSTS[0],
+                                    nic="bond0",
+                                    **mtu_dict1)
+        if not sample1.waitForFuncStatus(result=True):
+            raise NetworkException("Couldn't get correct MTU on host")
+
+        logger.info("Check that the change is reflected to Host")
+        logger.info("Checking logical layer of bridged network %s on host %s"
+                    % (config.NETWORKS[0], config.HOSTS[0]))
+        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
+                                 password=config.HOSTS_PW, mtu=config.MTU[0],
+                                 physical_layer=False,
+                                 network=config.NETWORKS[0],
+                                 nic="bond0"))
+
+        logger.info("Checking physical layer of bridged network %s on host %s"
+                    % (config.NETWORKS[0], config.HOSTS[0]))
+        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
+                                 password=config.HOSTS_PW, mtu=config.MTU[0],
+                                 nic="bond0"))
+
+        logger.info("Update MTU network with MTU %s", config.MTU[1])
+        if not updateNetwork(True, network=config.NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             mtu=config.MTU[1]):
+            raise NetworkException("Cannot update network with MTU %s" %
+                                   config.MTU[1])
+
+        logger.info("Wait till the Host is updated with the change")
+        sample2 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
+                                    func=checkHostNicParameters,
+                                    host=config.HOSTS[0],
+                                    nic="bond0",
+                                    **mtu_dict2)
+        if not sample2.waitForFuncStatus(result=True):
+            raise NetworkException("Couldn't get correct MTU on host")
+
+        logger.info("Check that the change is reflected to Host")
+        logger.info("Checking logical layer of bridged network %s on host %s"
+                    % (config.NETWORKS[0], config.HOSTS[0]))
+        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
+                                 password=config.HOSTS_PW, mtu=config.MTU[1],
+                                 physical_layer=False,
+                                 network=config.NETWORKS[0],
+                                 nic="bond0"))
+
+        logger.info("Checking physical layer of bridged network %s on host %s"
+                    % (config.NETWORKS[0], config.HOSTS[0]))
+        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
+                                 password=config.HOSTS_PW, mtu=config.MTU[1],
+                                 nic="bond0"))
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove network from the setup.
+        """
+        logger.info("Remove network from setup")
+        if not removeNetFromSetup(host=config.HOSTS[0],
+                                  auto_nics=[config.HOST_NICS[0]],
+                                  network=[config.NETWORKS[0]]):
+            raise NetworkException("Cannot remove network from setup")
+
+
+class MultiHost_Case11_355294(TestCase):
+    """
+    Update VM network to be non-VM network when that network is attached to
+    the Host bond
+    Update non-VM network to be VM network when that network is attached to
+    the Host bond
+    """
+    __test__ = False
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create and attach network on DC, Cluster and the host
+        """
+
+        local_dict = {config.NETWORKS[0]: {"nic": "bond0",
+                                           "slaves": [config.HOST_NICS[2],
+                                                      config.HOST_NICS[3]],
+                                           "required": "false"}}
+
+        logger.info("Attach network to DC/Cluster/Host")
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
+                                        cluster=config.CLUSTER_NAME,
+                                        host=config.HOSTS[0],
+                                        network_dict=local_dict,
+                                        auto_nics=[config.HOST_NICS[0]]):
+            raise NetworkException("Cannot create and attach network")
+
+    @istest
+    @tcms(12030, 355294)
+    def update_with_non_VM_nonVm(self):
+        """
+        Fails due to existing bug - 1082275
+        1) Update network to be non-VM network
+        2) Check that the Host was updated accordingly
+        3) Update network to be VM network
+        4) Check that the Host was updated accordingly
+        """
+        bridge_dict1 = {"bridge": False}
+        bridge_dict2 = {"bridge": True}
+
+        logger.info("Update network %s to be non-VM network",
+                    config.NETWORKS[0])
+        if not updateNetwork(True, network=config.NETWORKS[0],
+                             data_center=config.DC_NAME, usages=''):
+            raise NetworkException("Cannot update network to be non-VM net")
+
+        logger.info("Wait till the Host is updated with the change")
+        sample1 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
+                                    func=checkHostNicParameters,
+                                    host=config.HOSTS[0],
+                                    nic="bond0",
+                                    **bridge_dict1)
+        if not sample1.waitForFuncStatus(result=True):
+            raise NetworkException("Network is VM network and should be "
+                                   "Non-VM")
+
+        logger.info("Check that the change is reflected to Host")
+        if isVmHostNetwork(host=config.HOSTS[0], user=config.HOSTS_USER,
+                           password=config.HOSTS_PW,
+                           net_name=config.NETWORKS[0], conn_timeout=45):
+            raise NetworkException("Network on host %s was not updated to be "
+                                   "non-VM network" % config.HOSTS[0])
+
+        logger.info("Update network %s to be VM network", config.NETWORKS[0])
+        if not updateNetwork(True, network=config.NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             usages='vm'):
+            raise NetworkException("Cannot update network to be VM net")
+
+        logger.info("Wait till the Host is updated with the change")
+        sample2 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
+                                    func=checkHostNicParameters,
+                                    host=config.HOSTS[0],
+                                    nic="bond0",
+                                    **bridge_dict2)
+        if not sample2.waitForFuncStatus(result=True):
+            raise NetworkException("Network is not a VM network but should be")
+
+        logger.info("Check that the change is reflected to Host")
+        if not isVmHostNetwork(host=config.HOSTS[0], user=config.HOSTS_USER,
+                               password=config.HOSTS_PW,
+                               net_name=config.NETWORKS[0]):
+            raise NetworkException("Network on host %s was not updated to be "
+                                   "VM network" % config.HOSTS[0])
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove network from the setup.
+        """
+        logger.info("Remove network from setup")
+        if not removeNetFromSetup(host=config.HOSTS[0],
+                                  auto_nics=[config.HOST_NICS[0]],
+                                  network=[config.NETWORKS[0]]):
+            raise NetworkException("Cannot remove network from setup")
