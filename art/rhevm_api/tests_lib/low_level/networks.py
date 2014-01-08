@@ -650,3 +650,97 @@ def findVnicProfile(vnic_profile_name):
         if profile.get_name() == vnic_profile_name:
             return True
     return False
+
+
+def getNetworksInDataCenter(datacenter):
+    """
+    Description: Get all networks under datacenter.
+    **Author**: myakove
+    **Parameters**:
+        *  *datacenter* - datacenter name
+    **Return**: list of all networks
+    """
+    DC = DC_API.find(datacenter)
+    return NET_API.getElemFromLink(DC, get_href=False)
+
+
+def getNetworkInDataCenter(network, datacenter):
+    """
+    Description: Find network under datacenter.
+    **Author**: myakove
+    **Parameters**:
+        *  *network* - Network name to find
+        *  *datacenter* - datacenter name
+    **Return**: net obj if network found, otherwise raise EntityNotFound.
+    """
+    DC = DC_API.find(datacenter)
+    for net in NET_API.getElemFromLink(DC, get_href=False):
+        if net.get_name() == network:
+            return net
+    raise EntityNotFound('%s network does not exists in datacenter %s'
+                         % (network, datacenter))
+
+
+def createNetworkInDataCenter(positive, datacenter, **kwargs):
+    """
+    Description: add network to a datacenter
+    Author: myakove
+    Parameters:
+       *  *positive* - True if action should succeed, False otherwise
+       *  *datacenter* - data center name where a new network should be added
+       *  *name* - name of a new network
+       *  *description* - new network description (if relevant)
+       *  *stp* - support stp true/false (note: true/false as a strings)
+       *  *vlan_id* - network vlan id
+       *  *usages* - a string contain list of comma-separated usages
+                     'VM,DIPLAY'.
+       *  *mtu* - and integer to overrule mtu on the related host nic..
+       *  *profile_required* - flag to create or not VNIC profile for the
+                               network
+    Return: True if result of action == positive, False otherwise
+    """
+    DC = DC_API.find(datacenter)
+    net_obj = _prepareNetworkObject(**kwargs)
+    return NET_API.create(entity=net_obj, positive=positive,
+                          collection=NET_API.getElemFromLink
+                          (DC, get_href=True))[1]
+
+
+def deleteNetworkInDataCenter(positive, network, datacenter):
+    """
+    Description: remove existing network from datacenter
+    Author: myakove
+    Parameters:
+       *  *positive* - True if action should succeed, False otherwise
+       *  *network* - name of a network that should be removed
+       *  *datacenter* - datacenter where the network should be deleted from
+    Return: True if result of action == positive, False otherwise
+    """
+    net_to_remove = getNetworkInDataCenter(network=network,
+                                           datacenter=datacenter)
+    return NET_API.delete(net_to_remove, positive)
+
+
+def updateNetworkInDataCenter(positive, network, datacenter, **kwargs):
+    """
+    Description: update existing network in datacenter
+    Author: myakove
+    Parameters:
+       *  *positive* - True if action should succeed, False otherwise
+       *  *network* - name of a network that should be updated
+       *  *datacenter* -  datacenter name where the network should be updated
+       *  *name* - new network name (if relevant)
+       *  *description* - new network description (if relevant)
+       *  *stp* - new network support stp (if relevant). (true/false string)
+       *  *vlan_id* - new network vlan id (if relevant)
+       *  *usages* - a string contain list of comma-separated usages
+                     'VM,DIPLAY'.
+                    should contain all usages every update.
+                    a missing usage will be deleted!
+       *  *mtu* - and integer to overrule mtu on the related host nic..
+    Return: True if result of action == positive, False otherwise
+    """
+    net = getNetworkInDataCenter(network=network,
+                                 datacenter=datacenter)
+    net_update = _prepareNetworkObject(**kwargs)
+    return NET_API.update(net, net_update, positive)
