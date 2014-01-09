@@ -188,7 +188,7 @@
     <test_action>checkForFileExistenceAndContent</test_action>
     <parameters>ip='{vds}',password='{passwd}',filename='/var/tmp/after_update_device_fail.hook'</parameters>
     <positive>True</positive>
-    <vital>True</vital>
+    <bz>1047646</bz>
     <tcms_plan_id>10167</tcms_plan_id>
     <tcms_test_case>295174</tcms_test_case>
     <run>yes</run>
@@ -213,6 +213,7 @@
     <test_action>updateNic</test_action>
     <parameters>vm='{vm_prefix}', nic='nic2', linked=False, network='rhevm'</parameters>
     <positive>True</positive>
+     <bz>1047646</bz>
     <run>yes</run>
 </test_case>
 <test_case>
@@ -220,7 +221,7 @@
     <test_action>checkForFileExistenceAndContent</test_action>
     <parameters>ip='{vds}',password='{passwd}',filename='/var/tmp/before_update_device.hook', content='1000'</parameters>
     <positive>True</positive>
-    <vital>True</vital>
+     <bz>1047646</bz>
     <tcms_plan_id>10167</tcms_plan_id>
     <tcms_test_case>295144</tcms_test_case>
     <run>yes</run>
@@ -230,7 +231,7 @@
     <test_action>checkForFileExistenceAndContent</test_action>
     <parameters>ip='{vds}',password='{passwd}',filename='/var/tmp/after_update_device.hook', content='1000'</parameters>
     <positive>True</positive>
-    <vital>True</vital>
+     <bz>1047646</bz>
     <tcms_plan_id>10167</tcms_plan_id>
     <tcms_test_case>295144</tcms_test_case>
     <run>yes</run>
