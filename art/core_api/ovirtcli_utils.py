@@ -39,6 +39,7 @@ addlock = threading.Lock()
 ILLEGAL_XML_CHARS = u'[\x00-\x08\x0b\x0c\x0e-\x1F\uD800-\uDFFF\uFFFE\uFFFF]'
 CONTROL_CHARS = u'[\n\r]'
 RHEVM_SHELL = 'rhevm-shell'
+OVIRT_SHELL = 'ovirt-shell'
 TMP_FILE = '/tmp/cli_output.tmp'
 IP_FORMAT = '^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$'
 ADD_WAIVER = []
@@ -310,6 +311,7 @@ class RhevmCli(CliConnection):
     _specialMatrixParamsDict = {'case-sensitive': 'case_sensitive'}
     _cliRootCommands = ['action', 'add', 'list', 'remove', 'show', 'update']
     _cliTrashPattern = "[\[\]\\\?]"
+    _command = RHEVM_SHELL
 
     def __init__(self, logger, uri, user, userDomain, password,
                  secure, sslKeyFile, sslCertFile, sslCaFile, logFile,
@@ -420,7 +422,7 @@ class RhevmCli(CliConnection):
 
         # mandatory data
         cliConnect.append('{0} -c -l "{1}" -u "{2}"'.
-                          format(RHEVM_SHELL, uri, userWithDomain))
+                          format(self._command, uri, userWithDomain))
         # ssl stuff
         if secure:
             cliConnect.append('-K {0} -C {1} -A {2}'.
@@ -678,6 +680,36 @@ in Context dictionary:\n{2}".format(cmd_type, object_name, self.contextDict)
                     eval(context.split(')')[0].split('contexts: ')[1])
 
 
+class OvirtCli(RhevmCli):
+    """
+    Description: CLI connection implementation for ovirt-shell
+    Author: imeerovi
+    Parameters:
+        * logger - reference to logger
+        * uri - ovirt URI
+        * user - ovirt username
+        * userDomain - ovirt user domain
+        * password - ovirt password
+        * secure - secure connection boolean
+        * sslKeyFile - ssl key file
+        * sslCertFile - ssl certificate file
+        * sslCaFile - ssl ca file
+        * logFile - file for cli log
+        * **kwargs - additional parameters to CLI
+    """
+    _rhevmPrompt = '\[oVirt shell \(connected\)\]# '
+    _rhevmDisconnectedPrompt = '\[oVirt shell \(disconnected\)\]# '
+    _command = OVIRT_SHELL
+
+    def __init__(self, logger, uri, user, userDomain, password,
+                 secure, sslKeyFile, sslCertFile, sslCaFile, logFile,
+                 session_timeout, **kwargs):
+        super(OvirtCli, self).__init__(logger, uri, user, userDomain, password,
+                                       secure, sslKeyFile, sslCertFile,
+                                       sslCaFile, logFile, session_timeout,
+                                       **kwargs)
+
+
 class CliUtil(RestUtil):
     """
     Description: Implements CLI APIs methods
@@ -687,6 +719,7 @@ class CliUtil(RestUtil):
         * element - data_structures.py style element
         * collection - data_structures.py style collection
     """
+    _shells = {RHEVM_SHELL: RhevmCli, OVIRT_SHELL: OvirtCli}
 
     def __init__(self, element, collection):
         super(CliUtil, self).__init__(element, collection)
@@ -696,29 +729,20 @@ class CliUtil(RestUtil):
         global cliInit
 
         if not cliInit:
+            if self.opts['cli_tool'] not in self._shells:
+                msg = 'Unsupported CLI engine: %s' % self.opts['cli_tool']
+                raise UnsupportedCLIEngine(msg)
             try:
-                if self.opts['cli_tool'] == RHEVM_SHELL:
-                    self.cli = RhevmCli(self.logger,
-                                        self.opts['uri'],
-                                        self.opts['user'],
-                                        self.opts['user_domain'],
-                                        self.opts['password'],
-                                        self.opts['secure'],
-                                        sslKeyFile=self.opts.get(
-                                            'ssl_key_file', None),
-                                        sslCertFile=self.opts.get(
-                                            'ssl_cert_file', None),
-                                        sslCaFile=self.opts.get('ssl_ca_file',
-                                                                None),
-                                        logFile=self.opts['cli_log_file'],
-                                        session_timeout=self.opts[
-                                            'session_timeout'],
-                                        optionalParms=self.opts[
-                                            'cli_optional_params'],
-                                        )
-                else:
-                    msg = 'Unsupported CLI engine: %s' % self.opts['cli_tool']
-                    raise UnsupportedCLIEngine(msg)
+                self.cli = self._shells[self.opts['cli_tool']](
+                    self.logger, self.opts['uri'], self.opts['user'],
+                    self.opts['user_domain'], self.opts['password'],
+                    self.opts['secure'],
+                    sslKeyFile=self.opts.get('ssl_key_file', None),
+                    sslCertFile=self.opts.get('ssl_cert_file', None),
+                    sslCaFile=self.opts.get('ssl_ca_file', None),
+                    logFile=self.opts['cli_log_file'],
+                    session_timeout=self.opts['session_timeout'],
+                    optionalParms=self.opts['cli_optional_params'])
 
             except pe.ExceptionPexpect as e:
                 self.logger.error('Pexpect Connection Error: %s ' % e.value)
