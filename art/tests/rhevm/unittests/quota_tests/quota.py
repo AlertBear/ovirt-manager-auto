@@ -16,24 +16,26 @@
 # limitations under the License.
 #
 
+"""
+Quota Test
+Check different cases for quota limitations in None, Audit and Enforce mode
+Include CRUD tests, different limitations of storage, memory and vcpu tests
+"""
 __test__ = True
 
 import logging
 import config
-from art.unittest_lib import BaseTestCase as TestCase
 
 from common import DB
 from nose.tools import istest
-from functools import wraps
 
 # rhevm api
+from utilities.rhevm_tools.base import Setup
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import disks
-from art.rhevm_api.tests_lib.low_level import datacenters
-from art.rhevm_api.tests_lib.low_level import clusters
-from art.rhevm_api.tests_lib.low_level import hosts
-from art.rhevm_api.tests_lib.low_level import storagedomains
+from art.rhevm_api.tests_lib.high_level.disks import delete_disks
 from art.rhevm_api.tests_lib.low_level import templates
+from art.unittest_lib import BaseTestCase as TestCase
 
 # raut quota
 from raut.tests.webadmin.quota import QuotaTest
@@ -45,6 +47,7 @@ from utilities.errors import GeneralException
 try:
     from art.test_handler.tools import bz
 except ImportError:
+    # noinspection PyUnusedLocal
     def bz(*ids):
         def decorator(func):
             return func
@@ -53,16 +56,17 @@ except ImportError:
 try:
     from art.test_handler.tools import tcms
 except ImportError:
+    # noinspection PyUnusedLocal
     def tcms(*ids):
         def decorator(func):
             return func
         return decorator
 
-LOGGER  = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 # Names of created objects. Should be removed at the end of this test module
 # and not used by any other test module.
-EXPORT_NAME = 'user_actions__export'  # EXPORT domain
+EXPORT_NAME = 'export_domain'  # EXPORT domain
 VM_NAME = 'quota__vm'
 TMP_VM_NAME = 'quota__tpm_vm'
 DISK_NAME = 'quota_disk'
@@ -71,6 +75,9 @@ TMP_TEMPLATE_NAME = 'quota__template_tmp'
 VM_SNAPSHOT = 'quota_vm__snapshot'
 VM_POOL_NAME = 'quota__vm_pool'
 CLUSTER_NAME = 'quota__cluster'
+QUOTA_NONE = 0
+QUOTA_AUDIT = 1
+QUOTA_ENFORCED = 2
 QUOTA_NAME = 'quota_1'
 QUOTA_DESC = 'quota_1_desc'
 QUOTA2_NAME = 'quota_2'
@@ -84,476 +91,475 @@ GB = 1024 * MB
 test = QuotaTest()  # raut object to CRUD quota
 db = DB(None)  # db instance to access db to check resources
 
-def setUpModule():
+
+def setup_module():
     # Setup db
-    from utilities.rhevm_tools.base import Setup
     db.setup = Setup(config.OVIRT_ADDRESS, config.OVIRT_ROOT,
-            config.OVIRT_ROOT_PASSWORD, conf=config.DB_NAME)
+                     config.OVIRT_ROOT_PASSWORD, conf=config.DB_NAME)
 
     # Create quota
     test.set_up()
     test.create_quota(config.MAIN_DC_NAME, QUOTA_NAME)
     test.tear_down()
 
-    # Add Export domain
-    storagedomains.addStorageDomain(True,
-                type=vms.ENUMS['storage_dom_type_export'],
-                storage_type=vms.ENUMS['storage_type_nfs'],
-                host=config.MAIN_HOST_NAME,
-                name=EXPORT_NAME,
-                address=config.EXPORT_ADDRESS,
-                path=config.EXPORT_PATH)
-    storagedomains.attachStorageDomain(True, config.MAIN_DC_NAME,
-            EXPORT_NAME)
-    storagedomains.activateStorageDomain(True,
-            config.MAIN_DC_NAME, EXPORT_NAME)
 
-    # Add nfs data domain
-    storagedomains.addStorageDomain(True,
-            type=vms.ENUMS['storage_dom_type_data'],
-            storage_type=vms.ENUMS['storage_type_nfs'],
-            host=config.MAIN_HOST_NAME,
-            name=config.ALT1_STORAGE_NAME,
-            address=config.ALT1_STORAGE_ADDRESS,
-            path=config.ALT1_STORAGE_PATH)
-    storagedomains.attachStorageDomain(True, config.MAIN_DC_NAME,
-            config.ALT1_STORAGE_NAME)
-    storagedomains.activateStorageDomain(True,
-            config.MAIN_DC_NAME, config.ALT1_STORAGE_NAME)
-
-def tearDownModule():
+def teardown_module():
     test.set_up()
     test.remove_quota(config.MAIN_DC_NAME, QUOTA_NAME)
     test.tear_down()
 
-    # Delete export domain
-    storagedomains.deactivateStorageDomain(True, config.MAIN_DC_NAME,
-            EXPORT_NAME)
-    storagedomains.detachStorageDomain(True, config.MAIN_DC_NAME,
-            EXPORT_NAME)
-    storagedomains.removeStorageDomain(True, EXPORT_NAME,
-            config.MAIN_HOST_NAME, format='true')
-
-    # delete nfs data domain
-    storagedomains.deactivateStorageDomain(True, config.MAIN_DC_NAME,
-                                           config.ALT1_STORAGE_NAME)
-    storagedomains.detachStorageDomain(True, config.MAIN_DC_NAME,
-                                       config.ALT1_STORAGE_NAME)
-    storagedomains.removeStorageDomain(True, config.ALT1_STORAGE_NAME,
-                                       config.MAIN_HOST_NAME, format='true')
-
 
 class QuotaTestCRUD(TestCase):
-    '''
+    """
     This unittest class tests CRUD operation via selenium.
-    '''
+    """
     __test__ = True
 
     @classmethod
-    def setUpClass(cls): # Create and setup resources for tests
+    def setUpClass(cls):
+        """ Create and setup resources for tests """
         test.set_up()
 
     @classmethod
-    def tearDownClass(cls): # Delete/release resources of test
+    def tearDownClass(cls):
+        """ Delete/release resources of test """
         test.edit_quota(config.MAIN_DC_NAME, QUOTA_NAME,
-                mem_limit=0, vcpu_limit=0, storage_limit=0)
+                        mem_limit=0, vcpu_limit=0, storage_limit=0)
         test.tear_down()
 
     @istest
     @tcms(TCMS_PLAN_ID, 231136)
-    def a_createQuota(self):
-        """ Create Quota """
-        # Try to create quota with some limits.
+    def a_create_quota(self):
+        """ Create Quota with some limits """
         test.create_quota(config.MAIN_DC_NAME, QUOTA2_NAME,
-                description=QUOTA_DESC, mem_limit=1024, vcpu_limit=1,
-                storage_limit=10)
-        assert db.checkQuotaExists(QUOTA2_NAME)
+                          description=QUOTA_DESC,
+                          mem_limit=1024, vcpu_limit=1,
+                          storage_limit=10)
+        self.assertTrue(db.check_quota_exists(QUOTA2_NAME))
 
     @istest
     @tcms(TCMS_PLAN_ID, 231138)
-    def b_editQuota(self):
+    def b_edit_quota(self):
         """ Edit Quota """
-        # Try to edit creted quot
-        test.edit_quota(config.MAIN_DC_NAME, QUOTA2_NAME, description=QUOTA_DESC,
-                mem_limit=2048, vcpu_limit=2, storage_limit=20)
-        db.checkQuotaLimits(QUOTA2_NAME, mem_size_mb=2048, virtual_cpu=2,
-                storage_size_gb=20)
-        # TODO: check properties (treshold,grace percentage, description)
+        test.edit_quota(config.MAIN_DC_NAME, QUOTA2_NAME,
+                        description=QUOTA_DESC,
+                        mem_limit=2048, vcpu_limit=2, storage_limit=20)
+        self.assertTrue(db.check_quota_limits(QUOTA2_NAME, mem_size_mb=2048,
+                                              virtual_cpu=2,
+                                              storage_size_gb=20))
+        # TODO: check properties (thresholds, grace percentage, description)
 
     @istest
     @tcms(TCMS_PLAN_ID, 231141)
-    def c_copyQuota(self):
+    def c_copy_quota(self):
         """ Copy Quota """
-        # Try to copy Quota
         test.copy_quota(config.MAIN_DC_NAME, QUOTA_NAME, name=QUOTA3_NAME,
-                description=QUOTA3_DESC)
-        assert db.checkQuotaExists(QUOTA3_NAME)
+                        description=QUOTA3_DESC)
+        self.assertTrue(db.check_quota_exists(QUOTA3_NAME))
 
     @istest
     @tcms(TCMS_PLAN_ID, 231139)
-    def d_deleteQuota(self):
+    def d_delete_quota(self):
         """ Delete Quota """
         #TODO: Check if quota can be removed even when some object have
-        # quota assigned, but DC is in Disabled mode
         test.remove_quota(config.MAIN_DC_NAME, QUOTA2_NAME)
-        assert not db.checkQuotaExists(QUOTA2_NAME)
+        self.assertFalse(db.check_quota_exists(QUOTA2_NAME))
         test.remove_quota(config.MAIN_DC_NAME, QUOTA3_NAME)
-        assert not db.checkQuotaExists(QUOTA3_NAME)
+        self.assertFalse(db.check_quota_exists(QUOTA3_NAME))
 
 
 class QuotaTestMode(TestCase):
-    '''
+    """
     This unittest class tests quota enforced/audit mode.
-    '''
+    """
     __test__ = False
+    positive = True
 
     @classmethod
-    def setUpClass(cls): # Create and setup resources for tests
-        q_id = db.getQuotaIdByName(QUOTA_NAME)
-        assert vms.createVm(True, VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
-                storageDomainName=config.MAIN_STORAGE_NAME, size=10*GB,
-                memory=512*MB, vm_quota=q_id, disk_quota=q_id)
+    def setUpClass(cls):
+        """ Create and setup resources for tests """
+        q_id = db.get_quota_id_by_name(QUOTA_NAME)
+        assert vms.createVm(True, VM_NAME, '',
+                            cluster=config.MAIN_CLUSTER_NAME,
+                            storageDomainName=config.MAIN_STORAGE_NAME,
+                            size=10*GB, memory=512*MB, vm_quota=q_id,
+                            disk_quota=q_id, nic=config.NIC,
+                            network=config.cluster_network)
 
     @classmethod
-    def tearDownClass(cls): # Delete/release resources of test
+    def tearDownClass(cls):
+        """ Delete/release resources of test """
         assert vms.removeVm(True, VM_NAME)
 
     @istest
-    def a_quotaRAMLimit(self):
+    @tcms('9428', '268989')
+    def a_quota_memory_limit(self):
         """ Quota RAM limit """
         # Create VM with RAM 1024, quota level to 1024MB, try to run VM
         test.set_up()
         test.edit_quota(config.MAIN_DC_NAME, QUOTA_NAME,
-                mem_limit=1024, vcpu_limit=0, storage_limit=0)
+                        mem_limit=1024, vcpu_limit=0, storage_limit=0)
         test.tear_down()
-        assert vms.startVm(True, VM_NAME)
-        assert vms.stopVm(True, VM_NAME)
+        self.assertTrue(vms.startVm(True, VM_NAME))
+        self.assertTrue(vms.stopVm(True, VM_NAME))
 
     @istest
-    def b_quotaRAMLimitInGrace(self):
+    @tcms('9428', '268990')
+    def b_quota_memory_limit_in_grace(self):
         """ Quota RAM Limit in grace """
         # Create quota with 1024MB limit (Grace 120%)
         # Create vm with 1228 MB RAM, try to run it.
-        assert vms.updateVm(True, VM_NAME, memory=1228*MB)
-        assert vms.startVm(True, VM_NAME)
-        assert vms.stopVm(True, VM_NAME)
+        self.assertTrue(vms.updateVm(True, VM_NAME, memory=1228*MB))
+        self.assertTrue(vms.startVm(True, VM_NAME))
+        self.assertTrue(vms.stopVm(True, VM_NAME))
         # TODO: check if warning event was generated
 
     @istest
-    def c_quotaRAMLimitOverGrace(self):
+    @tcms('9428', '268991')
+    def c_quota_memory_limit_over_grace(self):
         """ Quota RAM Limit over grace """
         # Create quota with 1024MB limit (Grace 120%)
         # Create vm with 2048 MB RAM, try to run it.
-        assert vms.updateVm(True, VM_NAME, memory=2*GB)
-        assert vms.startVm(self.possitive, VM_NAME)
-        if self.possitive:
-            assert vms.stopVm(True, VM_NAME)
-        assert vms.updateVm(True, VM_NAME, memory=GB)
+        self.assertTrue(vms.updateVm(True, VM_NAME, memory=2*GB))
+        self.assertTrue(vms.startVm(self.positive, VM_NAME))
+        if self.positive:
+            self.assertTrue(vms.stopVm(True, VM_NAME))
+        self.assertTrue(vms.updateVm(True, VM_NAME, memory=GB))
         # TODO: check if warning event was generated
 
     @istest
-    def d_quotavCPULimit(self):
+    @tcms('9428', '268992')
+    def d_quota_vcpu_limit(self):
         """ Quota vCPU limit """
         # Set vCPU to 1 from unlimited
         # set RAM to unlimited - same for RAM
-        db.updateQuota(QUOTA_NAME, grace_vds_group_percentage=100)
+        db.update_quota(QUOTA_NAME, grace_vds_group_percentage=100)
         test.set_up()
         test.edit_quota(config.MAIN_DC_NAME, QUOTA_NAME,
-                mem_limit=0, vcpu_limit=1, storage_limit=0)
+                        mem_limit=0, vcpu_limit=1, storage_limit=0)
         test.tear_down()
-        assert vms.startVm(True, VM_NAME)
-        assert vms.stopVm(True, VM_NAME)
+        self.assertTrue(vms.startVm(True, VM_NAME))
+        self.assertTrue(vms.stopVm(True, VM_NAME))
 
     @istest
-    def e_quotavCPULimitInGrace(self):
+    @tcms('9428', '268993')
+    def e_quota_vcpu_limit_in_grace(self):
         """ Quota vCPU limit in grace """
-        assert vms.updateVm(True, VM_NAME, cpu_cores=2)
-        assert vms.startVm(True, VM_NAME)
-        assert vms.stopVm(True, VM_NAME)
-        assert vms.updateVm(True, VM_NAME, cpu_cores=1)
+        self.assertTrue(vms.updateVm(True, VM_NAME, cpu_cores=2))
+        self.assertTrue(vms.startVm(True, VM_NAME))
+        self.assertTrue(vms.stopVm(True, VM_NAME))
+        self.assertTrue(vms.updateVm(True, VM_NAME, cpu_cores=1))
         # TODO: check if warning event was generated
 
     @istest
-    def f_quotavCPULimitOverGrace(self):
+    @tcms('9428', '268994')
+    def f_quota_vcpu_limit_over_grace(self):
         """ Quota vCPU limit over grace """
-        assert vms.updateVm(True, VM_NAME, cpu_cores=3)
-        assert vms.startVm(self.possitive, VM_NAME)
-        if self.possitive:
-            assert vms.stopVm(True, VM_NAME)
-        assert vms.updateVm(True, VM_NAME, cpu_cores=1)
+        self.assertTrue(vms.updateVm(True, VM_NAME, cpu_cores=3))
+        self.assertTrue(vms.startVm(self.positive, VM_NAME))
+        if self.positive:
+            self.assertTrue(vms.stopVm(True, VM_NAME))
+        self.assertTrue(vms.updateVm(True, VM_NAME, cpu_cores=1))
         # TODO: check if warning event was generated
 
     @istest
-    def g_quotaStorageLimit(self):
+    @tcms('9428', '268995')
+    def g_quota_storage_limit(self):
         """ Quota storage limit """
         # Disable cluster quota
-        db.updateQuota(QUOTA_NAME, grace_vds_group_percentage=20)
+        db.update_quota(QUOTA_NAME, grace_vds_group_percentage=20)
         test.set_up()
         test.edit_quota(config.MAIN_DC_NAME, QUOTA_NAME,
-                mem_limit=0, vcpu_limit=0, storage_limit=20)
+                        mem_limit=0, vcpu_limit=0, storage_limit=20)
         test.tear_down()
-        q_id = db.getQuotaIdByName(QUOTA_NAME)
-        assert disks.addDisk(True, alias=DISK_NAME, provisioned_size=10*GB,
-                      interface='virtio', format='cow',
-                      storagedomain=config.MAIN_STORAGE_NAME,
-                      quota=q_id)
-        disks.waitForDisksState(DISK_NAME)
-        assert disks.deleteDisk(True, alias=DISK_NAME)
-        disks.waitForDisksGone(True, DISK_NAME)
+        q_id = db.get_quota_id_by_name(QUOTA_NAME)
+        self.assertTrue(disks.addDisk(True, alias=DISK_NAME,
+                                      provisioned_size=10*GB,
+                                      interface=config.DISK_INTERFACE,
+                                      format=config.DISK_FORMAT,
+                                      storagedomain=config.MAIN_STORAGE_NAME,
+                                      quota=q_id))
+        self.assertTrue(delete_disks([DISK_NAME]))
 
     @istest
-    def h_quotaStorageLimitInGrace(self):
+    @tcms('9428', '268996')
+    def h_quota_storage_limit_in_grace(self):
         """ Quota storage limit in grace """
-        q_id = db.getQuotaIdByName(QUOTA_NAME)
-        assert disks.addDisk(True, alias=DISK_NAME, provisioned_size=14*GB,
-                      interface='virtio', format='cow',
-                      storagedomain=config.MAIN_STORAGE_NAME,
-                      quota=q_id)
-        disks.waitForDisksState(DISK_NAME)
-        assert disks.deleteDisk(True, alias=DISK_NAME)
-        disks.waitForDisksGone(True, DISK_NAME)
+        q_id = db.get_quota_id_by_name(QUOTA_NAME)
+        self.assertTrue(disks.addDisk(True, alias=DISK_NAME,
+                                      provisioned_size=14*GB,
+                                      interface=config.DISK_INTERFACE,
+                                      format=config.DISK_FORMAT,
+                                      storagedomain=config.MAIN_STORAGE_NAME,
+                                      quota=q_id))
+        self.assertTrue(delete_disks([DISK_NAME]))
         # TODO: check if warning event was generated
 
     @istest
-    def i_quotaStorageLimitOverGrace(self):
+    @tcms('9428', '268997')
+    def i_quota_storage_limit_over_grace(self):
         """ Quota storage limit over grace """
-        q_id = db.getQuotaIdByName(QUOTA_NAME)
-        assert disks.addDisk(self.possitive, alias=DISK_NAME, provisioned_size=15*GB,
-                      interface='virtio', format='cow',
-                      storagedomain=config.MAIN_STORAGE_NAME,
-                      quota=q_id)
-        if self.possitive:
-            disks.waitForDisksState(DISK_NAME)
-            assert disks.deleteDisk(True, alias=DISK_NAME)
-            disks.waitForDisksGone(True, DISK_NAME)
+        q_id = db.get_quota_id_by_name(QUOTA_NAME)
+        self.assertTrue(disks.addDisk(self.positive, alias=DISK_NAME,
+                        provisioned_size=15*GB,
+                        interface=config.DISK_INTERFACE,
+                        format=config.DISK_FORMAT,
+                        storagedomain=config.MAIN_STORAGE_NAME,
+                        quota=q_id))
+        if self.positive:
+            self.assertTrue(delete_disks([DISK_NAME]))
         test.set_up()
         test.edit_quota(config.MAIN_DC_NAME, QUOTA_NAME,
-                mem_limit=0, vcpu_limit=0, storage_limit=0)
+                        mem_limit=0, vcpu_limit=0, storage_limit=0)
         test.tear_down()
         # TODO: check if warning event was generated
 
     @istest
-    def j_deleteQuotaInUse(self):
+    @tcms('9428', '268998')
+    def j_delete_quota_in_use(self):
         """ Delete quota in use """
         test.set_up()
-        self.assertRaises(GeneralException, test.remove_quota,
-                          config.MAIN_DC_NAME, QUOTA_NAME)
+        self.assertRaises(GeneralException,
+                          test.remove_quota, config.MAIN_DC_NAME, QUOTA_NAME)
         test.tear_down()
 
 
 class QuotaTestEnforced(QuotaTestMode):
-    '''
+    """
     This unittest class tests quota Enforced mode.
-    '''
+    """
     __test__ = True
 
-    possitive = False
+    positive = False
 
+    # Create and setup resources for tests
     @classmethod
-    def setUpClass(self): # Create and setup resources for tests
-        db.setDCQuotaMode(config.MAIN_DC_NAME, 2)
-        super(QuotaTestEnforced, self).setUpClass()
+    def setUpClass(cls):
+        db.set_dc_quota_mode(config.MAIN_DC_NAME, QUOTA_ENFORCED)
+        super(QuotaTestEnforced, cls).setUpClass()
 
 
 class QuotaTestAudit(QuotaTestMode):
-    '''
+    """
     This unittest class tests quota Audit mode.
-    '''
+    """
     __test__ = True
-    possitive = True
 
+    positive = True
+
+    # Create and setup resources for tests
     @classmethod
-    def setUpClass(self): # Create and setup resources for tests
-        db.setDCQuotaMode(config.MAIN_DC_NAME, 1)
-        super(QuotaTestAudit, self).setUpClass()
+    def setUpClass(cls):
+        db.set_dc_quota_mode(config.MAIN_DC_NAME, QUOTA_AUDIT)
+        super(QuotaTestAudit, cls).setUpClass()
 
 
 class QuotaTestObjectWithoutQuota(TestCase):
-    '''
+    """
     This class tests if object created in disabled mode can/can't
     be manipulated in audit/enforced mode(no quota assigned to objects)
-    '''
+    """
     __test__ = False
 
-    @classmethod
-    def setUpClass(cls): # Create and setup resources for tests
-        db.setDCQuotaMode(config.MAIN_DC_NAME, 0)  # Set dc to disabled
-        q_id = db.getQuotaIdByName(QUOTA_NAME)
+    positive = None
+    mode = None
 
+    @classmethod
+    def setUpClass(cls):
+        """ Create and setup resources for tests """
+        db.set_dc_quota_mode(config.MAIN_DC_NAME, QUOTA_NONE)
         # Create vm with no quota
-        assert vms.createVm(True, VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
-                storageDomainName=config.MAIN_STORAGE_NAME, size=10*GB,
-                memory=2*GB)
+        assert vms.createVm(True, VM_NAME, '',
+                            cluster=config.MAIN_CLUSTER_NAME,
+                            storageDomainName=config.MAIN_STORAGE_NAME,
+                            size=10*GB, memory=2*GB, nic=config.NIC,
+                            network=config.cluster_network)
         # Create disk with no quota
         assert disks.addDisk(True, alias=DISK_NAME, provisioned_size=10*GB,
-                      interface='virtio', format='cow',
-                      storagedomain=config.MAIN_STORAGE_NAME)
+                             interface=config.DISK_INTERFACE,
+                             format=config.DISK_FORMAT,
+                             storagedomain=config.MAIN_STORAGE_NAME)
         assert disks.waitForDisksState(DISK_NAME)
 
-        db.setDCQuotaMode(config.MAIN_DC_NAME, cls.mode)
+        db.set_dc_quota_mode(config.MAIN_DC_NAME, cls.mode)
 
     @classmethod
-    def tearDownClass(cls): # Delete/release resources of test
+    def tearDownClass(cls):
+        """ Delete/release resources of test """
         assert vms.removeVm(True, VM_NAME)
         assert disks.deleteDisk(True, alias=DISK_NAME)
         assert disks.waitForDisksGone(True, DISK_NAME)
 
     @istest
-    @tcms(TCMS_PLAN_ID, 235939)
-    def updateVm(self):
+    @tcms(TCMS_PLAN_ID, '236244')
+    def update_vm(self):
         """ Update vm with quota enforce mode """
         LOGGER.info("Updating vm '%s' memory" % VM_NAME)
-        assert vms.updateVm(self.positive, VM_NAME, memory=GB)
+        self.assertTrue(vms.updateVm(self.positive, VM_NAME, memory=GB))
         if self.positive:
-            assert vms.updateVm(self.positive, VM_NAME, memory=512*MB)
+            self.assertTrue(vms.updateVm(self.positive, VM_NAME,
+                                         memory=512*MB))
 
+    @tcms(TCMS_PLAN_ID, '236240')
     @istest
-    def runVm(self):
+    def run_vm(self):
         """ Run vm """
         # Add also case which tests, quota assigned only to vm not to disk
         LOGGER.info("Running vm '%s'" % VM_NAME)
-        assert vms.startVm(self.positive, VM_NAME)
+        self.assertTrue(vms.startVm(self.positive, VM_NAME))
         if self.positive:
-            assert vms.stopVm(True, VM_NAME)
+            self.assertTrue(vms.stopVm(True, VM_NAME))
             LOGGER.info("Stopping vm '%s'" % VM_NAME)
 
+    @tcms(TCMS_PLAN_ID, '237011')
     @istest
-    def createSnapshot(self):
+    def create_snapshot(self):
         """ Create snapshot """
         # Add also case which tests, quota assigned only to disk not to vm
         LOGGER.info("Creating snapshot '%s'" % VM_SNAPSHOT)
-        assert vms.addSnapshot(self.positive, VM_NAME, VM_SNAPSHOT)
+        self.assertTrue(vms.addSnapshot(self.positive, VM_NAME, VM_SNAPSHOT))
         if self.positive:
-            assert vms.removeSnapshot(True, VM_NAME, VM_SNAPSHOT)
+            self.assertTrue(vms.removeSnapshot(True, VM_NAME, VM_SNAPSHOT))
             LOGGER.info("Removing snapshot '%s'" % VM_SNAPSHOT)
 
     @istest
-    def createTemplate(self):
+    def create_template(self):
         """ Create template """
         # Template should be created in Enforced and in Audit
         # also when vm and vm disk has no quota assigned
-        LOGGER.info("Creating template '%s'" % TEMPLATE_NAME)
-        assert templates.createTemplate(self.positive, vm=VM_NAME,
-                name=TEMPLATE_NAME, cluster=config.MAIN_CLUSTER_NAME)
+        LOGGER.info("Creating template '%s'", TEMPLATE_NAME)
+        self.assertTrue(
+            templates.createTemplate(self.positive, vm=VM_NAME,
+                                     name=TEMPLATE_NAME,
+                                     cluster=config.MAIN_CLUSTER_NAME))
         if self.positive:
-            templates.removeTemplate(True, TEMPLATE_NAME)
+            self.assertTrue(templates.removeTemplate(True, TEMPLATE_NAME))
 
-    @istest
-    @tcms(TCMS_PLAN_ID, 4) # TODO:
-    def updateDisk(self):
-        """ Update disk """
-        # TODO: implement updateVmDisk in rhevm_api
-        pass
-
-    @istest
-    @tcms(TCMS_PLAN_ID, 5) # TODO:
-    def moveDisk(self):
-        """ Move disk """
-        # TODO: implement moveDisk in rhevm_api
-        pass
-
-    @istest
-    @tcms(TCMS_PLAN_ID, 5) # TODO:
-    def copyDisk(self):
-        """ Copy disk """
-        # TODO: implement copyDisk in rhevm_api
-        pass
+    # TODO: implement update_disk, move_disk and copy_disk, now no REST api
+    # available
 
 
-class QuotaTestEnforcedWithouQuota(QuotaTestObjectWithoutQuota):
+class QuotaTestEnforcedWithOutQuota(QuotaTestObjectWithoutQuota):
+    """
+    This unittest class tests quota Enforced mode.
+    """
     __test__ = True
 
-    mode = 2  # Enforced
+    mode = QUOTA_ENFORCED  # Enforced
     positive = False
 
 
-class QuotaTestAuditWithouQuota(QuotaTestObjectWithoutQuota):
+class QuotaTestAuditWithOutQuota(QuotaTestObjectWithoutQuota):
+    """
+    This unittest class tests quota Audit mode.
+    """
     __test__ = True
 
-    mode = 1  # Audit
+    mode = QUOTA_AUDIT
     positive = True
 
 
 class QuotaConsumptionCalc(TestCase):
-    '''
-    This class tests if quota consumtion is calculated right,
+    """
+    This class tests if quota consumption is calculated right,
     when user create/remove/run/stop/etc.. vms/disks/etc
-    '''
+    """
     __test__ = True
 
     @classmethod
     def setUpClass(cls):
-        db.setDCQuotaMode(config.MAIN_DC_NAME, 2)  # Set dc to disabled
-        q_id = db.getQuotaIdByName(QUOTA_NAME)
+        """ Create and setup resources for tests """
+        db.set_dc_quota_mode(config.MAIN_DC_NAME, QUOTA_ENFORCED)
+        q_id = db.get_quota_id_by_name(QUOTA_NAME)
         vms.createVm(True, VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
-                storageDomainName=config.MAIN_STORAGE_NAME, size=10*GB,
-                memory=GB, vm_quota=q_id, disk_quota=q_id)
+                     storageDomainName=config.MAIN_STORAGE_NAME, size=10*GB,
+                     memory=GB, vm_quota=q_id, disk_quota=q_id,
+                     nic=config.NIC, network=config.cluster_network)
 
     @classmethod
     def tearDownClass(cls):
+        """ Delete/release resources of test """
         vms.removeVm(True, VM_NAME)
 
     @istest
     @tcms(TCMS_PLAN_ID, 236236)
-    def removeVm(self):
+    def remove_vm(self):
         """ Remove vm """
-        q_id = db.getQuotaIdByName(QUOTA_NAME)
-        vms.createVm(True, TMP_VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
-                storageDomainName=config.MAIN_STORAGE_NAME, size=10*GB,
-                memory=2*GB, vm_quota=q_id, disk_quota=q_id)
-        db.checkGlobalConsumption(QUOTA_NAME, mem_size_mb_usage=0,
-                virtual_cpu_usage=0, storage_size_gb_usage=20)
-        assert vms.removeDisk(True, TMP_VM_NAME, TMP_VM_NAME + '_Disk1')
-        db.checkGlobalConsumption(QUOTA_NAME, mem_size_mb_usage=0,
-                virtual_cpu_usage=0, storage_size_gb_usage=10)
-        assert vms.removeVm(True, TMP_VM_NAME)
+        q_id = db.get_quota_id_by_name(QUOTA_NAME)
+        self.assertTrue(
+            vms.createVm(True, TMP_VM_NAME, '',
+                         cluster=config.MAIN_CLUSTER_NAME,
+                         storageDomainName=config.MAIN_STORAGE_NAME,
+                         size=10*GB, memory=2*GB, vm_quota=q_id,
+                         disk_quota=q_id, nic=config.NIC,
+                         network=config.cluster_network))
+        self.assertTrue(db.check_global_consumption(QUOTA_NAME,
+                                                    mem_size_mb_usage=0,
+                                                    virtual_cpu_usage=0,
+                                                    storage_size_gb_usage=20))
+        self.assertTrue(vms.removeDisk(True, TMP_VM_NAME,
+                                       TMP_VM_NAME + '_Disk1'))
+        self.assertTrue(db.check_global_consumption(QUOTA_NAME,
+                                                    mem_size_mb_usage=0,
+                                                    virtual_cpu_usage=0,
+                                                    storage_size_gb_usage=10))
+        self.assertTrue(vms.removeVm(True, TMP_VM_NAME))
 
     @istest
     @tcms(TCMS_PLAN_ID, 236237)
-    def removeTemplate(self):
+    def remove_template(self):
         """ Remove template """
-        assert templates.createTemplate(True, vm=VM_NAME, name=TMP_TEMPLATE_NAME)
-        try:
-            db.checkGlobalConsumption(QUOTA_NAME, mem_size_mb_usage=0,
-                virtual_cpu_usage=0, storage_size_gb_usage=20)
-        except Exception as e:
-            raise e
-        finally:
-            assert templates.removeTemplate(True, template=TMP_TEMPLATE_NAME)
-        db.checkGlobalConsumption(QUOTA_NAME, mem_size_mb_usage=0,
-                virtual_cpu_usage=0, storage_size_gb_usage=10)
+        self.assertTrue(templates.createTemplate(True, vm=VM_NAME,
+                        name=TMP_TEMPLATE_NAME))
+        self.assertTrue(db.check_global_consumption(QUOTA_NAME,
+                                                    mem_size_mb_usage=0,
+                                                    virtual_cpu_usage=0,
+                                                    storage_size_gb_usage=20))
+        self.assertTrue(templates.removeTemplate(True,
+                                                 template=TMP_TEMPLATE_NAME))
+        self.assertTrue(db.check_global_consumption(QUOTA_NAME,
+                                                    mem_size_mb_usage=0,
+                                                    virtual_cpu_usage=0,
+                                                    storage_size_gb_usage=10))
 
     @istest
     @tcms(TCMS_PLAN_ID, 236238)
-    def vmBasicOperations(self):
+    def vm_basic_operations(self):
         """ Vm basic operations """
-        db.checkGlobalConsumption(QUOTA_NAME, mem_size_mb_usage=0,
-                virtual_cpu_usage=0)
-        assert vms.startVm(True, VM_NAME)
-        db.checkGlobalConsumption(QUOTA_NAME, mem_size_mb_usage=1024,
-                virtual_cpu_usage=1)
-        assert vms.waitForVmsStates(True, VM_NAME)
-        db.checkGlobalConsumption(QUOTA_NAME, mem_size_mb_usage=1024,
-                virtual_cpu_usage=1)
-        assert vms.suspendVm(True, VM_NAME)
-        db.checkGlobalConsumption(QUOTA_NAME, mem_size_mb_usage=0,
-                virtual_cpu_usage=0)
-        assert vms.startVm(True, VM_NAME, vms.ENUMS['vm_state_up'])
-        db.checkGlobalConsumption(QUOTA_NAME, mem_size_mb_usage=1024,
-                virtual_cpu_usage=1)
-        assert vms.stopVm(True, VM_NAME)
-        db.checkGlobalConsumption(QUOTA_NAME, mem_size_mb_usage=0,
-                virtual_cpu_usage=0)
+        db.check_global_consumption(QUOTA_NAME, mem_size_mb_usage=0,
+                                    virtual_cpu_usage=0)
+        self.assertTrue(vms.startVm(True, VM_NAME))
+        self.assertTrue(db.check_global_consumption(QUOTA_NAME,
+                                                    mem_size_mb_usage=1024,
+                                                    virtual_cpu_usage=1))
+        self.assertTrue(vms.waitForVmsStates(True, VM_NAME))
+        self.assertTrue(db.check_global_consumption(QUOTA_NAME,
+                                                    mem_size_mb_usage=1024,
+                                                    virtual_cpu_usage=1))
+        self.assertTrue(vms.suspendVm(True, VM_NAME))
+        self.assertTrue(db.check_global_consumption(QUOTA_NAME,
+                                                    mem_size_mb_usage=0,
+                                                    virtual_cpu_usage=0))
+        self.assertTrue(vms.startVm(True, VM_NAME, vms.ENUMS['vm_state_up']))
+        self.assertTrue(db.check_global_consumption(QUOTA_NAME,
+                                                    mem_size_mb_usage=1024,
+                                                    virtual_cpu_usage=1))
+        self.assertTrue(vms.stopVm(True, VM_NAME))
+        self.assertTrue(db.check_global_consumption(QUOTA_NAME,
+                                                    mem_size_mb_usage=0,
+                                                    virtual_cpu_usage=0))
 
     @istest
     @tcms(TCMS_PLAN_ID, 236240)
-    def runVmOnce(self):
+    def run_vm_once(self):
         """ Run vm once """
-        assert vms.runVmOnce(True, VM_NAME)
-        db.checkGlobalConsumption(QUOTA_NAME, mem_size_mb_usage=1024,
-                virtual_cpu_usage=1)
-        assert vms.stopVm(True, VM_NAME)
+        self.assertTrue(vms.runVmOnce(True, VM_NAME))
+        self.assertTrue(db.check_global_consumption(QUOTA_NAME,
+                                                    mem_size_mb_usage=1024,
+                                                    virtual_cpu_usage=1))
+        self.assertTrue(vms.stopVm(True, VM_NAME))
 
     # TODO: Assign quota to disks, check if disk is counted
+
 # TODO: class ImportExport Negative positive
 # TODO: MLA+Quota

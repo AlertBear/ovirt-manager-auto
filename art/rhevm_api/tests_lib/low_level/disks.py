@@ -24,7 +24,7 @@ from utilities.machine import Machine
 from art.core_api.apis_exceptions import EntityNotFound, APITimeout
 from art.core_api.apis_utils import data_st, TimeoutingSampler
 from art.rhevm_api.data_struct.data_structures import Fault
-from art.rhevm_api.utils.test_utils import get_api, split
+from art.rhevm_api.utils.test_utils import get_api, split, waitUntilGone
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from art.core_api import is_action
 from art.test_handler.exceptions import DiskException, CanNotResolveActionPath
@@ -360,17 +360,7 @@ def waitForDisksGone(positive, disksNames, timeout=DEFAULT_DISK_TIMEOUT,
         * sleep - how often it should poll the state
     Return: True if disks are gone before timeout runs out, False otherwise
     """
-    disks = split(disksNames)
-    start = time.time()
-    query = ' or '.join(["name=%s" % disk for disk in disks])
-    while timeout > time.time() - start and timeout > 0:
-        time.sleep(sleep)  # Sleep first due to rhevm slowness
-        found = DISKS_API.query(query)
-        if not found:
-            return positive
-
-    logger.error("Remaining disks: %s" % [disk.name for disk in found])
-    return not positive
+    return waitUntilGone(positive, disksNames, DISKS_API, timeout, sleep)
 
 
 @is_action()
