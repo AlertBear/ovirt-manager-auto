@@ -20,6 +20,7 @@
 from art.core_api.apis_utils import data_st
 from art.rhevm_api.utils.test_utils import get_api, SYS_CLASS_NET_DIR
 from art.core_api.apis_exceptions import EntityNotFound
+from art.test_handler.exceptions import NetworkException
 from art.core_api import is_action
 from utilities.machine import Machine, LINUX
 import logging
@@ -33,6 +34,7 @@ DC_API = get_api("data_center", "datacenters")
 VNIC_PROFILE_API = get_api('vnic_profile', 'vnicprofiles')
 MGMT_NETWORK = "rhevm"
 PROC_NET_DIR = "/proc/net"
+NETWORK_NAME = "NET"
 
 logger = logging.getLogger('networks')
 
@@ -696,7 +698,7 @@ def createNetworkInDataCenter(positive, datacenter, **kwargs):
        *  *stp* - support stp true/false (note: true/false as a strings)
        *  *vlan_id* - network vlan id
        *  *usages* - a string contain list of comma-separated usages
-                     'VM,DIPLAY'.
+                     'vm' or "" for Non-VM.
        *  *mtu* - and integer to overrule mtu on the related host nic..
        *  *profile_required* - flag to create or not VNIC profile for the
                                network
@@ -732,12 +734,11 @@ def updateNetworkInDataCenter(positive, network, datacenter, **kwargs):
        *  *positive* - True if action should succeed, False otherwise
        *  *network* - name of a network that should be updated
        *  *datacenter* -  datacenter name where the network should be updated
-       *  *name* - new network name (if relevant)
        *  *description* - new network description (if relevant)
        *  *stp* - new network support stp (if relevant). (true/false string)
        *  *vlan_id* - new network vlan id (if relevant)
        *  *usages* - a string contain list of comma-separated usages
-                     'VM,DIPLAY'.
+                     'vm' or "" for Non-VM.
                     should contain all usages every update.
                     a missing usage will be deleted!
        *  *mtu* - and integer to overrule mtu on the related host nic..
@@ -788,3 +789,42 @@ def checkVlanNet(host, user, password, interface, vlan):
     if match_obj:
         vid = int(match_obj.group(1))
     return vid == vlan
+
+
+def createNetworksInDataCenter(datacenter, num_of_net):
+    """
+    Description: Create number of networks under datacenter.
+    Author: myakove
+    Parameters:
+       *  *datacenter* - datacenter name
+       *  *num_of_net* - number of networks to create
+    **Return**: List of networks if action succeeded,
+                otherwise raise NetworkException
+    """
+    nets = []
+    for net in range(num_of_net):
+        net_name = "_".join([NETWORK_NAME, str(net)])
+        if not createNetworkInDataCenter(positive=True,
+                                         datacenter=datacenter,
+                                         name=net_name):
+            raise NetworkException("Fail to create %s network on %s" %
+                                   (net_name, datacenter))
+        nets.append(net_name)
+    return nets
+
+
+def deleteNetworksInDataCenter(datacenter):
+    """
+    Description: Delete all networks under datacenter.
+    Author: myakove
+    Parameters:
+       *  *datacenter* - datacenter name
+    **Return**: True if action succeeded, otherwise False
+    """
+    for net in getNetworksInDataCenter(datacenter):
+        net_name = net.get_name()
+        if not deleteNetworkInDataCenter(positive=True,
+                                         network=net_name,
+                                         datacenter=datacenter):
+            raise NetworkException("Cannot remove %s from %s" %
+                                   (net_name, datacenter))
