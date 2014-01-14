@@ -2041,11 +2041,12 @@ def waitForIP(vm, timeout=600, sleep=DEF_SLEEP):
         guest_info = VM_API.find(vm).get_guest_info()
         if guest_info is not None:
             ip = guest_info.get_ips().get_ip()[0].get_address()
-            VM_API.logger.debug("Got IP: %s", ip)
+            VM_API.logger.debug("Got IP %s for %s", ip, vm)
             return True, {'ip': ip}
 
     if guest_info is None:
-        logger.error("rhevm-guest-agent wasn't installed or it is stopped")
+        logger.error("%s: rhevm-guest-agent wasn't installed or it is stopped",
+                     vm)
 
     return False, {'ip': None}
 
