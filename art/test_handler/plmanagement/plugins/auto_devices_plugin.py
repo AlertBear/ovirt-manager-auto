@@ -43,6 +43,11 @@ the following parameters:
     | **iscsi_devices** = <number_of_iscsi_devices>
     | **devices_capacity** = <devices_capacity>
     |
+    | # possible keys for fcp devices:
+    | **fcp_server** = <fcp_server_name>
+    | **fcp_devices** = <number_of_iscsi_devices>
+    | **devices_capacity** = <devices_capacity>
+    |
     | # possible keys for local
     | **local_devices** = <device_path>
     | **local_server** = <host_name> # optional, default is first vds server
@@ -56,13 +61,14 @@ export STORAGE_CONF_FILE=/mypath/myfile.conf
 import re
 import os
 from art.test_handler.plmanagement import Component, implements, get_logger
-from art.test_handler.plmanagement.interfaces.resources_listener import IResourcesListener
+from art.test_handler.plmanagement.interfaces.resources_listener import \
+    IResourcesListener
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.plmanagement.interfaces.config_validator import\
-                                                    IConfigValidation
+    IConfigValidation
 from art.test_handler.plmanagement.interfaces.tests_listener import\
-                                                    ITestSuiteHandler
+    ITestSuiteHandler
 from art.test_handler.exceptions import VitalTestFailed
 
 logger = get_logger('auto_devices')
@@ -81,8 +87,8 @@ class AutoDevices(Component):
     """
     Plugin provides storage allocation tool.
     """
-    implements(IResourcesListener, IConfigurable, IPackaging, \
-                        IConfigValidation, ITestSuiteHandler)
+    implements(IResourcesListener, IConfigurable, IPackaging,
+               IConfigValidation, ITestSuiteHandler)
 
     name = "Auto Devices"
 
@@ -150,11 +156,12 @@ class AutoDevices(Component):
         params['author_email'] = 'lbednar@redhat.com'
         params['description'] = 'Storage provisioning plugin for ART'
         params['long_description'] = 'Plugin for ART which provides '\
-                'Storage provisioning functionality.'
+            'Storage provisioning functionality.'
         # FIXME: Can not set version for art-storage-api
         params['requires'] = ['art-storage-api', 'pysnmp']
-        params['py_modules'] = ['art.test_handler.plmanagement.plugins.auto_devices_plugin',
-                'art.test_handler.plmanagement.plugins.storage']
+        params['py_modules'] = [
+            'art.test_handler.plmanagement.plugins.auto_devices_plugin',
+            'art.test_handler.plmanagement.plugins.storage']
 
     def config_spec(self, spec, val_funcs):
         section_spec = spec.get(STR_SECTION, {})
@@ -165,7 +172,6 @@ class AutoDevices(Component):
         spec[STR_SECTION] = section_spec
         run_spec = spec.get(RUN_SECTION, {})
         run_spec[AD_ENABLED] = "boolean(default=False)"
-        run_spec[AD_CLEANUP] = "option('pass','fail','all','yes','no',default='all')"
+        run_spec[AD_CLEANUP] = \
+            "option('pass', 'fail', 'all', 'yes', 'no', default='all')"
         spec[RUN_SECTION] = run_spec
-
-

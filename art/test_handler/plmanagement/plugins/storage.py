@@ -38,15 +38,18 @@ FAIL_CREATE_MSG = 'Failed to create device of type {0}: {1}\n{2}'
 PASS_CREATE_MSG = 'Successfully created device of type {0}: {1}'
 
 MAIN_SECTION = 'PARAMETERS'
+DEV_TYPES = ('gluster', 'nfs', 'iso', 'export', 'iscsi', 'fcp')
 DEVICES_TARGET_PATHS = {'gluster': '%s.%s' % (MAIN_SECTION, 'data_domain'),
                         'nfs': '%s.%s' % (MAIN_SECTION, 'data_domain'),
                         'export': '%s.%s' % (MAIN_SECTION, 'export_domain'),
                         'iso': '%s.%s' % (MAIN_SECTION, 'tests_iso_domain'),
                         'iscsi': '%s.%s' % (MAIN_SECTION, 'lun'),
+                        'fcp': '%s.%s' % (MAIN_SECTION, 'lun'),
                         'local': '%s.%s' % (MAIN_SECTION, 'local_domain'),
                         }
 POSIXFS_COMPLIANT_TYPES = ['gluster', 'nfs']
 NAS_DATA_CENTER_TYPES = ['gluster', 'nfs']
+SAN_DATA_CENTER_TYPES = ['iscsi', 'fcp']
 ISO_EXPORT_TYPE = 'iso_export_domain_nas'
 LOAD_BALANCING_CAPACITY = 'capacity'
 LOAD_BALANCING_RANDOM = 'random'
@@ -213,7 +216,7 @@ def getStorageServer(type, load_balancing, conf=None, servers=None):
     '''
     Get less used storage server(less used disk space + cpu load)
     Parameters:
-        * storageType - storage type(NFS/iSCSI)
+        * storageType - storage type(NFS/iSCSI/FCP)
         * servers - list of storage server IPs to choose from, if not defined -
                     configuration file used
     '''
@@ -239,6 +242,7 @@ class StorageUtils:
         self.nfs_devices = {}
         self.gluster_devices = {}
         self.iscsi_devices = {}
+        self.fcp_devices = {}
         self.local_devices = {}
         self.iso_devices = {}
         self.export_devices = {}
@@ -262,6 +266,7 @@ class StorageUtils:
         self.storages = {'gluster': {},
                          'nfs':     {},
                          'iscsi':   {},
+                         'fcp':     {},
                          'local':   {},
                          'iso':     {},
                          'export':  {},
@@ -278,7 +283,9 @@ class StorageUtils:
             addPasswords = [vdsPasswords[0]] * (numOfVds - numOfPassw)
             vdsPasswords.extend(addPasswords)
 
-        if self.data_center_type == 'iscsi' or self.data_center_type == 'none':
+        #fixme: exclude fcp
+        if self.data_center_type in SAN_DATA_CENTER_TYPES or \
+                self.data_center_type == 'none':
             for vds, password in zip(vdsServers, vdsPasswords):
                 try:
                     machine = Machine(vds, 'root', password).util('linux')
@@ -308,8 +315,8 @@ class StorageUtils:
         Author: edolinin
         Parameters:
            * targetPath - pre-defined path or None
-           * type - device type, possible values: nfs, gluster, iscsi, local,
-            export, iso
+           * type - device type, possible values: nfs, gluster, iscsi, fcp,
+                    local, export, iso
         Return: target path of a device in conf file
         '''
         if targetPath:
@@ -332,7 +339,7 @@ class StorageUtils:
         Return: None
         '''
 
-        for dev_type in ('gluster', 'nfs', 'iso', 'export', 'iscsi'):
+        for dev_type in DEV_TYPES:
             storageServer = \
                 confStorageSection.get('{0}_server'.format(dev_type), None)
             targetDevPath = self.getDeviceTargetPath(targetPath, dev_type)
@@ -342,7 +349,7 @@ class StorageUtils:
                  'total': int(confStorageSection.
                               get('{0}_devices'.format(dev_type), '0')),
                  }
-            if dev_type == 'iscsi':
+            if dev_type in SAN_DATA_CENTER_TYPES:
                 self.storages[dev_type][targetDevPath]['capacity'] = \
                     confStorageSection.get('devices_capacity', '0')
                 self.storages[dev_type][targetDevPath]['is_specific'] = False
@@ -387,8 +394,8 @@ class StorageUtils:
                      for i in range(0, sectionParams['total'])
                      ]
 
-    @getStorageServers('iscsi')
-    def _storageSetupSAN(self):
+    @getStorageServers()
+    def _storageSetupSAN(self, data_center_type):
         """
         Description: creation of SAN devices
         Author: imeerovi
@@ -396,13 +403,16 @@ class StorageUtils:
             * data_center_type - data center type from conf file
         Return: None
         """
-        for storageSection, sectionParams in self.storages['iscsi'].items():
-                self.iscsi_devices[storageSection] = [
-                    self.__create_iscsi_device(sectionParams, self.host_group,
-                                               sectionParams['capacity'],
-                                               **self.vdsData)
-                    for i in range(0, sectionParams['total'])
-                ]
+        block_devices = self.iscsi_devices if data_center_type == 'iscsi' \
+            else self.fcp_devices
+        for storageSection, sectionParams in \
+                self.storages[data_center_type].items():
+            block_devices[storageSection] = [
+                self.__create_block_device(
+                    data_center_type, sectionParams, self.host_group,
+                    sectionParams['capacity'], **self.vdsData)
+                for i in range(0, sectionParams['total'])
+            ]
 
     def _storageSetupDAS(self):
         """
@@ -446,14 +456,15 @@ class StorageUtils:
 
     def storageSetup(self):
         '''
-        Description: create NAS and ISCSI devices defined in settings
+        Description: create NAS and block devices defined in settings
         Author: edolinin
         Parameters: None
         '''
         if self.data_center_type == 'none':
             for st_type in NAS_DATA_CENTER_TYPES:
                 self._storageSetupNAS(st_type)
-            self._storageSetupSAN()
+            for st_type in SAN_DATA_CENTER_TYPES:
+                self._storageSetupSAN(st_type)
             self._storageSetupDAS()
             # only storages from (POSIXFS_COMPLIANT_TYPES -
             # (already created POSIXFS_COMPLIANT_TYPES)) will be created
@@ -475,8 +486,8 @@ class StorageUtils:
             elif self.real_storage_type in POSIXFS_COMPLIANT_TYPES:
                 self._storageSetupNAS(self.real_storage_type)
 
-        elif self.data_center_type == 'iscsi':
-            self._storageSetupSAN()
+        elif self.data_center_type in SAN_DATA_CENTER_TYPES:
+            self._storageSetupSAN(self.data_center_type)
 
         elif self.data_center_type == 'localfs':
             self._storageSetupDAS()
@@ -520,13 +531,14 @@ class StorageUtils:
                                    nfs=self.nfs_devices,
                                    iso=self.iso_devices,
                                    export=self.export_devices,
-                                   iscsi=self.iscsi_devices).iteritems():
+                                   iscsi=self.iscsi_devices,
+                                   fcp=self.fcp_devices).iteritems():
             for target in filterNonEmptyDicts(devices):
                 targetData = self.storages[type_][target]
                 address = [targetData['ip']] * targetData['total']
                 setConfValueByKeyPath(self.config, target, address, '_address',
                                       backwardCompatibilityCheck, cleanUpConf)
-                if type_ is not 'iscsi':
+                if type_ not in SAN_DATA_CENTER_TYPES:
                     path = devices[target]
                     setConfValueByKeyPath(self.config, target, path, '_path',
                                           backwardCompatibilityCheck,
@@ -539,13 +551,13 @@ class StorageUtils:
                                               backwardCompatibilityCheck,
                                               cleanUpConf)
                 else:
-                    iscsiTarget = map(lambda x: x['target'], devices[target])
-                    setConfValueByKeyPath(self.config, target, iscsiTarget,
+                    scsiTarget = map(lambda x: x['target'], devices[target])
+                    setConfValueByKeyPath(self.config, target, scsiTarget,
                                           '_target',
                                           backwardCompatibilityCheck,
                                           cleanUpConf)
-                    iscsiLun = map(lambda x: x['uuid'], devices[target])
-                    setConfValueByKeyPath(self.config, target, iscsiLun, '',
+                    scsiLun = map(lambda x: x['uuid'], devices[target])
+                    setConfValueByKeyPath(self.config, target, scsiLun, '',
                                           backwardCompatibilityCheck,
                                           cleanUpConf)
 
@@ -559,7 +571,7 @@ class StorageUtils:
 
     def storageCleanup(self):
         '''
-        Description: remove NFS and ISCSI devices defined in settings
+        Description: remove NFS and block devices defined in settings
         Author: edolinin
         Parameters: None
         Return: None
@@ -578,16 +590,23 @@ class StorageUtils:
                         self.storages['nfs'][storageSection]['ip'], device,
                         'nfs')
 
-        for storageSection in self.storages['iscsi']:
-            lunId = 'serial' if self.storages['iscsi'][
-                storageSection]['is_specific'] else 'uuid'
-            if storageSection in self.iscsi_devices.keys():
-                for device in self.iscsi_devices[storageSection]:
-                    self.__remove_iscsi_device(self.storages['iscsi'][
-                        storageSection]['ip'], device[lunId])
-                if self.iscsi_devices[storageSection]:
-                    self.__unmap_iscsi_initiators(
-                        self.storages['iscsi'][storageSection]['ip'])
+        for stype in SAN_DATA_CENTER_TYPES:
+            for storageSection in self.storages[stype]:
+                if self.storages[stype][storageSection]['total'] > 0:
+                    lunId = 'serial' if self.storages[stype][
+                        storageSection]['is_specific'] else 'uuid'
+                    block_devices = self.iscsi_devices if \
+                        self.data_center_type == 'iscsi' else self.fcp_devices
+                    if storageSection in block_devices.keys():
+                        for device in block_devices[storageSection]:
+                            self.__remove_block_device(
+                                stype,
+                                self.storages[stype][storageSection]['ip'],
+                                device[lunId])
+                        if block_devices[storageSection]:
+                            self.__unmap_initiators(
+                                stype,
+                                self.storages[stype][storageSection]['ip'])
 
         for storageSection in self.storages['local']:
             if storageSection in self.local_devices.keys():
@@ -633,19 +652,20 @@ class StorageUtils:
 
         return path
 
-    def __create_iscsi_device(self, storageServer, lunName, capacity,
+    def __create_block_device(self, stype, storageServer, lunName, capacity,
                               **serversData):
         '''
-        Description: create ISCSI device with given name
+        Description: create block device with given name
         Author: edolinin
         Parameters:
+           * stype - block device type: iSCSI or FCP
            * storageServerIp - IP of storage server
            * lunName - LUN name
            * capacity - LUN capacity
            * servers - list of lun initiators
         Return: dictionary of lunInfo and type of storage server
         '''
-        storageMngr = self.getStorageManager('iscsi', storageServer['ip'])
+        storageMngr = self.getStorageManager(stype, storageServer['ip'])
 
         lunId, targetName = storageMngr.createLun(lunName, capacity)
 
@@ -654,6 +674,7 @@ class StorageUtils:
                                                 re.I)
         # linux TGT requires host IP instead of iqn for mapping
         initiators = serversData.values() if 'tgt' not in \
+            storageMngr.__class__.__name__.lower() and 'fcp' not in \
             storageMngr.__class__.__name__.lower() else serversData.keys()
 
         for initiator in initiators:
@@ -672,7 +693,7 @@ class StorageUtils:
         else:
             lunInfo = storageMngr.getLun(lunId)
 
-        self.logger.info(PASS_CREATE_MSG.format('iscsi', lunId))
+        self.logger.info(PASS_CREATE_MSG.format(stype, lunId))
 
         return lunInfo
 
@@ -718,33 +739,36 @@ class StorageUtils:
             self.logger.info(FAIL_REMOVE_MSG.format(fsType, path,
                                                     traceback.format_exc()))
 
-    def __remove_iscsi_device(self, storageServerIp, deviceId):
+    def __remove_block_device(self, stype, storageServerIp, deviceId):
         '''
-        Description: remove ISCSI device with given id
+        Description: remove block device with given id
         Author: edolinin
         Parameters:
+           * stype - block device type: iSCSI or FCP
            * storageServerIp -  IP of storage server
            * deviceId - device lun id or serial number
         Return: None
         '''
 
         try:
-            storageMngr = self.getStorageManager('iscsi', storageServerIp)
+            storageMngr = self.getStorageManager(stype, storageServerIp)
             storageMngr.removeLun(deviceId)
-            self.logger.info(PASS_REMOVE_MSG.format('iscsi', deviceId))
+            self.logger.info(PASS_REMOVE_MSG.format(stype, deviceId))
         except:
-            self.logger.info(FAIL_REMOVE_MSG.format('iscsi', deviceId,
+            self.logger.info(FAIL_REMOVE_MSG.format(stype, deviceId,
                                                     traceback.format_exc()))
 
-    def __unmap_iscsi_initiators(self, storageServerIp):
+    def __unmap_initiators(self, stype, storageServerIp):
         '''
-        Description: cleanup iscsi initiator group -
+        Description: cleanup initiator group -
                      remove all the initiators from the group
         Parameters:
+            * stype - block device type: iSCSI or FCP
             * storageServerIp - IP of storage server
         '''
-        storageMngr = self.getStorageManager('iscsi', storageServerIp)
+        storageMngr = self.getStorageManager(stype, storageServerIp)
         initiators = self.vdsData.values() if 'tgt' not in \
+            storageMngr.__class__.__name__.lower() and 'fcp' not in \
             storageMngr.__class__.__name__.lower() else self.vdsData.keys()
         hostGroup = self.host_group
         if initiators:
