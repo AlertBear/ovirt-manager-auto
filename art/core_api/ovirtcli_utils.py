@@ -249,7 +249,7 @@ class CliConnection(object):
         if type(output) == list:
             output = ' '.join(output)
         output = self.escapeControlChars(output)
-        return self.escapeXMLIllegalChars(output)
+        return self.escapeXMLIllegalChars(output).lstrip()
 
     def escapeControlChars(self, val, replacement=''):
         """
@@ -702,6 +702,8 @@ class OvirtCli(RhevmCli):
     _rhevmDisconnectedPrompt = '((\[oVirt shell \(\x1b\[\d;\d\dmdisconnected' \
         '\x1b\[\d;m\)\]# )|(\[oVirt shell \(disconnected\)\]# ))'
     _command = OVIRT_SHELL
+    _errorStatusMsgSearch = "=+ ERROR.*status:.*reason:.*detail:.* (?==+)"
+    _errorParametersMsgSearch = "=+ ERROR.* (?==+)"
 
     def __init__(self, logger, uri, user, userDomain, password,
                  secure, sslKeyFile, sslCertFile, sslCaFile, logFile,
@@ -710,6 +712,45 @@ class OvirtCli(RhevmCli):
                                        secure, sslKeyFile, sslCertFile,
                                        sslCaFile, logFile, session_timeout,
                                        **kwargs)
+
+    def outputValidator(self, output):
+        """
+        Description: Implementation of outputValidator for ovirt-cli
+        Author: imeerovi
+        Parameters:
+            * output - output of cli command run
+        Returns: validated output
+        """
+        # looking for error - to change to more generic map style
+        tracebackMsg = self._tracebackMsgSearch in output
+        errorStatusMsg = re.search(self._errorStatusMsgSearch,
+                                   output, flags=re.DOTALL)
+        errorParametersMsg = re.search(self._errorParametersMsgSearch,
+                                       output, flags=re.DOTALL)
+        errorSyntaxMsg = re.search(self._errorSyntaxMsgSearch,
+                                   output, flags=re.DOTALL)
+        debugMsg = re.search(self._debugMsg, output, flags=re.DOTALL)
+        if tracebackMsg:
+            raise CLITracebackError(self.outputCleaner(output))
+        if debugMsg:
+            self.logger.debug('Debug output: %s',
+                              self.outputCleaner(debugMsg.group(0)))
+        if errorStatusMsg:
+            data = re.search(self._insiderSearch, errorStatusMsg.group(0),
+                             flags=re.DOTALL).group(0).split(self._eol)
+            status = self.outputCleaner(data[0])
+            reason = self.outputCleaner(data[1])
+            detail = self.outputCleaner(data[2:])
+            raise CLICommandFailure('Command Failed:', status, reason, detail)
+        elif errorParametersMsg:
+            reason = errorParametersMsg.group(0).split(self._eol)[1]
+            raise CLICommandFailure('Wrong parameters:', self.outputCleaner(
+                                    reason))
+        elif errorSyntaxMsg:
+            raise CLICommandFailure('Wrong syntax:', self.outputCleaner(
+                                    errorSyntaxMsg.group(0)))
+
+        return self.outputCleaner(output)
 
 
 class CliUtil(RestUtil):
