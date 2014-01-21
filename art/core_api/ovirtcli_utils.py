@@ -697,8 +697,10 @@ class OvirtCli(RhevmCli):
         * logFile - file for cli log
         * **kwargs - additional parameters to CLI
     """
-    _rhevmPrompt = '\[oVirt shell \(connected\)\]# '
-    _rhevmDisconnectedPrompt = '\[oVirt shell \(disconnected\)\]# '
+    _rhevmPrompt = '((\[oVirt shell \(\x1b\[\d;\d\dmconnected\x1b\[\d;m\)\]#' \
+        ' )|(\[oVirt shell \(connected\)\]# ))'
+    _rhevmDisconnectedPrompt = '((\[oVirt shell \(\x1b\[\d;\d\dmdisconnected' \
+        '\x1b\[\d;m\)\]# )|(\[oVirt shell \(disconnected\)\]# ))'
     _command = OVIRT_SHELL
 
     def __init__(self, logger, uri, user, userDomain, password,
