@@ -309,7 +309,8 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
                  nic='nic1', size=DISK_SIZE, useAgent=True,
                  template_name=None, attempt=ATTEMPTS,
                  interval=INTERVAL, placement_host=None,
-                 bridgeless=False, vm_network=MGMT_NETWORK):
+                 bridgeless=False, vm_network=MGMT_NETWORK,
+                 mgmt_network=MGMT_NETWORK, vnic_profile=None):
     '''
         Function that creates DC, Cluster, Storage, Hosts
         It creates VM with a NIC connected to default network and Template if
@@ -356,12 +357,13 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
             *  *bridgeless* - Set management network as bridgless,
                 MUST set management network to bridge after each job.
             *  *vm_network* - Network for VM
+            *  *mgmt_network* - management network
         **Returns**: True if creation of the setup succeeded, otherwise False
     '''
     if vmName and bridgeless:
-        if vm_network == MGMT_NETWORK:
+        if vm_network == mgmt_network:
             logger.error("vm network name can't be %s when using"
-                         "bridgeless management network", MGMT_NETWORK)
+                         "bridgeless management network", mgmt_network)
             return False
 
     if not createDatacenter(True, hosts=hosts, cpuName=cpuName,
@@ -376,14 +378,14 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
     hostArray = hosts.split(',')
 
     if bridgeless:
-        logger.info("Updating %s to bridgeless network", MGMT_NETWORK)
+        logger.info("Updating %s to bridgeless network", mgmt_network)
         if not updateAndSyncMgmtNetwork(datacenter=datacenter,
                                         hosts=hostArray,
                                         nic=HOST_NICS[0],
-                                        network=MGMT_NETWORK,
+                                        network=mgmt_network,
                                         bridge=False):
             logger.error("Failed to set %s as bridgeless network",
-                         MGMT_NETWORK)
+                         mgmt_network)
             return False
 
         logger.info("Waiting for StorageDomain %s state UP", storageDomainName)
@@ -408,6 +410,7 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
             return False
 
     if not bridgeless:
+        vm_network = mgmt_network
         for host in hostArray:
             try:
                 logger.info("Cleaning %s interfaces", host)
@@ -437,7 +440,8 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
                         cobblerPasswd=cobblerPasswd, network=vm_network,
                         useAgent=True, diskType=diskType,
                         attempt=attempt, interval=interval,
-                        placement_host=placement_host):
+                        placement_host=placement_host,
+                        vnic_profile=vnic_profile):
             logger.error("Cannot create VM")
             return False
 
@@ -563,11 +567,11 @@ def updateAndSyncMgmtNetwork(datacenter, hosts=list(),
     mgmt_net_type = "bridge" if bridge else "bridgeless"
     network_type = "vm" if bridge else ""
 
-    logger.info("Updating %s to %s network", MGMT_NETWORK, mgmt_net_type)
+    logger.info("Updating %s to %s network", network, mgmt_net_type)
     if not updateNetwork(positive=True, network=network,
                          data_center=datacenter, usages=network_type):
         logger.error("Failed to set %s as %s network",
-                     MGMT_NETWORK, mgmt_net_type)
+                     network, mgmt_net_type)
         return False
 
     for host in hosts:
@@ -743,7 +747,8 @@ def removeAllNetworks(datacenter=None, cluster=None):
     return True
 
 
-def networkTeardown(datacenter, storagedomain, hosts=list(), auto_nics=list()):
+def networkTeardown(datacenter, storagedomain, hosts=list(), auto_nics=list(),
+                    mgmt_net=MGMT_NETWORK):
     '''
     Description: Network jobs teardown for unittests, set mgmt network to
                  bridge network (default) and run cleanDataCenter function
@@ -754,12 +759,14 @@ def networkTeardown(datacenter, storagedomain, hosts=list(), auto_nics=list()):
         *  *hosts* - list of hosts
         *  *auto_nics* - list of host nics for setupnetwork
         *  *bridge* - True for bridge network, False for bridgeless
+        *  *mgmt_net* - Management network.
     return True/False
     '''
-    logger.info("Updating %s network to bridge network", MGMT_NETWORK)
+    logger.info("Updating %s network to bridge network", mgmt_net)
     if not updateAndSyncMgmtNetwork(datacenter=datacenter, hosts=hosts,
-                                    auto_nics=auto_nics, bridge=True):
-        logger.error("Failed to set %s network as bridge", MGMT_NETWORK)
+                                    auto_nics=auto_nics, bridge=True,
+                                    network=mgmt_net):
+        logger.error("Failed to set %s network as bridge", mgmt_net)
         return False
 
     logger.info("Wait for storage domain %s to be active", storagedomain)

@@ -1899,7 +1899,7 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
              installation=False, slim=False, user=None, password=None,
              attempt=60, interval=60, cobblerAddress=None, cobblerUser=None,
              cobblerPasswd=None, image=None, async=False, hostname=None,
-             network=MGMT_NETWORK, vnic_profile=MGMT_NETWORK, useAgent=False,
+             network=MGMT_NETWORK, vnic_profile=None, useAgent=False,
              placement_affinity=None, placement_host=None, vcpu_pinning=None,
              highly_available=None, availablity_priority=None, vm_quota=None,
              disk_quota=None, plugged='true', linked='true', protected=None,
@@ -1969,13 +1969,14 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
         return False
 
     if nic:
-        if not addNic(positive, vm=vmName, name=nic, interface=nicType,
-                      mac_address=mac_address,
-                      network=network, vnic_profile=vnic_profile,
-                      plugged=plugged, linked=linked):
+        profile = vnic_profile if vnic_profile is not None else network
+    if not addNic(positive, vm=vmName, name=nic, interface=nicType,
+                  mac_address=mac_address,
+                  network=network,
+                  vnic_profile=profile, plugged=plugged, linked=linked):
             return False
 
-    if template == 'Blank' and storageDomainName and templateUuid == None:
+    if template == 'Blank' and storageDomainName and templateUuid is None:
         if not addDisk(positive, vm=vmName, size=size, type=diskType,
                        storagedomain=storageDomainName, sparse=volumeType,
                        interface=diskInterface, format=volumeFormat,

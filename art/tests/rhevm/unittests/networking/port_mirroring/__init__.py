@@ -44,6 +44,7 @@ def setup_package():
                         nic=config.VM_NICS[0],
                         placement_host=config.HOSTS[0],
                         vmName=config.VM_NAME[0],
+                        mgmt_network=config.MGMT_BRIDGE,
                         template_name=config.TEMPLATE_NAME):
         raise DataCenterException("Cannot create setup")
 
@@ -65,7 +66,7 @@ def setup_package():
                                     auto_nics=config.HOST_NICS[:2]):
         raise NetworkException("Cannot create and attach networks")
 
-    # Create VNIC profiles with port mirroring for rhevm and sw1
+    # Create VNIC profiles with port mirroring for mgmt network and sw1
     for i, network in enumerate((config.MGMT_BRIDGE, config.VLAN_NETWORKS[0])):
         if not addVnicProfile(positive=True, name=config.VNIC_PROFILE[i],
                               cluster=config.CLUSTER_NAME,
@@ -87,7 +88,8 @@ def setup_package():
         if not createVm(True, vmName=vmName,
                         vmDescription='linux vm', cluster=config.CLUSTER_NAME,
                         start='True', template=config.TEMPLATE_NAME,
-                        placement_host=config.HOSTS[0]):
+                        placement_host=config.HOSTS[0],
+                        network=config.MGMT_BRIDGE):
             raise VMException('Failed to create %s from template' % vmName)
 
     # Add NICs to VMs. VM1 is handled separately since it needs port
@@ -119,26 +121,26 @@ def setup_package():
 
     # Configure IPs for each VM
     for i, vm in enumerate(config.VM_NAME[:config.NUM_VMS]):
-        logger.info('Getting rhevm IP for %s.', vm)
+        logger.info('Getting mgmt network IP for %s.', vm)
         rc, out = waitForIP(vm)
 
         if not rc:
-            raise VMException('Failed to get VM IP on rhevm')
+            raise VMException('Failed to get VM IP on mgmt network')
 
-        # Update the list of rhevm network IPs with IP the VM got (DHCP)
-        rhevmIP = out['ip']
-        config.RHEVM_IPS.append(rhevmIP)
+        # Update the list of mgmt network network IPs with IP the VM got (DHCP)
+        MGMT_IP = out['ip']
+        config.MGMT_IPS.append(MGMT_IP)
 
         # Configure static IPs for sw1 and sw2
         for nicIndex, ip in enumerate((config.NET1_IPS[i], config.NET2_IPS[i]),
                                       start=1):
-            if not configureTempStaticIp(rhevmIP, config.VM_LINUX_USER,
+            if not configureTempStaticIp(MGMT_IP, config.VM_LINUX_USER,
                                          config.VM_LINUX_PASSWORD, ip,
                                          'eth%s' % nicIndex):
                 raise VMException('Failed to configure static IP for sw%s.' %
                                   nicIndex)
 
-        if not setPersistentNetwork(host=rhevmIP,
+        if not setPersistentNetwork(host=MGMT_IP,
                                     password=config.VM_LINUX_PASSWORD):
             raise VMException('Failed to set network configuration.')
 

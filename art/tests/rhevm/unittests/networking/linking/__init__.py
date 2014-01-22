@@ -55,6 +55,7 @@ def setup_package():
                         vmName=config.VM_NAME[0],
                         template_name=config.TEMPLATE_NAME,
                         vm_password=config.HOSTS_PW,
+                        mgmt_network=config.MGMT_BRIDGE,
                         auto_nics=[config.HOST_NICS[0]]):
         raise NetworkException("Cannot create setup")
     if not createAndAttachNetworkSN(data_center=config.DC_NAME,

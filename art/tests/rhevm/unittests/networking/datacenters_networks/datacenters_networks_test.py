@@ -71,7 +71,7 @@ class DataCenter_Networks_Case1_333370(TestCase):
         """
         for dc_name in (config.DC_NAME, config.DC_NAME2):
             LOGGER.info("Remove all networks from %s", dc_name)
-            deleteNetworksInDataCenter(dc_name)
+            deleteNetworksInDataCenter(dc_name, config.MGMT_BRIDGE)
 
 
 class DataCenter_Networks_Case2_333360(TestCase):
@@ -128,7 +128,7 @@ class DataCenter_Networks_Case2_333360(TestCase):
         Remove network from the setup.
         """
         LOGGER.info("Remove all networks from DC")
-        deleteNetworksInDataCenter(config.DC_NAME)
+        deleteNetworksInDataCenter(config.DC_NAME, config.MGMT_BRIDGE)
 
 
 class DataCenter_Networks_Case3_333363(TestCase):
@@ -173,7 +173,7 @@ class DataCenter_Networks_Case3_333363(TestCase):
         Remove network from the setup.
         """
         LOGGER.info("Remove all networks from DC")
-        deleteNetworksInDataCenter(config.DC_NAME)
+        deleteNetworksInDataCenter(config.DC_NAME, config.MGMT_BRIDGE)
 
 
 class DataCenter_Networks_Case4_333361(TestCase):
@@ -197,7 +197,7 @@ class DataCenter_Networks_Case4_333361(TestCase):
         Delete networks under datacenter.
         """
         LOGGER.info("Remove all networks from DC")
-        deleteNetworksInDataCenter(config.DC_NAME)
+        deleteNetworksInDataCenter(config.DC_NAME, config.MGMT_BRIDGE)
 
     @classmethod
     def teardown_class(cls):

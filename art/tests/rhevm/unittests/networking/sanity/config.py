@@ -46,6 +46,7 @@ VM_NAME = ["".join([TEST_NAME, '_', elm]) for elm in
 TEMPLATE_NAME = "".join(['%s_', PARAMETERS['template_name']]) % TEST_NAME
 VM_OS = PARAMETERS['vm_os']
 VNIC_PROFILE = PARAMETERS['vnic_profile']
+MGMT_BRIDGE = PARAMETERS['mgmt_bridge']
 
 COBBLER_ADDRESS = PARAMETERS.get('cobbler_address', None)
 COBBLER_USER = PARAMETERS.get('cobbler_user', None)

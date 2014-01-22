@@ -18,7 +18,7 @@ def sendAndCaptureTraffic(srcVM, srcIP, dstIP,
     A function that sends ICMP traffic from 'srcIP' to 'dstIP' while capturing
     traffic on 'listeningVM' to check if mirroring is happening.
     **Parameters**:
-        *  *srcVM* - rhevm IP of the VM to send ping from
+        *  *srcVM* - mgmt netowrk IP of the VM to send ping from
         *  *srcIP* - IP to send ping form
         *  *dstIP* - IP to send ping to
         *  *listenVM* - name of the VM that will listen to the traffic
@@ -33,7 +33,7 @@ def sendAndCaptureTraffic(srcVM, srcIP, dstIP,
     listenVmIndex = config.VM_NAME.index(listenVM)
 
     with TrafficMonitor(expectedRes=expectTraffic,
-                        machine=config.RHEVM_IPS[listenVmIndex],
+                        machine=config.MGMT_IPS[listenVmIndex],
                         user=config.VM_LINUX_USER,
                         password=config.VM_LINUX_PASSWORD,
                         nic=nic, src=srcIP, dst=dstIP, dupCheck=dupCheck,
@@ -71,7 +71,7 @@ def setPortMirroring(vm, nic, network, disableMirroring=False):
 
     for ip, nic in zip((config.NET1_IPS[vmIndex], config.NET2_IPS[vmIndex]),
                        ('eth1', 'eth2')):
-            if not configureTempStaticIp(config.RHEVM_IPS[vmIndex],
+            if not configureTempStaticIp(config.MGMT_IPS[vmIndex],
                                          config.VM_LINUX_USER,
                                          config.VM_LINUX_PASSWORD,
                                          ip=ip, nic=nic):

@@ -63,10 +63,11 @@ class SanityCase01_CheckManagment(TestCase):
         """
         Check that MGMT is required
         """
-        logger.info("Checking that rhevm network is required by default")
-        self.assertTrue(isNetworkRequired(network='rhevm',
+        logger.info("Checking that mgmt network is required by "
+                    "default")
+        self.assertTrue(isNetworkRequired(network=config.MGMT_BRIDGE,
                                           cluster=config.CLUSTER_NAME),
-                        "rhevm network is not required by default")
+                        "mgmt network is not required by default")
 
 ########################################################################
 
@@ -829,10 +830,11 @@ class SanityCase12_CheckingLinking_vlan(TestCase):
         Removing the nics and networks.
         """
         logger.info("Starting the teardown_class")
-        logger.info("Updating all the networks beside rhevm to unplugged")
+        logger.info("Updating all the networks beside mgmt network to "
+                    "unplugged")
         for nic_name in ('nic2', 'nic3'):
             updateNic(True, config.VM_NAME[0], nic_name, plugged=False)
-        logger.info("Removing all the VNICs beside rhevm")
+        logger.info("Removing all the VNICs besides mgmt network")
         for i in range(4):
             if not removeNic(True, config.VM_NAME[0], "nic"+str(i+2)):
                 raise NetworkException("Cannot remove nic from setup")
@@ -928,10 +930,11 @@ class SanityCase13_CheckingLinking_bond(TestCase):
         Removing the nics and networks
         """
         logger.info("Starting the teardown_class")
-        logger.info("Updating all the networks beside rhevm to unplugged")
+        logger.info("Updating all the networks besides mgmt network to "
+                    "unplugged")
         for nic_name in ('nic2', 'nic3'):
             updateNic(True, config.VM_NAME[0], nic_name, plugged=False)
-        logger.info("Removing all the VNICs beside rhevm")
+        logger.info("Removing all the VNICs beside mgmt network")
         for i in range(4):
             if not removeNic(True, config.VM_NAME[0], "nic"+str(i+2)):
                 raise NetworkException("Cannot remove nic from setup")

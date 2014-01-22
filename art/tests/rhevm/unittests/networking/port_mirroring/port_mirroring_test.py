@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 
-RHEVM_IPS = config.RHEVM_IPS
+MGMT_IPS = config.MGMT_IPS
 NET1_IPS = config.NET1_IPS
 NET2_IPS = config.NET2_IPS
 NET2_TEMP_IP = config.NET2_TEMP_IP
@@ -52,7 +52,7 @@ class PortMirroring_Case1_302095_098(TestCase):
         another host and back
         """
         for dstVM in (2, 3):
-            self.assertTrue(sendAndCaptureTraffic(srcVM=RHEVM_IPS[1],
+            self.assertTrue(sendAndCaptureTraffic(srcVM=MGMT_IPS[1],
                                                   srcIP=NET1_IPS[1],
                                                   dstIP=NET1_IPS[dstVM]))
 
@@ -61,7 +61,7 @@ class PortMirroring_Case1_302095_098(TestCase):
         self.assertTrue(migrateVm(True, VM_NAME[0], config.HOSTS[0]))
 
         for dstVM in (2, 3):
-            self.assertTrue(sendAndCaptureTraffic(srcVM=RHEVM_IPS[1],
+            self.assertTrue(sendAndCaptureTraffic(srcVM=MGMT_IPS[1],
                                                   srcIP=NET1_IPS[1],
                                                   dstIP=NET1_IPS[dstVM]))
 
@@ -73,7 +73,7 @@ class PortMirroring_Case1_302095_098(TestCase):
         anther host
         """
         for dstVM in (2, 3):
-            self.assertTrue(sendAndCaptureTraffic(srcVM=RHEVM_IPS[1],
+            self.assertTrue(sendAndCaptureTraffic(srcVM=MGMT_IPS[1],
                                                   srcIP=NET1_IPS[1],
                                                   dstIP=NET1_IPS[dstVM]))
 
@@ -83,7 +83,7 @@ class PortMirroring_Case1_302095_098(TestCase):
             self.assertTrue(migrateVm(True, vmName, config.HOSTS[1]))
 
         for dstVM in (2, 3):
-            self.assertTrue(sendAndCaptureTraffic(srcVM=RHEVM_IPS[1],
+            self.assertTrue(sendAndCaptureTraffic(srcVM=MGMT_IPS[1],
                                                   srcIP=NET1_IPS[1],
                                                   dstIP=NET1_IPS[dstVM]))
 
@@ -126,7 +126,7 @@ class PortMirroring_Case2_302105(TestCase):
         check that its traffic is not mirrored anymore.
         """
         for dstVM in (2, 3):
-            self.assertTrue(sendAndCaptureTraffic(srcVM=RHEVM_IPS[1],
+            self.assertTrue(sendAndCaptureTraffic(srcVM=MGMT_IPS[1],
                                                   srcIP=NET1_IPS[1],
                                                   dstIP=NET1_IPS[dstVM]))
 
@@ -135,17 +135,17 @@ class PortMirroring_Case2_302105(TestCase):
         self.assertTrue(updateNic(True, VM_NAME[3], config.VM_NICS[1],
                                   network=config.VLAN_NETWORKS[1],
                                   vnic_profile=config.VLAN_NETWORKS[1]))
-        self.assertTrue(configureTempStaticIp(RHEVM_IPS[3],
+        self.assertTrue(configureTempStaticIp(MGMT_IPS[3],
                         config.VM_LINUX_USER, config.VM_LINUX_PASSWORD,
                         ip=NET2_TEMP_IP, nic='eth1'))
 
         # Check that traffic between VM2 and VM3 on sw1 is mirrored while
         # traffic related to VM4 on sw2 is not.
-        self.assertTrue(sendAndCaptureTraffic(srcVM=RHEVM_IPS[1],
+        self.assertTrue(sendAndCaptureTraffic(srcVM=MGMT_IPS[1],
                                               srcIP=NET1_IPS[1],
                                               dstIP=NET1_IPS[2]))
         for dstVM in (1, 2):
-            self.assertTrue(sendAndCaptureTraffic(srcVM=RHEVM_IPS[3],
+            self.assertTrue(sendAndCaptureTraffic(srcVM=MGMT_IPS[3],
                                                   srcIP=NET2_TEMP_IP,
                                                   dstIP=NET2_IPS[dstVM],
                                                   expectTraffic=False))
@@ -155,7 +155,7 @@ class PortMirroring_Case2_302105(TestCase):
         self.assertTrue(updateNic(True, VM_NAME[3], config.VM_NICS[1],
                                   network=config.VLAN_NETWORKS[0],
                                   vnic_profile=config.VLAN_NETWORKS[0]))
-        self.assertTrue(configureTempStaticIp(RHEVM_IPS[3],
+        self.assertTrue(configureTempStaticIp(MGMT_IPS[3],
                         config.VM_LINUX_USER, config.VM_LINUX_PASSWORD,
                         ip=NET1_IPS[3], nic='eth1'))
 
@@ -167,7 +167,7 @@ class PortMirroring_Case2_302105(TestCase):
         if not updateNic(True, VM_NAME[3], config.VM_NICS[2],
                          active=True):
             raise VMException('Cannot activate nic on %s' % VM_NAME[3])
-        if not configureTempStaticIp(RHEVM_IPS[3],
+        if not configureTempStaticIp(MGMT_IPS[3],
                                      config.VM_LINUX_USER,
                                      config.VM_LINUX_PASSWORD,
                                      ip=NET2_IPS[3], nic='eth2'):
@@ -197,14 +197,14 @@ class PortMirroring_Case3_302101(TestCase):
     @tcms(10475, 302101)
     def checkPMOneMachineMultipleNetworks(self):
         """
-        Check that VM1 gets all traffic on both rhevm and sw1
+        Check that VM1 gets all traffic on both mgmt netowrk and sw1
         """
-        self.assertTrue(sendAndCaptureTraffic(srcVM=RHEVM_IPS[1],
+        self.assertTrue(sendAndCaptureTraffic(srcVM=MGMT_IPS[1],
                                               srcIP=NET1_IPS[1],
                                               dstIP=NET1_IPS[2]))
-        self.assertTrue(sendAndCaptureTraffic(srcVM=RHEVM_IPS[3],
-                                              srcIP=RHEVM_IPS[3],
-                                              dstIP=RHEVM_IPS[4],
+        self.assertTrue(sendAndCaptureTraffic(srcVM=MGMT_IPS[3],
+                                              srcIP=MGMT_IPS[3],
+                                              dstIP=MGMT_IPS[4],
                                               nic='eth0'))
 
     @classmethod
@@ -234,27 +234,27 @@ class PortMirroring_Case4_302100_093_099(TestCase):
     def checkPMTwoMachinesDiffNetworks(self):
         """
         Check mirroring when it's enabled on different machines on different
-        networks (VM1 is listening to rhevm and VM2 is listening to sw1)
+        networks (VM1 is listening to mgmt netowrk and VM2 is listening to sw1)
         """
-        logger.info('Sending traffic between VM2 and VM3 on rhevm to make sure'
-                    ' only VM1 gets this traffic.')
-        self.assertTrue(sendAndCaptureTraffic(srcVM=RHEVM_IPS[1],
-                                              srcIP=RHEVM_IPS[1],
-                                              dstIP=RHEVM_IPS[2],
+        logger.info('Sending traffic between VM2 and VM3 on mgmt netowrk to '
+                    'make sure only VM1 gets this traffic.')
+        self.assertTrue(sendAndCaptureTraffic(srcVM=MGMT_IPS[1],
+                                              srcIP=MGMT_IPS[1],
+                                              dstIP=MGMT_IPS[2],
                                               nic='eth0'))
-        self.assertTrue(sendAndCaptureTraffic(srcVM=RHEVM_IPS[1],
-                                              srcIP=RHEVM_IPS[1],
-                                              dstIP=RHEVM_IPS[2],
+        self.assertTrue(sendAndCaptureTraffic(srcVM=MGMT_IPS[1],
+                                              srcIP=MGMT_IPS[1],
+                                              dstIP=MGMT_IPS[2],
                                               listenVM=VM_NAME[1],
                                               expectTraffic=False))
 
         logger.info('Sending traffic between VM1 and VM4 on sw1 to make sure'
                     ' only VM2 gets this traffic.')
-        self.assertTrue(sendAndCaptureTraffic(srcVM=RHEVM_IPS[0],
+        self.assertTrue(sendAndCaptureTraffic(srcVM=MGMT_IPS[0],
                                               srcIP=NET1_IPS[0],
                                               dstIP=NET1_IPS[3],
                                               listenVM=VM_NAME[1]))
-        self.assertTrue(sendAndCaptureTraffic(srcVM=RHEVM_IPS[0],
+        self.assertTrue(sendAndCaptureTraffic(srcVM=MGMT_IPS[0],
                                               srcIP=NET1_IPS[0],
                                               dstIP=NET1_IPS[3],
                                               nic='eth0',
@@ -270,7 +270,7 @@ class PortMirroring_Case4_302100_093_099(TestCase):
         logger.info('Sending traffic between VM3 and VM4 on sw1 to make sure'
                     ' both VM1 and VM2 get the traffic.')
         for vm in config.VM_NAME[:2]:
-            self.assertTrue(sendAndCaptureTraffic(srcVM=RHEVM_IPS[2],
+            self.assertTrue(sendAndCaptureTraffic(srcVM=MGMT_IPS[2],
                                                   srcIP=NET1_IPS[2],
                                                   dstIP=NET1_IPS[3],
                                                   listenVM=vm))
@@ -282,7 +282,7 @@ class PortMirroring_Case4_302100_093_099(TestCase):
                          config.VLAN_NETWORKS[0], disableMirroring=True)
 
         for vm, expTraffic in zip(config.VM_NAME[:2], (True, False)):
-            self.assertTrue(sendAndCaptureTraffic(srcVM=RHEVM_IPS[2],
+            self.assertTrue(sendAndCaptureTraffic(srcVM=MGMT_IPS[2],
                                                   srcIP=NET1_IPS[2],
                                                   dstIP=NET1_IPS[3],
                                                   listenVM=vm,
@@ -318,7 +318,7 @@ class PortMirroring_Case5_302106(TestCase):
         Check that mirroring still occurs after restarting VDSM and networking
         on the host
         """
-        self.assertTrue(sendAndCaptureTraffic(srcVM=RHEVM_IPS[1],
+        self.assertTrue(sendAndCaptureTraffic(srcVM=MGMT_IPS[1],
                                               srcIP=NET1_IPS[1],
                                               dstIP=NET1_IPS[2]))
 
@@ -327,7 +327,7 @@ class PortMirroring_Case5_302106(TestCase):
         self.assertTrue(restartVdsmd(config.HOSTS[0], config.HOSTS_PW[0],
                                      supervdsm=True))
 
-        self.assertTrue(sendAndCaptureTraffic(srcVM=RHEVM_IPS[1],
+        self.assertTrue(sendAndCaptureTraffic(srcVM=MGMT_IPS[1],
                                               srcIP=NET1_IPS[1],
                                               dstIP=NET1_IPS[2]))
 
@@ -360,7 +360,7 @@ class PortMirroring_Case6_302106(TestCase):
             logger.error("%s status isn't UP", config.HOSTS[0])
 
         logger.info("Check port mirroring traffic")
-        self.assertTrue(sendAndCaptureTraffic(srcVM=RHEVM_IPS[1],
+        self.assertTrue(sendAndCaptureTraffic(srcVM=MGMT_IPS[1],
                                               srcIP=NET1_IPS[1],
                                               dstIP=NET1_IPS[2],
                                               dupCheck=False))

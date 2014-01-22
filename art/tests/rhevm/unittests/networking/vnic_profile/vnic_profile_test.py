@@ -26,7 +26,6 @@ from art.rhevm_api.tests_lib.low_level.templates import addTemplateNic,\
 HOST_API = get_api('host', 'hosts')
 VM_API = get_api('vm', 'vms')
 logger = logging.getLogger(__name__)
-MGMT_NETWORK = "rhevm"
 
 
 ########################################################################
@@ -59,8 +58,8 @@ class VNIC_Profile_Case1_289787(TestCase):
         """
         Check MGMT VNIC profile is created when creating the new DC
         """
-        self.assertTrue(getVnicProfileObj(name=MGMT_NETWORK,
-                                          network=MGMT_NETWORK,
+        self.assertTrue(getVnicProfileObj(name=config.MGMT_NETWORK,
+                                          network=config.MGMT_NETWORK,
                                           data_center=config.DC_NAME2))
 
     @classmethod
@@ -553,7 +552,8 @@ class VNIC_Profile_Case9_289896(TestCase):
         if not createVm(positive=True, vmName=config.VM_NAME[1],
                         vmDescription='',
                         cluster=config.CLUSTER_NAME,
-                        template=config.TEMPLATE_NAME):
+                        template=config.TEMPLATE_NAME,
+                        network=config.MGMT_BRIDGE):
             raise VMException("Couldn't create VM from template")
 
         if not checkVmNicProfile(vm=config.VM_NAME[1],

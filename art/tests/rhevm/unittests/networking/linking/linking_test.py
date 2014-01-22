@@ -96,12 +96,13 @@ class Linked_Case1_231692_236620_231710(TestCase):
         Remove networks from the setup.
         """
         logger.info("Starting the teardown_class")
-        logger.info("Updating all the networks beside rhevm to unplugged")
+        logger.info("Updating all the networks besides mgmt network to "
+                    "unplugged")
         for nic_name in ('nic2', 'nic3', 'nic6'):
             if not updateNic(True, config.VM_NAME[0], nic_name,
                              plugged='false'):
                 raise NetworkException("Couldn't unplug NICs")
-        logger.info("Removing all the VNICs beside rhevm")
+        logger.info("Removing all the VNICs besides mgmt network")
         for i in range(5):
             if not removeNic(True, config.VM_NAME[0], "nic"+str(i+2)):
                 raise NetworkException("Cannot remove nic from setup")
@@ -261,12 +262,12 @@ class Linked_Case3_231698_231697(TestCase):
         Remove networks from the setup.
         """
         logger.info("Starting the teardown_class")
-        logger.info("Updating all the nics besides with rhevm to unplugged")
+        logger.info("Updating all the nics besides mgmt network to unplugged")
         for nic_name in ('nic3', 'nic2'):
             if not updateNic(True, config.VM_NAME[1], nic_name,
                              plugged='false'):
                 raise NetworkException("Couldn't update nic to be unplugged")
-        logger.info("Removing all the VNICs beside rhevm")
+        logger.info("Removing all the VNICs besides mgmt network")
         for i in range(2):
             if not removeNic(True, config.VM_NAME[1], "nic"+str(i+2)):
                 raise NetworkException("Cannot remove nic from setup")
@@ -318,7 +319,7 @@ class Linked_Case4_231691(TestCase):
         Remove networks from the setup.
         """
         logger.info("Starting the teardown_class")
-        logger.info("Updating all the nics beside with rhevm to unplugged")
+        logger.info("Updating all the nics besides mgmt network to unplugged")
         if not updateNic(True, config.VM_NAME[1], "nic6", plugged='false'):
             raise NetworkException("Couldn't update nics to be unplugged")
         if not removeNic(True, config.VM_NAME[1], "nic6"):
@@ -376,10 +377,10 @@ class Linked_Case5_239344(TestCase):
         Remove networks from the setup.
         """
         logger.info("Starting the teardown_class")
-        logger.info("Updating the nics beside with rhevm to unplugged")
+        logger.info("Updating the nics besides mgmt network to unplugged")
         if not updateNic(True, config.VM_NAME[0], "nic2", plugged='false'):
             raise NetworkException("Couldn't update nics to be unplugged")
-        logger.info("Removing all the VNICs beside rhevm")
+        logger.info("Removing all the VNICs besides mgmt network")
         if not removeNic(True, config.VM_NAME[0], "nic2"):
             raise NetworkException("Cannot remove nic from setup")
         logger.info("Removing vnic profile")
@@ -512,12 +513,13 @@ class Linked_Case6_239348(TestCase):
         Remove networks from the setup.
         """
         logger.info("Starting the teardown_class")
-        logger.info("Updating all the networks beside rhevm to unplugged")
+        logger.info("Updating all the networks besides mgmt network to "
+                    "unplugged")
         for nic_name in ('nic3', 'nic2'):
             if not updateNic(True, config.VM_NAME[0], nic_name,
                              plugged='false'):
                 raise NetworkException("Couldn't unplugg nic2/nic3 networks ")
-        logger.info("Removing all the VNICs beside rhevm")
+        logger.info("Removing all the VNICs besides mgmt network")
         for index in range(2):
             if not removeNic(True, config.VM_NAME[0], "nic"+str(index+2)):
                 raise NetworkException("Cannot remove nic from setup")
@@ -612,10 +614,10 @@ class Linked_Case7_239368(TestCase):
         Remove networks from the setup.
         """
         logger.info("Starting the teardown_class")
-        logger.info("Updating all the nics beside with rhevm to unplugged")
+        logger.info("Updating all the nics besides mgmt network to unplugged")
         if not updateNic(True, config.VM_NAME[1], 'nic2', plugged='false'):
             logger.info("Updating nics to be unplugged")
-        logger.info("Removing all the VNICs beside rhevm")
+        logger.info("Removing all the VNICs besides mgmt network")
         if not removeNic(True, config.VM_NAME[1], "nic2"):
             raise NetworkException("Cannot remove nic from setup")
         if not removeVnicProfile(positive=True,

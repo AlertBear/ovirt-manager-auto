@@ -813,16 +813,19 @@ def createNetworksInDataCenter(datacenter, num_of_net):
     return nets
 
 
-def deleteNetworksInDataCenter(datacenter):
+def deleteNetworksInDataCenter(datacenter, mgmt_net):
     """
-    Description: Delete all networks under datacenter.
+    Description: Delete all networks under datacenter except mgnt_net.
     Author: myakove
     Parameters:
        *  *datacenter* - datacenter name
     **Return**: True if action succeeded, otherwise False
     """
-    for net in getNetworksInDataCenter(datacenter):
+    dc_networks = getNetworksInDataCenter(datacenter)
+    for net in dc_networks:
         net_name = net.get_name()
+        if net_name == mgmt_net:
+            continue
         if not deleteNetworkInDataCenter(positive=True,
                                          network=net_name,
                                          datacenter=datacenter):

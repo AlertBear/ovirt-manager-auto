@@ -46,6 +46,7 @@ VM_LINUX_PASSWORD = PARAMETERS['vm_linux_password']
 USE_AGENT = PARAMETERS['useAgent']
 VM_NICS = ['nic1', 'nic2', 'nic3']
 NUM_VMS = 5  # Number of VM's used in the test
+MGMT_BRIDGE = PARAMETERS['mgmt_bridge']
 
 COBBLER_ADDRESS = PARAMETERS.get('cobbler_address', None)
 COBBLER_USER = PARAMETERS.get('cobbler_user', None)
@@ -58,7 +59,7 @@ NIC_TYPE_RTL8139 = ENUMS['nic_type_rtl8139']
 NIC_TYPE_E1000 = ENUMS['nic_type_e1000']
 
 # IP's for all networks:
-RHEVM_IPS = []  # Gets filled up during the test
+MGMT_IPS = []  # Gets filled up during the test
 NET1_IPS = ['5.5.5.1%s' % i for i in range(NUM_VMS + 1)]
 NET2_IPS = ['6.6.6.1%s' % i for i in range(NUM_VMS + 1)]
 NET2_TEMP_IP = '6.6.6.100'

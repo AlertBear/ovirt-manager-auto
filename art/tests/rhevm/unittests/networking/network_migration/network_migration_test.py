@@ -174,11 +174,11 @@ class Migration_Case2_250464(TestCase):
     @tcms(8735, 250464)
     def default_migration(self):
         """
-        Check default migration on rhevm network
+        Check default migration on mgmt network network
         """
         orig_host = getHost(config.VM_NAME[0])
         logger.info("Start migration from %s ", orig_host)
-        logger.info("Migrating VM over rhevm network")
+        logger.info("Migrating VM over mgmt network network")
         src, dst = find_ip(vm=config.VM_NAME[0],
                            host_list=config.HOSTS, nic=config.HOST_NICS[1])
         if not checkICMPConnectivity(host=orig_host, user=config.HOSTS_USER,
@@ -576,8 +576,8 @@ class Migration_Case6_250915(TestCase):
 
 class Migration_Case7_285179(TestCase):
     """
-    Verify migration over rhevm when migration network is not attached to Hosts
-    Migration Network is attached only to DC and Cluster
+    Verify migration over mgmt network when migration network is not attached.
+    to Hosts Migration Network is attached only to DC and Cluster
     """
     __test__ = True
 
@@ -597,13 +597,13 @@ class Migration_Case7_285179(TestCase):
 
     @istest
     @tcms(8735, 256582)
-    def rhevm_migration(self):
+    def mgmt_network_migration(self):
         """
-        Check rhevm network migration
+        Check mgmt network migration
         """
         orig_host = getHost(config.VM_NAME[0])
         logger.info("Start migration from %s ", orig_host)
-        logger.info("Checking that the migration traffic is on rhevm network")
+        logger.info("Checking that the migration traffic is on mgmt network")
         source_ip, dest_ip = find_ip(vm=config.VM_NAME[0],
                                      host_list=config.HOSTS,
                                      nic=config.HOST_NICS[0])
@@ -1026,7 +1026,8 @@ class Migration_Case11_260611(TestCase):
 
 class Migration_Case12_250469(TestCase):
     """
-    Verify  migration over rhevm when dedicated migration network is removed
+    Verify  migration over mgmt network when dedicated migration network is
+    removed
     """
     __test__ = True
 
@@ -1053,9 +1054,10 @@ class Migration_Case12_250469(TestCase):
 
     @istest
     @tcms(8735, 250469)
-    def rhevm_migration(self):
+    def mgmt_network_migration(self):
         """
-        Check migration over rhevm when migration network is changed to display
+        Check migration over mgmt network when migration network is changed to
+        display
         """
         logger.info("Replace migration from the network with display network")
         if not updateClusterNetwork(True, cluster=config.CLUSTER_NAME,
@@ -1064,7 +1066,7 @@ class Migration_Case12_250469(TestCase):
             raise NetworkException("Cannot update network usages param")
         orig_host = getHost(config.VM_NAME[0])
         logger.info("Start migration from %s ", orig_host)
-        logger.info("Make sure the migration is over rhevm network")
+        logger.info("Make sure the migration is over mgmt network")
         src, dst = find_ip(vm=config.VM_NAME[0],
                            host_list=config.HOSTS, nic=config.HOST_NICS[1])
         if not checkICMPConnectivity(host=orig_host, user=config.HOSTS_USER,
@@ -1110,7 +1112,7 @@ class Migration_Case12_250469(TestCase):
 class Migration_Case13_260613(TestCase):
     """
     Verify when dedicated regular network migration is not configured on the
-    Host the migration will occur on the rhevm network
+    Host the migration will occur on the mgmt network network
     """
     __test__ = True
 
@@ -1142,7 +1144,7 @@ class Migration_Case13_260613(TestCase):
         """
         orig_host = getHost(config.VM_NAME[0])
         logger.info("Start migration from %s ", orig_host)
-        logger.info("Make sure the migration is over rhevm network")
+        logger.info("Make sure the migration is over mgmt network")
 
         source_ip, dest_ip = find_ip(vm=config.VM_NAME[0],
                                      host_list=config.HOSTS,
