@@ -1,12 +1,13 @@
 SETUP_ACTION="bdist_rpm"
 SETUP_ACTION_OPTS?=--source-only
 RHEVM_API="setup_rhevm_api.py"
+RHEVM_QE_TESTS="setup_rhevm_qe_tests.py"
 GLUSTER_API="setup_gluster_api.py"
 JASPER_API="setup_jasper_api.py"
 PLUGINS="setup_plugins.py"
 CORE="setup.py"
 
-all: core_rpm rhevm_api_rpm gluster_api_rpm jasper_api_rpm plugins_rpms
+all: core_rpm rhevm_api_rpm gluster_api_rpm jasper_api_rpm plugins_rpms rhevm_qe_tests_rpm
 
 core_rpm:
 	python $(CORE) $(SETUP_ACTION) $(SETUP_ACTION_OPTS)
@@ -22,6 +23,9 @@ jasper_api_rpm:
 
 plugins_rpms:
 	python $(PLUGINS) $(SETUP_ACTION) $(SETUP_ACTION_OPTS)
+
+rhevm_qe_tests_rpm:
+	python $(RHEVM_QE_TESTS) $(SETUP_ACTION) $(SETUP_ACTION_OPTS)
 
 install_yum:
 	python $(CORE) install_yum
