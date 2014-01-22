@@ -312,6 +312,7 @@ class RhevmCli(CliConnection):
     _cliRootCommands = ['action', 'add', 'list', 'remove', 'show', 'update']
     _cliTrashPattern = "[\[\]\\\?]"
     _command = RHEVM_SHELL
+    _autocompletionSeparators = ['send:', 'error:']
 
     def __init__(self, logger, uri, user, userDomain, password,
                  secure, sslKeyFile, sslCertFile, sslCaFile, logFile,
@@ -500,15 +501,11 @@ class RhevmCli(CliConnection):
         except pe.EOF as e:
             raise CLIError(cmd, e)
 
-        # debug case
-        if 'send:' in output:
-            ret = output.split('send:')[0].split()
-        # non debug case, sometimes we can get error message
-        # after autocompletion options
-        elif 'error:' in output:
-            ret = output.split('error:')[0].split()
-        else:
-            ret = output.split()
+        # debug case, non debug case so we will have error message
+        # (don't ask why), I'm not using re since I want to be fast here
+        ret = next((output.split(sep)[0].split() for sep in
+                    self._autocompletionSeparators if sep in output),
+                   output.split())
 
         # cleaning from cli trash
         pattern = re.compile(self._cliTrashPattern)
@@ -714,6 +711,7 @@ class OvirtCli(RhevmCli):
     _command = OVIRT_SHELL
     _errorStatusMsgSearch = "=+ ERROR.*status:.*reason:.*detail:.* (?==+)"
     _errorParametersMsgSearch = "=+ ERROR.* (?==+)"
+    _autocompletionSeparators = ['send:', '====']
 
     def __init__(self, logger, uri, user, userDomain, password,
                  secure, sslKeyFile, sslCertFile, sslCaFile, logFile,
