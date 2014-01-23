@@ -18,18 +18,21 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 from art.core_api.apis_utils import data_st
-from art.rhevm_api.utils.test_utils import get_api
+from art.rhevm_api.utils.test_utils import get_api, SYS_CLASS_NET_DIR
 from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api import is_action
 from utilities.machine import Machine, LINUX
 import logging
 import re
+import os
+
 
 NET_API = get_api("network", "networks")
 CL_API = get_api("cluster", "clusters")
 DC_API = get_api("data_center", "datacenters")
 VNIC_PROFILE_API = get_api('vnic_profile', 'vnicprofiles')
 MGMT_NETWORK = "rhevm"
+PROC_NET_DIR = "/proc/net"
 
 logger = logging.getLogger('networks')
 
@@ -744,3 +747,44 @@ def updateNetworkInDataCenter(positive, network, datacenter, **kwargs):
                                  datacenter=datacenter)
     net_update = _prepareNetworkObject(**kwargs)
     return NET_API.update(net, net_update, positive)
+
+
+def isVmNetwork(host, user, password, net_name):
+    """
+    Check if network that resides on Host is VM or non-VM
+    **Author**: gcheresh
+        **Parameters**:
+        *  *host* - machine ip address or fqdn of the machine
+        *  *user* - root user on the  machine
+        *  *password* - password for the user
+        *  *net_name* - name of the network we test for being bridged
+    **Return**: True if net_name is VM, False otherwise
+    """
+    machine_obj = Machine(host, user, password).util(LINUX)
+    vm_file = os.path.join(SYS_CLASS_NET_DIR, net_name)
+    return machine_obj.isFileExists(vm_file)
+
+
+def checkVlanNet(host, user, password, interface, vlan):
+    """
+    Check for VLAN value on the network that resides on Host
+    **Author**: gcheresh
+        **Parameters**:
+        *  *host* - machine ip address or fqdn of the machine
+        *  *user* - root user on the  machine
+        *  *password* - password for the user
+        *  *interface* - name of the phy interface
+        *  *vlan* - the value to check on the host (int)
+    **Return**: True if VLAN on the host == provided VLAN, False otherwise
+    """
+    machine_obj = Machine(host, user, password).util(LINUX)
+    vlan_file = os.path.join(PROC_NET_DIR, "vlan", ".".join([interface,
+                                                             str(vlan)]))
+    rc, output = machine_obj.runCmd(["cat", vlan_file])
+    if not rc:
+        logger.error("Can't read {0}".format(vlan_file))
+        return False
+    match_obj = re.search("VID: ([0-9]+)", output)
+    if match_obj:
+        vid = int(match_obj.group(1))
+    return vid == vlan
