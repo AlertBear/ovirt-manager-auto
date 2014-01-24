@@ -829,7 +829,7 @@ def addDisk(positive, vm, size, wait=True, storagedomain=None,
     disk = data_st.Disk(size=size, format=ENUMS['format_cow'],
                         interface=ENUMS['interface_ide'], sparse=True,
                         alias=kwargs.pop('alias', None),
-                        active=kwargs.get('active', False))
+                        active=kwargs.get('active', True))
 
     # replace disk params from kwargs
     for param_name in ADD_DISK_KWARGS:
@@ -3012,13 +3012,17 @@ def wait_for_vm_states(vm_name, states=[ENUMS['vm_state_up']],
 
 
 @is_action('startVmsParallel')
-def start_vms(vm_list, max_workers, wait_for_ip=True):
+def start_vms(vm_list, max_workers,
+              wait_for_status=ENUMS['vm_state_powering_up'],
+              wait_for_ip=True):
     """
-    Description: Starts all vms in vm_list
+    Description: Starts all vms in vm_list. Throws an exception if it fails
 
     Parameters:
         * vm_list - List of vm names
         * max_workers - In how many threads should vms start
+        * wait_for_status - from ENUMS, to which state we wait for
+        * wait_for_ip - Boolean, wait to get an ip from the vm
     """
     results = list()
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -3027,8 +3031,9 @@ def start_vms(vm_list, max_workers, wait_for_ip=True):
             if vm_obj.status.state == ENUMS['vm_state_down']:
                 logger.info("Starting vm %s", machine)
                 results.append(executor.submit(startVm, True,
-                                               machine,
-                                               wait_for_ip=wait_for_ip))
+                                               machine, wait_for_status,
+                                               wait_for_ip,
+                                               ))
     for machine, res in zip(vm_list, results):
         if res.exception():
             logger.error("Got exception while starting vm %s: %s", machine,
@@ -3547,3 +3552,19 @@ def attach_backup_disk_to_vm(src_vm, backup_vm, snapshot_description,
                     disk_obj.get_alias(), src_vm, backup_vm)
 
     return status
+
+
+def getVmTemplateId(vm):
+    """
+    Returns vm's template id
+    **Author**: cmestreg
+
+    **Parameters**:
+        * *vm* - vm's name
+    **Returns**: id of the template, or raise VMException if entity not found
+    """
+    try:
+        vmObj = VM_API.find(vm)
+    except EntityNotFound:
+        raise exceptions.VMException("Cannot find vm with name %s" % vm)
+    return vmObj.get_template().id

@@ -1070,12 +1070,28 @@ def findNonMasterStorageDomains(positive, datacenter):
     sdObjList = getDCStorages(datacenter, False)
 
     #Filter out master domain and ISO/Export domains
-    nonMasterDomains = [sdObj.get_name() for sdObj in sdObjList if \
-                        sdObj.get_type() == ENUMS['storage_dom_type_data']\
+    nonMasterDomains = [sdObj.get_name() for sdObj in sdObjList if
+                        sdObj.get_type() == ENUMS['storage_dom_type_data']
                         and not sdObj.get_master()]
     if nonMasterDomains:
-        return positive, {'nonMasterDomains' : nonMasterDomains}
-    return not positive, {'nonMasterDomains' : ''}
+        return positive, {'nonMasterDomains': nonMasterDomains}
+    return not positive, {'nonMasterDomains': ''}
+
+
+@is_action()
+def findExportStorageDomains(datacenter):
+    """
+    Description: find all export storage domains
+    Author: cmestreg
+    Parameters:
+        * datacenter - datacenter name
+    Return: List of export storage domains
+    """
+    sdObjList = getDCStorages(datacenter, False)
+
+    exportDomains = [sdObj.get_name() for sdObj in sdObjList if
+                     sdObj.get_type() == ENUMS['storage_dom_type_export']]
+    return exportDomains
 
 
 @is_action()
