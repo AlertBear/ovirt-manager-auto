@@ -16,6 +16,8 @@ base_name = PARAMETERS.get('test_name', TEST_NAME)
 dc_name = PARAMETERS.get('dc_name', 'datacenter_%s' % base_name)
 cluster_name = PARAMETERS.get('cluster_name', 'cluster_%s' % base_name)
 vm_for_migration = PARAMETERS.get('vm_for_migration', 'vm_%s' % base_name)
+support_vm_1 = 'support_vm_1'
+support_vm_2 = 'support_vm_2'
 data_paths = PARAMETERS.as_list('data_domain_path')
 data_name = ["%s_%d" % (STORAGE_TYPE.lower(), index) for index in
              range(len(data_paths))]
