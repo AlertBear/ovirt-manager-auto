@@ -37,6 +37,7 @@ VERSION_31 = '3.1'
 INTERFACE_VIRTIO = ENUMS['interface_virtio']
 DEFAULT_NFS_RETRANS = 6
 DEFAULT_NFS_TIMEOUT = 600
+DEFAULT_DC_TIMEOUT = 1500
 
 
 def _verify_one_option(real, expected):
@@ -477,7 +478,8 @@ class TestCaseStandardOperations(TestCaseNFSOptions):
         ll_vms.waitForVmsGone(True, ",".join([cls.vm_1, cls.vm_2]))
         ll_st.activateStorageDomain(True, config.DATA_CENTER_NAME, 'nfs_0')
         ll_st.waitForStorageDomainStatus(
-            True, config.DATA_CENTER_NAME, 'nfs_0', 'active')
+            True, config.DATA_CENTER_NAME, 'nfs_0', 'active',
+            timeOut=DEFAULT_DC_TIMEOUT)
         ll_st.deactivateStorageDomain(True, config.DATA_CENTER_NAME, cls.sd_1)
         ll_st.findMasterStorageDomain(True, config.DATA_CENTER_NAME)
         ll_st.deactivateStorageDomain(True, config.DATA_CENTER_NAME, cls.sd_2)
