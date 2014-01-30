@@ -7,17 +7,20 @@ import utilities.utils as utils
 import utilities.errors as errors
 from utilities.enum import Enum
 
+old_level = logging.getLogger().getEffectiveLevel()
 import nitrate
+# we have to do it, nitrate module is setting it to WARN...
+logging.getLogger().setLevel(old_level)
 
 # TCMS entity names
-eTcmsEntity = Enum( TestPlan=1,
-                    TestRun=2,
-                    TestCase=3,
-                    TestCaseRun=4,
-                    Product=5,
-                    ProductVersion=6,
-                    ProductCategory=7,
-                    Build=8)
+eTcmsEntity = Enum(TestPlan=1,
+                   TestRun=2,
+                   TestCase=3,
+                   TestCaseRun=4,
+                   Product=5,
+                   ProductVersion=6,
+                   ProductCategory=7,
+                   Build=8)
 
 URL = "http://"
 SECURE_URL = "https://"
