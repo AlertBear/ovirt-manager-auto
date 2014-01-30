@@ -22,6 +22,7 @@ data_name = ["%s_%d" % (STORAGE_TYPE.lower(), index) for index in
 hosts = PARAMETERS.as_list('vds')
 host_user = PARAMETERS.get('host_user', 'root')
 host_password = PARAMETERS.get('host_password', 'qum5net')
+cluster_network = PARAMETERS.get('mgmt_bridge', 'rhevm')
 load_host_1 = hosts[0]
 load_host_2 = hosts[1]
 load_host_3 = hosts[2]

@@ -31,7 +31,8 @@ def setup_package():
                        cluster=config.cluster_name,
                        storageDomainName=config.data_name[0],
                        size=DISK_SIZE, nic='nic1',
-                       placement_host=config.load_host_1):
+                       placement_host=config.load_host_1,
+                       network=config.cluster_network):
         raise Errors.VMException("Cannot create vm %s" %
                                  config.vm_for_migration)
 

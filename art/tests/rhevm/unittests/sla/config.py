@@ -24,4 +24,5 @@ version = PARAMETERS['compatibility_version']
 hosts = PARAMETERS.as_list('vds')
 hosts_pw = PARAMETERS.as_list('vds_password')
 
+cluster_network = PARAMETERS.get('mgmt_bridge', 'rhevm')
 cpupin_iter = int(PARAMETERS.get('cpu_iter', 4))
