@@ -21,9 +21,8 @@ from utilities.machine import Machine
 from art.core_api.apis_utils import getDS
 from art.rhevm_api.utils.test_utils import get_api, split, getStat, \
     searchElement, searchForObj, stopVdsmd, startVdsmd
-import os
 import time
-from lxml import etree
+import json
 from utilities import machine
 import utilities.postgresConnection as psql
 from art.core_api.apis_utils import TimeoutingSampler, data_st
@@ -39,6 +38,7 @@ from art.rhevm_api.tests_lib.low_level.datacenters import \
     waitForDataCenterState
 from art.rhevm_api.tests_lib.low_level.vms import startVm, stopVm, stopVms, \
     startVms, waitForIP, getVmHost, get_vm_state
+from art.test_handler import find_test_file
 from art.rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.test_handler import settings
@@ -84,6 +84,9 @@ MEGABYTE = 1024 ** 2
 IP_PATTERN = '10.35.*'
 TIMEOUT = 120
 FIND_QEMU = 'ps aux |grep qemu | grep -e "-name %s"'
+MOM_CONF = '/etc/vdsm/mom.conf'
+MOM_SCRIPT_LOCAL = 'tests/rhevm/unittests/mom/momStats.py'
+MOM_SCRIPT_PATH = '/tmp/momStats.py'
 
 virsh_cmd = ['nwfilter-dumpxml', 'vdsm-no-mac-spoofing']
 search_for = ["<filterref filter='no-mac-spoofing'/>",
@@ -2689,3 +2692,90 @@ def add_label_to_hostnic(nic, label, host):
                                   collection=labels_href,
                                   coll_elm_name="label")[1]
     return status
+
+
+@is_action()
+def change_mom_rpc_port(host, host_user, host_pwd, port=8080):
+    '''
+    Change port for mom rpc communication
+    Author: lsvaty
+    Parameters:
+        * host - ip of host
+        * host_user - user on host machine (root)
+        * host_pwd - password for host_user user
+        * port - port for xmlrpc communication
+    @return value - (return code, output)
+    '''
+    host_machine = machine.Machine(
+        host, host_user, host_pwd).util(machine.LINUX)
+    rc, out = host_machine.runCmd(['sed', '-i',
+                                   's/rpc-port: [-0-9]\\+/rpc-port: ' +
+                                   str(port)+'/',
+                                   MOM_CONF])
+    if not rc:
+        HOST_API.logger.error(
+            "Failed to edit rpc port for mom on host %s ", host)
+        return False
+    return host_machine.restartService("vdsmd")
+
+
+def set_mom_script(host, host_user, host_pwd, path=MOM_SCRIPT_PATH):
+    '''
+    Set script for xmlrpc communication with mom
+    Author: lsvaty
+    Parameters:
+        * host - ip of host
+        * host_user - user on host machine (root)
+        * host_pwd - password for host_user user
+        * path - path to file
+    @return value - tuple (return code, output)
+    '''
+    host_machine = machine.Machine(
+        host, host_user, host_pwd).util(machine.LINUX)
+
+    return host_machine.copyTo(find_test_file(MOM_SCRIPT_LOCAL),
+                               MOM_SCRIPT_PATH)
+
+
+def remove_mom_script(host, host_user, host_pwd, path=MOM_SCRIPT_PATH):
+    '''
+    Remove script for xmlrpc communication with mom
+    Author: lsvaty
+    Parameters:
+        * host - ip of host
+        * host_user - user on host machine (root)
+        * host_pwd - password for host_user user
+        * path - path to file
+    @return value - tuple (return code, output)
+    '''
+    host_machine = machine.Machine(
+        host, host_user, host_pwd).util(machine.LINUX)
+    return host_machine.runCmd(['rm', '-f', path])
+
+
+@is_action()
+def get_mom_statistics(host, host_user, host_pwd, port=8080,
+                       path=MOM_SCRIPT_PATH):
+    '''
+    get statistics from mom through xmlrpc
+    first need to set the script for usage by setMomScript()
+    Author: lsvaty
+    Parameters:
+        * host - ip of host
+        * host_user - user on host machine (root)
+        * host_pwd - password for host_user user
+        * port - port for rpc communication
+        * path - path to mom script producing statistics
+    @return value - tuple (True, dictionary of stats on succeess
+        otherwise (False, output of run commands)
+    '''
+    host_machine = machine.Machine(
+        host, host_user, host_pwd).util(machine.LINUX)
+    rc, out = host_machine.runCmd(['python', path, str(port)])
+    if rc:
+        try:
+            stats_dict = json.loads(out.replace('\'', '"'))
+        except TypeError:
+            return rc, out
+        return rc, stats_dict
+    return rc, out

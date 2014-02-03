@@ -45,6 +45,7 @@ SchedulingPolicyThresholds = getDS('SchedulingPolicyThresholds')
 SchedulingPolicy = getDS('SchedulingPolicy')
 ErrorHandling = getDS('ErrorHandling')
 CPU = getDS('CPU')
+KSM = getDS('KSM')
 CLUSTER_API = get_api('cluster', 'clusters')
 
 xpathMatch = is_action('xpathClusters', id_name='xpathMatch')(XPathMatch(util))
@@ -115,6 +116,10 @@ def _prepareClusterObject(**kwargs):
 
         cl.set_scheduling_policy(schedulingPolicy)
 
+    ballooning_enabled = kwargs.pop('ballooning_enabled', None)
+    if ballooning_enabled is not None:
+        cl.set_ballooning_enabled(ballooning_enabled)
+
     errorHandling = None
     if 'on_error' in kwargs:
         errorHandling = ErrorHandling(on_error=kwargs.pop('on_error'))
@@ -123,6 +128,9 @@ def _prepareClusterObject(**kwargs):
     threads = kwargs.pop('threads_as_cores', None)
     if threads is not None:
         cl.set_threads_as_cores(threads)
+
+    if 'ksm_enabled' in kwargs:
+        cl.set_ksm(KSM(enabled=kwargs.pop('ksm_enabled')))
 
     return cl
 
@@ -158,6 +166,8 @@ def addCluster(positive, **kwargs):
                     (migrate, do_not_migrate, migrate_highly_available)
        * threads - if True, will count threads as cores, otherwise counts
                    only cores
+       * ballooning_enabled - if True, enables ballooning on cluster
+       * ksm_enabled - if True, enables KSM on cluster
     Return: status (True if cluster was removed properly, False otherwise)
     '''
 
@@ -198,6 +208,8 @@ def updateCluster(positive, cluster, **kwargs):
                     (migrate, do_not_migrate, migrate_highly_available)
        * threads - if True, will count threads as cores, otherwise counts
                     only cores
+       * ballooning_enabled - if True, enables ballooning on cluster
+       * ksm_enabled - if True, enables KSM on cluster
     Return: status (True if cluster was removed properly, False otherwise)
     '''
 
