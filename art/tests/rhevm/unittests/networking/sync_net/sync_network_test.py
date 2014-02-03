@@ -23,12 +23,11 @@ from art.test_handler.exceptions import\
 from art.rhevm_api.tests_lib.low_level.datacenters import\
     waitForDataCenterState
 from art.rhevm_api.tests_lib.high_level.networks import\
-    createAndAttachNetworkSN, removeNetFromSetup, removeNetwork
-from art.rhevm_api.tests_lib.low_level.networks import\
-    updateNetwork
-from art.rhevm_api.tests_lib.low_level.hosts import genSNNic,\
-    sendSNRequest, isSyncNetwork,\
-    deactivateHost, activateHost, updateHost, waitForHostsStates
+    createAndAttachNetworkSN, removeNetFromSetup, removeNetwork, \
+    checkHostNicParameters
+from art.rhevm_api.tests_lib.low_level.networks import updateNetwork
+from art.rhevm_api.tests_lib.low_level.hosts import genSNNic, sendSNRequest, \
+    isSyncNetwork, deactivateHost, activateHost, updateHost, waitForHostsStates
 from art.unittest_lib.network import skipBOND
 
 
@@ -68,11 +67,6 @@ class Sync_Case1_205933(TestCase):
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
             raise NetworkException("Cannot create and attach network")
-        logger.info('Update network with VLAN')
-        if not updateNetwork(True, network=config.VLAN_NETWORKS[0],
-                             data_center=config.DC_NAME,
-                             vlan_id=config.VLAN_ID[0]):
-            raise NetworkException("Cannot update network to be tagged")
 
     @istest
     @tcms(6665, 205933)
@@ -80,26 +74,22 @@ class Sync_Case1_205933(TestCase):
         """
         Remove network from host and reattach to the same NIC
         """
-        logger.info("Remove network from host")
+        vlan_dict = {"vlan_id": config.VLAN_ID[0]}
 
-        if not sendSNRequest(True, host=config.HOSTS[0], nics=[],
-                             auto_nics=[config.HOST_NICS[0]],
-                             check_connectivity='true',
-                             connectivity_timeout=60, force='false'):
-            raise NetworkException("Cannot remove network from NIC")
-        logger.info("Attaching network to nic1")
-        net_obj = []
-        rc, out = genSNNic(nic=config.HOST_NICS[1],
-                           network=config.VLAN_NETWORKS[0],
-                           override_configuration=True)
-        if not rc:
-            raise NetworkException("Cannot generate SNNIC object")
-        net_obj.append(out['host_nic'])
-        if not sendSNRequest(True, host=config.HOSTS[0], nics=net_obj,
-                             auto_nics=[config.HOST_NICS[0]],
-                             check_connectivity='true',
-                             connectivity_timeout=60, force='false'):
-            raise NetworkException("Cannot attach network to NIC")
+        logger.info('Update network with VLAN')
+        if not updateNetwork(True, network=config.VLAN_NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             vlan_id=config.VLAN_ID[0]):
+            raise NetworkException("Cannot update network to be tagged")
+
+        sample = TimeoutingSampler(timeout=60, sleep=1,
+                                   func=checkHostNicParameters,
+                                   host=config.HOSTS[0],
+                                   nic=config.HOST_NICS[1], **vlan_dict)
+
+        if not sample.waitForFuncStatus(result=True):
+            raise NetworkException("Couldn't get correct vlan interface on "
+                                   "host")
 
     @classmethod
     def teardown_class(cls):
@@ -269,37 +259,37 @@ class Sync_Case3_185337(TestCase):
         Remove networks from the setup.
         Put the host on the primary DC
         """
+        mtu_dict = {"mtu": "1500"}
         logger.info("Update host with MTU 1500")
         if not updateNetwork(True, network=config.NETWORKS[0],
                              data_center=config.DC_NAME2, mtu=1500):
             raise NetworkException("Cannot update network")
-        logger.info("Sync network with the correct MTU")
-        logger.info("Generating network object with default mtu ")
-        net_obj = []
-        rc, out = genSNNic(nic=config.HOST_NICS[1],
-                           network=config.NETWORKS[0],
-                           override_configuration=True)
-        if not rc:
-            raise NetworkException("Cannot generate SNNIC object")
-        net_obj.append(out['host_nic'])
-        if not sendSNRequest(True, host=config.HOSTS[0], nics=net_obj,
-                             auto_nics=[config.HOST_NICS[0]],
-                             check_connectivity='true',
-                             connectivity_timeout=60, force='false'):
-            raise NetworkException("Cannot SN the network with MTU 1500")
-        logger.info("Remove networks from setup")
+
+        sample = TimeoutingSampler(timeout=60, sleep=1,
+                                   func=checkHostNicParameters,
+                                   host=config.HOSTS[0],
+                                   nic=config.HOST_NICS[1],
+                                   **mtu_dict)
+
+        if not sample.waitForFuncStatus(result=True):
+            raise NetworkException("Couldn't get correct MTU on "
+                                   "host")
+
         if not removeNetwork(True, config.NETWORKS[0],
                              data_center=config.DC_NAME):
             raise NetworkException("Remove network from DC1 failed")
+
         if not removeNetFromSetup(host=config.HOSTS[0],
                                   auto_nics=[config.HOST_NICS[0]],
                                   network=[config.NETWORKS[0]]):
             raise NetworkException("Remove network from DC2/CL2/Host failed")
+
         logger.info("Put the host on the DC1")
         assert(deactivateHost(True, host=config.HOSTS[0]))
         if not updateHost(True, host=config.HOSTS[0],
                           cluster=config.CLUSTER_NAME):
             raise NetworkException("Cannot move host to another Cluster")
+
         assert(activateHost(True, host=config.HOSTS[0]))
         assert(waitForDataCenterState(name=config.DC_NAME))
 
@@ -600,45 +590,63 @@ class Sync_Case7_205919(TestCase):
                                         auto_nics=[config.HOST_NICS[0],
                                                    config.HOST_NICS[1]]):
             raise NetworkException("Cannot create and attach networks")
-        logger.info("Update VLAN network to VLAN 10")
-        if not updateNetwork(True, network=config.VLAN_NETWORKS[0],
-                             data_center=config.DC_NAME,
-                             vlan_id=10):
-            raise NetworkException("Cannot update network to be untagged")
-        logger.info("Update MTU network with MTU 1500")
-        if not updateNetwork(True, network=config.VLAN_NETWORKS[1],
-                             data_center=config.DC_NAME,
-                             mtu=1500):
-            raise NetworkException("Cannot update  network with mtu 1500")
-        logger.info("Update VM network to be non-VM")
-        if not updateNetwork(True, network=config.VLAN_NETWORKS[2],
-                             data_center=config.DC_NAME,
-                             usages=''):
-            raise NetworkException("Cannot update  network to be non-VM")
 
     @istest
     @tcms(6665, 205919)
     def syncNetworks(self):
         """
-        Sync networks after update
+        Check that the networks synced after update
         """
-        logger.info("Sync updated networks")
-        logger.info("Generating network object for SetupNetwork ")
-        net_obj = []
-        for i in range(3):
+        vlan_dict = {"vlan_id": "10"}
+        mtu_dict = {"mtu": "1500"}
+        bridge_dict = {"bridge": False}
 
-            rc, out = genSNNic(nic=config.HOST_NICS[i+1],
-                               network=config.VLAN_NETWORKS[i],
-                               override_configuration=True)
-            if not rc:
-                raise NetworkException("Cannot generate SNNIC object")
-            net_obj.append(out['host_nic'])
+        logger.info("Update VM network to be non-VM")
+        if not updateNetwork(True, network=config.VLAN_NETWORKS[2],
+                             data_center=config.DC_NAME,
+                             usages=''):
+            raise NetworkException("Cannot update network to be non-VM")
 
-        if not sendSNRequest(True, host=config.HOSTS[0], nics=net_obj,
-                             auto_nics=[config.HOST_NICS[0]],
-                             check_connectivity='true',
-                             connectivity_timeout=60, force='false'):
-            raise NetworkException("Cannot sync networks after update")
+        sample1 = TimeoutingSampler(timeout=60, sleep=1,
+                                    func=checkHostNicParameters,
+                                    host=config.HOSTS[0],
+                                    nic=config.HOST_NICS[3],
+                                    **bridge_dict)
+
+        if not sample1.waitForFuncStatus(result=True):
+            raise NetworkException("Network is VM network and should be "
+                                   "Non-VM")
+
+        logger.info("Update VLAN network to VLAN 10")
+        if not updateNetwork(True, network=config.VLAN_NETWORKS[0],
+                             data_center=config.DC_NAME,
+                             vlan_id=10):
+            raise NetworkException("Cannot update network to be untagged")
+
+        sample2 = TimeoutingSampler(timeout=60, sleep=1,
+                                    func=checkHostNicParameters,
+                                    host=config.HOSTS[0],
+                                    nic=config.HOST_NICS[1],
+                                    **vlan_dict)
+
+        if not sample2.waitForFuncStatus(result=True):
+            raise NetworkException("Couldn't get correct vlan interface on "
+                                   "host")
+
+        logger.info("Update MTU network with MTU 1500")
+        if not updateNetwork(True, network=config.VLAN_NETWORKS[1],
+                             data_center=config.DC_NAME,
+                             mtu=1500):
+            raise NetworkException("Cannot update network with mtu 1500")
+
+        sample3 = TimeoutingSampler(timeout=60, sleep=1,
+                                    func=checkHostNicParameters,
+                                    host=config.HOSTS[0],
+                                    nic=config.HOST_NICS[2],
+                                    **mtu_dict)
+
+        if not sample3.waitForFuncStatus(result=True):
+            raise NetworkException("Couldn't get correct MTU on host")
 
     @classmethod
     def teardown_class(cls):
@@ -683,16 +691,6 @@ class Sync_Case8_205932(TestCase):
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
             raise NetworkException("Cannot create and attach networks")
-        logger.info("Update VLAN network with VLAN 10")
-        if not updateNetwork(True, network=config.VLAN_NETWORKS[0],
-                             data_center=config.DC_NAME,
-                             vlan_id=10):
-            raise NetworkException("Cannot update network to be untagged")
-        logger.info("Update non-VM network to be VM network")
-        if not updateNetwork(True, network=config.VLAN_NETWORKS[1],
-                             data_center=config.DC_NAME,
-                             usages='vm'):
-            raise NetworkException("Cannot update  network to be non-VM")
 
     @istest
     @tcms(6665, 205932)
@@ -700,112 +698,40 @@ class Sync_Case8_205932(TestCase):
         """
         Sync networks after update
         """
-        logger.info("Sync updated networks")
-        logger.info("Generating network object for SetupNetwork ")
-        net_obj = []
-        for i in range(2):
+        vlan_dict = {"vlan_id": "10"}
+        bridge_dict = {"bridged": "vm"}
 
-            rc, out = genSNNic(nic=config.HOST_NICS[1],
-                               network=config.VLAN_NETWORKS[i],
-                               override_configuration=True)
-            if not rc:
-                raise NetworkException("Cannot generate SNNIC object")
-            net_obj.append(out['host_nic'])
-        logger.info('Try to sync networks')
-        logger.info("Should fail as VM net can't coexist with another on NIC")
-        if not sendSNRequest(False, host=config.HOSTS[0],
-                             nics=net_obj,
-                             auto_nics=[config.HOST_NICS[0]],
-                             check_connectivity='true',
-                             connectivity_timeout=60, force='false'):
-            raise NetworkException("Can sync networks but shouldn't")
-        logger.info('Removing Vlan net obj and trying SN again')
-        rc, out = genSNNic(nic=config.HOST_NICS[1],
-                           network=config.VLAN_NETWORKS[1],
-                           override_configuration=True)
-        if not rc:
-            raise NetworkException("Cannot generate SNNIC object")
-        if not sendSNRequest(True, host=config.HOSTS[0],
-                             nics=[out['host_nic']],
-                             auto_nics=[config.HOST_NICS[0]],
-                             check_connectivity='true',
-                             connectivity_timeout=60, force='false'):
-            raise NetworkException("Cannot sync networks after update")
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove networks from the setup.
-        """
-        logger.info("Remove networks from setup")
-        if not removeNetFromSetup(host=config.HOSTS[0],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.VLAN_NETWORKS[0],
-                                           config.VLAN_NETWORKS[1]]):
-            raise NetworkException("Cannot remove networks from setup")
-
-
-class Sync_Case9_276007(TestCase):
-    """
-    Sync only 1 network of 2 unsynced networks in setup
-    """
-    __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Attach networks with VLAN and MTU to host
-        Update networks with different MTU, VLAN for this 2 networks
-        """
-        local_dict = {config.VLAN_NETWORKS[0]: {'vlan_id':
-                                                config.VLAN_ID[0],
-                                                'nic': config.HOST_NICS[1],
-                                                'required': 'false'},
-                      config.VLAN_NETWORKS[1]: {'vlan_id':
-                                                config.VLAN_ID[1], 'mtu': 9000,
-                                                'nic': config.HOST_NICS[1],
-                                                'required': 'false'}}
-
-        logger.info("Attach networks with VLAN and MTU to DC/Cluster/Host")
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
-                                        host=config.HOSTS[0],
-                                        network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0],
-                                                   config.HOST_NICS[1]]):
-            raise NetworkException("Cannot create and attach networks")
         logger.info("Update VLAN network with VLAN 10")
         if not updateNetwork(True, network=config.VLAN_NETWORKS[0],
                              data_center=config.DC_NAME,
                              vlan_id=10):
             raise NetworkException("Cannot update network to be untagged")
-        logger.info("Update MTU network with MTU 1500")
+
+        sample1 = TimeoutingSampler(timeout=60, sleep=1,
+                                    func=checkHostNicParameters,
+                                    host=config.HOSTS[0],
+                                    nic=config.HOST_NICS[1],
+                                    **vlan_dict)
+
+        if not sample1.waitForFuncStatus(result=True):
+            raise NetworkException("Couldn't get correct vlan interface on "
+                                   "host")
+
+        logger.info("Update non-VM network to be VM network")
         if not updateNetwork(True, network=config.VLAN_NETWORKS[1],
                              data_center=config.DC_NAME,
-                             mtu=1500):
-            raise NetworkException("Cannot update  network with mtu 1500")
+                             usages='vm'):
+            raise NetworkException("Cannot update  network to be non-VM")
 
-    @istest
-    @tcms(6665, 276007)
-    def syncNetworks(self):
-        """
-        Sync only 1 of 2 unsync network
-        """
-        unsync_elem = '.'.join([config.HOST_NICS[1], config.VLAN_ID[1]])
-        logger.info("Sync only VLAN network out of 2 networks")
-        net_obj = []
-        rc, out = genSNNic(nic=config.HOST_NICS[1],
-                           network=config.VLAN_NETWORKS[0],
-                           override_configuration=True)
-        if not rc:
-            raise NetworkException("Cannot generate SNNIC object")
-        net_obj.append(out['host_nic'])
-        logger.info('Sending one sync and one unsync element to SN')
-        if not sendSNRequest(True, host=config.HOSTS[0], nics=net_obj,
-                             auto_nics=[config.HOST_NICS[0], unsync_elem],
-                             check_connectivity='true',
-                             connectivity_timeout=60, force='false'):
-            raise NetworkException("Couldn't SN sync and unsync networks")
+        sample2 = TimeoutingSampler(timeout=60, sleep=1,
+                                    func=checkHostNicParameters,
+                                    host=config.HOSTS[0],
+                                    nic=config.HOST_NICS[1],
+                                    **bridge_dict)
+
+        if not sample2.waitForFuncStatus(result=True):
+            raise NetworkException("Network is Non-VM network and should be "
+                                   "VM")
 
     @classmethod
     def teardown_class(cls):
@@ -817,73 +743,6 @@ class Sync_Case9_276007(TestCase):
                                   auto_nics=[config.HOST_NICS[0]],
                                   network=[config.VLAN_NETWORKS[0],
                                            config.VLAN_NETWORKS[1]]):
-            raise NetworkException("Cannot remove networks from setup")
-
-
-class Sync_Case10(TestCase):
-    """
-    Try to change parameters of unsynced network
-    """
-    __test__ = True
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Attach 1 network with VLAN and MTU 9000 to the host
-        Update network with different MTU
-        """
-        local_dict = {config.VLAN_NETWORKS[1]: {'vlan_id':
-                                                config.VLAN_ID[1], 'mtu': 9000,
-                                                'nic': config.HOST_NICS[1],
-                                                'required': 'false'}}
-
-        logger.info("Attach network to DC/Cluster/Host")
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
-                                        host=config.HOSTS[0],
-                                        network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0],
-                                                   config.HOST_NICS[1]]):
-            raise NetworkException("Cannot create and attach networks")
-        logger.info("Update network with MTU 1500")
-        if not updateNetwork(True, network=config.VLAN_NETWORKS[1],
-                             data_center=config.DC_NAME,
-                             mtu=1500):
-            raise NetworkException("Cannot update  network with mtu 1500")
-
-    @istest
-    def syncNetworks(self):
-        """
-            Try to change parameters on unsync network
-        """
-        logger.info("Trying to change parameters on unsync network")
-        net_obj = []
-
-        logger.info('Sending SN after update of static ip/mask ')
-        logger.info("SN should fail as you can't update unsync network")
-        rc, out = genSNNic(nic=config.HOST_NICS[1],
-                           network=config.VLAN_NETWORKS[1],
-                           boot_protocol='static', address='1.1.1.1',
-                           netmask='255.255.255.0',
-                           override_configuration=False)
-        if not rc:
-            raise NetworkException("Cannot generate SNNIC object")
-        net_obj.append(out['host_nic'])
-        if not sendSNRequest(False, host=config.HOSTS[0], nics=net_obj,
-                             auto_nics=[config.HOST_NICS[0]],
-                             check_connectivity='true',
-                             connectivity_timeout=60, force='false'):
-            raise NetworkException("Could SN but shouldn't")
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove network from the setup.
-        """
-        logger.info("Remove networks from setup")
-        if not removeNetFromSetup(host=config.HOSTS[0],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.VLAN_NETWORKS[1]]):
             raise NetworkException("Cannot remove networks from setup")
 
 skipBOND(['Sync_Case7_205919', 'Sync_Case6_240899'], config.HOST_NICS)

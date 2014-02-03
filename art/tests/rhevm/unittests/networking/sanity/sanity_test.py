@@ -4,13 +4,12 @@ Testing Sanity for the network features.
 Sanity will test untagged, tagged, bond scenarios.
 It will cover scenarios for VM/non-VM networks.
 '''
-
 from nose.tools import istest
 from unittest import TestCase
 from art.test_handler.tools import tcms
 import logging
 from art.rhevm_api.tests_lib.high_level.storagedomains import addNFSDomain
-
+from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.utils.test_utils import get_api
 from art.test_handler.exceptions import NetworkException,\
     StorageDomainException, VMException
@@ -30,7 +29,7 @@ from art.rhevm_api.tests_lib.low_level.vms import addNic,\
     getVmNicPlugged, updateNic
 from art.rhevm_api.tests_lib.low_level.networks import \
     updateClusterNetwork, isVMNetwork, isNetworkRequired,\
-    updateNetwork, addVnicProfile, removeVnicProfile
+    updateNetwork, addVnicProfile, removeVnicProfile, removeNetwork
 from art.rhevm_api.utils.test_utils import checkMTU,\
     checkSpoofingFilterRuleByVer
 from art.rhevm_api.tests_lib.low_level.storagedomains import\
@@ -199,21 +198,14 @@ class SanityCase04_CheckingVMNetworks_bond(TestCase):
     def setup_class(cls):
         """
         Create vm network sw164
-        Attach to the host as vlan over bond (eth2 & eth3)
         """
         logger.info("Create network and attach it to the host")
-        local_dict = {None: {'nic': config.BOND[0], 'mode': 1,
-                             'slaves': [config.HOST_NICS[2],
-                                        config.HOST_NICS[3]]},
-                      config.VLAN_NETWORKS[2]: {'nic': config.BOND[0],
-                                                'vlan_id': config.VLAN_ID[2],
+        local_dict = {config.VLAN_NETWORKS[2]: {'vlan_id': config.VLAN_ID[2],
                                                 'required': 'false'}}
 
         if not createAndAttachNetworkSN(data_center=config.DC_NAME,
                                         cluster=config.CLUSTER_NAME,
-                                        host=config.HOSTS[0],
-                                        network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0]]):
+                                        network_dict=local_dict):
             raise NetworkException("Cannot create and attach network")
 
     @istest
@@ -250,9 +242,7 @@ class SanityCase04_CheckingVMNetworks_bond(TestCase):
         Removing sw164 network from the setup
         """
         logger.info("Starting the teardown_class")
-        if not (removeNetFromSetup(host=config.HOSTS[0],
-                                   auto_nics=[config.HOST_NICS[0]],
-                                   network=[config.VLAN_NETWORKS[2]])):
+        if not removeNetwork(True, config.VLAN_NETWORKS[2]):
             raise NetworkException("Cannot remove network from setup")
 
 ########################################################################
@@ -543,35 +533,31 @@ class SanityCase09_CheckingJumboFrames_vlan(TestCase):
                         "%s is not configured with MTU 9000"
                         % config.VLAN_NETWORKS[0])
 
+        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
+                                 password=config.HOSTS_PW, mtu=9000,
+                                 nic=config.HOST_NICS[1]))
+
         self.assertTrue(updateNetwork(positive=True,
-                                      network=config.VLAN_NETWORKS[1],
+                                      network=config.VLAN_NETWORKS[0],
                                       mtu=1500),
-                        "%s was not updated" % config.VLAN_NETWORKS[1])
+                        "%s was not updated" % config.VLAN_NETWORKS[0])
 
-        logger.info("Sync network with the correct MTU")
-        net_obj = []
-        rc, out = genSNNic(nic=config.HOST_NICS[1],
-                           network=config.VLAN_NETWORKS[1],
-                           override_configuration=True)
-        if not rc:
-            raise NetworkException("Cannot generate SNNIC object")
-        net_obj.append(out['host_nic'])
-        if not sendSNRequest(True, host=config.HOSTS[0], nics=net_obj,
-                             auto_nics=[config.HOST_NICS[0]],
-                             check_connectivity='true',
-                             connectivity_timeout=60, force='false'):
-            raise NetworkException("Cannot SN the network with MTU 1500")
+        sample = TimeoutingSampler(timeout=60, sleep=1,
+                                   func=checkMTU, host=config.HOSTS[0],
+                                   user=config.HOSTS_USER,
+                                   password=config.HOSTS_PW,
+                                   mtu=1500,
+                                   physical_layer=False,
+                                   network=config.VLAN_NETWORKS[0],
+                                   nic=config.HOST_NICS[1],
+                                   vlan=config.VLAN_ID[0])
 
-        self.assertTrue(checkMTU(host=config.HOSTS[0],
-                                 user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW,
-                                 mtu=1500,
-                                 physical_layer=False,
-                                 network=config.VLAN_NETWORKS[1],
-                                 nic=config.HOST_NICS[1],
-                                 vlan=config.VLAN_ID[1]),
-                        "%s is not configured with MTU 1500"
-                        % config.VLAN_NETWORKS[1])
+        if not sample.waitForFuncStatus(result=True):
+            raise NetworkException("Couldn't get correct MTU")
+
+        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
+                                 password=config.HOSTS_PW, mtu=3500,
+                                 nic=config.HOST_NICS[1]))
 
     @classmethod
     def teardown_class(cls):
@@ -665,7 +651,7 @@ class SanityCase11_CheckingNetworkFilter_vlan(TestCase):
        dumpxml
     Finally, Removing nic2 and sw162
     """
-    __test__ = False
+    __test__ = True
     """
     Need investigation, this test always fails
     """
@@ -804,7 +790,7 @@ class SanityCase12_CheckingLinking_vlan(TestCase):
                           network=config.VLAN_NETWORKS[i],
                           plugged=plug_link_param_list[i][0],
                           linked=plug_link_param_list[i][1]):
-                raise VMException("Cannot add nic%s to VM", str(i+2))
+                raise VMException("Cannot add nic%s to VM" % (i+2))
 
     @istest
     def checkCombinationPluggedLinkedValues(self):
@@ -904,7 +890,7 @@ class SanityCase13_CheckingLinking_bond(TestCase):
                           network=config.VLAN_NETWORKS[i],
                           plugged=plug_link_param_list[i][0],
                           linked=plug_link_param_list[i][1]):
-                raise VMException("Cannot add nic%s to VM", str(i+2))
+                raise VMException("Cannot add nic%s to VM" % (i+2))
 
     @istest
     def checkCombinationPluggedLinkedValues(self):

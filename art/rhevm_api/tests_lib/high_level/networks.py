@@ -826,3 +826,45 @@ def checkICMPConnectivity(host, user, password, ip, max_counter=MAX_COUNTER,
         else:
             return True
     return False
+
+
+def checkHostNicParameters(host, nic, **kwargs):
+    """
+    Description: Check MTU, VLAN interface and bridge (VM/Non-VM) host nic
+    parameters .
+    Author: myakove
+    Parameters:
+       *  *host* - Host name
+       *  *nic* - Nic to get parameters from
+       *  *vlan_id* - expected VLAN id on the host
+       *  *mtu* - expected mtu on the host
+       *  *bridge* - Expected VM, Non-VM network (True for VM, False for
+           Non-VM)
+    **Return**: True if action succeeded, otherwise False
+    """
+    res = True
+    host_nic = getHostNic(host, nic)
+
+    if kwargs.get("bridge") is not None:
+        bridged = host_nic.get_bridged()
+        if kwargs.get("bridge") != bridged:
+            logger.error("%s interface is bridge: %s, expected is %s", nic,
+                         bridged, kwargs.get("bridge"))
+            res = False
+
+    if kwargs.get("vlan_id"):
+        vlan_nic = ".".join([nic, kwargs.get("vlan_id")])
+        try:
+            getHostNic(host, vlan_nic)
+        except EntityNotFound:
+            logger.error("Fail to get %s interface from %s", vlan_nic, host)
+            res = False
+
+    if kwargs.get("mtu"):
+        mtu = host_nic.get_mtu()
+        if kwargs.get("mtu") != str(mtu):
+            logger.error("MTU value on %s is %s, expected is %s", nic, mtu,
+                         kwargs.get("mtu"))
+            res = False
+
+    return res
