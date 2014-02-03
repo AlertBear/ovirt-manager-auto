@@ -44,3 +44,5 @@ COBBLER_ADDRESS = PARAMETERS.get('cobbler_address', None)
 COBBLER_PASSWD = PARAMETERS.get('cobbler_passwd', None)
 COBBLER_USER = PARAMETERS.get('cobbler_user', None)
 COBBLER_PROFILE = PARAMETERS['cobbler_profile']
+
+MGMT_BRIDGE = PARAMETERS['mgmt_bridge']

@@ -82,7 +82,8 @@ def create_vm_and_template(cobbler_image, template_name):
                         useAgent=True,
                         os_type='rhel_6',
                         user='root',
-                        password='qum5net'):
+                        password='qum5net',
+                        network=config.MGMT_BRIDGE):
         raise exceptions.VMException("Could not create vm %s" % vm_name)
     logger.info("VM %s created and started successfully" % vm_name)
 
@@ -143,7 +144,8 @@ def create_vm_from_template(template_name, class_name):
                         vmDescription=vm_name,
                         template=template_name,
                         start='false',
-                        cluster=config.DEFAULT_CLUSTER_NAME):
+                        cluster=config.DEFAULT_CLUSTER_NAME,
+                        network=config.MGMT_BRIDGE):
         raise exceptions.VMException("Unable to clone vm %s from template %s" %
                                      (vm_name, template_name))
     logger.info("VM %s cloned successfully from template %s" %
