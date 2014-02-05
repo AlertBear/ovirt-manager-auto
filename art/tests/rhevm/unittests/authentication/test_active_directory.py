@@ -18,16 +18,18 @@ from art.test_handler.tools import tcms
 
 
 LOGGER = logging.getLogger(__name__)
-
 OUT = '> /dev/null 2>&1 &'
 MB = 1024 * 1024
 AUTH = 'auth'
 AUTH_CONF = 'auth-conf'
-SET_AUTH = """rhevm-config -s SASL_QOP=%s && service ovirt-engine restart"""
+SET_AUTH = """%s-config -s SASL_QOP=%s && service ovirt-engine restart"""
 TCP_DUMP = 'nohup tcpdump -l -s 65535 -A -vv port 389 -w /tmp/tmp.cap %s' % OUT
 CHECK_DUMP = 'tcpdump -A -r /tmp/tmp.cap 2>/dev/null | grep %s'
 CLEAN = 'rm -f /tmp/tmp.cap && kill -9 `pgrep tcpdump`'
 USERVMMANAGER = 'UserVmManager'
+OVIRT = 'ovirt'
+ENGINE = 'engine'
+RHEVM = 'rhevm'
 
 
 def addUserWithClusterPermissions(user_name):
@@ -36,21 +38,6 @@ def addUserWithClusterPermissions(user_name):
     assert mla.addClusterPermissionsToUser(True, name,
                                            config.MAIN_CLUSTER_NAME,
                                            role=USERVMMANAGER, domain=domain)
-
-def setUpModule():
-    for user in [config.AD1_USER, config.USER_EXPIRED_PSW, config.AD2_USER,
-                 config.USER_EXPIRED_USER, config.USER_DISABLED,
-                 config.USER_WITH_GROUP, config.AD1_NORMAL_USER]:
-        addUserWithClusterPermissions(user)
-
-def tearDownModule():
-    users.loginAsUser(config.OVIRT_USERNAME, config.OVIRT_DOMAIN,
-                      config.USER_PASSWORD, False)
-    for username in [config.AD1_USER, config.USER_EXPIRED_PSW, config.AD2_USER,
-                     config.USER_EXPIRED_USER, config.USER_DISABLED,
-                     config.USER_WITH_GROUP, config.AD1_NORMAL_USER]:
-        user, domain = username.split('@')
-        assert users.removeUser(True, user, domain)
 
 
 def connectionTest():
@@ -61,7 +48,44 @@ def connectionTest():
 
 
 class ActiveDirectory(TestCase):
-    __test__ = True
+    __test__ = False
+
+    def __init__(self, *args, **kwargs):
+        super(ActiveDirectory, self).__init__(*args, **kwargs)
+        self.product = RHEVM
+        if OVIRT in general.getProductName()[1]['product_name'].lower():
+            self.product = ENGINE
+
+    def _loginAsUser(self, user_name, filter='true'):
+        name, domain = user_name.split('@')
+        users.loginAsUser(name, domain, self.PASSWORD, filter)
+
+    @classmethod
+    def setup_class(cls):
+        for user in [config.TEST_USER(cls.domain), config.AD2_USER,
+                     config.EXPIRED_PSW_NAME(cls.domain),
+                     config.DISABLED_ACC(cls.domain),
+                     config.EXPIRED_ACC_NAME(cls.domain),
+                     config.NORMAL_USER(cls.domain)]:
+            addUserWithClusterPermissions(user)
+        assert users.addGroup(True, config.GROUP(cls.domain))
+        assert mla.addClusterPermissionsToGroup(
+            True, config.GROUP(cls.domain),
+            config.MAIN_CLUSTER_NAME)
+
+    @classmethod
+    def teardown_class(cls):
+        users.loginAsUser(config.OVIRT_USERNAME, config.OVIRT_DOMAIN,
+                          config.USER_PASSWORD, False)
+        for username in [config.TEST_USER(cls.domain), config.AD2_USER,
+                         config.EXPIRED_PSW_NAME(cls.domain),
+                         config.DISABLED_ACC(cls.domain),
+                         config.EXPIRED_ACC_NAME(cls.domain),
+                         config.NORMAL_USER(cls.domain),
+                         config.USER_FROM_GROUP(cls.domain)]:
+            user, domain = username.split('@')
+            assert users.removeUser(True, user, domain)
+        assert users.deleteGroup(True, config.GROUP(cls.domain))
 
     def setUp(self):
         users.loginAsUser(config.OVIRT_USERNAME, config.OVIRT_DOMAIN,
@@ -71,8 +95,7 @@ class ActiveDirectory(TestCase):
     @tcms(config.AD_TCMS_PLAN_ID, 47586)
     def disabledAccount(self):
         """ Disabled account """
-        users.loginAsUser(config.AD1_DISABLED, config.AD1_DOMAIN,
-                          config.USER_PASSWORD, 'true')
+        self._loginAsUser(config.DISABLED_ACC(self.domain))
         self.assertFalse(connectionTest(), "User with disabled acc can login.")
         LOGGER.info("User with disabled acc can't login.")
 
@@ -80,8 +103,7 @@ class ActiveDirectory(TestCase):
     @tcms(config.AD_TCMS_PLAN_ID, 47587)
     def expiredPassword(self):
         """ Expired password """
-        users.loginAsUser(config.AD1_EXPIRED_PSW, config.AD1_DOMAIN,
-                          config.USER_PASSWORD, 'true')
+        self._loginAsUser(config.EXPIRED_PSW_NAME(self.domain))
         self.assertFalse(connectionTest(), "User with expired psw can login.")
         LOGGER.info("User with expired password can't login.")
 
@@ -89,8 +111,7 @@ class ActiveDirectory(TestCase):
     @tcms(config.AD_TCMS_PLAN_ID, 47585)
     def expiredUser(self):
         """ Expired user """
-        users.loginAsUser(config.AD1_EXPIRED_USER, config.AD1_DOMAIN,
-                          config.USER_PASSWORD, 'true')
+        self._loginAsUser(config.EXPIRED_ACC_NAME(self.domain))
         self.assertFalse(connectionTest(), "Expired user can login.")
         LOGGER.info("Expired user can't login.")
 
@@ -98,14 +119,14 @@ class ActiveDirectory(TestCase):
     @tcms(config.AD_TCMS_PLAN_ID, 91742)
     def fetchingGroupsWithUser(self):
         """ Fetching user groups when logging with UPN """
-        users.loginAsUser(config.AD1_USER_WITH_GROUP, config.AD1_DOMAIN,
-                          config.USER_PASSWORD, 'true')
-        groups = users.fetchUserGroups(True, user_name=config.USER_WITH_GROUP)
-        LOGGER.info("User's groups: %s" % [g.get_name() for g in groups])
-        assert len(groups) > 0
+        user_name = config.USER_FROM_GROUP(self.domain)
+        self._loginAsUser(user_name, filter='false')
+        groups = users.fetchUserGroups(True, user_name=user_name)
+        LOGGER.info("User's groups: %s", [g.get_name() for g in groups])
+        assert len(groups)
 
     def _checkEnc(self, auth, result):
-        user, domain = config.AD1_NORMAL_USER.split('@')
+        user, domain = config.NORMAL_USER(self.domain).split('@')
 
         self.assertTrue(
             runMachineCommand(True, ip=config.OVIRT_ADDRESS, cmd=auth,
@@ -120,12 +141,12 @@ class ActiveDirectory(TestCase):
                               password=config.OVIRT_ROOT_PASSWORD)[0],
             "Run cmd %s failed." % TCP_DUMP)
 
-        users.loginAsUser(user, domain, config.USER_PASSWORD, 'true')
+        users.loginAsUser(user, domain, self.PASSWORD, 'true')
         self.assertTrue(connectionTest())
         time.sleep(20)
 
         status = runMachineCommand(True, ip=config.OVIRT_ADDRESS,
-                                   cmd=CHECK_DUMP % config.AD1_NORMAL,
+                                   cmd=CHECK_DUMP % user,
                                    user=config.OVIRT_ROOT,
                                    password=config.OVIRT_ROOT_PASSWORD)
         self.assertTrue(status[0] == result, "Run cmd %s failed." % CHECK_DUMP)
@@ -141,17 +162,37 @@ class ActiveDirectory(TestCase):
     @tcms(config.AD_TCMS_PLAN_ID, 91745)
     def ldapEncryption(self):
         """ LDAP encryption """
-        self._checkEnc(SET_AUTH % AUTH, True)
-        self._checkEnc(SET_AUTH % AUTH_CONF, False)
+        self._checkEnc(SET_AUTH % (self.product, AUTH), True)
+        self._checkEnc(SET_AUTH % (self.product, AUTH_CONF), False)
 
     @istest
     @tcms(config.AD_TCMS_PLAN_ID, 41716)
     def multipleDomains(self):
         """ Multiple domains: Two ADs, using FQDN names """
-        users.loginAsUser(config.AD1_USER_NAME, config.AD1_DOMAIN,
-                          config.USER_PASSWORD, 'true')
+        self._loginAsUser(config.TEST_USER(self.domain))
         self.assertTrue(connectionTest())
         users.loginAsUser(config.AD2_USER_NAME, config.AD2_DOMAIN,
                           config.USER_PASSWORD, 'true')
         self.assertTrue(connectionTest())
         LOGGER.info("User with same name from different domains can login.")
+
+
+class AD(ActiveDirectory):
+    """ AD 2003 """
+    __test__ = True
+    domain = config.AD1_DOMAIN
+    PASSWORD = config.USER_PASSWORD
+
+
+class AD_W2K12_R2(ActiveDirectory):
+    """ AD 2012 """
+    __test__ = True
+    domain = config.W2K12R2_DOMAIN
+    PASSWORD = config.W2K12R2_PASSWORD
+
+
+class AD_W2K8_R2(ActiveDirectory):
+    """ AD 2008 """
+    __test__ = True
+    domain = config.W2K8R2_DOMAIN
+    PASSWORD = config.W2K8R2_PASSWORD

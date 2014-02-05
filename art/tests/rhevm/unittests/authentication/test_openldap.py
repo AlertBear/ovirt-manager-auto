@@ -113,6 +113,7 @@ class LDAPCase289066(TestCase):
 
 
 class LDAPCase289068(TestCase):
+    """ Test if user with expired password can't login """
     __test__ = True
 
     def setUp(self):
@@ -138,6 +139,7 @@ class LDAPCase289068(TestCase):
 
 
 class LDAPCase289069(TestCase):
+    """ Try to search via REST with firstname, lastname """
     __test__ = True
 
     def setUp(self):
@@ -164,6 +166,7 @@ class LDAPCase289069(TestCase):
 
 
 class LDAPCase289071(TestCase):
+    """ If the information is updated on LDAP side it's propageted to rhevm """
     __test__ = True
     UPDATE_USER1 = "%s/modify_user1.ldif" % TEST_FOLDER
     UPDATE_USER2 = "%s/modify_user2.ldif" % TEST_FOLDER
@@ -208,6 +211,7 @@ class LDAPCase289071(TestCase):
 
 
 class LDAPCase289072(TestCase):
+    """ If user which is part of group is removed, the group still persists """
     __test__ = True
 
     def setUp(self):
@@ -236,6 +240,7 @@ class LDAPCase289072(TestCase):
 
 
 class LDAPCase289076(TestCase):
+    """ Test if user which has lot of groups assigned can be added & login """
     __test__ = True
 
     def setUp(self):
@@ -259,6 +264,7 @@ class LDAPCase289076(TestCase):
 
 
 class LDAPCase289078(TestCase):
+    """ Test if user can't login after group removal from user """
     __test__ = True
     DEL_LDIF = 'del_group.ldif'
     ADD_LDIF = 'add_group.ldif'

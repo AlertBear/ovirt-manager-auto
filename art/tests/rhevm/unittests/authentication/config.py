@@ -20,25 +20,11 @@ OVIRT_DOMAIN = REST.get('user_domain', None)
 OVIRT_PASSWORD = REST.get('password', None)
 USER_PASSWORD = PARAMETERS.get('user_password', None)
 
-# AD
 AD1_DOMAIN = PARAMETERS.get('ad1_domain', None)
 AD2_DOMAIN = PARAMETERS.get('ad2_domain', None)
 
-AD1_USER_WITH_GROUP = PARAMETERS.get('ad1_user_with_group_name', None)
-AD1_NORMAL = PARAMETERS.get('ad1_normal_user_name', None)
-AD1_USER_NAME = PARAMETERS.get('ad1_user_name', None)
-AD2_USER_NAME = AD1_USER_NAME
-AD1_EXPIRED_PSW = PARAMETERS.get('ad1_expired_psw_name', None)
-AD1_EXPIRED_USER = PARAMETERS.get('ad1_expired_user_name', None)
-AD1_DISABLED = PARAMETERS.get('ad1_disabled_name', None)
-
-AD1_NORMAL_USER = PARAMETERS.get('ad1_normal_user', None)
-AD1_USER = PARAMETERS.get('ad1_user', None)
-USER_WITH_GROUP = PARAMETERS.get('ad1_user_with_group', None)
 AD2_USER = PARAMETERS.get('ad2_user', None)
-USER_EXPIRED_PSW = PARAMETERS.get('ad1_expired_psw', None)
-USER_EXPIRED_USER = PARAMETERS.get('ad1_expired_user', None)
-USER_DISABLED = PARAMETERS.get('ad1_disabled', None)
+AD2_USER_NAME = PARAMETERS.get('ad2_user_name', None)
 
 # IPA
 IPA_DOMAIN = str(PARAMETERS.get('ipa_domain', None)).upper()
@@ -78,9 +64,14 @@ LDAP_TESTING_USER_NAME = PARAMETERS.get('ldap_testing_user_name', None)
 
 # RHDS
 RHDS_DOMAIN = str(PARAMETERS.get('rhds_domain', None))
+W2K8R2_DOMAIN = str(PARAMETERS.get('w2k8r2_domain', None))
+W2K8R2_PASSWORD = str(PARAMETERS.get('w2k8r2_password', 'Heslo123'))
+W2K12R2_DOMAIN = str(PARAMETERS.get('w2k12rw_domain', None))
+W2K12R2_PASSWORD = str(PARAMETERS.get('w2k12rw_password', 'Heslo123'))
 
 # Common
-DOMAINS = {RHDS_DOMAIN: 'rhds', IPA_DOMAIN: 'ipa', AD1_DOMAIN: 'ad1'}
+DOMAINS = {RHDS_DOMAIN: 'rhds', IPA_DOMAIN: 'ipa', AD1_DOMAIN: 'ad1',
+           W2K8R2_DOMAIN: 'w2k8r2', W2K12R2_DOMAIN: 'w2k12r2'}
 
 
 def getParamFromDomain(param, domain_name):
@@ -111,9 +102,20 @@ def EXPIRED_PSW_NAME(domain):
     return getParamFromDomain('expired_psw_name', domain)
 
 
+def DISABLED_ACC(domain):
+    return getParamFromDomain('disabled', domain)
+
+
 def WITH_MANY_GROUPS_NAME(domain):
     return getParamFromDomain('with_many_groups_name', domain)
 
+
+def NORMAL_USER(domain):
+    return getParamFromDomain('normal_user', domain)
+
+
+def TEST_USER(domain):
+    return getParamFromDomain('user', domain)
 
 MAIN_CLUSTER_NAME = PARAMETERS.get('cluster_name', None)
 AD_TCMS_PLAN_ID = 2112

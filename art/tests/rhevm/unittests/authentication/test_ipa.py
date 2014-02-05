@@ -128,6 +128,7 @@ class IPACase93879(TestCase):
 
 
 class IPACase93881(TestCase):
+    """ Try to login with different login formats """
     __test__ = True
 
     def setUp(self):
@@ -156,6 +157,7 @@ class IPACase93881(TestCase):
 
 
 class IPACase109871(TestCase):
+    """ Test if user which has lot of groups assigned can be added & login """
     __test__ = True
 
     def setUp(self):
@@ -179,6 +181,7 @@ class IPACase109871(TestCase):
 
 
 class IPACase109146(TestCase):
+    """ If user which is part of group is removed, the group still persists """
     __test__ = True
 
     def setUp(self):
@@ -207,6 +210,7 @@ class IPACase109146(TestCase):
 
 
 class IPACase93882(TestCase):
+    """ Try to search via REST with firstname, lastname """
     __test__ = True
 
     def setUp(self):
@@ -232,6 +236,7 @@ class IPACase93882(TestCase):
 
 
 class IPACase93883(TestCase):
+    """ If the information is updated on IPA side it's propageted to rhevm """
     __test__ = True
 
     def setUp(self):
