@@ -25,6 +25,7 @@ def setup_package():
                         storageDomainName=config.STORAGE_NAME,
                         storage_type=config.STORAGE_TYPE,
                         cluster=config.CLUSTER_NAME,
+                        auto_nics=[config.HOST_NICS[0]],
                         lun_address=config.LUN_ADDRESS,
                         lun_target=config.LUN_TARGET,
                         luns=config.LUN, version=config.VERSION,
