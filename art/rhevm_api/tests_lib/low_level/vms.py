@@ -837,6 +837,7 @@ def addDisk(positive, vm, size, wait=True, storagedomain=None,
         if param_val is not None:
             logger.debug("addDisk parameter %s is %s", param_name, param_val)
             setattr(disk, param_name, param_val)
+            logger.debug("%s is not none", param_val)
 
     # quota
     quota_id = kwargs.pop('quota', None)
