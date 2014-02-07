@@ -80,7 +80,14 @@ IP_PATTERN = '10.35.*'
 TIMEOUT = 120
 
 virsh_cmd = ['nwfilter-dumpxml', 'vdsm-no-mac-spoofing']
-search_for = ["<filterref filter='no-mac-spoofing'/>","<filterref filter='no-arp-mac-spoofing'/>"]
+search_for = ["<filterref filter='no-mac-spoofing'/>",
+              "<filterref filter='no-arp-mac-spoofing'/>"]
+
+
+def get_host_list():
+    hostUtil = get_api('host', 'hosts')
+    return hostUtil.get(absLink=False)
+
 
 @is_action('getDCHosts')
 def get_dc_hosts(datacenter, get_href=True):
