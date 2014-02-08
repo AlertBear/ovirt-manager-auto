@@ -48,8 +48,8 @@ DEVICES_TARGET_PATHS = {'gluster': '%s.%s' % (MAIN_SECTION, 'data_domain'),
                         'local': '%s.%s' % (MAIN_SECTION, 'local_domain'),
                         }
 POSIXFS_COMPLIANT_TYPES = ['gluster', 'nfs']
-NAS_DATA_CENTER_TYPES = ['gluster', 'nfs']
-SAN_DATA_CENTER_TYPES = ['iscsi', 'fcp']
+NAS_STORAGE_TYPES = ['gluster', 'nfs']
+SAN_STORAGE_TYPES = ['iscsi', 'fcp']
 ISO_EXPORT_TYPE = 'iso_export_domain_nas'
 LOAD_BALANCING_CAPACITY = 'capacity'
 LOAD_BALANCING_RANDOM = 'random'
@@ -75,7 +75,7 @@ def getStorageServers(storageType='none'):
     Parameters:
         *  storageType - storage type, in case of none passed, storageType
                          will be selected between nfs and gluster according to
-                         data_center_type that passed to decorated function
+                         storage type that passed to decorated function
     It is:
         - adding corresponding storage api object to self.storages[storageType]
         - adding corresponding storage provider ip to corresponding data type.
@@ -212,7 +212,7 @@ def createHostGroupName(vdc):
         raise CreateHostGroupNameException(e)
 
 
-def getStorageServer(type, load_balancing, conf=None, servers=None):
+def getStorageServer(type_, load_balancing, conf=None, servers=None):
     '''
     Get less used storage server(less used disk space + cpu load)
     Parameters:
@@ -222,10 +222,10 @@ def getStorageServer(type, load_balancing, conf=None, servers=None):
     '''
     try:
         if load_balancing == LOAD_BALANCING_CAPACITY:
-            monitor = snmp.SNMPMonitor(type, conf, servers=servers)
+            monitor = snmp.SNMPMonitor(type_, conf, servers=servers)
             return monitor.getServersByDiskSpaceToCpuRatio()
         elif load_balancing == LOAD_BALANCING_RANDOM:
-            return smngr.getRandomServers(type, conf, servers)
+            return smngr.getRandomServers(type_, conf, servers)
         else:
             raise GetServerForDynamicStorageAllocationException(
                 "Unsupported load-balancing type: %s" % load_balancing)
@@ -253,13 +253,12 @@ class StorageUtils:
         self.storageConf = config['STORAGE']
         self.logger = logging.getLogger('storage')
         self.host_group = self.storageConf.get('host_group')
-        self.data_center_type = str(getFromMainConfSection(config,
-                                                           'data_center_type',
-                                                           asList=False))
+        self.storage_type = str(getFromMainConfSection(config, 'storage_type',
+                                                       asList=False))
         self.real_storage_type = 'mixed'
-        if 'posixfs_' in self.data_center_type:
-            self.data_center_type, self.real_storage_type = \
-                self.data_center_type.split('_')
+        if 'posixfs_' in self.storage_type:
+            self.storage_type, self.real_storage_type = \
+                self.storage_type.split('_')
         self.load_balancing = False
         self.serverPool = None
         self.storageConfigFile = storageConfig
@@ -284,8 +283,8 @@ class StorageUtils:
             vdsPasswords.extend(addPasswords)
 
         #fixme: exclude fcp
-        if self.data_center_type in SAN_DATA_CENTER_TYPES or \
-                self.data_center_type == 'none':
+        if self.storage_type in SAN_STORAGE_TYPES or \
+                self.storage_type == 'none':
             for vds, password in zip(vdsServers, vdsPasswords):
                 try:
                     machine = Machine(vds, 'root', password).util('linux')
@@ -349,7 +348,7 @@ class StorageUtils:
                  'total': int(confStorageSection.
                               get('{0}_devices'.format(dev_type), '0')),
                  }
-            if dev_type in SAN_DATA_CENTER_TYPES:
+            if dev_type in SAN_STORAGE_TYPES:
                 self.storages[dev_type][targetDevPath]['capacity'] = \
                     confStorageSection.get('devices_capacity', '0')
                 self.storages[dev_type][targetDevPath]['is_specific'] = False
@@ -371,7 +370,7 @@ class StorageUtils:
         Author: imeerovi
         Parameters:
             * storage_type - storage type, in all cases except posixfs it
-                             is exactly data center type from conf file
+                             is exactly storage type from conf file
         Return: None
         """
         if storage_type == 'gluster':
@@ -395,21 +394,21 @@ class StorageUtils:
                      ]
 
     @getStorageServers()
-    def _storageSetupSAN(self, data_center_type):
+    def _storageSetupSAN(self, storage_type):
         """
         Description: creation of SAN devices
         Author: imeerovi
         Parameters:
-            * data_center_type - data center type from conf file
+            * storage_type - storage type type from conf file
         Return: None
         """
-        block_devices = self.iscsi_devices if data_center_type == 'iscsi' \
+        block_devices = self.iscsi_devices if storage_type == 'iscsi' \
             else self.fcp_devices
         for storageSection, sectionParams in \
-                self.storages[data_center_type].items():
+                self.storages[storage_type].items():
             block_devices[storageSection] = [
                 self.__create_block_device(
-                    data_center_type, sectionParams, self.host_group,
+                    storage_type, sectionParams, self.host_group,
                     sectionParams['capacity'], **self.vdsData)
                 for i in range(0, sectionParams['total'])
             ]
@@ -418,8 +417,7 @@ class StorageUtils:
         """
         Description: creation of local fs devices
         Author: imeerovi
-        Parameters:
-            * data_center_type - data center type from conf file
+        Parameters: None
         Return: None
         """
         for storageSection, sectionParams in self.storages['local'].items():
@@ -434,8 +432,7 @@ class StorageUtils:
         """
         Description: creation of iso and export domains
         Author: imeerovi
-        Parameters:
-            * data_center_type - data center type from conf file
+        Parameters: None
         Return: None
         """
         fsType = self.config[MAIN_SECTION][ISO_EXPORT_TYPE]
@@ -460,10 +457,10 @@ class StorageUtils:
         Author: edolinin
         Parameters: None
         '''
-        if self.data_center_type == 'none':
-            for st_type in NAS_DATA_CENTER_TYPES:
+        if self.storage_type == 'none':
+            for st_type in NAS_STORAGE_TYPES:
                 self._storageSetupNAS(st_type)
-            for st_type in SAN_DATA_CENTER_TYPES:
+            for st_type in SAN_STORAGE_TYPES:
                 self._storageSetupSAN(st_type)
             self._storageSetupDAS()
             # only storages from (POSIXFS_COMPLIANT_TYPES -
@@ -471,14 +468,14 @@ class StorageUtils:
             # it means that 'nfs' and 'gluster' storages will not be created
             # since they were created before
             only_posixfs_supported_storage_types = \
-                set(POSIXFS_COMPLIANT_TYPES) - set(NAS_DATA_CENTER_TYPES)
+                set(POSIXFS_COMPLIANT_TYPES) - set(NAS_STORAGE_TYPES)
             for st_type in only_posixfs_supported_storage_types:
                 self._storageSetupNAS(st_type)
 
-        elif self.data_center_type in NAS_DATA_CENTER_TYPES:
-            self._storageSetupNAS(self.data_center_type)
+        elif self.storage_type in NAS_STORAGE_TYPES:
+            self._storageSetupNAS(self.storage_type)
 
-        elif self.data_center_type == 'posixfs':
+        elif self.storage_type == 'posixfs':
             if self.real_storage_type == 'mixed':
                 for st_type in POSIXFS_COMPLIANT_TYPES:
                     self._storageSetupNAS(st_type)
@@ -486,10 +483,10 @@ class StorageUtils:
             elif self.real_storage_type in POSIXFS_COMPLIANT_TYPES:
                 self._storageSetupNAS(self.real_storage_type)
 
-        elif self.data_center_type in SAN_DATA_CENTER_TYPES:
-            self._storageSetupSAN(self.data_center_type)
+        elif self.storage_type in SAN_STORAGE_TYPES:
+            self._storageSetupSAN(self.storage_type)
 
-        elif self.data_center_type == 'localfs':
+        elif self.storage_type == 'localfs':
             self._storageSetupDAS()
 
         create_iso_exp = False
@@ -538,7 +535,7 @@ class StorageUtils:
                 address = [targetData['ip']] * targetData['total']
                 setConfValueByKeyPath(self.config, target, address, '_address',
                                       backwardCompatibilityCheck, cleanUpConf)
-                if type_ not in SAN_DATA_CENTER_TYPES:
+                if type_ not in SAN_STORAGE_TYPES:
                     path = devices[target]
                     setConfValueByKeyPath(self.config, target, path, '_path',
                                           backwardCompatibilityCheck,
@@ -590,13 +587,13 @@ class StorageUtils:
                         self.storages['nfs'][storageSection]['ip'], device,
                         'nfs')
 
-        for stype in SAN_DATA_CENTER_TYPES:
+        for stype in SAN_STORAGE_TYPES:
             for storageSection in self.storages[stype]:
                 if self.storages[stype][storageSection]['total'] > 0:
                     lunId = 'serial' if self.storages[stype][
                         storageSection]['is_specific'] else 'uuid'
                     block_devices = self.iscsi_devices if \
-                        self.data_center_type == 'iscsi' else self.fcp_devices
+                        self.storage_type == 'iscsi' else self.fcp_devices
                     if storageSection in block_devices.keys():
                         for device in block_devices[storageSection]:
                             self.__remove_block_device(

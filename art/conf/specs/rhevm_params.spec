@@ -19,7 +19,9 @@ local_domain_path = string(default='/home/rest_test_domain')
 product_name = option('Red Hat Enterprise Virtualization Manager', 'oVirt Engine', default='Red Hat Enterprise Virtualization Manager')
 vds_password = force_list(default=list('qum5net', 'qum5net'))
 vds = is_alive()
-data_center_type = option('nfs', 'iscsi', 'fcp', 'gluster', 'posixfs_nfs', 'posixfs_gluster', 'posixfs_mixed', 'localfs', 'none', default='none')
+# local replaces data_center_type. it is boolean, shared dc will be created when it is False and local dc will be created when it is True
+local=boolean(default=False)
+storage_type = option('nfs', 'iscsi', 'fcp', 'gluster', 'posixfs_nfs', 'posixfs_gluster', 'posixfs_mixed', 'localfs', 'none', default='none')
 # This parameter will be used in order to choose nas protocol for iso and export domains
 iso_export_domain_nas = option('nfs', 'posixfs', default='nfs')
 host_nics = force_list(default=None)
