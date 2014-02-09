@@ -82,7 +82,7 @@
 <test_case>
     <test_name>Add NIC to VM to allow boot</test_name>
     <test_action>addNic</test_action>
-    <parameters>vm='payload-vm-for-test', name='nic1', network='rhevm'</parameters>
+    <parameters>vm='payload-vm-for-test', name='nic1', network='{mgmt_bridge}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
 </test_case>

@@ -118,7 +118,7 @@
 <test_case>
    <test_name>Create VM</test_name>
    <test_action>createVm</test_action>
-   <parameters>vmName='Migrations_VM-#loop_index', vmDescription='Foo bar baz', cluster='{cluster1_name}', storageDomainName='{storagedomain1}', size=3221225472, nic='nic1', memory=536870912, cpu_cores={cpu_cores}, cpu_socket={cpu_socket}, display_type='{display_type}'</parameters>
+   <parameters>vmName='Migrations_VM-#loop_index', vmDescription='Foo bar baz', cluster='{cluster1_name}', storageDomainName='{storagedomain1}', size=3221225472, nic='nic1', memory=536870912, cpu_cores={cpu_cores}, cpu_socket={cpu_socket}, display_type='{display_type}', network='{mgmt_bridge}'</parameters>
    <positive>TRUE</positive>
    <run>loop(5)</run>
    <vital>true</vital>
@@ -271,7 +271,7 @@
 <test_case>
    <test_name>Create Migrations_VM-5-15 to overload host</test_name>
    <test_action>createVm</test_action>
-   <parameters>vmName='Migrations_VM-#loop_index', vmDescription='host overloading VM-#loop_index', cluster='{cluster1_name}', storageDomainName='{storagedomain1}', size=3221225472, nic='nic1', memory=536870912, cpu_cores={cpu_cores}, cpu_socket={cpu_socket}, display_type='{display_type}'</parameters>
+   <parameters>vmName='Migrations_VM-#loop_index', vmDescription='host overloading VM-#loop_index', cluster='{cluster1_name}', storageDomainName='{storagedomain1}', size=3221225472, nic='nic1', memory=536870912, cpu_cores={cpu_cores}, cpu_socket={cpu_socket}, display_type='{display_type}', network='{mgmt_bridge}'</parameters>
    <positive>TRUE</positive>
    <run>loop(5-15)</run>
 </test_case>
