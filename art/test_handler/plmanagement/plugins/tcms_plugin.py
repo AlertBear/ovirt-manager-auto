@@ -19,22 +19,30 @@ Configuration Options:
     | **site** - url addres to TCMS site,
     |       default: https://tcms.engineering.redhat.com/xmlrpc/
     | **realm*** - KRB realm, default: @REDHAT.COM
-    | **keytab_files_location** - path to directory where KRB keytabs are located
+    | **keytab_files_location** - path to directory where KRB keytabs are
+    |       located
     | **send_result_email** - if to send the results by email (true/false)
     | **test_run_name_template** - test run template name, for an example:
     |       "Auto Run for {0} TestPlan"
-    | **category** - test category name (should be compatible with TCMS category)
+    | **category** - test category name (should be compatible with TCMS
+    |       category)
     | **build_id** - build id
+    | **info_lines** - list of formating strings which will be attached to test
+    |       case. only one parameter is provided to 'format' function, it is
+    |       instance of _TestElm named 'elm'. default: ["{elm}"]
+    |       example: ["{elm}", "{elm.description}"]
 
 Usage
 -----
 For XML tests sheet
 +++++++++++++++++++
 There are 2 tags dedicated for this plugin:
-    * <tcms_test_plan> - TCMS test plan ID. You can use this tag for each test_suite,  test_group or test_case.
-        It is inherited into nested elements (grouped test cases for an example),
-        so you don't need to repeate it there.
-    * <tcms_test_case> - TCMS test case ID. You can use this tag for either test_group or test_case.
+    * <tcms_test_plan> - TCMS test plan ID. You can use this tag for each
+        test_suite,  test_group or test_case. It is inherited into nested
+        elements (grouped test cases for an example), so you don't need to
+        epeate it there.
+    * <tcms_test_case> - TCMS test case ID. You can use this tag for either
+        test_group or test_case.
 
 From unittets suite
 +++++++++++++++++++
@@ -72,6 +80,7 @@ RUN_NAME_TEMPL = 'test_run_name_template'
 REALM_OPT = 'realm'
 GENERATE_LINKS = 'generate_links'
 TCMS_SITE = 'tcms_site'
+INFO_LINES = 'info_lines'
 
 TCMS_DEC = 'tcms'
 TCMS_TEST_CASE = 'tcms_test_case'
@@ -115,6 +124,7 @@ class TCMS(Component):
         self.tcms_plans = []
         self.__register_functions()
         self.build_id = None
+        self.info_lines = []
 
     @classmethod
     def add_options(cls, parser):
@@ -155,6 +165,7 @@ class TCMS(Component):
             tcms_cfg.as_bool(GENERATE_LINKS)
         self.report_bz = tcms_cfg.as_bool(REPORT_BZ)
         self.build_id = tcms_cfg[BUILD_ID]
+        self.info_lines = tcms_cfg[INFO_LINES]
 
         from art.test_handler.test_runner import TestGroup
         TestGroup.add_elm_attribute('TEST_TCMS_CASE_ID', TCMS_TEST_CASE)
@@ -235,9 +246,18 @@ class TCMS(Component):
             if self.report_bz:
                 bz = getattr(test, 'bz', None)
 
+        info_lines = []
+        for info_line in self.info_lines:
+            try:
+                info_line = info_line.format(test, elm=test)
+            except (LookupError, AttributeError) as ex:
+                logger.warn("Can not attach info line '%s' to %s: %s",
+                            info_line, test, ex)
+            info_lines.append(info_line.replace("'", "\\'"))
+
         self.agent.iterationInfo(sub_test_name=test.test_name,
                                  test_case_name=test.test_name,
-                                 info_line=[str(test).replace("'", "\\'")],
+                                 info_line=info_lines,
                                  iter_number=test.serial,
                                  iter_status=status,
                                  bz_info=bz,
@@ -286,3 +306,4 @@ class TCMS(Component):
         section_spec[GENERATE_LINKS] = "boolean(default=false)"
         section_spec[TCMS_SITE] = "string(default='%s')" % TCMS_URL
         section_spec[BUILD_ID] = "string(default='unspecified')"
+        section_spec[INFO_LINES] = "list(default=list('{elm}'))"
