@@ -1364,11 +1364,12 @@ def getAllImages(vds, vds_username, vds_password, spool_id, domain_id,
     attrib = '{' + namespace_dict['ovf'] + '}fileRef'
     return [disk.attrib[attrib].split('/', 1)[0] for disk in disks_elements]
 
+
 @is_action()
 def checkSpoofingFilterRuleByVer(host, user, passwd, target_version='3.2'):
     '''
-    Description: Check if NetworkFilter (nwfilter) rule is enabled/disabled for a requested
-    version
+    Description: Check if NetworkFilter (nwfilter) rule is enabled/disabled
+    for a requested version
     Author: myakove
     Parameters:
       * host - name of the rhevm
@@ -1378,7 +1379,7 @@ def checkSpoofingFilterRuleByVer(host, user, passwd, target_version='3.2'):
     Return True for version >= 3.2 and False for <=3.1
      '''
 
-    host_obj = Machine(host,user,passwd).util(LINUX)
+    host_obj = Machine(host, user, passwd).util(LINUX)
     cmd = ['engine-config', '-g', 'EnableMACAntiSpoofingFilterRules']
     rc, output = host_obj.runCmd(cmd)
     ERR_MSG = 'Version {0} has incorrect nwfilter value: {1}'
@@ -1409,10 +1410,10 @@ def setNetworkFilterStatus(enable, host, user, passwd, version):
       * version - Data center's version
     return: True if network filtering is disabled, False otherwise
     '''
-    cmd = ["rhevm-config", "-s", "EnableMACAntiSpoofingFilterRules=%s" \
-           % enable.lower(), "--cver=%s" % version]
+    cmd = ["engine-config", "-s", "EnableMACAntiSpoofingFilterRules=%s" %
+           enable.lower(), "--cver=%s" % version]
 
-    host_obj = Machine(host,user,passwd).util(LINUX)
+    host_obj = Machine(host, user, passwd).util(LINUX)
     if not host_obj.runCmd(cmd)[0]:
         logger.error("Operation failed")
         return False

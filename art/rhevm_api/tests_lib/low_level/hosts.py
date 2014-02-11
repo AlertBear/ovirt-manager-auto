@@ -2257,37 +2257,38 @@ def checkNetworkFilteringDumpxml(positive, host, user, passwd, vm, nics):
         return not positive
     return positive
 
+
 @is_action()
 def checkNetworkFilteringEbtables(positive, host, user, passwd, nics, vm_macs):
-    '''
+    """
     Description: Check that network filtering is enabled via ebtables
                  This function is also described in tcms_plan 6955
                  test_case 198920
     Author: awinter
     Parameters:
-      * host - name of the host
-      * user - user name for the host
-      * passwd - password for the user
-      * nics - number of nics
-      * vm_macs - list of vms' macs
-    return: True if network filtering is enabled, False otherwise
-    '''
+      *  *host - name of the host
+      *  *user - user name for the host
+      *  *passwd - password for the user
+      *  *nics - number of nics
+      *  *vm_macs - list of vms' macs
+    **return**: True if network filtering is enabled, False otherwise
+    """
     count = 0
     macTemplate = re.compile('([0-9a-f]+[:]){5}[0-9a-f]+', re.I)
-    host_obj = machine.Machine(host,user,passwd).util('linux')
+    host_obj = machine.Machine(host, user, passwd).util('linux')
     cmd = ['ebtables', '-t', 'nat', '-L']
     output = (host_obj.runCmd(cmd)[1].strip()).splitlines()
     for line in output:
         line_list = line.split()
-        mac_addr = [word for word in line_list if re.match(macTemplate, "0" + word)]
+        mac_addr = [word for word in line_list if re.match(macTemplate,
+                                                           "0" + word)]
         if mac_addr:
             mac = "0" + mac_addr[0]
             if mac in vm_macs:
-                count = count + 1
-            else:
-                HOST_API.logger.error("Mac not found in ebtables")
-                return not positive
+                count += 1
+
     if count != 2 * int(nics):
+        HOST_API.logger.error("Mac not found in ebtables")
         return not positive
     return positive
 
