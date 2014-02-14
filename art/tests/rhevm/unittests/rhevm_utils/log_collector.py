@@ -30,7 +30,7 @@ class LogCollectorSingleDC(RHEVMUtilsTestCase):
         self.ut.autoTest()
 
     @tcms(LOG_COLLECTOR_TEST_PLAN, 95162)
-    def lest_log_collector_collect(self):
+    def test_log_collector_collect(self):
         """ log_collector collect"""
         assert self.ut.setRestConnPassword(NAME, LOG_COL_CONF, REST_API_PASS)
         self.ut(action='collect')
