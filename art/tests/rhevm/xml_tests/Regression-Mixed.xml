@@ -150,9 +150,9 @@
   </test_case>
   <test_case>
     <id>d759d780-c695-11e1-a578-f0def10e0ce8</id>
-    <test_name>Search for data centers</test_name>
+    <test_name>Search for RestDataCenterUpdated data center</test_name>
     <test_action>searchForDataCenter</test_action>
-    <parameters>query_key='type', query_val='e{storage_type_nfs}', key_name='storage_type'</parameters>
+    <parameters>query_key='name', query_val='RestDataCenterUpdated', key_name='name'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
   </test_case>
