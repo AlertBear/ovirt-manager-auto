@@ -240,9 +240,24 @@ def checkSupportedVersions(name):
         if dcVersion.get_major() > version.get_major() or (
                 dcVersion.get_major() == version.get_major() and
                 dcVersion.get_minor() > version.get_minor()):
-            util.logger.error('Invalid supported versions in ' \
+            util.logger.error('Invalid supported versions in '
                               'data center {0}'.format(name))
             return False
-    util.logger.info('Validated supported versions of' \
+    util.logger.info('Validated supported versions of'
                      ' data center {0}'.format(name))
     return True
+
+
+def get_data_center(dc_name):
+    """
+    Get data center object by name
+    Author: ratamir
+    Parameters:
+        *dc_name - Data Center's name to get
+
+    Return: dc object, or raise DataCenterException
+    """
+    dc_obj = util.find(dc_name)
+    if not dc_obj:
+        raise exceptions.DataCenterException("DC %s not found" % dc_name)
+    return dc_obj

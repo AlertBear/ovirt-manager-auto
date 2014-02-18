@@ -19,6 +19,7 @@
 import logging
 import time
 import types
+from utilities.machine import Machine
 
 from art.core_api.apis_exceptions import EntityNotFound, APITimeout
 from art.core_api.apis_utils import data_st, TimeoutingSampler
@@ -26,7 +27,7 @@ from art.rhevm_api.data_struct.data_structures import Fault
 from art.rhevm_api.utils.test_utils import get_api, split
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from art.core_api import is_action
-from art.test_handler.exceptions import DiskException
+from art.test_handler.exceptions import DiskException, CanNotResolveActionPath
 from art.test_handler.settings import opts
 
 GBYTE = 1024 ** 3
@@ -50,6 +51,7 @@ CONN_API = get_api('storage_connection', 'storageconnections')
 
 logger = logging.getLogger(__package__ + __name__)
 xpathMatch = is_action('xpathMatch')(XPathMatch(VM_API))
+BLOCK_DEVICES = [ENUMS['storage_type_iscsi'], ENUMS['storage_type_fcp']]
 
 
 def getStorageDomainDisks(storagedomain, get_href):
@@ -115,6 +117,12 @@ def _prepareDiskObject(**kwargs):
         * storage_connection - in case of direct LUN - existing storage
                                connection to use instead of creating a new one
         You cannot set both storage_connection and lun_* in one call!
+
+        * id - disk id
+        * active - True or False whether disk should activate after creation
+        * snapshot - snapshot object of the disk
+
+
     Author: jlibosva
     Return: Disk object
     """
@@ -165,6 +173,21 @@ def _prepareDiskObject(**kwargs):
 
         disk.set_lun_storage(data_st.Storage(logical_unit=[direct_lun],
                                              type_=type_))
+
+    # id
+    disk_id = kwargs.pop('id', None)
+    if disk_id:
+        disk.set_id(disk_id)
+
+    # active
+    active = kwargs.pop('active', None)
+    if active:
+        disk.set_active(active)
+
+    # snapshot
+    snapshot = kwargs.pop('snapshot', None)
+    if snapshot:
+        disk.set_snapshot(snapshot)
 
     return disk
 
@@ -268,10 +291,8 @@ def attachDisk(positive, alias, vmName, active=True):
     """
     diskObj = DISKS_API.find(alias)
     diskObj.active = active
-
     vmDisks = getObjDisks(vmName)
     diskObj, status = DISKS_API.create(diskObj, positive, collection=vmDisks)
-
     return status
 
 
@@ -414,3 +435,38 @@ def move_disk(disk_name, source_domain, target_domain, wait=True,
             if disk.name == disk_name and \
                     disk.status.state == ENUMS['disk_state_ok']:
                 return
+
+
+def checksum_disk(hostname, user, password, disk_object, dc_obj):
+    """
+    Checksum disk
+    Author: ratamir
+    Parameters:
+        * hostname - name of host
+        * user - user name for host
+        * password - password for host
+        * disk_object - disk object that need checksum
+        * dc_obj - data center that the disk belongs to
+    Return:
+        Checksum output, or raise exception otherwise
+    """
+    host_machine = Machine(host=hostname, user=user,
+                           password=password).util('linux')
+
+    vol_id = disk_object.get_image_id()
+    sd_id = disk_object.get_storage_domains().get_storage_domain()[0].get_id()
+    image_id = disk_object.get_id()
+    sd = STORAGE_DOMAIN_API.find(sd_id, attribute='id')
+    sp_id = dc_obj.get_id()
+    block = sd.get_type() in BLOCK_DEVICES
+
+    if block:
+        host_machine.lv_change(sd_id, vol_id, activate=True)
+
+    vol_path = host_machine.get_volume_path(sd_id, sp_id, image_id, vol_id)
+    checksum = host_machine.checksum(vol_path)
+
+    if block:
+        host_machine.lv_change(sd_id, vol_id, activate=False)
+
+    return checksum

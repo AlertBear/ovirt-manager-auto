@@ -45,6 +45,7 @@ SchedulingPolicyThresholds = getDS('SchedulingPolicyThresholds')
 SchedulingPolicy = getDS('SchedulingPolicy')
 ErrorHandling = getDS('ErrorHandling')
 CPU = getDS('CPU')
+CLUSTER_API = get_api('cluster', 'clusters')
 
 xpathMatch = is_action('xpathClusters', id_name='xpathMatch')(XPathMatch(util))
 
@@ -525,3 +526,16 @@ def checkClusterParams(positive, cluster, thrhld_low=None, thrhld_high=None,
         util.logger.error("checkClusterParams: %s" % str(e))
         return not positive
     return status == positive
+
+
+@is_action()
+def get_cluster_object(cluster_name):
+    """
+    Description: get cluster object by name
+    Author: ratamir
+    Parameters:
+        * cluster_name - cluster name
+    Return: cluster object, or raise EntityNotFound exception
+    """
+    cluster_obj = CLUSTER_API.find(cluster_name)
+    return cluster_obj

@@ -1777,4 +1777,3 @@ class NFSStorage(object):
         for k, v in kwargs.iteritems():
             assert (k in self.__allowed)
             setattr(self, k, v)
-

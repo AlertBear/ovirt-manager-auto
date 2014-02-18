@@ -32,7 +32,7 @@ from art.core_api.apis_exceptions import APITimeout, EntityNotFound, \
     TestCaseError
 from art.core_api.apis_utils import data_st, TimeoutingSampler, getDS
 from art.rhevm_api.tests_lib.low_level.disks import _prepareDiskObject, \
-    getVmDisk
+    getVmDisk, getObjDisks
 from art.rhevm_api.tests_lib.low_level.networks import getVnicProfileObj, \
     MGMT_NETWORK
 from art.rhevm_api.utils.name2ip import LookUpVMIpByName
@@ -50,6 +50,7 @@ from art.test_handler import exceptions
 from utilities.jobs import Job, JobsSet
 from utilities.utils import pingToVms, makeVmList
 from utilities.machine import Machine, LINUX
+
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 DEFAULT_CLUSTER = 'Default'
@@ -279,6 +280,11 @@ def _prepareVmObject(**kwargs):
         perms = data_st.Permissions()
         perms.set_clone(True)
         vm.set_permissions(perms)
+
+    # initialization
+    initialization = kwargs.pop('initialization', None)
+    if initialization:
+        vm.set_initialization(initialization=initialization)
 
     return vm
 
@@ -529,17 +535,20 @@ def waitForVmsGone(positive, vms, timeout=60, samplingPeriod=10):
 
 
 @is_action()
-def waitForVmsStates(positive, names, states='up', *args, **kwargs):
+def waitForVmsStates(positive, names, states=ENUMS['vm_state_up'], *args,
+                     **kwargs):
     '''
     Wait until all of the vms identified by names exist and have the desired
     status.
     Parameters:
-        * names - A comma separated names of the hosts with status to wait for.
+        * names - List or comma separated string of VM's names with
+                  status to wait for.
         * states - A state of the vms to wait for.
     Author: jhenner
     Return True if all events passed, otherwise False
     '''
-    names = split(names)
+    if isinstance(names, basestring):
+        names = split(names)
     for vm in names:
         VM_API.find(vm)
 
@@ -782,8 +791,6 @@ def _getVmFirstDiskByName(vm, diskName, idx=0):
         * diskId - disk's id
         * idx - index of found disk to return
     Return: Disk object
-    """
-    """
     """
     disks = getVmDisks(vm)
     found = [disk for disk in disks if disk.get_name() == diskName]
@@ -3232,10 +3239,11 @@ def run_cmd_on_vm(vm_name, cmd, user, password, timeout=15):
 def check_VM_disk_state(vm_name, disk_alias):
     """
     Description: Check disk state
+    Author: ratamir
     Parameters:
         * vm_name - string containing vm name
         * disk_alias - string containing disk name
-    Author: ratamir
+
     Return: True if the disk is active, False otherwise
     """
 
@@ -3252,9 +3260,10 @@ def check_VM_disk_state(vm_name, disk_alias):
 def get_vm_state(vm_name):
     """
     Description: Get vm state
+    Author: ratamir
     Parameters:
         * vm_name - string containing vm name
-    Author: ratamir
+
     Return: state of vm
     """
     vm_obj = VM_API.find(vm_name)
@@ -3352,3 +3361,153 @@ def maintenance_vm_migration(vm, src_host, dst_host):
                          vm, vm_host.get("vmHoster"), dst_host)
             return False
         return True
+
+
+def get_snapshot_disks(vm, snapshot):
+    """
+    Description: Return the disks contained in a snapshot
+    Author: ratamir
+    Parameters:
+        * vm - vm name
+        * snapshot - snapshot's description
+
+    Return: list of disks, or raise EntityNotFound exception
+    """
+    snap_obj = _getVmSnapshot(vm, snapshot)
+    disks = DISKS_API.getElemFromLink(snap_obj.get_vm())
+    return disks
+
+
+def get_vm_snapshot_ovf_obj(vm, snapshot):
+    """
+    Description: Return ovf file of vm
+    - The ovf itself is in:
+        snaps.get_initialization().get_configuration().get_data()
+    Author: ratamir
+    Parameters:
+        * vm - vm name
+        * snapshot - snapshot's description
+
+    Return: ovf configuration object, or raise EntityNotFound exception
+    """
+    snap_obj = _getVmSnapshot(vm, snapshot)
+    return snap_obj.get_initialization()
+
+
+def get_vm_snapshots(vm):
+    """
+    Description: Return vm's snapshots
+    Author: ratamir
+    Parameters:
+        * vm - vm name
+    Return: list of snapshots, or raise EntityNotFound exception
+    """
+    snapshots = _getVmSnapshots(vm, get_href=False)
+    return snapshots
+
+
+def create_vm_from_ovf(new_vm_name, cluster_name, ovf):
+    """
+    Description: Creates a vm from ovf configuration file
+    * The ovf configuration can be retrieved via 'get_vm_ovf_file' method
+
+    Author: ratamir
+    Parameters:
+        * new_vm_name - name for the restored vm
+        * cluster - name of the cluster that the vm should create in
+        * ovf - ovf object. can retrieved from 'get_vm_snapshot_ovf_obj'
+    Return: True if operation succeeded, or False otherwise
+    """
+    restored_vm_obj = _prepareVmObject(name=new_vm_name, cluster=cluster_name,
+                                       initialization=ovf)
+    _, status = VM_API.create(restored_vm_obj, True)
+    return status
+
+
+def get_vm_ip(vm_name):
+    """
+    Description: get vm ip by name
+    Author: ratamir
+    Parameters:
+        * vm_name - vm name
+    Return: ip address of a vm, or raise EntityNotFound exception
+    """
+    vm_ip = LookUpVMIpByName('', '').get_ip(vm_name)
+    return vm_ip
+
+
+def stop_vms_safely(vms_list, async=False, max_workers=2):
+    """
+    Description: Stops vm after checking that it is not already in down
+    state
+    Author: ratamir
+    Parameters:
+        * vms_list - list of vm names
+        * async - True if operation should be async or False otherwise
+        * max_workers - The maximum number of threads that can be used
+    """
+    results = list()
+    async = str(async).lower()
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        for vm in vms_list:
+            if not get_vm_state(vm) == ENUMS['vm_state_down']:
+                results.append(executor.submit(stopVm(True, vm, async=async)))
+
+    for vm, res in zip(vms_list, results):
+        if not res:
+            raise exceptions.VMException("Failed to stop vm %s" % vm)
+
+
+def attach_snapshot_disk_to_vm(disk_obj, vm_name, async=False, activate=True):
+    """
+    Attaching a snapshot disk to a vm
+    Author: ratamir
+    Parameters:
+        * disk_obj - disk object to attach
+        * vm_name - name of the vm that the disk should be attached to
+        * async - True if operation should be async
+        * activate - True if the disk should be activated after attachment
+
+    Return:
+        True if operation succeeded, False otherwise
+    """
+
+    new_disk_obj = _prepareDiskObject(id=disk_obj.get_id(),
+                                      active=activate,
+                                      snapshot=disk_obj.get_snapshot())
+    vmDisks = getObjDisks(vm_name)
+    diskObj, status = DISKS_API.create(new_disk_obj, True,
+                                       collection=vmDisks, async=async)
+    return status
+
+
+def attach_backup_disk_to_vm(src_vm, backup_vm, snapshot_description,
+                             async=True, activate=True):
+    """
+    Attaching a backup disk to a vm
+    Author: ratamir
+    Parameters:
+        * src_vm - name of vm with the disk that should be attached
+        * backup_vm - name of the vm that the disk should attach to
+        * snapshot_description - snapshot description where the disk
+          is located in
+        * async - True if operation should be async
+    Return:
+        True if operation succeeded, False otherwise
+    """
+    status = True
+    disks_objs = get_snapshot_disks(src_vm, snapshot_description)
+    for disk_obj in disks_objs:
+        logger.info("Attach disk %s of vm %s to vm %s",
+                    disk_obj.get_alias(), src_vm, backup_vm)
+        status = attach_snapshot_disk_to_vm(disk_obj, backup_vm, async=async,
+                                            activate=activate)
+
+        if not status:
+            logger.info("Failed to attach disk %s of vm %s to vm %s",
+                        disk_obj.get_alias(), src_vm, backup_vm)
+            return status
+        logger.info("Succeeded to attach disk %s of vm %s to vm %s",
+                    disk_obj.get_alias(), src_vm, backup_vm)
+
+    return status
