@@ -12,7 +12,7 @@ def setup_package():
         True, type='export',
         storage_type='nfs',
         address=config.EXPORT_DOMAIN_ADDRESS,
-        host=config.VDS,
+        host=config.VDS[0],
         path=config.EXPORT_DOMAIN_PATH)
     h_sd.attach_and_activate_domain(config.DATA_CENTER_NAME,
                                     config.EXPORT_STORAGE_DOMAIN)
@@ -21,5 +21,5 @@ def setup_package():
 def teardown_package():
     import config
     h_sd.remove_storage_domain(config.EXPORT_STORAGE_DOMAIN,
-                               config.DATA_CENTER_NAME, config.VDS)
+                               config.DATA_CENTER_NAME, config.VDS[0])
     storagedomains.cleanDataCenter(True, config.DATA_CENTER_NAME)

@@ -21,8 +21,8 @@ COMPATIBILITY_VERSION = PARAMETERS['compatibility_version']
 CLUSTER_NAME = PARAMETERS['cluster_name']
 STORAGE_DOMAIN = PARAMETERS['storage_domain']
 EXPORT_STORAGE_DOMAIN = PARAMETERS['export_storage_domain']
-VDS = PARAMETERS['vds']
-VDS_PASSWORD = PARAMETERS['vds_password']
+VDS = PARAMETERS.as_list('vds')
+VDS_PASSWORD = PARAMETERS.as_list('vds_password')
 
 USER_ROOT = PARAMETERS['user_root']
 USER_PASSWORD = PARAMETERS['user_password']
