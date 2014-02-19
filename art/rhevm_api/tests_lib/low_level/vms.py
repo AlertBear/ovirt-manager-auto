@@ -1970,11 +1970,11 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
 
     if nic:
         profile = vnic_profile if vnic_profile is not None else network
-    if not addNic(positive, vm=vmName, name=nic, interface=nicType,
-                  mac_address=mac_address,
-                  network=network,
-                  vnic_profile=profile, plugged=plugged, linked=linked):
-            return False
+        if not addNic(positive, vm=vmName, name=nic, interface=nicType,
+                      mac_address=mac_address,
+                      network=network,
+                      vnic_profile=profile, plugged=plugged, linked=linked):
+                return False
 
     if template == 'Blank' and storageDomainName and templateUuid is None:
         if not addDisk(positive, vm=vmName, size=size, type=diskType,
