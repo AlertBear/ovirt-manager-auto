@@ -155,10 +155,12 @@ class Case_vm_basic_operations(BaseTest):
     def setUp(self):
         vms.createVm(True, VM_NAME, '',
                      cluster=config.MAIN_CLUSTER_NAME, size=config.GB,
-                     storageDomainName=config.MAIN_STORAGE_NAME)
+                     storageDomainName=config.MAIN_STORAGE_NAME,
+                     network=config.MGMT_BRIDGE)
         vms.createVm(True, VM_NAME2, '',
                      cluster=config.MAIN_CLUSTER_NAME, size=config.GB,
-                     storageDomainName=config.MAIN_STORAGE_NAME)
+                     storageDomainName=config.MAIN_STORAGE_NAME,
+                     network=config.MGMT_BRIDGE)
         mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME,
                                    role=self.role)
         mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME2,
@@ -230,7 +232,8 @@ class Case_connect_to_vm(BaseTest):
     def setUp(self):
         vms.createVm(True, VM_NAME, '',
                      cluster=config.MAIN_CLUSTER_NAME, size=config.GB,
-                     storageDomainName=config.MAIN_STORAGE_NAME)
+                     storageDomainName=config.MAIN_STORAGE_NAME,
+                     network=config.MGMT_BRIDGE)
         mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME,
                                    role=self.role)
         vms.startVm(True, VM_NAME)
@@ -269,7 +272,8 @@ class Case_change_vm_custom_properties(BaseTest):
     def setUp(self):
         vms.createVm(True, VM_NAME, '',
                      cluster=config.MAIN_CLUSTER_NAME, size=config.GB,
-                     storageDomainName=config.MAIN_STORAGE_NAME)
+                     storageDomainName=config.MAIN_STORAGE_NAME,
+                     network=config.MGMT_BRIDGE)
         mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME,
                                    role=self.role)
 
@@ -295,14 +299,16 @@ class Case_create_vm(BaseTest):
     def create_vm(self):
         """ create_vm """
         self.assertTrue(vms.createVm(self.positive, VM_NAME, '',
-                                     cluster=config.MAIN_CLUSTER_NAME))
+                                     cluster=config.MAIN_CLUSTER_NAME,
+                                     network=config.MGMT_BRIDGE))
 
 
 class Case_delete_vm(BaseTest):
     __test__ = True
 
     def setUp(self):
-        vms.createVm(True, VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME)
+        vms.createVm(True, VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
+                     network=config.MGMT_BRIDGE)
         mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME,
                                    role=self.role)
 
@@ -320,7 +326,8 @@ class Case_edit_vm_properties(BaseTest):
     __test__ = True
 
     def setUp(self):
-        vms.createVm(True, VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME)
+        vms.createVm(True, VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
+                     network=config.MGMT_BRIDGE)
         mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME,
                                    role=self.role)
 
@@ -342,7 +349,8 @@ class Case_change_vm_cd(BaseTest):
     def setUp(self):
         vms.createVm(True, VM_NAME, '',
                      cluster=config.MAIN_CLUSTER_NAME, size=config.GB,
-                     storageDomainName=config.MAIN_STORAGE_NAME)
+                     storageDomainName=config.MAIN_STORAGE_NAME,
+                     network=config.MGMT_BRIDGE)
         vms.startVm(True, VM_NAME)
         mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME,
                                    role=self.role)
@@ -362,10 +370,12 @@ class Case_import_export_vm(BaseTest):
     __test__ = True
 
     def setUp(self):
-        vms.createVm(True, VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME)
+        vms.createVm(True, VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
+                     network=config.MGMT_BRIDGE)
         vms.exportVm(True, VM_NAME, config.EXPORT_NAME)
         vms.removeVm(True, VM_NAME)
-        vms.createVm(True, VM_NAME2, '', cluster=config.MAIN_CLUSTER_NAME)
+        vms.createVm(True, VM_NAME2, '', cluster=config.MAIN_CLUSTER_NAME,
+                     network=config.MGMT_BRIDGE)
         mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME2,
                                    role=self.role)
 
@@ -398,7 +408,8 @@ class Case_configure_vm_network(BaseTest):
     __test__ = True
 
     def setUp(self):
-        vms.createVm(True, VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME)
+        vms.createVm(True, VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
+                     network=config.MGMT_BRIDGE)
         vms.addNic(True, VM_NAME, name=NIC_NAME2,
                    network=config.NETWORK_NAME,
                    interface='virtio')
@@ -424,7 +435,8 @@ class Case_configure_vm_storage(BaseTest):
     __test__ = True
 
     def setUp(self):
-        vms.createVm(True, VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME)
+        vms.createVm(True, VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
+                     network=config.MGMT_BRIDGE)
         mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME,
                                    role=self.role)
 
@@ -452,7 +464,8 @@ class Case_manipulate_vm_snapshots(BaseTest):
         for my_vm in [VM_NAME, VM_NAME2, VM_NAME3]:
             vms.createVm(True, my_vm, '',
                          cluster=config.MAIN_CLUSTER_NAME, size=config.GB,
-                         storageDomainName=config.MAIN_STORAGE_NAME)
+                         storageDomainName=config.MAIN_STORAGE_NAME,
+                         network=config.MGMT_BRIDGE)
             vms.addSnapshot(True, my_vm, SNAPSHOT_NAME)
             mla.addVMPermissionsToUser(True, config.USER_NAME, my_vm,
                                        role=self.role)
@@ -482,7 +495,8 @@ class Case_copy_template(BaseTest):
     def setUp(self):
         vms.createVm(True, VM_NAME, '',
                      cluster=config.MAIN_CLUSTER_NAME, size=config.GB,
-                     storageDomainName=config.MAIN_STORAGE_NAME)
+                     storageDomainName=config.MAIN_STORAGE_NAME,
+                     network=config.MGMT_BRIDGE)
         templates.createTemplate(True, vm=VM_NAME,
                                  name=TEMPLATE_NAME)
         vms.removeVm(True, VM_NAME)
@@ -521,7 +535,8 @@ class Case_create_template(BaseTest):
     __test__ = True
 
     def setUp(self):
-        vms.createVm(True, VM_NAME, '', config.MAIN_CLUSTER_NAME)
+        vms.createVm(True, VM_NAME, '', config.MAIN_CLUSTER_NAME,
+                     network=config.MGMT_BRIDGE)
         mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME,
                                    role=roles.role.UserRole)
 
@@ -541,7 +556,8 @@ class Case_edit_template_properties(BaseTest):
     __test__ = True
 
     def setUp(self):
-        vms.createVm(True, VM_NAME, '', config.MAIN_CLUSTER_NAME)
+        vms.createVm(True, VM_NAME, '', config.MAIN_CLUSTER_NAME,
+                     network=config.MGMT_BRIDGE)
         templates.createTemplate(True, vm=VM_NAME, name=TEMPLATE_NAME)
         mla.addPermissionsForTemplate(True, config.USER_NAME, TEMPLATE_NAME,
                                       role=self.role)
@@ -563,7 +579,8 @@ class Case_configure_template_network(BaseTest):
     __test__ = True
 
     def setUp(self):
-        vms.createVm(True, VM_NAME, '', config.MAIN_CLUSTER_NAME)
+        vms.createVm(True, VM_NAME, '', config.MAIN_CLUSTER_NAME,
+                     network=config.MGMT_BRIDGE)
         templates.createTemplate(True, vm=VM_NAME, name=TEMPLATE_NAME)
         templates.addTemplateNic(True, TEMPLATE_NAME, name=NIC_NAME2,
                                  network=config.NETWORK_NAME,
@@ -596,7 +613,8 @@ class Case_create_vm_pool(BaseTest):
     __test__ = True
 
     def setUp(self):
-        vms.createVm(True, VM_NAME, '', config.MAIN_CLUSTER_NAME)
+        vms.createVm(True, VM_NAME, '', config.MAIN_CLUSTER_NAME,
+                     network=config.MGMT_BRIDGE)
         templates.createTemplate(True, vm=VM_NAME, name=TEMPLATE_NAME)
         mla.addPermissionsForTemplate(True, config.USER_NAME, TEMPLATE_NAME,
                                       role=self.role)
@@ -623,7 +641,7 @@ class Case_edit_vm_pool_configuration(BaseTest):
 
     def setUp(self):
         vms.createVm(True, VM_NAME, '', config.MAIN_CLUSTER_NAME,
-                     os_type='rhel6x64')
+                     os_type='rhel6x64', network=config.MGMT_BRIDGE)
         templates.createTemplate(True, vm=VM_NAME, name=TEMPLATE_NAME)
         vmpools.addVmPool(True, name=VMPOOL_NAME, template=TEMPLATE_NAME,
                           cluster=config.MAIN_CLUSTER_NAME, size=1)
@@ -663,7 +681,8 @@ class Case_vm_pool_basic_operations(BaseTest):
 
     def setUp(self):
         vms.createVm(True, VM_NAME, '', config.MAIN_CLUSTER_NAME, size=GB,
-                     storageDomainName=config.MAIN_STORAGE_NAME)
+                     storageDomainName=config.MAIN_STORAGE_NAME,
+                     network=config.MGMT_BRIDGE)
         templates.createTemplate(True, vm=VM_NAME, name=TEMPLATE_NAME)
         vmpools.addVmPool(True, name=VMPOOL_NAME, template=TEMPLATE_NAME,
                           cluster=config.MAIN_CLUSTER_NAME, size=1)
@@ -694,7 +713,8 @@ class Case_delete_vm_pool(BaseTest):
 
     def setUp(self):
         vms.createVm(True, VM_NAME, '', config.MAIN_CLUSTER_NAME, size=GB,
-                     storageDomainName=config.MAIN_STORAGE_NAME)
+                     storageDomainName=config.MAIN_STORAGE_NAME,
+                     network=config.MGMT_BRIDGE)
         templates.createTemplate(True, vm=VM_NAME, name=TEMPLATE_NAME)
         vmpools.addVmPool(True, name=VMPOOL_NAME, template=TEMPLATE_NAME,
                           cluster=config.MAIN_CLUSTER_NAME, size=1)
@@ -726,7 +746,8 @@ class Case_delete_template(BaseTest):
     __test__ = True
 
     def setUp(self):
-        vms.createVm(True, VM_NAME, '', config.MAIN_CLUSTER_NAME)
+        vms.createVm(True, VM_NAME, '', config.MAIN_CLUSTER_NAME,
+                     network=config.MGMT_BRIDGE)
         templates.createTemplate(True, vm=VM_NAME, name=TEMPLATE_NAME)
         mla.addPermissionsForTemplate(True, config.USER_NAME, TEMPLATE_NAME,
                                       role=self.role)
@@ -746,7 +767,8 @@ class Case_manipulate_permissions(BaseTest):
     __test__ = True
 
     def setUp(self):
-        vms.createVm(True, VM_NAME, '', config.MAIN_CLUSTER_NAME)
+        vms.createVm(True, VM_NAME, '', config.MAIN_CLUSTER_NAME,
+                     network=config.MGMT_BRIDGE)
         mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME,
                                    role=self.role)
         mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME,
@@ -927,7 +949,8 @@ class Case_attach_disk(BaseTest):
                       format='cow', provisioned_size=config.GB,
                       storagedomain=config.MAIN_STORAGE_NAME)
         disks.waitForDisksState(config.DISK_NAME)
-        vms.createVm(True, VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME)
+        vms.createVm(True, VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
+                     network=config.MGMT_BRIDGE)
         mla.addPermissionsForDisk(True, config.USER_NAME, config.DISK_NAME,
                                   role=self.role)
         mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME,
@@ -953,7 +976,8 @@ class Case_edit_disk_properties(BaseTest):
     def setUp(self):
         vms.createVm(True, VM_NAME, '',
                      cluster=config.MAIN_CLUSTER_NAME, size=config.GB,
-                     storageDomainName=config.MAIN_STORAGE_NAME)
+                     storageDomainName=config.MAIN_STORAGE_NAME,
+                     network=config.MGMT_BRIDGE)
         mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME,
                                    role=self.role)
 
@@ -1240,7 +1264,8 @@ class Case_migrate_vm(BaseTest):
     def setUp(self):
         vms.createVm(True, VM_NAME, '',
                      cluster=config.MAIN_CLUSTER_NAME, size=config.GB,
-                     storageDomainName=config.MAIN_STORAGE_NAME)
+                     storageDomainName=config.MAIN_STORAGE_NAME,
+                     network=config.MGMT_BRIDGE)
         vms.startVm(True, VM_NAME)
         mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME,
                                    role=self.role)

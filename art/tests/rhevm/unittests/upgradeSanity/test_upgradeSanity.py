@@ -21,7 +21,8 @@ class UpgradeSanityTest(TestCase):
         LOGGER.debug("class UpgradeSanityTest setUp")
         assert vms.createVm(True, cfg.VM_NAME, '',
                             cluster=cfg.CLUSTER_NAME,
-                            storageDomainName=cfg.STORAGE_NAME, size=cfg.GB)
+                            storageDomainName=cfg.STORAGE_NAME, size=cfg.GB,
+                            network=config.MGMT_BRIDGE)
 
     def tearDown(self):
         LOGGER.debug("class UpgradeSanityTest tearDown")

@@ -195,7 +195,7 @@ class PositiveNetworkPermissions231826(NetworkingPossitive):
     def setUp(self):
         assert vms.createVm(True, VM_NAME, '', cluster=cfg.MAIN_CLUSTER_NAME,
                             storageDomainName=cfg.MAIN_STORAGE_NAME,
-                            size=cfg.GB)
+                            size=cfg.GB, network=cfg.MGMT_BRIDGE)
         assert mla.addVMPermissionsToUser(True, cfg.USER_NAME, VM_NAME)
         assert networks.addNetwork(True, name=cfg.NETWORK_NAME1,
                                    data_center=cfg.MAIN_DC_NAME)
@@ -229,7 +229,8 @@ class PositiveNetworkPermissions231827(NetworkingPossitive):
             assert networks.addNetworkToCluster(True, net,
                                                 cfg.MAIN_CLUSTER_NAME)
 
-        assert vms.createVm(True, VM_NAME, '', cluster=cfg.MAIN_CLUSTER_NAME)
+        assert vms.createVm(True, VM_NAME, '', cluster=cfg.MAIN_CLUSTER_NAME,
+                            network=cfg.MGMT_BRIDGE)
         assert mla.addVMPermissionsToUser(True, cfg.USER_NAME, VM_NAME)
         assert vms.addNic(True, VM_NAME, name=NIC_NAME,
                           network=cfg.NETWORK_NAME1, interface='virtio')
@@ -261,7 +262,8 @@ class PositiveNetworkPermissions231830(NetworkingPossitive):
         for net in [cfg.NETWORK_NAME1, cfg.NETWORK_NAME2]:
             assert networks.addNetworkToCluster(True, net,
                                                 cfg.MAIN_CLUSTER_NAME)
-        assert vms.createVm(True, VM_NAME, '', cluster=cfg.MAIN_CLUSTER_NAME)
+        assert vms.createVm(True, VM_NAME, '', cluster=cfg.MAIN_CLUSTER_NAME,
+                            network=cfg.MGMT_BRIDGE)
         assert vms.addNic(True, VM_NAME, name=NIC_NAME,
                           network=cfg.NETWORK_NAME1, interface='virtio')
         assert templates.createTemplate(True, vm=VM_NAME, name=TEMPLATE_NAME,
@@ -400,7 +402,8 @@ class PositiveNetworkPermissions236367(NetworkingPossitive):
     __test__ = True
 
     def setUp(self):
-        assert vms.createVm(True, VM_NAME, '', cluster=cfg.MAIN_CLUSTER_NAME)
+        assert vms.createVm(True, VM_NAME, '', cluster=cfg.MAIN_CLUSTER_NAME,
+                            network=cfg.MGMT_BRIDGE)
         assert networks.addNetwork(True, name=cfg.NETWORK_NAME1,
                                    data_center=cfg.MAIN_DC_NAME)
         assert mla.addPermissionsForVnicProfile(
@@ -431,7 +434,8 @@ class PositiveNetworkPermissions236406(NetworkingPossitive):
     __test__ = True
 
     def setUp(self):
-        assert vms.createVm(True, VM_NAME, '', cluster=cfg.MAIN_CLUSTER_NAME)
+        assert vms.createVm(True, VM_NAME, '', cluster=cfg.MAIN_CLUSTER_NAME,
+                            network=cfg.MGMT_BRIDGE)
         assert networks.addNetwork(True, name=cfg.NETWORK_NAME1,
                                    data_center=cfg.MAIN_DC_NAME)
         assert mla.addPermissionsForVnicProfile(
@@ -465,7 +469,7 @@ class PositiveNetworkPermissions236408(NetworkingPossitive):
     def setUp(self):
         assert vms.createVm(True, VM_NAME, '', cluster=cfg.MAIN_CLUSTER_NAME,
                             storageDomainName=cfg.MAIN_STORAGE_NAME,
-                            size=cfg.GB)
+                            size=cfg.GB, network=cfg.MGMT_BRIDGE)
         assert networks.addNetwork(True, name=cfg.NETWORK_NAME1,
                                    data_center=cfg.MAIN_DC_NAME)
         assert mla.addPermissionsForVnicProfile(
@@ -513,7 +517,7 @@ class PositiveNetworkPermissions236409(NetworkingPossitive):
             cfg.MAIN_DC_NAME, role=role.VnicProfileUser)
         assert vms.createVm(True, VM_NAME, '', cluster=cfg.MAIN_CLUSTER_NAME,
                             storageDomainName=cfg.MAIN_STORAGE_NAME,
-                            size=cfg.GB)
+                            size=cfg.GB, network=cfg.MGMT_BRIDGE)
         assert vms.addNic(True, VM_NAME, name=NIC_NAME,
                           network=cfg.NETWORK_NAME1, interface='virtio')
         assert mla.addVMPermissionsToUser(True, cfg.USER_NAME, VM_NAME)
@@ -686,7 +690,8 @@ class PositiveNetworkPermissions320610(NetworkingPossitive):
                                      data_center=cfg.MAIN_DC_NAME,
                                      role=role.VnicProfileUser)
         vms.createVm(True, VM_NAME, '', cluster=cfg.MAIN_CLUSTER_NAME,
-                     storageDomainName=cfg.MAIN_STORAGE_NAME, size=cfg.GB)
+                     storageDomainName=cfg.MAIN_STORAGE_NAME, size=cfg.GB,
+                     network=cfg.MGMT_BRIDGE)
         mla.addVMPermissionsToUser(True, cfg.USER_NAME, VM_NAME)
 
     @istest

@@ -37,6 +37,7 @@ REST_CONNECTION = ART_CONFIG['REST_CONNECTION']
 RHEVM_NAME = REST_CONNECTION['host']
 MB = 1024 * 1024
 GB = 1024 * MB
+MGMT_BRIDGE = PARAMETERS['mgmt_bridge']
 
 
 def installed_matches_current_version():

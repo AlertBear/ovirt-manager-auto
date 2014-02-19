@@ -45,7 +45,8 @@ def setUpModule():
 
     vms.createVm(
         True, config.VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
-        storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB)
+        storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB,
+        network=config.MGMT_BRIDGE)
     templates.createTemplate(
         True, vm=config.VM_NAME, name=config.TEMPLATE_NAME,
         cluster=config.MAIN_CLUSTER_NAME)
@@ -127,7 +128,8 @@ class PermissionsCase54409(TestCase):
         """ permissions inheritence """
         loginAsUser(config.USER_NAME, filter=False)
         self.assertTrue(vms.createVm(
-            True, config.VM_NAME1, '', cluster=config.MAIN_CLUSTER_NAME))
+            True, config.VM_NAME1, '', cluster=config.MAIN_CLUSTER_NAME,
+            network=config.MGMT_BRIDGE))
         self.assertTrue(vms.removeVm(True, config.VM_NAME1))
         LOGGER.info("User can create/remove vm with vm permissions.")
 
@@ -141,7 +143,8 @@ class PermissionsCase54409(TestCase):
 
         loginAsUser(config.USER_NAME)
         self.assertTrue(vms.createVm(
-            False, config.VM_NAME1, '', cluster=config.MAIN_CLUSTER_NAME))
+            False, config.VM_NAME1, '', cluster=config.MAIN_CLUSTER_NAME,
+            network=config.MGMT_BRIDGE))
         LOGGER.info("User can't create/remove vm without vm permissions.")
 
 
@@ -220,7 +223,8 @@ class PermissionsCase54425(TestCase):
     @classmethod
     def setUpClass(cls):
         vms.createVm(
-            True, config.VM_NAME1, '', cluster=config.MAIN_CLUSTER_NAME)
+            True, config.VM_NAME1, '', cluster=config.MAIN_CLUSTER_NAME,
+            network=config.MGMT_BRIDGE)
 
     @classmethod
     def tearDownClass(cls):
@@ -326,7 +330,8 @@ class PermissionsCase54446(TestCase):
         """ users permissions """
         loginAsUser(config.GROUP_USER)
         self.assertTrue(vms.createVm(
-            True, config.VM_NAME1, '', cluster=config.MAIN_CLUSTER_NAME))
+            True, config.VM_NAME1, '', cluster=config.MAIN_CLUSTER_NAME,
+            network=config.MGMT_BRIDGE))
         self.assertTrue(templates.createTemplate(
             False, vm=config.VM_NAME1, name=config.TEMPLATE_NAME2,
             cluster=config.MAIN_CLUSTER_NAME))
@@ -373,7 +378,8 @@ class PermissionsCase54420(TestCase):
             if 'create_vm' in r_permits:
                 LOGGER.info("Testing create_vm.")
                 vms.createVm(True, config.VM_NAME1, '',
-                             cluster=config.MAIN_CLUSTER_NAME)
+                             cluster=config.MAIN_CLUSTER_NAME,
+                             network=config.MGMT_BRIDGE)
                 b = b or checkIfObjectHasRole(vms.VM_API.find(config.VM_NAME1),
                                               VM_PREDEFINED,
                                               role_obj.administrative)
@@ -490,7 +496,8 @@ class PermissionsCase111082(TestCase):
             config.ALT1_STORAGE_PATH)
         vms.createVm(
             True, config.VM_NAME1, '', cluster=config.MAIN_CLUSTER_NAME,
-            storageDomainName=config.ALT1_STORAGE_NAME, size=config.GB)
+            storageDomainName=config.ALT1_STORAGE_NAME, size=config.GB,
+            network=config.MGMT_BRIDGE)
         templates.createTemplate(
             True, vm=config.VM_NAME1, name=config.TEMPLATE_NAME2,
             cluster=config.MAIN_CLUSTER_NAME)

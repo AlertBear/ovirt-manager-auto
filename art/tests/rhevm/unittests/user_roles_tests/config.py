@@ -134,6 +134,7 @@ VMPOOL_NAME = PARAMETERS.get('vmpool_name')
 SNAPSHOT_DEF = PARAMETERS.get('def_snap_desc')
 USER_ROLE = PARAMETERS.get('role_user_name')
 ADMIN_ROLE = PARAMETERS.get('role_admin_name')
+MGMT_BRIDGE = PARAMETERS['mgmt_bridge']
 
 MB = 1024*1024
 GB = 1024*MB

@@ -137,7 +137,8 @@ class CheckVmAfterSoftFencing(TestCase):
                             size=DISK_SIZE, nic='nic1',
                             diskInterface=ENUMS['interface_virtio'],
                             placement_host=config.host_with_pm,
-                            placement_affinity=PINNED):
+                            placement_affinity=PINNED,
+                            network=config.MGMT_BRIDGE):
             raise errors.VMException("Cannot create vm")
         logger.info("Successfully created a simple VM.")
         logger.info("Start Vm")

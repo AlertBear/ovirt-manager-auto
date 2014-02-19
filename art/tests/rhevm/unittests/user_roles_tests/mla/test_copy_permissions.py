@@ -29,7 +29,8 @@ def setUpModule():
     users.addUser(True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
     users.addUser(True, user_name=config.USER_NAME2, domain=config.USER_DOMAIN)
     vms.createVm(True, config.VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
-                 storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB)
+                 storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB,
+                 network=config.MGMT_BRIDGE)
     templates.createTemplate(True, vm=config.VM_NAME,
                              name=config.TEMPLATE_NAME,
                              cluster=config.MAIN_CLUSTER_NAME)
@@ -142,7 +143,8 @@ class CopyPermissions299326(TestCase):
     @classmethod
     def setUpClass(self):
         vms.createVm(True, config.VM_NAME1, '', template=config.TEMPLATE_NAME,
-                     cluster=config.MAIN_CLUSTER_NAME, copy_permissions=True)
+                     cluster=config.MAIN_CLUSTER_NAME, copy_permissions=True,
+                     network=config.MGMT_BRIDGE)
 
     @istest
     @tcms(TCMS_PLAN_ID, '299326')
@@ -162,7 +164,8 @@ class CopyPermissions299330(TestCase):
     @classmethod
     def setUpClass(self):
         vms.createVm(True, config.VM_NAME1, '', template=config.TEMPLATE_NAME,
-                     cluster=config.MAIN_CLUSTER_NAME)
+                     cluster=config.MAIN_CLUSTER_NAME,
+                     network=config.MGMT_BRIDGE)
 
     @istest
     @tcms(TCMS_PLAN_ID, '299330')

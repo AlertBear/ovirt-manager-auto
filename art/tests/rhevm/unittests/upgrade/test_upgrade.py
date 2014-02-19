@@ -21,7 +21,8 @@ class UpgradeTest(TestCase):
     def setUp(self):
         assert vms.createVm(True, cfg.VM_NAME, '',
                             cluster=cfg.CLUSTER_NAME,
-                            storageDomainName=cfg.STORAGE_NAME, size=cfg.GB)
+                            storageDomainName=cfg.STORAGE_NAME, size=cfg.GB,
+                            network=config.MGMT_BRIDGE)
 
     def tearDown(self):
         assert vms.removeVm(True, cfg.VM_NAME, stopVM='true')

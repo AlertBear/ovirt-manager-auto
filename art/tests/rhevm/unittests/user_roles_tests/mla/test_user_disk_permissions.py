@@ -57,7 +57,8 @@ class DPCase147121(TestCase):
                                         config.MAIN_STORAGE_NAME,
                                         role=role.DiskOperator)
         vms.createVm(
-            True, config.VM_NO_DISK, '', cluster=config.MAIN_CLUSTER_NAME)
+            True, config.VM_NO_DISK, '', cluster=config.MAIN_CLUSTER_NAME,
+            network=config.MGMT_BRIDGE)
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NO_DISK)
 
     @tcms(TCMS_PLAN_ID, 147121)
@@ -182,7 +183,8 @@ class DPCase147123(TestCase):
                                         config.MAIN_STORAGE_NAME,
                                         role=self.disk_role)
         vms.createVm(
-            True, config.VM_NO_DISK, '', cluster=config.MAIN_CLUSTER_NAME)
+            True, config.VM_NO_DISK, '', cluster=config.MAIN_CLUSTER_NAME,
+            network=config.MGMT_BRIDGE)
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NO_DISK,
                                    role=self.vm_role)
 
@@ -250,7 +252,8 @@ class DPCase147124(TestCase):
         self.disk_name = '%s%s' % (config.VM_NAME, '_Disk1')
         vms.createVm(
             True, config.VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
-            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB)
+            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB,
+            network=config.MGMT_BRIDGE)
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME,
                                    role=self.tested_role)
 
@@ -300,7 +303,8 @@ class DPCase147125(TestCase):
         self.disk_name = '%s%s' % (config.VM_NAME, '_Disk1')
         vms.createVm(
             True, config.VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
-            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB)
+            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB,
+            network=config.MGMT_BRIDGE)
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME)
 
     @istest
@@ -379,7 +383,8 @@ class DPCase147127(TestCase):
         self.disk_name = '%s%s' % (config.VM_NAME, '_Disk1')
         vms.createVm(
             True, config.VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
-            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB)
+            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB,
+            network=config.MGMT_BRIDGE)
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME)
 
     @tcms(TCMS_PLAN_ID, 147127)
@@ -408,7 +413,8 @@ class DPCase147128(TestCase):
         self.disk_name = '%s%s' % (config.VM_NAME, '_Disk1')
         vms.createVm(
             True, config.VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
-            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB)
+            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB,
+            network=config.MGMT_BRIDGE)
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME,
                                    role=role.StorageAdmin)
         storagedomains.addNFSDomain(
@@ -480,7 +486,8 @@ class DPCase147129(TestCase):
 
     def setUp(self):
         vms.createVm(
-            True, config.VM_NO_DISK, '', cluster=config.MAIN_CLUSTER_NAME)
+            True, config.VM_NO_DISK, '', cluster=config.MAIN_CLUSTER_NAME,
+            network=config.MGMT_BRIDGE)
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NO_DISK,
                                    role=role.UserRole)
 
@@ -541,7 +548,8 @@ class DPCase147130(TestCase):
     def setUp(self):
         vms.createVm(
             True, config.VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
-            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB)
+            storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB,
+            network=config.MGMT_BRIDGE)
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME,
                                    role=role.DiskOperator)
         mla.addClusterPermissionsToUser(True, config.USER_NAME,
@@ -593,7 +601,8 @@ class DPCase147137(TestCase):
                                         role=role.DiskOperator)
 
         vms.createVm(
-            True, config.VM_NO_DISK, '', cluster=config.MAIN_CLUSTER_NAME)
+            True, config.VM_NO_DISK, '', cluster=config.MAIN_CLUSTER_NAME,
+            network=config.MGMT_BRIDGE)
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NO_DISK)
 
     @tcms(TCMS_PLAN_ID, 147137)

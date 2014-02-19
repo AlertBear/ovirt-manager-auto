@@ -39,7 +39,8 @@ class RHEL(TestCase):
             name=cls.TEMPLATE_NAME)
         assert vms.createVm(True, cls.vm_name, cls.vm_name,
                             cluster=config.CLUSTER_NAME,
-                            template=cls.TEMPLATE_NAME)
+                            template=cls.TEMPLATE_NAME,
+                            network=config.MGMT_BRIDGE)
         assert vms.startVm(True, cls.vm_name,
                            wait_for_status=ENUMS['vm_state_up'])
 

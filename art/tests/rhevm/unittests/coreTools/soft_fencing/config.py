@@ -28,3 +28,4 @@ host_password = PARAMETERS.get('host_password')
 host_with_pm = hosts[0]
 host_without_pm = hosts[1]
 job_description = 'Executing SSH Soft Fencing on host'
+MGMT_BRIDGE = PARAMETERS['mgmt_bridge']

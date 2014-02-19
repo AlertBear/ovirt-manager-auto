@@ -219,7 +219,8 @@ class NegativeNetworkPermissions231919(NetworkingNegative):
 
     def setUp(self):
         assert vms.createVm(True, VM_NAME, '',
-                            cluster=config.MAIN_CLUSTER_NAME)
+                            cluster=config.MAIN_CLUSTER_NAME,
+                            network=config.MGMT_BRIDGE)
         assert mla.addPermissionsForDataCenter(
             True, config.USER_NAME,
             config.MAIN_DC_NAME, role=role.HostAdmin)
@@ -246,7 +247,8 @@ class NegativeNetworkPermissions234215(NetworkingNegative):
         assert mla.addPermissionsForDataCenter(
             True, config.USER_NAME, config.MAIN_DC_NAME, role=role.HostAdmin)
         assert vms.createVm(True, VM_NAME, '',
-                            cluster=config.MAIN_CLUSTER_NAME)
+                            cluster=config.MAIN_CLUSTER_NAME,
+                            network=config.MGMT_BRIDGE)
         assert templates.createTemplate(
             True, vm=VM_NAME, name=TEMPLATE_NAME,
             cluster=config.MAIN_CLUSTER_NAME)
@@ -271,7 +273,8 @@ class NegativeNetworkPermissions236686(NetworkingNegative):
 
     def setUp(self):
         assert vms.createVm(True, VM_NAME, '',
-                            cluster=config.MAIN_CLUSTER_NAME)
+                            cluster=config.MAIN_CLUSTER_NAME,
+                            network=config.MGMT_BRIDGE)
         assert networks.addNetwork(True, name=config.NETWORK_NAME1,
                                    data_center=config.MAIN_DC_NAME)
         assert networks.addNetwork(True, name=config.NETWORK_NAME2,
@@ -302,7 +305,8 @@ class NegativeNetworkPermissions236736(NetworkingNegative):
 
     def setUp(self):
         assert vms.createVm(True, VM_NAME, '',
-                            cluster=config.MAIN_CLUSTER_NAME)
+                            cluster=config.MAIN_CLUSTER_NAME,
+                            network=config.MGMT_BRIDGE)
         assert mla.addVMPermissionsToUser(True, config.USER_NAME, VM_NAME)
         assert networks.addNetwork(True, name=config.NETWORK_NAME1,
                                    data_center=config.MAIN_DC_NAME)

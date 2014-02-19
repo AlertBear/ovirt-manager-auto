@@ -32,10 +32,12 @@ def loginAsAdmin():
 def setUpModule():
     users.addUser(True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
     vms.createVm(
-        True, config.VM_NO_DISK, '', cluster=config.MAIN_CLUSTER_NAME)
+        True, config.VM_NO_DISK, '', cluster=config.MAIN_CLUSTER_NAME,
+        network=config.MGMT_BRIDGE)
     vms.createVm(
         True, config.VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
-        storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB)
+        storageDomainName=config.MAIN_STORAGE_NAME, size=config.GB,
+        network=config.MGMT_BRIDGE)
     templates.createTemplate(
         True, vm=config.VM_NAME, name=config.TEMPLATE_NAME,
         cluster=config.MAIN_CLUSTER_NAME)

@@ -54,8 +54,8 @@ class Windows(TestCase):
         vms.createVm(True, vmName=cls.vmName,
                      vmDescription="VM for %s class" % cls.__name__,
                      cluster=config.CLUSTER_NAME,
-                     template=cls.template)
-        vms.runVmOnce(True, cls.vmName)
+                     template=cls.template, network=config.MGMT_BRIGDE)
+        vms.runVmOnce(True, cls.vmName, cdrom_image=config.CD_WITH_TOOLS)
         vms.waitForVMState(vm=cls.vmName, state='up')
         cls.mac = vms.getVmMacAddress(
             True, vm=cls.vmName,
