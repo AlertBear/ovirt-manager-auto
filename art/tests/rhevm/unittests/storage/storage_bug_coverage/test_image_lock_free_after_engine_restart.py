@@ -120,6 +120,11 @@ class TestCase320223(TestCase):
                         "Failed restarting ovirt-engine")
         logger.info("Successfully restarted ovirt-engine")
 
+        # Wait until VM is down
+        self.assertTrue(vms.waitForVMState(self.vm_name,
+                                           state=config.VM_DOWN_STATE),
+                        "image status won't change to down")
+
         logger.info("starting vm %s", self.vm_name)
         self.assertTrue(vms.startVm(True, self.vm_name),
                         "Failed to start vm %s" % self.vm_name)

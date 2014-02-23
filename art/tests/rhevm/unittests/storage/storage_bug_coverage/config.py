@@ -71,3 +71,4 @@ MGMT_BRIDGE = PARAMETERS['mgmt_bridge']
 USE_AGENT = PARAMETERS['useAgent']
 
 VM_LOCK_STATE = ENUMS["vm_state_image_locked"]
+VM_DOWN_STATE = ENUMS["vm_state_down"]
