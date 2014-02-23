@@ -258,7 +258,7 @@ class Test06_checkMTU(TestCase):
         Negative: Trying to create a networks with invalid MTUs
         """
         valid_mtus = [68, 69, 8999, 9000]
-        invalid_mtus = [-5, 9001, 67]
+        invalid_mtus = [-5, 67]
         for valid_index, mtu in enumerate(invalid_mtus):
             logger.info("Trying to create networks with mtu = %s"
                         " - Should fail.", mtu)
