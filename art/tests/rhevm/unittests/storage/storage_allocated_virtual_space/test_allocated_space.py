@@ -87,7 +87,7 @@ class BaseCase(TestCase):
                         self.expected_allocated_size)
             disk_names.append(disk_name)
         logger.info('Waiting for disks to be OK')
-        self.assertTrue(waitForDisksState(disk_names))
+        self.assertTrue(waitForDisksState(disk_names, timeout=500))
 
     @classmethod
     def setup_class(cls):
