@@ -58,8 +58,8 @@ class VNIC_Profile_Case1_289787(TestCase):
         """
         Check MGMT VNIC profile is created when creating the new DC
         """
-        self.assertTrue(getVnicProfileObj(name=config.MGMT_NETWORK,
-                                          network=config.MGMT_NETWORK,
+        self.assertTrue(getVnicProfileObj(name=config.MGMT_BRIDGE,
+                                          network=config.MGMT_BRIDGE,
                                           data_center=config.DC_NAME2))
 
     @classmethod
