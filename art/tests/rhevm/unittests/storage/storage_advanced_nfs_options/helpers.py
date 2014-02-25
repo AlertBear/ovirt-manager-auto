@@ -433,6 +433,9 @@ class TestCaseStandardOperations(TestCaseNFSOptions):
 
         LOGGER.info("Changing SPM host")
         old_spm_host = ll_hosts.getSPMHost(config.HOSTS)
+        LOGGER.info("Waiting for tasks before deactivating the host")
+        test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                                  datacenter)
         if not ll_hosts.deactivateHost(True, old_spm_host):
             LOGGER.info("Cannot deactivate host %s" % old_spm_host)
         ll_hosts.waitForSPM(config.DATA_CENTER_NAME, 600, 30)
@@ -445,6 +448,9 @@ class TestCaseStandardOperations(TestCaseNFSOptions):
         if not found:
             self.fail("Master storage domain not found")
         master_std = master_std['masterDomain']
+        LOGGER.info("Waiting for tasks before deactivating the host")
+        test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                                  datacenter)
         LOGGER.info("Deactivating master storage domain %s" % master_std)
         if not ll_st.deactivateStorageDomain(True, datacenter, master_std):
             self.fail("Cannot deactivate master storage domain")
