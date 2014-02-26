@@ -15,7 +15,7 @@
     <id>d759b7dc-c695-11e1-a578-f0def10e0ce8</id>
     <test_name>Create default data center</test_name>
     <test_action>addDataCenter</test_action>
-    <parameters>name='DefaultRest', storage_type='e{storage_type_nfs}', version='{compatibility_version}'</parameters>
+    <parameters>name='DefaultRest', local={local}, version='{compatibility_version}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
     <test_description/>
@@ -80,18 +80,18 @@
   </test_case>
   <test_case>
     <id>d759c95c-c695-11e1-a578-f0def10e0ce8</id>
-    <test_name>Create NFS data center</test_name>
+    <test_name>Create Shared data center</test_name>
     <test_action>addDataCenter</test_action>
-    <parameters>name='RestDataCenter1', storage_type='e{storage_type_nfs}', version='3.0'</parameters>
+    <parameters>name='RestDataCenter1', local={local}, version='3.0'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 301}</conf>
   </test_case>
   <test_case>
     <id>d759cb50-c695-11e1-a578-f0def10e0ce8</id>
-    <test_name>Create temporary iSCSI data center</test_name>
+    <test_name>Create temporary Local data center</test_name>
     <test_action>addDataCenter</test_action>
-    <parameters>name='RestDataCenter2', storage_type='e{storage_type_iscsi}', version='{compatibility_version}'</parameters>
+    <parameters>name='RestDataCenter2', local=True, version='{compatibility_version}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 302}</conf>
