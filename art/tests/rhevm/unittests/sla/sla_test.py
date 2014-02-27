@@ -288,7 +288,6 @@ class CPUHost_Case2(TestCase):
 
     @istest
     @tcms('8140', '274202')
-    @bz('928402')
     def set_cpuhost_user_migratable(self):
         '''
         Attemp to change a VM to use CPU host + user migratable
@@ -440,7 +439,6 @@ class CPUHost_Case5(TestCase):
 
     @istest
     @tcms('8140', '274227')
-    @bz("928402")
     def set_pinned_cpuhost_vm_user_migratable(self):
         '''
         Attemp to change a non migratable VM with CPU host
@@ -560,6 +558,7 @@ class Threads_Case1(TestCase):
 
     @istest
     @tcms('9520', '274230')
+    @bz("1070890")
     def cores_as_threads_off1(self):
         '''
         Setting VM with number of cores equal to number of
@@ -602,6 +601,7 @@ class Threads_Case1(TestCase):
 
     @istest
     @tcms('9520', '274234')
+    @bz("1070890")
     def cores_as_threads_on1(self):
         '''
         Setting VM with number of cores equal to double the number of
@@ -1078,7 +1078,6 @@ class CPUPin_Case4(TestCase):
 
     @istest
     @tcms('6302', '274165')
-    @bz("926962")
     def set_user_migratable_cpupin(self):
         '''
         Attemp to set a user migratable VM to use CPU pinning
@@ -1129,7 +1128,6 @@ class CPUPin_Case5(TestCase):
 
     @istest
     @tcms('6302', '274164')
-    @bz("926962")
     def set_pinned_cpupin_vm_user_migratable(self):
         '''
         Attemp to change a non migratable VM with CPU pinning
@@ -1273,6 +1271,7 @@ class CPUPin_Case7(TestCase):
 
     @istest
     @tcms('6302', '232944')
+    @bz("1070890")
     def check_pinning_load(self):
         '''
         Set CPU pinning to random pCPU cores and check if pining holds.
@@ -1337,7 +1336,6 @@ class CPUPin_Case8(TestCase):
         logger.info("Successfully created VM.")
 
     @istest
-    @bz("928689")
     @tcms('6302', '274174')
     def set_pinned_cpupin_vm_a(self):
         '''
@@ -1549,7 +1547,6 @@ class PlacementPolicy_Case4(TestCase):
 
     @istest
     @tcms('9521', '274241')
-    @bz("928368")
     def run_non_migratable_no_specific(self):
         '''
         Start a non-migratable VM with no specific host to run on
