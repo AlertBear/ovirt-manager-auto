@@ -236,7 +236,7 @@ def _prepareVmObject(**kwargs):
     # high availablity
     ha = kwargs.pop('highly_available', None)
     ha_priority = kwargs.pop('availablity_priority', None)
-    if ha or ha_priority:
+    if ha is not None or ha_priority:
         vm.set_high_availability(
             data_st.HighAvailability(enabled=ha,
                                      priority=ha_priority))

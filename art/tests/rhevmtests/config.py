@@ -187,7 +187,7 @@ else:
         HOST_OBJS.append(host_obj)
         NETWORK_HOSTS.append(host_obj)
 
-    HOST_OS = PARAMETERS['host_os']
+    HOST_OS = PARAMETERS.get('host_os')
 
     VMS_LINUX_USER = PARAMETERS.as_list('vm_linux_user')[0]
     VMS_LINUX_PW = PARAMETERS.as_list('vm_linux_password')[0]
@@ -199,8 +199,8 @@ else:
     EXPORT_STORAGE_PATH = PARAMETERS.as_list('export_domain_path')[0]
     EXPORT_STORAGE_NAME = "Export"
 
-    CPU_CORES = PARAMETERS['cpu_cores']
-    CPU_SOCKET = PARAMETERS['cpu_socket']
+    CPU_CORES = PARAMETERS.get('cpu_cores')
+    CPU_SOCKET = PARAMETERS.get('cpu_socket')
 
     ISO_DOMAIN_NAME = PARAMETERS.get("shared_iso_domain_name", None)
     ISO_DOMAIN_ADDRESS = PARAMETERS.as_list("tests_iso_domain_address")[0]

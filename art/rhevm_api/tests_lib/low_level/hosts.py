@@ -2135,16 +2135,17 @@ def run_command(host, user, password, cmd):
 def count_host_active_vms(host, num_of_vms, timeout=300, sleep=10):
     """
     Count number of active vms on host in given timeout
-    **Author**: alukiano
 
-    **Parameters**:
-        * *host* - host to look on it
-        * *num_of_vms - number of vms on host that you wait for
-        * *timeout - timeout how long should we wait
-        * *sleep - polling interval
-    **Returns**: Migration time duration,
-                 if number of vms on host equal to num_of_vms
-                 None, otherwise
+    :param host: Name of host.
+    :type host: str.
+    :param num_of_vms: Expected number of vms on host.
+    :type num_of_vms: int.
+    :param timeout: Timeout in seconds.
+    :type timeout: int.
+    :param sleep: Time between samples in seconds.
+    :type sleep: int.
+    :returns: Waiting time for vms.
+    :raises: APITimeout
     """
     start_time = time.time()
     sampler = TimeoutingSampler(timeout, sleep, HOST_API.find, val=host)

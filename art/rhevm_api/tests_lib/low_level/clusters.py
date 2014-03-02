@@ -101,22 +101,31 @@ def _prepareClusterObject(**kwargs):
         cl.set_memory_policy(memoryPolicy)
 
     if 'scheduling_policy' in kwargs:
+        properties = None
         thresholds = None
-        thresholdLow = kwargs.get('thrhld_low')
-        thresholdHigh = kwargs.get('thrhld_high')
-        thresholdDuration = kwargs.get('duration')
+        threshold_low = kwargs.get('thrhld_low')
+        threshold_high = kwargs.get('thrhld_high')
+        threshold_dur = kwargs.get('duration')
+        if 'properties' in kwargs:
+            properties = getDS('Properties')()
+            for name, value in kwargs.get('properties').iteritems():
+                properties.add_property(
+                    getDS('Property')(name=name, value=value)
+                )
 
         # If at least one threshold tag parameter is set.
-        if max(thresholdLow, thresholdHigh, thresholdDuration) is not None:
-            thresholds = SchedulingPolicyThresholds(high=thresholdHigh,
-                                                    duration=thresholdDuration,
-                                                    low=thresholdLow)
+        if max(threshold_low, threshold_high, threshold_dur) is not None:
+            thresholds = SchedulingPolicyThresholds(
+                high=threshold_high, duration=threshold_dur, low=threshold_low
+            )
 
-        schedulingPolicy = \
-            SchedulingPolicy(policy=kwargs.pop('scheduling_policy'),
-                             thresholds=thresholds)
+        scheduling_policy = SchedulingPolicy(
+            policy=kwargs.pop('scheduling_policy'),
+            thresholds=thresholds,
+            properties=properties
+        )
 
-        cl.set_scheduling_policy(schedulingPolicy)
+        cl.set_scheduling_policy(scheduling_policy)
 
     ballooning_enabled = kwargs.pop('ballooning_enabled', None)
     if ballooning_enabled is not None:
@@ -165,6 +174,7 @@ def addCluster(positive, **kwargs):
                     another host
        * scheduling_policy - VM scheduling mode for hosts in the cluster
                              (evenly_distributed, power_saving)
+       * properties - properties of scheduling policy
        * transparent_hugepages - boolean, Defines the availability of
                                 Transparent Hugepages
        * on_error - in case of non - operational
@@ -207,6 +217,7 @@ def updateCluster(positive, cluster, **kwargs):
                     another host
        * scheduling_policy - VM scheduling mode for hosts in the cluster
                              (evenly_distributed, power_saving)
+       * properties - properties of scheduling policy
        * transparent_hugepages - boolean, Defines the availability of
                                 Transparent Hugepages
        * on_error - in case of non - operational
