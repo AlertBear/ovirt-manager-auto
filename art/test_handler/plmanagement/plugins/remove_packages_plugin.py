@@ -38,7 +38,7 @@ PACKAGES = 'packages'
 VDS = 'vds'
 VDS_PASSWORD = 'vds_password'
 DEFAULT_PACKAGES = ['vdsm', 'vdsm-cli', 'vdsm-python', 'vdsm-xmlrpc',
-                    'vdsm-python-cpopen']
+                    'python-cpopen']
 DEFAULT_STATE = False
 
 
