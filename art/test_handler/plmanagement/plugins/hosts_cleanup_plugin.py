@@ -225,6 +225,23 @@ def cleanCorruptedISCSIDBFiles(hostObj):
     return rc
 
 
+def releaseSanlockLockspaces(hostObj):
+    """
+    Description: WA for bug BZ1035847, it releases sanlocks
+    Parameters:
+     * hostObj - Machine instance of host
+    """
+    logger.info("Releasing sanlock lockspaces (WA for BZ1035847)")
+    cmd = ['sanlock', 'client', 'status', '|', 'awk', '-vORS=\'\\0\'',
+           '\\$1=="s"{print \\$2}', '|', 'xargs', '-0', '-r', '-n1', 'sanlock',
+           'rem_lockspace', '-s']
+    rc, out = hostObj.runCmd(cmd)
+    if rc:
+        logger.info("Lockspaces were released: %s", out)
+    else:
+        logger.error("Could not release lockspaces: %s", out)
+
+
 def hostCleanup(address, password, username='root'):
     '''
     Description: function that cleanup hosts
@@ -241,6 +258,7 @@ def hostCleanup(address, password, username='root'):
     cleanHostStorageSession(hostObj)
     killProcesses(hostObj, 'qemu')
     checkIfProcessIsRunning(hostObj)
+    releaseSanlockLockspaces(hostObj)
     return unmountRhevmMounts(hostObj) and restartServices(hostObj) \
         and cleanCorruptedISCSIDBFiles(hostObj) and cleanupDatacenters(hostObj)
 
