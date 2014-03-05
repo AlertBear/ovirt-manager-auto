@@ -378,7 +378,7 @@ class Case_import_export_vm(BaseTest):
         ie(vms.removeVm, self.positive, VM_NAME)
 
     @istest
-    @bz(1002588)
+    @bz(1072773)
     @logMe
     def import_export_vm(self):
         """ import_export_vm """
