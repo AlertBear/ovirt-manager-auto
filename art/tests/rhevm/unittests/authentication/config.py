@@ -27,7 +27,7 @@ AD2_USER = PARAMETERS.get('ad2_user', None)
 AD2_USER_NAME = PARAMETERS.get('ad2_user_name', None)
 
 # IPA
-IPA_DOMAIN = str(PARAMETERS.get('ipa_domain', None)).upper()
+IPA_DOMAIN = str(PARAMETERS.get('ipa_domain', None))
 IPA_PASSWORD = '123456'
 
 # TODO ADD expired_acc_name if none skip?

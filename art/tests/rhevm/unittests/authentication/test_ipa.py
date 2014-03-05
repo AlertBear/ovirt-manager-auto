@@ -15,11 +15,17 @@ from art.unittest_lib import BaseTestCase as TestCase
 from nose.tools import istest
 from art.rhevm_api.tests_lib.low_level import mla, users, general
 from art.rhevm_api.utils.resource_utils import runMachineCommand
+from art.rhevm_api.utils.test_utils import get_api
+from art.core_api.apis_utils import getDS
 from art.test_handler.tools import tcms
 
 LOGGER = logging.getLogger(__name__)
-UPDATE_USER = 'kinit nonascii <<< 123456 && ipa user-mod %s --last=%s --first=%s'
+KINIT = 'kinit nonascii <<< %s'
+UPDATE_USER = 'ipa user-mod %s --last=%s --first=%s'
 USER_ROLE = 'UserRole'
+User = getDS('User')
+Domain = getDS('Domain')
+util = get_api('user', 'users')
 
 
 def connectionTest():
@@ -30,9 +36,9 @@ def connectionTest():
 
 
 def addUser(user_name):
-    msg = 'Unable to add user %s to system.'
-    assert users.addUser(True, user_name=user_name,
-                         domain=config.IPA_DOMAIN), msg % user_name
+    userName = '%s@%s' % (user_name, config.IPA_DOMAIN.upper())
+    user = User(domain=Domain(name=config.IPA_DOMAIN), user_name=userName)
+    user, status = util.create(user, True)
 
 
 def loginAsUser(user_name, filter):
@@ -245,6 +251,11 @@ class IPACase93883(TestCase):
         addUser(config.IPA_TESTING_USER_NAME)
         name_search = "{0}={1}".format('name', config.IPA_TESTING_USER_NAME)
         self.user = users.util.query(name_search, href=self.query)[0]
+        self.assertTrue(
+            runMachineCommand(True, ip=config.IPA_DOMAIN.lower(),
+                              cmd=KINIT % config.USER_PASSWORD,
+                              user=config.OVIRT_ROOT,
+                              password=config.IPA_PASSWORD)[0])
 
     @istest
     @tcms(config.IPA_TCMS_PLAN_ID, 93883)
