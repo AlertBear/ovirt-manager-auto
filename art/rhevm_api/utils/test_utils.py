@@ -1411,7 +1411,7 @@ def setNetworkFilterStatus(enable, host, user, passwd, version):
     return: True if network filtering is disabled, False otherwise
     '''
     cmd = ["engine-config", "-s", "EnableMACAntiSpoofingFilterRules=%s" %
-           enable.lower(), "--cver=%s" % version]
+           str(enable).lower(), "--cver=%s" % version]
 
     host_obj = Machine(host, user, passwd).util(LINUX)
     if not host_obj.runCmd(cmd)[0]:
