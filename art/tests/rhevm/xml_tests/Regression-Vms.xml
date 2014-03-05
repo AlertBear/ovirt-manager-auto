@@ -461,6 +461,15 @@
     <test_name>Update VM OS type from RHEL to XP</test_name>
     <test_action>updateVm</test_action>
     <parameters>vm='restvm_os_rhel', os_type='e{windowsxp}', name='restvm_os_win'</parameters>
+    <positive>FALSE</positive>
+    <run>yes</run>
+    <conf>headers={'Correlation-Id': 418}</conf>
+  </test_case>
+  <test_case>
+    <id>cb8bc490-c695-11e1-bca8-f0def10e0ce8</id>
+    <test_name>Update VM OS type from RHEL to Win7</test_name>
+    <test_action>updateVm</test_action>
+    <parameters>vm='restvm_os_rhel', os_type='e{windows7}', name='restvm_os_win'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
     <conf>headers={'Correlation-Id': 418}</conf>
