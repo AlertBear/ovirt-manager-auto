@@ -15,7 +15,8 @@ LOGGER = logging.getLogger(__name__)
 ENUMS = opts['elements_conf']['RHEVM Enums']
 
 
-def build_setup(config, storage, storage_type, basename="testname"):
+def build_setup(config, storage, storage_type,
+                basename="testname", local=False):
     """
     Description: Creates a setup based on what's specified in the config
     Parameters:
@@ -31,7 +32,7 @@ def build_setup(config, storage, storage_type, basename="testname"):
     config['cluster_name'] = cluster_name
 
     if not datacenters.addDataCenter(True, name=datacenter_name,
-                                     storage_type=storage_type,
+                                     local=local,
                                      version=config['compatibility_version']):
         raise errors.DataCenterException("addDataCenter %s with storage type "
                                          "%s and version %s failed." %
