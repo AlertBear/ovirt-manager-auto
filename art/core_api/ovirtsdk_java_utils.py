@@ -813,15 +813,18 @@ class JavaSdkUtil(APIUtil):
 
     def __java_method_selector(self, collection, opcode):
         '''
-        Description: get needed java method for correlation id cases
+        Description: returns java method with maximum parameters
         Author: imeerovi
         Parameters:
            * collection - JavaTranslator/java SDK collection object
            * opcode - opcode like add, list
         Return: number of parameters to pass
         '''
-        # TODO: maybe to enhance logic and return list with parameters
-        # names and types, meanwhile I assume some order
+        # FIXME: currently we are choosing method by looking for longest
+        # signature. This assumption is working
+        # meanwhile but it is wrong.
+        # This function should also receive list of
+        # parameter types and return matched overload signature
 
         # get needed signature
         collection_methods = \
@@ -835,18 +838,9 @@ class JavaSdkUtil(APIUtil):
         methods_args_list = filter(lambda x: len(x[0]) > 0, methods_args_list)
 
         # take method with maximum parameters and go with it
-        if opcode == 'add':
-            sorted_method_args_list = filter(lambda x: len(x) > 1,
-                                             methods_args_list)[-1]
-        # in case of update: take first method with 1 or more parameters and
-        # go with it
-        elif opcode == 'update':
-            sorted_method_args_list = filter(lambda x: len(x) >= 1,
-                                             methods_args_list)[0]
-        # take first method with 2 or more parameters and go with it
-        else:
-            sorted_method_args_list = filter(lambda x: len(x) > 1,
-                                             methods_args_list)[0]
+        sorted_method_args_list = sorted(methods_args_list,
+                                         key=lambda item: len(item))[-1]
+
         return len(sorted_method_args_list), sorted_method_args_list
 
     @jvm_thread_care
@@ -1118,7 +1112,7 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
 
     @jvm_thread_care
     def query(self, constraint, exp_status=None, href=None, event_id=None,
-              **params):
+              all_content=None, **params):
         '''
         Description: run search query
         Author: imeerovi
@@ -1149,12 +1143,17 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
 
             case_sensitive = params.get('case_sensitive', 'false') == 'true'
             max_ = params.get('max', -1)
-
+            self.logger.debug("Using %s.list(%s)", get_object_name(collection),
+                              ', '.join(sorted_list_method_args_list))
             if list_method_args_length == 3:
                 search = collection.list(constraint, case_sensitive, max_)
             elif list_method_args_length == 4:
-                search = collection.list(constraint, case_sensitive, event_id,
-                                         max_)
+                if 'events' == get_object_name(collection).lower():
+                    search = collection.list(constraint, case_sensitive,
+                                             event_id, max_)
+                else:
+                    search = collection.list(constraint, case_sensitive,
+                                             max_, all_content)
             else:
                 msg = "We shouldn't get here, unknown list "\
                     "signature: list(%s)" % sorted_list_method_args_list
