@@ -15,6 +15,7 @@
 # License along with this software; if not, write to the Free
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+import shlex
 
 from concurrent.futures import ThreadPoolExecutor
 import logging
@@ -74,6 +75,8 @@ VM_SAMPLING_PERIOD = 3
 SNAPSHOT_SAMPLING_PERIOD = 5
 SNAPSHOT_APPEAR_TIMEOUT = 120
 FILTER_DEVICE = '[sv]d'
+DD_COMMAND = 'dd if=/dev/%s of=/dev/%s bs=1M oflag=direct'
+DD_TIMEOUT = 1500
 
 BLANK_TEMPLATE = '00000000-0000-0000-0000-000000000000'
 ADD_DISK_KWARGS = ['size', 'type', 'interface', 'format', 'bootable',
@@ -903,6 +906,8 @@ def addDisk(positive, vm, size, wait=True, storagedomain=None,
         * active - automatically activate the disk
         * alias - alias for the disk
         * read_only - if disk should be read only
+        * shareable = True if disk should be shared, False otherwise
+        * provisioned_size - disk's provisioned size
     Return: status (True if disk was added properly, False otherwise)
     '''
     vmObj = VM_API.find(vm)
@@ -923,6 +928,16 @@ def addDisk(positive, vm, size, wait=True, storagedomain=None,
     read_only = kwargs.pop('read_only', None)
     if read_only is not None:
         disk.set_read_only(read_only)
+
+    # shareable
+    shareable = kwargs.pop('shareable', None)
+    if shareable is not None:
+        disk.set_shareable(shareable)
+
+    # provisioned_size
+    provisioned_size = kwargs.pop('provisioned_size', None)
+    if provisioned_size is not None:
+        disk.set_provisioned_size(provisioned_size)
 
     # quota
     quota_id = kwargs.pop('quota', None)
@@ -1290,26 +1305,44 @@ def _getVmSnapshot(vm, snap):
 
 
 @is_action()
-def addSnapshot(positive, vm, description, wait=True, persist_memory=None):
+def addSnapshot(positive, vm, description, wait=True, persist_memory=None,
+                disks_lst=None):
     '''
     Description: add snapshot to vm
-    Author: edolinin
+    Author: edolinin, ratamir
     Parameters:
        * vm - vm where snapshot should be added
        * description - snapshot name
        * wait - wait until finish when True or exist without waiting when False
        * persist_memory - True to save memory state snapshot, default is False
+       * disks_lst - if not None, this list of disks names will be included in
+         snapshot's disks (Single disk snapshot)
     Return: status (True if snapshot was added properly, False otherwise)
     '''
     snapshot = data_st.Snapshot()
     snapshot.set_description(description)
     snapshot.set_persist_memorystate(persist_memory)
 
+    if disks_lst:
+        disks_coll = data_st.Disks()
+        for disk in disks_lst:
+
+            diskObj = DISKS_API.find(disk)
+
+            disk = data_st.Disk()
+            disk.set_id(diskObj.get_id())
+
+            disks_coll.add_disk(disk)
+
+        snapshot.set_disks(disks_coll)
+
     vmSnapshots = _getVmSnapshots(vm)
+
     snapshot, status = SNAPSHOT_API.create(snapshot, positive,
                                            collection=vmSnapshots)
 
-    time.sleep(30)
+    if wait:
+        wait_for_jobs()
 
     try:
         snapshot = _getVmSnapshot(vm, description)
@@ -3019,6 +3052,8 @@ def restoreSnapshot(positive, vm, description, ensure_vm_down=False,
     Parameters:
        * vm - vm where snapshot should be restored
        * description - snapshot name
+       * ensure_vm_down - True if vm should enforce to be down before restore
+       * restore_memory - True if should restore vm memory
     Return: status (True if snapshot was restored properly, False otherwise)
     """
     return perform_snapshot_action(positive, vm, description, 'restore',
@@ -3027,19 +3062,23 @@ def restoreSnapshot(positive, vm, description, ensure_vm_down=False,
 
 
 def preview_snapshot(positive, vm, description, ensure_vm_down=False,
-                     restore_memory=False):
+                     restore_memory=False, disks_lst=None):
     """
     Description: preview vm snapshot
     Author: gickowic
     Parameters:
        * vm - vm where snapshot should be previewed
        * description - snapshot name
+       * ensure_vm_down - True if vm should enforce to be down before preview
+       * restore_memory - True if should restore vm memory
+       * disks_lst - list of disk in case of custom preview
     Return: status (True if snapshot was previewed properly, False otherwise)
     """
     if ensure_vm_down:
         stop_vms_safely([vm])
+        waitForVMState(vm, state=ENUMS['vm_state_down'])
     return snapshot_action(positive, vm, PREVIEW, description,
-                           restore_memory=restore_memory)
+                           restore_memory=restore_memory, disks_lst=disks_lst)
 
 
 def undo_snapshot_preview(positive, vm, ensure_vm_down=False):
@@ -3048,10 +3087,12 @@ def undo_snapshot_preview(positive, vm, ensure_vm_down=False):
     Author: gickowic
     Parameters:
        * vm - vm where snapshot preview should be undone
+       * ensure_vm_down - True if vm should enforce to be down before undo
     Return: status (True if snapshot preview was undone, False otherwise)
     """
     if ensure_vm_down:
         stop_vms_safely([vm])
+        waitForVMState(vm, state=ENUMS['vm_state_down'])
     return snapshot_action(positive, vm, UNDO)
 
 
@@ -3063,10 +3104,13 @@ def commit_snapshot(positive, vm, ensure_vm_down=False,
     Parameters:
        * vm - vm where snapshot should be commited
        * description - snapshot name that is currently previewed
+       * ensure_vm_down - True if vm should enforce to be down before commit
+       * restore_memory - True if should restore vm memory
     Return: status (True if snapshot was committed properly, False otherwise)
     """
     if ensure_vm_down:
         stop_vms_safely([vm])
+        waitForVMState(vm, state=ENUMS['vm_state_down'])
     return snapshot_action(positive, vm, COMMIT,
                            restore_memory=restore_memory)
 
@@ -3098,9 +3142,8 @@ def perform_snapshot_action(positive, vm, description, action,
     return status
 
 
-# TODO: enable restore_memory
 def snapshot_action(positive, vm, action,
-                    description=None, restore_memory=False):
+                    description=None, restore_memory='false', disks_lst=None):
     """
     Function that performs snapshot actions
     Author: ratamir
@@ -3108,18 +3151,51 @@ def snapshot_action(positive, vm, action,
         * vm - vm name which snapshot belongs to
         * action - snapshot operation to execute (string - 'commit_snapshot',
                    'undo_snapshot', 'undo_snapshot')
-        * description - snapshot description
+        * description - snapshot description (In case of custom preview,
+                        this snapshot description is the one the vm
+                        configuration is taken from)
         * restore_memory - True if restore memory required
+        * disks_lst - in case of custom preview, provide list of
+          tuple of desired disks and snapshots
+          (i.e. disk_name, snap_description) to be part of the preview
     Return: True if operation succeeded, False otherwise
     """
     vmObj = VM_API.find(vm)
     action_args = {'entity': vmObj,
                    'action': action,
                    'positive': positive}
-    if action == 'preview_snapshot':
-        snapshot = _getVmSnapshot(vm, description)
-        action_args['snapshot'] = snapshot
 
+    if action == PREVIEW:
+        snapshot = _getVmSnapshot(vm, description)
+        snap = data_st.Snapshot(id=snapshot.get_id())
+        action_args['snapshot'] = snap
+        action_args['restore_memory'] = restore_memory
+
+        # In case of custom preview
+        if disks_lst:
+            disks_coll = data_st.Disks()
+            for disk, snap_desc in disks_lst:
+
+                new_disk = data_st.Disk()
+
+                if snap_desc == 'Active VM':
+                    diskObj = getVmDisk(vm, disk)
+                    snap_id = _getVmSnapshot(vm, snap_desc)
+                    new_disk.set_snapshot(snap_id)
+
+                else:
+                    snap_disks = get_snapshot_disks(vm, snap_desc)
+                    diskObj = [d for d in snap_disks if
+                               (d.get_alias() == disk)][0]
+
+                    new_disk.set_snapshot(diskObj.get_snapshot())
+
+                new_disk.set_id(diskObj.get_id())
+                new_disk.set_image_id(diskObj.get_image_id())
+
+                disks_coll.add_disk(new_disk)
+
+            action_args['disks'] = disks_coll
     status = VM_API.syncAction(**action_args)
     if status and positive:
         return VM_API.waitForElemStatus(vmObj, ENUMS['vm_state_down'],
@@ -3185,7 +3261,7 @@ def run_cmd_on_vm(vm_name, cmd, user, password, timeout=15):
         * user - username used to login to vm
         * password - password for the user
     """
-    vm_ip = LookUpVMIpByName('', '').get_ip(vm_name)
+    vm_ip = get_vm_ip(vm_name)
     rc, out = runMachineCommand(
         True, ip=vm_ip, user=user, password=password, cmd=cmd, timeout=timeout)
     logger.debug("cmd output: %s, exit code: %s", out, rc)
@@ -3859,6 +3935,7 @@ def remove_all_vm_lsm_snapshots(vm_name):
     wait_for_jobs()
 
 
+# TODO: use 3.5 feature - ability to get device name for vm plugged devices
 @is_action('getVmStorageDevices')
 def get_vm_storage_devices(vm_name, username, password,
                            filter_device=FILTER_DEVICE, ensure_vm_on=False):
@@ -3879,7 +3956,7 @@ def get_vm_storage_devices(vm_name, username, password,
         waitForVMState(vm_name)
     vm_ip = get_vm_ip(vm_name)
     vm_machine = Machine(host=vm_ip, user=username,
-                         password=password).util('linux')
+                         password=password).util(LINUX)
     output = vm_machine.get_boot_storage_device()
     boot_disk = 'vda' if 'vd' in output else 'sda'
     vm_devices = vm_machine.get_storage_devices(filter=filter_device)
@@ -3911,3 +3988,90 @@ def verify_vm_disk_moved(vm_name, disk_name, source_sd,
     elif source_sd != actual_sd:
         return True
     return False
+
+
+def get_vm_bootable_disk(vm):
+    """
+    Description: get bootable disk
+    Author: ratamir
+    Parameters:
+      * vm - vm name
+    Author: ratamir
+    Return: name of the bootable disk or None if no boot disk exist
+    """
+    vm_disks = getVmDisks(vm)
+    boot_disk = [d for d in vm_disks if d.get_bootable()][0].get_alias()
+    return boot_disk
+
+
+def verify_write_operation_to_disk(vm_name, user_name, password,
+                                   disk_number=0):
+    """
+    Function that perform dd command to disk
+    Author: ratamir
+    Parameters:
+        * vm_name - name of vm which write operation should occur on
+        * user_name - user name
+        * password - password
+        * disk_number - disk number from devices list
+    Return: ecode and output, or raise EntityNotFound if error occurs
+    """
+    vm_devices, boot_disk = get_vm_storage_devices(vm_name, user_name,
+                                                   password,
+                                                   ensure_vm_on=True)
+
+    command = DD_COMMAND % (boot_disk, vm_devices[disk_number])
+
+    ecode, out = run_cmd_on_vm(
+        vm_name, shlex.split(command), user_name, password, DD_TIMEOUT)
+
+    return ecode, out
+
+
+def get_volume_size(hostname, user, password, disk_object, dc_obj):
+    """
+    Get volume size in GB
+    Author: ratamir
+    Parameters:
+        * hostname - name of host
+        * user - user name for host
+        * password - password for host
+        * disk_object - disk object that need checksum
+        * dc_obj - data center that the disk belongs to
+    Return:
+        Volume size (integer), or raise exception otherwise
+    """
+    host_machine = Machine(host=hostname, user=user,
+                           password=password).util(LINUX)
+
+    vol_id = disk_object.get_image_id()
+    sd_id = disk_object.get_storage_domains().get_storage_domain()[0].get_id()
+    image_id = disk_object.get_id()
+    sp_id = dc_obj.get_id()
+
+    lv_size = host_machine.get_volume_size(sd_id, sp_id, image_id, vol_id)
+    logger.info("Volume size of disk %s is %s GB",
+                disk_object.get_alias(), lv_size)
+
+    return lv_size
+
+
+def get_vm_device_size(vm_name, user, password, device_name):
+    """
+    Get vm device size in GB
+    Author: ratamir
+    Parameters:
+        * vm_name - name of vm
+        * user - user name
+        * password - password
+        * device_name - name of device
+
+    Return:
+        VM device size (integer) output, or raise exception otherwise
+    """
+    vm_machine = get_vm_machine(vm_name, user, password)
+
+    device_size = vm_machine.get_storage_device_size(device_name)
+    logger.info("Device %s size: %s GB", device_name, device_size)
+
+    return device_size
