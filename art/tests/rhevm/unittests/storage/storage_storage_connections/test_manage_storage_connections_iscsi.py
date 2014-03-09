@@ -55,7 +55,7 @@ def _restore_empty_dc():
         assert storagedomains.removeStorageDomain(
             True, master_sd, config.HOSTS[0])
         assert ll_dc.addDataCenter(
-            True, storage_type=config.DATA_CENTER_TYPE,
+            True, storage_type=config.STORAGE_TYPE,
             name=config.DATA_CENTER_NAME,
             version=config.PARAMETERS['compatibility_version'])
         assert hosts.deactivateHost(True, config.HOSTS[0])
@@ -89,7 +89,7 @@ class TestCase288967(TestCase):
         """
         # add a connection to an empty dc
         conn = dict(config.CONNECTIONS[0])
-        conn['type'] = config.DATA_CENTER_TYPE
+        conn['type'] = config.STORAGE_TYPE
         self.conn, success = storageconnections.add_connection(**conn)
         assert success
 
@@ -99,7 +99,7 @@ class TestCase288967(TestCase):
         storagedomains.addStorageDomain(
             True, host=config.HOSTS[0], name=self.sd_name,
             type=config.ENUMS['storage_dom_type_data'],
-            storage_type=config.DATA_CENTER_TYPE,
+            storage_type=config.STORAGE_TYPE,
             lun=config.CONNECTIONS[1]['luns'][0], **(config.CONNECTIONS[1]))
         old_conns_for_sd = storagedomains.getConnectionsForStorageDomain(
             self.sd_name)
@@ -133,7 +133,7 @@ class TestCase288985(TestCase):
 
     def add_connection_without_sth(self, param, value=None):
         conn = dict(config.CONNECTIONS[0])
-        conn['type'] = config.DATA_CENTER_TYPE
+        conn['type'] = config.STORAGE_TYPE
         conn[param] = value
         self.conn, success = storageconnections.add_connection(**conn)
         if not success:
@@ -142,7 +142,7 @@ class TestCase288985(TestCase):
 
     def add_connection_with_empty_sth(self, param):
         conn = dict(config.CONNECTIONS[0])
-        conn['type'] = config.DATA_CENTER_TYPE
+        conn['type'] = config.STORAGE_TYPE
         conn[param] = ''
         self.conn, success = storageconnections.add_connection(**conn)
         if not success:
@@ -193,7 +193,7 @@ class TestCase288985(TestCase):
             and add it after it was removed
         """
         conn = dict(config.CONNECTIONS[0])
-        conn['type'] = config.DATA_CENTER_TYPE
+        conn['type'] = config.STORAGE_TYPE
         self.conn, success = storageconnections.add_connection(**conn)
         assert success
         _, success = storageconnections.add_connection(**conn)
@@ -222,12 +222,12 @@ class TestCase288986(TestCase):
     @classmethod
     def setup_class(cls):
         conn = dict(config.CONNECTIONS[0])
-        conn['type'] = config.DATA_CENTER_TYPE
+        conn['type'] = config.STORAGE_TYPE
         cls.conn_1, success = storageconnections.add_connection(**conn)
         assert success
 
         conn = dict(config.CONNECTIONS[1])
-        conn['type'] = config.DATA_CENTER_TYPE
+        conn['type'] = config.STORAGE_TYPE
         cls.conn_2_params = conn
         cls.conn_2, success = storageconnections.add_connection(**conn)
         assert success
@@ -235,7 +235,7 @@ class TestCase288986(TestCase):
     def change_connection_without_sth(self, conn, param):
         conn_params = {}
         conn_params[param] = ''
-        conn_params['type'] = config.DATA_CENTER_TYPE
+        conn_params['type'] = config.STORAGE_TYPE
         _, success = storageconnections.update_connection(
             conn.id, **conn_params)
         assert (not success)
@@ -295,7 +295,7 @@ class TestCase288983(TestCase):
         assert storagedomains.addStorageDomain(
             True, host=config.HOSTS[0], name=self.master_sd,
             type=config.ENUMS['storage_dom_type_data'],
-            storage_type=config.DATA_CENTER_TYPE,
+            storage_type=config.STORAGE_TYPE,
             lun=config.CONNECTIONS[1]['luns'][0], **(config.CONNECTIONS[1]))
 
         assert storagedomains.attachStorageDomain(
@@ -304,7 +304,7 @@ class TestCase288983(TestCase):
         assert storagedomains.addStorageDomain(
             True, host=config.HOSTS[0], name=self.sd_name_1,
             type=config.ENUMS['storage_dom_type_data'],
-            storage_type=config.DATA_CENTER_TYPE,
+            storage_type=config.STORAGE_TYPE,
             lun=config.CONNECTIONS[0]['luns'][0], **(config.CONNECTIONS[0]))
 
         assert storagedomains.attachStorageDomain(
@@ -313,7 +313,7 @@ class TestCase288983(TestCase):
         assert storagedomains.addStorageDomain(
             True, host=config.HOSTS[0], name=self.sd_name_2,
             type=config.ENUMS['storage_dom_type_data'],
-            storage_type=config.DATA_CENTER_TYPE,
+            storage_type=config.STORAGE_TYPE,
             lun=config.CONNECTIONS[0]['luns'][1], **(config.CONNECTIONS[0]))
 
         assert storagedomains.attachStorageDomain(
@@ -352,7 +352,7 @@ class TestCase288983(TestCase):
         # try to clean it as clearly as possible
         if self.sd_name_1 is not None and self.sd_name_2 is not None:
             conn = dict(config.CONNECTIONS[0])
-            conn['type'] = config.DATA_CENTER_TYPE
+            conn['type'] = config.STORAGE_TYPE
             conn_1, _ = storageconnections.add_connection(**conn)
             storagedomains.addConnectionToStorageDomain(
                 self.sd_name_1, conn_1.id)
@@ -380,7 +380,7 @@ class TestCase295262(TestCase):
         for i in range(cls.no_of_conn):
             conn = dict(config.CONNECTIONS[0])
             conn['lun_target'] = 'sth%d.%s' % (i, conn['lun_target'])
-            conn['type'] = config.DATA_CENTER_TYPE
+            conn['type'] = config.STORAGE_TYPE
             cls.con_params.append(conn)
             conn, success = storageconnections.add_connection(**conn)
             assert success
@@ -417,7 +417,7 @@ class TestCase295262(TestCase):
                         storageconnections.update_connection,
                         conn.id,
                         lun_target="aaa" + conn.target,
-                        type=config.DATA_CENTER_TYPE))
+                        type=config.STORAGE_TYPE))
         for result in results:
             assert result.result()
 
@@ -453,7 +453,7 @@ class TestCase288963(TestCase):
 
     def verify_one_orphaned_connection(self):
         conn_1 = dict(config.CONNECTIONS[0])
-        conn_1['type'] = config.DATA_CENTER_TYPE
+        conn_1['type'] = config.STORAGE_TYPE
         storageconnections.add_connection(**conn_1)
         assert len(_get_all_connections()) == 1
         storageconnections.remove_all_storage_connections()
@@ -463,7 +463,7 @@ class TestCase288963(TestCase):
         storagedomains.addStorageDomain(
             True, host=config.HOSTS[0], name=sd_name,
             type=config.ENUMS['storage_dom_type_data'],
-            storage_type=config.DATA_CENTER_TYPE,
+            storage_type=config.STORAGE_TYPE,
             lun=config.CONNECTIONS[0]['luns'][0], **(config.CONNECTIONS[0]))
         all_conn = _get_all_connections()
         conn_for_sd = storagedomains.getConnectionsForStorageDomain(sd_name)
@@ -484,7 +484,7 @@ class TestCase288963(TestCase):
         assert storagedomains.addStorageDomain(
             True, host=config.HOSTS[0], name=sd_name,
             type=config.ENUMS['storage_dom_type_data'],
-            storage_type=config.DATA_CENTER_TYPE,
+            storage_type=config.STORAGE_TYPE,
             lun=config.CONNECTIONS[0]['luns'][0], **(config.CONNECTIONS[0]))
         assert storagedomains.attachStorageDomain(
             True, config.DATA_CENTER_NAME, sd_name)
@@ -492,7 +492,7 @@ class TestCase288963(TestCase):
             True, config.DATA_CENTER_NAME, sd_name,
             config.ENUMS['storage_domain_state_active'])
         assert storagedomains.extendStorageDomain(
-            True, sd_name, storage_type=config.DATA_CENTER_TYPE,
+            True, sd_name, storage_type=config.STORAGE_TYPE,
             host=config.HOSTS[0], lun=config.CONNECTIONS[1]['luns'][0],
             **(config.CONNECTIONS[1]))
 
@@ -507,13 +507,13 @@ class TestCase288963(TestCase):
         storagedomains.addStorageDomain(
             True, host=config.HOSTS[0], name=sd_name_1,
             type=config.ENUMS['storage_dom_type_data'],
-            storage_type=config.DATA_CENTER_TYPE,
+            storage_type=config.STORAGE_TYPE,
             lun=config.CONNECTIONS[0]['luns'][0], **(config.CONNECTIONS[0]))
         sd_name_2 = "sd_4_%s" % self.tcms_test_case
         storagedomains.addStorageDomain(
             True, host=config.HOSTS[0], name=sd_name_2,
             type=config.ENUMS['storage_dom_type_data'],
-            storage_type=config.DATA_CENTER_TYPE,
+            storage_type=config.STORAGE_TYPE,
             lun=config.CONNECTIONS[0]['luns'][1], **(config.CONNECTIONS[0]))
 
         all_conn = _get_all_connections()
@@ -593,13 +593,13 @@ class TestCase288975(TestCase):
         assert storagedomains.addStorageDomain(
             True, host=config.HOSTS[0], name=self.sd_name_1,
             type=config.ENUMS['storage_dom_type_data'],
-            storage_type=config.DATA_CENTER_TYPE,
+            storage_type=config.STORAGE_TYPE,
             lun=config.CONNECTIONS[0]['luns'][0], **(config.CONNECTIONS[0]))
 
         assert storagedomains.addStorageDomain(
             True, host=config.HOSTS[0], name=self.sd_name_2,
             type=config.ENUMS['storage_dom_type_data'],
-            storage_type=config.DATA_CENTER_TYPE,
+            storage_type=config.STORAGE_TYPE,
             lun=config.CONNECTIONS[0]['luns'][1], **(config.CONNECTIONS[0]))
 
         assert storagedomains.attachStorageDomain(
@@ -616,13 +616,13 @@ class TestCase288975(TestCase):
     def _try_to_change_connection(self, conn_id, should_pass):
         assert should_pass is storageconnections.update_connection(
             conn_id, lun_address=config.CONNECTIONS[1]['lun_address'],
-            type=config.DATA_CENTER_TYPE)[1]
+            type=config.STORAGE_TYPE)[1]
         assert should_pass is storageconnections.update_connection(
             conn_id, lun_target=config.CONNECTIONS[1]['lun_target'],
-            type=config.DATA_CENTER_TYPE)[1]
+            type=config.STORAGE_TYPE)[1]
         assert should_pass is storageconnections.update_connection(
             conn_id, lun_port=config.CONNECTIONS[1]['lun_port'],
-            type=config.DATA_CENTER_TYPE)[1]
+            type=config.STORAGE_TYPE)[1]
 
     @tcms(tcms_plan_id, tcms_test_case)
     def test_change_connection_in_sd(self):
@@ -675,13 +675,13 @@ class TestCase288968(TestCase):
         assert storagedomains.addStorageDomain(
             True, host=config.HOSTS[0], name=self.sd_name_1,
             type=config.ENUMS['storage_dom_type_data'],
-            storage_type=config.DATA_CENTER_TYPE,
+            storage_type=config.STORAGE_TYPE,
             lun=config.CONNECTIONS[0]['luns'][0], **(config.CONNECTIONS[0]))
 
         assert storagedomains.addStorageDomain(
             True, host=config.HOSTS[0], name=self.sd_name_2,
             type=config.ENUMS['storage_dom_type_data'],
-            storage_type=config.DATA_CENTER_TYPE,
+            storage_type=config.STORAGE_TYPE,
             lun=config.CONNECTIONS[0]['luns'][1], **(config.CONNECTIONS[0]))
 
         assert storagedomains.attachStorageDomain(
@@ -690,7 +690,7 @@ class TestCase288968(TestCase):
             True, config.DATA_CENTER_NAME, self.sd_name_2)
 
         conn = dict(config.CONNECTIONS[1])
-        conn['type'] = config.DATA_CENTER_TYPE
+        conn['type'] = config.STORAGE_TYPE
         self.conn, success = storageconnections.add_connection(**conn)
         assert success
 
@@ -749,7 +749,7 @@ class TestCase289552(TestCase):
         assert storagedomains.addStorageDomain(
             True, host=config.HOSTS[0], name=self.sd_name,
             type=config.ENUMS['storage_dom_type_data'],
-            storage_type=config.DATA_CENTER_TYPE,
+            storage_type=config.STORAGE_TYPE,
             lun=config.CONNECTIONS[1]['luns'][0], **(config.CONNECTIONS[1]))
 
         assert storagedomains.attachStorageDomain(
@@ -840,7 +840,7 @@ class TestCase289552(TestCase):
 
         assert not storageconnections.update_connection(
             lun_conn.id, lun_address=config.CONNECTIONS[1]['lun_address'],
-            type=config.DATA_CENTER_TYPE)[1]
+            type=config.STORAGE_TYPE)[1]
 
         assert vms.stopVm(True, self.vm_name_1)
         assert vms.waitForVMState(
@@ -848,14 +848,14 @@ class TestCase289552(TestCase):
 
         assert not storageconnections.update_connection(
             lun_conn.id, lun_address=config.CONNECTIONS[1]['lun_address'],
-            type=config.DATA_CENTER_TYPE)[1]
+            type=config.STORAGE_TYPE)[1]
 
         assert vms.stopVm(True, self.vm_name_2)
         assert vms.waitForVMState(
             self.vm_name_2, config.ENUMS['vm_state_down'])
 
         assert storageconnections.update_connection(
-            lun_conn.id, type=config.DATA_CENTER_TYPE,
+            lun_conn.id, type=config.STORAGE_TYPE,
             **(config.CONNECTIONS[1]))[1]
 
         assert vms.startVm(True, self.vm_name_1)
@@ -868,7 +868,7 @@ class TestCase289552(TestCase):
             vdc_password=config.VDC_PASSWORD)
         storageconnections.remove_all_storage_connections()
         datacenters.build_setup(
-            config.PARAMETERS, config.PARAMETERS, config.DATA_CENTER_TYPE,
+            config.PARAMETERS, config.PARAMETERS, config.STORAGE_TYPE,
             basename=config.BASENAME)
 
 
@@ -887,7 +887,7 @@ class TestCase288988(TestCase):
     @classmethod
     def setup_class(cls):
         conn = dict(config.CONNECTIONS[0])
-        conn['type'] = config.DATA_CENTER_TYPE
+        conn['type'] = config.STORAGE_TYPE
         cls.conn, success = storageconnections.add_connection(**conn)
         assert success
 
@@ -905,14 +905,14 @@ class TestCase288988(TestCase):
         assert storagedomains.addStorageDomain(
             True, name=sd_name_2, host=config.HOSTS[0],
             type=config.ENUMS['storage_dom_type_data'],
-            storage_type=config.DATA_CENTER_TYPE,
+            storage_type=config.STORAGE_TYPE,
             lun=config.CONNECTIONS[1]['luns'][0], **(config.CONNECTIONS[1]))
         self.sds.append(sd_name_2)
 
         assert storagedomains.addStorageDomain(
             True, name=sd_name_3, host=config.HOSTS[0],
             type=config.ENUMS['storage_dom_type_data'],
-            storage_type=config.DATA_CENTER_TYPE,
+            storage_type=config.STORAGE_TYPE,
             lun=config.CONNECTIONS[0]['luns'][1],
             **(config.CONNECTIONS[0]))
         self.sds.append(sd_name_3)

@@ -12,9 +12,11 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 
 # Name of the test
 PARAMETERS = ART_CONFIG['PARAMETERS']
-DATA_CENTER_TYPE = PARAMETERS['data_center_type']
 
-BASENAME = "%s_storage_cov" % DATA_CENTER_TYPE
+# DC info
+STORAGE_TYPE = PARAMETERS['storage_type']
+
+BASENAME = "%s_storage_cov" % STORAGE_TYPE
 DEFAULT_DATA_CENTER_NAME = 'datacenter_%s' % BASENAME
 DEFAULT_CLUSTER_NAME = 'cluster_%s' % BASENAME
 
@@ -36,8 +38,7 @@ else:
     ADMINS = ['root'] * len(PASSWORDS)
 
 EXPORT_DOMAIN = PARAMETERS.get('export_domain_name')
-DATA_CENTER_TYPE = PARAMETERS['data_center_type']
-DOMAIN_NAME_1 = '%s_0' % DATA_CENTER_TYPE
+DOMAIN_NAME_1 = '%s_0' % STORAGE_TYPE
 
 CLUSTER_NAME = PARAMETERS.setdefault("cluster_name", DEFAULT_CLUSTER_NAME)
 

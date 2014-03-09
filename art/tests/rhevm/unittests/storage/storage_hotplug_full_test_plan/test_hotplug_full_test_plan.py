@@ -50,7 +50,7 @@ def setup_module():
     LOGGER.info("setup_module")
     datacenters.build_setup(
         config=config.PARAMETERS, storage=config.PARAMETERS,
-        storage_type=config.DATA_CENTER_TYPE, basename=config.BASENAME)
+        storage_type=config.STORAGE_TYPE, basename=config.BASENAME)
 
     helpers.create_local_files_with_hooks()
     helpers.create_vm_with_disks()

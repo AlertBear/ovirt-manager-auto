@@ -8,13 +8,15 @@ GB = 1024 ** 3
 PARAMETERS = ART_CONFIG['PARAMETERS']
 ENUMS = opts['elements_conf']['RHEVM Enums']
 
+# DC info
+STORAGE_TYPE = PARAMETERS['storage_type']
+
 TESTNAME = PARAMETERS.get('basename', None)
 
 VDC = PARAMETERS.get('host', None)
 VDC_PASSWORD = PARAMETERS.get('password', None)
 
 BASENAME = PARAMETERS.get('basename', None)
-DATA_CENTER_TYPE = PARAMETERS['data_center_type']
 DATA_CENTER_NAME = PARAMETERS.get('dc_name', 'datacenter_%s' % BASENAME)
 CLUSTER_NAME = PARAMETERS.get('cluster_name', 'cluster_%s' % BASENAME)
 
@@ -30,14 +32,14 @@ LOW_SPM_PRIORITY = '1'
 # move all storage details to same keys from separated keys created by
 # auto_devices, so all domains will be created by build_setup
 ## ISCSI
-if DATA_CENTER_TYPE == ENUMS['storage_type_iscsi']:
+if STORAGE_TYPE == ENUMS['storage_type_iscsi']:
     PARAMETERS['lun'] = [PARAMETERS['lun'], PARAMETERS['another_lun']]
     PARAMETERS['lun_address'] = [PARAMETERS['lun_address'],
                                  PARAMETERS['another_lun_address']]
     PARAMETERS['lun_target'] = [PARAMETERS['lun_target'],
                                 PARAMETERS['another_lun_target']]
 ## NFS
-elif DATA_CENTER_TYPE == ENUMS['storage_type_nfs']:
+elif STORAGE_TYPE == ENUMS['storage_type_nfs']:
     PARAMETERS['data_domain_path'] = [PARAMETERS['data_domain_path'],
                                       PARAMETERS['another_data_domain_path']]
     PARAMETERS['data_domain_address'] = [PARAMETERS['data_domain_address'],

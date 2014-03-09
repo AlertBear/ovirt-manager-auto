@@ -43,7 +43,7 @@ def _prepare_data(sparse, vol_format, template_names):
     template_name = "%s_%s_%s" % (
         config.TEMPLATE_NAME, sparse, vol_format)
     vm_name = '%s_%s_%s_%s_prep' % (
-        config.VM_BASE_NAME, config.DATA_CENTER_TYPE, sparse, vol_format)
+        config.VM_BASE_NAME, config.STORAGE_TYPE, sparse, vol_format)
     LOGGER.info("Creating vm %s %s ..." % (sparse, vol_format))
     if not _create_vm(
             vm_name, config.INTERFACE_IDE,
@@ -90,7 +90,7 @@ class TestCase248132(TestCase):
                 for vol_format in (ENUMS['format_cow'], ENUMS['format_raw']):
                     if not sparse and vol_format == ENUMS['format_cow']:
                         continue
-                    if (config.DATA_CENTER_TYPE != ENUMS['storage_type_nfs']
+                    if (config.STORAGE_TYPE != ENUMS['storage_type_nfs']
                             and sparse and vol_format == ENUMS['format_raw']):
                         continue
                     results.append(executor.submit(
@@ -105,7 +105,7 @@ class TestCase248132(TestCase):
     def create_vm_from_template_validate_disks(
             self, name, template_name, sparse, vol_format):
         vm_name = "%s_%s_clone_%s" % (
-            config.VM_BASE_NAME, config.DATA_CENTER_TYPE, name)
+            config.VM_BASE_NAME, config.STORAGE_TYPE, name)
         LOGGER.info("Clone vm %s, from %s, sparse=%s, volume format = %s" % (
             vm_name, template_name, sparse, vol_format))
         self.assertTrue(
@@ -128,7 +128,7 @@ class TestCase248132(TestCase):
         template_name = self.template_names[(sparse, vol_format)]
         self.create_vm_from_template_validate_disks(
             name, template_name, True, ENUMS['format_cow'])
-        if config.DATA_CENTER_TYPE == ENUMS['storage_type_nfs']:
+        if config.STORAGE_TYPE == ENUMS['storage_type_nfs']:
             name = '%s_sparse_raw' % name_prefix
             self.create_vm_from_template_validate_disks(
                 name, template_name, True, ENUMS['format_raw'])
@@ -147,7 +147,7 @@ class TestCase248132(TestCase):
     def test_disk_conv_from_sparse_raw_test(self):
         """ creates vms from template with sparse raw disk
         """
-        if config.DATA_CENTER_TYPE == ENUMS['storage_type_nfs']:
+        if config.STORAGE_TYPE == ENUMS['storage_type_nfs']:
             self.create_vms_from_template_convert_disks(
                 True, ENUMS['format_raw'], 'from_sparse_raw')
 

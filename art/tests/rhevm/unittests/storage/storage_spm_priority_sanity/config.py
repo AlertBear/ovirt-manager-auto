@@ -13,7 +13,10 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 TESTNAME = "storage_spm_priority_sanity"
 
 PARAMETERS = ART_CONFIG['PARAMETERS']
-STORAGE_TYPE = PARAMETERS['data_center_type']
+
+# DC info
+STORAGE_TYPE = PARAMETERS['storage_type']
+
 STORAGE_CONF = ART_CONFIG['STORAGE']
 
 # Data-center name

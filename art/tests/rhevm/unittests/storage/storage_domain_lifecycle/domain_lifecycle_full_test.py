@@ -23,7 +23,6 @@ import config
 
 TCMS_PLAN_ID = '6458'
 logger = logging.getLogger(__name__)
-dc_type = config.DATA_CENTER_TYPE
 ENUMS = config.ENUMS
 
 __THIS_MODULE = modules[__name__]
@@ -51,7 +50,7 @@ def setup_module():
     and overridden with only one lun/path to sent as parameter to build_setup.
     after the build_setup finish, we return to the original lists
     """
-    if config.DATA_CENTER_TYPE == config.STORAGE_TYPE_NFS:
+    if config.STORAGE_TYPE == config.STORAGE_TYPE_NFS:
         domain_path = config.PATH
         config.PARAMETERS['data_domain_path'] = [domain_path[0]]
     else:
@@ -63,10 +62,10 @@ def setup_module():
 
     datacenters.build_setup(config=config.PARAMETERS,
                             storage=config.PARAMETERS,
-                            storage_type=config.DATA_CENTER_TYPE,
+                            storage_type=config.STORAGE_TYPE,
                             basename=config.BASENAME)
 
-    if config.DATA_CENTER_TYPE == config.STORAGE_TYPE_NFS:
+    if config.STORAGE_TYPE == config.STORAGE_TYPE_NFS:
         config.PARAMETERS['data_domain_path'] = domain_path
     else:
         config.PARAMETERS['lun'] = luns
@@ -136,15 +135,15 @@ def _create_sds():
     """
     status = True
     sd_args = {'type': ENUMS['storage_dom_type_data'],
-               'storage_type': config.DATA_CENTER_TYPE,
+               'storage_type': config.STORAGE_TYPE,
                'host': config.FIRST_HOST}
 
     for index in range(1, 3):
         sd_args['name'] = config.SD_NAMES_LIST[index]
-        if config.DATA_CENTER_TYPE == 'nfs':
+        if config.STORAGE_TYPE == 'nfs':
             sd_args['address'] = config.ADDRESS[index]
             sd_args['path'] = config.PATH[index]
-        elif config.DATA_CENTER_TYPE == 'iscsi':
+        elif config.STORAGE_TYPE == 'iscsi':
             sd_args['lun'] = config.LUNS[index]
             sd_args['lun_address'] = config.LUN_ADDRESS[index]
             sd_args['lun_target'] = config.LUN_TARGET[index]
@@ -229,7 +228,7 @@ class TestCase174613(TestCase):
     is working properly
     https://tcms.engineering.redhat.com/case/174613/?from_plan=12050
     """
-    __test__ = (dc_type == ENUMS['storage_type_nfs'])
+    __test__ = (config.STORAGE_TYPE == ENUMS['storage_type_nfs'])
     tcms_plan_id = '12050'
     tcms_test_case = '174613'
     nfs_retrans = 4
@@ -427,7 +426,7 @@ class TestUpgrade(TestCase):
     host = config.FIRST_HOST
     vm_name = 'vm_test'
     domain_kw = None
-    if config.DATA_CENTER_TYPE == config.STORAGE_TYPE_NFS:
+    if config.STORAGE_TYPE == config.STORAGE_TYPE_NFS:
         sd_paths = config.PARAMETERS['data_domain_path'][1:]
 
     else:

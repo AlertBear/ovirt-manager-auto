@@ -3,12 +3,15 @@ from . import ART_CONFIG
 __test__ = False
 
 PARAMETERS = ART_CONFIG['PARAMETERS']
+
+# DC info
+STORAGE_TYPE = PARAMETERS['storage_type']
+
 CLUSTER_NAME = PARAMETERS['cluster_name']
 IMAGES = PARAMETERS['images']
 TEMPLATE_NAMES = PARAMETERS.as_list('template_names')
 WAIT_TIME = 120
 BLOCK_FS = PARAMETERS['data_center_type'] in ('iscsi',)
-STORAGE_TYPE = PARAMETERS['data_center_type']
 STORAGE_CONF = ART_CONFIG[STORAGE_TYPE.upper()]
 STORAGE_DOMAIN_NAME = "%s_%d" % (STORAGE_TYPE.lower(), 0)
 TESTNAME = 'hotplug'

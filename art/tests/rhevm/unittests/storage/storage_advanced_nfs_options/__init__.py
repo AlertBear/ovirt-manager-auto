@@ -19,7 +19,7 @@ def setup_module():
     """
     import config
     hl_dc.build_setup(config.PARAMETERS, config.STORAGE,
-                      config.DATA_CENTER_TYPE, basename=config.BASENAME)
+                      config.STORAGE_TYPE, basename=config.BASENAME)
 
     if len(config.HOSTS) > 1:
         # we need one host for 3.0 data center

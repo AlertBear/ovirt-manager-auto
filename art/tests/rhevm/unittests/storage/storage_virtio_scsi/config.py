@@ -18,6 +18,9 @@ ENGINE = ART_CONFIG['RUN']['engine'].lower()
 
 PARAMETERS = ART_CONFIG['PARAMETERS']
 
+# DC info
+STORAGE_TYPE = PARAMETERS['storage_type']
+
 STORAGE = copy.deepcopy(ART_CONFIG['PARAMETERS'])
 STORAGE['data_domain_path'] = [PARAMETERS.as_list('data_domain_path')[0]]
 STORAGE['data_domain_address'] = [PARAMETERS.as_list('data_domain_address')[0]]
@@ -43,8 +46,6 @@ PASSWORDS = PARAMETERS.as_list('vds_password')
 COMPATIBILITY_VERSION = PARAMETERS['compatibility_version']
 
 CPU_NAME = PARAMETERS['cpu_name']
-
-DATA_CENTER_TYPE = PARAMETERS['data_center_type']
 
 DISK_SIZE = PARAMETERS.as_int('disk_size') * GB
 

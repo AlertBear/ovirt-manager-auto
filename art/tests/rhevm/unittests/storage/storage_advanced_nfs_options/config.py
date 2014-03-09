@@ -21,6 +21,9 @@ STORAGE = copy.deepcopy(ART_CONFIG['PARAMETERS'])
 STORAGE['data_domain_path'] = [PARAMETERS.as_list('data_domain_path')[0]]
 STORAGE['data_domain_address'] = [PARAMETERS.as_list('data_domain_address')[0]]
 
+# DC info
+STORAGE_TYPE = PARAMETERS['storage_type']
+
 # Enums
 ENUMS = opts['elements_conf']['RHEVM Enums']
 
@@ -39,8 +42,6 @@ PASSWORDS = PARAMETERS.as_list('vds_password')
 COMPATIBILITY_VERSION = PARAMETERS['compatibility_version']
 
 CPU_NAME = PARAMETERS['cpu_name']
-
-DATA_CENTER_TYPE = PARAMETERS['data_center_type']
 
 HOST_FOR_30_DC = HOSTS[-1]
 

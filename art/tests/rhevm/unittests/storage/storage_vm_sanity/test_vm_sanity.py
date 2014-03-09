@@ -35,7 +35,7 @@ def setup_module():
     """
     datacenters.build_setup(
         config=config.PARAMETERS, storage=config.PARAMETERS,
-        storage_type=config.DATA_CENTER_TYPE, basename=config.BASENAME)
+        storage_type=config.STORAGE_TYPE, basename=config.BASENAME)
 
 
 def teardown_module():
@@ -87,9 +87,9 @@ class TestCase248112(TestCase):
         """ creates and removes vm
         """
         vm_name = '%s_%s_virtio' % (
-            config.VM_BASE_NAME, config.DATA_CENTER_TYPE)
+            config.VM_BASE_NAME, config.STORAGE_TYPE)
         vm_description = '%s_%s_virtio' % (
-            config.VM_BASE_NAME, config.DATA_CENTER_TYPE)
+            config.VM_BASE_NAME, config.STORAGE_TYPE)
         self.assertTrue(
             _create_vm(vm_name, vm_description, config.INTERFACE_VIRTIO),
             "VM %s creation failed!" % vm_name)
@@ -105,9 +105,9 @@ def _prepare_data(sparse, vol_format, template_names):
     template_name = "%s_%s_%s" % (
         config.TEMPLATE_NAME, sparse, vol_format)
     vm_name = '%s_%s_%s_%s_prep' % (
-        config.VM_BASE_NAME, config.DATA_CENTER_TYPE, sparse, vol_format)
+        config.VM_BASE_NAME, config.STORAGE_TYPE, sparse, vol_format)
     vm_description = '%s_%s_prep' % (
-        config.VM_BASE_NAME, config.DATA_CENTER_TYPE)
+        config.VM_BASE_NAME, config.STORAGE_TYPE)
     LOGGER.info("Creating vm %s %s ..." % (sparse, vol_format))
     if not _create_vm(
             vm_name, vm_description, config.INTERFACE_IDE,
@@ -154,7 +154,7 @@ class TestCase248132(TestCase):
                 for vol_format in (ENUMS['format_cow'], ENUMS['format_raw']):
                     if not sparse and vol_format == ENUMS['format_cow']:
                         continue
-                    if (config.DATA_CENTER_TYPE != ENUMS['storage_type_nfs']
+                    if (config.STORAGE_TYPE != ENUMS['storage_type_nfs']
                             and sparse and vol_format == ENUMS['format_raw']):
                         continue
                     results.append(executor.submit(
@@ -173,7 +173,7 @@ class TestCase248132(TestCase):
     def create_vm_from_template_validate_disks(
             self, name, template_name, sparse, vol_format):
         vm_name = "%s_%s_clone_%s" % (
-            config.VM_BASE_NAME, config.DATA_CENTER_TYPE, name)
+            config.VM_BASE_NAME, config.STORAGE_TYPE, name)
         LOGGER.info("Clone vm %s, from %s, sparse=%s, volume format = %s" % (
             vm_name, template_name, sparse, vol_format))
         self.assertTrue(
@@ -196,7 +196,7 @@ class TestCase248132(TestCase):
         template_name = self.template_names[(sparse, vol_format)]
         self.create_vm_from_template_validate_disks(
             name, template_name, True, ENUMS['format_cow'])
-        if config.DATA_CENTER_TYPE == ENUMS['storage_type_nfs']:
+        if config.STORAGE_TYPE == ENUMS['storage_type_nfs']:
             name = '%s_sparse_raw' % name_prefix
             self.create_vm_from_template_validate_disks(
                 name, template_name, True, ENUMS['format_raw'])
@@ -217,7 +217,7 @@ class TestCase248132(TestCase):
     def disk_conv_from_sparse_raw_test(self):
         """ creates vms from template with sparse raw disk
         """
-        if config.DATA_CENTER_TYPE == ENUMS['storage_type_nfs']:
+        if config.STORAGE_TYPE == ENUMS['storage_type_nfs']:
             self.create_vms_from_template_convert_disks(
                 True, ENUMS['format_raw'], 'from_sparse_raw')
 
@@ -249,12 +249,12 @@ class TestCase248138(TestCase):
     tcms_test_case = '248138'
     data_for_vm = []
     vms_ip_address = None
-    vm_name = '%s_%s_snap' % (config.VM_BASE_NAME, config.DATA_CENTER_TYPE)
+    vm_name = '%s_%s_snap' % (config.VM_BASE_NAME, config.STORAGE_TYPE)
 
     @classmethod
     def setup_class(cls):
         vm_description = '%s_%s_snap' % (
-            config.VM_BASE_NAME, config.DATA_CENTER_TYPE)
+            config.VM_BASE_NAME, config.STORAGE_TYPE)
         if not _create_vm(cls.vm_name, vm_description, config.INTERFACE_IDE):
             raise exceptions.VMException(
                 "Creation of VM %s failed!" % cls.vm_name)
@@ -409,7 +409,7 @@ class TestCase300867(TestCase):
     tcms_test_case = '300867'
     data_for_vm = []
     vms_ip_address = None
-    vm_name = '%s_%s_snap' % (config.VM_BASE_NAME, config.DATA_CENTER_TYPE)
+    vm_name = '%s_%s_snap' % (config.VM_BASE_NAME, config.STORAGE_TYPE)
     snapShot1_name = "%s_snapshot1" % config.VM_BASE_NAME
     snapShot2_name = "%s_snapshot2" % config.VM_BASE_NAME
     snapshots = [snapShot1_name, snapShot2_name]
@@ -420,7 +420,7 @@ class TestCase300867(TestCase):
     @classmethod
     def setup_class(cls):
         vm_description = '%s_%s_snap' % (
-            config.VM_BASE_NAME, config.DATA_CENTER_TYPE)
+            config.VM_BASE_NAME, config.STORAGE_TYPE)
         # create vm with thin provision disk
         if not _create_vm(cls.vm_name, vm_description,  config.INTERFACE_IDE,
                           sparse=True, volume_format=ENUMS['format_cow']):

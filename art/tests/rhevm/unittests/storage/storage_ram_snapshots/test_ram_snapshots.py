@@ -35,7 +35,7 @@ def setup_module():
     """
     logger.info('Creating datacenter')
     build_setup(config=config.PARAMETERS, storage=config.PARAMETERS,
-                storage_type=config.DATA_CENTER_TYPE)
+                storage_type=config.STORAGE_TYPE)
 
     rc, masterSD = findMasterStorageDomain(True, config.DATA_CENTER_NAME)
     assert rc

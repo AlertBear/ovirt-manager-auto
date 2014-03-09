@@ -8,9 +8,10 @@ from . import ART_CONFIG
 
 PARAMETERS = ART_CONFIG['PARAMETERS']
 
-DATA_CENTER_TYPE = PARAMETERS['data_center_type']
+# DC info
+STORAGE_TYPE = PARAMETERS['storage_type']
 
-BASENAME = "%sTestStorage" % DATA_CENTER_TYPE
+BASENAME = "%sTestStorage" % STORAGE_TYPE
 
 DATA_CENTER_NAME = 'datacenter_%s' % BASENAME
 

@@ -10,10 +10,12 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 
 PARAMETERS = ART_CONFIG['PARAMETERS']
 
+# DC info
+STORAGE_TYPE = PARAMETERS['storage_type']
+
 STORAGE = ART_CONFIG['STORAGE']
 
-DATA_CENTER_TYPE = (PARAMETERS['data_center_type']).split("_")[0]
-if DATA_CENTER_TYPE == ENUMS['storage_type_posixfs']:
+if STORAGE_TYPE == ENUMS['storage_type_posixfs']:
     VFS_TYPE = (PARAMETERS['data_center_type']).split("_")[1]
     PARAMETERS['vfs_type'] = VFS_TYPE
 
@@ -21,7 +23,7 @@ EXTEND_LUN = PARAMETERS.get('extend_lun', None)
 
 FIRST_HOST = PARAMETERS.as_list('vds')[0]
 
-BASENAME = "%sTestStorage" % DATA_CENTER_TYPE
+BASENAME = "%sTestStorage" % STORAGE_TYPE
 
 DATA_CENTER_NAME = 'datacenter_%s' % BASENAME
 

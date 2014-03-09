@@ -12,13 +12,15 @@ from . import ART_CONFIG
 ENUMS = opts['elements_conf']['RHEVM Enums']
 logger = logging.getLogger(__name__)
 
+# DC info
+STORAGE_TYPE = PARAMETERS['storage_type']
+
 # Name of the test
 TESTNAME = "full_disk_tests"
 PARAMETERS = ART_CONFIG['PARAMETERS']
-DATA_CENTER_TYPE = PARAMETERS['data_center_type']
 STORAGE = ART_CONFIG['STORAGE']
 
-BASENAME = "%sTestStorage" % DATA_CENTER_TYPE
+BASENAME = "%sTestStorage" % STORAGE_TYPE
 DEFAULT_DATA_CENTER_NAME = 'datacenter_%s' % BASENAME
 DEFAULT_CLUSTER_NAME = 'cluster_%s' % BASENAME
 
@@ -85,7 +87,7 @@ TEMPLATE_NAME = PARAMETERS.get('template', 'full_disk_template')
 SNAPSHOT_NAME = PARAMETERS.get('snapshot_name', 'full_disk_snapshot')
 
 STORAGE_SECTION = ART_CONFIG['STORAGE']
-if DATA_CENTER_TYPE == ISCSI_DOMAIN:
+if STORAGE_TYPE == ISCSI_DOMAIN:
     EXTEND_LUN = STORAGE_SECTION['PARAMETERS.extend_lun']
     # Size of device (in GB)
     EXTEND_SIZE = int(EXTEND_LUN['devices_capacity'])

@@ -11,7 +11,7 @@ def setup_package():
     """
     import config
     datacenters.build_setup(config.PARAMETERS, config.PARAMETERS,
-                            config.DATA_CENTER_TYPE, config.TESTNAME)
+                            config.STORAGE_TYPE, config.TESTNAME)
 
 
 def teardown_package():

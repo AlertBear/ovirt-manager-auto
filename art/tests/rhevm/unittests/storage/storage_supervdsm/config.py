@@ -9,14 +9,15 @@ from . import ART_CONFIG
 
 PARAMETERS = ART_CONFIG['PARAMETERS']
 
-STORAGE = ART_CONFIG['STORAGE']
+# DC info
+STORAGE_TYPE = PARAMETERS['storage_type']
 
-DATA_CENTER_TYPE = (PARAMETERS['data_center_type']).split("_")[0]
+STORAGE = ART_CONFIG['STORAGE']
 
 FIRST_HOST = PARAMETERS.as_list('vds')[0]
 FIRST_HOST_PASSWORD = PARAMETERS.as_list('vds_password')[0]
 
-BASENAME = "%sTestStorage" % DATA_CENTER_TYPE
+BASENAME = "%sTestStorage" % STORAGE_TYPE
 VM_NAME = "vm_%s" % BASENAME
 
 DEFAULT_CLUSTER_NAME = 'cluster_%s' % BASENAME

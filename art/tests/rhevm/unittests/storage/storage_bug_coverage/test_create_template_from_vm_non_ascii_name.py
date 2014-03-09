@@ -31,7 +31,7 @@ def setup_module():
     """
     datacenters.build_setup(
         config=config.PARAMETERS, storage=config.PARAMETERS,
-        storage_type=config.DATA_CENTER_TYPE, basename=config.BASENAME)
+        storage_type=config.STORAGE_TYPE, basename=config.BASENAME)
 
     # Add a VM
     if not ll_vms.addVm(True, name=config.VM_BASE_NAME,
@@ -79,7 +79,7 @@ class TestCase305452(TestCase):
         self.assertTrue(disks.updateDisk(True, **disk_params))
 
         template_name = '%s_%s_non_ascii_template_' % (
-            config.VM_BASE_NAME, config.DATA_CENTER_TYPE)
+            config.VM_BASE_NAME, config.STORAGE_TYPE)
         template_kwargs = {"vm": vm_name,
                            "name": template_name}
         LOGGER.info("Creating template")

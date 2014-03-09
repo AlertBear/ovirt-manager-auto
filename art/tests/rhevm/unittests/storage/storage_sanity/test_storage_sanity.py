@@ -20,7 +20,7 @@ def setup_module():
     datacenters.build_setup(
         config=config.PARAMETERS,
         storage=config.PARAMETERS,
-        storage_type=config.DATA_CENTER_TYPE,
+        storage_type=config.STORAGE_TYPE,
         basename=config.BASENAME)
 
 
@@ -56,7 +56,7 @@ class TestCase94947(TestCase):
                 "extending master storage domain %s" % master_domain_name)
             storagedomains.extend_storage_domain(
                 master_domain_name,
-                config.DATA_CENTER_TYPE,
+                config.STORAGE_TYPE,
                 config.FIRST_HOST,
                 config.PARAMETERS)
 

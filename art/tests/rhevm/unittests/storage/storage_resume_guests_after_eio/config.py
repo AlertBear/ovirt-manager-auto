@@ -13,8 +13,11 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 TESTNAME = "storage_resume_guests_eio"
 
 PARAMETERS = ART_CONFIG['PARAMETERS']
-STORAGE_TYPE = PARAMETERS['data_center_type']
 STORAGE_CONF = ART_CONFIG['STORAGE']
+
+# DC info
+LOCAL = PARAMETERS['local']
+STORAGE_TYPE = PARAMETERS['storage_type']
 
 DC_NAME = PARAMETERS.get('dc_name', 'datacenter_%s' % TESTNAME)
 CLUSTER_NAME = PARAMETERS.get('cluster_name', 'cluster_%s' % TESTNAME)

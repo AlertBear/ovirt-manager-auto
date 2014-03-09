@@ -34,7 +34,7 @@ def setup_module():
     """
     datacenters.build_setup(
         config=config.PARAMETERS, storage=config.PARAMETERS,
-        storage_type=config.DATA_CENTER_TYPE, basename=config.BASENAME)
+        storage_type=config.STORAGE_TYPE, basename=config.BASENAME)
 
 
 def teardown_module():

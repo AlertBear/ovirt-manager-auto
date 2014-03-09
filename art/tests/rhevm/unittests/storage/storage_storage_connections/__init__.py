@@ -27,16 +27,16 @@ def setup_module():
     """
     import config
     datacenters.build_setup(
-        config.PARAMETERS, config.PARAMETERS, config.DATA_CENTER_TYPE,
+        config.PARAMETERS, config.PARAMETERS, config.STORAGE_TYPE,
         basename=config.BASENAME)
     # for iscsi tests we want to have an empty DC
-    if config.DATA_CENTER_TYPE == 'iscsi':
+    if config.STORAGE_TYPE == 'iscsi':
         # if there is an automatically added iso domain - remove it
         sds = sd_api.get(absLink=False)
         for sd in sds:
             assert storagedomains.removeStorageDomain(
                 True, sd.name, config.HOSTS[0])
-    if config.DATA_CENTER_TYPE == 'nfs':
+    if config.STORAGE_TYPE == 'nfs':
         # remove second host, we will need it for manual copying sds
         assert hosts.deactivateHost(True, config.HOSTS[1])
         assert hosts.removeHost(True, config.HOSTS[1])

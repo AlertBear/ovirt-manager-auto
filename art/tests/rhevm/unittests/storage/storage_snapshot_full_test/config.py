@@ -12,6 +12,9 @@ TESTNAME = "storage_snapshot_full"
 
 PARAMETERS = ART_CONFIG['PARAMETERS']
 
+# DC info
+STORAGE_TYPE = PARAMETERS['storage_type']
+
 ENUMS = opts['elements_conf']['RHEVM Enums']
 
 SD_ACTIVE = ENUMS['storage_domain_state_active']
@@ -33,12 +36,11 @@ MAX_WORKERS = PARAMETERS.get('max_workers', 16)
 
 BASE_SNAPSHOT = 'clean_os_base_snapshot'
 VM_NAME = PARAMETERS['vm_name']
-DATA_CENTER_TYPE = PARAMETERS['data_center_type']
 EXPORT_DOMAIN = 'export_domain'
 
 # Storage domain names
-SD_NAME = "%s_0" % DATA_CENTER_TYPE
-SD_NAME_1 = "%s_1" % DATA_CENTER_TYPE
+SD_NAME = "%s_0" % STORAGE_TYPE
+SD_NAME_1 = "%s_1" % STORAGE_TYPE
 
 VM_USER = PARAMETERS.get('vm_user', 'root')
 VM_PASSWORD = PARAMETERS.get('vm_linux_password')

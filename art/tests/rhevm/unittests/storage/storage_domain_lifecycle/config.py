@@ -13,22 +13,24 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 
 PARAMETERS = ART_CONFIG['PARAMETERS']
 
-DATA_CENTER_TYPE = (PARAMETERS['data_center_type']).split("_")[0]
-if DATA_CENTER_TYPE == ENUMS['storage_type_posixfs']:
+# DC info
+STORAGE_TYPE = PARAMETERS['storage_type']
+
+if STORAGE_TYPE == ENUMS['storage_type_posixfs']:
     VFS_TYPE = (PARAMETERS['data_center_type']).split("_")[1]
     PARAMETERS['vfs_type'] = VFS_TYPE
 
 EXTEND_LUN = PARAMETERS.get('extend_lun', None)
 
-BASENAME = "%sTestStorage" % DATA_CENTER_TYPE
+BASENAME = "%sTestStorage" % STORAGE_TYPE
 
 DATA_CENTER_NAME = 'datacenter_%s' % BASENAME
 CLUSTER_NAME = PARAMETERS.get('cluster_name', 'cluster_%s' % BASENAME)
 
 SD_STATE_ACTIVE = ENUMS['storage_domain_state_active']
-SD_NAME_0 = "%s_0" % DATA_CENTER_TYPE
-SD_NAME_1 = "%s_1" % DATA_CENTER_TYPE
-SD_NAME_2 = "%s_2" % DATA_CENTER_TYPE
+SD_NAME_0 = "%s_0" % STORAGE_TYPE
+SD_NAME_1 = "%s_1" % STORAGE_TYPE
+SD_NAME_2 = "%s_2" % STORAGE_TYPE
 
 SD_NAMES_LIST = [SD_NAME_0, SD_NAME_1, SD_NAME_2]
 
@@ -80,10 +82,10 @@ TYPE_DATA = ENUMS['storage_dom_type_data']
 STORAGE_TYPE_NFS = ENUMS['storage_type_nfs']
 STORAGE_TYPE_ISCSI = ENUMS['storage_type_iscsi']
 
-if DATA_CENTER_TYPE == STORAGE_TYPE_NFS:
+if STORAGE_TYPE == STORAGE_TYPE_NFS:
     ADDRESS = PARAMETERS.as_list('data_domain_address')
     PATH = PARAMETERS.as_list('data_domain_path')
-elif DATA_CENTER_TYPE == STORAGE_TYPE_ISCSI:
+elif STORAGE_TYPE == STORAGE_TYPE_ISCSI:
     LUNS = PARAMETERS.as_list('lun')
     LUN_ADDRESS = PARAMETERS.as_list('lun_address')
     LUN_TARGET = PARAMETERS.as_list('lun_target')

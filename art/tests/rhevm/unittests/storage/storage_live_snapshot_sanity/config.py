@@ -10,8 +10,10 @@ from . import ART_CONFIG
 TESTNAME = "storage_live_snapshot_sanity"
 
 PARAMETERS = ART_CONFIG['PARAMETERS']
-STORAGE_TYPE = PARAMETERS['data_center_type']
 STORAGE_CONF = ART_CONFIG['STORAGE']
+
+# DC info
+STORAGE_TYPE = PARAMETERS['storage_type']
 
 # Data-center name
 DC_NAME = PARAMETERS.get('dc_name', 'datacenter_%s' % TESTNAME)

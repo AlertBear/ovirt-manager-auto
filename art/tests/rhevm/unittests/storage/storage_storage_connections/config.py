@@ -16,11 +16,12 @@ TESTNAME = "manage_storage_conn"
 
 PARAMETERS = ART_CONFIG['PARAMETERS']
 
+# DC info
+STORAGE_TYPE = PARAMETERS['storage_type']
+
 BASENAME = PARAMETERS.get('basename', 'storageConn')
 DATA_CENTER_NAME = PARAMETERS.get('dc_name', 'datacenter_%s' % BASENAME)
 CLUSTER_NAME = PARAMETERS.get('cluster_name', "cluster_%s" % BASENAME)
-
-DATA_CENTER_TYPE = PARAMETERS['data_center_type']
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 
@@ -30,7 +31,7 @@ STORAGE = copy.deepcopy(ART_CONFIG['PARAMETERS'])
 
 PASSWORDS = PARAMETERS.as_list('vds_password')
 
-if DATA_CENTER_TYPE == 'iscsi':
+if STORAGE_TYPE == 'iscsi':
     CONNECTIONS = []
     CONNECTIONS.append({
         'lun_address': PARAMETERS.as_list('lun_address')[0],
@@ -48,7 +49,7 @@ if DATA_CENTER_TYPE == 'iscsi':
     PARAMETERS['lun_target'] = []
     PARAMETERS['lun_port'] = []
 
-if DATA_CENTER_TYPE == 'nfs' or DATA_CENTER_TYPE.startswith('posixfs'):
+if STORAGE_TYPE == 'nfs' or STORAGE_TYPE.startswith('posixfs'):
     DOMAIN_ADDRESSES = PARAMETERS.as_list('data_domain_address')[1:]
     DOMAIN_PATHS = PARAMETERS.as_list('data_domain_path')[1:]
     PARAMETERS['data_domain_address'] = PARAMETERS.as_list(
@@ -82,7 +83,7 @@ VM_LINUX_PASSWORD = PARAMETERS['vm_linux_password']
 VDC = PARAMETERS.get('host', None)
 VDC_PASSWORD = PARAMETERS.get('password', None)
 
-DATA_CENTER_TYPE = (PARAMETERS['data_center_type']).split("_")[0]
-if DATA_CENTER_TYPE == ENUMS['storage_type_posixfs']:
+STORAGE_TYPE = (PARAMETERS['storage_type']).split("_")[0]
+if STORAGE_TYPE == ENUMS['storage_type_posixfs']:
     VFS_TYPE = (PARAMETERS['data_center_type']).split("_")[1]
     PARAMETERS['vfs_type'] = VFS_TYPE

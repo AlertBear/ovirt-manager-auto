@@ -30,7 +30,7 @@ def setup_module():
     Build datacenter
     """
     build_setup(config=config.PARAMETERS, storage=config.PARAMETERS,
-                storage_type=config.DATA_CENTER_TYPE, basename=config.BASENAME)
+                storage_type=config.STORAGE_TYPE, basename=config.BASENAME)
 
 
 def teardown_module():
@@ -292,7 +292,7 @@ class TestCase286775(BaseCase):
     """
 
     # test case only relevant to iscsi domains
-    __test__ = config.DATA_CENTER_TYPE == 'iscsi'
+    __test__ = config.STORAGE_TYPE == 'iscsi'
     tcms_test_case = '286775'
 
     def perform_action(self):
@@ -424,7 +424,7 @@ class TestCase286779(BaseCase):
         logger.info('Waiting for host to come back up')
         self.assertTrue(waitForSPM(config.DATA_CENTER_NAME, 60, 5),
                         'SPM was not elected on datacenter %s'
-                        % config.DATA_CENTER_TYPE)
+                        % config.DATA_CENTER_NAME)
 
         logger.info('Waiting for disk %s to be OK after rollback',
                     self.disk_name)

@@ -19,7 +19,8 @@ BASENAME = PARAMETERS.get('basename', 'async_tasks')
 DATA_CENTER_NAME = PARAMETERS.get('dc_name', 'datacenter_%s' % BASENAME)
 CLUSTER_NAME = PARAMETERS.get('cluster_name', "cluster_%s" % BASENAME)
 
-DATA_CENTER_TYPE = PARAMETERS['data_center_type']
+# DC info
+STORAGE_TYPE = PARAMETERS['storage_type']
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 RHEVM_UTILS_ENUMS = opts['elements_conf']['RHEVM Utilities']
@@ -57,9 +58,8 @@ VM_LINUX_PASSWORD = PARAMETERS['vm_linux_password']
 VDC = PARAMETERS.get('host', None)
 VDC_PASSWORD = PARAMETERS.get('vdc_root_password', None)
 
-DATA_CENTER_TYPE = (PARAMETERS['data_center_type']).split("_")[0]
-if DATA_CENTER_TYPE == ENUMS['storage_type_posixfs']:
-    VFS_TYPE = (PARAMETERS['data_center_type']).split("_")[1]
+if STORAGE_TYPE == ENUMS['storage_type_posixfs']:
+    VFS_TYPE = (PARAMETERS['storage_type']).split("_")[1]
     PARAMETERS['vfs_type'] = VFS_TYPE
 
 COBBLER_ADDRESS = PARAMETERS.get('cobbler_address', None)

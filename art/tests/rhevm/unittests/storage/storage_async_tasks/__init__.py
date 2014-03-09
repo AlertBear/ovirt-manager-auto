@@ -28,7 +28,7 @@ def setup_module():
     """
     import config
     assert datacenters.build_setup(
-        config.PARAMETERS, config.PARAMETERS, config.DATA_CENTER_TYPE,
+        config.PARAMETERS, config.PARAMETERS, config.STORAGE_TYPE,
         basename=config.BASENAME)
 
     vm_name = config.VM_NAME

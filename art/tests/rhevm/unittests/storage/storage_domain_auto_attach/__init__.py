@@ -18,23 +18,23 @@ def setup_package():
     LOGGER.info("Preparing datacenter %s with hosts %s",
                 config.DATA_CENTER_NAME, config.VDC)
     build_setup(config=config.PARAMETERS, storage=config.PARAMETERS,
-                storage_type=config.DATA_CENTER_TYPE,
+                storage_type=config.STORAGE_TYPE,
                 basename=config.BASENAME)
 
     config.PARAMETERS['lun'] = luns
     config.PARAMETERS['data_domain_path'] = domain_path
 
     sd_args1 = {
-        'name' : config.ST_NAME,
-        'type' : config.ENUMS['storage_dom_type_data'],
-        'storage_type' : config.DATA_CENTER_TYPE,
-        'host' : config.VDS[0],
+        'name': config.ST_NAME,
+        'type': config.ENUMS['storage_dom_type_data'],
+        'storage_type': config.STORAGE_TYPE,
+        'host': config.VDS[0],
     }
 
-    if config.DATA_CENTER_TYPE == 'nfs':
+    if config.STORAGE_TYPE == 'nfs':
         sd_args1['address'] = config.ADDRESS[0]
         sd_args1['path'] = config.PATH[0]
-    elif config.DATA_CENTER_TYPE == 'iscsi':
+    elif config.STORAGE_TYPE == 'iscsi':
         sd_args1['lun'] = config.LUN[0]
         sd_args1['lun_address'] = config.LUN_ADDRESS[0]
         sd_args1['lun_target'] = config.LUN_TARGET[0]
@@ -46,10 +46,10 @@ def setup_package():
     sd_args2 = sd_args1
     sd_args2['name'] = config.ST_NAME_2
 
-    if config.DATA_CENTER_TYPE == 'nfs':
+    if config.STORAGE_TYPE == 'nfs':
         sd_args2['address'] = config.ADDRESS[1]
         sd_args2['path'] = config.PATH[1]
-    elif config.DATA_CENTER_TYPE == 'iscsi':
+    elif config.STORAGE_TYPE == 'iscsi':
         sd_args2['lun'] = config.LUN[1]
         sd_args2['lun_address'] = config.LUN_ADDRESS[1]
         sd_args2['lun_target'] = config.LUN_TARGET[1]

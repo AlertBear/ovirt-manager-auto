@@ -18,7 +18,7 @@ import config
 
 TCMS_PLAN_ID = '6458'
 logger = logging.getLogger(__name__)
-dc_type = config.DATA_CENTER_TYPE
+dc_type = config.STORAGE_TYPE
 ENUMS = config.ENUMS
 
 __THIS_MODULE = modules[__name__]
@@ -46,7 +46,7 @@ def setup_module():
     and overridden with only one lun/path to sent as parameter to build_setup.
     after the build_setup finish, we return to the original lists
     """
-    if config.DATA_CENTER_TYPE == config.STORAGE_TYPE_NFS:
+    if config.STORAGE_TYPE == config.STORAGE_TYPE_NFS:
         domain_path = config.PATH
         config.PARAMETERS['data_domain_path'] = [domain_path[0]]
     else:
@@ -58,10 +58,10 @@ def setup_module():
 
     datacenters.build_setup(config=config.PARAMETERS,
                             storage=config.PARAMETERS,
-                            storage_type=config.DATA_CENTER_TYPE,
+                            storage_type=config.STORAGE_TYPE,
                             basename=config.BASENAME)
 
-    if config.DATA_CENTER_TYPE == config.STORAGE_TYPE_NFS:
+    if config.STORAGE_TYPE == config.STORAGE_TYPE_NFS:
         config.PARAMETERS['data_domain_path'] = domain_path
     else:
         config.PARAMETERS['lun'] = luns

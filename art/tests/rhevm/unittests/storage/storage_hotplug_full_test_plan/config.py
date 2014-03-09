@@ -22,10 +22,12 @@ positive = True
 # Name of the test
 TESTNAME = "hotplug_full_test"
 PARAMETERS = ART_CONFIG['PARAMETERS']
-DATA_CENTER_TYPE = PARAMETERS['data_center_type']
 STORAGE = ART_CONFIG['STORAGE']
 
-BASENAME = "%sTestStorage" % DATA_CENTER_TYPE
+# DC info
+STORAGE_TYPE = PARAMETERS['storage_type']
+
+BASENAME = "%sTestStorage" % STORAGE_TYPE
 DEFAULT_DATA_CENTER_NAME = 'datacenter_%s' % BASENAME
 DEFAULT_CLUSTER_NAME = 'cluster_%s' % BASENAME
 DEFAULT_VM_NAME = "vm_%s" % BASENAME
@@ -69,7 +71,6 @@ PASSWORDS = PARAMETERS.as_list("vds_password")
 
 WAIT_TIME = 120
 BLOCK_FS = PARAMETERS['data_center_type'] in ('iscsi',)
-STORAGE_TYPE = PARAMETERS['data_center_type']
 STORAGE_DOMAIN_NAME = "%s_%d" % (STORAGE_TYPE.lower(), 0)
 
 # cobbler related settings

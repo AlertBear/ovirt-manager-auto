@@ -19,7 +19,7 @@ def setup_module():
     logger.info("SETTING UP environment")
     datacenters.build_setup(
         config=config.PARAMETERS, storage=config.PARAMETERS,
-        storage_type=config.DATA_CENTER_TYPE, basename=config.BASENAME)
+        storage_type=config.STORAGE_TYPE, basename=config.BASENAME)
 
     from common import _create_vm
     logger.info("Creating two VMs for the tests environment")

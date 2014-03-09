@@ -26,8 +26,6 @@ host_api = test_utils.get_api('host', 'hosts')
 
 GB = 1024 ** 3
 
-dc_type = config.DATA_CENTER_TYPE
-
 
 class TestCaseLocalFS(TestCase):
     __test__ = False
@@ -202,7 +200,7 @@ class TestCase288707(TestCasePosixFS):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = (dc_type.startswith('posixfs'))
+    __test__ = (config.STORAGE_TYPE.startswith('posixfs'))
     tcms_plan_id = '9985'
     tcms_test_case = '288707'
     sd_name = "sd_%s" % tcms_test_case
@@ -220,7 +218,7 @@ class TestCase288597(TestCaseNFS):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = (dc_type == 'nfs')
+    __test__ = (config.STORAGE_TYPE == 'nfs')
     tcms_plan_id = '9985'
     tcms_test_case = '288597'
     sd_name = "sd_%s" % tcms_test_case
@@ -238,7 +236,7 @@ class TestCase289001(TestCasePosixFS):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = (dc_type.startswith('posixfs'))
+    __test__ = (config.STORAGE_TYPE.startswith('posixfs'))
     tcms_plan_id = '9985'
     tcms_test_case = '289001'
     sd_name = "sd_%s" % tcms_test_case
@@ -258,7 +256,7 @@ class TestCase288991(TestCaseNFS):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = (dc_type == 'nfs')
+    __test__ = (config.STORAGE_TYPE == 'nfs')
     tcms_plan_id = '9985'
     tcms_test_case = '288991'
     sd_name = "sd_%s" % tcms_test_case
@@ -278,7 +276,7 @@ class TestCase288710(TestCaseNFS):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = (dc_type == 'nfs')
+    __test__ = (config.STORAGE_TYPE == 'nfs')
     tcms_plan_id = '9985'
     tcms_test_case = '288710'
     sd_name = "sd_%s" % tcms_test_case
@@ -352,7 +350,7 @@ class TestCase293074(TestCaseNFS):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = (dc_type == 'nfs')
+    __test__ = (config.STORAGE_TYPE == 'nfs')
     tcms_plan_id = '9985'
     tcms_test_case = '293074'
     sd_name = "sd_%s" % tcms_test_case
@@ -401,7 +399,7 @@ class TestCase288708(TestCaseLocalFS):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = (dc_type == 'localfs')
+    __test__ = (config.STORAGE_TYPE == 'localfs')
     tcms_plan_id = '9985'
     tcms_test_case = '288708'
     path = "/home/manage_conn_test_%s" % tcms_test_case
@@ -456,7 +454,7 @@ class TestCase289228(TestCaseLocalFS):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = (dc_type == 'localfs')
+    __test__ = (config.STORAGE_TYPE == 'localfs')
     tcms_plan_id = '9985'
     tcms_test_case = '289228'
     path = "/home/manage_conn_test_%s" % tcms_test_case

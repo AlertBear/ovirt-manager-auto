@@ -26,7 +26,7 @@ def setup_module():
     """
     build_setup(config.PARAMETERS,
                 config.PARAMETERS,
-                config.DATA_CENTER_TYPE,
+                config.STORAGE_TYPE,
                 config.BASENAME)
 
 

@@ -12,6 +12,9 @@ TESTNAME = "storage_domain_upgrade"
 
 PARAMETERS = ART_CONFIG['PARAMETERS']
 
+# DC info
+STORAGE_TYPE = PARAMETERS['storage_type']
+
 # Workers for thread pool
 MAX_WORKERS = PARAMETERS.get('max_workers', 16)
 
