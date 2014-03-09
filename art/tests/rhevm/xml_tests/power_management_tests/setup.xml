@@ -10,14 +10,14 @@
 <test_case>
     <test_name>Create Data Center</test_name>
     <test_action>addDataCenter</test_action>
-    <parameters>name='{data_center_name}',storage_type='e{storage_type_nfs}',version='{compatibility_version}'</parameters>
+    <parameters>name='{data_center_name}', local={local}, version='{compatibility_version}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
   </test_case>
 <test_case>
     <test_name>Create Data Center</test_name>
     <test_action>addDataCenter</test_action>
-    <parameters>name='{data_center_name}_v31',storage_type='e{storage_type_nfs}',version='3.1'</parameters>
+    <parameters>name='{data_center_name}_v31', local={local}, storage_type='e{storage_type_nfs}',version='3.1'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
 </test_case>

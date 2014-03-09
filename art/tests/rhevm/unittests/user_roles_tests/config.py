@@ -62,7 +62,8 @@ NETWORK_NAME3 = PARAMETERS.get('network4')
 NETWORK_NAME4 = PARAMETERS.get('network5')
 
 # Storages
-MAIN_STORAGE_TYPE = PARAMETERS.get('data_center_type')
+MAIN_STORAGE_TYPE = PARAMETERS.get('storage_type')
+LOCAL = PARAMETERS['local']
 NFS_STORAGE_ADDRESS = get(PARAMETERS.as_list('data_domain_address'), 0, None)
 NFS_STORAGE_PATH = get(PARAMETERS.as_list('data_domain_path'), 0, None)
 

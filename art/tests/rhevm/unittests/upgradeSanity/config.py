@@ -12,7 +12,8 @@ LOGGER = logging.getLogger(__name__)
 TEST_NAME = "UpgradeSanity"
 PARAMETERS = ART_CONFIG['PARAMETERS']
 ENUMS = opts['elements_conf']['RHEVM Enums']
-STORAGE_TYPE = PARAMETERS['data_center_type']
+STORAGE_TYPE = PARAMETERS['storage_type']
+
 
 CURRENT = PARAMETERS.get('current')
 basename = TEST_NAME

@@ -10,7 +10,7 @@
 <test_case>
     <test_name>Create Data Center</test_name>
 <test_action>addDataCenter</test_action>
-<parameters>name='{dc_prefix}',storage_type='e{storage_type_nfs}',version='{compatibility_version}'</parameters>
+<parameters>name='{dc_prefix}',local={local}, version='{compatibility_version}'</parameters>
 <positive>TRUE</positive>
 <run>yes</run>
 </test_case>
@@ -40,7 +40,7 @@
 <test_case>
     <test_name>Create Data Storage Domain NFS</test_name>
     <test_action>addStorageDomain</test_action>
-    <parameters>name='{sd_name}',type='e{storage_dom_type_data}',storage_type='e{storage_type_nfs}',address='{data_domain_address}',host='{vds[0]}',path='{data_domain_path}'</parameters>
+    <parameters>name='{sd_name}',local={local}, type='e{storage_dom_type_data}',storage_type='e{storage_type_nfs}',address='{data_domain_address}',host='{vds[0]}',path='{data_domain_path}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
 </test_case>

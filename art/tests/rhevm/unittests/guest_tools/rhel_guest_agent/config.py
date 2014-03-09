@@ -12,7 +12,8 @@ import logging
 TESTNAME = "RHEL guest agent"
 log = logging.getLogger('setup')
 PARAMETERS = ART_CONFIG['PARAMETERS']
-STORAGE_TYPE = PARAMETERS['data_center_type']
+STORAGE_TYPE = PARAMETERS['storage_type']
+
 
 DATA_CENTER_NAME = PARAMETERS.get('dc_name', "datacenter_%s" % TESTNAME)
 

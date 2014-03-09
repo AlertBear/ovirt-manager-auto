@@ -12,7 +12,8 @@ import logging
 TESTNAME = "Guest Tools"
 log = logging.getLogger('setup')
 PARAMETERS = ART_CONFIG['PARAMETERS']
-STORAGE_TYPE = PARAMETERS['data_center_type']
+STORAGE_TYPE = PARAMETERS['storage_type']
+
 
 # STORAGE_CONF = ART_CONFIG[STORAGE_TYPE.upper()]
 
