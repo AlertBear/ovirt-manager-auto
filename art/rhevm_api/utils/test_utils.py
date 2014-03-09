@@ -34,6 +34,7 @@ import string
 
 from functools import wraps
 import art.test_handler.settings as settings
+from utilities.rhevm_tools.base import Setup
 from art.core_api.validator import compareCollectionSize
 from art.core_api.apis_utils import TimeoutingSampler
 from utilities.utils import readConfFile, calculateTemplateUuid, \
@@ -1257,7 +1258,7 @@ def getSetupHostname(vdc):
 
 
 def runSQLQueryOnSetup(vdc, vdc_pass, query,
-                       psql_username='postgres', psql_db='engine', timeout=10):
+                       psql_username='postgres', psql_db='engine'):
     """
     Runs a SQL query on the setup database.
     Parameters:
@@ -1269,14 +1270,8 @@ def runSQLQueryOnSetup(vdc, vdc_pass, query,
     Returns True and a list of the records in the query output on success
             False and an empty list on failure
     """
-    setup = Machine(vdc, 'root', vdc_pass).util(LINUX)
-    sep = '__RECORD_SEPARATOR__'
-    cmd = ['psql', '-d', psql_db, '-U', psql_username, '-R', sep, '-t', '-A', '-c', query]
-    passed, out = setup.runCmd(cmd, timeout=timeout, conn_timeout=timeout)
-    if not passed:
-        logger.error("Query %s failed with an output: %s", query, out)
-        return False, []
-    return True, [a.strip().split('|') for a in out.strip().split(sep) if a.strip()]
+    setup = Setup(vdc, 'root', vdc_pass, dbuser=psql_username)
+    return setup.psql(query, psql_db=psql_db)
 
 
 def get_running_tasks(vdc, vdc_pass, sp_id, db_name, db_user):
@@ -1292,9 +1287,7 @@ def get_running_tasks(vdc, vdc_pass, sp_id, db_name, db_user):
     """
     query = "select task_id, task_params_class from " \
             "async_tasks where storage_pool_id = '%s'" % sp_id
-    status, tasks = runSQLQueryOnSetup(vdc, vdc_pass, query, db_user, db_name)
-    if not status:
-        raise PSQLException("runSQLQueryOnSetup returned False")
+    tasks = runSQLQueryOnSetup(vdc, vdc_pass, query, db_user, db_name)
     logger.debug("Query %s returned list: %s", query, tasks)
     return tasks
 
