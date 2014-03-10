@@ -1718,6 +1718,15 @@ def verify_nfs_options(
         return ("nfsvers", expected_nfsvers, real_nfsvers)
 
 
+def get_storagedomain_names():
+    """
+    Get list of storagedomain names
+
+    **Returns**: List of storage domains
+    """
+    return [x.get_name() for x in util.get(absLink=False)]
+
+
 @is_action()
 class NFSStorage(object):
     """ Helper class - one object represents one NFS storage domain.

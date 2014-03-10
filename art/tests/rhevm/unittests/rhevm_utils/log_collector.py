@@ -1,19 +1,22 @@
-from art.rhevm_api.tests_lib.low_level.clusters import addCluster, \
-    removeCluster
-from art.rhevm_api.tests_lib.low_level.datacenters import addDataCenter, \
-    removeDataCenter
-from art.rhevm_api.tests_lib.low_level.hosts import get_host_list
+import art.rhevm_api.tests_lib.low_level.clusters as llclusters
+import art.rhevm_api.tests_lib.low_level.datacenters as lldatacenters
+import art.rhevm_api.tests_lib.low_level.hosts as llhosts
+import art.rhevm_api.tests_lib.low_level.storagedomains as llstoragedomains
+import art.rhevm_api.tests_lib.low_level.vms as llvms
 
-from art.test_handler.exceptions import DataCenterException
+from art.test_handler.exceptions import VMException
 from art.test_handler.tools import tcms
 from unittest_conf import REST_API_PASS, LOG_COL_CONF
 from utilities.rhevm_tools.log_collector import LogCollectorUtility
 from . import ART_CONFIG
+import logging
 
 import rhevm_utils.base as base
 
 LOG_COLLECTOR_TEST_PLAN = 3748
 NAME = 'log_collector'
+LOGGER = logging.getLogger(__name__)
+DISK_SIZE = 6 * 1024 * 1024 * 1024
 
 
 def setup_module():
@@ -101,7 +104,7 @@ class LogCollectorSingleDC(base.RHEVMUtilsTestCase):
         """collect logs from a specified host"""
         assert self.ut.setRestConnPassword(NAME, LOG_COL_CONF, REST_API_PASS)
 
-        hosts = get_host_list()
+        hosts = llhosts.get_host_list()
         args = {'hosts': hosts[0].address}
 
         self.ut(action='collect', kwargs=args)
@@ -119,24 +122,27 @@ class LogCollectorMoreDCs(base.RHEVMUtilsTestCase):
     def setUp(self):
         super(LogCollectorMoreDCs, self).setUp()
         self.config = ART_CONFIG['PARAMETERS']
+        datacenter_name = self.config.get('new_datacenter_name')
 
-        if not (addDataCenter(positive=True,
-                              name=self.config.get('new_datacenter_name'),
-                              storage_type=self.config.get('data_center_type'),
-                              version=self.config.get('compatibility_version'))
-                and
-                addCluster(positive=True,
-                           name=self.config.get('new_cluster_name'),
-                           cpu=self.config.get('cpu_family'),
-                           data_center=self.config.get('new_datacenter_name'),
-                           version=self.config.get('compatibility_version'))):
-            raise DataCenterException("Failed to create second DC and Cluster")
+        assert lldatacenters.addDataCenter(
+            positive=True,
+            name=datacenter_name,
+            storage_type=self.config.get('data_center_type'),
+            version=self.config.get('compatibility_version'))
+        assert llclusters.addCluster(
+            positive=True,
+            name=self.config.get('new_cluster_name'),
+            cpu=self.config.get('cpu_family'),
+            data_center=datacenter_name,
+            version=self.config.get('compatibility_version'))
 
     def tearDown(self):
-        if not (removeCluster(True, self.config.get('new_cluster_name')) and
-                removeDataCenter(True,
-                                 self.config.get('new_datacenter_name'))):
-            raise DataCenterException("Failed to remove second DC and Cluster")
+        assert llclusters.removeCluster(
+            True,
+            self.config.get('new_cluster_name'))
+        assert lldatacenters.removeDataCenter(
+            True,
+            self.config.get('new_datacenter_name'))
         super(LogCollectorMoreDCs, self).tearDown()
 
     @tcms(LOG_COLLECTOR_TEST_PLAN, 95167)
@@ -164,3 +170,40 @@ class LogCollectorMoreDCs(base.RHEVMUtilsTestCase):
         args = {'data-center': self.config.get('new_datacenter_name')}
         self.ut(action='list', kwargs=args)
         assert 'No hypervisors were found' in self.ut.out
+
+
+class LogCollectorRegressionBz1058894(base.RHEVMUtilsTestCase):
+    """ Regression tests for the log-collector """
+
+    __test__ = ART_CONFIG['PARAMETERS'].get('storage_type') == 'iscsi'
+    utility = NAME
+    utility_class = LogCollectorUtility
+
+    def setUp(self):
+        super(LogCollectorRegressionBz1058894, self).setUp()
+        self.config = ART_CONFIG['PARAMETERS']
+        self.host = self.config.as_list('vds')[0]
+        cluster = 'cluster_' + self.config.get('basename')
+        self.vm_name = self.config.get('vm_name')
+
+        storagedomains = llstoragedomains.get_storagedomain_names()
+        assert storagedomains
+        assert llvms.createVm(
+            True, self.vm_name, 'description does not matter',
+            cluster=cluster, size=DISK_SIZE, nic='nic0',
+            storageDomainName=storagedomains[0])
+        assert llvms.startVm(True, self.vm_name)
+
+    def tearDown(self):
+        if not llvms.removeVm(positive=True, vm=self.vm_name, stopVM='true'):
+            raise VMException("Cannot remove vm %s" % self.vm_name)
+        LOGGER.info("Successfully removed %s.", self.vm_name)
+
+        super(LogCollectorRegressionBz1058894, self).tearDown()
+
+    @tcms(LOG_COLLECTOR_TEST_PLAN, 339921)
+    def test_log_collector_bug_1058894(self):
+        """ collect from host running a VM on iSCSI storage"""
+        assert self.ut.setRestConnPassword(NAME, LOG_COL_CONF, REST_API_PASS)
+        self.ut(action='collect')
+        self.ut.autoTest()
