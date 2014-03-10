@@ -1774,3 +1774,18 @@ class NFSStorage(object):
         for k, v in kwargs.iteritems():
             assert (k in self.__allowed)
             setattr(self, k, v)
+
+
+def get_master_storage_domain_name(datacenter_name):
+    """
+    Get master storage domain
+
+    Return: master domain name, or raise exception otherwise
+    """
+    rc, masterSD = findMasterStorageDomain(True, datacenter_name)
+    if not rc:
+        raise exceptions.StorageDomainException("Could not find master "
+                                                "storage domain for dc %s"
+                                                % datacenter_name)
+    masterSD = masterSD['masterDomain']
+    return masterSD

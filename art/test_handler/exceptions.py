@@ -97,6 +97,10 @@ class DiskException(RHEVMEntityException):
     pass
 
 
+class SnapshotException(RHEVMEntityException):
+    pass
+
+
 class UnkownConfigurationException(RHEVMEntityException):
     pass
 

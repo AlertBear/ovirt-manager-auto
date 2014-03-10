@@ -16,6 +16,7 @@
 # License along with this software; if not, write to the Free
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+from utilities.machine import Machine
 
 from art.core_api.apis_utils import getDS
 from art.rhevm_api.utils.test_utils import get_api, split, getStat, \
@@ -42,8 +43,9 @@ from art.rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.test_handler import settings
 from art.core_api import is_action
-from art.rhevm_api.utils.guest import runLoadOnGuests, runLoadOnGuest
+from art.rhevm_api.utils.guest import runLoadOnGuest
 from random import choice
+import shlex
 
 ELEMENT = 'host'
 COLLECTION = 'hosts'
@@ -54,7 +56,6 @@ TAG_API = get_api('tag', 'tags')
 HOST_NICS_API = get_api('host_nic', 'host_nics')
 VM_API = get_api('vm', 'vms')
 CAP_API = get_api('version', 'capabilities')
-
 xpathMatch = is_action('xpathHosts',
                        id_name='xpathMatch')(XPathMatch(HOST_API))
 xpathHostsLinks = is_action('xpathLinksHosts',
@@ -82,6 +83,7 @@ KSMTUNED_CONF = '/etc/ksmtuned.conf'
 MEGABYTE = 1024 ** 2
 IP_PATTERN = '10.35.*'
 TIMEOUT = 120
+FIND_QEMU = 'ps aux |grep qemu | grep -e "-name %s"'
 
 virsh_cmd = ['nwfilter-dumpxml', 'vdsm-no-mac-spoofing']
 search_for = ["<filterref filter='no-mac-spoofing'/>",
@@ -2619,3 +2621,29 @@ def stop_vdsm(host, password):
         HOST_API.logger.error("Unable to deactivate host %s", host)
         return False
     return stopVdsmd(vds=host, password=password)
+
+
+def kill_qemu_process(vm_name, host, user, password):
+        """
+        Description: kill qemu process of a given vm
+        Parameters:
+            * vm_name - the vm name that wish to find its qemu proc
+            * host - ip or fqdn of host rum qemu process
+            * user - username for  host
+            * password - password for host
+        Author: ratamir
+        Return:
+            pid, or raise EntityNotFound exception
+        """
+        linux_machine = Machine(
+            host=host, user=user,
+            password=password).util('linux')
+
+        cmd = FIND_QEMU % vm_name
+        status, output = linux_machine.runCmd(shlex.split(cmd))
+        if not status:
+            raise RuntimeError("Output: %s" % output)
+        qemu_pid = output.split()[1]
+        HOST_API.logger.info("QEMU pid: %s", qemu_pid)
+
+        return linux_machine.runCmd(shlex.split('kill -9 %s', qemu_pid))

@@ -53,6 +53,11 @@ logger = logging.getLogger(__name__)
 xpathMatch = is_action('xpathMatch')(XPathMatch(VM_API))
 BLOCK_DEVICES = [ENUMS['storage_type_iscsi'], ENUMS['storage_type_fcp']]
 
+FORMAT_COW = ENUMS['format_cow']
+FORMAT_RAW = ENUMS['format_raw']
+VIRTIO = ENUMS['interface_virtio']
+VIRTIO_SCSI = ENUMS['interface_virtio_scsi']
+
 
 def getStorageDomainDisks(storagedomain, get_href):
     '''
@@ -249,6 +254,7 @@ def updateDisk(positive, **kwargs):
         * propagate_errors - True or False whether disk should propagate errors
         * wipe_after_delete - True or False whether disk should wiped after
                               deletion
+        * read_only - True if disk should be read only, False otherwise
         * storagedomain - name of storage domain where disk will reside
         * quota - disk quota
         * storage_connection - in case of direct LUN - existing storage
@@ -282,18 +288,21 @@ def deleteDisk(positive, alias, async=True):
 
 
 @is_action('attachDiskToVm')
-def attachDisk(positive, alias, vmName, active=True):
+def attachDisk(positive, alias, vmName, active=True, read_only=False):
     """
     Description: Attach disk to VM
     Parameters:
         * alias - disk to attach
         * vmName - vm attaching disk to
         * active - if disk should be activated after attaching
+        * read_only - if disk should be read only
     Author: jlibosva
     Return: Status of the operation dependent on positive value
     """
     diskObj = DISKS_API.find(alias)
     diskObj.active = active
+    diskObj.read_only = read_only
+
     vmDisks = getObjDisks(vmName)
     diskObj, status = DISKS_API.create(diskObj, positive, collection=vmDisks)
     return status
@@ -463,3 +472,43 @@ def checksum_disk(hostname, user, password, disk_object, dc_obj):
         host_machine.lv_change(sd_id, vol_id, activate=False)
 
     return checksum
+
+
+def get_all_disk_permutation(block=True, shared=False):
+    """
+    Description: Get all disks interfaces/formats/allocation policies
+    permutations possible
+    Author: ratamir
+    Parameters:
+        * block - True if storage type is block, False otherwise
+    Return: list permutations stored in dictionary
+    """
+    permutations = []
+    for disk_format in [FORMAT_COW, FORMAT_RAW]:
+        for interface in [VIRTIO, VIRTIO_SCSI]:
+            for sparse in [True, False]:
+                if disk_format is FORMAT_RAW and sparse and block:
+                    continue
+                if disk_format is FORMAT_COW and not sparse:
+                    continue
+                if shared and disk_format is FORMAT_COW:
+                    continue
+                permutation = {'format': disk_format,
+                               'interface': interface,
+                               'sparse': sparse,
+                               }
+                permutations.append(permutation)
+    return permutations
+
+
+def check_disk_visibility(disk, disks_list):
+    """
+    Check if disk is in vm disks collection
+    Parameters:
+        * disk - alias of disk that need to checked
+        * disks_list - collection of disks objects
+    Return: True if ok, or False otherwise
+    """
+    is_visible = disk in [disk_obj.get_alias() for disk_obj in
+                          disks_list if disk_obj.get_active()]
+    return is_visible

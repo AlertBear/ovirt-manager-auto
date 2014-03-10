@@ -376,6 +376,7 @@ class StorageAdder(object):
         """
         export_address = self.storage.get('export_domain_address', None)
         export_path = self.storage.get('export_domain_path', None)
+
         self._add_nfs_domain(
             export_address, export_path, ENUMS['storage_dom_type_export'])
 

@@ -58,16 +58,21 @@ NAME_ATTR = 'name'
 ID_ATTR = 'id'
 DEF_SLEEP = 10
 VM_ACTION_TIMEOUT = 180
-VM_REMOVE_SNAPSHOT_TIMEOUT = 500
+VM_SNAPSHOT_ACTION = 600
+VM_REMOVE_SNAPSHOT_TIMEOUT = 800
 VM_DISK_CLONE_TIMEOUT = 720
-VM_IMAGE_OPT_TIMEOUT = 600
+VM_IMAGE_OPT_TIMEOUT = 900
+CLONE_FROM_SNAPSHOT = 1500
 VM_SAMPLING_PERIOD = 3
 BLANK_TEMPLATE = '00000000-0000-0000-0000-000000000000'
 ADD_DISK_KWARGS = ['size', 'type', 'interface', 'format', 'bootable',
                    'sparse', 'wipe_after_delete', 'propagate_errors',
-                   'alias', 'active']
+                   'alias', 'active', 'read_only']
 VM_WAIT_FOR_IP_TIMEOUT = 600
 SNAPSHOT_TIMEOUT = 15 * 60
+PREVIEW = ENUMS['preview_snapshot']
+UNDO = ENUMS['undo_snapshot']
+COMMIT = ENUMS['commit_snapshot']
 
 VM_API = get_api('vm', 'vms')
 VNIC_PROFILE_API = get_api('vnic_profile', 'vnicprofiles')
@@ -344,6 +349,7 @@ def addVm(positive, wait=True, **kwargs):
        * quota - vm quota
        * snapshot - description of snapshot to use. Causes error if not unique
        * copy_permissions - True if perms should be copied from template
+       * timeout - waiting timeout
     Return: status (True if vm was added properly, False otherwise)
     '''
     kwargs.update(add=True)
@@ -361,7 +367,8 @@ def addVm(positive, wait=True, **kwargs):
         return status
 
     disk_clone = kwargs.pop('disk_clone', None)
-    wait_timeout = VM_ACTION_TIMEOUT
+
+    wait_timeout = kwargs.pop('timeout', VM_ACTION_TIMEOUT)
     if disk_clone and disk_clone.lower() == 'true':
         expectedVm.set_template(data_st.Template(id=BLANK_TEMPLATE))
         wait_timeout = VM_DISK_CLONE_TIMEOUT
@@ -851,6 +858,7 @@ def addDisk(positive, vm, size, wait=True, storagedomain=None,
         * quota - disk quota
         * active - automatically activate the disk
         * alias - alias for the disk
+        * read_only - if disk should be read only
     Return: status (True if disk was added properly, False otherwise)
     '''
     vmObj = VM_API.find(vm)
@@ -866,6 +874,11 @@ def addDisk(positive, vm, size, wait=True, storagedomain=None,
             logger.debug("addDisk parameter %s is %s", param_name, param_val)
             setattr(disk, param_name, param_val)
             logger.debug("%s is not none", param_val)
+
+    # read_only
+    read_only = kwargs.pop('read_only', None)
+    if read_only is not None:
+        disk.set_read_only(read_only)
 
     # quota
     quota_id = kwargs.pop('quota', None)
@@ -1880,7 +1893,7 @@ def _createVmForClone(name, template, cluster, clone, vol_sparse, vol_format):
 
 @is_action()
 def cloneVmFromTemplate(positive, name, template, cluster,
-                        timeout=VM_IMAGE_OPT_TIMEOUT, clone='true',
+                        timeout=VM_IMAGE_OPT_TIMEOUT, clone=True,
                         vol_sparse=None, vol_format=None, wait=True):
     '''
     Description: clone vm from a pre-defined template
@@ -1891,21 +1904,41 @@ def cloneVmFromTemplate(positive, name, template, cluster,
        * cluster - cluster name
        * timeout - action timeout (depends on disk size or system load
        * clone - true/false - if true, template disk will be copied
-       * vol_sparse - true/false - convert VM disk to sparse/preallocated
+       * vol_sparse - True/False - convert VM disk to sparse/preallocated
        * vol_format - COW/RAW - convert VM disk format
     Return: status (True if vm was cloned properly, False otherwise)
     '''
-
+    clone = str(clone).lower()
     # don't even try to use deepcopy, it will fail
     expectedVm = _createVmForClone(name, template, cluster, clone, vol_sparse,
                                    vol_format)
     newVm = _createVmForClone(name, template, cluster, clone, vol_sparse,
                               vol_format)
-
-    expectedVm.set_template(data_st.Template(id=BLANK_TEMPLATE))
+    if clone == 'true':
+        expectedVm.set_template(data_st.Template(id=BLANK_TEMPLATE))
     vm, status = VM_API.create(newVm, positive, expectedEntity=expectedVm)
     if positive and status and wait:
         return VM_API.waitForElemStatus(vm, "DOWN", timeout)
+    return status
+
+
+@is_action()
+def cloneVmFromSnapshot(positive, name, snapshot, cluster, wait=True,
+                        timeout=CLONE_FROM_SNAPSHOT):
+    """
+    Description: clone vm from a snapshot
+    Author: ratamir
+    Parameters:
+       * name - vm name
+       * snapshot - snapshot description
+       * cluster - cluster name
+    Return: True if vm was cloned properly, False otherwise
+    """
+    status = addVm(True, name=name, snapshot=snapshot, cluster=cluster,
+                   timeout=timeout)
+
+    if positive and status and wait:
+        return waitForVMState(name, ENUMS['vm_state_down'])
     return status
 
 
@@ -2726,9 +2759,9 @@ def removeVmFromExportDomain(positive, vm, datacenter,
     Description: removes a vm, from export domain
     Author: istein
     Parameters:
-       * vm - vm to import
+       * vm - name of vm to remove from export domain
        * datacenter - name of data center
-       * export_storagedomain -storage domain where to export vm from
+       * export_storagedomain - export domain containing the exported vm
     Return: status (True if vm was removed properly, False otherwise)
     '''
 
@@ -3211,12 +3244,13 @@ def preview_snapshot(positive, vm, description, ensure_vm_down=False,
        * description - snapshot name
     Return: status (True if snapshot was previewed properly, False otherwise)
     """
-    return perform_snapshot_action(positive, vm, description, 'preview',
-                                   ensure_vm_down,
-                                   restore_memory=restore_memory)
+    if ensure_vm_down:
+        stop_vms_safely([vm])
+    return snapshot_action(positive, vm, PREVIEW, description,
+                           restore_memory=restore_memory)
 
 
-def undo_snapshot_preview(positive, vm, description, ensure_vm_down=False):
+def undo_snapshot_preview(positive, vm, ensure_vm_down=False):
     """
     Description: Undo a snapshot preview
     Author: gickowic
@@ -3225,11 +3259,12 @@ def undo_snapshot_preview(positive, vm, description, ensure_vm_down=False):
        * description - snapshot name that is currently previewed
     Return: status (True if snapshot preview was undone, False otherwise)
     """
-    return perform_snapshot_action(positive, vm, description, 'undo',
-                                   ensure_vm_down)
+    if ensure_vm_down:
+        stop_vms_safely([vm])
+    return snapshot_action(positive, vm, UNDO)
 
 
-def commit_snapshot(positive, vm, description, ensure_vm_down=False,
+def commit_snapshot(positive, vm, ensure_vm_down=False,
                     restore_memory=False):
     """
     Description: Commit a vm snapshot (must be currently in preview)
@@ -3239,9 +3274,10 @@ def commit_snapshot(positive, vm, description, ensure_vm_down=False,
        * description - snapshot name that is currently previewed
     Return: status (True if snapshot was committed properly, False otherwise)
     """
-    return perform_snapshot_action(positive, vm, description, 'commit',
-                                   ensure_vm_down,
-                                   restore_memory=restore_memory)
+    if ensure_vm_down:
+        stop_vms_safely([vm])
+    return snapshot_action(positive, vm, COMMIT,
+                           restore_memory=restore_memory)
 
 
 def perform_snapshot_action(positive, vm, description, action,
@@ -3267,6 +3303,36 @@ def perform_snapshot_action(positive, vm, description, action,
     if status and positive:
         return VM_API.waitForElemStatus(vmObj, ENUMS['vm_state_down'],
                                         VM_ACTION_TIMEOUT)
+
+    return status
+
+
+# TODO: enable restore_memory
+def snapshot_action(positive, vm, action,
+                    description=None, restore_memory=False):
+    """
+    Function that performs snapshot actions
+    Author: ratamir
+    Parameters:
+        * vm - vm name which snapshot belongs to
+        * action - snapshot operation to execute (string - 'commit_snapshot',
+                   'undo_snapshot', 'undo_snapshot')
+        * description - snapshot description
+        * restore_memory - True if restore memory required
+    Return: True if operation succeeded, False otherwise
+    """
+    vmObj = VM_API.find(vm)
+    action_args = {'entity': vmObj,
+                   'action': action,
+                   'positive': positive}
+    if action == 'preview_snapshot':
+        snapshot = _getVmSnapshot(vm, description)
+        action_args['snapshot'] = snapshot
+
+    status = VM_API.syncAction(**action_args)
+    if status and positive:
+        return VM_API.waitForElemStatus(vmObj, ENUMS['vm_state_down'],
+                                        VM_SNAPSHOT_ACTION)
 
     return status
 
