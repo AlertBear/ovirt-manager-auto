@@ -7,6 +7,9 @@ Actually it uses its TestLoader to load modules, and executes test cases.
 In additional it provides integration with TCMS plugin, and Bugzilla plugin.
 Also supports the unittest2 backport from py3.
 
+CLI Options
+-----------
+  --test-tag name=value
 
 Configuration Options:
 ----------------------
@@ -25,6 +28,7 @@ should look like.
 
 """
 
+import os
 import re
 import sys
 from functools import wraps
@@ -49,8 +53,14 @@ DEPS_INSTALLED = None
 try:
     from nose.suite import ContextSuite
     from nose.case import Test
+    from nose.config import Config as NoseConfig
+    from nose.loader import TestLoader
+    from nose.plugins.manager import DefaultPluginManager as NosePluginManager
+    from nose.plugins.attrib import AttributeSelector
 except ImportError as ex:
-    ContextSuite = Test = None  # this is required
+    # this is required
+    ContextSuite = Test = NoseConfig = NosePluginManager = None
+    TestLoader = AttributeSelector = None
     DEPS_INSTALLED = ex
 
 try:
@@ -183,6 +193,8 @@ class UTestGroup(TestGroup):
                 elif None is c.context:
                     continue
                 else:
+                    if not c.countTestCases():
+                        continue
                     test_elm = UTestGroup(c)
                 test_elm.parent = self.context
                 yield test_elm
@@ -207,6 +219,8 @@ class UTestSuite(TestSuite):
         self.test_name = self.context.context.__name__
 
     def __iter__(self):
+        if not self.context.countTestCases():
+            raise StopIteration("No test cases found")
         try:
             logger.info(TEST_CASES_SEPARATOR)
             logger.info("TEST SUITE setUp: %s", self.test_name)
@@ -225,6 +239,8 @@ class UTestSuite(TestSuite):
                 elif None is c.context:
                     continue
                 else:
+                    if not c.countTestCases():
+                        continue
                     test_elm = UTestGroup(c)
                 test_elm.parent = self.context
                 yield test_elm
@@ -279,6 +295,8 @@ class UnittestLoader(Component):
             if self.root_path:
                 sys.path.insert(0, self.root_path)
 
+            # NOTE: maybe all this part could be replaced by
+            # nose.core.collector function
             from nose.loader import TestLoader
             for mod_path in self.mod_path.split(':'):
 
@@ -296,7 +314,13 @@ class UnittestLoader(Component):
                 description[mod.__name__] = mod.__doc__
                 modules.append([name, mod])
 
-            loader = TestLoader(workingDir=self.root_path)
+            # Initialize TestLoader
+            loader = TestLoader(workingDir=self.root_path,
+                                config=self.nose_conf)
+            pl_loader = self.nose_conf.plugins.prepareTestLoader(loader)
+            if pl_loader is not None:
+                loader = pl_loader
+
             for m in modules:
                 if m[0] is not None:
                     tests = loader.loadTestsFromName(module=m[1], name=m[0])
@@ -330,9 +354,19 @@ class UnittestLoader(Component):
         TestResult.ATTRIBUTES['test_action'] = ('test_action', None, None)
         TestResult.ATTRIBUTES['iter_num'] = ('serial', None, None)
 
+        self.nose_conf = NoseConfig(env=os.environ,
+                                    plugins=NosePluginManager())
+        args = ['nose']  # first is name of program
+        for tag in params.test_tags:
+            args.extend(['-a', tag])
+        self.nose_conf.configure(args)
+
     @classmethod
     def add_options(cls, parser):
-        pass
+        group = parser.add_argument_group(cls.name, description=cls.__doc__)
+        group.add_argument('--test-tag', action='append',
+                           dest='test_tags', help="tier=xx or/and team=yy",
+                           default=list())
 
     def pre_test_result_reported(self, res, tc):
         res.add_result_attribute('module_name', 'mod_name', 'Module Name', '')
@@ -392,7 +426,7 @@ class UnittestLoader(Component):
         params['author_email'] = 'lbednar@redhat.com'
         params['description'] = 'Unittest runner plugin for ART'
         params['long_description'] = cls.__doc__
-        params['requires'] = ['python-nose', 'python-unittest2']
+        params['requires'] = ['python-nose >= 0.11.0', 'python-unittest2']
 #        params['pip_deps'] = ['unittest2']
         params['py_modules'] = ['art.test_handler.plmanagement.plugins.'
                                 'unittest_test_runner_plugin']
