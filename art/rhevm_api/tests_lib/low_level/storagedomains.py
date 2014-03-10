@@ -565,26 +565,32 @@ def isStorageDomainMaster(positive, dataCenterName, storageDomainName):
 
 @is_action()
 def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
-                     storage_type, cluster, version, dataStorageDomains='', address='',
-                     lun_address='', lun_target='', luns='', lun_port='',
-                     sdNameSuffix='_data_domain', reboot=True):
+                     storage_type, cluster, version, dataStorageDomains='',
+                     address='', lun_address='', lun_target='', luns='',
+                     lun_port='', sdNameSuffix='_data_domain', reboot=True,
+                     local=False):
     """
-    Function creates data center.
-        positive           = positive
-        hosts              = host\s name\s or ip\s. A single host, or a list of hosts separated by comma.
-        username           = user name
-        password           = password
-        datacenter         = data center name
-        storage_type       = 'NFS'\'iSCSI'\'FCP'
-        cluster            = cluster name
-        dataStorageDomains = NFS data storage domain path list
-        address            = NFS storage domain address
-        lun_address        = address of iSCSI machine
-        lun_target         = LUN target
-        luns               = lun\s id. A single lun id, or a list of luns, separeted by comma.
-        lun_port           = lun port
-        sdNameSuffix    = suffix for storage domain name (default is '_data_domain')
-        version            = data center supported version (2.2 or 3.0)
+    Description: Function creates data center.
+    **Parameters**:
+        *  *positive* - positive
+        *  *hosts* - host\s name\s or ip\s. A single host, or a list of
+                     hosts separated by comma.
+        *  *username - user name
+        *  *password - password
+        *  *datacenter - data center name
+        *  *storage_type - 'NFS'\'iSCSI'\'FCP'
+        *  *cluster - cluster name
+        *  *dataStorageDomains - NFS data storage domain path list
+        *  *address - NFS storage domain address
+        *  *lun_address - address of iSCSI machine
+        *  *lun_target - LUN target
+        *  *luns - lun\s id. A single lun id, or a list of luns,separeted by
+                   comma.
+        *  *lun_port - lun port
+        *  *sdNameSuffix - suffix for storage domain name
+                           (default is '_data_domain')
+        *  *version - data center supported version (2.2 or 3.0)
+        *  *local - True for localFS DC type, False for shared DC type
     """
 
     storageDomainList = []
@@ -609,10 +615,12 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
     try:
         dcUtil.find(datacenter)
     except EntityNotFound:
-        util.logger.info("Create an empty %s Storage Pool %s" % (storage_type, datacenter))
+        util.logger.info("Create an empty %s Storage Pool %s" % (storage_type,
+                                                                 datacenter))
         if not addDataCenter(positive, name=datacenter,
-                             storage_type=storage_type, version=version):
-            util.logger.error('Creating an empty Storage Pool %s failed' % datacenter)
+                             version=version, local=local):
+            util.logger.error('Creating an empty Storage Pool %s failed' %
+                              datacenter)
             return False
 
     #Add cluster
@@ -644,15 +652,19 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
 
     #Check if host\s attached to cluster
     for host in hostArr:
-        util.logger.info("Check if host %s attached to cluster %s" % (host, cluster))
-        if not isHostAttachedToCluster(positive, host, cluster) and not attachHostToCluster(positive, host, cluster):
-            util.logger.error("Attach host %s to cluster %s failed" % (host, cluster))
+        util.logger.info("Check if host %s attached to cluster %s" %
+                         (host, cluster))
+        if not isHostAttachedToCluster(positive, host, cluster) and not \
+                attachHostToCluster(positive, host, cluster):
+            util.logger.error("Attach host %s to cluster %s failed" %
+                              (host, cluster))
             return False
 
     #Connect cluster to dataCenter
     util.logger.info('Connect cluster to dataCenter')
     if not connectClusterToDataCenter(positive, cluster, datacenter):
-        util.logger.error("Connect cluster %s to dataCenter %s failed" % (cluster, datacenter))
+        util.logger.error("Connect cluster %s to dataCenter %s failed" %
+                          (cluster, datacenter))
         return False
 
     #iSCSI discover and login
@@ -660,10 +672,12 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
         for index, lunAddr in enumerate(lunAddrArr):
             util.logger.info('Run ISCSI discovery and login')
             if not iscsiDiscover(positive, host, lunAddr):
-                util.logger.error("iscsiDiscover failed for storage %s" % lunAddr)
+                util.logger.error("iscsiDiscover failed for storage %s" %
+                                  lunAddr)
                 return False
             if not iscsiLogin(positive, host, lunAddr, lunTgtArr[index]):
-                util.logger.error("iscsiLogin failed for storage %s and target %s" % (lunAddr, lunTgtArr[index]))
+                util.logger.error("iscsiLogin failed for storage %s and "
+                                  "target %s" % (lunAddr, lunTgtArr[index]))
                 return False
 
     #create data storage domains
@@ -673,20 +687,49 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
 
     for index, storagePath in enumerate(storageArr):
         sdName = sdNamePref + str(index)
-        addStorageDomainLogMassageTemplate = "Add {0} storage domain parameters: positive=%s, name=%s, type=%s, storage_type=%s, host=%s {1}.." % (positive, sdName, domainType, storage_type, host)
-        util.logger.info("Create storage domain %s from storage %s" % (sdName, storagePath))
+        addStorageDomainLogMassageTemplate = "Add {0} storage domain " \
+                                             "parameters: positive=%s, " \
+                                             "name=%s, type=%s, storage_" \
+                                             "type=%s, host=%s {1}.." % \
+                                             (positive, sdName, domainType,
+                                              storage_type, host)
+        util.logger.info("Create storage domain %s from storage %s" %
+                         (sdName, storagePath))
         if storage_type == ENUMS['storage_type_nfs']:
-            util.logger.info(addStorageDomainLogMassageTemplate.format(ENUMS['storage_type_nfs'],
-                             "path=%s, address=%s" % (storagePath, address_arr[index])))
+            util.logger.info(addStorageDomainLogMassageTemplate.format
+                             (ENUMS['storage_type_nfs'],
+                             "path=%s, address=%s" % (storagePath,
+                                                      address_arr[index])))
             status = addStorageDomain(positive=positive, name=sdName,
-                                      type=domainType, storage_type=storage_type, path=storagePath,
+                                      type=domainType,
+                                      storage_type=storage_type,
+                                      path=storagePath,
                                       address=address_arr[index], host=host)
         elif storage_type == ENUMS['storage_type_iscsi']:
-            util.logger.info(addStorageDomainLogMassageTemplate.format(ENUMS['storage_type_iscsi'], "lun=%s, lun_address=%s, lun_target=%s, lun_port=%s" % (storagePath, lunAddrArr[index], lunTgtArr[index], lun_port)))
-            status = addStorageDomain(positive=positive, name=sdName, type=domainType, storage_type=storage_type, host=host, lun=storagePath, lun_address=lunAddrArr[index], lun_target=lunTgtArr[index], lun_port=lun_port)
+            util.logger.info(addStorageDomainLogMassageTemplate.format
+                             (ENUMS['storage_type_iscsi'], "lun=%s, "
+                                                           "lun_address=%s, "
+                                                           "lun_target=%s, "
+                                                           "lun_port=%s" %
+                                                           (storagePath,
+                                                            lunAddrArr[index],
+                                                            lunTgtArr[index],
+                                                            lun_port)))
+            status = addStorageDomain(positive=positive, name=sdName,
+                                      type=domainType,
+                                      storage_type=storage_type,
+                                      host=host, lun=storagePath,
+                                      lun_address=lunAddrArr[index],
+                                      lun_target=lunTgtArr[index],
+                                      lun_port=lun_port)
         elif storage_type == ENUMS['storage_type_fcp']:
-            util.logger.info(addStorageDomainLogMassageTemplate.format(ENUMS['storage_type_fcp'], "lun=%s" % (storagePath)))
-            status = addStorageDomain(positive=positive, name=sdName, type=domainType, storage_type=storage_type, host=host, lun=storagePath)
+            util.logger.info(addStorageDomainLogMassageTemplate.format
+                             (ENUMS['storage_type_fcp'], "lun=%s" %
+                                                         (storagePath)))
+            status = addStorageDomain(positive=positive, name=sdName,
+                                      type=domainType,
+                                      storage_type=storage_type, host=host,
+                                      lun=storagePath)
 
         if not status:
             util.logger.error("Add Storage domain %s failed" % sdName)
@@ -695,14 +738,19 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
 
     #attach storage domains
     for sd in storageDomainList:
-        util.logger.info("Attach storage domain %s to data center %s" % (sd, datacenter))
-        if not attachStorageDomain(positive=positive, datacenter=datacenter, storagedomain=sd):
-            util.logger.error("Attach storage domain %s to data center %s failed" % (sd, datacenter))
+        util.logger.info("Attach storage domain %s to data center %s" %
+                         (sd, datacenter))
+        if not attachStorageDomain(positive=positive, datacenter=datacenter,
+                                   storagedomain=sd):
+            util.logger.error("Attach storage domain %s to data center %s "
+                              "failed" % (sd, datacenter))
             return False
         storDomObj = util.find(sd)
         # Non master storage domains, require activation
         if not storDomObj.get_master():
-            if not activateStorageDomain(positive=positive, datacenter=datacenter, storagedomain=sd):
+            if not activateStorageDomain(positive=positive,
+                                         datacenter=datacenter,
+                                         storagedomain=sd):
                 util.logger.error("Activate storage domain %s failed", sd)
                 return False
     return True

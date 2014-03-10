@@ -297,7 +297,7 @@ def removeNetFromSetup(host, auto_nics=['eth0'], network=[], data_center=None):
 
 @is_action()
 def prepareSetup(hosts, cpuName, username, password, datacenter,
-                 storage_type, cluster, version,
+                 cluster, version, storage_type, local=False,
                  storageDomainName=None, lun_address='', lun_target='',
                  luns='', lun_port=LUN_PORT,
                  diskType='system', auto_nics=[HOST_NICS[0]],
@@ -311,7 +311,7 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
                  interval=INTERVAL, placement_host=None,
                  bridgeless=False, vm_network=MGMT_NETWORK,
                  mgmt_network=MGMT_NETWORK, vnic_profile=None):
-    '''
+    """
         Function that creates DC, Cluster, Storage, Hosts
         It creates VM with a NIC connected to default network and Template if
         flag is on:
@@ -359,7 +359,7 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
             *  *vm_network* - Network for VM
             *  *mgmt_network* - management network
         **Returns**: True if creation of the setup succeeded, otherwise False
-    '''
+    """
     if vmName and bridgeless:
         if vm_network == mgmt_network:
             logger.error("vm network name can't be %s when using"
@@ -368,8 +368,9 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
 
     if not createDatacenter(True, hosts=hosts, cpuName=cpuName,
                             username=username, password=password,
-                            datacenter=datacenter, storage_type=storage_type,
-                            cluster=cluster, version=version,
+                            datacenter=datacenter, cluster=cluster,
+                            version=version, local=local,
+                            storage_type=storage_type,
                             lun_address=lun_address, lun_target=lun_target,
                             luns=luns, lun_port=lun_port):
         logger.error("Couldn't create setup (DC, Cluster, Storage, Host)")
