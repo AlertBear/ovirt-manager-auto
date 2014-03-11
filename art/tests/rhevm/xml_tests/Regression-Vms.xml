@@ -12,7 +12,7 @@
     <id>cb8b6752-c695-11e1-bca8-f0def10e0ce8</id>
     <test_name>Create default data center</test_name>
     <test_action>addDataCenter</test_action>
-    <parameters>name='DefaultRest', storage_type='e{storage_type_nfs}', version='{compatibility_version}'</parameters>
+    <parameters>name='DefaultRest', local={local}, version='{compatibility_version}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
     <test_description/>
@@ -43,9 +43,9 @@
   </test_case>
   <test_case>
     <id>cb8b72ec-c695-11e1-bca8-f0def10e0ce8</id>
-    <test_name>Create iSCSI data center</test_name>
+    <test_name>Create Local data center</test_name>
     <test_action>addDataCenter</test_action>
-    <parameters>name='RestDataCenter2', storage_type='e{storage_type_iscsi}', version='{compatibility_version}'</parameters>
+    <parameters>name='RestDataCenter2', local=True, version='{compatibility_version}'</parameters>
     <positive>TRUE</positive>
     <run>yes</run>
   </test_case>
