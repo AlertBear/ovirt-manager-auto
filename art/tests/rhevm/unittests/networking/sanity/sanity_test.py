@@ -5,7 +5,7 @@ Sanity will test untagged, tagged, bond scenarios.
 It will cover scenarios for VM/non-VM networks.
 '''
 from nose.tools import istest
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 from art.test_handler.tools import tcms
 import logging
 from art.rhevm_api.tests_lib.high_level.storagedomains import addNFSDomain

@@ -5,7 +5,7 @@ Testing RequiredNetwork network feature.
 import logging
 import config
 from nose.tools import istest
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 from art.rhevm_api.tests_lib.high_level.networks import \
     createAndAttachNetworkSN, validateNetwork, removeNetFromSetup
 from art.rhevm_api.tests_lib.low_level.hosts import ifdownNic,\

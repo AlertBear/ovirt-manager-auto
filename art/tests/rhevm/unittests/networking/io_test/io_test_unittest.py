@@ -6,7 +6,7 @@ Positive and negative cases for creating/editing networks
 with valid/invalid names, IPs, netmask, VLAN, usages.
 """
 from nose.tools import istest
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 import logging
 from art.rhevm_api.tests_lib.high_level.networks import \
     createAndAttachNetworkSN, removeAllNetworks

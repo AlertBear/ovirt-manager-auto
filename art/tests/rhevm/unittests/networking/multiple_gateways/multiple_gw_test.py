@@ -7,7 +7,7 @@ Only static IP configuration is tested.
 '''
 
 from nose.tools import istest
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 import logging
 import config
 

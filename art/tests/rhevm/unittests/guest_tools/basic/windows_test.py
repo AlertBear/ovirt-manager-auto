@@ -4,7 +4,7 @@ Base class for all Windows basic sanity tests
 import json
 import logging
 from nose.tools import istest
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 from unittest2 import skipIf
 import os
 

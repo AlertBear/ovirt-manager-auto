@@ -1,4 +1,4 @@
-import unittest
+from art.unittest_lib import BaseTestCase as TestCase
 import logging
 from concurrent.futures import ThreadPoolExecutor
 import time
@@ -70,7 +70,7 @@ def _restore_empty_dc():
     assert storageconnections.remove_all_storage_connections()
 
 
-class TestCase288967(unittest.TestCase):
+class TestCase288967(TestCase):
     """
     https://tcms.engineering.redhat.com/case/288967/?from_plan=9985
 
@@ -119,7 +119,7 @@ class TestCase288967(unittest.TestCase):
         _restore_empty_dc()
 
 
-class TestCase288985(unittest.TestCase):
+class TestCase288985(TestCase):
     """
     https://tcms.engineering.redhat.com/case/288985/?from_plan=9985
 
@@ -206,7 +206,7 @@ class TestCase288985(unittest.TestCase):
         storageconnections.remove_all_storage_connections()
 
 
-class TestCase288986(unittest.TestCase):
+class TestCase288986(TestCase):
     """
     https://tcms.engineering.redhat.com/case/288986/?from_plan=9985
 
@@ -278,7 +278,7 @@ class TestCase288986(unittest.TestCase):
         _restore_empty_dc()
 
 
-class TestCase288983(unittest.TestCase):
+class TestCase288983(TestCase):
     """
     https://tcms.engineering.redhat.com/case/288983/?from_plan=9985
 
@@ -361,7 +361,7 @@ class TestCase288983(unittest.TestCase):
         _restore_empty_dc()
 
 
-class TestCase295262(unittest.TestCase):
+class TestCase295262(TestCase):
     """
     https://tcms.engineering.redhat.com/case/295262/?from_plan=9985
 
@@ -440,7 +440,7 @@ def _add_disk(conn_params, alias):
         lun_target=conn_params['lun_target'])
 
 
-class TestCase288963(unittest.TestCase):
+class TestCase288963(TestCase):
     """
     https://tcms.engineering.redhat.com/case/288963/?from_plan=9985
 
@@ -576,7 +576,7 @@ class TestCase288963(unittest.TestCase):
         _restore_empty_dc()
 
 
-class TestCase288975(unittest.TestCase):
+class TestCase288975(TestCase):
     """
     https://tcms.engineering.redhat.com/case/288975/?from_plan=9985
 
@@ -658,7 +658,7 @@ class TestCase288975(unittest.TestCase):
         _restore_empty_dc()
 
 
-class TestCase288968(unittest.TestCase):
+class TestCase288968(TestCase):
     """
     https://tcms.engineering.redhat.com/case/288968/?from_plan=9985
 
@@ -729,7 +729,7 @@ class TestCase288968(unittest.TestCase):
         _restore_empty_dc()
 
 
-class TestCase289552(unittest.TestCase):
+class TestCase289552(TestCase):
     """
     https://tcms.engineering.redhat.com/case/289552/?from_plan=9985
 
@@ -872,7 +872,7 @@ class TestCase289552(unittest.TestCase):
             basename=config.BASENAME)
 
 
-class TestCase288988(unittest.TestCase):
+class TestCase288988(TestCase):
     """
     https://tcms.engineering.redhat.com/case/288988/?from_plan=9985
 

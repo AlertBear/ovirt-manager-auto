@@ -3,7 +3,7 @@ Test exposing BZ 986961
 
 """
 import logging
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import datacenters as dc_ll

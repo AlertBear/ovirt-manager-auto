@@ -1,4 +1,4 @@
-import unittest
+from art.unittest_lib import BaseTestCase as TestCase
 import logging
 import time
 
@@ -20,7 +20,7 @@ ALL_TASKS_FINISHED = 'Number of running tasks: 0'
 OPERATION_FINISHED = False
 
 
-class RestartOvirt(unittest.TestCase):
+class RestartOvirt(TestCase):
     __test__ = False
     ovirt_host = test_utils.Machine(
         config.VDC, 'root', config.VDC_PASSWORD).util('linux')

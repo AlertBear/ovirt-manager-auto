@@ -7,7 +7,7 @@ __test__ = False
 
 import time
 import logging
-import unittest
+from art.unittest_lib import BaseTestCase as TestCase
 from art.rhevm_api.tests_lib.low_level.vms import addSnapshot, restoreSnapshot
 from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter, \
     prepareVmWithRhevm
@@ -264,7 +264,7 @@ class SetupManager(object):
 _multiprocess_can_split_ = True
 
 
-class RHEVMUtilsTestCase(unittest.TestCase):
+class RHEVMUtilsTestCase(TestCase):
     """
     Base class for test plan. It contains general setUp and tearDown class
     which are suitable for most of RHEVM utilities

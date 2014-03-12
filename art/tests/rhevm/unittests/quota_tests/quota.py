@@ -20,7 +20,7 @@ __test__ = True
 
 import logging
 import config
-import unittest2 as unittest
+from art.unittest_lib import BaseTestCase as TestCase
 
 from common import DB
 from nose.tools import istest
@@ -136,13 +136,14 @@ def tearDownModule():
 
     # delete nfs data domain
     storagedomains.deactivateStorageDomain(True, config.MAIN_DC_NAME,
-            config.ALT1_STORAGE_NAME)
+                                           config.ALT1_STORAGE_NAME)
     storagedomains.detachStorageDomain(True, config.MAIN_DC_NAME,
-            config.ALT1_STORAGE_NAME)
+                                       config.ALT1_STORAGE_NAME)
     storagedomains.removeStorageDomain(True, config.ALT1_STORAGE_NAME,
-            config.MAIN_HOST_NAME, format='true')
+                                       config.MAIN_HOST_NAME, format='true')
 
-class QuotaTestCRUD(unittest.TestCase):
+
+class QuotaTestCRUD(TestCase):
     '''
     This unittest class tests CRUD operation via selenium.
     '''
@@ -199,7 +200,8 @@ class QuotaTestCRUD(unittest.TestCase):
         test.remove_quota(config.MAIN_DC_NAME, QUOTA3_NAME)
         assert not db.checkQuotaExists(QUOTA3_NAME)
 
-class QuotaTestMode(unittest.TestCase):
+
+class QuotaTestMode(TestCase):
     '''
     This unittest class tests quota enforced/audit mode.
     '''
@@ -334,9 +336,10 @@ class QuotaTestMode(unittest.TestCase):
     def j_deleteQuotaInUse(self):
         """ Delete quota in use """
         test.set_up()
-        self.assertRaises(GeneralException,
-                test.remove_quota, config.MAIN_DC_NAME, QUOTA_NAME)
+        self.assertRaises(GeneralException, test.remove_quota,
+                          config.MAIN_DC_NAME, QUOTA_NAME)
         test.tear_down()
+
 
 class QuotaTestEnforced(QuotaTestMode):
     '''
@@ -351,6 +354,7 @@ class QuotaTestEnforced(QuotaTestMode):
         db.setDCQuotaMode(config.MAIN_DC_NAME, 2)
         super(QuotaTestEnforced, self).setUpClass()
 
+
 class QuotaTestAudit(QuotaTestMode):
     '''
     This unittest class tests quota Audit mode.
@@ -363,7 +367,8 @@ class QuotaTestAudit(QuotaTestMode):
         db.setDCQuotaMode(config.MAIN_DC_NAME, 1)
         super(QuotaTestAudit, self).setUpClass()
 
-class QuotaTestObjectWithoutQuota(unittest.TestCase):
+
+class QuotaTestObjectWithoutQuota(TestCase):
     '''
     This class tests if object created in disabled mode can/can't
     be manipulated in audit/enforced mode(no quota assigned to objects)
@@ -454,11 +459,13 @@ class QuotaTestObjectWithoutQuota(unittest.TestCase):
         # TODO: implement copyDisk in rhevm_api
         pass
 
+
 class QuotaTestEnforcedWithouQuota(QuotaTestObjectWithoutQuota):
     __test__ = True
 
     mode = 2  # Enforced
     positive = False
+
 
 class QuotaTestAuditWithouQuota(QuotaTestObjectWithoutQuota):
     __test__ = True
@@ -466,7 +473,8 @@ class QuotaTestAuditWithouQuota(QuotaTestObjectWithoutQuota):
     mode = 1  # Audit
     positive = True
 
-class QuotaConsumptionCalc(unittest.TestCase):
+
+class QuotaConsumptionCalc(TestCase):
     '''
     This class tests if quota consumtion is calculated right,
     when user create/remove/run/stop/etc.. vms/disks/etc

@@ -9,7 +9,7 @@ This test will create/delete/update and list networks under /api/datacenter.
 import logging
 import config
 from nose.tools import istest
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 from art.test_handler.tools import tcms
 from art.rhevm_api.tests_lib.low_level.networks import \
     getNetworksInDataCenter, getNetworkInDataCenter, \

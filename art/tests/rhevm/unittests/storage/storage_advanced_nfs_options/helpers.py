@@ -8,7 +8,7 @@ import io
 import time
 import tempfile
 import os
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 
 from art.rhevm_api.utils import test_utils
 from art.core_api import apis_exceptions

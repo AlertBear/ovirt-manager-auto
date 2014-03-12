@@ -1,7 +1,7 @@
 #! /usr/bin/python
 
 from nose.tools import istest
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 import logging
 
 from art.test_handler.exceptions import VMException

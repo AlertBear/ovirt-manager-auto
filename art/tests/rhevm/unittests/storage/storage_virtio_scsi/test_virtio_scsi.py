@@ -1,6 +1,6 @@
 from concurrent.futures.thread import ThreadPoolExecutor
 from nose.tools import istest
-import unittest
+from art.unittest_lib import BaseTestCase as TestCase
 from art.rhevm_api.tests_lib.high_level.datacenters import build_setup
 from art.rhevm_api.tests_lib.high_level.vms import add_disk_to_machine
 from art.rhevm_api.tests_lib.low_level.storagedomains import  \
@@ -88,7 +88,7 @@ def _create_vm(vm_name, storage_domain, interface, install_os):
         assert stopVm(True, vm_name)
 
 
-class ClassWithOneVM(unittest.TestCase):
+class ClassWithOneVM(TestCase):
     """
     Base test class that ensures master domain is active and creates
     vms as specificied in vm_names with interfaces per disk

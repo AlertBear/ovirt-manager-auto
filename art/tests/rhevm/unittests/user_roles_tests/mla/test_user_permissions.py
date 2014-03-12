@@ -10,7 +10,7 @@ from user_roles_tests import config
 from user_roles_tests.roles import role
 from nose.tools import istest
 from art.test_handler.tools import bz, tcms
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 from art.rhevm_api.tests_lib.high_level import storagedomains as h_sd
 from art.rhevm_api.tests_lib.low_level import \
     users, vms, disks, vmpools, templates, mla, clusters, datacenters, hosts,\

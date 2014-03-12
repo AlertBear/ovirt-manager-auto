@@ -4,7 +4,7 @@ Test installation and uninstallation of guest agent on RHEL 5/6 32b/64b
 import logging
 import config
 import art.rhevm_api.utils.test_utils as utils
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 from nose.tools import istest
 from art.test_handler.settings import opts
 from art.test_handler.tools import tcms

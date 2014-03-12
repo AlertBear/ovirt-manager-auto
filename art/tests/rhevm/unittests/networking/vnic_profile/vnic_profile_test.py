@@ -3,7 +3,7 @@
 import logging
 import config
 from nose.tools import istest
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 
 
 from art.rhevm_api.utils.test_utils import get_api

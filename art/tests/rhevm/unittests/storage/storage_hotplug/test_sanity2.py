@@ -19,7 +19,7 @@ import config
 import logging
 from nose.tools import istest
 import time
-import unittest
+from art.unittest_lib import BaseTestCase as TestCase
 
 positive = True
 logger = logging.getLogger(__name__)
@@ -60,7 +60,7 @@ def teardown_module():
     logger.info("Teardown module")
 
 
-class TestCase139348(unittest.TestCase):
+class TestCase139348(TestCase):
     """Hotplug floating disk (shareable and non-shareable)"""
 
     __test__ = True
@@ -122,7 +122,7 @@ class TestCase139348(unittest.TestCase):
         shutdown_and_remove_vms(cls.vm_names)
 
 
-class TestCase244310(unittest.TestCase):
+class TestCase244310(TestCase):
     """
     Plug shared disks into 2 VMs simultaneously
     """
@@ -195,7 +195,7 @@ class TestCase244310(unittest.TestCase):
             shutdown_and_remove_vms(vm_pair)
 
 
-class TestCase244314(unittest.TestCase):
+class TestCase244314(TestCase):
     """
     Unplug and detach shared disk from one of the vms
     """

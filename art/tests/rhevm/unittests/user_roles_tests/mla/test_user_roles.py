@@ -9,7 +9,7 @@ __test__ = True
 from user_roles_tests import config
 from user_roles_tests.roles import role
 from nose.tools import istest
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 
 from art.test_handler.tools import bz, tcms
 from art.rhevm_api.tests_lib.low_level import \

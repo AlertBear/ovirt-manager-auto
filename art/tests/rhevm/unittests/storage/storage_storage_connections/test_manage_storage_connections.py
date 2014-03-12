@@ -1,4 +1,4 @@
-import unittest
+from art.unittest_lib import BaseTestCase as TestCase
 import logging
 
 from utilities.machine import Machine
@@ -29,7 +29,7 @@ GB = 1024 ** 3
 dc_type = config.DATA_CENTER_TYPE
 
 
-class TestCaseLocalFS(unittest.TestCase):
+class TestCaseLocalFS(TestCase):
     __test__ = False
     sd_name = None
     conn = None
@@ -69,7 +69,7 @@ class TestCaseLocalFS(unittest.TestCase):
             self.machine.removeFile(self.path)
 
 
-class TestCasePosix(unittest.TestCase):
+class TestCasePosix(TestCase):
     __test__ = False
     conn = None
     host = None

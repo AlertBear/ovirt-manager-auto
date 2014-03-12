@@ -1,7 +1,7 @@
 """
 Test Allocation/Total size properties
 """
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 from art.rhevm_api.tests_lib.high_level.datacenters import build_setup
 from art.rhevm_api.tests_lib.high_level.storagedomains import \
     extend_storage_domain

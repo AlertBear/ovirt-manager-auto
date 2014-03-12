@@ -6,7 +6,7 @@ from a vm with non-ascii character in its name is working
 """
 import logging
 from nose.tools import istest
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 
 from art.rhevm_api.utils import test_utils
 

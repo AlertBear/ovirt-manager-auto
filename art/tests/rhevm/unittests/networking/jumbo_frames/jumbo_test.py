@@ -7,7 +7,7 @@ It will cover scenarios for VM/non-VM networks.
 
 import config
 import logging
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 from nose.tools import istest
 from art.test_handler.tools import tcms
 from art.rhevm_api.utils.test_utils import checkMTU

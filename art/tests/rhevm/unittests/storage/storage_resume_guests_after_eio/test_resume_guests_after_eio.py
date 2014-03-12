@@ -1,4 +1,4 @@
-import unittest
+from art.unittest_lib import BaseTestCase as TestCase
 import logging
 import time
 
@@ -29,7 +29,7 @@ def _wait_for_vm_booted(
         password=password, nic=config.HOST_NICS[0])
 
 
-class TestResumeGuests(unittest.TestCase):
+class TestResumeGuests(TestCase):
     __test__ = False
 
     def setUp(self):

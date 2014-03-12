@@ -17,7 +17,7 @@ from art.rhevm_api.tests_lib.low_level import \
     storagedomains, networks, events
 from art.rhevm_api.tests_lib.high_level import storagedomains as \
     h_storagedomains
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 
 from art.core_api.apis_exceptions import EntityNotFound
 

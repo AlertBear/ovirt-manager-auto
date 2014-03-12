@@ -7,7 +7,7 @@ import time
 import config
 import random
 import logging
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 from nose.tools import istest
 from art.test_handler.tools import bz, tcms
 from art.test_handler.settings import opts

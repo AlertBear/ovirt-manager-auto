@@ -6,7 +6,7 @@ It will cover scenarios for different states of VNIC on stopped/running VM.
 '''
 
 from nose.tools import istest
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 import logging
 import config
 from art.test_handler.tools import tcms

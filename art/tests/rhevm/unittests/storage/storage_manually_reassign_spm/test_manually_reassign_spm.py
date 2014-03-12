@@ -1,8 +1,9 @@
 import logging
 from time import sleep
-import unittest
+from art.unittest_lib import BaseTestCase as TestCase
 from art.rhevm_api.tests_lib.high_level.datacenters import build_setup
-from art.rhevm_api.tests_lib.low_level.datacenters import waitForDataCenterState
+from art.rhevm_api.tests_lib.low_level.datacenters import \
+    waitForDataCenterState
 from art.rhevm_api.tests_lib.low_level.storagedomains import \
     findMasterStorageDomain, findNonMasterStorageDomains, cleanDataCenter, \
     getDomainAddress, deactivateStorageDomain, activateStorageDomain
@@ -39,7 +40,7 @@ def teardown_module():
                     vdc_password=config.VDC_PASSWORD)
 
 
-class DCUp(unittest.TestCase):
+class DCUp(TestCase):
     """
     Base class that ensures DC, all domains and hosts are up, spm is elected
     and spm priorities are set to default for all hosts

@@ -10,7 +10,7 @@ __test__ = True
 import time
 import logging
 import config
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 from nose.tools import istest
 from art.rhevm_api.tests_lib.low_level import mla, users, general
 from art.rhevm_api.utils.resource_utils import runMachineCommand

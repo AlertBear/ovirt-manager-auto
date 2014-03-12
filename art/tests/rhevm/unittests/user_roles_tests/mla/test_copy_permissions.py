@@ -8,7 +8,7 @@ copied, when copy_permissions flag is/isn't provided.
 __test__ = True
 
 import logging
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 from nose.tools import istest
 from user_roles_tests import config
 from user_roles_tests.roles import role

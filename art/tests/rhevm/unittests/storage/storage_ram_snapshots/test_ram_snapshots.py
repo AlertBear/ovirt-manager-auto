@@ -1,5 +1,5 @@
 import logging
-import unittest
+from art.unittest_lib import BaseTestCase as TestCase
 
 from nose.tools import istest
 
@@ -88,7 +88,7 @@ def teardown_module():
                     vdc_password=config.VDC_PASSWORD)
 
 
-class DCWithStoragesActive(unittest.TestCase):
+class DCWithStoragesActive(TestCase):
     """
     A class that ensures DC is up with all storages active and SPM elected.
     """

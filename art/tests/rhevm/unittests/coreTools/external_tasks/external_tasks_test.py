@@ -2,7 +2,7 @@
 External Tasks test
 
 """
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 from nose.tools import istest
 from art.test_handler.tools import tcms
 import art.test_handler.exceptions as errors

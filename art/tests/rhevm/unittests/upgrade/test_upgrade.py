@@ -7,7 +7,7 @@ Test will create and run VM on 3.2 setup then upgrade to 3.3 and try the same.
 import config as cfg
 import logging
 from art.rhevm_api.tests_lib.low_level import vms
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 from nose.tools import istest
 
 

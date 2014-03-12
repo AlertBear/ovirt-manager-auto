@@ -19,7 +19,7 @@ import config
 import logging
 from nose.tools import istest
 import time
-import unittest
+from art.unittest_lib import BaseTestCase as TestCase
 
 positive = True
 logger = logging.getLogger(__name__)
@@ -60,7 +60,7 @@ def teardown_module():
     logger.info("Teardown module")
 
 
-class TestCase134134(unittest.TestCase):
+class TestCase134134(TestCase):
     """Plug in disk while OS is running (virtIO on supported OS type only)"""
 
     __test__ = True
@@ -121,7 +121,7 @@ class TestCase134134(unittest.TestCase):
         shutdown_and_remove_vms(cls.vm_names)
 
 
-class TestCase134139(unittest.TestCase):
+class TestCase134139(TestCase):
     """Unplug a disk and detach it. Tested as 2 independent functions"""
     __test__ = True
 
@@ -236,7 +236,7 @@ class TestCase134139(unittest.TestCase):
         shutdown_and_remove_vms(cls.vm_names)
 
 
-class TestCase231521(unittest.TestCase):
+class TestCase231521(TestCase):
     """Activate/Deactivate an already attached disk
     on a running VM with support OS"""
 

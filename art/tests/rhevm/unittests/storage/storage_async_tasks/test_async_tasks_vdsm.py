@@ -1,4 +1,4 @@
-import unittest
+from art.unittest_lib import BaseTestCase as TestCase
 import logging
 
 from art.rhevm_api.utils import log_listener
@@ -15,7 +15,7 @@ LOGGER = logging.getLogger(__name__)
 ENGINE_LOG = '/var/log/ovirt-engine/engine.log'
 
 
-class RestartVDSM(unittest.TestCase):
+class RestartVDSM(TestCase):
     __test__ = False
 
     def tearDown(self):

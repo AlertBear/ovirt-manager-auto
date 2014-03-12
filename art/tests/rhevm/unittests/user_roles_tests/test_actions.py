@@ -11,7 +11,7 @@ from nose.tools import istest
 from functools import wraps
 from time import sleep
 from art.core_api.apis_exceptions import EntityNotFound
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 from art.rhevm_api.tests_lib.low_level import storagedomains, disks,\
     users, vms, vmpools, templates, mla, datacenters, hosts, networks, clusters
 from art.rhevm_api.tests_lib.high_level import storagedomains as h_sd

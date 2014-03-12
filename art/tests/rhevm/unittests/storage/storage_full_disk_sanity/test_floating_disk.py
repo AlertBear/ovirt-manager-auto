@@ -2,7 +2,7 @@
 Storage VM Floating Disk
 """
 import logging
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 
 from art.rhevm_api.utils import test_utils
 from art.rhevm_api.utils import resource_utils

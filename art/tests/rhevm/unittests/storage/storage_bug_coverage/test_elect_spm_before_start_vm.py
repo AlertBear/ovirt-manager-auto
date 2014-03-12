@@ -3,7 +3,7 @@ Test exposing BZ 969343
 
 """
 import logging
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 from concurrent.futures import ThreadPoolExecutor
 
 from art.rhevm_api.utils import test_utils

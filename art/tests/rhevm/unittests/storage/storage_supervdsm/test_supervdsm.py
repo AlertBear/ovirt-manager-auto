@@ -6,7 +6,7 @@ installation of supervdsm when adding the host to the Data Center
 import logging
 import config
 import time
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 from nose.tools import istest
 
 from art.rhevm_api.tests_lib.high_level import datacenters

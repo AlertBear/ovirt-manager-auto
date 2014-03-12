@@ -5,7 +5,7 @@ https://tcms.engineering.redhat.com/plan/5299/
 
 import logging
 import time
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 
 from art.rhevm_api.tests_lib.high_level import hosts as hosts
 from art.rhevm_api.tests_lib.low_level import datacenters

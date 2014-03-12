@@ -1,6 +1,6 @@
 import logging
 import os
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
 

@@ -12,7 +12,7 @@ from art.rhevm_api.tests_lib.low_level.vms import checkVmState
 from art.rhevm_api.utils.test_utils import get_api
 from art.test_handler.settings import opts
 from art.test_handler.tools import tcms
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 from nose.tools import istest
 import art.rhevm_api.tests_lib.low_level.vms as vms
 import art.test_handler.exceptions as errors

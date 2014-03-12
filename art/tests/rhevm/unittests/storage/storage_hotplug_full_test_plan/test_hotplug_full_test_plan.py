@@ -24,7 +24,7 @@ from art.rhevm_api.tests_lib.low_level import vms, disks, storagedomains
 import config
 import helpers
 import common
-import unittest
+from art.unittest_lib import BaseTestCase as TestCase
 
 LOGGER = logging.getLogger(__name__)
 
@@ -429,7 +429,7 @@ class TestCase286861(helpers.HotplugHookTest):
         super(TestCase286861, self).tearDown()
 
 
-class TestCase134134(unittest.TestCase):
+class TestCase134134(TestCase):
     """Plug in disk while OS is running (virtIO on supported OS type only)"""
 
     __test__ = True
@@ -488,7 +488,7 @@ class TestCase134134(unittest.TestCase):
         common.shutdown_and_remove_vms(cls.vm_names)
 
 
-class TestCase134139(unittest.TestCase):
+class TestCase134139(TestCase):
     """Unplug a disk and detach it. Tested as 2 independent functions"""
     __test__ = True
 
@@ -601,7 +601,7 @@ class TestCase134139(unittest.TestCase):
         common.shutdown_and_remove_vms(cls.vm_names)
 
 
-class TestCase231521(unittest.TestCase):
+class TestCase231521(TestCase):
     """Activate/Deactivate an already attached disk
     on a running VM with support OS"""
 
@@ -701,7 +701,7 @@ class TestCase231521(unittest.TestCase):
         common.shutdown_and_remove_vms(cls.vm_names)
 
 
-class TestCase139348(unittest.TestCase):
+class TestCase139348(TestCase):
     """Hotplug floating disk (shareable and non-shareable)"""
 
     __test__ = True
@@ -762,7 +762,7 @@ class TestCase139348(unittest.TestCase):
         common.shutdown_and_remove_vms(cls.vm_names)
 
 
-class TestCase244310(unittest.TestCase):
+class TestCase244310(TestCase):
     """
     Plug shared disks into 2 VMs simultaneously
     """
@@ -834,7 +834,7 @@ class TestCase244310(unittest.TestCase):
             common.shutdown_and_remove_vms(vm_pair)
 
 
-class TestCase244314(unittest.TestCase):
+class TestCase244314(TestCase):
     """
     Unplug and detach shared disk from one of the vms
     """
@@ -911,7 +911,7 @@ class TestCase244314(unittest.TestCase):
             common.shutdown_and_remove_vms(vm_pair)
 
 
-class TestCase174616(unittest.TestCase):
+class TestCase174616(TestCase):
     """
     2 vms, 1 shareable disk attached to both of them.
     test check if hotplug works fine

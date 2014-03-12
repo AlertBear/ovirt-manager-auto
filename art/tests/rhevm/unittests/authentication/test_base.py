@@ -4,7 +4,7 @@ __test__ = False
 
 import config as cfg
 import logging
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 from nose.tools import istest
 from art.rhevm_api.tests_lib.low_level import mla, users
 from test_active_directory import connectionTest
