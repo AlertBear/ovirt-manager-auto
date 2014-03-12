@@ -1,4 +1,5 @@
 from art.test_handler.settings import plmanager
+from nose.case import TestBase
 
 try:
     BZ_PLUGIN = [pl for pl in plmanager.configurables
@@ -24,3 +25,9 @@ def is_bz_state(bz_id):
         * bz_id - BZ number
     """
     return BZ_PLUGIN.is_state(bz_id, BZ_PLUGIN.const_list)
+
+
+class BaseTestCase(TestBase):
+    """
+    Base test case class for unittets testing
+    """
