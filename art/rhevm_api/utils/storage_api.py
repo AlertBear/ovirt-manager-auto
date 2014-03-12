@@ -200,8 +200,7 @@ def generateSDMetadataCorruption(vds_name, username, passwd, sd_name,
          * sd_name - storage domain name
          * md_backup_path - full metadata backup path
          * md_tag - metadata tag ("TYPE" by default)
-         * md_tag_bad_value - new value for md_tag
-                             (corruption_string by default)
+         * md_tag_bad_value-new value for md_tag (corruption_string by default)
          * bs - block size (1024 by default)
          * count - number of blocks (1 by default)
         Return: True and dictionary with storage domain object with all \
@@ -306,9 +305,9 @@ def getVmsInfo(vds_name, user, passwd, dc_uuid, sd_uuid):
 
 
 @is_action()
-def spmStart(
-        positive, vds_name, user, passwd, sp_uuid, prev_id=-1, prev_lver=-1,
-        recovery_mode=0, scsi_fencing='False', max_host_id=0, version=2):
+def spmStart(positive, vds_name, user, passwd, sp_uuid, prev_id=-1,
+             prev_lver=-1, recovery_mode=0, scsi_fencing='False',
+             max_host_id=0, version=2):
     """
         Start SPM on VDS host.
         Author: egerman
@@ -327,9 +326,9 @@ def spmStart(
                 False otherwise
     """
     vds_obj = VdsLinuxMachine(vds_name, user, passwd).vdsObj
-    res = vds_obj.startSpm(sp_uuid, prev_id, prev_lver,
-                           recovery_mode, scsi_fencing, max_host_id, version)
-    return positive == res
+    res = vds_obj.startSpm(sp_uuid, prev_id, prev_lver, recovery_mode,
+                           scsi_fencing, max_host_id, version)
+    return not positive ^ res
 
 
 def getVolumesList(vds_name, user, passwd, dc_uuid, sd_uuid, images):
@@ -370,10 +369,10 @@ def checkZerosOnDevice(positive, lun_id, host, username, password,
     with m.ssh as ssh_con:
         with ssh_con.getFileHandler(timeout) as fh:
             if not fh.exists(dm_path):
-                log.error(
-                    "LUN device with id %s doesn't exist in device mapper,"
-                    "please check that lun is connected to the host.",
-                    lun_id)
+                log.error("LUN device with id %s doesn't exist in device "
+                          "mapper, please check that lun is connected to the"
+                          "host.",
+                          lun_id)
                 return False
 
             file_ = fh.open(dm_path, 'rb')

@@ -32,6 +32,7 @@ from art.test_handler.handler_lib.configs import ARTConfigValidator, \
 from art.test_handler.plmanagement.manager import PluginManager
 from art.test_handler import find_config_file
 
+ART_CONFIG = {}
 opts = {}
 ART_CONFIG = ConfigObj()
 """ A options global for all REST tests. """

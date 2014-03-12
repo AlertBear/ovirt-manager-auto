@@ -83,7 +83,7 @@ IP_PATTERN = '10.35.*'
 TIMEOUT = 120
 FIND_QEMU = 'ps aux |grep qemu | grep -e "-name %s"'
 MOM_CONF = '/etc/vdsm/mom.conf'
-MOM_SCRIPT_LOCAL = 'tests/rhevm/unittests/mom/momStats.py'
+MOM_SCRIPT_LOCAL = 'tests/rhevmtests/mom/momStats.py'
 MOM_SCRIPT_PATH = '/tmp/momStats.py'
 
 virsh_cmd = ['nwfilter-dumpxml', 'vdsm-no-mac-spoofing']
@@ -1819,7 +1819,8 @@ def checkSPMElectionRandomness(positive, hosts, attempt_number=5,
             HOST_API.logger.warning(
                 "SPM randomness test failed, but due to the nature "
                 "of this test, there's a small chance of that "
-                "happening at every run")
+                "happening at every run"
+            )
             status = False
 
     return status == positive

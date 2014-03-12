@@ -61,9 +61,8 @@ class XPathMatch(object):
         # A hack to make the XPathMatch able to match against the tags in the
         # RHEVM entry-point url.
         if self.api.opts['engine'] != 'rest':
-            raise EngineTypeError(
-                "Engine type '%s' not supported by xpath"
-                % self.api.opts['engine'])
+            raise EngineTypeError("Engine type '%s' not supported by xpath"
+                                  % self.api.opts['engine'])
 
         if link.startswith('/'):
             matching_nodes = self.getAndXpathEval(link, xpath, absLink)
@@ -82,8 +81,8 @@ class XPathMatch(object):
             return True
 
     def getEtreeParsed(self, link, absLink):
-        return etree.fromstring(
-            self.api.get(link, absLink=absLink, noParse=True))
+        return etree.fromstring(self.api.get(link, absLink=absLink,
+                                             noParse=True))
 
     def getAndXpathEval(self, link, xpath, absLink):
         return self.getEtreeParsed(link, absLink).xpath(xpath)
@@ -98,7 +97,9 @@ class XPathLinks(XPathMatch):
     Author: jvorcak
     Usage:
         xpathHostsLinks = XPathLinks(api)
-        xpathHostsLinks(True, 'host_address', link_name='storage',
+        xpathHostsLinks(True,
+                        'host_address',
+                        link_name='storage',
                         xpath='count(/base)')
     See @XPathMatch for more details
     """
@@ -108,10 +109,10 @@ class XPathLinks(XPathMatch):
 
     def __call__(self, positive, entity, link_name, xpath,
                  rslt_eval='0. < result'):
+
         if self.api.opts['engine'] != 'rest':
-            raise EngineTypeError(
-                "Engine type '%s' not supported by xpath" %
-                self.api.opts['engine'])
+            raise EngineTypeError("Engine type '%s' not supported by xpath"
+                                  % self.api.opts['engine'])
 
         entityObj = self.api.find(entity)
         link = self.api.getElemFromLink(entityObj, link_name=link_name,
