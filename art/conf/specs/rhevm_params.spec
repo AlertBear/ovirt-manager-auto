@@ -53,4 +53,4 @@ test_modules = force_list(default=list('art.rhevm_api',))
 auto_discovery = boolean(default=True)
 
 [STORAGE]
-storage_pool=force_list(default=list('10.35.64.81', '10.35.162.4', '10.35.160.108', '10.35.64.106', '10.35.160.107'))
+storage_pool=force_list(default=list('10.35.64.81', '10.35.160.108', '10.35.64.106', '10.35.160.107'))
