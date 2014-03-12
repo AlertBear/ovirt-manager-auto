@@ -1,5 +1,5 @@
-from rhevm_utils.base import RHEVMUtilsTestCase, istest, logger, \
-    REST_API_PASS, ISO_UP_CONF, ISO_DOMAIN_NAME
+from rhevm_utils.base import RHEVMUtilsTestCase, istest
+from unittest_conf import REST_API_PASS, ISO_UP_CONF, ISO_DOMAIN_NAME
 from utilities.rhevm_tools.iso_uploader import ISOUploadUtility
 from art.test_handler.tools import tcms
 ISO_UPLOADER_TEST_PLAN = 3741
@@ -7,6 +7,7 @@ NAME = 'iso-uploader'
 
 ISO_UPLOAD_DUMMY_FILE_PATH = '/tmp/test_iso.iso'
 ISO_UPLOAD_COMMAND = 'upload'
+
 
 class ISOUploaderTestCase(RHEVMUtilsTestCase):
     """
@@ -24,7 +25,7 @@ class ISOUploaderTestCase(RHEVMUtilsTestCase):
         assert self.ut.setRestConnPassword(NAME, ISO_UP_CONF, REST_API_PASS)
         self.ut.createDummyIsoFile(ISO_UPLOAD_DUMMY_FILE_PATH)
         self.ut(ISO_UPLOAD_COMMAND, ISO_UPLOAD_DUMMY_FILE_PATH,
-              i=ISO_DOMAIN_NAME)
+                i=ISO_DOMAIN_NAME)
         self.ut.autoTest()
 
     @istest
@@ -34,5 +35,3 @@ class ISOUploaderTestCase(RHEVMUtilsTestCase):
         assert self.ut.setRestConnPassword(NAME, ISO_UP_CONF, REST_API_PASS)
         self.ut('list')
         self.ut.autoTest()
-
-

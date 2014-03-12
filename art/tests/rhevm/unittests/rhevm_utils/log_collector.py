@@ -6,15 +6,25 @@ from art.rhevm_api.tests_lib.low_level.hosts import get_host_list
 
 from art.test_handler.exceptions import DataCenterException
 from art.test_handler.tools import tcms
-from rhevm_utils.base import RHEVMUtilsTestCase, REST_API_PASS, LOG_COL_CONF
+from unittest_conf import REST_API_PASS, LOG_COL_CONF
 from utilities.rhevm_tools.log_collector import LogCollectorUtility
 from . import ART_CONFIG
+
+import rhevm_utils.base as base
 
 LOG_COLLECTOR_TEST_PLAN = 3748
 NAME = 'log_collector'
 
 
-class LogCollectorSingleDC(RHEVMUtilsTestCase):
+def setup_module():
+    base.setup_module()
+
+
+def teardown_module():
+    base.teardown_module()
+
+
+class LogCollectorSingleDC(base.RHEVMUtilsTestCase):
     """ Tests with single DC and single cluster setup """
 
     __test__ = True
@@ -98,7 +108,7 @@ class LogCollectorSingleDC(RHEVMUtilsTestCase):
         self.ut.autoTest()
 
 
-class LogCollectorMoreDCs(RHEVMUtilsTestCase):
+class LogCollectorMoreDCs(base.RHEVMUtilsTestCase):
     """ Tests with additional DC and cluster """
 
     __test__ = True

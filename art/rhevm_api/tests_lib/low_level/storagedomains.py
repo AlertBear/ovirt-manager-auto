@@ -16,7 +16,6 @@
 # License along with this software; if not, write to the Free
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-import os
 import time
 import re
 
@@ -34,7 +33,7 @@ from art.rhevm_api.tests_lib.low_level.hosts import deactivateHost, \
     removeHost, getHostCompatibilityVersion
 from art.rhevm_api.tests_lib.low_level.hosts import addHost, \
     waitForHostsStates, getHost
-from art.rhevm_api.tests_lib.low_level.vms import removeVms, stopVms, createVm
+from art.rhevm_api.tests_lib.low_level.vms import removeVms, stopVms
 from art.rhevm_api.tests_lib.low_level.templates import removeTemplates
 from art.rhevm_api.utils.storage_api import getVmsInfo, getImagesList, \
     getVolumeInfo, getVolumesList
@@ -280,8 +279,8 @@ def attachStorageDomain(positive, datacenter, storagedomain, wait=True):
     attachDom = StorageDomain(id=storDomObj.get_id())
 
     dcStorages = getDCStorages(datacenter)
-    attachDom, status = util.create(attachDom, positive, collection=dcStorages,
-                                                            async=(not wait))
+    attachDom, status = util.create(
+        attachDom, positive, collection=dcStorages, async=(not wait))
 
     dcObj = dcUtil.find(datacenter)
     if status and positive and wait:
@@ -319,16 +318,19 @@ def activateStorageDomain(positive, datacenter, storagedomain, wait=True):
 
     storDomObj = getDCStorage(datacenter, storagedomain)
 
-    if positive and validateElementStatus(positive, 'storagedomain', COLLECTION,
-                                    storagedomain, 'active', datacenter):
-        util.logger.warning("Storage domain %s already activated" % (storagedomain))
+    if positive and validateElementStatus(positive, 'storagedomain',
+                                          COLLECTION, storagedomain, 'active',
+                                          datacenter):
+        util.logger.warning("Storage domain %s already activated",
+                            storagedomain)
         return True
 
     async = 'false' if wait else 'true'
     status = util.syncAction(storDomObj, "activate", positive, async=async)
     if status and positive and wait:
         return util.waitForElemStatus(storDomObj, "active", 180,
-                            collection=getDCStorages(datacenter, False))
+                                      collection=getDCStorages(datacenter,
+                                                               False))
     return status
 
 
@@ -351,7 +353,8 @@ def deactivateStorageDomain(positive, datacenter, storagedomain, wait=True):
     status = util.syncAction(storDomObj, "deactivate", positive, async=async)
     if positive and status and wait:
         return util.waitForElemStatus(storDomObj, "inactive maintenance", 180,
-                                    collection=getDCStorages(datacenter, False))
+                                      collection=getDCStorages(datacenter,
+                                                               False))
     return status
 
 
@@ -386,7 +389,7 @@ def iscsiLogin(positive, host, address, target, username=None, password=None):
     '''
     hostObj = hostUtil.find(host)
     iscsi = IscsiDetails(address=address, target=target, username=username,
-                                                        password=password)
+                         password=password)
     return hostUtil.syncAction(hostObj, "iscsilogin", positive, iscsi=iscsi)
 
 
@@ -405,7 +408,8 @@ def teardownStorageDomain(positive, storagedomain, host):
     hostObj = hostUtil.find(host)
 
     sdHost = Host(id=hostObj.get_id())
-    return util.syncAction(storDomObj.actions, "teardown", positive, host=sdHost)
+    return util.syncAction(storDomObj.actions, "teardown", positive,
+                           host=sdHost)
 
 
 @is_action()
@@ -418,7 +422,8 @@ def removeStorageDomain(positive, storagedomain, host, format='false',
        * storagedomain - storage domain name that should be removed
        * host - host name/IP address to use
        * format - format the content of storage domain ('false' by default)
-    Return: status (True if storage domain was removed properly, False otherwise)
+    Return: status (True if storage domain was removed properly,
+                    False otherwise)
     '''
     format_bool = format.lower() == "true"
 
@@ -433,8 +438,8 @@ def removeStorageDomain(positive, storagedomain, host, format='false',
 
     # Format domain if explicitly asked or
     # in case of data domain during a positive flow
-    if format_bool or (positive and \
-                       storDomObj.get_type() == ENUMS['storage_dom_type_data']):
+    if format_bool or (positive and storDomObj.get_type() ==
+                       ENUMS['storage_dom_type_data']):
         st.set_format('true')
 
     return util.delete(storDomObj, positive, st)
@@ -444,7 +449,8 @@ def removeStorageDomain(positive, storagedomain, host, format='false',
 def importStorageDomain(positive, type, storage_type, address, path, host,
                         nfs_version=None, nfs_retrans=None, nfs_timeo=None):
     '''
-    Description: import storage domain (similar to create function, but not providing name)
+    Description: import storage domain (similar to create function, but not
+    providing name)
     Author: edolinin
     Parameters:
        * type - storage domain type (DATA,EXPORT, etc.)
@@ -452,11 +458,13 @@ def importStorageDomain(positive, type, storage_type, address, path, host,
        * address - storage domain address (for ISCSI)
        * path - storage domain path (for NFS)
        * host - host to use
-    Return: status (True if storage domain was imported properly, False otherwise)
+    Return: status (True if storage domain was imported properly,
+                    False otherwise)
     '''
 
     sdStorage = Storage(type_=storage_type, address=address, path=path,
-        nfs_version=nfs_version, nfs_retrans=nfs_retrans, nfs_timeo=nfs_timeo)
+                        nfs_version=nfs_version, nfs_retrans=nfs_retrans,
+                        nfs_timeo=nfs_timeo)
     h = Host(name=host)
 
     sd = StorageDomain(type_=type, host=h, storage=sdStorage)
@@ -517,7 +525,8 @@ def removeStorageDomains(positive, storagedomains, host, format='true'):
 def waitForStorageDomainStatus(positive, dataCenterName, storageDomainName,
                                expectedStatus, timeOut=900, sleepTime=10):
     '''
-     Description: Wait till the storage domain gets the desired status or till timeout
+     Description: Wait till the storage domain gets the desired status or till
+                  timeout
      Author: egerman
      Parameters:
         * dataCenterName - name of data center
@@ -525,12 +534,14 @@ def waitForStorageDomainStatus(positive, dataCenterName, storageDomainName,
         * expectedStatus - storage domain status to wait for
         * timeOut - maximum timeout [sec]
         * sleepTime - sleep time [sec]
-     Return: status (True if storage domain get the desired status, False otherwise)
+     Return: status (True if storage domain get the desired status,
+                     False otherwise)
     '''
     handleTimeout = 0
     while handleTimeout <= timeOut:
-        if validateElementStatus(positive, 'storagedomain', COLLECTION, storageDomainName,
-                                 expectedStatus, dataCenterName):
+        if validateElementStatus(positive, 'storagedomain', COLLECTION,
+                                 storageDomainName, expectedStatus,
+                                 dataCenterName):
             return True
         time.sleep(sleepTime)
         handleTimeout += sleepTime
@@ -544,18 +555,19 @@ def isStorageDomainMaster(positive, dataCenterName, storageDomainName):
     The function isStorageDomainMaster checking if storage domain is a master
         dataCenterName = The name of datacenter
         storageDomainName = The name or ip address of storage domain
-    return values : Boolean value (True/False ) True in case storage domain is a master,otherwise False
+    return values : Boolean value (True/False ) True in case storage domain is
+                    a master,otherwise False
     '''
 
     storDomObj = getDCStorage(dataCenterName, storageDomainName)
     attribute = 'master'
     if not hasattr(storDomObj, attribute):
-        util.logger.error("Storage Domain " + storageDomainName + \
-                            " doesn't have attribute " + attribute)
+        util.logger.error("Storage Domain %s doesn't have attribute %s",
+                          storageDomainName, attribute)
         return False
 
-    util.logger.info("isStorageDomainMaster - Master status of Storage Domain " + \
-                    storageDomainName + " is: " + str(storDomObj.master))
+    util.logger.info("isStorageDomainMaster - Master status of Storage Domain "
+                     "%s is: %s", storageDomainName, storDomObj.master)
     isMaster = storDomObj.get_master()
     if positive:
         return isMaster
@@ -615,8 +627,8 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
     try:
         dcUtil.find(datacenter)
     except EntityNotFound:
-        util.logger.info("Create an empty %s Storage Pool %s" % (storage_type,
-                                                                 datacenter))
+        util.logger.info("Create an empty %s Storage Pool %s", storage_type,
+                         datacenter)
         if not addDataCenter(positive, name=datacenter,
                              version=version, local=local):
             util.logger.error('Creating an empty Storage Pool %s failed' %
@@ -627,10 +639,10 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
     try:
         clUtil.find(cluster)
     except EntityNotFound:
-        util.logger.info("Create cluster %s" % cluster)
+        util.logger.info("Create cluster %s", cluster)
         if not addCluster(positive=positive, name=cluster, cpu=cpuName,
-                            data_center=datacenter, version=version):
-            util.logger.error("Creating cluster %s failed" % cluster)
+                          data_center=datacenter, version=version):
+            util.logger.error("Creating cluster %s failed", cluster)
             return False
 
     #Add Host\s
@@ -638,12 +650,12 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
         try:
             hostUtil.find(host)
         except EntityNotFound:
-            util.logger.info("Add host %s" % host)
+            util.logger.info("Add host %s", host)
             ipAddress = getIpAddressByHostName(host)
             if not addHost(positive=positive, name=host, address=ipAddress,
-            root_password=passwordArr[index], port=54321, cluster=cluster,
-            wait=False, reboot=reboot):
-                util.logger.error("Add host %s failed" % host)
+                           root_password=passwordArr[index], port=54321,
+                           cluster=cluster, wait=False, reboot=reboot):
+                util.logger.error("Add host %s failed", host)
                 return False
 
     if not waitForHostsStates(positive=positive, names=hosts, states='up'):
@@ -652,8 +664,8 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
 
     #Check if host\s attached to cluster
     for host in hostArr:
-        util.logger.info("Check if host %s attached to cluster %s" %
-                         (host, cluster))
+        util.logger.info("Check if host %s attached to cluster %s", host,
+                         cluster)
         if not isHostAttachedToCluster(positive, host, cluster) and not \
                 attachHostToCluster(positive, host, cluster):
             util.logger.error("Attach host %s to cluster %s failed" %
@@ -663,8 +675,8 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
     #Connect cluster to dataCenter
     util.logger.info('Connect cluster to dataCenter')
     if not connectClusterToDataCenter(positive, cluster, datacenter):
-        util.logger.error("Connect cluster %s to dataCenter %s failed" %
-                          (cluster, datacenter))
+        util.logger.error("Connect cluster %s to dataCenter %s failed",
+                          cluster, datacenter)
         return False
 
     #iSCSI discover and login
@@ -672,12 +684,12 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
         for index, lunAddr in enumerate(lunAddrArr):
             util.logger.info('Run ISCSI discovery and login')
             if not iscsiDiscover(positive, host, lunAddr):
-                util.logger.error("iscsiDiscover failed for storage %s" %
+                util.logger.error("iscsiDiscover failed for storage %s",
                                   lunAddr)
                 return False
             if not iscsiLogin(positive, host, lunAddr, lunTgtArr[index]):
                 util.logger.error("iscsiLogin failed for storage %s and "
-                                  "target %s" % (lunAddr, lunTgtArr[index]))
+                                  "target %s", lunAddr, lunTgtArr[index])
                 return False
 
     #create data storage domains
@@ -687,63 +699,56 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
 
     for index, storagePath in enumerate(storageArr):
         sdName = sdNamePref + str(index)
-        addStorageDomainLogMassageTemplate = "Add {0} storage domain " \
-                                             "parameters: positive=%s, " \
-                                             "name=%s, type=%s, storage_" \
-                                             "type=%s, host=%s {1}.." % \
-                                             (positive, sdName, domainType,
-                                              storage_type, host)
-        util.logger.info("Create storage domain %s from storage %s" %
-                         (sdName, storagePath))
+        addStorageDomainLogMassageTemplate = (
+            "Add {0} storage domain parameters: positive=%s, name=%s, type=%s,"
+            " storage_type=%s, host=%s {1}.." % (positive, sdName, domainType,
+                                                 storage_type, host))
+        util.logger.info("Create storage domain %s from storage %s", sdName,
+                         storagePath)
+        formatMethod = addStorageDomainLogMassageTemplate.format
         if storage_type == ENUMS['storage_type_nfs']:
-            util.logger.info(addStorageDomainLogMassageTemplate.format
-                             (ENUMS['storage_type_nfs'],
-                             "path=%s, address=%s" % (storagePath,
-                                                      address_arr[index])))
+            util.logger.info(formatMethod(ENUMS['storage_type_nfs'],
+                             "path=%s, address=%s", storagePath,
+                                          address_arr[index]))
             status = addStorageDomain(positive=positive, name=sdName,
                                       type=domainType,
                                       storage_type=storage_type,
                                       path=storagePath,
                                       address=address_arr[index], host=host)
         elif storage_type == ENUMS['storage_type_iscsi']:
-            util.logger.info(addStorageDomainLogMassageTemplate.format
-                             (ENUMS['storage_type_iscsi'], "lun=%s, "
-                                                           "lun_address=%s, "
-                                                           "lun_target=%s, "
-                                                           "lun_port=%s" %
-                                                           (storagePath,
-                                                            lunAddrArr[index],
-                                                            lunTgtArr[index],
-                                                            lun_port)))
+            util.logger.info(
+                formatMethod(ENUMS['storage_type_iscsi'], "lun=%s, "
+                             "lun_address=%s, lun_target=%s, lun_port=%s",
+                             storagePath, lunAddrArr[index], lunTgtArr[index],
+                             lun_port))
             status = addStorageDomain(positive=positive, name=sdName,
                                       type=domainType,
-                                      storage_type=storage_type,
-                                      host=host, lun=storagePath,
+                                      storage_type=storage_type, host=host,
+                                      lun=storagePath,
                                       lun_address=lunAddrArr[index],
                                       lun_target=lunTgtArr[index],
                                       lun_port=lun_port)
         elif storage_type == ENUMS['storage_type_fcp']:
-            util.logger.info(addStorageDomainLogMassageTemplate.format
-                             (ENUMS['storage_type_fcp'], "lun=%s" %
-                                                         (storagePath)))
+            util.logger.info(formatMethod(ENUMS['storage_type_fcp'], "lun=%s",
+                                          storagePath))
             status = addStorageDomain(positive=positive, name=sdName,
                                       type=domainType,
                                       storage_type=storage_type, host=host,
                                       lun=storagePath)
 
         if not status:
-            util.logger.error("Add Storage domain %s failed" % sdName)
+            util.logger.error("Add Storage domain %s failed", sdName)
             return False
         storageDomainList.append(sdName)
 
     #attach storage domains
     for sd in storageDomainList:
-        util.logger.info("Attach storage domain %s to data center %s" %
-                         (sd, datacenter))
+        util.logger.info("Attach storage domain %s to data center %s", sd,
+                         datacenter)
         if not attachStorageDomain(positive=positive, datacenter=datacenter,
                                    storagedomain=sd):
             util.logger.error("Attach storage domain %s to data center %s "
-                              "failed" % (sd, datacenter))
+                              "failed", sd, datacenter)
             return False
         storDomObj = util.find(sd)
         # Non master storage domains, require activation
@@ -762,13 +767,15 @@ def cleanDataCenter(
         db_user=RHEVM_UTILS_ENUMS['RHEVM_DB_USER'], formatIsoStorage='false',
         formatExpStorage='false', vdc=None, vdc_password=None):
     '''
-    Description: Remove all elements in data center: dataCenter, storage domains, hosts & cluster.
+    Description: Remove all elements in data center: dataCenter,
+                 storage domains, hosts & cluster.
     Author: istein
     Parameters:
        * datacenter - data center name
        * db_name - name of the rhevm database
        * db_user - name of the rhevm database user
-       * formatIsoStorage - Determine if ISO storage domain will be formatted or not (true/false).
+       * formatIsoStorage - Determine if ISO storage domain will be formatted
+         or not (true/false).
     '''
 
     status = True
@@ -781,7 +788,9 @@ def cleanDataCenter(
     spmExist, spmHostName = getHost(positive, datacenter, True)
 
     if not spmExist:
-        util.logger.error("No SPM host found in data center %s, storage domains can't be removed, exit cleanDataCenter" % datacenter)
+        util.logger.error("No SPM host found in data center %s, storage "
+                          "domains can't be removed, exit cleanDataCenter",
+                          datacenter)
         return False
     spmHostName = spmHostName['hostName']
 
@@ -791,22 +800,25 @@ def cleanDataCenter(
 
     util.logger.info('Remove VMs, if any, connected to cluster')
     vmObjList = vmUtil.get(absLink=False)
-    vmsConnectedToCluster = filter(lambda vmObj: vmObj.get_cluster().get_id() == clId, vmObjList)
+    vmsConnectedToCluster = filter(
+        lambda vmObj: vmObj.get_cluster().get_id() == clId, vmObjList)
     if vmsConnectedToCluster:
         # Build vmList
         [vmList.append(vmObj.get_name()) for vmObj in vmsConnectedToCluster]
         # Build non down vm List to be stopped
-        nonDownVms = filter(lambda vmObj: vmObj.status.state.lower() != ENUMS['vm_state_down'], vmsConnectedToCluster)
+        nonDownVms = filter(
+            lambda vmObj: vmObj.status.state.lower() != ENUMS['vm_state_down'],
+            vmsConnectedToCluster)
         if nonDownVms:
             [nonDownVmList.append(vmObj.get_name()) for vmObj in nonDownVms]
-            util.logger.info('Shutting down vms that are still up: %s' %
+            util.logger.info('Shutting down vms that are still up: %s',
                              ','.join(nonDownVmList))
             if not stopVms(','.join(nonDownVmList)):
                 return False
         if not removeVms(positive, ','.join(vmList)):
             return False
     else:
-        util.logger.info('No vms found in cluster %s' % cluster_name)
+        util.logger.info('No vms found in cluster %s', cluster_name)
 
     if vdc is not None and vdc_password is not None:
         util.logger.info('Waiting for vms to be removed')
@@ -815,17 +827,19 @@ def cleanDataCenter(
 
     util.logger.info('Remove Templates, if any, connected to cluster')
     templObjList = templUtil.get(absLink=False)
-    templConnectedToCluster = filter(lambda templObj: templObj.get_cluster().get_id() == clId, templObjList)
+    templConnectedToCluster = filter(
+        lambda templObj: templObj.get_cluster().get_id() == clId, templObjList)
     if templConnectedToCluster:
-        [templList.append(templObj.name) for templObj in templConnectedToCluster]
-        util.logger.info('Removing templates: %s' % ','.join(templList))
+        [templList.append(templObj.name) for templObj in
+         templConnectedToCluster]
+        util.logger.info('Removing templates: %s', ','.join(templList))
         rmTemplStatus = removeTemplates(positive, ','.join(templList))
         if not rmTemplStatus:
             return False
-        util.logger.info('All templates in cluster %s removed succesfully' %
+        util.logger.info('All templates in cluster %s removed succesfully',
                          cluster_name)
     else:
-        util.logger.info('No templates found in cluster %s' % cluster_name)
+        util.logger.info('No templates found in cluster %s', cluster_name)
 
     if vdc is not None and vdc_password is not None:
         util.logger.info('Waiting for templates to be removed')
@@ -836,22 +850,24 @@ def cleanDataCenter(
 
     # remove any floating disks left after cleaning vms
     for storage_domain in sdObjList:
-        util.logger.info('Find any floating disks in storage domain %s' %
+        util.logger.info('Find any floating disks in storage domain %s',
                          storage_domain.get_name())
-        floating_disks = getStorageDomainDisks(storage_domain.get_name(), False)
+        floating_disks = getStorageDomainDisks(storage_domain.get_name(),
+                                               False)
         if floating_disks:
             floating_disks_list = [disk.get_alias() for disk in floating_disks]
             for disk in floating_disks_list:
-                util.logger.info('Removing floating disk %s' % disk)
+                util.logger.info('Removing floating disk %s', disk)
                 if not deleteDisk(True, alias=disk, async=False):
                     return False
             util.logger.info('Ensuring all disks are removed')
-            if not waitForDisksGone(True, ','.join(floating_disks_list), sleep=10):
+            if not waitForDisksGone(True, ','.join(floating_disks_list),
+                                    sleep=10):
                     return False
             util.logger.info('All floating disks removed succesfully')
-            util.logger.info('%s' % floating_disks_list)
+            util.logger.info('%s', floating_disks_list)
         else:
-            util.logger.info('No floating disks found in storage domain %s' %
+            util.logger.info('No floating disks found in storage domain %s',
                              storage_domain.get_name())
 
     if vdc is not None and vdc_password is not None:
@@ -861,7 +877,8 @@ def cleanDataCenter(
 
     util.logger.info("Find all non master storage domains")
 
-    nonMasterSdObjects = filter(lambda sdObj: not sdObj.get_master(), sdObjList)
+    nonMasterSdObjects = filter(lambda sdObj: not sdObj.get_master(),
+                                sdObjList)
 
     util.logger.info("Find Master Domain")
     st, masterDomain = findMasterStorageDomain(positive, datacenter)
@@ -873,13 +890,18 @@ def cleanDataCenter(
             if validateElementStatus(positive, 'storagedomain',
                                      'storagedomains', sd.get_name(), 'active',
                                      datacenter):
-                deactivateStatus = deactivateStorageDomain(positive, datacenter, sd.get_name())
+                deactivateStatus = deactivateStorageDomain(positive,
+                                                           datacenter,
+                                                           sd.get_name())
                 if not deactivateStatus:
-                    util.logger.error("Deactivate storage domain %s Failed" % sd.get_name())
+                    util.logger.error("Deactivate storage domain %s Failed",
+                                      sd.get_name())
                     status = False
-            detachStatus = detachStorageDomain(positive, datacenter, sd.get_name())
+            detachStatus = detachStorageDomain(positive, datacenter,
+                                               sd.get_name())
             if not detachStatus:
-                util.logger.error("Detach storage domain %s Failed" % sd.get_name())
+                util.logger.error("Detach storage domain %s Failed",
+                                  sd.get_name())
                 status = False
     else:
         util.logger.info("No non master storage domains found")
@@ -891,25 +913,26 @@ def cleanDataCenter(
             deactivateStatus = deactivateStorageDomain(positive, datacenter,
                                                        masterSd)
             if not deactivateStatus:
-                util.logger.error("Deactivate master storage domain %s Failed" % masterSd)
+                util.logger.error("Deactivate master storage domain %s Failed",
+                                  masterSd)
                 status = False
     else:
         util.logger.info("Error in master storage domain search")
 
     util.logger.info("Remove data center")
     if not removeDataCenter(positive, datacenter):
-        util.logger.error("Remove data center %s failed" % datacenter)
+        util.logger.error("Remove data center %s failed", datacenter)
         status = False
 
     util.logger.info("Remove storage domains")
     for sd in sdObjList:
         # If storage domain do not exist skip to the next one.
         try:
-            sdObj = util.find(sd.get_name())
+            util.find(sd.get_name())
         except EntityNotFound:
             continue
         sd_attached = False
-        # If storage domain is still attached to any dataCenter skip to next one
+        # If storage domain is still attached to a dataCenter skip to next one
         for dc in dcUtil.get(absLink=False):
             sdObjList = util.getElemFromLink(dc, get_href=False) or []
             for storageDomain in sdObjList:
@@ -923,14 +946,19 @@ def cleanDataCenter(
                 formatStorage = formatIsoStorage
             elif sd.get_type() == ENUMS['storage_dom_type_export']:
                 formatStorage = formatExpStorage
-            removeStatus = removeStorageDomain(positive, sd.get_name(), spmHostName, formatStorage)
+            removeStatus = removeStorageDomain(positive, sd.get_name(),
+                                               spmHostName, formatStorage)
             if not removeStatus:
-                util.logger.error("Remove storage domain %s Failed" % sd.get_name())
+                util.logger.error("Remove storage domain %s Failed",
+                                  sd.get_name())
                 status = False
 
-    util.logger.info("Deactivate all non maintenance hosts, connected to SPM host's cluster")
+    util.logger.info("Deactivate all non maintenance hosts, connected to SPM "
+                     "host's cluster")
     hostObjList = hostUtil.get(absLink=False)
-    hostsConnectedToCluster = filter(lambda hostObj: hostObj.get_cluster().get_id() == clId, hostObjList)
+    hostsConnectedToCluster = filter(lambda hostObj:
+                                     hostObj.get_cluster().get_id() == clId,
+                                     hostObjList)
     if hostsConnectedToCluster:
         nonMaintHosts = [
             host_obj for host_obj in hostsConnectedToCluster
@@ -938,18 +966,19 @@ def cleanDataCenter(
         if nonMaintHosts:
             for hostObj in nonMaintHosts:
                 if not deactivateHost(positive, hostObj.get_name()):
-                    util.logger.error("Deactivate Host %s Failed" % hostObj.get_name())
+                    util.logger.error("Deactivate Host %s Failed",
+                                      hostObj.get_name())
                     status = False
         for hostObj in hostsConnectedToCluster:
             if not removeHost(positive, hostObj.name):
-                util.logger.error("Remove Host %s Failed" % hostObj.get_name())
+                util.logger.error("Remove Host %s Failed", hostObj.get_name())
                 return False
 
     util.logger.info("Remove cluster")
     clObj = clUtil.find(clId, 'id')
     cluster = clObj.get_name()
     if not removeCluster(positive, cluster):
-        util.logger.error("Remove cluster %s Failed" % cluster)
+        util.logger.error("Remove cluster %s Failed", cluster)
         status = False
     return status
 
@@ -957,12 +986,14 @@ def cleanDataCenter(
 @is_action()
 def execOnNonMasterDomains(positive, datacenter, operation, type):
     '''
-    Description: Run operation on all storage domains that match type in datacenter.
+    Description: Run operation on all storage domains that match type in
+                 datacenter.
     Author: istein
     Parameters:
        * datacenter - datacenter name
        * operation  - 'activate' \ 'deactivate' \ 'detach'
-       * type - storage domain type ('all', ENUMS[storage_dom_type_data], ENUMS[storage_dom_type_export], ENUMS[storage_dom_type_iso])
+       * type - storage domain type ('all', ENUMS[storage_dom_type_data],
+                ENUMS[storage_dom_type_export], ENUMS[storage_dom_type_iso])
     Return: status (True if opearation suceeded, False otherwise)
     '''
 
@@ -974,13 +1005,14 @@ def execOnNonMasterDomains(positive, datacenter, operation, type):
     if type == 'all':
         sdObjects = filter(lambda sdObj: not sdObj.get_master(), sdObjList)
     else:
-        sdObjects = filter(lambda sdObj: sdObj.get_type() == type and \
-                                not sdObj.get_master(), sdObjList)
+        sdObjects = filter(
+            lambda sdObj: sdObj.get_type() == type and not sdObj.get_master(),
+            sdObjList)
 
     dispatch_map = {
-        'activate' : activateStorageDomain,
-        'deactivate' : deactivateStorageDomain,
-        'detach' : detachStorageDomain,
+        'activate': activateStorageDomain,
+        'deactivate': deactivateStorageDomain,
+        'detach': detachStorageDomain,
     }
 
     # Get the right function to perform the operation.
@@ -993,8 +1025,9 @@ def execOnNonMasterDomains(positive, datacenter, operation, type):
         func_result = func(positive, datacenter, sd.name)
         if not func_result:
             status = False
-            util.logger.error("Function %s failed" % func)
+            util.logger.error("Function %s failed", func)
     return status
+
 
 @is_action()
 def getDomainAddress(positive, storageDomain):
@@ -1014,14 +1047,15 @@ def getDomainAddress(positive, storageDomain):
         if storageDomainObject.get_storage().get_type() == 'iscsi':
 
             # Return the address of the first LUN of the domain
-            return positive, {'address' : storageDomainObject.get_storage().\
-                               get_volume_group().get_logical_unit()[0].\
-                               get_address()}
-        return positive, {'address' : storageDomainObject.get_storage().\
-                           get_address()}
+            return positive, {'address': storageDomainObject.get_storage().
+                              get_volume_group().get_logical_unit()[0].
+                              get_address()}
+        return positive, {'address': storageDomainObject.get_storage().
+                          get_address()}
 
     except EntityNotFound:
-        return not positive, {'address' : ''}
+        return not positive, {'address': ''}
+
 
 @is_action()
 def findNonMasterStorageDomains(positive, datacenter):
@@ -1057,9 +1091,9 @@ def findMasterStorageDomain(positive, datacenter):
     sdObjList = getDCStorages(datacenter, False)
 
     # Find the master DATA storage domain.
-    masterResult = filter(lambda sdObj: sdObj.get_type() == \
-        ENUMS['storage_dom_type_data'] and \
-        sdObj.get_master() in [True, 'true'], sdObjList)
+    masterResult = filter(lambda sdObj: sdObj.get_type() ==
+                          ENUMS['storage_dom_type_data'] and
+                          sdObj.get_master() in [True, 'true'], sdObjList)
     masterCount = len(masterResult)
     if masterCount == 1:
         return True, {'masterDomain': masterResult[0].get_name()}
@@ -1080,7 +1114,8 @@ def getStorageDomainFiles(positive, storagedomain, files_count):
      '''
 
     storDomObj = util.find(storagedomain)
-    storFiles = util.getElemFromLink(storDomObj, 'files', attr='file', get_href=True)
+    storFiles = util.getElemFromLink(storDomObj, 'files', attr='file',
+                                     get_href=True)
     return compareCollectionSize(storFiles, files_count, util.logger)
 
 
@@ -1099,7 +1134,8 @@ def getStorageDomainFile(positive, storagedomain, file):
 
     fileObj = None
     if storDomObj:
-        fileObj = fileUtil.getElemFromElemColl(storDomObj, file, 'files', 'file')
+        fileObj = fileUtil.getElemFromElemColl(storDomObj, file, 'files',
+                                               'file')
 
     if fileObj:
         return positive
@@ -1108,7 +1144,8 @@ def getStorageDomainFile(positive, storagedomain, file):
 
 
 @is_action()
-def getTemplateImageId(positive, vdsName, username, passwd, dataCenter, storageDomain):
+def getTemplateImageId(positive, vdsName, username, passwd, dataCenter,
+                       storageDomain):
     '''
     Description: get template disk entrence, which is not exposed to REST.
     Author: istein
@@ -1129,7 +1166,8 @@ def getTemplateImageId(positive, vdsName, username, passwd, dataCenter, storageD
     dcId = dcObj.get_id()
     storDomObj = util.find(storageDomain)
     storDomId = storDomObj.get_id()
-    vmObjList = util.getElemFromLink(storDomObj, 'vms', attr='vm', get_href=True)
+    vmObjList = util.getElemFromLink(storDomObj, 'vms', attr='vm',
+                                     get_href=True)
     for vmObj in vmObjList:
         vmIdList.append(vmObj.get_id())
 
@@ -1192,8 +1230,8 @@ def checkTemplateOnHost(positive, vdsName, username, passwd, dataCenter,
     try:
         templateObj = [t for t in templates if t.get_name() == template][0]
     except IndexError:
-        util.logger.error("Template %s was not found on storage domain %s" %
-                          (template, storageDomain))
+        util.logger.error("Template %s was not found on storage domain %s",
+                          template, storageDomain)
         return not positive
 
     template_id = templateObj.get_id()
@@ -1206,11 +1244,12 @@ def checkTemplateOnHost(positive, vdsName, username, passwd, dataCenter,
 
     if noImages == 'true':
         if image_id is not None:
-            util.logger.error("There are image(-s) on domain %s!" % storageDomain)
+            util.logger.error("There are image(-s) on domain %s!",
+                              storageDomain)
             return False
         return True
     elif image_id is None:
-        util.logger.error("There are no images on domain %s" % storageDomain)
+        util.logger.error("There are no images on domain %s", storageDomain)
         return False
 
     # Get volume Info
@@ -1219,14 +1258,15 @@ def checkTemplateOnHost(positive, vdsName, username, passwd, dataCenter,
 
     if not volInfo:
         msg = "failed to get volume info; DC {0}, SD{1}, Image {2}, Volume {3}"
-        util.logger.error(msg.format(dc_id, domain.get_id(), image_id, volume_id))
+        util.logger.error(msg.format(dc_id, domain.get_id(), image_id,
+                                     volume_id))
         return False
 
     # Check volume info legality field
     legality = volInfo['legality']
-    if (fake == 'true' and legality != 'FAKE') or \
-           (fake == 'false' and legality != 'LEGAL'):
-        util.logger.error("Template legality is wrong: %s" % legality)
+    if ((fake == 'true' and legality != 'FAKE') or (fake == 'false' and
+                                                    legality != 'LEGAL')):
+        util.logger.error("Template legality is wrong: %s", legality)
         return False
     return True
 
@@ -1244,7 +1284,8 @@ def checkIfStorageDomainExist(positive, storagedomain):
     '''
 
     storagedomains = util.get(absLink=False)
-    sdObj = filter(lambda sdObj: sdObj.get_name() == storagedomain, storagedomains)
+    sdObj = filter(lambda sdObj: sdObj.get_name() == storagedomain,
+                   storagedomains)
     return (len(sdObj) == 1) == positive
 
 
@@ -1256,15 +1297,16 @@ def checkStorageDomainParameters(positive, storagedomain, **kwargs):
         * storagedomain - domain's name
     Author: jlibosva
     Return: True if all keys and values matches given storage domain attributes
-            False if any attribute is missing or if the attribute's value differs
+            False if any attribute is missing or if the attribute's value
+            differs
     """
     domainObj = util.find(storagedomain)
 
     for attr in kwargs:
         if not hasattr(domainObj.storage, attr) or \
            getattr(domainObj.storage, attr) != kwargs[attr]:
-            util.logger.debug("Attribute \"%s\" doesn't match with storage domain \
-\"%s\"", attr, storagedomain)
+            util.logger.debug("Attribute \"%s\" doesn't match with storage "
+                              "domain \"%s\"", attr, storagedomain)
             return not positive
 
     return positive
@@ -1349,7 +1391,7 @@ def getObjList(sd, coll):
     """
     attr = coll[:-1]
     return util.getElemFromLink(sd, link_name=coll, attr=attr,
-                                    get_href=False)
+                                get_href=False)
 
 
 def checkVolume(positive, vdsName, username, passwd, dataCenter, storageDomain,
@@ -1422,80 +1464,10 @@ def checkVolume(positive, vdsName, username, passwd, dataCenter, storageDomain,
     if legality is None:
         legality = volInfo['legality']
 
-    if (fake and legality != 'FAKE') or \
-           (not fake and legality != 'LEGAL'):
+    if ((fake and legality != 'FAKE') or (not fake and legality != 'LEGAL')):
         util.logger.error("Template/Vm legality is wrong: %s", legality)
         return not positive
     return positive
-
-
-@is_action()
-def prepareVmWithRhevm(positive, hosts, cpuName, username, password, datacenter,
-               storage_type, cluster, data_domain_address, data_storage_domains,
-               version, type, export_domain_address, export_domain_path,
-               export_domain_name, data_domain_name, template_name, vm_name,
-               vm_description, tested_setup_mac_address, memory_size,
-               format_export_domain, nic, nicType, lun_address, lun_target,
-               luns, disk_size, disk_type, volume_format, disk_interface,
-               bootable, wipe_after_delete, start, vm_type, cpu_socket,
-               cpu_cores, display_type, installation, os_type, vm_user,
-               vm_password, cobblerAddress, cobblerUser, cobblerPasswd, image,
-               network, useAgent, iso_domain_path, iso_domain_address,
-               iso_domain_name):
-
-    util.logger.info("prepareVmWithRhevm function arguments: %s" % locals())
-    # Create Data Center
-    if not createDatacenter(True, hosts=hosts, cpuName=cpuName, username=username,
-                     password=password, datacenter=datacenter,
-                     storage_type=storage_type, cluster=cluster, version=version,
-                     dataStorageDomains=data_storage_domains,
-                     address=data_domain_address, lun_address=lun_address,
-                     lun_target=lun_target, luns=luns, lun_port=3260):
-        return False
-
-    if iso_domain_address:
-        # Add iso domain
-        if not addStorageDomain(positive=positive, name=iso_domain_name,
-                type=ENUMS['storage_dom_type_iso'],
-                storage_type=ENUMS['storage_type_nfs'],
-                path=iso_domain_path, address=iso_domain_address,
-                host=hosts):
-            return False
-
-        # Attach iso domain
-        if not attachStorageDomain(positive=positive, datacenter=datacenter,
-                     storagedomain=iso_domain_name):
-            return False
-
-    if export_domain_address:
-                # Add export domain
-        if not addStorageDomain(positive=positive, name=export_domain_name,
-                type=ENUMS['storage_dom_type_export'],
-                storage_type=ENUMS['storage_type_nfs'],
-                path=export_domain_path, address=export_domain_address,
-                host=hosts):
-            return False
-
-        # Attach iso domain
-        if not attachStorageDomain(positive=positive, datacenter=datacenter,
-                     storagedomain=export_domain_name):
-            return False
-
-    # Create VM and install it
-    if installation == 'true':
-        return createVm(
-            True, vmName=vm_name, vmDescription=vm_description,
-            cluster=cluster, mac_address=tested_setup_mac_address, nic=nic,
-            nicType=nicType, storageDomainName=data_domain_name,
-            size=disk_size, diskType=disk_type, volumeFormat=volume_format,
-            diskInterface=disk_interface, bootable=bootable,
-            wipe_after_delete=wipe_after_delete, start=start, type=vm_type,
-            memory=memory_size, cpu_socket=cpu_socket, cpu_cores=cpu_cores,
-            display_type=display_type, installation=True, os_type=os_type,
-            user=vm_user, password=vm_password, cobblerAddress=cobblerAddress,
-            cobblerUser=cobblerUser, cobblerPasswd=cobblerPasswd, image=image,
-            network=network, useAgent=useAgent)
-    return True
 
 
 @is_action("isStorageDomainActive")
@@ -1628,7 +1600,7 @@ def _parse_mount_output_line(line):
     >>> output = 'nfsd on /proc/fs/nfsd type nfsd (rw)'
     >>> result = _parse_mount_output_line(output)
     """
-    util.logger.debug("Parsed line: %s" % line)
+    util.logger.debug("Parsed line: %s", line)
     if not 'type nfs ' in line:
         return None
     parts = line.split(" ")

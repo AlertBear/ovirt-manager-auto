@@ -1,12 +1,15 @@
-from rhevm_utils.base import RHEVMUtilsTestCase, istest, logger, \
-    REST_API_PASS, IMAGE_UP_CONF, EXPORT_DOMAIN_NAME
+from rhevm_utils.base import RHEVMUtilsTestCase, istest
+from unittest_conf import REST_API_PASS, IMAGE_UP_CONF, EXPORT_DOMAIN_NAME
 from utilities.rhevm_tools.image_uploader import ImageUploadUtility
 from art.test_handler.tools import tcms
+
 IMAGE_UPLOADER_TEST_PLAN = 5200
 NAME = 'image-uploader'
 
-IMAGE_UPLOAD_FILE_PATH = '/opt/art/shared_data/image_uploader_test/img_up_test.ovf'
+IMAGE_UPLOAD_FILE_PATH = ('/opt/art/shared_data/image_uploader_test/'
+                          'img_up_test.ovf')
 IMAGE_UPLOAD_COMMAND = 'upload'
+
 
 class ImageUploaderTestCase(RHEVMUtilsTestCase):
     """
@@ -23,7 +26,7 @@ class ImageUploaderTestCase(RHEVMUtilsTestCase):
         """ image_uploder_upload """
         assert self.ut.setRestConnPassword(NAME, IMAGE_UP_CONF, REST_API_PASS)
         self.ut(IMAGE_UPLOAD_COMMAND, IMAGE_UPLOAD_FILE_PATH,
-              e=EXPORT_DOMAIN_NAME)
+                e=EXPORT_DOMAIN_NAME)
         self.ut.autoTest()
 
     @istest
@@ -33,5 +36,3 @@ class ImageUploaderTestCase(RHEVMUtilsTestCase):
         assert self.ut.setRestConnPassword(NAME, IMAGE_UP_CONF, REST_API_PASS)
         self.ut('list')
         self.ut.autoTest()
-
-

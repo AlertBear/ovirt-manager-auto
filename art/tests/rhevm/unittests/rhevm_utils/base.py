@@ -8,9 +8,9 @@ __test__ = False
 import time
 import logging
 from art.unittest_lib import BaseTestCase as TestCase
+from art.rhevm_api.tests_lib.high_level.datacenters import build_setup
+from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 from art.rhevm_api.tests_lib.low_level.vms import addSnapshot, restoreSnapshot
-from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter, \
-    prepareVmWithRhevm
 from art.rhevm_api.utils.test_utils import get_api
 VM_API = get_api('vm', 'vms')
 
@@ -19,15 +19,8 @@ VM_API = get_api('vm', 'vms')
 # also for another purposes.
 try:
     # PGPASS, PREPARE_CONF should move to test conf file, once possible.
-    from unittest_conf import (config,
-                               PGPASS,
-                               REST_API_PASS,
-                               ISO_UP_CONF,
-                               LOG_COL_CONF,
-                               IMAGE_UP_CONF,
-                               REST_API_HOST,
-                               ISO_DOMAIN_NAME,
-                               EXPORT_DOMAIN_NAME)
+    from unittest_conf import (config, PGPASS, REST_API_HOST)
+
     if not config:
         raise ImportError()
 except ImportError:
@@ -58,6 +51,26 @@ from . import ART_CONFIG
 # create patterns for errors recognition
 # also think about moving of message patterns to consts, because it can be
 # changed in next versions
+
+
+def setup_module():
+    """
+    Build datacenter
+    """
+    params = ART_CONFIG['PARAMETERS']
+    build_setup(config=params, storage=params,
+                storage_type=params.get('data_center_type'),
+                basename=params.get('basename'))
+
+
+def teardown_module():
+    """
+    Clean datacenter
+    """
+    params = ART_CONFIG['PARAMETERS']
+    cleanDataCenter(True, params.get('storage_name'),
+                    vdc=params.get('host'),
+                    vdc_password=params.get('vdc_password'))
 
 
 class SetupManager(object):
@@ -238,7 +251,7 @@ class SetupManager(object):
         if not ip:
             machine = self.refreshMachine(self.maps[name])
             if machine.status.get_state() != 'up':
-                rc = VM_API.syncAction(machine, 'start', 'true')
+                VM_API.syncAction(machine, 'start', 'true')
                 self.waitForMachineStatus(machine, 'up')
             self.waitForAgentIsUp(machine)
             ip = self.getIp(machine)
@@ -254,7 +267,7 @@ class SetupManager(object):
         try:
             machine = self.refreshMachine(self.maps[name])
             if machine.status.get_state() == 'up':
-                rc = VM_API.syncAction(machine, 'stop', 'true')
+                VM_API.syncAction(machine, 'stop', 'true')
                 self.waitForMachineStatus(machine, 'down')
             self.restoreSnapshotWrapper(machine.name, self.BASE_SNAPSHOT)
         finally:
@@ -281,103 +294,9 @@ class RHEVMUtilsTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         """
-        Prepares setup machine, install RHEVM on it, and create snapshot
+        dispatch setup for cleanup and setup tests
         """
-        ENUMS = opts['elements_conf']['RHEVM Enums']
-        logger.info("Preparation flow")
-        params = ART_CONFIG['PARAMETERS']
-        data_domain_address = None
-        data_storage_domains = None
-        lun_address = None
-        lun_target = None
-        luns = None
-        iso_domain_path = None
-        iso_domain_address = None
-        export_domain_path = None
-        export_domain_address = None
-
-        hosts = params.get('vds')
-        cpuName = params.get('cpu_name')
-        username = 'root'
-        password = params.get('vds_password')[0]
-        data_center_type = params.get('data_center_type')
-        datacenter = '%sToolsTest' % data_center_type
-        storage_type = data_center_type
-        cluster = '%sToolsTest' % data_center_type
-        if data_center_type.lower() == ENUMS['storage_type_nfs']:
-            data_domain_address = params.as_list('data_domain_address')[0]
-            data_storage_domains = params.as_list('data_domain_path')[0]
-        if data_center_type.lower() == ENUMS['storage_type_iscsi']:
-            lun_address = params.as_list('lun_address')[0]
-            lun_target = params.as_list('lun_target')[0]
-            luns = params.as_list('lun')[0]
-
-        version = params.get('compatibility_version')
-        type = ENUMS['storage_dom_type_export']
-        data_domain_name = params.get('data_domain_name')
-        template_name = params.get('template_name')
-        vm_name = params.get('vm_name')
-        vm_description = params.get('vm_description')
-        tested_setup_mac_address = params.get('tested_setup_mac_address')
-        memory_size = int(params.get('memory_size'))
-        format_export_domain = params.get('format_export_domain')
-        nic = params.get('host_nics')[0]
-        nicType = ENUMS['nic_type_virtio']
-        disk_size = int(params.get('disk_size'))
-        disk_type = ENUMS['disk_type_system']
-        volume_format = ENUMS['format_cow']
-        disk_interface = ENUMS['interface_ide']
-        bootable = params.get('bootable')
-        wipe_after_delete = params.get('wipe_after_delete')
-        start = params.get('start')
-        vm_type = ENUMS['vm_type_server']
-        os_type = params.get('vm_os')
-        cpu_socket = params.get('cpu_socket')
-        cpu_cores = params.get('cpu_cores')
-        display_type = ENUMS['display_type_spice']
-        cls.installation = params.get('installation')
-        vm_user = params.get('vm_linux_user')
-        vm_password = params.get('vm_linux_password')
-        cobblerAddress = params.get('cobbler_address')
-        cobblerUser = params.get('cobbler_user')
-        cobblerPasswd = params.get('cobbler_passwd')
-        image = params.get('cobbler_profile')
-        network = params.get('mgmt_bridge')
-        useAgent = params.get('useAgent')
-        if cls.utility == 'iso-uploader':
-            iso_domain_path = params.get('iso_domain_path')
-            iso_domain_address = params.get('iso_domain_address')
-        if cls.utility == 'image-uploader':
-            export_domain_path = params.get('export_domain_path')
-            export_domain_address = params.get('export_domain_address')
-        if cls.installation == 'true':
-            arr = ['setup', 'cleanup', 'iso-uploader', 'log_collector',
-                   'config']
-        else:
-            arr = ['iso-uploader', 'log_collector', 'image-uploader']
-        if cls.utility in arr:
-            if not prepareVmWithRhevm(True, hosts, cpuName, username,
-                                      password, datacenter, storage_type,
-                                      cluster, data_domain_address,
-                                      data_storage_domains, version, type,
-                                      export_domain_address,
-                                      export_domain_path,
-                                      EXPORT_DOMAIN_NAME, data_domain_name,
-                                      template_name, vm_name, vm_description,
-                                      tested_setup_mac_address, memory_size,
-                                      format_export_domain, nic, nicType,
-                                      lun_address, lun_target, luns, disk_size,
-                                      disk_type, volume_format, disk_interface,
-                                      bootable, wipe_after_delete, start,
-                                      vm_type, cpu_socket, cpu_cores,
-                                      display_type, cls.installation,
-                                      os_type, vm_user, vm_password,
-                                      cobblerAddress, cobblerUser,
-                                      cobblerPasswd, image, network,
-                                      useAgent, iso_domain_path,
-                                      iso_domain_address, ISO_DOMAIN_NAME):
-                logger.info("prepareVmWithRhevm failed")
-            logger.info("DEBUG: cls.utility = %s", cls.utility)
+        cls.installation = ART_CONFIG['PARAMETERS'].get('installation')
         if cls.utility in ['setup', 'cleanup']:
             cls.c = config[cls.utility]
             logger.info("DEBUG: cls.c %s", cls.c)
@@ -396,15 +315,6 @@ class RHEVMUtilsTestCase(TestCase):
             if cls.utility in ['setup', 'cleanup']:
                 cls.manager.releaseSetup(cls.utility)
 
-        if cls.installation == 'true':
-            logger.info("Clean Data center with wait for async"
-                        " tasks to finish")
-            cleanDataCenter(True, 'nfsToolsTest', 'true', 'false',
-                            REST_API_HOST, REST_API_PASS)
-        else:
-            if cls.utility in ['iso-uploader', 'log_collector']:
-                logger.info("Clean Data center")
-                cleanDataCenter(True, 'nfsToolsTest', 'true', 'false')
         if cls.installation != 'true':
             if cls.utility == 'setup':
                 machine = cls.manager.dispatchSetup(cls.utility, REST_API_HOST)
