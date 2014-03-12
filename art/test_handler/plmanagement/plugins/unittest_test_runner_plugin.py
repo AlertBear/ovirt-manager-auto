@@ -10,6 +10,7 @@ Also supports the unittest2 backport from py3.
 CLI Options
 -----------
   --test-tag name=value
+  --test-tag-expr "python expression"  [nose_tag_expression]_
   --with-nose-apiselector  mutiplies test-cases per each rhevm api
 
 Configuration Options:
@@ -21,6 +22,8 @@ Configuration Options:
     | **nose_config** path to file with nose configuration
     | **nose_custom_paths** path to nose customization (nose custom plugins)
     | **nose_apiselector** - enable/disable api selector plugin
+    | **tags** - list of tags
+    | **tag_expressions** - list of tag's expressions [nose_tag_expression]_
 
 How to start
 ------------
@@ -30,12 +33,16 @@ should look like.
 
 .. [nose_url] https://nose.readthedocs.org/en/latest/
 .. [unittets_example] ART/art/tests/unittest_template/example
+.. [nose_tag_expression] http://nose.readthedocs.org/en/latest/plugins/\
+attrib.html#expression-evaluation
 
 """
 
 import os
 import re
 import sys
+import parser as pyparser
+import argparse
 from functools import wraps
 
 from art.test_handler.plmanagement import Component, implements, get_logger
@@ -99,6 +106,9 @@ TCMS_TEST_CASE = 'tcms_test_case'  # TODO: should be removed
 CLI_VALIDATION = 'cli_validation'  # TODO: should be removed
 NOSE_CUSTOMIZATION_PATHS = 'nose_custom_paths'
 NOSE_CONFIG_PATH = 'nose_config'
+NOSE_API_SELECTOR = 'nose_apiselector'
+NOSE_TAGS = 'tags'
+NOSE_TAG_EXPRESSIONS = 'tag_expressions'
 
 ITER_NUM = 0
 
@@ -117,6 +127,48 @@ def isvital4group(f):
         self.vital4group = True
         return f(self, *args, **kwargs)
     return wrapper
+
+
+def python_expr_list(value):
+    """
+    validates list of py-expressions: "a == b", "a in (1, 2)", ...
+    """
+    if not isinstance(value, basestring):
+        return value
+
+    values = list()
+    value = value.strip()
+    if value == ',':
+        return values
+
+    try:
+        value = eval(value)  # convert to tuple
+        if not isinstance(value, tuple):
+            raise SyntaxError()
+    except (SyntaxError, NameError):
+        raise TypeError("'%s' is not list of expressions" % value)
+
+    for expr in value:
+        try:
+            pyparser.expr(expr)
+        except SyntaxError as ex:
+            raise TypeError("'%s' is not python expression: %s" % (expr, ex))
+        values.append(expr)
+
+    return values
+
+
+class PythonExprAction(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        try:
+            pyparser.expr(values)
+        except SyntaxError as ex:
+            raise argparse.ArgumentError(self, "%s in '%s'" % (ex, values))
+        exprs = getattr(namespace, self.dest, [])
+        if exprs is None:
+            exprs = list()
+        exprs.append(values)
+        setattr(namespace, self.dest, exprs)
 
 
 class UTestCase(TestCase):
@@ -392,10 +444,25 @@ class UnittestLoader(Component):
         nose_config_path = locate_file(nose_config_path, custom_paths)
         nose_args = ['nosetests', '-c', nose_config_path]
         if params.nose_apiselector_enabled or \
-                conf[UNITTEST_SEC].as_bool('nose_apiselector'):
+                conf[UNITTEST_SEC].as_bool(NOSE_API_SELECTOR):
             nose_args.append('--with-apiselector')
-        for tag in params.test_tags:
+
+        # Add tags
+        if params.test_tags is not None:
+            test_tags = params.test_tags
+        else:
+            test_tags = conf[UNITTEST_SEC].as_list(NOSE_TAGS)
+        for tag in test_tags:
             nose_args.extend(['-a', tag])
+
+        # Add tag's expressions
+        if params.test_tag_expressions is not None:
+            test_tag_exprs = params.test_tag_expressions
+        else:
+            test_tag_exprs = conf[UNITTEST_SEC].as_list(NOSE_TAG_EXPRESSIONS)
+        for expr in test_tag_exprs:
+            nose_args.extend(['-A', expr])
+
         self.nose_conf.configure(nose_args)
 
     def _load_nose_custom_plugins(self, path):
@@ -422,7 +489,12 @@ class UnittestLoader(Component):
         group = parser.add_argument_group(cls.name, description=cls.__doc__)
         group.add_argument('--test-tag', action='append',
                            dest='test_tags', help="tier=xx or/and team=yy",
-                           default=list())
+                           default=None)
+        group.add_argument('--test-tag-expr', action=PythonExprAction,
+                           dest='test_tag_expressions',
+                           help="python expression "
+                           "like: 'team == \"storage\" and tier == 0'",
+                           default=None)
         group.add_argument('--with-nose-apiselector', action='store_true',
                            dest='nose_apiselector_enabled',
                            help="enable nose apiselector plugin")
@@ -492,12 +564,15 @@ class UnittestLoader(Component):
             'art.test_handler.plmanagement.plugins.'
             'unittest_test_runner_plugin']
 
+    @classmethod
     def config_spec(self, spec, val_funcs):
-        section_spec = spec.get(UNITTEST_SEC, {})
+        val_funcs['expr_list'] = python_expr_list
+        section_spec = spec.setdefault(UNITTEST_SEC, {})
         section_spec[NOSE_CUSTOMIZATION_PATHS] = \
             ('list(default=list(%s))' % ','.join(DEFAULT_NOSE_CUSTOM_PATHS))
         section_spec[NOSE_CONFIG_PATH] = ('string('
                                           'default="configs/default.conf")')
-        section_spec['nose_apiselector'] = \
+        section_spec[NOSE_API_SELECTOR] = \
             'boolean(default=%s)' % DEFAULT_STATE
-        spec[UNITTEST_SEC] = section_spec
+        section_spec[NOSE_TAGS] = 'list(default=list())'
+        section_spec[NOSE_TAG_EXPRESSIONS] = 'expr_list(default=list())'
