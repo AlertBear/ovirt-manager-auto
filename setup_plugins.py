@@ -7,11 +7,13 @@ import art.test_handler.plmanagement as plcore
 from art.test_handler.plmanagement.interfaces import packaging
 from art.test_handler.plmanagement.manager import PluginManager
 from subprocess import Popen, PIPE
+from utilities.setup_utils import common
 
 #SETUP_DIR = 'plugin_setups'
 SETUP_DIR = './'
 SETUP_NAME = 'setup_%s_plugin.py'
 PREFIX_NAME = 'art-plugin'
+DATA_PATH = '/opt/art'
 
 RELEASE = os.environ.get('RELEASE', "1")
 VERSION = os.environ.get('VERSION', "1.0.0")
@@ -62,6 +64,11 @@ def check_params(params):
     #params['pipdeps'] = params.pop('pip_deps')
     params.pop('pip_deps', None)
     params['config'] = {'bdist_rpm': {'build_requires': 'art-utilities'}}
+
+    data_files = params.pop('data_files', [])
+    if data_files:
+        params['data_files'] = common.expand_paths(DATA_PATH, *data_files)
+
 
 def main():
 

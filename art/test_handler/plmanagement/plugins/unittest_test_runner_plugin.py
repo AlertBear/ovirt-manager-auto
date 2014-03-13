@@ -10,12 +10,17 @@ Also supports the unittest2 backport from py3.
 CLI Options
 -----------
   --test-tag name=value
+  --with-nose-apiselector  mutiplies test-cases per each rhevm api
 
 Configuration Options:
 ----------------------
     | **[RUN]**
     | **tests_file** the test specification;
         unittest://path/to/module:name_of_module
+    | **[UNITTEST]**
+    | **nose_config** path to file with nose configuration
+    | **nose_custom_paths** path to nose customization (nose custom plugins)
+    | **nose_apiselector** - enable/disable api selector plugin
 
 How to start
 ------------
@@ -41,10 +46,13 @@ from art.test_handler.plmanagement.interfaces.report_formatter \
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.plmanagement.interfaces.tests_listener \
     import ITestGroupHandler
+from art.test_handler.plmanagement.interfaces.config_validator import\
+    IConfigValidation
 from art.test_handler.test_runner import TestCase, TestSuite, TestGroup,\
     TestResult, TEST_CASES_SEPARATOR
 from art.test_handler.exceptions import SkipTest
-from art.test_handler import find_test_file
+from art.test_handler import find_test_file, locate_file
+import art
 
 logger = get_logger("unittest_loader")
 
@@ -78,11 +86,19 @@ RUN_SEC = 'RUN'
 TESTS_FILE = 'tests_file'
 CONFIG_PARAMS = 'PARAMETERS'
 REST_CONNECTION = 'REST_CONNECTION'
+UNITTEST_SEC = 'UNITTEST'
+DEFAULT_STATE = False
+DEFAULT_NOSE_CUSTOM_PATHS = [
+    os.path.abspath(os.path.join(os.path.dirname(art.__file__),
+                    '..', 'nose_customization')),
+    '/opt/art/nose_customization']
 
 BZ_ID = 'bz'  # TODO: should be removed
 TCMS_PLAN_ID = 'tcms_plan_id'  # TODO: should be removed
 TCMS_TEST_CASE = 'tcms_test_case'  # TODO: should be removed
 CLI_VALIDATION = 'cli_validation'  # TODO: should be removed
+NOSE_CUSTOMIZATION_PATHS = 'nose_custom_paths'
+NOSE_CONFIG_PATH = 'nose_config'
 
 ITER_NUM = 0
 
@@ -262,7 +278,7 @@ class UnittestLoader(Component):
     Plugin allows to test_runner be able to run unittest based tests
     """
     implements(ITestParser, IResultExtension, IConfigurable, IPackaging,
-               ITestGroupHandler)
+               IConfigValidation, ITestGroupHandler)
     name = 'Unittest runner'
 
     def __init__(self):
@@ -354,12 +370,52 @@ class UnittestLoader(Component):
         TestResult.ATTRIBUTES['test_action'] = ('test_action', None, None)
         TestResult.ATTRIBUTES['iter_num'] = ('serial', None, None)
 
+        #configuring nose
+        self._configure_nose(params, conf)
+
+    def _configure_nose(self, params, conf):
+        # init config
         self.nose_conf = NoseConfig(env=os.environ,
                                     plugins=NosePluginManager())
-        args = ['nose']  # first is name of program
+        # init log (maybe to pass loggingConfig in future)
+        #self.nose_conf.configureLogging()
+        #logger.info("Nose log: %s", conf[UNITTEST_SEC]['nose_log'])
+
+        custom_paths = conf[UNITTEST_SEC][NOSE_CUSTOMIZATION_PATHS]
+
+        # load custom plugins - make it more generic
+        plugins_dir = locate_file('plugins', custom_paths)
+        self._load_nose_custom_plugins(plugins_dir)
+
+        # first is name of program
+        nose_config_path = conf[UNITTEST_SEC][NOSE_CONFIG_PATH]
+        nose_config_path = locate_file(nose_config_path, custom_paths)
+        nose_args = ['nosetests', '-c', nose_config_path]
+        if params.nose_apiselector_enabled or \
+                conf[UNITTEST_SEC].as_bool('nose_apiselector'):
+            nose_args.append('--with-apiselector')
         for tag in params.test_tags:
-            args.extend(['-a', tag])
-        self.nose_conf.configure(args)
+            nose_args.extend(['-a', tag])
+        self.nose_conf.configure(nose_args)
+
+    def _load_nose_custom_plugins(self, path):
+        custom_plugins = []
+        mod = os.path.basename(os.path.abspath(path))
+        sys.path.insert(0, path)
+        try:
+            for root, dirs, files in os.walk(path, followlinks=True):
+                for f in (f for f in files if f.endswith('plugin.py')):
+                    mod = __import__(f.rstrip('.py'))
+                    plugs_list = filter(lambda x: x.endswith('Plugin')
+                                        and x != 'NosePlugin', dir(mod))
+                    custom_plugins.extend([getattr(mod, plug)
+                                           for plug in plugs_list])
+            self.nose_conf.plugins.addPlugins([plug() for plug in
+                                               custom_plugins])
+            logger.info("Loading Nose custom plugins %s DONE.",
+                        [plug.__name__ for plug in custom_plugins])
+        finally:
+            sys.path.remove(path)
 
     @classmethod
     def add_options(cls, parser):
@@ -367,6 +423,9 @@ class UnittestLoader(Component):
         group.add_argument('--test-tag', action='append',
                            dest='test_tags', help="tier=xx or/and team=yy",
                            default=list())
+        group.add_argument('--with-nose-apiselector', action='store_true',
+                           dest='nose_apiselector_enabled',
+                           help="enable nose apiselector plugin")
 
     def pre_test_result_reported(self, res, tc):
         res.add_result_attribute('module_name', 'mod_name', 'Module Name', '')
@@ -427,6 +486,18 @@ class UnittestLoader(Component):
         params['description'] = 'Unittest runner plugin for ART'
         params['long_description'] = cls.__doc__
         params['requires'] = ['python-nose >= 0.11.0', 'python-unittest2']
-#        params['pip_deps'] = ['unittest2']
-        params['py_modules'] = ['art.test_handler.plmanagement.plugins.'
-                                'unittest_test_runner_plugin']
+        params['data_files'] = ['nose_customization/'
+                                'plugins/api_selector_plugin.py']
+        params['py_modules'] = [
+            'art.test_handler.plmanagement.plugins.'
+            'unittest_test_runner_plugin']
+
+    def config_spec(self, spec, val_funcs):
+        section_spec = spec.get(UNITTEST_SEC, {})
+        section_spec[NOSE_CUSTOMIZATION_PATHS] = \
+            ('list(default=list(%s))' % ','.join(DEFAULT_NOSE_CUSTOM_PATHS))
+        section_spec[NOSE_CONFIG_PATH] = ('string('
+                                          'default="configs/default.conf")')
+        section_spec['nose_apiselector'] = \
+            'boolean(default=%s)' % DEFAULT_STATE
+        spec[UNITTEST_SEC] = section_spec

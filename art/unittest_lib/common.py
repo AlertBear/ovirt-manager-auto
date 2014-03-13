@@ -33,6 +33,7 @@ class BaseTestCase(TestCase):
     Base test case class for unittest testing
     """
     __test__ = False
+    apis = set(['rest', 'cli', 'sdk', 'java'])
 
 
 @attr(team="storage")

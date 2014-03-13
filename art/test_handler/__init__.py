@@ -1,5 +1,5 @@
 import os
-from utilities import getConfigFile
+from utilities import getConfigFile as locate_file
 import art
 
 
@@ -30,9 +30,8 @@ TEST_LOCATIONS = __compose_tests_location()
 
 
 def find_config_file(path):
-    return getConfigFile(path, CONFIG_LOCATIONS)
+    return locate_file(path, CONFIG_LOCATIONS)
 
 
 def find_test_file(path):
-    return getConfigFile(path, TEST_LOCATIONS)
-
+    return locate_file(path, TEST_LOCATIONS)
