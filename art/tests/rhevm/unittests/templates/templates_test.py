@@ -24,7 +24,7 @@ VM_API = get_api('vm', 'vms')
 TEMP_API = get_api('template', 'templates')
 CAP_API = get_api('version', 'capabilities')
 
-logger = logging.getLogger(__package__ + __name__)
+logger = logging.getLogger(__name__)
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 

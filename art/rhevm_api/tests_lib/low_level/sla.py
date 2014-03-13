@@ -32,7 +32,7 @@ VM_API = get_api('vm', 'vms')
 LOAD_SCRIPT_NAME = "load_host.sh"
 LOAD_SCRIPT_DIR = "/tmp"
 
-logger = logging.getLogger(__package__ + __name__)
+logger = logging.getLogger(__name__)
 
 
 @is_action()

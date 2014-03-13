@@ -28,7 +28,7 @@ from art.rhevm_api.tests_lib.low_level.vms import\
 HOST_API = get_api('host', 'hosts')
 VM_API = get_api('vm', 'vms')
 
-logger = logging.getLogger(__package__ + __name__)
+logger = logging.getLogger(__name__)
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 

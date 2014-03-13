@@ -55,9 +55,10 @@ VM = getDS('VM')
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 
-xpathMatch = is_action('xpathTemplates', id_name='xpathMatch')(XPathMatch(TEMPLATE_API))
+xpathMatch = is_action('xpathTemplates',
+                       id_name='xpathMatch')(XPathMatch(TEMPLATE_API))
 
-logger = logging.getLogger(__package__ + __name__)
+logger = logging.getLogger(__name__)
 
 
 def _prepareTemplateObject(**kwargs):

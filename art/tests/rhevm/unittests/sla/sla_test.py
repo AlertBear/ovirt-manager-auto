@@ -28,7 +28,7 @@ import art.rhevm_api.tests_lib.low_level.vms as vms
 HOST_API = get_api('host', 'hosts')
 VM_API = get_api('vm', 'vms')
 
-logger = logging.getLogger(__package__ + __name__)
+logger = logging.getLogger(__name__)
 
 DISK_SIZE = 3 * 1024 * 1024 * 1024
 ENUMS = opts['elements_conf']['RHEVM Enums']

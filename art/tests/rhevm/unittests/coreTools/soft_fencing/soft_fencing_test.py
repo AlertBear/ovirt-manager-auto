@@ -30,7 +30,7 @@ HOST_CONNECTING = ENUMS['host_state_connecting']
 VM_DOWN = ENUMS['vm_state_down']
 
 
-logger = logging.getLogger(__package__ + __name__)
+logger = logging.getLogger(__name__)
 
 ########################################################################
 #                             Test Cases                               #

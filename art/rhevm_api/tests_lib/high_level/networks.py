@@ -46,7 +46,7 @@ from utilities.jobs import Job, JobsSet
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 
-logger = logging.getLogger(__package__ + __name__)
+logger = logging.getLogger(__name__)
 CONNECTIVITY_TIMEOUT = 60
 DISK_SIZE = 21474836480
 LUN_PORT = 3260

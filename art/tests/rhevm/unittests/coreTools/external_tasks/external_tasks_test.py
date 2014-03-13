@@ -13,7 +13,7 @@ import logging
 
 JOB_API = get_api('job', 'jobs')
 
-logger = logging.getLogger(__package__ + __name__)
+logger = logging.getLogger(__name__)
 
 ########################################################################
 #                             Test Cases                               #
