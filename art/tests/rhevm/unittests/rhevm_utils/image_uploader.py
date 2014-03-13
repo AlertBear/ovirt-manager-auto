@@ -1,4 +1,4 @@
-from rhevm_utils.base import RHEVMUtilsTestCase, istest
+from rhevm_utils import base
 from unittest_conf import REST_API_PASS, IMAGE_UP_CONF, EXPORT_DOMAIN_NAME
 from utilities.rhevm_tools.image_uploader import ImageUploadUtility
 from art.test_handler.tools import tcms
@@ -11,7 +11,15 @@ IMAGE_UPLOAD_FILE_PATH = ('/opt/art/shared_data/image_uploader_test/'
 IMAGE_UPLOAD_COMMAND = 'upload'
 
 
-class ImageUploaderTestCase(RHEVMUtilsTestCase):
+def setup_module():
+    base.setup_module()
+
+
+def teardown_module():
+    base.teardown_module()
+
+
+class ImageUploaderTestCase(base.RHEVMUtilsTestCase):
     """
         rhevm image uploder test cases
     """
@@ -20,18 +28,16 @@ class ImageUploaderTestCase(RHEVMUtilsTestCase):
     utility_class = ImageUploadUtility
     _multiprocess_can_split_ = True
 
-    @istest
     @tcms(IMAGE_UPLOADER_TEST_PLAN, 287464)
-    def imageUploderUpload(self):
+    def test_image_uploder_upload(self):
         """ image_uploder_upload """
         assert self.ut.setRestConnPassword(NAME, IMAGE_UP_CONF, REST_API_PASS)
         self.ut(IMAGE_UPLOAD_COMMAND, IMAGE_UPLOAD_FILE_PATH,
                 e=EXPORT_DOMAIN_NAME)
         self.ut.autoTest()
 
-    @istest
     @tcms(IMAGE_UPLOADER_TEST_PLAN, 287465)
-    def imageUploderList(self):
+    def test_image_uploder_list(self):
         """ image_uploder_list """
         assert self.ut.setRestConnPassword(NAME, IMAGE_UP_CONF, REST_API_PASS)
         self.ut('list')

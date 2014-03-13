@@ -2,7 +2,7 @@
     rhevm cleanup module
 """
 
-from rhevm_utils.base import RHEVMUtilsTestCase, istest
+from rhevm_utils import base
 from utilities.rhevm_tools.cleanup import CleanUpUtility
 import os
 import logging
@@ -15,7 +15,7 @@ host = REST_API_HOST
 _multiprocess_can_split_ = True
 
 
-class CleanUpTestCase(RHEVMUtilsTestCase):
+class CleanUpTestCase(base.RHEVMUtilsTestCase):
     """
         rhevm cleanup test cases
     """
@@ -32,15 +32,13 @@ class CleanUpTestCase(RHEVMUtilsTestCase):
         self.ut.setup.fillAnswerFile(ans, **params)
         logger.info("%s: clean engine with %s", host, params)
 
-    @istest
-    def cleanUp(self):
+    def test_clean_up(self):
         """ clean_Up """
         self.create_answer_file()
         self.ut(config_append=self.c['cleanup_answer_file'])
         self.ut.autoTest()
 
-    @istest
-    def generatingAnswerFile(self):
+    def test_generating_answer_file(self):
         """ generating_Answer_File """
         self.create_answer_file()
         self.ut(config_append=self.c['cleanup_answer_file'],

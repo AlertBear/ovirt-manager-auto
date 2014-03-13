@@ -22,8 +22,10 @@ MAIN_SETUP = "https://lilach-rhel.qa.lab.tlv.redhat.com:443/api"
 PGPASS = "123456"
 HOST_PASS = "qum5net"
 
-ISO_DOMAIN_NAME = 'ISO_UPLOADER_TEST_DOMAIN'
-EXPORT_DOMAIN_NAME = 'EXPORT_DOMAIN'
+# image uploader is using default names for iso/export domain, which are
+# specified in high_level.storagedomains.create_storages
+ISO_DOMAIN_NAME = 'export_domain'
+EXPORT_DOMAIN_NAME = 'export_domain'
 DEFAULT = {
     'def_vm_name': VM_NAME,  # name
     'wait_timeout': 2400,  # wait for VM state change. Total install: ~40min

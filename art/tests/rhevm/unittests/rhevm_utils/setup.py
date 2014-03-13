@@ -1,7 +1,7 @@
 """
     rhevm setup module
 """
-from rhevm_utils.base import RHEVMUtilsTestCase, istest
+from rhevm_utils import base
 from utilities.rhevm_tools.setup import SetupUtility
 from unittest_conf import config, REST_API_HOST
 import os
@@ -15,7 +15,7 @@ _multiprocess_can_split_ = True
 host = REST_API_HOST
 
 
-class SetupTestCase(RHEVMUtilsTestCase):
+class SetupTestCase(base.RHEVMUtilsTestCase):
     """
         rhevm setup test cases
     """
@@ -32,8 +32,7 @@ class SetupTestCase(RHEVMUtilsTestCase):
         self.ut.setup.fillAnswerFile(ans, **params)
         logger.info("%s: install setup with %s", host, params)
 
-    @istest
-    def generatingAnswerFile(self):
+    def test_generating_answer_file(self):
         """ generating_Answer_File """
         self.create_answer_file()
         self.ut(config_append=self.c['answer_file'],
@@ -41,8 +40,7 @@ class SetupTestCase(RHEVMUtilsTestCase):
         self.ut.testGenerateAnswerFile()
         self.ut.setup.clean(config)
 
-    @istest
-    def installSetup(self):
+    def test_install_setup(self):
         """ install_Setup """
         self.create_answer_file()
         self.ut(config_append=self.c['answer_file'])

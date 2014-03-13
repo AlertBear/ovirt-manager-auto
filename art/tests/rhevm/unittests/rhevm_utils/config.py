@@ -1,4 +1,4 @@
-from rhevm_utils.base import RHEVMUtilsTestCase, istest
+from rhevm_utils import base
 from utilities.rhevm_tools.config import ConfigUtility
 from utilities.rhevm_tools import errors
 from art.test_handler.tools import tcms
@@ -7,16 +7,23 @@ CONFIG_TEST_PLAN = 3727
 NAME = 'config'
 
 
-class ConfigTestCase(RHEVMUtilsTestCase):
+def setup_module():
+    base.setup_module()
 
-    __test__ = True # FIXME: change to True, when you implement this
+
+def teardown_module():
+    base.teardown_module()
+
+
+class ConfigTestCase(base.RHEVMUtilsTestCase):
+
+    __test__ = True  # FIXME: change to True, when you implement this
     utility = NAME
     utility_class = ConfigUtility
     _multiprocess_can_split_ = True
 
-    @istest
     @tcms(CONFIG_TEST_PLAN, 86796)
-    def configListLong(self):
+    def test_config_list_long(self):
         """
         config list long option
         """
@@ -24,19 +31,20 @@ class ConfigTestCase(RHEVMUtilsTestCase):
         self.ut('--list')
         try:
             self.ut.autoTest()
-        except (errors.ConfigUtilityError, errors.OutputVerificationError) as ex:
+        except (errors.ConfigUtilityError,
+                errors.OutputVerificationError) as ex:
             failed = True
         self.ut('-l')
         try:
             self.ut.autoTest()
-        except (errors.ConfigUtilityError, errors.OutputVerificationError) as ex:
+        except (errors.ConfigUtilityError,
+                errors.OutputVerificationError) as ex:
             failed = True
         if failed:
             raise ex
 
-    @istest
     @tcms(CONFIG_TEST_PLAN, 86797)
-    def configGet(self):
+    def test_config_get(self):
         """
         rhevm-config --get
         """
@@ -47,11 +55,12 @@ class ConfigTestCase(RHEVMUtilsTestCase):
         try:
             self.ut.autoTest()
         except (errors.MissingPropertyFile, errors.OptionIsNotAllowed,
-            errors.FetchOptionError, errors.OutputVerificationError) as ex:
+                errors.FetchOptionError, errors.OutputVerificationError) as ex:
                 failed = True
                 exceptions.append(ex)
 
-        self.ut(get='SomeWeirdProperty', rc=1) # should return 1 when trying to get missing property
+        # should return 1 when trying to get missing property
+        self.ut(get='SomeWeirdProperty', rc=1)
         try:
             self.ut.autoTest()
         except (errors.MissingPropertyFile, errors.OptionIsNotAllowed,
@@ -72,8 +81,7 @@ class ConfigTestCase(RHEVMUtilsTestCase):
         if failed:
             raise exceptions
 
-    @istest
-    def configSet(self):
+    def test_config_set(self):
         """
         rhevm-config --set
         """
@@ -111,8 +119,7 @@ class ConfigTestCase(RHEVMUtilsTestCase):
         if failed:
             raise ex
 
-    @istest
-    def configAll(self):
+    def test_config_all(self):
         """
         rhevm-config --all
         """
