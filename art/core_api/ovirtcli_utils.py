@@ -304,8 +304,10 @@ class RhevmCli(CliConnection):
     _insiderSearch = "status:.*reason:.*detail:.*"
     _eol = '\r\n'
     _rhevmLoginPrompt = "Password:"
-    _rhevmPrompt = '\[RHEVM shell \(connected\)\]# '
-    _rhevmDisconnectedPrompt = '\[RHEVM shell \(disconnected\)\]# '
+    _rhevmPrompt = '((\[RHEVM shell \(\x1b\[\d;\d\dmconnected\x1b\[\d;m\)\]#' \
+        ' )|(\[oVirt shell \(connected\)\]# ))'
+    _rhevmDisconnectedPrompt = '((\[RHEVM shell \(\x1b\[\d;\d\dmdisconnected' \
+        '\x1b\[\d;m\)\]# )|(\[oVirt shell \(disconnected\)\]# ))'
     _rhevmTimeout = 900
     _specialCliPrompt = {'\r\n:': ' ', '7m\(END\)': 'q', '--More--': ' '}
     _specialMatrixParamsDict = {'case-sensitive': 'case_sensitive'}
