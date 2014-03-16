@@ -750,7 +750,7 @@ def updateNetworkInDataCenter(positive, network, datacenter, **kwargs):
     return NET_API.update(net, net_update, positive)
 
 
-def isVmNetwork(host, user, password, net_name):
+def isVmNetwork(host, user, password, net_name, conn_timeout=40):
     """
     Check if network that resides on Host is VM or non-VM
     **Author**: gcheresh
@@ -759,9 +759,11 @@ def isVmNetwork(host, user, password, net_name):
         *  *user* - root user on the  machine
         *  *password* - password for the user
         *  *net_name* - name of the network we test for being bridged
+        *  *conn_timeout* - ssh connection timeout to the host
     **Return**: True if net_name is VM, False otherwise
     """
-    machine_obj = Machine(host, user, password).util(LINUX)
+    machine_obj = Machine(host, user, password,
+                          conn_timeout=conn_timeout).util(LINUX)
     vm_file = os.path.join(SYS_CLASS_NET_DIR, net_name)
     return machine_obj.isFileExists(vm_file)
 
