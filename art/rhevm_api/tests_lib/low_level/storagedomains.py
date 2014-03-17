@@ -1100,6 +1100,23 @@ def findNonMasterStorageDomains(positive, datacenter):
 
 
 @is_action()
+def findIsoStorageDomains(datacenter):
+    '''
+    Description: find all iso storage domains
+    Author: cmestreg
+    Parameters:
+        * datacenter - datacenter name
+    Return: List of all iso storage domains
+    '''
+
+    sdObjList = getDCStorages(datacenter, False)
+
+    isoDomains = [sdObj.get_name() for sdObj in sdObjList if
+                  sdObj.get_type() == ENUMS['storage_dom_type_iso']]
+    return isoDomains
+
+
+@is_action()
 def findExportStorageDomains(datacenter):
     """
     Description: find all export storage domains

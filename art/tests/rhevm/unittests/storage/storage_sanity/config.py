@@ -26,6 +26,7 @@ FIRST_HOST = PARAMETERS.as_list('vds')[0]
 BASENAME = "%sTestStorage" % STORAGE_TYPE
 
 DATA_CENTER_NAME = 'datacenter_%s' % BASENAME
+CLUSTER_NAME = 'cluster_%s' % BASENAME
 
 VDC = PARAMETERS.get('host', None)
 VDC_PASSWORD = PARAMETERS.get('vdc_root_password', None)
