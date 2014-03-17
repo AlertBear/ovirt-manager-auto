@@ -834,14 +834,18 @@ class JavaSdkUtil(APIUtil):
         # filtering empty declarations
         methods_args_list = filter(lambda x: len(x[0]) > 0, methods_args_list)
 
-        # take first method with 2 or more parameters and go with it
-        if opcode != 'update':
+        # take method with maximum parameters and go with it
+        if opcode == 'add':
             sorted_method_args_list = filter(lambda x: len(x) > 1,
-                                             methods_args_list)[0]
+                                             methods_args_list)[-1]
         # in case of update: take first method with 1 or more parameters and
         # go with it
-        else:
+        elif opcode == 'update':
             sorted_method_args_list = filter(lambda x: len(x) >= 1,
+                                             methods_args_list)[0]
+        # take first method with 2 or more parameters and go with it
+        else:
+            sorted_method_args_list = filter(lambda x: len(x) > 1,
                                              methods_args_list)[0]
         return len(sorted_method_args_list), sorted_method_args_list
 
@@ -944,7 +948,9 @@ element:%(elm)s " % {'col': self.collection_name,
                 correlation_id = str(correlation_id)
                 add_method_args_length, sorted_add_method_args_list = \
                     self.__java_method_selector(collection, 'add')
-
+                self.logger.debug("Using %s.add(%s)",
+                                  get_collection_name_from_entity(entity),
+                                  ', '.join(sorted_add_method_args_list))
                 if add_method_args_length == 2:
                     response = collection.add(java_entity, correlation_id)
                 elif add_method_args_length == 3:
