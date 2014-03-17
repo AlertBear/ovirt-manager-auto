@@ -257,9 +257,7 @@ def get_data_center(dc_name):
     Parameters:
         *dc_name - Data Center's name to get
 
-    Return: dc object, or raise DataCenterException
+    Return: dc object, or raise EntityNotFound
     """
     dc_obj = util.find(dc_name)
-    if not dc_obj:
-        raise exceptions.DataCenterException("DC %s not found" % dc_name)
     return dc_obj

@@ -154,6 +154,14 @@ def _prepareStorageDomainObject(positive, **kwargs):
                 vfs_type=kwargs.pop('vfs_type', None)))
         storage_format = ENUMS['storage_format_version_v3']
         sd.set_storage_format(storage_format)
+    elif storage_type == ENUMS['storage_type_glusterfs']:
+        sd.set_storage(
+            Storage(
+                type_=storage_type, path=kwargs.pop('path', None),
+                address=kwargs.pop('address', None),
+                vfs_type=kwargs.pop('vfs_type', None)))
+        storage_format = ENUMS['storage_format_version_v3']
+        sd.set_storage_format(storage_format)
 
     return sd
 
@@ -496,6 +504,8 @@ def removeStorageDomains(positive, storagedomains, host, format='true'):
     detach_status = False
     if isinstance(storagedomains, basestring):
         storagedomains = storagedomains.split(',')
+    else:
+        storagedomains = storagedomains[:]
     for dc in dcUtil.get(absLink=False):
         sds = util.getElemFromLink(dc, get_href=False)
         # detach and remove non master domains
@@ -1800,3 +1810,10 @@ def get_master_storage_domain_name(datacenter_name):
                                                 % datacenter_name)
     masterSD = masterSD['masterDomain']
     return masterSD
+
+
+def getStorageDomainObj(storagedomain_name):
+    """
+    Returns storage domain object, fails with EntityNotFound
+    """
+    return util.find(storagedomain_name)

@@ -36,6 +36,7 @@ DEFAULT_CLUSTER = 'Default'
 NAME_ATTR = 'name'
 ID_ATTR = 'id'
 DEFAULT_DISK_TIMEOUT = 180
+DEFAULT_SLEEP = 5
 
 VM_API = get_api('vm', 'vms')
 CLUSTER_API = get_api('cluster', 'clusters')
@@ -276,8 +277,9 @@ def deleteDisk(positive, alias, async=True):
     Description: Removes disk from system
     Parameters:
         * alias - name of disk
-        * async - whether the task should be asynchronous
-    Author: jlibosva
+        * async - True if operation should be asynchronou - DOESN'T WORK
+        * wait - wait for the opration to end
+    Author: cmestreg
     Return: Status of the operation's result dependent on positive value
     """
     diskObj = DISKS_API.find(alias)
@@ -339,10 +341,12 @@ def waitForDisksState(disksNames, status=ENUMS['disk_state_ok'],
     Author: jlibosva
     Return: True if state was reached on all disks, False otherwise
     """
-    if isinstance(disksNames, types.StringTypes):
-        disksNames = split(disksNames)
+    if isinstance(disksNames, basestring):
+        disks = split(disksNames)
+    else:
+        disks = disksNames[:]
 
-    [DISKS_API.find(disk) for disk in disksNames]
+    [DISKS_API.find(disk) for disk in disks]
 
     sampler = TimeoutingSampler(timeout, sleep, DISKS_API.get, absLink=False)
 
@@ -350,13 +354,13 @@ def waitForDisksState(disksNames, status=ENUMS['disk_state_ok'],
         for sample in sampler:
             disks_in_wrong_state = [
                 x for x in sample
-                if x.name in disksNames and x.status.state != status]
+                if x.name in disks and x.status.state != status]
             if not disks_in_wrong_state:
                 return True
     except APITimeout:
         logger.error(
             "Timeout when waiting for all the disks %s in %s state" % (
-                disksNames, status))
+                disks, status))
         return False
 
 
@@ -407,36 +411,61 @@ def checkDiskExists(positive, name):
 
 
 @is_action()
-def move_disk(disk_name, source_domain, target_domain, wait=True,
-              timeout=DEFAULT_DISK_TIMEOUT, sleep=10):
+def copy_disk(**kwargs):
     """
-    Description: Moves disk from source_domain to target_domain
-    WARNING: does not work at the moment - remove this comment once it works
-    Author: gickowic
+    Description: Copy a disk to a target_domain
+    """
+    return do_disk_action('copy', **kwargs)
+
+
+@is_action()
+def move_disk(**kwargs):
+    """
+    Description: Moves a disk to a target_domain
+    """
+    return do_disk_action('move', **kwargs)
+
+
+@is_action()
+def do_disk_action(action, disk_name=None, target_domain=None, disk_id=None,
+                   wait=True, timeout=DEFAULT_DISK_TIMEOUT, sleep=10,
+                   positive=True):
+    """
+    Description: Exectues and action (copy/move) on the disk
+    Author: cmestreg
     Parameters:
-        * disk_name - name of disk to move
-        * source domain - name of the domain disk is currently on
-        * target_domain - name of the domain to move the disk to
+        * disk_name - name of disk
+        * disk_id - id of the disk
+        * target_domain - name of the domain
         * wait - wait for disk to be status 'ok' before returning
         * timeout - how long to wait for disk status (if wait=True)
         * sleep - how long to wait between checks when waiting for disk status
+    Returns: True on success/False on failure.
     """
-    # TODO: This feature does not work, being implemented, BZ#911348
     sd = STORAGE_DOMAIN_API.find(target_domain)
-    disk = DISKS_API.find(disk_name)
-    DISKS_API.logger.info('Disk found: %s', disk)
+    if disk_id:
+        disk = DISKS_API.find(disk_id, attribute='id')
+    elif disk_name:
+        disk = DISKS_API.find(disk_name)
+    else:
+        raise ValueError("Either specify disk_id or disk_name")
 
-    if not DISKS_API.syncAction(disk, 'move', storage_domain=sd,
-                                positive=True):
-        raise DiskException(
-            "Failed to move disk %s from domain %s to storage domain %s" %
-            (source_domain, disk_name, target_domain))
-    if wait:
-        for disk in TimeoutingSampler(timeout, sleep, getStorageDomainDisks,
-                                      target_domain):
-            if disk.name == disk_name and \
-                    disk.status.state == ENUMS['disk_state_ok']:
-                return
+    DISKS_API.logger.info('Disk found. name: %s id: %s', disk.get_alias(),
+                          disk.get_id())
+
+    if not DISKS_API.syncAction(disk, action, storage_domain=sd,
+                                positive=positive):
+        return not positive
+
+    if wait and positive:
+        # TBD: shouln't be possible to use a query here?
+        for sample in TimeoutingSampler(timeout, sleep, getStorageDomainDisks,
+                                        target_domain, False):
+            for target_disk in sample:
+                if disk.get_id() == target_disk.get_id() and \
+                        disk.status.state == ENUMS['disk_state_ok']:
+                    return True
+    return not positive
 
 
 def checksum_disk(hostname, user, password, disk_object, dc_obj):

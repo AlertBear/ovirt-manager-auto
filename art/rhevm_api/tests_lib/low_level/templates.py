@@ -515,6 +515,9 @@ def copyTemplateDisk(template, disk_name, target_sd):
     Throws: DiskException if syncAction returns False (syncAction should raise
             exception itself instead of returning False)
     """
+    # comment from cmestreg: XXX AVOID THIS
+    # TBD call for "/api/templates/{template:id}/disks/{disk:id}/copy"
+    # for a /api/disks/{disk:id}/copy better go to disks.py
     disk = _getTemplateFirstDiskByName(template, disk_name)
     sd = SD_API.find(target_sd)
     if not DISKS_API.syncAction(disk, 'copy', storage_domain=sd,

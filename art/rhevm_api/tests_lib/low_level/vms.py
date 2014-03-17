@@ -1856,7 +1856,9 @@ def changeCDWhileRunning(vm_name, cdrom_image):
     return status
 
 
-def _createVmForClone(name, template, cluster, clone, vol_sparse, vol_format):
+def _createVmForClone(
+        name, template=None, cluster=None, clone=None, vol_sparse=None,
+        vol_format=None, storagedomain=None, snapshot=None, vm_name=None):
     """
     Description: helper function - creates VM objects for VM_API.create call
                  when VM is created from template, sets all required attributes
@@ -1868,33 +1870,71 @@ def _createVmForClone(name, template, cluster, clone, vol_sparse, vol_format):
        * clone - true/false - if true, template disk will be copied
        * vol_sparse - true/false - convert VM disk to sparse/preallocated
        * vol_format - COW/RAW - convert VM disk format
+       * storagedomain - storage domain to clone the VM disk
+       * snapshot - description of the snapshot to clone
+       * vm_name - name of the snapshot's vm
     Returns: VM object
     """
+    # TBD: Probaly better split this since the disk parameter is not that
+    # similar for template and snapshots
     vm = data_st.VM(name=name)
-    templObj = TEMPLATE_API.find(template)
-    vm.set_template(templObj)
+    if template:
+        templObj = TEMPLATE_API.find(template)
+        vm.set_template(templObj)
+        disks_from = templObj
+    elif snapshot and vm_name:
+        # better pass both elements and don't search in all vms
+        snapshotObj = _getVmSnapshot(vm_name, snapshot)
+        snapshots = Snapshots()
+        snapshots.add_snapshot(snapshotObj)
+        vm.set_snapshots(snapshots)
+        disks_from = snapshotObj
+    else:
+        raise ValueError("Either template or snapshot and vm parameters "
+                         "must be set")
+
     clusterObj = CLUSTER_API.find(cluster)
     vm.set_cluster(clusterObj)
     diskArray = data_st.Disks()
-    if clone and clone.lower() == 'true':
-        diskArray.set_clone(clone)
-        disks = DISKS_API.getElemFromLink(templObj, link_name='disks',
-                                          attr='disk', get_href=False)
-        for dsk in disks:
-            disk = data_st.Disk(id=dsk.id)
-            if vol_sparse is not None:
-                disk.set_sparse(vol_sparse)
-            if vol_format is not None:
-                disk.set_format(vol_format)
-            diskArray.add_disk(disk)
-        vm.set_disks(diskArray)
+    diskArray.set_clone(clone.lower())
+
+    disks = DISKS_API.getElemFromLink(disks_from, link_name='disks',
+                                      attr='disk', get_href=False)
+    for dsk in disks:
+        if template:
+            disk = data_st.Disk(id=dsk.get_id())
+        else:
+            disk = data_st.Disk()
+            disk.set_image_id(dsk.get_id())
+        storage_domains = data_st.StorageDomains()
+        if vol_sparse is not None:
+            disk.set_sparse(vol_sparse)
+        if vol_format is not None:
+            disk.set_format(vol_format)
+        if storagedomain is not None:
+            sd = [STORAGE_DOMAIN_API.find(storagedomain)]
+        else:
+            # StorageDomain property is needed when include any disk
+            # on the request
+            sd = []
+            for elem in dsk.get_storage_domains().get_storage_domain():
+                sd.append(
+                    STORAGE_DOMAIN_API.find(
+                        elem.get_id(), attribute="id")
+                )
+        for elem in sd:
+            storage_domains.add_storage_domain(elem)
+        disk.storage_domains = storage_domains
+        diskArray.add_disk(disk)
+    vm.set_disks(diskArray)
     return vm
 
 
 @is_action()
 def cloneVmFromTemplate(positive, name, template, cluster,
                         timeout=VM_IMAGE_OPT_TIMEOUT, clone=True,
-                        vol_sparse=None, vol_format=None, wait=True):
+                        vol_sparse=None, vol_format=None, wait=True,
+                        storagedomain=None):
     '''
     Description: clone vm from a pre-defined template
     Author: edolinin
@@ -1911,9 +1951,10 @@ def cloneVmFromTemplate(positive, name, template, cluster,
     clone = str(clone).lower()
     # don't even try to use deepcopy, it will fail
     expectedVm = _createVmForClone(name, template, cluster, clone, vol_sparse,
-                                   vol_format)
+                                   vol_format, storagedomain)
     newVm = _createVmForClone(name, template, cluster, clone, vol_sparse,
-                              vol_format)
+                              vol_format, storagedomain)
+
     if clone == 'true':
         expectedVm.set_template(data_st.Template(id=BLANK_TEMPLATE))
     vm, status = VM_API.create(newVm, positive, expectedEntity=expectedVm)
@@ -1923,22 +1964,36 @@ def cloneVmFromTemplate(positive, name, template, cluster,
 
 
 @is_action()
-def cloneVmFromSnapshot(positive, name, snapshot, cluster, wait=True,
-                        timeout=CLONE_FROM_SNAPSHOT):
-    """
+def cloneVmFromSnapshot(positive, name, cluster, vm, snapshot,
+                        storagedomain=None, wait=True,
+                        timeout=VM_IMAGE_OPT_TIMEOUT):
+    '''
     Description: clone vm from a snapshot
-    Author: ratamir
+    Author: cmestreg
     Parameters:
        * name - vm name
-       * snapshot - snapshot description
        * cluster - cluster name
+       * vm - name of vm where the snapshot was taken
+       * snapshot - snapshot to clone from
+       * wait
+       * timeout - action timeout
     Return: True if vm was cloned properly, False otherwise
-    """
-    status = addVm(True, name=name, snapshot=snapshot, cluster=cluster,
-                   timeout=timeout)
+    '''
+    # don't even try to use deepcopy, it will fail
+    expectedVm = _createVmForClone(
+        name, cluster=cluster, clone="true", vol_sparse=None,
+        vol_format=None, storagedomain=storagedomain, snapshot=snapshot,
+        vm_name=vm)
+    newVm = _createVmForClone(
+        name, cluster=cluster, clone="true", vol_sparse=None,
+        vol_format=None, storagedomain=storagedomain, snapshot=snapshot,
+        vm_name=vm)
 
+    expectedVm.set_snapshots(None)
+    expectedVm.set_template(data_st.Template(id=BLANK_TEMPLATE))
+    vm, status = VM_API.create(newVm, positive, expectedEntity=expectedVm)
     if positive and status and wait:
-        return waitForVMState(name, ENUMS['vm_state_down'])
+        return VM_API.waitForElemStatus(vm, "DOWN", timeout)
     return status
 
 
