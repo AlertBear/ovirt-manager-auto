@@ -10,7 +10,7 @@ from art.test_handler.settings import opts
 TEST_NAME = "Jumbo"
 PARAMETERS = ART_CONFIG['PARAMETERS']
 ENUMS = opts['elements_conf']['RHEVM Enums']
-STORAGE_TYPE = PARAMETERS['data_center_type']
+STORAGE_TYPE = PARAMETERS['storage_type']
 
 DC_NAME = PARAMETERS.get('dc_name', '%s_DC' % TEST_NAME)
 CLUSTER_NAME = PARAMETERS.get('cluster_name', '%s_Cluster' % TEST_NAME)

@@ -10,7 +10,7 @@ from art.test_handler.settings import opts
 TEST_NAME = "PortMirroring"
 PARAMETERS = ART_CONFIG['PARAMETERS']
 ENUMS = opts['elements_conf']['RHEVM Enums']
-STORAGE_TYPE = PARAMETERS['data_center_type']
+STORAGE_TYPE = PARAMETERS['storage_type']
 
 DC_NAME = PARAMETERS.get('dc_name', '%s_DC' % TEST_NAME)
 STORAGE_DOMAIN_NAME = '%s_data_domain0' % DC_NAME
