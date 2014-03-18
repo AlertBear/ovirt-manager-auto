@@ -1398,20 +1398,19 @@ def checkSpoofingFilterRuleByVer(host, user, passwd, target_version='3.2'):
 
 
 @is_action()
-def setNetworkFilterStatus(enable, host, user, passwd, version):
-    '''
+def setNetworkFilterStatus(enable, host, user, passwd):
+    """
     Description: Disabling or enabling network filtering.
     Author: awinter
     Parameters:
-      * enable - True for enabling, False for disabling
-      * host - name of the rhevm
-      * user - user name for the rhevm
-      * passwd - password for the user
-      * version - Data center's version
-    return: True if network filtering is disabled, False otherwise
-    '''
+      *  *enable* - True for enabling, False for disabling
+      *  *host* - IP/FQDN of the management
+      *  *user* - user name for the management
+      *  *passwd* - password for the user
+    **return**: True if operation succeeded, False otherwise
+    """
     cmd = ["engine-config", "-s", "EnableMACAntiSpoofingFilterRules=%s" %
-           str(enable).lower(), "--cver=%s" % version]
+           str(enable).lower()]
 
     host_obj = Machine(host, user, passwd).util(LINUX)
     if not host_obj.runCmd(cmd)[0]:

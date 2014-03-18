@@ -296,8 +296,7 @@ class NetworkFilterCase05_CheckFilterIsOn(TestCase):
         logger.info("Disabling network filter on engine")
         if not setNetworkFilterStatus(enable=False, host=config.VDC,
                                       user=config.VDC_USER,
-                                      passwd=config.VDC_PASSWORD,
-                                      version=config.VERSION):
+                                      passwd=config.VDC_PASSWORD):
             raise NetworkException("Failed to disable network filter")
 
         logger.info("Starting the VM")
@@ -338,8 +337,7 @@ class NetworkFilterCase05_CheckFilterIsOn(TestCase):
         logger.info("Enabling network filter on engine")
         if not setNetworkFilterStatus(enable=True, host=config.VDC,
                                       user=config.VDC_USER,
-                                      passwd=config.VDC_PASSWORD,
-                                      version=config.VERSION):
+                                      passwd=config.VDC_PASSWORD):
             raise NetworkException("Failed to enable network filter")
 
 ##############################################################################
