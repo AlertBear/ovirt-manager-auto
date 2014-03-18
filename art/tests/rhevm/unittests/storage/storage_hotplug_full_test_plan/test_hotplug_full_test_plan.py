@@ -956,7 +956,7 @@ class TestCase174616(TestCase):
                 'interface': ENUMS['interface_virtio'],
                 'shareable': cls.shareable[index],
             }
-            if config.DATA_CENTER_TYPE == config.ENUMS['storage_type_iscsi'] \
+            if config.STORAGE_TYPE == config.ENUMS['storage_type_iscsi'] \
                     and disk_args['format'] == ENUMS['format_raw']:
                 disk_args['sparse'] = False
 
