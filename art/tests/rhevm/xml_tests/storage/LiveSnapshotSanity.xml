@@ -16,7 +16,7 @@
    <test_name>Create data center</test_name>
    <test_type></test_type>
    <test_action>addDataCenter</test_action>
-   <parameters>name='live_snapshot_dc', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <parameters>name='live_snapshot_dc', storage_type='{storage_type}', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <test_description/>
@@ -702,7 +702,7 @@
    <test_name>Create data center</test_name>
    <test_type></test_type>
    <test_action>addDataCenter</test_action>
-   <parameters>name='live_snapshot_dc', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <parameters>name='live_snapshot_dc', storage_type='{storage_type}', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <test_description/>
@@ -1403,7 +1403,7 @@
    <test_name>Create data center</test_name>
    <test_type></test_type>
    <test_action>addDataCenter</test_action>
-   <parameters>name='live_snapshot_dc', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <parameters>name='live_snapshot_dc', storage_type='{storage_type}', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <test_description/>
@@ -1618,7 +1618,7 @@
    <test_name>Create data center</test_name>
    <test_type></test_type>
    <test_action>addDataCenter</test_action>
-   <parameters>name='live_snapshot_dc', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <parameters>name='live_snapshot_dc', storage_type='{storage_type}', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <test_description/>
@@ -1825,7 +1825,7 @@
    <test_name>Create data center</test_name>
    <test_type></test_type>
    <test_action>addDataCenter</test_action>
-   <parameters>name='live_snapshot_dc', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <parameters>name='live_snapshot_dc', storage_type='{storage_type}', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <test_description/>
@@ -2140,7 +2140,7 @@
    <test_name>Create data center</test_name>
    <test_type></test_type>
    <test_action>addDataCenter</test_action>
-   <parameters>name='live_snapshot_dc', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <parameters>name='live_snapshot_dc', storage_type='{storage_type}', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <test_description/>
@@ -2443,7 +2443,7 @@
    <test_name>Create data center</test_name>
    <test_type></test_type>
    <test_action>addDataCenter</test_action>
-   <parameters>name='live_snapshot_dc', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <parameters>name='live_snapshot_dc', storage_type='{storage_type}', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <test_description/>
@@ -2657,7 +2657,7 @@
    <test_name>tc_286330 Create data center</test_name>
    <test_type></test_type>
    <test_action>addDataCenter</test_action>
-   <parameters>name='live_snapshot_dc', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <parameters>name='live_snapshot_dc', storage_type='{storage_type}', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <test_description/>

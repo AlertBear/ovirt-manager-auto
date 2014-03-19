@@ -11,7 +11,7 @@
 <test_case>
    <test_name>Create data center</test_name>
    <test_action>addDataCenter</test_action>
-   <parameters>name='test_136167', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <parameters>name='test_136167', storage_type='{storage_type}', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <test_description/>
@@ -282,7 +282,7 @@
 <test_case>
    <test_name>Create data center</test_name>
    <test_action>addDataCenter</test_action>
-   <parameters>name='test_136169', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <parameters>name='test_136169', storage_type='{storage_type}', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <test_description/>
@@ -477,7 +477,7 @@
 <test_case>
    <test_name>Create data center</test_name>
    <test_action>addDataCenter</test_action>
-   <parameters>name='test_136171', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <parameters>name='test_136171', storage_type='{storage_type}', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <test_description/>
@@ -727,7 +727,7 @@
 <test_case>
    <test_name>Create data center</test_name>
    <test_action>addDataCenter</test_action>
-   <parameters>name='test_136449', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <parameters>name='test_136449', storage_type='{storage_type}', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <test_description/>
@@ -878,7 +878,7 @@
 <test_case>
    <test_name>Create data center</test_name>
    <test_action>addDataCenter</test_action>
-   <parameters>name='test_136454', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <parameters>name='test_136454', storage_type='{storage_type}', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <test_description/>
@@ -970,7 +970,7 @@
 <test_case>
    <test_name>Create data center</test_name>
    <test_action>addDataCenter</test_action>
-   <parameters>name='test_136466', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <parameters>name='test_136466', storage_type='{storage_type}', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <test_description/>
@@ -1135,7 +1135,7 @@
 <test_case>
    <test_name>Create data center</test_name>
    <test_action>addDataCenter</test_action>
-   <parameters>name='test_136468', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <parameters>name='test_136468', storage_type='{storage_type}', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <vital>TRUE</vital>
@@ -1387,7 +1387,7 @@
 <test_case>
    <test_name>Create data center</test_name>
    <test_action>addDataCenter</test_action>
-   <parameters>name='test_136477', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <parameters>name='test_136477', storage_type='{storage_type}', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <vital>TRUE</vital>
@@ -1594,7 +1594,7 @@
 <test_case>
    <test_name>Create data center</test_name>
    <test_action>addDataCenter</test_action>
-   <parameters>name='test_138270', storage_type='{data_center_type}', version='{compatibility_version}'</parameters>
+   <parameters>name='test_138270', storage_type='{storage_type}', version='{compatibility_version}'</parameters>
    <positive>TRUE</positive>
    <run>yes</run>
    <test_description/>
