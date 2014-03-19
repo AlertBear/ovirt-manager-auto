@@ -64,7 +64,8 @@ VM_IMAGE_OPT_TIMEOUT = 600
 VM_SAMPLING_PERIOD = 3
 BLANK_TEMPLATE = '00000000-0000-0000-0000-000000000000'
 ADD_DISK_KWARGS = ['size', 'type', 'interface', 'format', 'bootable',
-                   'sparse', 'wipe_after_delete', 'propagate_errors']
+                   'sparse', 'wipe_after_delete', 'propagate_errors',
+                   'alias', 'active']
 VM_WAIT_FOR_IP_TIMEOUT = 600
 SNAPSHOT_TIMEOUT = 15 * 60
 
@@ -820,16 +821,21 @@ def addDisk(positive, vm, size, wait=True, storagedomain=None,
         * wipe_after_delete - if disk should be wiped after deletion or not
         * propagate_errors - if propagate errors or not
         * quota - disk quota
+        * active - automatically activate the disk
+        * alias - alias for the disk
     Return: status (True if disk was added properly, False otherwise)
     '''
     vmObj = VM_API.find(vm)
     disk = data_st.Disk(size=size, format=ENUMS['format_cow'],
-                        interface=ENUMS['interface_ide'], sparse=True)
+                        interface=ENUMS['interface_ide'], sparse=True,
+                        alias=kwargs.pop('alias', None),
+                        active=kwargs.get('active', False))
 
     # replace disk params from kwargs
     for param_name in ADD_DISK_KWARGS:
         param_val = kwargs.pop(param_name, None)
         if param_val is not None:
+            logger.debug("addDisk parameter %s is %s", param_name, param_val)
             setattr(disk, param_name, param_val)
 
     # quota
@@ -867,6 +873,7 @@ def removeDisk(positive, vm, disk, wait=True):
        * wait - wait until finish if True
     Return: True if disk was removed properly, False otherwise
     '''
+    status = False
     for d in getVmDisks(vm):
         if d.name.lower() == disk.lower():
             status = VM_API.delete(d, positive)
@@ -1907,7 +1914,7 @@ def checkVmStatistics(positive, vm):
 def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
              nicType=None, mac_address=None, storageDomainName=None, size=None,
              diskType=ENUMS['disk_type_data'], volumeType='true',
-             volumeFormat=ENUMS['format_cow'],
+             volumeFormat=ENUMS['format_cow'], diskActive=True,
              diskInterface=ENUMS['interface_ide'], bootable='true',
              wipe_after_delete='false', start='false', template='Blank',
              templateUuid=None, type=None, os_type=None, memory=None,
@@ -1997,10 +2004,11 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
                        storagedomain=storageDomainName, sparse=volumeType,
                        interface=diskInterface, format=volumeFormat,
                        bootable=bootable, quota=disk_quota,
-                       wipe_after_delete=wipe_after_delete):
+                       wipe_after_delete=wipe_after_delete,
+                       active=diskActive):
             return False
 
-    if installation == True:
+    if installation:
         floppy = None
         if image is None:
             (status, res) = getImageByOsType(positive, os_type, slim)
