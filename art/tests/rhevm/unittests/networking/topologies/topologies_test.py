@@ -74,17 +74,9 @@ class TopologiesCase01(TestCase):
         """
         Check connectivity to VLAN network with e1000 driver
         """
-        logger.info("Stop VM")
-        if not stopVm(positive=True, vm=config.VM_NAME[0]):
-            raise NetworkException("Fail to stop VM")
-
-        if not updateNic(positive=True, vm=config.VM_NAME[0], nic="nic1",
-                         interface="e1000"):
-            raise NetworkException("Fail to update vNIC to e1000 driver")
-
-        logger.info("Start VM")
-        if not startVm(positive=True, vm=config.VM_NAME[0]):
-            raise NetworkException("Fail to start VM")
+        logger.info("Updating vNIC driver to e1000")
+        if not update_vnic_driver(driver="e1000"):
+            raise NetworkException("Fail to update vNIC to e1000")
 
         logger.info("Check connectivity to VLAN network with e1000 driver")
         if not checkVMConnectivity(positive=True, vm=config.VM_NAME[0],
@@ -98,19 +90,11 @@ class TopologiesCase01(TestCase):
         """
         Check connectivity to VLAN network with rtl8139 driver
         """
-        logger.info("Stop VM")
-        if not stopVm(positive=True, vm=config.VM_NAME[0]):
-            raise NetworkException("Fail to stop VM")
+        logger.info("Updating vNIC driver to rtl8139")
+        if not update_vnic_driver(driver="rtl8139"):
+            raise NetworkException("Fail to update vNIC to rtl8139")
 
-        if not updateNic(positive=True, vm=config.VM_NAME[0], nic="nic1",
-                         interface="rtl8139"):
-            raise NetworkException("Fail to update vNIC to rtl8139 driver")
-
-        logger.info("Start VM")
-        if not startVm(positive=True, vm=config.VM_NAME[0]):
-            raise NetworkException("Fail to start VM")
-
-        logger.info("Check connectivity to VLAN network with e1000 driver")
+        logger.info("Check connectivity to VLAN network with rtl8139 driver")
         if not checkVMConnectivity(positive=True, vm=config.VM_NAME[0],
                                    osType="rhel", user=config.HOSTS_USER,
                                    password=config.HOSTS_PW):
@@ -198,17 +182,8 @@ class TopologiesCase02(TestCase):
         """
         Check connectivity to VLAN over BOND network with e1000 driver
         """
-        logger.info("Stop VM")
-        if not stopVm(positive=True, vm=config.VM_NAME[0]):
-            raise NetworkException("Fail to stop VM")
-
-        if not updateNic(positive=True, vm=config.VM_NAME[0], nic="nic1",
-                         interface="e1000"):
-            raise NetworkException("Fail to update vNIC to e1000 driver")
-
-        logger.info("Start VM")
-        if not startVm(positive=True, vm=config.VM_NAME[0]):
-            raise NetworkException("Fail to start VM")
+        if not update_vnic_driver(driver="e1000"):
+            raise NetworkException("Fail to update vNIC to e1000")
 
         logger.info("Check connectivity to VLAN over BOND network with e1000 "
                     "driver")
@@ -223,20 +198,11 @@ class TopologiesCase02(TestCase):
         """
         Check connectivity to VLAN over BOND network with rtl8139 driver
         """
-        logger.info("Stop VM")
-        if not stopVm(positive=True, vm=config.VM_NAME[0]):
-            raise NetworkException("Fail to stop VM")
+        if not update_vnic_driver(driver="rtl8139"):
+            raise NetworkException("Fail to update vNIC to rtl8139")
 
-        if not updateNic(positive=True, vm=config.VM_NAME[0], nic="nic1",
-                         interface="rtl8139"):
-            raise NetworkException("Fail to update vNIC to rtl8139 driver")
-
-        logger.info("Start VM")
-        if not startVm(positive=True, vm=config.VM_NAME[0]):
-            raise NetworkException("Fail to start VM")
-
-        logger.info("Check connectivity to VLAN over BOND network with e1000 "
-                    "driver")
+        logger.info("Check connectivity to VLAN over BOND network with "
+                    "rtl8139 driver")
         if not checkVMConnectivity(positive=True, vm=config.VM_NAME[0],
                                    osType="rhel", user=config.HOSTS_USER,
                                    password=config.HOSTS_PW):
@@ -321,17 +287,8 @@ class TopologiesCase03(TestCase):
         """
         Check connectivity to VLAN over BOND network with e1000 driver
         """
-        logger.info("Stop VM")
-        if not stopVm(positive=True, vm=config.VM_NAME[0]):
-            raise NetworkException("Fail to stop VM")
-
-        if not updateNic(positive=True, vm=config.VM_NAME[0], nic="nic1",
-                         interface="e1000"):
-            raise NetworkException("Fail to update vNIC to e1000 driver")
-
-        logger.info("Start VM")
-        if not startVm(positive=True, vm=config.VM_NAME[0]):
-            raise NetworkException("Fail to start VM")
+        if not update_vnic_driver(driver="e1000"):
+            raise NetworkException("Fail to update vNIC to e1000")
 
         logger.info("Check connectivity to BOND network with e1000 driver")
         if not checkVMConnectivity(positive=True, vm=config.VM_NAME[0],
@@ -345,19 +302,10 @@ class TopologiesCase03(TestCase):
         """
         Check connectivity to VLAN over BOND network with rtl8139 driver
         """
-        logger.info("Stop VM")
-        if not stopVm(positive=True, vm=config.VM_NAME[0]):
-            raise NetworkException("Fail to stop VM")
+        if not update_vnic_driver(driver="rtl8139"):
+            raise NetworkException("Fail to update vNIC to rtl8139")
 
-        if not updateNic(positive=True, vm=config.VM_NAME[0], nic="nic1",
-                         interface="rtl8139"):
-            raise NetworkException("Fail to update vNIC to rtl8139 driver")
-
-        logger.info("Start VM")
-        if not startVm(positive=True, vm=config.VM_NAME[0]):
-            raise NetworkException("Fail to start VM")
-
-        logger.info("Check connectivity to BOND network with e1000 driver")
+        logger.info("Check connectivity to BOND network with rtl8139 driver")
         if not checkVMConnectivity(positive=True, vm=config.VM_NAME[0],
                                    osType="rhel", user=config.HOSTS_USER,
                                    password=config.HOSTS_PW):
@@ -385,3 +333,26 @@ class TopologiesCase03(TestCase):
                                   auto_nics=[config.HOST_NICS[0]],
                                   network=[config.NETWORKS[0]]):
             raise NetworkException("Cannot remove network from setup")
+
+
+def update_vnic_driver(driver):
+    """
+    Description: Update vNIC driver for VM
+    author: myakove
+    Parameters:
+        *  *driver* - driver to update the vNIC (virtio, e1000, rtl8139)
+    """
+    logger.info("Stop VM")
+    if not stopVm(positive=True, vm=config.VM_NAME[0]):
+        return False
+
+    logger.info("Updating vNIC to %s driver", driver)
+    if not updateNic(positive=True, vm=config.VM_NAME[0], nic="nic1",
+                     interface=driver):
+        return False
+
+    logger.info("Start VM")
+    if not startVm(positive=True, vm=config.VM_NAME[0]):
+        return False
+
+    return True
