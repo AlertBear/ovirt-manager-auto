@@ -40,42 +40,12 @@ def setup_package():
                    root_password=config.HOSTS_PW, cluster=config.CLUSTER_NAME):
         raise NetworkException("Fail to add host")
 
-    logger.info("Updating mgmt_net to Non-VM network")
-    if not updateNetwork(positive=True, network=config.MGMT_BRIDGE,
-                         data_center=config.DC_NAME, usages=""):
-        raise NetworkException("Fail to set mgmt_net as Non-VM network")
-
-    logger.info("Check that mgmt_net is Non-VM network")
-    sample = TimeoutingSampler(timeout=60, sleep=1,
-                               func=isVmNetwork, host=config.HOSTS[0],
-                               user=config.HOSTS_USER,
-                               password=config.HOSTS_PW,
-                               net_name=config.MGMT_BRIDGE, conn_timeout=200)
-
-    if not sample.waitForFuncStatus(result=False):
-        raise NetworkException("mgmt_net is not Non-VM network")
-
 
 def teardown_package():
     """
     Cleans the environment
     """
     import config
-    logger.info("Updating mgmt_net to VM network")
-    if not updateNetwork(positive=True, network=config.MGMT_BRIDGE,
-                         data_center=config.DC_NAME, usages="vm"):
-        raise NetworkException("Fail to set mgmt_net as VM network")
-
-    logger.info("Check that mgmt_net is VM network")
-    sample = TimeoutingSampler(timeout=60, sleep=1,
-                               func=isVmNetwork, host=config.HOSTS[0],
-                               user=config.HOSTS_USER,
-                               password=config.HOSTS_PW,
-                               net_name=config.MGMT_BRIDGE, conn_timeout=200)
-
-    if not sample.waitForFuncStatus(result=True):
-        raise NetworkException("mgmt_net is not VM network")
-
     logger.info("Remove DC/Cluster and host")
     if not removeDataCenter(positive=True, datacenter=config.DC_NAME):
         raise NetworkException("Fail to remove datacenter")
