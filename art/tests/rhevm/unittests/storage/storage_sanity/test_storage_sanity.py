@@ -17,11 +17,13 @@ def setup_module():
     """ creates datacenter, adds hosts, clusters, storages according to
         config file
     """
+    local = True if config.STORAGE_TYPE == 'localfs' else False
     datacenters.build_setup(
         config=config.PARAMETERS,
         storage=config.PARAMETERS,
         storage_type=config.STORAGE_TYPE,
-        basename=config.BASENAME)
+        basename=config.BASENAME,
+        local=local)
 
 
 def teardown_module():
