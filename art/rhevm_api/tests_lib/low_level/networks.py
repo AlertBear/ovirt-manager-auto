@@ -831,5 +831,6 @@ def deleteNetworksInDataCenter(datacenter, mgmt_net):
         if not deleteNetworkInDataCenter(positive=True,
                                          network=net_name,
                                          datacenter=datacenter):
-            raise NetworkException("Cannot remove %s from %s" %
-                                   (net_name, datacenter))
+            logger.error("Cannot remove %s from %s", net_name, datacenter)
+            return False
+    return True

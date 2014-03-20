@@ -11,6 +11,7 @@ import config
 from nose.tools import istest
 from art.unittest_lib import BaseTestCase as TestCase
 from art.test_handler.tools import tcms
+from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.low_level.networks import \
     getNetworksInDataCenter, getNetworkInDataCenter, \
     createNetworkInDataCenter, updateNetworkInDataCenter, \
@@ -44,10 +45,15 @@ class DataCenter_Networks_Case1_333370(TestCase):
         """
         LOGGER.info("Create 10 networks under %s", config.DC_NAME)
         nets = createNetworksInDataCenter(config.DC_NAME, 10)
+        if not nets:
+            raise NetworkException("Fail to create 10 network on %s" %
+                                   config.DC_NAME)
         DC1_NETS.extend(nets)
 
         LOGGER.info("Create 5 networks under %s", config.DC_NAME2)
-        createNetworksInDataCenter(config.DC_NAME2, 5)
+        if not createNetworksInDataCenter(config.DC_NAME2, 5):
+            raise NetworkException("Fail to create 5 network on %s" %
+                                   config.DC_NAME2)
 
     @istest
     @tcms(12098, 333370)
@@ -61,8 +67,8 @@ class DataCenter_Networks_Case1_333370(TestCase):
             if net_name == config.MGMT_BRIDGE:
                 continue
             if net_name not in DC1_NETS:
-                LOGGER.error("%s was expected to be in %s",
-                             net_name, config.DC_NAME)
+                raise NetworkException("%s was expected to be in %s" %
+                                       (net_name, config.DC_NAME))
 
     @classmethod
     def teardown_class(cls):
@@ -71,7 +77,8 @@ class DataCenter_Networks_Case1_333370(TestCase):
         """
         for dc_name in (config.DC_NAME, config.DC_NAME2):
             LOGGER.info("Remove all networks from %s", dc_name)
-            deleteNetworksInDataCenter(dc_name, config.MGMT_BRIDGE)
+            if not deleteNetworksInDataCenter(dc_name, config.MGMT_BRIDGE):
+                raise NetworkException("Fail to delete all networks from DC")
 
 
 class DataCenter_Networks_Case2_333360(TestCase):
@@ -95,8 +102,8 @@ class DataCenter_Networks_Case2_333360(TestCase):
             kwargs_dict = {key: val, "name": name}
             if not createNetworkInDataCenter(True, config.DC_NAME,
                                              **kwargs_dict):
-                LOGGER.error("Fail to create %s network on %s",
-                             name, config.DC_NAME)
+                raise NetworkException("Fail to create %s network on %s" %
+                                       (name, config.DC_NAME))
 
     @istest
     @tcms(12098, 333360)
@@ -116,11 +123,11 @@ class DataCenter_Networks_Case2_333360(TestCase):
                 res = net_obj.get_usages().get_usage()
 
             else:
-                res = net_obj.__getattribute__(key)
+                res = getattr(net_obj, key)
 
             if res != val:
-                LOGGER.error("%s %s should be %s but have %s",
-                             name, key, val, res)
+                raise NetworkException("%s %s should be %s but have %s" %
+                                       (name, key, val, res))
 
     @classmethod
     def teardown_class(cls):
@@ -128,7 +135,8 @@ class DataCenter_Networks_Case2_333360(TestCase):
         Remove network from the setup.
         """
         LOGGER.info("Remove all networks from DC")
-        deleteNetworksInDataCenter(config.DC_NAME, config.MGMT_BRIDGE)
+        if not deleteNetworksInDataCenter(config.DC_NAME, config.MGMT_BRIDGE):
+            raise NetworkException("Fail to delete all networks from DC")
 
 
 class DataCenter_Networks_Case3_333363(TestCase):
@@ -144,6 +152,9 @@ class DataCenter_Networks_Case3_333363(TestCase):
         """
         LOGGER.info("Create 5 networks under %s", config.DC_NAME)
         nets = createNetworksInDataCenter(config.DC_NAME, 5)
+        if not nets:
+            raise NetworkException("Fail to create 5 network on %s" %
+                                   config.DC_NAME)
         NET_LIST.extend(nets)
 
     @istest
@@ -165,7 +176,8 @@ class DataCenter_Networks_Case3_333363(TestCase):
             LOGGER.info("Updating %s %s to %s", net, key, val)
             if not updateNetworkInDataCenter(True, net, config.DC_NAME,
                                              **kwargs_dict):
-                LOGGER.error("Fail to update %s %s to %s", net, key, val)
+                raise NetworkException("Fail to update %s %s to %s" %
+                                       (net, key, val))
 
     @classmethod
     def teardown_class(cls):
@@ -173,7 +185,8 @@ class DataCenter_Networks_Case3_333363(TestCase):
         Remove network from the setup.
         """
         LOGGER.info("Remove all networks from DC")
-        deleteNetworksInDataCenter(config.DC_NAME, config.MGMT_BRIDGE)
+        if not deleteNetworksInDataCenter(config.DC_NAME, config.MGMT_BRIDGE):
+            raise NetworkException("Fail to delete all networks from DC")
 
 
 class DataCenter_Networks_Case4_333361(TestCase):
@@ -188,7 +201,9 @@ class DataCenter_Networks_Case4_333361(TestCase):
         Create 5 networks under datacenter
         """
         LOGGER.info("Create 5 networks under %s", config.DC_NAME)
-        createNetworksInDataCenter(config.DC_NAME, 5)
+        if not createNetworksInDataCenter(config.DC_NAME, 5):
+            raise NetworkException("Fail to create 5 network on %s" %
+                                   config.DC_NAME)
 
     @istest
     @tcms(12098, 333361)
@@ -197,7 +212,8 @@ class DataCenter_Networks_Case4_333361(TestCase):
         Delete networks under datacenter.
         """
         LOGGER.info("Remove all networks from DC")
-        deleteNetworksInDataCenter(config.DC_NAME, config.MGMT_BRIDGE)
+        if not deleteNetworksInDataCenter(config.DC_NAME, config.MGMT_BRIDGE):
+            raise NetworkException("Fail to delete all networks from DC")
 
     @classmethod
     def teardown_class(cls):
