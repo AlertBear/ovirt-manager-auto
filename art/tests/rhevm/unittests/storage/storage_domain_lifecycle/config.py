@@ -17,7 +17,7 @@ PARAMETERS = ART_CONFIG['PARAMETERS']
 STORAGE_TYPE = PARAMETERS['storage_type']
 
 if STORAGE_TYPE == ENUMS['storage_type_posixfs']:
-    VFS_TYPE = (PARAMETERS['data_center_type']).split("_")[1]
+    VFS_TYPE = STORAGE_TYPE.split("_")[1]
     PARAMETERS['vfs_type'] = VFS_TYPE
 
 EXTEND_LUN = PARAMETERS.get('extend_lun', None)
@@ -36,7 +36,7 @@ SD_NAMES_LIST = [SD_NAME_0, SD_NAME_1, SD_NAME_2]
 
 DC_VERSIONS = PARAMETERS.as_list('dc_versions')
 DC_UPGRADE_VERSIONS = PARAMETERS.as_list('dc_upgrade_versions')
-DC_TYPE = PARAMETERS['data_center_type']
+DC_TYPE = PARAMETERS['storage_type']
 
 VDC = PARAMETERS.get('host', None)
 VDC_PASSWORD = PARAMETERS.get('vdc_root_password', None)
