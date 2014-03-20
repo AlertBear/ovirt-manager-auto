@@ -24,7 +24,7 @@ def getActionGroups(role_name):
 allActions = getActionGroups('SuperUser')
 for role in mla.util.get(absLink=False):
     role_name = role.get_name()
-    filter_ = not('Admin' in role_name or role_name == 'SuperUser')
+    filter_ = not role.get_administrative()
     roleActions = getActionGroups(role_name)
     if not 'login' in roleActions:
         continue

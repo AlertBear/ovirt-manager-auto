@@ -847,7 +847,11 @@ class Case_configure_host_network(BaseTest):
     def isMgmtNet(self, nic):
         if nic.get_network() is None:
             return False
-        net = networks.NET_API.find(nic.get_network().get_id(), attribute='id')
+        net_id = nic.get_network().get_id()
+        if net_id:
+            net = networks.NET_API.find(net_id, attribute='id')
+        else:
+            net = nic.get_network()
         return net.get_name() == networks.MGMT_NETWORK
 
     def setUp(self):
