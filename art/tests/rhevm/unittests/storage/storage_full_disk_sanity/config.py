@@ -11,13 +11,13 @@ from . import ART_CONFIG
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 logger = logging.getLogger(__name__)
+PARAMETERS = ART_CONFIG['PARAMETERS']
 
 # DC info
 STORAGE_TYPE = PARAMETERS['storage_type']
 
 # Name of the test
 TESTNAME = "full_disk_tests"
-PARAMETERS = ART_CONFIG['PARAMETERS']
 STORAGE = ART_CONFIG['STORAGE']
 
 BASENAME = "%sTestStorage" % STORAGE_TYPE
