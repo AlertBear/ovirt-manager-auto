@@ -55,8 +55,8 @@ class ManageDomainsTestCaseBase(RHEVMUtilsTestCase):
         self.password = config[self.directoryService].get('password', None)
         self.provider = config[self.directoryService].get('provider', None)
 
-        self.host = config['PARAMETERS'].as_list('vds')[0]
-        self.sshPassword = config['PARAMETERS'].as_list('vds_password')[0]
+        self.host = config['REST_CONNECTION'].get('host', None)
+        self.sshPassword = config['PARAMETERS'].get('vdc_root_password', None)
         cmd = ['mktemp']
         self.passwordFile = _run_ssh_command(self.host, self.sshPassword,
                                              cmd).rstrip('\n')
@@ -68,7 +68,7 @@ class ManageDomainsTestCaseBase(RHEVMUtilsTestCase):
         _run_ssh_command(self.host, self.sshPassword, cmd)
 
         if self.ut.domainExistsInDatabase(self.domainName):
-            self.ut(action='delete', domain=self.domainName, forceDelete=None)
+            self.ut(action='delete', domain=self.domainName, force=None)
 
     def tearDown(self):
         cmd = ['rm', '-f', self.password, self.passwordFile]
@@ -87,28 +87,29 @@ class ManageDomainsTestCaseAdd(ManageDomainsTestCaseBase):
         rhevm-manage-domains -action=add
         """
         self.ut(action='add', domain=self.domainName, provider=self.provider,
-                user=self.domainUser, passwordFile=self.passwordFile)
+                user=self.domainUser, password_file=self.passwordFile)
         self.ut.autoTest()
-        self.ut(action='delete', domain=self.domainName, forceDelete=None)
+        self.ut(action='delete', domain=self.domainName, force=None)
 
     @tcms(4580, 175847)
     def test_manage_domains_add_multiline_file(self):
         cmd = ['echo', '>>', self.passwordFile]
         _run_ssh_command(self.host, self.sshPassword, cmd)
         self.ut(action='add', domain=self.domainName, provider=self.provider,
-                user=self.domainUser, passwordFile=self.passwordFile)
+                user=self.domainUser, password_file=self.passwordFile)
         self.ut.autoTest()
-        self.ut(action='delete', domain=self.domainName, forceDelete=None)
+        self.ut(action='delete', domain=self.domainName, force=None)
 
     @tcms(4580, 175847)
     def test_manage_domains_add_relative_file(self):
         cwd = _run_ssh_command(self.host, self.sshPassword, 'pwd')
         self.passwordFile = relpath(self.passwordFile, cwd)
         self.ut(action='add', domain=self.domainName, provider=self.provider,
-                user=self.domainUser, passwordFile=self.passwordFile)
+                user=self.domainUser, password_file=self.passwordFile)
         self.ut.autoTest()
-        self.ut(action='delete', domain=self.domainName, forceDelete=None)
+        self.ut(action='delete', domain=self.domainName, force=None)
 
+    @bz(1083033)
     @tcms(4580, 175847)
     def test_manage_domains_add_missing_options(self):
         self.ut(action='add', domain=self.domainName, provider=self.provider,
@@ -124,7 +125,7 @@ class ManageDomainsTestCaseAdd(ManageDomainsTestCaseBase):
     @tcms(4580, 175847)
     def test_manage_domains_add_empty_file(self):
         self.ut(action='add', domain=self.domainName, provider=self.provider,
-                user=self.domainUser, passwordFile=self.emptyFile, rc=8)
+                user=self.domainUser, password_file=self.emptyFile, rc=8)
         self.assertRaises(errors.MissingDmainError, self.ut.autoTest)
 
         # -interactive cannot be tested now since manage-domains cannot read
@@ -139,12 +140,13 @@ class ManageDomainsTestCaseEdit(ManageDomainsTestCaseBase):
     def setUp(self):
         super(ManageDomainsTestCaseEdit, self).setUp()
         self.ut(action='add', domain=self.domainName, provider=self.provider,
-                user=self.domainUser, passwordFile=self.passwordFile)
+                user=self.domainUser, password_file=self.passwordFile)
 
     def tearDown(self):
-        self.ut(action='delete', domain=self.domainName, forceDelete=None)
+        self.ut(action='delete', domain=self.domainName, force=None)
         super(ManageDomainsTestCaseEdit, self).tearDown()
 
+    @bz(1083033)
     @bz(1055417)
     @tcms(4580, 175882)
     def test_manage_domains_edit(self):
@@ -152,12 +154,12 @@ class ManageDomainsTestCaseEdit(ManageDomainsTestCaseBase):
         rhevm-manage-domains -action=edit
         """
         self.ut(action='edit', domain=self.domainName, provider=self.provider,
-                user=self.domainUser, passwordFile=self.passwordFile)
+                user=self.domainUser, password_file=self.passwordFile)
         self.ut.autoTest()
 
         self.ut(action='edit', domain=self.domainName, provider=self.provider,
-                user=self.domainUser, passwordFile=self.passwordFile,
-                addPermissions=None)
+                user=self.domainUser, password_file=self.passwordFile,
+                add_permissions=None)
         self.ut.autoTest()
 
         self.ut(action='edit', domain=self.domainName)
@@ -167,12 +169,12 @@ class ManageDomainsTestCaseEdit(ManageDomainsTestCaseBase):
         cwd = _run_ssh_command(self.host, self.sshPassword, 'pwd')
         self.passwordFile = relpath(self.passwordFile, cwd)
         self.ut(action='edit', domain=self.domainName, provider=self.provider,
-                user=self.domainUser, passwordFile=self.passwordFile)
+                user=self.domainUser, password_file=self.passwordFile)
         self.ut.autoTest()
 
         # empty password file
         self.ut(action='edit', domain=self.domainName, provider=self.provider,
-                user=self.domainUser, passwordFile=self.emptyFile, rc=8)
+                user=self.domainUser, password_file=self.emptyFile, rc=8)
         self.ut.autoTest()
 
 
@@ -184,10 +186,10 @@ class ManageDomainsTestCaseList(ManageDomainsTestCaseBase):
     def setUp(self):
         super(ManageDomainsTestCaseList, self).setUp()
         self.ut(action='add', domain=self.domainName, provider=self.provider,
-                user=self.domainUser, passwordFile=self.passwordFile)
+                user=self.domainUser, password_file=self.passwordFile)
 
     def tearDown(self):
-        self.ut(action='delete', domain=self.domainName, forceDelete=None)
+        self.ut(action='delete', domain=self.domainName, force=None)
         super(ManageDomainsTestCaseList, self).tearDown()
 
     @tcms(4580, 107969)
@@ -207,12 +209,13 @@ class ManageDomainsTestCaseValidate(ManageDomainsTestCaseBase):
     def setUp(self):
         super(ManageDomainsTestCaseValidate, self).setUp()
         self.ut(action='add', domain=self.domainName, provider=self.provider,
-                user=self.domainUser, passwordFile=self.passwordFile)
+                user=self.domainUser, password_file=self.passwordFile)
 
     def tearDown(self):
-        self.ut(action='delete', domain=self.domainName, forceDelete=None)
+        self.ut(action='delete', domain=self.domainName, force=None)
         super(ManageDomainsTestCaseValidate, self).tearDown()
 
+    @bz(1083033)
     @tcms(4580, 334273)
     def test_manage_domains_validate(self):
         """
@@ -233,14 +236,14 @@ class ManageDomainsTestCaseDelete(ManageDomainsTestCaseBase):
     def setUp(self):
         super(ManageDomainsTestCaseDelete, self).setUp()
         self.ut(action='add', domain=self.domainName, provider=self.provider,
-                user=self.domainUser, passwordFile=self.passwordFile)
+                user=self.domainUser, password_file=self.passwordFile)
 
     @tcms(4580, 108231)
     def test_manage_domains_delete(self):
         """
         rhevm-manage-domains -action=delete
         """
-        self.ut(action='delete', domain=self.domainName, forceDelete=None)
+        self.ut(action='delete', domain=self.domainName, force=None)
         self.ut.autoTest()
 
 
@@ -259,7 +262,7 @@ class ManageDomainsTestCaseHelp(RHEVMUtilsTestCase):
         """
         rhevm-manage-domains
         """
-        self.ut(rc=1)
+        self.ut(rc=0)
         self.ut.autoTest()
 
         self.ut(help=None)
@@ -291,10 +294,11 @@ class ManageDomainsTimeSkew(ManageDomainsTestCaseBase):
         else:
             self._shiftTime(timedelta())
 
+    @bz(1083033)
     @tcms(4580, 110044)
     def test_time_skew(self):
         self.ut(action='add', domain=self.domainName, provider=self.provider,
-                user=self.domainUser, passwordFile=self.passwordFile, rc=8)
+                user=self.domainUser, password_file=self.passwordFile, rc=8)
         self.assertRaises(errors.MissingDmainError, self.ut.autoTest)
 
 
@@ -308,11 +312,17 @@ class ManageDomainsUnpriviledgedUser(ManageDomainsTestCaseBase):
     # get key error in SetUp
     directoryService = directoryServices.values()[0]
 
+    @bz(1083411)
     @tcms(4580, 127947)
     def test_unpriviledged_user(self):
-        cmd = ['su', 'postgres', '-c', 'rhevm-manage-domains']
-        self.assertRaises(exceptions.HostException, _run_ssh_command,
-                          self.host, self.sshPassword, cmd)
+        cmd = ['su', 'postgres', '-c', 'rhevm-manage-domains', 'add',
+               '--domain=' + self.domainName,
+               '--provider=' + self.provider,
+               '--user=' + self.domainUser,
+               '--password-file=' + self.password_file]
+        out = _run_ssh_command(self.host, self.sshPassword, cmd)
+        assert 'Permission denied' in out
+        assert 'Exception' not in out
 
 
 class ManageDomainsUppercaseLowercase(ManageDomainsTestCaseBase):
@@ -326,25 +336,26 @@ class ManageDomainsUppercaseLowercase(ManageDomainsTestCaseBase):
             labels[i] = labels[i].upper()
         return ".".join(labels)
 
+    @bz(1078147)
     @tcms(4580, 107971)
     def test_upercase_lowercase(self):
         self.ut(action='add', domain=self.domainName.upper(),
                 provider=self.provider, user=self.domainUser,
-                passwordFile=self.passwordFile)
+                password_file=self.passwordFile)
         self.ut.kwargs['domain'] = self.domainName
         self.ut.autoTest()
 
         self.ut(action='add', domain=self.domainName, provider=self.provider,
-                user=self.domainUser, passwordFile=self.passwordFile, rc=5)
+                user=self.domainUser, password_file=self.passwordFile, rc=5)
         assert 'already exists' in self.ut.out
 
         self.ut(action='edit', domain=self.mixedCase(self.domainName),
                 provider=self.provider, user=self.domainUser,
-                passwordFile=self.passwordFile)
+                password_file=self.passwordFile)
         self.ut.kwargs['domain'] = self.domainName
         self.ut.autoTest()
 
-        self.ut(action='delete', domain=self.domainName, forceDelete=None)
+        self.ut(action='delete', domain=self.domainName, force=None)
         self.ut.autoTest()
 
 
@@ -386,7 +397,7 @@ class ManageDomainsMultipleProviders(RHEVMUtilsTestCase):
     def test_use_all_providers(self):
         for (domainName, user, provider) in self.directoryServices:
             self.ut(action='add', domain=domainName, provider=provider,
-                    user=user, passwordFile=self.passwordFiles['domainName'])
+                    user=user, password_file=self.passwordFiles['domainName'])
             self.ut.autoTest()
 
         self.ut(action='list')
@@ -394,14 +405,14 @@ class ManageDomainsMultipleProviders(RHEVMUtilsTestCase):
 
         for (domainName, user, provider) in self.directoryServices:
             self.ut(action='edit', domain=domainName, provider=provider,
-                    user=user, passwordFile=self.passwordFiles['domainName'])
+                    user=user, password_file=self.passwordFiles['domainName'])
             self.ut.autoTest()
 
         self.ut(action='validate', report=None)
         self.ut.autoTest()
 
         for (domainName, _, _) in self.directoryServices:
-            self.ut(action='delete', domain=domainName, forceDelete=None)
+            self.ut(action='delete', domain=domainName, force=None)
             self.ut.autoTest()
 
 
@@ -410,10 +421,11 @@ class ManageDomainsTestCaseNegativeScenarios(ManageDomainsTestCaseBase):
     https://tcms.engineering.redhat.com/case/107972/?from_plan=4580
     """
 
+    @bz(1083033)
     @tcms(4580, 107972)
     def test_manage_domains_nonexistent_user(self):
         self.ut(action='add', domain=self.domainName, provider=self.provider,
-                user='chucknorris', passwordFile=self.passwordFile, rc=8)
+                user='chucknorris', password_file=self.passwordFile, rc=8)
         assert 'Authentication Failed' in self.ut.out
         self.assertRaises(errors.MissingDmainError, self.ut.autoTest)
 
@@ -421,15 +433,15 @@ class ManageDomainsTestCaseNegativeScenarios(ManageDomainsTestCaseBase):
     def test_manage_domains_nonexistent_domain(self):
         self.ut(action='add', domain='~!@#$%^*_+=-[]',
                 provider=self.provider, user=self.domainUser,
-                passwordFile=self.passwordFile, rc=23)
+                password_file=self.passwordFile, rc=23)
         assert 'No LDAP servers can be obtained' in self.ut.out
 
     @tcms(4580, 107972)
     def test_manage_domains_nonexistent_provider(self):
         self.ut(action='add', domain=self.domainName,
                 provider='~!@#$%^*_+=-[]', user=self.domainUser,
-                passwordFile=self.passwordFile, rc=14)
-        assert 'Supported provider types are' in self.ut.out
+                password_file=self.passwordFile, rc=26)
+        assert 'Invalid provider, valid providers are' in self.ut.out
 
 
 class ManageDomainsBug1037894(ManageDomainsTestCaseBase):
@@ -442,13 +454,13 @@ class ManageDomainsBug1037894(ManageDomainsTestCaseBase):
         self.server2 = config[self.directoryService].get('server2', None)
 
     def tearDown(self):
-        self.ut(action='delete', domain=self.domainName, forceDelete=None)
+        self.ut(action='delete', domain=self.domainName, force=None)
         super(ManageDomainsBug1037894, self).tearDown()
 
     def test_manage_domains_edit(self):
         self.ut(action='add', domain=self.domainName, provider=self.provider,
-                user=self.domainUser, passwordFile=self.passwordFile,
-                ldapServers=self.server1 + ',' + self.server2)
+                user=self.domainUser, password_file=self.passwordFile,
+                ldap_servers=self.server1 + ',' + self.server2)
         query = 'SELECT %s FROM %s WHERE %s = \'LdapServers\''
         servers = self.ut.setup.psql(query, VALUE_COLUMN, TABLE_NAME,
                                      KEY_COLUMN)
@@ -457,8 +469,8 @@ class ManageDomainsBug1037894(ManageDomainsTestCaseBase):
         assert self.server2 in servers[0][0]
 
         self.ut(action='edit', domain=self.domainName, provider=self.provider,
-                user=self.domainUser, passwordFile=self.passwordFile,
-                ldapServers=self.server1)
+                user=self.domainUser, password_file=self.passwordFile,
+                ldap_servers=self.server1)
         servers = self.ut.setup.psql(query, VALUE_COLUMN, TABLE_NAME,
                                      KEY_COLUMN)
         assert self.server1 in servers[0][0]
