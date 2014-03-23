@@ -2103,6 +2103,34 @@ def getVmMacAddress(positive, vm, nic='nic1'):
     return True, {'macAddress': str(nicObj.mac.address)}
 
 
+def check_vnic_on_vm_nic(vm, nic='nic1', vnic='rhevm'):
+    """
+    Check for vnic parameter value if this profile resides on the nic
+    parameter
+    **Author**: gcheresh
+
+    **Parameters**:
+        * *vm* - vm name to check for VNIC profile name on
+        * *nic* - NIC on VM to check the VNIC profile on
+        * *vnic* - vnic name to check on the NIC of VM
+    **Returns**: True if VNIC profile with 'vnic' name is located on the nic
+    of the vm
+    """
+    try:
+        nic = getVmNic(vm, nic)
+    except EntityNotFound:
+        VM_API.logger.error("Vm %s doesn't have nic '%s'", vm, nic)
+        return False
+    if nic.get_vnic_profile():
+        vnic_obj = VNIC_PROFILE_API.find(nic.get_vnic_profile().get_id(),
+                                         attribute='id')
+        return vnic_obj.get_name() == vnic
+    # for NIC that doesn't have VNIC profile on it
+    elif vnic is None:
+        return True
+    return False
+
+
 @is_action()
 def removeSystem(mac, cobblerAddress=None, cobblerUser=None,
                  cobblerPasswd=None):

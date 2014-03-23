@@ -207,6 +207,7 @@ def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
                                   'profile_required')):
                 logger.info("Cannot add network to DC")
                 return False
+
         if cluster and net:
             logger.info("Adding network to Cluster")
             if not addNetworkToCluster(True, network=net, cluster=cluster,
@@ -216,10 +217,10 @@ def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
                                        get('cluster_usages', None)):
                 logger.info("Cannot add network to Cluster")
                 return False
+
         # creating logical interface nic.vlan when host, vlan_id are provided
         if 'vlan_id' in net_param and host:
-                net_param['nic'] = "%s.%s" % (net_param['nic'],
-                                              net_param['vlan_id'])
+            vlan_interface = "%s.%s" % (net_param['nic'], net_param['vlan_id'])
 
     for host in host_list:
         net_obj = []
@@ -228,12 +229,12 @@ def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
             netmask_list = net_param.get('netmask', [])
             gateway_list = net_param.get('gateway', [])
 
-            rc, out = genSNNic(nic=net_param['nic'],
-                               network=net,
+            nic = vlan_interface \
+                if 'vlan_id' in net_param else net_param['nic']
+            rc, out = genSNNic(nic=nic, network=net,
                                slaves=net_param.get('slaves', None),
                                mode=net_param.get('mode', None),
-                               boot_protocol=net_param.get
-                               ('bootproto', None),
+                               boot_protocol=net_param.get('bootproto', None),
                                address=address_list.pop(0)
                                if address_list else None,
                                netmask=netmask_list.pop(0)
@@ -241,10 +242,10 @@ def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
                                gateway=gateway_list.pop(0)
                                if gateway_list else None)
 
-            if not rc:
-                logger.error("Cannot generate network object")
-                return False
-            net_obj.append(out['host_nic'])
+        if not rc:
+            logger.error("Cannot generate network object")
+            return False
+        net_obj.append(out['host_nic'])
 
         logger.info("Sending SN request to host %s" % host)
         if not sendSNRequest(True,
@@ -255,6 +256,7 @@ def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
                              connectivity_timeout=60, force='false'):
             logger.info("Failed to send SN request to host %s" % host)
             return False
+
         if save_config:
             logger.info("Saving network configuration on host %s" % host)
             if not commitNetConfig(True, host=host):

@@ -27,7 +27,7 @@ from art.core_api.apis_utils import getDS, data_st
 from art.rhevm_api.utils.test_utils import get_api, split, waitUntilGone
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from art.rhevm_api.tests_lib.low_level.networks import getClusterNetwork,\
-    getVnicProfileObj
+    getVnicProfileObj, VNIC_PROFILE_API
 from art.rhevm_api.tests_lib.low_level.vms import DiskNotFound
 from art.test_handler.settings import opts
 from utilities.jobs import Job, JobsSet
@@ -549,3 +549,32 @@ def waitForTemplatesGone(positive, templates, timeout=600, samplingPeriod=10):
     '''
     return waitUntilGone(
         positive, templates, TEMPLATE_API, timeout, samplingPeriod)
+
+
+def check_vnic_on_template_nic(template, nic='nic1', vnic='rhevm'):
+    """
+    Check for vnic parameter value if this profile resides on the nic
+    parameter
+    **Author**: gcheresh
+
+    **Parameters**:
+        * *template* - template name to check for VNIC profile name on
+        * *nic* - NIC on template to check the VNIC profile on
+        * *vnic* - vnic name to check on the NIC of Template
+    **Returns**: True if VNIC profile with 'vnic' name is located on the nic
+    of the Template
+    """
+    try:
+        nic = getTemplatesNic(template=template, nic=nic)
+    except EntityNotFound:
+        VM_API.logger.error("Template %s doesn't have nic '%s'", template,
+                            nic)
+        return False
+    if nic.get_vnic_profile():
+        vnic_obj = VNIC_PROFILE_API.find(val=nic.get_vnic_profile().get_id(),
+                                         attribute='id')
+        return vnic_obj.get_name() == vnic
+    # for NIC that doesn't have VNIC profile on it
+    elif vnic is None:
+        return True
+    return False
