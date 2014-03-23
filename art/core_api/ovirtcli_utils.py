@@ -29,7 +29,7 @@ from art.rhevm_api.data_struct.data_structures import ClassesMapping
 from art.core_api.rest_utils import RestUtil
 from art.core_api.apis_exceptions import CLIError, CLITimeout,\
     CLICommandFailure, UnsupportedCLIEngine, CLITracebackError,\
-    CLIAutoCompletionFailure
+    CLIAutoCompletionFailure, EntityNotFound
 from art.core_api import validator
 from utilities.utils import createCommandLineOptionFromDict
 
@@ -833,10 +833,12 @@ class CliUtil(RestUtil):
             format(self.cli_element_name, addEntity)
 
         if collection:
-            ownerId, ownerName, entityName = \
-                self._getHrefData(collection)
-
-            if ownerId and ownerName:  # adding to some element collection
+            try:
+                ownerId, ownerName, entityName = self._getHrefData(collection)
+            except EntityNotFound:
+                pass
+            else:
+                # adding to some element collection
                 createCmd = "add {0} --{1}-identifier '{2}' {3} \
 --expect '201-created'".format(self.cli_element_name, ownerId.rstrip('s'),
                                entityName, addEntity)
@@ -919,10 +921,11 @@ class CliUtil(RestUtil):
         updateCmd = "update {0} {1} {2}".format(self.cli_element_name,
                                                 name, updateBody)
 
-        ownerId, ownerName, entityName = \
-            self._getHrefData(origEntity.href)
-
-        if ownerId and ownerName and entityName:
+        try:
+            ownerId, ownerName, entityName = self._getHrefData(origEntity.href)
+        except EntityNotFound:
+            pass
+        else:
             updateCmd = "update {0} '{1}' --{2}-identifier '{3}' {4}".\
                 format(entityName, origEntity.id, ownerName, ownerId,
                        updateBody)
@@ -988,11 +991,13 @@ class CliUtil(RestUtil):
         return response, True
 
     def _getHrefData(self, href):
-
-        entityHrefData = href.split('/')
-        actionOwnerId = entityHrefData[-3]
-        actionOwnerName = entityHrefData[-4].rstrip('s')
-        actionEntityName = entityHrefData[-2].rstrip('s')
+        entityHrefData = href.split(self.opts['entry_point'])[1].split('/')
+        if len(entityHrefData) >= 4:
+            actionOwnerId = entityHrefData[-3]
+            actionOwnerName = entityHrefData[-4].rstrip('s')
+            actionEntityName = entityHrefData[-2].rstrip('s')
+        else:
+            raise EntityNotFound
 
         return (actionOwnerId, actionOwnerName, actionEntityName)
 
@@ -1013,9 +1018,11 @@ class CliUtil(RestUtil):
         deleteCmd = 'remove {0} "{1}" {2} --async false'.format(
             self.cli_element_name, entity.name, addBody)
 
-        ownerId, ownerName, entityName = self._getHrefData(entity.href)
-
-        if ownerId and ownerName and entityName:
+        try:
+            ownerId, ownerName, entityName = self._getHrefData(entity.href)
+        except EntityNotFound:
+            pass
+        else:
             deleteCmd = "remove {0} '{1}' --{2}-identifier '{3}' {4} "\
                 "--async false".format(entityName, entity.id, ownerName,
                                        ownerId, addBody)
@@ -1130,9 +1137,11 @@ class CliUtil(RestUtil):
             format(self.element_name.replace('_', ''), entity.id, action,
                    validator.cliEntety(act, 'action'))
 
-        ownerId, ownerName, entityName = self._getHrefData(entity.href)
-
-        if ownerId and ownerName and entityName:
+        try:
+            ownerId, ownerName, entityName = self._getHrefData(entity.href)
+        except EntityNotFound:
+            pass
+        else:
             addParams = ''
             for p in params:
                 if ClassesMapping.get(p, None):
