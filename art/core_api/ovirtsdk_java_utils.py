@@ -747,10 +747,10 @@ class JavaTranslator(object):
             python_data = data.toString()
         # boolean
         elif isinstance(data, java.lang.Boolean):
-            python_data = data.toString()
+            python_data = True if data.toString() == 'true' else False
         # jboolean case:
         elif isinstance(data, bool):
-            python_data = 'true' if data is True else 'false'
+            python_data = data
         # BigDecimal case
         elif isinstance(data, java.math.BigDecimal):
             python_data = Decimal(data.toString())
