@@ -116,7 +116,6 @@ def _prepareDiskObject(**kwargs):
         * quota - disk quota
         * storage_connection - in case of direct LUN - existing storage
                                connection to use instead of creating a new one
-        * active - True or False whether disk should be automatically activated
         You cannot set both storage_connection and lun_* in one call!
 
         * id - disk id
@@ -217,7 +216,6 @@ def addDisk(positive, **kwargs):
         * quota - disk quota
         * storage_connection - in case of direct LUN - existing storage
                                connection to use instead of creating a new one
-        * active - True or False whether disk should be automatically activated
         You cannot set both storage_connection and lun_* in one call!
     Author: jlibosva
     Return: True - if positive and successfully added or not positive and not
@@ -253,7 +251,6 @@ def updateDisk(positive, **kwargs):
         * quota - disk quota
         * storage_connection - in case of direct LUN - existing storage
                                connection to use instead of creating a new one
-        * active - True or False whether disk should be automatically activated
         You cannot set both storage_connection and lun_* in one call!
     Author: jlibosva
     Return: Status of the operation's result dependent on positive value
