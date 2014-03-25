@@ -31,15 +31,16 @@ from art.core_api import is_action
 from art.core_api.apis_exceptions import APITimeout, EntityNotFound, \
     TestCaseError
 from art.core_api.apis_utils import data_st, TimeoutingSampler, getDS
+from art.rhevm_api.tests_lib.high_level.disks import delete_disks
 from art.rhevm_api.tests_lib.low_level.disks import _prepareDiskObject, \
     getVmDisk, getObjDisks
 from art.rhevm_api.tests_lib.low_level.networks import getVnicProfileObj, \
     MGMT_NETWORK
 from art.rhevm_api.utils.name2ip import LookUpVMIpByName
 from art.rhevm_api.utils.test_utils import searchForObj, getImageByOsType, \
-    convertMacToIpAddress, checkHostConnectivity, updateVmStatusInDatabase, \
-    get_api, split, getAllImages, waitUntilPingable, restoringRandomState, \
-    waitUntilGone
+    convertMacToIpAddress, checkHostConnectivity,\
+    update_vm_status_in_database, get_api, split, getAllImages,\
+    waitUntilPingable, restoringRandomState, waitUntilGone
 from art.rhevm_api.utils.provisioning_utils import ProvisionProvider
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils.threads import runParallel
@@ -53,6 +54,7 @@ from utilities.machine import Machine, LINUX
 
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
+RHEVM_UTILS_ENUMS = opts['elements_conf']['RHEVM Utilities']
 DEFAULT_CLUSTER = 'Default'
 NAME_ATTR = 'name'
 ID_ATTR = 'id'
@@ -184,7 +186,8 @@ def _prepareVmObject(**kwargs):
             setattr(os, opt_name, opt_val)
     boot_seq = kwargs.pop('boot', None)
     if boot_seq:
-        boot_seq = boot_seq.split()
+        if isinstance(boot_seq, basestring):
+            boot_seq = boot_seq.split()
         os.set_boot([data_st.Boot(dev=boot_dev) for boot_dev in boot_seq])
         apply_os = True
     if apply_os:
@@ -726,13 +729,14 @@ def stopVms(vms, wait='true'):
     Stop vms.
     Author: mbenenso
     Parameters:
-       * vms - comma separated list of VM names
+       * vms - comma separated string of VM names or list
        * wait - if 'true' will wait till the end of stop action
                ('true' by default)
     Return: True iff all VMs stopped, False otherwise
     '''
     vmObjectsList = []
-    vms = split(vms)
+    if isinstance(vms, basestring):
+        vms = split(vms)
     wait = wait.lower() == 'true'
     async = 'false' if not wait else 'true'
     for vm in vms:
@@ -1244,32 +1248,34 @@ def hotUnplugNic(positive, vm, nic):
 
 
 @is_action()
-def removeLockedVm(vm, vdc, vdc_pass, psql_username='postgres',
-                   psql_db='rhevm'):
-    '''
+def remove_locked_vm(vm_name, vdc, vdc_pass,
+                     psql_username=RHEVM_UTILS_ENUMS['RHEVM_DB_USER'],
+                     psql_db=RHEVM_UTILS_ENUMS['RHEVM_DB_NAME'],
+                     psql_password=RHEVM_UTILS_ENUMS['RHEVM_DB_PASSWORD']):
+    """
     Remove locked vm with flag force=true
     Make sure that vm no longer exists, otherwise set it's status to down,
     and remove it
     Author: jvorcak
     Parameters:
-       * vm - name of the VM
+       * vm_name - name of the VM
        * vdc - address of the setup
        * vdc_pass - password for the vdc
        * psql_username - psql username
        * psql_db - name of the DB
-    '''
-    vmObj = VM_API.find(vm)
+    """
+    vm_obj = VM_API.find(vm_name)
 
-    if removeVm(True, vmObj.get_name(), force='true'):
+    if removeVm(True, vm_obj.get_name(), force='true'):
         return True
 
     # clean if vm has not been removed
     logger.error('Locked vm has not been removed with force flag')
 
-    updateVmStatusInDatabase(vmObj.get_name(), 0, vdc, vdc_pass,
-                             psql_username, psql_db)
+    update_vm_status_in_database(vm_obj.get_name(), 0, vdc, vdc_pass,
+                                 psql_username, psql_db, psql_password)
 
-    return removeVm("true", vmObj.get_name())
+    return removeVm("true", vm_obj.get_name())
 
 
 def _getVmSnapshots(vm, get_href=True):
@@ -1484,6 +1490,7 @@ def runVmOnce(positive, vm, pause=None, display_type=None, stateless=None,
 
     if None is not domainName:
         domain = data_st.Domain()
+        domain.set_name(domainName)
 
         if password is None:
             logger.error('You have to specify password with username')
@@ -3748,3 +3755,97 @@ def getVmTemplateId(vm):
     except EntityNotFound:
         raise exceptions.VMException("Cannot find vm with name %s" % vm)
     return vmObj.get_template().id
+
+
+def get_vm_boot_sequence(vm_name):
+    """
+    Get vm boot sequence
+    **Author**: alukiano
+
+    **Parameters**:
+        * *vm_name* - vm name
+    **Returns**: list of vm boot devices
+    """
+    vm_obj = get_vm_obj(vm_name)
+    boots = vm_obj.get_os().get_boot()
+    return [boot.get_dev() for boot in boots]
+
+
+def remove_all_vms_from_cluster(cluster_name):
+    """
+    Remove all exists vms from specific cluster
+    **Author**: alukiano
+
+    **Parameters**:
+        * *cluster_name* - cluster name
+    **Returns**: True, if all vms removed from cluster, False otherwise
+    """
+    vms_in_cluster = []
+    cluster_name_query = "name=%s" % cluster_name
+    cluster_obj = CLUSTER_API.query(cluster_name_query)[0]
+    all_vms_obj = VM_API.get(absLink=False)
+    for vm_obj in all_vms_obj:
+        if vm_obj.get_cluster().get_id() == cluster_obj.get_id():
+            vms_in_cluster.append(vm_obj.get_name())
+    if not removeVms(True, vms_in_cluster):
+        return False
+    return True
+
+
+def get_vm_display_port(vm_name):
+    """
+    Get vm display port
+    **Author**: alukiano
+
+    **Parameters**:
+        * *vm_name* - vm name
+    **Returns**: vm display port or None
+    """
+    vm_obj = get_vm_obj(vm_name)
+    return vm_obj.get_display().get_port()
+
+
+def get_vm_display_address(vm_name):
+    """
+    Get vm display address
+    **Author**: alukiano
+
+    **Parameters**:
+        * *vm_name* - vm name
+    **Returns**: vm display address or None
+    """
+    vm_obj = get_vm_obj(vm_name)
+    return vm_obj.get_display().get_address()
+
+
+def get_vm_obj(vm_name):
+    """
+    Get vm object by name
+    **Author**: alukiano
+
+    **Parameters**:
+        * *vm_name* - vm name
+    **Returns**: vm object
+    """
+    vm_name_query = "name=%s" % vm_name
+    return VM_API.query(vm_name_query)[0]
+
+
+# Create this function as duplicate for function removeDisk
+# with additional functionality to remove all disks from vm
+def remove_vm_disks(vm_name, disk_name=None):
+    """
+    Remove all disks from given vm, if disk name not specified,
+    else remove only given disk from vm
+    **Author**: alukiano
+
+    **Parameters**:
+        * *vm_name* - vm name
+        * *disk_name - disk name to remove,
+                       if specified method will remove just this disk
+    **Returns**: True, if removed all disks successfully, otherwise False
+    """
+    vm_disks = getVmDisks(vm_name)
+    if disk_name:
+        vm_disks = [disk for disk in vm_disks if disk.get_name() == disk_name]
+    return delete_disks(vm_disks)

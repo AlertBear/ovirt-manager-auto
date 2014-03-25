@@ -402,10 +402,15 @@ def restartNetwork(vds, password):
     machine = Machine(vds, 'root', password).util(LINUX)
     return machine.restartService('network')
 
+
 @is_action()
-def updateVmStatusInDatabase(vmName, status, vdc, vdc_pass,
-        psql_username='postgres', psql_db='rhevm'):
-    '''
+def update_vm_status_in_database(vm_name, status, vdc, vdc_pass,
+                                 psql_username=RHEVM_UTILS_ENUMS[
+                                     'RHEVM_DB_USER'],
+                                 psql_db=RHEVM_UTILS_ENUMS['RHEVM_DB_NAME'],
+                                 psql_password=RHEVM_UTILS_ENUMS[
+                                     'RHEVM_DB_PASSWORD']):
+    """
     Update vm status in the database
     Author: jvorcak
     Parameters:
@@ -416,17 +421,17 @@ def updateVmStatusInDatabase(vmName, status, vdc, vdc_pass,
        * vdc_pass - password for the vdc
        * psql_username - psql username
        * psql_db - name of the DB
-    Return: (True if sql command has been executed successfuly,
+    Return: (True if sql command has been executed successfully,
              False otherwise)
-    '''
+    """
     util = get_api('vm', 'vms')
-    vm = util.find(vmName)
-    machine = Machine(vdc, 'root', vdc_pass).util(LINUX)
-    cmd = ["psql", "-U", psql_username, psql_db, "-c",
-            r'"UPDATE vm_dynamic SET status=%d WHERE vm_guid=\'%s\'"' %
-            (status, vm.get_id())]
-
-    return machine.runCmd(cmd)
+    vm = util.find(vm_name)
+    setup = Setup(vdc, 'root', vdc_pass,
+                  dbuser=psql_username,
+                  dbpassw=psql_password)
+    query = ("UPDATE vm_dynamic SET status=%d WHERE vm_guid=\'%s\';"
+             % (status, vm.get_id()))
+    return setup.psql(query, psql_db=psql_db)
 
 
 @is_action()
