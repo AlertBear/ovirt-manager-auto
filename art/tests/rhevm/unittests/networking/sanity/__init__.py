@@ -5,7 +5,6 @@ Sanity Test
 import logging
 from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 from art.rhevm_api.tests_lib.high_level.networks import prepareSetup
-from art.test_handler.exceptions import DataCenterException
 from art.test_handler.exceptions import NetworkException
 
 logger = logging.getLogger("Sanity")
@@ -14,9 +13,9 @@ logger = logging.getLogger("Sanity")
 
 
 def setup_package():
-    '''
+    """
     Prepare environment
-    '''
+    """
     import config
     logger.info("Creating data center, cluster, adding host and storage")
     if not prepareSetup(hosts=config.HOSTS[0],
@@ -41,10 +40,9 @@ def setup_package():
 
 
 def teardown_package():
-    '''
+    """
     Cleans the environment
-    '''
+    """
     import config
     if not cleanDataCenter(positive=True, datacenter=config.DC_NAME,):
-        raise DataCenterException("Cannot remove setup")
-
+        raise NetworkException("Cannot remove setup")

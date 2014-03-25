@@ -219,7 +219,7 @@ def _prepareClusterNetworkObj(**kwargs):
         net.set_usages(data_st.Usages(usage=kwargs.get('usages').split(',')))
 
     if 'required' in kwargs:
-        net.set_required(kwargs.get('required'))
+        net.set_required(str(kwargs.get('required')).lower())
 
     if 'display' in kwargs:
         net.set_display(kwargs.get('display'))

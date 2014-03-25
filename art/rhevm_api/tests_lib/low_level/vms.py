@@ -964,7 +964,7 @@ def _prepareNicObj(**kwargs):
         nic_obj.set_active(kwargs.get('active'))
 
     if 'plugged' in kwargs:
-        nic_obj.set_plugged(kwargs.get('plugged'))
+        nic_obj.set_plugged(str(kwargs.get('plugged')).lower())
 
     if 'linked' in kwargs:
         nic_obj.set_linked(kwargs.get('linked'))
