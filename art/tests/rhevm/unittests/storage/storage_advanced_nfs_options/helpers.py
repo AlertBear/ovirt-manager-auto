@@ -486,6 +486,8 @@ class TestCaseStandardOperations(TestCaseNFSOptions):
         ll_st.waitForStorageDomainStatus(
             True, config.DATA_CENTER_NAME, 'nfs_0', 'active',
             timeOut=DEFAULT_DC_TIMEOUT)
+        ll_st.wait_for_tasks(
+            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
         ll_st.deactivateStorageDomain(True, config.DATA_CENTER_NAME, cls.sd_1)
         ll_st.findMasterStorageDomain(True, config.DATA_CENTER_NAME)
         ll_st.deactivateStorageDomain(True, config.DATA_CENTER_NAME, cls.sd_2)
