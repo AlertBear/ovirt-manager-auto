@@ -746,3 +746,14 @@ def detach_and_deactivate_domain(datacenter, domain):
     logger.info('Domain %s detached to dc %s' % (domain, datacenter))
 
     return True
+
+
+def get_master_storage_domain_ip(datacenter):
+    found, master_domain = storagedomains.findMasterStorageDomain(
+        True, datacenter)
+    assert found
+    master_domain = master_domain['masterDomain']
+    found, master_domain_ip = storagedomains.getDomainAddress(
+        True, master_domain)
+    assert found
+    return master_domain_ip['address']

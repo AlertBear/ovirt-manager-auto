@@ -51,7 +51,7 @@ DB_REPORTS_NAME = "ovirt_engine_reports"
 DB_REPORTS_USER = "ovirt_engine_reports"
 DB_REPORTS_PASSWORD = "123456"
 
-# DATA CENTER SECTION
+# # DATA CENTER SECTION
 DC_NAME = ["_".join([TEST_NAME, "DC", str(i)]) for i in range(1, 6)]
 PARAMETERS['dc_name'] = DC_NAME[0]
 # CLUSTER SECTION

@@ -24,9 +24,9 @@ from art.rhevm_api.utils.test_utils import get_api, split, getStat, \
 import time
 import json
 from utilities import machine
-import utilities.postgresConnection as psql
 from art.core_api.apis_utils import TimeoutingSampler, data_st
 from art.core_api.apis_exceptions import APITimeout, EntityNotFound
+from utilities.rhevm_tools import errors
 import re
 import tempfile
 from utilities.utils import getIpAddressByHostName, getHostName
@@ -36,6 +36,7 @@ from art.rhevm_api.tests_lib.low_level.datacenters import \
     waitForDataCenterState
 from art.rhevm_api.tests_lib.low_level.vms import stopVm, getVmHost, \
     get_vm_state
+from utilities.rhevm_tools.base import Setup
 from art.test_handler import find_test_file
 from art.rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
 from art.rhevm_api.utils.resource_utils import runMachineCommand
@@ -709,6 +710,11 @@ def fenceHost(positive, host, fence_type):
     """
 
     hostObj = HOST_API.find(host)
+    # this is meant to differentiate between fencing a host in maintenance
+    # and fencing a host in down state. since 3.4 fencing a host in maintenance
+    # will result with the host staying in maintenance and not up state.
+    host_in_maintenance = HOST_API.waitForElemStatus(hostObj, "maintenance",
+                                                     30)
     status = HOST_API.syncAction(hostObj, "fence", positive,
                                  fence_type=fence_type.upper())
 
@@ -718,7 +724,11 @@ def fenceHost(positive, host, fence_type):
         return True
     testHostStatus = True
     if fence_type == "restart" or fence_type == "start":
-        testHostStatus = HOST_API.waitForElemStatus(hostObj, "up", 500)
+        if host_in_maintenance:
+            testHostStatus = HOST_API.waitForElemStatus(hostObj, "maintenance",
+                                                        500)
+        else:
+            testHostStatus = HOST_API.waitForElemStatus(hostObj, "up", 500)
     if fence_type == "stop":
         testHostStatus = HOST_API.waitForElemStatus(hostObj, "down", 300)
     return (testHostStatus and status) == positive
@@ -1583,8 +1593,10 @@ def getClusterCompatibilityVersion(cluster):
 
 
 @is_action()
-def waitForHostPmOperation(positive, host, vdc='localhost', dbuser='postgres',
-                           dbpassword='postgres', dbname='engine'):
+def waitForHostPmOperation(host, vdc_password, vdc='localhost',
+                           vdc_user='root', dbuser='engine',
+                           dbpassword='engine', dbname='engine',
+                           product='rhevm'):
     """
     Description: Wait for next PM operation availability
     Author: lustalov
@@ -1595,33 +1607,34 @@ def waitForHostPmOperation(positive, host, vdc='localhost', dbuser='postgres',
         * dbname - vdc database name
     Return: True if success, False otherwise
     """
+
     timeToWait = 0
     returnVal = True
-    dbConn = psql.Postgresql(host=vdc, user=dbuser,
-                             password=dbpassword, dbname=dbname)
+    DB_NAME_CONF = {'RHEVM_DB_NAME': dbname}
+    dbConn = Setup(host=vdc, user=vdc_user,
+                   passwd=vdc_password, dbuser=dbuser,
+                   dbpassw=dbpassword, product=product,
+                   conf=DB_NAME_CONF)
     try:
-        dbConn.connect()
         sql = "select option_value from vdc_options \
             where option_name = 'FenceQuietTimeBetweenOperationsInSec';"
-        res = dbConn.query(sql)
+        res = dbConn.psql(sql)
         waitSec = res[0][0]
         events = ['USER_VDS_STOP', 'USER_VDS_START', 'USER_VDS_RESTART']
         for event in events:
             sql = "select get_seconds_to_wait_before_pm_operation(" \
                   "'{0}','{1}',{2});".format(host, event, waitSec)
-            res = dbConn.query(sql)
+            res = dbConn.psql(sql)
             timeSec = int(res[0][0])
             if timeSec > timeToWait:
                 timeToWait = timeSec
-    except Exception as ex:
-        HOST_API.logger.error('Failed to get wait time before host %s \
-            PM operation: %s' % (host, ex))
+    except errors.ExecuteDBQueryError as ex:
+        HOST_API.logger.error('Failed to get wait time before host %s '
+                              'PM operation: %s', host, ex)
         returnVal = False
-    finally:
-        dbConn.close()
     if timeToWait > 0:
         HOST_API.logger.info('Wait %d seconds until PM operation will'
-                             ' be permitted.' % timeToWait)
+                             ' be permitted.', timeToWait)
         time.sleep(timeToWait)
     return returnVal
 

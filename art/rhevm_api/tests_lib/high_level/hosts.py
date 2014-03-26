@@ -97,7 +97,7 @@ def deactivate_hosts_if_up(hosts_list):
 
 
 def add_power_management(host, pm_type, pm_address, pm_user, pm_password,
-                         pm_secure='false'):
+                         pm_secure='false', **kwargs):
     """
     Description: Add power management to host
     Author: slitmano
@@ -111,7 +111,8 @@ def add_power_management(host, pm_type, pm_address, pm_user, pm_password,
     logging.info("Add power management type %s for host: %s", pm_type, host)
     if not hosts.updateHost(True, host=host, pm='true', pm_type=pm_type,
                             pm_address=pm_address, pm_username=pm_user,
-                            pm_password=pm_password, pm_secure=pm_secure):
+                            pm_password=pm_password, pm_secure=pm_secure,
+                            **kwargs):
         raise errors.HostException("Cannot add power management to host: %s"
                                    % host)
 
@@ -125,6 +126,7 @@ def remove_power_management(host, pm_type):
     * pm_type - Name of power management type (ipmilan, apc_snmp and so on)
     """
     logging.info("disable power management for host: %s", host)
-    if not hosts.updateHost(True, host=host, pm='false', pm_type=pm_type):
+    if not hosts.updateHost(True, host=host, pm='false', pm_type=pm_type,
+                            pm_password='', pm_address='', pm_username=''):
         raise errors.HostException("Cannot remove power management"
                                    " from host: %s" % host)

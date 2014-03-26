@@ -9,12 +9,9 @@ from art.rhevm_api.utils import test_utils
 
 PM1_TYPE = 'ipmilan'
 PM2_TYPE = 'apc_snmp'
-PM1_ADDRESS = '10.35.35.35'
-PM2_ADDRESS = '10.11.11.11'
-PM1_USER = 'user1'
-PM2_USER = 'user2'
-PM1_PASS = 'pass1'
-PM2_PASS = 'pass2'
+
+PM_TYPE_DEFAULT = 'apc'
+
 HOST_FALSE_IP = '10.1.1.256'
 ISO_IMAGE = PARAMETERS.get('iso_image', None)
 
