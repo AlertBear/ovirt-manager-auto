@@ -26,7 +26,7 @@ def setup_package():
     Prepare environment
     """
     import config
-
+    logger.info("Create DC, Cluster, attach hosts and create VM and template")
     if not prepareSetup(hosts=','.join(config.HOSTS), cpuName=config.CPU_NAME,
                         username=config.HOSTS_USER,
                         password=','.join(config.HOSTS_PW),
@@ -60,6 +60,7 @@ def setup_package():
                                                'nic': config.BOND[0],
                                                'required': 'false'}}
 
+    logger.info("Create and attach networks")
     if not createAndAttachNetworkSN(data_center=config.DC_NAME,
                                     cluster=config.CLUSTER_NAME,
                                     host=config.HOSTS,
@@ -67,7 +68,8 @@ def setup_package():
                                     auto_nics=config.HOST_NICS[:2]):
         raise NetworkException("Cannot create and attach networks")
 
-    # Create VNIC profiles with port mirroring for mgmt network and sw1
+    logger.info("Create VNIC profiles with port mirroring for mgmt network "
+                "and sw1")
     for i, network in enumerate((config.MGMT_BRIDGE, config.VLAN_NETWORKS[0])):
         if not addVnicProfile(positive=True, name=config.VNIC_PROFILE[i],
                               cluster=config.CLUSTER_NAME,
@@ -75,16 +77,25 @@ def setup_package():
             raise NetworkException('Failed to create VNIC profile with port '
                                    'mirroring.')
 
-    # Update NIC1 on VM1 to a profile with port mirroring
+    logger.info("Unplug NIC1 on VM1")
+    if not updateNic(True, config.VM_NAME[0], config.VM_NICS[0],
+                     plugged=False):
+        raise NetworkException("Failed to unplug NIC1 on VM1")
+
+    logger.info("Updating NIC1 to profile with port mirroring")
     if not updateNic(True, config.VM_NAME[0], config.VM_NICS[0],
                      network=config.MGMT_BRIDGE,
-                     vnic_profile=config.VNIC_PROFILE[0], plugged=False):
-        raise NetworkException('Failed to update VM1 nic1 to a profile with '
-                               'port mirroring.')
-    if not updateNic(True, config.VM_NAME[0], config.VM_NICS[0], plugged=True):
-        raise NetworkException('Failed to plug VM1 nic1 after update.')
+                     vnic_profile=config.VNIC_PROFILE[0]):
+        raise NetworkException("Failed to update NIC1 to profile with port "
+                               "mirroring")
 
-    # Create 4 more VMs from the template created by prepareSetup()
+    logger.info("Plugin NIC1 on VM1")
+    if not updateNic(True, config.VM_NAME[0], config.VM_NICS[0],
+                     plugged=True):
+        raise NetworkException("Failed to plug NIC 1 on VM1")
+
+    logger.info("Create 4 more VMs from the template created by "
+                "prepareSetup()")
     for vmName in config.VM_NAME[1:config.NUM_VMS]:
         if not createVm(True, vmName=vmName,
                         vmDescription='linux vm', cluster=config.CLUSTER_NAME,
@@ -93,8 +104,8 @@ def setup_package():
                         network=config.MGMT_BRIDGE):
             raise VMException('Failed to create %s from template' % vmName)
 
-    # Add NICs to VMs. VM1 is handled separately since it needs port
-    # mirroring
+    logger.info("Add NICs to VMs. VM1 is handled separately since it needs "
+                "port mirroring")
     if not waitForVMState(config.VM_NAME[0]):
         raise VMException('Failed to start %s.' % config.VM_NAME[0])
 
@@ -120,7 +131,7 @@ def setup_package():
                           network=config.VLAN_NETWORKS[i]):
                 raise VMException('Failed to add nic to %s' % vmName)
 
-    # Configure IPs for each VM
+    logger.info("Configure IPs for each VM")
     for i, vm in enumerate(config.VM_NAME[:config.NUM_VMS]):
         logger.info('Getting mgmt network IP for %s.', vm)
         rc, out = waitForIP(vm)
@@ -128,11 +139,12 @@ def setup_package():
         if not rc:
             raise VMException('Failed to get VM IP on mgmt network')
 
-        # Update the list of mgmt network network IPs with IP the VM got (DHCP)
+        logger.info("Update the list of mgmt network network IPs with IP the "
+                    "VM got (DHCP)")
         MGMT_IP = out['ip']
         config.MGMT_IPS.append(MGMT_IP)
 
-        # Configure static IPs for sw1 and sw2
+        logger.info("Configure static IPs for sw1 and sw2")
         for nicIndex, ip in enumerate((config.NET1_IPS[i], config.NET2_IPS[i]),
                                       start=1):
             if not configureTempStaticIp(MGMT_IP, config.VM_LINUX_USER,
@@ -151,6 +163,6 @@ def teardown_package():
     Clean the environment
     """
     import config
-
+    logger.info("Clean the environment")
     if not cleanDataCenter(positive=True, datacenter=config.DC_NAME):
         raise DataCenterException("Cannot remove setup")
