@@ -242,10 +242,10 @@ def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
                                gateway=gateway_list.pop(0)
                                if gateway_list else None)
 
-        if not rc:
-            logger.error("Cannot generate network object")
-            return False
-        net_obj.append(out['host_nic'])
+            if not rc:
+                logger.error("Cannot generate network object")
+                return False
+            net_obj.append(out['host_nic'])
 
         logger.info("Sending SN request to host %s" % host)
         if not sendSNRequest(True,
