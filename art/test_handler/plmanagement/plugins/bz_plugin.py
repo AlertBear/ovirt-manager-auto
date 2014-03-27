@@ -372,8 +372,9 @@ class Bugzilla(Component):
                 logger.error("failed to get BZ<%s> info: %s", bz_id, ex)
                 continue
 
-            if not self.__is_related_product(bz):
-                continue
+            # NOTE: https://projects.engineering.redhat.com/browse/RHEVM-1189
+            #if not self.__is_related_product(bz):
+            #    continue
 
             skipped = self.__deal_with_comp_and_version(bz)
             if not self.__is_open(bz):
