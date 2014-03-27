@@ -73,25 +73,45 @@ class PSQLException(Exception):
     pass
 
 
-def get_api(element, collection):
-    '''
-    Fetch proper API instance based on engine type
-    '''
+class GetApi(object):
 
-    engine = settings.opts.get('engine')
-    if engine == 'rest':
-        from art.core_api.rest_utils import RestUtil
-        api = RestUtil(element, collection)
-    if engine == 'sdk':
-        from art.core_api.ovirtsdk_utils import SdkUtil
-        api = SdkUtil(element, collection)
-    if engine == 'cli':
-        from art.core_api.ovirtcli_utils import CliUtil
-        api = CliUtil(element, collection)
-    if engine == 'java':
-        from art.core_api.ovirtsdk_java_utils import JavaSdkUtil
-        api = JavaSdkUtil(element, collection)
-    return api
+    _util_cache = {}
+
+    def __init__(self, element, collection):
+        self._element = element
+        self._collection = collection
+
+    #setter is not needed since _util_cache.__setitem__ is doing all the job
+    @property
+    def util_cache(self):
+        return self.__class__._util_cache
+
+    def __getattr__(self, opcode):
+        engine = settings.opts.get('engine')
+        key = (self._element, self._collection, engine)
+        # checking in cache
+        if key in self.util_cache:
+            api = self.util_cache[key]
+        else:
+            if engine == 'rest':
+                from art.core_api.rest_utils import RestUtil
+                api = RestUtil(self._element, self._collection)
+            elif engine == 'sdk':
+                from art.core_api.ovirtsdk_utils import SdkUtil
+                api = SdkUtil(self._element, self._collection)
+            elif engine == 'cli':
+                from art.core_api.ovirtcli_utils import CliUtil
+                api = CliUtil(self._element, self._collection)
+            elif engine == 'java':
+                from art.core_api.ovirtsdk_java_utils import JavaSdkUtil
+                api = JavaSdkUtil(self._element, self._collection)
+            # adding to cache
+            self.util_cache[key] = api
+
+        return getattr(self.util_cache[key], opcode)
+
+
+get_api = GetApi
 
 
 def raise_if_false(results, collection, message, exc):
