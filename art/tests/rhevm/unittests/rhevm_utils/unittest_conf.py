@@ -4,7 +4,6 @@ global config
 config = ConfigObj(raise_errors=True)
 
 from . import ART_CONFIG
-import socket
 
 params = ART_CONFIG['PARAMETERS']
 VM_NAME = params.get('vm_name')
@@ -66,7 +65,7 @@ ANSWERS = {
     'OVESETUP_DB/port': 'int:5432',
     'OVESETUP_SYSTEM/nfsConfigEnabled': 'bool:True',
     'OVESETUP_SYSTEM/memCheckEnabled': 'bool:False',
-    'OVESETUP_SYSTEM/redhatSupportProxyEnabled': 'bool:False',
+    'OVESETUP_RHEVM_SUPPORT/redhatSupportProxyEnabled': 'bool:False',
     'OVESETUP_PKI/organization': 'str:tlv.redhat.com',
     'OVESETUP_CONFIG/isoDomainName': 'str:ISO_DOMAIN',
     'OVESETUP_CONFIG/isoDomainMountPoint': 'str:/var/lib/exports/iso',
@@ -76,12 +75,13 @@ ANSWERS = {
     'OVESETUP_CONFIG/fqdn': 'str:' + REST_API_HOST,
     'OVESETUP_CONFIG/storageType': 'str:nfs',
     'OVESETUP_CONFIG/websocketProxyConfig': 'bool:True',
-    'OVESETUP_CONFIG/updateFirewall' : 'bool:True',
+    'OVESETUP_CONFIG/updateFirewall': 'bool:True',
     'OVESETUP_PROVISIONING/postgresProvisioningEnabled': 'bool:False',
     'OVESETUP_APACHE/configureRootRedirection': 'bool:True',
     'OVESETUP_APACHE/configureSsl': 'bool:True',
     'OVESETUP_AIO/configure': 'none:None',
-    'OVESETUP_AIO/storageDomainDir': 'none:None'
+    'OVESETUP_AIO/storageDomainDir': 'none:None',
+    'OVESETUP_CONFIG/isoDomainACL': 'str:0.0.0.0/0.0.0.0(rw)'
 }
 
 
@@ -99,7 +99,7 @@ ANSWERS['__default__'] = (
     'OVESETUP_DB/fixDbViolations',
     'OVESETUP_SYSTEM/nfsConfigEnabled',
     'OVESETUP_SYSTEM/memCheckEnabled',
-    'OVESETUP_SYSTEM/redhatSupportProxyEnabled',
+    'OVESETUP_RHEVM_SUPPORT/redhatSupportProxyEnabled',
     'OVESETUP_PKI/organization',
     'OVESETUP_CONFIG/isoDomainName',
     'OVESETUP_CONFIG/isoDomainMountPoint',
@@ -115,6 +115,7 @@ ANSWERS['__default__'] = (
     'OVESETUP_APACHE/configureSsl',
     'OVESETUP_AIO/configure',
     'OVESETUP_AIO/storageDomainDir',
+    'OVESETUP_CONFIG/isoDomainACL'
 )
 
 
