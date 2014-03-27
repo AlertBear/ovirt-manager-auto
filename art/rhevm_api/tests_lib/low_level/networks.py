@@ -432,7 +432,7 @@ def checkIPRule(host, user, password, subnet):
 def updateVnicProfile(name, network, cluster=None, data_center=None,
                       new_name=None, port_mirroring=None, description=None,
                       new_network=None):
-    '''
+    """
     Description: Update VNIC profile with provided parameters in kwargs
     **Author**: gcheresh
     **Parameters**:
@@ -446,11 +446,15 @@ def updateVnicProfile(name, network, cluster=None, data_center=None,
         *  *description* - New description of vnic profile
         *  *new_network - new network for VNIC profile (for negative case)
     **Return**: True, if adding vnic profile was success, otherwise False
-    '''
+    """
+    vnic_profile_obj = getVnicProfileFromNetwork(network=network,
+                                                 vnic_profile=name,
+                                                 cluster=cluster,
+                                                 data_center=data_center)
+    if not vnic_profile_obj:
+        logger.error("Failed to get VNIC profile object")
+        return False
 
-    vnic_profile_obj = getVnicProfileObj(name=name, network=network,
-                                         cluster=cluster,
-                                         data_center=data_center)
     new_vnic_profile_obj = vnic_profile_obj
 
     logger.info("Updating VNIC profile with new parameters")
@@ -834,3 +838,25 @@ def deleteNetworksInDataCenter(datacenter, mgmt_net):
             logger.error("Cannot remove %s from %s", net_name, datacenter)
             return False
     return True
+
+
+def getVnicProfileFromNetwork(network, vnic_profile, cluster=None,
+                              data_center=None):
+    """
+    Returns the VNIC profile object that belong to a certain network.
+    **Author**: myakove
+    **Parameters**:
+        *  *network* - Name of the network.
+        *  *vnic_profile* - VNIC profile name
+        *  *cluster* - Name of the cluster in which the network is located.
+        *  *data_center* - Name of the data center in which the network is
+                           located.
+    **Return**: Returns a VNIC profile object that belong to the
+                provided network.
+    """
+    network_obj = findNetwork(network, data_center, cluster).id
+    all_vnic_profiles = VNIC_PROFILE_API.get(absLink=False)
+    for vnic_profile_obj in all_vnic_profiles:
+        if vnic_profile_obj.name == vnic_profile:
+            if vnic_profile_obj.get_network().id == network_obj:
+                return vnic_profile_obj
