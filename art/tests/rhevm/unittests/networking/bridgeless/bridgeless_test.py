@@ -58,6 +58,7 @@ class BridgelessCase1(TestCase):
         """
         logger.info("Remove network from setup")
         if not removeNetFromSetup(host=config.HOSTS[0],
+                                  data_center=config.DC_NAME,
                                   auto_nics=[config.HOST_NICS[0]],
                                   network=[config.NETWORKS[0]]):
             raise NetworkException("Cannot remove network from setup")
@@ -98,6 +99,7 @@ class BridgelessCase2(TestCase):
         """
         logger.info("Remove network from setup")
         if not removeNetFromSetup(host=config.HOSTS[0],
+                                  data_center=config.DC_NAME,
                                   auto_nics=[config.HOST_NICS[0]],
                                   network=[config.VLAN_NETWORKS[0]]):
             raise NetworkException("Cannot remove network from setup")
@@ -144,6 +146,7 @@ class BridgelessCase3(TestCase):
         """
         logger.info("Remove network from setup")
         if not removeNetFromSetup(host=config.HOSTS[0],
+                                  data_center=config.DC_NAME,
                                   auto_nics=[config.HOST_NICS[0]],
                                   network=[config.VLAN_NETWORKS[0]]):
             raise NetworkException("Cannot remove network from setup")
@@ -169,11 +172,11 @@ class BridgelessCase4(TestCase):
         local_dict = {config.NETWORKS[0]: {"nic": config.BOND[0], "mode": 1,
                                            "slaves": [config.HOST_NICS[2],
                                                       config.HOST_NICS[3]],
+                                           "required": "false",
                                            "usages": ""}}
 
         logger.info("Create and attach Non-VM network "
                     "over BOND to DC/Cluster and Host")
-
         if not createAndAttachNetworkSN(data_center=config.DC_NAME,
                                         cluster=config.CLUSTER_NAME,
                                         host=config.HOSTS[0],
@@ -188,6 +191,7 @@ class BridgelessCase4(TestCase):
         """
         logger.info("Remove network from setup")
         if not removeNetFromSetup(host=config.HOSTS[0],
+                                  data_center=config.DC_NAME,
                                   auto_nics=[config.HOST_NICS[0]],
                                   network=[config.NETWORKS[0]]):
             raise NetworkException("Cannot remove network from setup")
