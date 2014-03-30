@@ -212,19 +212,18 @@ def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
             logger.info("Adding network to Cluster")
             if not addNetworkToCluster(True, network=net, cluster=cluster,
                                        required=net_param.
-                                       get('required'),
+                                       get('required', "true"),
                                        usages=net_param.
                                        get('cluster_usages', None)):
                 logger.info("Cannot add network to Cluster")
                 return False
 
-        # creating logical interface nic.vlan when host, vlan_id are provided
-        if 'vlan_id' in net_param and host:
-            vlan_interface = "%s.%s" % (net_param['nic'], net_param['vlan_id'])
-
     for host in host_list:
         net_obj = []
         for net, net_param in network_dict.items():
+            if 'vlan_id' in net_param:
+                vlan_interface = "%s.%s" % (
+                    net_param['nic'], net_param['vlan_id'])
             address_list = net_param.get('address', [])
             netmask_list = net_param.get('netmask', [])
             gateway_list = net_param.get('gateway', [])
