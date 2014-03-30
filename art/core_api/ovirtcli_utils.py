@@ -159,7 +159,7 @@ class CliConnection(object):
                                         " failed due to timeout in writing/"
                                         "flushing of this file.\n"
                                         "It can also happen if cli doesn't "
-                                        "return any stdout (in case of error")
+                                        "return any stdout (in case of error)")
             new_size = int(subprocess.Popen(["wc", "-c", TMP_FILE],
                                             stdout=subprocess.PIPE).
                            communicate()[0].split()[0])
@@ -942,7 +942,7 @@ class CliUtil(RestUtil):
             updateCmd = "%s --correlation_id %s" % (updateCmd, correlationId)
 
         if current is not None:
-            updateCmd = "%s --current %s" % (updateCmd, current)
+            updateCmd = "%s --current %s" % (updateCmd, str(current).lower())
 
         # checking if we have legal entity name
         updateCmd = self.cli.convertComplexNameToBaseEntityName(newEntity,
