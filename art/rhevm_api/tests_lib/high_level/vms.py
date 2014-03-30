@@ -7,7 +7,7 @@ import logging
 from art.core_api import is_action
 import art.rhevm_api.tests_lib.low_level.vms as vms
 import art.rhevm_api.tests_lib.low_level.hosts as hosts
-from art.rhevm_api.utils.test_utils import get_api
+from art.rhevm_api.utils.test_utils import get_api, setPersistentNetwork
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
 
@@ -178,3 +178,58 @@ def restore_snapshot(vm_name, snap_description):
         raise errors.VMException(
             "restoreSnapshot returned False for vm %s and snapshot %s" %
             (vm_name, snap_description))
+
+
+def prepare_vm_for_rhel_template(vm_name, vm_password, image):
+    """
+    Prepare vm to create rhel with agent template from it
+    **Author**: alukiano
+
+    **Parameters**:
+        * *vm_name* - vm to prepare
+        * *vm_password* - vm connection password
+        * *image* - image to install on vm
+    **Returns**: True if method success, otherwise False
+    """
+    logging.info("Install image %s on vm %s", vm_name, image)
+    if not vms.unattendedInstallation(True, vm_name, image):
+        logging.error("Installation of image %s on vm %s failed",
+                      image, vm_name)
+        return False
+    logging.info("Wait for vm %s ip", vm_name)
+    status, result = vms.waitForIP(vm_name)
+    if not status:
+        logging.error("Vm %s still not have ip", vm_name)
+        return False
+    logging.info("Seal vm %s", vm_name)
+    if not setPersistentNetwork(result.get('ip'), vm_password):
+        logging.error("Failed to seal vm %s", vm_name)
+        return False
+    logging.info("Stop vm %s")
+    if not vms.stopVm(True, vm_name):
+        logging.error("Failed to stop vm %s", vm_name)
+        return False
+    return True
+
+
+def get_vm_ip(vm_name, start_vm=True):
+    """
+    Start vm and return vm ip
+    **Author**: alukiano
+
+    **Parameters**:
+        * *vm_name* - vm name
+    **Returns**: vm ip as string
+    """
+    logging.info("Check vm %s status", vm_name)
+    if vms.checkVmState(True, vm_name, ENUMS['vm_state_down']) and start_vm:
+        logging.info("Start vm %s", vm_name)
+        if not vms.startVm(True, vm_name):
+            raise errors.VMException("Failed to start vm %s" %
+                                     vm_name)
+    logging.info("Wait until vm %s up and fetch ip", vm_name)
+    status, result = vms.waitForIP(vm_name)
+    if not status:
+        raise errors.VMException("Vm %s still not have ip" %
+                                 vm_name)
+    return result.get('ip')

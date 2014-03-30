@@ -2837,10 +2837,10 @@ def getVmPayloads(positive, vm, **kwargs):
     * vm - vm name to retreive payloads property from
     Return: status, element obj or None if not found
     '''
-
+    name_query = "name=%s" % vm
     try:
-        vm_obj = VM_API.find(vm)
-    except EntityNotFound:
+        vm_obj = VM_API.query(name_query, all_content=True)[0]
+    except IndexError:
         logger.error('Entity %s not found!' % vm)
         return False, {'property_obj': None}
 
