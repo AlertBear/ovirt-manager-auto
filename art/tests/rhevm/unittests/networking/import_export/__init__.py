@@ -111,12 +111,14 @@ def setup_package():
             raise NetworkException("Cannot create template %s" %
                                    config.TEMPLATE_NAME[i])
 
-    logger.info("Export VM and template to Export domain")
+    logger.info("Export %s to Export domain", config.VM_NAME[0])
     if not exportVm(positive=True, vm=config.VM_NAME[0],
                     storagedomain="Export"):
         raise NetworkException("Couldn't export VM %s to export Domain" %
                                config.VM_NAME[0])
 
+    logger.info("Export %s to Export domain",
+                config.TEMPLATE_NAME[0])
     if not exportTemplate(positive=True,
                           template=config.TEMPLATE_NAME[0],
                           storagedomain="Export"):
@@ -136,22 +138,18 @@ def setup_package():
         raise NetworkException("Couldn't reattach and reactivate Export "
                                "storage domain on %s", config.DC_NAME[1])
 
-    logger.info("Export %s and %s to Export domain", config.VM_NAME[1],
-                config.TEMPLATE_NAME[1])
+    logger.info("Export %s to Export domain", config.VM_NAME[1])
     if not exportVm(positive=True, vm=config.VM_NAME[1],
                     storagedomain="Export"):
         raise NetworkException("Couldn't export VM %s to export Domain" %
                                config.VM_NAME[1])
 
+    logger.info("Export %s to Export domain", config.TEMPLATE_NAME[1])
     if not exportTemplate(positive=True,
                           template=config.TEMPLATE_NAME[1],
                           storagedomain="Export"):
         raise NetworkException("Couldn't export %s to export Domain",
                                config.TEMPLATE_NAME[1])
-
-    logger.info("Removing setup: %s", config.DC_NAME[0])
-    if not cleanDataCenter(positive=True, datacenter=config.DC_NAME[0]):
-        raise NetworkException("Cannot remove setup: %s", config.DC_NAME[0])
 
     logger.info("Remove %s from setup: %s", config.VM_NAME[1],
                 config.DC_NAME[1])
@@ -171,5 +169,10 @@ def teardown_package():
     Cleans the environment
     """
     import config
-    if not cleanDataCenter(positive=True, datacenter=config.DC_NAME[1]):
-        raise NetworkException("Cannot remove setup")
+    for i in range(2):
+        logger.info("Removing setup: %s", config.DC_NAME[i])
+        if not cleanDataCenter(positive=True, datacenter=config.DC_NAME[i],
+                               vdc=config.VDC,
+                               vdc_password=config.VDC_PASSWORD):
+            raise NetworkException("Cannot remove setup: %s",
+                                   config.DC_NAME[i])
