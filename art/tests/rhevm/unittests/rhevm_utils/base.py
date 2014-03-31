@@ -87,14 +87,14 @@ class RHEVMUtilsTestCase(TestCase):
         dispatch setup for the cleanup and setup tests
         """
         cls.installation = ART_CONFIG['PARAMETERS'].get('installation')
+        cls.machine = Setup(REST_API_HOST,
+                            'root',
+                            config['testing_env']['host_pass'],
+                            dbpassw=PGPASS,
+                            conf=VARS)
         if cls.utility in ['setup', 'cleanup']:
             cls.c = config[cls.utility]
             logger.info("DEBUG: cls.c %s", cls.c)
-            cls.machine = Setup(REST_API_HOST,
-                                'root',
-                                config['testing_env']['host_pass'],
-                                dbpassw=PGPASS,
-                                conf=VARS)
             if cls.installation != 'true' and cls.utility == 'setup':
                 cls.machine.clean(config)
 
