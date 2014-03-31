@@ -151,22 +151,25 @@ class TestSwitching(NetworkingPossitive):
         assert networks.addNetworkToCluster(
             True, cfg.NETWORK_NAME1, cfg.MAIN_CLUSTER_NAME)
 
-    def _testSwitchingDisplayAndRequired(self, required=None, display=None):
-        assert networks.updateClusterNetwork(
-            True, cfg.MAIN_CLUSTER_NAME, cfg.NETWORK_NAME1,
-            required=None if required is None else required,
-            display=None if display is None else display)
+    def _inverseParams(self, kwargs):
+        ''' inverse required or/and display param if exists '''
+        if 'required' in kwargs:
+            kwargs['required'] = not kwargs['required']
+        if 'display' in kwargs:
+            kwargs['display'] = not kwargs['display']
+
+    def _testSwitchingDisplayAndRequired(self, **kwargs):
+        assert networks.updateClusterNetwork(True, cfg.MAIN_CLUSTER_NAME,
+                                             cfg.NETWORK_NAME1, **kwargs)
 
         for uName in [cfg.USER_NAME, cfg.USER_NAME2]:
             loginAsUser(userName=uName, filter_=False)
-            assert networks.updateClusterNetwork(
-                True, cfg.MAIN_CLUSTER_NAME, cfg.NETWORK_NAME1,
-                required=None if required is None else not required,
-                display=None if display is None else not display)
-            assert networks.updateClusterNetwork(
-                True, cfg.MAIN_CLUSTER_NAME, cfg.NETWORK_NAME1,
-                required=None if required is None else required,
-                display=None if display is None else display)
+            self._inverseParams(kwargs)
+            assert networks.updateClusterNetwork(True, cfg.MAIN_CLUSTER_NAME,
+                                                 cfg.NETWORK_NAME1, **kwargs)
+            self._inverseParams(kwargs)
+            assert networks.updateClusterNetwork(True, cfg.MAIN_CLUSTER_NAME,
+                                                 cfg.NETWORK_NAME1, **kwargs)
 
 
 class PositiveNetworkPermissions231824(TestSwitching):
