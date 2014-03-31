@@ -1015,8 +1015,12 @@ element:%(elm)s " % {'col': self.collection_name,
         Return: PUT response, True if PUT test succeeded, False otherwise
         '''
         python_response = None
-        java_entity = origEntity.java_object
-        translator_to_java(newEntity, origEntity.java_object)
+
+        if isinstance(newEntity, JavaTranslator):
+            java_entity = newEntity.java_object
+        else:
+            java_entity = origEntity.java_object
+            translator_to_java(newEntity, origEntity.java_object)
 
         dumpedEntity = None
         try:
