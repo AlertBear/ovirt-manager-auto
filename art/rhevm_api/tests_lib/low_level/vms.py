@@ -1927,7 +1927,7 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
              placement_affinity=None, placement_host=None, vcpu_pinning=None,
              highly_available=None, availablity_priority=None, vm_quota=None,
              disk_quota=None, plugged='true', linked='true', protected=None,
-             copy_permissions=False):
+             copy_permissions=False, custom_properties=None):
     '''
     Description: The function createStartVm adding new vm with nic,disk
                  and started new created vm.
@@ -1989,7 +1989,8 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
                  highly_available=highly_available,
                  availablity_priority=availablity_priority, quota=vm_quota,
                  protected=protected, cpu_mode=cpu_mode,
-                 copy_permissions=copy_permissions):
+                 copy_permissions=copy_permissions,
+                 custom_properties=custom_properties):
         return False
 
     if nic:

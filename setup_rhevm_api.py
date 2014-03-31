@@ -65,6 +65,7 @@ DATA_FILES = [
         'art/rhevm_api/data_struct/api.xsd',
         'art/tests/rhevm/xml_tests/migration_tests/*.xml',
         'art/tests/rhevm/unittests/upgradeSanity/*.py',
+        'art/tests/rhevm/unittests/hooks/*.py',
 ]
 
 DATA_FILES = common.expand_paths(TEST_DATA_PATH, *DATA_FILES)

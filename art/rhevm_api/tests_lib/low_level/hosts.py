@@ -18,8 +18,8 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 from art.core_api.apis_utils import getDS
-from art.rhevm_api.utils.test_utils import get_api, split, getStat,\
-    searchElement
+from art.rhevm_api.utils.test_utils import get_api, split, getStat, \
+    searchElement, searchForObj, stopVdsmd, startVdsmd
 import os
 import time
 from lxml import etree
@@ -34,10 +34,11 @@ from utilities.utils import getIpAddressByHostName, getHostName, readConfFile
 # TODO: remove both compareCollectionSize, dump_entity is not needed
 from art.core_api.validator import compareCollectionSize, dump_entity
 from art.rhevm_api.tests_lib.low_level.networks import getClusterNetwork
-from art.rhevm_api.tests_lib.low_level.vms import startVm, stopVm, stopVms,\
-    startVms, waitForIP
+from art.rhevm_api.tests_lib.low_level.datacenters import \
+    waitForDataCenterState
+from art.rhevm_api.tests_lib.low_level.vms import startVm, stopVm, stopVms, \
+    startVms, waitForIP, getVmHost, get_vm_state
 from art.rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
-from art.rhevm_api.utils.test_utils import searchForObj
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.test_handler import settings
 from art.core_api import is_action
@@ -2546,3 +2547,42 @@ def open_host_port(hosts, user, passwd, port, protocol='tcp', chain='INPUT'):
             HOST_API.logger.info("Run command failed")
             return False
     return True
+
+
+def start_vdsm(host, password, datacenter):
+    """
+    Start vdsm. Before that stop all vms and deactivate host.
+    Parameters:
+      * host - host name/ip
+      * password - password of host
+      * datacenter - datacenter of host
+    """
+    if not startVdsmd(vds=host, password=password):
+        HOST_API.logger.error("Unable to start vdsm on host %s", host)
+        return False
+    if not activateHost(True, host):
+        HOST_API.logger.error("Unable to activate host %s", host)
+        return False
+
+    return waitForDataCenterState(datacenter)
+
+
+def stop_vdsm(host, password):
+    """
+    Stop vdsm. Before that stop all vms and deactivate host.
+    Parameters:
+      * host - host name/ip
+      * password - password of host
+    """
+    for vm in VM_API.get(absLink=False):
+        if get_vm_state(vm.name) == ENUMS['vm_state_down']:
+            continue
+        if getVmHost(vm.name)[1]['vmHoster'] == host:
+            HOST_API.logger.error("Stopping vm %s", vm.name)
+            if not stopVm(True, vm.name):
+                return False
+
+    if not deactivateHost(True, host):
+        HOST_API.logger.error("Unable to deactivate host %s", host)
+        return False
+    return stopVdsmd(vds=host, password=password)

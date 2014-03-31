@@ -66,6 +66,7 @@ TASK_POLL = 5
 ENGINE_HEALTH_URL = "http://localhost/OvirtEngineWeb/HealthStatus"
 ENGINE_SERVICE = "ovirt-engine"
 SUPERVDSMD = "supervdsmd"
+VDSMD = "vdsmd"
 
 RHEVM_UTILS_ENUMS = settings.opts['elements_conf']['RHEVM Utilities']
 
@@ -972,6 +973,13 @@ def isServiceRunning(positive, host, user, password, service):
         result = machine.isServiceRunning(service)
 
     return result == positive
+
+
+def isVdsmdRunning(host, user, password):
+    """
+    Check if vdsmd is running on host.
+    """
+    return isServiceRunning(True, host, user, password, VDSMD)
 
 
 @is_action()
