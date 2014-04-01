@@ -1136,10 +1136,11 @@ class CliUtil(RestUtil):
         Return: status (True if Action test succeeded, False otherwise)
         '''
         act = self.makeAction(async, 10, **params)
+        cli_act = validator.cliEntety(act, 'action')
 
         actionCmd = "action {0} '{1}' {2} {3}".\
             format(self.element_name.replace('_', ''), entity.id, action,
-                   validator.cliEntety(act, 'action'))
+                   cli_act)
 
         try:
             ownerId, ownerName, entityName = self._getHrefData(entity.href)
@@ -1154,16 +1155,22 @@ class CliUtil(RestUtil):
                         self.logger.error("syncAction failed to run")
                         return False
                     if params[p].id is None:
-                        addParams += " --{0}-name '{1}'".format(p,
-                                                                params[p].name)
-                        self.logger.debug("%s.id=None, using %s.name instead",
-                                          params[p], params[p])
+                        param_to_add = \
+                            " --{0}-name '{1}'".format(p, params[p].name)
+                        if param_to_add not in cli_act:
+                            addParams += param_to_add
+                            self.logger.debug(
+                                "%s.id=None, using %s.name instead", params[p],
+                                params[p])
                     else:
-                        addParams += " --{0}-id '{1}'".format(p, params[p].id)
+                        param_to_add = " --{0}-id '{1}'".format(p,
+                                                                params[p].id)
+                        if param_to_add not in cli_act:
+                            addParams += param_to_add
 
-            actionCmd = "action {0} '{1}' {2} --{3}-identifier '{4}' {5}".\
+            actionCmd = "action {0} '{1}' {2} --{3}-identifier '{4}' {5} {6}".\
                         format(entityName, entity.id, action, ownerName,
-                               ownerId, addParams)
+                               ownerId, addParams, cli_act)
 
         correlationId = self.getCorrelationId()
         if correlationId:
