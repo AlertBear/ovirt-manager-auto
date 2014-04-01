@@ -39,7 +39,7 @@ VDC = 'host'
 VDC_PASSWD = 'vdc_root_password'
 VDS_PASSWORD = 'vds_password'
 
-PUPPET_DAEMON = 'puppetd'
+PUPPET_DAEMON = 'puppet'
 OPT_ENABLE = '--enable'
 OPT_DISABLE = '--disable'
 
@@ -93,8 +93,8 @@ class PuppetPlugin(Component):
         self.__exec_toogle_puppet(OPT_ENABLE)
 
     def __exec_toogle_puppet(self, opt):
-        toogle_cmd = [PUPPET_DAEMON, opt, '--detailed-exitcodes']
-        test_cmd = [PUPPET_DAEMON, '--test', '--detailed-exitcodes']
+        toogle_cmd = [PUPPET_DAEMON, 'agent', '--test', '--detailed-exitcodes']
+        test_cmd = [PUPPET_DAEMON, 'agent', '--test', '--detailed-exitcodes']
         error_log_msg = "%s: failed execute %s with %s err: %s; out: %s"
 
         if opt == OPT_ENABLE:
