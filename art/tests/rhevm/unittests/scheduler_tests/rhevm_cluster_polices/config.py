@@ -10,7 +10,7 @@ TEST_NAME = "cluster_policies"
 PARAMETERS = ART_CONFIG['PARAMETERS']
 STORAGE_TYPE = PARAMETERS['storage_type']
 VDC = PARAMETERS.get('host', None)
-VDC_PASSWORD = PARAMETERS.get('password', None)
+VDC_PASSWORD = PARAMETERS.get('vdc_root_password', None)
 
 base_name = PARAMETERS.get('test_name', TEST_NAME)
 dc_name = PARAMETERS.get('dc_name', 'datacenter_%s' % base_name)

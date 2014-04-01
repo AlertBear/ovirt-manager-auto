@@ -9,7 +9,7 @@ import random
 import logging
 from art.unittest_lib import BaseTestCase as TestCase
 from nose.tools import istest
-from art.test_handler.tools import bz, tcms
+from art.test_handler.tools import tcms
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as vm_api
@@ -441,3 +441,56 @@ class PutHostToMaintenanceED(EvenlyDistributed):
         if not vm_api.stopVms(VMS):
             raise errors.VMException("Stopping vms failed")
         super(PutHostToMaintenanceED, cls).teardown_class()
+
+
+class CheckClusterPolicyParameters(TestCase):
+    """
+    Check different values for cluster policy parameters:
+        1) CpuOverCommitDurationMinutes - min=1; max=99
+        2) HighUtilization - min=50; max=99
+        3) LowUtilization - min=0; max=49
+    """
+    __test__ = True
+    high_utilization = random.randint(50, 99)
+    low_utilization = random.randint(0, 49)
+    duration = random.randint(1, 99) * 60
+
+    @istest
+    def check_parameters_ed(self):
+        """
+        Check if cluster success to do update to Evenly Distributed
+        with given parameters
+        Added, because this bug:
+        https://bugzilla.redhat.com/show_bug.cgi?id=1070704
+        """
+        logger.info("Change cluster policy to %s with parameters",
+                    CLUSTER_POLICIES[0])
+        self.assertTrue(updateCluster(True, config.cluster_name,
+                                      scheduling_policy=CLUSTER_POLICIES[0],
+                                      thrhld_high=self.high_utilization,
+                                      duration=self.duration))
+
+    @istest
+    def check_parameters_ps(self):
+        """
+        Check if cluster success to do update to Power Saving
+        with given parameters
+        Added, because this bug:
+        https://bugzilla.redhat.com/show_bug.cgi?id=1070704
+        """
+        logger.info("Change cluster policy to %s with parameters",
+                    CLUSTER_POLICIES[1])
+        self.assertTrue(updateCluster(True, config.cluster_name,
+                                      scheduling_policy=CLUSTER_POLICIES[1],
+                                      thrhld_high=self.high_utilization,
+                                      thrhld_low=self.low_utilization,
+                                      duration=self.duration))
+
+    @classmethod
+    def teardown_class(cls):
+        logger.info("Update cluster policy to none")
+        if not updateCluster(True, config.cluster_name,
+                             scheduling_policy=CLUSTER_POLICIES[2]):
+            raise errors.ClusterException("Update cluster %s failed" %
+                                          config.cluster_name)
+        time.sleep(UPDATE_STATS)

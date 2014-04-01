@@ -10,7 +10,7 @@ import art.rhevm_api.tests_lib.low_level.hosts as host_api
 import art.rhevm_api.tests_lib.high_level.datacenters as dc_api
 from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 
-logger = logging.getLogger("rhevm_cluster_polices")
+logger = logging.getLogger(__name__)
 
 #################################################
 
