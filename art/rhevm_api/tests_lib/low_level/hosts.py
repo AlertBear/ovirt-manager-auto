@@ -18,7 +18,8 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 from art.core_api.apis_utils import getDS
-from art.rhevm_api.utils.test_utils import get_api, split, getStat, searchElement
+from art.rhevm_api.utils.test_utils import get_api, split, getStat,\
+    searchElement
 import os
 import time
 from lxml import etree
@@ -33,8 +34,8 @@ from utilities.utils import getIpAddressByHostName, getHostName, readConfFile
 # TODO: remove both compareCollectionSize, dump_entity is not needed
 from art.core_api.validator import compareCollectionSize, dump_entity
 from art.rhevm_api.tests_lib.low_level.networks import getClusterNetwork
-from art.rhevm_api.tests_lib.low_level.vms import startVm, stopVm, stopVms, startVms,\
-    waitForIP
+from art.rhevm_api.tests_lib.low_level.vms import startVm, stopVm, stopVms,\
+    startVms, waitForIP
 from art.rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
 from art.rhevm_api.utils.test_utils import searchForObj
 from art.rhevm_api.utils.resource_utils import runMachineCommand
@@ -53,16 +54,18 @@ HOST_NICS_API = get_api('host_nic', 'host_nics')
 VM_API = get_api('vm', 'vms')
 CAP_API = get_api('version', 'capabilities')
 
-xpathMatch = is_action('xpathHosts', id_name='xpathMatch')(XPathMatch(HOST_API))
-xpathHostsLinks = is_action('xpathLinksHosts', id_name='xpathHostsLinks')(XPathLinks(HOST_API))
+xpathMatch = is_action('xpathHosts',
+                       id_name='xpathMatch')(XPathMatch(HOST_API))
+xpathHostsLinks = is_action('xpathLinksHosts',
+                            id_name='xpathHostsLinks')(XPathLinks(HOST_API))
 
 Host = getDS('Host')
 Options = getDS('Options')
 Option = getDS('Option')
 PowerManagement = getDS('PowerManagement')
 PmProxyTypes = getDS('PmProxyTypes')
-PmProxy=getDS('PmProxy')
-PmProxies=getDS('PmProxies')
+PmProxy = getDS('PmProxy')
+PmProxies = getDS('PmProxies')
 Agent = getDS('Agent')
 Agents = getDS('Agents')
 Tag = getDS('Tag')
@@ -73,7 +76,7 @@ SERVICE = '/sbin/service'
 ENUMS = settings.opts['elements_conf']['RHEVM Enums']
 RHEVM_UTILS = settings.opts['elements_conf']['RHEVM Utilities']
 KSM_STATUSFILE = '/sys/kernel/mm/ksm/run'
-HOST_STATE_TIMEOUT=1000
+HOST_STATE_TIMEOUT = 1000
 KSMTUNED_CONF = '/etc/ksmtuned.conf'
 MEGABYTE = 1024 ** 2
 IP_PATTERN = '10.35.*'
@@ -119,7 +122,8 @@ def get_dc_hosts(datacenter, get_href=True):
 @is_action()
 def getRandPM(positive, cluster, size):
     '''
-    Description: get all power management types, and create random list of given size.
+    Description: get all power management types, and create random list of
+    given size.
     Author: alukiano
     Parameters:
       * positive - True
@@ -133,7 +137,8 @@ def getRandPM(positive, cluster, size):
     minor_v = cluster_obj.get_version().get_minor()
     major_v = cluster_obj.get_version().get_major()
     cap = CAP_API.get(absLink=False)
-    version = [v for v in cap if v.get_major() == major_v and v.get_minor() == minor_v][0]
+    version = [v for v in cap if v.get_major() == major_v and
+               v.get_minor() == minor_v][0]
     for power_manager in version.get_power_managers().get_power_management():
         pm_list.append(power_manager.get_type())
     for i in range(size):
@@ -181,7 +186,8 @@ def measureKSMThreshold(positive, poolname, pool_size, vm_num, host, host_user,
         HOST_API.logger.debug('Starting VM: %s', vm_name)
         if not startVm(True, vm_name, wait_for_status=None):
             HOST_API.logger.error('Failed to start VM: %s', vm_name)
-        query = "name={0} and status=up or name={0} and status=poweringup".format(vm_name)
+        query = "name={0} and status=up or name={0}" \
+                " and status=poweringup".format(vm_name)
         HOST_API.logger.info("Running memory load on VM %s", vm_name)
         VM_API.waitForQuery(query, timeout=timeout, sleep=10)
         load_status = runLoadOnGuest(True, targetVM=vm_name, osType='linux',
@@ -216,7 +222,7 @@ def measureKSMThreshold(positive, poolname, pool_size, vm_num, host, host_user,
         vm_name = "%s-%s" % (poolname, str(vm_index + 1))
         if not stopVm(True, vm_name):
             status = False
-    return status,{'actual_thres': started_count}
+    return status, {'actual_thres': started_count}
 
 
 @is_action()
@@ -224,7 +230,7 @@ def verifyKSMThreshold(positive, poolname, vm_num, host, host_user,
                        host_passwd, guest_user, guest_passwd, vm_mem,
                        loadType, port, load=None, allocationSize=None,
                        protocol=None, clientVMs=None, extra=None,
-                       timeout = 600):
+                       timeout=600):
     '''
     Description: starts all of the calculated VMs at once and check if
     it was enough to trigger the KSM routines. Shuts down the started
@@ -258,7 +264,9 @@ def verifyKSMThreshold(positive, poolname, vm_num, host, host_user,
     if not startVms(','.join(vm_list)):
         HOST_API.logger.error('Failed to start VMs')
         return False
-    query = ' or '.join(['name={0} and status=up or name={0} and status=poweringup'.format(vm_name) for vm_name in vm_list])
+    query = ' or '.join(['name={0} and status=up or'
+                         ' name={0} and status=poweringup'.format(vm_name) for
+                         vm_name in vm_list])
     VM_API.waitForQuery(query, timeout=timeout, sleep=10)
     for vm_name in vm_list:
         load_status = runLoadOnGuest(True, targetVM=vm_name, osType='linux',
@@ -295,14 +303,17 @@ def isHostSaturated(host, max_cpu=95, max_mem=95):
     '''
     hostObj = HOST_API.find(host)
     stats = getStat(host, ELEMENT, COLLECTION, ["memory.used", "memory.total",
-                     "cpu.current.system", "cpu.current.user"])
+                                                "cpu.current.system",
+                                                "cpu.current.user"])
     cpu_sum = stats["cpu.current.system"] + stats["cpu.current.user"]
     mem_percent = stats["memory.used"] / float(stats["memory.total"]) * 100.0
     if cpu_sum > max_cpu or mem_percent > max_mem:
         if cpu_sum > max_cpu:
-            HOST_API.logger.info("Host %s reached the CPU saturation point", host)
+            HOST_API.logger.info("Host %s reached the CPU saturation point",
+                                 host)
         else:
-            HOST_API.logger.info("Host %s reached the memory saturation point", host)
+            HOST_API.logger.info("Host %s reached the memory saturation point",
+                                 host)
         return True
     return False
 
@@ -357,7 +368,8 @@ def saturateHost(positive, poolname, vm_total, host, host_user,
     Return: False on error, True otherwise
     '''
     if isHostSaturated(host):
-        HOST_API.logger.error('Host is already saturated at the start of the test')
+        HOST_API.logger.error('Host is already saturated at the start of'
+                              ' the test')
         return False
     status = True
     for vm_index in range(vm_total):
@@ -365,7 +377,8 @@ def saturateHost(positive, poolname, vm_total, host, host_user,
         HOST_API.logger.debug('Starting VM: %s', vm_name)
         if not startVm(True, vm_name, wait_for_status=None):
             HOST_API.logger.error('Failed to start VM: %s', vm_name)
-        HOST_API.logger.debug("Waiting for the guest %s to get IP address", vm_name)
+        HOST_API.logger.debug("Waiting for the guest %s to get IP address",
+                              vm_name)
         if not waitForIP(vm=vm_name)[0]:
             HOST_API.logger.error("Guest %s did not get IP.", vm_name)
             return False
@@ -384,7 +397,8 @@ def saturateHost(positive, poolname, vm_total, host, host_user,
         HOST_API.logger.debug("Checking for host saturation")
         if isHostSaturated(host):
             started_count = vm_index + 1
-            HOST_API.logger.info("Saturation point found at %d guests", started_count)
+            HOST_API.logger.info("Saturation point found at %d guests",
+                                 started_count)
             break
     HOST_API.logger.debug("Stopping the previously started VMs")
     for vm_index in range(vm_total):
@@ -439,7 +453,8 @@ def waitForHostsStates(positive, names, states='up',
             for host in sample:
                 if host.name in names:
                     if host.status.state in stop_states:
-                        HOST_API.logger.error("Host state: %s", host.status.state)
+                        HOST_API.logger.error("Host state: %s",
+                                              host.status.state)
                         return False
                     elif host.status.state == states:
                         ok += 1
@@ -450,6 +465,7 @@ def waitForHostsStates(positive, names, states='up',
         HOST_API.logger.error("Timeout waiting for all hosts in state %s",
                               states)
         return False
+
 
 def _check_hypervisor(positive, host, cluster):
     """
@@ -465,8 +481,8 @@ def _check_hypervisor(positive, host, cluster):
     except EntityNotFound:
         return False
 
-    if host.get_status() == \
-        ENUMS['search_host_state_pending_approval'] and positive:
+    if host.get_status() == ENUMS['search_host_state_pending_approval'] and\
+            positive:
         return approveHost(True, host, cluster)
     return False
 
@@ -614,45 +630,40 @@ def updateHost(positive, host, **kwargs):
                 pmOptions.add_option(op)
 
         if kwargs.get('pm_proxies'):
-            pm_proxies_list = [PmProxy(type_=proxy) for proxy \
-                                                    in kwargs.get('pm_proxies')]
+            pm_proxies_list = [PmProxy(type_=proxy) for proxy
+                               in kwargs.get('pm_proxies')]
             pm_proxies = PmProxies(pm_proxy=pm_proxies_list)
 
         if kwargs.get('agents'):
             agents_array = []
             agents = None
             use_agents = kwargs.get('agents')
-            for pm_agent_type   , pm_agent_addr, pm_agent_usr \
-              , pm_agent_passwd , pm_agent_opts, pm_agent_concurrent \
-              , pm_agent_order \
-              in use_agents:
-                agent_obj = Agent(type_=pm_agent_type            \
-                                , address=pm_agent_addr          \
-                                , username=pm_agent_usr          \
-                                , password=pm_agent_passwd       \
-                                , options=pm_agent_opts          \
-                                , concurrent=pm_agent_concurrent \
-                                , order=pm_agent_order)
+            for pm_agent_type, pm_agent_addr, pm_agent_usr, pm_agent_passwd, \
+                pm_agent_opts, pm_agent_concurrent, pm_agent_order in\
+                    use_agents:
+                agent_obj = Agent(type_=pm_agent_type, address=pm_agent_addr,
+                                  username=pm_agent_usr,
+                                  password=pm_agent_passwd,
+                                  options=pm_agent_opts,
+                                  concurrent=pm_agent_concurrent,
+                                  order=pm_agent_order)
                 agents_array.append(agent_obj)
                 agents = Agents(agent=agents_array)
 
         if kwargs.get('agents') and kwargs.get('pm_proxies'):
-            hostPm = PowerManagement(type_=kwargs.get('pm_type') \
-                                   , address=pm_address          \
-                                   , enabled=kwargs.get('pm')    \
-                                   , username=pm_username        \
-                                   , password=pm_password        \
-                                   , options=pmOptions           \
-                                   , pm_proxies=pm_proxies       \
-                                   , agents=agents)
+            hostPm = PowerManagement(type_=kwargs.get('pm_type'),
+                                     address=pm_address,
+                                     enabled=kwargs.get('pm'),
+                                     username=pm_username,
+                                     password=pm_password,
+                                     options=pmOptions, pm_proxies=pm_proxies,
+                                     agents=agents)
         else:
-             hostPm = PowerManagement(type_=kwargs.get('pm_type')\
-                                    , address=pm_address         \
-                                    , enabled=kwargs.get('pm')   \
-                                    , username=pm_username       \
-                                    , password=pm_password       \
-                                    , options=pmOptions)
-
+            hostPm = PowerManagement(type_=kwargs.get('pm_type'),
+                                     address=pm_address,
+                                     enabled=kwargs.get('pm'),
+                                     username=pm_username,
+                                     password=pm_password, options=pmOptions)
         hostUpd.set_power_management(hostPm)
     hostObj, status = HOST_API.update(hostObj, hostUpd, positive)
 
@@ -692,6 +703,7 @@ def activateHost(positive, host, wait=True):
 
     return status and testHostStatus
 
+
 def _sort_hosts_by_priority(hosts, reverse=True):
     '''
     Description: Set hosts by priorities, default is DESC order
@@ -709,9 +721,10 @@ def _sort_hosts_by_priority(hosts, reverse=True):
         hosts_priorities_dic[host] = spm_priority
 
     sorted_list = sorted(hosts_priorities_dic, key=hosts_priorities_dic.get,
-                  reverse=reverse)
+                         reverse=reverse)
     HOST_API.logger.info('Sorted hosts list: %s', sorted_list)
     return sorted_list
+
 
 @is_action()
 def activateHosts(positive, hosts):
@@ -841,7 +854,8 @@ def approveHost(positive, host, cluster='Default'):
 
 # FIXME: need to rewrite this def because new ovirt approval has been changed
 @is_action()
-def installOvirtHost(positive, host, user_name, password, vdc, port=443, timeout=60):
+def installOvirtHost(positive, host, user_name, password, vdc, port=443,
+                     timeout=60):
     '''
     Description: installation of ovirt host
     Author: edolinin
@@ -892,7 +906,8 @@ def installOvirtHost(positive, host, user_name, password, vdc, port=443, timeout
         return False
 
     if not waitForHostsStates(positive, host,
-                       states=ENUMS['search_host_state_pending_approval']):
+                              states=ENUMS[
+                                  'search_host_state_pending_approval']):
         HOST_API.logger.error("Host %s isn't in PENDING_APPROVAL state" % host)
         return False
 
@@ -906,7 +921,8 @@ def commitNetConfig(positive, host):
     Author: edolinin
     Parameters:
        * host - name of a host to be committed
-    Return: status (True if host network configuration was saved properly, False otherwise)
+    Return: status (True if host network configuration was saved properly,
+     False otherwise)
     '''
 
     hostObj = HOST_API.find(host)
@@ -926,7 +942,7 @@ def fenceHost(positive, host, fence_type):
 
     hostObj = HOST_API.find(host)
     status = HOST_API.syncAction(hostObj, "fence", positive,
-                             fence_type=fence_type.upper())
+                                 fence_type=fence_type.upper())
 
     # if test type is negative, we don't have to wait for element status,
     # since host state will not be changed
@@ -969,7 +985,8 @@ def _prepareHostNicObject(**kwargs):
         nic_obj.set_boot_protocol(kwargs.get('boot_protocol'))
 
     if 'override_configuration' in kwargs:
-        nic_obj.set_override_configuration(kwargs.get('override_configuration'))
+        nic_obj.set_override_configuration(kwargs.get(
+            'override_configuration'))
 
     address = kwargs.get('address')
     netmask = kwargs.get('netmask')
@@ -1023,19 +1040,22 @@ def getHostNic(host, nic):
 def getHostNics(host):
 
     host_obj = HOST_API.find(host)
-    return HOST_API.getElemFromLink(host_obj, 'nics', 'host_nic', get_href=True)
+    return HOST_API.getElemFromLink(host_obj, 'nics', 'host_nic',
+                                    get_href=True)
 
 
 def getHostNicsList(host):
 
     host_obj = HOST_API.find(host)
-    return HOST_API.getElemFromLink(host_obj, 'nics', 'host_nic', get_href=False)
+    return HOST_API.getElemFromLink(host_obj, 'nics', 'host_nic',
+                                    get_href=False)
 
 
 def getHostNicsAction(host):
 
     host_obj = HOST_API.find(host)
-    return HOST_API.getElemFromLink(host_obj, 'nics', 'actions', get_href=False)
+    return HOST_API.getElemFromLink(host_obj, 'nics', 'actions',
+                                    get_href=False)
 
 
 def hostNicsNetworksMapper(host):
@@ -1067,7 +1087,9 @@ def getFreeInterface(positive, host):
     '''
     for nic, network in hostNicsNetworksMapper(host).iteritems():
         if network is None:
-            if not any(hostNic for hostNic in hostNicsNetworksMapper(host).keys() if re.search('%s\.\d' % (nic), hostNic)):
+            if not any(hostNic for hostNic in
+                       hostNicsNetworksMapper(host).keys() if re.search(
+                       '%s\.\d' % nic, hostNic)):
                 return True, {'freeNic': nic}
     return False, {'freeNic': None}
 
@@ -1151,7 +1173,8 @@ def detachHostNic(positive, host, nic, network=None):
     '''
     nicObj = getHostNic(host, nic)
 
-    return HOST_API.syncAction(nicObj, "detach", positive, network=nicObj.get_network())
+    return HOST_API.syncAction(nicObj, "detach", positive,
+                               network=nicObj.get_network())
 
 
 @is_action()
@@ -1191,8 +1214,10 @@ def addBond(positive, host, name, **kwargs):
         * mode - bonding mode (int), added as option
         * miimon - another int for bonding options
         * check_connectivity - boolean and working only for management int.
-         supported modes are: 1,2,4,5. using underscore due to XML syntax limitations
-    Return: status (True if bond was attached properly to host, False otherwise)
+         supported modes are: 1,2,4,5. using underscore due to XML syntax
+         limitations
+    Return: status (True if bond was attached properly to host,
+    False otherwise)
     '''
     kwargs.update([('name', name)])
 
@@ -1241,7 +1266,8 @@ def genSNBond(name, **kwargs):
         * mode - bonding mode (int), added as option
         * miimon - another int for bonding options
         * check_connectivity - boolean and working only for management int.
-         supported modes are: 1,2,4,5. using underscore due to XML syntax limitations
+         supported modes are: 1,2,4,5. using underscore due to XML syntax
+         limitations
     return True, dict with host nic element.
     '''
     kwargs.update([('name', name)])
@@ -1323,7 +1349,7 @@ def rebootHost(positive, host, username, password):
 
 @is_action()
 def runDelayedControlService(positive, host, host_user, host_passwd, service,
-                          command='restart', delay=0):
+                             command='restart', delay=0):
     '''
     Description: Restarts a service on the host after a delay
     Author: adarazs
@@ -1337,14 +1363,14 @@ def runDelayedControlService(positive, host, host_user, host_passwd, service,
     Return: True if the command is sent successfully, False otherwise,
     or inverted in case of negative test
     '''
-    cmd = '( sleep %d; service %s %s 1>/dev/null; echo $? )' \
-               % (delay, service, command)
+    cmd = '( sleep %d; service %s %s 1>/dev/null; echo $? )'\
+          % (delay, service, command)
     host_obj = machine.Machine(host, host_user, host_passwd).util('linux')
     output = host_obj.runCmd(cmd.split(), bg=('/tmp/delayed-stdout',
-                                                 '/tmp/delayed-stderr'))
+                                              '/tmp/delayed-stderr'))
     if not output[0]:
-        HOST_API.logger.error("Sending delayed service control command failed. Output: %s",
-                     output[1])
+        HOST_API.logger.error("Sending delayed service control command failed."
+                              " Output: %s", output[1])
     return output[0] == positive
 
 
@@ -1365,7 +1391,8 @@ def checkDelayedControlService(positive, host, host_user, host_passwd):
     host_obj = machine.Machine(host, host_user, host_passwd).util('linux')
     output = host_obj.runCmd(cmd.split())
     if not output[0]:
-        HOST_API.logger.error("Failed to check for service control command result.")
+        HOST_API.logger.error("Failed to check for service control command"
+                              " result.")
     if int(output[1]) != 0:
         HOST_API.logger.error("Last service control command failed.")
     return output[0] == positive
@@ -1384,7 +1411,8 @@ def addTagToHost(positive, host, tag):
 
     hostObj = HOST_API.find(host)
     tagObj = Tag(name=tag)
-    hostTags = HOST_API.getElemFromLink(hostObj, link_name='tags', attr='tag', get_href=True)
+    hostTags = HOST_API.getElemFromLink(hostObj, link_name='tags', attr='tag',
+                                        get_href=True)
     tagObj, status = TAG_API.create(tagObj, positive, collection=hostTags)
     return status
 
@@ -1405,7 +1433,8 @@ def removeTagFromHost(positive, host, tag):
     if tagObj:
         return HOST_API.delete(tagObj, positive)
     else:
-        HOST_API.logger.error("Tag {0} is not found at host {1}".format(tag, host))
+        HOST_API.logger.error("Tag {0} is not found at host {1}".format(tag,
+                                                                        host))
         return False
 
 
@@ -1421,21 +1450,26 @@ def checkHostStatistics(positive, host):
 
     hostObj = HOST_API.find(host)
     expectedStatistics = ['memory.total', 'memory.used', 'memory.free',
-            'memory.buffers', 'memory.cached', 'swap.total', 'swap.free',
-            'swap.used', 'swap.cached', 'ksm.cpu.current', 'cpu.current.user',
-            'cpu.current.system', 'cpu.current.idle', 'cpu.load.avg.5m']
+                          'memory.buffers', 'memory.cached', 'swap.total',
+                          'swap.free', 'swap.used', 'swap.cached',
+                          'ksm.cpu.current', 'cpu.current.user',
+                          'cpu.current.system', 'cpu.current.idle',
+                          'cpu.load.avg.5m']
 
     numOfExpStat = len(expectedStatistics)
     status = True
-    statistics = HOST_API.getElemFromLink(hostObj, link_name='statistics', attr='statistic')
+    statistics = HOST_API.getElemFromLink(hostObj, link_name='statistics',
+                                          attr='statistic')
 
     for stat in statistics:
         datum = str(stat.get_values().get_value()[0].get_datum())
         if not re.match('(\d+\.\d+)|(\d+)', datum):
-            HOST_API.logger.error('Wrong value for ' + stat.get_name() + ': ' + datum)
+            HOST_API.logger.error('Wrong value for '
+                                  + stat.get_name() + ': ' + datum)
             status = False
         else:
-            HOST_API.logger.info('Correct value for ' + stat.get_name() + ': ' + datum)
+            HOST_API.logger.info('Correct value for '
+                                 + stat.get_name() + ': ' + datum)
 
         if stat.get_name() in expectedStatistics:
             expectedStatistics.remove(stat.get_name())
@@ -1443,7 +1477,8 @@ def checkHostStatistics(positive, host):
     if len(expectedStatistics) == 0:
         HOST_API.logger.info('All ' + str(numOfExpStat) + ' statistics appear')
     else:
-        HOST_API.logger.error('The following statistics are missing: ' + str(expectedStatistics))
+        HOST_API.logger.error('The following statistics are missing: '
+                              + str(expectedStatistics))
         status = False
 
     return status
@@ -1473,7 +1508,10 @@ def checkHostSpmStatus(positive, hostName):
     HOST_API.logger.info("checkHostSpmStatus - SPM Status of host %s is: %s",
                          hostName, spmStatus)
 
-    return (spmStatus == 'true') == positive
+    #due to differences between the return types of java and python sdk
+    #checks for spmStatus in a set with different possible return values
+    #  as a workaround
+    return (spmStatus in ('true', True, 'True')) == positive
 
 
 @is_action()
@@ -1512,7 +1550,6 @@ def getAnyNonSPMHost(hosts, expected_states=None):
 
     hosts = [HOST_API.find(host) for host in hosts]
 
-
     if expected_states:
         HOST_API.logger.info('Filtering host list for hosts in states %s',
                              expected_states)
@@ -1544,12 +1581,12 @@ def getSPMPriority(hostName):
 
     if not hasattr(hostObj, attribute):
         HOST_API.logger.error("Element host %s doesn't have attribute %s",
-                           hostName, attribute)
+                              hostName, attribute)
         return False
 
     spmPriority = hostObj.get_storage_manager().get_priority()
     HOST_API.logger.info("checkSPMPriority - SPM Value of host %s is %s",
-                     hostName, spmPriority)
+                         hostName, spmPriority)
     return spmPriority
 
 
@@ -1586,7 +1623,7 @@ def setSPMPriority(positive, hostName, spmPriority):
 
     if not hasattr(hostObj, attribute):
         HOST_API.logger.error("Element host %s doesn't have attribute %s",
-                          hostName, attribute)
+                              hostName, attribute)
         return False
 
     # Update host
@@ -1600,7 +1637,7 @@ def setSPMPriority(positive, hostName, spmPriority):
     hostObj = HOST_API.find(hostName)
     new_priority = hostObj.get_storage_manager().get_priority()
     HOST_API.logger.info("setSPMPriority - SPM Value of host %s is set to %s",
-                     hostName, new_priority)
+                         hostName, new_priority)
 
     return new_priority == int(spmPriority)
 
@@ -1648,11 +1685,11 @@ def setSPMStatus(positive, hostName, spmStatus):
 
     if not hasattr(hostObj, attribute):
         HOST_API.logger.error("Element host %s doesn't have attribute %s",
-                          hostName, attribute)
+                              hostName, attribute)
         return False
 
     HOST_API.logger.info("setSPMStatus - SPM Value of host is set to %s is %s",
-                     hostName, spmStatus)
+                         hostName, spmStatus)
 
     # Update host
     HOST_API.logger.info("Updating Host %s", hostName)
@@ -1698,7 +1735,8 @@ def checkSPMPresence(positive, hosts):
 
 
 @is_action()
-def checkSPMElectionRandomness(positive, hosts, attempt_number=5, spm_priority='1'):
+def checkSPMElectionRandomness(positive, hosts, attempt_number=5,
+                               spm_priority='1'):
     '''
     Description: checks whether SPM host is being chosen randomly when hosts
                  have the same SPM priority
@@ -1726,7 +1764,7 @@ def checkSPMElectionRandomness(positive, hosts, attempt_number=5, spm_priority='
         for i in xrange(attempt_number):
             for h in activation_order:
                 activateHost(bool(True), h)
-            time.sleep(45) # waiting due to SPM contending
+            time.sleep(45)  # waiting due to SPM contending
             deactivateHost(bool(True), host)
             time.sleep(45)
             try:
@@ -1763,7 +1801,7 @@ def _getSPMHostname(hosts):
     if status:
         return spmHostDict['spmHost']
     else:
-        raise EntityNotFound('SPM not found among these hosts: %s' \
+        raise EntityNotFound('SPM not found among these hosts: %s'
                              % (str(hosts),))
 
 
@@ -1819,7 +1857,7 @@ def getSPMHost(hosts):
         if checkHostSpmStatus(bool(True), host):
             return host
     else:
-        raise EntityNotFound('SPM not found among these hosts: %s' \
+        raise EntityNotFound('SPM not found among these hosts: %s'
                              % (str(hosts),))
 
 
@@ -1835,13 +1873,14 @@ def checkHostSubelementPresence(positive, host, element_path):
     path = []
     for subelem_name in element_path.split('.'):
         if not hasattr(actual_tag, subelem_name):
-            msg = "Element host %s doesn't have any subelement '%s' at path '%s'."
+            msg = "Element host %s doesn't have any subelement '%s' at path" \
+                  " '%s'."
             HOST_API.logger.error(msg % (host, subelem_name, '.'.join(path)))
             return False
         path += (subelem_name,)
         actual_tag = getattr(actual_tag, subelem_name)
-    HOST_API.logger.info("checkHostAttribute - tag %s in host %s has value '%s'"
-        % ('.'.join(path), host, actual_tag))
+    HOST_API.logger.info("checkHostAttribute - tag %s in host %s has value"
+                         " '%s'" % ('.'.join(path), host, actual_tag))
     return True
 
 
@@ -1850,11 +1889,13 @@ def getHost(positive, dataCenter='Default', spm=True, hostName=None):
     '''
     Locate and return SPM or HSM host from specific data center (given by name)
         dataCenter  - The data center name
-        spm      - When true return SPM host, false locate and return the HSM host
+        spm      - When true return SPM host, false locate and return the
+        HSM host
         hostName - Optionally, when the host name exist, the function locates
                    the specific HSM host. When such host doesn't exist, the
                    first HSM found will be returned.
-    return: True and located host name in case of success, otherwise false and None
+    return: True and located host name in case of success,
+    otherwise false and None
     '''
 
     try:
@@ -1863,17 +1904,20 @@ def getHost(positive, dataCenter='Default', spm=True, hostName=None):
     except EntityNotFound:
         return False, {'hostName': None}
 
-    clusters = (cl for cl in clusters if hasattr(cl, 'data_center') \
-        and cl.get_data_center() and cl.get_data_center().id == dataCenterObj.id)
+    clusters = (cl for cl in clusters if hasattr(cl, 'data_center')
+                and cl.get_data_center()
+                and cl.get_data_center().id == dataCenterObj.id)
     for cluster in clusters:
-        elementStatus, hosts = searchElement(positive, ELEMENT, COLLECTION, 'cluster', cluster.name)
+        elementStatus, hosts = searchElement(positive, ELEMENT, COLLECTION,
+                                             'cluster', cluster.name)
         if not elementStatus:
             return False, {'hostName': None}
         for host in hosts:
             spmStatus = checkHostSpmStatus(positive, host.name)
             if spm and spmStatus:
                 return True, {'hostName': host.name}
-            elif not spm and not spmStatus and (not hostName or hostName == host.name):
+            elif not spm and not spmStatus and (
+                    not hostName or hostName == host.name):
                 return True, {'hostName': host.name}
     return False, {'hostName': None}
 
@@ -1892,8 +1936,8 @@ def waitForSPM(datacenter, timeout, sleep):
     '''
     sampler = TimeoutingSampler(timeout, sleep,
                                 getHost, True, datacenter, True)
-    sampler.timeout_exc_args = \
-            "Timeout when waiting for SPM to appear in DC %s." % datacenter,
+    sampler.timeout_exc_args = "Timeout when waiting for SPM to appear"
+    " in DC %s." % datacenter,
     for s in sampler:
         if s[0]:
             return True
@@ -1907,7 +1951,8 @@ def getHostNicAttr(host, nic, attr):
     Parameters:
        * host - name of a host
        * nic - name of nic we'd like to check
-       * attr - attribute of nic we would like to recive. attr can dive deeper as a string with DOTS ('.').
+       * attr - attribute of nic we would like to recive. attr can dive deeper
+         as a string with DOTS ('.').
     return: True if the function succeeded, otherwise False
     '''
     try:
@@ -1932,7 +1977,8 @@ def countHostNics(host):
     Author: atal
     Parameters:
        * host - name of a host
-    return: True and counter if the function succeeded, otherwise False and None
+    return: True and counter if the function succeeded, otherwise False
+    and None
     '''
     nics = getHostNicsList(host)
     return True, {'nicsNumber': len(nics)}
@@ -1946,8 +1992,10 @@ def validateHostExist(positive, host):
     Parameters:
        * host - host name
     Return:
-        1) When positive equals True and given host exists in the setup - return true,otherwise return false
-        2) When positive equals False and given host does not exists in the setup  - return true,otherwise return false
+        1) When positive equals True and given host exists in the setup -
+           return true,otherwise return false
+        2) When positive equals False and given host does not exists in
+           the setup  - return true,otherwise return false
     '''
     hosts = HOST_API.get(absLink=False)
     hosts = filter(lambda x: x.get_name().lower() == host.lower(), hosts)
@@ -2015,11 +2063,13 @@ def ifdownNic(host, root_password, nic, wait=True):
         * host - host name
         * ip - ip of remote machine
         * user/password - to login remote machine
-        * nic - interface name. make sure you're not trying to disable rhevm network!
+        * nic - interface name. make sure you're not trying to disable rhevm
+          network!
     return True/False
     '''
     # must always run as a root in order to run ifdown
-    host_obj = machine.Machine(getIpAddressByHostName(host), 'root', root_password).util('linux')
+    host_obj = machine.Machine(getIpAddressByHostName(host), 'root',
+                               root_password).util('linux')
     if not host_obj.ifdown(nic):
         return False
     if wait:
@@ -2040,7 +2090,8 @@ def ifupNic(host, root_password, nic, wait=True):
     return True/False
     '''
     # must always run as a root in order to run ifup
-    host_obj = machine.Machine(getIpAddressByHostName(host), 'root', root_password).util('linux')
+    host_obj = machine.Machine(getIpAddressByHostName(host), 'root',
+                               root_password).util('linux')
     if not host_obj.ifup(nic):
         return False
     if wait:
@@ -2060,7 +2111,8 @@ def checkIfNicStateIs(host, user, password, nic, state):
         * state - state user like to check (up|down)
     return True/False
     '''
-    host_obj = machine.Machine(getIpAddressByHostName(host), user, password).util('linux')
+    host_obj = machine.Machine(getIpAddressByHostName(host), user,
+                               password).util('linux')
     regex = re.compile(state, re.I)
     if regex.match(host_obj.getNicState(nic)) is not None:
         return True
@@ -2074,7 +2126,8 @@ def getOsInfo(host, root_password=''):
     Author: atal
     Parameters:
        * host - name of a new host
-       * root_password - password of root user (required, can be empty only for negative tests)
+       * root_password - password of root user (required, can be empty only
+         for negative tests)
     Return: True with OS info string if succeeded, False and None otherwise
     '''
     host_obj = machine.Machine(host, 'root', root_password).util('linux')
@@ -2102,7 +2155,7 @@ def getClusterCompatibilityVersion(positive, cluster):
         HOST_API.logger.error(err)
         return False, {'clusterCompatibilityVersion': None}
     clVersion = '{0}.{1}'.format(clusterObj.get_version().get_major(),
-                                clusterObj.get_version().get_minor())
+                                 clusterObj.get_version().get_minor())
     return True, {'clusterCompatibilityVersion': clVersion}
 
 
@@ -2131,8 +2184,8 @@ def waitForHostPmOperation(positive, host, vdc='localhost', dbuser='postgres',
         waitSec = res[0][0]
         events = ['USER_VDS_STOP', 'USER_VDS_START', 'USER_VDS_RESTART']
         for event in events:
-            sql = "select get_seconds_to_wait_before_pm_operation('{0}','{1}',{2});".\
-                format(host, event, waitSec)
+            sql = "select get_seconds_to_wait_before_pm_operation(" \
+                  "'{0}','{1}',{2});".format(host, event, waitSec)
             res = dbConn.query(sql)
             timeSec = int(res[0][0])
             if timeSec > timeToWait:
@@ -2144,9 +2197,11 @@ def waitForHostPmOperation(positive, host, vdc='localhost', dbuser='postgres',
     finally:
         dbConn.close()
     if timeToWait > 0:
-        HOST_API.logger.info('Wait %d seconds until PM operation will be permitted.' % timeToWait)
+        HOST_API.logger.info('Wait %d seconds until PM operation will'
+                             ' be permitted.' % timeToWait)
         time.sleep(timeToWait)
     return returnVal
+
 
 @is_action()
 def checkKSMRun(host, host_user, host_passwd, timeout=120, sleep=1):
@@ -2161,12 +2216,15 @@ def checkKSMRun(host, host_user, host_passwd, timeout=120, sleep=1):
     Return: True if KSM is running, False otherwise
     '''
     starttime = time.time()
-    HOST_API.logger.info('Checking if KSM is running: checking every {0} seconds, for {1} seconds.'.format(str(sleep), str(timeout)))
+    HOST_API.logger.info('Checking if KSM is running: checking every'
+                         ' {0} seconds, for {1} seconds.'.format(str(sleep),
+                                                                 str(timeout)))
     host_obj = machine.Machine(host, host_user, host_passwd).util('linux')
-    while (time.time() - starttime < timeout):
+    while time.time() - starttime < timeout:
         output = host_obj.runCmd(['cat', KSM_STATUSFILE])
         if not output[0]:
-            HOST_API.logger.error("Can't read '/sys/kernel/mm/ksm/run' on %s", host)
+            HOST_API.logger.error("Can't read '/sys/kernel/mm/ksm/run' on %s",
+                                  host)
             return False
     # check if there's a 1 or a 0 in the file
         match_obj = re.search('([01])[\n\r]*$', output[1])
@@ -2178,6 +2236,7 @@ def checkKSMRun(host, host_user, host_passwd, timeout=120, sleep=1):
             time.sleep(sleep)
     HOST_API.logger.info('KSM is not running.')
     return False
+
 
 @is_action()
 def checkNetworkFiltering(positive, host, user, passwd):
@@ -2193,9 +2252,11 @@ def checkNetworkFiltering(positive, host, user, passwd):
     return: True if network filtering is enabled, False otherwise
     '''
 
-    host_obj = machine.Machine(host,user,passwd).util('linux')
-    if host_obj.runVirshCmd(['nwfilter-list'])[1].count("vdsm-no-mac-spoofing") != 1:
-        HOST_API.logger.error("nwfilter-list does not have 'vdsm-no-mac-spoofing'")
+    host_obj = machine.Machine(host, user, passwd).util('linux')
+    if host_obj.runVirshCmd(['nwfilter-list'])[1].count(
+            "vdsm-no-mac-spoofing") != 1:
+        HOST_API.logger.error("nwfilter-list does not have"
+                              " 'vdsm-no-mac-spoofing'")
         return not positive
     if not host_obj.isFileExists(RHEVM_UTILS['NWFILTER_DUMPXML']):
         HOST_API.logger.error("vdsm-no-mac-spoofing.xml file not found")
@@ -2212,6 +2273,7 @@ def checkNetworkFiltering(positive, host, user, passwd):
     if not checkNWFilterVirsh(host_obj):
         return not positive
     return positive
+
 
 def checkNWFilterVirsh(host_obj):
     '''
@@ -2236,6 +2298,7 @@ def checkNWFilterVirsh(host_obj):
                 return False
     return True
 
+
 @is_action()
 def checkNetworkFilteringDumpxml(positive, host, user, passwd, vm, nics):
     '''
@@ -2251,9 +2314,10 @@ def checkNetworkFilteringDumpxml(positive, host, user, passwd, vm, nics):
       * nics - number nics for vm in dumpxml
     return: True if network filtering is enabled, False otherwise
     '''
-    host_obj = machine.Machine(host,user,passwd).util('linux')
-    res, out = host_obj.runVirshCmd(['dumpxml', '%s' %vm])
-    if not out.count("<filterref filter='vdsm-no-mac-spoofing'/>") == int(nics):
+    host_obj = machine.Machine(host, user, passwd).util('linux')
+    res, out = host_obj.runVirshCmd(['dumpxml', '%s' % vm])
+    if not out.count(
+            "<filterref filter='vdsm-no-mac-spoofing'/>") == int(nics):
         return not positive
     return positive
 
@@ -2317,8 +2381,8 @@ def getKSMStats(positive, host, host_user, host_passwd, vm_num, mem_ovrcmt,
     stats = getStat(host, ELEMENT, COLLECTION, ['memory.total', 'memory.free'])
     total_mem = stats['memory.total']
     free_mem = stats['memory.free']
-    vm_mem = (((free_mem + int(vm_num) - 1) / int(vm_num)) / MEGABYTE)\
-             * MEGABYTE
+    vm_mem = (((free_mem + int(vm_num) - 1) / int(vm_num)) / MEGABYTE) \
+        * MEGABYTE
     pool_size = (int(vm_num) * int(mem_ovrcmt) + 99) / 100
     # let's find out the thresholds for KSM on the host and default to
     # the known defaults if there are no custom settings
@@ -2342,7 +2406,7 @@ def getKSMStats(positive, host, host_user, host_passwd, vm_num, mem_ovrcmt,
     if (total_mem * (ksm_thres_coeff/100) > ksm_thres_const):
         vm_load = int(((100 - ksm_thres_coeff) / 100.0) * vm_mem)
     else:
-        vm_load = int(((total_mem - ksm_thres_const) / float(total_mem))\
+        vm_load = int(((total_mem - ksm_thres_const) / float(total_mem))
                       * vm_mem)
     vm_load = int(vm_load / MEGABYTE + 0.5)
     return True, {'vm_mem': vm_mem, 'vm_load': vm_load,
@@ -2407,6 +2471,7 @@ def killProcesses(hostObj, procName, **kwargs):
     res, out = hostObj.runCmd(pkill_proc)
     if not res:
         HOST_API.logger.info(str(out))
+
 
 @is_action()
 def select_host_as_spm(positive, host, datacenter,
