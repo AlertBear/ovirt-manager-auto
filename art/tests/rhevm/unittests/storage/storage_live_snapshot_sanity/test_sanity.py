@@ -550,7 +550,7 @@ class LiveSnapshotOnVMCreatedFromTemplate(BaseTestCase):
         assert templates.removeTemplate(True, template='template_test')
         wait_for_tasks(
             vdc=config.PARAMETERS['host'],
-            vdc_password=config.PARAMETERS['password'],
+            vdc_password=config.PARAMETERS['vdc_root_password'],
             datacenter=config.DC_NAME)
 
     def test_snapshot_on_thin_vm(self):

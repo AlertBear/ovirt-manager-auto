@@ -66,7 +66,7 @@ VM_TYPE_SERVER = ENUMS['vm_type_server']
 MAX_WORKERS = 4
 
 VDC = PARAMETERS.get('host', None)
-VDC_PASSWORD = PARAMETERS.get('password', None)
+VDC_PASSWORD = PARAMETERS.get('vdc_root_password', None)
 VDC_ROOT_PASSWORD = PARAMETERS.get('vdc_root_password', None)
 
 EXTENT_SIZE = 128 * 1024 * 1024

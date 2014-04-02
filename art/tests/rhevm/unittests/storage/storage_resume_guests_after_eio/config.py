@@ -64,4 +64,4 @@ PARAMETERS['data_domain_address'] = PARAMETERS['static_domain_address']
 PARAMETERS['data_domain_path'] = PARAMETERS['static_domain_path']
 
 VDC = PARAMETERS.get('host', None)
-VDC_PASSWORD = PARAMETERS.get('password', None)
+VDC_PASSWORD = PARAMETERS.get('vdc_root_password', None)

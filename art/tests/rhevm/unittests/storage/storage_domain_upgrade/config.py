@@ -28,7 +28,7 @@ DC_UPGRADE_VERSIONS = PARAMETERS.as_list('dc_upgrade_versions')
 DC_TYPE = PARAMETERS['data_center_type']
 
 VDC = PARAMETERS.get('host', None)
-VDC_PASSWORD = PARAMETERS.get('password', None)
+VDC_PASSWORD = PARAMETERS.get('vdc_root_password', None)
 
 SETUP_ADDRESS = ART_CONFIG['REST_CONNECTION']['host']
 SETUP_PASSWORD = PARAMETERS['vdc_root_password']

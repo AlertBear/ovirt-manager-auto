@@ -14,7 +14,7 @@ STORAGE_TYPE = PARAMETERS['storage_type']
 TESTNAME = PARAMETERS.get('basename', None)
 
 VDC = PARAMETERS.get('host', None)
-VDC_PASSWORD = PARAMETERS.get('password', None)
+VDC_PASSWORD = PARAMETERS.get('vdc_root_password', None)
 
 BASENAME = PARAMETERS.get('basename', None)
 DATA_CENTER_NAME = PARAMETERS.get('dc_name', 'datacenter_%s' % BASENAME)

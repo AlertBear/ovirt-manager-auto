@@ -81,7 +81,7 @@ VM_LINUX_USER = PARAMETERS['vm_linux_user']
 VM_LINUX_PASSWORD = PARAMETERS['vm_linux_password']
 
 VDC = PARAMETERS.get('host', None)
-VDC_PASSWORD = PARAMETERS.get('password', None)
+VDC_PASSWORD = PARAMETERS.get('vdc_root_password', None)
 
 STORAGE_TYPE = (PARAMETERS['storage_type']).split("_")[0]
 if STORAGE_TYPE == ENUMS['storage_type_posixfs']:

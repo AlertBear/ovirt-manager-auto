@@ -28,7 +28,7 @@ DATA_CENTER_NAME = PARAMETERS.setdefault("dc_name", DEFAULT_DATA_CENTER_NAME)
 CLUSTER_NAME = PARAMETERS.setdefault("cluster_name", DEFAULT_CLUSTER_NAME)
 
 VDC = PARAMETERS.get('host', None)
-VDC_PASSWORD = PARAMETERS.get('password', None)
+VDC_PASSWORD = PARAMETERS.get('vdc_root_password', None)
 VDC_ROOT_PASSWORD = PARAMETERS.get('vdc_root_password', None)
 
 HOSTS = PARAMETERS.as_list('vds')

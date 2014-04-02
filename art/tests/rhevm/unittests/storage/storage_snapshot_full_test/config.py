@@ -57,7 +57,7 @@ COBBLER_USER = PARAMETERS.get('cobbler_user', None)
 COBBLER_PROFILE = PARAMETERS['cobbler_profile']
 
 VDC = PARAMETERS.get('host', None)
-VDC_PASSWORD = PARAMETERS.get('password', None)
+VDC_PASSWORD = PARAMETERS.get('vdc_root_password', None)
 
 MAX_DESC_LENGTH = 4000
 SPECIAL_CHAR_DESC = '!@#$\% ^&*/\\'

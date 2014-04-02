@@ -28,7 +28,7 @@ VM_BASE_NAME = PARAMETERS.setdefault('vm_name', "storage_bug_coverage_vm")
 DISK_SIZE = int(PARAMETERS.get('disk_size', 10737418240))
 
 VDC = PARAMETERS.get('host', None)
-VDC_PASSWORD = PARAMETERS.get('password', None)
+VDC_PASSWORD = PARAMETERS.get('vdc_root_password', None)
 
 HOSTS = PARAMETERS.as_list('vds')
 PASSWORDS = PARAMETERS.as_list('vds_password')

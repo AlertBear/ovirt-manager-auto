@@ -373,7 +373,7 @@
 <test_case>
    <test_name>Wait for all background tasks to finish on hosts</test_name>
    <test_action>waitForTasks</test_action>
-   <parameters>vdc='{host}', vdc_password='{password}', datacenter='storage_san_upgr'</parameters>
+   <parameters>vdc='{host}', vdc_password='{vdc_root_password}', datacenter='storage_san_upgr'</parameters>
    <positive>None</positive>
    <run>yes</run>
 </test_case>

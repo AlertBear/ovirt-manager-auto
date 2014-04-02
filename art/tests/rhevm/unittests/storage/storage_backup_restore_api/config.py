@@ -56,7 +56,7 @@ VM_UP = ENUMS['vm_state_up']
 VM_DOWN = ENUMS['vm_state_down']
 
 VDC = PARAMETERS.get('host', None)
-VDC_PASSWORD = PARAMETERS.get('password', None)
+VDC_PASSWORD = PARAMETERS.get('vdc_root_password', None)
 
 HOSTS = PARAMETERS.as_list('vds')
 VDS_PASSWORD = PARAMETERS.as_list('vds_password')

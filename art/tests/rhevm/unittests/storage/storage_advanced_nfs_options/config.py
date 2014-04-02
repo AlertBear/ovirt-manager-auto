@@ -51,4 +51,4 @@ CLUSTER_NAME = PARAMETERS['cluster_name']
 
 VDC = PARAMETERS.get('host', None)
 
-VDC_PASSWORD = PARAMETERS.get('password', None)
+VDC_PASSWORD = PARAMETERS.get('vdc_root_password', None)
