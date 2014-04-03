@@ -395,10 +395,12 @@ class QuotaTestObjectWithoutQuota(TestCase):
     def update_vm(self):
         """ Update vm with quota enforce mode """
         LOGGER.info("Updating vm '%s' memory" % VM_NAME)
-        self.assertTrue(vms.updateVm(self.positive, VM_NAME, memory=GB))
+        self.assertTrue(vms.updateVm(self.positive, VM_NAME, memory=GB,
+                                     memory_guaranteed=GB))
         if self.positive:
             self.assertTrue(vms.updateVm(self.positive, VM_NAME,
-                                         memory=512*MB))
+                                         memory=512*MB,
+                                         memory_guaranteed=512*MB))
 
     @tcms(TCMS_PLAN_ID, '236240')
     @istest
