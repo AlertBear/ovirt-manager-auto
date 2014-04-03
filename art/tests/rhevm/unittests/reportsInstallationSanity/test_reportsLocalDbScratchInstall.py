@@ -12,6 +12,7 @@ LOGGER = logging.getLogger(__name__)
 
 OVIRT_ENGINE_DWH_LOG = "/var/log/ovirt-engine-dwh/ovirt-engine-dwhd.log"
 OVIRT_ENGINE_DWH_SERVICE = "ovirt-engine-dwhd"
+JASPER_SERVER_LOG = "/var/log/ovirt-engine-reports/jasperserver.log"
 SERVICE_IS_NOT_RUNNING_MSG = "Service %s is not running"
 SERVICE_IS_RUNNING_MSG = "Service %s is running"
 FILE_DOES_NOT_EXIST_MSG = "File %s does not exist"
@@ -46,6 +47,7 @@ class ReportsLocalDbScratchInstallSanityTest(TestCase):
         self.assertTrue(is_dwh_running(MACHINE),
                         "%s is not running" % OVIRT_ENGINE_DWH_SERVICE)
 
-        LOGGER.info("Test if %s exists", OVIRT_ENGINE_DWH_LOG)
-        self.assertTrue(MACHINE.isFileExists(OVIRT_ENGINE_DWH_LOG),
-                        FILE_DOES_NOT_EXIST_MSG % OVIRT_ENGINE_DWH_LOG)
+        for log_file in [OVIRT_ENGINE_DWH_LOG, JASPER_SERVER_LOG]:
+            LOGGER.info("Test if %s exists", log_file)
+            self.assertTrue(MACHINE.isFileExists(log_file),
+                            FILE_DOES_NOT_EXIST_MSG % log_file)
