@@ -202,6 +202,7 @@ class IECase03(TestCase):
         sw1 and sw2 should be empty.
         sw3 should be with network.
         """
+
         logger.info("Remove sw1 and sw2 from setup")
         if not removeNetFromSetup(host=config.HOSTS[1],
                                   auto_nics=[config.HOST_NICS[0]],
@@ -242,6 +243,7 @@ class IECase03(TestCase):
         action, has an empty VNIC for that VNIC profiles after import
         completed
         """
+
         logger.info("Check VM NICs VNIC profiles when one of them is missing "
                     "in the target DC exist on the setup")
         for (nic, vnic) in (('nic1', config.MGMT_BRIDGE),

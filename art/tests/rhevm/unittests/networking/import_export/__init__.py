@@ -151,17 +151,19 @@ def setup_package():
         raise NetworkException("Couldn't export %s to export Domain",
                                config.TEMPLATE_NAME[1])
 
-    logger.info("Remove %s from setup: %s", config.VM_NAME[1],
-                config.DC_NAME[1])
-    if not removeVm(positive=True, vm=config.VM_NAME[1], stopVM='true'):
-        raise NetworkException("Couldn't remove imported VM %s" %
-                               config.VM_NAME[1])
+    for i in range(2):
+        logger.info("Remove %s from setup: %s", config.VM_NAME[i],
+                    config.DC_NAME[i])
+        if not removeVm(positive=True, vm=config.VM_NAME[i], stopVM='true'):
+            raise NetworkException("Couldn't remove imported VM %s" %
+                                   config.VM_NAME[i])
 
-    logger.info("Remove %s from setup: %s", config.TEMPLATE_NAME[1],
-                config.DC_NAME[1])
-    if not removeTemplate(positive=True,
-                          template=config.TEMPLATE_NAME[1]):
-        raise NetworkException("Couldn't remove %s", config.TEMPLATE_NAME[1])
+        logger.info("Remove %s from setup: %s", config.TEMPLATE_NAME[i],
+                    config.DC_NAME[i])
+        if not removeTemplate(positive=True,
+                              template=config.TEMPLATE_NAME[i]):
+            raise NetworkException("Couldn't remove %s" %
+                                   config.TEMPLATE_NAME[i])
 
 
 def teardown_package():
