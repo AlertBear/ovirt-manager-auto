@@ -1330,7 +1330,7 @@ def checkSPMPresence(positive, hosts):
         if checkHostSpmStatus(True, host):
             return positive
     else:
-        return not (positive)
+        return not positive
 
 
 def _getSPMHostname(hosts):
@@ -1983,10 +1983,7 @@ def kill_qemu_process(vm_name, host, user, password):
     Return:
         pid, or raise EntityNotFound exception
     """
-    linux_machine = machine.Machine(
-        host=host, user=user,
-        password=password).util(machine.LINUX)
-
+    linux_machine = get_linux_machine_obj(host, user, password)
     cmd = FIND_QEMU % vm_name
     status, output = linux_machine.runCmd(shlex.split(cmd))
     if not status:
@@ -1994,7 +1991,7 @@ def kill_qemu_process(vm_name, host, user, password):
     qemu_pid = output.split()[1]
     HOST_API.logger.info("QEMU pid: %s", qemu_pid)
 
-    return linux_machine.runCmd(shlex.split('kill -9 %s', qemu_pid))
+    return linux_machine.runCmd(['kill', '-9', qemu_pid])
 
 
 @is_action()
@@ -2271,3 +2268,43 @@ def get_cluster_hosts(cluster_name, host_status=ENUMS['host_state_up']):
         return [host.get_name() for host in hosts
                 if host.get_status().get_state() == host_status]
     return []
+
+
+def get_linux_machine_obj(host, host_user, host_passwd):
+    """
+    Get linux machine object.
+
+    :param host: name of host.
+    :type host: str.
+    :param host_user: user name to login to host.
+    :type host_user: str.
+    :param host_passwd: user password to login to host.
+    :type host_passwd: str.
+    :returns: object of linux machine.
+    """
+    host_ip = getHostIP(host)
+    return machine.Machine(host_ip, host_user, host_passwd).util(machine.LINUX)
+
+
+def get_host_memory(host_name):
+    """
+    Get host memory
+
+    :param host_name: host name.
+    :type host_name: str.
+    :returns: total host memory.
+    """
+    stats = getStat(host_name, ELEMENT, COLLECTION, ["memory.total"])
+    return stats["memory.total"]
+
+
+def get_host_max_scheduling_memory(host_name):
+    """
+    Get host max scheduling memory.
+
+    :param host_name: host name.
+    :type host_name: str.
+    :returns: host max scheduling memory.
+    """
+    host_obj = get_host_object(host_name)
+    return host_obj.get_max_scheduling_memory()

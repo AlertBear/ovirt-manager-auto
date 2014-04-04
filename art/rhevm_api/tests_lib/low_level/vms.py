@@ -181,9 +181,15 @@ def _prepareVmObject(**kwargs):
             cpu.set_cpu_tune(data_st.CpuTune())
         elif vcpu_pinning:
             cpu.set_cpu_tune(
-                data_st.CpuTune([data_st.VCpuPin(elm.keys()[0],
-                                                 elm.values()[0])
-                                 for elm in vcpu_pinning]))
+                data_st.CpuTune(
+                    [
+                        data_st.VCpuPin(
+                            elm.keys()[0],
+                            elm.values()[0]
+                        ) for elm in vcpu_pinning
+                    ]
+                )
+            )
         if cpu_mode is not None and cpu_mode == "":
             cpu.set_mode("CUSTOM")
         elif cpu_mode:
@@ -1481,21 +1487,21 @@ def runVmOnce(positive, vm, pause=None, display_type=None, stateless=None,
     if None is not stateless:
         vm_for_action.set_stateless(stateless)
 
-    if None is not cdrom_image:
+    if cdrom_image:
         cdrom = data_st.CdRom()
-        vmCdroms = data_st.CdRoms()
+        vm_cdroms = data_st.CdRoms()
         cdrom.set_file(data_st.File(id=cdrom_image))
-        vmCdroms.add_cdrom(cdrom)
-        vm_for_action.set_cdroms(vmCdroms)
+        vm_cdroms.add_cdrom(cdrom)
+        vm_for_action.set_cdroms(vm_cdroms)
 
-    if None is not floppy_image:
+    if floppy_image:
         floppy = data_st.Floppy()
         floppies = data_st.Floppies()
         floppy.set_file(data_st.File(id=floppy_image))
         floppies.add_floppy(floppy)
         vm_for_action.set_floppies(floppies)
 
-    if None is not boot_dev:
+    if boot_dev:
         os_type = data_st.OperatingSystem()
         # boot_dev_seq = data_st.Boot()
         for dev in boot_dev.split(","):
@@ -1503,29 +1509,20 @@ def runVmOnce(positive, vm, pause=None, display_type=None, stateless=None,
             os_type.add_boot(data_st.Boot(dev=dev))
         vm_for_action.set_os(os_type)
 
-    if None is not host:
-        raise NotImplementedError(
-            "Setting host in runVmOnce was discontinued.\n"
-            "Please change the VM affinity with updateVm instead.\n"
-            "Bug 743674 - runOnce doesn't start on the specific host"
-        )
+    if host:
+        host_obj = HOST_API.find(host)
+        placement_policy = data_st.VmPlacementPolicy(host=host_obj)
+        vm_for_action.set_placement_policy(placement_policy)
 
-    if None is not domainName:
+    if domainName:
         domain = data_st.Domain()
         domain.set_name(domainName)
 
-        if password is None:
-            logger.error('You have to specify password with username')
-            return False
-
-        if None is not user_name:
+        if user_name and password is not None:
             domain.set_user(data_st.User(user_name=user_name,
                                          password=password))
 
         vm_for_action.set_domain(domain)
-
-    # default value True
-    status = True
 
     if pause:
         status = VM_API.syncAction(vm_obj, 'start', positive, pause=pause,
@@ -4180,3 +4177,19 @@ def get_vm_nics_obj(vm_name):
                                   link_name='nics',
                                   attr='nic',
                                   get_href=False)
+
+
+def get_vm_host(vm_name):
+    """
+    Return name of host, where vm run
+
+    :param vm_name: name of vm.
+    :type vm_name: str.
+    :returns: None if function fail, otherwise name of host.
+    """
+    try:
+        vm_obj = VM_API.find(vm_name)
+        host_obj = HOST_API.find(vm_obj.host.id, 'id')
+    except EntityNotFound:
+        return None
+    return host_obj.get_name()

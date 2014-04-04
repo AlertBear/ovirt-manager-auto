@@ -47,6 +47,8 @@ ErrorHandling = getDS('ErrorHandling')
 CPU = getDS('CPU')
 KSM = getDS('KSM')
 CLUSTER_API = get_api('cluster', 'clusters')
+AFFINITY_API = get_api('affinity_group', 'affinity_groups')
+VM_API = get_api('vm', 'vms')
 
 xpathMatch = is_action('xpathClusters', id_name='xpathMatch')(XPathMatch(util))
 
@@ -555,3 +557,114 @@ def get_cluster_object(cluster_name):
     """
     cluster_obj = CLUSTER_API.find(cluster_name)
     return cluster_obj
+
+
+def get_affinity_group_obj(affinity_name, cluster_name):
+    """
+    Get affinity group object by name.
+
+    :param affinity_name: name of affinity group
+    :type affinity_name: str
+    :param cluster_name: cluster name
+    :type cluster_name: str
+    :returns: affinity group object if exist, otherwise None
+    """
+    cluster_obj = get_cluster_object(cluster_name)
+    affinity_groups = CLUSTER_API.getElemFromLink(cluster_obj,
+                                                  link_name='affinitygroups',
+                                                  attr='affinity_group')
+    for affinity_group in affinity_groups:
+        if affinity_group.get_name() == affinity_name:
+            return affinity_group
+    return None
+
+
+def create_affinity_group(affinity_name, cluster_name,
+                          positive=True, enforcing=True):
+    """
+    Create new affinity group under given cluster.
+
+    :param affinity_name name of affinity group
+    :type affinity_name: str
+    :param cluster_name: cluster name
+    :type cluster_name: str
+    :param positive: affinity positive or negative
+    :type positive: bool
+    :param enforcing: affinity hard or soft
+    :type enforcing: bool
+    :returns: True, if affinity creation success, else False
+    """
+    link_name = 'affinitygroups'
+    cluster_obj = get_cluster_object(cluster_name)
+    affinity_groups_obj = CLUSTER_API.getElemFromLink(cluster_obj,
+                                                      link_name=link_name,
+                                                      get_href=True)
+    affinity_group_obj = getDS('AffinityGroup')(name=affinity_name,
+                                                cluster=cluster_obj,
+                                                positive=positive,
+                                                enforcing=enforcing)
+    return AFFINITY_API.create(affinity_group_obj, True,
+                               collection=affinity_groups_obj)[1]
+
+
+def remove_affinity_group(affinity_name, cluster_name):
+    """
+    Remove affinity group under given cluster.
+
+    :param affinity_name: name of affinity group
+    :type affinity_name: str
+    :param cluster_name: cluster name
+    :type cluster_name: str
+    :returns: True, if affinity group removed, otherwise False
+    """
+    affinity_group_obj = get_affinity_group_obj(affinity_name, cluster_name)
+    return AFFINITY_API.delete(affinity_group_obj, True)
+
+
+def populate_affinity_with_vms(affinity_name, cluster_name, vms):
+    """
+    Populate affinity group with vms under given cluster.
+
+    :param affinity_name: name of affinity group
+    :type affinity_name: str
+    :param cluster_name: cluster name
+    :type cluster_name: str
+    :param vms: name of vms to insert into affinity group
+    :type vms: list
+    :returns: True, if affinity group populated successfully, otherwise False
+    """
+    affinity_group_obj = get_affinity_group_obj(affinity_name, cluster_name)
+    affinity_vms_obj = AFFINITY_API.getElemFromLink(affinity_group_obj,
+                                                    link_name='vms',
+                                                    get_href=True)
+    for vm in vms:
+        vm_id = VM_API.find(vm).get_id()
+        vm_id_obj = getDS('VM')(id=vm_id)
+        out, status = VM_API.create(vm_id_obj, True, async=True,
+                                    collection=affinity_vms_obj)
+        if not status:
+            return False
+    return True
+
+
+def check_vm_affinity_group(affinity_name, cluster_name, vm_name):
+    """
+    Check if vm in specific affinity group.
+
+    :param affinity_name: name of affinity group
+    :type affinity_name: str
+    :param cluster_name: cluster name
+    :type cluster_name: str
+    :param vm_name: name of vm
+    :type vm_name: str
+    :returns: True, if vm in specific affinity group, otherwise False
+    """
+    vm_id = VM_API.find(vm_name).get_id()
+    affinity_group_obj = get_affinity_group_obj(affinity_name, cluster_name)
+    affinity_vms_obj = AFFINITY_API.getElemFromLink(affinity_group_obj,
+                                                    link_name='vms',
+                                                    attr='vm')
+    for vm in affinity_vms_obj:
+        if vm_id == vm.get_id():
+            return True
+    return False
