@@ -7,14 +7,6 @@ CONFIG_TEST_PLAN = 3727
 NAME = 'config'
 
 
-def setup_module():
-    base.setup_module()
-
-
-def teardown_module():
-    base.teardown_module()
-
-
 class ConfigTestCase(base.RHEVMUtilsTestCase):
 
     __test__ = True  # FIXME: change to True, when you implement this
