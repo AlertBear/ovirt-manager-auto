@@ -5,7 +5,8 @@ Sanity will test untagged, tagged, bond scenarios.
 It will cover scenarios for VM/non-VM networks.
 '''
 from nose.tools import istest
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import attr
+from art.unittest_lib import NetworkTest as TestCase
 from art.test_handler.tools import tcms
 import logging
 from art.core_api.apis_utils import TimeoutingSampler
@@ -13,7 +14,7 @@ from art.rhevm_api.utils.test_utils import get_api
 from art.test_handler.exceptions import NetworkException, VMException
 from art.test_handler.settings import opts
 
-import config
+from networking import config
 from art.rhevm_api.tests_lib.high_level.networks import\
     createAndAttachNetworkSN, removeNetFromSetup, createDummyInterface,\
     deleteDummyInterface
@@ -42,21 +43,22 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 ########################################################################
 
 
-class SanityCase01_CheckManagment(TestCase):
+@attr(tier=0)
+class SanityCase01(TestCase):
     """
     Validate that MANAGEMENT is Required by default
     """
     __test__ = True
 
     @istest
-    def validateMGMT(self):
+    def validate_mgmt(self):
         """
         Check that MGMT is required
         """
         logger.info("Checking that mgmt network is required by "
                     "default")
         self.assertTrue(isNetworkRequired(network=config.MGMT_BRIDGE,
-                                          cluster=config.CLUSTER_NAME),
+                                          cluster=config.CLUSTER_NAME[0]),
                         "mgmt network is not required by default")
 
 ########################################################################
@@ -64,7 +66,8 @@ class SanityCase01_CheckManagment(TestCase):
 ########################################################################
 
 
-class SanityCase02_CheckStaticIPHost(TestCase):
+@attr(tier=0)
+class SanityCase02(TestCase):
     """
     Check static ip:
     Creating network (sw162) with static ip, Attaching it to eth1,
@@ -73,7 +76,7 @@ class SanityCase02_CheckStaticIPHost(TestCase):
     __test__ = True
 
     @istest
-    def checkStaticIP(self):
+    def check_static_ip(self):
         """
         Create vlan sw162 with static ip (1.1.1.1) on eth1
         """
@@ -85,8 +88,8 @@ class SanityCase02_CheckStaticIPHost(TestCase):
                                                 'address': ['1.1.1.1'],
                                                 'netmask': ['255.255.255.0']}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0],
@@ -109,7 +112,8 @@ class SanityCase02_CheckStaticIPHost(TestCase):
 ########################################################################
 
 
-class SanityCase03_CheckingVMNetworks_vlan(TestCase):
+@attr(tier=0)
+class SanityCase03(TestCase):
     """
     Check VM network & NON_VM network (vlan test):
     Creating two networks (sw162 & sw163) on eth1 while one is VM network
@@ -134,8 +138,8 @@ class SanityCase03_CheckingVMNetworks_vlan(TestCase):
                                                 'nic': config.HOST_NICS[1],
                                                 'required': 'false'}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0],
@@ -143,18 +147,18 @@ class SanityCase03_CheckingVMNetworks_vlan(TestCase):
             raise NetworkException("Cannot create and attach network")
 
     @istest
-    def checkNetworksUsages(self):
+    def check_networks_usages(self):
         """
         Checking that sw162 is a vm network & sw163 is a non-vm network
         """
         logger.info("Checking bridged network %s", config.VLAN_NETWORKS[0])
         self.assertTrue(isVMNetwork(network=config.VLAN_NETWORKS[0],
-                                    cluster=config.CLUSTER_NAME),
+                                    cluster=config.CLUSTER_NAME[0]),
                         "%s is not VM Network" % config.VLAN_NETWORKS[0])
 
         logger.info("Checking bridged network %s", config.VLAN_NETWORKS[1])
         self.assertFalse((isVMNetwork(network=config.VLAN_NETWORKS[1],
-                                      cluster=config.CLUSTER_NAME)),
+                                      cluster=config.CLUSTER_NAME[0])),
                          "%s is not NON_VM network" % config.VLAN_NETWORKS[1])
 
     @classmethod
@@ -174,7 +178,8 @@ class SanityCase03_CheckingVMNetworks_vlan(TestCase):
 ########################################################################
 
 
-class SanityCase04_CheckingVMNetworks_bond(TestCase):
+@attr(tier=0)
+class SanityCase04(TestCase):
     """
     Check VM network & NON_VM network:
     1. Check that the creation of the network created a proper network (VM).
@@ -193,20 +198,20 @@ class SanityCase04_CheckingVMNetworks_bond(TestCase):
         local_dict = {config.VLAN_NETWORKS[2]: {'vlan_id': config.VLAN_ID[2],
                                                 'required': 'false'}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         network_dict=local_dict):
             raise NetworkException("Cannot create and attach network")
 
     @istest
-    def checkNetworksUsages(self):
+    def check_networks_usages(self):
         """
         Checking that sw164 is a vm network, Changing it to non_vm network
         and checking that it is not non_vm
         """
         logger.info("Checking bridged network %s", config.VLAN_NETWORKS[2])
         self.assertTrue(isVMNetwork(network=config.VLAN_NETWORKS[2],
-                                    cluster=config.CLUSTER_NAME),
+                                    cluster=config.CLUSTER_NAME[0]),
                         "%s is NON_VM network when it should be VM"
                         % config.VLAN_NETWORKS[2])
 
@@ -214,7 +219,7 @@ class SanityCase04_CheckingVMNetworks_bond(TestCase):
                     config.VLAN_NETWORKS[2])
         if not updateNetwork(positive=True,
                              network=config.VLAN_NETWORKS[2],
-                             cluster=config.CLUSTER_NAME, usages=''):
+                             cluster=config.CLUSTER_NAME[0], usages=''):
             logger.error("Failed to update %s to be NON_VM network",
                          config.VLAN_NETWORKS[2])
             return False
@@ -222,7 +227,7 @@ class SanityCase04_CheckingVMNetworks_bond(TestCase):
         logger.info("Checking bridged network %s", config.VLAN_NETWORKS[2])
 
         self.assertFalse(isVMNetwork(network=config.VLAN_NETWORKS[2],
-                                     cluster=config.CLUSTER_NAME),
+                                     cluster=config.CLUSTER_NAME[0]),
                          "%s is VM network when it should be NON_VM"
                          % config.VLAN_NETWORKS[2])
 
@@ -240,7 +245,8 @@ class SanityCase04_CheckingVMNetworks_bond(TestCase):
 ########################################################################
 
 
-class SanityCase05_CheckingPortMirroring_vlan(TestCase):
+@attr(tier=0)
+class SanityCase05(TestCase):
     """
     Checking Port Mirroring (vlan test):
     Creating vnic profile with network sw162 and port mirroring enabled,
@@ -260,8 +266,8 @@ class SanityCase05_CheckingPortMirroring_vlan(TestCase):
                                                 'nic': config.HOST_NICS[1],
                                                 'required': 'false'}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0],
@@ -272,15 +278,15 @@ class SanityCase05_CheckingPortMirroring_vlan(TestCase):
                     "enabled",
                     config.VLAN_NETWORKS[0])
         if not addVnicProfile(positive=True, name=config.VNIC_PROFILE[0],
-                              cluster=config.CLUSTER_NAME,
+                              cluster=config.CLUSTER_NAME[0],
                               network=config.VLAN_NETWORKS[0],
                               port_mirroring=True):
             logger.error("Failed to add %s profile with %s network to %s",
                          config.VNIC_PROFILE[0], config.VLAN_NETWORKS[0],
-                         config.CLUSTER_NAME)
+                         config.CLUSTER_NAME[0])
 
     @istest
-    def attachVnicToVm(self):
+    def attach_vnic_to_vm(self):
         """
         Attaching vnic to VM
         """
@@ -321,7 +327,8 @@ class SanityCase05_CheckingPortMirroring_vlan(TestCase):
 ########################################################################
 
 
-class SanityCase06_CheckingRequiredNetwork_vlan(TestCase):
+@attr(tier=0)
+class SanityCase06(TestCase):
     """
     Checking required network (vlan test):
     Creating network sw162 as required and attaching it to the host(eth1),
@@ -343,8 +350,8 @@ class SanityCase06_CheckingRequiredNetwork_vlan(TestCase):
                                                 'nic': config.HOST_NICS[1],
                                                 'required': 'true'}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0],
@@ -352,21 +359,21 @@ class SanityCase06_CheckingRequiredNetwork_vlan(TestCase):
             raise NetworkException("Cannot create and attach network")
 
     @istest
-    def checkRequired(self):
+    def check_required(self):
         """
         Verifying that the network is required,
         updating network to be not required and checking
         that the network is non-required
         """
         logger.info("network = %s, cluster = %s", config.VLAN_NETWORKS[0],
-                    config.CLUSTER_NAME)
+                    config.CLUSTER_NAME[0])
         self.assertTrue(isNetworkRequired(network=config.VLAN_NETWORKS[0],
-                                          cluster=config.CLUSTER_NAME),
+                                          cluster=config.CLUSTER_NAME[0]),
                         "Network %s is non-required, Should be required"
                         % config.VLAN_NETWORKS[0])
 
         if not updateClusterNetwork(positive=True,
-                                    cluster=config.CLUSTER_NAME,
+                                    cluster=config.CLUSTER_NAME[0],
                                     network=config.VLAN_NETWORKS[0],
                                     required=False):
             logger.error("Updating %s to non-required failed"
@@ -374,9 +381,9 @@ class SanityCase06_CheckingRequiredNetwork_vlan(TestCase):
             return False
 
         logger.info("network = %s, cluster = %s", config.VLAN_NETWORKS[0],
-                    config.CLUSTER_NAME)
+                    config.CLUSTER_NAME[0])
         self.assertFalse(isNetworkRequired(network=config.VLAN_NETWORKS[0],
-                                           cluster=config.CLUSTER_NAME),
+                                           cluster=config.CLUSTER_NAME[0]),
                          "Network %s is required, Should be non-required"
                          % config.VLAN_NETWORKS[0])
 
@@ -397,7 +404,8 @@ class SanityCase06_CheckingRequiredNetwork_vlan(TestCase):
 ########################################################################
 
 
-class SanityCase07_CheckingRequiredNetwork_bond(TestCase):
+@attr(tier=0)
+class SanityCase07(TestCase):
     """
     Checking required network (bond test):
     Creating network sw163 as required and attaching it to the host
@@ -420,27 +428,28 @@ class SanityCase07_CheckingRequiredNetwork_bond(TestCase):
                                                 'vlan_id': config.VLAN_ID[1],
                                                 'required': 'true'}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
             raise NetworkException("Cannot create and attach network")
 
     @istest
-    def checkRequired(self):
+    def check_required(self):
         """
         Verifying that the network is required, updating network to be
         not required and then checking that the network is non-required
         """
         logger.info("network = %s, cluster = %s", config.VLAN_NETWORKS[1],
-                    config.CLUSTER_NAME)
+                    config.CLUSTER_NAME[0])
         self.assertTrue(isNetworkRequired(network=config.VLAN_NETWORKS[1],
-                                          cluster=config.CLUSTER_NAME),
+                                          cluster=config.CLUSTER_NAME[0]),
                         "Network %s is non-required, Should be required"
                         % config.VLAN_NETWORKS[1])
 
-        if not updateClusterNetwork(positive=True, cluster=config.CLUSTER_NAME,
+        if not updateClusterNetwork(positive=True,
+                                    cluster=config.CLUSTER_NAME[0],
                                     network=config.VLAN_NETWORKS[1],
                                     required=False):
             logger.error("Updating %s to non-required failed"
@@ -449,9 +458,9 @@ class SanityCase07_CheckingRequiredNetwork_bond(TestCase):
 
         logger.info("network = %s, cluster = %s",
                     config.VLAN_NETWORKS[1],
-                    config.CLUSTER_NAME)
+                    config.CLUSTER_NAME[0])
         self.assertFalse(isNetworkRequired(network=config.VLAN_NETWORKS[1],
-                                           cluster=config.CLUSTER_NAME),
+                                           cluster=config.CLUSTER_NAME[0]),
                          "Network %s is required, Should be non-required"
                          % config.VLAN_NETWORKS[1])
 
@@ -471,7 +480,8 @@ class SanityCase07_CheckingRequiredNetwork_bond(TestCase):
 
 ########################################################################
 
-class SanityCase08_CheckingJumboFrames_vlan(TestCase):
+@attr(tier=0)
+class SanityCase08(TestCase):
     """
     Checking Jumbo Frame (vlan test):
     Creating and adding sw162 (MTU 9000) & sw163 (MTU 3500) to the host
@@ -499,8 +509,8 @@ class SanityCase08_CheckingJumboFrames_vlan(TestCase):
                                                 'required': 'false',
                                                 'mtu': 3500}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0],
@@ -508,7 +518,7 @@ class SanityCase08_CheckingJumboFrames_vlan(TestCase):
             raise NetworkException("Cannot create and attach network")
 
     @istest
-    def checkMTU(self):
+    def check_mtu(self):
         """
         Check that MTU on sw162 and sw163 is really 9000 & 1500
         """
@@ -566,7 +576,8 @@ class SanityCase08_CheckingJumboFrames_vlan(TestCase):
 ########################################################################
 
 
-class SanityCase09_CheckingJumboFrames_bond(TestCase):
+@attr(tier=0)
+class SanityCase09(TestCase):
     """
     Checking Jumbo Frame (vlan test):
     Creating and adding sw162 (MTU 7000) to the host
@@ -590,15 +601,15 @@ class SanityCase09_CheckingJumboFrames_bond(TestCase):
                                                 'mtu': 7000,
                                                 'required': 'false'}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
             raise NetworkException("Cannot create and attach network")
 
     @istest
-    def checkMTU(self):
+    def check_mtu(self):
         """
         Check that MTU on sw162 is really 7000
         """
@@ -629,7 +640,8 @@ class SanityCase09_CheckingJumboFrames_bond(TestCase):
 ########################################################################
 
 
-class SanityCase10_CheckingNetworkFilter_vlan(TestCase):
+@attr(tier=0)
+class SanityCase10(TestCase):
     """
     Checking Network Filter (vlan test):
     Creating network sw162 and adding it to the host on eth1, then:
@@ -656,8 +668,8 @@ class SanityCase10_CheckingNetworkFilter_vlan(TestCase):
                                                 'nic': config.HOST_NICS[1],
                                                 'required': 'false'}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0],
@@ -665,7 +677,7 @@ class SanityCase10_CheckingNetworkFilter_vlan(TestCase):
             raise NetworkException("Cannot create and attach network")
 
     @istest
-    def checkNwfilterOnRhevm(self):
+    def check_nwfilter_on_rhevm(self):
         """
         Checking that network spoofing filter is enabled according to
         the rhevm's version.
@@ -678,7 +690,7 @@ class SanityCase10_CheckingNetworkFilter_vlan(TestCase):
             "Spoofing filter is not enabled")
 
     @istest
-    def checkNwfilterOnVM(self):
+    def check_nwfilter_on_vm(self):
         """
         Checking that network spoofing filter is enabled on the vm
         """
@@ -732,7 +744,8 @@ class SanityCase10_CheckingNetworkFilter_vlan(TestCase):
 ########################################################################
 
 
-class SanityCase11_CheckingLinking_vlan(TestCase):
+@attr(tier=0)
+class SanityCase11(TestCase):
     """
     Checking Linking Nic (vlan test):
     Creating 4 networks (sw162, sw163, sw164 & sw165) and adding them to
@@ -764,8 +777,8 @@ class SanityCase11_CheckingLinking_vlan(TestCase):
                                                 'nic': config.HOST_NICS[1],
                                                 'required': 'false'}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0],
@@ -783,7 +796,7 @@ class SanityCase11_CheckingLinking_vlan(TestCase):
                 raise VMException("Cannot add nic%s to VM" % (i+2))
 
     @istest
-    def checkCombinationPluggedLinkedValues(self):
+    def check_combination_plugged_linked_values(self):
         """
         Check all permutation for the Plugged/Linked options on VNIC
         """
@@ -828,7 +841,8 @@ class SanityCase11_CheckingLinking_vlan(TestCase):
 ########################################################################
 
 
-class SanityCase12_CheckingLinking_bond(TestCase):
+@attr(tier=0)
+class SanityCase12(TestCase):
     """
     Checking Linking Nic (bond test):
     Creating 4 networks (sw162, sw163, sw164 & sw165) and adding them to
@@ -864,8 +878,8 @@ class SanityCase12_CheckingLinking_bond(TestCase):
                                                 'vlan_id': config.VLAN_ID[3],
                                                 'required': 'false'}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0],
@@ -883,7 +897,7 @@ class SanityCase12_CheckingLinking_bond(TestCase):
                 raise VMException("Cannot add nic%s to VM" % (i+2))
 
     @istest
-    def checkCombinationPluggedLinkedValues(self):
+    def check_combination_plugged_linked_values(self):
         """
         Checking that all the permutations of plugged & linked are correct
         """
@@ -928,7 +942,8 @@ class SanityCase12_CheckingLinking_bond(TestCase):
 ########################################################################
 
 
-class SanityCase13_275464(TestCase):
+@attr(tier=0)
+class SanityCase13(TestCase):
     """
     Positive: Creates bridged network over bond on Host with custom name
     """
@@ -948,8 +963,8 @@ class SanityCase13_275464(TestCase):
                                                 'vlan_id': config.VLAN_ID[0],
                                                 'required': 'false'}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -957,7 +972,7 @@ class SanityCase13_275464(TestCase):
 
     @istest
     @tcms(6957, 275464)
-    def bondModeChange(self):
+    def bond_mode_change(self):
         """
         Check physical and logical levels for networks with Jumbo frames
         """
@@ -1012,11 +1027,12 @@ class SanityCase13_275464(TestCase):
         if not removeNetFromSetup(host=config.HOSTS[0],
                                   auto_nics=[config.HOST_NICS[0]],
                                   network=[config.VLAN_NETWORKS[0]],
-                                  data_center=config.DC_NAME):
+                                  data_center=config.DC_NAME[0]):
             raise NetworkException("Cannot create and attach network")
 
 
-class SanityCase14_275471_bondMaxLength(TestCase):
+@attr(tier=0)
+class SanityCase14(TestCase):
     """
     Negative: Bond with exceeded name length (more than 15 chars)
     """
@@ -1028,7 +1044,7 @@ class SanityCase14_275471_bondMaxLength(TestCase):
 
     @istest
     @tcms(6958, 275471)
-    def bondMaxLength(self):
+    def bond_max_length(self):
         """
         Create BOND: exceed allowed length (max 15 chars)
         """
@@ -1054,7 +1070,8 @@ class SanityCase14_275471_bondMaxLength(TestCase):
         pass
 
 
-class SanityCase15_275471_bondPrefix(TestCase):
+@attr(tier=0)
+class SanityCase15(TestCase):
     """
     Negative:  Try to create bond with wrong prefix
     """
@@ -1066,7 +1083,7 @@ class SanityCase15_275471_bondPrefix(TestCase):
 
     @istest
     @tcms(6958, 275471)
-    def bondPrefix(self):
+    def bond_prefix(self):
         """
         Create BOND: use wrong prefix (eg. NET1515)
         """
@@ -1092,7 +1109,8 @@ class SanityCase15_275471_bondPrefix(TestCase):
         pass
 
 
-class SanityCase16_275471_bondSuffix(TestCase):
+@attr(tier=0)
+class SanityCase16(TestCase):
     """
     Negative: Try to create bond with wrong suffix
     """
@@ -1104,7 +1122,7 @@ class SanityCase16_275471_bondSuffix(TestCase):
 
     @istest
     @tcms(6958, 275471)
-    def bondSuffix(self):
+    def bond_suffix(self):
         """
         Create BOND: use wrong suffix (e.g. bond1!)
         """
@@ -1130,7 +1148,8 @@ class SanityCase16_275471_bondSuffix(TestCase):
         pass
 
 
-class SanityCase17_275471_bondEmpty(TestCase):
+@attr(tier=0)
+class SanityCase17(TestCase):
     """
     Negative: Try to create bond with empty name
     """
@@ -1142,7 +1161,7 @@ class SanityCase17_275471_bondEmpty(TestCase):
 
     @istest
     @tcms(6958, 275471)
-    def bondEmpty(self):
+    def bond_empty(self):
         """
         Create BOND: leave name field empty
         """
@@ -1168,7 +1187,8 @@ class SanityCase17_275471_bondEmpty(TestCase):
         pass
 
 
-class SanityCase18_275813_MoreThen5BONDS(TestCase):
+@attr(tier=0)
+class SanityCase18(TestCase):
     """
     Negative: Create more then 5 BONDS using dummy interfaces
     """
@@ -1188,7 +1208,7 @@ class SanityCase18_275813_MoreThen5BONDS(TestCase):
 
     @istest
     @tcms(6957, 275813)
-    def dummyBonds(self):
+    def dummy_bonds(self):
         """
         Create 10 BONDS using dummy interfaces
         """
@@ -1233,8 +1253,8 @@ class SanityCase18_275813_MoreThen5BONDS(TestCase):
                                   timeout=600):
             logger.error("%s is not in UP state", config.HOSTS[0])
 
-        if not waitForSPM(config.DC_NAME, 600, 30):
-            logger.error("No SPM in %s", config.DC_NAME)
+        if not waitForSPM(config.DC_NAME[0], 600, 30):
+            logger.error("No SPM in %s", config.DC_NAME[0])
             return False
 
 ########################################################################

@@ -3,13 +3,14 @@ Testing Topologies feature.
 1 DC, 1 Cluster, 1 Hosts and 1 VM will be created for testing.
 """
 
-import config
+from networking import config
 import logging
 from nose.tools import istest
 from art.test_handler.tools import tcms
-from art.unittest_lib import BaseTestCase as TestCase
-from art.rhevm_api.tests_lib.low_level.vms import \
-    updateNic, startVm, stopVm, waitForIP
+from art.unittest_lib import attr
+from art.unittest_lib import NetworkTest as TestCase
+from art.rhevm_api.tests_lib.low_level.vms import updateNic, startVm, stopVm, \
+    waitForIP
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.high_level.networks import \
     createAndAttachNetworkSN, removeNetFromSetup, checkICMPConnectivity
@@ -24,6 +25,7 @@ logger = logging.getLogger(__name__)
 ########################################################################
 
 
+@attr(tier=1)
 class TopologiesCase01(TestCase):
     """
     Check connectivity to VM with VLAN network
@@ -41,8 +43,8 @@ class TopologiesCase01(TestCase):
                                                 'nic': config.HOST_NICS[1],
                                                 'required': 'false'}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0],
@@ -66,7 +68,7 @@ class TopologiesCase01(TestCase):
         """
         Check connectivity to VLAN network with virtIO driver
         """
-        check_vm_connect_and_log(driver="virtIO", vlan=True)
+        check_vm_connect_and_log(driver=config.NIC_TYPE_VIRTIO, vlan=True)
 
     @istest
     @tcms(4139, 385831)
@@ -75,10 +77,10 @@ class TopologiesCase01(TestCase):
         Check connectivity to VLAN network with e1000 driver
         """
         logger.info("Updating vNIC driver to e1000")
-        if not update_vnic_driver(driver="e1000"):
+        if not update_vnic_driver(driver=config.NIC_TYPE_E1000):
             raise NetworkException("Fail to update vNIC to e1000")
 
-        check_vm_connect_and_log(driver="e1000", vlan=True)
+        check_vm_connect_and_log(driver=config.NIC_TYPE_E1000, vlan=True)
 
     @istest
     @tcms(4139, 385834)
@@ -87,10 +89,10 @@ class TopologiesCase01(TestCase):
         Check connectivity to VLAN network with rtl8139 driver
         """
         logger.info("Updating vNIC driver to rtl8139")
-        if not update_vnic_driver(driver="rtl8139"):
+        if not update_vnic_driver(driver=config.NIC_TYPE_RTL8139):
             raise NetworkException("Fail to update vNIC to rtl8139")
 
-        check_vm_connect_and_log(driver="rtl8139", vlan=True)
+        check_vm_connect_and_log(driver=config.NIC_TYPE_RTL8139, vlan=True)
 
     @classmethod
     def teardown_class(cls):
@@ -117,6 +119,7 @@ class TopologiesCase01(TestCase):
 ##############################################################################
 
 
+@attr(tier=1)
 class TopologiesCase02(TestCase):
     """
     Check connectivity to VM with VLAN over BOND mode 1 network
@@ -138,8 +141,8 @@ class TopologiesCase02(TestCase):
                                                 "vlan_id": config.VLAN_ID[0],
                                                 "required": "false"}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -162,7 +165,7 @@ class TopologiesCase02(TestCase):
         """
         Check connectivity to VLAN over BOND mode 1 network with virtIO driver
         """
-        check_vm_connect_and_log(driver="virtIO", vlan=True,
+        check_vm_connect_and_log(driver=config.NIC_TYPE_VIRTIO, vlan=True,
                                  mode=config.BOND_MODES[1])
 
     @istest
@@ -171,10 +174,10 @@ class TopologiesCase02(TestCase):
         """
         Check connectivity to VLAN over BOND mode 1 network with e1000 driver
         """
-        if not update_vnic_driver(driver="e1000"):
+        if not update_vnic_driver(driver=config.NIC_TYPE_E1000):
             raise NetworkException("Fail to update vNIC to e1000")
 
-        check_vm_connect_and_log(driver="e1000", vlan=True,
+        check_vm_connect_and_log(driver=config.NIC_TYPE_E1000, vlan=True,
                                  mode=config.BOND_MODES[1])
 
     @istest
@@ -184,10 +187,10 @@ class TopologiesCase02(TestCase):
         Check connectivity to VLAN over BOND mode 1 network with rtl8139
         driver
         """
-        if not update_vnic_driver(driver="rtl8139"):
+        if not update_vnic_driver(driver=config.NIC_TYPE_RTL8139):
             raise NetworkException("Fail to update vNIC to rtl8139")
 
-        check_vm_connect_and_log(driver="rtl8139", vlan=True,
+        check_vm_connect_and_log(driver=config.NIC_TYPE_RTL8139, vlan=True,
                                  mode=config.BOND_MODES[1])
 
     @classmethod
@@ -216,6 +219,7 @@ class TopologiesCase02(TestCase):
 ##############################################################################
 
 
+@attr(tier=1)
 class TopologiesCase03(TestCase):
     """
     Check connectivity to VM with BOND mode 2 network
@@ -249,7 +253,8 @@ class TopologiesCase03(TestCase):
         """
         Check connectivity to BOND mode 2 network with virtIO driver
         """
-        check_vm_connect_and_log(driver="virtIO", mode=config.BOND_MODES[2])
+        check_vm_connect_and_log(driver=config.NIC_TYPE_VIRTIO,
+                                 mode=config.BOND_MODES[2])
 
     @istest
     @tcms(4139, 386261)
@@ -257,10 +262,11 @@ class TopologiesCase03(TestCase):
         """
         Check connectivity to BOND mode 2 network with e1000 driver
         """
-        if not update_vnic_driver(driver="e1000"):
+        if not update_vnic_driver(driver=config.NIC_TYPE_E1000):
             raise NetworkException("Fail to update vNIC to e1000")
 
-        check_vm_connect_and_log(driver="e1000", mode=config.BOND_MODES[2])
+        check_vm_connect_and_log(driver=config.NIC_TYPE_E1000,
+                                 mode=config.BOND_MODES[2])
 
     @istest
     @tcms(4139, 386262)
@@ -268,10 +274,11 @@ class TopologiesCase03(TestCase):
         """
         Check connectivity to BOND mode 2 network with rtl8139 driver
         """
-        if not update_vnic_driver(driver="rtl8139"):
+        if not update_vnic_driver(driver=config.NIC_TYPE_RTL8139):
             raise NetworkException("Fail to update vNIC to rtl8139")
 
-        check_vm_connect_and_log(driver="rtl8139", mode=config.BOND_MODES[2])
+        check_vm_connect_and_log(driver=config.NIC_TYPE_RTL8139,
+                                 mode=config.BOND_MODES[2])
 
     @classmethod
     def teardown_class(cls):
@@ -296,12 +303,13 @@ class TopologiesCase03(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
+@attr(tier=1)
 class TopologiesCase04(TestCase):
     """
     Check connectivity to VM with BOND mode 4 network
     Check virtIO, e1000 and rtl8139 drivers
     """
-    __test__ = len(config.HOST_NICS) > 4
+    __test__ = len(config.HOST_NICS) > 3
 
     @classmethod
     def setup_class(cls):
@@ -329,7 +337,8 @@ class TopologiesCase04(TestCase):
         """
         Check connectivity to BOND mode 4 network with virtIO driver
         """
-        check_vm_connect_and_log(driver="virtIO", mode=config.BOND_MODES[4])
+        check_vm_connect_and_log(driver=config.NIC_TYPE_VIRTIO,
+                                 mode=config.BOND_MODES[4])
 
     @istest
     @tcms(4139, 386264)
@@ -337,10 +346,11 @@ class TopologiesCase04(TestCase):
         """
         Check connectivity to BOND mode 4 network with e1000 driver
         """
-        if not update_vnic_driver(driver="e1000"):
+        if not update_vnic_driver(driver=config.NIC_TYPE_E1000):
             raise NetworkException("Fail to update vNIC to e1000")
 
-        check_vm_connect_and_log(driver="e1000", mode=config.BOND_MODES[4])
+        check_vm_connect_and_log(driver=config.NIC_TYPE_E1000,
+                                 mode=config.BOND_MODES[4])
 
     @istest
     @tcms(4139, 386265)
@@ -348,10 +358,11 @@ class TopologiesCase04(TestCase):
         """
         Check connectivity to BOND mode 4 network with rtl8139 driver
         """
-        if not update_vnic_driver(driver="rtl8139"):
+        if not update_vnic_driver(driver=config.NIC_TYPE_RTL8139):
             raise NetworkException("Fail to update vNIC to rtl8139")
 
-        check_vm_connect_and_log(driver="rtl8139", mode=config.BOND_MODES[4])
+        check_vm_connect_and_log(driver=config.NIC_TYPE_RTL8139,
+                                 mode=config.BOND_MODES[4])
 
     @classmethod
     def teardown_class(cls):
@@ -376,6 +387,7 @@ class TopologiesCase04(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
+@attr(tier=1)
 class TopologiesCase05(TestCase):
     """
     Check connectivity to VM with BOND mode 3 network
@@ -409,7 +421,8 @@ class TopologiesCase05(TestCase):
         """
         Check connectivity to BOND mode 3 network with virtIO driver
         """
-        check_vm_connect_and_log(driver="virtIO", mode=config.BOND_MODES[3])
+        check_vm_connect_and_log(driver=config.NIC_TYPE_VIRTIO,
+                                 mode=config.BOND_MODES[3])
 
     @istest
     @tcms(4139, 386266)
@@ -417,10 +430,11 @@ class TopologiesCase05(TestCase):
         """
         Check connectivity to BOND mode 3 network with e1000 driver
         """
-        if not update_vnic_driver(driver="e1000"):
+        if not update_vnic_driver(driver=config.NIC_TYPE_E1000):
             raise NetworkException("Fail to update vNIC to e1000")
 
-        check_vm_connect_and_log(driver="e1000", mode=config.BOND_MODES[3])
+        check_vm_connect_and_log(driver=config.NIC_TYPE_E1000,
+                                 mode=config.BOND_MODES[3])
 
     @istest
     @tcms(4139, 386267)
@@ -428,10 +442,11 @@ class TopologiesCase05(TestCase):
         """
         Check connectivity to BOND mode 3 network with rtl8139 driver
         """
-        if not update_vnic_driver(driver="rtl8139"):
+        if not update_vnic_driver(driver=config.NIC_TYPE_RTL8139):
             raise NetworkException("Fail to update vNIC to rtl8139")
 
-        check_vm_connect_and_log(driver="rtl8139", mode=config.BOND_MODES[3])
+        check_vm_connect_and_log(driver=config.NIC_TYPE_RTL8139,
+                                 mode=config.BOND_MODES[3])
 
     @classmethod
     def teardown_class(cls):
@@ -456,6 +471,7 @@ class TopologiesCase05(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
+@attr(tier=1)
 class TopologiesCase06(TestCase):
     """
     Check connectivity to BOND mode 0 network
@@ -495,6 +511,7 @@ class TopologiesCase06(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
+@attr(tier=1)
 class TopologiesCase07(TestCase):
     """
     Check connectivity to BOND mode 5 network
@@ -534,6 +551,7 @@ class TopologiesCase07(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
+@attr(tier=1)
 class TopologiesCase08(TestCase):
     """
     Check connectivity to BOND mode 6 network
@@ -601,7 +619,7 @@ def check_connectivity(vlan=False, vm=True):
 
     """
     if vm:
-        ip = waitForIP(config.VM_NAME[0])[1]
+        ip = waitForIP(vm=config.VM_NAME[0], timeout=60)[1]
         if not ip:
             return False
 
@@ -646,8 +664,8 @@ def create_and_attach_bond(mode):
                                        "bootproto": bootproto,
                                        "required": False}}
 
-    if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                    cluster=config.CLUSTER_NAME,
+    if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                    cluster=config.CLUSTER_NAME[0],
                                     host=config.HOSTS[0],
                                     network_dict=local_dict,
                                     auto_nics=[config.HOST_NICS[0]]):

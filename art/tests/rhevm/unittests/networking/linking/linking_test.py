@@ -6,9 +6,10 @@ It will cover scenarios for different states of VNIC on stopped/running VM.
 '''
 
 from nose.tools import istest
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import attr
+from art.unittest_lib import NetworkTest as TestCase
 import logging
-import config
+from networking import config
 from art.test_handler.tools import tcms
 from art.rhevm_api.utils.test_utils import get_api
 
@@ -41,7 +42,8 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 # This func is supposed to solve async problem between vdsm and libvirt/qemu
 
 
-class Linked_Case1_231692_236620_231710(TestCase):
+@attr(tier=1)
+class LinkedCase1(TestCase):
     """
     Create permutation for the Plugged/Linked option on VNIC
     """
@@ -69,7 +71,7 @@ class Linked_Case1_231692_236620_231710(TestCase):
 
     @istest
     @tcms(8046, 231692)
-    def checkCombinationPluggedLinkedValues(self):
+    def check_combination_plugged_linked_values(self):
         """
         Check all permutation for the Plugged/Linked options on VNIC
         """
@@ -108,7 +110,8 @@ class Linked_Case1_231692_236620_231710(TestCase):
                 raise NetworkException("Cannot remove nic from setup")
 
 
-class Linked_Case2_231696(TestCase):
+@attr(tier=1)
+class LinkedCase2(TestCase):
     """
     Add a new network to VM with default plugged and linked states
     Checked that plugged and linked are True by default
@@ -127,7 +130,7 @@ class Linked_Case2_231696(TestCase):
 
     @istest
     @tcms(8046, 231696)
-    def checkDefaultValues(self):
+    def check_default_values(self):
         """
         Check the default values for the Plugged/Linked options on VNIC
         """
@@ -152,7 +155,8 @@ class Linked_Case2_231696(TestCase):
             raise NetworkException("Cannot remove nic from setup")
 
 
-class Linked_Case3_231698_231697(TestCase):
+@attr(tier=1)
+class LinkedCase3(TestCase):
     """
     Create permutation for the Plugged/Linked VNIC
     Use e1000 and rtl8139 drivers
@@ -178,7 +182,7 @@ class Linked_Case3_231698_231697(TestCase):
 
     @istest
     @tcms(8046, 231697)
-    def checkCombinationPluggedLinkedValues(self):
+    def check_ombination_plugged_linked_values(self):
         """
         Check all permutation for the Plugged/Linked options on VNIC
         """
@@ -273,7 +277,8 @@ class Linked_Case3_231698_231697(TestCase):
                 raise NetworkException("Cannot remove nic from setup")
 
 
-class Linked_Case4_231691(TestCase):
+@attr(tier=1)
+class LinkedCase4(TestCase):
     """
     Try to run VM with network attached to Cluster but not to the host
     The test should fail as VM can't run when there is no network on
@@ -288,10 +293,10 @@ class Linked_Case4_231691(TestCase):
         """
         logger.info("Creating network on DC, Cluster")
         if not addNetwork(True, name=config.NETWORKS[0],
-                          data_center=config.DC_NAME):
+                          data_center=config.DC_NAME[0]):
             raise NetworkException("Cannot add network to DC")
         if not addNetworkToCluster(True, network=config.NETWORKS[0],
-                                   cluster=config.CLUSTER_NAME,
+                                   cluster=config.CLUSTER_NAME[0],
                                    required='false'):
             raise NetworkException("Cannot add network to Cluster")
         logger.info("Adding network to VM")
@@ -301,7 +306,7 @@ class Linked_Case4_231691(TestCase):
 
     @istest
     @tcms(8046, 231691)
-    def checkStartVm(self):
+    def check_start_vm(self):
         """
         Try to start VM when there is no network on the host
         """
@@ -325,11 +330,12 @@ class Linked_Case4_231691(TestCase):
         if not removeNic(True, config.VM_NAME[1], "nic6"):
             raise NetworkException("Cannot remove nic from setup")
         if not (removeNetwork(True, network=config.NETWORKS[0],
-                              data_center=config.DC_NAME)):
+                              data_center=config.DC_NAME[0])):
             raise NetworkException("Cannot remove network from DC")
 
 
-class Linked_Case5_239344(TestCase):
+@attr(tier=1)
+class LinkedCase5(TestCase):
     """
     Editing plugged VNIC with port mirroring enabled on running VM
     """
@@ -342,12 +348,12 @@ class Linked_Case5_239344(TestCase):
         on running VM
         """
         if not addVnicProfile(positive=True, name=config.VNIC_PROFILE[0],
-                              cluster=config.CLUSTER_NAME,
+                              cluster=config.CLUSTER_NAME[0],
                               network=config.VLAN_NETWORKS[0],
                               port_mirroring=True):
             logger.error("Failed to add %s profile with %s network to %s",
                          config.VNIC_PROFILE[0], config.VLAN_NETWORKS[0],
-                         config.CLUSTER_NAME)
+                         config.CLUSTER_NAME[0])
 
         logger.info("Creating plugged/linked VNIC with port mirroring on sw1")
         if not addNic(True, vm=config.VM_NAME[0], name='nic2',
@@ -357,7 +363,7 @@ class Linked_Case5_239344(TestCase):
 
     @istest
     @tcms(8046, 239344)
-    def checkPortMirroringNetwork(self):
+    def check_port_mirroring_network(self):
         """
         Check scenarios for port mirroring network
         """
@@ -390,7 +396,8 @@ class Linked_Case5_239344(TestCase):
             logger.error("Failed to remove %s profile", config.VNIC_PROFILE[0])
 
 
-class Linked_Case6_239348(TestCase):
+@attr(tier=1)
+class LinkedCase6(TestCase):
     """
     Create VNICs with linked/unlinked states on running VM.
     Change network parameters for both VNICs:
@@ -414,7 +421,7 @@ class Linked_Case6_239348(TestCase):
 
     @istest
     @tcms(8046, 239348)
-    def changeNetParamValues(self):
+    def change_net_param_values(self):
         """
         Check network parameters changes for VNICS
         Change NIC names, update linked/plugged states
@@ -525,7 +532,8 @@ class Linked_Case6_239348(TestCase):
                 raise NetworkException("Cannot remove nic from setup")
 
 
-class Linked_Case7_239368(TestCase):
+@attr(tier=1)
+class LinkedCase7(TestCase):
     """
     Changing several network parameters at once on non-running VM
     """
@@ -543,17 +551,17 @@ class Linked_Case7_239368(TestCase):
             raise VMException("Cannot add VNIC to VM")
 
         if not addVnicProfile(positive=True, name=config.VNIC_PROFILE[0],
-                              cluster=config.CLUSTER_NAME,
+                              cluster=config.CLUSTER_NAME[0],
                               network=config.VLAN_NETWORKS[1],
                               port_mirroring=True):
             raise NetworkException("Failed to add %s profile with %s network"
                                    "to %s" % (config.VNIC_PROFILE[0],
                                               config.VLAN_NETWORKS[1],
-                                              config.CLUSTER_NAME))
+                                              config.CLUSTER_NAME[0]))
 
     @istest
     @tcms(8046, 239368)
-    def changeNetParamValues(self):
+    def change_net_param_values(self):
         """
         Change plugged, network and name at once on VNIC of VM
         """

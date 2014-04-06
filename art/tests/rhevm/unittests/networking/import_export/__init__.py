@@ -4,6 +4,7 @@ Import Export Test
 """
 
 import logging
+from networking import config
 from art.rhevm_api.tests_lib.high_level.storagedomains import addNFSDomain,\
     detach_and_deactivate_domain, attach_and_activate_domain
 from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
@@ -25,12 +26,10 @@ def setup_package():
     """
     Prepare environment
     """
-    import config
     logger.info("Creating two data centers, clusters, adding host and "
                 "storage to each")
     for i in range(2):
-        if not prepareSetup(hosts=config.HOSTS[i],
-                            cpuName=config.CPU_NAME,
+        if not prepareSetup(hosts=config.HOSTS[i], cpuName=config.CPU_NAME,
                             username=config.HOSTS_USER,
                             password=config.HOSTS_PW,
                             datacenter=config.DC_NAME[i],
@@ -39,14 +38,14 @@ def setup_package():
                             cluster=config.CLUSTER_NAME[i],
                             lun_address=config.LUN_ADDRESS[i],
                             lun_target=config.LUN_TARGET[i],
-                            luns=config.LUN[i], version=config.VERSION[i],
+                            luns=config.LUN[i], version=config.VERSION[i-2],
                             vmName=config.VM_NAME[i],
                             vm_password=config.VMS_LINUX_PW,
                             mgmt_network=config.MGMT_BRIDGE,
                             auto_nics=[config.HOST_NICS[0]]):
             raise NetworkException("Cannot create setup %s" % i)
 
-    logger.info("Adding export domain (NFS) to %s", config.DC_NAME[0])
+    logger.info("Adding export domain (NFS) to %s", config.DC_NAME[0],)
     if not addNFSDomain(host=config.HOSTS[0],
                         storage=config.EXPORT_STORAGE_NAME,
                         data_center=config.DC_NAME[0],
@@ -101,7 +100,7 @@ def setup_package():
     for i in range(2):
         for index, net in enumerate(net_list):
             if not addNic(True, config.VM_NAME[i],
-                          name=config.NIC_NAME[index],
+                          name=config.NIC_NAME[index + 1],
                           network=net, vnic_profile=net):
                 raise NetworkException("Cannot add vnic_profile %s to VM" %
                                        net)
@@ -171,11 +170,10 @@ def teardown_package():
     """
     Cleans the environment
     """
-    import config
     for i in range(2):
         logger.info("Removing setup: %s", config.DC_NAME[i])
         if not cleanDataCenter(positive=True, datacenter=config.DC_NAME[i],
                                vdc=config.VDC,
-                               vdc_password=config.VDC_PASSWORD):
+                               vdc_password=config.VDC_ROOT_PASSWORD):
             raise NetworkException("Cannot remove setup: %s" %
                                    config.DC_NAME[i])

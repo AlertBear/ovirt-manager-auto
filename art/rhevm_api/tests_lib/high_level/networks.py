@@ -20,6 +20,7 @@
 import logging
 import re
 import os
+from art.rhevm_api.tests_lib.low_level.clusters import addCluster
 
 from utilities import machine
 from art.rhevm_api.utils.test_utils import restartVdsmd, sendICMP
@@ -27,7 +28,7 @@ from art.rhevm_api.tests_lib.low_level.networks import addNetwork,\
     getClusterNetwork, removeNetwork, addNetworkToCluster, NET_API,\
     DC_API, updateNetwork, getClusterNetworks, MGMT_NETWORK
 from art.rhevm_api.tests_lib.low_level.hosts import sendSNRequest,\
-    commitNetConfig, genSNNic, getHostNic
+    commitNetConfig, genSNNic, getHostNic, addHost
 from art.rhevm_api.tests_lib.low_level.templates import createTemplate
 from art.rhevm_api.tests_lib.low_level.vms import getVmMacAddress,\
     startVm, stopVm, createVm, waitForVmsStates
@@ -36,7 +37,7 @@ from art.rhevm_api.utils.test_utils import convertMacToIpAddress,\
 from art.rhevm_api.tests_lib.low_level.storagedomains import createDatacenter,\
     waitForStorageDomainStatus, cleanDataCenter
 from art.rhevm_api.tests_lib.low_level.datacenters import\
-    waitForDataCenterState
+    waitForDataCenterState, addDataCenter
 from art.test_handler.exceptions import DataCenterException
 from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api import is_action
@@ -947,3 +948,38 @@ def checkHostNicParameters(host, nic, **kwargs):
             res = False
 
     return res
+
+
+def create_basic_setup(datacenter, storage_type, version, cluster=None,
+                       cpu=None, host=None, host_password=None):
+    """
+    Description: Create basic setup with datacenter and optional cluster and
+    host
+    Author: myakove
+    Parameters:
+       *  *datacenter* - Datacenter name
+       *  *storage_type* - Storage type for datacenter
+       *  *version* - Version of the datacenter/cluster
+       *  *cluster* - Cluster name
+       *  *cpu* - CPU type for cluster
+       *  *host* - Host name
+       *  *host_password* - Password for the host
+    **Return**: True if setup creation succeeded, otherwise False
+    """
+    if not addDataCenter(positive=True, name=datacenter,
+                         storage_type=storage_type,
+                         version=version):
+        return False
+
+    if cluster:
+        if not addCluster(positive=True, name=cluster,
+                          cpu=cpu, data_center=datacenter,
+                          version=version):
+            return False
+
+        if host:
+            if not addHost(positive=True, name=host,
+                           root_password=host_password,
+                           cluster=cluster):
+                return False
+    return True

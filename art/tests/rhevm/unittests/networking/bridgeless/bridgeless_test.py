@@ -6,10 +6,10 @@ bond scenarios.
 """
 
 from nose.tools import istest
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import attr
+from art.unittest_lib import NetworkTest as TestCase
 import logging
-import config
-
+from networking import config
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.high_level.networks import\
     createAndAttachNetworkSN, removeNetFromSetup
@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 ########################################################################
 
 
+@attr(tier=1)
 class BridgelessCase1(TestCase):
     """
     Create and attach Non-VM network
@@ -44,8 +45,8 @@ class BridgelessCase1(TestCase):
 
         logger.info("Create and attach Non-VM network to DC/Cluster "
                     "and Host")
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -58,12 +59,13 @@ class BridgelessCase1(TestCase):
         """
         logger.info("Remove network from setup")
         if not removeNetFromSetup(host=config.HOSTS[0],
-                                  data_center=config.DC_NAME,
+                                  data_center=config.DC_NAME[0],
                                   auto_nics=[config.HOST_NICS[0]],
                                   network=[config.NETWORKS[0]]):
             raise NetworkException("Cannot remove network from setup")
 
 
+@attr(tier=1)
 class BridgelessCase2(TestCase):
     """
     Create and attach Non-VM with VLAN network
@@ -85,8 +87,8 @@ class BridgelessCase2(TestCase):
 
         logger.info("Create and attach Non-VM VLAN network to DC/Cluster"
                     "and Host")
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0],
                                                    config.HOST_NICS[1]]):
@@ -99,12 +101,13 @@ class BridgelessCase2(TestCase):
         """
         logger.info("Remove network from setup")
         if not removeNetFromSetup(host=config.HOSTS[0],
-                                  data_center=config.DC_NAME,
+                                  data_center=config.DC_NAME[0],
                                   auto_nics=[config.HOST_NICS[0]],
                                   network=[config.VLAN_NETWORKS[0]]):
             raise NetworkException("Cannot remove network from setup")
 
 
+@attr(tier=1)
 class BridgelessCase3(TestCase):
     """
     Create and attach Non-VM network with VLAN over BOND
@@ -132,8 +135,8 @@ class BridgelessCase3(TestCase):
 
         logger.info("Create and attach Non-VM network with VLAN "
                     "over BOND to DC/Cluster and Host")
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -146,12 +149,13 @@ class BridgelessCase3(TestCase):
         """
         logger.info("Remove network from setup")
         if not removeNetFromSetup(host=config.HOSTS[0],
-                                  data_center=config.DC_NAME,
+                                  data_center=config.DC_NAME[0],
                                   auto_nics=[config.HOST_NICS[0]],
                                   network=[config.VLAN_NETWORKS[0]]):
             raise NetworkException("Cannot remove network from setup")
 
 
+@attr(tier=1)
 class BridgelessCase4(TestCase):
     """
     Create and attach Non-VM network over BOND
@@ -177,8 +181,8 @@ class BridgelessCase4(TestCase):
 
         logger.info("Create and attach Non-VM network "
                     "over BOND to DC/Cluster and Host")
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -191,7 +195,7 @@ class BridgelessCase4(TestCase):
         """
         logger.info("Remove network from setup")
         if not removeNetFromSetup(host=config.HOSTS[0],
-                                  data_center=config.DC_NAME,
+                                  data_center=config.DC_NAME[0],
                                   auto_nics=[config.HOST_NICS[0]],
                                   network=[config.NETWORKS[0]]):
             raise NetworkException("Cannot remove network from setup")

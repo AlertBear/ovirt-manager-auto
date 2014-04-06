@@ -685,16 +685,20 @@ def updateHost(positive, host, **kwargs):
 
 
 @is_action()
-def removeHost(positive, host):
+def removeHost(positive, host, deactivate=False):
     """
     Description: remove existed host
     Author: edolinin
     Parameters:
-       * host - name of a host to be removed
+       *  *host* - name of a host to be removed
+       *  *deactivate* - Flag to put host in maintenance before remove
     Return: status (True if host was removed properly, False otherwise)
     """
 
     hostObj = HOST_API.find(host)
+    if deactivate:
+        if not deactivateHost(positive=positive, host=host):
+            return False
     return HOST_API.delete(hostObj, positive)
 
 
@@ -2317,15 +2321,6 @@ def checkNetworkFiltering(positive, host, user, passwd):
         return not positive
     if not checkNWFilterVirsh(host_obj):
         return not positive
-    if not host_obj.removeFile(RHEVM_UTILS['NWFILTER_DUMPXML']):
-        HOST_API.logger.error("Deletion failed")
-        return not positive
-    if not host_obj.restartService("vdsmd"):
-        HOST_API.logger.error("restarting vdsm failed")
-        return not positive
-    time.sleep(30)
-    if not checkNWFilterVirsh(host_obj):
-        return not positive
     return positive
 
 
@@ -2337,7 +2332,7 @@ def checkNWFilterVirsh(host_obj):
       * host_obj - the host's object
     return: True if all the elements were found, False otherwise
     """
-    NOT_FOUND = -1
+    not_found = -1
 
     xml_file = tempfile.NamedTemporaryFile()
     if not host_obj.copyFrom(RHEVM_UTILS['NWFILTER_DUMPXML'], xml_file.name):
@@ -2346,7 +2341,7 @@ def checkNWFilterVirsh(host_obj):
     with xml_file as f:
         tmp_file = f.read().strip()
         for string in search_for:
-            if (tmp_file.find(string) == NOT_FOUND) or \
+            if (tmp_file.find(string) == not_found) or \
                     (host_obj.runVirshCmd(virsh_cmd)[1].count(string) != 1):
                 HOST_API.logger.error("nwfilter tags weren't found in file")
                 return False

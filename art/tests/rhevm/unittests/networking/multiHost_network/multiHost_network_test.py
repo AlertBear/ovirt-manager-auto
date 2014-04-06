@@ -6,20 +6,19 @@ scenarios.
 """
 
 from nose.tools import istest
+from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.low_level.clusters import addCluster,\
     removeCluster
 from art.rhevm_api.tests_lib.low_level.datacenters import addDataCenter, \
     removeDataCenter
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import NetworkTest as TestCase
 import logging
-import config
+from networking import config
 import time
-
 from art.rhevm_api.utils.test_utils import checkMTU
 from art.test_handler.exceptions import NetworkException
 from art.test_handler.tools import tcms
 from art.core_api.apis_utils import TimeoutingSampler
-
 from art.rhevm_api.tests_lib.high_level.networks import\
     createAndAttachNetworkSN, removeNetFromSetup, checkHostNicParameters
 from art.rhevm_api.tests_lib.low_level.networks import\
@@ -39,7 +38,8 @@ logger = logging.getLogger(__name__)
 ########################################################################
 
 
-class MultiHost_Case01_331894(TestCase):
+@attr(tier=1)
+class MultiHostCase01(TestCase):
     """
     Update untagged network with VLAN
     Update tagged network with another VLAN
@@ -56,8 +56,8 @@ class MultiHost_Case01_331894(TestCase):
                                                 "required": "false"}}
 
         logger.info("Attach network to DC/Cluster and Host")
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -65,7 +65,7 @@ class MultiHost_Case01_331894(TestCase):
 
     @istest
     @tcms(12030, 331894)
-    def update_with_VLAN(self):
+    def update_with_vlan(self):
         """
         1) Update network with VLAN 162
         2) Check that the Host was updated with VLAN 162
@@ -79,7 +79,7 @@ class MultiHost_Case01_331894(TestCase):
 
         logger.info("Update network with VLAN %s", config.VLAN_ID[0])
         if not updateNetwork(True, network=config.VLAN_NETWORKS[0],
-                             data_center=config.DC_NAME,
+                             data_center=config.DC_NAME[0],
                              vlan_id=config.VLAN_ID[0]):
             raise NetworkException("Cannot update network to be tagged with "
                                    "VLAN %s" % config.VLAN_ID[0])
@@ -105,7 +105,7 @@ class MultiHost_Case01_331894(TestCase):
 
         logger.info("Update network with VLAN %s", config.VLAN_ID[1])
         if not updateNetwork(True, network=config.VLAN_NETWORKS[0],
-                             data_center=config.DC_NAME,
+                             data_center=config.DC_NAME[0],
                              vlan_id=config.VLAN_ID[1]):
             raise NetworkException("Cannot update network to be tagged with "
                                    "VLAN %s" % config.VLAN_ID[1])
@@ -131,7 +131,7 @@ class MultiHost_Case01_331894(TestCase):
 
         logger.info("Update network to be untagged")
         if not updateNetwork(True, network=config.VLAN_NETWORKS[0],
-                             data_center=config.DC_NAME,
+                             data_center=config.DC_NAME[0],
                              vlan_id=None):
             raise NetworkException("Cannot update network to be untagged")
 
@@ -160,7 +160,8 @@ class MultiHost_Case01_331894(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class MultiHost_Case02_331895(TestCase):
+@attr(tier=1)
+class MultiHostCase02(TestCase):
     """
     Update network with the default MTU to the MTU of 9000
     Update network to have default MTU value
@@ -176,8 +177,8 @@ class MultiHost_Case02_331895(TestCase):
                                          "required": "false"}}
 
         logger.info("Attach network to DC/Cluster/Host")
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=dict_dc1,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -185,7 +186,7 @@ class MultiHost_Case02_331895(TestCase):
 
     @istest
     @tcms(12030, 331895)
-    def update_with_MTU(self):
+    def update_with_mtu(self):
         """
         1) Update network with MTU 9000
         2) Check that the Host was updated with MTU 9000
@@ -193,11 +194,11 @@ class MultiHost_Case02_331895(TestCase):
         4) Check that the Host was updated with MTU 1500
         """
         mtu_dict1 = {"mtu": config.MTU[0]}
-        mtu_dict2 = {"mtu": config.MTU[1]}
+        mtu_dict2 = {"mtu": config.MTU[-1]}
 
         logger.info("Update network with MTU %s", config.MTU[0])
         if not updateNetwork(True, network=config.NETWORKS[0],
-                             data_center=config.DC_NAME,
+                             data_center=config.DC_NAME[0],
                              mtu=config.MTU[0]):
             raise NetworkException("Cannot update  network with  MTU %s" %
                                    config.MTU[0])
@@ -226,12 +227,12 @@ class MultiHost_Case02_331895(TestCase):
                                  password=config.HOSTS_PW, mtu=config.MTU[0],
                                  nic=config.HOST_NICS[1]))
 
-        logger.info("Update MTU network with MTU %s", config.MTU[1])
+        logger.info("Update MTU network with MTU %s", config.MTU[-1])
         if not updateNetwork(True, network=config.NETWORKS[0],
-                             data_center=config.DC_NAME,
-                             mtu=config.MTU[1]):
+                             data_center=config.DC_NAME[0],
+                             mtu=config.MTU[-1]):
             raise NetworkException("Cannot update network with MTU %s" %
-                                   config.MTU[1])
+                                   config.MTU[-1])
 
         logger.info("Wait till the Host is updated with the change")
         sample2 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
@@ -246,7 +247,7 @@ class MultiHost_Case02_331895(TestCase):
         logger.info("Checking logical layer of bridged network %s on host "
                     "%s", config.NETWORKS[0], config.HOSTS[0])
         self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=config.MTU[1],
+                                 password=config.HOSTS_PW, mtu=config.MTU[-1],
                                  physical_layer=False,
                                  network=config.NETWORKS[0],
                                  nic=config.HOST_NICS[1]))
@@ -254,7 +255,7 @@ class MultiHost_Case02_331895(TestCase):
         logger.info("Checking physical layer of bridged network %s on host %s"
                     % (config.NETWORKS[0], config.HOSTS[0]))
         self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=config.MTU[1],
+                                 password=config.HOSTS_PW, mtu=config.MTU[-1],
                                  nic=config.HOST_NICS[1]))
 
     @classmethod
@@ -269,7 +270,8 @@ class MultiHost_Case02_331895(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class MultiHost_Case03_331911(TestCase):
+@attr(tier=1)
+class MultiHostCase03(TestCase):
     """
     Update VM network to be non-VM network
     Update non-VM network to be VM network
@@ -286,8 +288,8 @@ class MultiHost_Case03_331911(TestCase):
                                          "required": "false"}}
 
         logger.info("Attach network to DC/Cluster/Host")
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=dict_dc1,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -295,7 +297,7 @@ class MultiHost_Case03_331911(TestCase):
 
     @istest
     @tcms(12030, 331911)
-    def update_with_non_VM_nonVm(self):
+    def update_with_non_vm_nonvm(self):
         """
         1) Update network to be non-VM network
         2) Check that the Host was updated accordingly
@@ -308,7 +310,7 @@ class MultiHost_Case03_331911(TestCase):
         logger.info("Update network %s to be non-VM network",
                     config.NETWORKS[0])
         if not updateNetwork(True, network=config.NETWORKS[0],
-                             data_center=config.DC_NAME, usages=""):
+                             data_center=config.DC_NAME[0], usages=""):
             raise NetworkException("Cannot update network to be non-VM "
                                    "network")
 
@@ -331,7 +333,7 @@ class MultiHost_Case03_331911(TestCase):
 
         logger.info("Update network %s to be VM network", config.NETWORKS[0])
         if not updateNetwork(True, network=config.NETWORKS[0],
-                             data_center=config.DC_NAME,
+                             data_center=config.DC_NAME[0],
                              usages="vm"):
             raise NetworkException("Cannot update network to be VM network")
 
@@ -363,7 +365,8 @@ class MultiHost_Case03_331911(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class MultiHost_Case04_331896(TestCase):
+@attr(tier=1)
+class MultiHostCase04(TestCase):
     """
     Update network name:
     1) Negative when host is using it
@@ -384,8 +387,8 @@ class MultiHost_Case04_331896(TestCase):
                                          "required": "false"}}
 
         logger.info("Attach network to DC/Cluster/Host")
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=dict_dc1,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -406,7 +409,7 @@ class MultiHost_Case04_331896(TestCase):
         logger.info("Negative: Try to update network name when network "
                     "resides on host")
         if not updateNetwork(False, network=config.NETWORKS[0],
-                             data_center=config.DC_NAME,
+                             data_center=config.DC_NAME[0],
                              name=config.NETWORKS[1]):
             raise NetworkException("Could update network name when shouldn't")
 
@@ -426,7 +429,7 @@ class MultiHost_Case04_331896(TestCase):
         logger.info("Negative: Try to update network name when network "
                     "resides on VM")
         if not updateNetwork(False, network=config.NETWORKS[0],
-                             data_center=config.DC_NAME,
+                             data_center=config.DC_NAME[0],
                              name=config.NETWORKS[1]):
             raise NetworkException("Could update network name when shouldn't")
 
@@ -435,26 +438,26 @@ class MultiHost_Case04_331896(TestCase):
             raise NetworkException("Cannot remove NIC from VM")
 
         logger.info("Put network on the Template")
-        if not addTemplateNic(True, config.TEMPLATE_NAME, name="nic2",
-                              data_center=config.DC_NAME,
+        if not addTemplateNic(True, config.TEMPLATE_NAME[0], name="nic2",
+                              data_center=config.DC_NAME[0],
                               network=config.NETWORKS[0]):
             raise NetworkException("Cannot add NIC to Template")
 
         logger.info("Negative: Try to update network name when network "
                     "resides on Template")
         if not updateNetwork(False, network=config.NETWORKS[0],
-                             data_center=config.DC_NAME,
+                             data_center=config.DC_NAME[0],
                              name=config.NETWORKS[1]):
             raise NetworkException("Could update network name when shouldn't")
 
         logger.info("Remove network from Template")
-        if not removeTemplateNic(True, config.TEMPLATE_NAME, "nic2"):
+        if not removeTemplateNic(True, config.TEMPLATE_NAME[0], "nic2"):
             raise NetworkException("Cannot remove nic from Template")
 
         logger.info("Update network name when network resides only on "
                     "DC and Cluster")
         if not updateNetwork(True, network=config.NETWORKS[0],
-                             data_center=config.DC_NAME,
+                             data_center=config.DC_NAME[0],
                              name=config.NETWORKS[1]):
             raise NetworkException("Couldn't update network name when should")
 
@@ -470,7 +473,8 @@ class MultiHost_Case04_331896(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class MultiHost_Case05_331909(TestCase):
+@attr(tier=1)
+class MultiHostCase05(TestCase):
     """
     Update network on running/non-running VM:
     1) Negative: Try to change MTU on net when running VM is using it
@@ -492,8 +496,8 @@ class MultiHost_Case05_331909(TestCase):
                                          "required": "false"}}
 
         logger.info("Attach network to DC/Cluster/Host")
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=dict_dc1,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -509,7 +513,7 @@ class MultiHost_Case05_331909(TestCase):
 
     @istest
     @tcms(12030, 331909)
-    def update_net_on_VM(self):
+    def update_net_on_vm(self):
         """
         1) Negative: Try to change MTU on net when running VM is using it
         2) Negative: Try to change VLAN on net when running VM is using it
@@ -524,7 +528,7 @@ class MultiHost_Case05_331909(TestCase):
 
         logger.info("Negative: Update MTU network with MTU %s", config.MTU[0])
         if not updateNetwork(False, network=config.NETWORKS[0],
-                             data_center=config.DC_NAME,
+                             data_center=config.DC_NAME[0],
                              mtu=config.MTU[0]):
             raise NetworkException("Could update  network with MTU %s "
                                    "when running VM is using the network" %
@@ -532,7 +536,7 @@ class MultiHost_Case05_331909(TestCase):
 
         logger.info("Negative: Update network with VLAN %s", config.VLAN_ID[0])
         if not updateNetwork(False, network=config.NETWORKS[0],
-                             data_center=config.DC_NAME,
+                             data_center=config.DC_NAME[0],
                              vlan_id=config.VLAN_ID[0]):
             raise NetworkException("Could update network to be tagged with "
                                    "VLAN %s when running VM is using the"
@@ -546,7 +550,7 @@ class MultiHost_Case05_331909(TestCase):
 
         logger.info("Update MTU network with MTU %s", config.MTU[0])
         if not updateNetwork(True, network=config.NETWORKS[0],
-                             data_center=config.DC_NAME,
+                             data_center=config.DC_NAME[0],
                              mtu=config.MTU[0]):
             raise NetworkException("Couldn't update  network (with MTU 9000) "
                                    "when Network resides on non-running VM "
@@ -579,7 +583,7 @@ class MultiHost_Case05_331909(TestCase):
 
         logger.info("Update network with VLAN %s", config.VLAN_ID[0])
         if not updateNetwork(True, network=config.NETWORKS[0],
-                             data_center=config.DC_NAME,
+                             data_center=config.DC_NAME[0],
                              vlan_id=config.VLAN_ID[0]):
             raise NetworkException("Couldn't update network (to be tagged "
                                    "with VLAN %s) when Network resides on "
@@ -608,7 +612,7 @@ class MultiHost_Case05_331909(TestCase):
         logger.info("Negative: Update network %s to be non-VM network",
                     config.NETWORKS[0])
         if not updateNetwork(False, network=config.NETWORKS[0],
-                             data_center=config.DC_NAME,
+                             data_center=config.DC_NAME[0],
                              usages=""):
             raise NetworkException("Could update network to be non-VM net "
                                    "though it's attached to VM")
@@ -625,14 +629,14 @@ class MultiHost_Case05_331909(TestCase):
         """
         Remove network from the setup.
         """
-        mtu_dict1 = {"mtu": config.MTU[1]}
+        mtu_dict1 = {"mtu": config.MTU[-1]}
 
-        logger.info("Update MTU network with MTU %s", config.MTU[1])
+        logger.info("Update MTU network with MTU %s", config.MTU[-1])
         if not updateNetwork(True, network=config.NETWORKS[0],
-                             data_center=config.DC_NAME,
-                             mtu=config.MTU[1]):
+                             data_center=config.DC_NAME[0],
+                             mtu=config.MTU[-1]):
             raise NetworkException("Couldn't update  network with MTU %s " %
-                                   config.MTU[1])
+                                   config.MTU[-1])
 
         logger.info("Wait till the Host is updated with the change")
         sample1 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
@@ -656,7 +660,8 @@ class MultiHost_Case05_331909(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class MultiHost_Case06_331910(TestCase):
+@attr(tier=1)
+class MultiHostCase06(TestCase):
     """
     Update network when template is using it:
     1) Negative: Try to update network from VM to non-VM
@@ -675,16 +680,16 @@ class MultiHost_Case06_331910(TestCase):
                                          "required": "false"}}
 
         logger.info("Attach network to DC/Cluster/Host")
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=dict_dc1,
                                         auto_nics=[config.HOST_NICS[0]]):
             raise NetworkException("Cannot create and attach network")
 
         logger.info("Attach NIC to the Template")
-        if not addTemplateNic(True, config.TEMPLATE_NAME, name="nic2",
-                              data_center=config.DC_NAME,
+        if not addTemplateNic(True, config.TEMPLATE_NAME[0], name="nic2",
+                              data_center=config.DC_NAME[0],
                               network=config.NETWORKS[0]):
             raise NetworkException("Cannot add NIC to Template")
 
@@ -702,14 +707,14 @@ class MultiHost_Case06_331910(TestCase):
         logger.info("Negative: Try to update network from VM to non-VM "
                     "when network resides on Template")
         if not updateNetwork(False, network=config.NETWORKS[0],
-                             data_center=config.DC_NAME,
+                             data_center=config.DC_NAME[0],
                              usages=""):
             raise NetworkException("Could update network to be non-VM net "
                                    "though it's attached to Template")
 
         logger.info("Update network with MTU %s", config.MTU[0])
         if not updateNetwork(True, network=config.NETWORKS[0],
-                             data_center=config.DC_NAME,
+                             data_center=config.DC_NAME[0],
                              mtu=config.MTU[0]):
             raise NetworkException("Couldn't update  network with MTU %s "
                                    "when network resides on Template" %
@@ -742,7 +747,7 @@ class MultiHost_Case06_331910(TestCase):
 
         logger.info("Update network with VLAN %s", config.VLAN_ID[0])
         if not updateNetwork(True, network=config.NETWORKS[0],
-                             data_center=config.DC_NAME,
+                             data_center=config.DC_NAME[0],
                              vlan_id=config.VLAN_ID[0]):
             raise NetworkException("Couldn't update network to be tagged  "
                                    "with VLAN %s when network resides on "
@@ -772,14 +777,14 @@ class MultiHost_Case06_331910(TestCase):
         """
         Remove network from the setup.
         """
-        mtu_dict1 = {"mtu": config.MTU[1]}
+        mtu_dict1 = {"mtu": config.MTU[-1]}
 
-        logger.info("Update MTU network with MTU %s", config.MTU[1])
+        logger.info("Update MTU network with MTU %s", config.MTU[-1])
         if not updateNetwork(True, network=config.NETWORKS[0],
-                             data_center=config.DC_NAME,
-                             mtu=config.MTU[1]):
+                             data_center=config.DC_NAME[0],
+                             mtu=config.MTU[-1]):
             raise NetworkException("Couldn't update  network with MTU %s " %
-                                   config.MTU[1])
+                                   config.MTU[-1])
 
         logger.info("Wait till the Host is updated with the change")
         sample1 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
@@ -791,10 +796,12 @@ class MultiHost_Case06_331910(TestCase):
             raise NetworkException("Couldn't update with correct MTU on host")
 
         logger.info("Remove NIC from Template")
-        if not removeTemplateNic(positive=True, template=config.TEMPLATE_NAME,
-                                 nic=config.VM_NIC[0]):
+        if not removeTemplateNic(positive=True,
+                                 template=config.TEMPLATE_NAME[0],
+                                 nic=config.NIC_NAME[1]):
             raise NetworkException("NIC %s wasn't removed from Template %s" %
-                                   (config.VM_NIC[0], config.TEMPLATE_NAME))
+                                   (config.NIC_NAME[1],
+                                    config.TEMPLATE_NAME[0]))
 
         logger.info("Remove network from setup")
         if not removeNetFromSetup(host=config.HOSTS[0],
@@ -803,7 +810,8 @@ class MultiHost_Case06_331910(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class MultiHost_Case07_331897(TestCase):
+@attr(tier=1)
+class MultiHostCase07(TestCase):
     """
     Update untagged network with VLAN and MTU when several hosts reside under
     the same DC/Cluster
@@ -821,8 +829,8 @@ class MultiHost_Case07_331897(TestCase):
                                                 "required": "false"}}
 
         logger.info("Attach network to DC/Cluster and 2 Hosts")
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS,
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -830,7 +838,7 @@ class MultiHost_Case07_331897(TestCase):
 
     @istest
     @tcms(12030, 331897)
-    def update_with_VLAN_MTU(self):
+    def update_with_vlan_mtu(self):
         """
         1) Update network with VLAN 162
         3) Update network with MTU 9000
@@ -843,7 +851,7 @@ class MultiHost_Case07_331897(TestCase):
         logger.info("Update network with VLAN %s and MTU %s ",
                     config.VLAN_ID[0], config.MTU[0])
         if not updateNetwork(True, network=config.VLAN_NETWORKS[0],
-                             data_center=config.DC_NAME,
+                             data_center=config.DC_NAME[0],
                              vlan_id=config.VLAN_ID[0], mtu=config.MTU[0]):
             raise NetworkException("Cannot update network to be tagged "
                                    "and to have MTU in one action")
@@ -894,15 +902,15 @@ class MultiHost_Case07_331897(TestCase):
         """
         Remove network from the setup.
         """
-        mtu_dict1 = {"mtu": config.MTU[1]}
+        mtu_dict1 = {"mtu": config.MTU[-1]}
         sample1 = []
 
-        logger.info("Update MTU network with MTU %s", config.MTU[1])
+        logger.info("Update MTU network with MTU %s", config.MTU[-1])
         if not updateNetwork(True, network=config.VLAN_NETWORKS[0],
-                             data_center=config.DC_NAME,
-                             mtu=config.MTU[1]):
+                             data_center=config.DC_NAME[0],
+                             mtu=config.MTU[-1]):
             raise NetworkException("Couldn't update  network with MTU %s " %
-                                   config.MTU[1])
+                                   config.MTU[-1])
 
         logger.info("Check correct MTU on both Hosts")
         for host in config.HOSTS:
@@ -922,7 +930,8 @@ class MultiHost_Case07_331897(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class MultiHost_Case08_331903(TestCase):
+@attr(tier=1)
+class MultiHostCase08(TestCase):
     """
     Update untagged network with VLAN and MTU when several hosts reside under
     the same DC, but under different Clusters of the same DC
@@ -938,18 +947,18 @@ class MultiHost_Case08_331903(TestCase):
         """
 
         logger .info("Add additional Cluster %s under DC %s ",
-                     config.CLUSTER_NAME2, config.DC_NAME)
-        if not addCluster(positive=True, name=config.CLUSTER_NAME2,
-                          cpu=config.CPU_NAME, data_center=config.DC_NAME,
+                     config.CLUSTER_NAME[1], config.DC_NAME[0])
+        if not addCluster(positive=True, name=config.CLUSTER_NAME[1],
+                          cpu=config.CPU_NAME, data_center=config.DC_NAME[0],
                           version=config.COMP_VERSION):
             raise NetworkException("Cannot add Cluster %s under DC %s " %
-                                   (config.CLUSTER_NAME2, config.DC_NAME))
+                                   (config.CLUSTER_NAME[1], config.DC_NAME[0]))
 
         logger.info("Deactivate host %s, move it to other Cluster and "
                     "reactivate it", config.HOSTS[1])
         assert (deactivateHost(True, host=config.HOSTS[1]))
         if not updateHost(True, host=config.HOSTS[1],
-                          cluster=config.CLUSTER_NAME2):
+                          cluster=config.CLUSTER_NAME[1]):
             raise NetworkException("Cannot move host to another Cluster")
         assert (activateHost(True, host=config.HOSTS[1]))
 
@@ -957,13 +966,13 @@ class MultiHost_Case08_331903(TestCase):
                                                 "required": "false"}}
 
         logger.info("Attach network to DC/Cluster and 2 Hosts")
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
             raise NetworkException("Cannot create and attach network")
-        if not createAndAttachNetworkSN(cluster=config.CLUSTER_NAME2,
+        if not createAndAttachNetworkSN(cluster=config.CLUSTER_NAME[1],
                                         host=config.HOSTS[1],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -971,7 +980,7 @@ class MultiHost_Case08_331903(TestCase):
 
     @istest
     @tcms(12030, 331903)
-    def update_with_VLAN_MTU(self):
+    def update_with_vlan_mtu(self):
         """
         1) Update network with VLAN 162
         3) Update network with MTU 9000
@@ -984,7 +993,7 @@ class MultiHost_Case08_331903(TestCase):
         logger.info("Update network with VLAN %s and MTU %s ",
                     config.VLAN_ID[0], config.MTU[0])
         if not updateNetwork(True, network=config.VLAN_NETWORKS[0],
-                             data_center=config.DC_NAME,
+                             data_center=config.DC_NAME[0],
                              vlan_id=config.VLAN_ID[0], mtu=config.MTU[0]):
             raise NetworkException("Cannot update network to be tagged "
                                    "and to have MTU in one action")
@@ -1035,16 +1044,16 @@ class MultiHost_Case08_331903(TestCase):
         Remove network from the setup.
         """
 
-        mtu_dict1 = {"mtu": config.MTU[1]}
+        mtu_dict1 = {"mtu": config.MTU[-1]}
         sample1 = []
 
         logger.info("Update network %s with MTU %s", config.VLAN_NETWORKS[0],
-                    config.MTU[1])
+                    config.MTU[-1])
         if not updateNetwork(True, network=config.VLAN_NETWORKS[0],
-                             data_center=config.DC_NAME,
-                             mtu=config.MTU[1]):
+                             data_center=config.DC_NAME[0],
+                             mtu=config.MTU[-1]):
             raise NetworkException("Couldn't update  network with MTU %s ",
-                                   config.MTU[1])
+                                   config.MTU[-1])
 
         logger.info("Check correct MTU on both Hosts")
         for host in config.HOSTS:
@@ -1068,17 +1077,18 @@ class MultiHost_Case08_331903(TestCase):
                     "reactivate it")
         assert (deactivateHost(True, host=config.HOSTS[1]))
         if not updateHost(True, host=config.HOSTS[1],
-                          cluster=config.CLUSTER_NAME):
+                          cluster=config.CLUSTER_NAME[0]):
             raise NetworkException("Cannot move host to another Cluster")
         assert (activateHost(True, host=config.HOSTS[1]))
 
-        logger.info("Remove cluster %s from setup", config.CLUSTER_NAME2)
-        if not removeCluster(True, config.CLUSTER_NAME2):
+        logger.info("Remove cluster %s from setup", config.CLUSTER_NAME[1])
+        if not removeCluster(True, config.CLUSTER_NAME[1]):
             raise NetworkException("Cannot remove Cluster %s from setup" %
-                                   config.CLUSTER_NAME2)
+                                   config.CLUSTER_NAME[1])
 
 
-class MultiHost_Case09_355193(TestCase):
+@attr(tier=1)
+class MultiHostCase09(TestCase):
     """
     Update untagged network with VLAN when that network is attached to
     the Host bond
@@ -1087,7 +1097,7 @@ class MultiHost_Case09_355193(TestCase):
     Update tagged network to be untagged when that network is attached to
     the Host bond
     """
-    __test__ = True
+    __test__ = len(config.HOST_NICS) > 3
 
     @classmethod
     def setup_class(cls):
@@ -1101,8 +1111,8 @@ class MultiHost_Case09_355193(TestCase):
                                                 "required": "false"}}
 
         logger.info("Attach network to DC/Cluster and bond on Host")
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -1110,7 +1120,7 @@ class MultiHost_Case09_355193(TestCase):
 
     @istest
     @tcms(12030, 355193)
-    def update_with_VLAN(self):
+    def update_with_vlan(self):
         """
         There is a bz for updating network to be tagged - 1081489
 
@@ -1126,7 +1136,7 @@ class MultiHost_Case09_355193(TestCase):
 
         logger.info("Update network with VLAN %s", config.VLAN_ID[0])
         if not updateNetwork(True, network=config.VLAN_NETWORKS[0],
-                             data_center=config.DC_NAME,
+                             data_center=config.DC_NAME[0],
                              vlan_id=config.VLAN_ID[0]):
             raise NetworkException("Cannot update network to be tagged with "
                                    "VLAN %s" % config.VLAN_ID[0])
@@ -1152,7 +1162,7 @@ class MultiHost_Case09_355193(TestCase):
 
         logger.info("Update network with VLAN %s", config.VLAN_ID[1])
         if not updateNetwork(True, network=config.VLAN_NETWORKS[0],
-                             data_center=config.DC_NAME,
+                             data_center=config.DC_NAME[0],
                              vlan_id=config.VLAN_ID[1]):
             raise NetworkException("Cannot update network to be tagged with "
                                    "VLAN %s" % config.VLAN_ID[1])
@@ -1178,12 +1188,12 @@ class MultiHost_Case09_355193(TestCase):
 
         logger.info("Update network to be untagged")
         if not updateNetwork(True, network=config.VLAN_NETWORKS[0],
-                             data_center=config.DC_NAME,
+                             data_center=config.DC_NAME[0],
                              vlan_id=None):
             raise NetworkException("Cannot update network to be untagged")
 
         logger.info("Wait till the Host is updated with the change")
-        if not sample1.waitForFuncStatus(result=False):
+        if not sample2.waitForFuncStatus(result=False):
             raise NetworkException("Could get vlan interface on host but "
                                    "shouldn't")
 
@@ -1207,14 +1217,15 @@ class MultiHost_Case09_355193(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class MultiHost_Case10_355194(TestCase):
+@attr(tier=1)
+class MultiHostCase10(TestCase):
     """
     Update network with the default MTU to the new MTU when that network
     is attached to the Host bond
     Update network with another MTU value when that network is attached to
     the Host bond
     """
-    __test__ = True
+    __test__ = len(config.HOST_NICS) > 3
 
     @classmethod
     def setup_class(cls):
@@ -1227,8 +1238,8 @@ class MultiHost_Case10_355194(TestCase):
                                            "required": "false"}}
 
         logger.info("Attach network to DC/Cluster/Host")
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -1236,7 +1247,7 @@ class MultiHost_Case10_355194(TestCase):
 
     @istest
     @tcms(12030, 355194)
-    def update_with_MTU(self):
+    def update_with_mtu(self):
         """
         1) Update network with MTU 9000
         2) Check that the Host was updated with MTU 9000
@@ -1244,11 +1255,11 @@ class MultiHost_Case10_355194(TestCase):
         4) Check that the Host was updated with MTU 1500
         """
         mtu_dict1 = {"mtu": config.MTU[0]}
-        mtu_dict2 = {"mtu": config.MTU[1]}
+        mtu_dict2 = {"mtu": config.MTU[-1]}
 
         logger.info("Update network with MTU %s", config.MTU[0])
         if not updateNetwork(True, network=config.NETWORKS[0],
-                             data_center=config.DC_NAME,
+                             data_center=config.DC_NAME[0],
                              mtu=config.MTU[0]):
             raise NetworkException("Cannot update  network with  MTU %s" %
                                    config.MTU[0])
@@ -1277,12 +1288,12 @@ class MultiHost_Case10_355194(TestCase):
                                  password=config.HOSTS_PW, mtu=config.MTU[0],
                                  nic=config.BOND[0]))
 
-        logger.info("Update MTU network with MTU %s", config.MTU[1])
+        logger.info("Update MTU network with MTU %s", config.MTU[-1])
         if not updateNetwork(True, network=config.NETWORKS[0],
-                             data_center=config.DC_NAME,
-                             mtu=config.MTU[1]):
+                             data_center=config.DC_NAME[0],
+                             mtu=config.MTU[-1]):
             raise NetworkException("Cannot update network with MTU %s" %
-                                   config.MTU[1])
+                                   config.MTU[-1])
 
         logger.info("Wait till the Host is updated with the change")
         sample2 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
@@ -1297,7 +1308,7 @@ class MultiHost_Case10_355194(TestCase):
         logger.info("Checking logical layer of bridged network %s on host %s"
                     % (config.NETWORKS[0], config.HOSTS[0]))
         self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=config.MTU[1],
+                                 password=config.HOSTS_PW, mtu=config.MTU[-1],
                                  physical_layer=False,
                                  network=config.NETWORKS[0],
                                  nic=config.BOND[0]))
@@ -1305,7 +1316,7 @@ class MultiHost_Case10_355194(TestCase):
         logger.info("Checking physical layer of bridged network %s on host %s"
                     % (config.NETWORKS[0], config.HOSTS[0]))
         self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=config.MTU[1],
+                                 password=config.HOSTS_PW, mtu=config.MTU[-1],
                                  nic=config.BOND[0]))
 
     @classmethod
@@ -1320,14 +1331,15 @@ class MultiHost_Case10_355194(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class MultiHost_Case11_355294(TestCase):
+@attr(tier=1)
+class MultiHostCase11(TestCase):
     """
     Update VM network to be non-VM network when that network is attached to
     the Host bond
     Update non-VM network to be VM network when that network is attached to
     the Host bond
     """
-    __test__ = True
+    __test__ = len(config.HOST_NICS) > 3
 
     @classmethod
     def setup_class(cls):
@@ -1341,8 +1353,8 @@ class MultiHost_Case11_355294(TestCase):
                                            "required": "false"}}
 
         logger.info("Attach network to DC/Cluster/Host")
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -1350,7 +1362,7 @@ class MultiHost_Case11_355294(TestCase):
 
     @istest
     @tcms(12030, 355294)
-    def update_with_non_VM_nonVm(self):
+    def update_with_non_vm_nonvm(self):
         """
         Fails due to existing bug - 1082275
         1) Update network to be non-VM network
@@ -1364,7 +1376,7 @@ class MultiHost_Case11_355294(TestCase):
         logger.info("Update network %s to be non-VM network",
                     config.NETWORKS[0])
         if not updateNetwork(True, network=config.NETWORKS[0],
-                             data_center=config.DC_NAME, usages=""):
+                             data_center=config.DC_NAME[0], usages=""):
             raise NetworkException("Cannot update network to be non-VM net")
 
         logger.info("Wait till the Host is updated with the change")
@@ -1386,7 +1398,7 @@ class MultiHost_Case11_355294(TestCase):
 
         logger.info("Update network %s to be VM network", config.NETWORKS[0])
         if not updateNetwork(True, network=config.NETWORKS[0],
-                             data_center=config.DC_NAME,
+                             data_center=config.DC_NAME[0],
                              usages="vm"):
             raise NetworkException("Cannot update network to be VM net")
 
@@ -1418,7 +1430,8 @@ class MultiHost_Case11_355294(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class MultiHost_Case12_331908(TestCase):
+@attr(tier=1)
+class MultiHostCase12(TestCase):
     """
     1)Check that for unsupported DC version multiHost feature is not
     working
@@ -1444,7 +1457,7 @@ class MultiHost_Case12_331908(TestCase):
 
         logger.info("Create new Cluster with version %s in the setup ",
                     config.VERSION[1])
-        if not addCluster(positive=True, name=config.UNCOMP_CL_Name[1],
+        if not addCluster(positive=True, name=config.UNCOMP_CL_NAME[1],
                           cpu=config.CPU_NAME, version=config.VERSION[1],
                           data_center=config.UNCOMP_DC_NAME):
             raise NetworkException("Couldn't add a new Cluster with %s "
@@ -1454,7 +1467,7 @@ class MultiHost_Case12_331908(TestCase):
                     "reactivate it", config.UNCOMP_DC_NAME)
         assert (deactivateHost(True, host=config.HOSTS[0]))
         if not updateHost(True, host=config.HOSTS[0],
-                          cluster=config.UNCOMP_CL_Name[1]):
+                          cluster=config.UNCOMP_CL_NAME[1]):
             raise NetworkException("Cannot move host to another DC/Cluster")
         assert (activateHost(True, host=config.HOSTS[0]))
 
@@ -1463,7 +1476,7 @@ class MultiHost_Case12_331908(TestCase):
         logger.info("Attach network %s to DC and Cluster for Cluster "
                     "version %s", config.NETWORKS[0], config.VERSION[1])
         if not createAndAttachNetworkSN(data_center=config.UNCOMP_DC_NAME,
-                                        cluster=config.UNCOMP_CL_Name[1],
+                                        cluster=config.UNCOMP_CL_NAME[1],
                                         network_dict=local_dict):
             raise NetworkException("Cannot create and attach network %s" %
                                    config.NETWORKS[0])
@@ -1517,9 +1530,9 @@ class MultiHost_Case12_331908(TestCase):
                                    config.NETWORKS[0])
 
         logger.info("move Host back to the original Cluster %s "
-                    "and reactivate it", config.CLUSTER_NAME)
+                    "and reactivate it", config.CLUSTER_NAME[0])
         if not updateHost(True, host=config.HOSTS[0],
-                          cluster=config.CLUSTER_NAME):
+                          cluster=config.CLUSTER_NAME[0]):
             raise NetworkException("Cannot move host to the original DC")
 
         assert (activateHost(True, host=config.HOSTS[0]))
@@ -1533,12 +1546,13 @@ class MultiHost_Case12_331908(TestCase):
 
         logger.info("Removing the Cluster with %s version", config.VERSION[1])
         if not removeCluster(positive=True,
-                             cluster=config.UNCOMP_CL_Name[1]):
+                             cluster=config.UNCOMP_CL_NAME[1]):
             raise NetworkException("Failed to remove cluster with %s version"
                                    % config.VERSION[1])
 
 
-class MultiHost_Case13_331907(TestCase):
+@attr(tier=1)
+class MultiHostCase13(TestCase):
     """
     1)Check that for unsupported Cluster version multiHost feature is not
     working
@@ -1564,7 +1578,7 @@ class MultiHost_Case13_331907(TestCase):
 
         logger.info("Create new Cluster with version %s in the setup ",
                     config.VERSION[0])
-        if not addCluster(positive=True, name=config.UNCOMP_CL_Name[0],
+        if not addCluster(positive=True, name=config.UNCOMP_CL_NAME[0],
                           cpu=config.CPU_NAME, version=config.VERSION[0],
                           data_center=config.UNCOMP_DC_NAME):
             raise NetworkException("Couldn't add a new Cluster with %s "
@@ -1574,7 +1588,7 @@ class MultiHost_Case13_331907(TestCase):
                     "reactivate it", config.UNCOMP_DC_NAME)
         assert (deactivateHost(True, host=config.HOSTS[0]))
         if not updateHost(True, host=config.HOSTS[0],
-                          cluster=config.UNCOMP_CL_Name[0]):
+                          cluster=config.UNCOMP_CL_NAME[0]):
             raise NetworkException("Cannot move host to another DC/Cluster")
         assert (activateHost(True, host=config.HOSTS[0]))
 
@@ -1584,7 +1598,7 @@ class MultiHost_Case13_331907(TestCase):
         logger.info("Attach network %s to DC and Cluster for Cluster "
                     "version %s", config.VLAN_NETWORKS[0], config.VERSION[0])
         if not createAndAttachNetworkSN(data_center=config.UNCOMP_DC_NAME,
-                                        cluster=config.UNCOMP_CL_Name[0],
+                                        cluster=config.UNCOMP_CL_NAME[0],
                                         network_dict=local_dict):
             raise NetworkException("Cannot create and attach network %s" %
                                    config.VLAN_NETWORKS[0])
@@ -1639,9 +1653,9 @@ class MultiHost_Case13_331907(TestCase):
             raise NetworkException("Cannot remove network from Host")
 
         logger.info("move Host back to the original Cluster %s "
-                    "and reactivate it", config.CLUSTER_NAME)
+                    "and reactivate it", config.CLUSTER_NAME[0])
         if not updateHost(True, host=config.HOSTS[0],
-                          cluster=config.CLUSTER_NAME):
+                          cluster=config.CLUSTER_NAME[0]):
             raise NetworkException("Cannot move host to the original DC")
 
         assert (activateHost(True, host=config.HOSTS[0]))
@@ -1655,6 +1669,6 @@ class MultiHost_Case13_331907(TestCase):
 
         logger.info("Removing the Cluster with %s version", config.VERSION[0])
         if not removeCluster(positive=True,
-                             cluster=config.UNCOMP_CL_Name[0]):
+                             cluster=config.UNCOMP_CL_NAME[0]):
             raise NetworkException("Failed to remove cluster with %s version"
                                    % config.VERSION[0])

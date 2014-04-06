@@ -5,11 +5,10 @@ Testing Input/Output feature.
 Positive and negative cases for creating/editing networks
 with valid/invalid names, IPs, netmask, VLAN, usages.
 """
-import logging
-
 from nose.tools import istest
-
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import attr
+from art.unittest_lib import NetworkTest as TestCase
+import logging
 from art.rhevm_api.tests_lib.high_level.networks import \
     createAndAttachNetworkSN, removeAllNetworks
 from art.rhevm_api.tests_lib.low_level.networks import \
@@ -17,7 +16,7 @@ from art.rhevm_api.tests_lib.low_level.networks import \
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.utils.test_utils import get_api
 from art.test_handler.settings import opts
-import config
+from networking import config
 
 
 HOST_API = get_api('host', 'hosts')
@@ -45,11 +44,12 @@ class IOTestCaseBase(TestCase):
         Remove networks from the setup.
         """
         logger.info("Starting teardown")
-        if not removeAllNetworks(config.DC_NAME):
+        if not removeAllNetworks(config.DC_NAME[0]):
             raise NetworkException("Cannot remove network from setup")
 
 
-class Test01checkNetworkNames(IOTestCaseBase):
+@attr(tier=1)
+class Test01(IOTestCaseBase):
     """
     Positive: Creating & adding networks with valid names to the cluster
     Negative: Trying to create networks with invalid names
@@ -79,28 +79,29 @@ class Test01checkNetworkNames(IOTestCaseBase):
                         networkName)
             self.assertTrue(addNetwork(positive=True,
                                        name=networkName,
-                                       data_center=config.DC_NAME),
+                                       data_center=config.DC_NAME[0]),
                             "The network %s was not created although "
                             "it should have" % networkName)
 
             logger.info("Trying to add %s to cluster %s",
-                        networkName, config.CLUSTER_NAME)
-            self.assertTrue(addNetworkToCluster(positive=True,
-                                                network=networkName,
-                                                cluster=config.CLUSTER_NAME),
-                            "Cannot add network %s to Cluster" % networkName)
+                        networkName, config.CLUSTER_NAME[0])
+            self.assertTrue(addNetworkToCluster(
+                positive=True, network=networkName,
+                cluster=config.CLUSTER_NAME[0]), "Cannot add network %s to "
+                                                 "Cluster" % networkName)
 
         for networkName in invalid_names:
             logger.info("Trying to create networks with the name %s - should"
                         " fail", networkName)
             self.assertFalse(addNetwork(positive=True,
                                         name=networkName,
-                                        data_center=config.DC_NAME),
+                                        data_center=config.DC_NAME[0]),
                              "The network %s was created although "
                              "it shouldn't have" % networkName)
 
 
-class Test02checkInvalidIPs(IOTestCaseBase):
+@attr(tier=1)
+class Test02(IOTestCaseBase):
     """
     Negative: Trying to create networks with invalid IPs
     """
@@ -130,15 +131,16 @@ class Test02checkInvalidIPs(IOTestCaseBase):
                                           'required': 'false'}}
 
             self.assertFalse(
-                createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                         cluster=config.CLUSTER_NAME,
+                createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                         cluster=config.CLUSTER_NAME[0],
                                          host=config.HOSTS[0],
                                          network_dict=local_dict,
                                          auto_nics=[config.HOST_NICS[0]]),
                 "Network with invalid IP (%s) was created" % invalid_ip)
 
 
-class Test03checkInvalidNetmask(IOTestCaseBase):
+@attr(tier=1)
+class Test03(IOTestCaseBase):
     """
     Negative: Trying to create networks with invalid netmasks
     """
@@ -167,8 +169,8 @@ class Test03checkInvalidNetmask(IOTestCaseBase):
                                               'required': 'false'}}
 
             self.assertFalse(
-                createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                         cluster=config.CLUSTER_NAME,
+                createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                         cluster=config.CLUSTER_NAME[0],
                                          host=config.HOSTS[0],
                                          network_dict=local_dict,
                                          auto_nics=[config.HOST_NICS[0]]),
@@ -176,7 +178,8 @@ class Test03checkInvalidNetmask(IOTestCaseBase):
                 % invalid_netmask)
 
 
-class Test04checkNetmaskWithoutIp(IOTestCaseBase):
+@attr(tier=1)
+class Test04(IOTestCaseBase):
     """
     Negative: Trying to create a network with netmask but without an ip address
     """
@@ -195,15 +198,16 @@ class Test04checkNetmaskWithoutIp(IOTestCaseBase):
                                           'netmask': ['255.255.255.0'],
                                           'required': 'false'}}
         self.assertFalse(
-            createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                     cluster=config.CLUSTER_NAME,
+            createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                     cluster=config.CLUSTER_NAME[0],
                                      host=config.HOSTS[0],
                                      network_dict=local_dict,
                                      auto_nics=[config.HOST_NICS[0]]),
             "Network without ip was created although it shouldn't have")
 
 
-class Test05checkStaticIpWithoutNetmask(IOTestCaseBase):
+@attr(tier=1)
+class Test05(IOTestCaseBase):
     """
     Negative: Trying to create a network with static ip but without
     netmask
@@ -222,8 +226,8 @@ class Test05checkStaticIpWithoutNetmask(IOTestCaseBase):
                                           'address': ['1.1.1.1'],
                                           'required': 'false'}}
         self.assertFalse(
-            createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                     cluster=config.CLUSTER_NAME,
+            createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                     cluster=config.CLUSTER_NAME[0],
                                      host=config.HOSTS[0],
                                      network_dict=local_dict,
                                      auto_nics=[config.HOST_NICS[0]]),
@@ -231,7 +235,8 @@ class Test05checkStaticIpWithoutNetmask(IOTestCaseBase):
             " have")
 
 
-class Test06checkMTU(IOTestCaseBase):
+@attr(tier=1)
+class Test06(IOTestCaseBase):
     """
     Positive: Creating networks with valid MTU and adding them to a cluster.
     Negative: Trying to create a network with invalid MTUs - should fail.
@@ -256,7 +261,7 @@ class Test06checkMTU(IOTestCaseBase):
             self.assertFalse(addNetwork(positive=True,
                                         name='invalid_mtu%s' % index_1,
                                         mtu=invalid_mtu,
-                                        data_center=config.DC_NAME),
+                                        data_center=config.DC_NAME[0]),
                              "Network with mtu = %s was created "
                              "although it shouldn't have" % invalid_mtu)
 
@@ -265,21 +270,21 @@ class Test06checkMTU(IOTestCaseBase):
             self.assertTrue(addNetwork(positive=True,
                                        name='valid_mtu%s' % index_2,
                                        mtu=valid_mtu,
-                                       data_center=config.DC_NAME),
+                                       data_center=config.DC_NAME[0]),
                             "Network with mtu = %s was not created" % valid_mtu
                             )
 
             logger.info("Adding valid_mtu%s to cluster %s",
-                        index_2, config.CLUSTER_NAME)
-            self.assertTrue(addNetworkToCluster(positive=True,
-                                                network='valid_mtu%s'
-                                                        % index_2,
-                                                cluster=config.CLUSTER_NAME),
-                            "Cannot add network valid_mtu%s to Cluster"
-                            % index_2)
+                        index_2, config.CLUSTER_NAME[0])
+            self.assertTrue(
+                addNetworkToCluster(positive=True, network='valid_mtu%s' %
+                                                           index_2,
+                                    cluster=config.CLUSTER_NAME[0]),
+                "Cannot add network valid_mtu%s to Cluster" % index_2)
 
 
-class Test07checkInvalidUsages(IOTestCaseBase):
+@attr(tier=1)
+class Test07(IOTestCaseBase):
     """
     Negative: Trying to create a network with invalid usages value
     """
@@ -295,11 +300,12 @@ class Test07checkInvalidUsages(IOTestCaseBase):
         self.assertFalse(addNetwork(positive=True,
                                     name='invalid_usage',
                                     usages=usages,
-                                    data_center=config.DC_NAME),
+                                    data_center=config.DC_NAME[0]),
                          "Network with usages = %s was created" % usages)
 
 
-class Test08checkVlanIDs(IOTestCaseBase):
+@attr(tier=1)
+class Test08(IOTestCaseBase):
     """
     Positive: Creating networks with valid VLAN IDs & adding them to a cluster.
     Negative: Trying to create networks with invalid VLAN IDs.
@@ -321,7 +327,7 @@ class Test08checkVlanIDs(IOTestCaseBase):
             if addNetwork(positive=True,
                           name='invalid_vlan_id%s' % invalid_index,
                           vlan_id=vlan_id,
-                          data_center=config.DC_NAME):
+                          data_center=config.DC_NAME[0]):
                 raise NetworkException("Network with VLAN id = %s was created"
                                        " although it shouldn't have "
                                        "(Valid range = [0,4094])" % vlan_id)
@@ -332,21 +338,21 @@ class Test08checkVlanIDs(IOTestCaseBase):
             if not addNetwork(positive=True,
                               name='valid_vlan_id%s' % valid_index,
                               vlan_id=vlan_id,
-                              data_center=config.DC_NAME):
+                              data_center=config.DC_NAME[0]):
                 raise NetworkException("Network with VLAN ID %s was not "
                                        "created although it should have"
                                        % vlan_id)
 
             logger.info("Adding valid VLAN ID %s to cluster %s",
-                        vlan_id, config.CLUSTER_NAME)
+                        vlan_id, config.CLUSTER_NAME[0])
             if not addNetworkToCluster(positive=True,
                                        network='valid_vlan_id%s' % valid_index,
-                                       cluster=config.CLUSTER_NAME):
+                                       cluster=config.CLUSTER_NAME[0]):
                 raise NetworkException("Cannot add network %s to Cluster %s" %
-                                       vlan_id, config.CLUSTER_NAME)
+                                       vlan_id, config.CLUSTER_NAME[0])
 
 
-class Test09editNetworkName(IOTestCaseBase):
+class Test09(IOTestCaseBase):
     """
     Positive: Create network and edit its name to valid name
     Negative: Try to edit its name to invalid name
@@ -364,10 +370,11 @@ class Test09editNetworkName(IOTestCaseBase):
                        "description": "network with initial valid name"}
 
         logger.info("Creating network %s on data center %s",
-                    initial_name, config.DC_NAME)
-        if not createNetworkInDataCenter(True, config.DC_NAME, **kwargs_dict):
+                    initial_name, config.DC_NAME[0])
+        if not createNetworkInDataCenter(True, config.DC_NAME[0],
+                                         **kwargs_dict):
             raise NetworkException("Failed to create %s network on %s" %
-                                   (initial_name, config.DC_NAME))
+                                   (initial_name, config.DC_NAME[0]))
 
     @istest
     def edit_network_name(self, initial_name=initial_name):
@@ -397,7 +404,8 @@ class Test09editNetworkName(IOTestCaseBase):
                           % (valid_name, invalid_name)))
 
 
-class Test10editNetworkTag(IOTestCaseBase):
+@attr(tier=1)
+class Test10(IOTestCaseBase):
     """
     Positive: change network VLAN tag to valid VLAN tag
     Negative: change network VLAN tag to invalid VLAN tag
@@ -416,11 +424,12 @@ class Test10editNetworkTag(IOTestCaseBase):
                                       "without VLAN ID"}
 
         logger.info("Creating network %s on data center %s", default_name,
-                    config.DC_NAME)
+                    config.DC_NAME[0])
 
-        if not createNetworkInDataCenter(True, config.DC_NAME, **kwargs_dict):
+        if not createNetworkInDataCenter(True, config.DC_NAME[0],
+                                         **kwargs_dict):
             raise NetworkException("Failed to create %s network on %s" %
-                                   (default_name, config.DC_NAME))
+                                   (default_name, config.DC_NAME[0]))
 
     @istest
     def edit_network_tag(self, default_name=default_name):
@@ -450,7 +459,8 @@ class Test10editNetworkTag(IOTestCaseBase):
                               " should fail" % (default_name, invalid_tag)))
 
 
-class Test11editUsages(IOTestCaseBase):
+@attr(tier=1)
+class Test11(IOTestCaseBase):
     """
     Positive: Change VM network to be non-VM network
     Positive: Change non-VM network to be VM network
@@ -468,11 +478,12 @@ class Test11editUsages(IOTestCaseBase):
         kwargs_dict = {"name": default_name, "description": 'VM network'}
 
         logger.info("Creating VM network %s on data center %s",
-                    default_name, config.DC_NAME)
+                    default_name, config.DC_NAME[0])
 
-        if not createNetworkInDataCenter(True, config.DC_NAME, **kwargs_dict):
+        if not createNetworkInDataCenter(True, config.DC_NAME[0],
+                                         **kwargs_dict):
             raise NetworkException("Failed to create %s network in DC %s" %
-                                   (default_name, config.DC_NAME))
+                                   (default_name, config.DC_NAME[0]))
 
     @istest
     def edit_vm_network(self, default_name=default_name):

@@ -1,14 +1,15 @@
 """
 IO feature test
 """
-
+import logging
+from networking import config
+from art.rhevm_api.tests_lib.high_level.networks import create_basic_setup
 from art.test_handler.exceptions import NetworkException
-from art.rhevm_api.tests_lib.low_level.datacenters import addDataCenter, \
-    removeDataCenter
-from art.rhevm_api.tests_lib.low_level.clusters import addCluster,\
-    removeCluster
-from art.rhevm_api.tests_lib.low_level.hosts import addHost, deactivateHost,\
-    removeHost
+from art.rhevm_api.tests_lib.low_level.datacenters import removeDataCenter
+from art.rhevm_api.tests_lib.low_level.clusters import removeCluster
+from art.rhevm_api.tests_lib.low_level.hosts import removeHost
+
+logger = logging.getLogger("IO_test")
 #################################################
 
 
@@ -19,44 +20,28 @@ def setup_package():
     create 1 Cluster
     add 1 Host
     """
-    import config
-
-    if not addDataCenter(positive=True, name=config.DC_NAME,
-                         storage_type=config.STORAGE_TYPE,
-                         version=config.VERSION, local=False):
-        raise NetworkException("Cannot create DC %s" % config.DC_NAME)
-
-    if not addCluster(positive=True, name=config.CLUSTER_NAME,
-                      data_center=config.DC_NAME, version=config.VERSION,
-                      cpu=config.CPU_NAME):
-        raise NetworkException("Cannot create Cluster %s" %
-                               config.CLUSTER_NAME)
-
-    if not addHost(positive=True,
-                   name=config.HOSTS[0],
-                   root_password=config.HOSTS_PW,
-                   cluster=config.CLUSTER_NAME):
-        raise NetworkException("Cannot add host %s to Cluster %s" %
-                               (config.HOSTS[0], config.CLUSTER_NAME))
+    logger.info("Create setup with datacenter, cluster and host")
+    if not create_basic_setup(datacenter=config.DC_NAME[0],
+                              storage_type=config.STORAGE_TYPE,
+                              version=config.COMP_VERSION,
+                              cluster=config.CLUSTER_NAME[0],
+                              cpu=config.CPU_NAME, host=config.HOSTS[0],
+                              host_password=config.HOSTS_PW):
+        raise NetworkException("Failed to create setup")
 
 
 def teardown_package():
     """
     Cleans environment by removing Host, Cluster and DC from the setup
     """
-    import config
-
-    if not deactivateHost(positive=True, host=config.HOSTS[0]):
-        raise NetworkException("Cannot switch host %s to maintenance" %
-                               config.HOSTS[0])
-
-    if not removeHost(positive=True, host=config.HOSTS[0]):
+    if not removeHost(positive=True, host=config.HOSTS[0],
+                      deactivate=True):
         raise NetworkException("Cannot remove host %s from Cluster %s" %
-                               (config.HOSTS[0], config.CLUSTER_NAME))
+                               (config.HOSTS[0], config.CLUSTER_NAME[0]))
 
-    if not removeCluster(positive=True, cluster=config.CLUSTER_NAME):
+    if not removeCluster(positive=True, cluster=config.CLUSTER_NAME[0]):
         raise NetworkException("Cannot remove Cluster %s" %
-                               config.CLUSTER_NAME)
+                               config.CLUSTER_NAME[0])
 
-    if not removeDataCenter(positive=True, datacenter=config.DC_NAME):
-        raise NetworkException("Cannot remove DC %s" % config.DC_NAME)
+    if not removeDataCenter(positive=True, datacenter=config.DC_NAME[0]):
+        raise NetworkException("Cannot remove DC %s" % config.DC_NAME[0])

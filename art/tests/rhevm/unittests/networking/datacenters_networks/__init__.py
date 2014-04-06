@@ -1,12 +1,12 @@
 """
 DataCenter Networks feature test
 """
-
-from art.test_handler.exceptions import DataCenterException
-from art.rhevm_api.tests_lib.low_level.datacenters import addDataCenter, \
-    removeDataCenter
-
-
+import logging
+from networking import config
+from art.rhevm_api.tests_lib.high_level.networks import create_basic_setup
+from art.test_handler.exceptions import NetworkException
+from art.rhevm_api.tests_lib.low_level.datacenters import removeDataCenter
+logger = logging.getLogger("Datacenter_Networks")
 #################################################
 
 
@@ -14,21 +14,18 @@ def setup_package():
     """
     Prepare environment
     """
-    import config
-    if not (addDataCenter(positive=True, name=config.DC_NAME,
-                          storage_type=config.STORAGE_TYPE,
-                          version=config.VERSION, local=False) and
-            addDataCenter(positive=True, name=config.DC_NAME2,
-                          storage_type=config.STORAGE_TYPE,
-                          version=config.VERSION, local=False)):
-        raise DataCenterException("Cannot create DCs")
+    for i in range(2):
+        logger.info("Create datacenters,")
+        if not create_basic_setup(datacenter=config.DC_NAME[i],
+                                  storage_type=config.STORAGE_TYPE,
+                                  version=config.COMP_VERSION):
+            raise NetworkException("Failed to create setup")
 
 
 def teardown_package():
     """
     Cleans environment
     """
-    import config
-    if not (removeDataCenter(positive=True, datacenter=config.DC_NAME) and
-            removeDataCenter(positive=True, datacenter=config.DC_NAME2)):
-        raise DataCenterException("Cannot remove DCs")
+    if not (removeDataCenter(positive=True, datacenter=config.DC_NAME[0]) and
+            removeDataCenter(positive=True, datacenter=config.DC_NAME[1])):
+        raise NetworkException("Cannot remove DCs")

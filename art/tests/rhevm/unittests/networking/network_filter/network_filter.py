@@ -3,13 +3,13 @@ Testing NetworkFilter feature.
 1 DC, 1 Cluster, 1 Hosts and 1 VM will be created for testing.
 """
 
-import config
+from networking import config
 import logging
 from nose.tools import istest
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import attr
+from art.unittest_lib import NetworkTest as TestCase
 from art.rhevm_api.tests_lib.low_level.vms import addNic, getVmMacAddress, \
-    stopVm, startVm, removeNic, updateNic, hotUnplugNic, waitForVMState, \
-    waitForVmsStates
+    stopVm, startVm, removeNic, updateNic, hotUnplugNic
 from art.test_handler.tools import tcms
 from art.rhevm_api.utils.test_utils import setNetworkFilterStatus
 from art.test_handler.exceptions import NetworkException
@@ -27,7 +27,8 @@ logger = logging.getLogger(__name__)
 ########################################################################
 
 
-class NetworkFilterCase01_CheckFilterIsOn(TestCase):
+@attr(tier=1)
+class NetworkFilterCase01(TestCase):
     """
     Check that Network Filter is enabled by default
     """
@@ -42,7 +43,7 @@ class NetworkFilterCase01_CheckFilterIsOn(TestCase):
 
     @istest
     @tcms(6955, 233972)
-    def checkFilterStatusEngine(self):
+    def check_filter_status_engine(self):
         """
         Check that Network Filter is enabled by default on engine
         """
@@ -54,7 +55,7 @@ class NetworkFilterCase01_CheckFilterIsOn(TestCase):
 
     @istest
     @tcms(6955, 198901)
-    def checkFilterStatusVdsm(self):
+    def check_filter_status_vdsm(self):
         """
         Check that Network Filter is enabled by default on VDSM
         """
@@ -67,7 +68,7 @@ class NetworkFilterCase01_CheckFilterIsOn(TestCase):
 
     @istest
     @tcms(6955, 198903)
-    def checkFilterStatusDumpXml(self):
+    def check_filter_status_dump_xml(self):
         """
         Check that Network Filter is enabled by default via dumpxml
         """
@@ -90,7 +91,8 @@ class NetworkFilterCase01_CheckFilterIsOn(TestCase):
 ##############################################################################
 
 
-class NetworkFilterCase02_CheckFilterIsOnForNewNic(TestCase):
+@attr(tier=1)
+class NetworkFilterCase02(TestCase):
     """
     Check that network filter is enabled for hot-plug  NIC to on VM
     """
@@ -109,7 +111,7 @@ class NetworkFilterCase02_CheckFilterIsOnForNewNic(TestCase):
 
     @istest
     @tcms(6955, 198914)
-    def checkNetworkFilterOnNic(self):
+    def check_network_filter_on_nic(self):
         """
         Check that the new NIC has network filter
         """
@@ -140,7 +142,8 @@ class NetworkFilterCase02_CheckFilterIsOnForNewNic(TestCase):
 ##############################################################################
 
 
-class NetworkFilterCase03_CheckEbtables(TestCase):
+@attr(tier=1)
+class NetworkFilterCase03(TestCase):
     """
     Check that Network Filter is enabled via ebtables on running VM and
     disabled on stopped VM
@@ -156,11 +159,11 @@ class NetworkFilterCase03_CheckEbtables(TestCase):
 
     @istest
     @tcms(6955, 198920)
-    def checkNetworkFilterViaEbtables(self):
+    def check_network_filter_via_ebtables(self):
         """
         Check that VM NIC has network filter via ebtables
         """
-        vm_macs = getVmMacs(vm=config.VM_NAME[0], nics=["nic1"])
+        vm_macs = get_vm_macs(vm=config.VM_NAME[0], nics=["nic1"])
         logger.info("Check ebtables rules for running VM")
         if not checkNetworkFilteringEbtables(positive=True,
                                              host=config.HOSTS[0],
@@ -191,17 +194,15 @@ class NetworkFilterCase03_CheckEbtables(TestCase):
         Start the VM
         """
         logger.info("Starting the VM and wait for status up")
-        if not startVm(positive=True, vm=config.VM_NAME[0]):
+        if not startVm(positive=True, vm=config.VM_NAME[0],
+                       wait_for_status="up"):
             raise NetworkException("failed to start the VM")
-
-        if not waitForVmsStates(positive=True, names=config.VM_NAME[0],
-                                timeout=120):
-            raise NetworkException("VM state is not up")
 
 ##############################################################################
 
 
-class NetworkFilterCase04_CheckEbtablesHotplug(TestCase):
+@attr(tier=1)
+class NetworkFilterCase04(TestCase):
     """
     Check that Network Filter is disabled via ebtables on after VNIC hot-plug
     and still active after hot-unplug for remaining NICs
@@ -217,11 +218,11 @@ class NetworkFilterCase04_CheckEbtablesHotplug(TestCase):
 
     @istest
     @tcms(6955, 198966)
-    def checkNetworkFilterViaEbtables(self):
+    def check_network_filter_via_ebtables(self):
         """
         Check that VM NICs has network filter via ebtables
         """
-        vm_nic1_mac = getVmMacs(vm=config.VM_NAME[0], nics=["nic1"])
+        vm_nic1_mac = get_vm_macs(vm=config.VM_NAME[0], nics=["nic1"])
         logger.info("Check ebtables rules for nic1")
         if not checkNetworkFilteringEbtables(positive=True,
                                              host=config.HOSTS[0],
@@ -238,7 +239,7 @@ class NetworkFilterCase04_CheckEbtablesHotplug(TestCase):
                       network=config.MGMT_BRIDGE):
             raise NetworkException("Failed to add NIC to VM")
 
-        vm_nic2_mac = getVmMacs(vm=config.VM_NAME[0], nics=["nic2"])
+        vm_nic2_mac = get_vm_macs(vm=config.VM_NAME[0], nics=["nic2"])
         logger.info("Check ebtables rules for nic2")
         if not checkNetworkFilteringEbtables(positive=True,
                                              host=config.HOSTS[0],
@@ -257,7 +258,7 @@ class NetworkFilterCase04_CheckEbtablesHotplug(TestCase):
         if not removeNic(positive=True, vm=config.VM_NAME[0], nic="nic2"):
             raise NetworkException("Failed to remove nic2")
 
-        vm_nic1_1_mac = getVmMacs(vm=config.VM_NAME[0], nics=["nic1"])
+        vm_nic1_1_mac = get_vm_macs(vm=config.VM_NAME[0], nics=["nic1"])
         logger.info("Check ebtables rules for nic1")
         if not checkNetworkFilteringEbtables(positive=True,
                                              host=config.HOSTS[0],
@@ -278,7 +279,8 @@ class NetworkFilterCase04_CheckEbtablesHotplug(TestCase):
 ##############################################################################
 
 
-class NetworkFilterCase05_CheckFilterIsOn(TestCase):
+@attr(tier=1)
+class NetworkFilterCase05(TestCase):
     """
     Disabling network filter then check that VM run without network filter.
     """
@@ -296,16 +298,17 @@ class NetworkFilterCase05_CheckFilterIsOn(TestCase):
         logger.info("Disabling network filter on engine")
         if not setNetworkFilterStatus(enable=False, host=config.VDC,
                                       user=config.VDC_USER,
-                                      passwd=config.VDC_PASSWORD):
+                                      passwd=config.VDC_ROOT_PASSWORD):
             raise NetworkException("Failed to disable network filter")
 
         logger.info("Starting the VM")
-        if not startVm(positive=True, vm=config.VM_NAME[0]):
+        if not startVm(positive=True, vm=config.VM_NAME[0],
+                       wait_for_status="up"):
             raise NetworkException("failed to start the VM")
 
     @istest
     @tcms(6955, 203261)
-    def checkNetworkFilterOnNic(self):
+    def check_network_filter_on_nic(self):
         """
         Check that VM run without network filter.
         """
@@ -318,7 +321,7 @@ class NetworkFilterCase05_CheckFilterIsOn(TestCase):
                                             nics='1'):
             raise NetworkException("Network Filter is enabled via dumpxml")
 
-        vm_nic1_mac = getVmMacs(vm=config.VM_NAME[0], nics=["nic1"])
+        vm_nic1_mac = get_vm_macs(vm=config.VM_NAME[0], nics=["nic1"])
         logger.info("Check ebtables rules for nic1")
         if not checkNetworkFilteringEbtables(positive=False,
                                              host=config.HOSTS[0],
@@ -337,13 +340,13 @@ class NetworkFilterCase05_CheckFilterIsOn(TestCase):
         logger.info("Enabling network filter on engine")
         if not setNetworkFilterStatus(enable=True, host=config.VDC,
                                       user=config.VDC_USER,
-                                      passwd=config.VDC_PASSWORD):
+                                      passwd=config.VDC_ROOT_PASSWORD):
             raise NetworkException("Failed to enable network filter")
 
 ##############################################################################
 
 
-def getVmMacs(vm, nics):
+def get_vm_macs(vm, nics):
     """
     Description: Get MACs from VM
     **Author**: myakove

@@ -7,15 +7,14 @@ Only static IP configuration is tested.
 '''
 
 from nose.tools import istest
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import attr
+from art.unittest_lib import NetworkTest as TestCase
 import logging
-import config
-
+from networking import config
 from art.rhevm_api.utils.test_utils import get_api
 from art.test_handler.exceptions import NetworkException, ClusterException
 from art.test_handler.settings import opts
-from art.test_handler.tools import tcms, bz
-
+from art.test_handler.tools import tcms
 from art.rhevm_api.tests_lib.low_level.datacenters import\
     waitForDataCenterState
 from art.rhevm_api.tests_lib.low_level.clusters import\
@@ -25,8 +24,6 @@ from art.rhevm_api.tests_lib.high_level.networks import\
 from art.rhevm_api.tests_lib.low_level.networks import checkIPRule
 from art.rhevm_api.tests_lib.low_level.hosts import genSNNic,\
     sendSNRequest, deactivateHost, activateHost, updateHost
-from art.unittest_lib.network import skipBOND
-
 
 HOST_API = get_api('host', 'hosts')
 VM_API = get_api('vm', 'vms')
@@ -35,11 +32,11 @@ logger = logging.getLogger(__name__)
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 
-IP = '1.1.1.1'
-NETMASK = '255.255.255.0'
-GATEWAY = '1.1.1.254'
-SUBNET = '1.1.1.0'
-TIMEOUT = 60
+IP = config.SOURCE_IP
+NETMASK = config.NETMASK
+GATEWAY = config.MG_GATEWAY
+SUBNET = config.SUBNET
+TIMEOUT = config.TIMEOUT
 
 ########################################################################
 
@@ -48,7 +45,8 @@ TIMEOUT = 60
 ########################################################################
 
 
-class Gateways_Case1_282894(TestCase):
+@attr(tier=1)
+class GatewaysCase1(TestCase):
     """
     Verify you can configure additional network beside MGMT with gateway
     Verify you can remove network configured with gateway
@@ -68,8 +66,8 @@ class Gateways_Case1_282894(TestCase):
                                            'netmask': [NETMASK],
                                            'gateway': [GATEWAY]}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -108,7 +106,8 @@ class Gateways_Case1_282894(TestCase):
             raise NetworkException("Cannot remove network from DC/Cluster")
 
 
-class Gateways_Case2_282901(TestCase):
+@attr(tier=1)
+class GatewaysCase2(TestCase):
     """
     Verify you can configure additional VLAN network with static IP and gateway
     """
@@ -129,8 +128,8 @@ class Gateways_Case2_282901(TestCase):
                                                 'netmask': [NETMASK],
                                                 'gateway': [GATEWAY]}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0],
@@ -161,7 +160,8 @@ class Gateways_Case2_282901(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class Gateways_Case3_282902(TestCase):
+@attr(tier=1)
+class GatewaysCase3(TestCase):
     """
     Verify you can configure additional bridgeless network with static IP.
     """
@@ -181,8 +181,8 @@ class Gateways_Case3_282902(TestCase):
                                            'netmask': [NETMASK],
                                            'gateway': [GATEWAY]}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -211,7 +211,8 @@ class Gateways_Case3_282902(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class Gateways_Case4_283407(TestCase):
+@attr(tier=1)
+class GatewaysCase4(TestCase):
     """
     Verify you can configure additional display network with static ip config.
     Mgmt network should be static
@@ -232,8 +233,8 @@ class Gateways_Case4_283407(TestCase):
                                            'netmask': [NETMASK],
                                            'gateway': [GATEWAY]}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -262,7 +263,8 @@ class Gateways_Case4_283407(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class Gateways_Case5_283968(TestCase):
+@attr(tier=1)
+class GatewaysCase5(TestCase):
     """
     Try to assign to vm network incorrect static IP and gw addresses
     """
@@ -273,8 +275,8 @@ class Gateways_Case5_283968(TestCase):
         local_dict1 = {config.NETWORKS[0]: {'nic': config.HOST_NICS[1],
                                             'required': 'false'}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         network_dict=local_dict1):
             raise NetworkException("Cannot create and attach first network")
 
@@ -332,7 +334,8 @@ class Gateways_Case5_283968(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class Gateways_Case6_289770(TestCase):
+@attr(tier=1)
+class GatewaysCase6(TestCase):
     """
     Verify you can configure additional network with gateway 0.0.0.0
     """
@@ -355,8 +358,8 @@ class Gateways_Case6_289770(TestCase):
                                            'address': [IP],
                                            'netmask': [NETMASK],
                                            'gateway': ['0.0.0.0']}}
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -374,11 +377,12 @@ class Gateways_Case6_289770(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class Gateways_Case7_289694(TestCase):
+@attr(tier=1)
+class GatewaysCase7(TestCase):
     """
     Verify you can add additional NIC to the already created bond
     """
-    __test__ = True
+    __test__ = len(config.HOST_NICS) > 3
 
     @classmethod
     def setup_class(cls):
@@ -395,8 +399,8 @@ class Gateways_Case7_289694(TestCase):
                                            'netmask': [NETMASK],
                                            'gateway': [GATEWAY]}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -450,11 +454,12 @@ class Gateways_Case7_289694(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class Gateways_Case8_289695(TestCase):
+@attr(tier=1)
+class GatewaysCase8(TestCase):
     """
     Verify you can remove Nic from bond having network with gw configured on it
     """
-    __test__ = True
+    __test__ = len(config.HOST_NICS) > 3
 
     @classmethod
     def setup_class(cls):
@@ -473,8 +478,8 @@ class Gateways_Case8_289695(TestCase):
                                            'netmask': [NETMASK],
                                            'gateway': [GATEWAY]}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -528,23 +533,24 @@ class Gateways_Case8_289695(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class Gateways_Case9_284029(TestCase):
+@attr(tier=1)
+class GatewaysCase9(TestCase):
     """
     Verify you can't configure gateway on the network in 3.2 Cluster
     """
     __test__ = False
-    '''
+    """
     There is a bug 1008999, as a result this case fails and is False till fixed
-    '''
+    """
 
     @classmethod
     def setup_class(cls):
         """
         Create 3.2 Cluster for DC 3.3
         """
-        if not addCluster(positive=True, name=config.CLUSTER_NAME2,
-                          cpu=config.CPU_NAME, data_center=config.DC_NAME,
-                          version=config.VERSION):
+        if not addCluster(positive=True, name=config.CLUSTER_NAME[1],
+                          cpu=config.CPU_NAME, data_center=config.DC_NAME[0],
+                          version=config.COMP_VERSION):
             raise ClusterException("Cannot create second Cluster")
 
     @istest
@@ -558,10 +564,10 @@ class Gateways_Case9_284029(TestCase):
         logger.info("Put the host on another Cluster")
         assert(deactivateHost(True, host=config.HOSTS[0]))
         if not updateHost(True, host=config.HOSTS[0],
-                          cluster=config.CLUSTER_NAME2):
+                          cluster=config.CLUSTER_NAME[1]):
             raise NetworkException("Cannot move host to another Cluster")
         assert(activateHost(True, host=config.HOSTS[0]))
-        assert(waitForDataCenterState(name=config.DC_NAME))
+        assert(waitForDataCenterState(name=config.DC_NAME[0]))
         local_dict = {config.NETWORKS[0]: {'nic': config.HOST_NICS[1],
                                            'required': 'false',
                                            'bootproto': 'static',
@@ -569,8 +575,8 @@ class Gateways_Case9_284029(TestCase):
                                            'netmask': [NETMASK],
                                            'gateway': [GATEWAY]}}
         self.assertFalse(
-            createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                     cluster=config.CLUSTER_NAME2,
+            createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                     cluster=config.CLUSTER_NAME[1],
                                      host=config.HOSTS[0],
                                      network_dict=local_dict,
                                      auto_nics=[config.HOST_NICS[0]]))
@@ -584,16 +590,17 @@ class Gateways_Case9_284029(TestCase):
         logger.info("Put the host on original Cluster")
         assert(deactivateHost(True, host=config.HOSTS[0]))
         if not updateHost(True, host=config.HOSTS[0],
-                          cluster=config.CLUSTER_NAME):
+                          cluster=config.CLUSTER_NAME[0]):
             raise NetworkException("Cannot move host to another Cluster")
         assert(activateHost(True, host=config.HOSTS[0]))
-        assert(waitForDataCenterState(name=config.DC_NAME))
+        assert(waitForDataCenterState(name=config.DC_NAME[0]))
         logger.info("Remove Cluster 3.2 from DC")
-        if not removeCluster(True, config.CLUSTER_NAME2):
+        if not removeCluster(True, config.CLUSTER_NAME[1]):
             raise NetworkException("Cannot remove Cluster from DC")
 
 
-class Gateways_Case10_282904(TestCase):
+@attr(tier=1)
+class GatewaysCase10(TestCase):
     """
     Verify you can configure additional network without gateway
     """
@@ -611,8 +618,8 @@ class Gateways_Case10_282904(TestCase):
                                            'address': [IP],
                                            'netmask': [NETMASK]}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -639,5 +646,3 @@ class Gateways_Case10_282904(TestCase):
                                   auto_nics=[config.HOST_NICS[0]],
                                   network=[config.NETWORKS[0]]):
             raise NetworkException("Cannot remove network from setup")
-
-skipBOND([Gateways_Case7_289694, Gateways_Case8_289695], config.HOST_NICS)

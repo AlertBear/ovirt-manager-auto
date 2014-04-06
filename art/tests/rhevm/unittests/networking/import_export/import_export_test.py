@@ -4,9 +4,10 @@ Testing Import/Export feature.
 created for testing.
 """
 from art.rhevm_api.tests_lib.low_level.hosts import sendSNRequest
-import config
+from networking import config
 import logging
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import attr
+from art.unittest_lib import NetworkTest as TestCase
 from art.rhevm_api.tests_lib.low_level.vms import startVm, removeNic, \
     importVm, removeVm, check_vnic_on_vm_nic, addVm
 from art.rhevm_api.tests_lib.high_level.networks import removeNetFromSetup, \
@@ -25,6 +26,7 @@ logger = logging.getLogger(__name__)
 ########################################################################
 
 
+@attr(tier=1)
 class IECase01(TestCase):
     """
     Check that VM created in the previous version could be imported
@@ -96,6 +98,7 @@ class IECase01(TestCase):
                 raise NetworkException("Couldn't remove imported VM %s" % vm)
 
 
+@attr(tier=1)
 class IECase02(TestCase):
     """
     Check that Template created in the previous version could be imported
@@ -174,6 +177,7 @@ class IECase02(TestCase):
                 raise NetworkException("Couldn't remove imported Template")
 
 
+@attr(tier=1)
 class IECase03(TestCase):
     """
     Check for the VM and template:
@@ -375,6 +379,7 @@ class IECase03(TestCase):
                                    "the setup")
 
 
+@attr(tier=1)
 class IECase04(TestCase):
     """
     Check that VM created in the same version could be imported with all the
@@ -444,6 +449,7 @@ class IECase04(TestCase):
                 raise NetworkException("Couldn't remove imported VM %s" % vm)
 
 
+@attr(tier=1)
 class IECase05(TestCase):
     """
     Check that Template created in the same DC version could be imported with

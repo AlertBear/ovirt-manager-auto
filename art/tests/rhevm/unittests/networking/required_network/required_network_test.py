@@ -3,13 +3,13 @@ Testing RequiredNetwork network feature.
 1 DC, 1 Cluster, 1 Hosts will be created for testing.
 """
 import logging
-import config
-from nose.tools import istest
-from art.unittest_lib import BaseTestCase as TestCase
+from networking import config
+from art.unittest_lib import attr
+from art.unittest_lib import NetworkTest as TestCase
 from art.rhevm_api.tests_lib.high_level.networks import \
     createAndAttachNetworkSN, validateNetwork, removeNetFromSetup
 from art.rhevm_api.tests_lib.low_level.hosts import ifdownNic,\
-    waitForHostsStates, ifupNic, waitForHostNicState, activateHost
+    waitForHostsStates, ifupNic, activateHost
 from art.test_handler.tools import tcms
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.low_level.networks import isNetworkRequired, \
@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 ########################################################################
 
 
+@attr(tier=1)
 class RequiredNetwork01(TestCase):
     """
     VM-Network
@@ -47,11 +48,11 @@ class RequiredNetwork01(TestCase):
         """
         logger.info("Checking that mgmt network is required by default")
         if not isNetworkRequired(network=config.MGMT_BRIDGE,
-                                 cluster=config.CLUSTER_NAME):
+                                 cluster=config.CLUSTER_NAME[0]):
             raise NetworkException("mgmt network is not required by default")
 
         logger.info("Editing mgmt network to be non-required")
-        if updateClusterNetwork(positive=True, cluster=config.CLUSTER_NAME,
+        if updateClusterNetwork(positive=True, cluster=config.CLUSTER_NAME[0],
                                 network=config.MGMT_BRIDGE, required='false'):
             raise NetworkException("mgmt network is set to non required")
 
@@ -65,6 +66,7 @@ class RequiredNetwork01(TestCase):
 ##############################################################################
 
 
+@attr(tier=1)
 class RequiredNetwork02(TestCase):
     """
     VM-Network
@@ -82,8 +84,8 @@ class RequiredNetwork02(TestCase):
         local_dict = {config.NETWORKS[0]: {"nic": config.HOST_NICS[1],
                                            "required": "false"}}
         logger.info("Attach sw1 network to DC/Cluster/Host")
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -95,7 +97,7 @@ class RequiredNetwork02(TestCase):
         Validate that sw1 is operational.
         """
         logger.info("Check that sw1 status is operational")
-        if not validateNetwork(positive=True, cluster=config.CLUSTER_NAME,
+        if not validateNetwork(positive=True, cluster=config.CLUSTER_NAME[0],
                                network=config.NETWORKS[0], tag='status',
                                val='operational'):
             raise NetworkException("sw1 status is not operational")
@@ -129,12 +131,13 @@ class RequiredNetwork02(TestCase):
         if not removeNetFromSetup(host=config.HOSTS[0],
                                   auto_nics=[config.HOST_NICS[0]],
                                   network=[config.NETWORKS[0]],
-                                  data_center=config.DC_NAME):
+                                  data_center=config.DC_NAME[0]):
             raise NetworkException("Failed to remove sw1 from setup")
 
 ##############################################################################
 
 
+@attr(tier=1)
 class RequiredNetwork03(TestCase):
     """
     VM-Network
@@ -152,8 +155,8 @@ class RequiredNetwork03(TestCase):
                                            "required": "true"}}
 
         logger.info("Attach sw1 network to DC/Cluster/Host")
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -192,12 +195,13 @@ class RequiredNetwork03(TestCase):
         if not removeNetFromSetup(host=config.HOSTS[0],
                                   auto_nics=[config.HOST_NICS[0]],
                                   network=[config.NETWORKS[0]],
-                                  data_center=config.DC_NAME):
+                                  data_center=config.DC_NAME[0]):
             raise NetworkException("Failed to remove networks from setup")
 
 ##############################################################################
 
 
+@attr(tier=1)
 class RequiredNetwork04(TestCase):
     """
     VLAN-OVER-BOND
@@ -220,8 +224,8 @@ class RequiredNetwork04(TestCase):
                                                 'vlan_id': config.VLAN_ID[0],
                                                 'required': 'true'}}
         logger.info("Attach sw162 network to DC/Cluster/Host")
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -278,12 +282,13 @@ class RequiredNetwork04(TestCase):
         if not removeNetFromSetup(host=config.HOSTS[0],
                                   auto_nics=[config.HOST_NICS[0]],
                                   network=[config.VLAN_NETWORKS[0]],
-                                  data_center=config.DC_NAME):
+                                  data_center=config.DC_NAME[0]):
             raise NetworkException("Failed to remove networks from setup")
 
 ##############################################################################
 
 
+@attr(tier=1)
 class RequiredNetwork05(TestCase):
     """
     VLAN-Network
@@ -302,8 +307,8 @@ class RequiredNetwork05(TestCase):
                                                 'nic': config.HOST_NICS[1],
                                                 'required': 'true'}}
         logger.info("Attach sw162 network to DC/Cluster/Host")
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0],
@@ -343,12 +348,13 @@ class RequiredNetwork05(TestCase):
         if not removeNetFromSetup(host=config.HOSTS[0],
                                   auto_nics=[config.HOST_NICS[0]],
                                   network=[config.VLAN_NETWORKS[0]],
-                                  data_center=config.DC_NAME):
+                                  data_center=config.DC_NAME[0]):
             raise NetworkException("Failed to remove networks from setup")
 
 ##############################################################################
 
 
+@attr(tier=1)
 class RequiredNetwork06(TestCase):
     """
     Non-VM-Network
@@ -366,8 +372,8 @@ class RequiredNetwork06(TestCase):
                                            'usages': "",
                                            'required': 'true'}}
         logger.info("Attach sw1 network to DC/Cluster/Host")
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -407,7 +413,7 @@ class RequiredNetwork06(TestCase):
         if not removeNetFromSetup(host=config.HOSTS[0],
                                   auto_nics=[config.HOST_NICS[0]],
                                   network=[config.NETWORKS[0]],
-                                  data_center=config.DC_NAME):
+                                  data_center=config.DC_NAME[0]):
             raise NetworkException("Failed to remove networks from setup")
 
 ##############################################################################

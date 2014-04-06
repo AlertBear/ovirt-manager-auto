@@ -1,40 +1,42 @@
 #! /usr/bin/python
-'''
+"""
 Testing network migration feature.
 1 DC, 1 Cluster, 2 Hosts and 1 VM will be created for testing.
 Network migration will be tested for untagged, tagged, bond scenarios.
 It will cover scenarios for VM/non-VM networks
-'''
+"""
 from nose.tools import istest
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import attr
+from art.unittest_lib import NetworkTest as TestCase
 from art.test_handler.tools import tcms
-import time
 import logging
 
-from art.rhevm_api.utils.test_utils import get_api, checkTraffic, sendICMP
+from art.rhevm_api.utils.test_utils import get_api, checkTraffic
 from art.test_handler.exceptions import NetworkException, VMException
 from art.test_handler.settings import opts
 
-import config
+from networking import config
 from art.rhevm_api.tests_lib.high_level.networks import\
     createAndAttachNetworkSN, removeNetFromSetup, TrafficMonitor,\
-    checkICMPConnectivity, getIpOnHostNic
+    checkICMPConnectivity
 from art.rhevm_api.tests_lib.low_level.networks import\
     updateClusterNetwork
 from art.rhevm_api.tests_lib.low_level.hosts import setHostToNonOperational
 from art.rhevm_api.tests_lib.low_level.vms import addNic, removeNic,\
-    updateNic, getVmHost
+    updateNic
 from art.rhevm_api.tests_lib.high_level.vms import check_vm_migration
+from art.unittest_lib.network import find_ip, get_host
+
 HOST_API = get_api('host', 'hosts')
 VM_API = get_api('vm', 'vms')
 
 logger = logging.getLogger(__name__)
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
-NUM_PACKETS = 1000
-SOURCE_IP = '1.1.1.1'
-DEST_IP = '1.1.1.2'
-NETMASK = '255.255.255.0'
+NUM_PACKETS = config.NUM_PACKETS
+SOURCE_IP = config.NM_SOURCE_IP
+DEST_IP = config.NM_DEST_IP
+NETMASK = config.NETMASK
 
 ########################################################################
 
@@ -43,7 +45,8 @@ NETMASK = '255.255.255.0'
 ########################################################################
 
 
-class Migration_Case01_256582_250476(TestCase):
+@attr(tier=1)
+class MigrationCase01(TestCase):
     """
     Verify dedicated regular network migration
     """
@@ -64,8 +67,8 @@ class Migration_Case01_256582_250476(TestCase):
                                                        NETMASK]},
                       config.NETWORKS[1]: {'nic': config.HOST_NICS[2],
                                            'required': 'true'}}
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS,
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -77,24 +80,24 @@ class Migration_Case01_256582_250476(TestCase):
         """
         Check dedicated network migration
         """
-        orig_host = getHost(config.VM_NAME[0])
+        orig_host = get_host(config.VM_NAME[0])
         logger.info("Start migration from %s ", orig_host)
         logger.info("Migrating VM over migration network")
         src, dst = find_ip(vm=config.VM_NAME[0],
                            host_list=config.HOSTS, nic=config.HOST_NICS[1])
         if not checkICMPConnectivity(host=orig_host, user=config.HOSTS_USER,
-                                     password=config.HOSTS_PW[0], ip=dst):
+                                     password=config.HOSTS_PW, ip=dst):
             logger.error("ICMP wasn't established")
         with TrafficMonitor(machine=orig_host, user=config.HOSTS_USER,
-                            password=config.HOSTS_PW[0],
+                            password=config.HOSTS_PW,
                             nic=config.HOST_NICS[1],
                             src=src, dst=dst,
                             protocol='tcp', numPackets=NUM_PACKETS) as monitor:
             monitor.addTask(check_vm_migration,
                             vm_names=config.VM_NAME[0],
                             orig_host=orig_host, vm_user=config.HOSTS_USER,
-                            host_password=config.HOSTS_PW[0],
-                            vm_password=config.HOSTS_PW[0],
+                            host_password=config.HOSTS_PW,
+                            vm_password=config.HOSTS_PW,
                             os_type='rhel')
         self.assertTrue(monitor.getResult())
 
@@ -104,26 +107,26 @@ class Migration_Case01_256582_250476(TestCase):
         """
         Check dedicated network migration by putting req net down
         """
-        orig_host = getHost(config.VM_NAME[0])
+        orig_host = get_host(config.VM_NAME[0])
         logger.info("Returning VMs back to original host over migration net")
         logger.info("Start migration from %s ", orig_host)
         src, dst = find_ip(vm=config.VM_NAME[0],
                            host_list=config.HOSTS, nic=config.HOST_NICS[1])
         if not setHostToNonOperational(orig_host=orig_host,
-                                       host_password=config.HOSTS_PW[0],
+                                       host_password=config.HOSTS_PW,
                                        nic=config.HOST_NICS[2]):
             raise NetworkException("Cannot start migration by putting"
                                    " Nic %s down", config.HOST_NICS[2])
         with TrafficMonitor(machine=orig_host, user=config.HOSTS_USER,
-                            password=config.HOSTS_PW[0],
+                            password=config.HOSTS_PW,
                             nic=config.HOST_NICS[1],
                             src=src, dst=dst,
                             protocol='tcp', numPackets=NUM_PACKETS) as monitor:
             monitor.addTask(check_vm_migration,
                             vm_names=config.VM_NAME[0],
                             orig_host=orig_host, vm_user=config.HOSTS_USER,
-                            host_password=config.HOSTS_PW[0],
-                            vm_password=config.HOSTS_PW[0],
+                            host_password=config.HOSTS_PW,
+                            vm_password=config.HOSTS_PW,
                             os_type='rhel', nic=config.HOST_NICS[2],
                             nic_down=False)
         self.assertTrue(monitor.getResult())
@@ -141,7 +144,8 @@ class Migration_Case01_256582_250476(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class Migration_Case02_250464(TestCase):
+@attr(tier=1)
+class MigrationCase02(TestCase):
     """
     Verify default migration when no migration network specified
     """
@@ -160,8 +164,8 @@ class Migration_Case02_250464(TestCase):
                                            'netmask': [NETMASK,
                                                        NETMASK]}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS,
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -173,13 +177,13 @@ class Migration_Case02_250464(TestCase):
         """
         Check default migration on mgmt network network
         """
-        orig_host = getHost(config.VM_NAME[0])
+        orig_host = get_host(config.VM_NAME[0])
         logger.info("Start migration from %s ", orig_host)
         logger.info("Migrating VM over mgmt network network")
         src, dst = find_ip(vm=config.VM_NAME[0],
                            host_list=config.HOSTS, nic=config.HOST_NICS[1])
         if not checkICMPConnectivity(host=orig_host, user=config.HOSTS_USER,
-                                     password=config.HOSTS_PW[0], ip=dst):
+                                     password=config.HOSTS_PW, ip=dst):
             logger.error("ICMP wasn't established")
         source_ip, dest_ip = find_ip(vm=config.VM_NAME[0],
                                      host_list=config.HOSTS,
@@ -187,19 +191,19 @@ class Migration_Case02_250464(TestCase):
 
         with TrafficMonitor(machine=orig_host,
                             user=config.HOSTS_USER,
-                            password=config.HOSTS_PW[0],
+                            password=config.HOSTS_PW,
                             nic=config.HOST_NICS[0],
                             src=source_ip, dst=dest_ip,
                             protocol='tcp', numPackets=NUM_PACKETS) as monitor:
             monitor.addTask(check_vm_migration,
                             vm_names=config.VM_NAME[0],
                             orig_host=orig_host, vm_user=config.HOSTS_USER,
-                            host_password=config.HOSTS_PW[0],
-                            vm_password=config.HOSTS_PW[0],
+                            host_password=config.HOSTS_PW,
+                            vm_password=config.HOSTS_PW,
                             os_type='rhel')
             monitor.addTask(checkTraffic, expectedRes=False,
                             machine=orig_host, user=config.HOSTS_USER,
-                            password=config.HOSTS_PW[0],
+                            password=config.HOSTS_PW,
                             nic=config.HOST_NICS[1],
                             src=src, dst=dst)
         self.assertTrue(monitor.getResult())
@@ -216,7 +220,8 @@ class Migration_Case02_250464(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class Migration_Case03_250466_256583(TestCase):
+@attr(tier=1)
+class MigrationCase03(TestCase):
     """
     Verify dedicated migration over tagged network over NIC
     """
@@ -240,8 +245,8 @@ class Migration_Case03_250466_256583(TestCase):
                                                 'nic': config.HOST_NICS[2],
                                                 'required': 'true'
                                                 }}
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS,
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0],
@@ -255,7 +260,7 @@ class Migration_Case03_250466_256583(TestCase):
         """
         Check dedicated migration over tagged network over NIC
         """
-        orig_host = getHost(config.VM_NAME[0])
+        orig_host = get_host(config.VM_NAME[0])
         logger.info("Start migration from %s ", orig_host)
         logger.info("Migrating VM over migration network")
         src, dst = find_ip(vm=config.VM_NAME[0],
@@ -263,19 +268,19 @@ class Migration_Case03_250466_256583(TestCase):
                            nic='.'.join([config.HOST_NICS[1],
                                          config.VLAN_ID[0]]))
         if not checkICMPConnectivity(host=orig_host, user=config.HOSTS_USER,
-                                     password=config.HOSTS_PW[0], ip=dst):
+                                     password=config.HOSTS_PW, ip=dst):
             logger.error("ICMP wasn't established")
 
         with TrafficMonitor(machine=orig_host, user=config.HOSTS_USER,
-                            password=config.HOSTS_PW[0],
+                            password=config.HOSTS_PW,
                             nic=config.HOST_NICS[1],
                             src=src, dst=dst,
                             protocol='tcp', numPackets=NUM_PACKETS) as monitor:
             monitor.addTask(check_vm_migration,
                             vm_names=config.VM_NAME[0],
                             orig_host=orig_host, vm_user=config.HOSTS_USER,
-                            host_password=config.HOSTS_PW[0],
-                            vm_password=config.HOSTS_PW[0],
+                            host_password=config.HOSTS_PW,
+                            vm_password=config.HOSTS_PW,
                             os_type='rhel')
         self.assertTrue(monitor.getResult())
 
@@ -285,7 +290,7 @@ class Migration_Case03_250466_256583(TestCase):
         """
         Check dedicated migration over tagged network by putting req net down
         """
-        orig_host = getHost(config.VM_NAME[0])
+        orig_host = get_host(config.VM_NAME[0])
         logger.info("Returning VMs back to original host")
         logger.info("Start migration from %s ", orig_host)
         logger.info("Migrating VM over migration network")
@@ -294,21 +299,21 @@ class Migration_Case03_250466_256583(TestCase):
                            nic='.'.join([config.HOST_NICS[1],
                                          config.VLAN_ID[0]]))
         if not setHostToNonOperational(orig_host=orig_host,
-                                       host_password=config.HOSTS_PW[0],
+                                       host_password=config.HOSTS_PW,
                                        nic=config.HOST_NICS[2]):
             raise NetworkException("Cannot start migration by putting"
                                    " Nic %s down", config.HOST_NICS[2])
 
         with TrafficMonitor(machine=orig_host, user=config.HOSTS_USER,
-                            password=config.HOSTS_PW[0],
+                            password=config.HOSTS_PW,
                             nic=config.HOST_NICS[1],
                             src=src, dst=dst,
                             protocol='tcp', numPackets=NUM_PACKETS) as monitor:
             monitor.addTask(check_vm_migration,
                             vm_names=config.VM_NAME[0],
                             orig_host=orig_host, vm_user=config.HOSTS_USER,
-                            host_password=config.HOSTS_PW[0],
-                            vm_password=config.HOSTS_PW[0],
+                            host_password=config.HOSTS_PW,
+                            vm_password=config.HOSTS_PW,
                             os_type='rhel', nic=config.HOST_NICS[2],
                             nic_down=False)
         self.assertTrue(monitor.getResult())
@@ -326,7 +331,8 @@ class Migration_Case03_250466_256583(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class Migration_Case04_260555_260554(TestCase):
+@attr(tier=1)
+class MigrationCase04(TestCase):
     """
     Verify dedicated migration over non-VM network over NIC
     """
@@ -347,8 +353,8 @@ class Migration_Case04_260555_260554(TestCase):
                                                        NETMASK]},
                       config.NETWORKS[1]: {'nic': config.HOST_NICS[2],
                                            'required': 'true'}}
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS,
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -360,23 +366,23 @@ class Migration_Case04_260555_260554(TestCase):
         """
         Check dedicated migration over non-VM network over NIC
         """
-        orig_host = getHost(config.VM_NAME[0])
+        orig_host = get_host(config.VM_NAME[0])
         logger.info("Start migration from %s ", orig_host)
         src, dst = find_ip(vm=config.VM_NAME[0],
                            host_list=config.HOSTS, nic=config.HOST_NICS[1])
         if not checkICMPConnectivity(host=orig_host, user=config.HOSTS_USER,
-                                     password=config.HOSTS_PW[0], ip=dst):
+                                     password=config.HOSTS_PW, ip=dst):
             logger.error("ICMP wasn't established")
         with TrafficMonitor(machine=orig_host, user=config.HOSTS_USER,
-                            password=config.HOSTS_PW[0],
+                            password=config.HOSTS_PW,
                             nic=config.HOST_NICS[1],
                             src=src, dst=dst,
                             protocol='tcp', numPackets=NUM_PACKETS) as monitor:
             monitor.addTask(check_vm_migration,
                             vm_names=config.VM_NAME[0],
                             orig_host=orig_host, vm_user=config.HOSTS_USER,
-                            host_password=config.HOSTS_PW[0],
-                            vm_password=config.HOSTS_PW[0],
+                            host_password=config.HOSTS_PW,
+                            vm_password=config.HOSTS_PW,
                             os_type='rhel')
         self.assertTrue(monitor.getResult())
 
@@ -386,26 +392,26 @@ class Migration_Case04_260555_260554(TestCase):
         """
         Check dedicated migration over non-VM network by putting req net down
         """
-        orig_host = getHost(config.VM_NAME[0])
+        orig_host = get_host(config.VM_NAME[0])
         logger.info("Returning VMs back to original host")
         logger.info("Start migration from %s ", orig_host)
         src, dst = find_ip(vm=config.VM_NAME[0],
                            host_list=config.HOSTS, nic=config.HOST_NICS[1])
         if not setHostToNonOperational(orig_host=orig_host,
-                                       host_password=config.HOSTS_PW[0],
+                                       host_password=config.HOSTS_PW,
                                        nic=config.HOST_NICS[2]):
             raise NetworkException("Cannot start migration by putting"
                                    " Nic %s down", config.HOST_NICS[2])
         with TrafficMonitor(machine=orig_host, user=config.HOSTS_USER,
-                            password=config.HOSTS_PW[0],
+                            password=config.HOSTS_PW,
                             nic=config.HOST_NICS[1],
                             src=src, dst=dst,
                             protocol='tcp', numPackets=NUM_PACKETS) as monitor:
             monitor.addTask(check_vm_migration,
                             vm_names=config.VM_NAME[0],
                             orig_host=orig_host, vm_user=config.HOSTS_USER,
-                            host_password=config.HOSTS_PW[0],
-                            vm_password=config.HOSTS_PW[0],
+                            host_password=config.HOSTS_PW,
+                            vm_password=config.HOSTS_PW,
                             os_type='rhel', nic=config.HOST_NICS[2],
                             nic_down=False)
         self.assertTrue(monitor.getResult())
@@ -423,7 +429,8 @@ class Migration_Case04_260555_260554(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class Migration_Case05_250810(TestCase):
+@attr(tier=1)
+class MigrationCase05(TestCase):
     """
     Verify dedicated regular network migration when its also display network
     """
@@ -445,8 +452,8 @@ class Migration_Case05_250810(TestCase):
                                               NETMASK]},
              config.NETWORKS[1]: {'nic': config.HOST_NICS[2],
                                   'required': 'true'}}
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS,
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -458,24 +465,24 @@ class Migration_Case05_250810(TestCase):
         """
         Check dedicated network migration over display network
         """
-        orig_host = getHost(config.VM_NAME[0])
+        orig_host = get_host(config.VM_NAME[0])
         logger.info("Start migration from %s ", orig_host)
         src, dst = find_ip(vm=config.VM_NAME[0],
                            host_list=config.HOSTS, nic=config.HOST_NICS[1])
         if not checkICMPConnectivity(host=orig_host, user=config.HOSTS_USER,
-                                     password=config.HOSTS_PW[0], ip=dst):
+                                     password=config.HOSTS_PW, ip=dst):
             logger.error("ICMP wasn't established")
 
         with TrafficMonitor(machine=orig_host, user=config.HOSTS_USER,
-                            password=config.HOSTS_PW[0],
+                            password=config.HOSTS_PW,
                             nic=config.HOST_NICS[1],
                             src=src, dst=dst,
                             protocol='tcp', numPackets=NUM_PACKETS) as monitor:
             monitor.addTask(check_vm_migration,
                             vm_names=config.VM_NAME[0],
                             orig_host=orig_host, vm_user=config.HOSTS_USER,
-                            host_password=config.HOSTS_PW[0],
-                            vm_password=config.HOSTS_PW[0],
+                            host_password=config.HOSTS_PW,
+                            vm_password=config.HOSTS_PW,
                             os_type='rhel')
         self.assertTrue(monitor.getResult())
 
@@ -492,7 +499,8 @@ class Migration_Case05_250810(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class Migration_Case06_250915(TestCase):
+@attr(tier=1)
+class MigrationCase06(TestCase):
     """
     Verify dedicated regular network migration when the net reside on the VM
     """
@@ -515,8 +523,8 @@ class Migration_Case06_250915(TestCase):
                                            'required': 'true'}}
 
         logger.info("Configure migration network on the DC/Cluster/Host")
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS,
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -532,24 +540,24 @@ class Migration_Case06_250915(TestCase):
         """
         Check dedicated network migration when network resides on VM
         """
-        orig_host = getHost(config.VM_NAME[0])
+        orig_host = get_host(config.VM_NAME[0])
         logger.info("Start migration from %s ", orig_host)
         src, dst = find_ip(vm=config.VM_NAME[0],
                            host_list=config.HOSTS, nic=config.HOST_NICS[1])
         if not checkICMPConnectivity(host=orig_host, user=config.HOSTS_USER,
-                                     password=config.HOSTS_PW[0], ip=dst):
+                                     password=config.HOSTS_PW, ip=dst):
             logger.error("ICMP wasn't established")
 
         with TrafficMonitor(machine=orig_host, user=config.HOSTS_USER,
-                            password=config.HOSTS_PW[0],
+                            password=config.HOSTS_PW,
                             nic=config.HOST_NICS[1],
                             src=src, dst=dst,
                             protocol='tcp', numPackets=NUM_PACKETS) as monitor:
             monitor.addTask(check_vm_migration,
                             vm_names=config.VM_NAME[0],
                             orig_host=orig_host, vm_user=config.HOSTS_USER,
-                            host_password=config.HOSTS_PW[0],
-                            vm_password=config.HOSTS_PW[0],
+                            host_password=config.HOSTS_PW,
+                            vm_password=config.HOSTS_PW,
                             os_type='rhel')
         self.assertTrue(monitor.getResult())
 
@@ -571,7 +579,8 @@ class Migration_Case06_250915(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class Migration_Case07_285179(TestCase):
+@attr(tier=1)
+class MigrationCase07(TestCase):
     """
     Verify migration over mgmt network when migration network is not attached.
     to Hosts Migration Network is attached only to DC and Cluster
@@ -587,8 +596,8 @@ class Migration_Case07_285179(TestCase):
         local_dict = {config.NETWORKS[0]: {'nic': config.HOST_NICS[1],
                                            'required': 'true',
                                            'cluster_usages': 'migration'}}
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         network_dict=local_dict):
             raise NetworkException("Cannot create and attach network to DC/CL")
 
@@ -598,7 +607,7 @@ class Migration_Case07_285179(TestCase):
         """
         Check mgmt network migration
         """
-        orig_host = getHost(config.VM_NAME[0])
+        orig_host = get_host(config.VM_NAME[0])
         logger.info("Start migration from %s ", orig_host)
         logger.info("Checking that the migration traffic is on mgmt network")
         source_ip, dest_ip = find_ip(vm=config.VM_NAME[0],
@@ -606,15 +615,15 @@ class Migration_Case07_285179(TestCase):
                                      nic=config.HOST_NICS[0])
 
         with TrafficMonitor(machine=orig_host, user=config.HOSTS_USER,
-                            password=config.HOSTS_PW[0],
+                            password=config.HOSTS_PW,
                             nic=config.HOST_NICS[0],
                             src=source_ip, dst=dest_ip,
                             protocol='tcp', numPackets=NUM_PACKETS) as monitor:
             monitor.addTask(check_vm_migration,
                             vm_names=config.VM_NAME[0],
                             orig_host=orig_host, vm_user=config.HOSTS_USER,
-                            host_password=config.HOSTS_PW[0],
-                            vm_password=config.HOSTS_PW[0],
+                            host_password=config.HOSTS_PW,
+                            vm_password=config.HOSTS_PW,
                             os_type='rhel')
         self.assertTrue(monitor.getResult())
 
@@ -630,7 +639,8 @@ class Migration_Case07_285179(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class Migration_Case08_260607(TestCase):
+@attr(tier=1)
+class MigrationCase08(TestCase):
     """
     Verify dedicated regular network migration over Bond
     """
@@ -653,8 +663,8 @@ class Migration_Case08_260607(TestCase):
                                                        NETMASK]},
                       config.NETWORKS[1]: {'nic': config.HOST_NICS[1],
                                            'required': 'true'}}
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS,
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -666,25 +676,25 @@ class Migration_Case08_260607(TestCase):
         """
         Check dedicated network migration over bond
         """
-        orig_host = getHost(config.VM_NAME[0])
+        orig_host = get_host(config.VM_NAME[0])
         logger.info("Start migration from %s ", orig_host)
         src, dst = find_ip(vm=config.VM_NAME[0],
                            host_list=config.HOSTS,
                            nic=config.BOND[0])
         if not checkICMPConnectivity(host=orig_host, user=config.HOSTS_USER,
-                                     password=config.HOSTS_PW[0], ip=dst):
+                                     password=config.HOSTS_PW, ip=dst):
             logger.error("ICMP wasn't established")
 
         with TrafficMonitor(machine=orig_host, user=config.HOSTS_USER,
-                            password=config.HOSTS_PW[0],
+                            password=config.HOSTS_PW,
                             nic=config.BOND[0],
                             src=src, dst=dst,
                             protocol='tcp', numPackets=NUM_PACKETS) as monitor:
             monitor.addTask(check_vm_migration,
                             vm_names=config.VM_NAME[0],
                             orig_host=orig_host, vm_user=config.HOSTS_USER,
-                            host_password=config.HOSTS_PW[0],
-                            vm_password=config.HOSTS_PW[0],
+                            host_password=config.HOSTS_PW,
+                            vm_password=config.HOSTS_PW,
                             os_type='rhel')
         self.assertTrue(monitor.getResult())
 
@@ -694,28 +704,28 @@ class Migration_Case08_260607(TestCase):
         """
         Check dedicated network migration over bond putting req net down
         """
-        orig_host = getHost(config.VM_NAME[0])
+        orig_host = get_host(config.VM_NAME[0])
         logger.info("Returning VMs back to original host over bond ")
         logger.info("Start migration from %s ", orig_host)
         src, dst = find_ip(vm=config.VM_NAME[0],
                            host_list=config.HOSTS,
                            nic=config.BOND[0])
         if not setHostToNonOperational(orig_host=orig_host,
-                                       host_password=config.HOSTS_PW[0],
+                                       host_password=config.HOSTS_PW,
                                        nic=config.HOST_NICS[1]):
             raise NetworkException("Cannot start migration by putting"
                                    " Nic %s down", config.HOST_NICS[1])
 
         with TrafficMonitor(machine=orig_host, user=config.HOSTS_USER,
-                            password=config.HOSTS_PW[0],
+                            password=config.HOSTS_PW,
                             nic='bond0',
                             src=src, dst=dst,
                             protocol='tcp', numPackets=NUM_PACKETS) as monitor:
             monitor.addTask(check_vm_migration,
                             vm_names=config.VM_NAME[0],
                             orig_host=orig_host, vm_user=config.HOSTS_USER,
-                            host_password=config.HOSTS_PW[0],
-                            vm_password=config.HOSTS_PW[0],
+                            host_password=config.HOSTS_PW,
+                            vm_password=config.HOSTS_PW,
                             os_type='rhel', nic=config.HOST_NICS[1],
                             nic_down=False)
         self.assertTrue(monitor.getResult())
@@ -733,7 +743,8 @@ class Migration_Case08_260607(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class Migration_Case09_260606(TestCase):
+@attr(tier=1)
+class MigrationCase09(TestCase):
     """
     Verify dedicated regular non-vm network migration over Bond
     """
@@ -757,8 +768,8 @@ class Migration_Case09_260606(TestCase):
                                                        NETMASK]},
                       config.NETWORKS[1]: {'nic': config.HOST_NICS[1],
                                            'required': 'true'}}
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS,
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -770,25 +781,25 @@ class Migration_Case09_260606(TestCase):
         """
         Check migration over dedicated non-vm network over bond
         """
-        orig_host = getHost(config.VM_NAME[0])
+        orig_host = get_host(config.VM_NAME[0])
         logger.info("Start migration from %s ", orig_host)
         src, dst = find_ip(vm=config.VM_NAME[0],
                            host_list=config.HOSTS,
                            nic=config.BOND[0])
         if not checkICMPConnectivity(host=orig_host, user=config.HOSTS_USER,
-                                     password=config.HOSTS_PW[0], ip=dst):
+                                     password=config.HOSTS_PW, ip=dst):
             logger.error("ICMP wasn't established")
 
         with TrafficMonitor(machine=orig_host, user=config.HOSTS_USER,
-                            password=config.HOSTS_PW[0],
+                            password=config.HOSTS_PW,
                             nic='bond0',
                             src=src, dst=dst,
                             protocol='tcp', numPackets=NUM_PACKETS) as monitor:
             monitor.addTask(check_vm_migration,
                             vm_names=config.VM_NAME[0],
                             orig_host=orig_host, vm_user=config.HOSTS_USER,
-                            host_password=config.HOSTS_PW[0],
-                            vm_password=config.HOSTS_PW[0],
+                            host_password=config.HOSTS_PW,
+                            vm_password=config.HOSTS_PW,
                             os_type='rhel')
         self.assertTrue(monitor.getResult())
 
@@ -799,29 +810,29 @@ class Migration_Case09_260606(TestCase):
         Check migration over dedicated non-vm network over bond
         Do it by turning down NIC with required network
         """
-        orig_host = getHost(config.VM_NAME[0])
+        orig_host = get_host(config.VM_NAME[0])
         logger.info("Returning VMs back to original host over bond ")
         logger.info("Start migration from %s ", orig_host)
         src, dst = find_ip(vm=config.VM_NAME[0],
                            host_list=config.HOSTS,
                            nic=config.BOND[0])
         if not setHostToNonOperational(orig_host=orig_host,
-                                       host_password=config.HOSTS_PW[0],
+                                       host_password=config.HOSTS_PW,
                                        nic=config.HOST_NICS[1]):
             raise NetworkException("Cannot start migration by putting"
                                    " Nic %s down", config.HOST_NICS[1])
 
         with TrafficMonitor(timeout=200, machine=orig_host,
                             user=config.HOSTS_USER,
-                            password=config.HOSTS_PW[0],
+                            password=config.HOSTS_PW,
                             nic=config.BOND[0],
                             src=src, dst=dst,
                             protocol='tcp', numPackets=NUM_PACKETS) as monitor:
             monitor.addTask(check_vm_migration,
                             vm_names=config.VM_NAME[0],
                             orig_host=orig_host, vm_user=config.HOSTS_USER,
-                            host_password=config.HOSTS_PW[0],
-                            vm_password=config.HOSTS_PW[0],
+                            host_password=config.HOSTS_PW,
+                            vm_password=config.HOSTS_PW,
                             os_type='rhel', nic=config.HOST_NICS[1],
                             nic_down=False)
 
@@ -840,7 +851,8 @@ class Migration_Case09_260606(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class Migration_Case10_260608(TestCase):
+@attr(tier=1)
+class MigrationCase10(TestCase):
     """
     Verify dedicated regular tagged network migration over Bond
     """
@@ -866,8 +878,8 @@ class Migration_Case10_260608(TestCase):
                                                             NETMASK]},
                       config.NETWORKS[1]: {'nic': config.HOST_NICS[1],
                                            'required': 'true'}}
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS,
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -879,24 +891,24 @@ class Migration_Case10_260608(TestCase):
         """
         Check migration over dedicated tagged network over bond
         """
-        orig_host = getHost(config.VM_NAME[0])
+        orig_host = get_host(config.VM_NAME[0])
         logger.info("Start migration from %s ", orig_host)
         src, dst = find_ip(vm=config.VM_NAME[0],
                            host_list=config.HOSTS,
                            nic='.'.join([config.BOND[0], config.VLAN_ID[0]]))
         if not checkICMPConnectivity(host=orig_host, user=config.HOSTS_USER,
-                                     password=config.HOSTS_PW[0], ip=dst):
+                                     password=config.HOSTS_PW, ip=dst):
             logger.error("ICMP wasn't established")
         with TrafficMonitor(machine=orig_host, user=config.HOSTS_USER,
-                            password=config.HOSTS_PW[0],
+                            password=config.HOSTS_PW,
                             nic='.'.join([config.BOND[0], config.VLAN_ID[0]]),
                             src=src, dst=dst,
                             protocol='tcp', numPackets=NUM_PACKETS) as monitor:
             monitor.addTask(check_vm_migration,
                             vm_names=config.VM_NAME[0],
                             orig_host=orig_host, vm_user=config.HOSTS_USER,
-                            host_password=config.HOSTS_PW[0],
-                            vm_password=config.HOSTS_PW[0],
+                            host_password=config.HOSTS_PW,
+                            vm_password=config.HOSTS_PW,
                             os_type='rhel')
         self.assertTrue(monitor.getResult())
 
@@ -907,29 +919,29 @@ class Migration_Case10_260608(TestCase):
         Check migration over dedicated tagged network over bond
         Disconnect the nic with required network to do it
         """
-        orig_host = getHost(config.VM_NAME[0])
+        orig_host = get_host(config.VM_NAME[0])
         logger.info("Returning VMs back to original host over bond ")
         logger.info("Start migration from %s ", orig_host)
         src, dst = find_ip(vm=config.VM_NAME[0],
                            host_list=config.HOSTS,
                            nic='.'.join([config.BOND[0], config.VLAN_ID[0]]))
         if not setHostToNonOperational(orig_host=orig_host,
-                                       host_password=config.HOSTS_PW[0],
+                                       host_password=config.HOSTS_PW,
                                        nic=config.HOST_NICS[1]):
             raise NetworkException("Cannot start migration by putting"
                                    " Nic %s down", config.HOST_NICS[1])
 
         with TrafficMonitor(timeout=200, machine=orig_host,
                             user=config.HOSTS_USER,
-                            password=config.HOSTS_PW[0],
+                            password=config.HOSTS_PW,
                             nic='.'.join([config.BOND[0], config.VLAN_ID[0]]),
                             src=src, dst=dst,
                             protocol='tcp', numPackets=NUM_PACKETS) as monitor:
             monitor.addTask(check_vm_migration,
                             vm_names=config.VM_NAME[0],
                             orig_host=orig_host, vm_user=config.HOSTS_USER,
-                            host_password=config.HOSTS_PW[0],
-                            vm_password=config.HOSTS_PW[0],
+                            host_password=config.HOSTS_PW,
+                            vm_password=config.HOSTS_PW,
                             os_type='rhel', nic=config.HOST_NICS[1],
                             nic_down=False)
         self.assertTrue(monitor.getResult())
@@ -947,7 +959,8 @@ class Migration_Case10_260608(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class Migration_Case11_250469(TestCase):
+@attr(tier=1)
+class MigrationCase11(TestCase):
     """
     Verify  migration over mgmt network when dedicated migration network is
     removed
@@ -968,8 +981,8 @@ class Migration_Case11_250469(TestCase):
                                                        NETMASK]},
                       config.NETWORKS[1]: {'nic': config.HOST_NICS[2],
                                            'required': 'true'}}
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS,
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -983,17 +996,17 @@ class Migration_Case11_250469(TestCase):
         display
         """
         logger.info("Replace migration from the network with display network")
-        if not updateClusterNetwork(True, cluster=config.CLUSTER_NAME,
+        if not updateClusterNetwork(True, cluster=config.CLUSTER_NAME[0],
                                     network=config.NETWORKS[0],
                                     usages='display'):
             raise NetworkException("Cannot update network usages param")
-        orig_host = getHost(config.VM_NAME[0])
+        orig_host = get_host(config.VM_NAME[0])
         logger.info("Start migration from %s ", orig_host)
         logger.info("Make sure the migration is over mgmt network")
         src, dst = find_ip(vm=config.VM_NAME[0],
                            host_list=config.HOSTS, nic=config.HOST_NICS[1])
         if not checkICMPConnectivity(host=orig_host, user=config.HOSTS_USER,
-                                     password=config.HOSTS_PW[0], ip=dst):
+                                     password=config.HOSTS_PW, ip=dst):
             logger.error("ICMP wasn't established")
 
         source_ip, dest_ip = find_ip(vm=config.VM_NAME[0],
@@ -1002,19 +1015,19 @@ class Migration_Case11_250469(TestCase):
 
         with TrafficMonitor(machine=orig_host,
                             user=config.HOSTS_USER,
-                            password=config.HOSTS_PW[0],
+                            password=config.HOSTS_PW,
                             nic=config.HOST_NICS[0],
                             src=source_ip, dst=dest_ip,
                             protocol='tcp', numPackets=NUM_PACKETS) as monitor:
             monitor.addTask(check_vm_migration,
                             vm_names=config.VM_NAME[0],
                             orig_host=orig_host, vm_user=config.HOSTS_USER,
-                            host_password=config.HOSTS_PW[0],
-                            vm_password=config.HOSTS_PW[0],
+                            host_password=config.HOSTS_PW,
+                            vm_password=config.HOSTS_PW,
                             os_type='rhel')
             monitor.addTask(checkTraffic, expectedRes=False,
                             machine=orig_host, user=config.HOSTS_USER,
-                            password=config.HOSTS_PW[0],
+                            password=config.HOSTS_PW,
                             nic=config.HOST_NICS[1],
                             src=src, dst=dst)
         self.assertTrue(monitor.getResult())
@@ -1032,7 +1045,8 @@ class Migration_Case11_250469(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class Migration_Case12_260613(TestCase):
+@attr(tier=1)
+class MigrationCase12(TestCase):
     """
     Verify when dedicated regular network migration is not configured on the
     Host the migration will occur on the mgmt network network
@@ -1052,8 +1066,8 @@ class Migration_Case12_260613(TestCase):
                                            'bootproto': 'static',
                                            'address': [SOURCE_IP],
                                            'netmask': [NETMASK]}}
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
@@ -1065,7 +1079,7 @@ class Migration_Case12_260613(TestCase):
         """
         Check dedicated network migration
         """
-        orig_host = getHost(config.VM_NAME[0])
+        orig_host = get_host(config.VM_NAME[0])
         logger.info("Start migration from %s ", orig_host)
         logger.info("Make sure the migration is over mgmt network")
 
@@ -1075,15 +1089,15 @@ class Migration_Case12_260613(TestCase):
 
         with TrafficMonitor(machine=orig_host,
                             user=config.HOSTS_USER,
-                            password=config.HOSTS_PW[0],
+                            password=config.HOSTS_PW,
                             nic=config.HOST_NICS[0],
                             src=source_ip, dst=dest_ip,
                             protocol='tcp', numPackets=NUM_PACKETS) as monitor:
             monitor.addTask(check_vm_migration,
                             vm_names=config.VM_NAME[0],
                             orig_host=orig_host, vm_user=config.HOSTS_USER,
-                            host_password=config.HOSTS_PW[0],
-                            vm_password=config.HOSTS_PW[0],
+                            host_password=config.HOSTS_PW,
+                            vm_password=config.HOSTS_PW,
                             os_type='rhel')
         self.assertTrue(monitor.getResult())
 
@@ -1097,18 +1111,3 @@ class Migration_Case12_260613(TestCase):
                                   auto_nics=[config.HOST_NICS[0]],
                                   network=[config.NETWORKS[0]]):
             raise NetworkException("Cannot remove network from setup")
-
-
-# Function that returns source and destination ip for specific host
-def find_ip(vm, host_list, nic):
-    orig_host = getHost(vm)
-    dst_host = host_list[(host_list.index(orig_host)+1) % len(host_list)]
-    return getIpOnHostNic(orig_host, nic), getIpOnHostNic(dst_host, nic)
-
-
-#  Function that returns host the specific VM resides on
-def getHost(vm):
-    rc, out = getVmHost(vm)
-    if not rc:
-        raise NetworkException("Cannot get host that VM resides on")
-    return out['vmHoster']

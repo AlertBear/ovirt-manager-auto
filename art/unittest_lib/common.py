@@ -42,3 +42,11 @@ class StorageTest(BaseTestCase):
     Basic class for storage tests
     """
     __test__ = False
+
+
+@attr(team="network")
+class NetworkTest(BaseTestCase):
+    """
+    Basic class for network tests
+    """
+    __test__ = False
