@@ -4,7 +4,7 @@ https://tcms.engineering.redhat.com/plan/10435
 """
 
 import logging
-from unittest import TestCase
+from unittest import StorageTest as TestCase
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.tests_lib.low_level import vms

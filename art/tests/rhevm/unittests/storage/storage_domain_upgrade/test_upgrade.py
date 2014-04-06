@@ -6,7 +6,7 @@ TCMS plan:
 import logging
 from nose.tools import istest
 from sys import modules
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import StorageTest as TestCase
 
 import art.rhevm_api.tests_lib.low_level.clusters as llclusters
 import art.rhevm_api.tests_lib.low_level.datacenters as lldatacenters

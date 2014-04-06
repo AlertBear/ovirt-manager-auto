@@ -2,7 +2,7 @@
 Storage VM Floating Disk
 """
 import logging
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import StorageTest as TestCase
 
 from art.rhevm_api.utils import test_utils
 from art.rhevm_api.utils import resource_utils
@@ -18,7 +18,6 @@ ENUMS = config.ENUMS
 logger = logging.getLogger(__name__)
 
 from art.rhevm_api.tests_lib.low_level import vms
-from art.unittest_lib import BaseTestCase as TestCase
 
 
 class TestCase174621(TestCase):

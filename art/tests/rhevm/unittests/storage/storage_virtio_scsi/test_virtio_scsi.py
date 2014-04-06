@@ -1,6 +1,6 @@
 from concurrent.futures.thread import ThreadPoolExecutor
 from nose.tools import istest
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import StorageTest as TestCase
 from art.rhevm_api.tests_lib.high_level.datacenters import build_setup
 from art.rhevm_api.tests_lib.high_level.vms import add_disk_to_machine
 from art.rhevm_api.tests_lib.low_level.storagedomains import  \

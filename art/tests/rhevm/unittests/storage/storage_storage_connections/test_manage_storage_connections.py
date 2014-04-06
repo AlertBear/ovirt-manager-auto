@@ -1,4 +1,4 @@
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import StorageTest as TestCase
 import logging
 
 from utilities.machine import Machine

@@ -1,5 +1,6 @@
 from art.test_handler.settings import plmanager
 from unittest import TestCase
+from nose.plugins.attrib import attr
 
 try:
     BZ_PLUGIN = [pl for pl in plmanager.configurables
@@ -30,5 +31,13 @@ def is_bz_state(bz_id):
 class BaseTestCase(TestCase):
     """
     Base test case class for unittest testing
+    """
+    __test__ = False
+
+
+@attr(team="storage")
+class StorageTest(BaseTestCase):
+    """
+    Basic class for storage tests
     """
     __test__ = False

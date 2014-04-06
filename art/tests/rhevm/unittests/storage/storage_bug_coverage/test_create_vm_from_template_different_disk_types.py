@@ -3,7 +3,7 @@ Test exposing BZ 1000789, checks that creating a vm
 from a template with no disks is working
 """
 import logging
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import StorageTest as TestCase
 
 from art.rhevm_api.utils import test_utils
 

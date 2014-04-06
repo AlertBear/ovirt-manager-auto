@@ -4,7 +4,7 @@ Hotplug test helpers functions
 
 import logging
 import os
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import StorageTest as TestCase
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from art.rhevm_api.utils import test_utils

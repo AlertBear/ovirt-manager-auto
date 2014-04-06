@@ -4,7 +4,7 @@ TCMS plan: https://tcms.engineering.redhat.com/plan/8676
 """
 from concurrent.futures import ThreadPoolExecutor
 import logging
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import StorageTest as TestCase
 import time
 
 from art.rhevm_api.utils import test_utils

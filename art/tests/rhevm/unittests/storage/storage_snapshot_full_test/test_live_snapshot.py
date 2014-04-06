@@ -5,7 +5,7 @@ https://tcms.engineering.redhat.com/plan/5588/
 
 from concurrent.futures import ThreadPoolExecutor
 import logging
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import StorageTest as TestCase
 
 from art.rhevm_api.tests_lib.high_level.vms import restore_snapshot, \
     shutdown_vm_if_up

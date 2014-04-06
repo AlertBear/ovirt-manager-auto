@@ -3,7 +3,7 @@ Storage full snapshot test - ram snapshot
 """
 
 import logging
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import StorageTest as TestCase
 
 from nose.tools import istest
 

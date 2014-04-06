@@ -24,7 +24,7 @@ from art.rhevm_api.tests_lib.low_level import vms, disks, storagedomains
 import config
 import helpers
 import common
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import StorageTest as TestCase
 
 LOGGER = logging.getLogger(__name__)
 
