@@ -63,14 +63,14 @@ VM_TYPE_DESKTOP = ENUMS['vm_type_desktop']
 MAX_WORKERS = 10
 
 VDC = PARAMETERS.get('host', None)
-VDC_PASSWORD = PARAMETERS.get('password', None)
+VDC_PASSWORD = PARAMETERS.get('vdc_root_password', None)
 
 HOSTS = PARAMETERS.as_list("vds")
 ADMINS = PARAMETERS.as_list("vds_admin")
 PASSWORDS = PARAMETERS.as_list("vds_password")
 
 WAIT_TIME = 120
-BLOCK_FS = PARAMETERS['data_center_type'] in ('iscsi',)
+BLOCK_FS = PARAMETERS['storage_type'] in ('iscsi',)
 STORAGE_DOMAIN_NAME = "%s_%d" % (STORAGE_TYPE.lower(), 0)
 
 # cobbler related settings

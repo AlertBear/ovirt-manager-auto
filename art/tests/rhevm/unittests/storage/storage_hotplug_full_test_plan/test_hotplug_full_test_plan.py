@@ -522,30 +522,13 @@ class TestCase134139(TestCase):
             }
 
             # add 2 disks:
-            LOGGER.info("Adding first disk to vm %s" % vm_name)
-            if not vms.addDisk(**disk_args):
-                raise exceptions.DiskException("Unable to add disk to VM %s"
-                                               % vm_name)
-            LOGGER.info("First disk added successfully to vm %s" % vm_name)
-            LOGGER.info("Adding second disk to vm %s" % vm_name)
-            if not vms.addDisk(**disk_args):
-                raise exceptions.DiskException("Unable to add disk to VM %s"
-                                               % vm_name)
-            LOGGER.info("Second disk added successfully to vm %s" % vm_name)
+            for active in True, False:
+                LOGGER.info("Adding disk to vm %s with %s active disk",
+                            vm_name, "not" if not active else "")
+                if not vms.addDisk(active=active, **disk_args):
+                    raise exceptions.DiskException("Unable to add disk to VM "
+                                                   "%s" % vm_name)
 
-            non_bootable_disks = [disk for disk in vms.getVmDisks(vm_name)
-                                  if not disk.get_bootable()]
-            disk = non_bootable_disks[0]
-            LOGGER.info("Deactivating disk %s on vm %s"
-                        % (disk.get_name(), vm_name))
-            if not vms.deactivateVmDisk(positive,
-                                        vm=vm_name,
-                                        diskAlias=disk.get_name(),
-                                        wait=True):
-                raise exceptions.DiskException("Unable to deactivate disk %s" %
-                                               disk)
-            LOGGER.info("Disk %s deactivated successfully on vm %s"
-                        % (disk.get_name(), vm_name))
             if not vms.startVm(positive, vm=vm_name, wait_for_ip=True):
                 raise exceptions.VMException("Unable to start VM %s" % vm_name)
 
@@ -630,27 +613,14 @@ class TestCase231521(TestCase):
                 'vm': vm_name,
             }
 
-            LOGGER.info("Adding first disk...")
-            if not vms.addDisk(**disk_args):
-                raise exceptions.DiskException("Unable to add disk to VM %s"
-                                               % vm_name)
-            LOGGER.info("First disk added successfully")
-            LOGGER.info("Adding second disk...")
-            if not vms.addDisk(**disk_args):
-                raise exceptions.DiskException("Unable to add disk to VM %s"
-                                               % vm_name)
-            LOGGER.info("Second disk added successfully")
-            non_bootable_disks = [disk for disk in vms.getVmDisks(vm_name)
-                                  if not disk.get_bootable()]
-            disk = non_bootable_disks[0]
-            LOGGER.info("Deactivating disk %s" % disk.get_name())
-            diskAlias = disk.get_name()
-            if not vms.deactivateVmDisk(positive,
-                                        vm=vm_name,
-                                        diskAlias=diskAlias,
-                                        wait=True):
-                raise exceptions.DiskException("Unable to deactivate disk %s" %
-                                               disk.get_name())
+            # add 2 disks:
+            for active in True, False:
+                LOGGER.info("Adding disk to vm %s with %s active disk",
+                            vm_name, "not" if not active else "")
+                if not vms.addDisk(active=active, **disk_args):
+                    raise exceptions.DiskException("Unable to add disk to VM "
+                                                   "%s" % vm_name)
+
             if not vms.startVm(positive, vm=vm_name, wait_for_ip=True):
                 raise exceptions.VMException("Unable to start VM %s" % vm_name)
 
