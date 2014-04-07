@@ -152,15 +152,42 @@ class BaseCase(TestCase):
                              'Total size is: %s, expected is %s'
                              % (total_size, self.expected_total_size[domain]))
 
+
 # TBD: Remove this when is implemented in the main story, storage sanity
 # http://rhevm-qe-storage.pad.engineering.redhat.com/11?
-#class TestCase286305(BaseCase):
-#    """
-#    TCMS Test Case 286305 - Create new disk and check storage details
-#    """
-#
-#    __test__ = True
-#    tcms_test_case = '286305'
+class TestCase286305(BaseCase):
+    """
+    TCMS Test Case 286305 - Create new disk and check storage details
+    """
+
+    __test__ = True
+    tcms_test_case = '286305'
+
+    def perform_action(self):
+        """
+        Create a preallocated and a thin provision disk
+        """
+        self.create_disks()
+
+    @istest
+    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @bz('1025294')
+    def create_disks_and_check_size(self):
+        """
+        Create preallocated and thin provision disk then check if storage
+        domain details are updated accordingly
+        """
+        self.domains = [self.master_domain]
+        self.run_scenario()
+
+    def tearDown(self):
+        """
+        Remove the disks that were created
+        """
+        disk_names = ['%s_disk' % disk_type for disk_type in self.disk_types]
+        for name in disk_names:
+            logger.info('Removing disk %s', name)
+            self.assertTrue(deleteDisk(True, name))
 
 
 class TestCase286768(BaseCase):
@@ -200,11 +227,56 @@ class TestCase286768(BaseCase):
 
 # TBD: Remove this when is implemented in the main story, storage sanity
 # http://rhevm-qe-storage.pad.engineering.redhat.com/11?
-#class TestCase286772(BaseCase):
-#    """
-#    TCMS Test Case 286772 - Move disks and check storage details of both
-#    domains
-#    """
+class TestCase286772(BaseCase):
+    """
+    TCMS Test Case 286772 - Move disks and check storage details of both
+    domains
+    """
+
+    # TODO: Move floating disk through REST not working development -
+    # enable test once this feature works
+    __test__ = False
+    tcms_test_case = '286772'
+
+    disk_types = ('thin_provision', 'preallocated')
+    disk_sizes = [160 * GB, 7 * GB]
+
+    def setUp(self):
+        """
+        Create preallocated and thin provision disks
+        """
+        self.create_disks()
+
+    def perform_action(self):
+        """
+        Move disks from master domain to second domain
+        """
+        for disk in getStorageDomainDisks(self.master_domain, False):
+            logger.info('Moving disk %s from domain %s to domain %s',
+                        disk.get_alias(), self.master_domain,
+                        self.nonmaster_domain)
+            self.assertTrue(move_disk(disk.get_alias(), self.master_domain,
+                                      self.nonmaster_domain))
+            self.expected_allocated_size[self.master_domain] -= disk.get_size()
+            self.expected_allocated_size[self.nonmaster_domain] += \
+                disk.get_size()
+
+    @istest
+    @tcms(TCMS_PLAN_ID, tcms_test_case)
+    def test_move_disks(self):
+        """
+        Move disks and check domain details
+        """
+        self.run_scenario()
+
+    def tearDown(self):
+        """
+        Delete disks that were created in setup
+        """
+        disk_names = ['%s_disk' % disk_type for disk_type in self.disk_types]
+        for name in disk_names:
+            logger.info('Removing disk %s', name)
+            self.assertTrue(deleteDisk(True, name))
 
 
 class TestCase286775(BaseCase):
