@@ -38,9 +38,10 @@ from utilities.rhevm_tools.base import Setup
 from art.core_api.validator import compareCollectionSize
 from art.core_api.apis_utils import TimeoutingSampler
 from utilities.utils import readConfFile, calculateTemplateUuid, \
-convertMacToIp, pingToVms, getIpAddressByHostName, createDirTree
+    convertMacToIp, pingToVms, getIpAddressByHostName, createDirTree
 from utilities.machine import Machine, eServiceAction, LINUX
-from art.core_api.apis_exceptions import APITimeout, EntityNotFound
+from art.core_api.apis_exceptions import APITimeout, EntityNotFound, \
+    TestCaseError
 from utilities.tools import updateGuestTools, verifyToolsFilesExist, \
     removeToolsFromGuest, waitForGuestReboot, GuestToolsMachine, \
     installToolsFromDir
@@ -1152,8 +1153,16 @@ def searchForObj(util, query_key, query_val, key_name,
         if re.match(r'(.*)\*$', query_val):
             pattern = r'^%s' % pattern
 
+        logger.warning("searchForObj: pattern='%s'", pattern)
+
         for obj in objs:
             objProperty = getattr(obj, key_name)
+            if objProperty is None:
+                msg = "searchForObj: '{0}.{1}' returns '{2}', "\
+                    "It can happen if you are passing wrong property '{1}' to"\
+                    " '{0}' or it is a bug in product".format(obj, key_name,
+                                                              objProperty)
+                raise TestCaseError(msg)
 
             if re.match(pattern, objProperty):
                 expected_count += 1

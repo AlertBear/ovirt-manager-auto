@@ -498,10 +498,10 @@ class RhevmCli(CliConnection):
         # - DEADBEAF needed in order to fail command in case that command the
         #   we have is runnable so after EOL it wil run even if we pressed tab
         #   before it
-        cmd = "%s %s%s DEADBEAF" % (cmd, chr(9), chr(9))
+        cmd = "%s %s%s" % (cmd, chr(9), chr(9))
 
         try:
-            output = self.sendCmd(cmd, timeout)
+            output = self.sendCmd("%s DEADBEAF" % cmd, timeout)
         except pe.TIMEOUT as e:
             raise CLITimeout(e)
         except pe.EOF as e:
