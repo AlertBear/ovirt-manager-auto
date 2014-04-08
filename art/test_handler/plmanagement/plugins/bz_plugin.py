@@ -66,6 +66,7 @@ from art.test_handler.plmanagement.interfaces.tests_listener import\
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.plmanagement.interfaces.config_validator import\
     IConfigValidation
+import art.test_handler.settings as settings
 from art.test_handler import find_config_file
 from utilities.issuesdb import IssuesDB
 
@@ -220,7 +221,6 @@ class Bugzilla(Component):
                               split())
 
         self.build_id = None  # where should I get it
-        self.comp = conf[RUN][ENGINE].lower()
         self.product = bz_cfg[PRODUCT]
 
         self.url = URL_RE.match(self.url).group(0)
@@ -328,15 +328,16 @@ class Bugzilla(Component):
                 import getSystemVersion
             self.version = Version("%d.%d" % getSystemVersion())
 
+        active_comp = settings.opts.get('engine')
         if 'ovirt-engine' in comp:
             comp = transform_ovirt_comp(comp)
-            if comp in (SDK, CLI) and self.comp == REST:
+            if comp in (SDK, CLI) and active_comp == REST:
                 return False
-            if comp == SDK and self.comp in (SDK, CLI):
+            if comp == SDK and active_comp in (SDK, CLI):
                 return self.__check_version(bug)
-            if comp == CLI and self.comp == comp:
+            if comp == CLI and active_comp == comp:
                 return self.__check_version(bug)
-            if comp == CLI and self.comp in (SDK, REST):
+            if comp == CLI and active_comp in (SDK, REST):
                 return False
             return self.__check_version(bug)
         # different component, why not to skip it
