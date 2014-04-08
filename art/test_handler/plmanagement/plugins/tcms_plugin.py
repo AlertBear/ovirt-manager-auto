@@ -51,6 +51,7 @@ decorator. You can use it to decorate your functions.
 """
 
 import re
+import copy
 from art.test_handler.plmanagement import Component, implements, get_logger
 from art.test_handler.plmanagement.interfaces.application import \
     IConfigurable, IApplicationListener
@@ -59,6 +60,7 @@ from art.test_handler.plmanagement.interfaces.tests_listener import\
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
 from art.test_handler.plmanagement.interfaces.config_validator import\
     IConfigValidation
+import art.test_handler.settings as settings
 
 TCMS_OPTION = 'TCMS'
 PARAMETERS = 'PARAMETERS'
@@ -145,8 +147,7 @@ class TCMS(Component):
         url = tcms_cfg[TCMS_SITE]
         self.site = re.match('^(?P<site>[^/]+//[^/]+)/.*$', url).group('site')
         self.user = params.tcms_user or tcms_cfg[USER]
-        test_run_smr_temlate = "%s - %s" % (tcms_cfg[RUN_NAME_TEMPL], \
-                                conf[RUN]['engine'].upper())
+        test_run_smr_temlate = tcms_cfg[RUN_NAME_TEMPL]
 
         self.info = {'tcms_url': url,
                      'placeholder_plan_type':  PLAN_TYPE,
@@ -192,6 +193,12 @@ class TCMS(Component):
     def test_group_skipped(self, g):
         pass
 
+    def _get_engine_name(self, test):
+        engine = getattr(test, 'api', None)
+        if not engine:
+            engine = settings.opts['engine']
+        return engine
+
     def post_test_case(self, test):
         tcms_data = getattr(test, TCMS_TEST_CASE, None)
         if not tcms_data:
@@ -203,9 +210,10 @@ class TCMS(Component):
             plan = self.tcms_plans[-1]
 
         assert plan, "Missing tcms_plan for test_case %s" % tcms_cases
-                        # NOTE: it shouldn't happen
+        # NOTE: it shouldn't happen
 
-        res = self.results.setdefault(plan, {})
+        plans = self.results.setdefault(self._get_engine_name(test), {})
+        res = plans.setdefault(plan, {})
 
         for case in tcms_cases:
             res[case] = test
@@ -220,10 +228,17 @@ class TCMS(Component):
     def __upload_results(self):
         from art.test_handler.plmanagement.plugins import tcmsAgent
 
-        for plan, cases in self.results.items():
-            self.agent = tcmsAgent.TcmsAgent(self.user, self.info)
-            self.__upload_plan(plan, cases)
-            self.agent.testEnd()
+        template_name = 'test_run_name_template'
+        info = copy.copy(self.info)
+        for engine, plans in self.results.iteritems():
+            if not plans:
+                continue
+            template = "%s (%s)" % (self.info[template_name], engine)
+            info[template_name] = template
+            for plan, cases in plans.iteritems():
+                self.agent = tcmsAgent.TcmsAgent(self.user, info)
+                self.__upload_plan(plan, cases)
+                self.agent.testEnd()
 
     def __upload_plan(self, plan, cases):
         self.agent.init(test_type='Functionality',
@@ -255,7 +270,9 @@ class TCMS(Component):
                             info_line, test, ex)
             info_lines.append(info_line.replace("'", "\\'"))
 
-        self.agent.iterationInfo(sub_test_name=test.test_name,
+        sub_test_name = "%s - %s" % (test.test_name,
+                                     self._get_engine_name(test).upper())
+        self.agent.iterationInfo(sub_test_name=sub_test_name,
                                  test_case_name=test.test_name,
                                  info_line=info_lines,
                                  iter_number=test.serial,
@@ -281,8 +298,8 @@ class TCMS(Component):
         params['author'] = 'Lukas Bednar'
         params['author_email'] = 'lbednar@redhat.com'
         params['description'] = 'TCMS plugin for ART'
-        params['long_description'] = 'Provides connection to TCMS DB and '\
-            'reports there tests results.'
+        params['long_description'] = ('Provides connection to TCMS DB and '
+                                      'reports there tests results.')
         params['requires'] = ['python-kerberos', 'python-nitrate',
                               'art-utilities', 'krb5-workstation']
         params['py_modules'] = ['art.test_handler.plmanagement.plugins.'
