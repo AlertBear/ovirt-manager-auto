@@ -26,8 +26,8 @@ from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api.apis_utils import APIUtil, parse, data_st
 from art.test_handler import settings
 
-DEF_TIMEOUT = 900 # default timeout
-DEF_SLEEP = 10 # default sleep
+DEF_TIMEOUT = 900  # default timeout
+DEF_SLEEP = 10  # default sleep
 NEGATIVE_CODES = [400, 409, 500]
 NEGATIVE_CODES_CREATE = NEGATIVE_CODES + [404]
 
@@ -67,7 +67,6 @@ class RestUtil(APIUtil):
 
         self.max_collection = settings.opts.get('max_collection')
 
-
     def validateResponseViaXSD(self, href, ret):
         '''
         Validate xml response against xsd schema
@@ -84,9 +83,8 @@ class RestUtil(APIUtil):
                 error_obj = (href, ret, err)
                 self.xsd_schema_errors.append(error_obj)
             except etree.XMLSyntaxError as err:
-                self.logger.error('Failed parsing response for XSD validations'\
+                self.logger.error('Failed parsing response for XSD validations'
                                   'error: %s. body: %s' % (err, ret['body']))
-
 
     def buildUrl(self, href, current=None):
         '''
@@ -101,11 +99,11 @@ class RestUtil(APIUtil):
             url = '%s;current' % href
         return url
 
-
     def get(self, href=None, elm=None, absLink=True, listOnly=False,
             noParse=False, validate=True):
         '''
-        Description: implements GET method and verify the reponse (codes 200,201)
+        Description: implements GET method and verify the response
+                     (codes 200,201)
         Author: edolinin
         Parameters:
            * href - url for get request
@@ -114,7 +112,7 @@ class RestUtil(APIUtil):
         Return: parsed GET response
         '''
         if href is None:
-            href=self.collection_name
+            href = self.collection_name
 
         if not absLink:
             if href:
@@ -123,18 +121,20 @@ class RestUtil(APIUtil):
                 href = self.opts['uri']
 
         if not elm:
-            elm=self.element_name
+            elm = self.element_name
 
-        self.logger.debug("GET request content is --  url:%(uri)s " % {'uri': href })
+        self.logger.debug("GET request content is --  url:%(uri)s ",
+                          {'uri': href})
         ret = self.api.GET(href)
 
         if not validator.compareResponseCode(ret, [200, 201], self.logger):
             return None
 
-        if  validate:
+        if validate:
             self.validateResponseViaXSD(href, ret)
 
-        self.logger.debug("Response body for GET request is: %s " % ret['body'])
+        self.logger.debug("Response body for GET request is: %s ",
+                          ret['body'])
 
         if noParse:
             return ret['body']
@@ -150,25 +150,28 @@ class RestUtil(APIUtil):
             return getattr(parsedResp, elm)
         else:
             if listOnly:
-                self.logger.error("Element '{0}' not found at {1}".format(elm, ret['body']))
+                self.logger.error(
+                    "Element '{0}' not found at {1}".format(elm, ret['body']))
             return parsedResp
 
-
     def create(self, entity, positive,
-                expected_pos_status=[200, 201, 202],
-                expected_neg_status=NEGATIVE_CODES_CREATE,
-                expectedEntity=None, incrementBy=1,
-                async=False, collection=None,
-                coll_elm_name = None, current=None):
+               expected_pos_status=[200, 201, 202],
+               expected_neg_status=NEGATIVE_CODES_CREATE,
+               expectedEntity=None, incrementBy=1,
+               async=False, collection=None,
+               coll_elm_name=None, current=None):
         '''
         Description: implements POST method and verify the response
         Author: edolinin
         Parameters:
            * entity - entity for post body
            * positive - if positive or negative verification should be done
-           * expected_pos_status - list of expected statuses for positive request
-           * expected_neg_status - list of expected statuses for negative request
-           * expectedEntity - if there are some expected entity different from sent
+           * expected_pos_status - list of expected statuses for positive
+                                   request
+           * expected_neg_status - list of expected statuses for negative
+                                   request
+           * expectedEntity - if there are some expected entity different from
+                              sent
            * incrementBy - increment by number of elements
            * async -sycnh or asynch request
            * collection - explicitely defined collection where to add an entity
@@ -194,8 +197,9 @@ class RestUtil(APIUtil):
         entity = validator.dump_entity(entity, self.element_name)
 
         post_url = self.buildUrl(href, current)
-        self.logger.debug("CREATE request content is --  url:%(uri)s body:%(body)s " \
-                            % {'uri': post_url, 'body': entity })
+        self.logger.debug(
+            "CREATE request content is --  url:%(uri)s body:%(body)s ",
+            {'uri': post_url, 'body': entity})
 
         with measure_time('POST'):
             ret = self.api.POST(post_url, entity)
@@ -205,10 +209,12 @@ class RestUtil(APIUtil):
 
         collection = self.get(href, listOnly=True, elm=coll_elm_name)
 
-        self.logger.debug("Response body for CREATE request is: %s " % ret['body'])
+        self.logger.debug("Response body for CREATE request is: %s ",
+                          ret['body'])
 
         if positive:
-            if not validator.compareResponseCode(ret, expected_pos_status, self.logger):
+            if not validator.compareResponseCode(ret, expected_pos_status,
+                                                 self.logger):
                 return None, False
 
             if ret['body']:
@@ -231,17 +237,16 @@ class RestUtil(APIUtil):
                 return ret['body'], True
 
         else:
-            if not validator.compareResponseCode(ret, expected_neg_status, self.logger):
+            if not validator.compareResponseCode(ret, expected_neg_status,
+                                                 self.logger):
                 return None, False
 
         self.validateResponseViaXSD(href, ret)
         return parse(ret['body']), True
 
-
     def update(self, origEntity, newEntity, positive,
-                        expected_pos_status=[200, 201],
-                        expected_neg_status=NEGATIVE_CODES,
-                        current=None):
+               expected_pos_status=[200, 201],
+               expected_neg_status=NEGATIVE_CODES, current=None):
         '''
         Description: implements PUT method and verify the response
         Author: edolinin
@@ -249,16 +254,20 @@ class RestUtil(APIUtil):
            * origEntity - original entity
            * newEntity - entity for post body
            * positive - if positive or negative verification should be done
-           * expected_pos_status - list of expected statuses for positive request
-           * expected_neg_status - list of expected statuses for negative request
-        Return: PUT response, status (True if PUT test succeeded, False otherwise)
+           * expected_pos_status - list of expected statuses for positive
+                                   request
+           * expected_neg_status - list of expected statuses for negative
+                                   request
+        Return: PUT response, status (True if PUT test succeeded,
+                                      False otherwise)
         '''
 
         entity = validator.dump_entity(newEntity, self.element_name)
 
         put_url = self.buildUrl(origEntity.href, current)
-        self.logger.debug("PUT request content is --  url:%(uri)s body:%(body)s " \
-                                    % {'uri': put_url, 'body': entity })
+        self.logger.debug(
+            "PUT request content is --  url:%(uri)s body:%(body)s ",
+            {'uri': put_url, 'body': entity})
 
         with measure_time('PUT'):
             ret = self.api.PUT(put_url, entity)
@@ -266,10 +275,12 @@ class RestUtil(APIUtil):
         if not self.opts['validate']:
             return None, True
 
-        self.logger.debug("Response body for PUT request is: %s " % ret['body'])
+        self.logger.debug("Response body for PUT request is: %s ",
+                          ret['body'])
 
         if positive:
-            if not validator.compareResponseCode(ret, expected_pos_status, self.logger):
+            if not validator.compareResponseCode(ret, expected_pos_status,
+                                                 self.logger):
                 return None, False
 
             self.logger.info(self.element_name + " was updated")
@@ -279,16 +290,16 @@ class RestUtil(APIUtil):
                 return None, False
 
         else:
-            if not validator.compareResponseCode(ret, expected_neg_status, self.logger):
+            if not validator.compareResponseCode(ret, expected_neg_status,
+                                                 self.logger):
                 return None, False
 
         self.validateResponseViaXSD(origEntity.href, ret)
         return parse(ret['body']), True
 
-
     def delete(self, entity, positive, body=None, element_name=None,
-                                expected_pos_status=[200, 202, 204],
-                                expected_neg_status=NEGATIVE_CODES):
+               expected_pos_status=[200, 202, 204],
+               expected_neg_status=NEGATIVE_CODES):
         '''
         Description: implements DELETE method and verify the reponse
         Author: edolinin
@@ -297,8 +308,10 @@ class RestUtil(APIUtil):
            * positive - if positive or negative verification should be done
            * body - entity for post body
            * element_name - element name
-           * expected_pos_status - list of expected statuses for positive request
-           * expected_neg_status - list of expected statuses for negative request
+           * expected_pos_status - list of expected statuses for positive
+                                   request
+           * expected_neg_status - list of expected statuses for negative
+                                   request
         Return: status (True if DELETE test succeeded, False otherwise)
         '''
 
@@ -306,32 +319,35 @@ class RestUtil(APIUtil):
             if not element_name:
                 element_name = self.element_name
             body = validator.dump_entity(body, element_name)
-            self.logger.debug("DELETE request content is --  url:%(uri)s body:%(body)s " \
-                                                        % {'uri': entity.href, 'body': body })
+            self.logger.debug(
+                "DELETE request content is --  url:%(uri)s body:%(body)s ",
+                {'uri': entity.href, 'body': body})
 
             with measure_time('DELETE'):
                 ret = self.api.DELETE(entity.href, body)
         else:
-            self.logger.debug("DELETE request content is --  url:%(uri)s" \
-                                                            % {'uri': entity.href})
+            self.logger.debug("DELETE request content is --  url:%(uri)s",
+                              {'uri': entity.href})
             with measure_time('DELETE'):
                 ret = self.api.DELETE(entity.href)
 
         if not self.opts['validate']:
             return True
 
-        self.logger.debug("Response body for DELETE request is: %s " % ret['body'])
+        self.logger.debug("Response body for DELETE request is: %s ",
+                          ret['body'])
 
         if positive:
-            if not validator.compareResponseCode(ret, expected_pos_status, self.logger):
+            if not validator.compareResponseCode(ret, expected_pos_status,
+                                                 self.logger):
                 return False
         else:
-            if not validator.compareResponseCode(ret, expected_neg_status, self.logger):
+            if not validator.compareResponseCode(ret, expected_neg_status,
+                                                 self.logger):
                 return False
 
         self.validateResponseViaXSD(entity.href, ret)
         return True
-
 
     def find(self, val, attribute='name', absLink=True, collection=None,
              **kwargs):
@@ -376,15 +392,17 @@ class RestUtil(APIUtil):
                                   on url '%s'." % (val, href))
         return results[0]
 
-
     def query(self, constraint, expected_status=[200, 201], href=None,
-            event_id=None, **params):
+              event_id=None, all_content=False, **params):
         '''
         Description: run search query
         Author: edolinin
         Parameters:
            * constraint - query for search
            * expected_status - list of expected statuses for positive request
+           * href - base href for search
+           * event_id - even id
+           * all_content - all content header
         Return: query results
         '''
         if not href:
@@ -404,24 +422,34 @@ class RestUtil(APIUtil):
         else:
             qhref = qhref.replace("from=;", '')
 
-        self.logger.debug("SEARCH request content is --  url:%(uri)s" % {'uri': qhref})
+        self.logger.debug(
+            "SEARCH request content is --  url:%(uri)s" % {'uri': qhref})
 
-        with measure_time('GET'):
-            ret = self.api.GET(qhref)
+        if all_content:
+            self.api.headers['All-content'] = all_content
 
-        self.logger.debug("Response body for QUERY request is: %s " % ret['body'])
+        try:
+            with measure_time('GET'):
+                ret = self.api.GET(qhref)
+        finally:
+            if all_content:
+                self.api.headers.pop('All-content')
 
-        if not validator.compareResponseCode(ret, expected_status, self.logger):
+        self.logger.debug(
+            "Response body for QUERY request is: %s " % ret['body'])
+
+        if not validator.compareResponseCode(ret, expected_status,
+                                             self.logger):
             return None
 
         self.validateResponseViaXSD(href, ret)
 
         return getattr(parse(ret['body']), self.element_name)
 
-
     def syncAction(self, entity, action, positive, async=False,
-                positive_async_stat=[200, 202], positive_sync_stat=[200,201],
-                negative_stat=NEGATIVE_CODES, **params):
+                   positive_async_stat=[200, 202],
+                   positive_sync_stat=[200, 201], negative_stat=NEGATIVE_CODES,
+                   **params):
         '''
         Description: run synchronic action
         Author: edolinin
@@ -437,18 +465,21 @@ class RestUtil(APIUtil):
         '''
 
         def getActionHref(actions, action):
-            results = filter(lambda x: x.get_rel()==action, actions.get_link())
+            results = filter(lambda x: x.get_rel() == action,
+                             actions.get_link())
             return results[0].get_href()
 
         actionHref = getActionHref(entity.actions, action)
         if re.search('^/{0}/.*'.format(self.entry_point), actionHref) is None:
             actionHref = '/{0}{1}'.format(self.entry_point, actionHref)
 
-        actionBody = validator.dump_entity(self.makeAction(async, 10, **params),
-                                    'action')
+        actionBody = validator.dump_entity(self.makeAction(async, 10,
+                                                           **params),
+                                           'action')
 
-        self.logger.debug("Action request content is --  url:%(uri)s body:%(body)s " \
-                                     % {'uri': actionHref, 'body': actionBody })
+        self.logger.debug(
+            "Action request content is --  url:%(uri)s body:%(body)s ",
+            {'uri': actionHref, 'body': actionBody})
 
         with measure_time('POST'):
             ret = self.api.POST(actionHref, actionBody)
@@ -456,35 +487,37 @@ class RestUtil(APIUtil):
         if not self.opts['validate']:
             return True
 
-        self.logger.debug("Response body for action request is: %s " % ret['body'])
+        self.logger.debug("Response body for action request is: %s ",
+                          ret['body'])
         resp_action = None
         try:
             resp_action = parse(ret['body'])
         except etree.XMLSyntaxError:
-             self.logger.error("Cant parse xml response")
-             return False
+            self.logger.error("Cant parse xml response")
+            return False
 
         if positive and not async:
-            if not validator.compareResponseCode(ret, positive_sync_stat, self.logger):
+            if not validator.compareResponseCode(ret, positive_sync_stat,
+                                                 self.logger):
                 return False
-            if resp_action and not validator.compareActionStatus(resp_action.status.state,
-                                                                    ["complete"],
-                                                                    self.logger):
+            if resp_action and not validator.compareActionStatus(
+                    resp_action.status.state, ["complete"], self.logger):
                 return False
         elif positive and async:
-            if not validator.compareResponseCode(ret, positive_async_stat, self.logger):
+            if not validator.compareResponseCode(ret, positive_async_stat,
+                                                 self.logger):
                 return False
-            if resp_action and not validator.compareActionStatus(resp_action.status.state,
-                                                                    ["pending", "complete"],
-                                                                    self.logger):
+            if resp_action and not validator.compareActionStatus(
+                    resp_action.status.state, ["pending", "complete"],
+                    self.logger):
                 return False
         else:
-            if not validator.compareResponseCode(ret, negative_stat, self.logger):
+            if not validator.compareResponseCode(ret, negative_stat,
+                                                 self.logger):
                 return False
 
         self.validateResponseViaXSD(actionHref, ret)
         return validator.compareActionLink(entity.actions, action, self.logger)
-
 
     def getElemFromLink(self, elm, link_name=None, attr=None, get_href=False):
         '''
@@ -524,9 +557,8 @@ class RestUtil(APIUtil):
                     return getattr(linkCont, 'get_' + attr)()
         return no_results
 
-
     def waitForElemStatus(self, restElement, status, timeout=DEF_TIMEOUT,
-                            ignoreFinalStates=False, collection=None):
+                          ignoreFinalStates=False, collection=None):
         '''
         Description: Wait till the rest element (the Host, VM) gets the desired
         status or till timeout.
@@ -538,7 +570,8 @@ class RestUtil(APIUtil):
                        multiple statuses as a string with space delimiter
                        Example: "active maintenance inactive"
             * timeout - maximum time to continue status probing
-        Return: status (True if element get the desired status, False otherwise)
+        Return: status (True if element get the desired status,
+                        False otherwise)
         '''
 
         handleTimeout = 0
@@ -551,25 +584,26 @@ class RestUtil(APIUtil):
             elif hasattr(restElement, 'status'):
                 elemStat = restElement.status.state.lower()
             else:
-                self.logger.error("Element %s doesn't have attribute status" % \
-                                                        (self.element_name))
+                self.logger.error("Element %s doesn't have attribute status",
+                                  self.element_name)
                 return False
 
             if elemStat in status.lower().split():
-                self.logger.info("%s status is '%s'" \
-                                % (self.element_name, elemStat))
+                self.logger.info("%s status is '%s'", self.element_name,
+                                 elemStat)
                 return True
             elif elemStat.find("fail") != -1 and not ignoreFinalStates:
-                self.logger.error("%s status is '%s'"\
-                                % (self.element_name, elemStat))
+                self.logger.error("%s status is '%s'", self.element_name,
+                                  elemStat)
                 return False
             elif elemStat == 'up' and not ignoreFinalStates:
-                self.logger.error("%s status is '%s'"\
-                                % (self.element_name, elemStat))
+                self.logger.error("%s status is '%s'", self.element_name,
+                                  elemStat)
                 return False
             else:
-                self.logger.debug("Waiting for status '%s' currently status is '%s' "\
-                                % (status, elemStat))
+                self.logger.debug(
+                    "Waiting for status '%s' currently status is '%s' ",
+                    status, elemStat)
                 time.sleep(DEF_SLEEP)
                 handleTimeout = handleTimeout + DEF_SLEEP
                 continue
