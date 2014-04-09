@@ -109,7 +109,14 @@ def getStorageServers(storageType='none'):
                         for section, params in self.storages[t].items():
                             self.storages[t][section]['ip'] = \
                                 self.storageServers[stype].host
-            return f(self, *args, **kwargs)
+            if stype in self.storageServers:
+                return f(self, *args, **kwargs)
+            logger.debug("\n{2}\nSkipping storage creation for '{1}'\n"
+                         "Reason: you are running with "
+                         "PARAMETERS.storage_type={0}\n"
+                         "STORAGE.{1}_devices=0 or {1}_devices missing in "
+                         "[STORAGE] section in conf file\n{2}".format(
+                             storageType, stype, "#" * 50))
         return wrapper
     return outwrap
 
