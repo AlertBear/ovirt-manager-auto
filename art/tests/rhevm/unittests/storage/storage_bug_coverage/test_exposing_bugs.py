@@ -451,7 +451,7 @@ class TestCase320223(TestCase):
             user=config.VM_LINUX_USER,
             password=config.VM_LINUX_PASSWORD).util('linux')
 
-        self.assertTrue(restartOvirtEngine(engine_object, 1, 30, 30),
+        self.assertTrue(restartOvirtEngine(engine_object, 5, 30, 75),
                         "Failed restarting ovirt-engine")
         logger.info("Successfully restarted ovirt-engine")
 
