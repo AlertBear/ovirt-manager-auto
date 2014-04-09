@@ -169,10 +169,9 @@ class TestCase286305(BaseCase):
         """
         self.create_disks()
 
-    @istest
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     @bz('1025294')
-    def create_disks_and_check_size(self):
+    def test_create_disks_and_check_size(self):
         """
         Create preallocated and thin provision disk then check if storage
         domain details are updated accordingly
@@ -239,7 +238,7 @@ class TestCase286772(BaseCase):
     tcms_test_case = '286772'
 
     disk_types = ('thin_provision', 'preallocated')
-    disk_sizes = [160 * GB, 7 * GB]
+    disk_sizes = [160 * config.GB, 7 * config.GB]
 
     def setUp(self):
         """
@@ -261,7 +260,6 @@ class TestCase286772(BaseCase):
             self.expected_allocated_size[self.nonmaster_domain] += \
                 disk.get_size()
 
-    @istest
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_move_disks(self):
         """
