@@ -94,9 +94,10 @@ def main():
 #                " &> /dev/null"
 
         manifest = [
-                "exclude art/test_handler/plmanagement/plugins/__init__.py",
-                "include %s" % file_name,
-                ]
+            "exclude art/test_handler/plmanagement/plugins/__init__.py",
+            "include %s" % file_name]
+        for _, files in params.get('data_files', []):
+            manifest.extend(["include %s" % x for x in files])
         params['manifest_list'] = manifest
 
         args = globals()
