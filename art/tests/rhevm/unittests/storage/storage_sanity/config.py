@@ -15,8 +15,8 @@ STORAGE_TYPE = PARAMETERS['storage_type']
 
 STORAGE = ART_CONFIG['STORAGE']
 
-if STORAGE_TYPE == ENUMS['storage_type_posixfs']:
-    VFS_TYPE = (PARAMETERS['storage_type']).split("_")[1]
+if STORAGE_TYPE.split("_")[0] == ENUMS['storage_type_posixfs']:
+    STORAGE_TYPE, VFS_TYPE = (PARAMETERS['storage_type']).split("_")
     PARAMETERS['vfs_type'] = VFS_TYPE
 
 EXTEND_LUN = PARAMETERS.get('extend_lun', None)
