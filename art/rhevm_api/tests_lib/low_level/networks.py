@@ -19,6 +19,7 @@
 
 from art.core_api.apis_utils import data_st
 from art.rhevm_api.utils.test_utils import get_api, SYS_CLASS_NET_DIR
+import art.rhevm_api.tests_lib.low_level as ll
 from art.core_api.apis_exceptions import EntityNotFound
 from art.test_handler.exceptions import NetworkException
 from art.core_api import is_action
@@ -861,3 +862,22 @@ def getVnicProfileFromNetwork(network, vnic_profile, cluster=None,
         if vnic_profile_obj.name == vnic_profile:
             if vnic_profile_obj.get_network().id == network_obj:
                 return vnic_profile_obj
+
+
+def check_network_on_nic(network, host, nic):
+    """
+    Description: Checks if network resides on Host NIC
+    Author: gcheresh
+    Parameters:
+       *  *network* - network name to check
+       *  *host* - Host name
+       *  *nic* - NIC name on Host
+    **Return**: True if network resides on Host NIC, otherwise False
+    """
+    try:
+        nic_obj_id = ll.hosts.getHostNic(host, nic).get_network().get_id()
+        net_obj_id = NET_API.find(network).get_id
+    except (EntityNotFound, AttributeError) as e:
+        logger.error(e)
+        return False
+    return nic_obj_id == net_obj_id
