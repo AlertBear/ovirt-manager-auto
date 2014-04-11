@@ -741,10 +741,10 @@ def activateHosts(positive, hosts):
     sorted_hosts = _sort_hosts_by_priority(hosts)
 
     for host in sorted_hosts:
-        status = activateHost(bool(True), host)
+        status = activateHost(True, host)
         if not status:
             time.sleep(30)
-            status = activateHost(bool(True), host)
+            status = activateHost(True, host)
             if not status:
                 return status
     return positive
@@ -1661,7 +1661,7 @@ def setSPMPriorityInDB(
     cmd = 'psql engine %s -c \"UPDATE vds_static SET ' \
           'vds_spm_priority=\'%s\' WHERE vds_name=\'%s\';\"' \
           % (db_user, spm_priority, hostName)
-    status = runMachineCommand(bool(True), ip=ip, user=user, password=password,
+    status = runMachineCommand(True, ip=ip, user=user, password=password,
                                cmd=cmd)
     if not status[0]:
         log_fce = HOST_API.logger.error if (positive is not None) and \
@@ -1714,7 +1714,7 @@ def checkHostsForSPM(positive, hosts, expected_spm_host):
     Returns: True (success - SPM is expected host) / False (failure)
     '''
     for host in hosts.split(','):
-        if checkHostSpmStatus(bool(True), host):
+        if checkHostSpmStatus(True, host):
             return (host == expected_spm_host) == positive
     return not positive
 
@@ -1730,7 +1730,7 @@ def checkSPMPresence(positive, hosts):
              False (failure - SPM not present)
     '''
     for host in hosts.split(','):
-        if checkHostSpmStatus(bool(True), host):
+        if checkHostSpmStatus(True, host):
             return positive
     else:
         return not(positive)
@@ -1752,8 +1752,8 @@ def checkSPMElectionRandomness(positive, hosts, attempt_number=5,
     '''
     hosts_pairs = {}
     for host in hosts.split(','):
-        setSPMPriority(bool(True), host, spm_priority)
-    deactivateHosts(bool(True), hosts)
+        setSPMPriority(True, host, spm_priority)
+    deactivateHosts(True, hosts)
 
     hosts = sorted(hosts.split(','))
     for host in hosts:
@@ -1765,9 +1765,9 @@ def checkSPMElectionRandomness(positive, hosts, attempt_number=5,
 
         for i in xrange(attempt_number):
             for h in activation_order:
-                activateHost(bool(True), h)
+                activateHost(True, h)
             time.sleep(45)  # waiting due to SPM contending
-            deactivateHost(bool(True), host)
+            deactivateHost(True, host)
             time.sleep(45)
             try:
                 spm = _getSPMHostname(running_hosts)
@@ -1778,7 +1778,7 @@ def checkSPMElectionRandomness(positive, hosts, attempt_number=5,
                 hosts_pairs[running_hosts] = [spm]
             else:
                 hosts_pairs[running_hosts].append(spm)
-            deactivateHosts(bool(True), ','.join(running_hosts))
+            deactivateHosts(True, ','.join(running_hosts))
 
     status = True
     for spms in hosts_pairs.keys():
@@ -1842,7 +1842,7 @@ def reactivateHost(positive, host):
     '''
     status = deactivateHost(True, host)
     if status:
-        status = activateHost(bool(True), host)
+        status = activateHost(True, host)
     return status == positive
 
 
@@ -1856,7 +1856,7 @@ def getSPMHost(hosts):
     Returns: hostName (success) / raises EntityNotFound exception
     '''
     for host in hosts:
-        if checkHostSpmStatus(bool(True), host):
+        if checkHostSpmStatus(True, host):
             return host
     else:
         raise EntityNotFound('SPM not found among these hosts: %s'
