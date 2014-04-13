@@ -48,8 +48,7 @@ def checkForFileExistenceAndContent(positive, ip, password, filename,
     new_filename = tempfile.gettempdir() + os.sep + os.path.basename(filename)
 
     if not vm.copyFrom(filename, new_filename):
-        logger.error("Couldn't copy filename %s from address %s" %
-                     (filename, ip))
+        logger.error("Couldn't copy filename %s from address %s", filename, ip)
         return False
 
     if content:

@@ -606,6 +606,24 @@ def changeVMStatus(positive, vm, action, expectedStatus, async='true'):
     return status
 
 
+def restartVm(vm, wait_for_ip=False, timeout=VM_ACTION_TIMEOUT, async='false',
+              wait_for_status=ENUMS['vm_state_up']):
+    '''
+    Description: Stop and start vm.
+    Parameters:
+      * vm - name of vm
+      * wait_for_ip - True/False wait for ip
+      * timeout - timeout of wait for vm
+      * async - stop VM asynchronously if 'true' ('false' by default)
+      * wait_for_status - status which should have vm after starting it
+    '''
+    if not checkVmState(True, vm, ENUMS['vm_state_down']):
+        if not stopVm(True, vm, async=async):
+            return False
+    return startVm(True, vm, wait_for_status=wait_for_status,
+                   wait_for_ip=True, timeout=timeout)
+
+
 @is_action()
 def startVm(positive, vm, wait_for_status=ENUMS['vm_state_powering_up'],
             wait_for_ip=False, timeout=VM_ACTION_TIMEOUT):
