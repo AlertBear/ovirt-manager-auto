@@ -189,6 +189,7 @@ def readTestRunOpts(path, redefs):
 
     opts['in_parallel'] = runSection.get('in_parallel')
     opts['parallel_run'] = True if opts['in_parallel'] else False
+    opts['parallel_timeout'] = runSection.get('parallel_timeout')
     opts['parallel_configs'] = runSection.get('parallel_configs')
     opts['parallel_sections'] = runSection.get('parallel_sections')
 

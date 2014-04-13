@@ -7,10 +7,11 @@ from datetime import datetime
 from dateutil.tz import tzutc
 import threading
 import copy
-from art.test_handler.settings import initPlmanager
+from art.test_handler.settings import initPlmanager, opts
 from art.test_handler.exceptions import VitalTestFailed, \
     Vital4GroupTestFailed, SkipTest, formatExcInfo
 from utilities.jobs import JobsSet, Job
+from utilities.timeout import TimeoutExpiredError
 # TODO: consider to use
 # http://docs.python.org/dev/library/concurrent.futures.html instead
 
@@ -214,9 +215,11 @@ class TestRunner(object):
     '''
     Implements general methods for test runs
     '''
+
     def __init__(self, parser):
         self.parser = parser
         self.plmanager = initPlmanager()
+        self._default_join_timeout = opts['parallel_timeout']
 
     def run(self):
         in_parallel = False
@@ -303,16 +306,17 @@ class TestRunner(object):
             self.plmanager.test_groups.pre_test_group(test_group)
             logger.info(TEST_CASES_SEPARATOR)
             logger.info("Starting %s", test_group)
-            self.plmanager.test_skippers.should_be_test_group_skipped(test_group)
+            self.plmanager.test_skippers.should_be_test_group_skipped(
+                test_group)
             if test_group.workers == 1:
                 for test_elm in test_group:
                     try:
                         self._run_test_elm(test_elm)
                     except Vital4GroupTestFailed:
-                        logger.error('Vital for group test failed: %s' \
-                                                    % test_elm.test_name)
-                        logger.warn('Skipping all further tests in group: %s' \
-                                                        % test_group.test_name)
+                        logger.error('Vital for group test failed: %s',
+                                     test_elm.test_name)
+                        logger.warn('Skipping all further tests in group: %s',
+                                    test_group.test_name)
                         raise SkipTest
 
                     if test_elm.status == _TestElm.TEST_STATUS_PASSED:
@@ -325,17 +329,24 @@ class TestRunner(object):
                         test_group.error += 1
                     else:
                         assert False, "status has to be defined for "\
-                                "each TestElement: %s" % test_elm.status
+                            "each TestElement: %s" % test_elm.status
             elif test_group.workers > 1:
                 self.__run_test_group_in_parallel(test_group)
+                for test_elm in test_group:
+                    logger.warning("%s", test_elm.status)
             else:
-                assert False, 'number of workers must be positive not %s' % test_group.workers
+                assert False, 'number of workers must be positive not %s' % \
+                    test_group.workers
+        except TimeoutExpiredError as e:
+            test_group.status = test_group.TEST_STATUS_ERROR
+            logger.error("Failed: %s, the reason: %s", test_group.test_name, e)
         except SkipTest as s:
             test_group.status = test_group.TEST_STATUS_SKIPPED
             logger.info("Skipped: %s, the reason: %s", test_group.test_name, s)
-            #raise SkipTest("FIXME: I don't know what should I do here: %s" % s)
+            # raise SkipTest("FIXME: I don't know what should I do here:
+            # %s" % s)
             # TODO: what will we do here?, maybe we should go over whole
-            # content and mark everythig as Skipped.
+            # content and mark everything as Skipped.
         finally:
             test_group.end_time = datetime.now(tzutc())
             self.plmanager.test_groups.post_test_group(test_group)
@@ -361,6 +372,8 @@ class TestRunner(object):
                          test_group.exc)
 
     def __run_test_group_in_parallel(self, test_group):
+        logger.debug("Start running tests in parallel. join timeout = %s",
+                     self._default_join_timeout)
         jobs = [Job(target=self._run_test_elm, args=(x,))
                 for x in test_group]
         if not jobs:
@@ -368,7 +381,7 @@ class TestRunner(object):
         job_set = JobsSet(test_group.workers)
         job_set.addJobs(jobs)
         job_set.start()
-        job_set.join()
+        job_set.join(self._default_join_timeout)
         for job in jobs:
             if isinstance(job.exception, VitalTestFailed):
                 raise job.exception
