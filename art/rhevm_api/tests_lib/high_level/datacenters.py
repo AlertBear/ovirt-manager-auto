@@ -37,7 +37,7 @@ def build_setup(config, storage, storage_type, basename="testname",
         raise errors.DataCenterException("addDataCenter %s with storage type "
                                          "%s and version %s failed." %
                                          (datacenter_name, storage_type,
-                                         config['compatibility_version']))
+                                          config['compatibility_version']))
     LOGGER.info("Datacenter %s was created successfully", datacenter_name)
 
     if not clusters.addCluster(True, name=cluster_name,
@@ -47,8 +47,8 @@ def build_setup(config, storage, storage_type, basename="testname",
         raise errors.ClusterException("addCluster %s with cpu_type %s and "
                                       "version %s to datacenter %s failed" %
                                       (cluster_name, config['cpu_name'],
-                                      config['compatibility_version'],
-                                      datacenter_name))
+                                       config['compatibility_version'],
+                                       datacenter_name))
     LOGGER.info("Cluster %s was created successfully", cluster_name)
 
     hosts.add_hosts(config.as_list('vds'), config.as_list('vds_password'),
