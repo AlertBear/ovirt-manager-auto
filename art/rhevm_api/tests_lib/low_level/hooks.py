@@ -90,7 +90,7 @@ def checkForFileExistenceAndContentOnVm(vmName, password, filename,
     try:
         ip = vm.guest_info.get_ips().get_ip()[0].get_address()
     except errors.VMException as err:
-        logger.error("Cannot retrieve IP address from VM")
+        logger.error("Cannot retrieve IP address from VM: %s", err)
     return checkForFileExistenceAndContent(ip, password,
                                            filename, content, user)
 
@@ -107,7 +107,8 @@ def createOneLineShellScript(ip, password, scriptName, command,
        * scriptName - the name of the file to be created
        * command - the command which the script file will hold
        * arguments - the args for the command
-       * target - target directory to place the script on the destination machine
+       * target - target directory to place the script on the destination
+                  machine
        * user - username to access the destination machine
        * osType - Type of the destination machine
     '''
@@ -117,11 +118,11 @@ def createOneLineShellScript(ip, password, scriptName, command,
         host = Machine(ip, user, password).util(osType)
         host.copyTo(scriptName, target, 300)
     except IOError as err:
-        logger.error("Copy data to %s : %s" %  (ip, err) )
+        logger.error("Copy data to %s : %s" % (ip, err))
     except Exception as err:
         logger.error("Oops! something went wrong in"
                      " connecting or copying data to %s" % (ip, err))
-    cmd = [CHMOD, "755", target+"/"+scriptName]
+    cmd = [CHMOD, "755", os.path.join(target, scriptName)]
     host.runCmd(cmd)
 
     return True
@@ -131,7 +132,7 @@ def createOneLineShellScript(ip, password, scriptName, command,
 def createPythonScriptToVerifyCustomHook(ip, password, scriptName, customHook,
                                          target, outputFile, user='root',
                                          osType='linux'):
-    '''
+    """
     This function creates an ad-hoc python script which creates
      a file on host to test hook mechanism.
     Author: talayan
@@ -145,9 +146,11 @@ def createPythonScriptToVerifyCustomHook(ip, password, scriptName, customHook,
        * outputFile - the name and path where the file to be created
        * user - username to access the destination machine
        * osType - Type of the destination machine
-    '''
+    """
     with open(scriptName, 'w+') as fd:
-        fd.write('''#!/usr/bin/python\nimport os\nwith open("%s", 'w') as fo:\n\tfo.write(os.environ['%s'])\n'''
+        fd.write("""#!/usr/bin/python\nimport os\n"""
+                 """with open("%s", 'w') as fo:\n"""
+                 """\tfo.write(os.environ['%s'])\n"""
                  % (outputFile, customHook))
     try:
         host = Machine(ip, user, password).util(osType)
@@ -158,7 +161,7 @@ def createPythonScriptToVerifyCustomHook(ip, password, scriptName, customHook,
         logger.error("Oops! something went wrong "
                      "in connecting or copying data to %s" % (ip, err))
 
-    cmd = [CHMOD, "755", target+"/"+scriptName]
+    cmd = [CHMOD, "755", os.path.join(target, scriptName)]
     host.runCmd(cmd)
 
     return True
