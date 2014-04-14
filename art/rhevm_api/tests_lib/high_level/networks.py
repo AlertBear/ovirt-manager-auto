@@ -111,7 +111,7 @@ def getNetworkConfig(positive, cluster, network, datacenter=None, tag=None):
             return False, {'value': None}
 
         # return False means that given datacenter
-        #doesn't contain the given network
+        # doesn't contain the given network
         if dcObj.get_id() != netObj.get_data_center().get_id():
             return False, {'value': None}
 
@@ -124,7 +124,7 @@ def getNetworkConfig(positive, cluster, network, datacenter=None, tag=None):
                 attrValue = getattr(netObj, tag)
             return True, {'value': attrValue}
 
-    # in canse we only like to check if the network exists or not.
+    # in case we only like to check if the network exists or not.
     if netObj:
         return True, {'value': netObj.get_name()}
 

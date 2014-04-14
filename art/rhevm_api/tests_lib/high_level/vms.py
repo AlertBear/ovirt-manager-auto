@@ -16,7 +16,7 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 
 VM_API = get_api('vm', 'vms')
 
-GB = 1024**3
+GB = 1024 ** 3
 TIMEOUT = 120
 ATTEMPTS = 600
 INTERVAL = 2
@@ -46,7 +46,7 @@ def add_disk_to_machine(vm_name, interface, format_, sparse, storage_domain,
     vms.waitForVMState(vm_name, state=ENUMS['vm_state_down'], timeout=60)
 
     LOGGER.info("AddDisk to vm %s", vm_name)
-    if not vms.addDisk(True, vm_name, 5*GB, storagedomain=storage_domain,
+    if not vms.addDisk(True, vm_name, 5 * GB, storagedomain=storage_domain,
                        format=format_, interface=interface, sparse=sparse,
                        **kwargs):
         raise errors.VMException("addDisk to vm %s failed" % vm_name)
@@ -96,7 +96,7 @@ def check_vm_migration(vm_names, orig_host, vm_user, host_password,
     # Anyone using this function should take care of checking that all the VMs
     # are located on the same physical host before the test
 
-    #support vm_names parameter received as list or string
+    # support vm_names parameter received as list or string
     vm_names = [vm_names] if isinstance(vm_names, basestring) else vm_names
 
     # causes VM migration by turning down NIC with required network
@@ -150,7 +150,7 @@ def check_vm_migration(vm_names, orig_host, vm_user, host_password,
                 LOGGER.error("Couldn't migrate VM %s", vm)
                 return False
 
-    #check VM connectivity for both cases
+    # check VM connectivity for both cases
     LOGGER.info("Check VM connectivity after migration finished")
     for vm in vm_names:
         if not vms.checkVMConnectivity(True, vm=vm, osType=os_type,
