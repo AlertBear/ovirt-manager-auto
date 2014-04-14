@@ -15,7 +15,7 @@ STEP_TYPES = ['VALIDATING', 'EXECUTING', 'FINALIZING']
 @is_action()
 def check_recent_job(positive, description, last_jobs_num=None,
                      job_status='finished'):
-    '''
+    """
     Description: Check if in recent jobs exist job with given description
     **Author**: alukiano
     **Parameters**:
@@ -25,7 +25,7 @@ def check_recent_job(positive, description, last_jobs_num=None,
       * *job_status* - to job must be given state
     **Returns**: True if exist job with given description, job and job time
             Else return False, None, None
-    '''
+    """
     jobs = JOBS_API.get(absLink=False)
     last_job = None
     job_time = None
@@ -38,11 +38,11 @@ def check_recent_job(positive, description, last_jobs_num=None,
             jobs = jobs[:last_jobs_num]
     for job in jobs:
         status = job.get_status().get_state().lower()
-        if description in job.get_description() \
-           and status == job_status.lower():
+        if (description in job.get_description()
+                and status == job_status.lower()):
             last_time = str(job.get_start_time()).split(".")[0].split("T")[1]
             last_time_obj = time.strptime(last_time, "%H:%M:%S")
-            #Check if no newer job with the same description
+            # Check if no newer job with the same description
             if last_time_obj > job_time:
                 last_job = job
                 job_time = last_time_obj
@@ -77,7 +77,7 @@ def add_job(job_description, auto_cleared=True):
 @is_action()
 def add_step(job_description, step_description,
              step_type, step_state, parent_step_description=None):
-    '''
+    """
     Description: Add new step to job or step with given description
     **Author**: alukiano
     **Parameters**:
@@ -89,13 +89,13 @@ def add_step(job_description, step_description,
         ['STARTED', 'FINISHED', 'FAILED', 'ABORTED', 'UNKNOWN']
       * *parent_step_description* - add sub-step to step with given description
     **Returns**: True, if job adding job was success, else False
-    '''
+    """
     job_obj = None
     parent_step_obj = None
-    for type in JOB_STATUSES:
+    for status in JOB_STATUSES:
         job_obj = check_recent_job(True,
                                    job_description,
-                                   job_status=type)[1]
+                                   job_status=status)[1]
         if job_obj:
             if parent_step_description:
                 parent_step_obj = step_by_description(job_obj,
@@ -124,7 +124,7 @@ def add_step(job_description, step_description,
 
 
 def step_by_description(job, step_description):
-    '''
+    """
     Description: Look for step under job with given description
     **Author**: alukiano
     **Parameters**:
@@ -132,7 +132,7 @@ def step_by_description(job, step_description):
       * *step_description* - looking for step with this description
     **Returns**: if step with given description exist, return step object
             else, return None
-    '''
+    """
     steps_obj = JOBS_API.get(job.get_link()[0].get_href()).get_step()
     if not steps_obj:
         LOGGER.warn("No step with description %s"
@@ -146,7 +146,7 @@ def step_by_description(job, step_description):
 
 @is_action()
 def end_job(job_description, job_status, end_status):
-    '''
+    """
     Description: End job with given description
     **Author**: alukiano
     **Parameters**:
@@ -156,7 +156,7 @@ def end_job(job_description, job_status, end_status):
         ['STARTED', 'FINISHED', 'FAILED', 'ABORTED', 'UNKNOWN']
     **Returns**: True, if ending job success
             False, else
-    '''
+    """
     status_obj = data_st.Status(state=end_status)
     job_obj = check_recent_job(True,
                                job_description,
@@ -171,7 +171,7 @@ def end_job(job_description, job_status, end_status):
 
 @is_action()
 def end_step(job_description, job_status, step_description, end_status):
-    '''
+    """
     Description: End step with given description
     **Author**: alukiano
     **Parameters**:
@@ -180,7 +180,7 @@ def end_step(job_description, job_status, step_description, end_status):
       * *step_description* - end step with given description
       * *end_status* - end step with specific status False or True
     **Returns**: True, if ending job success,else False
-    '''
+    """
     job_obj = check_recent_job(True,
                                job_description,
                                job_status=job_status)[1]
