@@ -39,7 +39,8 @@ def _getMaxEventId(query):
 @is_action()
 def searchForRecentEvent(positive, win_start_query, query, expected_count=1):
     """
-    Checks the count of events specified by query, sentineled by win_start_query.
+    Checks the count of events specified by query, sentineled by
+    win_start_query.
 
     Expected count is the count of such events on the listing page, that have
     their id greater that the event specified by win_start_query. If
@@ -60,13 +61,13 @@ def searchForRecentEvent(positive, win_start_query, query, expected_count=1):
     # Pick the event with maximum id, matching the win_start_query.
     win_start_event_id = _getMaxEventId(win_start_query)
     if win_start_event_id is None:
-        util.logger.error('Couln\'t find the event that marks the ' \
-                     'matching-window start, win_start_query="%s"',
-                     win_start_query)
+        util.logger.error('Couln\'t find the event that marks the '
+                          'matching-window start, win_start_query="%s"',
+                          win_start_query)
         return False
 
     # Query for events matching `query`, with id bigger than window start one.
-    found_ev = util.query(query, event_id = str(win_start_event_id))
+    found_ev = util.query(query, event_id=str(win_start_event_id))
     util.logger.info('Searching for events with id > %s,', win_start_event_id)
     status = compareCollectionSize(found_ev, expected_count, util.logger)
 
@@ -75,17 +76,17 @@ def searchForRecentEvent(positive, win_start_query, query, expected_count=1):
 
 @is_action()
 def waitForEvent(query, start_id=None, win_start_query=None,
-    timeout=DEF_TIMEOUT, sleep=DEF_SLEEP):
+                 timeout=DEF_TIMEOUT, sleep=DEF_SLEEP):
     '''
     Wait until there is an event matching query with id greater than start_id.
 
     Parameters:
-     * query       - query specifying the event to wait for.
-     * start_id    - All the returned events will have id greater than start_id.
+     * query - query specifying the event to wait for.
+     * start_id - All the returned events will have id greater than start_id.
      * win_start_query - A query for the event which id should be used for
                          start_id.
-     * timeout     - Duration of polling for the event to appear in seconds.
-     * sleep       - Interval between the poll requests in seconds.
+     * timeout - Duration of polling for the event to appear in seconds.
+     * sleep - Interval between the poll requests in seconds.
     '''
     if win_start_query:
         start_id = _getMaxEventId(win_start_query)
@@ -94,4 +95,3 @@ def waitForEvent(query, start_id=None, win_start_query=None,
 
     util.waitForQuery(query, str(start_id), timeout, sleep)
     return True
-

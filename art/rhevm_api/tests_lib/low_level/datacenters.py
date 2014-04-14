@@ -24,7 +24,6 @@ import time
 from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api.apis_utils import getDS
 from art.rhevm_api.utils.test_utils import get_api, split
-from utilities.utils import readConfFile
 from art.rhevm_api.utils.test_utils import searchForObj
 from art.core_api import is_action
 from art.test_handler.settings import opts
@@ -38,7 +37,8 @@ util = get_api(ELEMENT, COLLECTION)
 DataCenter = getDS('DataCenter')
 Version = getDS('Version')
 
-ELEMENTS = os.path.join(os.path.dirname(__file__), '../../../conf/elements.conf')
+ELEMENTS = os.path.join(
+    os.path.dirname(__file__), '../../../conf/elements.conf')
 ENUMS = opts['elements_conf']['RHEVM Enums']
 
 DATA_CENTER_INIT_TIMEOUT = 180
@@ -171,8 +171,9 @@ def removeDataCenters(positive, datacenters):
 
     threadQueue = Queue.Queue()
     for dc in datacentersList:
-        thread = threading.Thread(target=removeDataCenterAsynch,
-            name="Remove DC " + dc, args=(positive, dc, threadQueue))
+        thread = threading.Thread(
+            target=removeDataCenterAsynch, name="Remove DC " + dc,
+            args=(positive, dc, threadQueue))
         thread.start()
         thread.join()
 

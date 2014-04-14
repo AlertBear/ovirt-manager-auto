@@ -412,7 +412,7 @@ def move_disk(disk_name, source_domain, target_domain, wait=True,
         * timeout - how long to wait for disk status (if wait=True)
         * sleep - how long to wait between checks when waiting for disk status
     """
-    #TODO: This feature does not work, being implemented, BZ#911348
+    # TODO: This feature does not work, being implemented, BZ#911348
     sd = STORAGE_DOMAIN_API.find(target_domain)
     disk = DISKS_API.find(disk_name)
     DISKS_API.logger.info('Disk found: %s', disk)
