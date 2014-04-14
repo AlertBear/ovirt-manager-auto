@@ -623,7 +623,7 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
     if lun_target:
         lunTgtArr = lun_target.split(',')
 
-    #Add dataCenter
+    # Add dataCenter
     try:
         dcUtil.find(datacenter)
     except EntityNotFound:
@@ -635,7 +635,7 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
                               datacenter)
             return False
 
-    #Add cluster
+    # Add cluster
     try:
         clUtil.find(cluster)
     except EntityNotFound:
@@ -645,7 +645,7 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
             util.logger.error("Creating cluster %s failed", cluster)
             return False
 
-    #Add Host\s
+    # Add Host\s
     for index, host in enumerate(hostArr):
         try:
             hostUtil.find(host)
@@ -662,7 +662,7 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
         util.logger.error("wait For hosts State UP failed")
         return False
 
-    #Check if host\s attached to cluster
+    # Check if host\s attached to cluster
     for host in hostArr:
         util.logger.info("Check if host %s attached to cluster %s", host,
                          cluster)
@@ -672,14 +672,14 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
                               (host, cluster))
             return False
 
-    #Connect cluster to dataCenter
+    # Connect cluster to dataCenter
     util.logger.info('Connect cluster to dataCenter')
     if not connectClusterToDataCenter(positive, cluster, datacenter):
         util.logger.error("Connect cluster %s to dataCenter %s failed",
                           cluster, datacenter)
         return False
 
-    #iSCSI discover and login
+    # iSCSI discover and login
     if storage_type == ENUMS['storage_type_iscsi']:
         for index, lunAddr in enumerate(lunAddrArr):
             util.logger.info('Run ISCSI discovery and login')
@@ -692,7 +692,7 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
                                   "target %s", lunAddr, lunTgtArr[index])
                 return False
 
-    #create data storage domains
+    # create data storage domains
     util.logger.info('Create data storage domains')
     sdNamePref = datacenter + sdNameSuffix
     domainType = ENUMS['storage_dom_type_data']
@@ -741,7 +741,7 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
             return False
         storageDomainList.append(sdName)
 
-    #attach storage domains
+    # attach storage domains
     for sd in storageDomainList:
         util.logger.info("Attach storage domain %s to data center %s", sd,
                          datacenter)
@@ -1069,7 +1069,7 @@ def findNonMasterStorageDomains(positive, datacenter):
 
     sdObjList = getDCStorages(datacenter, False)
 
-    #Filter out master domain and ISO/Export domains
+    # Filter out master domain and ISO/Export domains
     nonMasterDomains = [sdObj.get_name() for sdObj in sdObjList if
                         sdObj.get_type() == ENUMS['storage_dom_type_data']
                         and not sdObj.get_master()]
@@ -1617,7 +1617,7 @@ def _parse_mount_output_line(line):
     >>> result = _parse_mount_output_line(output)
     """
     util.logger.debug("Parsed line: %s", line)
-    if not 'type nfs ' in line:
+    if 'type nfs ' not in line:
         return None
     parts = line.split(" ")
     address, path = parts[0].split(":")
