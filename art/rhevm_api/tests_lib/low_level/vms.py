@@ -127,7 +127,7 @@ def _prepareVmObject(**kwargs):
         template = TEMPLATE_API.find(template_name, search_by)
         vm.set_template(data_st.Template(id=template.id))
 
-    #cluster
+    # cluster
     cluster_name = kwargs.pop('cluster', DEFAULT_CLUSTER if add else None)
     cluster_id = kwargs.pop('clusterUuid', None)
     search_by = NAME_ATTR
@@ -352,11 +352,12 @@ def addVm(positive, wait=True, **kwargs):
 
     # Workaround for framework validator:
     #     if disk_clone==false Tempalte_Id will be set to BLANK_TEMPLATE
-    #expectedVm = deepcopy(vmObj)
+    # expectedVm = deepcopy(vmObj)
     expectedVm = _prepareVmObject(**kwargs)
 
     if False in [positive, wait]:
-        vmObj, status = VM_API.create(vmObj, positive, expectedEntity=expectedVm)
+        vmObj, status = VM_API.create(vmObj, positive,
+                                      expectedEntity=expectedVm)
         return status
 
     disk_clone = kwargs.pop('disk_clone', None)
@@ -371,6 +372,7 @@ def addVm(positive, wait=True, **kwargs):
         status = VM_API.waitForElemStatus(vmObj, "DOWN", wait_timeout)
 
     return status
+
 
 @is_action()
 def updateVm(positive, vm, **kwargs):
@@ -396,8 +398,8 @@ def updateVm(positive, vm, **kwargs):
        * initrd - initrd path
        * cmdline - kernel parameters
        * highly_available - set high-availability for vm ('true' or 'false')
-       * availablity_priority - priority for high-availability (an integer in range
-                       0-100 where 0 - Low, 50 - Medium, 100 - High priority)
+       * availablity_priority - priority for high-availability (an integer in
+                   range 0-100 where 0 - Low, 50 - Medium, 100 - High priority)
        * custom_properties - custom properties set to the vm
        * stateless - if vm stateless or not
        * memory_guaranteed - size of guaranteed memory in bytes
@@ -442,7 +444,7 @@ def removeVm(positive, vm, **kwargs):
     wait = kwargs.pop('wait', True)
     if positive and wait and status:
         return waitForVmsGone(positive, vm, kwargs.pop('timeout', 60),
-                kwargs.pop('waitTime', 10))
+                              kwargs.pop('waitTime', 10))
     return status
 
 
@@ -452,8 +454,9 @@ def removeVmAsynch(positive, tasksQ, resultsQ, stopVmBool=False):
     Author: jhenner
     Parameters:
         * tasksQ - A input Queue of VM names to remove
-        * resultsQ - A output Queue of tuples tuple(VM name, VM removal status).
-        * stopVm - if True will attempt to stop VM before actually remove it (False by default)
+        * resultsQ - A output Queue of tuples tuple(VM name, VM removal status)
+        * stopVm - if True will attempt to stop VM before actually remove it
+                   (False by default)
     '''
     vm = tasksQ.get(True)
     status = False
@@ -575,7 +578,8 @@ def waitForVMState(vm, state='up', **kwargs):
           image_illegal, image_locked]
     Return True if event passed, otherwise False
     '''
-    query = "name={0} and status={1}".format(vm, state.lower().replace('_', ''))
+    query = "name={0} and status={1}".format(
+        vm, state.lower().replace('_', ''))
 
     return VM_API.waitForQuery(query, **kwargs)
 
@@ -597,7 +601,8 @@ def changeVMStatus(positive, vm, action, expectedStatus, async='true'):
     asyncMode = async.lower() == 'true'
     status = VM_API.syncAction(vmObj, action, positive, async)
     if status and positive and not asyncMode:
-        return VM_API.waitForElemStatus(vmObj, expectedStatus, VM_ACTION_TIMEOUT)
+        return VM_API.waitForElemStatus(vmObj, expectedStatus,
+                                        VM_ACTION_TIMEOUT)
     return status
 
 
@@ -618,7 +623,8 @@ def startVm(positive, vm, wait_for_status=ENUMS['vm_state_powering_up'],
            saving_state, restoring_state, suspended,
            image_illegal, image_locked]
 
-    NOTE: positive="false" or wait_for_status=None implies no wait for VM status
+    NOTE: positive="false" or wait_for_status=None implies no wait for VM
+          status
     Return: status (True if vm was started properly, False otherwise)
     '''
     if not positive:
@@ -632,14 +638,14 @@ def startVm(positive, vm, wait_for_status=ENUMS['vm_state_powering_up'],
     if wait_for_status is None:
         return True
 
-    query = "name={0} and status={1} or name={0} and status=up".format(vm,
-                                    wait_for_status.lower().replace('_', ''))
+    query = "name={0} and status={1} or name={0} and status=up".format(
+        vm, wait_for_status.lower().replace('_', ''))
     started = VM_API.waitForQuery(query, timeout=timeout, sleep=10)
     if started and wait_for_ip:
         started = waitForIP(vm)[0]
         if started != positive:
             VM_API.logger.error("waitForIP returned %s, positive is set to %s",
-                            started, positive)
+                                started, positive)
 
     return started == positive
 
@@ -654,7 +660,8 @@ def startVms(vms, wait_for_status=ENUMS['vm_state_powering_up']):
       * vms - Names of VMs to start.
     Returns: True iff all VMs started.
     '''
-    jobs = [Job(target=startVm, args=(True, vm, wait_for_status)) for vm in split(vms)]
+    jobs = [Job(target=startVm,
+                args=(True, vm, wait_for_status)) for vm in split(vms)]
     js = JobsSet()
     js.addJobs(jobs)
     js.start()
@@ -665,7 +672,7 @@ def startVms(vms, wait_for_status=ENUMS['vm_state_powering_up']):
         if job.exception:
             status = False
             logger.error('Starting vm %s failed: %s.',
-                            job.args[1], job.exception)
+                         job.args[1], job.exception)
         elif not job.result:
             status = False
             logger.error('Starting %s failed.', job.args[1])
@@ -695,7 +702,8 @@ def stopVms(vms, wait='true'):
     Author: mbenenso
     Parameters:
        * vms - comma separated list of VM names
-       * wait - if 'true' will wait till the end of stop action ('true' by default)
+       * wait - if 'true' will wait till the end of stop action
+               ('true' by default)
     Return: True iff all VMs stopped, False otherwise
     '''
     vmObjectsList = []
@@ -718,7 +726,8 @@ def stopVms(vms, wait='true'):
     query_fmt = 'name={0} and status=down'
     for vmObj in vmObjectsList:
         query = query_fmt.format(vmObj.get_name())
-        querySt = VM_API.waitForQuery(query, timeout=VM_ACTION_TIMEOUT, sleep=DEF_SLEEP)
+        querySt = VM_API.waitForQuery(query, timeout=VM_ACTION_TIMEOUT,
+                                      sleep=DEF_SLEEP)
         resultsList.append(querySt)
 
     return all(resultsList)
@@ -753,14 +762,15 @@ def detachVm(positive, vm):
 
     status = VM_API.syncAction(vmObj, "detach", positive)
     if status and positive:
-        return VM_API.waitForElemStatus(vmObj, expectedStatus, VM_ACTION_TIMEOUT)
+        return VM_API.waitForElemStatus(vmObj, expectedStatus,
+                                        VM_ACTION_TIMEOUT)
     return status
 
 
 def getVmDisks(vm):
     vmObj = VM_API.find(vm)
     disks = VM_API.getElemFromLink(vmObj, link_name='disks', attr='disk',
-                                    get_href=False)
+                                   get_href=False)
     return disks
 
 
@@ -890,7 +900,8 @@ def removeDisk(positive, vm, disk, wait=True):
             disks = filter(lambda x: x.name.lower() == disk.lower(), disks)
             diskExist = bool(disks)
             if VM_IMAGE_OPT_TIMEOUT < time.time() - startTime:
-                raise APITimeout('Timeouted when waiting for disk to be removed')
+                raise APITimeout(
+                    'Timeouted when waiting for disk to be removed')
             time.sleep(VM_SAMPLING_PERIOD)
 
     return not diskExist
@@ -1158,7 +1169,8 @@ def removeNic(positive, vm, nic):
     # TODO: remove wait section. func need to be atomic. wait can be done
     # externally!
     if positive and status:
-        return VM_API.waitForElemStatus(vm_obj, expectedStatus, VM_ACTION_TIMEOUT)
+        return VM_API.waitForElemStatus(vm_obj, expectedStatus,
+                                        VM_ACTION_TIMEOUT)
     return status
 
 
@@ -1224,7 +1236,7 @@ def removeLockedVm(vm, vdc, vdc_pass, psql_username='postgres',
     logger.error('Locked vm has not been removed with force flag')
 
     updateVmStatusInDatabase(vmObj.get_name(), 0, vdc, vdc_pass,
-            psql_username, psql_db)
+                             psql_username, psql_db)
 
     return removeVm("true", vmObj.get_name())
 
@@ -1237,7 +1249,7 @@ def _getVmSnapshots(vm, get_href=True):
 def _getVmSnapshot(vm, snap):
     vmObj = VM_API.find(vm)
     return SNAPSHOT_API.getElemFromElemColl(vmObj, snap, 'snapshots',
-                        'snapshot', prop='description')
+                                            'snapshot', prop='description')
 
 
 @is_action()
@@ -1257,7 +1269,8 @@ def addSnapshot(positive, vm, description, wait=True, persist_memory=None):
     snapshot.set_persist_memorystate(persist_memory)
 
     vmSnapshots = _getVmSnapshots(vm)
-    snapshot, status = SNAPSHOT_API.create(snapshot, positive, collection=vmSnapshots)
+    snapshot, status = SNAPSHOT_API.create(snapshot, positive,
+                                           collection=vmSnapshots)
 
     time.sleep(30)
 
@@ -1268,8 +1281,9 @@ def addSnapshot(positive, vm, description, wait=True, persist_memory=None):
 
     snapshotStatus = True
     if status and positive and wait:
-        snapshotStatus = SNAPSHOT_API.waitForElemStatus(snapshot, 'ok',
-                    VM_IMAGE_OPT_TIMEOUT, collection=_getVmSnapshots(vm, False))
+        snapshotStatus = SNAPSHOT_API.waitForElemStatus(
+            snapshot, 'ok', VM_IMAGE_OPT_TIMEOUT,
+            collection=_getVmSnapshots(vm, False))
         if snapshotStatus:
             snapshotStatus = validateSnapshot(positive, vm, description)
     return status and snapshotStatus
@@ -1293,7 +1307,8 @@ def validateSnapshot(positive, vm, snapshot):
 
 
 @is_action()
-def removeSnapshot(positive, vm, description, timeout=VM_REMOVE_SNAPSHOT_TIMEOUT):
+def removeSnapshot(positive, vm, description,
+                   timeout=VM_REMOVE_SNAPSHOT_TIMEOUT):
     '''
     Description: remove vm snapshot
     Author: jhenner
@@ -1303,9 +1318,9 @@ def removeSnapshot(positive, vm, description, timeout=VM_REMOVE_SNAPSHOT_TIMEOUT
                        uniquely identified by description.
        * timeout     - How long this would block until machine status switches
                        back to the one before deletion.
-                       If timeout < 0, return immediately after getting the action
-                       response, don't check the action on snapshot really did
-                       something.
+                       If timeout < 0, return immediately after getting the
+                       action response, don't check the action on snapshot
+                       really did something.
     Return: If positive:
                 True iff snapshot was removed properly.
             If negative:
@@ -1379,8 +1394,8 @@ def snapshotContainsDisks(vm, snapshot, expected_disk_count):
 
 @is_action()
 def runVmOnce(positive, vm, pause=None, display_type=None, stateless=None,
-        cdrom_image=None, floppy_image=None, boot_dev=None, host=None,
-        domainName=None, user_name=None, password=None):
+              cdrom_image=None, floppy_image=None, boot_dev=None, host=None,
+              domainName=None, user_name=None, password=None):
     '''
     Description: run vm once
     Author: edolinin
@@ -1397,7 +1412,7 @@ def runVmOnce(positive, vm, pause=None, display_type=None, stateless=None,
        * password - password for specified user
     Return: status (True if vm was run properly, False otherwise)
     '''
-    #TODO Consider merging this method with the startVm.
+    # TODO Consider merging this method with the startVm.
     vm_obj = VM_API.find(vm)
 
     vm_for_action = data_st.VM()
@@ -1423,17 +1438,17 @@ def runVmOnce(positive, vm, pause=None, display_type=None, stateless=None,
 
     if None is not boot_dev:
         os = data_st.OperatingSystem()
-#        boot_dev_seq = data_st.Boot()
+        # boot_dev_seq = data_st.Boot()
         for dev in boot_dev.split(","):
-#            boot_dev_seq.set_dev(dev)
+            # boot_dev_seq.set_dev(dev)
             os.add_boot(data_st.Boot(dev=dev))
         vm_for_action.set_os(os)
 
     if None is not host:
         raise NotImplementedError(
-                "Setting host in runVmOnce was discontinued.\n"
-                "Please change the VM affinity with updateVm instead.\n"
-                "Bug 743674 - runOnce doesn't start on the specific host"
+            "Setting host in runVmOnce was discontinued.\n"
+            "Please change the VM affinity with updateVm instead.\n"
+            "Bug 743674 - runOnce doesn't start on the specific host"
         )
 
     if None is not domainName:
@@ -1444,7 +1459,8 @@ def runVmOnce(positive, vm, pause=None, display_type=None, stateless=None,
             return False
 
         if None is not user_name:
-            domain.set_user(data_st.User(user_name=user_name, password=password))
+            domain.set_user(data_st.User(user_name=user_name,
+                                         password=password))
 
         vm_for_action.set_domain(domain)
 
@@ -1453,22 +1469,22 @@ def runVmOnce(positive, vm, pause=None, display_type=None, stateless=None,
 
     if pause:
         status = VM_API.syncAction(vm_obj, 'start', positive, pause=pause,
-                                 vm=vm_for_action)
+                                   vm=vm_for_action)
         if positive and status:
             # in case status is False we shouldn't wait for rest element status
             if pause.lower() == 'true':
-                state = wait_for_status = ENUMS['vm_state_paused']
+                state = ENUMS['vm_state_paused']
             else:
                 state = ENUMS['vm_state_powering_up']
-            return VM_API.waitForElemStatus(vm_obj, state,
-                                                      VM_ACTION_TIMEOUT)
+            return VM_API.waitForElemStatus(vm_obj, state, VM_ACTION_TIMEOUT)
     else:
         status = VM_API.syncAction(vm_obj, 'start', positive, vm=vm_for_action)
         if positive and status:
             # in case status is False we shouldn't wait for rest element status
-            return VM_API.waitForElemStatus(vm_obj,
-                       ENUMS['vm_state_powering_up'] + " "
-                       + ENUMS['vm_state_up'], VM_ACTION_TIMEOUT)
+            return VM_API.waitForElemStatus(
+                vm_obj,
+                ENUMS['vm_state_powering_up'] + " " + ENUMS['vm_state_up'],
+                VM_ACTION_TIMEOUT)
     return status
 
 
@@ -1477,8 +1493,8 @@ def suspendVm(positive, vm, wait=True):
     '''
     Suspend VM.
 
-    Wait for status UP, then the suspend action is performed and then it awaits status
-    SUSPENDED, sampling every 10 seconds.
+    Wait for status UP, then the suspend action is performed and then it awaits
+    status SUSPENDED, sampling every 10 seconds.
 
     Author: jhenner
     Parameters:
@@ -1523,7 +1539,7 @@ def suspendVms(vms):
         if job.exception:
             status = False
             logger.error('Suspending vm %s failed: %s.',
-                            job.args[1], job.exception)
+                         job.args[1], job.exception)
         elif not job.result:
             status = False
             logger.error('Suspending vm %s failed.', job.args[1])
@@ -1593,7 +1609,8 @@ def migrateVm(positive, vm, host=None, wait=True, force=False):
         wait=%s, positive=%s' % (str(wait), positive))
         return True
 
-    #Barak: change status to up from powering up, since all migrations ends in up, but diskless VM skips the powering_up phase
+    # Barak: change status to up from powering up, since all migrations ends in
+    # up, but diskless VM skips the powering_up phase
     if not VM_API.waitForElemStatus(vmObj, 'up', 300):
         return False
 
@@ -1644,7 +1661,8 @@ def addTagToVm(positive, vm, tag):
     '''
 
     vmObj = VM_API.find(vm)
-    vmTags = VM_API.getElemFromLink(vmObj, link_name='tags', attr='tag', get_href=True)
+    vmTags = VM_API.getElemFromLink(vmObj, link_name='tags', attr='tag',
+                                    get_href=True)
 
     tagObj = data_st.Tag()
     tagObj.set_name(tag)
@@ -1743,7 +1761,7 @@ def importVm(positive, vm, export_storagedomain, import_storagedomain,
     if async:
         return status
 
-    #TODO: replac sleep with true diagnostic
+    # TODO: replace sleep with true diagnostic
     time.sleep(30)
     if status and positive:
         return VM_API.waitForElemStatus(vmObj, expectedStatus, 300)
@@ -1768,9 +1786,11 @@ def moveVm(positive, vm, storagedomain, wait=True):
     async = 'false'
     if not wait:
         async = 'true'
-    status = VM_API.syncAction(vmObj, "move", positive, storage_domain=sd, async=async)
+    status = VM_API.syncAction(
+        vmObj, "move", positive, storage_domain=sd, async=async)
     if positive and status and wait:
-        return VM_API.waitForElemStatus(vmObj, expectedStatus, VM_IMAGE_OPT_TIMEOUT)
+        return VM_API.waitForElemStatus(
+            vmObj, expectedStatus, VM_IMAGE_OPT_TIMEOUT)
     return status
 
 
@@ -1792,7 +1812,7 @@ def changeCDWhileRunning(vm_name, cdrom_image):
     '''
     vmObj = VM_API.find(vm_name)
     cdroms = CDROM_API.getElemFromLink(vmObj, link_name='cdroms',
-                                             attr='cdrom', get_href=False)
+                                       attr='cdrom', get_href=False)
     if not cdroms:
         VM_API.logger.error('There is no cdrom attached to vm')
         return False
@@ -1889,7 +1909,8 @@ def checkVmStatistics(positive, vm):
                           'cpu.current.total']
 
     numOfExpStat = len(expectedStatistics)
-    statistics = VM_API.getElemFromLink(vmObj, link_name='statistics', attr='statistic')
+    statistics = VM_API.getElemFromLink(vmObj, link_name='statistics',
+                                        attr='statistic')
 
     for stat in statistics:
         datum = str(stat.get_values().get_value()[0].get_datum())
@@ -1905,7 +1926,8 @@ def checkVmStatistics(positive, vm):
     if len(expectedStatistics) == 0:
         logger.info('All ' + str(numOfExpStat) + ' statistics appear')
     else:
-        logger.error('The following statistics are missing: ' + str(expectedStatistics))
+        logger.error(
+            'The following statistics are missing:', expectedStatistics)
         status = False
 
     return status
@@ -2078,7 +2100,7 @@ def waitForIP(vm, timeout=600, sleep=DEF_SLEEP):
     return False, {'ip': None}
 
 
-#TODO: replace with generic "async create requests" mechanism
+# TODO: replace with generic "async create requests" mechanism
 @is_action()
 def createVms(positive, amount=2, **kwargs):
     """
@@ -2280,8 +2302,10 @@ def changeVmDiskState(positive, vm, action, diskAlias, diskId, wait):
         VM_API.logger.error("Disk must be specified either by alias or ID")
         return False
 
-    disk = _getVmDiskById(vm, diskId) if diskId is not None else \
-           _getVmFirstDiskByName(vm, diskAlias)
+    if diskId is not None:
+        disk = _getVmDiskById(vm, diskId)
+    else:
+        disk = _getVmFirstDiskByName(vm, diskAlias)
 
     status = DISKS_API.syncAction(disk, action, positive)
     if status and wait:
@@ -2317,7 +2341,7 @@ def waitForVmDiskStatus(vm, active, diskAlias=None, diskId=None,
         return False
 
     getFunc, diskDesc = (_getVmDiskById, diskId) if diskId is not None else \
-           (_getVmFirstDiskByName, diskAlias)
+                        (_getVmFirstDiskByName, diskAlias)
 
     disk = getFunc(vm, diskDesc)
     cur_state = disk.get_active()
@@ -2373,8 +2397,9 @@ def checkVMConnectivity(positive, vm, osType, attempt=1, interval=1,
                                         user=user, password=password,
                                         osType=osType, attempt=attempt,
                                         interval=interval)
-    VM_API.logger.info('VM: %s TYPE: %s, IP: %s, VLAN: %s, NIC: %s \
-                Connectivity Status: %s' % (vm, osType, ip, vlan, nic, status))
+    VM_API.logger.info(
+        "VM: %s TYPE: %s, IP: %s, VLAN: %s, NIC: %s Connectivity Status: %s",
+        vm, osType, ip, vlan, nic, status)
     return status
 
 
@@ -2396,7 +2421,8 @@ def checkMultiVMsConnectivity(positive, vms, osType, attempt=1, interval=1,
     for vm in split(vms):
         if not checkVMConnectivity(positive, vm, osType, attempt,
                                    interval, nic, user, password):
-            VM_API.logger.error('Missing connectivity with %s, nic %s' % (vm, nic))
+            VM_API.logger.error(
+                'Missing connectivity with %s, nic %s', vm, nic)
             status = False
     return status
 
@@ -2499,7 +2525,8 @@ def addIfcfgFile(positive, vm, user, password, nic='nic1', nic_name='eth1',
     vm = Machine(ip['ip'], user, password).util('linux')
     status = vm.addNicConfFile(nic_name, onboot, bootProto, nic_ip,
                                nic_netmask, nic_gateway)
-    VM_API.logger.info('Adding nic: %s to VM: %s Status: %s' % (nic_name, vm, status))
+    VM_API.logger.info('Adding nic: %s to VM: %s Status: %s',
+                       nic_name, vm, status)
     return status
 
 
@@ -2620,7 +2647,8 @@ def getVmNicVlanId(vm, nic='nic1'):
     try:
         return True, {'vlan_id': int(net_obj.vlan.id)}
     except AttributeError:
-        VM_API.logger.warning('%s network doesnt contain vlan id.' % net_obj.get_name())
+        VM_API.logger.warning("%s network doesn't contain vlan id.",
+                              net_obj.get_name())
     return False, {'vlan_id': 0}
 
 
@@ -2641,12 +2669,13 @@ def validateVmDisks(positive, vm, sparse, format):
 
     for disk in disks:
         if disk.get_sparse() != sparse:
-            logger.error("VM disk %s allocation type %s is not as expected: %s"
-                        % (disk.id, str(disk.get_sparse()), str(sparse)))
+            logger.error(
+                "VM disk %s allocation type %s is not as expected: %s",
+                disk.id, disk.get_sparse(), sparse)
             return not positive
         if disk.get_format().lower() != format.lower():
-            logger.error("VM disk %s format %s is not as expected: %s" %
-                         (disk.id, disk.format, format))
+            logger.error("VM disk %s format %s is not as expected: %s",
+                         disk.id, disk.format, format)
             return not positive
     return positive
 
@@ -2736,13 +2765,13 @@ def waitForVmsDisks(vm, disks_status=ENUMS['disk_state_ok'], timeout=600,
     disks_to_wait = [disk for disk in
                      DISKS_API.getElemFromLink(vm, get_href=False)
                      if disk.get_status() is not None and
-                        disk.get_status().get_state() != disks_status]
+                     disk.get_status().get_state() != disks_status]
     while disks_to_wait and time.time() - start_time < timeout:
         time.sleep(sleep)
         disks_to_wait = [disk for disk in
                          DISKS_API.getElemFromLink(vm, get_href=False)
                          if disk.get_status() is not None and
-                            disk.get_status().get_state() != disks_status]
+                         disk.get_status().get_state() != disks_status]
 
     return False if disks_to_wait else True
 
@@ -2816,8 +2845,10 @@ def pingVm(vm_ip=None):
     ips = [vm_ip]
     return waitUntilPingable(ips)
 
+
 @is_action()
-def migrateVmsSimultaneously(positive, vm_name, range_low, range_high, hosts, useAgent, seed=None):
+def migrateVmsSimultaneously(positive, vm_name, range_low, range_high, hosts,
+                             useAgent, seed=None):
     '''
     Migrate several VMs between the hosts, taking random one.
     Original Author: jhenner
@@ -2840,22 +2871,26 @@ def migrateVmsSimultaneously(positive, vm_name, range_low, range_high, hosts, us
 
     hostsObjs = [HOST_API.find(host) for host in set(split(hosts))]
     if len(hostsObjs) < 2:
-        raise TestCaseError('There is less then 2 hosts. Migrations impossible!')
+        raise TestCaseError(
+            'There is less then 2 hosts. Migrations impossible!')
     all_hosts_ids = set(hostObj.id for hostObj in hostsObjs)
 
-    vmsObjs = [VM_API.find(vm) for vm in makeVmList(vm_name, range_low, range_high)]
+    vmsObjs = [
+        VM_API.find(vm) for vm in makeVmList(vm_name, range_low, range_high)]
     if not vmsObjs:
         raise TestCaseError('No vm to migrate on.')
 
     if useAgent:
         vm_ips = [waitForIP(vmObj.name)[1]['ip'] for vmObj in vmsObjs]
     else:
-        vm_ips = [LookUpVMIpByName('ip', 'name').get_ip(vmObj.name) for vmObj in vmsObjs]
+        vm_ips = [LookUpVMIpByName('ip', 'name').get_ip(vmObj.name)
+                  for vmObj in vmsObjs]
 
     waitUntilPingable(vm_ips)
 
     # Save the state of the random generator and seed it with the `seed`
-    # constant. The state should get recovered before thiLookUpVMIpByName('ip', 'name').get_ip(vmObj.name)s method returns.
+    # constant. The state should get recovered before
+    # thiLookUpVMIpByName('ip', 'name').get_ip(vmObj.name)s method returns.
 
     with restoringRandomState(seed):
         for vmObj in vmsObjs:
@@ -2863,8 +2898,8 @@ def migrateVmsSimultaneously(positive, vm_name, range_low, range_high, hosts, us
             try:
                 oldHostId = vmObj.host.id
             except AttributeError as ex:
-                MSG = 'The VM {0} is probably not running \
-                    since it has no attribute \'host\'.'
+                MSG = ("The VM {0} is probably not running "
+                       "since it has no attribute 'host'. ex: " + str(ex))
                 raise TestCaseError(MSG.format(vmObj.name))
 
             # Pick a new host.
@@ -2876,10 +2911,11 @@ def migrateVmsSimultaneously(positive, vm_name, range_low, range_high, hosts, us
         logger.info(MSG.format(sorted(vm_ips)))
         pingResult = pingToVms(vm_ips, PING_ATTEMPTS)
         dead_machines = [ip for ip, alive in pingResult.iteritems()
-                            if not alive]
+                         if not alive]
         if dead_machines:
             MSG = "IPs {0} seems to be dead before the migration."
-            raise TestCaseError(MSG.format(dead_machines)) # need to change the error
+            raise TestCaseError(MSG.format(dead_machines))
+            # need to change the error
 
         # Migrate
         actions_states = [
@@ -2895,22 +2931,24 @@ def migrateVmsSimultaneously(positive, vm_name, range_low, range_high, hosts, us
 
         # Wait for all migrated VMs are UP.
         def vmsUp(state):
-            StateResults = (VM_API.find(vm.name).status.state.lower() == state for vm in vmsObjs)
+            StateResults = (
+                VM_API.find(vm.name).status.state.lower() == state
+                for vm in vmsObjs)
             return reduce(and_, StateResults)
 
         logger.info('Waiting for all migrated machines UP.')
         for state in ['migrating', 'up']:
             sampler = TimeoutingSampler(VM_ACTION_TIMEOUT, 10, vmsUp, state)
-            sampler.timeout_exc_args = \
-                    'Timeouted when waiting for all VMs UP after the migration.',
+            sampler.timeout_exc_args = (
+                'Timeouted when waiting for all VMs UP after the migration.',)
             for statusOk in sampler:
                 if statusOk:
                     break
 
-
         logger.info('Checking whether VMs really migrated.')
         for vm in vmsObjs:
-            if vm.href == VM_API.find(vm.name).host.href: # need to check if it works on SDK
+            if vm.href == VM_API.find(vm.name).host.href:
+                # need to check if it works on SDK
                 MSG = 'VM is on same host as it was before migrating.'
                 raise TestCaseError(MSG)
             logger.info('VM {0} migrated.'.format(vm.name))
@@ -2920,7 +2958,7 @@ def migrateVmsSimultaneously(positive, vm_name, range_low, range_high, hosts, us
         logger.info(MSG.format(sorted(vm_ips)))
         pingResult = pingToVms(vm_ips, PING_ATTEMPTS)
         dead_machines = [ip for ip, alive in pingResult.iteritems()
-                            if not alive]
+                         if not alive]
         if dead_machines:
             MSG = "IPs {0} seems to be dead after the migration."
             raise TestCaseError(MSG.format(dead_machines))
@@ -3085,7 +3123,7 @@ def collect_vm_logs(vm_name, root_passwd='qum5net'):
     vm = VM_API.find(vm_name)
     os_type = vm.get_os().get_type().lower()
     if not ('linux' in os_type or 'rhel' in os_type):
-        #no logs from non-linux machines
+        # no logs from non-linux machines
         return False
 
     vm_ip = None
@@ -3094,7 +3132,8 @@ def collect_vm_logs(vm_name, root_passwd='qum5net'):
         vm_ip = LookUpVMIpByName('', '').get_ip(vm_name)
         logger.info('Got ip %s', vm_ip)
     except CanNotFindIP:
-        logger.warning("failed to get vm logs from vm %s: No IP found", vm_name)
+        logger.warning(
+            "failed to get vm logs from vm %s: No IP found", vm_name)
         return False
     except Exception, e:
         logger.error('Could not get vm logs from vm %s - unexpected exception '
@@ -3104,8 +3143,8 @@ def collect_vm_logs(vm_name, root_passwd='qum5net'):
     m = Machine(vm_ip, 'root', root_passwd).util(LINUX)
     log_dest = os.path.join(opts['logdir'], '{0}-messages.log'.format(vm_name))
 
-    #hack, to be fixed when moving to logging.config
-    #logging the error in debug instead of error
+    # hack, to be fixed when moving to logging.config
+    # logging the error in debug instead of error
     class tempfilter(logging.Filter):
         def filter(self, record):
             if record.msg == '%s: failed copy %s from %s, err: %s':
