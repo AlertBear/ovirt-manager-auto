@@ -18,12 +18,10 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 from art.core_api.apis_utils import getDS
-import os
-from utilities.utils import readConfFile
 from art.rhevm_api.utils.test_utils import get_api, split
 from art.core_api import is_action
 from art.test_handler.settings import opts
-from networks import findNetwork, getVnicProfileObj
+from networks import findNetwork
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 CONF_PERMITS = opts['elements_conf']['RHEVM Permits']
@@ -79,16 +77,17 @@ def checkSystemPermits(positive):
 
     for permit in PERMITS:
         if permit.get_name() not in confPermits:
-            util.logger.error("Permit '{0}' doesn't appear in permission list: {1}" \
-                    .format(permit.get_name(), CONF_PERMITS.values()))
+            util.logger.error(
+                "Permit '{0}' doesn't appear in permission list: {1}".format(
+                    permit.get_name(), CONF_PERMITS.values()))
             status = False
         else:
             util.logger.info(permit.get_name())
             confPermits.remove(permit.get_name())
 
     if confPermits:
-        util.logger.error("The following permissions don't appear: {0}" \
-                    .format(confPermits))
+        util.logger.error(
+            "The following permissions don't appear: {0}".format(confPermits))
         status = False
 
     return status
@@ -129,7 +128,7 @@ def addRole(positive, administrative="false", **kwargs):
     '''
     kwargs['administrative'] = administrative
     role = _prepareRoleObject(**kwargs)
-    role,status = util.create(role, positive)
+    role, status = util.create(role, positive)
 
     return status
 
@@ -147,7 +146,7 @@ def updateRole(positive, role, **kwargs):
 
     roleObj = util.find(role)
     roleNew = _prepareRoleObject(**kwargs)
-    roleObj,status = util.update(roleObj, roleNew, positive)
+    roleObj, status = util.update(roleObj, roleNew, positive)
 
     return status
 
@@ -166,10 +165,11 @@ def addRolePermissions(positive, role, permit):
     roleObj = util.find(role)
     permitObj = permitUtil.find(permit, collection=PERMITS)
     rolePermits = util.getElemFromLink(roleObj, link_name='permits',
-                                            attr='permit', get_href=True)
+                                       attr='permit', get_href=True)
     rolePermit = Permit()
     rolePermit.set_id(permitObj.get_id())
-    role, status = permitUtil.create(rolePermit, positive, collection=rolePermits)
+    role, status = permitUtil.create(rolePermit, positive,
+                                     collection=rolePermits)
     return status
 
 
@@ -206,7 +206,8 @@ def removeRole(positive, role):
 def addPermitsToUser(positive, user, domain, role, obj, attr):
 
     if domain is not None:
-        userObj = userUtil.find('%s@%s' % (user, domain), attribute='user_name')
+        userObj = userUtil.find('%s@%s' % (user, domain),
+                                attribute='user_name')
     else:
         userObj = userUtil.find(user)
     roleObj = util.find(role)
@@ -215,7 +216,8 @@ def addPermitsToUser(positive, user, domain, role, obj, attr):
     permit.set_role(roleObj)
     getattr(permit, 'set_' + attr)(obj)
     userPermits = permisUtil.getElemFromLink(userObj, get_href=True)
-    permit, status = permisUtil.create(permit, positive, collection=userPermits)
+    permit, status = permisUtil.create(permit, positive,
+                                       collection=userPermits)
 
     return status
 
@@ -229,14 +231,16 @@ def addPermitsToGroup(positive, group, role, obj, attr):
     permit.set_role(roleObj)
     getattr(permit, 'set_' + attr)(obj)
     groupPermits = permisUtil.getElemFromLink(groupObj, get_href=True)
-    permit, status = permisUtil.create(permit, positive, collection=groupPermits)
+    permit, status = permisUtil.create(permit, positive,
+                                       collection=groupPermits)
 
     return status
 
 
 @is_action()
-def addVMPermissionsToUser(positive, user, vm, role=ENUMS['role_name_user_vm_manager'],
-                           domain=None):
+def addVMPermissionsToUser(
+        positive, user, vm, role=ENUMS['role_name_user_vm_manager'],
+        domain=None):
     '''
     Description: add vm permissios to user
     Author: edolinin
@@ -285,7 +289,8 @@ def addStoragePermissionsToUser(positive, user, storage, role="StorageAdmin",
     '''
 
     sdObj = sdUtil.find(storage)
-    return addPermitsToUser(positive, user, domain, role, sdObj, 'storage_domain')
+    return addPermitsToUser(
+        positive, user, domain, role, sdObj, 'storage_domain')
 
 
 @is_action()
@@ -307,7 +312,8 @@ def addClusterPermissionsToUser(positive, user, cluster, role="ClusterAdmin",
 
 
 @is_action()
-def addClusterPermissionsToGroup(positive, group, cluster, role="ClusterAdmin"):
+def addClusterPermissionsToGroup(positive, group, cluster,
+                                 role="ClusterAdmin"):
     '''
     Description: add cluster permissios to group
     Author: jvorcak
@@ -351,8 +357,9 @@ def addPermissionsForVnicProfile(positive, user, vnicprofile, network,
       * role - role to add
     Return: status (True if permission was added properly, False otherwise)
     '''
-    #after bz 1014985 is resolved use this to prevent colision in names
-    #vnicObj = getVnicProfileObj(vnicprofile, network, data_center=data_center)
+    # after bz 1014985 is resolved use this to prevent colision in names
+    # vnicObj = getVnicProfileObj(
+    #     vnicprofile, network, data_center=data_center)
     vnicObj = vnicUtil.find(vnicprofile)
     return addUserPermitsForObj(positive, user, role, vnicObj)
 
@@ -421,7 +428,8 @@ def addVnicProfilePermissionsToGroup(positive, group, vnicprofile, network,
 
 
 @is_action()
-def addTemplatePermissionsToGroup(positive, group, template, role="TemplateAdmin"):
+def addTemplatePermissionsToGroup(positive, group, template,
+                                  role="TemplateAdmin"):
     '''
     Description: add template permissions to group using template link
     Author: jvorcak
@@ -437,7 +445,8 @@ def addTemplatePermissionsToGroup(positive, group, template, role="TemplateAdmin
 
 
 @is_action()
-def addPermissionsForTemplateToGroup(positive, group, template, role="TemplateAdmin"):
+def addPermissionsForTemplateToGroup(positive, group, template,
+                                     role="TemplateAdmin"):
     '''
     Description: add template permissions to group using group link
     Author: jvorcak
@@ -452,7 +461,8 @@ def addPermissionsForTemplateToGroup(positive, group, template, role="TemplateAd
 
 
 @is_action()
-def addPermissionsForDataCenter(positive, user, data_center, role="TemplateAdmin"):
+def addPermissionsForDataCenter(positive, user, data_center,
+                                role="TemplateAdmin"):
     '''
     Description: add data centers permissios to user
     Author: edolinin
@@ -538,8 +548,8 @@ def removeUsersPermissionsFromObject(positive, obj, user_names):
     '''
     status = True
     permits = permisUtil.getElemFromLink(obj, get_href=False)
-    user_ids = [userUtil.find(user_name, attribute='user_name').get_id() \
-            for user_name in user_names]
+    user_ids = [userUtil.find(user_name, attribute='user_name').get_id()
+                for user_name in user_names]
 
     for perm in permits:
         if perm.get_user().get_id() in user_ids and \
@@ -580,11 +590,12 @@ def removeUserPermissionsFromVnicProfile(positive, vnicprofile, network,
     Return: status (True if permissions was removed, False otherwise)
     '''
     return removeUsersPermissionsFromNetwork(positive, network,
-            data_center, [user_name])
+                                             data_center, [user_name])
 
 
 @is_action()
-def removeUsersPermissionsFromNetwork(positive, network, data_center, user_names):
+def removeUsersPermissionsFromNetwork(positive, network, data_center,
+                                      user_names):
     '''
     Description: remove all permissions on network of specified users
     Author: omachace
@@ -599,7 +610,8 @@ def removeUsersPermissionsFromNetwork(positive, network, data_center, user_names
 
 
 @is_action()
-def removeUserPermissionsFromNetwork(positive, network, data_center, user_name):
+def removeUserPermissionsFromNetwork(positive, network, data_center,
+                                     user_name):
     '''
     Description: remove all permissions on network of specified user
     Author: omachace
@@ -609,8 +621,8 @@ def removeUserPermissionsFromNetwork(positive, network, data_center, user_name):
        * user_name - user name
     Return: status (True if permissions was removed, False otherwise)
     '''
-    return removeUsersPermissionsFromNetwork(positive, network,
-            data_center, [user_name])
+    return removeUsersPermissionsFromNetwork(
+        positive, network, data_center, [user_name])
 
 
 @is_action()
@@ -637,7 +649,8 @@ def removeUserPermissionsFromDatacenter(positive, data_center, user_name):
        * user_name - user name
     Return: status (True if permissions was removed, False otherwise)
     '''
-    return removeUsersPermissionsFromDatacenter(positive, data_center, [user_name])
+    return removeUsersPermissionsFromDatacenter(
+        positive, data_center, [user_name])
 
 
 @is_action()
@@ -814,8 +827,9 @@ def checkDomainsId():
         domainHrefId = domainHref.split('/')[-1]
 
         if domainHrefId != domainId:
-            util.logger.error("Domain resource %s has wrong id, %s found but %s expected"\
-                    % (domain.get_name(), domainId, domainHrefId))
+            util.logger.error(
+                "Domain resource %s has wrong id, %s found but %s expected"
+                % (domain.get_name(), domainId, domainHrefId))
             ret = False
 
     return ret
