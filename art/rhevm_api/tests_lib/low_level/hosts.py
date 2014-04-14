@@ -883,17 +883,18 @@ def installOvirtHost(positive, host, user_name, password, vdc, port=443,
         HOST_API.logger.error("No connectivity to the host %s" % host)
         return False
     commands = []
-    commands.append([SED, '-i',
-                    "'s/vdc_host_name[[:space:]]*=.*/vdc_host_name = " +
-                    vdcHostName + "/'", "/etc/vdsm-reg/vdsm-reg.conf",
-                    '--copy'])
-    commands.append([SED, '-i',
-                     "'s/nc_host_name[[:space:]]*=.*/nc_host_name = " +
-                     vdc + "/'", "/etc/vdsm-reg/vdsm-reg.conf", '--copy'])
-    commands.append([SED, '-i',
-                     "'s/vdc_host_port[[:space:]]*=.*/vdc_host_port = " +
-                     str(port) + "/'", "/etc/vdsm-reg/vdsm-reg.conf",
-                     '--copy'])
+    commands.append([
+        SED, '-i',
+        "'s/vdc_host_name[[:space:]]*=.*/vdc_host_name = %s/'" % vdcHostName,
+        "/etc/vdsm-reg/vdsm-reg.conf", '--copy'])
+    commands.append([
+        SED, '-i',
+        "'s/nc_host_name[[:space:]]*=.*/nc_host_name = %s/'" % vdc,
+        "/etc/vdsm-reg/vdsm-reg.conf", '--copy'])
+    commands.append([
+        SED, '-i',
+        "'s/vdc_host_port[[:space:]]*=.*/vdc_host_port = %s/'" % port,
+        "/etc/vdsm-reg/vdsm-reg.conf", '--copy'])
     commands.append([SERVICE, 'vdsm-reg', "restart"])
     for command in commands:
         res, out = hostObj.runCmd(command)
@@ -1090,7 +1091,7 @@ def getFreeInterface(positive, host):
         if network is None:
             if not any(hostNic for hostNic in
                        hostNicsNetworksMapper(host).keys() if re.search(
-                       '%s\.\d' % nic, hostNic)):
+                           '%s\.\d' % nic, hostNic)):
                 return True, {'freeNic': nic}
     return False, {'freeNic': None}
 
@@ -1509,8 +1510,8 @@ def checkHostSpmStatus(positive, hostName):
     HOST_API.logger.info("checkHostSpmStatus - SPM Status of host %s is: %s",
                          hostName, spmStatus)
 
-    #due to differences between the return types of java and python sdk
-    #checks for spmStatus in a set with different possible return values
+    # due to differences between the return types of java and python sdk
+    # checks for spmStatus in a set with different possible return values
     #  as a workaround
     return (spmStatus in ('true', True, 'True')) == positive
 
@@ -1528,7 +1529,7 @@ def returnSPMHost(hosts):
     hosts = [HOST_API.find(host) for host in hosts]
 
     for host in hosts:
-        #TODO: remove check against string and leave as boolean when ticket
+        # TODO: remove check against string and leave as boolean when ticket
         # https://engineering.redhat.com/trac/automation/ticket/2142 is solved
         if host.get_storage_manager().get_valueOf_() == 'true':
             return True, {'spmHost': host.get_name()}
@@ -1560,7 +1561,7 @@ def getAnyNonSPMHost(hosts, expected_states=None):
                              [host.get_name() for host in hosts])
 
     for host in hosts:
-        #TODO: remove check against string and leave as boolean when ticket
+        # TODO: remove check against string and leave as boolean when ticket
         # https://engineering.redhat.com/trac/automation/ticket/2142 is solved
         if host.get_storage_manager().get_valueOf_() == 'false':
             return True, {'hsmHost': host.get_name()}
