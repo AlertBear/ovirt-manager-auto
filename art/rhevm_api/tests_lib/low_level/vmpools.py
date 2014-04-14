@@ -89,7 +89,7 @@ def addVmPool(positive, **kwargs):
     if not pool:
         return positive is False
 
-    time.sleep(int(size)*3)
+    time.sleep(int(size) * 3)
 
     vms_in_pool = []
     for vm in vmUtil.get(absLink=False):
@@ -125,7 +125,7 @@ def updateVmPool(positive, vmpool, **kwargs):
     pool, status = util.update(pool, poolNew, positive)
 
     if size and pool:
-        time.sleep(size*3)
+        time.sleep(size * 3)
         vms_in_pool = []
         for vm in vmUtil.get(absLink=False):
             if not hasattr(vm, "vmpool"):
@@ -174,7 +174,8 @@ def _controlVMsInPool(positive, vmpool, action):
     for job in jobs:
         if not job.result:
             status = False
-            util.logger.error('Operation %s failed on VM %s', action, job.args[1])
+            util.logger.error(
+                'Operation %s failed on VM %s', action, job.args[1])
     return status
 
 
@@ -226,7 +227,6 @@ def removePooledVms(positive, name, vm_total, vm_to_remove=-1):
                        high end of the list (if it's -1, then remove all)
     Returns: True if all VMs were removed, false otherwise.
     '''
-    vm_decimal_places = len(str(vm_total))
     vmlist = []
     for i in range(vm_total):
         vm_number = str(i + 1)

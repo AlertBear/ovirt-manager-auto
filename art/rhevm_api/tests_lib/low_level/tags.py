@@ -98,4 +98,3 @@ def removeTag(positive, tag):
 
     tagObj = util.find(tag)
     return util.delete(tagObj, positive)
-

@@ -90,7 +90,8 @@ def _prepareTemplateObject(**kwargs):
     cpu_cores = kwargs.pop('cpu_cores', None)
 
     if cpu_socket or cpu_cores:
-        templ.set_cpu(CPU(topology=CpuTopology(sockets=cpu_socket, cores=cpu_cores)))
+        templ.set_cpu(CPU(topology=CpuTopology(sockets=cpu_socket,
+                                               cores=cpu_cores)))
 
     vm = kwargs.pop('vm', None)
     if vm:
@@ -120,7 +121,8 @@ def _prepareTemplateObject(**kwargs):
 
 
 @is_action()
-def createTemplate(positive, wait=True, timeout=CREATE_TEMPLATE_TIMEOUT, **kwargs):
+def createTemplate(positive, wait=True, timeout=CREATE_TEMPLATE_TIMEOUT,
+                   **kwargs):
     '''
     Description: add new template
     Author: edolinin
@@ -134,7 +136,8 @@ def createTemplate(positive, wait=True, timeout=CREATE_TEMPLATE_TIMEOUT, **kwarg
        * cpu_cores - number of cpu cores
        * boot - template boot device
        * type - template type
-       * wait - wait untill end of creation of template (true) or exit without waiting (false)
+       * wait - wait until end of creation of template (true) or exit without
+                waiting (false)
        * storagedomain - name of storagedomain
        * protected - if template is delete protected
        * copy_permissions - True if perms from vm to template should be copied
@@ -185,7 +188,7 @@ def removeTemplate(positive, template, wait=True, sleepTime=10, timeout=60):
     Author: edolinin
     Parameters:
        * template - name of template that should be removed
-       * wait - When true :wait until end of action ,When False return without wait
+       * wait - wait until end of action if true, else return without wait
        * sleepTime - How much time wait between validation
        * timeout - maximun waiting time
     Return: status (True if template was removed properly, False otherwise)
@@ -197,7 +200,8 @@ def removeTemplate(positive, template, wait=True, sleepTime=10, timeout=60):
         handleTimeout = 0
         while handleTimeout <= timeout:
             if not validateTemplate(positive, template):
-                # Add a delay, required as a workaround, for actual template removal
+                # Add a delay, required as a workaround, for actual template
+                # removal
                 time.sleep(30)
                 return True
             time.sleep(sleepTime)
@@ -214,7 +218,8 @@ def removeTemplate(positive, template, wait=True, sleepTime=10, timeout=60):
 @is_action()
 def removeTemplates(positive, templates):
     # TODO: Doc
-    jobs = [Job(target=removeTemplate, args=(True, tmpl)) for tmpl in split(templates)]
+    jobs = [Job(
+        target=removeTemplate, args=(True, tmpl)) for tmpl in split(templates)]
     js = JobsSet()
     js.addJobs(jobs)
     js.start()
@@ -224,7 +229,8 @@ def removeTemplates(positive, templates):
     for job in jobs:
         status = status and job.result
         if not job.result:
-            TEMPLATE_API.logger.error('Removing template %s failed', job.args[1])
+            TEMPLATE_API.logger.error(
+                'Removing template %s failed', job.args[1])
     return status
 
 
@@ -280,7 +286,8 @@ def _prepareNicObj(**kwargs):
 def getTemplatesNics(template):
 
     templ_obj = TEMPLATE_API.find(template)
-    return TEMPLATE_API.getElemFromLink(templ_obj, link_name='nics', attr='nic', get_href=True)
+    return TEMPLATE_API.getElemFromLink(templ_obj, link_name='nics',
+                                        attr='nic', get_href=True)
 
 
 def getTemplatesNic(template, nic):
@@ -311,7 +318,7 @@ def addTemplateNic(positive, template, **kwargs):
 
     res, status = NIC_API.create(nic_obj, positive, collection=nics_coll)
 
-    return  status
+    return status
 
 
 @is_action()
@@ -356,7 +363,8 @@ def removeTemplateNic(positive, template, nic):
 
 
 @is_action()
-def removeTemplateFromExportDomain(positive, template, datacenter, export_storagedomain):
+def removeTemplateFromExportDomain(positive, template, datacenter,
+                                   export_storagedomain):
     '''
     Description: removes a template from export domain
     Author: istein
@@ -412,8 +420,8 @@ def exportTemplate(positive, template, storagedomain, exclusive='false',
     Parameters:
        * template - name of template that should be exported
        * storagedomain - name of export storage domain where to export to
-       * exclusive - 'true' if overwrite already existed templates with the same
-                       name, 'false' otherwise ('false' by default)
+       * exclusive - 'true' if overwrite already existed templates with the
+                      same name, 'false' otherwise ('false' by default)
        * wait - waits until template is exported
     Return: status (True if template was exported properly, False otherwise)
     '''
@@ -440,8 +448,8 @@ def importTemplate(positive, template, export_storagedomain,
     Parameters:
        * template - name of template that should be imported
        * cluster - cluster to use
-       * export_storagedomain - storage domain where to export the template from
-       * import_storagedomain - storage domain where to import the template to
+       * export_storagedomain - storage domain from where export the template
+       * import_storagedomain - storage domain to where import the template
        * name - new name of template
     Return: status (True if template was imported properly, False otherwise)
     '''
@@ -473,8 +481,8 @@ def importTemplate(positive, template, export_storagedomain,
 
 def _getTemplateDisks(template):
     tmpObj = TEMPLATE_API.find(template)
-    disks = TEMPLATE_API.getElemFromLink(tmpObj, link_name='disks', attr='disk',
-                                         get_href=False)
+    disks = TEMPLATE_API.getElemFromLink(
+        tmpObj, link_name='disks', attr='disk', get_href=False)
     return disks
 
 
@@ -532,7 +540,7 @@ def waitForTemplatesStates(names, state=ENUMS['template_state_ok'],
     [TEMPLATE_API.find(template) for template in names]
 
     query = ' and '.join(['name=%s and status=%s' % (template, state) for
-                    template in names])
+                          template in names])
 
     return TEMPLATE_API.waitForQuery(query, timeout=timeout, sleep=sleep)
 
