@@ -911,6 +911,11 @@ def cleanDataCenter(
     if masterSd:
         if validateElementStatus(positive, 'storagedomain', 'storagedomains',
                                  masterSd, 'active', datacenter):
+            if vdc and vdc_password:
+                util.logger.info('Waiting for pending tasks...')
+                wait_for_tasks(vdc=vdc, vdc_password=vdc_password,
+                               datacenter=datacenter, db_name=db_name,
+                               db_user=db_user)
             deactivateStatus = deactivateStorageDomain(positive, datacenter,
                                                        masterSd)
             if not deactivateStatus:
