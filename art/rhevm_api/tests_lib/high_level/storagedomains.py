@@ -286,7 +286,7 @@ def __extend_iscsi_domain(storage_domain, host, storage_conf):
                 storage_domain, host, lun, lun_address, lun_target):
             raise errors.StorageDomainException(
                 "extendISCSIDomain(%s, %s, %s, %s, %s) failed." % (
-                storage_domain, host, lun, lun_address, lun_target))
+                    storage_domain, host, lun, lun_address, lun_target))
 
 
 def __extend_fcp_domain(storage_domain, host, storage_conf):
@@ -331,7 +331,7 @@ class StorageAdder(object):
         if not add_func(*args):
             raise errors.StorageDomainException(
                 "%s domain adding function with arguments %s failed" % (
-                add_func.__name__, args))
+                    add_func.__name__, args))
         logging.info(
             "%s function added storage with args %s", add_func.__name__, args)
 
