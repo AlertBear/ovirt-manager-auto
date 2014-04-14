@@ -49,7 +49,8 @@ def addUser(positive, **kwargs):
     Parameters:
        * user_name - user account name
        * domain - user domain
-       * groups - list of groups separated by comma that should be added to user
+       * groups - list of groups separated by comma that should be added
+                to user
        * role - role name that should be assigned to user
     Return: status (True if user was created properly, False otherwise)
     '''
@@ -116,7 +117,8 @@ def addTagToUser(positive, user, tag):
     Return: status (True if tag was added properly, False otherwise)
     '''
     userObj = util.find(user)
-    usersTags = util.getElemFromLink(userObj, link_name='tags', attr='tag', get_href=True)
+    usersTags = util.getElemFromLink(userObj, link_name='tags', attr='tag',
+                                     get_href=True)
 
     tagObj = Tag(name=tag)
     tagObj, status = taglUtil.create(tagObj, positive, collection=usersTags)
@@ -134,13 +136,16 @@ def verifyADUserProperties(positive, domain, user, expected_username=None,
        * user - name of user
        * expected_username - expected username
        * expected_department - expected user department
-    Return: status (True if all user properties are as expected, False otherwise)
+    Return: status (True if all user properties are as expected,
+            False otherwise)
     '''
     domainObj = domUtil.find(domain)
     query_user = util.getElemFromElemColl(domainObj, user)
-   # query_users = util.query(domainObj.links.get(name='users/search').href, "name=" + user)
+    # query_users = util.query(domainObj.links.get(name='users/search').href,
+    #                          "name=" + user)
 
-    userExpected = User(user_name=expected_username, department=expected_department)
+    userExpected = User(
+        user_name=expected_username, department=expected_department)
 
     return compareElements(userExpected, query_user, util.logger, ELEMENT)
 
@@ -152,9 +157,11 @@ def searchForUserInAD(positive, query_key, query_val, key_name, domain):
     Parameters:
        * query_key - name of property to search for
        * query_val - value of the property to search for
-       * key_name - name of the property in user object equivalent to query_key, required if expected_count is not set
+       * key_name - name of the property in user object equivalent to
+                   query_key, required if expected_count is not set
        * domain - name of active directory domain
-    Return: status (True if expected number of users equal to found by search, False otherwise)
+    Return: status (True if expected number of users equal to found by search,
+            False otherwise)
     '''
     # Get what's needed.
     domainObj = domUtil.find(domain)
@@ -174,7 +181,7 @@ def searchForUserInAD(positive, query_key, query_val, key_name, domain):
 
     # Compare it with the RHEVM results.
     contsraint = "{0}={1}".format(query_key, query_val)
-    query_users =  util.query(contsraint)
+    query_users = util.query(contsraint)
     return compareCollectionSize(query_users, len(matches), util.logger)
 
 
