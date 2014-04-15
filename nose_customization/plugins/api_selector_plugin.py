@@ -2,7 +2,6 @@ import logging
 import os
 from nose.util import transplant_class
 from nose.plugins import Plugin as NosePlugin
-from nose.loader import defaultTestLoader
 
 log = logging.getLogger('nose.plugins.apiselector')
 
@@ -19,11 +18,15 @@ class APISelectorPlugin(NosePlugin):
         if options.enable_plugin_apiselector:
             self.enabled = True
 
+    def prepareTestLoader(self, loader):
+        # we need to use configured loader in order to have plugins working
+        self.loader = loader
+
     def makeTest(self, obj, parent):
         if parent and obj.__module__ != parent.__name__:
             obj = transplant_class(obj, parent.__name__)
-        objs = []
 
+        objs = []
         for api in iter(getattr(obj, 'apis', ['rest'])):
             log.info('creating  %s for api %s', obj.__name__, api)
             new_name = "%s%s" % (obj.__name__, api.upper())
@@ -32,6 +35,6 @@ class APISelectorPlugin(NosePlugin):
             new_obj = type(new_name, obj.__bases__, new_dict)
             log.info('%s for api %s created', new_obj.__name__, api)
 
-            objs.append(defaultTestLoader().loadTestsFromTestCase(new_obj))
+            objs.append(self.loader.loadTestsFromTestCase(new_obj))
 
-        return defaultTestLoader().suiteClass(objs)
+        return self.loader.suiteClass(objs)
