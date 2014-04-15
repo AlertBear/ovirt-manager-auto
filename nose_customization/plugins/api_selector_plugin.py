@@ -2,8 +2,11 @@ import logging
 import os
 from nose.util import transplant_class
 from nose.plugins import Plugin as NosePlugin
+from art.test_handler.settings import opts
+from art.test_handler.plmanagement import get_logger
 
 log = logging.getLogger('nose.plugins.apiselector')
+art_log = get_logger("apiselector")
 
 
 class APISelectorPlugin(NosePlugin):
@@ -14,9 +17,11 @@ class APISelectorPlugin(NosePlugin):
         super(APISelectorPlugin, self).options(parser, env=env)
 
     def configure(self, options, conf):
+        super(APISelectorPlugin, self).configure(options, conf)
         log.info('Configuring APISelector')
         if options.enable_plugin_apiselector:
             self.enabled = True
+        self.original_engine = opts['engine']
 
     def prepareTestLoader(self, loader):
         # we need to use configured loader in order to have plugins working
@@ -38,3 +43,17 @@ class APISelectorPlugin(NosePlugin):
             objs.append(self.loader.loadTestsFromTestCase(new_obj))
 
         return self.loader.suiteClass(objs)
+
+    def _set_api(self, test):
+        api = getattr(test, 'api', None)
+        if not api:
+            return
+        opts['engine'] = api
+        art_log.info("The API backend switched to %s", api)
+
+    def startTest(self, test):
+        self._set_api(test)
+
+    def stopTest(self, test):
+        opts['engine'] = self.original_engine
+        art_log.info("The API backend switched to %s", self.original_engine)

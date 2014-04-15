@@ -51,8 +51,8 @@ from art.test_handler.plmanagement.interfaces.application import ITestParser,\
 from art.test_handler.plmanagement.interfaces.report_formatter \
     import IResultExtension
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
-from art.test_handler.plmanagement.interfaces.tests_listener \
-    import ITestGroupHandler
+from art.test_handler.plmanagement.interfaces.tests_listener import \
+    ITestGroupHandler
 from art.test_handler.plmanagement.interfaces.config_validator import\
     IConfigValidation
 from art.test_handler.test_runner import TestCase, TestSuite, TestGroup,\
@@ -201,6 +201,7 @@ class UTestCase(TestCase):
                 logger.info(self.format_attr('test_name'))
                 logger.info('Test description: %s', self.description)
                 logger.info(self.format_attr('serial'))
+                self.t.plugins.startTest(self.t.test)
                 self.f()
                 self.status = self.TEST_STATUS_PASSED
             except AssertionError:
@@ -212,6 +213,8 @@ class UTestCase(TestCase):
             except Exception:
                 self.status = self.TEST_STATUS_ERROR
                 self.incr_exc()
+            finally:
+                self.t.plugins.stopTest(self.t.test)
         finally:
             logger.info("tearDown: %s", self.test_name)
             try:
@@ -227,6 +230,10 @@ class UTestCase(TestCase):
     def __str__(self):
         return "Test Action: %s; Test Name: %s" % (self.test_action,
                                                    self.test_name)
+
+    @property
+    def api(self):
+        return getattr(self.t.test, 'api', None)
 
 
 class UTestGroup(TestGroup):
@@ -329,8 +336,12 @@ class UnittestLoader(Component):
     """
     Plugin allows to test_runner be able to run unittest based tests
     """
-    implements(ITestParser, IResultExtension, IConfigurable, IPackaging,
-               IConfigValidation, ITestGroupHandler)
+    implements(ITestParser,
+               IResultExtension,
+               IConfigurable,
+               IPackaging,
+               IConfigValidation,
+               ITestGroupHandler)
     name = 'Unittest runner'
 
     def __init__(self):
