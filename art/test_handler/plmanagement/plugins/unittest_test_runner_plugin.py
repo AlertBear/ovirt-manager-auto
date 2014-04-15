@@ -70,12 +70,13 @@ try:
     from nose.case import Test
     from nose.config import Config as NoseConfig
     from nose.loader import TestLoader
+    from nose.failure import Failure
     from nose.plugins.manager import DefaultPluginManager as NosePluginManager
     from nose.plugins.attrib import AttributeSelector
 except ImportError as ex:
     # this is required
     ContextSuite = Test = NoseConfig = NosePluginManager = None
-    TestLoader = AttributeSelector = None
+    TestLoader = AttributeSelector = Failure = None
     DEPS_INSTALLED = ex
 
 try:
@@ -263,7 +264,11 @@ class UTestGroup(TestGroup):
                 self.error += 1
                 raise StopIteration(str(ex))
             for c in self.context:
-                if isinstance(c, Test):
+                if isinstance(c, Failure):
+                    logger.error("There is critical failure in test module, "
+                                 "please see nose.log for more info: %s", c)
+                    continue
+                elif isinstance(c, Test):
                     test_elm = UTestCase(c)
                 elif None is c.context:
                     continue
@@ -309,7 +314,11 @@ class UTestSuite(TestSuite):
                 self.error += 1
                 raise StopIteration(str(ex))
             for c in self.context:
-                if isinstance(c, Test):
+                if isinstance(c, Failure):
+                    logger.error("There is critical failure in test module, "
+                                 "please see nose.log for more info: %s", c)
+                    continue
+                elif isinstance(c, Test):
                     test_elm = UTestCase(c)
                 elif None is c.context:
                     continue
