@@ -708,8 +708,8 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
         formatMethod = addStorageDomainLogMassageTemplate.format
         if storage_type == ENUMS['storage_type_nfs']:
             util.logger.info(formatMethod(ENUMS['storage_type_nfs'],
-                             "path=%s, address=%s", storagePath,
-                                          address_arr[index]))
+                             "path=%s, address=%s" % (storagePath,
+                                                      address_arr[index])))
             status = addStorageDomain(positive=positive, name=sdName,
                                       type=domainType,
                                       storage_type=storage_type,
@@ -718,9 +718,9 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
         elif storage_type == ENUMS['storage_type_iscsi']:
             util.logger.info(
                 formatMethod(ENUMS['storage_type_iscsi'], "lun=%s, "
-                             "lun_address=%s, lun_target=%s, lun_port=%s",
-                             storagePath, lunAddrArr[index], lunTgtArr[index],
-                             lun_port))
+                             "lun_address=%s, lun_target=%s, lun_port=%s" %
+                             (storagePath, lunAddrArr[index], lunTgtArr[index],
+                              lun_port)))
             status = addStorageDomain(positive=positive, name=sdName,
                                       type=domainType,
                                       storage_type=storage_type, host=host,
@@ -729,7 +729,7 @@ def createDatacenter(positive, hosts, cpuName, username, password, datacenter,
                                       lun_target=lunTgtArr[index],
                                       lun_port=lun_port)
         elif storage_type == ENUMS['storage_type_fcp']:
-            util.logger.info(formatMethod(ENUMS['storage_type_fcp'], "lun=%s",
+            util.logger.info(formatMethod(ENUMS['storage_type_fcp'], "lun=%s" %
                                           storagePath))
             status = addStorageDomain(positive=positive, name=sdName,
                                       type=domainType,
