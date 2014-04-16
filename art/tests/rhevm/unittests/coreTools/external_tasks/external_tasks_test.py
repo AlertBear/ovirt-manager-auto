@@ -4,15 +4,16 @@ External Tasks test
 """
 from art.unittest_lib import BaseTestCase as TestCase
 from nose.tools import istest
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms, bz
 import art.test_handler.exceptions as errors
 from art.rhevm_api.utils.test_utils import get_api
 import art.rhevm_api.tests_lib.low_level.jobs as job_api
+from art.test_handler.settings import opts
 import config
 import logging
 
 JOB_API = get_api('job', 'jobs')
-
+ENUMS = opts['elements_conf']['RHEVM Enums']
 logger = logging.getLogger(__name__)
 
 ########################################################################
@@ -30,10 +31,9 @@ class AddingJob(TestCase):
         logger.info("Attempting to add job")
         if not job_api.add_job(job_description=description):
             logger.error("Adding job failed")
-        status = job_api.check_recent_job(True,
-                                          description=description,
-                                          job_status=
-                                          job_api.JOB_STATUSES[0])[0]
+        status = job_api.check_recent_job(
+            True, description=description,
+            job_status=ENUMS['job_started'])[0]
         return status
 
 
@@ -58,9 +58,8 @@ class AddJobWithCorrectDescription(AddingJob):
         End job with given description
         '''
         logger.info("Attempting to end job %s", config.job_description)
-        if not job_api.end_job(config.job_description,
-                               job_api.JOB_STATUSES[0],
-                               job_api.JOB_STATUSES[1]):
+        if not job_api.end_job(config.job_description, ENUMS['job_started'],
+                               ENUMS['job_finished']):
             raise errors.JobException("Ending job was failed")
 
 
@@ -103,12 +102,11 @@ class AddingStep(TestCase):
         if not job_api.add_step(job_description=config.job_description,
                                 step_description=config.step_description,
                                 step_type=step_type,
-                                step_state=job_api.JOB_STATUSES[1]):
+                                step_state=ENUMS['job_finished']):
             logger.error("Adding step failed")
-        job_obj = job_api.check_recent_job(True,
-                                           config.job_description,
-                                           job_status=
-                                           job_api.JOB_STATUSES[0])[1]
+        job_obj = job_api.check_recent_job(
+            True, config.job_description,
+            job_status=ENUMS['job_started'])[1]
         logger.info("Checking if step with description %s "
                     "appear under job with description %s",
                     config.step_description, config.job_description)
@@ -121,9 +119,8 @@ class AddingStep(TestCase):
         End job with given description
         '''
         logger.info("Attempting to end job %s", config.job_description)
-        if not job_api.end_job(config.job_description,
-                               job_api.JOB_STATUSES[0],
-                               job_api.JOB_STATUSES[1]):
+        if not job_api.end_job(config.job_description, ENUMS['job_started'],
+                               ENUMS['job_finished']):
             raise errors.JobException("Ending job was failed")
 
 
@@ -139,7 +136,7 @@ class AddStepWithCorrectParameters(AddingStep):
         '''
         Adding step with correct parameters under given job
         '''
-        self.assertTrue(self._add_step(job_api.STEP_TYPES[0]))
+        self.assertTrue(self._add_step(ENUMS['step_validating']))
         logger.info("Step exist")
 
 
@@ -175,8 +172,8 @@ class AddSubStepWithCorrectParameters(TestCase):
             logger.error("Adding job failed")
         if not job_api.add_step(job_description=config.job_description,
                                 step_description=config.step_description,
-                                step_type=job_api.STEP_TYPES[1],
-                                step_state=job_api.JOB_STATUSES[1]):
+                                step_type=ENUMS['step_executing'],
+                                step_state=ENUMS['job_finished']):
             logger.error("Adding step failed")
 
     @tcms('9767', '289237')
@@ -185,27 +182,26 @@ class AddSubStepWithCorrectParameters(TestCase):
         '''
         Add sub step with correct description
         '''
+        step_description = config.step_description
         logger.info("Attempting to add sub step")
         if not job_api.add_step(job_description=config.job_description,
                                 step_description=config.sub_step_description,
-                                step_type=job_api.STEP_TYPES[1],
-                                step_state=job_api.JOB_STATUSES[1],
-                                parent_step_description=
-                                config.step_description):
+                                step_type=ENUMS['step_executing'],
+                                step_state=ENUMS['job_finished'],
+                                parent_step_description=step_description):
             logger.error("Adding sub step failed")
-        job_obj = job_api.check_recent_job(True,
-                                           config.job_description,
-                                           job_status=
-                                           job_api.JOB_STATUSES[0])[1]
+        job_obj = job_api.check_recent_job(
+            True, config.job_description,
+            job_status=ENUMS['job_started'])[1]
         logger.info("Checking if step with description %s "
                     "appear under step with description %s",
-                    config.sub_step_description, config.step_description)
+                    config.sub_step_description, step_description)
         step_obj = job_api.step_by_description(job_obj,
                                                config.sub_step_description)
         parent_step_obj = job_api.step_by_description(job_obj,
-                                                      config.step_description)
-        status = step_obj.get_parent_step().get_id() ==\
-            parent_step_obj.get_id()
+                                                      step_description)
+        status = (step_obj.get_parent_step().get_id() ==
+                  parent_step_obj.get_id())
         self.assertTrue(status)
         logger.info("Step exist")
 
@@ -215,9 +211,8 @@ class AddSubStepWithCorrectParameters(TestCase):
         End job with given description
         '''
         logger.info("Attempting to end job %s", config.job_description)
-        if not job_api.end_job(config.job_description,
-                               job_api.JOB_STATUSES[0],
-                               job_api.JOB_STATUSES[1]):
+        if not job_api.end_job(config.job_description, ENUMS['job_started'],
+                               ENUMS['job_finished']):
             raise errors.JobException("Ending job was failed")
 
 
@@ -243,9 +238,8 @@ class EndJobWithCorrectDescription(TestCase):
         Ending job with correct description
         '''
         logger.info("Attempting to end job %s", config.job_description)
-        status = job_api.end_job(config.job_description,
-                                 job_api.JOB_STATUSES[0],
-                                 job_api.JOB_STATUSES[1])
+        status = job_api.end_job(config.job_description, ENUMS['job_started'],
+                                 ENUMS['job_finished'])
         self.assertTrue(status)
         logger.info("Ending job %s success", config.job_description)
 
@@ -267,11 +261,12 @@ class EndStepWithCorrectDescription(TestCase):
         logger.info("Adding job success")
         if not job_api.add_step(job_description=config.job_description,
                                 step_description=config.step_description,
-                                step_type=job_api.STEP_TYPES[1],
-                                step_state=job_api.JOB_STATUSES[1]):
+                                step_type=ENUMS['step_executing'],
+                                step_state=ENUMS['job_finished']):
             logger.error("Adding step to job was failed")
 
     @tcms('9767', '308836')
+    @bz(1087916)
     @istest
     def end_step_with_correct_description(self):
         '''
@@ -279,9 +274,8 @@ class EndStepWithCorrectDescription(TestCase):
         '''
         logger.info("Attempting to end step %s", config.step_description)
         status = job_api.end_step(config.job_description,
-                                  job_api.JOB_STATUSES[0],
-                                  config.step_description,
-                                  True)
+                                  ENUMS['job_started'],
+                                  config.step_description, True)
         self.assertTrue(status)
         logger.info("Ending step %s success", config.step_description)
 
@@ -291,7 +285,6 @@ class EndStepWithCorrectDescription(TestCase):
         End job with given description
         '''
         logger.info("Attempting to end job %s", config.job_description)
-        if not job_api.end_job(config.job_description,
-                               job_api.JOB_STATUSES[0],
-                               job_api.JOB_STATUSES[1]):
+        if not job_api.end_job(config.job_description, ENUMS['job_started'],
+                               ENUMS['job_finished']):
             raise errors.JobException("Ending job was failed")

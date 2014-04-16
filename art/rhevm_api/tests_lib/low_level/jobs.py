@@ -1,20 +1,19 @@
 from art.core_api import is_action
 from art.core_api.apis_utils import data_st
 from art.rhevm_api.utils.test_utils import get_api
+from art.test_handler.settings import opts
 import logging
-import time
+
+ENUMS = opts['elements_conf']['RHEVM Enums']
 
 JOBS_API = get_api('job', 'jobs')
 STEPS_API = get_api('step', 'steps')
 LOGGER = logging.getLogger(__name__)
-JOB_STATUSES = ['STARTED', 'FINISHED', 'FAILED', 'ABORTED', 'UNKNOWN']
-STEP_TYPES = ['VALIDATING', 'EXECUTING', 'FINALIZING']
 
 
-# noinspection PyUnusedLocal
 @is_action()
 def check_recent_job(positive, description, last_jobs_num=None,
-                     job_status='finished'):
+                     job_status=ENUMS['job_finished']):
     """
     Description: Check if in recent jobs exist job with given description
     **Author**: alukiano
@@ -26,30 +25,19 @@ def check_recent_job(positive, description, last_jobs_num=None,
     **Returns**: True if exist job with given description, job and job time
             Else return False, None, None
     """
-    jobs = JOBS_API.get(absLink=False)
-    last_job = None
-    job_time = None
+    jobs = JOBS_API.get(absLink=False)[:last_jobs_num]
     if not description:
         LOGGER.warn("Description is empty")
         return False, None, None
-    if last_jobs_num:
-        last_jobs_num = int(last_jobs_num)
-        if len(jobs) > last_jobs_num:
-            jobs = jobs[:last_jobs_num]
-    for job in jobs:
-        status = job.get_status().get_state().lower()
-        if (description in job.get_description()
-                and status == job_status.lower()):
-            last_time = str(job.get_start_time()).split(".")[0].split("T")[1]
-            last_time_obj = time.strptime(last_time, "%H:%M:%S")
-            # Check if no newer job with the same description
-            if last_time_obj > job_time:
-                last_job = job
-                job_time = last_time_obj
+
+    job_status = job_status.lower()
+    jobs = filter(lambda j: (description in j.get_description() and
+                             j.get_status().get_state().lower() == job_status),
+                  jobs)
+    last_job = max(jobs, key=lambda j: j.get_start_time())
+
     if last_job:
-        return True, last_job, (job_time.tm_hour,
-                                job_time.tm_min,
-                                job_time.tm_sec)
+        return True, last_job
     else:
         return False, None, None
 
@@ -92,10 +80,10 @@ def add_step(job_description, step_description,
     """
     job_obj = None
     parent_step_obj = None
-    for status in JOB_STATUSES:
-        job_obj = check_recent_job(True,
-                                   job_description,
-                                   job_status=status)[1]
+    for status in [ENUMS['job_started'], ENUMS['job_finished'],
+                   ENUMS['job_failed'], ENUMS['job_aborted'],
+                   ENUMS['job_unknown']]:
+        job_obj = check_recent_job(True, job_description, job_status=status)[1]
         if job_obj:
             if parent_step_description:
                 parent_step_obj = step_by_description(job_obj,
@@ -110,8 +98,7 @@ def add_step(job_description, step_description,
     if parent_step_description and not parent_step_obj:
         LOGGER.error("No parent step with given description found")
         return False
-    steps_obj = JOBS_API.getElemFromLink(job_obj, link_name='steps',
-                                         get_href=True)
+    steps_obj = STEPS_API.getElemFromLink(job_obj, get_href=True)
     status_obj = data_st.Status(state=step_state)
     step_obj = data_st.Step(description=step_description,
                             job=job_obj,
@@ -133,11 +120,11 @@ def step_by_description(job, step_description):
     **Returns**: if step with given description exist, return step object
             else, return None
     """
-    steps_obj = JOBS_API.get(job.get_link()[0].get_href()).get_step()
+    steps_obj = STEPS_API.getElemFromLink(job, link_name='steps', attr='step',
+                                          get_href=False)
     if not steps_obj:
-        LOGGER.warn("No step with description %s"
-                    " under job with description %s",
-                    step_description, job.get_description())
+        warn_msg = 'No step with description %s under job with description %s'
+        LOGGER.warn(warn_msg, step_description, job.get_description())
     for step in steps_obj:
         if step_description in step.get_description():
             return step
@@ -192,15 +179,14 @@ def end_step(job_description, job_status, step_description, end_status):
         return False
     return True
 
-# @is_action()
-# def clear_job(job_description, job_status):
-#     job_obj = check_recent_job(True,
-#                                job_description,
-#                                job_status=job_status)[1]
-#     if not job_obj:
-#         LOGGER.warn("Job with given description not exist")
-#         return False
-#     status = JOBS_API.syncAction(job_obj, "clear", True)
-#     if not status:
-#         LOGGER.warn("Clearing of job failed")
-#     return True
+
+@is_action()
+def clear_job(job_description, job_status):
+    job_obj = check_recent_job(True, job_description, job_status=job_status)[1]
+    if not job_obj:
+        LOGGER.warn("Job with given description not exist")
+        return False
+    status = JOBS_API.syncAction(job_obj, "clear", True)
+    if not status:
+        LOGGER.warn("Clearing of job failed")
+    return True
