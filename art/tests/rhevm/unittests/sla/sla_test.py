@@ -571,7 +571,7 @@ class Threads_Case1(TestCase):
         logger.info("Updating {0} to have {1} cores."
                     .format(self.vm_name, self.cores * self.sockets))
         self.assertTrue(vms.updateVm(positive=True, vm=self.vm_name,
-                                     cpu_sockets=self.sockets,
+                                     cpu_socket=self.sockets,
                                      cpu_cores=self.cores))
         logger.info("Update successful. Starting VM %s:" % self.vm_name)
         self.assertTrue(vms.startVm(positive=True, vm=self.vm_name))
@@ -593,7 +593,7 @@ class Threads_Case1(TestCase):
         logger.info("Setting {0} to have {1} cores."
                     .format(self.vm_name, self.cores * self.sockets * 2))
         self.assertTrue(vms.updateVm(positive=True, vm=self.vm_name,
-                                     cpu_sockets=self.sockets,
+                                     cpu_socket=self.sockets,
                                      cpu_cores=self.cores * 2))
         logger.info("Update successful. Starting VM %s:" % self.vm_name)
         self.assertTrue(vms.startVm(positive=False, vm=self.vm_name))
@@ -615,7 +615,7 @@ class Threads_Case1(TestCase):
                     .format(self.vm_name,
                             self.cores * self.sockets * self.threads))
         self.assertTrue(vms.updateVm(positive=True, vm=self.vm_name,
-                                     cpu_sockets=self.sockets,
+                                     cpu_socket=self.sockets,
                                      cpu_cores=self.cores * self.threads))
         logger.info("Update successful. Starting VM %s:" % self.vm_name)
         self.assertTrue(vms.startVm(positive=True, vm=self.vm_name))
@@ -638,7 +638,7 @@ class Threads_Case1(TestCase):
                     .format(self.vm_name,
                             self.cores * self.sockets * self.threads * 2))
         if vms.updateVm(positive=True, vm=self.vm_name,
-                        cpu_sockets=self.sockets,
+                        cpu_socket=self.sockets,
                         cpu_cores=self.cores * self.threads * 2):
             logger.info("Update successful. Starting VM %s:" % self.vm_name)
             self.assertTrue(vms.startVm(positive=False, vm=self.vm_name))
