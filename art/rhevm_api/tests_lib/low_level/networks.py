@@ -126,7 +126,7 @@ def updateNetwork(positive, network, **kwargs):
        * description - new network description (if relevant)
        * stp - new network support stp (if relevant). (true/false string)
        * vlan_id - new network vlan id (if relevant)
-       * usages - a string contain list of comma-separated usages 'VM,DIPLAY'.
+       * usages - a string contain list of comma-separated usages 'VM,DISPLAY'.
                     should contain all usages every update.
                     a missing usage will be deleted!
        * mtu - and integer to overrule mtu on the related host nic..
@@ -268,7 +268,7 @@ def addNetworkToCluster(positive, network, cluster, **kwargs):
        * cluster - name of a cluster to attach to
        * required - boolean, decide if network should be required by cluster..
        * usages - a string contain list of usages separated by comma
-       'VM,DIPLAY'. should contain all usages every update.
+       'VM,DISPLAY'. should contain all usages every update.
        a missing usage will be deleted!
        * display - deprecated. boolean, a spice display network.
     Return: status (True if network was attached properly, False otherwise)
@@ -293,7 +293,7 @@ def updateClusterNetwork(positive, cluster, network, **kwargs):
        * cluster - name of a cluster to attach to
        * required - boolean, decide if network should be required by cluster..
        * usages - a string contain list of usages separated by
-       commas 'VM,DIPLAY'. should contain all usages every update.
+       commas 'VM,DISPLAY'. should contain all usages every update.
        a missing usage will be deleted!
        * display - deprecated. boolean, a spice display network.
     Return: status (True if network was attached properly, False otherwise)
