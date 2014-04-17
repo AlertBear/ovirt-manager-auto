@@ -1564,6 +1564,8 @@ class PlacementPolicy_Case4(TestCase):
         '''
         Remove VM
         '''
+        if not vms.stopVm(positive=True, vm=cls.vm_name):
+            raise errors.VMException("Cannot stop vm %s" % cls.vm_name)
         if not vms.removeVm(positive=True, vm=cls.vm_name):
             raise errors.VMException("Cannot remove vm %s" % cls.vm_name)
         logger.info("Successfully removed %s." % cls.vm_name)

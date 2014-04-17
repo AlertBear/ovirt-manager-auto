@@ -10,7 +10,7 @@ TEST_NAME = "SLA"
 PARAMETERS = ART_CONFIG['PARAMETERS']
 STORAGE_TYPE = PARAMETERS['storage_type']
 VDC = PARAMETERS.get('host', None)
-VDC_PASSWORD = PARAMETERS.get('password', None)
+VDC_PASSWORD = PARAMETERS.get('vdc_root_password', None)
 
 basename = PARAMETERS.get('test_name', TEST_NAME)
 DC_name = PARAMETERS.get('dc_name', '%s_DC' % basename)
