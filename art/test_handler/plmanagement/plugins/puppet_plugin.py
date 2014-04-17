@@ -93,7 +93,7 @@ class PuppetPlugin(Component):
         self.__exec_toogle_puppet(OPT_ENABLE)
 
     def __exec_toogle_puppet(self, opt):
-        toogle_cmd = [PUPPET_DAEMON, 'agent', '--test', '--detailed-exitcodes']
+        toogle_cmd = [PUPPET_DAEMON, 'agent', opt, '--detailed-exitcodes']
         test_cmd = [PUPPET_DAEMON, 'agent', '--test', '--detailed-exitcodes']
         error_log_msg = "%s: failed execute %s with %s err: %s; out: %s"
 
