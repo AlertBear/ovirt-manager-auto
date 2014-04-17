@@ -19,7 +19,6 @@
 
 import sys
 import time
-from time import strftime
 import abc
 import logging
 from art.core_api.apis_exceptions import APITimeout, EntityNotFound
@@ -28,8 +27,6 @@ import art.test_handler.settings as settings
 # TODO: move default values to conf spec
 DS_PATH = settings.opts.get('data_struct_mod')
 DS_VALIDATE = DS_PATH
-if settings.opts.get('engine') == 'sdk':
-    DS_PATH = 'ovirtsdk.xml.params'
 
 __import__(DS_PATH)
 __import__(DS_VALIDATE)

@@ -17,11 +17,12 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-from art.core_api import validator
 import time
+from art.core_api import validator
+from art.core_api.apis_utils import data_st
 from art.core_api.apis_exceptions import EntityNotFound
-from art.rhevm_api.data_struct.data_structures import *
 from ovirtsdk import api as sdkApi
+from ovirtsdk.xml import params as sdk_params
 from ovirtsdk.infrastructure.errors import RequestError
 from art.core_api.apis_utils import APIUtil
 
@@ -31,6 +32,10 @@ sdkInit = None
 DEF_TIMEOUT = 900
 # default sleep
 DEF_SLEEP = 10
+
+PROPERTIES_MAP = {
+    'type_': 'type',
+}
 
 
 class SdkUtil(APIUtil):
@@ -45,7 +50,7 @@ class SdkUtil(APIUtil):
 
         if not sdkInit:
             user_with_domain = '{0}@{1}'.format(self.opts['user'],
-                                        self.opts['user_domain'])
+                                                self.opts['user_domain'])
             if not self.opts['secure']:
                 self.api = \
                     sdkApi.API(self.opts['uri'], user_with_domain,
@@ -85,15 +90,15 @@ class SdkUtil(APIUtil):
         if not collection:
             collection = self.collection_name
 
-        self.logger.debug("GET request content is --  collection:%(col)s " \
-                        % {'col': collection})
+        self.logger.debug("GET request content is --  collection:%s",
+                          collection)
 
         results = None
         try:
             results = self.__getCollection(collection).list()
         except AttributeError as exc:
-            raise EntityNotFound("Can't get collection '{0}': {1}".\
-                                format(collection, exc.message))
+            raise EntityNotFound("Can't get collection '{0}': {1}".
+                                 format(collection, exc.message))
 
         return results
 
@@ -105,25 +110,31 @@ class SdkUtil(APIUtil):
         Parameters:
            * entity - entity for post body
            * positive - if positive or negative verification should be done
-           * expectedEntity - if there are some expected entity different from sent
+           * expectedEntity - if there are some expected entity different from
+                              entity
            * incrementBy - increment by number of elements
            * async -sycnh or asynch request
         Return: POST response (None on parse error.),
                 status (True if POST test succeeded, False otherwise.)
         '''
 
+        entity = self._translate_params(entity)
+
         if not collection:
             collection = self.__getCollection(self.collection_name)
 
         try:
-            self.logger.debug("CREATE api content is --  collection:%(col)s element:%(elm)s " \
-            % {'col': self.collection_name, 'elm': validator.dump_entity(entity, self.element_name)})
+            self.logger.debug("CREATE api content is --  "
+                              "collection:%s element:%s ",
+                              self.collection_name,
+                              validator.dump_entity(entity, self.element_name))
         except Exception:
             pass
 
         response = None
         try:
-            response = collection.add(entity, **self.getReqMatrixParams(current))
+            response = collection.add(entity,
+                                      **self.getReqMatrixParams(current))
 
             if not async:
                 self.find(response.id, 'id', collection=collection.list())
@@ -131,13 +142,14 @@ class SdkUtil(APIUtil):
             self.logger.info("New entity was added successfully")
             expEntity = entity if not expectedEntity else expectedEntity
             if not validator.compareElements(expEntity, response,
-                                self.logger, self.element_name):
+                                             self.logger, self.element_name):
                 return response, False
 
         except RequestError as e:
             if positive:
-                errorMsg = "Failed to create a new element, status: {0},reason: {1}, details: {2}"
-                self.logger.error(errorMsg.format(e.status, e.reason, e.detail))
+                errorMsg = ("Failed to create a new element, status: %s, "
+                            "reason: %s, details: %s")
+                self.logger.error(errorMsg, e.status, e.reason, e.detail)
                 return None, False
 
         return response, True
@@ -146,7 +158,62 @@ class SdkUtil(APIUtil):
         '''
         Set property for sdk object
         '''
+        property_name = PROPERTIES_MAP.get(property_name, property_name)
+        self.logger.debug("Setting %s.%s property to '%s'",
+                          entity.__class__.__name__,
+                          property_name,
+                          property_value)
         getattr(entity, 'set_' + property_name)(property_value)
+
+    def _translate_params(self, entity):
+        """
+        Translates data_st.Entity to ovirtsdk.xml.params.Entity
+        Parameters:
+         * entity - instance data_st.Entity
+        Return: instance of ovirtsdk.xml.params.Entity
+        """
+        if isinstance(entity, data_st.GeneratedsSuper):
+            entity_name = validator.getClassName(entity.__class__.__name__)
+            self.logger.debug("Translation data_st.%s to ovirtsdk.%s",
+                              entity_name, entity.__class__.__name__)
+            new_entity = getattr(sdk_params, entity_name)()
+        elif isinstance(entity, sdk_params.GeneratedsSuper):
+            entity_name = entity.__class__.__name__
+            self.logger.debug("%s is already instance of ovirtsdk.%s",
+                              entity_name, entity_name)
+            new_entity = entity
+        else:
+            # in this case here is no reason to translate it
+            return entity
+
+        for attr, value in entity.__dict__.iteritems():
+            if value is not None:
+                if isinstance(value, data_st.GeneratedsSuper):
+                    self.logger.debug("%s is instance of data_st.%s, "
+                                      "translate to ovirtsdk.%s", attr,
+                                      entity_name, entity_name)
+                    value = self._translate_params(value)
+                elif isinstance(value, list):
+                    self.logger.debug("%s is list, going over items", attr)
+                    self._translate_list(value)
+                try:
+                    self.__set_property(new_entity, attr, value)
+                except AttributeError:
+                    self.logger.warn("Attribute doesn't exist %s", attr)
+        return new_entity
+
+    def _translate_list(self, list_):
+        """
+        Translates list of data_st.Entity to list ovirtsdk.xml.params.Entity.
+        NOTE: It is done in the place.
+        """
+        for i in xrange(len(list_)):
+            value = list_[i]
+            if isinstance(value, list):
+                self._translate_list(value)
+            elif isinstance(value, (data_st.GeneratedsSuper,
+                                    sdk_params.GeneratedsSuper)):
+                list_[i] = self._translate_params(value)
 
     def update(self, origEntity, newEntity, positive, current=None):
         '''
@@ -159,13 +226,14 @@ class SdkUtil(APIUtil):
         Return: PUT response, True if PUT test succeeded, False otherwise
         '''
         response = None
+        newEntity = self._translate_params(newEntity)
         for attr in newEntity.__dict__.keys():
             try:
                 attrVal = newEntity.__dict__[attr]
                 if attrVal:
                     self.__set_property(origEntity, attr, attrVal)
             except AttributeError:
-                self.logger.warn("Attribute doesn't exist %s" % attr)
+                self.logger.warn("Attribute doesn't exist %s", attr)
 
         dumpedEntity = None
         try:
@@ -173,25 +241,26 @@ class SdkUtil(APIUtil):
         except Exception:
             pass
 
-        self.logger.debug("UPDATE api content is --  collection :%(col)s element:%(elm)s " \
-            % {
-                'col': self.collection_name,
-                'elm': dumpedEntity
-            })
+        self.logger.debug("UPDATE api content is --  "
+                          "collection :%s element:%s ", self.collection_name,
+                          dumpedEntity)
 
         try:
             if positive:
-                response = origEntity.update(**self.getReqMatrixParams(current))
+                matrix_params = self.getReqMatrixParams(current)
+                response = origEntity.update(**matrix_params)
                 self.logger.info(self.element_name + " was updated")
 
                 if not validator.compareElements(newEntity, response,
-                                    self.logger, self.element_name):
+                                                 self.logger,
+                                                 self.element_name):
                     return None, False
 
         except RequestError as e:
             if positive:
-                errorMsg = "Failed to update an element, status: {0}, reason: {1}, details: {2}"
-                self.logger.error(errorMsg.format(e.status, e.reason, e))
+                errorMsg = ("Failed to update an element, status: %s, "
+                            "reason: %s, details: %s")
+                self.logger.error(errorMsg, e.status, e.reason, e)
                 return None, False
 
         return response, True
@@ -214,13 +283,15 @@ class SdkUtil(APIUtil):
                 entity.delete(correlation_id=self.getCorrelationId())
         except RequestError as e:
             if positive:
-                errorMsg = "Failed to delete an element, status: {0},reason: {1}, details: {2}"
-                self.logger.error(errorMsg.format(e.status, e.reason, e.detail))
+                errorMsg = ("Failed to delete an element, status: %s, "
+                            "reason: %s, details: %s")
+                self.logger.error(errorMsg, e.status, e.reason, e.detail)
                 return False
 
         return True
 
-    def query(self, constraint, exp_status=None, href=None, event_id=None, **params):
+    def query(self, constraint, exp_status=None, href=None, event_id=None,
+              **params):
         '''
         Description: run search query
         Author: edolinin
@@ -238,12 +309,12 @@ class SdkUtil(APIUtil):
         if event_id is not None:
             params['from_event_id'] = event_id
 
-        MSG = "SEARCH content is -- collection:%(col)s query:%(q)s params :%(params)s"
-        self.logger.debug(MSG % {'col': self.collection_name, \
-                        'q': constraint, 'params': params})
+        MSG = ("SEARCH content is -- collection:%s "
+               "query:%s params :%s")
+        self.logger.debug(MSG, self.collection_name, constraint, params)
         search = collection.list(constraint, **params)
 
-        self.logger.debug("Response for QUERY request is: %s " % search)
+        self.logger.debug("Response for QUERY request is: %s ", search)
 
         return search
 
@@ -268,8 +339,8 @@ class SdkUtil(APIUtil):
             if attribute == 'id':
                 results = filter(lambda r: r.get_id() == val, collection)[0]
         except Exception:
-            raise EntityNotFound("Entity %s not found  for collection '%s'." \
-                                % (val, self.collection_name))
+            raise EntityNotFound("Entity %s not found  for collection '%s'."
+                                 % (val, self.collection_name))
 
         return results
 
@@ -308,37 +379,43 @@ class SdkUtil(APIUtil):
         Return: status (True if Action test succeeded, False otherwise)
         '''
 
-        act = self.makeAction(async, 10, **params)
+        entity = self._translate_params(entity)
+
+        act = self._translate_params(self.makeAction(async, 10, **params))
 
         try:
-            self.logger.info("Running action {0} on {1}"\
-            .format(validator.dump_entity(act, 'action'), entity))
+            self.logger.info("Running action %s on %s",
+                             validator.dump_entity(act, 'action'),
+                             entity)
         except Exception:
             pass
 
         try:
-            act = getattr(entity, action)(act, correlation_id=\
-                                        self.getCorrelationId())
+            correlation_id = self.getCorrelationId()
+            act = getattr(entity, action)(act, correlation_id=correlation_id)
         except RequestError as e:
             if positive:
-                errorMsg = "Failed to run an action '{0}', status: {1},reason: {2}, details: {3}"
-                self.logger.error(errorMsg.format(action, e.status, e.reason, e.detail))
+                errorMsg = ("Failed to run an action '%s', status: %s,reason: "
+                            "%s, details: %s")
+                self.logger.error(errorMsg, action, e.status, e.reason,
+                                  e.detail)
                 return False
             else:
                 return True
         else:
             if not positive:
-                errorMsg = "Succeeded to run an action '{0}' for negative test"
-                self.logger.error(errorMsg.format(action))
+                errorMsg = "Succeeded to run an action '%s' for negative test"
+                self.logger.error(errorMsg, action)
                 return False
 
         if async:
             if not validator.compareActionStatus(act.status.state,
-                ["pending", "complete"], self.logger):
+                                                 ["pending", "complete"],
+                                                 self.logger):
                 return False
         else:
             if not validator.compareActionStatus(act.status.state,
-                ["complete"], self.logger):
+                                                 ["complete"], self.logger):
                 return False
 
         return True
@@ -356,7 +433,8 @@ class SdkUtil(APIUtil):
                        multiple statuses as a string with space delimiter
                        Example: "active maintenance inactive"
             * timeout - maximum time to continue status probing
-        Return: status (True if element get the desired status, False otherwise)
+        Return: status (True if element get the desired status,
+                False otherwise)
         '''
 
         handleTimeout = 0
@@ -370,42 +448,43 @@ class SdkUtil(APIUtil):
             elif hasattr(elm, 'status'):
                 elemStat = elm.status.state.lower()
             else:
-                self.logger.error("Element %s doesn't have attribute status" % \
-                                                        (self.element_name))
+                self.logger.error("Element %s doesn't have attribute status",
+                                  self.element_name)
                 return False
 
             try:
-                self.logger.info("Element {0} Waiting for the status {1}".\
-                format(validator.dump_entity(elm, self.element_name), status))
+                self.logger.info("Element %s Waiting for the status %s",
+                                 validator.dump_entity(elm, self.element_name),
+                                 status)
             except Exception:
                 pass
 
             if not hasattr(elm, 'status'):
-                self.logger.error("Element %s doesn't have attribute status"\
-                                % (self.element_name))
+                self.logger.error("Element %s doesn't have attribute status",
+                                  self.element_name)
                 return False
 
             if elemStat in status.lower().split():
-                self.logger.info("%s status is '%s'" \
-                                % (self.element_name, elemStat))
+                self.logger.info("%s status is '%s'", self.element_name,
+                                 elemStat)
                 return True
             elif elemStat.find("fail") != -1 and not ignoreFinalStates:
-                self.logger.error("%s status is '%s'"\
-                                % (self.element_name, elemStat))
+                self.logger.error("%s status is '%s'", self.element_name,
+                                  elemStat)
                 return False
             elif elemStat == 'up' and not ignoreFinalStates:
-                self.logger.error("%s status is '%s'"\
-                                % (self.element_name, elemStat))
+                self.logger.error("%s status is '%s'", self.element_name,
+                                  elemStat)
                 return False
             else:
-                self.logger.debug("Waiting for status '%s', currently status is '%s' "\
-                                % (status, elemStat))
+                self.logger.debug("Waiting for status '%s', currently "
+                                  "status is '%s' ", status, elemStat)
                 time.sleep(DEF_SLEEP)
                 handleTimeout = handleTimeout + DEF_SLEEP
                 continue
 
-        self.logger.error("Interrupt because of timeout. %s status is '%s'." \
-                        % (self.element_name, elemStat))
+        self.logger.error("Interrupt because of timeout. %s status is '%s'.",
+                          self.element_name, elemStat)
         return False
 
 

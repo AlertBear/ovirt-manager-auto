@@ -24,22 +24,28 @@ from art.core_api.apis_utils import settings
 import re
 
 ATTR_IGNORE_LIST = ['href', 'link', 'rel']
-if settings.opts.get('engine') == 'sdk':
-    ATTR_IGNORE_LIST = ATTR_IGNORE_LIST + \
-                     ['actions', 'disks', 'certificate', 'lun_storage', 'statistic']
 
 VALS_IGNORE_DICT = {
-                    'usage': ['vm'],
-                    }
+    'usage': ['vm'],
+}
 
 DS_CLASS_MAPPER = {
-                'ClusterNetwork': 'Network',
-                'VMCdRom': 'CdRom',
-                'RolePermits': 'Permits',
-                'HostNicStatistics': 'Statistics',
-                'DiskStatistics': 'Statistics',
-                'NetworkVnicProfile': 'VnicProfile'
+    'ClusterNetwork': 'Network',
+    'VMCdRom': 'CdRom',
+    'RolePermits': 'Permits',
+    'HostNicStatistics': 'Statistics',
+    'DiskStatistics': 'Statistics',
+    'NetworkVnicProfile': 'VnicProfile'
 }
+
+
+def compose_attr_ignore_list():
+    # FIXME: encapsulate it into specific api's backend implementation
+    list_ = ATTR_IGNORE_LIST[:]
+    if settings.opts.get('engine') == 'sdk':
+        list_.extend(['actions', 'disks', 'certificate', 'lun_storage',
+                      'statistic'])
+    return list_
 
 
 def dump_entity(ds, root_name):
@@ -93,7 +99,7 @@ def cli_entity(elm, node_name, level=0, collection=False, start=False):
     attrList = getObjAttributes(elmInstance, elmInstance)
 
     # cleaning from unneeded attributes
-    for attr in ATTR_IGNORE_LIST + ignore:
+    for attr in compose_attr_ignore_list() + ignore:
         if attr in attrList:
             attrList.remove(attr)
 
@@ -258,8 +264,8 @@ def compareElements(expElm, actElm, logger, root, equal=True):
     * equal - elements are equal or not till this point
     Returns: True is elements are equal, False otherwise
     '''
-    ignore = ATTR_IGNORE_LIST + ['status', 'role', 'active', 'total',
-                                'required', 'permit']
+    ignore = compose_attr_ignore_list() + ['status', 'role', 'active', 'total',
+                                           'required', 'permit']
 
     if not actElm:
         logger.warn("Attribute '{0}' doesn't exist"
@@ -360,8 +366,8 @@ def compareElementsJava(expElm, actElm, logger, root, equal=True):
     * equal - elements are equal or not till this point
     Returns: True is elements are equal, False otherwise
     '''
-    ignore = ATTR_IGNORE_LIST + ['status', 'role', 'active', 'total',
-                                'required', 'permit']
+    ignore = compose_attr_ignore_list() + ['status', 'role', 'active',
+                                           'total', 'required', 'permit']
 
     if not actElm:
         logger.warn("Attribute '{0}' doesn't exist"
