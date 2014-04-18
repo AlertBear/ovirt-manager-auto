@@ -2,6 +2,7 @@ import os.path
 import logging
 import traceback
 from subprocess import call
+import xmlrpclib
 
 import utilities.utils as utils
 import utilities.errors as errors
@@ -71,9 +72,8 @@ class CustomNitrateKerbXmlrpc(nitrate.xmlrpc.NitrateXmlrpc):
         try:
             # Create xmlrpc server
             self._transport.cookiejar = nitrate.xmlrpc.CookieJar()
-            self.server = nitrate.xmlrpclib.ServerProxy(url,
-                                                    transport=self._transport,
-                                                    verbose=nitrate.xmlrpc.VERBOSE)
+            self.server = xmlrpclib.ServerProxy(
+                url, transport=self._transport, verbose=nitrate.xmlrpc.VERBOSE)
             if userName is not None:
                 # Try to login into Nitrate xmlrpc service
                 if self._obtainKerberosTicket(userName, keytabFile):
