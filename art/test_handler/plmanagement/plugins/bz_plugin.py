@@ -316,7 +316,7 @@ class Bugzilla(Component):
 
         return False
 
-    def __deal_with_comp_and_version(self, bug):
+    def __deal_with_comp_and_version(self, bug, active_comp):
         comp = expect_list(bug, 'component', '')
         if comp and comp[0]:
             comp = comp.pop()
@@ -328,7 +328,6 @@ class Bugzilla(Component):
                 import getSystemVersion
             self.version = Version("%d.%d" % getSystemVersion())
 
-        active_comp = settings.opts.get('engine')
         if 'ovirt-engine' in comp:
             comp = transform_ovirt_comp(comp)
             if comp in (SDK, CLI) and active_comp == REST:
@@ -357,6 +356,12 @@ class Bugzilla(Component):
                 return False
         return True
 
+    def _get_engine_name(self, test):
+        engine = getattr(test, 'api', None)
+        if not engine:
+            engine = settings.opts['engine']
+        return engine
+
     def _should_be_skipped(self, test):
         if not getattr(test, 'bz', False):
             bz_ids = []
@@ -366,6 +371,7 @@ class Bugzilla(Component):
         if self.issuedb:
             bz_ids += self.issuedb.lookup(test.test_name, self.config_name)
 
+        active_comp = self._get_engine_name(test)
         for bz_id in bz_ids:
             try:
                 bz = self.bz(bz_id)
@@ -374,10 +380,10 @@ class Bugzilla(Component):
                 continue
 
             # NOTE: https://projects.engineering.redhat.com/browse/RHEVM-1189
-            #if not self.__is_related_product(bz):
-            #    continue
+            # if not self.__is_related_product(bz):
+            #     continue
 
-            skipped = self.__deal_with_comp_and_version(bz)
+            skipped = self.__deal_with_comp_and_version(bz, active_comp)
             if not self.__is_open(bz):
                 skipped &= self.__check_fixed_at(bz)
             if skipped:
