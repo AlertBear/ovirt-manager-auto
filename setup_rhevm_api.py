@@ -18,6 +18,7 @@ DEPS = [
         'python >= 2.6',
         'python-lxml',
         'python-pip',
+        'python-netaddr',
         ]
 
 PIP_DEPS = [
