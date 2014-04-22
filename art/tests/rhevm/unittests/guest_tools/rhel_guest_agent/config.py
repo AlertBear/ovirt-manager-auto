@@ -36,3 +36,4 @@ RHEL_5_32b = PARAMETERS['rhel_5_32b']
 RHEL_5_64b = PARAMETERS['rhel_5_64b']
 TCMS_PLAN_ID = 3146
 MGMT_BRIDGE = PARAMETERS['mgmt_bridge']
+INSTALL_TIMEOUT = PARAMETERS.get('install_timeout', 480)

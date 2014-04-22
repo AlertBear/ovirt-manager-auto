@@ -67,7 +67,7 @@ class RHEL(TestCase):
         status = runMachineCommand(True, ip=cls.ip, cmd=cls.install,
                                    user=config.USER_ROOT,
                                    password=config.USER_PASSWORD,
-                                   timeout=240)
+                                   timeout=config.INSTALL_TIMEOUT)
         LOGGER.info(status)
         assert status[0]
         cls.is_installed = status[0]
