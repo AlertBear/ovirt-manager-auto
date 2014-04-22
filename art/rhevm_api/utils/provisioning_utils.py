@@ -193,19 +193,23 @@ class ProvisionProvidersType(type):
         # creating needed class
         new_cls = super(ProvisionProvidersType, cls).__new__(cls, name, bases,
                                                              dct)
+        if 'provisioning_tool' in opts:
+            # providing needed api provisioning parameters
+            new_cls.provisioning_tool = \
+                ProvisionProvidersType._provisioning_providers[
+                    opts['provisioning_tool']]
+            new_cls.common_parameters = \
+                opts['provisioning_tool_common_parameters']
+            new_cls.provisioning_profiles = opts['provisioning_profiles']
 
-        # providing needed api provisioning parameters
-        new_cls.provisioning_tool = \
-            ProvisionProvidersType._provisioning_providers[
-                opts['provisioning_tool']]
-        new_cls.common_parameters = \
-            opts['provisioning_tool_common_parameters']
-        new_cls.provisioning_profiles = opts['provisioning_profiles']
-
-        # providing needed api access parameters
-        new_cls.provisioning_tool_api = opts['provisioning_tool_api']
-        new_cls.provisioning_tool_user = opts['provisioning_tool_user']
-        new_cls.provisioning_tool_password = opts['provisioning_tool_password']
+            # providing needed api access parameters
+            new_cls.provisioning_tool_api = opts['provisioning_tool_api']
+            new_cls.provisioning_tool_user = opts['provisioning_tool_user']
+            new_cls.provisioning_tool_password = opts[
+                'provisioning_tool_password']
+        else:
+            logger.info("Provisioning_tools_plugin disabled, %s is not "
+                        "functional", __name__)
 
         return new_cls
 
