@@ -19,6 +19,7 @@ from art.test_handler.tools import tcms
 from art.rhevm_api.tests_lib.high_level import storagedomains
 from art.rhevm_api.tests_lib.low_level import users, vms, disks, mla
 from art.rhevm_api.tests_lib.low_level import storagedomains as low_sd
+from art.rhevm_api.utils import test_utils
 
 
 LOGGER = logging.getLogger(__name__)
@@ -460,6 +461,8 @@ class DPCase147128(TestCase):
                          config.ALT1_STORAGE_NAME)
         time.sleep(5)
         disks.waitForDisksState(self.disk_name)
+        test_utils.wait_for_tasks(config.OVIRT_IP, config.OVIRT_ROOT_PSW,
+                                  config.MAIN_DC_NAME)
         LOGGER.info("User with perms on target sd and disk can move disk.")
 
     def tearDown(self):
@@ -473,6 +476,8 @@ class DPCase147128(TestCase):
                                         config.USER1)
         mla.removeUserPermissionsFromSD(True, config.ALT1_STORAGE_NAME,
                                         config.USER1)
+        test_utils.wait_for_tasks(config.OVIRT_IP, config.OVIRT_ROOT_PSW,
+                                  config.MAIN_DC_NAME)
         storagedomains.remove_storage_domain(config.ALT1_STORAGE_NAME,
                                              config.MAIN_DC_NAME,
                                              config.MAIN_HOST_NAME)

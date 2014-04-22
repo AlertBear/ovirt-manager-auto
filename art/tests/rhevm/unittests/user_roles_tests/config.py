@@ -37,6 +37,7 @@ OVIRT_VERSION = PARAMETERS.get('compatibility_version')
 
 OVIRT_IP = PARAMETERS.get('vdc')
 OVIRT_PSW = PARAMETERS.get('vdc_password')
+OVIRT_ROOT_PSW = PARAMETERS.get('vdc_root_password')
 
 # Hosts
 HOST_ADDRESS = get(PARAMETERS.as_list('vds'), 0, None)
