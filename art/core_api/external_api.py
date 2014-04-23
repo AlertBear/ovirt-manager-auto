@@ -86,15 +86,6 @@ class TestRunnerWrapper():
         if opts['debug']:
             self.logger.setLevel(logging.DEBUG)
 
-        # Init provisioning plugin
-        # https://projects.engineering.redhat.com/browse/RHEVM-772
-        opts['provisioning_tool'] = 'cobbler'
-        opts['provisioning_tool_common_parameters'] = None
-        opts['provisioning_profiles'] = None
-        opts['provisioning_tool_api'] = None
-        opts['provisioning_tool_user'] = None
-        opts['provisioning_tool_password'] = None
-
         print "Log file is initialized at {0}".format(opts['log'])
 
 
