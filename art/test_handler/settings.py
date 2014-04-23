@@ -192,7 +192,10 @@ def readTestRunOpts(path, redefs):
     opts['parallel_configs'] = runSection.get('parallel_configs')
     opts['parallel_sections'] = runSection.get('parallel_sections')
 
-    opts['engine'] = runSection['engine']
+    opts['engines'] = runSection['engines']
+    # this way we have engine that will be used by art before test runs
+    # and also it will provide backward compatibilty with xml tests
+    opts['engine'] = runSection['system_engine']
     opts['data_struct_mod'] = runSection['data_struct_mod']
     opts['media_type'] = runSection['media_type']
     opts['secure'] = runSection.as_bool('secure')

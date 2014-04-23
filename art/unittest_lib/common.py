@@ -1,4 +1,4 @@
-from art.test_handler.settings import plmanager
+from art.test_handler.settings import plmanager, opts
 from unittest import TestCase
 from nose.plugins.attrib import attr
 
@@ -33,7 +33,7 @@ class BaseTestCase(TestCase):
     Base test case class for unittest testing
     """
     __test__ = False
-    apis = set(['rest', 'cli', 'sdk', 'java'])
+    apis = set(opts['engines'])
 
 
 @attr(team="storage")

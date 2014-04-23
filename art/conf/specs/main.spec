@@ -2,7 +2,8 @@
 parameters_section_validation = section_exists(section='PARAMETERS', default=True)
 
 [RUN]
-engine = option('sdk', 'rest', 'cli', 'java', default='rest')
+engines = force_list(default=list('sdk', 'rest', 'cli', 'java'))
+system_engine = option('sdk', 'rest', 'cli', 'java', default='rest')
 debug = boolean(default=True)
 media_type = option('application/xml', default='application/xml')
 in_parallel = force_list(default=list())
