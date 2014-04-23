@@ -1,5 +1,7 @@
 import logging
 from art.rhevm_api.tests_lib.low_level import disks
+from art.rhevm_api.tests_lib.low_level.disks import get_all_disk_permutation,\
+    addDisk
 
 logger = logging.getLogger(__name__)
 
@@ -7,6 +9,8 @@ logger = logging.getLogger(__name__)
 SLEEP_TIME = 10
 # Waiting timeout
 DEFAULT_TIMEOUT = 180
+GB = 1024 ** 3
+DISK_SIZE = 6 * GB
 
 
 def delete_disks(disks_names, timeout=DEFAULT_TIMEOUT, sleep=SLEEP_TIME):
@@ -30,3 +34,61 @@ def delete_disks(disks_names, timeout=DEFAULT_TIMEOUT, sleep=SLEEP_TIME):
             logging.error("Delete disk %s failed", disk)
             return False
     return disks.waitForDisksGone(True, disks_names, timeout, sleep)
+
+
+def add_new_disk(sd_name, size, block, shared=False, **kwargs):
+    """
+    Add a new disk
+    Parameters:
+        * sd_name - disk wil added to this sd
+        * shared - True if the disk should e shared
+        * kwargs:
+            * interface - ENUMS['interface_virtio'] or
+                          ENUMS['interface_virtio_scsi']
+            * sparse - True if thin, False preallocated
+            * disk_format - 'cow' or 'raw'
+    """
+    disk_args = {
+        # Fixed arguments
+        'provisioned_size': size,
+        'wipe_after_delete': block,
+        'storagedomain': sd_name,
+        'bootable': False,
+        'shareable': shared,
+        'active': True,
+        'size': size,
+        # Custom arguments - change for each disk
+        'format': kwargs['format'],
+        'interface': kwargs['interface'],
+        'sparse': kwargs['sparse'],
+        'alias': "%s_%s_%s_disk" %
+                 (kwargs['interface'],
+                  kwargs['format'],
+                  kwargs['sparse'])}
+
+    assert addDisk(True, **disk_args)
+    return disk_args['alias']
+
+
+def create_all_legal_disk_permutations(sd_name, shared=False, block=False,
+                                       size=DISK_SIZE):
+    """
+    Begins asynchronous creation of disks of all permutations
+    interfaces, formats and allocation policies
+    Parameters:
+      * sd_name - name of storage domain where the disks should create on
+      * shared - if the disks should created as shared
+      * block - if disk type is block (True), or file (False)
+      * size - size for all disks
+    Author: ratamir
+    Return: list of created disks aliases
+    """
+    disks_names = []
+    logger.info("Creating all disks")
+    disk_permutations = get_all_disk_permutation(block=block,
+                                                 shared=shared)
+    for permutation in disk_permutations:
+        name = add_new_disk(sd_name, size, block, shared=shared,
+                            **permutation)
+        disks_names.append(name)
+    return disks_names

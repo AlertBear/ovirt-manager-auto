@@ -59,9 +59,9 @@ DEFAULT_CLUSTER = 'Default'
 NAME_ATTR = 'name'
 ID_ATTR = 'id'
 DEF_SLEEP = 10
-VM_ACTION_TIMEOUT = 180
 VM_SNAPSHOT_ACTION = 600
-VM_REMOVE_SNAPSHOT_TIMEOUT = 800
+VM_ACTION_TIMEOUT = 600
+VM_REMOVE_SNAPSHOT_TIMEOUT = 1200
 VM_DISK_CLONE_TIMEOUT = 720
 VM_IMAGE_OPT_TIMEOUT = 900
 CLONE_FROM_SNAPSHOT = 1500
@@ -1167,6 +1167,7 @@ def updateVmDisk(positive, vm, disk, **kwargs):
       * interface - IDE or virtio
       * bootable - True or False whether disk should be bootable
       * shareable - True or False whether disk should be sharable
+      * size - new disk size in bytes
       * quota - disk quota
     Author: omachace
     Return: Status of the operation's result dependent on positive value
@@ -4016,3 +4017,32 @@ def rebootVm(positive, vm):
     if not stopVm(positive=True, vm=vm):
         logger.warning("VM was already down before reboot, starting VM")
     return startVm(positive=True, vm=vm)
+
+
+@is_action()
+def extend_vm_disk_size(positive, vm, disk, **kwargs):
+    """
+    Description: extend already existing vm disk
+    Parameters:
+      * vm - vm where disk should be updated
+      * disk - disk name that should be updated
+      * provisioned_size - new disk size in bytes
+    Author: ratamir
+    Return: Status of the operation's result dependent on positive value
+    """
+    disk_obj = _getVmFirstDiskByName(vm, disk)
+    new_disk = _prepareDiskObject(**kwargs)
+    if positive:
+        # Expecting to succeed: in this case the validator will verify that
+        # the returned object is like the expected one. update() operation is
+        # async so the returned object is not the updated one. The returned
+        # object in this case is a locked disk with the original size (i.e
+        # before the resize).
+        # To pass this, I send OK codes (200, 201) as negative codes.
+        disk, status = DISKS_API.update(disk_obj, new_disk, False,
+                                        expected_neg_status=[200, 201])
+    else:
+        # Expecting to fail: in this case the validator is disabled so no
+        # further manipulation is needed
+        disk, status = DISKS_API.update(disk_obj, new_disk, False)
+    return status
