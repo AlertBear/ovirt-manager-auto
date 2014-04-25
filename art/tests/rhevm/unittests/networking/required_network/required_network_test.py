@@ -127,6 +127,7 @@ class RequiredNetwork02(TestCase):
 
         logger.info("Remove all networks from setup")
         if not removeNetFromSetup(host=config.HOSTS[0],
+                                  auto_nics=[config.HOST_NICS[0]],
                                   network=[config.NETWORKS[0]],
                                   data_center=config.DC_NAME):
             raise NetworkException("Failed to remove sw1 from setup")
