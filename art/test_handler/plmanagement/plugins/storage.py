@@ -109,14 +109,26 @@ def getStorageServers(storageType='none'):
                         for section, params in self.storages[t].items():
                             self.storages[t][section]['ip'] = \
                                 self.storageServers[stype].host
-            if stype in self.storageServers:
-                return f(self, *args, **kwargs)
-            logger.debug("\n{2}\nSkipping storage creation for '{1}'\n"
-                         "Reason: you are running with "
-                         "PARAMETERS.storage_type={0}\n"
-                         "STORAGE.{1}_devices=0 or {1}_devices missing in "
-                         "[STORAGE] section in conf file\n{2}".format(
-                             storageType, stype, "#" * 50))
+                if stype in self.storageServers:
+                    return f(self, *args, **kwargs)
+                logger.debug("\n{2}\nSkipping storage creation for '{1}'\n"
+                             "Reason: you are running with "
+                             "PARAMETERS.storage_type={0}\n"
+                             "STORAGE.{1}_devices=0 or {1}_devices missing in "
+                             "[STORAGE] section in conf file\n{2}".format(
+                                 storageType, stype, "#" * 50))
+            else:
+                try:
+                    return f(self, *args, **kwargs)
+                except Exception:
+                    logger.error("\n{2}\n{0}{1} run failed\n"
+                                 "Reason: you are running without "
+                                 "load balancing. It means that you need to "
+                                 "provide storage servers for all your "
+                                 "storages\n.You didn't provide a storage "
+                                 "server\n{2}".format(f.__name__, args,
+                                                      "#" * 50))
+                    raise
         return wrapper
     return outwrap
 
