@@ -35,7 +35,8 @@ DS_CLASS_MAPPER = {
     'RolePermits': 'Permits',
     'HostNicStatistics': 'Statistics',
     'DiskStatistics': 'Statistics',
-    'NetworkVnicProfile': 'VnicProfile'
+    'NetworkVnicProfile': 'VnicProfile',
+    'JobStep': 'Step'
 }
 
 
@@ -459,6 +460,7 @@ and java decorator object")
                         equal = False
 
     return equal
+
 
 def compareStrings(positive, strA=None, strB=None):
     """
