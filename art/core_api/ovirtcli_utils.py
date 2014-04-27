@@ -1067,12 +1067,16 @@ class CliUtil(RestUtil):
         return True
 
     def query(self, constraint, exp_status=None, href=None, event_id=None,
-              **params):
+              all_content=None, **params):
         '''
         Description: run search query
         Author: edolinin
         Parameters:
            * constraint - query for search
+           * expected_status - list of expected statuses for positive request
+           * href - base href for search
+           * event_id - even id
+           * all_content - all content header
         Return: query results
         '''
 
@@ -1088,6 +1092,9 @@ class CliUtil(RestUtil):
             format(self.collection_name, constraint,
                    " ".join(createCommandLineOptionFromDict(params,
                                                             long_glue=' ')))
+
+        if all_content:
+            queryCmd = "%s all_content %s" % (queryCmd, all_content)
 
         queryCmd = "%s > %s" % (queryCmd, TMP_FILE)
 
