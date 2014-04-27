@@ -1147,6 +1147,7 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
 
             case_sensitive = params.get('case_sensitive', 'false') == 'true'
             max_ = params.get('max', -1)
+            all_content = str(all_content).lower() if all_content else None
             self.logger.debug("Using %s.list(%s)", get_object_name(collection),
                               ', '.join(sorted_list_method_args_list))
             if list_method_args_length == 3:
