@@ -8,7 +8,7 @@ from art.rhevm_api.utils.test_utils import get_api
 from art.core_api.apis_exceptions import EntityNotFound
 from art.test_handler.settings import opts
 from art.test_handler.tools import tcms
-from unittest import TestCase
+from art.unittest_lib import BaseTestCase as TestCase
 from nose.tools import istest
 import config
 import logging
@@ -301,7 +301,8 @@ class ReinstallHost(TestHostInMaintenance):
     @tcms('9608', '275961')
     def reinstall_host(self):
         logger.info("reinstall host: %s", HOST)
-        if not hosts.installHost(True, host=HOST, root_password=HOST_PW):
+        if not hosts.installHost(True, host=HOST, root_password=HOST_PW,
+                                 iso_image=config.ISO_IMAGE):
             raise HostException("re installation of host: %s failed" % HOST)
 
 
@@ -347,7 +348,8 @@ class ReinstallActiveHost(TestActiveHost):
     @tcms('9608', '275964')
     def reinstall_active_host(self):
         logger.info("attempting to re install host: %s ", HOST)
-        if not hosts.installHost(False, host=HOST, root_password=HOST_PW):
+        if not hosts.installHost(False, host=HOST, root_password=HOST_PW,
+                                 iso_image=config.ISO_IMAGE):
             raise HostException("re install host: %s worked although "
                                 "host is active" % HOST)
 
