@@ -300,7 +300,7 @@ class TestCase286775(BaseCase):
             config.EXTEND_SIZE * config.GB
 
         # wait for storage details to update
-        time.sleep(10)
+        time.sleep(30)
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_extend_domain_and_check_details(self):
