@@ -93,7 +93,7 @@ def cli_entity(elm, node_name, level=0, collection=False, start=False):
     '''
 
     dumped_ent = ''
-    ignore = ['status', 'supported_versions', 'valueOf_']
+    ignore = ['supported_versions', 'valueOf_']
 
     elmClass = elm.__class__.__name__
     elmInstance = getattr(ds, elmClass)()
