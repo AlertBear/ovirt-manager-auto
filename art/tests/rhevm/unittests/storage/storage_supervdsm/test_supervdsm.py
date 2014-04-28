@@ -31,7 +31,7 @@ SUPERVDSMD = "supervdsmd"
 VDSMD = "vdsmd"
 
 HW_INFO_COMMAND = ["vdsClient", "-s", "0", "getVdsHardwareInfo"]
-SLEEP_SERVICE = 3
+SLEEP_SERVICE = 10
 
 # Error messages
 ERROR_EXEC_SERVICE_ACTION = "Failed to execute %s on service %s"
@@ -103,7 +103,7 @@ class SuperVDSMTestBase(TestCase):
                             "Host %s was not activated" % config.FIRST_HOST)
         self.machine = Machine(
             config.FIRST_HOST, "root",
-            config.FIRST_HOST_PASSWORD).util(type=LINUX)
+            config.FIRST_HOST_PASSWORD).util(LINUX)
         self.machine.enableServiceSupport()
 
 
@@ -243,7 +243,7 @@ class TestCase289547(SuperVDSMTestBase):
                          "Get HW Info is suppose to fail:\n%s" % output)
         logger.info("Starting supervdsmd")
         self.assertTrue(self.machine.startService(SUPERVDSMD),
-                        "Supervdsm didn't stop")
+                        "Supervdsm didn't start")
         time.sleep(SLEEP_SERVICE)
         success, output = self.machine.runCmd(HW_INFO_COMMAND)
         self.assertTrue(success, ERROR_HW_OUTPUT % output)
