@@ -1079,8 +1079,8 @@ class CliUtil(RestUtil):
            * all_content - all content header
         Return: query results
         '''
-
-        results = []
+        is_different = False
+        cli_results = []
         tmpResDict = {}
 
         if event_id is not None:
@@ -1120,16 +1120,56 @@ class CliUtil(RestUtil):
         for line in data:
             # dumping entity data (there is empty line between entities)
             if not line:
-                results.append(QueryResult(tmpResDict))
+                cli_results.append(QueryResult(tmpResDict))
                 tmpResDict = {}
                 continue
             # getting data
             keyAndValue = line.split(':')
             tmpResDict[keyAndValue[0].strip()] = keyAndValue[1].strip()
 
-        self.logger.debug("Response for QUERY request is: %s " % results)
+        # getting results via rest
+        self.logger.debug("Running the same query via rest API")
+        rest_results = super(CliUtil, self).query(
+            constraint=constraint,
+            expected_status=[200, 201] if exp_status is None else exp_status,
+            href=href, event_id=event_id, all_content=all_content, **params)
 
-        return results
+        # comparing it to cli results
+        self.logger.debug("Validating cli results vs rest API results")
+        if len(rest_results) != len(cli_results):
+            self.logger.error(
+                "Same query gives different results in rest and cli:\ncli"
+                " results: %s\nrest_results: %s", cli_results, rest_results)
+            return []
+
+        for cli_res in cli_results:
+            rest_res = filter(lambda x: cli_res.id == x.id, rest_results)[0]
+            diff = filter(lambda x: not x.startswith('__') and
+                          getattr(cli_res, x) != getattr(rest_res, x, None),
+                          dir(cli_res))
+            if diff:
+                # looking for typos in cli output
+                cli_typos = filter(lambda x: not hasattr(rest_res, x), diff)
+                if cli_typos:
+                    self.logger.error("Parameters: '%s' in %s '%s' exisst in "
+                                      "cli but doesn't exists in rest, "
+                                      "it means that they are typos",
+                                      ', '.join(cli_typos),
+                                      rest_res.__class__.__name__,
+                                      rest_res.name)
+                different_values = set(diff).difference(set(cli_typos))
+                self.logger.error("Parameters: '%s' in %s '%s' have different "
+                                  "values in cli and rest",
+                                  ', '.join(list(different_values)),
+                                  rest_res.__class__.__name__, rest_res.name)
+                is_different = True
+
+        if is_different:
+            return []
+
+        self.logger.debug("Response for QUERY request is: %s " % rest_results)
+
+        return rest_results
 
     def syncAction(self, entity, action, positive, async=False, **params):
         '''
