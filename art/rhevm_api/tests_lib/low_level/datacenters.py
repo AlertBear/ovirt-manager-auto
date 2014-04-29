@@ -46,14 +46,15 @@ DATA_CENTER_INIT_TIMEOUT = 180
 
 @is_action()
 def addDataCenter(positive, **kwargs):
-    '''
+    """
      Description: Add new data center
      Parameters:
-        * name - name of a new data center
-        * storage_type - storage type data center will support
-        * version - data center supported version (2.2 or 3.0)
+        *  *name - name of a new data center
+        *  *storage_type - storage type data center will support
+        *  *version - data center supported version (2.2 or 3.0)
+        *  *local - True for localFS DC type, False for shared DC type
      Return: status (True if data center was added properly, False otherwise)
-     '''
+     """
 
     majorV, minorV = kwargs.pop('version').split(".")
     dcVersion = Version(major=majorV, minor=minorV)

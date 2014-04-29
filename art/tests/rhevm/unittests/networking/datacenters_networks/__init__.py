@@ -17,10 +17,10 @@ def setup_package():
     import config
     if not (addDataCenter(positive=True, name=config.DC_NAME,
                           storage_type=config.STORAGE_TYPE,
-                          version=config.VERSION) and
+                          version=config.VERSION, local=False) and
             addDataCenter(positive=True, name=config.DC_NAME2,
                           storage_type=config.STORAGE_TYPE,
-                          version=config.VERSION)):
+                          version=config.VERSION, local=False)):
         raise DataCenterException("Cannot create DCs")
 
 
