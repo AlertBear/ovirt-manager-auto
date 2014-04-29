@@ -570,7 +570,8 @@ class UnittestLoader(Component):
         params['long_description'] = cls.__doc__
         params['requires'] = ['python-nose >= 0.11.0', 'python-unittest2']
         params['data_files'] = ['nose_customization/'
-                                'plugins/api_selector_plugin.py']
+                                'plugins/api_selector_plugin.py',
+                                'nose_customization/configs/default.conf']
         params['py_modules'] = [
             'art.test_handler.plmanagement.plugins.'
             'unittest_test_runner_plugin']
