@@ -113,19 +113,20 @@ class ManageDomainsTestCaseAdd(ManageDomainsTestCaseBase):
     @tcms(4580, 175847)
     def test_manage_domains_add_missing_options(self):
         self.ut(action='add', domain=self.domainName, provider=self.provider,
-                user=self.domainUser, rc=3)
+                user=self.domainUser, rc=22)
         self.assertRaises(errors.MissingDmainError, self.ut.autoTest)
         self.ut(action='add', domain=self.domainName, provider=self.provider,
-                rc=3)
+                rc=1)
         self.assertRaises(errors.MissingDmainError, self.ut.autoTest)
-        self.ut(action='add', domain=self.domainName, rc=3)
+        self.ut(action='add', domain=self.domainName, rc=1)
         self.assertRaises(errors.MissingDmainError, self.ut.autoTest)
-        self.ut(action='add', rc=3)
+        self.ut(action='add', rc=1)
 
     @tcms(4580, 175847)
     def test_manage_domains_add_empty_file(self):
         self.ut(action='add', domain=self.domainName, provider=self.provider,
-                user=self.domainUser, password_file=self.emptyFile, rc=8)
+                user=self.domainUser, password_file=self.emptyFile, rc=22)
+        assert 'cannot be empty' in self.ut.out
         self.assertRaises(errors.MissingDmainError, self.ut.autoTest)
 
         # -interactive cannot be tested now since manage-domains cannot read
