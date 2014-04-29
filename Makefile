@@ -6,8 +6,12 @@ GLUSTER_API="setup_gluster_api.py"
 JASPER_API="setup_jasper_api.py"
 PLUGINS="setup_plugins.py"
 CORE="setup.py"
+TARGET_BRANCH?=origin/master
 
 all: core_rpm rhevm_api_rpm gluster_api_rpm jasper_api_rpm plugins_rpms rhevm_qe_tests_rpm
+
+test:
+	git diff $(TARGET_BRANCH) | flake8 --diff
 
 core_rpm:
 	python $(CORE) $(SETUP_ACTION) $(SETUP_ACTION_OPTS)
