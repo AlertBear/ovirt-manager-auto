@@ -31,4 +31,4 @@ PM2_USER = PARAMETERS['pm2_user']
 PM1_PASS = PARAMETERS['pm1_pass']
 PM2_PASS = PARAMETERS['pm2_pass']
 HOST_FALSE_IP = PARAMETERS['host_false_ip']
-ISO_IMAGE = PARAMETERS['iso_image']
+ISO_IMAGE = PARAMETERS.get('iso_image', None)
