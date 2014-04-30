@@ -163,7 +163,7 @@ class ManageDomainsTestCaseEdit(ManageDomainsTestCaseBase):
                 add_permissions=None)
         self.ut.autoTest()
 
-        self.ut(action='edit', domain=self.domainName)
+        self.ut(action='edit', domain=self.domainName, rc=22)
         self.ut.autoTest()
 
         # relative password file
@@ -175,7 +175,7 @@ class ManageDomainsTestCaseEdit(ManageDomainsTestCaseBase):
 
         # empty password file
         self.ut(action='edit', domain=self.domainName, provider=self.provider,
-                user=self.domainUser, password_file=self.emptyFile, rc=8)
+                user=self.domainUser, password_file=self.emptyFile, rc=22)
         self.ut.autoTest()
 
 
@@ -441,7 +441,7 @@ class ManageDomainsTestCaseNegativeScenarios(ManageDomainsTestCaseBase):
     def test_manage_domains_nonexistent_provider(self):
         self.ut(action='add', domain=self.domainName,
                 provider='~!@#$%^*_+=-[]', user=self.domainUser,
-                password_file=self.passwordFile, rc=26)
+                password_file=self.passwordFile, rc=1)
         assert 'Invalid provider, valid providers are' in self.ut.out
 
 
