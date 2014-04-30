@@ -28,7 +28,8 @@ def setup_module():
     import config
     datacenters.build_setup(
         config.PARAMETERS, config.PARAMETERS, config.STORAGE_TYPE,
-        basename=config.BASENAME)
+        basename=config.BASENAME,
+        local=config.STORAGE_TYPE == config.ENUMS['storage_type_local'])
     # for iscsi tests we want to have an empty DC
     if config.STORAGE_TYPE == 'iscsi':
         # if there is an automatically added iso domain - remove it
