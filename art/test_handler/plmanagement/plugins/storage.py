@@ -274,6 +274,9 @@ class StorageUtils:
         self.host_group = self.storageConf.get('host_group')
         self.storage_type = str(getFromMainConfSection(config, 'storage_type',
                                                        asList=False))
+        # alligning with gluster name in rhevm
+        self.storage_type = 'gluster' if self.storage_type == 'glusterfs' \
+            else self.storage_type
         self.real_storage_type = 'mixed'
         if 'posixfs_' in self.storage_type:
             self.storage_type, self.real_storage_type = \
