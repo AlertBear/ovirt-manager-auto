@@ -1,11 +1,13 @@
 """
     rhevm setup module
 """
+import os
+import logging
+from pprint import pformat
+
 from rhevm_utils import base
 from utilities.rhevm_tools.setup import SetupUtility
 from unittest_conf import config, REST_API_HOST
-import os
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +32,7 @@ class SetupTestCase(base.RHEVMUtilsTestCase):
         params = self.ut.setup.getInstallParams('__default__',
                                                 config['ANSWERS'])
         self.ut.setup.fillAnswerFile(ans, **params)
-        logger.info("%s: install setup with %s", host, params)
+        logger.info("%s: install setup with %s", host, pformat(params))
 
     def test_generating_answer_file(self):
         """ generating_Answer_File """

@@ -3,6 +3,7 @@ Sanity testing of upgrade.
 '''
 
 import logging
+from pprint import pformat
 
 from art.unittest_lib import BaseTestCase as TestCase
 from utilities.rhevm_tools.base import Setup
@@ -40,7 +41,7 @@ class UpgradeSanityUpgrade(TestCase):
         params = self.ut.setup.getInstallParams('__default__',
                                                 cfg.ANSWERS)
         self.ut.setup.fillAnswerFile(self.answerfile, **params)
-        LOGGER.info("%s: install setup with %s", cfg.VDC, params)
+        LOGGER.info("%s: install setup with %s", cfg.VDC, pformat(params))
 
     def test_upgrade(self):
         """ Perform the upgrade of the setup """
