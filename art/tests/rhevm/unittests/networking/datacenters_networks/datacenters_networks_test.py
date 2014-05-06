@@ -18,8 +18,6 @@ from art.rhevm_api.tests_lib.low_level.networks import \
     createNetworksInDataCenter, deleteNetworksInDataCenter, NETWORK_NAME
 
 LOGGER = logging.getLogger(__name__)
-DC1_NETS = []
-NET_LIST = []
 CREATE_NET_DICT = {"description": "New network", "stp": True,
                    "vlan_id": 500, "usages": [],
                    "mtu": 5555}
@@ -37,6 +35,7 @@ class DataCenter_Networks_Case1_333370(TestCase):
     List all networks under datacenter.
     """
     __test__ = True
+    net_list = None
 
     @classmethod
     def setup_class(cls):
@@ -44,11 +43,12 @@ class DataCenter_Networks_Case1_333370(TestCase):
         Create networks under 2 datacenters.
         """
         LOGGER.info("Create 10 networks under %s", config.DC_NAME)
+        cls.net_list = []
         nets = createNetworksInDataCenter(config.DC_NAME, 10)
         if not nets:
             raise NetworkException("Fail to create 10 network on %s" %
                                    config.DC_NAME)
-        DC1_NETS.extend(nets)
+        cls.net_list.extend(nets)
 
         LOGGER.info("Create 5 networks under %s", config.DC_NAME2)
         if not createNetworksInDataCenter(config.DC_NAME2, 5):
@@ -66,7 +66,7 @@ class DataCenter_Networks_Case1_333370(TestCase):
             net_name = net.get_name()
             if net_name == config.MGMT_BRIDGE:
                 continue
-            if net_name not in DC1_NETS:
+            if net_name not in self.net_list:
                 raise NetworkException("%s was expected to be in %s" %
                                        (net_name, config.DC_NAME))
 
@@ -144,6 +144,7 @@ class DataCenter_Networks_Case3_333363(TestCase):
     Update network under datacenter.
     """
     __test__ = True
+    net_list = None
 
     @classmethod
     def setup_class(cls):
@@ -151,11 +152,12 @@ class DataCenter_Networks_Case3_333363(TestCase):
         Create 5 networks under datacenter
         """
         LOGGER.info("Create 5 networks under %s", config.DC_NAME)
+        cls.net_list = []
         nets = createNetworksInDataCenter(config.DC_NAME, 5)
         if not nets:
             raise NetworkException("Fail to create 5 network on %s" %
                                    config.DC_NAME)
-        NET_LIST.extend(nets)
+        cls.net_list.extend(nets)
 
     @istest
     @tcms(12098, 333363)
@@ -169,7 +171,7 @@ class DataCenter_Networks_Case3_333363(TestCase):
         mtu
         """
         LOGGER.info("Update networks under %s", config.DC_NAME)
-        for idx, net in enumerate(NET_LIST):
+        for idx, net in enumerate(self.net_list):
             key = VERIFY_NET_LIST[idx]
             val = CREATE_NET_DICT[VERIFY_NET_LIST[idx]]
             kwargs_dict = {key: val}
