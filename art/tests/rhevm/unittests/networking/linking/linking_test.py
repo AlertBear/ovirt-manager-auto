@@ -565,7 +565,7 @@ class Linked_Case7_239368(TestCase):
                          plugged='false'):
             raise NetworkException("Couldn't update nic with plugged, network "
                                    "and name params")
-        logger.info(" Checking plugged state on nic2 to be False")
+        logger.info("Checking plugged state on nic2 to be False")
         self.assertFalse(getVmNicPlugged(config.VM_NAME[1], nic='vnic2'),
                          "VNIC2 is plugged, but shouldn't be")
         print "Add here check for network name"
@@ -615,14 +615,18 @@ class Linked_Case7_239368(TestCase):
         """
         logger.info("Starting the teardown_class")
         logger.info("Updating all the nics besides mgmt network to unplugged")
+
         if not updateNic(True, config.VM_NAME[1], 'nic2', plugged='false'):
             logger.info("Updating nics to be unplugged")
         logger.info("Removing all the VNICs besides mgmt network")
+
         if not removeNic(True, config.VM_NAME[1], "nic2"):
             raise NetworkException("Cannot remove nic from setup")
+
         if not removeVnicProfile(positive=True,
                                  vnic_profile_name=config.VNIC_PROFILE[0],
-                                 network=config.VLAN_NETWORKS[0]):
+                                 network=config.VLAN_NETWORKS[1]):
             raise NetworkException("Cannot remove VNIC profile.")
+
         if not stopVm(True, vm=config.VM_NAME[1]):
             raise VMException("Cannot stop VM")
