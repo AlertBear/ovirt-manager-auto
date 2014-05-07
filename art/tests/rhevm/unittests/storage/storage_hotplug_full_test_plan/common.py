@@ -166,8 +166,7 @@ def shutdown_and_remove_vms(vm_names):
     results = []
 
     with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
-        for _ in xrange(len(vm_names)):
-            vm_name = vm_names.pop()
+        for vm_name in vm_names:
             if not vms.get_vm_state(vm_name) == config.ENUMS['vm_state_down']:
                 logger.warn("Stopping vm %s" % vm_name)
                 results.append(executor.submit(vms.removeVm, config.positive,
