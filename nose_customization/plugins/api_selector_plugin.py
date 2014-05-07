@@ -37,7 +37,8 @@ class APISelectorPlugin(NosePlugin):
             new_name = "%s%s" % (obj.__name__, api.upper())
             new_dict = dict(obj.__dict__)
             new_dict.update({'api': api})
-            new_obj = type(new_name, obj.__bases__, new_dict)
+            bases = [obj] + list(obj.__bases__)
+            new_obj = type(new_name, tuple(bases), new_dict)
             log.info('%s for api %s created', new_obj.__name__, api)
 
             objs.append(self.loader.loadTestsFromTestCase(new_obj))
