@@ -1124,7 +1124,7 @@ class CliUtil(RestUtil):
                 tmpResDict = {}
                 continue
             # getting data
-            keyAndValue = line.split(':')
+            keyAndValue = line.split(':', 1)
             tmpResDict[keyAndValue[0].strip()] = keyAndValue[1].strip()
 
         # getting results via rest
