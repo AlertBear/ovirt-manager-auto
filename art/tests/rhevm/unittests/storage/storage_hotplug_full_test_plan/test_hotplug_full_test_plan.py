@@ -263,7 +263,7 @@ class TestCase287249(helpers.HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
     def tearDown(self):
-        super(TestCase287249, self).tearDown()
+        super(self.__class__, self).tearDown()
         vm_disks = vms.getVmDisks(VM_NAME)
         disk_names = [disk.get_name() for disk in vm_disks]
         if self.use_disks[0] in disk_names:
@@ -426,7 +426,7 @@ class TestCase286861(helpers.HotplugHookTest):
     def tearDown(self):
         # give vdsm time to restart
         ll_dc.waitForDataCenterState(config.DATA_CENTER_NAME)
-        super(TestCase286861, self).tearDown()
+        super(self.__class__, self).tearDown()
 
 
 class TestCase134134(TestCase):
@@ -800,7 +800,8 @@ class TestCase244310(TestCase):
         """
         remove and delete vms
         """
-        for vm_pair in cls.vm_pairs:
+        for _ in xrange(len(cls.vm_pairs)):
+            vm_pair = cls.vm_pair.pop()
             common.shutdown_and_remove_vms(vm_pair)
 
 
@@ -877,7 +878,8 @@ class TestCase244314(TestCase):
         """
         Shutdown and remove vms created in test
         """
-        for vm_pair in cls.vm_pairs:
+        for _ in xrange(len(cls.vm_pairs)):
+            vm_pair = cls.vm_pairs.pop()
             common.shutdown_and_remove_vms(vm_pair)
 
 
