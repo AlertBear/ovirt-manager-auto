@@ -46,7 +46,7 @@ class TestCase166613(helpers.TestCaseStandardOperations):
         """ Creates storage domains with custom advanced NFS options
         """
         self.vdsm_copy_file = None
-        super(self.__class__, self).setUp()
+        super(TestCase166613, self).setUp()
 
     @istest
     @tcms(tcms_plan_id, tcms_test_case)
@@ -204,7 +204,7 @@ class TestCase166615(helpers.TestCaseNFSOptions):
     @classmethod
     def teardown_class(cls):
         helpers.clean_dc(cls.dc_v30_name, cls.host, cls.cl_name)
-        super(cls, cls).teardown_class()
+        super(TestCase166615, cls).teardown_class()
 
 
 class TestCase148697(helpers.TestCaseNFSOptions):
