@@ -183,7 +183,7 @@ class TestCase272383(ClassWithOneVM):
 
     @classmethod
     def setup_class(cls):
-        super(cls, cls).setup_class()
+        super(TestCase272383, cls).setup_class()
         logger.info('Adding virtio disk to vm %s', cls.vm_names[0])
         add_disk_to_machine(cls.vm_names[0],
                             config.VIRTIO_SCSI,
@@ -224,7 +224,7 @@ class TestCase272383(ClassWithOneVM):
 
     @classmethod
     def teardown_class(cls):
-        super(cls, cls).teardown_class()
+        super(TestCase272383, cls).teardown_class()
         logger.info('removing template %s', config.TEMPLATE_NAME)
         assert removeTemplate(True, config.TEMPLATE_NAME)
 
@@ -275,7 +275,7 @@ class TestCase272388(ClassWithOneVM):
 
     @classmethod
     def setup_class(cls):
-        super(cls, cls).setup_class()
+        super(TestCase272388, cls).setup_class()
         logger.info('Starting vm %s', cls.vm_names[0])
         assert startVm(True, cls.vm_names[0])
         logger.info('Waiting for OS to boot')
@@ -313,7 +313,7 @@ class TestCase272914(ClassWithOneVM):
 
     @classmethod
     def setup_class(cls):
-        super(cls, cls).setup_class()
+        super(TestCase272914, cls).setup_class()
         logger.info('Creating snapshot for vm %s', cls.vm_names[0])
         cls.snapshot_name = config.SNAPSHOT_NAME
         cls.cloned_vm_name = cls.vm_names[0] + '_cloned'
@@ -351,7 +351,7 @@ class TestCase293163(ClassWithOneVM):
 
     @classmethod
     def setup_class(cls):
-        super(cls, cls).setup_class()
+        super(TestCase293163, cls).setup_class()
         logger.info('Adding virtio-blk disk to vm %s', cls.vm_names[0])
         add_disk_to_machine(cls.vm_names[0],
                             config.VIRTIO_BLK,
