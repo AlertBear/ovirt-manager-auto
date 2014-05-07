@@ -185,7 +185,7 @@ class TestCase248138(TestCase):
         LOGGER.info("Copying data from %s to %s" % (source_path, self.vm_name))
         self.assertTrue(
             resource_utils.copyDataToVm(
-                ip=self.vms_ip_address, user=config.VM_LINUX_USER,
+                ip=TestCase248138.vms_ip_address, user=config.VM_LINUX_USER,
                 password=config.VM_LINUX_PASSWORD, osType='linux',
                 src=source_path, dest=config.DEST_DIR),
             "Copying data to vm %s failed" % self.vms_ip_address)
