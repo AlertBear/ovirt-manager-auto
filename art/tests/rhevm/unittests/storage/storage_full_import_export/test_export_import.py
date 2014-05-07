@@ -33,7 +33,6 @@ class BaseExportImportTestCase(TestCase):
     __test__ = False
     tcms_test_case = ''
     vm_type = config.VM_TYPE_SERVER
-    template_name = None
 
     def setUp(self):
         """
@@ -69,7 +68,7 @@ class TestCase42054(BaseExportImportTestCase):
         """
         * Creates a template from the vm
         """
-        super(self.__class__, self).setUp()
+        super(TestCase42054, self).setUp()
         self.template_name = "origial_template_%s" % self.tcms_test_case
 
         assert templates.createTemplate(
@@ -127,7 +126,7 @@ class TestCase42054(BaseExportImportTestCase):
             True, self.vm_name, config.CLUSTER_NAME, self.export_domain)
         assert templates.removeTemplate(True, self.template_name)
 
-        super(self.__class__, self).tearDown()
+        super(TestCase42054, self).tearDown()
 
 
 class TestCase41256(BaseExportImportTestCase):
@@ -168,7 +167,7 @@ class TestCase41256(BaseExportImportTestCase):
         """
         Remove newly Vm imported
         """
-        super(self.__class__, self).tearDown()
+        super(TestCase41256, self).tearDown()
         assert vms.removeVm(True, self.imported_vm, stopVM="true")
         assert vms.removeVmFromExportDomain(
             True, self.vm_name, config.CLUSTER_NAME, self.export_domain)
@@ -190,7 +189,7 @@ class TestCase41242(BaseExportImportTestCase):
         """
         * Create a new template where to clone a vm from
         """
-        super(self.__class__, self).setUp()
+        super(TestCase41242, self).setUp()
         self.template_name = "origial_template_%s" % self.tcms_test_case
 
         assert templates.createTemplate(
@@ -242,7 +241,7 @@ class TestCase41242(BaseExportImportTestCase):
         """
         * Remove import and exported vms
         """
-        super(self.__class__, self).tearDown()
+        super(TestCase41242, self).tearDown()
         assert vms.removeVmFromExportDomain(
             True, self.vm_name, config.CLUSTER_NAME, self.export_domain)
         assert vms.removeVmFromExportDomain(
