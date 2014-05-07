@@ -622,7 +622,7 @@ def create_nfs_domain_with_options(
             "Cannot add storage domain %s" % name)
     storagedomains.Storage = old_storage
 
-    if datacenter is not None:
+    if datacenter is not None and positive:
         logging.info("Attaching storage domain")
         if not storagedomains.attachStorageDomain(True, datacenter, name):
             raise errors.StorageDomainException(

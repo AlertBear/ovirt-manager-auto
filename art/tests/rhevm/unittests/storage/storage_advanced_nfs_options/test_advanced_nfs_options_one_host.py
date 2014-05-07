@@ -3,7 +3,10 @@ import logging
 
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_st
+from art.test_handler.exceptions import SkipTest
+from art.test_handler.handler_lib.utils import no_datatype_validation
 from art.test_handler.tools import tcms
+from art.test_handler.settings import opts
 
 import helpers
 import config
@@ -130,14 +133,16 @@ class TestCase148670(helpers.TestCaseNFSOptions):
     @istest
     @tcms(tcms_plan_id, tcms_test_case)
     @bz(983885)
+    @no_datatype_validation
     def test_create_nfs_storage_with_string_retrans(self):
         """ Tries to create an NFS storage domain with a string passed as
         the number of retransmissions
         """
-        if config.ENGINE == 'cli':
-            LOGGER.info(
-                "Passing string instead of int is unsupported by CLI now")
-            return
+        # check backend we are running on at runtime and not from config.py
+        # due to backends switching on the fly several times, while config.py
+        # is only executed once
+        if opts['engine'] == 'cli':
+            raise SkipTest("CLI backend is not supported")
         self.name = 'test_%s_str_retrans' % self.tcms_test_case
         nfs_retrans = 'a'
         nfs_timeout = 720
@@ -151,14 +156,16 @@ class TestCase148670(helpers.TestCaseNFSOptions):
     @istest
     @tcms(tcms_plan_id, tcms_test_case)
     @bz(983885)
+    @no_datatype_validation
     def test_create_nfs_storage_with_string_timeout(self):
         """ Tries to create an NFS storage domain with a string passed as
         the NFS timeout
         """
-        if config.ENGINE == 'cli':
-            LOGGER.info(
-                "Passing string instead of int is unsupported by CLI now")
-            return
+        # check backend we are running on at runtime and not from config.py
+        # due to backends switching on the fly several times, while config.py
+        # is only executed once
+        if opts['engine'] == 'cli':
+            raise SkipTest("CLI backend is not supported")
         self.name = 'test_%s_str_timeout' % self.tcms_test_case
         nfs_retrans = 7
         nfs_timeout = 'aaa'

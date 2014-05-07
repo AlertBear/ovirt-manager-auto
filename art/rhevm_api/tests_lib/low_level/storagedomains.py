@@ -188,7 +188,12 @@ def addStorageDomain(positive, wait=True, **kwargs):
                     False otherwise)
     '''
     sd = _prepareStorageDomainObject(positive, **kwargs)
-    sd, status = util.create(sd, positive, async=(not wait))
+    try:
+        sd, status = util.create(sd, positive, async=(not wait))
+    except TypeError:
+        util.logger.warning('Domain not created, wrong argument type passed. '
+                            'Args: %s', kwargs)
+        status = not positive
     return status
 
 
