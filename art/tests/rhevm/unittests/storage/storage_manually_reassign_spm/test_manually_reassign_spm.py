@@ -340,7 +340,7 @@ class TestCase289890(DCUp):
         """
         deactivate non master domain
         """
-        super(cls, cls).setup_class()
+        super(TestCase289890, cls).setup_class()
         logger.info('deactivating non-master domain %s', cls.nonmaster_domain)
         assert deactivateStorageDomain(True, config.DATA_CENTER_NAME,
                                        cls.nonmaster_domain)
@@ -370,4 +370,4 @@ class TestCase289890(DCUp):
             logger.info('Reactivating domain %s', domain)
             assert activateStorageDomain(True, config.DATA_CENTER_NAME,
                                          domain)
-        super(cls, cls).teardown_class()
+        super(TestCase289890, cls).teardown_class()
