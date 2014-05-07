@@ -161,10 +161,10 @@ class TestCasePosix(TestCase):
 
 class TestCaseNFS(TestCasePosix):
     def setUp(self):
-        super(TestCaseNFS, self).setUp('nfs', {})
+        super(self.__class__, self).setUp('nfs', {})
 
     def tearDown(self):
-        super(TestCaseNFS, self).tearDown('nfs')
+        super(self.__class__, self).tearDown('nfs')
         LOGGER.info("After NFS test tearDown")
 
     def default_update(self):
@@ -179,11 +179,11 @@ class TestCaseNFS(TestCasePosix):
 
 class TestCasePosixFS(TestCasePosix):
     def setUp(self):
-        super(TestCasePosixFS, self).setUp(
+        super(self.__class__, self).setUp(
             'posixfs', {'vfs_type': config.VFS_TYPE})
 
     def tearDown(self):
-        super(TestCasePosixFS, self).tearDown(config.VFS_TYPE)
+        super(self.__class__, self).tearDown(config.VFS_TYPE)
 
     def default_update(self):
         new_address = config.PARAMETERS.as_list('another_address')[0]
@@ -390,7 +390,7 @@ class TestCase293074(TestCaseNFS):
         assert hosts.waitForHostsStates(True, config.HOSTS[0])
         assert datacenters.waitForDataCenterState(config.DATA_CENTER_NAME)
         clusters.removeCluster(True, self.cluster)
-        TestCaseNFS.tearDown(self)
+        super(self.__class__, self).tearDown()
 
 
 class TestCase288708(TestCaseLocalFS):
@@ -445,7 +445,7 @@ class TestCase288708(TestCaseLocalFS):
         storageconnections.update_connection(
             self.conn, path=self.old_path, type='localfs', host=self.host)
         LOGGER.info("Calling common tearDown")
-        super(TestCase288708, self).tearDown()
+        super(self.__class__, self).tearDown()
 
 
 class TestCase289228(TestCaseLocalFS):
