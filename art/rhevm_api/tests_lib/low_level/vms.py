@@ -354,6 +354,7 @@ def addVm(positive, wait=True, **kwargs):
        * snapshot - description of snapshot to use. Causes error if not unique
        * copy_permissions - True if perms should be copied from template
        * timeout - waiting timeout
+       * protected - true if VM is delete protected
     Return: status (True if vm was added properly, False otherwise)
     '''
     kwargs.update(add=True)

@@ -246,15 +246,15 @@ def removeTemplates(positive, templates):
 
 @is_action()
 def searchForTemplate(positive, query_key, query_val, key_name, **kwargs):
-    '''
-    Description: search for a data center by desired property
+    """
+    Description: search for a template by desired property
     Parameters:
        * query_key - name of property to search for
        * query_val - value of the property to search for
-       * key_name - property in data center object equivalent to query_key
-    Return: status (True if expected number of data centers equal to
+       * key_name - property in template object equivalent to query_key
+    Return: status (True if expected number of templates equal to
                     found by search, False otherwise)
-    '''
+    """
 
     return searchForObj(TEMPLATE_API, query_key, query_val, key_name, **kwargs)
 
@@ -639,3 +639,23 @@ def check_vnic_on_template_nic(template, nic='nic1', vnic='rhevm'):
     # for NIC that doesn't have VNIC profile on it
     else:
         return vnic is None
+
+
+def check_template_existence(template_name):
+    """
+    Check if template exist
+    **Author**: alukiano
+
+    **Parameters**:
+        * *template_name* - template name
+    **Returns**: True if template exist, otherwise False
+    """
+    name_query = "name=%s" % template_name
+    try:
+        template_obj = TEMPLATE_API.query(name_query, all_content=True)[0]
+    except IndexError:
+        logger.error('Entity %s not found!' % template_name)
+        return False
+    if not template_obj:
+        return False
+    return True

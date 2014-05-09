@@ -2,6 +2,7 @@
 Templates Test
 """
 
+import os
 import logging
 
 import art.rhevm_api.tests_lib.high_level.datacenters as datacenters
@@ -17,9 +18,10 @@ def setup_package():
     Prepare environment for template test
     """
     import config
-    logger.info("Building setup...")
-    datacenters.build_setup(config.PARAMETERS, config.PARAMETERS,
-                            config.STORAGE_TYPE, config.TEST_NAME)
+    if os.environ.get("JENKINS_URL"):
+        logger.info("Building setup...")
+        datacenters.build_setup(config.PARAMETERS, config.PARAMETERS,
+                                config.STORAGE_TYPE, config.TEST_NAME)
 
 
 def teardown_package():
@@ -27,7 +29,8 @@ def teardown_package():
     Cleans the environment
     """
     import config
-    logger.info("Teardown...")
-    dc_name = config.DC_name
-    cleanDataCenter(True, dc_name, vdc=config.VDC,
-                    vdc_password=config.VDC_PASSWORD)
+    if os.environ.get("JENKINS_URL"):
+        logger.info("Teardown...")
+        dc_name = config.DC_name
+        cleanDataCenter(True, dc_name, vdc=config.VDC,
+                        vdc_password=config.VDC_PASSWORD)
