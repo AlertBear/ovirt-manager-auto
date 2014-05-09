@@ -27,6 +27,7 @@ HOSTS = PARAMETERS.as_list('vds')
 HOSTS_PW = PARAMETERS.as_list('vds_password')[0]
 HOSTS_USER = 'root'
 PGPASS = '123456'
+NIC_NAME = 'nic0'
 VDC = PARAMETERS.get('host', None)
 VDC_PASSWORD = PARAMETERS.get('vdc_root_password', None)
 TIMEOUT = 7200
@@ -40,6 +41,10 @@ RHEVM_NAME = REST_CONNECTION['host']
 MB = 1024 * 1024
 GB = 1024 * MB
 MGMT_BRIDGE = PARAMETERS['mgmt_bridge']
+
+VM_LINUX_USER = PARAMETERS.get('vm_linux_user', 'root')
+VM_LINUX_PASSWORD = PARAMETERS.get('vm_linux_password', 'qum5net')
+
 
 ANSWERS = {
     # KEYWORDS FOR OTOPI ANSWERFILE
