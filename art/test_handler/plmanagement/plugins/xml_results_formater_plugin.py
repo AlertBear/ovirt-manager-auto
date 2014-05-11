@@ -59,7 +59,7 @@ class XMLFormatter(Component):
         if not self.is_enabled(params, config):
             return
         self.path = params.rf_xml
-        self.suite_type = config['RUN']['engine']
+        self.suite_type = config['RUN']['system_engine']
         self.root = Element(self.suite_type)
         self.tree = ElementTree(self.root)
         self.root.attrib['testfile'] = config['RUN']['tests_file']
