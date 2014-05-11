@@ -234,10 +234,6 @@ def readTestRunOpts(path, redefs):
     opts['cli_optional_params'] = cliSection['optional_params']
     opts['validate_cli_command'] = cliSection['validate_cli_command']
 
-    # Populate otps from JAVA_SDK section:
-    javaSection = config['JAVA_SDK']
-    opts['no_host_verification'] = javaSection['no_host_verification']
-
     return config
 
 

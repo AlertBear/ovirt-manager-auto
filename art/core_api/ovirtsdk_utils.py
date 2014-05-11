@@ -55,7 +55,9 @@ class SdkUtil(APIUtil):
                 self.api = \
                     sdkApi.API(self.opts['uri'], user_with_domain,
                                self.opts['password'], insecure=True,
-                               persistent_auth=self.opts['persistent_auth'])
+                               persistent_auth=self.opts['persistent_auth'],
+                               session_timeout=self.opts['session_timeout'],
+                               renew_session=True)
             else:
                 self.api = \
                     sdkApi.API(self.opts['uri'], user_with_domain,
@@ -64,7 +66,8 @@ class SdkUtil(APIUtil):
                                self.opts['ssl_cert_file'],
                                self.opts['ssl_ca_file'],
                                persistent_auth=self.opts['persistent_auth'],
-                               session_timeout=self.opts['session_timeout'])
+                               session_timeout=self.opts['session_timeout'],
+                               renew_session=True)
             sdkInit = self.api
         else:
             self.api = sdkInit

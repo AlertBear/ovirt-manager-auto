@@ -424,7 +424,7 @@ class RhevmCli(CliConnection):
         userWithDomain = '{0}@{1}'.format(user, userDomain)
 
         # mandatory data
-        cliConnect.append('{0} -c -l "{1}" -u "{2}"'.
+        cliConnect.append('{0} -r -c -l "{1}" -u "{2}"'.
                           format(self._command, uri, userWithDomain))
         # ssl stuff
         if secure:

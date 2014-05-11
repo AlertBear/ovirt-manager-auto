@@ -48,12 +48,16 @@ class RestUtil(APIUtil):
 
         self.entry_point = settings.opts.get('entry_point', 'api')
         standalone = self.opts.get('standalone', False)
+
         global restInit
 
         if restInit and not standalone:
             self.api = restInit
         else:
             self.api = http.HTTPProxy(self.opts)
+            if self.opts['persistent_auth']:
+                self.api.headers['Prefer'] = 'persistent-auth'
+            self.api.headers['Session-TTL'] = self.opts['session_timeout']
             if not standalone:
                 self.api.connect()
                 restInit = self.api

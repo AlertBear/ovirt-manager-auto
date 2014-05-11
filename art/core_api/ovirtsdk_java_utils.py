@@ -770,6 +770,7 @@ class JavaSdkUtil(APIUtil):
         * collection - data_structures.py style collection
     """
 
+    @jvm_thread_care
     def __init__(self, element, collection):
         super(JavaSdkUtil, self).__init__(element, collection)
 
@@ -788,25 +789,47 @@ class JavaSdkUtil(APIUtil):
         if not sdk_init:
             session_id = \
                 self.opts['session_id'] if 'session_id' in self.opts else None
-            timeout = self.opts['timeout'] if 'timeout' in self.opts else None
+            request_timeout = self.opts['request_timeout'] if \
+                'request_timeout' in self.opts else None
             filter_ = self.opts['filter'] if 'filter' in self.opts else None
             user_with_domain = \
                 '{0}@{1}'.format(self.opts['user'], self.opts['user_domain'])
-# Api(String url, String username, String password, String sessionid,
-# Integer port, Integer timeout, Boolean persistentAuth,
-# Boolean noHostVerification, Boolean filter, Boolean debug)
-            self.api = \
-                org.ovirt.engine.sdk.Api(self.opts['uri'].rstrip('/'),
-                                         user_with_domain,
-                                         self.opts['password'],
-                                         session_id,
-                                         self.opts['port'],
-                                         timeout,
-                                         self.opts['persistent_auth'],
-                                         self.opts['no_host_verification'],
-                                         filter_,
-                                         self.opts['debug'])
 
+            if not self.opts['secure']:
+                # Api(java.lang.String url, java.lang.String username,
+                # java.lang.String password, java.lang.String sessionid,
+                # java.lang.Integer port, java.lang.Integer requestTimeout,
+                # java.lang.Integer sessionTimeout,
+                # java.lang.Boolean persistentAuth,
+                # java.lang.Boolean noHostVerification,
+                # java.lang.Boolean filter,
+                # java.lang.Boolean debug)
+                self.api = org.ovirt.engine.sdk.Api(
+                    self.opts['uri'].rstrip('/'),
+                    user_with_domain, self.opts['password'], session_id,
+                    self.opts['port'], request_timeout,
+                    self.opts['session_timeout'],
+                    self.opts['persistent_auth'],
+                    True,
+                    filter_, self.opts['debug'])
+            else:
+                # Api(java.lang.String url, java.lang.String username,
+                # java.lang.String password, java.lang.String sessionid,
+                # java.lang.Integer port, java.lang.Integer requestTimeout,
+                # java.lang.Integer sessionTimeout,
+                # java.lang.Boolean persistentAuth,
+                # java.lang.String keyStorePath,
+                # java.lang.String keyStorePassword, java.lang.Boolean filter,
+                # java.lang.Boolean debug)
+                self.api = org.ovirt.engine.sdk.Api(
+                    self.opts['uri'].rstrip('/'),
+                    user_with_domain, self.opts['password'], session_id,
+                    self.opts['port'], request_timeout,
+                    self.opts['session_timeout'],
+                    self.opts['persistent_auth'],
+                    self.opts['ssl_key_file'],
+                    self.opts['ssl_cert_file'],
+                    filter_, self.opts['debug'])
             sdk_init = self.api
         else:
             self.api = sdk_init

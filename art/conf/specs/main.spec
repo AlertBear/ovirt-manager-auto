@@ -32,9 +32,7 @@ validate_cli_command = boolean(default=True)
 optional_params = string(default='')
 
 [JAVA_SDK]
-#timeout = integer(default=100)
-#persistent_auth = boolean(default=True)
-no_host_verification = boolean(default=True)
+#request_timeout = integer(default=100)
 #filter = boolean(default=True)
 
 [REPORT]
