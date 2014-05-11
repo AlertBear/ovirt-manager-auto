@@ -58,6 +58,7 @@ DEFAULT_MTU = 1500
 VDSM_CONF_FILE = "/etc/vdsm/vdsm.conf"
 IFCFG_FILE_PATH = "/etc/sysconfig/network-scripts/"
 HOST_NICS = ["eth0", "eth1", "eth2", "eth3", "eth4", "eth5"]
+RHEL_IMAGE = "rhel6.5-agent3.4"
 
 
 @is_action()
@@ -306,7 +307,7 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
                  vmName=None, vmDescription='linux vm',
                  cobblerAddress=None, cobblerUser=None,
                  cobblerPasswd=None, nicType='virtio', display_type='spice',
-                 os_type='RHEL6x64', image='rhel6.4-agent3.2',
+                 os_type='RHEL6x64', image=RHEL_IMAGE,
                  nic='nic1', size=DISK_SIZE, useAgent=True,
                  template_name=None, attempt=ATTEMPTS,
                  interval=INTERVAL, placement_host=None,
