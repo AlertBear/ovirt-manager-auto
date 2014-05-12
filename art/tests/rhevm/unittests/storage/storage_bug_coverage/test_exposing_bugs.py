@@ -1,3 +1,5 @@
+#!/usr/bin/python
+# -*- coding: utf8 -*-
 """
 All test-exposing bugs
 """
@@ -33,8 +35,6 @@ VM_NAME = "vm_%s" % BZID
 STORAGE_DOMAIN_API = test_utils.get_api('storage_domain', 'storagedomains')
 VDSM_RESPAWN_FILE = '/usr/share/vdsm/respawn'
 LINUX = test_utils.LINUX
-
-STORAGE_DOMAIN_API = test_utils.get_api('storage_domain', 'storagedomains')
 
 
 """
@@ -194,11 +194,12 @@ class TestCase305452(TestCase):
         """
         logger.info("Adding a non-ascii character to the disk name")
         disk_name = u"DiskNonAsciié"
-        disk_params = {"alias": "%s_Disk1" % config.VM_BASE_NAME,
+        disk_params = {"disk": "%s_Disk1" % config.VM_BASE_NAME,
                        "name": disk_name}
-        self.assertTrue(disks.updateDisk(True, **disk_params))
+        self.assertTrue(ll_vms.updateVmDisk(True, config.VM_BASE_NAME,
+                                            **disk_params))
 
-        template_name = '%s_%s_non_ascii_template_' % (
+        template_name = '%s_%s_template_' % (
             config.VM_BASE_NAME, config.STORAGE_TYPE)
         template_kwargs = {"vm": config.VM_BASE_NAME,
                            "name": template_name}
@@ -925,20 +926,20 @@ class TestCase280628(TestCase):
     vm_name = "vm_%s" % tcms_test_case
     snap_name = "snap_%s" % tcms_test_case
 
-    @istest
     @tcms(tcms_plan_id, tcms_test_case)
-    def merge_snapshots_on_hsm_test(self):
+    def test_merge_snapshots_on_hsm_test(self):
         """
         checks that a VM with a snapshot, which where created when the VM was
         run on SPM and removed when the VM was moved to an HSM, can be booted
         """
         logger.info("Create VM")
-        storage_domain_name = STORAGE_DOMAIN_API.get(absLink=False)[0].name
+        master_domain = storagedomains.findMasterStorageDomain(
+            True, config.DATA_CENTER_NAME)[1]['masterDomain']
         spm_host = hosts.getSPMHost(config.HOSTS)
         assert ll_vms.createVm(
             True, self.vm_name, self.vm_name, config.CLUSTER_NAME,
             installation=True, nic=config.HOST_NICS[0],
-            storageDomainName=storage_domain_name, size=config.DISK_SIZE,
+            storageDomainName=master_domain, size=config.DISK_SIZE,
             diskType=config.DISK_TYPE_SYSTEM, memory=GB,
             cpu_socket=config.CPU_SOCKET, cpu_cores=config.CPU_CORES,
             nicType=config.NIC_TYPE_VIRTIO, display_type=config.DISPLAY_TYPE,

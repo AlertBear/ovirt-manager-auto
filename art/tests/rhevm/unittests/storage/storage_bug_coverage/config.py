@@ -23,7 +23,7 @@ DEFAULT_CLUSTER_NAME = 'cluster_%s' % BASENAME
 DATA_CENTER_NAME = PARAMETERS.setdefault("dc_name", DEFAULT_DATA_CENTER_NAME)
 CLUSTER_NAME = PARAMETERS.setdefault("cluster_name", DEFAULT_CLUSTER_NAME)
 
-VM_BASE_NAME = PARAMETERS.setdefault('vm_name', "storage_bug_coverage_vm")
+VM_BASE_NAME = PARAMETERS.setdefault('vm_name', "storage_bug_cov_vm")
 
 DISK_SIZE = int(PARAMETERS.get('disk_size', 10737418240))
 
