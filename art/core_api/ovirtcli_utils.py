@@ -832,14 +832,17 @@ class CliUtil(RestUtil):
            * expectedEntity - if there are some expected entity different
              from sent
            * incrementBy - increment by number of elements
-           * async -sycnh or asynch request
+           * async -sync or async request
+           * collection - collection to use for add command
         Return: POST response (None on parse error.),
                 status (True if POST test succeeded, False otherwise.)
         '''
         out = ''
         addEntity = validator.cliEntety(entity, self.element_name)
-        createCmd = "add {0} {1} --expect '201-created'".\
-            format(self.cli_element_name, addEntity)
+        createCmd = "add {0} {1}".format(self.cli_element_name, addEntity)
+
+        if not async:
+            createCmd = "{0} --expect '201-created'".format(createCmd)
 
         if collection:
             try:
@@ -1010,13 +1013,15 @@ class CliUtil(RestUtil):
 
         return (actionOwnerId, actionOwnerName, actionEntityName)
 
-    def delete(self, entity, positive, body=None, **kwargs):
+    def delete(self, entity, positive, body=None, async=False, **kwargs):
         '''
         Description: delete an element
         Author: edolinin
         Parameters:
            * entity - entity to delete
            * positive - if positive or negative verification should be done
+           * body - body for delete
+           * async - sync or async action
         Return: status (True if DELETE test succeeded, False otherwise)
         '''
 
@@ -1024,8 +1029,11 @@ class CliUtil(RestUtil):
         if body:
             addBody = validator.cliEntety(body, self.element_name)
 
-        deleteCmd = 'remove {0} "{1}" {2} --async false'.format(
-            self.cli_element_name, entity.name, addBody)
+        deleteCmd = 'remove {0} "{1}" {2}'.format(self.cli_element_name,
+                                                  entity.name, addBody)
+
+        if not async:
+            deleteCmd = '{0} --async false'.format(deleteCmd)
 
         try:
             ownerId, ownerName, entityName = self._getHrefData(entity.href)
@@ -1184,7 +1192,7 @@ class CliUtil(RestUtil):
            * entity - target entity
            * action - desired action
            * positive - if positive or negative verification should be done
-           * asynch - synch or asynch action
+           * async - sync or async action
         Return: status (True if Action test succeeded, False otherwise)
         '''
         act = self.makeAction(async, 10, **params)
