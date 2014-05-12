@@ -204,6 +204,12 @@ def readTestRunOpts(path, redefs):
     opts['debug'] = runSection['debug'] == "yes"
     opts['max_collection'] = runSection.get('max_collection', None)
 
+    # VDSM transport protocol
+    opts['vdsm_transport_protocol'] = runSection.get(
+        'vdsm_transport_protocol',
+        None
+    )
+
     # Populate opts from the REST section.
     restSection = config['REST_CONNECTION']
     opts['scheme'] = restSection['scheme']

@@ -535,6 +535,16 @@ def addHost(positive, name, wait=True, vdcPort=None, rhel_like=True,
 
     hostObj = None
 
+    if kwargs.get('protocol') is None:
+        # check whether configuration requires specific transport protocol
+        transport_proto = settings.opts.get('vdsm_transport_protocol')
+        if transport_proto is not None:
+            HOST_API.logger.info(
+                "Setting vdsm_transport_protocol = %s explicitly",
+                transport_proto
+            )
+            kwargs['protocol'] = transport_proto
+
     if root_password:
         hostObj = machine.Machine(host_address, 'root',
                                   root_password).util('linux')
