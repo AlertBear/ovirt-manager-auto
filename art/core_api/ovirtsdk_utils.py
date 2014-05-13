@@ -20,7 +20,8 @@
 import time
 import logging
 from art.core_api import validator, measure_time
-from art.core_api.apis_utils import data_st
+from art.core_api.apis_utils import data_st, NEGATIVE_CODES, DEF_TIMEOUT, \
+    DEF_SLEEP
 from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api.apis_exceptions import APIException, APILoginError
 from ovirtsdk import api as sdkApi
@@ -29,11 +30,6 @@ from ovirtsdk.infrastructure.errors import RequestError, DisconnectedError
 from art.core_api.apis_utils import APIUtil
 
 logger = logging.getLogger(__name__)
-
-# default timeout
-DEF_TIMEOUT = 900
-# default sleep
-DEF_SLEEP = 10
 
 PROPERTIES_MAP = {
     'type_': 'type',
@@ -249,7 +245,8 @@ class SdkUtil(APIUtil):
                                     sdk_params.GeneratedsSuper)):
                 list_[i] = self._translate_params(value)
 
-    def update(self, origEntity, newEntity, positive, current=None):
+    def update(self, origEntity, newEntity, positive,
+               expected_neg_status=NEGATIVE_CODES, current=None):
         '''
         Description: update an element
         Author: edolinin
@@ -257,6 +254,8 @@ class SdkUtil(APIUtil):
            * origEntity - original entity
            * newEntity - entity for post body
            * positive - if positive or negative verification should be done
+            * expected_neg_status - list of expected statuses for negative
+                                   request
         Return: PUT response, True if PUT test succeeded, False otherwise
         '''
         response = None
@@ -280,25 +279,25 @@ class SdkUtil(APIUtil):
                           dumpedEntity)
 
         try:
-            if positive:
-                matrix_params = self.getReqMatrixParams(current)
-                with measure_time('PUT'):
-                    response = origEntity.update(**matrix_params)
-                self.logger.info(self.element_name + " was updated")
-
-                if not validator.compareElements(newEntity, response,
-                                                 self.logger,
-                                                 self.element_name):
-                    return None, False
-
+            matrix_params = self.getReqMatrixParams(current)
+            with measure_time('PUT'):
+                response = origEntity.update(**matrix_params)
+            self.logger.info(self.element_name + " was updated")
         except RequestError as e:
-            if positive:
-                errorMsg = ("Failed to update an element, status: %s, "
-                            "reason: %s, details: %s")
-                self.logger.error(errorMsg, e.status, e.reason, e)
+            errorMsg = ("Failed to update an element, status: %s, "
+                        "reason: %s, details: %s")
+            self.logger.error(errorMsg, e.status, e.reason, e.detail)
+            if positive or not validator.compareResponseCode(
+                    e.status, expected_neg_status, self.logger):
                 return None, False
+            return None, True
 
-        return response, True
+        if (positive and validator.compareElements(
+                newEntity, response, self.logger, self.element_name)) or (
+                not positive and expected_neg_status not in NEGATIVE_CODES):
+            return response, True
+
+        return None, False
 
     def delete(self, entity, positive, body=None, **kwargs):
         '''

@@ -37,6 +37,8 @@ parse = data_st.parseString
 
 DEF_TIMEOUT = 900  # default timeout
 DEF_SLEEP = 10  # default sleep
+NEGATIVE_CODES = [400, 409, 500]
+NEGATIVE_CODES_CREATE = NEGATIVE_CODES + [404]
 HEADERS = 'headers'
 CORRELATION_ID = 'Correlation-Id'
 
@@ -177,8 +179,8 @@ class APIUtil(object):
     def waitForQuery(self, query, event_id=None, timeout=DEF_TIMEOUT,
                      sleep=DEF_SLEEP, href=None):
         '''
-        Waits until the query `xpath` on doc specified by `link` is
-        evaluates as True.
+        Waits until the query `xpath` on doc specified by `link` is evaluates
+        as True.
 
         Parameters:
             * query - query to wait for.

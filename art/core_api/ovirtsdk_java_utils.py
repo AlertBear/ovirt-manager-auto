@@ -29,7 +29,7 @@ from art.core_api import validator, measure_time
 from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.data_struct.data_structures import ClassesMapping
 from art.core_api.apis_exceptions import APIException, APILoginError
-from art.core_api.apis_utils import APIUtil
+from art.core_api.apis_utils import APIUtil, NEGATIVE_CODES, api_error
 
 import java_sdk
 import java
@@ -189,7 +189,7 @@ def get_getters_and_setters(python_object=None, java_object=None):
     return (python_getters, python_setters, java_getters, java_setters)
 
 
-def print_java_error(java_error, op_code, logger):
+def parse_java_error(java_error, op_code, logger):
     """
     Description: function that converts java error to object that has
                  code, reason, detail, java_traceback fields
@@ -210,7 +210,7 @@ def print_java_error(java_error, op_code, logger):
             else:
                 detail = '\n\t\t'.join([detail, line])
             if 'code' in name:
-                code = value.strip()
+                status = int(value.strip())
             elif 'reason' in name:
                 reason = value.strip()
             elif extra_details is False:
@@ -220,14 +220,16 @@ def print_java_error(java_error, op_code, logger):
         # getting traceback
         java_traceback = '\n\t'.join([trace.toString() for trace
                                       in java_error.args[0].stackTrace])
-        #printing it
+        # printing it
         errorMsg = "\nFailed to {0} a new element:\n\tStatus: {1}\n\t\
 Reason: {2}\n\tDetail: {3}\nTrace:\n\t{4}"
-        logger.error(errorMsg.format(op_code, code, reason, detail,
+        logger.error(errorMsg.format(op_code, status, reason, detail,
                                      java_traceback))
     except Exception as e:
         logger.error('Caught Exception %s', e)
         logger.error('Possible internal error: %s', str(java_error))
+
+    return api_error(reason=reason, status=status, detail=detail)
 
 
 def python_primitives_converter(java_datatype, data):
@@ -1029,7 +1031,7 @@ element:%(elm)s " % {'col': self.collection_name,
                 return python_response, False
 
         except java_sdk.JavaError as e:
-            print_java_error(e, 'create', self.logger)
+            parse_java_error(e, 'create', self.logger)
             if positive:
                 return None, False
 
@@ -1052,8 +1054,8 @@ element:%(elm)s " % {'col': self.collection_name,
         getattr(entity, setter)(property_value)
 
     @jvm_thread_care
-    def update(self, origEntity, newEntity, positive, current=None,
-               async=False):
+    def update(self, origEntity, newEntity, positive,
+               expected_neg_status=NEGATIVE_CODES, current=None, async=False):
         '''
         Description: update an element
         Author: imeerovi
@@ -1061,6 +1063,8 @@ element:%(elm)s " % {'col': self.collection_name,
            * origEntity - original entity
            * newEntity - entity for post body
            * positive - if positive or negative verification should be done
+           * expected_neg_status - list of expected statuses for negative
+                                    request
         Return: PUT response, True if PUT test succeeded, False otherwise
         '''
         python_response = None
@@ -1084,47 +1088,52 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
         correlation_id = self.getCorrelationId()
 
         try:
-            if positive:
-                if correlation_id is not None or current is not None or async:
-                    correlation_id = str(correlation_id)
-                    upd_method_args_length, sorted_upd_method_args_list = \
-                        self.__java_method_selector(java_entity, 'update')
-                    if upd_method_args_length == 1:
-                        with measure_time('PUT'):
-                            response = java_entity.update(correlation_id)
-                    elif upd_method_args_length == 2:
-                        with measure_time('PUT'):
-                            response = java_entity.update(async,
-                                                          correlation_id)
-                    elif upd_method_args_length == 3:
-                        with measure_time('PUT'):
-                            response = java_entity.update(async, current,
-                                                          correlation_id)
-                    else:
-                        msg = "We shouldn't get here, unknown update signatur"\
-                            "e: update(%s)" % sorted_upd_method_args_list
-                        self.logger.error(msg)
-                        raise Exception(msg)
+            if correlation_id is not None or current is not None or async:
+                correlation_id = str(correlation_id)
+                upd_method_args_length, sorted_upd_method_args_list = \
+                    self.__java_method_selector(java_entity, 'update')
+                if upd_method_args_length == 1:
+                    with measure_time('PUT'):
+                        response = java_entity.update(correlation_id)
+                elif upd_method_args_length == 2:
+                    with measure_time('PUT'):
+                        response = java_entity.update(async,
+                                                      correlation_id)
+                elif upd_method_args_length == 3:
+                    with measure_time('PUT'):
+                        response = java_entity.update(async, current,
+                                                      correlation_id)
                 else:
+                    msg = "We shouldn't get here, unknown update signatur"\
+                        "e: update(%s)" % sorted_upd_method_args_list
+                    self.logger.error(msg)
+                    raise Exception(msg)
+            else:
+                with measure_time('PUT'):
                     response = java_entity.update()
 
-                # translating of result to python
-                python_response = JavaTranslator(response)
-                #response = \
-                #    origEntity.update(**self.getReqMatrixParams(current))
-                self.logger.info("%s was updated", self.element_name)
-
-                if not validator.compareElements(
-                        newEntity, python_response, self.logger,
-                        self.element_name, java_sdk_mode=True):
-                    return None, False
-
-        except java_sdk.JavaError as e:
-            print_java_error(e, 'update', self.logger)
-            if positive:
+            # translating of result to python
+            python_response = JavaTranslator(response)
+            self.logger.info("%s was updated", self.element_name)
+            if not validator.compareElements(
+                    newEntity, python_response, self.logger, self.element_name,
+                    java_sdk_mode=True):
                 return None, False
 
-        return python_response, True
+        except java_sdk.JavaError as e:
+            e = parse_java_error(e, 'update', self.logger)
+            if positive or not validator.compareResponseCode(
+                    e.status, expected_neg_status, self.logger):
+                return None, False
+            return None, True
+
+        if (positive and validator.compareElements(
+                newEntity, python_response, self.logger, self.element_name,
+                java_sdk_mode=True)) or (not positive and expected_neg_status
+                                         not in NEGATIVE_CODES):
+            return python_response, True
+
+        return None, False
 
     @jvm_thread_care
     def delete(self, entity, positive, body=None, async=False, **kwargs):
@@ -1162,7 +1171,7 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
                     java_entity.delete()
 
         except java_sdk.JavaError as e:
-            print_java_error(e, 'delete', self.logger)
+            parse_java_error(e, 'delete', self.logger)
             if positive:
                 return False
             return True
@@ -1355,7 +1364,7 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
                 act = getattr(java_entity, action)(
                     java_action_entity, str(self.getCorrelationId()))
         except java_sdk.JavaError as e:
-            print_java_error(e, 'syncAction', self.logger)
+            parse_java_error(e, 'syncAction', self.logger)
             if positive:
                 return False
             return True

@@ -26,7 +26,7 @@ from abc import ABCMeta, abstractmethod
 from time import strftime, sleep
 from art.rhevm_api.data_struct.data_structures import ClassesMapping
 from art.core_api.rest_utils import RestUtil
-from art.core_api.apis_utils import api_error
+from art.core_api.apis_utils import NEGATIVE_CODES, api_error
 from art.core_api.apis_exceptions import CLIError, CLITimeout,\
     CLICommandFailure, UnsupportedCLIEngine, CLITracebackError,\
     CLIAutoCompletionFailure, EntityNotFound, APILoginError
@@ -916,7 +916,8 @@ class CliUtil(RestUtil):
                 self.logger.info("New entity was added successfully")
         return response, True
 
-    def update(self, origEntity, newEntity, positive, current=None):
+    def update(self, origEntity, newEntity, positive,
+               expected_neg_status=NEGATIVE_CODES, current=None):
         '''
         Description: update an element
         Author: edolinin
@@ -924,6 +925,8 @@ class CliUtil(RestUtil):
            * origEntity - original entity
            * newEntity - entity for post body
            * positive - if positive or negative verification should be done
+           * expected_neg_status - list of expected statuses for negative
+                                   request
         Return: PUT response, True if PUT test succeeded, False otherwise
         '''
 
@@ -976,6 +979,7 @@ class CliUtil(RestUtil):
         updateCmd = "%s > %s" % (updateCmd, TMP_FILE)
 
         response = None
+
         try:
             out = self.cli.cliCmdRunner(updateCmd, 'UPDATE')
         except CLITracebackError as e:
@@ -984,28 +988,28 @@ class CliUtil(RestUtil):
         except CLICommandFailure as e:
             errorMsg = "Failed to update a new element, details: {0}"
             self.logger.error(errorMsg.format(e))
-            if positive:
-                return response, False
+            if positive or not validator.compareResponseCode(
+                    e.status, expected_neg_status, self.logger):
+                return None, False
+            return None, True
+
+        if collHref:
+            collection = self.get(collHref, listOnly=True)
         else:
-            if positive:
-                if collHref:
-                    collection = self.get(collHref, listOnly=True)
-                else:
-                    # refresh collection
-                    collection = self.getCollection(collHref)
-                # looking for id in cli output:
-                elemId = re.search(self.cli._id_extract_re, out).group().\
-                    split(':')[1].strip()
-                response = self.find(elemId, attribute='id',
-                                     collection=collection,
-                                     absLink=False)
+            # refresh collection
+            collection = self.getCollection(collHref)
+        # looking for id in cli output:
+        elemId = re.search(self.cli._id_extract_re, out).group().\
+            split(':')[1].strip()
+        response = self.find(elemId, attribute='id', collection=collection,
+                             absLink=False)
 
-                if not validator.compareElements(newEntity, response,
-                                                 self.logger,
-                                                 self.element_name):
-                    return response, False
+        if (positive and validator.compareElements(
+                newEntity, response, self.logger, self.element_name)) or (
+                not positive and expected_neg_status not in NEGATIVE_CODES):
+            return response, True
 
-        return response, True
+        return None, False
 
     def _getHrefData(self, href):
         entityHrefData = href.split(self.opts['entry_point'])[1].split('/')

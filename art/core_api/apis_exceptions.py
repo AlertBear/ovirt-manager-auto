@@ -99,7 +99,7 @@ class CLICommandFailure(APIException):
     Raised when cli command returns error
     '''
 
-    def __init__(self, message, err):
+    def __init__(self, message, err=None):
         super(CLICommandFailure, self).__init__(message)
         self.status = None
         self.reason = None

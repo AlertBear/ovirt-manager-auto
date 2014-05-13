@@ -187,13 +187,13 @@ def cli_entity(elm, node_name, level=0, collection=False, start=False):
 
 def compareResponseCode(resp, expected, logger):
     try:
-        assert resp['status'] in expected
-        logger.debug("Response code is valid: %(exp)s " % {'exp': expected})
+        assert resp in expected
+        logger.debug("Response code is valid: %(exp)s ", {'exp': expected})
         return True
     except AssertionError:
         logger.error("Response code is not valid, expected is:"
-                     " %(exp)s, actual is: %(act)s " % \
-                     {'exp': expected, 'act': resp['status']})
+                     " %(exp)s, actual is: %(act)s ",
+                     {'exp': expected, 'act': resp})
         return False
 
 

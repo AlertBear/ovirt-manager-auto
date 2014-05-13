@@ -24,13 +24,9 @@ import time
 from art.core_api import http, template_parser, validator, measure_time
 from art.core_api.apis_exceptions import EntityNotFound, APIException,\
     APILoginError
-from art.core_api.apis_utils import APIUtil, parse, data_st
+from art.core_api.apis_utils import APIUtil, parse, data_st, \
+    NEGATIVE_CODES_CREATE, NEGATIVE_CODES, DEF_TIMEOUT, DEF_SLEEP
 from art.test_handler import settings
-
-DEF_TIMEOUT = 900  # default timeout
-DEF_SLEEP = 10  # default sleep
-NEGATIVE_CODES = [400, 409, 500]
-NEGATIVE_CODES_CREATE = NEGATIVE_CODES + [404]
 
 
 class RestUtil(APIUtil):
@@ -150,7 +146,8 @@ class RestUtil(APIUtil):
                           {'uri': href})
         ret = self.api.GET(href)
 
-        if not validator.compareResponseCode(ret, [200, 201], self.logger):
+        if not validator.compareResponseCode(ret['status'],
+                                             [200, 201], self.logger):
             return None
 
         if validate:
@@ -236,8 +233,8 @@ class RestUtil(APIUtil):
                           ret['body'])
 
         if positive:
-            if not validator.compareResponseCode(ret, expected_pos_status,
-                                                 self.logger):
+            if not validator.compareResponseCode(
+                    ret['status'], expected_pos_status, self.logger):
                 return None, False
 
             if ret['body']:
@@ -260,8 +257,8 @@ class RestUtil(APIUtil):
                 return ret['body'], True
 
         else:
-            if not validator.compareResponseCode(ret, expected_neg_status,
-                                                 self.logger):
+            if not validator.compareResponseCode(
+                    ret['status'], expected_neg_status, self.logger):
                 return None, False
 
         self.validateResponseViaXSD(href, ret)
@@ -302,8 +299,8 @@ class RestUtil(APIUtil):
                           ret['body'])
 
         if positive:
-            if not validator.compareResponseCode(ret, expected_pos_status,
-                                                 self.logger):
+            if not validator.compareResponseCode(
+                    ret['status'], expected_pos_status, self.logger):
                 return None, False
 
             self.logger.info(self.element_name + " was updated")
@@ -313,8 +310,8 @@ class RestUtil(APIUtil):
                 return None, False
 
         else:
-            if not validator.compareResponseCode(ret, expected_neg_status,
-                                                 self.logger):
+            if not validator.compareResponseCode(
+                    ret['status'], expected_neg_status, self.logger):
                 return None, False
 
         self.validateResponseViaXSD(origEntity.href, ret)
@@ -361,12 +358,12 @@ class RestUtil(APIUtil):
                           ret['body'])
 
         if positive:
-            if not validator.compareResponseCode(ret, expected_pos_status,
-                                                 self.logger):
+            if not validator.compareResponseCode(
+                    ret['status'], expected_pos_status, self.logger):
                 return False
         else:
-            if not validator.compareResponseCode(ret, expected_neg_status,
-                                                 self.logger):
+            if not validator.compareResponseCode(
+                    ret['status'], expected_neg_status, self.logger):
                 return False
 
         self.validateResponseViaXSD(entity.href, ret)
@@ -461,7 +458,7 @@ class RestUtil(APIUtil):
         self.logger.debug(
             "Response body for QUERY request is: %s " % ret['body'])
 
-        if not validator.compareResponseCode(ret, expected_status,
+        if not validator.compareResponseCode(ret['status'], expected_status,
                                              self.logger):
             return None
 
@@ -520,22 +517,22 @@ class RestUtil(APIUtil):
             return False
 
         if positive and not async:
-            if not validator.compareResponseCode(ret, positive_sync_stat,
-                                                 self.logger):
+            if not validator.compareResponseCode(
+                    ret['status'], positive_sync_stat, self.logger):
                 return False
             if resp_action and not validator.compareActionStatus(
                     resp_action.status.state, ["complete"], self.logger):
                 return False
         elif positive and async:
-            if not validator.compareResponseCode(ret, positive_async_stat,
-                                                 self.logger):
+            if not validator.compareResponseCode(
+                    ret['status'], positive_async_stat, self.logger):
                 return False
             if resp_action and not validator.compareActionStatus(
                     resp_action.status.state, ["pending", "complete"],
                     self.logger):
                 return False
         else:
-            if not validator.compareResponseCode(ret, negative_stat,
+            if not validator.compareResponseCode(ret['status'], negative_stat,
                                                  self.logger):
                 return False
 
