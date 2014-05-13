@@ -2442,8 +2442,9 @@ def changeVmDiskState(positive, vm, action, diskAlias, diskId, wait):
         if positive:
             # wait until the disk is really (de)activated
             active = True if action == 'activate' else False
+            # always use disk.id
             return waitForVmDiskStatus(
-                vm, active, diskAlias, diskId, 300) == positive
+                vm, active, diskId=disk.get_id(), timeout=300) == positive
         else:
             # only wait for the disk to be again in 'ok' state
             return DISKS_API.waitForElemStatus(disk, 'ok', 300)

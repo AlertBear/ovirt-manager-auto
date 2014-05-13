@@ -5,7 +5,6 @@ Hotplug test common functions
 from art.rhevm_api.tests_lib.low_level import disks, templates, vms
 from art.rhevm_api.utils import test_utils as utils
 import art.test_handler.exceptions as exceptions
-from art.test_handler.settings import opts
 from concurrent.futures import ThreadPoolExecutor
 import config
 import logging
@@ -29,7 +28,7 @@ def start_creating_disks_for_test():
         'wipe_after_delete': config.BLOCK_FS,
         'storagedomain': config.STORAGE_DOMAIN_NAME,
         'bootable': False,
-        #Custom arguments - change for each disk
+        # Custom arguments - change for each disk
         'interface': None,
         'shareable': None,
         'alias': None,
@@ -165,13 +164,20 @@ def shutdown_and_remove_vms(vm_names):
     """
     results = []
 
+    def unattach_and_shutdown(vm_name):
+        """Unattached not active disks, shutdown and remove vm"""
+        vmDisks = vms.getVmDisks(vm_name)
+        for disk in vmDisks:
+            if not disk.get_bootable():
+                assert disks.detachDisk(True, disk.get_alias(), vm_name)
+        stopVm = vms.get_vm_state(vm_name) == config.ENUMS['vm_state_up']
+        assert vms.removeVm(config.positive, vm_name, stopVM=str(stopVm))
+
     with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
-        for _ in xrange(len(vm_names)):
-            vm_name = vm_names.pop()
-            if not vms.get_vm_state(vm_name) == config.ENUMS['vm_state_down']:
-                logger.warn("Stopping vm %s" % vm_name)
-                results.append(executor.submit(vms.removeVm, config.positive,
-                                               vm_name, stopVM='true'))
+        for index in xrange(len(vm_names)):
+            vm_name = vm_names[index]
+            logger.info("Removing vm %s", vm_name)
+            results.append(executor.submit(unattach_and_shutdown, vm_name))
 
     utils.raise_if_exception(results)
     logger.info("All vms removed successfully")

@@ -171,9 +171,9 @@ class HotplugHookTest(TestCase):
         for disk_name in self.use_disks:
             disk = disks.getVmDisk(VM_NAME, disk_name)
             LOGGER.info("Disk active: %s" % disk.active)
-            if disk.active and not self.active_disk:
+            if disk.get_active() and not self.active_disk:
                 assert vms.deactivateVmDisk(True, VM_NAME, disk_name)
-            elif not disk.active and self.active_disk:
+            elif not disk.get_active() and self.active_disk:
                 assert vms.activateVmDisk(True, VM_NAME, disk_name)
 
     def clear_hooks(self):

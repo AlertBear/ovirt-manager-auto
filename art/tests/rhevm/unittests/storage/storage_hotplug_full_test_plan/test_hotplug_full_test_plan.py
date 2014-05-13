@@ -11,15 +11,13 @@ from art.test_handler.tools import bz, tcms
 from art.rhevm_api.utils import test_utils as utils
 import art.test_handler.exceptions as exceptions
 from art.test_handler.settings import opts
-from art.rhevm_api.utils.test_utils import get_api, wait_for_tasks
+from art.rhevm_api.utils.test_utils import wait_for_tasks
 
 import art.rhevm_api.tests_lib.high_level.datacenters as datacenters
 from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 
-
 from art.rhevm_api.tests_lib.low_level import datacenters as ll_dc
-from art.rhevm_api.tests_lib.low_level import vms, disks, storagedomains
-
+from art.rhevm_api.tests_lib.low_level import vms, disks
 
 import config
 import helpers
@@ -91,7 +89,6 @@ def teardown_module():
     clean setup
     """
     LOGGER.info("Teardown module")
-
     helpers.remove_hook_files()
 
     cleanDataCenter(
@@ -434,7 +431,6 @@ class TestCase134134(TestCase):
 
     __test__ = True
 
-    vm_names = []
     tcms_plan_id = '5291'
     tcms_test_case = '134134'
 
@@ -444,6 +440,7 @@ class TestCase134134(TestCase):
         Clone a vm of each supported OS type and wait for VM boot to complete
         """
         LOGGER.info("setup class %s" % cls.__name__)
+        cls.vm_names = []
 
         def _create_and_start_vm(template):
             """
@@ -492,7 +489,6 @@ class TestCase134139(TestCase):
     """Unplug a disk and detach it. Tested as 2 independent functions"""
     __test__ = True
 
-    vm_names = []
     tcms_plan_id = '5291'
     tcms_test_case = '134139'
 
@@ -502,6 +498,8 @@ class TestCase134139(TestCase):
         Clone VMs, one for each template and create 2 additional disks
         for each vm - one should be active and the other inactive
         """
+        cls.vm_names = []
+
         def _create_vm_and_disks(template):
             """
             Creates a single vm and adds 2 disks to it, deactivating
@@ -590,13 +588,14 @@ class TestCase231521(TestCase):
 
     __test__ = True
 
-    vm_names = []
     tcms_plan_id = '5291'
     tcms_test_case = '231521'
 
     @classmethod
     def setup_class(cls):
         """Create a VM with 2 disks extra disks - 1 active and 1 inactive"""
+        cls.vm_names = []
+
         def _create_vm_and_disks(template):
             vm_name = common.create_vm_from_template(template, cls.__name__)
 
@@ -678,13 +677,13 @@ class TestCase139348(TestCase):
     tcms_plan_id = '5291'
     tcms_test_case = '139348'
 
-    vm_names = []
-
     @classmethod
     def setup_class(cls):
         """
         Clone and start vm for test
         """
+        cls.vm_names = []
+
         def _create_and_start_vm(template):
             vm_name = common.create_vm_from_template(template, cls.__name__)
             LOGGER.info("Starting vm %s" % vm_name)
@@ -741,13 +740,13 @@ class TestCase244310(TestCase):
     tcms_plan_id = '5291'
     tcms_test_case = '244310'
 
-    vm_pairs = []
-
     @classmethod
     def setup_class(cls):
         """
         create 2 vms for each template and start them
         """
+        cls.vm_pairs = []
+
         def _create_vms_and_disks(template):
             vm_name = common.create_vm_from_template(template, cls.__name__)
             new_name = vm_name + "1"
@@ -813,13 +812,13 @@ class TestCase244314(TestCase):
     tcms_plan_id = '5291'
     tcms_test_case = '244314'
 
-    vm_pairs = []
-
     @classmethod
     def setup_class(cls):
         """
         create vm pair for each template, plug disk into vms and start them
         """
+        cls.vm_pairs = []
+
         def _create_vms_and_disks(template):
             disk_name = DISK_NAME_FORMAT % (template,
                                             ENUMS['interface_virtio'],
@@ -829,7 +828,7 @@ class TestCase244314(TestCase):
             LOGGER.info("renaming vm %s to %s" % (vm_name, new_name))
             if not vms.updateVm(positive, vm=vm_name, name=new_name):
                 raise exceptions.VMException("Unable to rename vm %s to %s" %
-                                            (vm_name, new_name))
+                                             (vm_name, new_name))
             vm_name = common.create_vm_from_template(template, cls.__name__)
             vm_pair = (vm_name, new_name)
             for vm in vm_pair:
@@ -894,7 +893,6 @@ class TestCase174616(TestCase):
     disk_count = 2
     first_vm = 'first'
     second_vm = 'second'
-    vm_names = list()
     template = config.TEMPLATE_NAMES[0]
     first_disk_name = 'non-shareable_virtio_disk'
     second_disk_name = 'shareable_virtio_disk'
@@ -907,6 +905,7 @@ class TestCase174616(TestCase):
         """
         Create 2 VMs, 2 virtio disks and one of them is shareable
         """
+        cls.vm_names = []
         cls.first_vm = common.create_vm_from_template(cls.template,
                                                       cls.first_vm)
 
@@ -1007,6 +1006,11 @@ class TestCase174616(TestCase):
     @classmethod
     def teardown_class(cls):
         """
-        remove all vms created during the test
+        Remove all vms and disks created during the test
         """
+        LOGGER.info("Removing vms %s", cls.vm_names)
         common.shutdown_and_remove_vms(cls.vm_names)
+
+        LOGGER.info("Removing disks  %s", cls.disks_aliases)
+        for disk_alias in cls.disks_aliases:
+            assert disks.deleteDisk(True, disk_alias)
