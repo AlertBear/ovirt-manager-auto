@@ -1372,15 +1372,15 @@ def rebootHost(positive, host, username, password):
     Description: rebooting host via ssh session
     Author: edolinin
     Parameters:
-       * host - name of a host to be rebooted
+       * host - fqdn (name) of a host to be rebooted
        * username - user name for ssh session
        * password - password for ssh session
     Return: status (True if host was rebooted properly, False otherwise)
     """
-    hostObj = HOST_API.find(host)
-    ssh = ssh_session.ssh_session(username, host, password)
-    ssh.ssh("reboot")
-    return HOST_API.waitForElemStatus(hostObj, "non_responsive", 180)
+    host_machine = Machine(host=host, user=username,
+                           password=password).util('linux')
+    host_machine.reboot()
+    return waitForHostsStates(positive, host, ENUMS['non_responsive'], 180)
 
 
 @is_action()
@@ -1903,6 +1903,23 @@ def getSPMHost(hosts):
     else:
         raise EntityNotFound('SPM not found among these hosts: %s'
                              % (str(hosts),))
+
+
+@is_action()
+def getHSMHost(hosts):
+    """
+    Description: get HSM host from the list of hosts
+    Author: ratamir
+    Parameters:
+    * hosts - the list of hosts to be searched through
+    Returns: hostName (success) / raises EntityNotFound exception
+    """
+    for host in hosts:
+        if not checkHostSpmStatus(True, host):
+            return host
+    else:
+        raise EntityNotFound('HSM not found among these hosts: %s'
+                             % hosts)
 
 
 @is_action()

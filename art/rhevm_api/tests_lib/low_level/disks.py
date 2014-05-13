@@ -18,10 +18,11 @@
 
 import logging
 from utilities.machine import Machine
-
+import random
 from art.core_api.apis_exceptions import EntityNotFound, APITimeout
 from art.core_api.apis_utils import data_st, TimeoutingSampler
 from art.rhevm_api.data_struct.data_structures import Fault
+from art.rhevm_api.tests_lib.low_level.datacenters import get_sd_datacenter
 from art.rhevm_api.utils.test_utils import get_api, split, waitUntilGone
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from art.core_api import is_action
@@ -97,6 +98,17 @@ def getVmDisk(vmName, alias):
     """
     vmObj = VM_API.find(vmName)
     return DISKS_API.getElemFromElemColl(vmObj, alias)
+
+
+def get_disk_obj(disk_alias):
+    """
+    Description: Returns disk obj from disks collection
+    Parameters:
+        * disk_alias - name of disk
+    Author: ratamir
+    Return: Disk from disks collection
+    """
+    return DISKS_API.find(disk_alias)
 
 
 def _prepareDiskObject(**kwargs):
@@ -269,17 +281,21 @@ def updateDisk(positive, **kwargs):
 
 
 @is_action()
-def deleteDisk(positive, alias, async=True):
+def deleteDisk(positive, alias, async=True, disk_id=None):
     """
     Description: Removes disk from system
     Parameters:
         * alias - name of disk
-        * async - True if operation should be asynchronou - DOESN'T WORK
-        * wait - wait for the opration to end
+        * async - True if operation should be asynchronous - DOESN'T WORK
+        * wait - wait for the operation to end
+        * disk_id - In case disk's id is provided for the deletion
     Author: cmestreg
     Return: Status of the operation's result dependent on positive value
     """
-    diskObj = DISKS_API.find(alias)
+    if disk_id:
+        diskObj = DISKS_API.find(disk_id, attributes='id')
+    else:
+        diskObj = DISKS_API.find(alias)
 
     # TODO: add async parameter to delete method once it's supported
     status = DISKS_API.delete(diskObj, positive)
@@ -327,7 +343,7 @@ def detachDisk(positive, alias, vmName, detach=True):
 
 @is_action()
 def waitForDisksState(disksNames, status=ENUMS['disk_state_ok'],
-                      timeout=DEFAULT_DISK_TIMEOUT, sleep=10):
+                      timeout=DEFAULT_DISK_TIMEOUT, sleep=DEFAULT_SLEEP):
     """
     Description: Waits till all disks are in the given state
     Parameters:
@@ -350,8 +366,8 @@ def waitForDisksState(disksNames, status=ENUMS['disk_state_ok'],
     try:
         for sample in sampler:
             disks_in_wrong_state = [
-                x for x in sample
-                if x.name in disks and x.status.state != status]
+                x for x in sample if (x.get_name() in disks and
+                                      (x.get_status().get_state() != status))]
             if not disks_in_wrong_state:
                 return True
     except APITimeout:
@@ -363,7 +379,7 @@ def waitForDisksState(disksNames, status=ENUMS['disk_state_ok'],
 
 @is_action()
 def waitForDisksGone(positive, disksNames, timeout=DEFAULT_DISK_TIMEOUT,
-                     sleep=10):
+                     sleep=DEFAULT_SLEEP):
     """
     Description: Waits until disks are still in system
     Author: jlibosva
@@ -530,6 +546,7 @@ def get_all_disk_permutation(block=True, shared=False):
 def check_disk_visibility(disk, disks_list):
     """
     Check if disk is in vm disks collection
+    Author: ratamir
     Parameters:
         * disk - alias of disk that need to checked
         * disks_list - collection of disks objects
@@ -538,3 +555,53 @@ def check_disk_visibility(disk, disks_list):
     is_visible = disk in [disk_obj.get_alias() for disk_obj in
                           disks_list if disk_obj.get_active()]
     return is_visible
+
+
+@is_action('getImproperStorageDomain')
+def get_other_storage_domain(disk_name, vm_name=None):
+    """
+    Description: Chooses random storage domain from the set of storage domains,
+    that disk is not placed on.
+    Author: ratamir
+    Parameters:
+    * disk_name - name of the disk
+    * vm_name - name of vm (None by default), that contains disk disk_name.
+                None if the disk is floating disk (will be searched in disks
+                collection)
+    Return: Name of storage domain that doesn't contain disk_name
+    """
+    logger.info("Get disk %s improper storage domain", disk_name)
+
+    disk_sd_name = get_disk_storage_domain_name(disk_name, vm_name=vm_name)
+    dc = get_sd_datacenter(disk_sd_name)
+    sd_list = [sd.get_name() for sd in
+               STORAGE_DOMAIN_API.getElemFromLink(dc, get_href=False)
+               if (sd.get_name() != disk_sd_name) and
+               (sd.get_status().get_state() ==
+                ENUMS['storage_domain_state_active'])]
+    improper_sd = random.choice(sd_list)
+    logger.info("Disk %s improper storage domain is: %s", disk_name,
+                improper_sd)
+    return improper_sd
+
+
+def get_disk_storage_domain_name(disk_name, vm_name=None):
+    """
+    Description: gets the disks' storage domain name
+    Author: ratamir
+    Parameters:
+    * disk_name - name of the disk
+    * vm_name - name of vm (None by default), that contains disk disk_name.
+                None if the disk is floating disk (will be searched in disks
+                collection)
+    Return: Name of storage domain that contain disk_name
+    """
+    logger.info("Get disk %s storage domain", disk_name)
+    if vm_name is None:
+        disk = DISKS_API.find(disk_name)
+    else:
+        disk = getVmDisk(vm_name, disk_name)
+    sd_id = disk.get_storage_domains().get_storage_domain()[0].get_id()
+    disk_sd_name = STORAGE_DOMAIN_API.find(sd_id, 'id').get_name()
+    logger.info("Disk %s storage domain is: %s", disk_name, disk_sd_name)
+    return disk_sd_name

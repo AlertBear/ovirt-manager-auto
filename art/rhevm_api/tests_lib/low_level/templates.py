@@ -19,10 +19,11 @@
 
 import logging
 import time
+from art.rhevm_api.tests_lib.low_level.disks import getObjDisks
 import art.test_handler.exceptions as errors
 
 from art.core_api.apis_exceptions import EntityNotFound
-from art.core_api.apis_utils import getDS, data_st
+from art.core_api.apis_utils import getDS, data_st, TimeoutingSampler
 from art.rhevm_api.utils.test_utils import get_api, split, waitUntilGone
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from art.rhevm_api.tests_lib.low_level.networks import getVnicProfileObj, \
@@ -33,6 +34,7 @@ from art.test_handler.settings import opts
 from utilities.jobs import Job, JobsSet
 from art.rhevm_api.utils.test_utils import searchForObj
 from art.core_api import is_action
+from art.test_handler import exceptions
 
 CREATE_TEMPLATE_TIMEOUT = 900
 ELEMENT = 'template'
@@ -586,15 +588,45 @@ def waitForTemplatesStates(names, state=ENUMS['template_state_ok'],
         * states - Desired state for all given templates
     Author: jlibosva
     """
+    def get_pending_templates(template_names, state):
+        """
+        Gets templates that doesn't fit the desired state
+        Parameters:
+        * template_names - list of templates' names
+        * state - desired state
+        """
+        templates = [TEMPLATE_API.find(name) for name in template_names]
+        return [templ for templ in templates if
+                (templ.get_status().get_state() != state)]
+
     names = split(names)
+    sampler = TimeoutingSampler(
+        timeout, sleep, get_pending_templates, names, state)
+    for bad_templates in sampler:
+        if not bad_templates:
+            return True
+    raise exceptions.TemplateException(
+        "Timeout: Templates %s haven't reached state %s after %s seconds" %
+        (bad_templates, state, timeout))
 
-    # FIXME: list is assigned to nothing. remove if not in use
-    [TEMPLATE_API.find(template) for template in names]
 
-    query = ' and '.join(['name=%s and status=%s' % (template, state) for
-                          template in names])
-
-    return TEMPLATE_API.waitForQuery(query, timeout=timeout, sleep=sleep)
+@is_action('waitForTemplateDisksState')
+def wait_for_template_disks_state(template, state=ENUMS['disk_state_ok'],
+                                  timeout=CREATE_TEMPLATE_TIMEOUT):
+    """
+    Description: Waits until all template's disks are in given state
+    Author: ratamir
+    Parameters:
+    * template - name of the template
+    * state - desired state of disks
+    * timeout - how long should it wait
+    """
+    disks = getObjDisks(template, get_href=False, is_template=True)
+    for disk in disks:
+        if not DISKS_API.waitForElemStatus(disk, state, timeout):
+            raise exceptions.DiskException(
+                "Timeout, disk %s is still in status %s insted of desired %s"
+                % (disk.alias, disk.get_status().get_state(), state))
 
 
 def waitForTemplatesGone(positive, templates, timeout=600, samplingPeriod=10):
@@ -658,3 +690,28 @@ def check_template_existence(template_name):
     if not template_obj:
         return False
     return True
+
+
+@is_action('copyTemplateDisks')
+def copy_template_disks(positive, template, disks, storagedomain, async=True):
+    """
+    Description: Copies disks of given template to target storage domain
+    Author: ratamir
+    Parameters:
+    * template - name of the template
+    * disks - list of disks separated by comma
+    * storagedomain - target storage domain name
+    * async -
+    """
+    disks_names = split(disks)
+    storage_domain = SD_API.find(storagedomain)
+    all_disks = getObjDisks(template, is_template=True, get_href=False)
+    relevant_disks = [disk for disk in all_disks if
+                      (disk.get_name() in disks_names)]
+    for disk in relevant_disks:
+        if not TEMPLATE_API.syncAction(disk, action='copy', positive=positive,
+                                       async=async,
+                                       storage_domain=storage_domain):
+            raise exceptions.TemplateException(
+                "Copying of disk %s of template %s to storage domain %s "
+                "failed." % (disk.name, template, storagedomain))

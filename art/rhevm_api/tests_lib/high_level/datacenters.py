@@ -8,6 +8,10 @@ import art.rhevm_api.tests_lib.low_level.clusters as clusters
 import art.rhevm_api.tests_lib.low_level.datacenters as datacenters
 import art.rhevm_api.tests_lib.high_level.hosts as hosts
 import art.rhevm_api.tests_lib.high_level.storagedomains as storagedomains
+from art.rhevm_api.tests_lib.low_level.disks import getStorageDomainDisks,\
+    deleteDisk
+from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
+from art.rhevm_api.tests_lib.low_level.storagedomains import getDCStorages
 import art.test_handler.exceptions as errors
 from art.test_handler.settings import opts
 
@@ -56,3 +60,35 @@ def build_setup(config, storage, storage_type, basename="testname",
 
     return storagedomains.create_storages(
         storage, storage_type, config.as_list('vds')[0], datacenter_name)
+
+
+def clean_all_disks_from_dc(datacenter, exception_list=None):
+    """
+    Description: Removes all disks in DC's storage domain. If exception_list
+    is given, the disks names in that list will remain in the setup
+    Author: ratamir
+    Parameters:
+    * datacenter - data center name
+    * exception_list - List of disks names that should remain in the setup
+    """
+    sdObjList = getDCStorages(datacenter, False)
+
+    for storage_domain in sdObjList:
+        LOGGER.info('Find any floating disks in storage domain %s',
+                    storage_domain.get_name())
+        floating_disks = getStorageDomainDisks(storage_domain.get_name(),
+                                               False)
+        if floating_disks:
+            floating_disks_list = [disk.get_id() for disk in
+                                   floating_disks if
+                                   (disk.get_alias() not in exception_list)]
+            for disk in floating_disks_list:
+                LOGGER.info('Removing floating disk %s', disk)
+                if not deleteDisk(True, alias=disk, async=False, disk_id=disk):
+                    return False
+            LOGGER.info('Ensuring all disks are removed')
+            wait_for_jobs()
+            LOGGER.info('All floating disks removed successfully')
+        else:
+            LOGGER.info('No floating disks found in storage domain %s',
+                        storage_domain.get_name())

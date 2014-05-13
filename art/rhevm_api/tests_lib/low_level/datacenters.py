@@ -33,6 +33,7 @@ import art.test_handler.exceptions as exceptions
 ELEMENT = 'data_center'
 COLLECTION = 'datacenters'
 util = get_api(ELEMENT, COLLECTION)
+STORAGE_API = get_api('storage_domain', 'storagedomains')
 
 DataCenter = getDS('DataCenter')
 Version = getDS('Version')
@@ -261,3 +262,23 @@ def get_data_center(dc_name):
     """
     dc_obj = util.find(dc_name)
     return dc_obj
+
+
+def get_sd_datacenter(storage_domain_name):
+    """
+    Description: Returns data-center object that storage is connected to
+    Author: ratamir
+    Parameters:
+        * storage_domain_name - Name of the storage domain
+    Returns: DC name which storage_domain_name belongs to, False otherwise
+    """
+    storage_domain_id = STORAGE_API.find(storage_domain_name).get_id()
+    all_dcs = util.get(absLink=False)
+    for dc in all_dcs:
+        dc_sds = STORAGE_API.getElemFromLink(dc, get_href=False)
+        for sd in dc_sds:
+            if sd.get_id() == storage_domain_id:
+                return dc
+    util.logger.info("Storage domain %s is not attached to any data-center",
+                     storage_domain_name)
+    return False

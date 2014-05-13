@@ -33,7 +33,9 @@ from art.core_api.apis_exceptions import APITimeout, EntityNotFound, \
 from art.core_api.apis_utils import data_st, TimeoutingSampler, getDS
 from art.rhevm_api.tests_lib.high_level.disks import delete_disks
 from art.rhevm_api.tests_lib.low_level.disks import _prepareDiskObject, \
-    getVmDisk, getObjDisks
+    getVmDisk, getObjDisks, get_other_storage_domain, waitForDisksState,\
+    get_disk_storage_domain_name
+from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level.networks import getVnicProfileObj, \
     MGMT_NETWORK
 from art.rhevm_api.utils.name2ip import LookUpVMIpByName
@@ -66,6 +68,11 @@ VM_DISK_CLONE_TIMEOUT = 720
 VM_IMAGE_OPT_TIMEOUT = 900
 CLONE_FROM_SNAPSHOT = 1500
 VM_SAMPLING_PERIOD = 3
+
+SNAPSHOT_SAMPLING_PERIOD = 5
+SNAPSHOT_APPEAR_TIMEOUT = 120
+FILTER_DEVICE = '[sv]d'
+
 BLANK_TEMPLATE = '00000000-0000-0000-0000-000000000000'
 ADD_DISK_KWARGS = ['size', 'type', 'interface', 'format', 'bootable',
                    'sparse', 'wipe_after_delete', 'propagate_errors',
@@ -75,6 +82,7 @@ SNAPSHOT_TIMEOUT = 15 * 60
 PREVIEW = ENUMS['preview_snapshot']
 UNDO = ENUMS['undo_snapshot']
 COMMIT = ENUMS['commit_snapshot']
+LIVE_SNAPSHOT_DESCRIPTION = ENUMS['live_snapshot_description']
 
 VM_API = get_api('vm', 'vms')
 VNIC_PROFILE_API = get_api('vnic_profile', 'vnicprofiles')
@@ -1645,7 +1653,7 @@ def migrateVm(positive, vm, host=None, wait=True, force=False):
             False otherwise.
     '''
     vmObj = VM_API.find(vm)
-    if not vmObj.host:
+    if not vmObj.get_host():
         logger.error("VM has no attribute 'host': %s" % dir(vmObj))
         return False
     actionParams = {}
@@ -3210,7 +3218,7 @@ def move_vm_disk(vm_name, disk_name, target_sd, wait=True,
                                 positive=True):
         raise exceptions.DiskException(
             "Failed to move disk %s of vm %s to storage domain %s" %
-            (vm_name, disk_name, target_sd))
+            (disk_name, vm_name, target_sd))
     if wait:
         for disk in TimeoutingSampler(timeout, sleep, getVmDisk, vm_name,
                                       disk_name):
@@ -3251,7 +3259,7 @@ def start_vms(vm_list, max_workers,
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         for machine in vm_list:
             vm_obj = VM_API.find(machine)
-            if vm_obj.status.state == ENUMS['vm_state_down']:
+            if vm_obj.get_status().get_state() == ENUMS['vm_state_down']:
                 logger.info("Starting vm %s", machine)
                 results.append(executor.submit(startVm, True,
                                                machine, wait_for_status,
@@ -3746,6 +3754,7 @@ def stop_vms_safely(vms_list, async=False, max_workers=2):
     """
     results = list()
     async = str(async).lower()
+    logger.info("Stops vms: %s", vms_list)
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         for vm in vms_list:
             if not get_vm_state(vm) == ENUMS['vm_state_down']:
@@ -4088,3 +4097,162 @@ def extend_vm_disk_size(positive, vm, disk, **kwargs):
         # further manipulation is needed
         disk, status = DISKS_API.update(disk_obj, new_disk, False)
     return status
+
+
+@is_action('liveMigrateVmDisk')
+def live_migrate_vm_disk(vm_name, disk_name, target_sd,
+                         timeout=VM_IMAGE_OPT_TIMEOUT*2,
+                         sleep=SNAPSHOT_SAMPLING_PERIOD, wait=True):
+    """
+    Description: Moves vm's disk. Starts disk movement then waits until new
+    snapshot appears. Then waits for disk is locked, which means
+    migration started. Waits until migration is finished, which is
+    when disk is moved to up.
+    Author: ratamir
+    Parameters:
+        * vm_name - Name of the disk's vm
+        * disk_name - Name of the disk
+        * target_sd - Name of storage domain disk should be moved to
+        * timeout - timeout for waiting
+        * sleep - polling interval while waiting
+        * wait - if should wait for operation to finish
+    Throws:
+        * DiskException if something went wrong
+        * APITimeout if waiting for snapshot was longer than 20 seconds
+    """
+    def _wait_for_new_storage_domain(vm_name, disk_name, new_sd):
+        """
+        Waits until disk disk_name isn't placed on new_sd
+        """
+        migrated_disk = getVmDisk(vm_name, disk_name)
+        target_domain = STORAGE_DOMAIN_API.find(
+            migrated_disk.storage_domains.storage_domain[0].get_id(), 'id')
+        return target_domain.name == new_sd
+    logger.info("Migrating disk %s of vm %s to domain %s", disk_name, vm_name,
+                target_sd)
+    move_vm_disk(vm_name, disk_name, target_sd, timeout=timeout, wait=wait)
+    if wait:
+        sampler = TimeoutingSampler(timeout, sleep,
+                                    _wait_for_new_storage_domain,
+                                    vm_name, disk_name, target_sd)
+        for sample in sampler:
+            if sample:
+                break
+        waitForDisksState([disk_name], timeout=timeout)
+        wait_for_jobs()
+
+
+@is_action('liveMigrateVm')
+def live_migrate_vm(vm_name, timeout=VM_IMAGE_OPT_TIMEOUT*2, wait=True,
+                    ensure_on=True):
+    """
+    Description: Live migrate all vm's disks
+    Author: ratamir
+    Parameters:
+        * vm_name - name of the vm
+        * timeout - after how many seconds should be raised exception
+        * wait - if should wait until done
+        * ensure_on - if vm is not up will start before lsm
+    Throws:
+        * DiskException if something went wrong
+        * VMException if vm is not up and ensure_on=False
+        * APITimeout if waiting for snapshot was longer than 20 seconds
+    """
+    logger.info("Start Live Migrating vm %s disks", vm_name)
+    vm_obj = VM_API.find(vm_name)
+    if vm_obj.get_status().get_state() == ENUMS['vm_state_down']:
+        logger.warning("Storage live migrating vm %s is not in up status",
+                       vm_name)
+        if ensure_on:
+            start_vms([vm_name], 1, wait_for_ip=False)
+            waitForVMState(vm_name)
+        else:
+            raise exceptions.VMException("VM must be up to perform live "
+                                         "storage migration")
+    vm_disks = [disk.get_name() for disk in getObjDisks(vm_name,
+                                                        get_href=False)]
+    logger.info("Live Storage Migrating vm %s, will migrate following "
+                "disks: %s", vm_name, vm_disks)
+    for disk in vm_disks:
+        target_sd = get_other_storage_domain(disk, vm_name)
+        live_migrate_vm_disk(vm_name, disk, target_sd, timeout=timeout,
+                             wait=wait)
+    if wait:
+        wait_for_jobs()
+        waitForVMState(vm_name, timeout=timeout, sleep=5)
+
+
+@is_action('removeAllVmLmSnapshots')
+def remove_all_vm_lsm_snapshots(vm_name):
+    """
+    Description: Removes all snapshots of given VM which were created during
+    live storage migration (according to snapshot description)
+    Author: ratamir
+    Parameters:
+        * vm_name - name of the vm that should be cleaned out of snapshots
+    created during live migration
+    Raise: AssertionError if something went wrong
+    """
+    logger.info("Removing all '%s'", LIVE_SNAPSHOT_DESCRIPTION)
+    stop_vms_safely([vm_name])
+    snapshots = _getVmSnapshots(vm_name, False)
+    results = [removeSnapshot(True, vm_name, LIVE_SNAPSHOT_DESCRIPTION,
+                              SNAPSHOT_TIMEOUT)
+               for snapshot in snapshots
+               if snapshot.description == LIVE_SNAPSHOT_DESCRIPTION]
+    assert False not in results
+    wait_for_jobs()
+
+
+@is_action('getVmStorageDevices')
+def get_vm_storage_devices(vm_name, username, password,
+                           filter_device=FILTER_DEVICE, ensure_vm_on=False):
+    """
+    Function that returns vm storage devices
+    Author: ratamir
+    Parameters:
+        * vm_name - name of vm which write operation should occur on
+        * username - username for vm
+        * password - password for vm
+        * filter - filter regex for device (e.g. 'vd*')
+        * ensure_on - True if wish to make sure that vm is up
+    Return: list of devices (e.g [vdb,vdc,...]) and boot device,
+    or raise EntityNotFound if error occurs
+    """
+    if ensure_vm_on:
+        start_vms([vm_name], 1, wait_for_ip=False)
+        waitForVMState(vm_name)
+    vm_ip = get_vm_ip(vm_name)
+    vm_machine = Machine(host=vm_ip, user=username,
+                         password=password).util('linux')
+    output = vm_machine.get_boot_storage_device()
+    boot_disk = 'vda' if 'vd' in output else 'sda'
+    vm_devices = vm_machine.get_storage_devices(filter=filter_device)
+    if not vm_devices:
+        raise EntityNotFound("Error occurred retrieving vm devices")
+    vm_devices = [device for device in vm_devices if device != boot_disk]
+    return vm_devices, boot_disk
+
+
+@is_action('getVmStorageDevices')
+def verify_vm_disk_moved(vm_name, disk_name, source_sd,
+                         target_sd=None):
+    """
+    Function that checks if disk movement was actually succeeded
+    Author: ratamir
+    Parameters:
+        * vm_name - name of vm which write operation should occur on
+        * disk_name - the name of the disk that moved
+        * source_sd - original storage domain
+        * target_sd - destination storage domain
+    Return: True in case source and target sds are different or actual target
+            is equal to target_sd, False otherwise
+    """
+    actual_sd = get_disk_storage_domain_name(disk_name, vm_name)
+    if target_sd is not None:
+        if source_sd != target_sd:
+            if actual_sd == target_sd:
+                return True
+    elif source_sd != actual_sd:
+        return True
+    return False

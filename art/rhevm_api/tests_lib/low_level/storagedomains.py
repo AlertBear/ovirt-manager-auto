@@ -1109,7 +1109,8 @@ def findNonMasterStorageDomains(positive, datacenter):
 @is_action()
 def findIsoStorageDomains(datacenter=None):
     '''
-    Description: find all iso storage domains in datacenter only if specified
+    Description: find all iso storage domains, if datacenter is specified
+                 searches only in that specific datacenter.
     Author: cmestreg
     Parameters:
         * datacenter - datacenter name
@@ -1630,6 +1631,19 @@ def get_total_size(storagedomain):
     """
     sdObj = util.find(storagedomain)
     return sdObj.get_available() + sdObj.get_used()
+
+
+@is_action()
+def get_free_space(storagedomain):
+    """
+    Description: Gets the free space of the storage domain
+    Author: ratamir
+    Parameters:
+        * storagedomain - name of the storage domain
+    Returns: total size of the storage domain in bytes
+    """
+    sdObj = util.find(storagedomain)
+    return sdObj.get_available() - sdObj.get_used()
 
 
 @is_action()

@@ -10,6 +10,7 @@ JOBS_API = get_api('job', 'jobs')
 STEPS_API = get_api('step', 'steps')
 LOGGER = logging.getLogger(__name__)
 TASK_TIMEOUT = 600
+JOB_TIMEOUT = 1200
 TASK_POLL = 5
 
 
@@ -57,7 +58,7 @@ def get_active_jobs():
 
 
 @is_action("waitForJobs")
-def wait_for_jobs(timeout=TASK_TIMEOUT, sleep=TASK_POLL):
+def wait_for_jobs(timeout=JOB_TIMEOUT, sleep=TASK_POLL):
     """
     Description: Waits until all tasks in data-center are finished
     Author: ratamir
