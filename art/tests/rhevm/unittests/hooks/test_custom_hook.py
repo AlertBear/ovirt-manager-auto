@@ -118,6 +118,9 @@ class TestCaseVdsm(TestCase):
         test_utils.removeFileOnHost(positive=True, ip=config.HOST,
                                     password=config.HOST_PASSWORD,
                                     filename=path.join(HOOK_DIR, hook_name))
+        test_utils.removeFileOnHost(positive=True, ip=config.HOST,
+                                    password=config.HOST_PASSWORD,
+                                    filename=path.join(TMP, self._hook_name()))
         check_vdsmd()
 
 

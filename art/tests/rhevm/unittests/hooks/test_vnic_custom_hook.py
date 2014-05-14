@@ -145,6 +145,15 @@ class TestCaseAfterBeforeNicHotplug(TestCaseVnic):
         assert vms.addNic(True, vm=config.VM_NAME, name=self.NIC_NAME,
                           network=config.MGMT_BRIDGE, vnic_profile=PROFILE_A)
 
+    def tearDown(self):
+        """ remove created nic """
+        assert vms.stopVm(True, config.VM_NAME)
+        assert vms.removeNic(True, config.VM_NAME, self.NIC_NAME)
+        assert vms.startVm(True, vm=config.VM_NAME,
+                           wait_for_status=config.VM_UP,
+                           wait_for_ip=True)
+        super(TestCaseAfterBeforeNicHotplug, self).tearDown()
+
     @istest
     @tcms(PLAN, 295122)
     def after_before_nic_hotplug(self):
@@ -166,6 +175,11 @@ class TestCaseAfterBeforeNicHotunplug(TestCaseVnic):
         """ hot unplug nic """
         super(TestCaseAfterBeforeNicHotunplug, self).setUp()
         assert vms.hotUnplugNic(True, vm=config.VM_NAME, nic=HOTUNPLUG_NIC)
+
+    def tearDown(self):
+        """ plug nic back """
+        super(TestCaseAfterBeforeNicHotunplug, self).tearDown()
+        assert vms.hotPlugNic(True, config.VM_NAME, HOTUNPLUG_NIC)
 
     @istest
     @tcms(PLAN, 295128)
@@ -201,7 +215,7 @@ class TestCaseAfterUpdateDeviceFail(TestCaseVnic):
     """ after_update_device_fail hook """
     __test__ = True
 
-    FAIL_NIC = 'net0'
+    FAIL_NIC = 'net1'
     NONEXISTENT = 'xxxyxxx'
     UPDATE_FAIL = ('vdsClient -s 0 vmUpdateDevice %s deviceType=interface '
                    'alias=%s network=%s')
