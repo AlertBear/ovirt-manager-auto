@@ -18,6 +18,7 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 import logging
+from pprint import pformat
 
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.tests_lib.low_level import hosts
@@ -496,6 +497,8 @@ def create_storages(storage, type_, host, datacenter,
         ENUMS['storage_type_fcp']: FCPStorageAdder,
         ENUMS['storage_type_local']: LocalFSStorageAdder,
         ENUMS['storage_type_posixfs']: PosixFSStorageAdder}
+
+    logger.debug('Creating storages: %s', pformat(storage))
 
     if type_ in storage_types:
         storage_adder = storage_types[type_](
