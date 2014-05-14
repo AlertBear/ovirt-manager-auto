@@ -15,15 +15,14 @@ rest_conn = ART_CONFIG['REST_CONNECTION']
 REST_API_PASS = rest_conn.get('password')
 REST_API_HOST = rest_conn.get('host')
 
-#MAIN_SETUP = "https://10.34.63.3:443/api"
 # workaround to skip sdk for now
 MAIN_SETUP = "https://lilach-rhel.qa.lab.tlv.redhat.com:443/api"
 PGPASS = "123456"
 HOST_PASS = "qum5net"
 
-# image uploader is using default names for iso/export domain, which are
+# image/iso uploader is using default names for iso/export domain, which are
 # specified in high_level.storagedomains.create_storages
-ISO_DOMAIN_NAME = 'export_domain'
+ISO_DOMAIN_NAME = 'iso_domain'
 EXPORT_DOMAIN_NAME = 'export_domain'
 DEFAULT = {
     'def_vm_name': VM_NAME,  # name
@@ -51,7 +50,7 @@ TESTING_ENV = {
 }
 
 ANSWERS = {
-    #KEYWORDS FOR OTOPI ANSWERFILE
+    # KEYWORDS FOR OTOPI ANSWERFILE
     'OSETUP_RPMDISTRO/enableUpgrade': 'none:None',
     'OVESETUP_CORE/engineStop': 'none:None',
     'OVESETUP_DIALOG/confirmSettings': 'bool:True',
