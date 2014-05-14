@@ -16,7 +16,7 @@
 # License along with this software; if not, write to the Free
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-
+import logging
 from art.core_api.apis_utils import getDS
 from art.rhevm_api.utils.test_utils import get_api, split
 from art.core_api.validator import compareElements, compareCollectionSize
@@ -40,6 +40,8 @@ Roles = getDS('Roles')
 Role = getDS('Role')
 Tag = getDS('Tag')
 Permission = getDS('Permission')
+
+logger = logging.getLogger(__name__)
 
 
 @is_action()
@@ -234,13 +236,14 @@ def loginAsUser(user, domain, password, filter):
      * password - password of user
      * filter - true if user has non-admin role, false if user has admin role
     """
+    get_api.logoff_api()
     msg = "Logged in as %s@%s(filter=%s)"
     global opts
     opts['filter'] = filter
     opts['user'] = user
     opts['user_domain'] = domain
     opts['password'] = password
-    util.logger.info(msg % (user, domain, filter))
+    logger.info(msg % (user, domain, filter))
 
 
 def fetchUserGroups(positive, user_name):

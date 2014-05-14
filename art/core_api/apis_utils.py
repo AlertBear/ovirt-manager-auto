@@ -95,6 +95,16 @@ class APIUtil(object):
     def getElemFromLink(self, elm, link_name, **kwagrs):
         return
 
+    @abc.abstractmethod
+    def login(self):
+        return
+
+    # FIXME: when we will move to python 2.7: to use @abc.abstractclassmethod
+    @classmethod
+    @abc.abstractmethod
+    def logout(cls):
+        return
+
     @property
     def logger(self):
         return logging.getLogger(self.collection_name)

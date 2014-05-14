@@ -18,15 +18,17 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 import time
+import logging
 from art.core_api import validator
 from art.core_api.apis_utils import data_st
 from art.core_api.apis_exceptions import EntityNotFound
+from art.core_api.apis_exceptions import APIException, APILoginError
 from ovirtsdk import api as sdkApi
 from ovirtsdk.xml import params as sdk_params
-from ovirtsdk.infrastructure.errors import RequestError
+from ovirtsdk.infrastructure.errors import RequestError, DisconnectedError
 from art.core_api.apis_utils import APIUtil
 
-sdkInit = None
+logger = logging.getLogger(__name__)
 
 # default timeout
 DEF_TIMEOUT = 900
@@ -42,38 +44,63 @@ class SdkUtil(APIUtil):
     '''
     Implements SDK APIs methods
     '''
+    _sdkInit = None
 
     def __init__(self, element, collection):
         super(SdkUtil, self).__init__(element, collection)
+        self.login()
 
-        global sdkInit
-
-        if not sdkInit:
+    def login(self):
+        """
+        Description: login to python sdk.
+        Author: imeerovi
+        Parameters:
+        Returns:
+        """
+        if not self._sdkInit:
             user_with_domain = '{0}@{1}'.format(self.opts['user'],
                                                 self.opts['user_domain'])
-            if not self.opts['secure']:
-                self.api = \
-                    sdkApi.API(self.opts['uri'], user_with_domain,
-                               self.opts['password'], insecure=True,
-                               persistent_auth=self.opts['persistent_auth'],
-                               session_timeout=self.opts['session_timeout'],
-                               renew_session=True,
-                               filter=self.opts['filter'])
-            else:
-                self.api = \
-                    sdkApi.API(self.opts['uri'], user_with_domain,
-                               self.opts['password'],
-                               self.opts['ssl_key_file'],
-                               self.opts['ssl_cert_file'],
-                               self.opts['ssl_ca_file'],
-                               persistent_auth=self.opts['persistent_auth'],
-                               session_timeout=self.opts['session_timeout'],
-                               renew_session=True,
-                               filter=self.opts['filter'])
+            try:
+                if not self.opts['secure']:
+                    self.api = \
+                        sdkApi.API(
+                            self.opts['uri'], user_with_domain,
+                            self.opts['password'], insecure=True,
+                            persistent_auth=self.opts['persistent_auth'],
+                            session_timeout=self.opts['session_timeout'],
+                            renew_session=True, filter=self.opts['filter'])
+                else:
+                    self.api = \
+                        sdkApi.API(
+                            self.opts['uri'], user_with_domain,
+                            self.opts['password'], self.opts['ssl_key_file'],
+                            self.opts['ssl_cert_file'],
+                            self.opts['ssl_ca_file'],
+                            persistent_auth=self.opts['persistent_auth'],
+                            session_timeout=self.opts['session_timeout'],
+                            renew_session=True, filter=self.opts['filter'])
+            except (RequestError, DisconnectedError) as e:
+                raise APILoginError(e)
 
-            sdkInit = self.api
+            self.__class__._sdkInit = self.api
+
         else:
-            self.api = sdkInit
+            self.api = self._sdkInit
+
+    @classmethod
+    def logout(cls):
+        """
+        Description: logout from python sdk.
+        Author: imeerovi
+        Parameters:
+        Returns:
+        """
+        if cls._sdkInit:
+            try:
+                cls._sdkInit.disconnect()
+            except Exception as e:
+                raise APIException(e, 'logout from python sdk failed')
+            cls._sdkInit = None
 
     def get(self, collection=None, **kwargs):
         '''

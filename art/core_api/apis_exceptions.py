@@ -25,6 +25,13 @@ class APIException(Exception):
     pass
 
 
+class APILoginError(APIException):
+    '''
+    Raised when API login failed
+    '''
+    pass
+
+
 class EntityNotFound(APIException):
     '''
     Raised when a RHEVM REST framework entity like a Host, DataCenter or

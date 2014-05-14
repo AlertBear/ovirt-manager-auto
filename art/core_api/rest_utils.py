@@ -22,7 +22,8 @@ import re
 import time
 
 from art.core_api import http, template_parser, validator, measure_time
-from art.core_api.apis_exceptions import EntityNotFound
+from art.core_api.apis_exceptions import EntityNotFound, APIException,\
+    APILoginError
 from art.core_api.apis_utils import APIUtil, parse, data_st
 from art.test_handler import settings
 
@@ -31,39 +32,44 @@ DEF_SLEEP = 10  # default sleep
 NEGATIVE_CODES = [400, 409, 500]
 NEGATIVE_CODES_CREATE = NEGATIVE_CODES + [404]
 
-restInit = None
-
 
 class RestUtil(APIUtil):
 
     xsd = None
     xsd_schema_errors = []
+    _restInit = None
 
     '''
     Implements REST APIs methods
     '''
     def __init__(self, element, collection, **kwargs):
-
         super(RestUtil, self).__init__(element, collection, **kwargs)
-
         self.entry_point = settings.opts.get('entry_point', 'api')
-        standalone = self.opts.get('standalone', False)
+        self.standalone = self.opts.get('standalone', False)
+        self.login()
 
-        global restInit
-
-        if restInit and not standalone:
-            self.api = restInit
+    def login(self):
+        """
+        Description: login to rest api.
+        Author: imeerovi
+        Parameters:
+        Returns:
+        """
+        if self._restInit and not self.standalone:
+            self.api = self._restInit
         else:
             self.api = http.HTTPProxy(self.opts)
             if self.opts['persistent_auth']:
                 self.api.headers['Prefer'] = 'persistent-auth'
             self.api.headers['Session-TTL'] = self.opts['session_timeout']
-            if self.opts['filter']:
-                self.api.headers['Filter'] = str(self.opts['filter'])
+            self.api.headers['Filter'] = str(self.opts['filter'])
 
-            if not standalone:
-                self.api.connect()
-                restInit = self.api
+            if not self.standalone:
+                try:
+                    self.api.connect()
+                except APIException as e:
+                    raise APILoginError(e)
+                self.__class__._restInit = self.api
 
         self.links = self.api.HEAD_for_links()
 
@@ -73,6 +79,16 @@ class RestUtil(APIUtil):
             self.xsd = etree.XMLSchema(xsd_schema)
 
         self.max_collection = settings.opts.get('max_collection')
+
+    @classmethod
+    def logout(cls):
+        """
+        Description: logout from rest api.
+        Author: imeerovi
+        Parameters:
+        Returns: True if logout succeeded or False otherwise
+        """
+        cls._restInit = None
 
     def validateResponseViaXSD(self, href, ret):
         '''

@@ -29,7 +29,7 @@ from art.core_api import validator
 from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.data_struct.data_structures import *
 from art.rhevm_api.data_struct.data_structures import ClassesMapping
-from art.core_api.apis_exceptions import APIException
+from art.core_api.apis_exceptions import APIException, APILoginError
 from art.core_api.apis_utils import APIUtil
 
 import java_sdk
@@ -43,9 +43,6 @@ addlock = threading.Lock()
 jvm = java_sdk.initVM(java_sdk.CLASSPATH)
 
 import org.ovirt.engine.sdk
-
-
-sdk_init = None
 
 # default timeout
 DEF_TIMEOUT = 900
@@ -769,6 +766,7 @@ class JavaSdkUtil(APIUtil):
         * element - data_structures.py style element
         * collection - data_structures.py style collection
     """
+    _sdk_init = None
 
     @jvm_thread_care
     def __init__(self, element, collection):
@@ -783,54 +781,79 @@ class JavaSdkUtil(APIUtil):
         else:
             self.java_sdk_collection_name = \
                 underscore_to_camelcase(self.collection_name)
+        self.login()
 
-        global sdk_init
-
-        if not sdk_init:
+    def login(self):
+        """
+        Description: login to java sdk.
+        Author: imeerovi
+        Parameters:
+        Returns:
+        """
+        if not self._sdk_init:
             session_id = \
                 self.opts['session_id'] if 'session_id' in self.opts else None
             request_timeout = self.opts['request_timeout'] if \
                 'request_timeout' in self.opts else None
             user_with_domain = \
                 '{0}@{1}'.format(self.opts['user'], self.opts['user_domain'])
+            try:
+                if not self.opts['secure']:
+                    # Api(java.lang.String url, java.lang.String username,
+                    # java.lang.String password, java.lang.String sessionid,
+                    # java.lang.Integer port, java.lang.Integer requestTimeout,
+                    # java.lang.Integer sessionTimeout,
+                    # java.lang.Boolean persistentAuth,
+                    # java.lang.Boolean noHostVerification,
+                    # java.lang.Boolean filter,
+                    # java.lang.Boolean debug)
+                    self.api = org.ovirt.engine.sdk.Api(
+                        self.opts['uri'].rstrip('/'),
+                        user_with_domain, self.opts['password'], session_id,
+                        self.opts['port'], request_timeout,
+                        self.opts['session_timeout'],
+                        self.opts['persistent_auth'],
+                        True, self.opts['filter'], self.opts['debug'])
+                else:
+                    # Api(java.lang.String url, java.lang.String username,
+                    # java.lang.String password, java.lang.String sessionid,
+                    # java.lang.Integer port, java.lang.Integer requestTimeout,
+                    # java.lang.Integer sessionTimeout,
+                    # java.lang.Boolean persistentAuth,
+                    # java.lang.String keyStorePath,
+                    # java.lang.String keyStorePassword,
+                    # java.lang.Boolean filter,
+                    # java.lang.Boolean debug)
+                    self.api = org.ovirt.engine.sdk.Api(
+                        self.opts['uri'].rstrip('/'),
+                        user_with_domain, self.opts['password'], session_id,
+                        self.opts['port'], request_timeout,
+                        self.opts['session_timeout'],
+                        self.opts['persistent_auth'],
+                        self.opts['ssl_key_file'],
+                        self.opts['ssl_cert_file'], self.opts['filter'],
+                        self.opts['debug'])
+            except java_sdk.JavaError as e:
+                raise APILoginError(e)
 
-            if not self.opts['secure']:
-                # Api(java.lang.String url, java.lang.String username,
-                # java.lang.String password, java.lang.String sessionid,
-                # java.lang.Integer port, java.lang.Integer requestTimeout,
-                # java.lang.Integer sessionTimeout,
-                # java.lang.Boolean persistentAuth,
-                # java.lang.Boolean noHostVerification,
-                # java.lang.Boolean filter,
-                # java.lang.Boolean debug)
-                self.api = org.ovirt.engine.sdk.Api(
-                    self.opts['uri'].rstrip('/'),
-                    user_with_domain, self.opts['password'], session_id,
-                    self.opts['port'], request_timeout,
-                    self.opts['session_timeout'],
-                    self.opts['persistent_auth'],
-                    True, self.opts['filter'], self.opts['debug'])
-            else:
-                # Api(java.lang.String url, java.lang.String username,
-                # java.lang.String password, java.lang.String sessionid,
-                # java.lang.Integer port, java.lang.Integer requestTimeout,
-                # java.lang.Integer sessionTimeout,
-                # java.lang.Boolean persistentAuth,
-                # java.lang.String keyStorePath,
-                # java.lang.String keyStorePassword, java.lang.Boolean filter,
-                # java.lang.Boolean debug)
-                self.api = org.ovirt.engine.sdk.Api(
-                    self.opts['uri'].rstrip('/'),
-                    user_with_domain, self.opts['password'], session_id,
-                    self.opts['port'], request_timeout,
-                    self.opts['session_timeout'],
-                    self.opts['persistent_auth'],
-                    self.opts['ssl_key_file'],
-                    self.opts['ssl_cert_file'], self.opts['filter'],
-                    self.opts['debug'])
-            sdk_init = self.api
+            self.__class__._sdk_init = self.api
         else:
-            self.api = sdk_init
+            self.api = self._sdk_init
+
+    @classmethod
+    def logout(cls):
+        """
+        Description: logout from java sdk.
+        Author: imeerovi
+        Parameters:
+        Returns:
+        """
+        if cls._sdk_init:
+            try:
+                cls._sdk_init.shutdown()
+            except Exception as e:
+                raise APIException(e, 'logout from java sdk failed')
+            cls._sdk_init = None
 
     def __java_method_selector(self, collection, opcode):
         '''

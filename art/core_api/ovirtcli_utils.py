@@ -17,6 +17,7 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 import pexpect as pe
+import logging
 import re
 import threading
 import subprocess
@@ -29,11 +30,11 @@ from art.rhevm_api.data_struct.data_structures import ClassesMapping
 from art.core_api.rest_utils import RestUtil
 from art.core_api.apis_exceptions import CLIError, CLITimeout,\
     CLICommandFailure, UnsupportedCLIEngine, CLITracebackError,\
-    CLIAutoCompletionFailure, EntityNotFound
+    CLIAutoCompletionFailure, EntityNotFound, APILoginError
 from art.core_api import validator
 from utilities.utils import createCommandLineOptionFromDict
 
-cliInit = False
+logger = logging.getLogger(__name__)
 addlock = threading.Lock()
 
 ILLEGAL_XML_CHARS = u'[\x00-\x08\x0b\x0c\x0e-\x1F\uD800-\uDFFF\uFFFE\uFFFF]'
@@ -119,6 +120,18 @@ class CliConnection(object):
                      Reason: Login may differ between different CLI engines
         Author: imeerovi
         """
+
+    def logout(self):
+        """
+        Description: cli logout
+        Author: imeerovi
+        """
+        try:
+            self.sendCmd('exit', 10)
+        except CLIError:
+            logger.debug('logged out from cli')
+        else:
+            raise CLICommandFailure('logout from cli failed')
 
     @property
     def expectDict(self):
@@ -781,15 +794,24 @@ class CliUtil(RestUtil):
         * collection - data_structures.py style collection
     """
     _shells = {RHEVM_SHELL: RhevmCli, OVIRT_SHELL: OvirtCli}
+    _cliInit = None
 
     def __init__(self, element, collection):
         super(CliUtil, self).__init__(element, collection)
         # no _ in cli
         self.cli_element_name = self.element_name.replace('_', '')
+        # No need to call login here - CliUtil login overrides RestUtil one
+        # so it will be used in RestUtil __init__
+        # self.login()
 
-        global cliInit
-
-        if not cliInit:
+    def login(self):
+        """
+        Description: login to cli.
+        Author: imeerovi
+        Parameters:
+        Returns:
+        """
+        if not self._cliInit:
             if self.opts['cli_tool'] not in self._shells:
                 msg = 'Unsupported CLI engine: %s' % self.opts['cli_tool']
                 raise UnsupportedCLIEngine(msg)
@@ -808,11 +830,29 @@ class CliUtil(RestUtil):
 
             except pe.ExceptionPexpect as e:
                 self.logger.error('Pexpect Connection Error: %s ' % e.value)
-                exit(2)
+                raise APILoginError(e)
+            except CLIError as e:
+                raise APILoginError(e)
 
-            cliInit = self.cli
+            self.__class__._cliInit = self.cli
         else:
-            self.cli = cliInit
+            self.cli = self._cliInit
+        super(CliUtil, self).login()
+
+    @classmethod
+    def logout(cls):
+        """
+        Description: logout from cli.
+        Author: imeerovi
+        Parameters:
+        Returns:
+        """
+        if cls._cliInit:
+            try:
+                cls._cliInit.logout()
+                cls._cliInit = None
+            finally:
+                super(CliUtil, cls).logout()
 
     def getCollection(self, href):
 
