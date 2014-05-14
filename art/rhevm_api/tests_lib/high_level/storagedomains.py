@@ -357,17 +357,15 @@ class StorageAdder(object):
         self.add_iso_domains()
         return created_storages
 
-    def _add_nfs_domain(self, address, path, sd_type):
+    def _add_nfs_domain(self, address, path, sd_type, name):
         if address is not None and path is not None:
             if not addNFSDomain(
-                    self.host, self.export_name, self.datacenter,
-                    address, path, sd_type):
+                    self.host, name, self.datacenter, address, path, sd_type):
                 raise errors.StorageDomainException(
                     "addNFSDomain %s (%s, %s, %s) to DC %s failed." %
                     (sd_type, address, path, self.host, self.datacenter))
             logging.info(
-                "%s domain %s was created successfully",
-                sd_type, self.export_name)
+                "%s domain %s was created successfully", sd_type, name)
         else:
             logging.info(
                 "There is no %s domain defined in config file", sd_type)
@@ -379,7 +377,8 @@ class StorageAdder(object):
         export_path = self.storage.get('export_domain_path', None)
 
         self._add_nfs_domain(
-            export_address, export_path, ENUMS['storage_dom_type_export'])
+            export_address, export_path, ENUMS['storage_dom_type_export'],
+            self.export_name)
 
     def add_iso_domains(self):
         """ Adds iso domain
@@ -387,7 +386,8 @@ class StorageAdder(object):
         iso_address = self.storage.get('iso_domain_address', None)
         iso_path = self.storage.get('iso_domain_path', None)
         self._add_nfs_domain(
-            iso_address, iso_path, ENUMS['storage_dom_type_iso'])
+            iso_address, iso_path, ENUMS['storage_dom_type_iso'],
+            self.iso_name)
 
 
 class NFSStorageAdder(StorageAdder):
