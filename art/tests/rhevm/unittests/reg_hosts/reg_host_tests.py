@@ -449,10 +449,7 @@ class AddSecondaryPowerManagement(TestPowerManagement):
 
     @classmethod
     def setup_class(cls):
-        logger.info("setting host: %s to maintenance", HOST)
-        if not hosts.deactivateHost(True, host=HOST):
-            raise HostException("failed to set host: %s to "
-                                "maintenance" % HOST)
+        logger.info("Add primary power management to host: %s", HOST)
         add_power_management(host=HOST, pm_type=PM1_TYPE,
                              pm_address=PM1_ADDRESS, pm_user=PM1_USER,
                              pm_password=PM1_PASS)
