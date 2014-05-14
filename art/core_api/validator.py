@@ -36,7 +36,8 @@ DS_CLASS_MAPPER = {
     'HostNicStatistics': 'Statistics',
     'DiskStatistics': 'Statistics',
     'NetworkVnicProfile': 'VnicProfile',
-    'JobStep': 'Step'
+    'JobStep': 'Step',
+    'HostNICLabels': 'Labels'
 }
 
 
