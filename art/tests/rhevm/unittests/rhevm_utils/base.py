@@ -61,8 +61,8 @@ def teardown_module():
     Clean datacenter
     """
     params = ART_CONFIG['PARAMETERS']
-    cleanDataCenter(True, params.get('storage_name'),
-                    vdc=params.get('host'),
+    dc_name = params.get('dc_name', 'datacenter_%s' % params.get('basename'))
+    cleanDataCenter(True, dc_name, vdc=params.get('host'),
                     vdc_password=params.get('vdc_password'))
 
 _multiprocess_can_split_ = True
