@@ -3,7 +3,7 @@ config module for host regression test
 """
 __test__ = False
 
-from . import ART_CONFIG
+from art.test_handler.settings import ART_CONFIG
 
 TEST_NAME = "regression_hosts"
 PARAMETERS = ART_CONFIG['PARAMETERS']

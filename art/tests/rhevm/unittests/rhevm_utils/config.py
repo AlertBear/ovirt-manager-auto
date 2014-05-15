@@ -2,11 +2,13 @@ from rhevm_utils import base
 from utilities.rhevm_tools.config import ConfigUtility
 from utilities.rhevm_tools import errors
 from art.test_handler.tools import tcms
+from art.unittest_lib import attr
 
 CONFIG_TEST_PLAN = 3727
 NAME = 'config'
 
 
+@attr(tier=0)
 class ConfigTestCase(base.RHEVMUtilsTestCase):
 
     __test__ = True  # FIXME: change to True, when you implement this

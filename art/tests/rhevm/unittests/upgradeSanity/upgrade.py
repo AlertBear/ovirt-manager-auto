@@ -5,15 +5,18 @@ Sanity testing of upgrade.
 import logging
 from pprint import pformat
 
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import CoreSystemTest as TestCase
 from utilities.rhevm_tools.base import Setup
 from utilities.rhevm_tools.setup import SetupUtility
+
+from art.unittest_lib import attr
 
 import config as cfg
 
 LOGGER = logging.getLogger(__name__)
 
 
+@attr(tier=1)
 class UpgradeSanityUpgrade(TestCase):
     """ Perform the upgrade """
     __test__ = True

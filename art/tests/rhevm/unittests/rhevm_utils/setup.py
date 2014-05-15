@@ -9,6 +9,8 @@ from rhevm_utils import base
 from utilities.rhevm_tools.setup import SetupUtility
 from unittest_conf import config, REST_API_HOST
 
+from art.unittest_lib import attr
+
 logger = logging.getLogger(__name__)
 
 NAME = 'setup'
@@ -17,6 +19,7 @@ _multiprocess_can_split_ = True
 host = REST_API_HOST
 
 
+@attr(tier=0)
 class SetupTestCase(base.RHEVMUtilsTestCase):
     """
         rhevm setup test cases

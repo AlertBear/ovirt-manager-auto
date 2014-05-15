@@ -4,7 +4,7 @@ External Tasks config module
 
 __test__ = False
 
-from . import ART_CONFIG
+from art.test_handler.settings import ART_CONFIG
 
 TEST_NAME = "External_Tasks"
 PARAMETERS = ART_CONFIG['PARAMETERS']

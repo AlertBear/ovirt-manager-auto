@@ -8,10 +8,11 @@ import roles
 import art.test_handler.exceptions as errors
 from art.test_handler.tools import bz
 from nose.tools import istest
+from art.unittest_lib import attr
 from functools import wraps
 from time import sleep
 from art.core_api.apis_exceptions import EntityNotFound
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import CoreSystemTest as TestCase
 from art.rhevm_api.tests_lib.low_level import storagedomains, disks,\
     users, vms, vmpools, templates, mla, datacenters, hosts, networks, clusters
 from art.rhevm_api.tests_lib.high_level import storagedomains as h_sd
@@ -149,6 +150,7 @@ class BaseTest(TestCase):
                       domain=config.USER_DOMAIN)
 
 
+@attr(tier=2)
 class Case_vm_basic_operations(BaseTest):
     __test__ = True
 
@@ -182,6 +184,7 @@ class Case_vm_basic_operations(BaseTest):
         self.assertTrue(vms.stopVm(self.positive, VM_NAME))
 
 
+@attr(tier=2)
 class Case_edit_storage_pool_configuration(BaseTest):
     __test__ = True
 
@@ -205,6 +208,7 @@ class Case_edit_storage_pool_configuration(BaseTest):
                                          name=STRING, description=STRING))
 
 
+@attr(tier=2)
 class Case_delete_storage_pool(BaseTest):
     __test__ = True
 
@@ -226,6 +230,7 @@ class Case_delete_storage_pool(BaseTest):
             datacenters.removeDataCenter(self.positive, config.DC_NAME_B))
 
 
+@attr(tier=2)
 class Case_connect_to_vm(BaseTest):
     __test__ = True
 
@@ -250,6 +255,7 @@ class Case_connect_to_vm(BaseTest):
         self.assertTrue(vms.ticketVm(self.positive, VM_NAME, '120'))
 
 
+@attr(tier=2)
 class Case_create_storage_pool(BaseTest):
     __test__ = True
 
@@ -266,6 +272,7 @@ class Case_create_storage_pool(BaseTest):
                                       version=config.OVIRT_VERSION))
 
 
+@attr(tier=2)
 class Case_change_vm_custom_properties(BaseTest):
     __test__ = True
 
@@ -288,6 +295,7 @@ class Case_change_vm_custom_properties(BaseTest):
                                      custom_properties='sndbuf=111'))
 
 
+@attr(tier=2)
 class Case_create_vm(BaseTest):
     __test__ = True
 
@@ -303,6 +311,7 @@ class Case_create_vm(BaseTest):
                                      network=config.MGMT_BRIDGE))
 
 
+@attr(tier=2)
 class Case_delete_vm(BaseTest):
     __test__ = True
 
@@ -322,6 +331,7 @@ class Case_delete_vm(BaseTest):
         self.assertTrue(vms.removeVm(self.positive, VM_NAME))
 
 
+@attr(tier=2)
 class Case_edit_vm_properties(BaseTest):
     __test__ = True
 
@@ -343,6 +353,7 @@ class Case_edit_vm_properties(BaseTest):
                                      description=STRING))
 
 
+@attr(tier=2)
 class Case_change_vm_cd(BaseTest):
     __test__ = True
 
@@ -366,6 +377,7 @@ class Case_change_vm_cd(BaseTest):
                          self.positive)
 
 
+@attr(tier=2)
 class Case_import_export_vm(BaseTest):
     __test__ = True
 
@@ -404,6 +416,7 @@ class Case_import_export_vm(BaseTest):
                 raise e
 
 
+@attr(tier=2)
 class Case_configure_vm_network(BaseTest):
     __test__ = True
 
@@ -457,6 +470,7 @@ class Case_configure_vm_storage(BaseTest):
                                     storagedomain=config.MAIN_STORAGE_NAME))
 
 
+@attr(tier=2)
 class Case_manipulate_vm_snapshots(BaseTest):
     __test__ = True
 
@@ -489,6 +503,7 @@ class Case_manipulate_vm_snapshots(BaseTest):
                                             SNAPSHOT_NAME))
 
 
+@attr(tier=2)
 class Case_copy_template(BaseTest):
     __test__ = True
 
@@ -531,6 +546,7 @@ class Case_copy_template(BaseTest):
                 raise e
 
 
+@attr(tier=2)
 class Case_create_template(BaseTest):
     __test__ = True
 
@@ -552,6 +568,7 @@ class Case_create_template(BaseTest):
                                                  name=TEMPLATE_NAME))
 
 
+@attr(tier=2)
 class Case_edit_template_properties(BaseTest):
     __test__ = True
 
@@ -575,6 +592,7 @@ class Case_edit_template_properties(BaseTest):
                                                  memory=3*GB))
 
 
+@attr(tier=2)
 class Case_configure_template_network(BaseTest):
     __test__ = True
 
@@ -609,6 +627,7 @@ class Case_configure_template_network(BaseTest):
                                                     NIC_NAME2))
 
 
+@attr(tier=2)
 class Case_create_vm_pool(BaseTest):
     __test__ = True
 
@@ -636,6 +655,7 @@ class Case_create_vm_pool(BaseTest):
                                           template=TEMPLATE_NAME, size=1))
 
 
+@attr(tier=2)
 class Case_edit_vm_pool_configuration(BaseTest):
     __test__ = True
 
@@ -676,6 +696,7 @@ class Case_edit_vm_pool_configuration(BaseTest):
                 raise
 
 
+@attr(tier=2)
 class Case_vm_pool_basic_operations(BaseTest):
     __test__ = True
 
@@ -708,6 +729,7 @@ class Case_vm_pool_basic_operations(BaseTest):
         self.assertTrue(vmpools.allocateVmFromPool(self.positive, VMPOOL_NAME))
 
 
+@attr(tier=2)
 class Case_delete_vm_pool(BaseTest):
     __test__ = True
 
@@ -742,6 +764,7 @@ class Case_delete_vm_pool(BaseTest):
                 raise e
 
 
+@attr(tier=2)
 class Case_delete_template(BaseTest):
     __test__ = True
 
@@ -763,6 +786,7 @@ class Case_delete_template(BaseTest):
         self.assertTrue(templates.removeTemplate(self.positive, TEMPLATE_NAME))
 
 
+@attr(tier=2)
 class Case_manipulate_permissions(BaseTest):
     __test__ = True
 
@@ -793,6 +817,7 @@ class Case_manipulate_permissions(BaseTest):
                 raise e
 
 
+@attr(tier=2)
 class Case_create_host(BaseTest):
     __test__ = True
 
@@ -817,6 +842,7 @@ class Case_create_host(BaseTest):
                           address=config.ALT1_HOST_ADDRESS))
 
 
+@attr(tier=2)
 class Case_edit_host_configuration(BaseTest):
     __test__ = True
 
@@ -841,6 +867,7 @@ class Case_edit_host_configuration(BaseTest):
                 raise e
 
 
+@attr(tier=2)
 class Case_configure_host_network(BaseTest):
     __test__ = True
 
@@ -884,7 +911,8 @@ class Case_configure_host_network(BaseTest):
                 raise e
 
 
-class Case_manipulate_host(BaseTest):
+@attr(tier=2)
+class Case_maniputlate_host(BaseTest):
     __test__ = True
 
     def tearDown(self):
@@ -902,6 +930,7 @@ class Case_manipulate_host(BaseTest):
                 raise e
 
 
+@attr(tier=2)
 class Case_delete_host(BaseTest):
     __test__ = True
 
@@ -926,6 +955,7 @@ class Case_delete_host(BaseTest):
                 raise e
 
 
+@attr(tier=2)
 class Case_create_disk(BaseTest):
     __test__ = True
 
@@ -945,6 +975,7 @@ class Case_create_disk(BaseTest):
                           storagedomain=config.MAIN_STORAGE_NAME))
 
 
+@attr(tier=2)
 class Case_attach_disk(BaseTest):
     __test__ = True
 
@@ -974,6 +1005,7 @@ class Case_attach_disk(BaseTest):
             disks.attachDisk(self.positive, config.DISK_NAME, VM_NAME))
 
 
+@attr(tier=2)
 class Case_edit_disk_properties(BaseTest):
     __test__ = True
 
@@ -997,6 +1029,7 @@ class Case_edit_disk_properties(BaseTest):
                                          interface='ide'))
 
 
+@attr(tier=2)
 class Case_delete_disk(BaseTest):
     __test__ = True
 
@@ -1019,6 +1052,7 @@ class Case_delete_disk(BaseTest):
         self.assertTrue(disks.deleteDisk(self.positive, config.DISK_NAME))
 
 
+@attr(tier=2)
 class Case_create_cluster(BaseTest):
     __test__ = True
 
@@ -1036,6 +1070,7 @@ class Case_create_cluster(BaseTest):
                                 version=config.PARAMETERS.get(CV)))
 
 
+@attr(tier=2)
 class Case_edit_cluster_configuration(BaseTest):
     __test__ = True
 
@@ -1056,6 +1091,7 @@ class Case_edit_cluster_configuration(BaseTest):
                                                cpu=NEW_CPU))
 
 
+@attr(tier=2)
 class Case_assign_cluster_network(BaseTest):
     __test__ = True
 
@@ -1087,6 +1123,7 @@ class Case_assign_cluster_network(BaseTest):
                                          ALT_CLUSTER_NAME))
 
 
+@attr(tier=2)
 class Case_delete_cluster(BaseTest):
     __test__ = True
 
@@ -1107,6 +1144,7 @@ class Case_delete_cluster(BaseTest):
                                                ALT_CLUSTER_NAME))
 
 
+@attr(tier=2)
 class Case_manipulate_roles(BaseTest):
     __test__ = True
 
@@ -1128,6 +1166,7 @@ class Case_manipulate_roles(BaseTest):
         self.assertTrue(mla.removeRole(self.positive, USER_ROLE))
 
 
+@attr(tier=2)
 class Case_manipulate_users(BaseTest):
     __test__ = True
 
@@ -1152,6 +1191,7 @@ class Case_manipulate_users(BaseTest):
                 raise e
 
 
+@attr(tier=2)
 class Case_create_storage_domain(BaseTest):
     __test__ = True
 
@@ -1176,6 +1216,7 @@ class Case_create_storage_domain(BaseTest):
                 raise e
 
 
+@attr(tier=2)
 class Case_edit_storage_domain_configuration(BaseTest):
     __test__ = True
 
@@ -1200,6 +1241,7 @@ class Case_edit_storage_domain_configuration(BaseTest):
                                                name=STRING))
 
 
+@attr(tier=2)
 class Case_manipulate_storage_domain(BaseTest):
     __test__ = True
 
@@ -1228,6 +1270,7 @@ class Case_manipulate_storage_domain(BaseTest):
                                                  config.ALT1_STORAGE_NAME))
 
 
+@attr(tier=2)
 class Case_delete_storage_domain(BaseTest):
     __test__ = True
 
@@ -1261,6 +1304,7 @@ class Case_delete_storage_domain(BaseTest):
                 raise e
 
 
+@attr(tier=2)
 class Case_migrate_vm(BaseTest):
     __test__ = True
     to_host = config.MAIN_HOST_NAME
@@ -1292,6 +1336,7 @@ class Case_migrate_vm(BaseTest):
                                           self.to_host))
 
 
+@attr(tier=2)
 class Case_configure_storage_pool_network(BaseTest):
     __test__ = True
 

@@ -2,8 +2,9 @@
 External Tasks test
 
 """
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import CoreSystemTest as TestCase
 from nose.tools import istest
+from art.unittest_lib import attr
 from art.test_handler.tools import tcms, bz
 import art.test_handler.exceptions as errors
 from art.rhevm_api.utils.test_utils import get_api
@@ -37,6 +38,7 @@ class AddingJob(TestCase):
         return status
 
 
+@attr(tier=1)
 class AddJobWithCorrectDescription(AddingJob):
     """
     Adding job with correct description
@@ -63,6 +65,7 @@ class AddJobWithCorrectDescription(AddingJob):
             raise errors.JobException("Ending job was failed")
 
 
+@attr(tier=1)
 class AddJobWithEmptyDescription(AddingJob):
     """
     Adding job with empty description
@@ -124,6 +127,7 @@ class AddingStep(TestCase):
             raise errors.JobException("Ending job was failed")
 
 
+@attr(tier=1)
 class AddStepWithCorrectParameters(AddingStep):
     """
     Adding step with correct parameters
@@ -140,6 +144,7 @@ class AddStepWithCorrectParameters(AddingStep):
         logger.info("Step exist")
 
 
+@attr(tier=1)
 class AddStepWithIncorrectType(AddingStep):
     """
     Adding step with incorrect type
@@ -156,6 +161,7 @@ class AddStepWithIncorrectType(AddingStep):
         logger.info("Step adding was failed")
 
 
+@attr(tier=1)
 class AddSubStepWithCorrectParameters(TestCase):
     """
     Add sub step with correct description
@@ -216,6 +222,7 @@ class AddSubStepWithCorrectParameters(TestCase):
             raise errors.JobException("Ending job was failed")
 
 
+@attr(tier=1)
 class EndJobWithCorrectDescription(TestCase):
     """
     Ending job with correct description
@@ -244,6 +251,7 @@ class EndJobWithCorrectDescription(TestCase):
         logger.info("Ending job %s success", config.job_description)
 
 
+@attr(tier=1)
 class EndStepWithCorrectDescription(TestCase):
     """
     Ending step with correct description

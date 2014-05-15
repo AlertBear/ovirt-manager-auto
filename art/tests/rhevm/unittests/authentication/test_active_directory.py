@@ -10,8 +10,9 @@ __test__ = True
 import time
 import logging
 import config
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import CoreSystemTest as TestCase
 from nose.tools import istest
+from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.low_level import mla, users, general
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils import test_utils
@@ -174,6 +175,7 @@ class ActiveDirectory(TestCase):
         LOGGER.info("User with same name from different domains can login.")
 
 
+@attr(tier=1)
 class AD(ActiveDirectory):
     """ AD 2003 """
     __test__ = True
@@ -181,6 +183,7 @@ class AD(ActiveDirectory):
     PASSWORD = config.USER_PASSWORD
 
 
+@attr(tier=1)
 class AD_W2K12_R2(ActiveDirectory):
     """ AD 2012 """
     __test__ = True
@@ -188,6 +191,7 @@ class AD_W2K12_R2(ActiveDirectory):
     PASSWORD = config.W2K12R2_PASSWORD
 
 
+@attr(tier=1)
 class AD_W2K8_R2(ActiveDirectory):
     """ AD 2008 """
     __test__ = True

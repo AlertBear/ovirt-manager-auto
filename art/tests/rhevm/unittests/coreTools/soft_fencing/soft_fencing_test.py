@@ -12,9 +12,10 @@ from art.rhevm_api.tests_lib.low_level.vms import checkVmState
 from art.rhevm_api.utils.test_utils import get_api
 from art.test_handler.settings import opts
 from art.test_handler.tools import tcms
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import CoreSystemTest as TestCase
 from nose.tools import istest
 from art.rhevm_api.tests_lib.low_level import vms
+from art.unittest_lib import attr
 import art.test_handler.exceptions as errors
 import config
 import logging
@@ -90,6 +91,7 @@ class SoftFencing(TestCase):
         _delete_job_from_db()
 
 
+@attr(tier=2)
 class SoftFencingPassedWithoutPM(SoftFencing):
     """
     Positive: Soft fencing success on host without PM
@@ -106,6 +108,7 @@ class SoftFencingPassedWithoutPM(SoftFencing):
                           config.job_finished)
 
 
+@attr(tier=2)
 class SoftFencingFailedWithPM(SoftFencing):
     """
     Positive: After soft fencing failed, fence with power management
@@ -124,6 +127,7 @@ class SoftFencingFailedWithPM(SoftFencing):
                           config.job_failed)
 
 
+@attr(tier=2)
 class SoftFencingPassedWithPM(SoftFencing):
     """
     Positive: Soft fencing success on host with PM
@@ -141,6 +145,7 @@ class SoftFencingPassedWithPM(SoftFencing):
                           config.job_finished)
 
 
+@attr(tier=2)
 class CheckVmAfterSoftFencing(SoftFencing):
     """
     Positive: Check vm after soft fencing
@@ -191,6 +196,7 @@ class CheckVmAfterSoftFencing(SoftFencing):
             raise errors.VMException("cannot remove vm: %s" % cls.vm_test)
 
 
+@attr(tier=2)
 class SoftFencingToHostNoProxies(SoftFencing):
     """
     Positive: Soft fencing to host with power management without proxies

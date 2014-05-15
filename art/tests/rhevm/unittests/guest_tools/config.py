@@ -6,7 +6,7 @@ Config module for Guest Tools
 __test__ = False
 
 # Our chance to access config object of config file
-from . import ART_CONFIG
+from art.test_handler.settings import ART_CONFIG
 import logging
 # Name of the test
 TESTNAME = "Guest Tools"

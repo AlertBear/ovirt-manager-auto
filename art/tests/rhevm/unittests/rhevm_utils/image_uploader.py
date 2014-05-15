@@ -1,10 +1,12 @@
 from rhevm_utils import base
 from unittest_conf import (
     REST_API_PASS, IMAGE_UP_CONF, EXPORT_DOMAIN_NAME, DC_NAME)
+from art.unittest_lib import attr
 from utilities.rhevm_tools.image_uploader import ImageUploadUtility
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
     activateStorageDomain, deactivateStorageDomain)
 from art.test_handler.tools import tcms
+
 
 IMAGE_UPLOADER_TEST_PLAN = 5200
 NAME = 'image-uploader'
@@ -23,6 +25,7 @@ def teardown_module():
     base.teardown_module()
 
 
+@attr(tier=1)
 class ImageUploaderTestCase(base.RHEVMUtilsTestCase):
     """
         rhevm image uploder test cases

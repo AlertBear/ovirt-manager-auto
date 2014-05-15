@@ -6,7 +6,7 @@ File contains base classes for this module.
 __test__ = False
 
 import logging
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import CoreSystemTest as TestCase
 from art.rhevm_api.tests_lib.high_level.datacenters import build_setup
 from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 import art.rhevm_api.tests_lib.low_level.vms as llvms
@@ -43,7 +43,7 @@ BASE_SNAPSHOT = 'working_snapshot'
 
 VARS = opts[CONFIG_ELEMENTS][CONFIG_SECTION]
 
-from . import ART_CONFIG
+from art.test_handler.settings import ART_CONFIG
 
 
 def setup_module():

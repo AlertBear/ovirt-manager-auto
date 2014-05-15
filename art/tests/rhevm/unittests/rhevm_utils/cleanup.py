@@ -7,6 +7,8 @@ from utilities.rhevm_tools.cleanup import CleanUpUtility
 import os
 import logging
 from unittest_conf import config, REST_API_HOST
+from art.unittest_lib import attr
+
 logger = logging.getLogger(__name__)
 
 NAME = 'cleanup'
@@ -15,6 +17,7 @@ host = REST_API_HOST
 _multiprocess_can_split_ = True
 
 
+@attr(tier=0)
 class CleanUpTestCase(base.RHEVMUtilsTestCase):
     """
         rhevm cleanup test cases

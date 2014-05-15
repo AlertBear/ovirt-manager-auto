@@ -12,7 +12,8 @@ from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import tcms
 from utilities.enum import Enum
 from nose.tools import istest
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import attr
+from art.unittest_lib import CoreSystemTest as TestCase
 from time import sleep
 from os import path
 
@@ -129,6 +130,7 @@ class TestCaseVnic(TestCase):
                                                            hook_name))
 
 
+@attr(tier=1)
 class TestCaseAfterBeforeNicHotplug(TestCaseVnic):
     """ after_before_nic_hotplug hook """
     __test__ = True
@@ -162,6 +164,7 @@ class TestCaseAfterBeforeNicHotplug(TestCaseVnic):
         sleep(SLEEP_TIME)  # Sleep to let nic receive network stats
 
 
+@attr(tier=1)
 class TestCaseAfterBeforeNicHotunplug(TestCaseVnic):
     """ before_after_nic_hotunplug hook """
     __test__ = True
@@ -188,6 +191,7 @@ class TestCaseAfterBeforeNicHotunplug(TestCaseVnic):
         self.check_for_files()
 
 
+@attr(tier=1)
 class TestCaseAfterBeforeUpdateDevice(TestCaseVnic):
     """ before_after_update_device hook """
     __test__ = True
@@ -211,6 +215,7 @@ class TestCaseAfterBeforeUpdateDevice(TestCaseVnic):
         self.check_for_files()
 
 
+@attr(tier=1)
 class TestCaseAfterUpdateDeviceFail(TestCaseVnic):
     """ after_update_device_fail hook """
     __test__ = True

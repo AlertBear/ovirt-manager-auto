@@ -7,7 +7,10 @@ from unittest_conf import (REST_API_HOST,
                            ISO_DOMAIN_NAME,
                            LOCAL_ISO_DOMAIN_NAME)
 from utilities.rhevm_tools.iso_uploader import ISOUploadUtility
+from art.unittest_lib import attr
 from art.test_handler.tools import tcms
+
+
 ISO_UPLOADER_TEST_PLAN = 3741
 NAME = 'iso-uploader'
 
@@ -23,6 +26,7 @@ def teardown_module():
     base.teardown_module()
 
 
+@attr(tier=1)
 class ISOUploaderTestCase(base.RHEVMUtilsTestCase):
     """
         rhevm iso uploder test cases

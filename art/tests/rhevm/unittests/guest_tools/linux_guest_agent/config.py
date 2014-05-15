@@ -4,7 +4,7 @@ Config module for Guest Agent
 
 __test__ = False
 
-from . import ART_CONFIG
+from art.test_handler.settings import ART_CONFIG
 from utilities.enum import Enum
 
 

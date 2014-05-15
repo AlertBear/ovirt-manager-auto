@@ -5,7 +5,7 @@ Soft Fencing config module
 __test__ = False
 
 from art.test_handler.settings import opts
-from . import ART_CONFIG
+from art.test_handler.settings import ART_CONFIG
 
 TEST_NAME = "Soft Fencing"
 PARAMETERS = ART_CONFIG['PARAMETERS']

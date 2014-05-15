@@ -4,7 +4,7 @@ import logging
 
 from art.test_handler.settings import opts
 
-from . import ART_CONFIG
+from art.test_handler.settings import ART_CONFIG
 
 LOGGER = logging.getLogger(__name__)
 

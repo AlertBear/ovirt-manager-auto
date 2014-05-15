@@ -3,7 +3,7 @@ from configobj import ConfigObj
 global config
 config = ConfigObj(raise_errors=True)
 
-from . import ART_CONFIG
+from art.test_handler.settings import ART_CONFIG
 
 params = ART_CONFIG['PARAMETERS']
 VM_NAME = params.get('vm_name')

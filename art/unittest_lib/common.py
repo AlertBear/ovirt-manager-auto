@@ -58,3 +58,11 @@ class ComputeTest(BaseTestCase):
     Basic class for compute tests
     """
     __test__ = False
+
+
+@attr(team="CoreSystem")
+class CoreSystemTest(BaseTestCase):
+    """
+    Basic class for core system tests
+    """
+    __test__ = False

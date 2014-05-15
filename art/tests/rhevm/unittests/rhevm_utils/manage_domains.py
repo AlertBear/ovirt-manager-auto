@@ -11,7 +11,9 @@ from utilities.rhevm_tools.manage_domains import ManageDomainsUtility
 from utilities.rhevm_tools import errors
 from utilities import sshConnection
 
-from . import ART_CONFIG as config
+from art.unittest_lib import attr
+
+from art.test_handler.settings import ART_CONFIG as config
 
 NAME = 'manage-domains'
 TABLE_NAME = 'vdc_options'
@@ -76,6 +78,7 @@ class ManageDomainsTestCaseBase(RHEVMUtilsTestCase):
         super(ManageDomainsTestCaseBase, self).tearDown()
 
 
+@attr(tier=2)
 class ManageDomainsTestCaseAdd(ManageDomainsTestCaseBase):
     """
     https://tcms.engineering.redhat.com/case/175847/?from_plan=4580
@@ -133,6 +136,7 @@ class ManageDomainsTestCaseAdd(ManageDomainsTestCaseBase):
         # from a pipe
 
 
+@attr(tier=2)
 class ManageDomainsTestCaseEdit(ManageDomainsTestCaseBase):
     """
     https://tcms.engineering.redhat.com/case/175882/?from_plan=4580
@@ -179,6 +183,7 @@ class ManageDomainsTestCaseEdit(ManageDomainsTestCaseBase):
         self.ut.autoTest(rc=22)
 
 
+@attr(tier=2)
 class ManageDomainsTestCaseList(ManageDomainsTestCaseBase):
     """
     https://tcms.engineering.redhat.com/case/107969/?from_plan=4580
@@ -202,6 +207,7 @@ class ManageDomainsTestCaseList(ManageDomainsTestCaseBase):
         self.ut.autoTest()
 
 
+@attr(tier=2)
 class ManageDomainsTestCaseValidate(ManageDomainsTestCaseBase):
     """
     https://tcms.engineering.redhat.com/case/334273/?from_plan=4580
@@ -229,6 +235,7 @@ class ManageDomainsTestCaseValidate(ManageDomainsTestCaseBase):
         self.ut.autoTest()
 
 
+@attr(tier=2)
 class ManageDomainsTestCaseDelete(ManageDomainsTestCaseBase):
     """
     https://tcms.engineering.redhat.com/case/108231/?from_plan=4580
@@ -248,6 +255,7 @@ class ManageDomainsTestCaseDelete(ManageDomainsTestCaseBase):
         self.ut.autoTest()
 
 
+@attr(tier=2)
 class ManageDomainsTestCaseHelp(RHEVMUtilsTestCase):
     """
     https://tcms.engineering.redhat.com/case/107969/?from_plan=4580
@@ -270,6 +278,7 @@ class ManageDomainsTestCaseHelp(RHEVMUtilsTestCase):
         self.ut.autoTest()
 
 
+@attr(tier=2)
 class ManageDomainsTimeSkew(ManageDomainsTestCaseBase):
     """
     https://tcms.engineering.redhat.com/case/110044/?from_plan=4580
@@ -303,7 +312,8 @@ class ManageDomainsTimeSkew(ManageDomainsTestCaseBase):
         self.assertRaises(errors.MissingDmainError, self.ut.autoTest, rc=8)
 
 
-class ManageDomainsUnprivilegedUser(ManageDomainsTestCaseBase):
+@attr(tier=2)
+class ManageDomainsUnpriviledgedUser(ManageDomainsTestCaseBase):
     """
     https://tcms.engineering.redhat.com/case/127947/?from_plan=4580
     """
@@ -327,6 +337,7 @@ class ManageDomainsUnprivilegedUser(ManageDomainsTestCaseBase):
         assert 'Exception' not in out
 
 
+@attr(tier=2)
 class ManageDomainsUppercaseLowercase(ManageDomainsTestCaseBase):
     """
     https://tcms.engineering.redhat.com/case/107971/?from_plan=4580
@@ -361,6 +372,7 @@ class ManageDomainsUppercaseLowercase(ManageDomainsTestCaseBase):
         self.ut.autoTest()
 
 
+@attr(tier=2)
 class ManageDomainsMultipleProviders(RHEVMUtilsTestCase):
     """
     https://tcms.engineering.redhat.com/case/109297/?from_plan=4580
@@ -418,6 +430,7 @@ class ManageDomainsMultipleProviders(RHEVMUtilsTestCase):
             self.ut.autoTest()
 
 
+@attr(tier=2)
 class ManageDomainsTestCaseNegativeScenarios(ManageDomainsTestCaseBase):
     """
     https://tcms.engineering.redhat.com/case/107972/?from_plan=4580
@@ -446,6 +459,7 @@ class ManageDomainsTestCaseNegativeScenarios(ManageDomainsTestCaseBase):
         assert 'Invalid provider, valid providers are' in self.ut.out
 
 
+@attr(tier=2)
 class ManageDomainsBug1037894(ManageDomainsTestCaseBase):
     __test__ = True
     directoryService = 'ACTIVE_DIRECTORY_TLV'

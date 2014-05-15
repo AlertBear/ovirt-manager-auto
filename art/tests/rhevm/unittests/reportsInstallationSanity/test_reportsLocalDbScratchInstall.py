@@ -4,7 +4,8 @@ Sanity testing of report installation
 
 import logging
 from utilities.machine import LINUX, Machine
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import attr
+from art.unittest_lib import CoreSystemTest as TestCase
 import config as cfg
 
 
@@ -29,6 +30,7 @@ def is_dwh_running(machine):
         return False
 
 
+@attr(tier=0)
 class ReportsLocalDbScratchInstallSanityTest(TestCase):
     """ Basic run vm test """
     __test__ = True

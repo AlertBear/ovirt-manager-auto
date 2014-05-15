@@ -6,9 +6,10 @@ import art.rhevm_api.tests_lib.low_level.vms as llvms
 
 from art.test_handler.exceptions import VMException
 from art.test_handler.tools import tcms
+from art.unittest_lib import attr
 from unittest_conf import REST_API_PASS, LOG_COL_CONF
 from utilities.rhevm_tools.log_collector import LogCollectorUtility
-from . import ART_CONFIG
+from art.test_handler.settings import ART_CONFIG
 import logging
 
 import rhevm_utils.base as base
@@ -27,6 +28,7 @@ def teardown_module():
     base.teardown_module()
 
 
+@attr(tier=0)
 class LogCollectorSingleDC(base.RHEVMUtilsTestCase):
     """ Tests with single DC and single cluster setup """
 
@@ -111,6 +113,7 @@ class LogCollectorSingleDC(base.RHEVMUtilsTestCase):
         self.ut.autoTest()
 
 
+@attr(tier=1)
 class LogCollectorMoreDCs(base.RHEVMUtilsTestCase):
     """ Tests with additional DC and cluster """
 
@@ -172,6 +175,7 @@ class LogCollectorMoreDCs(base.RHEVMUtilsTestCase):
         assert 'No hypervisors were found' in self.ut.out
 
 
+@attr(tier=1)
 class LogCollectorRegressionBz1058894(base.RHEVMUtilsTestCase):
     """ Regression tests for the log-collector """
 

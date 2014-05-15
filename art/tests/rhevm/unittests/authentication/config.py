@@ -2,12 +2,11 @@
 
 __test__ = False
 
-from . import ART_CONFIG
+from art.test_handler.settings import ART_CONFIG
 
 
 def getUserWithDomain(user_name, user_domain):
     return '%s@%s' % (user_name, user_domain)
-
 
 PARAMETERS = ART_CONFIG['PARAMETERS']
 REST = ART_CONFIG['REST_CONNECTION']

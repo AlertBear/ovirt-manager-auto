@@ -7,7 +7,8 @@ import logging
 from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 from art.rhevm_api.tests_lib.low_level.vms import removeVm, checkVMConnectivity
 from art.test_handler.exceptions import VMException
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import CoreSystemTest as TestCase
+from art.unittest_lib import attr
 
 import config as cfg
 
@@ -23,6 +24,7 @@ def teardown_module():
     LOGGER.debug("tearDownClass: cleaned the DC")
 
 
+@attr(tier=1)
 class UpgradeSanityVerification(TestCase):
     """ Basic test """
     __test__ = True

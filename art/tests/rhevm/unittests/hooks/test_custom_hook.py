@@ -10,8 +10,9 @@ from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import tcms
 from nose.tools import istest
+from art.unittest_lib import attr
 from os import path
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import CoreSystemTest as TestCase
 
 import config
 import logging
@@ -124,6 +125,7 @@ class TestCaseVdsm(TestCase):
         check_vdsmd()
 
 
+@attr(tier=1)
 class TestCaseAfterVdsmStop(TestCaseVdsm):
     """ after_vdsm_stop hook """
     __test__ = True
@@ -137,6 +139,7 @@ class TestCaseAfterVdsmStop(TestCaseVdsm):
         self.assertTrue(self.check_for_file(positive=True))
 
 
+@attr(tier=1)
 class TestCaseBeforeVdsmStart(TestCaseVdsm):
     """ before_vdsm_start hook """
     __test__ = True
@@ -153,6 +156,7 @@ class TestCaseBeforeVdsmStart(TestCaseVdsm):
         self.assertTrue(self.check_for_file(positive=True))
 
 
+@attr(tier=1)
 class TestCaseBeforeVmStart(TestCaseVm):
     """ before_vm_start hook """
     __test__ = True
@@ -170,6 +174,7 @@ class TestCaseBeforeVmStart(TestCaseVm):
         self.assertTrue(self.check_for_file(positive=True))
 
 
+@attr(tier=1)
 class TestCaseAfterVmPause(TestCaseVm):
     """ after_vm_pause hook """
     __test__ = True

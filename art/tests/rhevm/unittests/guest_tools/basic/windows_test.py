@@ -4,7 +4,8 @@ Base class for all Windows basic sanity tests
 import json
 import logging
 from nose.tools import istest
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import attr
+from art.unittest_lib import CoreSystemTest as TestCase
 from unittest2 import skipIf
 import os
 
@@ -108,6 +109,7 @@ class Windows(TestCase):
         return True
 
 
+@attr(tier=1)
 class Windows7_64bit(Windows):
     """
     Setup for Windows 7 64 bit
