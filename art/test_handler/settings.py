@@ -223,9 +223,10 @@ def readTestRunOpts(path, redefs):
     opts['password'] = restSection['password']
     opts['urisuffix'] = ''
     opts['uri'] = '%(scheme)s://%(host)s:%(port)s/%(entry_point)'\
-                      's%(urisuffix)s/' % opts
+        's%(urisuffix)s/' % opts
     opts['persistent_auth'] = restSection['persistent_auth']
     opts['session_timeout'] = restSection['session_timeout']
+    opts['filter'] = restSection['filter']
 
     # Populate opts from the CLI section.
     cliSection = config['CLI_CONNECTION']

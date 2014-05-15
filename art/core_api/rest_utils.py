@@ -58,6 +58,9 @@ class RestUtil(APIUtil):
             if self.opts['persistent_auth']:
                 self.api.headers['Prefer'] = 'persistent-auth'
             self.api.headers['Session-TTL'] = self.opts['session_timeout']
+            if self.opts['filter']:
+                self.api.headers['Filter'] = str(self.opts['filter'])
+
             if not standalone:
                 self.api.connect()
                 restInit = self.api

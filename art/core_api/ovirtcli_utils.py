@@ -318,12 +318,12 @@ class RhevmCli(CliConnection):
 
     def __init__(self, logger, uri, user, userDomain, password,
                  secure, sslKeyFile, sslCertFile, sslCaFile, logFile,
-                 session_timeout, **kwargs):
+                 session_timeout, filter_, **kwargs):
         self.logger = logger
         self.prepareConnectionCommand(uri, user, userDomain,
                                       secure, sslKeyFile, sslCertFile,
                                       sslCaFile, session_timeout,
-                                      additionalArgs=kwargs)
+                                      filter_, additionalArgs=kwargs)
         super(RhevmCli, self).__init__(self._connectionCommand,
                                        prompt=self._rhevmPrompt,
                                        timeout=self._rhevmTimeout,
@@ -404,7 +404,8 @@ class RhevmCli(CliConnection):
 
     def prepareConnectionCommand(self, uri, user, userDomain,
                                  secure, sslKeyFile, sslCertFile,
-                                 sslCaFile, session_timeout, additionalArgs):
+                                 sslCaFile, session_timeout, filter_,
+                                 additionalArgs):
         """
         Description: This method prepares CLI connection command
         Author: imeerovi
@@ -432,6 +433,9 @@ class RhevmCli(CliConnection):
                               format(sslKeyFile, sslCertFile, sslCaFile))
         else:
             cliConnect.append('-I')
+
+        if filter_:
+            cliConnect.append('-F')
 
         # session timeout
         cliConnect.append('-S {0}'.format(session_timeout))
@@ -799,7 +803,8 @@ class CliUtil(RestUtil):
                     sslCaFile=self.opts.get('ssl_ca_file', None),
                     logFile=self.opts['cli_log_file'],
                     session_timeout=self.opts['session_timeout'],
-                    optionalParms=self.opts['cli_optional_params'])
+                    optionalParms=self.opts['cli_optional_params'],
+                    filter_=self.opts['filter'])
 
             except pe.ExceptionPexpect as e:
                 self.logger.error('Pexpect Connection Error: %s ' % e.value)

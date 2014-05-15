@@ -24,6 +24,7 @@ entry_point = string(default='api')
 user_domain = domain_format()
 persistent_auth = boolean(default=True)
 session_timeout = integer(default=3600)
+filter = boolean(default=False)
 
 [CLI_CONNECTION]
 tool = option('ovirt-shell', 'rhevm-shell', default='rhevm-shell')
@@ -33,7 +34,6 @@ optional_params = string(default='')
 
 [JAVA_SDK]
 #request_timeout = integer(default=100)
-#filter = boolean(default=True)
 
 [REPORT]
 has_sub_tests = boolean(default=True)

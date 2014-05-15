@@ -791,7 +791,6 @@ class JavaSdkUtil(APIUtil):
                 self.opts['session_id'] if 'session_id' in self.opts else None
             request_timeout = self.opts['request_timeout'] if \
                 'request_timeout' in self.opts else None
-            filter_ = self.opts['filter'] if 'filter' in self.opts else None
             user_with_domain = \
                 '{0}@{1}'.format(self.opts['user'], self.opts['user_domain'])
 
@@ -810,8 +809,7 @@ class JavaSdkUtil(APIUtil):
                     self.opts['port'], request_timeout,
                     self.opts['session_timeout'],
                     self.opts['persistent_auth'],
-                    True,
-                    filter_, self.opts['debug'])
+                    True, self.opts['filter'], self.opts['debug'])
             else:
                 # Api(java.lang.String url, java.lang.String username,
                 # java.lang.String password, java.lang.String sessionid,
@@ -828,8 +826,8 @@ class JavaSdkUtil(APIUtil):
                     self.opts['session_timeout'],
                     self.opts['persistent_auth'],
                     self.opts['ssl_key_file'],
-                    self.opts['ssl_cert_file'],
-                    filter_, self.opts['debug'])
+                    self.opts['ssl_cert_file'], self.opts['filter'],
+                    self.opts['debug'])
             sdk_init = self.api
         else:
             self.api = sdk_init

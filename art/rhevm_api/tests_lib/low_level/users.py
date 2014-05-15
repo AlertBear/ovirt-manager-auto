@@ -236,7 +236,7 @@ def loginAsUser(user, domain, password, filter):
     """
     msg = "Logged in as %s@%s(filter=%s)"
     global opts
-    opts['headers']['Filter'] = str(filter)
+    opts['filter'] = filter
     opts['user'] = user
     opts['user_domain'] = domain
     opts['password'] = password
