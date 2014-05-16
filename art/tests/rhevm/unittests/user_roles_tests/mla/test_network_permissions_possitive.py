@@ -157,8 +157,11 @@ class TestSwitching(NetworkingPossitive):
             kwargs['required'] = not kwargs['required']
         if 'display' in kwargs:
             kwargs['display'] = not kwargs['display']
+        if 'usages' in kwargs:
+            kwargs['usages'] = (
+                'vm' if kwargs['usages'] == 'display' else 'display')
 
-    def _testSwitchingDisplayAndRequired(self, **kwargs):
+    def _test_switching_display_and_required(self, **kwargs):
         assert networks.updateClusterNetwork(True, cfg.MAIN_CLUSTER_NAME,
                                              cfg.NETWORK_NAME1, **kwargs)
 
@@ -179,7 +182,7 @@ class PositiveNetworkPermissions231824(TestSwitching):
     @tcms(TCMS_PLAN_ID_POS, 231824)
     def requiredToNonRequiredAndViceVersa(self):
         """ Required to non-required and vice versa """
-        self._testSwitchingDisplayAndRequired(required=True)
+        self._test_switching_display_and_required(required=True)
 
 
 class PositiveNetworkPermissions236073(TestSwitching):
@@ -189,7 +192,8 @@ class PositiveNetworkPermissions236073(TestSwitching):
     @tcms(TCMS_PLAN_ID_POS, 236073)
     def displayNetwork(self):
         """ Display network """
-        self._testSwitchingDisplayAndRequired(display=True)
+        self._test_switching_display_and_required(display=True,
+                                                  usages='display')
 
 
 class PositiveNetworkPermissions231826(NetworkingPossitive):
@@ -728,7 +732,6 @@ class PositiveNetworkPermissions317270(NetworkingPossitive):
                                                 role=role.UserRole)
 
     @istest
-    @bz(1014985)
     @tcms(TCMS_PLAN_ID_POS, 317270)
     def nonVmToVmNetwork(self):
         """ When network is switched to nonvm permissions should be removed """

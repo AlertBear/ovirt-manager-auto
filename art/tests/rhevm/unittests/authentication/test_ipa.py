@@ -18,7 +18,7 @@ from art.rhevm_api.tests_lib.low_level import mla, users
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils.test_utils import get_api
 from art.core_api.apis_utils import getDS
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms, bz
 from test_base import connectionTest
 
 LOGGER = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ group_api = get_api('group', 'groups')
 
 
 def addUser(user_name):
-    userName = '%s@%s' % (user_name, config.IPA_DOMAIN.upper())
+    userName = '%s@%s' % (user_name, config.IPA_DOMAIN)
     user = User(domain=Domain(name=config.IPA_DOMAIN), user_name=userName)
     user, status = util.create(user, True)
 
@@ -223,10 +223,9 @@ class IPACase93882(TestCase):
     """ Try to search via REST with firstname, lastname """
     __test__ = True
 
-    apis = set(['rest'])
-
     @istest
     @tcms(config.IPA_TCMS_PLAN_ID, 93882)
+    @bz(1117240)
     def search(self):
         """ Search """
         domain_id = users.domUtil.find(config.IPA_DOMAIN.lower()).get_id()
@@ -277,6 +276,7 @@ class IPACase93883(TestCase):
 
     @istest
     @tcms(config.IPA_TCMS_PLAN_ID, 93883)
+    @bz(1117240)
     def update(self):
         """ Update """
         new_name = 'new_name'

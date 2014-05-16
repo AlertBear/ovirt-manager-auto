@@ -255,7 +255,7 @@ class PermissionsCase54425(TestCase):
                 True, config.USER_NAME, config.VM_NAME1, r)
 
             # For know if login as User/Admin
-            filt = not('Admin' in r or role.SuperUser == r)
+            filt = not role_obj.administrative
             # login as user with role
             loginAsUser(config.USER_NAME, filter=filt)
             # Test if user with role can/can't manipualte perms
@@ -370,8 +370,7 @@ class PermissionsCase54420(TestCase):
             mla.addClusterPermissionsToUser(True, config.USER_NAME,
                                             config.MAIN_CLUSTER_NAME,
                                             role.UserRole)
-            loginAsUser(config.USER_NAME,
-                        filter=False if role_obj.administrative else True)
+            loginAsUser(config.USER_NAME, filter=not role_obj.administrative)
 
             LOGGER.info("Testing role - " + role_obj.get_name())
             # Create vm,template, disk and check permissions of it

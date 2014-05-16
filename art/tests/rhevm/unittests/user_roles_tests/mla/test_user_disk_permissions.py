@@ -17,6 +17,7 @@ from art.unittest_lib import BaseTestCase as TestCase
 
 from art.test_handler.tools import tcms
 from art.rhevm_api.tests_lib.high_level import storagedomains
+from art.rhevm_api.tests_lib.high_level import disks as h_disks
 from art.rhevm_api.tests_lib.low_level import users, vms, disks, mla
 from art.rhevm_api.tests_lib.low_level import storagedomains as low_sd
 from art.rhevm_api.utils import test_utils
@@ -87,8 +88,7 @@ class DPCase147121(TestCase):
 
     def tearDown(self):
         vms.removeVm(True, config.VM_NO_DISK)
-        disks.deleteDisk(True, config.DISK_NAME)
-        disks.waitForDisksGone(True, config.DISK_NAME)
+        h_disks.delete_disks([config.DISK_NAME])
         mla.removeUserPermissionsFromSD(True, config.MAIN_STORAGE_NAME,
                                         config.USER1)
 
@@ -107,7 +107,7 @@ class DPCase14722_2(TestCase):
 
     def setUp(self):
         users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter='true')
+                          config.USER_PASSWORD, filter=True)
 
     @istest
     @tcms(TCMS_PLAN_ID, 147122)
@@ -123,11 +123,7 @@ class DPCase14722_2(TestCase):
 
     def tearDown(self):
         loginAsAdmin()
-        try:
-            disks.deleteDisk(True, config.DISK_NAME)
-            disks.waitForDisksGone(True, config.DISK_NAME)
-        except:
-            pass
+        h_disks.delete_disks([config.DISK_NAME])
         mla.removeUserPermissionsFromSD(True, config.MAIN_STORAGE_NAME,
                                         config.USER1)
 
@@ -139,6 +135,9 @@ class DPCase147122(TestCase):
     """
     __test__ = True
 
+    # RHEVM-1461
+    apis = set(['rest'])
+
     @classmethod
     def setup_class(cls):
         mla.addStoragePermissionsToUser(True, config.USER_NAME,
@@ -147,7 +146,7 @@ class DPCase147122(TestCase):
 
     def setUp(self):
         users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter='false')
+                          config.USER_PASSWORD, filter=False)
 
     @tcms(TCMS_PLAN_ID, 147122)
     @istest
@@ -159,14 +158,14 @@ class DPCase147122(TestCase):
                           format='cow', provisioned_size=config.GB,
                           storagedomain=config.MAIN_STORAGE_NAME),
             "User with StorageAdmin permissions can't create disk.")
-        disks.waitForDisksState(config.DISK_NAME)
-        disks.deleteDisk(True, config.DISK_NAME)
-        disks.waitForDisksGone(True, config.DISK_NAME)
+        h_disks.delete_disks([config.DISK_NAME])
         LOGGER.info("User with StorageAdmin perms on SD can create disk.")
 
     def tearDown(self):
         # Remove permissions from SD
         loginAsAdmin()
+        if disks.checkDiskExists(True, config.DISK_NAME):
+            h_disks.delete_disks([config.DISK_NAME])
         mla.removeUserPermissionsFromSD(True, config.MAIN_STORAGE_NAME,
                                         config.USER1)
 
@@ -197,7 +196,7 @@ class DPCase147123(TestCase):
         msg = "User with UserVmManager on vm and DiskOperator on disk can " \
               "attach disk."
         users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter='true')
+                          config.USER_PASSWORD, filter=True)
         self.assertTrue(
             disks.attachDisk(self.pos, config.DISK_NAME, config.VM_NO_DISK),
             "Unable to attach disk to vm.")
@@ -205,8 +204,7 @@ class DPCase147123(TestCase):
 
     def tearDown(self):
         loginAsAdmin()
-        disks.deleteDisk(True, config.DISK_NAME)
-        disks.waitForDisksGone(True, config.DISK_NAME)
+        h_disks.delete_disks([config.DISK_NAME])
         vms.removeVm(True, config.VM_NO_DISK)
         mla.removeUserPermissionsFromSD(True, config.MAIN_STORAGE_NAME,
                                         config.USER1)
@@ -263,7 +261,7 @@ class DPCase147124(TestCase):
     def detachDisk(self):
         """ Detach disk from vm """
         users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter='true')
+                          config.USER_PASSWORD, filter=True)
         self.assertTrue(
             disks.detachDisk(self.pos, self.disk_name, config.VM_NAME),
             "User with UserVmManager can't detach disk from VM.")
@@ -271,8 +269,7 @@ class DPCase147124(TestCase):
 
     def tearDown(self):
         loginAsAdmin()
-        disks.deleteDisk(True, self.disk_name)
-        disks.waitForDisksGone(True, self.disk_name)
+        h_disks.delete_disks([self.disk_name])
         vms.removeVm(True, config.VM_NAME)
 
 
@@ -313,7 +310,7 @@ class DPCase147125(TestCase):
     def activateDeactivateDisk(self):
         """ ActivateDeactivateDisk """
         users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter='true')
+                          config.USER_PASSWORD, filter=True)
         self.assertTrue(
             vms.deactivateVmDisk(True, config.VM_NAME,
                                  diskAlias=self.disk_name),
@@ -349,7 +346,7 @@ class DPCase147126(TestCase):
     def removeDisk(self):
         """ Remove disk as user with and without permissions """
         users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter='true')
+                          config.USER_PASSWORD, filter=True)
         self.assertTrue(
             disks.deleteDisk(False, config.DISK_NAME),
             "User without delete_disk action group can remove disk.")
@@ -361,7 +358,7 @@ class DPCase147126(TestCase):
                                         role=role.DiskOperator)
 
         users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter='true')
+                          config.USER_PASSWORD, filter=True)
         self.assertTrue(
             disks.deleteDisk(True, config.DISK_NAME),
             "User with delete_disk action group can't remove disk.")
@@ -393,7 +390,7 @@ class DPCase147127(TestCase):
     def updateVmDisk(self):
         """ Update vm disk """
         users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter='true')
+                          config.USER_PASSWORD, filter=True)
         self.assertTrue(
             vms.updateVmDisk(True, config.VM_NAME, self.disk_name, name='xyz'),
             "User can't update vm disk.")
@@ -429,7 +426,7 @@ class DPCase147128(TestCase):
         """ Move disk with and without having permissions on sds """
         # Move disk without permissions
         users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter='false')
+                          config.USER_PASSWORD, filter=False)
 
         try:
             vms.move_vm_disk(
@@ -442,7 +439,7 @@ class DPCase147128(TestCase):
                                         config.MAIN_STORAGE_NAME,
                                         role=role.StorageAdmin)
         users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter='false')
+                          config.USER_PASSWORD, filter=False)
         try:
             vms.move_vm_disk(
                 config.VM_NAME, self.disk_name, config.ALT1_STORAGE_NAME)
@@ -456,7 +453,7 @@ class DPCase147128(TestCase):
                                         role=role.DiskCreator)
 
         users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter='false')
+                          config.USER_PASSWORD, filter=False)
         vms.move_vm_disk(config.VM_NAME, self.disk_name,
                          config.ALT1_STORAGE_NAME)
         time.sleep(5)
@@ -469,8 +466,7 @@ class DPCase147128(TestCase):
         loginAsAdmin()
         low_sd.waitForStorageDomainStatus(True, config.MAIN_DC_NAME,
                                           config.ALT1_STORAGE_NAME, 'active')
-        disks.deleteDisk(True, self.disk_name)
-        disks.waitForDisksGone(True, self.disk_name)
+        h_disks.delete_disks([self.disk_name])
         vms.removeVm(True, config.VM_NAME)
         mla.removeUserPermissionsFromSD(True, config.MAIN_STORAGE_NAME,
                                         config.USER1)
@@ -501,7 +497,7 @@ class DPCase147129(TestCase):
     def addDiskToVm(self):
         """ add disk to vm with and without permissions """
         users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter='true')
+                          config.USER_PASSWORD, filter=True)
         self.assertTrue(vms.addDisk(
             False, config.VM_NO_DISK, config.GB,
             storagedomain=config.MAIN_STORAGE_NAME,
@@ -512,7 +508,7 @@ class DPCase147129(TestCase):
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NO_DISK,
                                    role=role.UserVmManager)
         users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter='true')
+                          config.USER_PASSWORD, filter=True)
         self.assertTrue(
             vms.addDisk(
                 False, config.VM_NO_DISK, config.GB,
@@ -527,7 +523,7 @@ class DPCase147129(TestCase):
                                         role=role.DiskCreator)
 
         users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter='true')
+                          config.USER_PASSWORD, filter=True)
         self.assertTrue(
             vms.addDisk(
                 True, config.VM_NO_DISK, config.GB,
@@ -571,7 +567,7 @@ class DPCase147130(TestCase):
     def removeVm(self):
         """ remove vm with disk without/with having apprirate permissions """
         users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter='true')
+                          config.USER_PASSWORD, filter=True)
         self.assertTrue(
             vms.removeVm(False, config.VM_NAME),
             "User can remove vm as DiskOperator.")
@@ -582,7 +578,7 @@ class DPCase147130(TestCase):
                                    role=role.UserVmManager)
 
         users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter='true')
+                          config.USER_PASSWORD, filter=True)
         self.assertTrue(
             vms.removeVm(True, config.VM_NAME),
             "User can't remove vm as DiskOperator and UserVmManager on vm.")
@@ -615,7 +611,7 @@ class DPCase147137(TestCase):
     def sharedDisk(self):
         """ Basic operations with shared disk """
         users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
-                          config.USER_PASSWORD, filter='true')
+                          config.USER_PASSWORD, filter=True)
         self.assertTrue(
             disks.attachDisk(True, config.DISK_NAME, config.VM_NO_DISK),
             "Unable to attach disk to vm.")

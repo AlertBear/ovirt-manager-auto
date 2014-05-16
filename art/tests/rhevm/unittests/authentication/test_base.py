@@ -8,6 +8,8 @@ from art.unittest_lib import CoreSystemTest as TestCase
 from nose.tools import istest
 from art.rhevm_api.tests_lib.low_level import mla, users, general
 from art.core_api.apis_exceptions import APIException
+from art.test_handler.tools import bz
+
 
 LOGGER = logging.getLogger(__name__)
 USERROLE = 'UserRole'
@@ -174,13 +176,12 @@ class BaseSearchForUsersAndGroups(TestCase):
     """ Search within domain for users and groups """
     __test__ = False
 
-    apis = set(['rest'])
-
     def setUp(self):
         domainID = users.domUtil.find(self.domain).get_id()
         self.query = '/api/domains/' + domainID + '/%s?search={query}'
 
     @istest
+    @bz(1117240)
     def searchForUsersAndGroups(self):
         """ Search within domain for users and groups """
         self.assertTrue(

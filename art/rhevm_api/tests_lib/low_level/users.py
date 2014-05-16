@@ -103,7 +103,8 @@ def removeUser(positive, user, domain=None):
     Return: status (True if user was removed properly, False otherwise)
     '''
     if domain is not None:
-        userObj = util.find('%s@%s' % (user, domain), attribute='user_name')
+        user_name = '%s@%s' % (user, domain)
+        userObj = util.query('{0}={1}'.format('usrname', user_name))[0]
     else:
         userObj = util.find(user)
     return util.delete(userObj, positive)
@@ -243,7 +244,7 @@ def loginAsUser(user, domain, password, filter):
     opts['user'] = user
     opts['user_domain'] = domain
     opts['password'] = password
-    logger.info(msg % (user, domain, filter))
+    logger.info(msg, user, domain, filter)
 
 
 def fetchUserGroups(positive, user_name):
@@ -253,5 +254,5 @@ def fetchUserGroups(positive, user_name):
        * user_name - name of the user
     Return: list of Group objects
     '''
-    userObj = util.find(user_name, attribute='user_name')
+    userObj = util.query('{0}={1}'.format('usrname', user_name))[0]
     return userObj.get_groups().group

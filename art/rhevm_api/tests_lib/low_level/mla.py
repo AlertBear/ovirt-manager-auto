@@ -22,7 +22,7 @@ from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.utils.test_utils import get_api, split
 from art.core_api import is_action
 from art.test_handler.settings import opts
-from networks import findNetwork
+from networks import findNetwork, getVnicProfileObj
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 CONF_PERMITS = opts['elements_conf']['RHEVM Permits']
@@ -50,7 +50,6 @@ domUtil = get_api('domain', 'domains')
 groupUtil = get_api('group', 'groups')
 permisUtil = get_api('permission', 'permissions')
 diskUtil = get_api('disk', 'disks')
-vnicUtil = get_api('vnic_profile', 'vnicprofiles')
 
 
 def getPermits():
@@ -214,8 +213,8 @@ def removeRole(positive, role):
 def addPermitsToUser(positive, user, domain, role, obj, attr):
 
     if domain is not None:
-        userObj = userUtil.find('%s@%s' % (user, domain),
-                                attribute='user_name')
+        user_name = '%s@%s' % (user, domain)
+        userObj = userUtil.query('{0}={1}'.format('usrname', user_name))[0]
     else:
         userObj = userUtil.find(user)
     roleObj = util.find(role)
@@ -365,10 +364,7 @@ def addPermissionsForVnicProfile(positive, user, vnicprofile, network,
       * role - role to add
     Return: status (True if permission was added properly, False otherwise)
     '''
-    # after bz 1014985 is resolved use this to prevent colision in names
-    # vnicObj = getVnicProfileObj(
-    #     vnicprofile, network, data_center=data_center)
-    vnicObj = vnicUtil.find(vnicprofile)
+    vnicObj = getVnicProfileObj(vnicprofile, network, data_center=data_center)
     return addUserPermitsForObj(positive, user, role, vnicObj)
 
 
@@ -431,7 +427,7 @@ def addVnicProfilePermissionsToGroup(positive, group, vnicprofile, network,
        * role - role to add
     Return: status (True if permission was added properly, False otherwise)
     '''
-    vnicObj = vnicUtil.find(vnicprofile)
+    vnicObj = getVnicProfileObj(vnicprofile, network, data_center=data_center)
     return addUserPermitsForObj(positive, group, role, vnicObj, True)
 
 
@@ -528,16 +524,16 @@ def removeUserRoleFromObject(positive, obj, user_name, role_name):
     Description: remove user's role from object
     Parameters:
       * obj - object where permissions should be removed
-      * user_names - user name
+      * user_name - user name
       * role_name - role which should be removed
     '''
     status = True
     role_id = util.find(role_name).get_id()
     permits = permisUtil.getElemFromLink(obj, get_href=False)
-    user_id = userUtil.find(user_name, attribute='user_name').get_id()
+    user = userUtil.query('{0}={1}'.format('usrname', user_name))[0].get_id()
 
     for perm in permits:
-        if perm.get_user().get_id() == user_id and \
+        if perm.get_user().get_id() == user and \
                 perm.get_role().get_id() == role_id and \
                 not permisUtil.delete(perm, positive):
                     status = False
@@ -556,8 +552,8 @@ def removeUsersPermissionsFromObject(positive, obj, user_names):
     '''
     status = True
     permits = permisUtil.getElemFromLink(obj, get_href=False)
-    user_ids = [userUtil.find(user_name, attribute='user_name').get_id()
-                for user_name in user_names]
+    user_ids = [userUtil.query('{0}={1}'.format('usrname', user))[0].get_id()
+                for user in user_names]
 
     for perm in permits:
         if perm.get_user().get_id() in user_ids and \
@@ -580,8 +576,8 @@ def removeUsersPermissionsFromVnicProfile(positive, vnicprofile, network,
        * user_names - list with user names (ie.['user1@..', 'user2@..'])
     Return: status (True if permissions was removed, False otherwise)
     '''
-    vnicProfObj = vnicUtil.find(vnicprofile)
-    return removeUsersPermissionsFromObject(positive, vnicProfObj, user_names)
+    vnicObj = getVnicProfileObj(vnicprofile, network, data_center=data_center)
+    return removeUsersPermissionsFromObject(positive, vnicObj, user_names)
 
 
 @is_action()
@@ -850,9 +846,14 @@ def hasUserOrGroupPermissionsOnObject(name, obj, role, group=False):
     objPermits = permisUtil.getElemFromLink(obj, get_href=False)
     roleNAid = util.find(role).get_id()
     if group:
-        userId = groupUtil.find(name).get_id()
+        user = groupUtil.find(name)
     else:
-        userId = userUtil.find(name, 'user_name').get_id()
+        users = userUtil.query('{0}={1}'.format('usrname', name))
+        user = filter(lambda u: u.get_user_name() == name, users) or [None]
+        user = user[0]
+
+    if user is None:
+        return False
 
     perms = []
     for perm in objPermits:
@@ -860,7 +861,7 @@ def hasUserOrGroupPermissionsOnObject(name, obj, role, group=False):
         if mlaObj is not None:
             perms.append((mlaObj.get_id(), perm.get_role().get_id()))
 
-    return (userId, roleNAid) in perms
+    return (user.get_id(), roleNAid) in perms
 
 
 def hasGroupPermissionsOnObject(group_name, obj, role):

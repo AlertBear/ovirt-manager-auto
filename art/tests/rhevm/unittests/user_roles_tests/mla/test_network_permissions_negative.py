@@ -63,6 +63,9 @@ def ignoreAllExceptions(method, **kwargs):
 class NetworkingNegative(TestCase):
     __test__ = False
 
+    # Network is not supported in CLI
+    apis = set(['rest', 'sdk', 'java'])
+
     def tearDown(self):
         loginAsAdmin()
         ignoreAllExceptions(vms.removeVm, positive=True, vm=VM_NAME)
@@ -347,5 +350,13 @@ class NegativeNetworkPermissions236736(NetworkingNegative):
         # (is not shown in /api/networks) + Default DC
         assert len(nets) == 3
         assert vms.updateNic(True, VM_NAME, NIC_NAME2, network=None)
-        self.assertRaises(EntityNotFound, vms.updateNic, False, VM_NAME,
-                          NIC_NAME2, network=config.NETWORK_NAME2)
+
+        try:
+            # CLI passes network search
+            assert vms.updateNic(False, VM_NAME, NIC_NAME2,
+                                 network=config.NETWORK_NAME2)
+        except EntityNotFound:
+            pass  # SDK/java/rest raise EntityNotFound
+        except Exception as e:
+            LOGGER.error(e)
+            raise e

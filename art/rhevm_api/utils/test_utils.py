@@ -90,22 +90,20 @@ class GetApi(object):
 
     @classmethod
     def logoff_api(cls):
-        engine = settings.opts.get('engine')
-        if engine == 'rest':
-            from art.core_api.rest_utils import RestUtil as util
-        elif engine == 'sdk':
-            from art.core_api.ovirtsdk_utils import SdkUtil as util
-        elif engine == 'cli':
-            from art.core_api.ovirtcli_utils import CliUtil as util
-        elif engine == 'java':
-            from art.core_api.ovirtsdk_java_utils import JavaSdkUtil as util
+        from art.core_api.rest_utils import RestUtil
+        from art.core_api.ovirtsdk_utils import SdkUtil
+        from art.core_api.ovirtcli_utils import CliUtil
+        from art.core_api.ovirtsdk_java_utils import JavaSdkUtil
 
-        util.logout()
+        RestUtil.logout()
+        SdkUtil.logout()
+        CliUtil.logout()
+        JavaSdkUtil.logout()
 
         # cleaning cache (I can add clean by api type but in most cases all
         # apis will run so all of them will be cleaned eventually)
         cls._util_cache = {}
-        logger.debug("logout from %s engine succeeded", engine)
+        logger.debug("logout from succeeded")
 
     def __getattr__(self, opcode):
         engine = settings.opts.get('engine')

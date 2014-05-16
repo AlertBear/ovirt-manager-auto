@@ -16,6 +16,7 @@ from art.rhevm_api.tests_lib.low_level import \
     users, vms, disks, vmpools, templates, mla
 
 import logging
+import time
 
 LOGGER = logging.getLogger(__name__)
 
@@ -62,7 +63,7 @@ def tearDownModule():
     disks.deleteDisk(True, config.DISK_NAME)
     disks.waitForDisksGone(True, config.DISK_NAME)
     vmpools.detachVms(True, config.VMPOOL_NAME)
-    import time;time.sleep(20)
+    time.sleep(20)
     vms.removeVm(True, '%s-%s' % (config.VMPOOL_NAME, 1))
     vmpools.removeVmPool(True, config.VMPOOL_NAME)
     templates.removeTemplate(True, config.TEMPLATE_NAME)
@@ -81,34 +82,35 @@ class RoleCase54413(TestCase):
         """ Check if user can add/del role if he has permissions for it """
         cantLogin = "Role %s not tested, because don't have login permissions."
 
-        for role in mla.util.get(absLink=False):
+        for r in mla.util.get(absLink=False):
             rolePermits = mla.util.getElemFromLink(
-                role, link_name='permits', attr='permit', get_href=False)
-            if not 'login' in [p.get_name() for p in rolePermits]:
-                LOGGER.info(cantLogin % role.get_name())
+                r, link_name='permits', attr='permit', get_href=False)
+            if 'login' not in [p.get_name() for p in rolePermits]:
+                LOGGER.info(cantLogin, r.get_name())
                 continue
 
             self.assertTrue(
-                users.addRoleToUser(True, config.USER_NAME, role.get_name()))
-            LOGGER.info("Testing if role %s can add new role." % role.get_name())
+                users.addRoleToUser(True, config.USER_NAME, r.get_name()))
+            LOGGER.info("Testing if role %s can add new role.", r.get_name())
             l = [r.get_name() for r in rolePermits]
-            users.loginAsUser(
-                config.USER_NAME, config.USER_DOMAIN, config.USER_PASSWORD,
-                filter=(False if role.administrative else True))
+            users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
+                              config.USER_PASSWORD,
+                              filter=not r.administrative)
             if 'manipulate_roles' in l:
-                self.assertTrue(
-                    mla.addRole(True, name=config.USER_ROLE, permits='login'))
+                self.assertTrue(mla.addRole(True, name=config.USER_ROLE,
+                                            permits='login'))
                 self.assertTrue(mla.removeRole(True, config.USER_ROLE))
                 self.assertTrue(mla.addRole(True, name=config.ADMIN_ROLE,
-                                            permits='login', administrative='true'))
+                                            permits='login',
+                                            administrative='true'))
                 self.assertTrue(mla.removeRole(True, config.ADMIN_ROLE))
-                LOGGER.info("%s can manipulate with roles." % role.get_name())
+                LOGGER.info("%s can manipulate with roles.", r.get_name())
             else:
-                self.assertTrue(
-                    mla.addRole(False, name=config.USER_ROLE, permits='login'))
-                self.assertTrue(
-                    mla.addRole(False, name=config.ADMIN_ROLE, permits='login'))
-                LOGGER.info("%s can't manipulate with roles." % role.get_name())
+                self.assertTrue(mla.addRole(False, name=config.USER_ROLE,
+                                            permits='login'))
+                self.assertTrue(mla.addRole(False, name=config.ADMIN_ROLE,
+                                permits='login'))
+                LOGGER.info("%s can't manipulate with roles.", r.get_name())
 
             loginAsAdmin()
             users.removeUser(True, config.USER_NAME)
@@ -120,7 +122,8 @@ class RoleCase54413(TestCase):
         """ Recreate user """
         loginAsAdmin()
         users.removeUser(True, config.USER_NAME)
-        users.addUser(True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
+        users.addUser(True, user_name=config.USER_NAME,
+                      domain=config.USER_DOMAIN)
 
 
 class RoleCase54401(TestCase):
@@ -139,23 +142,23 @@ class RoleCase54401(TestCase):
             True, user_name=config.USER_NAME2, domain=config.USER_DOMAIN)
 
         # 1. Edit created role.
-        self.assertTrue(mla.updateRole(
-            True, config.USER_ROLE, description=config.USER_ROLE))
+        self.assertTrue(mla.updateRole(True, config.USER_ROLE,
+                                       description=config.USER_ROLE))
         # 2.Create several users and associate them with certain role.
-        self.assertTrue(users.addRoleToUser(
-            True, config.USER_NAME, config.USER_ROLE))
-        self.assertTrue(users.addRoleToUser(
-            True, config.USER_NAME2, config.USER_ROLE))
+        self.assertTrue(users.addRoleToUser(True, config.USER_NAME,
+                                            config.USER_ROLE))
+        self.assertTrue(users.addRoleToUser(True, config.USER_NAME2,
+                                            config.USER_ROLE))
         # 3.Create a new user and associate it with the role.
-        self.assertTrue(users.addUser(
-            True, user_name=config.USER_NAME3, domain=config.USER_DOMAIN))
+        self.assertTrue(users.addUser(True, user_name=config.USER_NAME3,
+                                      domain=config.USER_DOMAIN))
         self.assertTrue(users.addRoleToUser(
             True, config.USER_NAME3, config.USER_ROLE))
         # 4.Edit new user's role.
-        users.loginAsUser(
-            config.USER_NAME, config.USER_DOMAIN, config.USER_PASSWORD,
-            filter='true')
-        self.assertRaises(vms.EntityNotFound, vms.startVm, False, config.VM_NAME)
+        users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
+                          config.USER_PASSWORD, filter=True)
+        self.assertRaises(vms.EntityNotFound, vms.startVm, False,
+                          config.VM_NAME)
 
         loginAsAdmin()
         self.assertTrue(mla.addRolePermissions(
@@ -163,14 +166,12 @@ class RoleCase54401(TestCase):
 
         # 5.Check that after editing(changing) a role effect will be immediate.
         # User should operate vm now
-        users.loginAsUser(
-            config.USER_NAME, config.USER_DOMAIN, config.USER_PASSWORD,
-            filter='true')
+        users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
+                          config.USER_PASSWORD, filter=True)
         self.assertTrue(vms.startVm(True, config.VM_NAME))
         self.assertTrue(vms.stopVm(True, config.VM_NAME))
-        users.loginAsUser(
-            config.USER_NAME3, config.USER_DOMAIN, config.USER_PASSWORD,
-            filter='true')
+        users.loginAsUser(config.USER_NAME3, config.USER_DOMAIN,
+                          config.USER_PASSWORD, filter=True)
         self.assertTrue(vms.startVm(True, config.VM_NAME))
         self.assertTrue(vms.stopVm(True, config.VM_NAME))
 
@@ -179,7 +180,8 @@ class RoleCase54401(TestCase):
         """ Recreate user """
         loginAsAdmin()
         users.removeUser(True, config.USER_NAME)
-        users.addUser(True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
+        users.addUser(True, user_name=config.USER_NAME,
+                      domain=config.USER_DOMAIN)
         users.removeUser(True, config.USER_NAME2)
         users.removeUser(True, config.USER_NAME3)
         mla.removeRole(True, config.USER_ROLE)
@@ -197,20 +199,20 @@ class RoleCase54415(TestCase):
         roles = mla.util.get(absLink=False)
         size = len(roles)
 
-        for role in roles:
+        for r in roles:
             rolePermits = mla.util.getElemFromLink(
-                role, link_name='permits', attr='permit', get_href=False)
-            if not 'login' in [p.get_name() for p in rolePermits]:
-                LOGGER.info(msg % role.get_name())
+                r, link_name='permits', attr='permit', get_href=False)
+            if 'login' not in [p.get_name() for p in rolePermits]:
+                LOGGER.info(msg, r.get_name())
                 continue
 
             self.assertTrue(users.addRoleToUser(
-                True, config.USER_NAME, role.get_name()))
+                True, config.USER_NAME, r.get_name()))
             users.loginAsUser(
                 config.USER_NAME, config.USER_DOMAIN, config.USER_PASSWORD,
-                filter=(False if role.administrative else True))
+                filter=not r.administrative)
             self.assertEqual(len(mla.util.get(absLink=False)), size)
-            LOGGER.info("User with role %s can see all roles." % role.get_name())
+            LOGGER.info("User with role %s can see all roles.", r.get_name())
 
             loginAsAdmin()
             self.assertTrue(users.removeUser(True, config.USER_NAME))
@@ -219,7 +221,7 @@ class RoleCase54415(TestCase):
 
 
 class RoleCase54402(TestCase):
-    """ Try to remove role which is assigned to user and that is not assigned """
+    """ Try remove role which is assigned to user and that isn't assigned """
     __test__ = True
 
     @tcms(TCMS_PLAN_ID, 54402)
@@ -227,7 +229,8 @@ class RoleCase54402(TestCase):
     def removeRole(self):
         """ Try to remove roles which are associted to objects """
         msg = "Role %s can't be removed. It is associated with user."
-        self.assertTrue(mla.addRole(True, name=config.USER_ROLE, permits='login'))
+        self.assertTrue(mla.addRole(True, name=config.USER_ROLE,
+                                    permits='login'))
         self.assertTrue(mla.addRole(
             True, name=config.ADMIN_ROLE,
             permits='login', administrative='true'))
@@ -238,7 +241,7 @@ class RoleCase54402(TestCase):
         self.assertTrue(mla.removeRole(True, config.ADMIN_ROLE))
         # Try to remove role that is associated with user.
         self.assertTrue(mla.removeRole(False, config.USER_ROLE))
-        LOGGER.info(msg % config.USER_ROLE)
+        LOGGER.info(msg, config.USER_ROLE)
         self.assertTrue(mla.removeUserPermissionsFromVm(
             True, config.VM_NAME, config.USER1))
         self.assertTrue(mla.removeRole(True, config.USER_ROLE))
@@ -247,7 +250,8 @@ class RoleCase54402(TestCase):
     def teardown_class(cls):
         """ Recreate user """
         users.removeUser(True, config.USER_NAME)
-        users.addUser(True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
+        users.addUser(True, user_name=config.USER_NAME,
+                      domain=config.USER_DOMAIN)
 
 
 class RoleCase54366(TestCase):
@@ -260,7 +264,7 @@ class RoleCase54366(TestCase):
         """ Try to create role name with invalid characters """
         for char in INVALID_CHARS:
             self.assertTrue(mla.addRole(False, name=char, permits='login'))
-            LOGGER.info("Role with char '%s' can't be created." % char)
+            LOGGER.info("Role with char '%s' can't be created.", char)
 
 
 class RoleCase54540(TestCase):
@@ -271,9 +275,9 @@ class RoleCase54540(TestCase):
     @istest
     def removePreDefinedRoles(self):
         """ Test that pre-defined roles can not be removed. """
-        for role in mla.util.get(absLink=False):
-            self.assertTrue(mla.util.delete(role, False))
-            LOGGER.info("Predefined role %s can't be removed." % role.get_name())
+        for r in mla.util.get(absLink=False):
+            self.assertTrue(mla.util.delete(r, False))
+            LOGGER.info("Predefined role %s can't be removed.", r.get_name())
 
 
 class RoleCase54411(TestCase):
@@ -303,7 +307,8 @@ class RoleCase54403(TestCase):
     @istest
     def cloneRole(self):
         """ Clone role """
-        self.assertTrue(mla.addRole(True, name=config.USER_ROLE, permits='login'))
+        self.assertTrue(mla.addRole(True, name=config.USER_ROLE,
+                                    permits='login'))
         self.assertTrue(mla.removeRole(True, config.USER_ROLE))
 
 
@@ -322,8 +327,8 @@ class RolesCase54412(TestCase):
 
         def checkIfObjectHasRole(obj, role):
             objPermits = mla.permisUtil.getElemFromLink(obj, get_href=False)
-            roleNAid = users.rlUtil.find(role).get_id()
-            return roleNAid in [perm.get_role().get_id() for perm in objPermits]
+            role_id = users.rlUtil.find(role).get_id()
+            return role_id in [perm.get_role().get_id() for perm in objPermits]
 
         msg_f = "Object don't have inherited perms."
         msg_t = "Object have inherited perms."
@@ -334,30 +339,30 @@ class RolesCase54412(TestCase):
         }
         h = {
             config.MAIN_CLUSTER_NAME:
-                {
-                    config.MAIN_HOST_NAME: vms.HOST_API,
-                    config.VM_NAME: vms.VM_API,
-                    config.VMPOOL_NAME: vmpools.util,
-                    config.VM_NO_DISK: vms.VM_API
-                },
+            {
+                config.MAIN_HOST_NAME: vms.HOST_API,
+                config.VM_NAME: vms.VM_API,
+                config.VMPOOL_NAME: vmpools.util,
+                config.VM_NO_DISK: vms.VM_API
+            },
             config.MAIN_STORAGE_NAME:
-                {
-                    config.DISK_NAME: vms.DISKS_API
-                },
+            {
+                config.DISK_NAME: vms.DISKS_API
+            },
             config.MAIN_DC_NAME:
-                {
-                    config.MAIN_HOST_NAME: vms.HOST_API,
-                    config.VM_NAME: vms.VM_API,
-                    config.VMPOOL_NAME: vmpools.util,
-                    config.TEMPLATE_NAME: vms.TEMPLATE_API,
-                    config.VM_NO_DISK: vms.VM_API,
-                    config.TEMPLATE_NO_DISK: vms.TEMPLATE_API
-                }
+            {
+                config.MAIN_HOST_NAME: vms.HOST_API,
+                config.VM_NAME: vms.VM_API,
+                config.VMPOOL_NAME: vmpools.util,
+                config.TEMPLATE_NAME: vms.TEMPLATE_API,
+                config.VM_NO_DISK: vms.VM_API,
+                config.TEMPLATE_NO_DISK: vms.TEMPLATE_API
+            }
         }
 
         b = False
         for k in l.keys():
-            LOGGER.info("Testing propagated permissions from %s" % k)
+            LOGGER.info("Testing propagated permissions from %s", k)
             mla.addUserPermitsForObj(
                 True, config.USER_NAME, role.UserRole, l[k].find(k))
             for key, val in h[k].items():
@@ -375,4 +380,5 @@ class RolesCase54412(TestCase):
     def teardown_class(cls):
         """ Recreate user """
         users.removeUser(True, config.USER_NAME)
-        users.addUser(True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
+        users.addUser(True, user_name=config.USER_NAME,
+                      domain=config.USER_DOMAIN)

@@ -143,14 +143,13 @@ class LDAPCase289069(TestCase):
     """ Try to search via REST with firstname, lastname """
     __test__ = True
 
-    apis = set(['rest'])
-
     def setUp(self):
         domainID = users.domUtil.find(config.LDAP_DOMAIN).get_id()
         self.query = '/api/domains/' + domainID + '/%s?search={query}'
 
     @istest
     @tcms(config.LDAP_TCMS_PLAN_ID, 289069)
+    @bz(1117240)
     def searchForUsersAndGroups(self):
         """ Search within domain for users and groups """
         self.assertTrue(
