@@ -23,6 +23,7 @@ storage_type = option('nfs', 'iscsi', 'fcp', 'glusterfs', 'posixfs_nfs', 'posixf
 # This parameter will be used in order to choose nas protocol for iso and export domains
 iso_export_domain_nas = option('nfs', 'posixfs', default='nfs')
 host_nics = force_list(default=None)
+
 vdc_root_password = string(default='qum5net')
 
 #users
