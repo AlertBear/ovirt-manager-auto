@@ -145,7 +145,8 @@ def _prepareStorageDomainObject(positive, **kwargs):
     elif storage_type == ENUMS['storage_type_fcp']:
         logical_unit = LogicalUnit(id=kwargs.pop('lun', None))
         sd.set_storage(Storage(logical_unit=logical_unit))
-    elif storage_type == ENUMS['storage_type_posixfs']:
+    elif (storage_type == ENUMS['storage_type_posixfs'] or
+          storage_type == ENUMS['storage_type_gluster']):
         sd.set_storage(
             Storage(
                 type_=storage_type, path=kwargs.pop('path', None),

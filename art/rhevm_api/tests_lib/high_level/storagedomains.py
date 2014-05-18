@@ -136,6 +136,37 @@ def extendFCPDomain(storage_domain, host, lun):
 
 
 @is_action()
+def addGlusterDomain(host, name, data_center, address, path, vfs_type,
+                     sd_type=ENUMS['storage_dom_type_data'],
+                     storage_format=None):
+    """
+    Description: Adds a glusterFS storage domain, attaches it to the given DC
+    and activates it
+    Author: gickowic
+    Parameters:
+        * host - host used to add the domain
+        * name - name of the storage domain
+        * data_center - datacenter to create the domain in
+        * address - address of one of the gluster nodes
+        * path - path of gluster volume
+        * vfs_type - vfs_type parameter used by rhevm api like posix domain
+    Return: True if domain was successfully added, attached to DC and activated
+    """
+    if not storagedomains.addStorageDomain(
+            True, host=host, name=name, type=sd_type,
+            storage_type=ENUMS['storage_type_gluster'], address=address,
+            path=path, storage_format=storage_format, vfs_type=vfs_type):
+        logger.error('Failed to add %s:%s using host %s', address, path, host)
+        return False
+
+    status = storagedomains.attachStorageDomain(
+        True, data_center, name, True)
+
+    return status and storagedomains.activateStorageDomain(
+        True, data_center, name)
+
+
+@is_action()
 def addNFSDomain(host, storage, data_center, address, path,
                  sd_type=ENUMS['storage_dom_type_data'], storage_format=None):
     '''
@@ -480,6 +511,15 @@ class PosixFSStorageAdder(StorageAdder):
         return name
 
 
+class GlusterStorageAdder(PosixFSStorageAdder):
+    def add_storage(self, i):
+        name = 'gluster_%s' % i
+        self._add_storage(addGlusterDomain, self.host, name, self.datacenter,
+                          self.domain_addresses[i], self.domain_paths[i],
+                          self.vfs_type, ENUMS['storage_dom_type_data'])
+        return name
+
+
 def create_storages(storage, type_, host, datacenter,
                     export_name="export_domain", iso_name="iso_domain"):
     """
@@ -496,7 +536,8 @@ def create_storages(storage, type_, host, datacenter,
         ENUMS['storage_type_iscsi']: ISCSIStorageAdder,
         ENUMS['storage_type_fcp']: FCPStorageAdder,
         ENUMS['storage_type_local']: LocalFSStorageAdder,
-        ENUMS['storage_type_posixfs']: PosixFSStorageAdder}
+        ENUMS['storage_type_posixfs']: PosixFSStorageAdder,
+        ENUMS['storage_type_gluster']: GlusterStorageAdder}
 
     logger.debug('Creating storages: %s', pformat(storage))
 
