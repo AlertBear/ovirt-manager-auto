@@ -5,6 +5,7 @@ Migration feature test
 import logging
 from art.rhevm_api.tests_lib.low_level.storagedomains import\
     cleanDataCenter
+from art.rhevm_api.utils.test_utils import toggleServiceOnHost
 from art.test_handler.exceptions import\
     DataCenterException, NetworkException
 from art.rhevm_api.tests_lib.high_level.networks import prepareSetup
@@ -37,6 +38,16 @@ def setup_package():
                         mgmt_network=config.MGMT_BRIDGE,
                         auto_nics=[config.HOST_NICS[0]]):
         raise NetworkException("Cannot create setup")
+
+    for host in config.HOSTS:
+        stop_firewall = toggleServiceOnHost(positive=True,
+                                            host=host,
+                                            user=config.HOSTS_USER,
+                                            password=config.HOSTS_PW[0],
+                                            service=config.FIREWALL_SRV,
+                                            action="STOP")
+        if not stop_firewall:
+            raise NetworkException("Cannot stop Firewall service")
 
 
 def teardown_package():

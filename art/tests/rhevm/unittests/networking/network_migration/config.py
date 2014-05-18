@@ -38,6 +38,7 @@ VM_OS = PARAMETERS['vm_os']
 VM_LINUX_USER = PARAMETERS['vm_linux_user']
 VM_LINUX_PASSWORD = PARAMETERS['vm_linux_password']
 MGMT_BRIDGE = PARAMETERS['mgmt_bridge']
+FIREWALL_SRV = "iptables"
 
 COBBLER_ADDRESS = PARAMETERS.get('cobbler_address', None)
 COBBLER_USER = PARAMETERS.get('cobbler_user', None)
