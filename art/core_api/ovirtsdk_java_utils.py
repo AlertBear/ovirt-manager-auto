@@ -226,8 +226,9 @@ def print_java_error(java_error, op_code, logger):
 Reason: {2}\n\tDetail: {3}\nTrace:\n\t{4}"
         logger.error(errorMsg.format(op_code, code, reason, detail,
                                      java_traceback))
-    except Exception:
-        logger.error('Possible internal error: %s', java_error)
+    except Exception as e:
+        logger.error('Caught Exception %s', e)
+        logger.error('Possible internal error: %s', str(java_error))
 
 
 def python_primitives_converter(java_datatype, data):
