@@ -303,7 +303,7 @@ class ManageDomainsTimeSkew(ManageDomainsTestCaseBase):
         self.assertRaises(errors.MissingDmainError, self.ut.autoTest, rc=8)
 
 
-class ManageDomainsUnpriviledgedUser(ManageDomainsTestCaseBase):
+class ManageDomainsUnprivilegedUser(ManageDomainsTestCaseBase):
     """
     https://tcms.engineering.redhat.com/case/127947/?from_plan=4580
     """
@@ -313,14 +313,15 @@ class ManageDomainsUnpriviledgedUser(ManageDomainsTestCaseBase):
     # get key error in SetUp
     directoryService = directoryServices.values()[0]
 
+    @bz(1102065)
     @bz(1083411)
     @tcms(4580, 127947)
-    def test_unpriviledged_user(self):
-        cmd = ['su', 'postgres', '-c', 'rhevm-manage-domains', 'add',
-               '--domain=' + self.domainName,
-               '--provider=' + self.provider,
-               '--user=' + self.domainUser,
-               '--password-file=' + self.password_file]
+    def test_unprivileged_user(self):
+        # user needs permissions on current working directorty, that's why /tmp
+        cmd = ('cd /tmp; su postgres -c "rhevm-manage-domains add --domain=%s '
+               '--provider=%s --user=%s --password-file=%s"' %
+               (self.domainName, self.provider, self.domainUser,
+                self.passwordFile))
         out = _run_ssh_command(self.host, self.sshPassword, cmd)
         assert 'Permission denied' in out
         assert 'Exception' not in out
