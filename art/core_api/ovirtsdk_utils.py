@@ -109,7 +109,7 @@ class SdkUtil(APIUtil):
         return results
 
     def create(self, entity, positive, expectedEntity=None, incrementBy=1,
-               async=False, collection=None, current=None):
+               async=False, collection=None, current=None, **kwargs):
         '''
         Description: creates a new element
         Author: edolinin
