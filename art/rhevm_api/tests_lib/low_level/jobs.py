@@ -41,7 +41,7 @@ def check_recent_job(positive, description, last_jobs_num=None,
     if last_job:
         return True, last_job
     else:
-        return False, None, None
+        return False, None
 
 
 @is_action()

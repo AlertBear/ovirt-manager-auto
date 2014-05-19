@@ -4,13 +4,15 @@ Soft Fencing config module
 
 __test__ = False
 
+from art.test_handler.settings import opts
 from . import ART_CONFIG
 
 TEST_NAME = "Soft Fencing"
 PARAMETERS = ART_CONFIG['PARAMETERS']
+ENUMS = opts['elements_conf']['RHEVM Enums']
 STORAGE_TYPE = PARAMETERS['storage_type']
 VDC = PARAMETERS.get('host', None)
-VDC_PASSWORD = PARAMETERS.get('password', None)
+VDC_PASSWORD = PARAMETERS.get('vdc_root_password', None)
 
 base_name = PARAMETERS.get('test_name', TEST_NAME)
 dc_name = PARAMETERS.get('dc_name', 'datacenter_%s' % base_name)
@@ -29,3 +31,11 @@ host_with_pm = hosts[0]
 host_without_pm = hosts[1]
 job_description = 'Executing SSH Soft Fencing on host'
 MGMT_BRIDGE = PARAMETERS['mgmt_bridge']
+db_user = PARAMETERS['db_user']
+db_pass = PARAMETERS['db_pass']
+db_name = PARAMETERS['db_name']
+PRODUCT_RHEVM = 'rhevm'
+job_finished = ENUMS['job_finished']
+job_failed = ENUMS['job_failed']
+service_vdsmd = 'vdsmd'
+service_network = 'network'

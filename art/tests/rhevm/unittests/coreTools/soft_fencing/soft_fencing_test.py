@@ -6,7 +6,7 @@ on host with pm and without,
 
 from art.rhevm_api.tests_lib.low_level.hosts import \
     runDelayedControlService, waitForHostsStates,\
-    deactivateHost, removeHost, addHost
+    deactivateHost, removeHost, addHost, isHostUp, activateHost
 from art.rhevm_api.tests_lib.low_level.jobs import check_recent_job
 from art.rhevm_api.tests_lib.low_level.vms import checkVmState
 from art.rhevm_api.utils.test_utils import get_api
@@ -14,12 +14,11 @@ from art.test_handler.settings import opts
 from art.test_handler.tools import tcms
 from art.unittest_lib import BaseTestCase as TestCase
 from nose.tools import istest
-import art.rhevm_api.tests_lib.low_level.vms as vms
+from art.rhevm_api.tests_lib.low_level import vms
 import art.test_handler.exceptions as errors
 import config
 import logging
-import datetime
-
+from utilities.rhevm_tools.base import Setup
 
 HOST_API = get_api('host', 'hosts')
 VM_API = get_api('vm', 'vms')
@@ -28,6 +27,8 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 PINNED = ENUMS['vm_affinity_pinned']
 HOST_CONNECTING = ENUMS['host_state_connecting']
 VM_DOWN = ENUMS['vm_state_down']
+DB_NAME_CONF = {'RHEVM_DB_NAME': config.db_name}
+JOB = 'SshSoftFencing'
 
 
 logger = logging.getLogger(__name__)
@@ -37,34 +38,56 @@ logger = logging.getLogger(__name__)
 ########################################################################
 
 
+def _check_host_state(host, service, job_status):
+    logger.info("Stop %s on host %s", service, host)
+    if not runDelayedControlService(True, host, config.host_user,
+                                    config.host_password,
+                                    service=service, command='stop'):
+        raise errors.HostException("Trying to stop %s "
+                                   "on host %s failed" % (service, host))
+    logger.info("Check if host %s is in connecting state", host)
+    if not waitForHostsStates(True, host, states=HOST_CONNECTING):
+        raise errors.HostException("Host %s is not in connecting state" %
+                                   host)
+    if not waitForHostsStates(True, host):
+        raise errors.HostException("Host %s is not in up state" % host)
+    status = check_recent_job(True, description=config.job_description,
+                              job_status=job_status)
+    if not status:
+        raise errors.JobException("No job with given description")
+    logger.info("Ssh soft fencing to host %s %s", host, job_status)
+
+
+def _delete_job_from_db():
+    dbConn = Setup(host=config.VDC, user=config.host_user,
+                   passwd=config.host_password, dbuser=config.db_user,
+                   dbpassw=config.db_pass, product=config.PRODUCT_RHEVM,
+                   conf=DB_NAME_CONF)
+    sql = '%s FROM job WHERE action_type=\'SshSoftFencing\''
+    if dbConn.psql(sql, 'SELECT *'):
+        dbConn.psql(sql, 'DELETE')
+    if dbConn.psql(sql, 'SELECT *'):
+        logger.info("Deleting %s job from db failed", JOB)
+
+
+def _activate_both_hosts():
+    for host in config.host_with_pm, config.host_without_pm:
+        if not isHostUp(True, host=host):
+            if not activateHost(True, host=host):
+                raise errors.HostException("cannot activate host: %s" % host)
+
+
 class SoftFencing(TestCase):
 
     __test__ = False
 
-    def _check_host_state(self, host, service, job_status):
-        ts = datetime.datetime.now()
-        logger.info("Stop %s to host %s", service, host)
-        if not runDelayedControlService(True, host, config.host_user,
-                                        config.host_password,
-                                        service=service, command='stop'):#STOPS SERVICE e.g vdsmd ON HOST
-            raise errors.HostException("Trying to stop %s "
-                                       "on host %s failed", service, host)
-        logger.info("Check if host %s in connecting state", host)
-        if not waitForHostsStates(True, host, states=HOST_CONNECTING):#checks if host in state connecting
-            raise errors.HostException("Host %s not in connecting state",
-                                       host)
-        if not waitForHostsStates(True, host):#checks if host in state up
-            raise errors.HostException("Host %s not in up state", host)
-        status, job, job_time = check_recent_job(True,
-                                                 description=config.
-                                                 job_description,
-                                                 job_status=job_status)#check if ssh soft fencing job was created and return the last job
-        if not status:
-            raise errors.JobException("No job with given description")
-        self.assertTrue(job_time[0] >= ts.hour
-                        and job_time[1] >= ts.minute
-                        and job_time[2] >= ts.second)
-        logger.info("Ssh soft fencing to host %s %s", host, job_status)
+    @classmethod
+    def setup_class(cls):
+        _activate_both_hosts()
+
+    @classmethod
+    def teardown_class(cls):
+        _delete_job_from_db()
 
 
 class SoftFencingPassedWithoutPM(SoftFencing):
@@ -77,14 +100,15 @@ class SoftFencingPassedWithoutPM(SoftFencing):
     @istest
     def check_host_state(self):
         """
-        Check if engine do soft fencing to host with stopped vdsm
+        Check if engine does soft fencing to host when vdsm is stopped
         """
-        self._check_host_state(config.host_without_pm, 'vdsmd', 'finished')
+        _check_host_state(config.host_without_pm, config.service_vdsmd,
+                          config.job_finished)
 
 
 class SoftFencingFailedWithPM(SoftFencing):
     """
-    Positive: After soft fencing via ssh failed, do fence via pm
+    Positive: After soft fencing failed, fence with power management
     """
 
     __test__ = True
@@ -96,7 +120,8 @@ class SoftFencingFailedWithPM(SoftFencing):
         Check if job sshSoftFencing appear after timestamp,
         and job status FAILED
         """
-        self._check_host_state(config.host_with_pm, 'network', 'failed')
+        _check_host_state(config.host_with_pm, config.service_network,
+                          config.job_failed)
 
 
 class SoftFencingPassedWithPM(SoftFencing):
@@ -110,12 +135,13 @@ class SoftFencingPassedWithPM(SoftFencing):
     @istest
     def check_host_state(self):
         """
-        Check if engine do soft fencing to host with stopped vdsm
+        Check if engine does soft fencing to host when vdsm is stopped
         """
-        self._check_host_state(config.host_with_pm, 'vdsmd', 'finished')
+        _check_host_state(config.host_with_pm, config.service_vdsmd,
+                          config.job_finished)
 
 
-class CheckVmAfterSoftFencing(TestCase):
+class CheckVmAfterSoftFencing(SoftFencing):
     """
     Positive: Check vm after soft fencing
     """
@@ -126,9 +152,7 @@ class CheckVmAfterSoftFencing(TestCase):
 
     @classmethod
     def setup_class(cls):
-        '''
-        Add vm to host
-        '''
+        super(CheckVmAfterSoftFencing, cls).setup_class()
         logger.info("Create new vm")
         if not vms.createVm(positive=True, vmName=cls.vm_test,
                             vmDescription="Test VM",
@@ -150,40 +174,21 @@ class CheckVmAfterSoftFencing(TestCase):
     @istest
     def check_vm_state(self):
         """
-        Check that after soft fencing vm up
+        Check that vm is up after soft fencing
         """
-        ts = datetime.datetime.now()
-        logger.info("Stop vdsm to host %s", config.host_with_pm)
-        if not runDelayedControlService(True, config.host_with_pm,
-                                        config.host_user,
-                                        config.host_password,
-                                        service='vdsmd',
-                                        command='stop'):
-            raise errors.HostException("Trying to stop vdsm on host %s failed"
-                                       % config.host_with_pm)
-        logger.info("Check if host %s in connecting state",
-                    config.host_with_pm)
-        if not waitForHostsStates(True, config.host_with_pm,
-                                  states=HOST_CONNECTING):
-            raise errors.HostException("Host %s not in connecting state"
-                                       % config.host_with_pm)
-        if not waitForHostsStates(True, config.host_with_pm):
-            raise errors.HostException("Host %s not in up state"
-                                       % config.host_with_pm)
-        status, job, job_time = check_recent_job(True,
-                                                 description=config.
-                                                 job_description,
-                                                 job_status='finished')
-        if not (status and
-                job_time[0] >= ts.hour and
-                job_time[1] >= ts.minute and
-                job_time[2] >= ts.second):
-            raise errors.JobException("No job with given "
-                                       "description in recent time")
+        _check_host_state(config.host_with_pm, config.service_vdsmd,
+                          config.job_finished)
         logger.info("Check VM state")
         self.assertTrue(checkVmState(True, self.vm_test,
                                      ENUMS['vm_state_up']))
         logger.info("Vm state up")
+
+    @classmethod
+    def teardown_class(cls):
+        super(CheckVmAfterSoftFencing, cls).teardown_class()
+        logger.info("Deleting vm: %s", cls.vm_test)
+        if not vms.removeVms(True, cls.vm_test, stop='true'):
+            raise errors.VMException("cannot remove vm: %s" % cls.vm_test)
 
 
 class SoftFencingToHostNoProxies(SoftFencing):
@@ -195,9 +200,10 @@ class SoftFencingToHostNoProxies(SoftFencing):
 
     @classmethod
     def setup_class(cls):
-        '''
+        """
         Remove another host in cluster
-        '''
+        """
+        super(SoftFencingToHostNoProxies, cls).setup_class()
         logger.info("Put another host in cluster to maintenance")
         if not deactivateHost(True, config.host_without_pm):
             raise errors.HostException("Attempt to put host %s"
@@ -214,10 +220,12 @@ class SoftFencingToHostNoProxies(SoftFencing):
         """
         Check that host do soft fencing with out proxies
         """
-        self._check_host_state(config.host_with_pm, 'vdsmd', 'finished')
+        _check_host_state(config.host_with_pm, config.service_vdsmd,
+                          config.job_finished)
 
     @classmethod
     def teardown_class(cls):
+        super(SoftFencingToHostNoProxies, cls).teardown_class()
         logger.info("Add host that was removed")
         if not addHost(True, config.host_without_pm,
                        root_password=config.host_password,
