@@ -201,7 +201,7 @@ class RestUtil(APIUtil):
         if self.opts['validate']:
             collection = self.get(href, listOnly=True, elm=coll_elm_name)
 
-        entity = validator.dump_entity(entity, self.element_name)
+        entity = validator.dump_entity(entity, coll_elm_name)
 
         post_url = self.buildUrl(href, current)
         self.logger.debug(
