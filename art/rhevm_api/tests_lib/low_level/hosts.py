@@ -2647,3 +2647,29 @@ def kill_qemu_process(vm_name, host, user, password):
         HOST_API.logger.info("QEMU pid: %s", qemu_pid)
 
         return linux_machine.runCmd(shlex.split('kill -9 %s', qemu_pid))
+
+
+def add_label_to_hostnic(nic, label, host):
+    """
+    Description: Add network label to host nic
+    Author: myakove
+    Parameters:
+       *  *nic* - nic name
+       *  *label* - label name
+       *  *host* - host name
+    **Return**: status (True if label was added properly, False otherwise)
+    """
+    try:
+        host_nic = getHostNic(host, nic)
+    except EntityNotFound as e:
+        HOST_API.logger.error(e)
+        return False
+
+    labels_href = HOST_NICS_API.getElemFromLink(host_nic, "labels", "label",
+                                                get_href=True)
+    label_obj = data_st.Label()
+    label_obj.set_id(label)
+    status = HOST_NICS_API.create(entity=label_obj, positive=True,
+                                  collection=labels_href,
+                                  coll_elm_name="label")[1]
+    return status

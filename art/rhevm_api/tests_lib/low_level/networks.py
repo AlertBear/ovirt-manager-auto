@@ -1002,3 +1002,29 @@ class NetworkInfoDispatcher(object):
                     net_info["interface"] = interface
 
         return net_info
+
+
+def add_label_to_network(network, label, datacenter=None, cluster=None):
+    """
+    Description: Add network label to network
+    Author: myakove
+    Parameters:
+       *  *network* - network name
+       *  *label* - label name
+       *  *datacenter* - datacenter that the network resides on
+       *  *cluster* - cluster that the network resides on
+    **Return**: status (True if label was added properly, False otherwise)
+    """
+    try:
+        net = findNetwork(network, data_center=datacenter, cluster=cluster)
+    except EntityNotFound as e:
+        logger.error(e)
+        return False
+
+    labels_href = NET_API.getElemFromLink(net, "labels", "label",
+                                          get_href=True)
+    label_obj = data_st.Label()
+    label_obj.set_id(label)
+    status = NET_API.create(entity=label_obj, positive=True,
+                            collection=labels_href, coll_elm_name="label")[1]
+    return status
