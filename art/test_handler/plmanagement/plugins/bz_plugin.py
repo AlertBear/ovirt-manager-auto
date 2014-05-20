@@ -384,7 +384,7 @@ class Bugzilla(Component):
 
         if versions is None:
             from art.rhevm_api.tests_lib.low_level import general
-            versions = ["%d.%d" % general.getSystemVersion()]
+            versions = ["%d.%d.%d.%d" % general.getSystemVersion()]
 
         for version in versions:
             self.version = Version(version)

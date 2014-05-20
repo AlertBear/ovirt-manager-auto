@@ -125,9 +125,8 @@ class Trac(Component):
     @property
     def version(self):
         if self._version is None:
-            from art.rhevm_api.tests_lib.low_level.general\
-                import getSystemVersion
-            self._version = Version("%d.%d" % getSystemVersion())
+            from art.rhevm_api.tests_lib.low_level import general
+            self._version = Version("%d.%d.%d.%d" % general.getSystemVersion())
         return self._version
 
     @classmethod

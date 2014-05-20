@@ -15,6 +15,7 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
+from collections import namedtuple
 from art.core_api.apis_utils import getDS
 from art.core_api import validator
 from art.rhevm_api.utils.test_utils import get_api
@@ -40,18 +41,24 @@ xpathMatch = is_action('xpathGeneral', id_name='xpathMatch')(XPathMatch(util))
 VM = getDS('VM')
 
 
+ProductVersion = namedtuple('ProductVersion', ['major',
+                                               'minor',
+                                               'build',
+                                               'revision'])
+
+
 def getSystemVersion():
     '''
     Description: Gets the version of current system
-    Author: jlibosva
-    Return: Tuple containing version (major, minor)
+    Author: cmestreg
+    Return: named tuple ProductVersion(major, minor, build, revision)
     '''
     system_version = util.get(
         href='', absLink=False).get_product_info().get_version()
-    system_major = system_version.get_major()
-    system_minor = system_version.get_minor()
 
-    return system_major, system_minor
+    fields = (getattr(system_version, "get_%s" % field)()
+              for field in ProductVersion._fields)
+    return ProductVersion(*fields)
 
 
 @is_action()
