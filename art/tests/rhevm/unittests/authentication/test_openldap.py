@@ -12,9 +12,10 @@ import logging
 
 from art.unittest_lib import BaseTestCase as TestCase
 from nose.tools import istest
-from art.rhevm_api.tests_lib.low_level import mla, users, general
+from art.rhevm_api.tests_lib.low_level import mla, users
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.test_handler.tools import bz, tcms
+from test_base import connectionTest
 
 LOGGER = logging.getLogger(__name__)
 
@@ -24,20 +25,13 @@ CN = 'cn=Manager,dc=brq-openldap,dc=rhev,dc=lab,dc=eng,dc=brq,dc=redhat,dc=com'
 CMD = "ldapmodify -v -D '" + CN + "' -h $(hostname) -w 123456 -f %s"
 
 
-def connectionTest():
-    try:
-        return general.getProductName()[0]
-    except AttributeError:
-        return False
-
-
 def addUser(user_name):
     users.addUser(True, user_name=user_name, domain=config.LDAP_DOMAIN)
 
 
-def loginAsUser(user_name, filter):
+def loginAsUser(user_name, filter_):
     users.loginAsUser(user_name, config.LDAP_DOMAIN,
-                      config.USER_PASSWORD, filter)
+                      config.USER_PASSWORD, filter_)
 
 
 def loginAsAdmin():
@@ -147,7 +141,6 @@ class LDAPCase289069(TestCase):
         self.query = '/api/domains/' + domainID + '/%s?search={query}'
 
     @istest
-    @bz(1027284)
     @tcms(config.LDAP_TCMS_PLAN_ID, 289069)
     def searchForUsersAndGroups(self):
         """ Search within domain for users and groups """
@@ -174,14 +167,14 @@ class LDAPCase289071(TestCase):
     new_last_name = 'new_last_name'
     new_email = 'new_email@mynewemail.com'
 
+    def _find_user_in_directory(self, name):
+        domain_obj = users.domUtil.find(config.LDAP_DOMAIN)
+        return filter(lambda x: x.get_name() == name,
+                      users.util.getElemFromLink(domain_obj, get_href=True))[0]
+
     def setUp(self):
-        domainID = users.domUtil.find(config.LDAP_DOMAIN).get_id()
-        self.query = '/api/domains/' + domainID + '/users?search={query}'
+        self.user = self._find_user_in_directory(config.LDAP_TESTING_USER_NAME)
         addUser(config.LDAP_TESTING_USER_NAME)
-        self.user = users.util.query(
-            "{0}={1}".format('name',
-                             config.LDAP_TESTING_USER_NAME),
-            href=self.query)[0]
 
     @istest
     @tcms(config.LDAP_TCMS_PLAN_ID, 289071)
@@ -192,8 +185,7 @@ class LDAPCase289071(TestCase):
                               cmd=CMD % self.UPDATE_USER1,
                               user=config.OVIRT_ROOT,
                               password=config.LDAP_PASSWORD)[0])
-        user = users.util.query("{0}={1}".format('name', self.new_name),
-                                href=self.query)[0]
+        user = self._find_user_in_directory(self.new_name)
         self.assertTrue(user.get_name() == self.new_name)
         LOGGER.info("User name was updated correctly.")
         self.assertTrue(user.get_last_name() == self.new_last_name)
@@ -223,8 +215,8 @@ class LDAPCase289072(TestCase):
     @tcms(config.LDAP_TCMS_PLAN_ID, 289072)
     def persistencyOfGroupRights(self):
         """ Persistency of group rights """
-        loginAsUser(config.LDAP_USER_FROM_GROUP, True)
-        self.assertTrue(connectionTest(), 'User from group cant log in')
+        loginAsUser(config.LDAP_USER_FROM_GROUP, False)
+        self.assertTrue(connectionTest(), "User from group can't log in")
         LOGGER.info('User from group logged in')
         loginAsAdmin()
         users.removeUser(positive=True, user=config.LDAP_USER_FROM_GROUP,
@@ -253,7 +245,7 @@ class LDAPCase289076(TestCase):
     @tcms(config.LDAP_TCMS_PLAN_ID, 289076)
     def userWithManyGroups(self):
         """ User with many groups """
-        loginAsUser(config.LDAP_WITH_MANY_GROUPS_NAME, 'true')
+        loginAsUser(config.LDAP_WITH_MANY_GROUPS_NAME, True)
         self.assertTrue(
             connectionTest(), "User with many groups can't connect to system")
 
@@ -283,6 +275,7 @@ class LDAPCase289078(TestCase):
 
     @istest
     @tcms(config.LDAP_TCMS_PLAN_ID, 289078)
+    @bz(1099987)
     def removeUserFromOpenLDAP(self):
         """ remove user from OpenLDAP """
         msg = "After group del, user can login."

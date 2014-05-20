@@ -6,11 +6,21 @@ import config as cfg
 import logging
 from art.unittest_lib import BaseTestCase as TestCase
 from nose.tools import istest
-from art.rhevm_api.tests_lib.low_level import mla, users
-from test_active_directory import connectionTest
+from art.rhevm_api.tests_lib.low_level import mla, users, general
+from art.core_api.apis_exceptions import APIException
 
 LOGGER = logging.getLogger(__name__)
 USERROLE = 'UserRole'
+
+
+def connectionTest():
+    try:
+        return general.getProductName()[0]
+    except (APIException, AttributeError):
+        # We expect either login will fail (wrong user) or
+        # general.getProductName() will return None (correct user + filter set)
+        return False
+    return True
 
 
 def loginAsAdmin():
@@ -18,8 +28,8 @@ def loginAsAdmin():
                       cfg.USER_PASSWORD, False)
 
 
-def loginAsUser(user_name, domain, filter=True):
-    users.loginAsUser(user_name, domain, cfg.USER_PASSWORD, filter)
+def loginAsUser(user_name, domain, filter_=True):
+    users.loginAsUser(user_name, domain, cfg.USER_PASSWORD, filter_)
 
 
 def addUser(user_name, domain):
@@ -100,7 +110,7 @@ class BaseExpiredPassword(TestCase):
     def expiredPassword(self):
         """ Login as user with disabled account """
         msg = "User with expired psw can login."
-        loginAsUser(cfg.EXPIRED_PSW_NAME(self.domain), True)
+        loginAsUser(cfg.EXPIRED_PSW_NAME(self.domain), self.domain, True)
         self.assertTrue(not connectionTest(), msg)
         LOGGER.info("User with expired password can't login.")
 

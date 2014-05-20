@@ -14,15 +14,17 @@ from art.unittest_lib import BaseTestCase as TestCase
 from nose.tools import istest
 from art.rhevm_api.tests_lib.low_level import mla, users, general
 from art.rhevm_api.utils.resource_utils import runMachineCommand
+from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import tcms
-
+from test_base import connectionTest
+from utilities.machine import LINUX, Machine
 
 LOGGER = logging.getLogger(__name__)
 OUT = '> /dev/null 2>&1 &'
 MB = 1024 * 1024
 AUTH = 'auth'
 AUTH_CONF = 'auth-conf'
-SET_AUTH = """%s-config -s SASL_QOP=%s && service ovirt-engine restart"""
+SET_AUTH = """%s-config -s SASL_QOP=%s"""
 TCP_DUMP = 'nohup tcpdump -l -s 65535 -A -vv port 389 -w /tmp/tmp.cap %s' % OUT
 CHECK_DUMP = 'tcpdump -A -r /tmp/tmp.cap 2>/dev/null | grep %s'
 CLEAN = 'rm -f /tmp/tmp.cap && kill -9 `pgrep tcpdump`'
@@ -40,13 +42,6 @@ def addUserWithClusterPermissions(user_name):
                                            role=USERVMMANAGER, domain=domain)
 
 
-def connectionTest():
-    try:
-        return general.getProductName()[0]
-    except AttributeError:
-        return False
-
-
 class ActiveDirectory(TestCase):
     __test__ = False
 
@@ -56,7 +51,7 @@ class ActiveDirectory(TestCase):
         if OVIRT in general.getProductName()[1]['product_name'].lower():
             self.product = ENGINE
 
-    def _loginAsUser(self, user_name, filter='true'):
+    def _loginAsUser(self, user_name, filter=True):
         name, domain = user_name.split('@')
         users.loginAsUser(name, domain, self.PASSWORD, filter)
 
@@ -120,7 +115,7 @@ class ActiveDirectory(TestCase):
     def fetchingGroupsWithUser(self):
         """ Fetching user groups when logging with UPN """
         user_name = config.USER_FROM_GROUP(self.domain)
-        self._loginAsUser(user_name, filter='false')
+        self._loginAsUser(user_name, filter=False)
         groups = users.fetchUserGroups(True, user_name=user_name)
         LOGGER.info("User's groups: %s", [g.get_name() for g in groups])
         assert len(groups)
@@ -133,7 +128,9 @@ class ActiveDirectory(TestCase):
                               user=config.OVIRT_ROOT,
                               password=config.OVIRT_ROOT_PASSWORD)[0],
             "Run cmd %s failed." % auth)
-        time.sleep(config.RESTART_TIMEOUT)
+        machine = Machine(config.OVIRT_ADDRESS, config.OVIRT_ROOT,
+                          config.OVIRT_ROOT_PASSWORD).util(LINUX)
+        test_utils.restartOvirtEngine(machine, 5, 25, 70)
         self.assertTrue(
             runMachineCommand(True, ip=config.OVIRT_ADDRESS,
                               cmd=TCP_DUMP,
@@ -141,7 +138,7 @@ class ActiveDirectory(TestCase):
                               password=config.OVIRT_ROOT_PASSWORD)[0],
             "Run cmd %s failed." % TCP_DUMP)
 
-        users.loginAsUser(user, domain, self.PASSWORD, 'true')
+        users.loginAsUser(user, domain, self.PASSWORD, True)
         self.assertTrue(connectionTest())
         time.sleep(20)
 
@@ -172,7 +169,7 @@ class ActiveDirectory(TestCase):
         self._loginAsUser(config.TEST_USER(self.domain))
         self.assertTrue(connectionTest())
         users.loginAsUser(config.AD2_USER_NAME, config.AD2_DOMAIN,
-                          config.USER_PASSWORD, 'true')
+                          config.USER_PASSWORD, True)
         self.assertTrue(connectionTest())
         LOGGER.info("User with same name from different domains can login.")
 

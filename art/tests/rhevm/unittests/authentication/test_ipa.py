@@ -13,11 +13,12 @@ import logging
 
 from art.unittest_lib import BaseTestCase as TestCase
 from nose.tools import istest
-from art.rhevm_api.tests_lib.low_level import mla, users, general
+from art.rhevm_api.tests_lib.low_level import mla, users
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils.test_utils import get_api
 from art.core_api.apis_utils import getDS
 from art.test_handler.tools import tcms
+from test_base import connectionTest
 
 LOGGER = logging.getLogger(__name__)
 KINIT = 'kinit nonascii <<< %s'
@@ -26,13 +27,7 @@ USER_ROLE = 'UserRole'
 User = getDS('User')
 Domain = getDS('Domain')
 util = get_api('user', 'users')
-
-
-def connectionTest():
-    try:
-        return general.getProductName()[0]
-    except AttributeError:
-        return False
+group_api = get_api('group', 'groups')
 
 
 def addUser(user_name):
@@ -41,9 +36,9 @@ def addUser(user_name):
     user, status = util.create(user, True)
 
 
-def loginAsUser(user_name, filter):
+def loginAsUser(user_name, filter_):
     users.loginAsUser(user_name, config.IPA_DOMAIN,
-                      config.USER_PASSWORD, filter)
+                      config.USER_PASSWORD, filter_)
 
 
 def loginAsAdmin():
@@ -137,6 +132,8 @@ class IPACase93881(TestCase):
     """ Try to login with different login formats """
     __test__ = True
 
+    apis = set(['rest'])
+
     def setUp(self):
         # Add regular users, and add him permissions
         addUser(config.IPA_REGULAR_NAME)
@@ -176,7 +173,7 @@ class IPACase109871(TestCase):
     @tcms(config.IPA_TCMS_PLAN_ID, 109871)
     def userWithManyGroups(self):
         """ User with many groups """
-        loginAsUser(config.IPA_WITH_MANY_GROUPS_NAME, 'true')
+        loginAsUser(config.IPA_WITH_MANY_GROUPS_NAME, True)
         self.assertTrue(
             connectionTest(), "User with many groups can't connect to system")
 
@@ -199,7 +196,7 @@ class IPACase109146(TestCase):
     @tcms(config.IPA_TCMS_PLAN_ID, 109146)
     def persistencyOfGroupRights(self):
         """ Persistency of group rights """
-        loginAsUser(config.IPA_WITH_GROUP_NAME, 'false')
+        loginAsUser(config.IPA_WITH_GROUP_NAME, False)
         self.assertTrue(connectionTest(), "User from group can't login.")
         LOGGER.info("User from group can login.")
         loginAsAdmin()
@@ -219,24 +216,22 @@ class IPACase93882(TestCase):
     """ Try to search via REST with firstname, lastname """
     __test__ = True
 
-    def setUp(self):
-        domainID = users.domUtil.find(config.IPA_DOMAIN.lower()).get_id()
-        self.query = '/api/domains/' + domainID + '/%s?search={query}'
-
     @istest
     @tcms(config.IPA_TCMS_PLAN_ID, 93882)
     def search(self):
         """ Search """
-        self.assertTrue(
-            users.groupUtil.query('', href=self.query % 'groups') is not None)
+        domain_obj = users.domUtil.find(config.IPA_DOMAIN.lower())
+        groups_in_domain = group_api.getElemFromLink(domain_obj, get_href=True)
+        self.assertTrue(len(groups_in_domain) > 0)
 
-        len_of_users = len(users.util.query('', href=self.query % 'users')) > 0
-        self.assertTrue(len_of_users)
-        user = users.util.query("{0}={1}".format('name', 'uzivatel'),
-                                href=self.query % 'users')[0]
+        users_in_domain = util.getElemFromLink(domain_obj, get_href=True)
+        self.assertTrue(len(users_in_domain) > 0)
+        name = "{0}={1}".format('name', 'uzivatel')
+        user = util.query(domain_obj.links.get(name='users/search').href, name)
         self.assertTrue(user.get_name().lower() == 'uzivatel')
-        user = users.util.query("{0}={1}".format('lastname', 'bezskupiny'),
-                                href=self.query % 'users')[0]
+        lastname = "{0}={1}".format('lastname', 'bezskupiny')
+        user = util.query(domain_obj.links.get(name='users/search').href,
+                          lastname)
         self.assertTrue(user.get_last_name().lower() == 'bezskupiny')
         LOGGER.info("Searching for users and groups works correctly.")
 
@@ -245,12 +240,14 @@ class IPACase93883(TestCase):
     """ If the information is updated on IPA side it's propageted to rhevm """
     __test__ = True
 
+    def _find_user_in_directory(self, name):
+        domain_obj = users.domUtil.find(config.IPA_DOMAIN.lower())
+        return filter(lambda x: x.get_name() == name,
+                      users.util.getElemFromLink(domain_obj, get_href=True))[0]
+
     def setUp(self):
-        domainID = users.domUtil.find(config.IPA_DOMAIN.lower()).get_id()
-        self.query = '/api/domains/' + domainID + '/users?search={query}'
         addUser(config.IPA_TESTING_USER_NAME)
-        name_search = "{0}={1}".format('name', config.IPA_TESTING_USER_NAME)
-        self.user = users.util.query(name_search, href=self.query)[0]
+        self.user = self._find_user_in_directory(config.IPA_TESTING_USER_NAME)
         self.assertTrue(
             runMachineCommand(True, ip=config.IPA_DOMAIN.lower(),
                               cmd=KINIT % config.USER_PASSWORD,
@@ -270,8 +267,7 @@ class IPACase93883(TestCase):
                                                  new_last_name, new_name),
                               user=config.OVIRT_ROOT,
                               password=config.IPA_PASSWORD)[0])
-        user = users.util.query("{0}={1}".format('name', new_name),
-                                href=self.query)[0]
+        user = self._find_user_in_directory(new_name)
         self.assertTrue(user.get_name() == new_name)
         self.assertTrue(user.get_last_name() == new_last_name)
 
