@@ -1,3 +1,5 @@
+import sys
+
 from rhevm_utils import base
 from unittest_conf import REST_API_PASS, ISO_UP_CONF, ISO_DOMAIN_NAME
 from utilities.rhevm_tools.iso_uploader import ISOUploadUtility
@@ -5,7 +7,7 @@ from art.test_handler.tools import tcms
 ISO_UPLOADER_TEST_PLAN = 3741
 NAME = 'iso-uploader'
 
-ISO_UPLOAD_DUMMY_FILE_PATH = '/tmp/test_iso.iso'
+DUMMY_ISO_FILE_PATTERN = '/tmp/%s.iso'
 ISO_UPLOAD_COMMAND = 'upload'
 
 
@@ -25,19 +27,29 @@ class ISOUploaderTestCase(base.RHEVMUtilsTestCase):
     utility = NAME
     utility_class = ISOUploadUtility
     _multiprocess_can_split_ = True
+    current_iso_file = None
+
+    def setUp(self):
+        super(ISOUploaderTestCase, self).setUp()
+        assert self.ut.setRestConnPassword(NAME, ISO_UP_CONF, REST_API_PASS)
+
+    def tearDown(self):
+        if self.current_iso_file:
+            self.ut.setup.removeFile(self.current_iso_file)
+            self.current_iso_file = None
+        super(ISOUploaderTestCase, self).tearDown()
 
     @tcms(ISO_UPLOADER_TEST_PLAN, 275523)
-    def test_iso_uloder_upload(self):
+    def test_iso_uploader_upload(self):
         """ iso_uploder_upload """
-        assert self.ut.setRestConnPassword(NAME, ISO_UP_CONF, REST_API_PASS)
-        self.ut.createDummyIsoFile(ISO_UPLOAD_DUMMY_FILE_PATH)
-        self.ut(ISO_UPLOAD_COMMAND, ISO_UPLOAD_DUMMY_FILE_PATH,
-                i=ISO_DOMAIN_NAME)
+        isoFile = DUMMY_ISO_FILE_PATTERN % sys._getframe().f_code.co_name
+        self.ut.createDummyIsoFile(isoFile)
+        self.current_iso_file = isoFile
+        self.ut(ISO_UPLOAD_COMMAND, isoFile, i=ISO_DOMAIN_NAME)
         self.ut.autoTest()
 
     @tcms(ISO_UPLOADER_TEST_PLAN, 97800)
-    def test_iso_uploder_list(self):
+    def test_iso_uploader_list(self):
         """ iso_uploder_list """
-        assert self.ut.setRestConnPassword(NAME, ISO_UP_CONF, REST_API_PASS)
         self.ut('list')
         self.ut.autoTest()
