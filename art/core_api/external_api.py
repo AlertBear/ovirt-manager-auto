@@ -81,13 +81,15 @@ class TestRunnerWrapper():
         opts['parallel_run'] = True if opts['in_parallel'] else False
         opts['standalone'] = kwargs.get('standalone', False)
 
+        for arg in kwargs:
+            if arg not in opts:
+                opts[arg] = kwargs[arg]
+
         initializeLogger()
         self.logger = logging.getLogger(__name__)
         if opts['debug']:
             self.logger.setLevel(logging.DEBUG)
-
-        print "Log file is initialized at {0}".format(opts['log'])
-
+        self.logger.info("Log file is initialized at %s", opts['log'])
 
     @classmethod
     def runCommand(cls, action, *args, **kwargs):
