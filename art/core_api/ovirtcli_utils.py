@@ -133,7 +133,7 @@ class CliConnection(object):
         Author: imeerovi
         """
         try:
-            self.sendCmd('exit', 10)
+            self.sendCmd('exit', timeout=30)
         except CLIError:
             logger.debug('logged out from cli')
         else:
