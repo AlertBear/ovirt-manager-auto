@@ -216,22 +216,30 @@ class IPACase93882(TestCase):
     """ Try to search via REST with firstname, lastname """
     __test__ = True
 
+    apis = set(['rest'])
+
     @istest
     @tcms(config.IPA_TCMS_PLAN_ID, 93882)
     def search(self):
         """ Search """
+        domain_id = users.domUtil.find(config.IPA_DOMAIN.lower()).get_id()
+        query = '/api/domains/' + domain_id + '/users?search={query}'
+
         domain_obj = users.domUtil.find(config.IPA_DOMAIN.lower())
-        groups_in_domain = group_api.getElemFromLink(domain_obj, get_href=True)
+        groups_in_domain = group_api.getElemFromLink(domain_obj,
+                                                     link_name='groups',
+                                                     attr='group',
+                                                     get_href=False)
         self.assertTrue(len(groups_in_domain) > 0)
 
-        users_in_domain = util.getElemFromLink(domain_obj, get_href=True)
+        users_in_domain = util.getElemFromLink(domain_obj, link_name='users',
+                                               attr='user', get_href=False)
         self.assertTrue(len(users_in_domain) > 0)
         name = "{0}={1}".format('name', 'uzivatel')
-        user = util.query(domain_obj.links.get(name='users/search').href, name)
+        user = util.query(name, href=query)[0]
         self.assertTrue(user.get_name().lower() == 'uzivatel')
         lastname = "{0}={1}".format('lastname', 'bezskupiny')
-        user = util.query(domain_obj.links.get(name='users/search').href,
-                          lastname)
+        user = util.query(lastname, href=query)[0]
         self.assertTrue(user.get_last_name().lower() == 'bezskupiny')
         LOGGER.info("Searching for users and groups works correctly.")
 
@@ -240,10 +248,15 @@ class IPACase93883(TestCase):
     """ If the information is updated on IPA side it's propageted to rhevm """
     __test__ = True
 
+    apis = set(['rest'])
+
     def _find_user_in_directory(self, name):
         domain_obj = users.domUtil.find(config.IPA_DOMAIN.lower())
         return filter(lambda x: x.get_name() == name,
-                      users.util.getElemFromLink(domain_obj, get_href=True))[0]
+                      users.util.getElemFromLink(domain_obj,
+                                                 link_name='users',
+                                                 attr='user',
+                                                 get_href=False))[0]
 
     def setUp(self):
         addUser(config.IPA_TESTING_USER_NAME)

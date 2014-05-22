@@ -174,6 +174,8 @@ class BaseSearchForUsersAndGroups(TestCase):
     """ Search within domain for users and groups """
     __test__ = False
 
+    apis = set(['rest'])
+
     def setUp(self):
         domainID = users.domUtil.find(self.domain).get_id()
         self.query = '/api/domains/' + domainID + '/%s?search={query}'

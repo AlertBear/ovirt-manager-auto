@@ -16,7 +16,9 @@ from art.rhevm_api.tests_lib.low_level import mla, users
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.test_handler.tools import bz, tcms
 from test_base import connectionTest
+from art.unittest_lib.common import is_bz_state
 
+BZ1099987_NOT_FIXED = not is_bz_state('1099987')
 LOGGER = logging.getLogger(__name__)
 
 TEST_FOLDER = '/root/do_not_remove'
@@ -136,6 +138,8 @@ class LDAPCase289069(TestCase):
     """ Try to search via REST with firstname, lastname """
     __test__ = True
 
+    apis = set(['rest'])
+
     def setUp(self):
         domainID = users.domUtil.find(config.LDAP_DOMAIN).get_id()
         self.query = '/api/domains/' + domainID + '/%s?search={query}'
@@ -170,7 +174,10 @@ class LDAPCase289071(TestCase):
     def _find_user_in_directory(self, name):
         domain_obj = users.domUtil.find(config.LDAP_DOMAIN)
         return filter(lambda x: x.get_name() == name,
-                      users.util.getElemFromLink(domain_obj, get_href=True))[0]
+                      users.util.getElemFromLink(domain_obj,
+                                                 link_name='users',
+                                                 attr='user',
+                                                 get_href=False))[0]
 
     def setUp(self):
         self.user = self._find_user_in_directory(config.LDAP_TESTING_USER_NAME)
@@ -210,12 +217,13 @@ class LDAPCase289072(TestCase):
         users.addGroup(True, group_name=config.LDAP_GROUP)
         mla.addClusterPermissionsToGroup(
             True, config.LDAP_GROUP, config.MAIN_CLUSTER_NAME)
+        addUser(config.LDAP_USER_FROM_GROUP)
 
     @istest
     @tcms(config.LDAP_TCMS_PLAN_ID, 289072)
     def persistencyOfGroupRights(self):
         """ Persistency of group rights """
-        loginAsUser(config.LDAP_USER_FROM_GROUP, False)
+        loginAsUser(config.LDAP_USER_FROM_GROUP, True)
         self.assertTrue(connectionTest(), "User from group can't log in")
         LOGGER.info('User from group logged in')
         loginAsAdmin()
@@ -278,6 +286,9 @@ class LDAPCase289078(TestCase):
     @bz(1099987)
     def removeUserFromOpenLDAP(self):
         """ remove user from OpenLDAP """
+        if BZ1099987_NOT_FIXED:
+            LOGGER.info("BZ 1099987 is not yet fixed, skipping")
+            return
         msg = "After group del, user can login."
         loginAsUser(config.LDAP_TESTING_USER_NAME, True)
         self.assertTrue(connectionTest(), "User from group can't log in.")
@@ -320,12 +331,13 @@ class LDAPCase289078(TestCase):
 
     def tearDown(self):
         loginAsAdmin()
-        runMachineCommand(True, ip=config.LDAP_DOMAIN,
-                          cmd=self.ADD,
-                          user=config.OVIRT_ROOT,
-                          password=config.LDAP_PASSWORD)
-        runMachineCommand(True, ip=config.LDAP_DOMAIN,
-                          cmd=CMD % self.ADD_GROUP,
-                          user=config.OVIRT_ROOT,
-                          password=config.LDAP_PASSWORD)
+        if not BZ1099987_NOT_FIXED:
+            runMachineCommand(True, ip=config.LDAP_DOMAIN,
+                              cmd=self.ADD,
+                              user=config.OVIRT_ROOT,
+                              password=config.LDAP_PASSWORD)
+            runMachineCommand(True, ip=config.LDAP_DOMAIN,
+                              cmd=CMD % self.ADD_GROUP,
+                              user=config.OVIRT_ROOT,
+                              password=config.LDAP_PASSWORD)
         users.deleteGroup(positive=True, group_name=config.LDAP_GROUP2)
