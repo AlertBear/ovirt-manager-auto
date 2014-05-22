@@ -1019,9 +1019,9 @@ element:%(elm)s " % {'col': self.collection_name,
 
             self.logger.info("New entity was added successfully")
             exp_entity = entity if not expectedEntity else expectedEntity
-            if not validator.compareElementsJava(exp_entity, python_response,
-                                                 self.logger,
-                                                 self.element_name):
+            if not validator.compareElements(exp_entity, python_response,
+                                             self.logger, self.element_name,
+                                             java_sdk_mode=True):
                 return python_response, False
 
         except java_sdk.JavaError as e:
@@ -1106,10 +1106,9 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
                 #    origEntity.update(**self.getReqMatrixParams(current))
                 self.logger.info("%s was updated", self.element_name)
 
-                if not validator.compareElementsJava(newEntity,
-                                                     python_response,
-                                                     self.logger,
-                                                     self.element_name):
+                if not validator.compareElements(
+                        newEntity, python_response, self.logger,
+                        self.element_name, java_sdk_mode=True):
                     return None, False
 
         except java_sdk.JavaError as e:

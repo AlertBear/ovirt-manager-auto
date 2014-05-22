@@ -254,7 +254,8 @@ def getClassName(elmClass):
     return DS_CLASS_MAPPER.get(elmClass, elmClass)
 
 
-def compareElements(expElm, actElm, logger, root, equal=True):
+def compareElements(expElm, actElm, logger, root, equal=True,
+                    java_sdk_mode=False):
     '''
     Recursive function for elements comparison,
     elements are compared vis DS scheme
@@ -264,17 +265,21 @@ def compareElements(expElm, actElm, logger, root, equal=True):
     * logger - logger instance
     * root - name of the root node
     * equal - elements are equal or not till this point
+    * java_sdk_mode - run with java sdk backend
     Returns: True is elements are equal, False otherwise
     '''
-    ignore = compose_attr_ignore_list() + ['status', 'role', 'active', 'total',
-                                           'required', 'permit']
+    ignore = compose_attr_ignore_list()
+    ignore.extend(['status', 'role', 'active', 'total', 'required', 'permit'])
 
     if not actElm:
         logger.warn("Attribute '{0}' doesn't exist"
                     " in actual results".format(root))
         return True
 
-    elmClass = expElm.__class__.__name__
+    if expElm.__class__.__name__ == 'JavaTranslator':
+        elmClass = expElm.java_object.__class__.__name__
+    else:
+        elmClass = expElm.__class__.__name__
     elmClass = getClassName(elmClass)
     elmInstance = getattr(ds, elmClass)()
 
@@ -288,9 +293,29 @@ def compareElements(expElm, actElm, logger, root, equal=True):
             attrExpVal = getAttibuteValue(expElm, attr)
             attrActVal = getAttibuteValue(actElm, attr)
         except AttributeError:
-            logger.error("Element '{0}' has no attribute '{1}'".\
-                                        format(actElm, attr))
-            equal = False
+            if java_sdk_mode:
+                # collection case
+                if actElm.java_object.__class__.__name__.endswith('s'):
+                    logger.warn(
+                        "'{0}' is collection - skipping validation".format(
+                            actElm.java_object.__class__))
+                else:
+                    logger.warning(
+                        "Element '{0}' has no attribute '{1}'".format(
+                            actElm.java_object.__class__.__name__, attr))
+                    logger.warning("Possible issue, however it can happen due "
+                                   "to difference in implementation since we "
+                                   "compare between data_structures.py and "
+                                   "java decorator object")
+            else:
+                # collection case
+                if actElm.__class__.__name__.endswith('s'):
+                    logger.warn("'{0}' is collection - skipping validation".
+                                format(actElm))
+                else:
+                    logger.error("Element '{0}' has no attribute '{1}'".
+                                 format(actElm, attr))
+                    equal = False
             continue
 
         attrType = elmInstance.member_data_items_[attr].get_data_type()
@@ -310,9 +335,10 @@ def compareElements(expElm, actElm, logger, root, equal=True):
                         attrExpVal.sort()
                         attrActVal.sort()
                         if attr in VALS_IGNORE_DICT:
-                            ignoreVals = filter(lambda x: x not in attrExpVal \
-                                 and x in VALS_IGNORE_DICT[attr], attrActVal)
-                            attrActVal = list(set(attrActVal) - \
+                            ignoreVals = filter(
+                                lambda x: x not in attrExpVal
+                                and x in VALS_IGNORE_DICT[attr], attrActVal)
+                            attrActVal = list(set(attrActVal) -
                                               set(ignoreVals))
 
                 if re.search('boolean', attrType):
@@ -345,119 +371,12 @@ def compareElements(expElm, actElm, logger, root, equal=True):
                             logger.warn(MSG.format(nodeName, i))
                             continue
                         if not compareElements(attrExpVal[i], attrActVal[i],
-                                               logger, nodeName, equal):
+                                               logger, nodeName, equal,
+                                               java_sdk_mode):
                             equal = False
                 else:
                     if not compareElements(attrExpVal, attrActVal, logger,
-                                           nodeName, equal):
-                        equal = False
-
-    return equal
-
-
-def compareElementsJava(expElm, actElm, logger, root, equal=True):
-    '''
-    Description: Recursive function for elements comparison, elements are
-                 compared vis DS scheme
-    Author: imeerovi
-    Parameters:
-    * expElm - expected element
-    * actElm - actual element
-    * logger - logger instance
-    * root - name of the root node
-    * equal - elements are equal or not till this point
-    Returns: True is elements are equal, False otherwise
-    '''
-    ignore = compose_attr_ignore_list() + ['status', 'role', 'active',
-                                           'total', 'required', 'permit']
-
-    if not actElm:
-        logger.warn("Attribute '{0}' doesn't exist"
-                    " in actual results".format(root))
-        return True
-    if expElm.__class__.__name__ == 'JavaTranslator':
-        elmClass = expElm.java_object.__class__.__name__
-    else:
-        elmClass = expElm.__class__.__name__
-    elmClass = getClassName(elmClass)
-    elmInstance = getattr(ds, elmClass)()
-
-    attrList = getObjAttributes(elmInstance, elmInstance)
-
-    for attr in attrList:
-        if attr in ignore:
-            continue
-
-        try:
-            attrExpVal = getAttibuteValue(expElm, attr)
-            attrActVal = getAttibuteValue(actElm, attr)
-        except AttributeError:
-            logger.warning("Element '{0}' has no attribute '{1}'".\
-                           format(actElm.java_object.__class__.__name__, attr))
-            logger.warning("Possible issue, however it can happen due to \
-difference in implementation since we compare between data_structures.py \
-and java decorator object")
-            #equal = False
-            continue
-
-        attrType = elmInstance.member_data_items_[attr].get_data_type()
-        attrContainer = elmInstance.member_data_items_[attr].get_container()
-
-        if attrExpVal is not None:
-            if attrActVal is None:
-                MSG = "Attribute '{0}->{1}' doesn't exist in actual results"
-                logger.warn(MSG.format(root, attr))
-                continue
-
-            if attrType.startswith('xs:'):
-                if attrContainer and isinstance(attrExpVal, list):
-                    if not isinstance(attrActVal, list):
-                        attrExpVal = attrExpVal[0]
-                    else:
-                        attrExpVal.sort()
-                        attrActVal.sort()
-                        if attr in VALS_IGNORE_DICT:
-                            ignoreVals = filter(lambda x: x not in attrExpVal \
-                                 and x in VALS_IGNORE_DICT[attr], attrActVal)
-                            attrActVal = list(set(attrActVal) -\
-                                              set(ignoreVals))
-
-                if re.search('boolean', attrType):
-                    attrExpVal = str(attrExpVal).lower()
-                    attrActVal = str(attrActVal).lower()
-
-                if str(attrExpVal) == str(attrActVal):
-                    MSG = "Property '{0}->{1}' has correct value: {2}"
-                    logger.info(MSG.format(root, attr, attrExpVal))
-                else:
-                    equal = False
-                    MSG = "Property '{0}->{1}' has wrong value, " \
-                    " expected: '{2}'; actual: '{3}'"
-                    logger.error(MSG.format(root, attr, attrExpVal,
-                                            attrActVal))
-            else:
-                nodeName = "{0}->{1}".format(root, attr)
-                if isinstance(attrExpVal, list):
-                    try:
-                        attrExpVal.sort(key=lambda x: x.name)
-                        attrActVal.sort(key=lambda x: x.name)
-                    except AttributeError:
-                        logger.warn("Can't sort {0} objects list by name".\
-                                    format(elmClass))
-
-                    for i in range(0, len(attrExpVal)):
-                        if i > len(attrActVal) - 1:
-                            MSG = "Attribute '{0}' with index {1} doesn't"
-                            " exist in actual results"
-                            logger.warn(MSG.format(nodeName, i))
-                            continue
-                        if not compareElementsJava(attrExpVal[i],
-                                                   attrActVal[i],
-                                                   logger, nodeName, equal):
-                            equal = False
-                else:
-                    if not compareElementsJava(attrExpVal, attrActVal, logger,
-                                               nodeName, equal):
+                                           nodeName, equal, java_sdk_mode):
                         equal = False
 
     return equal
