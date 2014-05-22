@@ -154,7 +154,7 @@ def _prepareStorageDomainObject(positive, **kwargs):
                 vfs_type=kwargs.pop('vfs_type', None)))
         storage_format = ENUMS['storage_format_version_v3']
         sd.set_storage_format(storage_format)
-    elif storage_type == ENUMS['storage_type_glusterfs']:
+    elif storage_type == ENUMS['storage_type_gluster']:
         sd.set_storage(
             Storage(
                 type_=storage_type, path=kwargs.pop('path', None),
