@@ -23,6 +23,7 @@ HOST_PASS = "qum5net"
 # image/iso uploader is using default names for iso/export domain, which are
 # specified in high_level.storagedomains.create_storages
 ISO_DOMAIN_NAME = 'iso_domain'
+LOCAL_ISO_DOMAIN_NAME = 'ISO_DOMAIN'
 EXPORT_DOMAIN_NAME = 'export_domain'
 DEFAULT = {
     'def_vm_name': VM_NAME,  # name
