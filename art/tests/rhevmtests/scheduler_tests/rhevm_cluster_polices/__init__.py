@@ -7,6 +7,7 @@ import logging
 
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as vm_api
+import art.rhevm_api.tests_lib.low_level.sla as sla_api
 import art.rhevm_api.tests_lib.low_level.hosts as host_api
 import art.rhevm_api.tests_lib.high_level.datacenters as dc_api
 from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
@@ -16,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 #################################################
 
-DISK_SIZE = 3 * 1024 * 1024 * 1024
+DISK_SIZE = config.GB
 
 
 def setup_package():
@@ -59,3 +60,9 @@ def teardown_package():
         if not cleanDataCenter(True, config.DC_NAME[0], vdc=config.VDC_HOST,
                                vdc_password=config.VDC_ROOT_PASSWORD):
             raise errors.DataCenterException("Clean up environment failed")
+        logger.info("Free all host CPU's from loading")
+        for host in config.HOSTS:
+            status = sla_api.stop_loading_cpu(host, config.HOSTS_USER,
+                                              config.HOSTS_PW)
+            if not status:
+                raise errors.HostException("Failed to release hosts CPU")

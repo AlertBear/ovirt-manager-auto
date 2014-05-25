@@ -19,8 +19,9 @@ from art.rhevm_api.tests_lib.low_level.clusters import updateCluster
 
 
 logger = logging.getLogger(__name__)
-timestamp = 0
+timestamp = False
 
+VMS = [config.VM_FOR_MIGRATION, config.SUPPORT_VM_1, config.SUPPORT_VM_2]
 MAX_CPU_LOAD = 100
 AVERAGE_CPU_LOAD = 50
 MIN_CPU_LOAD = 0
@@ -47,18 +48,18 @@ class RhevmClusterPolicies(TestCase):
         """
         Start vm on specific host for future migration
         """
-        logger.info("Starting vm %s", config.VM_FOR_MIGRATION)
-        if not vm_api.startVm(True, config.VM_FOR_MIGRATION):
-            raise errors.VMException("Starting vm failed")
+        logger.info("Starting all vms")
+        if not vm_api.startVms(VMS):
+            raise errors.VMException("Starting vms failed")
 
     @classmethod
     def teardown_class(cls):
         """
         Stop vm
         """
-        logger.info("Stopping vm %s", config.VM_FOR_MIGRATION)
-        if not vm_api.stopVms(config.VM_FOR_MIGRATION):
-            raise errors.VMException("Stopping vm failed")
+        logger.info("Stopping all vms")
+        if not vm_api.stopVms(VMS):
+            raise errors.VMException("Stopping vms failed")
         logger.info("Update cluster policy to none")
         if not updateCluster(True, config.CLUSTER_NAME[0],
                              scheduling_policy=CLUSTER_POLICIES[2]):
@@ -96,14 +97,15 @@ class RhevmClusterPolicies(TestCase):
         """
         Check if vm migrated on given host in defined time
         """
-        result, migration_duration = vm_api.check_vm_migration(
-            config.VM_FOR_MIGRATION, migration_host, WAIT_FOR_MIGRATION)
+        migration_duration = host_api.count_host_active_vms(
+            migration_host, 2, timeout=WAIT_FOR_MIGRATION)
+        status = True if migration_duration else False
         global timestamp
         if not timestamp:
-            timestamp = 1
-            self.assertTrue(result and migration_duration >= DURATION)
+            timestamp = True
+            self.assertTrue(status and migration_duration >= DURATION)
         else:
-            self.assertTrue(result)
+            self.assertTrue(status)
 
     def _no_migration(self, host):
         """
@@ -282,15 +284,11 @@ class PutHostToMaintenancePS(PowerSaving):
         Set CPU load on host with vm and on second host
         to correct utilization CPU level
         """
-        super(PutHostToMaintenancePS, cls).setup_class()
         logger.info("Load host %s and %s CPU up to %d percent",
                     config.LOAD_HOST_0, config.LOAD_HOST_1, AVERAGE_CPU_LOAD)
-        logger.info("Starting vms %s and %s",
-                    config.SUPPORT_VM_1, config.SUPPORT_VM_2)
-        if not vm_api.startVms(config.VMS):
-            raise errors.VMException("Starting vms failed")
         cls._load_hosts_cpu([config.LOAD_HOST_0,
                              config.LOAD_HOST_1], AVERAGE_CPU_LOAD)
+        super(PutHostToMaintenancePS, cls).setup_class()
 
     @tcms('9904', '50888')
     @istest
@@ -313,10 +311,6 @@ class PutHostToMaintenancePS(PowerSaving):
         logger.info("Release host %s and %s CPU",
                     config.LOAD_HOST_0, config.LOAD_HOST_1)
         cls._release_hosts_cpu([config.LOAD_HOST_0, config.LOAD_HOST_1])
-        logger.info("Stopping vms %s and %s",
-                    config.SUPPORT_VM_1, config.SUPPORT_VM_2)
-        if not vm_api.stopVms(config.VMS):
-            raise errors.VMException("Stopping vms failed")
         super(PutHostToMaintenancePS, cls).teardown_class()
 
 
@@ -409,10 +403,6 @@ class PutHostToMaintenanceED(EvenlyDistributed):
         super(PutHostToMaintenanceED, cls).setup_class()
         logger.info("Load host %s CPU up to %d percent",
                     config.LOAD_HOST_2, MAX_CPU_LOAD)
-        logger.info("Starting vms %s and %s",
-                    config.SUPPORT_VM_1, config.SUPPORT_VM_2)
-        if not vm_api.startVms(config.VMS):
-            raise errors.VMException("Starting vms failed")
         cls._load_hosts_cpu([config.LOAD_HOST_2], MAX_CPU_LOAD)
 
     @tcms('9904', '51185')
@@ -435,10 +425,6 @@ class PutHostToMaintenanceED(EvenlyDistributed):
                                        config.LOAD_HOST_0)
         logger.info("Release host %s CPU", config.LOAD_HOST_2)
         cls._release_hosts_cpu([config.LOAD_HOST_2])
-        logger.info("Stopping vms %s and %s",
-                    config.SUPPORT_VM_1, config.SUPPORT_VM_2)
-        if not vm_api.stopVms(config.VMS):
-            raise errors.VMException("Stopping vms failed")
         super(PutHostToMaintenanceED, cls).teardown_class()
 
 

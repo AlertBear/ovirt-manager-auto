@@ -2068,3 +2068,30 @@ def run_command(host, user, password, cmd):
         raise RuntimeError("Output: %s" % out)
 
     return out
+
+
+def count_host_active_vms(host, num_of_vms, timeout=300, sleep=10):
+    """
+    Count number of active vms on host in given timeout
+    **Author**: alukiano
+
+    **Parameters**:
+        * *host* - host to look on it
+        * *num_of_vms - number of vms on host that you wait for
+        * *timeout - timeout how long should we wait
+        * *sleep - polling interval
+    **Returns**: Migration time duration,
+                 if number of vms on host equal to num_of_vms
+                 None, otherwise
+    """
+    start_time = time.time()
+    sampler = TimeoutingSampler(timeout, sleep, HOST_API.find, val=host)
+    try:
+        for sample in sampler:
+            if sample.get_summary().get_active() == num_of_vms:
+                return time.time() - start_time
+    except APITimeout:
+        HOST_API.logger.error(
+            "Timeout when waiting for number of vms %d on host %s",
+            num_of_vms, host)
+        return None
