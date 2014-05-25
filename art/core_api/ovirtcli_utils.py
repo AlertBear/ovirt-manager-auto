@@ -98,17 +98,22 @@ class CliConnection(object):
     """
     _defaultLogFile = "/tmp/cli_log_%s.log"
     __metaclass__ = ABCMeta
+    _cliLog = None
 
     def __init__(self, command, prompt, timeout, logFile=None):
         self._prompt = prompt
         self.cliConnection = pe.spawn(command, timeout=timeout)
         self.cliConnection.setecho(False)
         timestamp = strftime('%Y%m%d_%H%M%S')
-        if logFile:
-            self.cliLog = logFile
+        # we want log file to be singleton
+        if self.__class__._cliLog is None:
+            if logFile:
+                self.__class__._cliLog = logFile
+            else:
+                self.__class__._cliLog = self._defaultLogFile % timestamp
+            self.cliConnection.logfile = open(self.__class__._cliLog, 'w')
         else:
-            self.cliLog = self._defaultLogFile % timestamp
-        self.cliConnection.logfile = open(self.cliLog, 'w')
+            self.cliConnection.logfile = open(self.__class__._cliLog, 'a')
         self._expectDict = {}
         self._illegalXMLCharsRE = re.compile(ILLEGAL_XML_CHARS)
         self._controlCharsRE = re.compile(CONTROL_CHARS)
@@ -341,7 +346,7 @@ class RhevmCli(CliConnection):
                                        prompt=self._rhevmPrompt,
                                        timeout=self._rhevmTimeout,
                                        logFile=logFile)
-        self.logger.debug("CLI logfile: %s" % self.cliLog)
+        self.logger.debug("CLI logfile: %s", self._cliLog)
         self.login(password)
         # updating parent dictionary for cli work
         self.expectDict = self._specialCliPrompt
