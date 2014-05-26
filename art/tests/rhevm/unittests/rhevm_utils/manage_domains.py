@@ -113,21 +113,21 @@ class ManageDomainsTestCaseAdd(ManageDomainsTestCaseBase):
     @tcms(4580, 175847)
     def test_manage_domains_add_missing_options(self):
         self.ut(action='add', domain=self.domainName, provider=self.provider,
-                user=self.domainUser, rc=22)
-        self.assertRaises(errors.MissingDmainError, self.ut.autoTest)
-        self.ut(action='add', domain=self.domainName, provider=self.provider,
-                rc=1)
-        self.assertRaises(errors.MissingDmainError, self.ut.autoTest)
-        self.ut(action='add', domain=self.domainName, rc=1)
-        self.assertRaises(errors.MissingDmainError, self.ut.autoTest)
-        self.ut(action='add', rc=1)
+                user=self.domainUser)
+        self.assertRaises(errors.MissingDmainError, self.ut.autoTest, rc=22)
+        self.ut(action='add', domain=self.domainName, provider=self.provider)
+        self.assertRaises(errors.MissingDmainError, self.ut.autoTest, rc=1)
+        self.ut(action='add', domain=self.domainName)
+        self.assertRaises(errors.MissingDmainError, self.ut.autoTest, rc=1)
+        self.ut(action='add')
+        self.ut.autoTest(rc=1)
 
     @tcms(4580, 175847)
     def test_manage_domains_add_empty_file(self):
         self.ut(action='add', domain=self.domainName, provider=self.provider,
-                user=self.domainUser, password_file=self.emptyFile, rc=22)
+                user=self.domainUser, password_file=self.emptyFile)
         assert 'cannot be empty' in self.ut.out
-        self.assertRaises(errors.MissingDmainError, self.ut.autoTest)
+        self.assertRaises(errors.MissingDmainError, self.ut.autoTest, rc=22)
 
         # -interactive cannot be tested now since manage-domains cannot read
         # from a pipe
@@ -163,8 +163,8 @@ class ManageDomainsTestCaseEdit(ManageDomainsTestCaseBase):
                 add_permissions=None)
         self.ut.autoTest()
 
-        self.ut(action='edit', domain=self.domainName, rc=22)
-        self.ut.autoTest()
+        self.ut(action='edit', domain=self.domainName)
+        self.ut.autoTest(rc=22)
 
         # relative password file
         cwd = _run_ssh_command(self.host, self.sshPassword, 'pwd')
@@ -175,8 +175,8 @@ class ManageDomainsTestCaseEdit(ManageDomainsTestCaseBase):
 
         # empty password file
         self.ut(action='edit', domain=self.domainName, provider=self.provider,
-                user=self.domainUser, password_file=self.emptyFile, rc=22)
-        self.ut.autoTest()
+                user=self.domainUser, password_file=self.emptyFile)
+        self.ut.autoTest(rc=22)
 
 
 class ManageDomainsTestCaseList(ManageDomainsTestCaseBase):
@@ -263,7 +263,7 @@ class ManageDomainsTestCaseHelp(RHEVMUtilsTestCase):
         """
         rhevm-manage-domains
         """
-        self.ut(rc=0)
+        self.ut()
         self.ut.autoTest()
 
         self.ut(help=None)
@@ -299,8 +299,8 @@ class ManageDomainsTimeSkew(ManageDomainsTestCaseBase):
     @tcms(4580, 110044)
     def test_time_skew(self):
         self.ut(action='add', domain=self.domainName, provider=self.provider,
-                user=self.domainUser, password_file=self.passwordFile, rc=8)
-        self.assertRaises(errors.MissingDmainError, self.ut.autoTest)
+                user=self.domainUser, password_file=self.passwordFile)
+        self.assertRaises(errors.MissingDmainError, self.ut.autoTest, rc=8)
 
 
 class ManageDomainsUnpriviledgedUser(ManageDomainsTestCaseBase):
@@ -347,7 +347,7 @@ class ManageDomainsUppercaseLowercase(ManageDomainsTestCaseBase):
         self.ut.autoTest()
 
         self.ut(action='add', domain=self.domainName, provider=self.provider,
-                user=self.domainUser, password_file=self.passwordFile, rc=5)
+                user=self.domainUser, password_file=self.passwordFile)
         assert 'already exists' in self.ut.out
 
         self.ut(action='edit', domain=self.mixedCase(self.domainName),
@@ -426,7 +426,7 @@ class ManageDomainsTestCaseNegativeScenarios(ManageDomainsTestCaseBase):
     @tcms(4580, 107972)
     def test_manage_domains_nonexistent_user(self):
         self.ut(action='add', domain=self.domainName, provider=self.provider,
-                user='chucknorris', password_file=self.passwordFile, rc=8)
+                user='chucknorris', password_file=self.passwordFile)
         assert 'Authentication Failed' in self.ut.out
         self.assertRaises(errors.MissingDmainError, self.ut.autoTest)
 
@@ -434,14 +434,14 @@ class ManageDomainsTestCaseNegativeScenarios(ManageDomainsTestCaseBase):
     def test_manage_domains_nonexistent_domain(self):
         self.ut(action='add', domain='~!@#$%^*_+=-[]',
                 provider=self.provider, user=self.domainUser,
-                password_file=self.passwordFile, rc=23)
+                password_file=self.passwordFile)
         assert 'No LDAP servers can be obtained' in self.ut.out
 
     @tcms(4580, 107972)
     def test_manage_domains_nonexistent_provider(self):
         self.ut(action='add', domain=self.domainName,
                 provider='~!@#$%^*_+=-[]', user=self.domainUser,
-                password_file=self.passwordFile, rc=1)
+                password_file=self.passwordFile)
         assert 'Invalid provider, valid providers are' in self.ut.out
 
 
