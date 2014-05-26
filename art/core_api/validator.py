@@ -17,11 +17,11 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-from cStringIO import StringIO
 import sys
+import re
+from cStringIO import StringIO
 from art.core_api.apis_utils import data_st_validate as ds
 from art.core_api.apis_utils import settings
-import re
 
 ATTR_IGNORE_LIST = ['href', 'link', 'rel']
 
@@ -242,11 +242,22 @@ def compareActionLink(actions, action, logger):
 
 
 def getAttibuteValue(elm, attrName):
-
+    '''
+    Description: function that gets attribute value and converts it if needed
+    Parameters:
+       * elm - api entity
+       * attrName - api entity attribute name
+    Return:api entity attribute value
+    '''
     if attrName.startswith('type'):
         attrName = attrName.rstrip('_')
 
-    return getattr(elm, 'get_' + attrName)()
+    val = getattr(elm, 'get_{0}'.format(attrName))()
+    # TODO: to find some generic way to handle such conversions for all string
+    # answers from api backends
+    if isinstance(val, unicode):
+        val = val.encode('UTF-8', 'replace')
+    return val
 
 
 def getClassName(elmClass):

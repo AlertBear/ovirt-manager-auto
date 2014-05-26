@@ -45,10 +45,9 @@ DEFAULT_LEVEL = 'debug'
 ATTR_NAME = 'captured_log'
 
 
-class LogCaptureHandler(logging.Handler):
+class LogCaptureHandler(logging.StreamHandler):
     def __init__(self):
-        #super(LogCaptureHandler, self).__init__(logging.DEBUG)
-        logging.Handler.__init__(self, logging.DEBUG)
+        super(LogCaptureHandler, self).__init__(logging.DEBUG)
         self.th_scope = ThreadScope()
 
     def set_test_case(self, t):
@@ -68,7 +67,7 @@ class LogCaptureHandler(logging.Handler):
         if self.th_scope.tc is None:
             return
         log = getattr(self.th_scope.tc, ATTR_NAME, str())
-        log +=  self.format(rec) + '\n'
+        log += super(LogCaptureHandler, self).emit(rec) + '\n'
         setattr(self.th_scope.tc, ATTR_NAME, log)
 
 

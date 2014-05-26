@@ -15,20 +15,17 @@ Configuration Options:
 ----------------------
     | **[GENERATE_DS]**
     | **enabled** - to enable plugin (true/false)
+    | **encoding** - to choose encoding from (ascii, utf-8)
 """
 
 import os
-import re
 import art
-from subprocess  import Popen, PIPE
 from art.test_handler.plmanagement import Component, implements, get_logger,\
-     PluginError
+    PluginError
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.test_handler.plmanagement.interfaces.config_validator import\
-              IConfigValidation
+    IConfigValidation
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
-from art.core_api.http import HTTPProxy
-from art.test_handler.settings import opts
 
 
 logger = get_logger('data_struct_gen')
@@ -52,6 +49,7 @@ class GenerateDSError(PluginError):
 class FailedToDonwloadSchema(GenerateDSError):
     pass
 
+
 class GenerateDSExecutionError(GenerateDSError):
     pass
 
@@ -68,8 +66,8 @@ class GenerateDataStructures(Component):
     @classmethod
     def add_options(cls, parser):
         group = parser.add_argument_group(cls.name, description=cls.__doc__)
-        group.add_argument('--with-ds-gen', action='store_true', \
-                dest='ds_gen_enabled', help="eniable plugin")
+        group.add_argument('--with-ds-gen', action='store_true',
+                           dest='ds_gen_enabled', help="enable plugin")
 
     def configure(self, params, conf):
         if not self.is_enabled(params, conf):
@@ -108,11 +106,12 @@ class GenerateDataStructures(Component):
         params['description'] = 'Generate DS plugin for ART'
         params['long_description'] = cls.__doc__
 #        params['pip_deps'] = ['generateDS'] # not used yet
-        params['py_modules'] = ['art.test_handler.plmanagement.plugins.generate_data_structs_plugin']
+        params['py_modules'] = ['art.test_handler.plmanagement.plugins'
+                                '.generate_data_structs_plugin']
 
     def config_spec(self, spec, val_funcs):
         section_spec = spec.get(DS_GEN_OPTIONS, {})
         section_spec['enabled'] = 'boolean(default=%s)' % DEFAULT_STATE
         section_spec[VITAL] = 'boolean(default=%s)' % DEFAULT_VITAL
+        section_spec['encoding'] = 'option("ascii", "utf-8", default="ascii")'
         spec[DS_GEN_OPTIONS] = section_spec
-

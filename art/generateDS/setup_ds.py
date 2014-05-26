@@ -25,6 +25,12 @@ from subprocess  import Popen, PIPE
 logger = logging.getLogger('setup_ds')
 
 
+class GenerateDataStructuresError(Exception):
+    """
+    General exception for generate_ds related failures
+    """
+
+
 class GenerateDataStructures(object):
 
     __metaclass__ = ABCMeta
@@ -42,7 +48,7 @@ class GenerateDataStructures(object):
 
     def __call__(self, conf):
         self._download_xsd()
-        self._generate_ds()
+        self._generate_ds(conf)
 
     def _download_xsd(self):
         from art.core_api.http import HTTPProxy
@@ -55,13 +61,15 @@ class GenerateDataStructures(object):
             fh.write(res['body'])
         logger.info("Downloaded XSD scheme: %s", self._xsd_path)
 
-    def _generate_ds(self):
+    def _generate_ds(self, conf):
         ds_exec = os.path.join(self._repo_path, 'generateDS', 'generateDS.py')
-        cmd = ['python', ds_exec, '-f', '-o', self._ds_path, \
-                '--member-specs=dict', self._xsd_path]
+        encoding = conf['GENERATE_DS']['encoding']
+        cmd = ['python', ds_exec, '-f', '-o', self._ds_path,
+               '--member-specs=dict', '--external-encoding=%s' % encoding,
+               self._xsd_path]
 
         p = Popen(cmd, stdout=PIPE, stderr=PIPE)
         out, err = p.communicate()
         if p.returncode:
-            raise Exception(err)
+            raise GenerateDataStructuresError(err, out)
         logger.info("Generated data structures: %s", self._ds_path)
