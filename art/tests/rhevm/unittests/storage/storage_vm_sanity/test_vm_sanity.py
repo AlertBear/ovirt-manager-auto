@@ -171,6 +171,7 @@ class TestCase248138(TestCase):
         and we do want to remove all prepared data (no need to care for the
         VMs as they will be eventually removed by module-level tearDown)
         """
+        self.data_for_vm = []
         LOGGER.info("Preparing data for copying to VM")
         for i in range(6):
             success, result = test_utils.prepareDataForVm(
@@ -185,7 +186,7 @@ class TestCase248138(TestCase):
         LOGGER.info("Copying data from %s to %s" % (source_path, self.vm_name))
         self.assertTrue(
             resource_utils.copyDataToVm(
-                ip=TestCase248138.vms_ip_address, user=config.VM_LINUX_USER,
+                vmName=self.vm_name, user=config.VM_LINUX_USER,
                 password=config.VM_LINUX_PASSWORD, osType='linux',
                 src=source_path, dest=config.DEST_DIR),
             "Copying data to vm %s failed" % self.vms_ip_address)
