@@ -2271,9 +2271,8 @@ def check_vnic_on_vm_nic(vm, nic='nic1', vnic='rhevm'):
                                          attribute='id')
         return vnic_obj.get_name() == vnic
     # for NIC that doesn't have VNIC profile on it
-    elif vnic is None:
-        return True
-    return False
+    else:
+        return vnic is None
 
 
 @is_action()

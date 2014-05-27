@@ -587,6 +587,5 @@ def check_vnic_on_template_nic(template, nic='nic1', vnic='rhevm'):
                                          attribute='id')
         return vnic_obj.get_name() == vnic
     # for NIC that doesn't have VNIC profile on it
-    elif vnic is None:
-        return True
-    return False
+    else:
+        return vnic is None

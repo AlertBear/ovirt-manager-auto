@@ -47,13 +47,14 @@ def setup_package():
             raise NetworkException("Cannot create setup %s" % i)
 
     logger.info("Adding export domain (NFS) to %s", config.DC_NAME[0])
-    if not addNFSDomain(host=config.HOSTS[0], storage="Export",
+    if not addNFSDomain(host=config.HOSTS[0],
+                        storage=config.EXPORT_STORAGE_NAME,
                         data_center=config.DC_NAME[0],
                         address=config.EXPORT_STORAGE_ADDRESS,
                         path=config.EXPORT_STORAGE_PATH,
                         sd_type=config.EXPORT_TYPE):
         raise NetworkException("Cannot create and attach Export Storage "
-                               "Domain to %s", config.DC_NAME[0])
+                               "Domain to %s" % config.DC_NAME[0])
 
     local_dict = {config.NETWORKS[0]: {'nic': config.HOST_NICS[1],
                                        'required': 'false'},
@@ -73,18 +74,18 @@ def setup_package():
                                         auto_nics=[config.HOST_NICS[0],
                                                    config.HOST_NICS[3]]):
             raise NetworkException("Cannot create and attach networks to "
-                                   "setup %s", i)
+                                   "setup %s" % i)
 
     for i in range(2):
         logger.info("Get IP for %s", config.VM_NAME[i])
         ip = waitForIP(config.VM_NAME[i])[1]["ip"]
         if not ip:
-            raise NetworkException("Failed to get IP from %s",
+            raise NetworkException("Failed to get IP from %s" %
                                    config.VM_NAME[i])
 
         logger.info("setPersistentNetwork for %s", config.VM_NAME[i])
         if not setPersistentNetwork(host=ip, password=config.VMS_LINUX_PW):
-            raise NetworkException("Failed to setPersistentNetwork on %s",
+            raise NetworkException("Failed to setPersistentNetwork on %s" %
                                    config.VM_NAME[i])
 
         logger.info("Stopping VMs to create template from them")
@@ -113,7 +114,7 @@ def setup_package():
 
     logger.info("Export %s to Export domain", config.VM_NAME[0])
     if not exportVm(positive=True, vm=config.VM_NAME[0],
-                    storagedomain="Export"):
+                    storagedomain=config.EXPORT_STORAGE_NAME):
         raise NetworkException("Couldn't export VM %s to export Domain" %
                                config.VM_NAME[0])
 
@@ -121,26 +122,26 @@ def setup_package():
                 config.TEMPLATE_NAME[0])
     if not exportTemplate(positive=True,
                           template=config.TEMPLATE_NAME[0],
-                          storagedomain="Export"):
+                          storagedomain=config.EXPORT_STORAGE_NAME):
         raise NetworkException("Couldn't export Template to export Domain")
 
     logger.info("Deactivate and detach Export storage domain from %s",
                 config.DC_NAME[0])
     if not detach_and_deactivate_domain(datacenter=config.DC_NAME[0],
-                                        domain="Export"):
+                                        domain=config.EXPORT_STORAGE_NAME):
         raise NetworkException("Couldn't detach and deactivate Export "
-                               "storage domain from %s", config.DC_NAME[0])
+                               "storage domain from %s" % config.DC_NAME[0])
 
     logger.info("Attach and activate Export storage domain on %s",
                 config.DC_NAME[1])
     if not attach_and_activate_domain(datacenter=config.DC_NAME[1],
-                                      domain="Export"):
+                                      domain=config.EXPORT_STORAGE_NAME):
         raise NetworkException("Couldn't reattach and reactivate Export "
-                               "storage domain on %s", config.DC_NAME[1])
+                               "storage domain on %s" % config.DC_NAME[1])
 
     logger.info("Export %s to Export domain", config.VM_NAME[1])
     if not exportVm(positive=True, vm=config.VM_NAME[1],
-                    storagedomain="Export"):
+                    storagedomain=config.EXPORT_STORAGE_NAME):
         raise NetworkException("Couldn't export VM %s to export Domain" %
                                config.VM_NAME[1])
 
@@ -148,7 +149,7 @@ def setup_package():
     if not exportTemplate(positive=True,
                           template=config.TEMPLATE_NAME[1],
                           storagedomain="Export"):
-        raise NetworkException("Couldn't export %s to export Domain",
+        raise NetworkException("Couldn't export %s to export Domain" %
                                config.TEMPLATE_NAME[1])
 
     for i in range(2):
@@ -176,5 +177,5 @@ def teardown_package():
         if not cleanDataCenter(positive=True, datacenter=config.DC_NAME[i],
                                vdc=config.VDC,
                                vdc_password=config.VDC_PASSWORD):
-            raise NetworkException("Cannot remove setup: %s",
+            raise NetworkException("Cannot remove setup: %s" %
                                    config.DC_NAME[i])

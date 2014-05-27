@@ -214,7 +214,7 @@ class IECase03(TestCase):
         logger.info("Remove sw3 from the host")
         if not sendSNRequest(positive=True, host=config.HOSTS[1],
                              auto_nics=[config.HOST_NICS[0]]):
-            raise NetworkException("Failed to remove sw3 from %s",
+            raise NetworkException("Failed to remove sw3 from %s" %
                                    config.HOSTS[1])
 
         logger.info("Import template with sw1, sw2 and sw3 to DC when sw1 "
@@ -273,6 +273,7 @@ class IECase03(TestCase):
                 raise NetworkException("No correct VNIC profile %s on VNIC %s"
                                        " for Template" % (vnic, nic))
 
+    @tcms(6915, 378808)
     def test_start_vm(self):
         """
         1) Negative - Start VM when one of the networks attached to it doesn't
@@ -298,6 +299,7 @@ class IECase03(TestCase):
             raise NetworkException("Couldn't start VM %s , when should" %
                                    config.VM_NAME[0])
 
+    @tcms(6915, 378809)
     def test_start_vm_from_template(self):
         """
         1) Create VM from imported template
