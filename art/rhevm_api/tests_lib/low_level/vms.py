@@ -808,9 +808,18 @@ def detachVm(positive, vm):
 
 
 def getVmDisks(vm):
+    """
+    Description: Returns list of a vm's disks as data_structs objects, sorted
+    according to the disks' aliases
+    Parameters:
+        * vm - name of the vm to get disks
+    Return: list of disk objects attached to the vm
+    Raises: EntityNotFound if vm does not exist
+    """
     vmObj = VM_API.find(vm)
     disks = VM_API.getElemFromLink(vmObj, link_name='disks', attr='disk',
                                    get_href=False)
+    disks.sort(key=lambda disk: disk.get_alias())
     return disks
 
 
