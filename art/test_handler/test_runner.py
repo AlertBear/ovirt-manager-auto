@@ -291,11 +291,12 @@ class TestRunner(object):
                 elif test_case.status == test_case.TEST_STATUS_ERROR:
                     logger.error("Test Case execution failed: %s",
                                  test_case.exc)
-        self.plmanager.results_collector.add_test_result(test_case)
-        if test_case.vital and test_case.status != test_case.TEST_STATUS_PASSED:
+            self.plmanager.results_collector.add_test_result(test_case)
+        if test_case.vital and \
+                test_case.status != test_case.TEST_STATUS_PASSED:
             raise VitalTestFailed(test_case.test_name)
         if test_case.vital4group and test_case.status != \
-                            test_case.TEST_STATUS_PASSED:
+                test_case.TEST_STATUS_PASSED:
             raise Vital4GroupTestFailed(test_case.test_name)
 
     def _run_test_group(self, test_group):
@@ -352,8 +353,7 @@ class TestRunner(object):
             self.plmanager.test_groups.post_test_group(test_group)
             logger.info("Finishing %s", test_group)
             logger.info(TEST_CASES_SEPARATOR)
-
-        self.plmanager.results_collector.add_test_result(test_group)
+            self.plmanager.results_collector.add_test_result(test_group)
 
         if test_group.vital:
             if test_group.failed != 0 or \
