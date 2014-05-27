@@ -79,7 +79,8 @@ ANSWERS = {
     'OVESETUP_AIO/configure': 'none:None',
     'OVESETUP_AIO/storageDomainDir': 'none:None',
     'OVESETUP_CONFIG/isoDomainACL': 'str:0.0.0.0/0.0.0.0(rw)',
-    'OVESETUP_DIALOG/confirmSettings': 'bool:True'
+    'OVESETUP_DIALOG/confirmSettings': 'bool:True',
+    'OVESETUP_RHEVM_DIALOG/confirmUpgrade': 'bool:False'
 }
 
 ANSWERS['__default__'] = (
@@ -114,5 +115,6 @@ ANSWERS['__default__'] = (
     'OVESETUP_AIO/configure',
     'OVESETUP_AIO/storageDomainDir',
     'OVESETUP_CONFIG/isoDomainACL',
-    'OVESETUP_DIALOG/confirmSettings'
+    'OVESETUP_DIALOG/confirmSettings',
+    'OVESETUP_RHEVM_DIALOG/confirmUpgrade'
 )
