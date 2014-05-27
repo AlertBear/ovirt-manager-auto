@@ -704,8 +704,8 @@ class SingleHostChangePriorityIllegalValue(DCUp):
         """
         Change priority to an illegal value - '#'
         """
-        self.assertFalse(ll_hosts.setSPMPriority(True, config.HOSTS[0], '#'),
-                         "Failed to set SPM priority to # - illegal value")
+        self.assertTrue(ll_hosts.setSPMPriority(False, config.HOSTS[0], '#'),
+                        "Failed to set SPM priority to # - illegal value")
         ll_hosts.checkSPMPriority(True,  config.HOSTS[0], DEFAULT_SPM_PRIORITY)
 
 

@@ -668,7 +668,17 @@ def updateHost(positive, host, **kwargs):
                                      username=pm_username,
                                      password=pm_password, options=pmOptions)
         hostUpd.set_power_management(hostPm)
-    hostObj, status = HOST_API.update(hostObj, hostUpd, positive)
+
+    try:
+        hostObj, status = HOST_API.update(hostObj, hostUpd, positive)
+    except TypeError:
+        # TypeError expected on all backends except REST for negative cases
+        # when passing wrong parameter type due to type-checking
+        if not positive:
+            return True
+        # if this is not a negative case, continue raising exception upwards
+        else:
+            raise
 
     return status
 
@@ -1635,6 +1645,12 @@ def setSPMPriority(positive, hostName, spmPriority):
                          spmPriority)
     updateStat = updateHost(positive=positive, host=hostName,
                             storage_manager_priority=spmPriority)
+
+    # no need to continue checking what the new priority is in case of
+    # negative test
+    if not positive:
+        return updateStat
+
     if not updateStat:
         return False
 
