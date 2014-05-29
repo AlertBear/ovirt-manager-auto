@@ -7,10 +7,11 @@ import time
 import config
 import random
 import logging
-from art.unittest_lib import BaseTestCase as TestCase
 from nose.tools import istest
+from art.unittest_lib import attr
 from art.test_handler.tools import tcms
 from art.test_handler.settings import opts
+from art.unittest_lib import ComputeTest as TestCase
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as vm_api
 import art.rhevm_api.tests_lib.low_level.sla as sla_api
@@ -25,21 +26,22 @@ VMS = "%s %s" % (config.support_vm_1, config.support_vm_2)
 MAX_CPU_LOAD = 100
 AVERAGE_CPU_LOAD = 50
 MIN_CPU_LOAD = 0
-#Time to update hosts stats
+# Time to update hosts stats
 UPDATE_STATS = 30
-#Time to wait for vm migration MAX_DURATION + 60(for migration)
+# Time to wait for vm migration MAX_DURATION + 60(for migration)
 WAIT_FOR_MIGRATION = 240
-#Generate random value for CpuOverCommitDuration
+# Generate random value for CpuOverCommitDuration
 DURATION = random.randint(1, 2) * 60
-#Generae random value HighUtilization
+# Generate random value HighUtilization
 HIGH_UTILIZATION = random.randint(70, 90)
-#Generae random value LowUtilization
+# Generate random value LowUtilization
 LOW_UTILIZATION = random.randint(10, 30)
 ENUMS = opts['elements_conf']['RHEVM Enums']
 CLUSTER_POLICIES = [ENUMS['scheduling_policy_evenly_distributed'],
                     ENUMS['scheduling_policy_power_saving'], 'none']
 
 
+@attr(tier=1)
 class RhevmClusterPolicies(TestCase):
     __test__ = False
 
@@ -443,6 +445,7 @@ class PutHostToMaintenanceED(EvenlyDistributed):
         super(PutHostToMaintenanceED, cls).teardown_class()
 
 
+@attr(tier=0)
 class CheckClusterPolicyParameters(TestCase):
     """
     Check different values for cluster policy parameters:

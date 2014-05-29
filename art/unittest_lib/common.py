@@ -50,3 +50,11 @@ class NetworkTest(BaseTestCase):
     Basic class for network tests
     """
     __test__ = False
+
+
+@attr(team="compute")
+class ComputeTest(BaseTestCase):
+    """
+    Basic class for compute tests
+    """
+    __test__ = False

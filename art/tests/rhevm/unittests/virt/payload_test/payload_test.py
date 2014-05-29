@@ -6,7 +6,8 @@ check mount of different types of payloads, cdrom, floppy.
 import os
 import logging
 from nose.tools import istest
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import attr
+from art.unittest_lib import ComputeTest as TestCase
 from art.test_handler.tools import tcms
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
@@ -35,6 +36,7 @@ TIMEOUT = 60
 CONN_TIMEOUT = 30
 
 
+@attr(tier=0)
 class Payloads(TestCase):
     """
     Base class for Payloads Test
@@ -233,6 +235,7 @@ class UpdateVmWithCdromPayloadAndCheckPayloadObject(PayloadViaUpdate):
         self.assertTrue(self._check_existence_of_payload(PAYLOADS_DEVICES[0]))
 
 
+@attr(tier=1)
 class CdromPayloadComplexContent(PayloadViaUpdate):
     """
     Create new vm with cdrom payload, that have complex content via update

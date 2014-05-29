@@ -4,13 +4,9 @@ count threads as cores and placement policy
 """
 
 from nose.tools import istest
-from art.unittest_lib import BaseTestCase as TestCase
-from unittest2 import skipIf
-from functools import wraps
 import logging
 import random
 
-import art.rhevm_api.tests_lib.low_level.vms as vms
 import art.rhevm_api.tests_lib.low_level.clusters as clusters
 from art.core_api.apis_utils import data_st
 
@@ -19,6 +15,8 @@ from art.rhevm_api.utils.test_utils import get_api
 import art.test_handler.exceptions as errors
 from art.test_handler.settings import opts
 from art.test_handler.tools import bz, tcms
+from art.unittest_lib import ComputeTest as TestCase
+from art.unittest_lib import attr
 from utilities import machine
 import config
 import re
@@ -124,6 +122,7 @@ def getQemuValue(host, host_user, host_pwd, vm, arg):
 ########################################################################
 
 
+@attr(tier=0)
 class ProtectedVm_Case1(TestCase):
     """
     Negative: Remove protected VM
@@ -172,6 +171,7 @@ class ProtectedVm_Case1(TestCase):
 ########################################################################
 
 
+@attr(tier=0)
 class ProtectedVm_Case2(TestCase):
     """
     Negative: Force remove protected VM
@@ -221,6 +221,7 @@ class ProtectedVm_Case2(TestCase):
 ########################################################################
 
 
+@attr(tier=0)
 class CPUHost_Case1(TestCase):
     """
     Negative: Change migratable VM to use CPU host
@@ -265,6 +266,7 @@ class CPUHost_Case1(TestCase):
 ########################################################################
 
 
+@attr(tier=0)
 class CPUHost_Case2(TestCase):
     """
     Set CPU host to a user migratable VM
@@ -311,6 +313,7 @@ class CPUHost_Case2(TestCase):
 ########################################################################
 
 
+@attr(tier=0)
 class CPUHost_Case3(TestCase):
     """
     Negative: Change VM with CPU host mode (pinned) to migratable
@@ -361,6 +364,7 @@ class CPUHost_Case3(TestCase):
 ########################################################################
 
 
+@attr(tier=0)
 class CPUHost_Case4(TestCase):
     """
     Set a CPU host non migratable VM to have no host specified to run on
@@ -412,6 +416,7 @@ class CPUHost_Case4(TestCase):
 ########################################################################
 
 
+@attr(tier=0)
 class CPUHost_Case5(TestCase):
     """
     Change CPU host vm's placement affinity from pinned
@@ -463,6 +468,7 @@ class CPUHost_Case5(TestCase):
 ########################################################################
 
 
+@attr(tier=0)
 class CPUHost_Case6(TestCase):
     """
     Check if VM with CPU host is running with correct QEMU values
@@ -522,6 +528,7 @@ class CPUHost_Case6(TestCase):
 ########################################################################
 
 
+@attr(tier=0)
 class Threads_Case1(TestCase):
     """
     Verify number of cores on host, depending on cluster policy
@@ -667,6 +674,7 @@ class Threads_Case1(TestCase):
 ########################################################################
 
 
+@attr(tier=0)
 class CPUPin_Case1(TestCase):
     """
     Check CPU pinning format correctness
@@ -745,6 +753,7 @@ class CPUPin_Case1(TestCase):
                         "Successfully changed VCPU pinning")
         logger.info("Unable to change VCPU pinning to 0#^1.")
 
+    @attr(tier=1)
     @istest
     @tcms('6302', '233224')
     def cpupin_format4(self):
@@ -855,6 +864,7 @@ class CPUPin_Case1(TestCase):
                         "Failed to change VCPU pinning")
         logger.info("Successfully changed VCPU pinning to 0#0-3,^2,5-7,^6.")
 
+    @attr(tier=1)
     @istest
     @tcms('6302', '233224')
     def cpupin_format12(self):
@@ -960,6 +970,7 @@ class CPUPin_Case1(TestCase):
 ########################################################################
 
 
+@attr(tier=1)
 class CPUPin_Case2(TestCase):
     """
     Negative: Set CPU pinning to a migratable VM
@@ -1004,6 +1015,7 @@ class CPUPin_Case2(TestCase):
 ########################################################################
 
 
+@attr(tier=1)
 class CPUPin_Case3(TestCase):
     """
     Negative: Change CPU pinned VM to migratable
@@ -1054,6 +1066,7 @@ class CPUPin_Case3(TestCase):
 ########################################################################
 
 
+@attr(tier=1)
 class CPUPin_Case4(TestCase):
     """
     Negative: Set CPU pinning to a user migratable VM
@@ -1102,6 +1115,7 @@ class CPUPin_Case4(TestCase):
 ########################################################################
 
 
+@attr(tier=1)
 class CPUPin_Case5(TestCase):
     """
     Negative: Change CPU pinned VM to user migratable
@@ -1154,6 +1168,7 @@ class CPUPin_Case5(TestCase):
 ########################################################################
 
 
+@attr(tier=1)
 class CPUPin_Case6(TestCase):
     """
     Check if pinning holds on random pCPU's
@@ -1235,6 +1250,7 @@ class CPUPin_Case6(TestCase):
 ########################################################################
 
 
+@attr(tier=0)
 class CPUPin_Case7(TestCase):
     """
     Check if pinning holds when all vCPU's are running on the same pCPU
@@ -1313,6 +1329,7 @@ class CPUPin_Case7(TestCase):
 ########################################################################
 
 
+@attr(tier=1)
 class CPUPin_Case8(TestCase):
     """
     Negative: Set CPU pinning to a non migratable VM with no host
@@ -1362,6 +1379,7 @@ class CPUPin_Case8(TestCase):
 ########################################################################
 
 
+@attr(tier=0)
 class PlacementPolicy_Case1(TestCase):
     """
     Migrate a migratable VM
@@ -1415,6 +1433,7 @@ class PlacementPolicy_Case1(TestCase):
 ########################################################################
 
 
+@attr(tier=0)
 class PlacementPolicy_Case2(TestCase):
     """
     Migrate a user-migratable VM
@@ -1469,6 +1488,7 @@ class PlacementPolicy_Case2(TestCase):
 ########################################################################
 
 
+@attr(tier=0)
 class PlacementPolicy_Case3(TestCase):
     """
     Migrate a non-migratable VM
@@ -1523,6 +1543,7 @@ class PlacementPolicy_Case3(TestCase):
 ########################################################################
 
 
+@attr(tier=0)
 class PlacementPolicy_Case4(TestCase):
     """
     Run non migratable VM with no specific host

@@ -4,7 +4,7 @@ SLA test config module
 
 __test__ = False
 
-from . import ART_CONFIG
+from art.test_handler.settings import ART_CONFIG
 
 TEST_NAME = "SLA"
 PARAMETERS = ART_CONFIG['PARAMETERS']

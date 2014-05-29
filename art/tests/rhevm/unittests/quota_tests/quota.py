@@ -35,7 +35,8 @@ from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import disks
 from art.rhevm_api.tests_lib.high_level.disks import delete_disks
 from art.rhevm_api.tests_lib.low_level import templates
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import attr
+from art.unittest_lib import ComputeTest as TestCase
 
 # raut quota
 from raut.tests.webadmin.quota import QuotaTest
@@ -109,6 +110,7 @@ def teardown_module():
     test.tear_down()
 
 
+@attr(tier=0)
 class QuotaTestCRUD(TestCase):
     """
     This unittest class tests CRUD operation via selenium.
@@ -168,6 +170,7 @@ class QuotaTestCRUD(TestCase):
         self.assertFalse(db.check_quota_exists(QUOTA3_NAME))
 
 
+@attr(tier=0)
 class QuotaTestMode(TestCase):
     """
     This unittest class tests quota enforced/audit mode.
@@ -354,6 +357,7 @@ class QuotaTestAudit(QuotaTestMode):
         super(QuotaTestAudit, cls).setUpClass()
 
 
+@attr(tier=1)
 class QuotaTestObjectWithoutQuota(TestCase):
     """
     This class tests if object created in disabled mode can/can't
@@ -461,6 +465,7 @@ class QuotaTestAuditWithOutQuota(QuotaTestObjectWithoutQuota):
     positive = True
 
 
+@attr(tier=1)
 class QuotaConsumptionCalc(TestCase):
     """
     This class tests if quota consumption is calculated right,

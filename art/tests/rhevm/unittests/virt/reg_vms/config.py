@@ -4,7 +4,7 @@ Virt - Regression Vms Test configuration file
 
 __test__ = False
 
-from . import ART_CONFIG
+from art.test_handler.settings import ART_CONFIG
 
 TEST_NAME = "reg_vms"
 PARAMETERS = ART_CONFIG['PARAMETERS']
