@@ -59,7 +59,7 @@ class TestCase94947(TestCase):
                 master_domain_name,
                 config.STORAGE_TYPE,
                 config.FIRST_HOST,
-                config.PARAMETERS)
+                **config.EXTEND_LUN)
 
 
 class TestCase94950(TestCase):

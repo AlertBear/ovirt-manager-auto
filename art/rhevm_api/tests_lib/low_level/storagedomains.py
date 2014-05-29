@@ -20,7 +20,7 @@ import time
 import re
 
 from art.core_api.apis_exceptions import EntityNotFound
-from art.core_api.apis_utils import getDS
+from art.core_api.apis_utils import getDS, TimeoutingSampler
 from art.core_api.validator import compareCollectionSize
 from art.rhevm_api.tests_lib.low_level.clusters import addCluster, \
     removeCluster, isHostAttachedToCluster, attachHostToCluster, \
@@ -1623,6 +1623,19 @@ def get_total_size(storagedomain):
 
 
 @is_action()
+def get_used_size(storagedomain):
+    """
+    Description: Gets the used size
+    Author: cmestreg
+    Parameters:
+        * storagedomain - name of the storage domain
+    Returns: used size of the storagedomain in bytes
+    """
+    sdObj = util.find(storagedomain)
+    return sdObj.get_used()
+
+
+@is_action()
 def _parse_mount_output_line(line):
     """
     Parses one line of mount output
@@ -1834,3 +1847,23 @@ def getStorageDomainObj(storagedomain_name):
     Returns storage domain object, fails with EntityNotFound
     """
     return util.find(storagedomain_name)
+
+
+def wait_for_change_total_size(storagedomain_name, original_size=0,
+                               sleep=5, timeout=50):
+    """
+    Waits until the total size changes from original_size
+    Parameters:
+        * storagedomain_name
+        * original_size: size to compare to
+    """
+    for total_size in TimeoutingSampler(timeout, sleep, get_total_size,
+                                        storagedomain_name):
+        util.logger.info("Total size for %s is %d", storagedomain_name,
+                         total_size)
+        if total_size != original_size:
+            return True
+
+    util.logger.warning("Total size for %s didn't update from %d",
+                        storagedomain_name, original_size)
+    return False

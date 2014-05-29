@@ -19,7 +19,14 @@ if STORAGE_TYPE.split("_")[0] == ENUMS['storage_type_posixfs']:
     STORAGE_TYPE, VFS_TYPE = (PARAMETERS['storage_type']).split("_")
     PARAMETERS['vfs_type'] = VFS_TYPE
 
-EXTEND_LUN = PARAMETERS.get('extend_lun', None)
+if PARAMETERS.get('extend_lun', None):
+    EXTEND_LUN = {
+        "lun_targets": PARAMETERS.as_list("extend_lun_target"),
+        "lun_addresses": PARAMETERS.as_list("extend_lun_address"),
+        "lun_list": PARAMETERS.as_list("extend_lun"),
+    }
+else:
+    EXTEND_LUN = None
 
 FIRST_HOST = PARAMETERS.as_list('vds')[0]
 

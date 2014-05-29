@@ -91,3 +91,18 @@ if STORAGE_TYPE == ISCSI_DOMAIN:
     EXTEND_LUN = STORAGE_SECTION['PARAMETERS.extend_lun']
     # Size of device (in GB)
     EXTEND_SIZE = int(EXTEND_LUN['devices_capacity'])
+    EXTEND_LUN_ADDRESS = PARAMETERS.as_list("extend_lun_address")
+    EXTEND_LUN_TARGET = PARAMETERS.as_list("extend_lun_target")
+    EXTEND_LUN = PARAMETERS.as_list("extend_lun")
+
+    # Adds to EXTEND_LUNS a dictionary with all the luns data used to be
+    # extended
+    EXTEND_LUNS = []
+    for address, target, lun in zip(
+        EXTEND_LUN_ADDRESS, EXTEND_LUN_TARGET, EXTEND_LUN
+    ):
+        EXTEND_LUNS.append({
+            "lun_targets": [target],
+            "lun_addresses": [address],
+            "lun_list": [lun],
+        })

@@ -280,7 +280,7 @@ def addFCPDataDomain(host, storage, data_center, lun):
     return True
 
 
-def extend_storage_domain(storage_domain, type_, host, storage):
+def extend_storage_domain(storage_domain, type_, host, **kwargs):
     """
     Description: Extends given storage domain with luns defined
         with extend_lun* params
@@ -293,25 +293,27 @@ def extend_storage_domain(storage_domain, type_, host, storage):
     """
     logger.info("extending storage domain %s" % storage_domain)
     if type_ == ENUMS['storage_type_iscsi']:
-        __extend_iscsi_domain(storage_domain, host, storage)
+        __extend_iscsi_domain(storage_domain, host, **kwargs)
     elif type_ == ENUMS['storage_type_fcp']:
-        __extend_fcp_domain(storage_domain, host, storage)
+        __extend_fcp_domain(storage_domain, host, **kwargs)
     else:
         raise errors.UnkownConfigurationException(
             "Extending storage domain is supported for iscsi/fcp data centers")
 
 
-def __extend_iscsi_domain(storage_domain, host, storage_conf):
+def __extend_iscsi_domain(storage_domain, host, **kwargs):
     """
     Description: Extends iscsi domain with luns defined with extend_lun* params
     Parameters:
         * storage_domain - storage domain to extend
         * host - host on which storage domain is created
-        * storage_conf - dictionary ([storage_type] section)
+        * lun_targets - list of lun targets
+        * lun_addresses - list of lun addresses
+        * lun_list - list of lun ids
     """
-    lun_targets_list = storage_conf.as_list('extend_lun_target')
-    lun_addresses_list = storage_conf.as_list('extend_lun_address')
-    lun_list = storage_conf.as_list('extend_lun')
+    lun_targets_list = kwargs.pop('lun_targets')
+    lun_addresses_list = kwargs.pop('lun_addresses')
+    lun_list = kwargs.pop('lun_list')
     for (lun, lun_address, lun_target) in zip(
             lun_list, lun_addresses_list, lun_targets_list):
         if not extendISCSIDomain(
@@ -321,15 +323,17 @@ def __extend_iscsi_domain(storage_domain, host, storage_conf):
                     storage_domain, host, lun, lun_address, lun_target))
 
 
-def __extend_fcp_domain(storage_domain, host, storage_conf):
+def __extend_fcp_domain(storage_domain, host, **kwargs):
     """
     Description: Extends fcp domain with luns defined with extend_lun parameter
     Parameters:
         * storage_domain - storage domain to extend
         * host - host on which storage domain is created
-        * storage_conf - dictionary ([storage_type] section)
+        * lun_targets - list of lun targets
+        * lun_addresses - list of lun addresses
+        * lun_list - list of lun ids
     """
-    lun_list = storage_conf.as_list('extend_lun')
+    lun_list = kwargs.pop('lun_list')
     for lun in lun_list:
         if not extendFCPDomain(storage_domain, host, lun):
             raise errors.StorageDomainException(

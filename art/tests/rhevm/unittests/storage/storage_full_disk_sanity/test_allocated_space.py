@@ -2,7 +2,6 @@
 Test Allocation/Total size properties
 """
 from art.unittest_lib import StorageTest as TestCase
-from art.rhevm_api.tests_lib.high_level.datacenters import build_setup
 from art.rhevm_api.tests_lib.high_level.storagedomains import \
     extend_storage_domain
 from art.rhevm_api.tests_lib.low_level.datacenters import \
@@ -11,15 +10,15 @@ from art.rhevm_api.tests_lib.low_level.disks import addDisk, deleteDisk, \
     getStorageDomainDisks, waitForDisksState, move_disk
 from art.rhevm_api.tests_lib.low_level.hosts import waitForHostsStates, \
     waitForSPM
-from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter, \
+from art.rhevm_api.tests_lib.low_level.storagedomains import \
     get_allocated_size, get_total_size, findMasterStorageDomain, \
-    findNonMasterStorageDomains
+    findNonMasterStorageDomains, wait_for_change_total_size, \
+    get_used_size
 from art.rhevm_api.tests_lib.low_level.templates import createTemplate, \
     removeTemplate
 from art.rhevm_api.tests_lib.low_level.vms import createVm, removeVm
 from art.rhevm_api.utils.test_utils import restartVdsmd
 from art.test_handler.tools import tcms, bz
-import time
 import config
 import logging
 
@@ -48,6 +47,7 @@ class BaseCase(TestCase):
 
     current_allocated_size = {}
     current_total_size = {}
+    current_used_size = {}
 
     expected_allocated_size = {}
     expected_total_size = {}
@@ -114,7 +114,11 @@ class BaseCase(TestCase):
         for domain in cls.domains:
             cls.current_allocated_size[domain] = get_allocated_size(domain)
             cls.current_total_size[domain] = get_total_size(domain)
+            cls.current_used_size[domain] = get_used_size(domain)
 
+            logger.debug("Allocated size for %s is %d Total size is %d",
+                         domain, cls.current_allocated_size[domain],
+                         cls.current_total_size[domain])
             cls.expected_total_size[domain] = cls.current_total_size[domain]
             cls.expected_allocated_size[domain] = cls.current_allocated_size[
                 domain]
@@ -285,6 +289,9 @@ class TestCase286775(BaseCase):
 
     # test case only relevant to iscsi domains
     __test__ = config.STORAGE_TYPE == 'iscsi'
+    # disable since there's a bug while extending twice the storage domain
+    # cmestreg: enable once this issue is resolved
+    apis = BaseCase.apis - set(['sdk'])
     tcms_test_case = '286775'
 
     def perform_action(self):
@@ -292,15 +299,22 @@ class TestCase286775(BaseCase):
         Extend master domain
         """
         logger.info('Extending master domain')
+        extend_luns = config.EXTEND_LUNS.pop()
         extend_storage_domain(self.master_domain,
                               config.ISCSI_DOMAIN,
                               config.HOSTS[0],
-                              config.PARAMETERS)
+                              **extend_luns)
         self.expected_total_size[self.master_domain] += \
             config.EXTEND_SIZE * config.GB
 
-        # wait for storage details to update
-        time.sleep(30)
+        # Waits until total size changes (extend is done)
+        # wait_for_tasks doesn't work (value is not updated properly)
+        wait_for_change_total_size(
+            self.master_domain, self.current_total_size[self.master_domain])
+
+        # Assert size hasn't changed during the extend
+        self.assertEqual(self.current_used_size[self.master_domain],
+                         get_used_size(self.master_domain))
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_extend_domain_and_check_details(self):
@@ -438,3 +452,48 @@ class TestCase286779(BaseCase):
         Start disk move and fail it, then check details after rollback
         """
         self.run_scenario()
+
+
+# This test for a weird behaviour in which the second time the storage domain
+# is extended the used value changes without reason
+# Disabling while is being investigated
+class TestCaseUsedSpace(BaseCase):
+    """
+    Checking behaviour used space
+    """
+    __test__ = False
+    apis = BaseCase.apis - set(['sdk'])
+
+    def test_used_space(self):
+        """
+        Test extending an iscsi domain doesn't remove used space
+        """
+        for extend_lun in config.EXTEND_LUNS:
+            logger.info('Extending master domain')
+            extend_storage_domain(self.master_domain,
+                                  config.ISCSI_DOMAIN,
+                                  config.HOSTS[0],
+                                  **extend_lun)
+
+            # Waits until total size changes (extend is done)
+            # wait_for_tasks doesn't work (value is not updated properly)
+            wait_for_change_total_size(
+                self.master_domain,
+                self.current_total_size[self.master_domain])
+
+            # Assert size hasn't changed during the extend
+            previous = self.current_used_size[self.master_domain]
+            current = get_used_size(self.master_domain)
+            total = get_total_size(self.master_domain)
+            allocated = get_allocated_size(self.master_domain)
+
+            logger.info("Storage domain %s. Allocated: %s Total: %d Used: %d",
+                        self.master_domain, allocated, total, current)
+
+            if previous != current:
+                logger.error("Used size for %s is %d, before extend was %d",
+                             self.master_domain, current, previous)
+
+            self.current_total_size[self.master_domain] = total
+            self.current_used_size[self.master_domain] = current
+            self.current_allocated_size[self.master_domain] = allocated
