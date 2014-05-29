@@ -1,4 +1,5 @@
 import logging
+from art.rhevm_api.tests_lib.low_level.clusters import addCluster
 from art.unittest_lib import StorageTest as TestCase
 from nose.tools import istest
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st_domains
@@ -64,6 +65,13 @@ def setup_module():
                             storage=config.PARAMETERS,
                             storage_type=config.STORAGE_TYPE,
                             basename=config.BASENAME)
+
+    logger.info("Adding temporary cluster %s for upgrade tests to default dc ",
+                config.TMP_CLUSTER_NAME)
+    assert addCluster(True, name=config.TMP_CLUSTER_NAME,
+                      cpu=config.PARAMETERS['cpu_name'],
+                      data_center='Default',
+                      version=config.COMPATIBILITY_VERSION)
 
     if config.STORAGE_TYPE == config.STORAGE_TYPE_NFS:
         config.PARAMETERS['data_domain_path'] = domain_path
@@ -488,7 +496,10 @@ class TestUpgrade(TestCase):
         LOGGER.info('Removing data center %s', cls.dc_name)
         assert ll_datacenters.removeDataCenter(True, cls.dc_name)
 
-        for i in range(len(config.PARAMETERS.as_list(cls.domain_kw))):
+        # there number of domains created for dc test always 1 less than total
+        # number of storage devices defined since other cases (not upgrade)
+        # use the additional storage device for their own domain
+        for i in range(len(config.PARAMETERS.as_list(cls.domain_kw)) - 1):
             assert ll_st_domains.removeStorageDomain(
                 True, cls.sd_name_pattern % i, cls.host)
             LOGGER.info("%s storage domain %s was removed successfully",
