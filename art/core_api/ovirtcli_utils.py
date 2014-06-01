@@ -28,6 +28,7 @@ from time import strftime, sleep
 from art.rhevm_api.data_struct.data_structures import *
 from art.rhevm_api.data_struct.data_structures import ClassesMapping
 from art.core_api.rest_utils import RestUtil
+from art.core_api.apis_utils import api_error
 from art.core_api.apis_exceptions import CLIError, CLITimeout,\
     CLICommandFailure, UnsupportedCLIEngine, CLITracebackError,\
     CLIAutoCompletionFailure, EntityNotFound, APILoginError
@@ -242,7 +243,10 @@ class CliConnection(object):
               not set default timeout used
         Returns: validated output
         """
-        return self.outputValidator(self.sendCmd(cmd, timeout))
+        raw_output = self.sendCmd(cmd, timeout)
+        logger.debug("cli command '%s'\nDebug and Error raw output:\n%s",
+                     cmd, raw_output)
+        return self.outputValidator(raw_output)
 
     @abstractmethod
     def outputValidator(self, output):
@@ -316,8 +320,8 @@ class RhevmCli(CliConnection):
     _tracebackMsgSearch = "Traceback (most recent call last):"
     _rhevmOutputErrorKeys = ['error', 'status', 'reason', 'detail']
     _debugMsg = "send:.*header:.*(\r\r\n\r)"
-    _errorStatusMsgSearch = "error:.*status:.*reason:.*detail:.*"
-    _errorParametersMsgSearch = "error:.*"
+    _errorStatusMsgSearch = "=+ ERROR.*status:.*reason:.*detail:.* (?==+)"
+    _errorParametersMsgSearch = "=+ ERROR.* (?==+)"
     _errorSyntaxMsgSearch = "\*\*\* Unknown syntax.*"
     _insiderSearch = "status:.*reason:.*detail:.*"
     _eol = '\r\n'
@@ -332,7 +336,7 @@ class RhevmCli(CliConnection):
     _cliRootCommands = ['action', 'add', 'list', 'remove', 'show', 'update']
     _cliTrashPattern = "[\[\]\\\?]"
     _command = RHEVM_SHELL
-    _autocompletionSeparators = ['send:', 'error:']
+    _autocompletionSeparators = ['send:', '====']
 
     def __init__(self, logger, uri, user, userDomain, password,
                  secure, sslKeyFile, sslCertFile, sslCaFile, logFile,
@@ -381,9 +385,7 @@ class RhevmCli(CliConnection):
         Returns: CLI output
         """
         self.logger.debug("%s cli command is: %s", apiCmdName, apiCmd)
-        errAndDebug = self.commandRun(apiCmd)
-        self.logger.debug("%s cli command Debug and Error output: %s",
-                          apiCmdName, errAndDebug)
+        self.commandRun(apiCmd)
         out = self.readTmpFile()
         self.logger.debug("%s cli command output: %s", apiCmdName, out)
         return out
@@ -490,10 +492,12 @@ class RhevmCli(CliConnection):
         if errorStatusMsg:
             data = re.search(self._insiderSearch, errorStatusMsg.group(0),
                              flags=re.DOTALL).group(0).split(self._eol)
-            status = self.outputCleaner(data[0])
-            reason = self.outputCleaner(data[1])
-            detail = self.outputCleaner(data[2:])
-            raise CLICommandFailure('Command Failed:', status, reason, detail)
+            err = api_error(
+                reason=self.outputCleaner(data[1]).split(':')[1].strip(),
+                status=int(self.outputCleaner(data[0]).split(':')[1].strip()),
+                detail=self.outputCleaner(data[2:]).split(':', 1)[1].strip())
+            raise CLICommandFailure('Command Failed: {0}'.format(
+                self.outputCleaner(errorStatusMsg.group(0))), err)
         elif errorParametersMsg:
             raise CLICommandFailure('Wrong parameters:', self.outputCleaner(
                                     errorParametersMsg.group(0)))
@@ -737,9 +741,6 @@ class OvirtCli(RhevmCli):
     _rhevmDisconnectedPrompt = '((\[oVirt shell \(\x1b\[\d;\d\dmdisconnected' \
         '\x1b\[\d;m\)\]# )|(\[oVirt shell \(disconnected\)\]# ))'
     _command = OVIRT_SHELL
-    _errorStatusMsgSearch = "=+ ERROR.*status:.*reason:.*detail:.* (?==+)"
-    _errorParametersMsgSearch = "=+ ERROR.* (?==+)"
-    _autocompletionSeparators = ['send:', '====']
 
     def __init__(self, logger, uri, user, userDomain, password,
                  secure, sslKeyFile, sslCertFile, sslCaFile, logFile,
@@ -748,45 +749,6 @@ class OvirtCli(RhevmCli):
                                        secure, sslKeyFile, sslCertFile,
                                        sslCaFile, logFile, session_timeout,
                                        **kwargs)
-
-    def outputValidator(self, output):
-        """
-        Description: Implementation of outputValidator for ovirt-cli
-        Author: imeerovi
-        Parameters:
-            * output - output of cli command run
-        Returns: validated output
-        """
-        # looking for error - to change to more generic map style
-        tracebackMsg = self._tracebackMsgSearch in output
-        errorStatusMsg = re.search(self._errorStatusMsgSearch,
-                                   output, flags=re.DOTALL)
-        errorParametersMsg = re.search(self._errorParametersMsgSearch,
-                                       output, flags=re.DOTALL)
-        errorSyntaxMsg = re.search(self._errorSyntaxMsgSearch,
-                                   output, flags=re.DOTALL)
-        debugMsg = re.search(self._debugMsg, output, flags=re.DOTALL)
-        if tracebackMsg:
-            raise CLITracebackError(self.outputCleaner(output))
-        if debugMsg:
-            self.logger.debug('Debug output: %s',
-                              self.outputCleaner(debugMsg.group(0)))
-        if errorStatusMsg:
-            data = re.search(self._insiderSearch, errorStatusMsg.group(0),
-                             flags=re.DOTALL).group(0).split(self._eol)
-            status = self.outputCleaner(data[0])
-            reason = self.outputCleaner(data[1])
-            detail = self.outputCleaner(data[2:])
-            raise CLICommandFailure('Command Failed:', status, reason, detail)
-        elif errorParametersMsg:
-            reason = errorParametersMsg.group(0).split(self._eol)[1]
-            raise CLICommandFailure('Wrong parameters:', self.outputCleaner(
-                                    reason))
-        elif errorSyntaxMsg:
-            raise CLICommandFailure('Wrong syntax:', self.outputCleaner(
-                                    errorSyntaxMsg.group(0)))
-
-        return self.outputCleaner(output)
 
 
 class CliUtil(RestUtil):

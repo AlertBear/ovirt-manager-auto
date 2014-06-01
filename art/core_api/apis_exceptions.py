@@ -98,7 +98,17 @@ class CLICommandFailure(APIException):
     '''
     Raised when cli command returns error
     '''
-    pass
+
+    def __init__(self, message, err):
+        super(CLICommandFailure, self).__init__(message)
+        self.status = None
+        self.reason = None
+        self.detail = None
+        # in case of api error
+        if isinstance(err, tuple):
+            self.status = err.status
+            self.reason = err.reason
+            self.detail = err.detail
 
 
 class CLITracebackError(APIException):

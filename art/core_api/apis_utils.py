@@ -21,6 +21,7 @@ import sys
 import time
 import abc
 import logging
+from collections import namedtuple
 from art.core_api.apis_exceptions import APITimeout, EntityNotFound
 import art.test_handler.settings as settings
 
@@ -40,6 +41,8 @@ HEADERS = 'headers'
 CORRELATION_ID = 'Correlation-Id'
 
 logger = logging.getLogger('api_utils')
+
+api_error = namedtuple('api_error', 'reason status detail')
 
 
 def getDS(ds_name):
@@ -143,9 +146,8 @@ class APIUtil(object):
             setattr(action, p, params[p])
         return action
 
-
     def getElemFromElemColl(self, elm, name_val, collection_name=None,
-                                    elm_name=None, prop='name'):
+                            elm_name=None, prop='name'):
         '''
         Description: get element from element's collection
         Parameters:
@@ -172,12 +174,11 @@ class APIUtil(object):
 
         raise EntityNotFound("Entity '{0}' not found".format(name_val))
 
-
     def waitForQuery(self, query, event_id=None, timeout=DEF_TIMEOUT,
-                                        sleep=DEF_SLEEP, href=None):
+                     sleep=DEF_SLEEP, href=None):
         '''
-        Waits until the query `xpath` on doc specified by `link` is evaluates as
-        True.
+        Waits until the query `xpath` on doc specified by `link` is
+        evaluates as True.
 
         Parameters:
             * query - query to wait for.
@@ -208,9 +209,9 @@ class TimeoutingSampler(object):
     '''
     Samples the function output.
 
-    This is a generator object that at first yields the output of function `func`.
-    After the yield, it either raises instance of `timeout_exc_cls` or sleeps
-    `sleep` seconds.
+    This is a generator object that at first yields the output of function
+    `func`. After the yield, it either raises instance of `timeout_exc_cls` or
+    sleeps `sleep` seconds.
 
     Yielding the output allows you to handle every value as you wish.
 
