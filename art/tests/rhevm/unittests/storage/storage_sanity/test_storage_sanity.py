@@ -17,13 +17,12 @@ def setup_module():
     """ creates datacenter, adds hosts, clusters, storages according to
         config file
     """
-    local = True if config.STORAGE_TYPE == 'localfs' else False
     datacenters.build_setup(
         config=config.PARAMETERS,
         storage=config.PARAMETERS,
         storage_type=config.STORAGE_TYPE,
         basename=config.BASENAME,
-        local=local)
+        local=config.LOCAL)
 
 
 def teardown_module():
@@ -111,23 +110,29 @@ class TestCase94950(TestCase):
                 True, config.DATA_CENTER_NAME, 'detach', 'all'),
             "Detaching non-master domains failed")
 
-        logger.info("Attaching non-master domains")
-        for storage in non_master_storages['nonMasterDomains']:
-            self.assertTrue(
-                ll_st_domains.attachStorageDomain(True,
-                    config.DATA_CENTER_NAME, storage),
-                "Attaching non-master domain failed")
-        if config.COMPATIBILITY_VERSION != "3.3":
-            logger.info("Activating non-master domains")
-            self.assertTrue(
-                ll_st_domains.execOnNonMasterDomains(
-                    True, config.DATA_CENTER_NAME, 'activate', 'all'),
-                "Activating non-master domains failed")
-        for storage in non_master_storages['nonMasterDomains']:
-            self.assertTrue(
-                ll_st_domains.waitForStorageDomainStatus(True,
-                   config.DATA_CENTER_NAME, storage, 'active', timeOut=60),
-                "non-master domains didn't become active")
+        # In local DC, once a domain is detached it is removed completely
+        # so it cannot be reattached - only run this part of the test
+        # for non-local DCs
+        if not config.LOCAL:
+            logger.info("Attaching non-master domains")
+            for storage in non_master_storages['nonMasterDomains']:
+                self.assertTrue(
+                    ll_st_domains.attachStorageDomain(True,
+                                                      config.DATA_CENTER_NAME,
+                                                      storage),
+                    "Attaching non-master domain failed")
+            if config.COMPATIBILITY_VERSION != "3.3":
+                logger.info("Activating non-master domains")
+                self.assertTrue(
+                    ll_st_domains.execOnNonMasterDomains(
+                        True, config.DATA_CENTER_NAME, 'activate', 'all'),
+                    "Activating non-master domains failed")
+            for storage in non_master_storages['nonMasterDomains']:
+                self.assertTrue(
+                    ll_st_domains.waitForStorageDomainStatus(
+                        True, config.DATA_CENTER_NAME, storage, 'active',
+                        timeOut=60),
+                    "non-master domains didn't become active")
 
 
 class TestCase94954(TestCase):
