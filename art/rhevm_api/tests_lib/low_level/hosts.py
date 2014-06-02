@@ -823,8 +823,8 @@ def deactivateHost(positive, host,
 
 
 @is_action()
-def installHost(positive, host, root_password,
-                iso_image=None, override_iptables='false'):
+def installHost(positive, host, root_password, iso_image=None,
+                override_iptables='false', rhevh=False):
     """
     Description: run host installation
     Author: edolinin, atal
@@ -833,9 +833,16 @@ def installHost(positive, host, root_password,
        * root_password - password of root user
        * iso_image - iso image for rhevh installation
        * override_iptables - override iptables. gets true/false strings.
+
+       * rhevh - wa for current version's (rhevm 3.4.0 av9) non unity in
+         expected state after install for rhel and rhev - must be changed when
+          issue is resolved (expected on rhevm 3.4.1)
     Return: status (True if host was installed properly, False otherwise)
     """
-
+    if rhevh:
+        state = ENUMS['host_state_maintenance']
+    else:
+        state = ENUMS['host_state_up']
     hostObj = HOST_API.find(host)
     status = HOST_API.syncAction(hostObj, "install", positive,
                                  root_password=root_password,
@@ -843,8 +850,9 @@ def installHost(positive, host, root_password,
                                  override_iptables=override_iptables.lower())
     if not status:
         return False
-
-    return HOST_API.waitForElemStatus(hostObj, "up", 800)
+    if not positive:
+        return True
+    return HOST_API.waitForElemStatus(hostObj, state, 800)
 
 
 @is_action()

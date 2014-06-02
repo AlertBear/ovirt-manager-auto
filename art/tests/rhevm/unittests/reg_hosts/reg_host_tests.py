@@ -297,17 +297,22 @@ class ReinstallHost(TestHostInMaintenance):
     """
     __test__ = True
 
+    os_rhel = 'rhel'
+    os_rhevh = 'rhevh'
+
     @istest
     @tcms('9608', '275961')
     def reinstall_host(self):
         logger.info("reinstall host: %s", HOST)
+        # host_os check is wa for temp change in installHost function
+        # need to change this when installHost has single behaviour any os
+        # expected on rhevm 3.4.1
+        if config.HOST_OS not in [self.os_rhevh, self.os_rhel]:
+            raise HostException("unexpected host type for host: %s" % HOST)
+        rhevh = (config.HOST_OS == self.os_rhevh)
         if not hosts.installHost(True, host=HOST, root_password=HOST_PW,
-                                 iso_image=config.ISO_IMAGE):
+                                 iso_image=config.ISO_IMAGE, rhevh=rhevh):
             raise HostException("re installation of host: %s failed" % HOST)
-
-
-##TODO: add reinstallation with ssh authentication and negative tests
-##installation of rhevh - here or in rhevh test suite??
 
 
 class ManualFenceForHost(TestHostInMaintenance):
@@ -344,12 +349,21 @@ class ReinstallActiveHost(TestActiveHost):
     """
     __test__ = True
 
+    os_rhel = 'rhel'
+    os_rhevh = 'rhevh'
+
     @istest
     @tcms('9608', '275964')
     def reinstall_active_host(self):
         logger.info("attempting to re install host: %s ", HOST)
+        # host_os check is wa for temp change in installHost function
+        # need to change this when installHost has single behaviour any os
+        # expected on rhevm 3.4.1
+        if config.HOST_OS not in [self.os_rhevh, self.os_rhel]:
+            raise HostException("unexpected host type for host: %s" % HOST)
+        rhevh = (config.HOST_OS == self.os_rhevh)
         if not hosts.installHost(False, host=HOST, root_password=HOST_PW,
-                                 iso_image=config.ISO_IMAGE):
+                                 iso_image=config.ISO_IMAGE, rhevh=rhevh):
             raise HostException("re install host: %s worked although "
                                 "host is active" % HOST)
 
@@ -461,8 +475,8 @@ class AddSecondaryPowerManagement(TestPowerManagement):
         if not hosts.updateHost(True, host=HOST, pm='true',
                                 pm_proxies=['cluster', 'dc'],
                                 agents=[(PM1_TYPE, PM1_ADDRESS, PM1_USER,
-                                PM1_PASS, None, False, 1),
-                                (PM2_TYPE, PM2_ADDRESS, PM2_USER,
-                                PM2_PASS, None, False, 2)]):
+                                         PM1_PASS, None, False, 1),
+                                        (PM2_TYPE, PM2_ADDRESS, PM2_USER,
+                                         PM2_PASS, None, False, 2)]):
             raise HostException("adding secondary power management to "
                                 "host s% failed" % HOST)
