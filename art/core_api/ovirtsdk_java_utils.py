@@ -25,7 +25,7 @@ import threading
 import thread
 from decimal import Decimal
 
-from art.core_api import validator
+from art.core_api import validator, measure_time
 from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.data_struct.data_structures import *
 from art.rhevm_api.data_struct.data_structures import ClassesMapping
@@ -991,24 +991,29 @@ element:%(elm)s " % {'col': self.collection_name,
                                   get_collection_name_from_entity(entity),
                                   ', '.join(sorted_add_method_args_list))
                 if add_method_args_length == 2:
-                    response = collection.add(java_entity, correlation_id)
+                    with measure_time('POST'):
+                        response = collection.add(java_entity, correlation_id)
                 elif add_method_args_length == 3:
                     if 'vms' == collection_name.lower():
-                        response = collection.add(java_entity, correlation_id,
-                                                  expect)
+                        with measure_time('POST'):
+                            response = collection.add(java_entity,
+                                                      correlation_id, expect)
                     else:
-                        response = collection.add(java_entity, expect,
-                                                  correlation_id)
+                        with measure_time('POST'):
+                            response = collection.add(java_entity, expect,
+                                                      correlation_id)
                 elif add_method_args_length == 4:
-                    response = collection.add(java_entity, async, expect,
-                                              correlation_id)
+                    with measure_time('POST'):
+                        response = collection.add(java_entity, async, expect,
+                                                  correlation_id)
                 else:
                     msg = "We shouldn't get here, unknown add "\
                         "signature: add(%s)" % sorted_add_method_args_list
                     self.logger.error(msg)
                     raise Exception(msg)
             else:
-                response = collection.add(java_entity)
+                with measure_time('POST'):
+                    response = collection.add(java_entity)
 
             # translating of result to python
             python_response = JavaTranslator(response)
@@ -1086,12 +1091,16 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
                     upd_method_args_length, sorted_upd_method_args_list = \
                         self.__java_method_selector(java_entity, 'update')
                     if upd_method_args_length == 1:
-                        response = java_entity.update(correlation_id)
+                        with measure_time('PUT'):
+                            response = java_entity.update(correlation_id)
                     elif upd_method_args_length == 2:
-                        response = java_entity.update(async, correlation_id)
+                        with measure_time('PUT'):
+                            response = java_entity.update(async,
+                                                          correlation_id)
                     elif upd_method_args_length == 3:
-                        response = java_entity.update(async, current,
-                                                      correlation_id)
+                        with measure_time('PUT'):
+                            response = java_entity.update(async, current,
+                                                          correlation_id)
                     else:
                         msg = "We shouldn't get here, unknown update signatur"\
                             "e: update(%s)" % sorted_upd_method_args_list
@@ -1140,15 +1149,18 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
                 translator_to_java(body, java_body)
                 # public Response delete(entity, Boolean async,
                 #                        String correlationId)
-                java_entity.delete(java_body, async, correlation_id)
+                with measure_time('DELETE'):
+                    java_entity.delete(java_body, async, correlation_id)
             # if async is False and no correlation id defined - we got default
             # behavior (last case)
             elif async or self.getCorrelationId():
                 # public Response delete(Boolean async, String correlationId)
-                java_entity.delete(async, correlation_id)
+                with measure_time('DELETE'):
+                    java_entity.delete(async, correlation_id)
             else:
                 # public Response delete()
-                java_entity.delete()
+                with measure_time('DELETE'):
+                    java_entity.delete()
 
         except java_sdk.JavaError as e:
             print_java_error(e, 'delete', self.logger)
@@ -1183,7 +1195,8 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
                                  'q': constraint, 'params': params})
 
         if constraint is None:
-            search = collection.list()
+            with measure_time('GET'):
+                search = collection.list()
         else:
             # get needed signature
             list_method_args_length, sorted_list_method_args_list = \
@@ -1195,14 +1208,17 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
             self.logger.debug("Using %s.list(%s)", get_object_name(collection),
                               ', '.join(sorted_list_method_args_list))
             if list_method_args_length == 3:
-                search = collection.list(constraint, case_sensitive, max_)
+                with measure_time('GET'):
+                    search = collection.list(constraint, case_sensitive, max_)
             elif list_method_args_length == 4:
                 if 'events' == get_object_name(collection).lower():
-                    search = collection.list(constraint, case_sensitive,
-                                             event_id, max_)
+                    with measure_time('GET'):
+                        search = collection.list(constraint, case_sensitive,
+                                                 event_id, max_)
                 else:
-                    search = collection.list(constraint, case_sensitive,
-                                             max_, all_content)
+                    with measure_time('GET'):
+                        search = collection.list(constraint, case_sensitive,
+                                                 max_, all_content)
             else:
                 msg = "We shouldn't get here, unknown list "\
                     "signature: list(%s)" % sorted_list_method_args_list
@@ -1336,8 +1352,9 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
             java_action_entity = getattr(org.ovirt.engine.sdk.entities,
                                          java_action_entity_name)()
             translator_to_java(act, java_action_entity)
-            act = getattr(java_entity, action)(java_action_entity,
-                                               str(self.getCorrelationId()))
+            with measure_time('POST'):
+                act = getattr(java_entity, action)(
+                    java_action_entity, str(self.getCorrelationId()))
         except java_sdk.JavaError as e:
             print_java_error(e, 'syncAction', self.logger)
             if positive:

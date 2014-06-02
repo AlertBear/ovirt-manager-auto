@@ -19,7 +19,7 @@
 
 import time
 import logging
-from art.core_api import validator
+from art.core_api import validator, measure_time
 from art.core_api.apis_utils import data_st
 from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api.apis_exceptions import APIException, APILoginError
@@ -166,8 +166,9 @@ class SdkUtil(APIUtil):
 
         response = None
         try:
-            response = collection.add(entity,
-                                      **self.getReqMatrixParams(current))
+            with measure_time('POST'):
+                response = collection.add(entity,
+                                          **self.getReqMatrixParams(current))
 
             if not async:
                 self.find(response.id, 'id', collection=collection.list())
@@ -281,7 +282,8 @@ class SdkUtil(APIUtil):
         try:
             if positive:
                 matrix_params = self.getReqMatrixParams(current)
-                response = origEntity.update(**matrix_params)
+                with measure_time('PUT'):
+                    response = origEntity.update(**matrix_params)
                 self.logger.info(self.element_name + " was updated")
 
                 if not validator.compareElements(newEntity, response,
@@ -311,9 +313,11 @@ class SdkUtil(APIUtil):
         try:
             self.logger.debug("DELETE entity: {0}".format(entity.get_id()))
             if body:
-                entity.delete(body, correlation_id=self.getCorrelationId())
+                with measure_time('DELETE'):
+                    entity.delete(body, correlation_id=self.getCorrelationId())
             else:
-                entity.delete(correlation_id=self.getCorrelationId())
+                with measure_time('DELETE'):
+                    entity.delete(correlation_id=self.getCorrelationId())
         except RequestError as e:
             if positive:
                 errorMsg = ("Failed to delete an element, status: %s, "
@@ -345,7 +349,8 @@ class SdkUtil(APIUtil):
         MSG = ("SEARCH content is -- collection:%s "
                "query:%s params :%s")
         self.logger.debug(MSG, self.collection_name, constraint, params)
-        search = collection.list(constraint, **params)
+        with measure_time('GET'):
+            search = collection.list(constraint, **params)
 
         self.logger.debug("Response for QUERY request is: %s ", search)
 
@@ -425,7 +430,9 @@ class SdkUtil(APIUtil):
 
         try:
             correlation_id = self.getCorrelationId()
-            act = getattr(entity, action)(act, correlation_id=correlation_id)
+            with measure_time('POST'):
+                act = getattr(entity, action)(act,
+                                              correlation_id=correlation_id)
         except RequestError as e:
             if positive:
                 errorMsg = ("Failed to run an action '%s', status: %s,reason: "
