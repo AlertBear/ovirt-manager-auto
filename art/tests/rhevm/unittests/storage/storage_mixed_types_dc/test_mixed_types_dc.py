@@ -10,6 +10,7 @@ import config
 from utilities.machine import Machine
 
 from art.unittest_lib import StorageTest as TestCase
+from art.unittest_lib import attr
 
 import art.rhevm_api.tests_lib.low_level.datacenters as ll_dc
 import art.rhevm_api.tests_lib.low_level.clusters as ll_cl
@@ -120,6 +121,7 @@ class IscsiNfsSdVMs(IscsiNfsSD):
 
 
 # doesn't work - need verification when FC is available
+@attr(tier=0)
 class TestCase336356(BaseCaseDCMixed):
     """
     * Create FC and iSCSI Storage Domains.
@@ -163,6 +165,7 @@ class TestCase336356(BaseCaseDCMixed):
             disk_name=self.fc_disk, target_domain=self.iscsi)
 
 
+@attr(tier=0)
 class TestCase336360(IscsiNfsSD):
     """
     * Create a shared DC.
@@ -212,6 +215,7 @@ class TestCase336360(IscsiNfsSD):
                                self.nfs, config.CLUSTER_NAME)
 
 
+@attr(tier=0)
 class TestCase336361(IscsiNfsSdVMs):
     """
     * Create a shared DC.
@@ -270,6 +274,7 @@ class TestCase336361(IscsiNfsSdVMs):
         add_snapshot_and_clone(self.iscsi_vm)
 
 
+@attr(tier=0)
 class TestCase336522(IscsiNfsSD):
     """
     * Create a shared DC.
@@ -340,6 +345,7 @@ class TestCase336522(IscsiNfsSD):
         clone_and_verify(self.nfs)
 
 
+@attr(tier=0)
 class TestCase336529(IscsiNfsSD):
     """
     Create a shared DC.
@@ -402,6 +408,7 @@ class TestCase336529(IscsiNfsSD):
         assert ll_vms.removeSnapshot(True, self.vm_name, snap_name)
 
 
+@attr(tier=0)
 class TestCase336530(IscsiNfsSD):
     """
     Create a shared DC.
@@ -482,6 +489,7 @@ class TestCase336530(IscsiNfsSD):
 
 # doesn't work - wait until reinitialize is on rest
 # RFE https://bugzilla.redhat.com/show_bug.cgi?id=1092374
+@attr(tier=0)
 class TestCase336594(BaseCaseDCMixed):
     """
     Create a shared DC.
@@ -522,6 +530,7 @@ class TestCase336594(BaseCaseDCMixed):
 
 
 # doesn't work, need FC
+@attr(tier=0)
 class TestCase343102(IscsiNfsSD):
     """
     Create DataCenter of shared type.
@@ -555,6 +564,7 @@ class TestCase343102(IscsiNfsSD):
         # Make matrix...
 
 
+@attr(tier=0)
 class TestCase343101(BaseCaseDCMixed):
     """
     Create DataCenter of shared type.
@@ -586,6 +596,7 @@ class TestCase343101(BaseCaseDCMixed):
             disk_name="gluster_disk", target_domain=self.nfs)
 
 
+@attr(tier=1)
 class TestCase343383(IscsiNfsSD):
     """
     Create a shared DC.
@@ -670,6 +681,7 @@ class TestCase343383(IscsiNfsSD):
 
 
 # doesn't work - FC
+@attr(tier=0)
 class TestCase336357(BaseCaseDCMixed):
     """
     Create a shared DC.
@@ -683,6 +695,7 @@ class TestCase336357(BaseCaseDCMixed):
 
 
 # syncAction in doesn't return the response, only the status
+@attr(tier=1)
 class TestCase336358(IscsiNfsSdVMs):
     """
     Live Storage Migration between storage domains not of same type: block/file
@@ -718,6 +731,7 @@ class TestCase336358(IscsiNfsSdVMs):
             disk_name=iscsi_vm_disk, target_domain=self.nfs, positive=False)
 
 
+@attr(tier=0)
 class TestCase336526(IscsiNfsSD):
     """
     Create a shared DC.
@@ -756,6 +770,7 @@ class TestCase336526(IscsiNfsSD):
 
 
 # works - have to update the case though, is need to remove DC
+@attr(tier=2)
 class TestCase336601(BaseCaseDCMixed):
     """
     Create a shared DC version 3.0
@@ -814,6 +829,7 @@ class TestCase336601(BaseCaseDCMixed):
             True, config.DATA_CENTER_NAME, self.nfs)
 
 
+@attr(tier=2)
 class TestCase336617(TestCase):
     """
     Create shared DCs versions 3.0, 3.1 and 3.2.
@@ -860,6 +876,7 @@ class TestCase336617(TestCase):
 
 
 # works - but need to check for message
+@attr(tier=2)
 class TestCase336874(BaseCaseDCMixed):
     """
     Create a shared Data Center version 3.0.
@@ -899,6 +916,7 @@ class TestCase336874(BaseCaseDCMixed):
         assert ll_cl.removeCluster(True, config.CLUSTER_NAME)
 
 
+@attr(tier=0)
 class TestCase336876(IscsiNfsSD):
     """
     Create a shared DC with two Storage Domans - ISCSI and NFS.
@@ -952,6 +970,7 @@ class TestCase336876(IscsiNfsSD):
 
 
 # need work
+@attr(tier=0)
 class TestCase337426(TestCase):
     """
     have a RHEV 3.3 with DC 3.3 of type ISCSI
@@ -962,6 +981,7 @@ class TestCase337426(TestCase):
     __test__ = False
 
 
+@attr(tier=1)
 class TestCase339619(IscsiNfsSD):
     """
     Create shared DC.

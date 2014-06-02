@@ -7,10 +7,11 @@ from art.rhevm_api.tests_lib.low_level import vms, disks
 from art.rhevm_api.tests_lib.high_level import vms as hi_vms
 from art.rhevm_api.utils import test_utils
 import art.test_handler.exceptions as exceptions
-from art.test_handler.tools import tcms, bz
+from art.test_handler.tools import tcms
+from art.unittest_lib.common import StorageTest as TestCase
+from art.unittest_lib import attr
 import config
 import logging
-import unittest
 import helpers
 
 logger = logging.getLogger(__name__)
@@ -20,7 +21,7 @@ DISK_PERMUTATIONS = helpers.get_all_disk_permutation()
 TIMEOUT_RESUME_VM = 500
 
 
-class VmWithOs(unittest.TestCase):
+class VmWithOs(TestCase):
     """
     Prepare a VM with OS installed
     """
@@ -52,6 +53,7 @@ class VmWithOs(unittest.TestCase):
                                          cls.vm_name)
 
 
+@attr(tier=0)
 class TestCase334691(VmWithOs):
     """
     Add disks while vm is running
@@ -95,6 +97,7 @@ class VmWithAnotherDiskWhileStatus(VmWithOs):
             **permutation)
 
 
+@attr(tier=1)
 class TestCase334692(VmWithAnotherDiskWhileStatus):
     """
     Add disks while VM is in a certain state

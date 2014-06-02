@@ -4,7 +4,7 @@ Storage full snapshot test - ram snapshot
 
 import logging
 from art.unittest_lib import StorageTest as TestCase
-
+from art.unittest_lib import attr
 from nose.tools import istest
 
 from art.rhevm_api.tests_lib.high_level.vms import shutdown_vm_if_up
@@ -262,6 +262,7 @@ class CreateSnapshotWithMemoryState(DCWithStoragesActive):
         super(CreateSnapshotWithMemoryState, cls).teardown_class()
 
 
+@attr(tier=0)
 class TestCase294432(CreateSnapshotWithMemoryState):
     """
     TCMS Test Case 294432 - Create Snapshot with Memory State on SPM
@@ -279,6 +280,7 @@ class TestCase294432(CreateSnapshotWithMemoryState):
         self.create_snapshot()
 
 
+@attr(tier=0)
 class TestCase294434(CreateSnapshotWithMemoryState):
     """
     TCMS Test Case 294434 - Create Snapshot with Memory State on HSM
@@ -331,6 +333,7 @@ class ReturnToSnapshot(VMWithMemoryStateSnapshot):
                         (self.pids[0], self.vm))
 
 
+@attr(tier=0)
 class TestCase294435(ReturnToSnapshot):
     """
     TCMS Test Case 294435 - Preview to RAM Snapshot
@@ -359,6 +362,7 @@ class TestCase294435(ReturnToSnapshot):
         super(TestCase294435, cls).teardown_class()
 
 
+@attr(tier=0)
 class TestCase294437(ReturnToSnapshot):
     """
     TCMS Test Case 294437 - Commit to RAM Snapshot
@@ -376,6 +380,7 @@ class TestCase294437(ReturnToSnapshot):
         self.return_to_ram_snapshot()
 
 
+@attr(tier=1)
 class TestCase294439(VMWithMemoryStateSnapshot):
     """
     TCMS Test Case 294439 - VM with multiple RAM Snapshots
@@ -499,6 +504,7 @@ class TestCase294439(VMWithMemoryStateSnapshot):
         super(TestCase294439, cls).teardown_class()
 
 
+@attr(tier=1)
 class TestCase294617(VMWithMemoryStateSnapshot):
     """
     TCMS test case 294617 - Create vm from memory snapshot
@@ -548,6 +554,7 @@ class TestCase294617(VMWithMemoryStateSnapshot):
         super(TestCase294617, cls).teardown_class()
 
 
+@attr(tier=1)
 class TestCase294623(VMWithMemoryStateSnapshot):
     """
     TCMS test case 294623 - Export a vm with memory snapshot
@@ -584,6 +591,7 @@ class TestCase294623(VMWithMemoryStateSnapshot):
         super(TestCase294623, cls).teardown_class()
 
 
+@attr(tier=1)
 class TestCase294624(VMWithMemoryStateSnapshot):
     """
     TCMS test case 294624 - Import a vm with memory snapshot
@@ -660,6 +668,7 @@ class TestCase294624(VMWithMemoryStateSnapshot):
         super(TestCase294624, cls).teardown_class()
 
 
+@attr(tier=1)
 class TestCase294631(VMWithMemoryStateSnapshot):
     """
     TCMS test case 294631 - Remove a snapshot with memory state
@@ -691,12 +700,13 @@ class TestCase294631(VMWithMemoryStateSnapshot):
                                                       self.cmdlines[0]))
 
 
+@attr(tier=2)
 class TestCase305433(VMWithMemoryStateSnapshot):
     """
     TCMS test case 305433 - Stateless vm with memory snapshot
     """
 
-    __test__ = False
+    __test__ = True
     tcms_test_case = '305433'
 
     @classmethod

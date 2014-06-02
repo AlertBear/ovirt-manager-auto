@@ -5,8 +5,9 @@ import config
 import logging
 
 from concurrent.futures import ThreadPoolExecutor
-from nose.tools import istest
-from unittest import TestCase
+
+from art.unittest_lib.common import StorageTest as TestCase
+from art.unittest_lib import attr
 
 from art.test_handler.tools import tcms, bz
 from art.rhevm_api.tests_lib.low_level import storagedomains, vms, templates
@@ -57,6 +58,7 @@ class BaseExportImportTestCase(TestCase):
         assert vms.removeVm(True, self.vm_name)
 
 
+@attr(tier=0)
 class TestCase42054(BaseExportImportTestCase):
     """
     Test Force Override option
@@ -129,6 +131,7 @@ class TestCase42054(BaseExportImportTestCase):
         super(TestCase42054, self).tearDown()
 
 
+@attr(tier=0)
 class TestCase41256(BaseExportImportTestCase):
     """
     Test Case 41256 -  Collapse Snapshots
@@ -173,6 +176,7 @@ class TestCase41256(BaseExportImportTestCase):
             True, self.vm_name, config.CLUSTER_NAME, self.export_domain)
 
 
+@attr(tier=0)
 class TestCase41242(BaseExportImportTestCase):
     """
     Test case 41242 - Export a VM sanity

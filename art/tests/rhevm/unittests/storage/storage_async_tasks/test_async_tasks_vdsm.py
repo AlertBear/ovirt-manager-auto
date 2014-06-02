@@ -7,6 +7,7 @@ from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.low_level import datacenters
 from art.test_handler.tools import tcms
+from nose.plugins.attrib import attr
 
 import config
 import common
@@ -15,6 +16,7 @@ LOGGER = logging.getLogger(__name__)
 ENGINE_LOG = '/var/log/ovirt-engine/engine.log'
 
 
+@attr(tier=2)
 class RestartVDSM(TestCase):
     __test__ = False
 

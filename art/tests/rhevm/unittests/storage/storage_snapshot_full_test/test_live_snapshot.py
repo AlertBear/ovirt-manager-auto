@@ -6,6 +6,7 @@ https://tcms.engineering.redhat.com/plan/5588/
 from concurrent.futures import ThreadPoolExecutor
 import logging
 from art.unittest_lib import StorageTest as TestCase
+from art.unittest_lib import attr
 
 from art.rhevm_api.tests_lib.high_level.vms import restore_snapshot, \
     shutdown_vm_if_up
@@ -127,6 +128,7 @@ class BaseTestCase(TestCase):
         raise_if_exception(results)
 
 
+@attr(tier=0)
 class LiveSnapshot(BaseTestCase):
     """
     https://tcms.engineering.redhat.com/case/141612
@@ -171,12 +173,14 @@ class LiveSnapshot(BaseTestCase):
                     data_path, vm_name)
         assert helpers.verify_data_on_vm(False, vm_name, data_path)
 
+    @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
     def test_on_spm(self):
         """
         Create a snapshot while VM is running on SPM host
         """
         self._test_on_host(VM_ON_SPM)
 
+    @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
     def test_on_hsm(self):
         """
         Create a snapshot while VM is running on HSM host
@@ -194,6 +198,7 @@ class LiveSnapshot(BaseTestCase):
         switch_host_to_cluster(HSM, config.CLUSTER_NAME)
 
 
+@attr(tier=0)
 class LiveSnapshotMultipleDisks(LiveSnapshot):
     """
     https://tcms.engineering.redhat.com/case/141646/
@@ -224,6 +229,20 @@ class LiveSnapshotMultipleDisks(LiveSnapshot):
                 sparse='true')
         super(LiveSnapshotMultipleDisks, cls).setup_class()
 
+    @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
+    def test_on_spm(self):
+        """
+        Create a snapshot while VM is running on SPM host
+        """
+        self._test_on_host(VM_ON_SPM)
+
+    @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
+    def test_on_hsm(self):
+        """
+        Create a snapshot while VM is running on HSM host
+        """
+        self._test_on_host(VM_ON_HSM)
+
     @classmethod
     def teardown_class(cls):
         """
@@ -235,6 +254,7 @@ class LiveSnapshotMultipleDisks(LiveSnapshot):
             assert vms.removeDisk(True, vm_name, disk_name)
 
 
+@attr(tier=2)
 class SnapshotDescription(BaseTestCase):
     """
     https://tcms.engineering.redhat.com/case/141636
@@ -262,6 +282,7 @@ class SnapshotDescription(BaseTestCase):
         self.assertTrue(
             vms.addSnapshot(positive, vm=vm_name, description=description))
 
+    @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
     def test_snapshot_description_length_positive(self):
         """
         Try to create a snapshot with max chars length
@@ -269,6 +290,7 @@ class SnapshotDescription(BaseTestCase):
         self._test_snapshot_desc_length(True, config.MAX_DESC_LENGTH,
                                         VM_ON_SPM)
 
+    @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
     def test_special_characters(self):
         """
         Try to create snapshots containing special characters
@@ -279,6 +301,7 @@ class SnapshotDescription(BaseTestCase):
                                description=config.SPECIAL_CHAR_DESC)
 
 
+@attr(tier=0)
 class PreviewSnapshot(BaseTestCase):
     """
     https://tcms.engineering.redhat.com/case/141644/
@@ -298,6 +321,7 @@ class PreviewSnapshot(BaseTestCase):
     __test__ = True
     tcms_test_case = '141644'
 
+    @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
     def test_preview(self):
         """
         Checking that erased file is presented in preview mode of snapshot
@@ -342,6 +366,7 @@ class PreviewSnapshot(BaseTestCase):
         super(PreviewSnapshot, cls).teardown_class()
 
 
+@attr(tier=1)
 class MultipleStorageDomainDisks(BaseTestCase):
     """
     https://tcms.engineering.redhat.com/case/147751
@@ -382,6 +407,7 @@ class MultipleStorageDomainDisks(BaseTestCase):
             LOGGER.info("Removing disk %s of vm %s", disk_name, VM_ON_HSM)
             assert vms.removeDisk(True, VM_ON_HSM, disk_name)
 
+    @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
     def test_snapshot_on_multiple_domains(self):
         """
         Tests whether snapshot can be created on vm that has disks on multiple
@@ -391,6 +417,7 @@ class MultipleStorageDomainDisks(BaseTestCase):
             vms.addSnapshot(True, vm=VM_ON_HSM, description=SNAP_1))
 
 
+@attr(tier=1)
 class CreateSnapshotWhileMigration(BaseTestCase):
     """
     https://tcms.engineering.redhat.com/case/141738
@@ -413,6 +440,7 @@ class CreateSnapshotWhileMigration(BaseTestCase):
         vms.waitForVMState(VM_ON_HSM)
         super(CreateSnapshotWhileMigration, cls).teardown_class()
 
+    @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
     def test_migration(self):
         """
         Tests live snapshot during migration
@@ -422,6 +450,7 @@ class CreateSnapshotWhileMigration(BaseTestCase):
             vms.addSnapshot(False, vm=VM_ON_HSM, description=SNAP_1))
 
 
+@attr(tier=0)
 class SnapshotPresentation(BaseTestCase):
     """
     https://tcms.engineering.redhat.com/case/141614/
@@ -461,6 +490,7 @@ class SnapshotPresentation(BaseTestCase):
         LOGGER.info("Removing disk %s of vm %s", disk_name, VM_ON_SPM)
         assert vms.removeDisk(True, VM_ON_SPM, disk_name)
 
+    @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
     def test_snapshot_with_multiple_disks(self):
         """
         Checks that created snapshot appears only once although vm has more
@@ -474,6 +504,7 @@ class SnapshotPresentation(BaseTestCase):
         self.assertTrue(snap_descs == current_snap_descs)
 
 
+@attr(tier=1)
 class LiveSnapshotOnVMCreatedFromTemplate(BaseTestCase):
     """
     https://tcms.engineering.redhat.com/case/286330
@@ -522,6 +553,7 @@ class LiveSnapshotOnVMCreatedFromTemplate(BaseTestCase):
             vdc_password=config.PARAMETERS['vdc_root_password'],
             datacenter=config.DC_NAME)
 
+    @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
     def test_snapshot_on_thin_vm(self):
         """
         Try to make a live snapshot from thinly provisioned VM
@@ -529,6 +561,7 @@ class LiveSnapshotOnVMCreatedFromTemplate(BaseTestCase):
         self.assertTrue(
             vms.addSnapshot(True, vm='vm_thin', description=SNAP_1))
 
+    @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
     def test_snapshot_on_cloned_vm(self):
         """
         Try to make a live snapshot from cloned VM

@@ -4,7 +4,7 @@ from a template with no disks is working
 """
 import logging
 from art.unittest_lib import StorageTest as TestCase
-
+from art.unittest_lib import attr
 from art.rhevm_api.utils import test_utils
 
 from art.rhevm_api.tests_lib.high_level import datacenters
@@ -144,7 +144,8 @@ def teardown_module():
                                    vdc_password=config.VDC_PASSWORD)
 
 
-class TestCase305452(TestCase):
+@attr(tier=1)
+class TestCase231819(TestCase):
     """
     test exposing https://bugzilla.redhat.com/show_bug.cgi?id=1000789
     scenario:

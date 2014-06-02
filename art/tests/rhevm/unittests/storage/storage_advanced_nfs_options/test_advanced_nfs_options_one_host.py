@@ -1,3 +1,4 @@
+from art.unittest_lib import attr
 from nose.tools import istest
 import logging
 
@@ -8,6 +9,7 @@ from art.test_handler.handler_lib.utils import no_datatype_validation
 from art.test_handler.tools import tcms
 from art.test_handler.settings import opts
 
+
 import helpers
 import config
 
@@ -17,6 +19,7 @@ LOGGER = logging.getLogger(__name__)
 ENUMS = helpers.ENUMS
 
 
+@attr(tier=1)
 class TestCase232975(helpers.TestCaseNFSOptions):
     """
     Imports existing storage domain with custom advanced NFS options.
@@ -77,6 +80,7 @@ class TestCase232975(helpers.TestCaseNFSOptions):
             self.fail("NFS option %s not as expected %s, real %s" % result)
 
 
+@attr(tier=1)
 class TestCase148669(helpers.TestCaseNFSOptions):
     """
     The most basic test case - creates a data storage domain with specified
@@ -112,6 +116,7 @@ class TestCase148669(helpers.TestCaseNFSOptions):
         self.create_nfs_domain_and_verify_options([storage])
 
 
+@attr(tier=1)
 class TestCase148670(helpers.TestCaseNFSOptions):
     """
     Negative test - tests if passed values are correctly validated.
@@ -234,6 +239,7 @@ class TestCase148670(helpers.TestCaseNFSOptions):
                 config.VDC_PASSWORD)
 
 
+@attr(tier=0)
 class TestCase148641(helpers.TestCaseNFSOptions):
     """
     Creates NFS data storage domain without specifying advanced NFS options and
@@ -265,6 +271,7 @@ class TestCase148641(helpers.TestCaseNFSOptions):
         self.create_nfs_domain_and_verify_options([storage])
 
 
+@attr(tier=1)
 class TestCase153290(helpers.TestCaseNFSOptions):
     """
     Creates ISO and export storage domains with custom advanced NFS options
@@ -311,6 +318,7 @@ class TestCase153290(helpers.TestCaseNFSOptions):
         self._create_and_check(ENUMS['storage_dom_type_iso'], 'iso', 1)
 
 
+@attr(tier=2)
 class TestCase153368(helpers.TestCaseNFSOptions):
     """
     Creates multiple storage domains with different custom advanced NFS options
@@ -351,6 +359,7 @@ class TestCase153368(helpers.TestCaseNFSOptions):
         self.create_nfs_domain_and_verify_options(nfs_resources)
 
 
+@attr(tier=1)
 class TestCase166534(helpers.TestCaseNFSOptions):
     """
     Test steps:
@@ -419,6 +428,7 @@ class TestCase166534(helpers.TestCaseNFSOptions):
         LOGGER.info("Test passed")
 
 
+@attr(tier=1)
 class TestCase166616(helpers.TestCaseNFSOptions):
     """
     Test checks that removing and destroying NFS storage domain with custom

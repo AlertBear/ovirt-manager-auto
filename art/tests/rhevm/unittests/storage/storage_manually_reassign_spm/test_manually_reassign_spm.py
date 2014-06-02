@@ -1,6 +1,6 @@
 import logging
-from time import sleep
 from art.unittest_lib import StorageTest as TestCase
+from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.high_level.datacenters import build_setup
 from art.rhevm_api.tests_lib.low_level.datacenters import \
     waitForDataCenterState
@@ -136,6 +136,7 @@ class DCUp(TestCase):
             assert setSPMPriority(True, host, priority)
 
 
+@attr(tier=0)
 class TestCase288461(DCUp):
     """
     TCMS Test Case 288461 - Manually Resign SPM
@@ -186,6 +187,7 @@ class SelectNewSPMDuringSPMElection(DCUp):
         logger.info('SPM selected successfully')
 
 
+@attr(tier=1)
 class TestCase288463(SelectNewSPMDuringSPMElection):
     """
     TCMS Test Case 288463 - Set new host as spm during spm election
@@ -208,6 +210,7 @@ class TestCase288463(SelectNewSPMDuringSPMElection):
         self.select_new_spm_during_selection()
 
 
+@attr(tier=1)
 class TestCase293727(SelectNewSPMDuringSPMElection):
     """
     TCMS Test Case 288463 - Set previous spm host as spm during new spm
@@ -287,6 +290,7 @@ class ReassignSPMWithStorageBlocked(DCUp):
                                              self.domain_to_block)
 
 
+@attr(tier=1)
 class TestCase289887(ReassignSPMWithStorageBlocked):
     """
     TCMS Test Case 289887 - Resign SPM when host cannot see non-master domain
@@ -306,6 +310,7 @@ class TestCase289887(ReassignSPMWithStorageBlocked):
         self.block_connection_and_reassign_spm()
 
 
+@attr(tier=1)
 class TestCase289888(ReassignSPMWithStorageBlocked):
     """
     TCMS Test Case 289888 - Resign SPM when host cannot see master domain
@@ -327,6 +332,7 @@ class TestCase289888(ReassignSPMWithStorageBlocked):
         self.block_connection_and_reassign_spm()
 
 
+@attr(tier=1)
 class TestCase289890(DCUp):
     """
     TCMS Test Case 289890 - Reassign spm during storage domain deactivation

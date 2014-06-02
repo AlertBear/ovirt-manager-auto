@@ -1,6 +1,6 @@
 from art.unittest_lib import StorageTest as TestCase
 import logging
-
+from art.unittest_lib import attr
 from utilities.machine import Machine
 
 from art.test_handler.tools import tcms, bz
@@ -194,6 +194,7 @@ class TestCasePosixFS(TestCasePosix):
             type='posixfs')[1]
 
 
+@attr(tier=0)
 class TestCase288707(TestCasePosixFS):
     """
     https://tcms.engineering.redhat.com/case/288707/?from_plan=9985
@@ -212,6 +213,7 @@ class TestCase288707(TestCasePosixFS):
         self.positive_flow(config.VFS_TYPE)
 
 
+@attr(tier=0)
 class TestCase288597(TestCaseNFS):
     """
     https://tcms.engineering.redhat.com/case/288597/?from_plan=9985
@@ -230,6 +232,7 @@ class TestCase288597(TestCaseNFS):
         self.positive_flow('nfs')
 
 
+@attr(tier=2)
 class TestCase289001(TestCasePosixFS):
     """
     https://tcms.engineering.redhat.com/case/289001/?from_plan=9985
@@ -250,6 +253,7 @@ class TestCase289001(TestCasePosixFS):
         self.change_connection_in_active_sd()
 
 
+@attr(tier=1)
 class TestCase288991(TestCaseNFS):
     """
     https://tcms.engineering.redhat.com/case/288991/?from_plan=9985
@@ -270,6 +274,7 @@ class TestCase288991(TestCaseNFS):
         self.change_connection_in_active_sd()
 
 
+@attr(tier=1)
 class TestCase288710(TestCaseNFS):
     """
     https://tcms.engineering.redhat.com/case/288710/?from_plan=9985
@@ -348,6 +353,7 @@ class TestCase288710(TestCaseNFS):
             True, config.DATA_CENTER_NAME, self.sd_name)
 
 
+@attr(tier=1)
 class TestCase293074(TestCaseNFS):
     """
     https://tcms.engineering.redhat.com/case/293074/?from_plan=9985
@@ -397,6 +403,7 @@ class TestCase293074(TestCaseNFS):
         TestCaseNFS.tearDown(self)
 
 
+@attr(tier=0)
 class TestCase288708(TestCaseLocalFS):
     """
     https://tcms.engineering.redhat.com/case/288708/?from_plan=9985
@@ -457,6 +464,7 @@ class TestCase288708(TestCaseLocalFS):
         super(TestCase288708, self).tearDown()
 
 
+@attr(tier=1)
 class TestCase289228(TestCaseLocalFS):
     """
     https://tcms.engineering.redhat.com/case/289228/?from_plan=9985

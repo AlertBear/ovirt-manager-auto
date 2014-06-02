@@ -5,16 +5,13 @@ TCMS plan: https://tcms.engineering.redhat.com/plan/8676
 from concurrent.futures import ThreadPoolExecutor
 import logging
 from art.unittest_lib import StorageTest as TestCase
-import time
+from art.unittest_lib import attr
 
 from art.rhevm_api.utils import test_utils
-from art.rhevm_api.utils import resource_utils
 from art.test_handler import exceptions
 
-from art.rhevm_api.tests_lib.high_level import datacenters
-from art.rhevm_api.tests_lib.low_level import vms, disks
+from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import templates
-from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.utils import log_listener
 from art.test_handler.tools import tcms
 
@@ -72,6 +69,7 @@ def _prepare_data(sparse, vol_format, template_names):
     template_names[(sparse, vol_format)] = template_name
 
 
+@attr(tier=1)
 class TestCase248132(TestCase):
     """
     storage vm sanity test, cloning vm from template with changing disk type
@@ -267,6 +265,7 @@ class TestReadLock(TestCase):
                                                % cls.template_name)
 
 
+@attr(tier=0)
 class TestCase320224(TestReadLock):
     """
     TCMS Test Case 320224 - Run on desktop
@@ -285,6 +284,7 @@ class TestCase320224(TestReadLock):
         self.create_two_vms_simultaneously()
 
 
+@attr(tier=0)
 class TestCase320225(TestReadLock):
     """
     TCMS Test Case 320225 - Run on server

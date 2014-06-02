@@ -1,8 +1,7 @@
 import logging
 from art.unittest_lib import StorageTest as TestCase
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st_domains
-from art.rhevm_api.tests_lib.low_level import vms, hosts
-
+from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.high_level import datacenters
 from utilities.utils import getIpAddressByHostName
 from art.test_handler.tools import tcms, bz
@@ -104,6 +103,7 @@ class BaseTestCase(TestCase):
         cls.engine_ip = getIpAddressByHostName(config.VDC)
 
 
+@attr(tier=0)
 class TestCase174611(BaseTestCase):
     """
     * Block connection from one host to storage server.

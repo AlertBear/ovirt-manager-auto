@@ -1,5 +1,6 @@
 import logging
 from art.unittest_lib import StorageTest as TestCase
+from art.unittest_lib import attr
 from nose.tools import istest
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st_domains
@@ -33,6 +34,7 @@ def teardown_module():
         vdc_password=config.VDC_PASSWORD)
 
 
+@attr(tier=0)
 class TestCase68536(TestCase):
     """
     storage sanity test, disconnect SPM from storage

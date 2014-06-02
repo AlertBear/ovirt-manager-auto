@@ -6,6 +6,7 @@ https://tcms.engineering.redhat.com/plan/5299/
 import logging
 import time
 from art.unittest_lib import StorageTest as TestCase
+from art.unittest_lib import attr
 
 from art.rhevm_api.tests_lib.high_level import hosts as hosts
 from art.rhevm_api.tests_lib.low_level import datacenters
@@ -203,6 +204,7 @@ class DCUp(AllHostsUp):
                                    POLLING_INTERVAL)
 
 
+@attr(tier=3)
 class TwoHostsAndOneWithHigherPriority(AllHostsUp):
     """
     Setup with 3 hosts -
@@ -228,6 +230,7 @@ class TwoHostsAndOneWithHigherPriority(AllHostsUp):
             self._check_host_for_spm(config.HOSTS[2])
 
 
+@attr(tier=1)
 class SPMPriorityMinusOne(AllHostsUp):
     """
     All hosts with '-1' priority - no SPM should be elected
@@ -269,6 +272,7 @@ class SPMPriorityMinusOne(AllHostsUp):
         super(SPMPriorityMinusOne, cls).teardown_class()
 
 
+@attr(tier=0)
 class SeveralHosts(DCUp):
     """
     Several hosts with different SPM priority
@@ -288,6 +292,7 @@ class SeveralHosts(DCUp):
         self._get_new_spm(config.HOSTS[1], config.HOSTS[2])
 
 
+@attr(tier=2)
 class PriorityOutOfRange(SPMPriorityMinusOne):
     """
     Change the SPM priority value in the DataBase (negative test)
@@ -332,6 +337,7 @@ class PriorityOutOfRange(SPMPriorityMinusOne):
         set_spm_priority_in_db(False, self.host, config.MIN_VALUE - 1)
 
 
+@attr(tier=0)
 class ADefaultSPMPriority(BaseTestCase):
     """
     Default SPM priority value
@@ -361,6 +367,7 @@ class ADefaultSPMPriority(BaseTestCase):
             exceptions.HostException)
 
 
+@attr(tier=0)
 class RandomSelection(DCUp):
     """
     Random SPM selection when all hosts have the same priority
@@ -399,6 +406,7 @@ class RandomSelection(DCUp):
             self._select_new_spm()
 
 
+@attr(tier=2)
 class RestartVdsm(DCUp):
     """
     Restart/Stop VDSM
@@ -424,6 +432,7 @@ class RestartVdsm(DCUp):
         self._check_host_for_spm(config.HOSTS[0])
 
 
+@attr(tier=2)
 class SingleHost(AllHostsUp):
     """
     Host that has priority -1 is not chosen, even if it is the only host
@@ -465,6 +474,7 @@ class SingleHost(AllHostsUp):
             self._check_no_spm()
 
 
+@attr(tier=1)
 class SPMPriorityOneHostMinusOne(DCUp):
     """
     Host with -1 priority never chosen to be spm
@@ -507,6 +517,7 @@ class SPMPriorityOneHostMinusOne(DCUp):
                 % current_spm)
 
 
+@attr(tier=2)
 class TwoHost(AllHostsUp):
     """
     Host with higher priority is always chosen, after swiping priorities
@@ -560,6 +571,7 @@ class TwoHost(AllHostsUp):
         self._check_host_for_spm(config.HOSTS[0])
 
 
+@attr(tier=0)
 class SingleHostChangePriority(DCUp):
     """
     Make sure that spm priority changes correctly
@@ -607,6 +619,7 @@ class SingleHostChangePriority(DCUp):
         ll_hosts.checkSPMPriority(True,  config.HOSTS[0], '10')
 
 
+@attr(tier=2)
 class SingleHostChangePriorityIllegal(DCUp):
     """
     Make sure that spm priority changes correctly or doesn't change at all
@@ -659,6 +672,7 @@ class SingleHostChangePriorityIllegal(DCUp):
         ll_hosts.checkSPMPriority(True, config.HOSTS[0], DEFAULT_SPM_PRIORITY)
 
 
+@attr(tier=1)
 class SingleHostChangePriorityIllegalValue(DCUp):
     """
     Make sure that spm priority doesn't change if there is an illegal
@@ -709,6 +723,7 @@ class SingleHostChangePriorityIllegalValue(DCUp):
         ll_hosts.checkSPMPriority(True,  config.HOSTS[0], DEFAULT_SPM_PRIORITY)
 
 
+@attr(tier=1)
 class StorageDisconnect(DCUp):
     """
     Disconnect spm from storage, make sure that backend send spmStop and

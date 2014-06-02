@@ -2,6 +2,7 @@
 Test Allocation/Total size properties
 """
 from art.unittest_lib import StorageTest as TestCase
+from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.high_level.storagedomains import \
     extend_storage_domain
 from art.rhevm_api.tests_lib.low_level.datacenters import \
@@ -159,6 +160,7 @@ class BaseCase(TestCase):
 
 # TBD: Remove this when is implemented in the main story, storage sanity
 # http://rhevm-qe-storage.pad.engineering.redhat.com/11?
+@attr(tier=0)
 class TestCase286305(BaseCase):
     """
     TCMS Test Case 286305 - Create new disk and check storage details
@@ -193,6 +195,7 @@ class TestCase286305(BaseCase):
             self.assertTrue(deleteDisk(True, name))
 
 
+@attr(tier=1)
 class TestCase286768(BaseCase):
     """
     TCMS Test Case 286768 - Delete disk and check storage details
@@ -230,6 +233,7 @@ class TestCase286768(BaseCase):
 
 # TBD: Remove this when is implemented in the main story, storage sanity
 # http://rhevm-qe-storage.pad.engineering.redhat.com/11?
+@attr(tier=1)
 class TestCase286772(BaseCase):
     """
     TCMS Test Case 286772 - Move disks and check storage details of both
@@ -281,6 +285,7 @@ class TestCase286772(BaseCase):
             self.assertTrue(deleteDisk(True, name))
 
 
+@attr(tier=1)
 class TestCase286775(BaseCase):
     """
     TCMS Test Case 286775 - Extend domain and check storage details
@@ -324,6 +329,7 @@ class TestCase286775(BaseCase):
         self.run_scenario()
 
 
+@attr(tier=1)
 class TestCase321336(BaseCase):
     """
     TCMS Test Case 321336 - Create template and check storage details
@@ -398,6 +404,7 @@ class TestCase321336(BaseCase):
         self.run_scenario()
 
 
+@attr(tier=2)
 class TestCase286779(BaseCase):
     """
     TCMS Test Case 286779 - Check  storage domain details after rollback

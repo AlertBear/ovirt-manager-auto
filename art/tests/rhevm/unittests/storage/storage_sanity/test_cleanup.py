@@ -3,7 +3,8 @@ import config
 
 from art.core_api.apis_exceptions import EntityNotFound
 from art.test_handler.tools import tcms
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import StorageTest as TestCase
+from art.unittest_lib import attr
 
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
@@ -13,6 +14,7 @@ from art.rhevm_api.tests_lib.low_level import hosts, clusters, storagedomains
 logger = logging.getLogger(__name__)
 
 
+@attr(tier=0)
 class TestCase99062(TestCase):
     """
     storage sanity test, clean up the environment
@@ -21,7 +23,7 @@ class TestCase99062(TestCase):
     This test case expects one host
     """
     __test__ = True
-    tcms_plan_id = '4038'
+    tcms_plan_id = '6458'
     tcms_test_case = '99062'
     host = config.HOSTS[0]
 

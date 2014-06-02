@@ -6,6 +6,7 @@ from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st_domains
 from art.rhevm_api.tests_lib.low_level import datacenters as ll_datacenters
 from art.rhevm_api.tests_lib.low_level import clusters as ll_clusters
 from art.rhevm_api.tests_lib.low_level import vms, hosts
+from art.unittest_lib import attr
 
 from art.rhevm_api.tests_lib.high_level import hosts as hi_hosts
 from art.rhevm_api.tests_lib.high_level import datacenters, storagedomains
@@ -187,6 +188,7 @@ def _create_vm(vm_name, vm_description, disk_interface,
         useAgent=config.USE_AGENT)
 
 
+@attr(tier=0)
 class TestCase174610(BaseTestCase):
     """
     * Block connection from engine to host.
@@ -230,6 +232,7 @@ class TestCase174610(BaseTestCase):
             logging.info("Connection already unblocked. reason: %s", msg)
 
 
+@attr(tier=0)
 class TestCase174613(TestCase):
     """
     test check if creating storage domain with defined values
@@ -291,6 +294,7 @@ class TestCase174613(TestCase):
             True, cls.sd_names, config.FIRST_HOST)
 
 
+@attr(tier=1)
 class TestCase174631(TestCase):
     """
     test checks if creating vm disks on different storage
@@ -376,6 +380,7 @@ class TestCase174631(TestCase):
             True, cls.sd_names, config.FIRST_HOST)
 
 
+@attr(tier=0)
 class TestCase284310(TestCase):
     """
     Starting version 3.3 attaching domains should activate them automatically.
@@ -417,6 +422,7 @@ class TestCase284310(TestCase):
             True, cls.sd_names, config.FIRST_HOST)
 
 
+@attr(tier=0)
 class TestUpgrade(TestCase):
     """
     Base class for upgrade testing
@@ -434,6 +440,9 @@ class TestUpgrade(TestCase):
     host = config.FIRST_HOST
     vm_name = 'vm_test'
     domain_kw = None
+    tcms_plan_id = '6127'
+    tcms_test_case = '165844'
+
     if config.STORAGE_TYPE == config.STORAGE_TYPE_NFS:
         sd_paths = config.PARAMETERS['data_domain_path'][1:]
 
@@ -509,6 +518,7 @@ class TestUpgrade(TestCase):
 
         LOGGER.info("Class %s teardown finished", cls.__name__)
 
+    @tcms(tcms_plan_id, tcms_test_case)
     def test_data_center_upgrade(self):
         """
         Changes DC version while installing a VM

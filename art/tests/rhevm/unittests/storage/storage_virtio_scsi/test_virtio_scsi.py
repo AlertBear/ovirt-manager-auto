@@ -1,5 +1,6 @@
 from concurrent.futures.thread import ThreadPoolExecutor
 from nose.tools import istest
+from art.unittest_lib import attr
 from art.unittest_lib import StorageTest as TestCase
 from art.rhevm_api.tests_lib.high_level.datacenters import build_setup
 from art.rhevm_api.tests_lib.high_level.vms import add_disk_to_machine
@@ -138,6 +139,7 @@ class ClassWithOneVM(TestCase):
             assert removeVm(True, vm)
 
 
+@attr(tier=0)
 class TestCase272386(ClassWithOneVM):
     """
     TCMS test case 272386 - Create vm with virtio-scsi bootable disk
@@ -169,6 +171,7 @@ class TestCase272386(ClassWithOneVM):
         logger.info('vm with virtio-scsi boot disk created successfully')
 
 
+@attr(tier=0)
 class TestCase272383(ClassWithOneVM):
     """
     TCMS test case 272383 - Create template from vm with virtio-scsi disk
@@ -229,6 +232,7 @@ class TestCase272383(ClassWithOneVM):
         assert removeTemplate(True, config.TEMPLATE_NAME)
 
 
+@attr(tier=0)
 class TestCase272390(ClassWithOneVM):
     """
     TCMS case 272390 - Remove vm with virtio-scsi disk
@@ -261,6 +265,7 @@ class TestCase272390(ClassWithOneVM):
                          'found disks on storage domain: %s' % vm_disks)
 
 
+@attr(tier=0)
 class TestCase272388(ClassWithOneVM):
     """
     TCMS case 272388 - Migrate a vm with virtio-scsi disk
@@ -296,6 +301,7 @@ class TestCase272388(ClassWithOneVM):
                         'Error during migration of vm %s' % self.vm_names[0])
 
 
+@attr(tier=0)
 class TestCase272914(ClassWithOneVM):
     """
     TCMS case 272914 - Clone VM from virtio scsi disk
@@ -339,6 +345,7 @@ class TestCase272914(ClassWithOneVM):
         self.assertTrue(startVm(True, self.cloned_vm_name, wait_for_ip=True))
 
 
+@attr(tier=0)
 class TestCase293163(ClassWithOneVM):
     """
     TCMS case 293163 - VM with both virtio-scsi and virtio-blk disks

@@ -4,10 +4,8 @@ from nose.tools import istest
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.high_level import storagedomains
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st_domains
-from art.rhevm_api.tests_lib.low_level.hosts import waitForSPM
-from art.test_handler.tools import tcms, bz
-from art.rhevm_api.tests_lib.low_level import hosts
-import art.rhevm_api.utils.storage_api as st_api
+from art.test_handler.tools import tcms
+from art.unittest_lib import attr
 import config
 
 logger = logging.getLogger(__name__)
@@ -34,13 +32,13 @@ def teardown_module():
         vdc_password=config.VDC_PASSWORD)
 
 
+@attr(tier=0)
 class TestCase94947(TestCase):
     """
     storage sanity test, create & remove data center
     https://tcms.engineering.redhat.com/case/94947/?from_plan=4038
     """
     __test__ = True
-
     tcms_test_case = '94947'
 
     @istest
@@ -63,6 +61,7 @@ class TestCase94947(TestCase):
                 **config.EXTEND_LUN)
 
 
+@attr(tier=0)
 class TestCase94950(TestCase):
     """
     storage sanity test, changing domain status
@@ -134,6 +133,7 @@ class TestCase94950(TestCase):
                     "non-master domains didn't become active")
 
 
+@attr(tier=0)
 class TestCase94954(TestCase):
     """
     storage sanity test, changing master domain

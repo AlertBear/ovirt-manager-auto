@@ -3,16 +3,15 @@ Virtio iSCSI Test suit
 """
 from concurrent.futures.thread import ThreadPoolExecutor
 from art.unittest_lib import StorageTest as TestCase
-from art.rhevm_api.tests_lib.high_level.datacenters import build_setup
+from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.high_level.vms import add_disk_to_machine
 from art.rhevm_api.tests_lib.low_level.storagedomains import  \
-    findMasterStorageDomain, cleanDataCenter, findNonMasterStorageDomains
+    findMasterStorageDomain
 from art.rhevm_api.tests_lib.low_level.templates import createTemplate, \
     removeTemplate
 from art.rhevm_api.tests_lib.low_level.vms import createVm, stopVm, removeVm,\
     checkVmState, getVmHost, startVm, waitForIP, migrateVm, \
-    cloneVmFromTemplate, addSnapshot, addVm, waitForVmsDisks, getVmDisks
-from art.rhevm_api.tests_lib.low_level.disks import getStorageDomainDisks
+    cloneVmFromTemplate, addSnapshot, addVm, waitForVmsDisks
 from art.rhevm_api.utils.test_utils import setPersistentNetwork
 from art.test_handler.tools import tcms, bz
 import config
@@ -138,6 +137,7 @@ class ClassWithOneVM(TestCase):
 #    """
 
 
+@attr(tier=0)
 class TestCase272383(ClassWithOneVM):
     """
     TCMS test case 272383 - Create template from vm with virtio-scsi disk
@@ -146,7 +146,7 @@ class TestCase272383(ClassWithOneVM):
     """
 
     cloned_vm_name = None
-    tcms_case = 272386
+    tcms_case = '272383'
 
     __test__ = True
 
@@ -207,6 +207,7 @@ class TestCase272383(ClassWithOneVM):
 #    https://tcms.engineering.redhat.com/case/272390/?from_plan=9456
 #    """
 #
+@attr(tier=0)
 class TestCase272388(ClassWithOneVM):
     """
     TCMS case 272388 - Migrate a vm with virtio-scsi disk
@@ -239,6 +240,7 @@ class TestCase272388(ClassWithOneVM):
                         'Error during migration of vm %s' % self.vm_names[0])
 
 
+@attr(tier=0)
 class TestCase272914(ClassWithOneVM):
     """
     TCMS case 272914 - Clone VM from virtio scsi disk
@@ -281,6 +283,7 @@ class TestCase272914(ClassWithOneVM):
         self.assertTrue(startVm(True, self.cloned_vm_name, wait_for_ip=True))
 
 
+@attr(tier=0)
 class TestCase293163(ClassWithOneVM):
     """
     TCMS case 293163 - VM with both virtio-scsi and virtio-blk disks

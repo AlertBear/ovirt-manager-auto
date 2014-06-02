@@ -8,7 +8,7 @@ from art.rhevm_api.tests_lib.low_level.datacenters import addDataCenter,\
 from art.rhevm_api.tests_lib.low_level.hosts import updateHost,\
     deactivateHost, activateHost, kill_qemu_process
 from art.rhevm_api.utils.test_utils import setPersistentNetwork, wait_for_tasks
-from art.unittest_lib.common import BaseTestCase
+from art.unittest_lib.common import StorageTest as TestCase
 from utilities.utils import getIpAddressByHostName
 from art.rhevm_api.tests_lib.high_level.datacenters import build_setup
 from art.rhevm_api.tests_lib.low_level.clusters import addCluster,\
@@ -33,6 +33,7 @@ from art.rhevm_api.utils.storage_api import blockOutgoingConnection,\
 
 from art.test_handler.tools import tcms, bz
 from art.test_handler import exceptions
+from art.unittest_lib import attr
 
 import helpers
 import config
@@ -123,7 +124,7 @@ def teardown_module():
                     vdc_password=config.VDC_PASSWORD)
 
 
-class DefaultEnvironment(BaseTestCase):
+class DefaultEnvironment(TestCase):
     """
     A class with common setup and teardown methods
     """
@@ -203,6 +204,7 @@ class DefaultSnapshotEnvironment(DefaultEnvironment):
         super(DefaultSnapshotEnvironment, self).tearDown()
 
 
+@attr(tier=0)
 class TestCase332472(DefaultEnvironment):
     """
     Attach a RO disk to vm and try to write to the disk
@@ -228,7 +230,8 @@ class TestCase332472(DefaultEnvironment):
         helpers.write_on_vms_ro_disks(config.VM_NAME)
 
 
-class TestCase332473(BaseTestCase):
+@attr(tier=1)
+class TestCase332473(TestCase):
     """
     Attach a RO direct LUN disk to vm and try to write to the disk
     https://tcms.engineering.redhat.com/case/332473/?from_plan=12049
@@ -288,6 +291,7 @@ class TestCase332473(BaseTestCase):
                     self.disk_alias)
 
 
+@attr(tier=0)
 class TestCase332474(DefaultEnvironment):
     """
     Attach a RO shared disk to vm and try to write to the disk
@@ -340,6 +344,7 @@ class TestCase332474(DefaultEnvironment):
         super(TestCase332474, self).tearDown()
 
 
+@attr(tier=1)
 class TestCase337630(DefaultEnvironment):
     """
     Verifies that RO shared disk is persistent after snapshot is taken to a
@@ -427,7 +432,8 @@ class TestCase337630(DefaultEnvironment):
                                                % self.snapshot_description)
 
 
-class TestCase332475(BaseTestCase):
+@attr(tier=0)
+class TestCase332475(TestCase):
     """
     Checks that changing disk's write policy from RW to RO will fails
     when the disk is active
@@ -468,7 +474,8 @@ class TestCase332475(BaseTestCase):
             self.assertTrue(status, "Failed to change RW disk %s to RO" % disk)
 
 
-class TestCase337936(BaseTestCase):
+@attr(tier=1)
+class TestCase337936(TestCase):
     """
     Check that booting from RO disk should be impossible
     https://tcms.engineering.redhat.com/case/337936/?from_plan=12049
@@ -489,6 +496,7 @@ class TestCase337936(BaseTestCase):
         """
 
 
+@attr(tier=2)
 class TestCase332489(DefaultEnvironment):
     """
     Block connectivity from vdsm to the storage domain
@@ -589,6 +597,7 @@ class TestCase332489(DefaultEnvironment):
         super(TestCase332489, self).tearDown()
 
 
+@attr(tier=1)
 class TestCase332484(DefaultEnvironment):
     """
     Migrate a vm with RO disk, and check the disk is still visible as RO
@@ -646,6 +655,7 @@ class TestCase332484(DefaultEnvironment):
         super(TestCase332484, self).tearDown()
 
 
+@attr(tier=1)
 class TestCase332476(DefaultEnvironment):
     """
     Checks that suspending a vm with RO disk shouldn't
@@ -680,6 +690,7 @@ class TestCase332476(DefaultEnvironment):
         helpers.write_on_vms_ro_disks(config.VM_NAME)
 
 
+@attr(tier=1)
 class TestCase332480(DefaultEnvironment):
     """
     Export and import a vm with RO disk attached to it
@@ -731,6 +742,7 @@ class TestCase332480(DefaultEnvironment):
         super(TestCase332480, self).tearDown()
 
 
+@attr(tier=2)
 class TestCase334878(DefaultEnvironment):
     """
     Import more than once VM with RO disk, and verify that it's impossible
@@ -794,6 +806,7 @@ class TestCase334878(DefaultEnvironment):
         super(TestCase334878, self).tearDown()
 
 
+@attr(tier=1)
 class TestCase332483(DefaultSnapshotEnvironment):
     """
     Check that the RO disk is part of vm snapshot, and also after preview
@@ -855,6 +868,7 @@ class TestCase332483(DefaultSnapshotEnvironment):
                                                % self.snapshot_description)
 
 
+@attr(tier=1)
 class TestCase337931(DefaultSnapshotEnvironment):
     """
     Check that the RO disk is part of vm snapshot, and the disk
@@ -925,6 +939,7 @@ class TestCase337931(DefaultSnapshotEnvironment):
                                                % self.snapshot_description)
 
 
+@attr(tier=0)
 class TestCase337930(DefaultSnapshotEnvironment):
     """
     Check that the RO disk is part of vm snapshot, and the disk
@@ -993,6 +1008,7 @@ class TestCase337930(DefaultSnapshotEnvironment):
                                                % self.snapshot_description)
 
 
+@attr(tier=0)
 class TestCase337934(DefaultSnapshotEnvironment):
     """
     Checks that deleting a snapshot with RO disk shouldn't effect
@@ -1056,6 +1072,7 @@ class TestCase337934(DefaultSnapshotEnvironment):
         super(TestCase337934, self).tearDown()
 
 
+@attr(tier=1)
 class TestCase337935(DefaultEnvironment):
     """
     Checks that a cloned vm from a snapshot with RO disk shouldn't
@@ -1142,6 +1159,7 @@ class TestCase337935(DefaultEnvironment):
                                                % self.snapshot_description)
 
 
+@attr(tier=1)
 class TestCase332481(DefaultEnvironment):
     """
     Create 2 VMs from a template with RO disk in 2 provisioning methods:
@@ -1234,6 +1252,7 @@ class TestCase332481(DefaultEnvironment):
         super(TestCase332481, self).tearDown()
 
 
+@attr(tier=1)
 class TestCase334877(DefaultEnvironment):
     """
     Checks that moving RO disk to a second storage domain will
@@ -1287,6 +1306,7 @@ class TestCase334877(DefaultEnvironment):
                         "to different storage domain" % vm_disk.get_alias())
 
 
+@attr(tier=1)
 class TestCase332477(DefaultEnvironment):
     """
     Checks that Live Storage Migration of RO disk should be possible
@@ -1331,7 +1351,8 @@ class TestCase332477(DefaultEnvironment):
                         "to different storage domain" % vm_disk.get_alias())
 
 
-class TestCase332482(BaseTestCase):
+@attr(tier=1)
+class TestCase332482(TestCase):
     """
 
     https://tcms.engineering.redhat.com/case/332482/?from_plan=12049
@@ -1357,6 +1378,7 @@ class TestCase332482(BaseTestCase):
         pass
 
 
+@attr(tier=1)
 class TestCase334876(DefaultEnvironment):
     """
     Checks that Live Storage Migration of RW disk should be possible, even
@@ -1396,7 +1418,8 @@ class TestCase334876(DefaultEnvironment):
         move_vm_disk(config.VM_NAME, bootable.get_alias(), config.SD_NAME_1)
 
 
-class TestCase334923(BaseTestCase):
+@attr(tier=1)
+class TestCase334923(TestCase):
     """
     Check that RO disk is available for lower versions than 3.4
     https://tcms.engineering.redhat.com/case/334923/?from_plan=12049
@@ -1487,6 +1510,7 @@ class TestCase334923(BaseTestCase):
         assert removeCluster(True, cluster=self.cluster_name)
 
 
+@attr(tier=2)
 class TestCase334921(DefaultEnvironment):
     """
     Check that the VM sees its second disk as RO, after killing qemu process
@@ -1527,7 +1551,8 @@ class TestCase334921(DefaultEnvironment):
             logger.info("Failed to write to read only disk")
 
 
-class TestCase332485(BaseTestCase):
+@attr(tier=2)
+class TestCase332485(TestCase):
     """
     Restart vdsm during RO disk activation
     https://tcms.engineering.redhat.com/case/332485/?from_plan=12049
@@ -1550,7 +1575,8 @@ class TestCase332485(BaseTestCase):
         """
 
 
-class TestCase332486(BaseTestCase):
+@attr(tier=2)
+class TestCase332486(TestCase):
     """
     Restart ovirt-engine during RO disk activation
     https://tcms.engineering.redhat.com/case/332486/?from_plan=12049
@@ -1573,7 +1599,8 @@ class TestCase332486(BaseTestCase):
         """
 
 
-class TestCase332488(BaseTestCase):
+@attr(tier=2)
+class TestCase332488(TestCase):
     """
     Restart libvirt during RO disk activation
     https://tcms.engineering.redhat.com/case/332488/?from_plan=12049
@@ -1598,7 +1625,8 @@ class TestCase332488(BaseTestCase):
         """
 
 
-class TestCase332487(BaseTestCase):
+@attr(tier=1)
+class TestCase332487(TestCase):
     """
     Changing RW disk to RO while disk is plugged to a running VM
     https://tcms.engineering.redhat.com/case/332487/?from_plan=12049

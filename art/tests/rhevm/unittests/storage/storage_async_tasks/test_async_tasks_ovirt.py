@@ -8,6 +8,7 @@ from art.rhevm_api.utils import log_listener
 from art.rhevm_api.utils import test_utils
 from art.rhevm_api.tests_lib.low_level import vms
 from art.test_handler.tools import tcms
+from nose.plugins.attrib import attr
 
 import config
 import common
@@ -20,6 +21,7 @@ ALL_TASKS_FINISHED = 'Number of running tasks: 0'
 OPERATION_FINISHED = False
 
 
+@attr(tier=2)
 class RestartOvirt(TestCase):
     __test__ = False
     ovirt_host = test_utils.Machine(

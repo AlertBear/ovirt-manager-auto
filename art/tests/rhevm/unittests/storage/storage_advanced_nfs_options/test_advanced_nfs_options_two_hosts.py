@@ -8,6 +8,7 @@ from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_st
 from art.test_handler.tools import tcms, bz
+from art.unittest_lib import attr
 
 import helpers
 import config
@@ -16,6 +17,7 @@ LOGGER = logging.getLogger(__name__)
 ENUMS = helpers.ENUMS
 
 
+@attr(tier=1)
 class TestCase166613(helpers.TestCaseStandardOperations):
     """
     Creates NFS storage domain in 3.1 data center. Then changes settings
@@ -73,6 +75,7 @@ class TestCase166613(helpers.TestCaseStandardOperations):
                 self.host, self.password, self.vdsm_copy_file)
 
 
+@attr(tier=1)
 class TestCase148672(helpers.TestCaseStandardOperations):
     """
     Tests if data center with NFS storage domains with custom NFS options works
@@ -114,6 +117,7 @@ class TestCase148672(helpers.TestCaseStandardOperations):
             self.sd_exp, config.DATA_CENTER_NAME)
 
 
+@attr(tier=2)
 class TestCase166615(helpers.TestCaseNFSOptions):
     """
     Creates NFS storage domain in 3.0 data center. Upgrades data center.
@@ -207,6 +211,7 @@ class TestCase166615(helpers.TestCaseNFSOptions):
         super(TestCase166615, cls).teardown_class()
 
 
+@attr(tier=2)
 class TestCase148697(helpers.TestCaseNFSOptions):
     """
     Tests checks that

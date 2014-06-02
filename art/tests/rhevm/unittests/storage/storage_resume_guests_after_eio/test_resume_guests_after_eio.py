@@ -1,7 +1,7 @@
 from art.unittest_lib import StorageTest as TestCase
 import logging
 import time
-
+from art.unittest_lib import attr
 from art.test_handler.tools import tcms, bz
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import storagedomains
@@ -170,6 +170,7 @@ class TestNoSpaceLeftOnDevice(TestResumeGuests):
         super(TestNoSpaceLeftOnDevice, self).tearDown()
 
 
+@attr(tier=2)
 class TestCase285357(TestCaseBlockedConnection):
     __test__ = (DC_TYPE == 'nfs')
     tcms_test_case = '285357'
@@ -183,6 +184,7 @@ class TestCase285357(TestCaseBlockedConnection):
         self.run()
 
 
+@attr(tier=2)
 class TestCase285370(TestNoSpaceLeftOnDevice):
     __test__ = (DC_TYPE == 'nfs')
     tcms_test_case = '285370'
@@ -197,6 +199,7 @@ class TestCase285370(TestNoSpaceLeftOnDevice):
         self.run()
 
 
+@attr(tier=2)
 class TestCase285371(TestCaseBlockedConnection):
     __test__ = (DC_TYPE == 'iscsi')
     tcms_test_case = '285371'
@@ -210,6 +213,7 @@ class TestCase285371(TestCaseBlockedConnection):
         self.run()
 
 
+@attr(tier=1)
 class TestCase285372(TestNoSpaceLeftOnDevice):
     __test__ = (DC_TYPE == 'iscsi')
     tcms_test_case = '285372'
@@ -222,6 +226,7 @@ class TestCase285372(TestNoSpaceLeftOnDevice):
         self.run()
 
 
+@attr(tier=2)
 class TestCase285375(TestCaseBlockedConnection):
     __test__ = (DC_TYPE == 'fcp')
     tcms_test_case = '285375'
@@ -234,6 +239,7 @@ class TestCase285375(TestCaseBlockedConnection):
         self.run()
 
 
+@attr(tier=1)
 class TestCase285376(TestNoSpaceLeftOnDevice):
     __test__ = (DC_TYPE == 'fcp')
     tcms_test_case = '285376'

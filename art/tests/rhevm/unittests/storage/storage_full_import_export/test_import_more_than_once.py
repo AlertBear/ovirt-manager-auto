@@ -6,8 +6,9 @@ import config
 import logging
 
 from concurrent.futures import ThreadPoolExecutor
-from nose.tools import istest
-from unittest import TestCase
+
+from art.unittest_lib.common import StorageTest as TestCase
+from art.unittest_lib import attr
 
 from art.test_handler.tools import tcms, bz
 from art.rhevm_api.utils.test_utils import get_api, setPersistentNetwork
@@ -21,6 +22,7 @@ ENUMS = config.ENUMS
 STORAGE_DOMAIN_API = get_api('storage_domain', 'storagedomains')
 
 
+@attr(tier=0)
 class TestCase174617(TestCase):
     """
     Test Case 174617 - Import more than once

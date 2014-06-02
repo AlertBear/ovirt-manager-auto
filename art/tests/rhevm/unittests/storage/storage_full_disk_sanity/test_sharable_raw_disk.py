@@ -3,10 +3,7 @@ Storage VM Floating Disk
 """
 import logging
 from art.unittest_lib import StorageTest as TestCase
-
-from art.rhevm_api.utils import test_utils
-from art.rhevm_api.utils import resource_utils
-from art.test_handler import exceptions
+from art.unittest_lib import attr
 
 from art.rhevm_api.tests_lib.low_level import disks, storagedomains
 from art.test_handler.tools import tcms
@@ -20,11 +17,13 @@ logger = logging.getLogger(__name__)
 from art.rhevm_api.tests_lib.low_level import vms
 
 
+@attr(tier=0)
 class TestCase174621(TestCase):
     """
     Test sharing disk
     Expected system: 2 vms with state down
     """
+    __test__ = True
 
     tcms_plan_id = '6458'
     tcms_test_case = '174621'
@@ -74,6 +73,7 @@ class TestCase174621(TestCase):
         assert disks.deleteDisk(True, self.disk_name)
 
 
+@attr(tier=1)
 class TestCase275816(TestCase):
     """
     test exposing https://bugzilla.redhat.com/show_bug.cgi?id=834893
@@ -85,6 +85,8 @@ class TestCase275816(TestCase):
 
     https://tcms.engineering.redhat.com/case/275816/?from_plan=9583
     """
+    __test__ = True
+
     tcms_plan_id = '9583'
     tcms_test_case = '275816'
     vm_names = []

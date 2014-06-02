@@ -7,14 +7,13 @@ import config
 import logging
 
 from nose.tools import istest
-from unittest import TestCase
+from art.unittest_lib import attr
+from art.unittest_lib.common import StorageTest as TestCase
 
 from art.rhevm_api.utils import test_utils
 
-from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import disks
-from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.low_level import templates
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.tests_lib.low_level import hosts
@@ -29,6 +28,7 @@ ENUMS = config.ENUMS
 STORAGE_DOMAIN_API = test_utils.get_api('storage_domain', 'storagedomains')
 
 
+@attr(tier=2)
 class TestCase281164(TestCase):
     """
     test exposing https://bugzilla.redhat.com/show_bug.cgi?id=908327

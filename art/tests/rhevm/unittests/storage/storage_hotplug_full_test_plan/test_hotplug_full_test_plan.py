@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 import time
 
 from art.test_handler.tools import bz, tcms
+from art.unittest_lib import attr
 
 from art.rhevm_api.utils import test_utils as utils
 import art.test_handler.exceptions as exceptions
@@ -96,6 +97,7 @@ def teardown_module():
         vdc_password=config.VDC_PASSWORD)
 
 
+@attr(tier=0)
 class TestCase286224(helpers.HotplugHookTest):
     """
     Check if before_disk_hotplug is called
@@ -115,6 +117,7 @@ class TestCase286224(helpers.HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
+@attr(tier=0)
 class TestCase286365(helpers.HotplugHookTest):
     """
     Check if after_disk_hotplug is called
@@ -134,6 +137,7 @@ class TestCase286365(helpers.HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
+@attr(tier=0)
 class TestCase286366(helpers.HotplugHookTest):
     """
     Check if before_disk_hotunplug is called
@@ -153,6 +157,7 @@ class TestCase286366(helpers.HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
+@attr(tier=0)
 class TestCase286368(helpers.HotplugHookTest):
     """
     Check if after_disk_hotunplug is called
@@ -172,6 +177,7 @@ class TestCase286368(helpers.HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
+@attr(tier=2)
 class TestCase286226(helpers.HotplugHookTest):
     """
     Check after_disk_hotplug for plugging 10 disks concurrently
@@ -199,6 +205,7 @@ class TestCase286226(helpers.HotplugHookTest):
         self.assertEqual(len(result), len(DISKS_TO_PLUG), result)
 
 
+@attr(tier=2)
 class TestCase287480(helpers.HotplugHookTest):
     """
     Check after_disk_hotunplug for unplugging 10 disks concurrently
@@ -226,6 +233,7 @@ class TestCase287480(helpers.HotplugHookTest):
         self.assertEqual(len(result), len(DISKS_TO_PLUG), result)
 
 
+@attr(tier=2)
 class TestCase287249(helpers.HotplugHookTest):
     """
     Check if before_disk_hotplug is called when attaching & activating
@@ -267,6 +275,7 @@ class TestCase287249(helpers.HotplugHookTest):
             disks.detachDisk(True, self.use_disks[0], VM_NAME)
 
 
+@attr(tier=2)
 class TestCase287481(helpers.HotplugHookTest):
     """
     Check that activation will succeed and the hook will fail if
@@ -316,6 +325,7 @@ class TestCase287481(helpers.HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
+@attr(tier=1)
 class TestCase286369(helpers.HotplugHookTest):
     """
     Check that non-executable hooks will not be called
@@ -349,6 +359,7 @@ class TestCase286369(helpers.HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
+@attr(tier=2)
 class TestCase286243(helpers.HotplugHookTest):
     """
     Multiple hooks for one action, checks that all will be called
@@ -385,6 +396,7 @@ class TestCase286243(helpers.HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
 
+@attr(tier=2)
 class TestCase286861(helpers.HotplugHookTest):
     """
     Restart vdsm during before_disk_hotplug, action should fail
@@ -426,6 +438,7 @@ class TestCase286861(helpers.HotplugHookTest):
         super(TestCase286861, self).tearDown()
 
 
+@attr(tier=0)
 class TestCase134134(TestCase):
     """Plug in disk while OS is running (virtIO on supported OS type only)"""
 
@@ -485,6 +498,7 @@ class TestCase134134(TestCase):
         common.shutdown_and_remove_vms(cls.vm_names)
 
 
+@attr(tier=0)
 class TestCase134139(TestCase):
     """Unplug a disk and detach it. Tested as 2 independent functions"""
     __test__ = True
@@ -582,6 +596,7 @@ class TestCase134139(TestCase):
         common.shutdown_and_remove_vms(cls.vm_names)
 
 
+@attr(tier=0)
 class TestCase231521(TestCase):
     """Activate/Deactivate an already attached disk
     on a running VM with support OS"""
@@ -670,6 +685,7 @@ class TestCase231521(TestCase):
         common.shutdown_and_remove_vms(cls.vm_names)
 
 
+@attr(tier=0)
 class TestCase139348(TestCase):
     """Hotplug floating disk (shareable and non-shareable)"""
 
@@ -731,6 +747,7 @@ class TestCase139348(TestCase):
         common.shutdown_and_remove_vms(cls.vm_names)
 
 
+@attr(tier=0)
 class TestCase244310(TestCase):
     """
     Plug shared disks into 2 VMs simultaneously
@@ -803,6 +820,7 @@ class TestCase244310(TestCase):
             common.shutdown_and_remove_vms(vm_pair)
 
 
+@attr(tier=1)
 class TestCase244314(TestCase):
     """
     Unplug and detach shared disk from one of the vms
@@ -880,6 +898,7 @@ class TestCase244314(TestCase):
             common.shutdown_and_remove_vms(vm_pair)
 
 
+@attr(tier=0)
 class TestCase174616(TestCase):
     """
     2 vms, 1 shareable disk attached to both of them.

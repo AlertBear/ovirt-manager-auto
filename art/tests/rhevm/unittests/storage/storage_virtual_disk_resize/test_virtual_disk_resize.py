@@ -5,6 +5,7 @@ https://tcms.engineering.redhat.com/plan/9949
 
 import logging
 from utilities.machine import Machine
+from art.unittest_lib import attr
 from utilities.utils import getIpAddressByHostName
 from art.rhevm_api.tests_lib.high_level.disks import \
     create_all_legal_disk_permutations
@@ -305,6 +306,7 @@ class BasicResize(BaseTestCase):
                         "Failed to remove disks %s" % self.disk_name)
 
 
+@attr(tier=0)
 class TestCase336099(DisksPermutationEnvironment):
     """
     Resize virtual disk after snapshot creation
@@ -354,6 +356,7 @@ class TestCase336099(DisksPermutationEnvironment):
                                                % self.snap_description)
 
 
+@attr(tier=0)
 class TestCase336100(DisksPermutationEnvironment):
     """
     Commit snapshot after resizing the disk
@@ -416,6 +419,7 @@ class TestCase336100(DisksPermutationEnvironment):
                                                % self.snap_description)
 
 
+@attr(tier=0)
 class TestCase287466(BasicResize):
     """
     Virtual disk resize - preallocated  block disk
@@ -445,6 +449,7 @@ class TestCase287466(BasicResize):
         self.perform_basic_action()
 
 
+@attr(tier=0)
 class TestCase297017(BasicResize):
     """
     Virtual disk resize - Thin block disk
@@ -474,6 +479,7 @@ class TestCase297017(BasicResize):
         self.perform_basic_action()
 
 
+@attr(tier=0)
 class TestCase287467(BasicResize):
     """
     Virtual disk resize - preallocated file disk
@@ -503,6 +509,7 @@ class TestCase287467(BasicResize):
         self.perform_basic_action()
 
 
+@attr(tier=0)
 class TestCase297018(BasicResize):
     """
     Virtual disk resize - Thin file disk
@@ -532,6 +539,7 @@ class TestCase297018(BasicResize):
         self.perform_basic_action()
 
 
+@attr(tier=1)
 class TestCase297090(BasicResize):
     """
     block connectivity from host to storage domain - preallocated disk
@@ -562,6 +570,7 @@ class TestCase297090(BasicResize):
         self.block_connection_case()
 
 
+@attr(tier=1)
 class TestCase297089(BasicResize):
     """
     block connectivity from host to storage domain - sparse disk
@@ -592,6 +601,7 @@ class TestCase297089(BasicResize):
         self.block_connection_case()
 
 
+@attr(tier=1)
 class TestCase287468(BasicResize):
     """
     Resize shared disk
@@ -656,6 +666,7 @@ class TestCase287468(BasicResize):
         assert removeVm(True, self.test_vm_name, stopVM='true', wait=True)
 
 
+@attr(tier=1)
 class TestCase287469(BasicResize):
     """
     Extend disk to more than available capacity
@@ -693,6 +704,7 @@ class TestCase287469(BasicResize):
         super(TestCase287469, self).tearDown()
 
 
+@attr(tier=1)
 class TestCase297085(BasicResize):
     """
     Stop libvirt service during disk extension
@@ -756,6 +768,7 @@ class TestCase297085(BasicResize):
         self.assertEqual(lv_size, self.new_size / config.GB)
 
 
+@attr(tier=2)
 class TestCase287477(BasicResize):
     """
     Increase and decrease multiple disks
@@ -809,6 +822,7 @@ class TestCase287477(BasicResize):
             assert removeVm(True, vm)
 
 
+@attr(tier=2)
 class TestCase287478(BasicResize):
     """
     Increase and decrease multiple disks

@@ -3,11 +3,10 @@ Storage VM sanity
 TCMS plan: https://tcms.engineering.redhat.com/plan/8676
 """
 
-from concurrent.futures import ThreadPoolExecutor
 import logging
 from nose.tools import istest
+from art.unittest_lib import attr
 from art.unittest_lib import StorageTest as TestCase
-import time
 
 from art.rhevm_api.utils import test_utils
 from art.rhevm_api.utils import resource_utils
@@ -72,6 +71,7 @@ def _create_vm(vm_name, vm_description, disk_interface,
         network=config.MGMT_BRIDGE, useAgent=config.USE_AGENT)
 
 
+@attr(tier=1)
 class TestCase248112(TestCase):
     """
     storage vm sanity test, creates and removes vm with a cow disk
@@ -136,6 +136,7 @@ def _prepare_data(sparse, vol_format, template_names):
     template_names[(sparse, vol_format)] = template_name
 
 
+@attr(tier=0)
 class TestCase248138(TestCase):
     """
     storage vm sanity test, creates and removes snapshots
@@ -295,6 +296,7 @@ class TestCase248138(TestCase):
         vms.removeVm(True, vm=cls.vm_name, stopVM='true')
 
 
+@attr(tier=0)
 class TestCase300867(TestCase):
     """
     storage vm sanity test, creates 2 snapshots and removes them.
@@ -478,6 +480,7 @@ class TestReadLock(TestCase):
                                                % cls.template_name)
 
 
+@attr(tier=0)
 class TestCase320224(TestReadLock):
     """
     TCMS Test Case 320224 - Run on desktop
@@ -496,6 +499,7 @@ class TestCase320224(TestReadLock):
         self.create_two_vms_simultaneously()
 
 
+@attr(tier=0)
 class TestCase320225(TestReadLock):
     """
     TCMS Test Case 320225 - Run on server

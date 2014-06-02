@@ -8,6 +8,7 @@ import config
 import time
 from art.unittest_lib import StorageTest as TestCase
 from nose.tools import istest
+from art.unittest_lib import attr
 
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import hosts
@@ -103,6 +104,7 @@ class SuperVDSMTestBase(TestCase):
         self.machine.enableServiceSupport()
 
 
+@attr(tier=0)
 class TestCase289230(SuperVDSMTestBase):
     """
     supervdsm test case, sanity
@@ -136,6 +138,7 @@ class TestCase289230(SuperVDSMTestBase):
             FILE_DOES_NOT_EXIST % VDSM_LOG)
 
 
+@attr(tier=0)
 class TestCase289539(SuperVDSMTestBase):
     """
     supervdsm test case, command options
@@ -197,6 +200,7 @@ class TestCase289539(SuperVDSMTestBase):
             )
 
 
+@attr(tier=0)
 class TestCase289547(SuperVDSMTestBase):
     """
     supervdsm test case, communication between supervdsm and vdsm
@@ -249,6 +253,7 @@ class TestCase289547(SuperVDSMTestBase):
         self.assertTrue(success, ERROR_HW_OUTPUT % output)
 
 
+@attr(tier=2)
 class TestCase289565(SuperVDSMTestBase):
     """
     supervdsm test case, supervdsm stress test
@@ -282,6 +287,7 @@ class TestCase289565(SuperVDSMTestBase):
         )
 
 
+@attr(tier=2)
 class TestCase293152(SuperVDSMTestBase):
     """
     deleting supervdsm log and changing log file permissions

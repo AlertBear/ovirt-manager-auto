@@ -6,7 +6,8 @@ import config
 import logging
 
 from nose.tools import istest
-from unittest import TestCase
+from art.unittest_lib.common import StorageTest as TestCase
+from art.unittest_lib import attr
 
 from art.rhevm_api.utils import test_utils
 
@@ -25,6 +26,7 @@ ENUMS = config.ENUMS
 STORAGE_DOMAIN_API = test_utils.get_api('storage_domain', 'storagedomains')
 
 
+@attr(tier=2)
 class TestCase281163(TestCase):
     """
     test exposing https://bugzilla.redhat.com/show_bug.cgi?id=890922

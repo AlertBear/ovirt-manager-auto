@@ -3,10 +3,7 @@ Storage VM Floating Disk
 """
 import logging
 from art.unittest_lib import StorageTest as TestCase
-
-from art.rhevm_api.utils import test_utils
-from art.rhevm_api.utils import resource_utils
-from art.test_handler import exceptions
+from art.unittest_lib import attr
 
 from art.rhevm_api.tests_lib.low_level import disks, vms, storagedomains
 from art.test_handler.tools import tcms
@@ -18,13 +15,17 @@ ENUMS = config.ENUMS
 logger = logging.getLogger(__name__)
 
 
+@attr(tier=0)
 class TestCase174614(TestCase):
     """
     Test Floating disk is functional
     Spected system: 2 vms with state down
     """
+    __test__ = True
 
     disk_name = "floating"
+    tcms_plan_id = '6458'
+    tcms_test_case = '174614'
 
     def setUp(self):
         """Get the sd and make sure the VM's are down"""
@@ -33,6 +34,7 @@ class TestCase174614(TestCase):
         assert vms.checkVmState(True, VM_1, ENUMS["vm_state_down"])
         assert vms.checkVmState(True, VM_2, ENUMS["vm_state_down"])
 
+    @tcms(tcms_plan_id, tcms_test_case)
     def test_floating_disk(self):
         """Creates a floating disk and assign it to different vms"""
         logger.info("Creating Floating Disk")

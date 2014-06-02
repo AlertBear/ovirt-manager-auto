@@ -4,8 +4,8 @@
 All test-exposing bugs
 """
 import logging
-import time
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib.common import StorageTest as TestCase
+from art.unittest_lib import attr
 from art.rhevm_api.utils import test_utils
 from concurrent.futures import ThreadPoolExecutor
 from art.rhevm_api.utils.name2ip import LookUpVMIpByName
@@ -60,6 +60,7 @@ def teardown_module():
                                    vdc_password=config.VDC_PASSWORD)
 
 
+@attr(tier=2)
 class TestCase355191(TestCase):
     """
     Test case 355191 - Test that exposes BZ1066834
@@ -151,6 +152,7 @@ from a vm with non-ascii character in its name is working
 """
 
 
+@attr(tier=2)
 class TestCase305452(TestCase):
     """
     test exposing https://bugzilla.redhat.com/show_bug.cgi?id=1002249
@@ -220,6 +222,7 @@ Test exposing BZ 969343
 """
 
 
+@attr(tier=1)
 class TestCase289683(TestCase):
     """
     test exposing https://bugzilla.redhat.com/show_bug.cgi?id=969343
@@ -287,6 +290,7 @@ class TestCase289683(TestCase):
             ip, config.VM_LINUX_USER, config.VM_LINUX_PASSWORD).util(LINUX)
         machine.shutdown()
 
+    @tcms(tcms_plan_id, tcms_test_case)
     def test_elect_new_spm_after_failure(self):
         """
             * stop vdsm and prevent it from restarting
@@ -368,6 +372,7 @@ Test image lock free after engine restart
 """
 
 
+@attr(tier=2)
 class TestCase320223(TestCase):
     """
     bug coverage test, restart engine during template creation
@@ -519,6 +524,7 @@ Maintenance spm with a running vm
 """
 
 
+@attr(tier=0)
 class TestCase315489(TestCase):
     """
     test exposing https://bugzilla.redhat.com/show_bug.cgi?id=986961
@@ -588,6 +594,7 @@ TCMS plan: https://tcms.engineering.redhat.com/plan/9583
 """
 
 
+@attr(tier=1)
 class TestCase275816(TestCase):
     """
     test exposing https://bugzilla.redhat.com/show_bug.cgi?id=834893
@@ -650,6 +657,7 @@ TCMS plan: https://tcms.engineering.redhat.com/plan/9583
 """
 
 
+@attr(tier=1)
 class TestCase284324(TestCase):
     """ Test exposing https://bugzilla.redhat.com/show_bug.cgi?id=960430
     Tries to create a disk via REST API without specifying 'sparse' tag.
@@ -683,6 +691,7 @@ TCMS plan: https://tcms.engineering.redhat.com/plan/9583
 """
 
 
+@attr(tier=2)
 class TestCase280628(TestCase):
     """ Test exposing https://bugzilla.redhat.com/show_bug.cgi?id=962549
 
@@ -701,7 +710,7 @@ class TestCase280628(TestCase):
     snap_name = "snap_%s" % tcms_test_case
 
     @tcms(tcms_plan_id, tcms_test_case)
-    def test_merge_snapshots_on_hsm_test(self):
+    def test_merge_snapshots_on_hsm(self):
         """
         checks that a VM with a snapshot, which where created when the VM was
         run on SPM and removed when the VM was moved to an HSM, can be booted

@@ -1,7 +1,7 @@
 from art.unittest_lib import StorageTest as TestCase
+from art.unittest_lib import attr
 import logging
 from concurrent.futures import ThreadPoolExecutor
-import time
 
 from art.test_handler.tools import tcms, bz
 
@@ -70,6 +70,7 @@ def _restore_empty_dc():
     assert storageconnections.remove_all_storage_connections()
 
 
+@attr(tier=0)
 class TestCase288967(TestCase):
     """
     https://tcms.engineering.redhat.com/case/288967/?from_plan=9985
@@ -119,6 +120,7 @@ class TestCase288967(TestCase):
         _restore_empty_dc()
 
 
+@attr(tier=0)
 class TestCase288985(TestCase):
     """
     https://tcms.engineering.redhat.com/case/288985/?from_plan=9985
@@ -206,6 +208,7 @@ class TestCase288985(TestCase):
         storageconnections.remove_all_storage_connections()
 
 
+@attr(tier=1)
 class TestCase288986(TestCase):
     """
     https://tcms.engineering.redhat.com/case/288986/?from_plan=9985
@@ -278,6 +281,7 @@ class TestCase288986(TestCase):
         _restore_empty_dc()
 
 
+@attr(tier=1)
 class TestCase288983(TestCase):
     """
     https://tcms.engineering.redhat.com/case/288983/?from_plan=9985
@@ -361,6 +365,7 @@ class TestCase288983(TestCase):
         _restore_empty_dc()
 
 
+@attr(tier=2)
 class TestCase295262(TestCase):
     """
     https://tcms.engineering.redhat.com/case/295262/?from_plan=9985
@@ -440,6 +445,7 @@ def _add_disk(conn_params, alias):
         lun_target=conn_params['lun_target'])
 
 
+@attr(tier=0)
 class TestCase288963(TestCase):
     """
     https://tcms.engineering.redhat.com/case/288963/?from_plan=9985
@@ -576,6 +582,7 @@ class TestCase288963(TestCase):
         _restore_empty_dc()
 
 
+@attr(tier=0)
 class TestCase288975(TestCase):
     """
     https://tcms.engineering.redhat.com/case/288975/?from_plan=9985
@@ -658,6 +665,7 @@ class TestCase288975(TestCase):
         _restore_empty_dc()
 
 
+@attr(tier=1)
 class TestCase288968(TestCase):
     """
     https://tcms.engineering.redhat.com/case/288968/?from_plan=9985
@@ -729,6 +737,7 @@ class TestCase288968(TestCase):
         _restore_empty_dc()
 
 
+@attr(tier=2)
 class TestCase289552(TestCase):
     """
     https://tcms.engineering.redhat.com/case/289552/?from_plan=9985
@@ -872,6 +881,7 @@ class TestCase289552(TestCase):
             basename=config.BASENAME)
 
 
+@attr(tier=0)
 class TestCase288988(TestCase):
     """
     https://tcms.engineering.redhat.com/case/288988/?from_plan=9985
