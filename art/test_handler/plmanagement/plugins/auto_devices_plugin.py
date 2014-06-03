@@ -139,10 +139,12 @@ class AutoDevices(Component):
             self.clean = (self.cleanup == suite.status.lower())
 
     def on_storages_cleanup_request(self):
-        logger.info("Cleaning storages.")
         if self.su is not None and self.clean:
+            logger.info("Cleaning storages.")
             self.su.storageCleanup()
             self.su = None
+        else:
+            logger.info("No cleaning storages")
 
     @classmethod
     def is_enabled(cls, params, conf):
