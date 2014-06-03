@@ -884,7 +884,7 @@ class Case_configure_host_network(BaseTest):
                 raise e
 
 
-class Case_maniputlate_host(BaseTest):
+class Case_manipulate_host(BaseTest):
     __test__ = True
 
     def tearDown(self):
@@ -892,8 +892,8 @@ class Case_maniputlate_host(BaseTest):
 
     @istest
     @logMe
-    def maniputlate_host(self):
-        """ maniputlate_host """
+    def manipulate_host(self):
+        """ manipulate_host """
         try:
             self.assertTrue(hosts.deactivateHost(self.positive,
                                                  config.ALT1_HOST_ADDRESS))
