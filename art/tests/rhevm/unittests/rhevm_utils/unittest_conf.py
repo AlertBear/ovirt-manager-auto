@@ -14,6 +14,7 @@ IMAGE_UP_CONF = params.get('image_up_conf_file')
 rest_conn = ART_CONFIG['REST_CONNECTION']
 REST_API_PASS = rest_conn.get('password')
 REST_API_HOST = rest_conn.get('host')
+DC_NAME = params.get('dc_name', 'datacenter_%s' % params.get('basename'))
 
 # workaround to skip sdk for now
 MAIN_SETUP = "https://lilach-rhel.qa.lab.tlv.redhat.com:443/api"
