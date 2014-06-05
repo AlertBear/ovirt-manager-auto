@@ -43,10 +43,8 @@ TEMPLATE_NAME = "".join(['%s_', PARAMETERS['template_name']]) % TEST_NAME
 VM_OS = PARAMETERS['vm_os']
 VNIC_PROFILE = PARAMETERS['vnic_profile']
 MGMT_BRIDGE = PARAMETERS['mgmt_bridge']
-
-COBBLER_ADDRESS = PARAMETERS.get('cobbler_address', None)
-COBBLER_USER = PARAMETERS.get('cobbler_user', None)
-COBBLER_PASSWORD = PARAMETERS.get('cobbler_passwd', None)
-
+BOND_MODES = PARAMETERS.as_list("bond_modes")
+ADDR_AND_MASK = ["172.16.200.100", "255.255.255.0"]
+DST_HOST_IP = "172.16.200.2"
 REST_CONNECTION = ART_CONFIG['REST_CONNECTION']
 RHEVM_NAME = REST_CONNECTION['host']

@@ -1030,7 +1030,7 @@ def _prepareHostNicObject(**kwargs):
     mode = kwargs.get('mode')
     miimon = kwargs.get('miimon')
 
-    if (slave_list or mode or miimon) is not None:
+    if slave_list is not None:
         bond_obj = data_st.Bonding()
         if slave_list is not None:
             slaves = data_st.Slaves()
@@ -1039,10 +1039,9 @@ def _prepareHostNicObject(**kwargs):
 
             bond_obj.set_slaves(slaves)
 
-        if (mode or miimon) is not None:
+        if mode is not None:
             options = data_st.Options()
-            if mode is not None:
-                options.add_option(data_st.Option(name='mode', value=mode))
+            options.add_option(data_st.Option(name='mode', value=mode))
 
             if miimon is not None:
                 options.add_option(data_st.Option(name='miimon', value=miimon))

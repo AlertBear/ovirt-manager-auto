@@ -1051,3 +1051,25 @@ def check_bridge_opts(host, user, password, bridge_name, opts, value):
         logger.error("Can't read {0}".format(bridge_file))
         return False
     return output.strip() == value
+
+
+def check_bond_mode(host, user, password, interface, mode):
+    """
+    Check BOND mode on BOND interface
+    **Author**: myakove
+        **Parameters**:
+        *  *host* - machine ip address or fqdn of the machine
+        *  *user* - root user on the  machine
+        *  *password* - password for the user
+        *  *interface* - name of the BOND interface
+        *  *mode* - The BOND mode
+    **Return**: True if correct BOND mode was found, False otherwise
+    """
+    machine_obj = Machine(host, user, password).util(LINUX)
+    mode_file = os.path.join(SYS_CLASS_NET_DIR, interface, "bonding/mode")
+    rc, output = machine_obj.runCmd(["cat", mode_file])
+    if not rc:
+        logger.error("Can't read {0}".format(mode_file))
+        return False
+    bond_mode = output.split()[1]
+    return bond_mode == str(mode)
