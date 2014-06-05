@@ -33,7 +33,7 @@ def setup_module():
     if not status:
         raise DataCenterException('Failed to add data center')
     logger.info('Add cluster')
-    status = clusters.addCluster(positive=True, name=config.CLUSTER_NAME,
+    status = clusters.addCluster(positive=True, name=config.CLUSTER_1_NAME,
                                  cpu=config.CPU_NAME,
                                  data_center=config.DATA_CENTER_1_NAME,
                                  version=config.COMPATIBILITY_VERSION,
@@ -55,7 +55,7 @@ def teardown_module():
     """
     logger.info('Remove cluster')
     status = clusters.removeCluster(positive=True,
-                                    cluster=config.CLUSTER_NAME)
+                                    cluster=config.CLUSTER_1_NAME)
     if not status:
         raise ClusterException('Failed to remove cluster')
     logger.info('Remove data center')
@@ -97,7 +97,7 @@ class TestCaseHost(TestCase):
         logger.info('Add host')
         status = hosts.addHost(
             positive=True, name=config.HOST_NAME, wait=True, reboot=False,
-            root_password=config.VDS_PASSWORD, cluster=config.CLUSTER_NAME,
+            root_password=config.VDS_PASSWORD, cluster=config.CLUSTER_1_NAME,
             vdcPort=config.VDC_PORT)
         self.assertTrue(status, 'Add host')
 
