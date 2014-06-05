@@ -23,10 +23,7 @@ and preparing the environment for the tests.
 """
 
 import argparse
-import sys
 import os
-import re
-from time import strftime
 from shutil import copyfile
 from configobj import ConfigObj
 
@@ -67,7 +64,6 @@ def populateOptsFromArgv(argv):
     Author: edolinin, jhenner
     Parameters:
        argv - the list of arguments (as sys.argv) to populate from
-    Return: None
     '''
 
     opts['art_base_path'] = os.path.dirname(argv[0])
@@ -102,12 +98,8 @@ def populateOptsFromArgv(argv):
 
     args = parser.parse_args(argv[1:])
 
-    plmanager.configure.im_func.func_defaults = (args, \
-            plmanager.configure.im_func.func_defaults[1])
-
-
-    opts.update((k, v) for k, v in vars(args).iteritems() if k!='redefs')
-    return args.redefs
+    opts.update((k, v) for k, v in vars(args).iteritems() if k != 'redefs')
+    return args
 
 
 def rewriteConfig(config, redefs):
@@ -122,7 +114,7 @@ def rewriteConfig(config, redefs):
         try:
             sectionPath, value = r.split('=', 1)
         except ValueError:
-            raise CmdLineError, "Expected '=' sign somewhere in '%s'." % r
+            raise CmdLineError("Expected '=' sign somewhere in '%s'." % r)
         sectionPath = sectionPath.split('.')
         redef(config, sectionPath[:-1], sectionPath[-1], value)
 
@@ -169,9 +161,6 @@ def readTestRunOpts(path, redefs):
 
     config = validator()
 
-    plmanager.configure.im_func.func_defaults = \
-        (plmanager.configure.im_func.func_defaults[0], config)
-
     opts['headers'] = config.get('HTTP_HEADERS', {})
 
     # Populate opts from the RUN section.
@@ -182,7 +171,7 @@ def readTestRunOpts(path, redefs):
 
     opts['test_file_name'] = []
     opts['tests'] = runSection.as_list('tests_file')
-    for ind, test in enumerate(opts['tests']):
+    for test in opts['tests']:
         opts['test_file_name'].append(os.path.basename(test))
 
     buildTestsFilesMatrix(config, opts['test_file_name'])
@@ -254,14 +243,10 @@ def buildTestsFilesMatrix(config, testsList):
         opts[test] = {}
 
         testSection = config['RUN']
-        if config.has_key(test):
+        if test in config:
             testSection = config[test]
 
         opts[test]['in_parallel'] = testSection.get('in_parallel', [])
 
-        if testSection.has_key('lines'):
-            linesVal = testSection.as_list('lines')
-            opts[test]['lines'] = parseLines(','.join(linesVal))
-
-        if testSection.has_key('groups'):
+        if 'groups' in testSection:
             opts[test]['groups'] = testSection.as_list('groups')

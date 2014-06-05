@@ -1,7 +1,5 @@
 #!/usr/bin/python
 
-import os
-import sys
 import logging
 from sys import argv, exit, stderr
 import traceback
@@ -20,10 +18,10 @@ logger = logging.getLogger(__name__)
 
 
 def _main(plmanager):
-    redefs = populateOptsFromArgv(argv)
+    args = populateOptsFromArgv(argv)
     initializeLogger()
     logger.info("Log file name: %s" % opts['log'])
-    config = readTestRunOpts(opts['conf'], redefs)
+    config = readTestRunOpts(opts['conf'], args.redefs)
     if config['RUN']['debug']:
         logging.getLogger().setLevel(logging.DEBUG)
     test_iden = config['RUN']['tests_file']
@@ -36,7 +34,7 @@ def _main(plmanager):
     if suitable_parser is None:
         raise Exception("can not find suitable test_parser for %s" % test_iden)
 
-    plmanager.configure()
+    plmanager.configure(args, config)
     runner = TestRunner(suitable_parser)
     plmanager.configurators.configure_app(config)
     plmanager.application_liteners.on_application_start()
