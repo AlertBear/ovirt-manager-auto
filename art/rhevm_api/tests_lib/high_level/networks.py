@@ -59,6 +59,11 @@ VDSM_CONF_FILE = "/etc/vdsm/vdsm.conf"
 IFCFG_FILE_PATH = "/etc/sysconfig/network-scripts/"
 HOST_NICS = ["eth0", "eth1", "eth2", "eth3", "eth4", "eth5"]
 RHEL_IMAGE = "rhel6.5-agent3.4"
+HYPERVISOR = "hypervisor"
+
+# command variables
+IP_CMD = "/sbin/ip"
+MODPROBE_CMD = "/sbin/modprobe"
 
 
 @is_action()
@@ -473,7 +478,7 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
 
 
 def createDummyInterface(host, username, password, num_dummy=1):
-    '''
+    """
     Description: create (X) dummy network interfaces on host
     **Author**: myakove
     **Parameters**:
@@ -481,18 +486,32 @@ def createDummyInterface(host, username, password, num_dummy=1):
         *  *username* - host username
         *  *password* - host password
         *  *num_dummy* - number of dummy interfaces to create
-    '''
+    **Returns**: True if creation of the dummy interface succeeded,
+                 otherwise False
+    """
 
     host_obj = machine.Machine(host, username, password).util(machine.LINUX)
 
-    dummy_list = ['modprobe', 'dummy', 'numdummies=' + str(num_dummy)]
+    dummy_list = [MODPROBE_CMD, 'dummy', 'numdummies=' + str(num_dummy)]
     rc, out = host_obj.runCmd(dummy_list)
+    append_dummy = ["/bin/sed", "-i", "'$afake_nics=dummy*'", VDSM_CONF_FILE]
+
     if not rc:
         logger.error("Create dummy interfaces failed. ERR: %s", out)
         return False
 
-    rc, out = host_obj.runCmd(["/bin/sed", "-i", "'$afake_nics=dummy*'",
-                               VDSM_CONF_FILE])
+    logger.info(host_obj.runCmd([IP_CMD, "a", "l", "|", "grep", "dummy"])[1])
+
+    logger.info("Adding dummy support to %s", VDSM_CONF_FILE)
+    # detect RHEV-H
+    os_type = host_obj.getOsInfo().lower()
+    if HYPERVISOR in os_type:
+        logger.info("RHEV-H detected")
+        # unperist the file, change the file, persist the file
+        with host_obj.edit_files_on_rhevh(VDSM_CONF_FILE):
+            rc, out = host_obj.runCmd(append_dummy)
+    else:
+        rc, out = host_obj.runCmd(append_dummy)
     if not rc:
         logger.error("Add dummy support to VDSM conf file failed. ERR: %s",
                      out)
@@ -503,6 +522,7 @@ def createDummyInterface(host, username, password, num_dummy=1):
         if not host_obj.addNicConfFile(nic=ifcfg_file_name):
             return False
 
+    logger.info("Restarting VDSM")
     if not restartVdsmd(host, password, supervdsm=True):
         logger.error("Restart vdsm service failed")
         return False
@@ -511,40 +531,96 @@ def createDummyInterface(host, username, password, num_dummy=1):
 
 
 def deleteDummyInterface(host, username, password):
-    '''
+    """
     Description: Delete dummy network interfaces on host
     **Author**: myakove
     **Parameters**:
         *  *host* - IP or FDQN of the host
         *  *username* - host username
         *  *password* - host password
-    '''
+     **Returns**: True if deletion of the dummy interface succeeded,
+                 otherwise False
+    """
     host_obj = machine.Machine(host, username, password).util(machine.LINUX)
 
-    rc, out = host_obj.runCmd(["/bin/sed", "-i", "'/^fake_nics/d'",
-                               VDSM_CONF_FILE])
-    if not rc:
-        logger.error("Clean VDSM conf file failed. ERR: %s", out)
-        return False
+    logger.info("Unloading dummy module")
+    unload_dummy = [MODPROBE_CMD, "-r", "dummy"]
+    host_obj.runCmd(unload_dummy)
 
-    unload_dummy = ["/sbin/modprobe", "-r", "dummy"]
-    rc, out = host_obj.runCmd(unload_dummy)
-    if not rc:
-        logger.error("Unload dummy driver failed. ERR: %s", out)
-        return False
+    logger.info("Removing dummy support")
+    dummy_remove = ["/bin/sed", "-i", "'/^fake_nics/d'", VDSM_CONF_FILE]
+    # detect RHEV-H
+    os_type = host_obj.getOsInfo().lower()
+    if HYPERVISOR in os_type:
+        logger.info("RHEV-H detected")
+        # make sure dummy0 does not exist so module can be unloaded WA for
+        # BZ1107969
+        assert rhevh_remove_dummy(host, username, password)
 
+        # unpersist the file, change the file, persist the file
+        with host_obj.edit_files_on_rhevh(VDSM_CONF_FILE):
+            rc, out = host_obj.runCmd(dummy_remove)
+    else:
+        rc, out = host_obj.runCmd(dummy_remove)
+    if not rc:
+        logger.error("Removing dummy support failed ERR: %s",
+                     VDSM_CONF_FILE, out)
+        return False
+    logger.info("Dummy support removed")
+
+    logger.info("Removing ifcg-dummy* files")
     delete_dummy_ifcfg = ["/bin/rm", "-f"]
     path = os.path.join(IFCFG_FILE_PATH, "ifcfg-dummy*")
     delete_dummy_ifcfg.append(path)
-    rc, out = host_obj.runCmd(delete_dummy_ifcfg)
-    if not rc:
+    host_obj.runCmd(delete_dummy_ifcfg)
+    rc, out = host_obj.runCmd(["ls", path])
+    if rc:
         logger.error("Delete dummy ifcfg file failed. ERR: %s", out)
         return False
+    logger.info("ifcg-dummy* files removed")
 
+    logger.info("Restarting VDSM")
     if not restartVdsmd(host, password, supervdsm=True):
         logger.error("Restart vdsm service failed")
         return False
 
+    return True
+
+
+def rhevh_remove_dummy(host, username, password):
+    """
+    Description: this function servers as workaround for #BZ1107969
+    remove dummy0 interface
+    unload dummy module
+    **Author**: mpavlik
+    **Parameters**:
+        *  *host* - IP or FDQN of the host
+        *  *username* - host username
+        *  *password* - host password
+     **Returns**: True if unloading of the dummy module succeeded,
+                 otherwise False
+    """
+    host_obj = machine.Machine(host, username, password).util(machine.LINUX)
+    dummy_args = [IP_CMD, "a", "l", "dummy0"]
+
+    logger.info("Verifying there is no dummy0 interface left")
+    rc, out = host_obj.runCmd(dummy_args)
+    if rc:
+        logger.warn("modprobe -r dummy failed. ERR: %s", out)
+        logger.info("removing interface dummy0")
+        rc, out = host_obj.runCmd([IP_CMD, "link", "del", "dev", "dummy0"])
+        if not rc:
+            logger.error("Removing dummy0 failed. ERR: %s", out)
+            return False
+        rc, out = host_obj.runCmd(dummy_args)
+        if not rc:
+            logger.info("Interface dummy0 succesfully removed")
+            logger.info("retrying to unload dummy module")
+            rc, out = host_obj.runCmd([MODPROBE_CMD, "-r", "dummy"])
+            if not rc:
+                logger.error("failed to unload dummy module ERR:%s", out)
+                return False
+            logger.info("module dummy unloaded")
     return True
 
 
