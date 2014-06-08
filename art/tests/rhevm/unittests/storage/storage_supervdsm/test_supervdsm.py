@@ -10,14 +10,10 @@ from art.unittest_lib import StorageTest as TestCase
 from nose.tools import istest
 
 from art.rhevm_api.tests_lib.high_level import datacenters
-from art.rhevm_api.tests_lib.high_level import storagedomains
-from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import hosts
-from art.rhevm_api.tests_lib.low_level import templates
 from art.rhevm_api.tests_lib.low_level import storagedomains as \
     ll_storagedomains
 
-from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import tcms
 
 from utilities.machine import LINUX, Machine
@@ -161,7 +157,7 @@ class TestCase289539(SuperVDSMTestBase):
                 value = function()
                 if pid != getVdsmPid(self.machine):
                     self.fail("VDSM changed during supervdsm restart")
-            except IndexError, ex:
+            except IndexError:
                 self.fail("Couldn't find vdsm PID")
 
             return value
@@ -245,6 +241,10 @@ class TestCase289547(SuperVDSMTestBase):
         self.assertTrue(self.machine.startService(SUPERVDSMD),
                         "Supervdsm didn't start")
         time.sleep(SLEEP_SERVICE)
+        success, output = self.machine.runCmd(HW_INFO_COMMAND)
+        self.assertFalse(success,
+                         "Get HW Info is suppose to fail first time after "
+                         "supervdsmd restart:\n%s" % output)
         success, output = self.machine.runCmd(HW_INFO_COMMAND)
         self.assertTrue(success, ERROR_HW_OUTPUT % output)
 
@@ -331,3 +331,6 @@ class TestCase293152(SuperVDSMTestBase):
         self.machine.runCmd(["chmod", "0644", SUPERVDSM_LOG])
         self.machine.runCmd(["chown", "vdsm:kvm", SUPERVDSM_LOG])
         self.machine.startService(SUPERVDSMD)
+        # after restarting supervdsm, run vdsm command that requires
+        # supervdsm in order to trigger reconnection between supervdsm and vdsm
+        self.machine.runCmd(HW_INFO_COMMAND)
