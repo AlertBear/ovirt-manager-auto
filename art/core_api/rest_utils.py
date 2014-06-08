@@ -17,10 +17,10 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 from lxml import etree
-import os
 import re
 import time
-
+import threading
+from contextlib import contextmanager
 from art.core_api import http, template_parser, validator, measure_time
 from art.core_api.apis_exceptions import EntityNotFound, APIException,\
     APILoginError
@@ -34,6 +34,7 @@ class RestUtil(APIUtil):
     xsd = None
     xsd_schema_errors = []
     _restInit = None
+    context_lock = threading.Lock()
 
     '''
     Implements REST APIs methods
@@ -85,6 +86,26 @@ class RestUtil(APIUtil):
         Returns: True if logout succeeded or False otherwise
         """
         cls._restInit = None
+
+    @contextmanager
+    def correlationIdContext(self):
+        """
+        Description: context management for getting correlation id
+        Author: imeerovi
+        Parameters: None
+        Returns: correlation-id
+        """
+        with self.__class__.context_lock:
+            try:
+                self.api.headers['Correlation-Id'] = super(
+                    RestUtil, self).getCorrelationId()
+                self.logger.info("Using Correlation-Id: %s",
+                                 self.api.headers['Correlation-Id'])
+                yield
+            finally:
+                self.logger.debug("Cleaning Correlation-Id: %s",
+                                  self.api.headers['Correlation-Id'])
+                self.api.headers.pop('Correlation-Id')
 
     def validateResponseViaXSD(self, href, ret):
         '''
@@ -221,8 +242,10 @@ class RestUtil(APIUtil):
             "CREATE request content is --  url:%(uri)s body:%(body)s ",
             {'uri': post_url, 'body': entity})
 
-        with measure_time('POST'):
-            ret = self.api.POST(post_url, entity)
+        # TODO: fix this nasty nested with when we will move to python 2.7
+        with self.correlationIdContext():
+            with measure_time('POST'):
+                ret = self.api.POST(post_url, entity)
 
         if not self.opts['validate']:
             return None, True
@@ -289,8 +312,10 @@ class RestUtil(APIUtil):
             "PUT request content is --  url:%(uri)s body:%(body)s ",
             {'uri': put_url, 'body': entity})
 
-        with measure_time('PUT'):
-            ret = self.api.PUT(put_url, entity)
+        # TODO: fix this nasty nested with when we will move to python 2.7
+        with self.correlationIdContext():
+            with measure_time('PUT'):
+                ret = self.api.PUT(put_url, entity)
 
         if not self.opts['validate']:
             return None, True
@@ -334,22 +359,22 @@ class RestUtil(APIUtil):
                                    request
         Return: status (True if DELETE test succeeded, False otherwise)
         '''
+        with self.correlationIdContext():
+            if body:
+                if not element_name:
+                    element_name = self.element_name
+                body = validator.dump_entity(body, element_name)
+                self.logger.debug(
+                    "DELETE request content is --  url:%(uri)s body:%(body)s ",
+                    {'uri': entity.href, 'body': body})
 
-        if body:
-            if not element_name:
-                element_name = self.element_name
-            body = validator.dump_entity(body, element_name)
-            self.logger.debug(
-                "DELETE request content is --  url:%(uri)s body:%(body)s ",
-                {'uri': entity.href, 'body': body})
-
-            with measure_time('DELETE'):
-                ret = self.api.DELETE(entity.href, body)
-        else:
-            self.logger.debug("DELETE request content is --  url:%(uri)s",
-                              {'uri': entity.href})
-            with measure_time('DELETE'):
-                ret = self.api.DELETE(entity.href)
+                with measure_time('DELETE'):
+                    ret = self.api.DELETE(entity.href, body)
+            else:
+                self.logger.debug("DELETE request content is --  url:%(uri)s",
+                                  {'uri': entity.href})
+                with measure_time('DELETE'):
+                    ret = self.api.DELETE(entity.href)
 
         if not self.opts['validate']:
             return True
@@ -501,8 +526,10 @@ class RestUtil(APIUtil):
             "Action request content is --  url:%(uri)s body:%(body)s ",
             {'uri': actionHref, 'body': actionBody})
 
-        with measure_time('POST'):
-            ret = self.api.POST(actionHref, actionBody)
+        # TODO: fix this nasty nested with when we will move to python 2.7
+        with self.correlationIdContext():
+            with measure_time('POST'):
+                ret = self.api.POST(actionHref, actionBody)
 
         if not self.opts['validate']:
             return True

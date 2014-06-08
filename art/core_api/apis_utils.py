@@ -21,7 +21,9 @@ import sys
 import time
 import abc
 import logging
+import inspect
 from collections import namedtuple
+from utilities.utils import generateShortGuid
 from art.core_api.apis_exceptions import APITimeout, EntityNotFound
 import art.test_handler.settings as settings
 
@@ -41,7 +43,7 @@ NEGATIVE_CODES = [400, 409, 500]
 NEGATIVE_CODES_CREATE = NEGATIVE_CODES + [404]
 HEADERS = 'headers'
 CORRELATION_ID = 'Correlation-Id'
-
+MAX_CORRELATION_ID_LENGTH = 50
 logger = logging.getLogger('api_utils')
 
 api_error = namedtuple('api_error', 'reason status detail')
@@ -58,6 +60,7 @@ class APIUtil(object):
     Basic class for API functionality
     '''
     __metaclass__ = abc.ABCMeta
+    __api_methods = ['create', 'update', 'delete', 'syncAction']
 
     def __init__(self, element, collection, **kwargs):
         self.opts = kwargs['opts'] if 'opts' in kwargs else settings.opts
@@ -115,7 +118,26 @@ class APIUtil(object):
         return logging.getLogger(self.collection_name)
 
     def getCorrelationId(self):
-        return self.opts[HEADERS].get(CORRELATION_ID, None)
+        '''
+        Description: builds unique correlation id
+        Parameters: None
+        Return: correlation id
+        '''
+        # backward compatibility
+        if CORRELATION_ID in self.opts[HEADERS]:
+            return self.opts[HEADERS][CORRELATION_ID]
+
+        funcs_names_stack = [func[3] for func in inspect.stack()]
+        api_func_name = filter(lambda func: func in self.__api_methods,
+                               funcs_names_stack)[0]
+        test_func_name = funcs_names_stack[funcs_names_stack.index(
+            api_func_name) + 1]
+
+        correlation_id = "_".join(
+            [generateShortGuid(), test_func_name,
+             api_func_name])[:MAX_CORRELATION_ID_LENGTH]
+
+        return correlation_id
 
     def getReqMatrixParams(self, current=None):
         '''

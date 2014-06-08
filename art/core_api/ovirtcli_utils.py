@@ -861,7 +861,7 @@ class CliUtil(RestUtil):
                                entityName, addEntity)
         correlationId = self.getCorrelationId()
         if correlationId:
-            createCmd = "%s --correlation_id %s" % (createCmd, correlationId)
+            createCmd = "%s --correlation_id '%s'" % (createCmd, correlationId)
 
         # checking if we have legal entity name
         createCmd = self.cli.convertComplexNameToBaseEntityName(entity,
@@ -955,7 +955,7 @@ class CliUtil(RestUtil):
 
         correlationId = self.getCorrelationId()
         if correlationId:
-            updateCmd = "%s --correlation_id %s" % (updateCmd, correlationId)
+            updateCmd = "%s --correlation_id '%s'" % (updateCmd, correlationId)
 
         if current is not None:
             updateCmd = "%s --current %s" % (updateCmd, str(current).lower())
@@ -1055,7 +1055,7 @@ class CliUtil(RestUtil):
 
         correlationId = self.getCorrelationId()
         if correlationId:
-            deleteCmd = "%s --correlation_id %s" % (deleteCmd, correlationId)
+            deleteCmd = "%s --correlation_id '%s'" % (deleteCmd, correlationId)
 
         # checking if we have legal entity name
         deleteCmd = self.cli.convertComplexNameToBaseEntityName(entity,
@@ -1243,7 +1243,7 @@ class CliUtil(RestUtil):
 
         correlationId = self.getCorrelationId()
         if correlationId:
-            actionCmd = "%s --correlation_id %s" % (actionCmd, correlationId)
+            actionCmd = "%s --correlation_id '%s'" % (actionCmd, correlationId)
 
         if self.opts['validate_cli_command']:
             # validating command vs cli help
