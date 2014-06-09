@@ -27,7 +27,6 @@ from decimal import Decimal
 
 from art.core_api import validator, measure_time
 from art.core_api.apis_exceptions import EntityNotFound
-from art.rhevm_api.data_struct.data_structures import *
 from art.rhevm_api.data_struct.data_structures import ClassesMapping
 from art.core_api.apis_exceptions import APIException, APILoginError
 from art.core_api.apis_utils import APIUtil

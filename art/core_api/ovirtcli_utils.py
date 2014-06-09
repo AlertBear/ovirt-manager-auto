@@ -22,10 +22,8 @@ import re
 import threading
 import subprocess
 from functools import wraps
-from sys import exit
 from abc import ABCMeta, abstractmethod
 from time import strftime, sleep
-from art.rhevm_api.data_struct.data_structures import *
 from art.rhevm_api.data_struct.data_structures import ClassesMapping
 from art.core_api.rest_utils import RestUtil
 from art.core_api.apis_utils import api_error
