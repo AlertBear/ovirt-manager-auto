@@ -138,7 +138,7 @@ class TestCasePosix(TestCase):
         result = self.default_update()
         LOGGER.info("result: %s" % result)
         assert result
-        self.left_domains.append([self.address, self.path, sd.id])
+        self.left_domains.append([self.address, self.path, sd.get_id()])
 
         LOGGER.info("Activating sd")
         assert storagedomains.activateStorageDomain(
@@ -310,7 +310,7 @@ class TestCase288710(TestCaseNFS):
         assert result
 
         helpers.clean_nfs_domain(
-            self.address, self.path, sd.id, config.HOST_FOR_MNT, 'root',
+            self.address, self.path, sd.get_id(), config.HOST_FOR_MNT, 'root',
             config.PASSWD_FOR_MNT)
 
         assert storagedomains.activateStorageDomain(
@@ -326,19 +326,23 @@ class TestCase288710(TestCaseNFS):
         new_path = config.PARAMETERS.as_list('another_path')[1]
 
         helpers.copy_nfs_sd(
-            self.address, self.path, new_address, new_path,
+            old_address, old_path, new_address, new_path,
             config.HOST_FOR_MNT, 'root', config.PASSWD_FOR_MNT)
 
         assert datacenters.waitForDataCenterState(config.DATA_CENTER_NAME)
         assert hosts.waitForHostsStates(True, self.host)
 
         result = storageconnections.update_connection(
-            self.conn, address=self.address, path=self.path, type='nfs',
+            self.conn, address=new_address, path=new_path, type='nfs',
             host=self.host)[1]
         assert result
 
         self.left_domains[0][0] = old_address
         self.left_domains[0][1] = old_path
+
+        helpers.clean_nfs_domain(
+            old_address, old_path, sd.get_id(), config.HOST_FOR_MNT, 'root',
+            config.PASSWD_FOR_MNT)
 
         assert storagedomains.activateStorageDomain(
             True, config.DATA_CENTER_NAME, self.sd_name)
