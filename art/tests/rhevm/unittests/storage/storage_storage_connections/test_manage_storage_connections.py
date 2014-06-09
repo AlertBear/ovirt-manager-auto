@@ -444,6 +444,11 @@ class TestCase288708(TestCaseLocalFS):
         LOGGER.info("Reverting changes in storage connection")
         storageconnections.update_connection(
             self.conn, path=self.old_path, type='localfs', host=self.host)
+
+        LOGGER.info('Re-activating storage domain')
+        storagedomains.activateStorageDomain(True, config.DATA_CENTER_NAME,
+                                             self.sd_name)
+
         LOGGER.info("Calling common tearDown")
         super(TestCase288708, self).tearDown()
 
