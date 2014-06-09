@@ -1028,3 +1028,26 @@ def add_label_to_network(network, label, datacenter=None, cluster=None):
     status = NET_API.create(entity=label_obj, positive=True,
                             collection=labels_href, coll_elm_name="label")[1]
     return status
+
+
+def check_bridge_opts(host, user, password, bridge_name, opts, value):
+    """
+    Checks the bridge_opts of specific network bridge
+    **Author**: gcheresh
+        **Parameters**:
+        *  *host* - machine ip address or fqdn of the machine
+        *  *user* - root user on the  machine
+        *  *password* - password for the user
+        *  *bridge_name* - name of the bridge with specific opts
+        *  *opts* - opts name to check
+        *  *value - value of opts to compare to
+    **Return**: True if the value for bridge_opts is equal to the value
+    provided, False otherwise
+    """
+    machine_obj = Machine(host, user, password).util(LINUX)
+    bridge_file = os.path.join(SYS_CLASS_NET_DIR, bridge_name, 'bridge', opts)
+    rc, output = machine_obj.runCmd(["cat", bridge_file])
+    if not rc:
+        logger.error("Can't read {0}".format(bridge_file))
+        return False
+    return output.strip() == value
