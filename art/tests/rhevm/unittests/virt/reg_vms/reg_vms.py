@@ -539,6 +539,44 @@ class UpdateVm(BaseVm):
         self.assertFalse(vm_api.updateVm(True, self.vm_name, memory=512*MB))
 
 
+class UpdateRunningVm(BaseVmWithDisk):
+    """
+    Update parameters of a running VM.
+    """
+    __test__ = True
+    vm_name = 'running_vm'
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Start VM.
+        """
+        super(UpdateRunningVm, cls).setup_class()
+        logger.info("Starting VM %s", cls.vm_name)
+        if not vm_api.startVm(True, cls.vm_name,
+                              wait_for_status=ENUMS['vm_state_up']):
+            raise errors.VMException("Failed to start VM")
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Stop VM.
+        """
+        logger.info("Stopping VM %s", cls.vm_name)
+        if not vm_api.stopVm(True, cls.vm_name):
+            raise errors.VMException("Failed to stop VM")
+        super(UpdateRunningVm, cls).teardown_class()
+
+    @istest
+    def update_vm_description(self):
+        """
+        Update description of a running VM.
+        """
+        logger.info("Updating description of VM %s", self.vm_name)
+        self.assertTrue(
+            vm_api.updateVm(True, self.vm_name, description="TEST"))
+
+
 class DifferentVmTestCases(TestCase):
     """
     Create, update and delete vms with different parameters
