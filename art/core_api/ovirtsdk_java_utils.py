@@ -753,6 +753,9 @@ class JavaTranslator(object):
         # BigDecimal case
         elif isinstance(data, java.math.BigDecimal):
             python_data = Decimal(data.toString())
+        # enum case
+        elif isinstance(data, java.lang.Enum):
+            python_data = data.toString()
         # assuming that this is string
         elif data is not None:
             python_data = data.encode('utf8')
