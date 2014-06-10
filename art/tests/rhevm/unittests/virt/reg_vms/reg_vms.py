@@ -856,6 +856,16 @@ class ImportExportVm(BaseVmWithDisk):
     __test__ = True
     vm_name = 'export_vm'
 
+    @classmethod
+    def teardown_class(cls):
+        """ Remove the VM from export storage. """
+        if not vm_api.removeVmFromExportDomain(
+                True, cls.vm_name, config.dc_name, config.export_storage):
+            raise errors.VMException(
+                "Failed to remove VM %s from export storage %s"
+                % (cls.vm_name, config.export_storage))
+        super(ImportExportVm, cls).teardown_class()
+
     @istest
     def basic_import_export_vm(self):
         """
