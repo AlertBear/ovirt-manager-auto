@@ -4,19 +4,18 @@ Created on May 12, 2014
 @author: ncredi
 '''
 
+import logging
+
 from nose.tools import istest
 from nose.plugins.attrib import attr
 
-import config
-
 from art.unittest_lib import BaseTestCase as TestCase
-import logging
 from art.rhevm_api.tests_lib.low_level import hosts
-from art.rhevm_api.tests_lib.low_level import datacenters
-from art.rhevm_api.tests_lib.low_level import clusters
-from art.test_handler.exceptions import DataCenterException, ClusterException
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from art.core_api.apis_exceptions import EntityNotFound, EngineTypeError
+
+from .. import config
+from .. import help_functions
 
 logger = logging.getLogger(__name__)
 
@@ -26,26 +25,8 @@ def setup_module():
     Setup prerequisites for testing host functionality:
     create data center & cluster
     """
-    logger.info('Add data center')
-    status = datacenters.addDataCenter(
-        positive=True, name=config.DATA_CENTER_1_NAME,
-        local=False, version=config.COMPATIBILITY_VERSION)
-    if not status:
-        raise DataCenterException('Failed to add data center')
-    logger.info('Add cluster')
-    status = clusters.addCluster(positive=True, name=config.CLUSTER_1_NAME,
-                                 cpu=config.CPU_NAME,
-                                 data_center=config.DATA_CENTER_1_NAME,
-                                 version=config.COMPATIBILITY_VERSION,
-                                 on_error='migrate')
-    if not status:
-        logger.info('Failed to add cluster - clean environment')
-        logger.info('Remove data center')
-        status = datacenters.removeDataCenter(
-            positive=True, datacenter=config.DATA_CENTER_1_NAME)
-        if not status:
-            raise DataCenterException('Failed to remove data center')
-        raise ClusterException('Failed to add cluster')
+    help_functions.utils.add_dc()
+    help_functions.utils.add_cluster()
 
 
 def teardown_module():
@@ -53,16 +34,8 @@ def teardown_module():
     Tear down prerequisites for testing host functionality:
     remove data center & cluster
     """
-    logger.info('Remove cluster')
-    status = clusters.removeCluster(positive=True,
-                                    cluster=config.CLUSTER_1_NAME)
-    if not status:
-        raise ClusterException('Failed to remove cluster')
-    logger.info('Remove data center')
-    status = datacenters.removeDataCenter(
-        positive=True, datacenter=config.DATA_CENTER_1_NAME)
-    if not status:
-        raise DataCenterException('Failed to remove data center')
+    help_functions.utils.remove_cluster()
+    help_functions.utils.remove_dc()
 
 
 @attr(team='automationInfra', tier=0)
@@ -70,6 +43,10 @@ class TestCaseHost(TestCase):
     """
     Host sanity tests for basic functionality
     """
+
+    __test__ = True
+
+    host_name = config.HOST_NAME
 
     @classmethod
     def teardown_class(cls):
@@ -85,8 +62,6 @@ class TestCaseHost(TestCase):
             logger.info('Failed to remove host - this is expected if: '
                         '1. remove host test passed successfully '
                         '2. add host test failed')
-
-    __test__ = True
 
     @istest
     def t01_add_host(self):
@@ -123,14 +98,11 @@ class TestCaseHost(TestCase):
         than returns it back to the original name
         """
         logger.info('Update host name')
-        new_name = config.HOST_NAME + 'Updated'
+        new_name = 'Host_updated_name'
         status = hosts.updateHost(positive=True, host=config.HOST_NAME,
                                   name=new_name)
         self.assertTrue(status, 'Update host name')
-        logger.info('Change host name back to the default value')
-        status = hosts.updateHost(positive=True, host=new_name,
-                                  name=config.HOST_NAME)
-        self.assertTrue(status, 'Update host name to default value')
+        self.__class__.host_name = new_name
 
     @istest
     def t04_activate_active_host(self):
@@ -139,7 +111,8 @@ class TestCaseHost(TestCase):
         the test activates an active host & verifies it fails
         """
         logger.info('Activate active host')
-        status = hosts.activateHost(positive=False, host=config.HOST_NAME)
+        status = hosts.activateHost(positive=False,
+                                    host=self.host_name)
         self.assertTrue(status, 'Activate active host')
 
     @istest
@@ -149,7 +122,8 @@ class TestCaseHost(TestCase):
         the test sets the host to maintenance mode
         """
         logger.info('Set active host to maintenance')
-        status = hosts.deactivateHost(positive=True, host=config.HOST_NAME)
+        status = hosts.deactivateHost(positive=True,
+                                      host=self.host_name)
         self.assertTrue(status, 'Set active host to maintenance')
 
     @istest
@@ -159,7 +133,8 @@ class TestCaseHost(TestCase):
         the test activates a host from maintenance mode
         """
         logger.info('Activate host')
-        status = hosts.activateHost(positive=True, host=config.HOST_NAME)
+        status = hosts.activateHost(positive=True,
+                                    host=self.host_name)
         self.assertTrue(status, 'Activate host')
 
     @istest
@@ -169,7 +144,9 @@ class TestCaseHost(TestCase):
         the test sets the host to maintenance mode & removes it
         """
         logger.info('Remove host')
-        status = hosts.deactivateHost(positive=True, host=config.HOST_NAME)
+        status = hosts.deactivateHost(positive=True,
+                                      host=self.host_name)
         self.assertTrue(status, 'Set active host to maintenance')
-        status = hosts.removeHost(positive=True, host=config.HOST_NAME)
+        status = hosts.removeHost(positive=True,
+                                  host=self.host_name)
         self.assertTrue(status, 'Remove host')

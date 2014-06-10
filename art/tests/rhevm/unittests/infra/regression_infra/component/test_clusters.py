@@ -4,18 +4,19 @@ Created on June 3, 2014
 @author: ncredi
 '''
 
+import logging
+
 from nose.tools import istest
 from nose.plugins.attrib import attr
 
-import config
-
 from art.unittest_lib import BaseTestCase as TestCase
-import logging
 from art.rhevm_api.tests_lib.low_level import datacenters
 from art.rhevm_api.tests_lib.low_level import clusters
-from art.test_handler.exceptions import DataCenterException
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from art.core_api.apis_exceptions import EntityNotFound, EngineTypeError
+
+from .. import config
+from .. import help_functions
 
 logger = logging.getLogger(__name__)
 ENUMS = config.ENUMS
@@ -26,12 +27,7 @@ def setup_module():
     Setup prerequisites for testing cluster functionality:
     create data center
     """
-    logger.info('Add data center')
-    status = datacenters.addDataCenter(
-        positive=True, name=config.DATA_CENTER_1_NAME,
-        local=False, version=config.COMPATIBILITY_VERSION)
-    if not status:
-        raise DataCenterException('Failed to add data center')
+    help_functions.utils.add_dc()
 
 
 def teardown_module():
@@ -39,11 +35,7 @@ def teardown_module():
     Tear down prerequisites for testing cluster functionality:
     remove data center
     """
-    logger.info('Remove data center')
-    status = datacenters.removeDataCenter(
-        positive=True, datacenter=config.DATA_CENTER_1_NAME)
-    if not status:
-        raise DataCenterException('Failed to remove data center')
+    help_functions.utils.remove_dc()
 
 
 @attr(team='automationInfra', tier=0)
@@ -51,6 +43,10 @@ class TestCaseCluster(TestCase):
     """
     Cluster sanity tests for basic functionality
     """
+
+    __test__ = True
+
+    cluster_name = config.STORAGE_DOMAIN_NAME
 
     @classmethod
     def teardown_class(cls):
@@ -68,8 +64,6 @@ class TestCaseCluster(TestCase):
             logger.info('Failed to remove cluster - this is expected if: '
                         '1. remove clusters test passed successfully '
                         '2. add cluster tests failed')
-
-    __test__ = True
 
     @istest
     def t01_add_cluster(self):
@@ -276,10 +270,7 @@ class TestCaseCluster(TestCase):
         status = clusters.updateCluster(positive=True, name=new_name,
                                         cluster=config.CLUSTER_1_NAME)
         self.assertTrue(status, 'Update cluster name')
-        logger.info('Change cluster name back to the default value')
-        status = clusters.updateCluster(positive=True, cluster=new_name,
-                                        name=config.CLUSTER_1_NAME)
-        self.assertTrue(status, 'Update cluster name to default value')
+        self.__class__.cluster_name = new_name
 
     @istest
     def t16_update_cluster_description(self):
@@ -289,7 +280,7 @@ class TestCaseCluster(TestCase):
         """
         logger.info('Update cluster description')
         status = clusters.updateCluster(positive=True,
-                                        cluster=config.CLUSTER_1_NAME,
+                                        cluster=self.cluster_name,
                                         description='Cluster Description')
         self.assertTrue(status, 'Update cluster description')
 
@@ -301,7 +292,7 @@ class TestCaseCluster(TestCase):
         """
         logger.info('Update cluster on error behavior')
         status = clusters.updateCluster(positive=True,
-                                        cluster=config.CLUSTER_1_NAME,
+                                        cluster=self.cluster_name,
                                         on_error='migrate_highly_available')
         self.assertTrue(status, 'Update cluster on error behavior')
 
@@ -309,8 +300,8 @@ class TestCaseCluster(TestCase):
     def t18_update_cluster_data_center(self):
         """
         test verifies update cluster functionality
-        the test updates the cluster data center to a non existing DC
-        & verifies failure
+        the test updates the cluster data center & verifies failure
+        'Cannot change Data Center association when editing a Cluster.'
         """
         logger.info('Add data center')
         status = datacenters.addDataCenter(
@@ -318,13 +309,13 @@ class TestCaseCluster(TestCase):
             local=False, version=config.COMPATIBILITY_VERSION)
         self.assertTrue(status, 'Add data center')
         logger.info('Update cluster data center')
-        status = clusters.updateCluster(positive=False,
-                                        cluster=config.CLUSTER_1_NAME,
-                                        data_center=config.DATA_CENTER_2_NAME)
-        self.assertTrue(status, 'Remove data center')
+        test_status = clusters.updateCluster(
+            positive=False, cluster=self.cluster_name,
+            data_center=config.DATA_CENTER_2_NAME)
         status = datacenters.removeDataCenter(
             positive=True, datacenter=config.DATA_CENTER_2_NAME)
         self.assertTrue(status, 'Remove data center')
+        self.assertTrue(test_status, 'Update cluster data center')
 
     @istest
     def t19_update_cluster_memory_overcommit(self):
@@ -494,7 +485,7 @@ class TestCaseCluster(TestCase):
         the test removes all clusters
         """
         logger.info('Remove clusters')
-        clusters_to_remove = ','.join([config.CLUSTER_1_NAME,
+        clusters_to_remove = ','.join([self.cluster_name,
                                        config.CLUSTER_2_NAME,
                                        config.CLUSTER_3_NAME,
                                        config.CLUSTER_4_NAME])

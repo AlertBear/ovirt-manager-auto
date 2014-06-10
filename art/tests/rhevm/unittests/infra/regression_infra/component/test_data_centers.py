@@ -9,13 +9,15 @@ command:
 
 @author: Kobi Hakimi
 """
+import logging
+
 from nose.tools import istest
 from nose.plugins.attrib import attr
-from art.unittest_lib import BaseTestCase as TestCase
-import logging
-from art.rhevm_api.tests_lib.high_level.datacenters import datacenters
-import config
 
+from art.unittest_lib import BaseTestCase as TestCase
+from art.rhevm_api.tests_lib.high_level.datacenters import datacenters
+
+from .. import config
 
 logger = logging.getLogger(__name__)
 
