@@ -11,6 +11,7 @@ import art.rhevm_api.utils.storage_api as st_api
 import config
 
 logger = logging.getLogger(__name__)
+TCMS_PLAN_ID = '6458'
 
 
 def setup_module():
@@ -39,11 +40,11 @@ class TestCase94947(TestCase):
     https://tcms.engineering.redhat.com/case/94947/?from_plan=4038
     """
     __test__ = True
-    tcms_plan_id = '4038'
+
     tcms_test_case = '94947'
 
     @istest
-    @tcms(tcms_plan_id, tcms_test_case)
+    @tcms(TCMS_PLAN_ID, tcms_test_case)
     def create_remove_data_center_test(self):
         """ extends master storage domain
         """
@@ -68,12 +69,10 @@ class TestCase94950(TestCase):
     https://tcms.engineering.redhat.com/case/94947/?from_plan=4038
     """
     __test__ = True
-    tcms_plan_id = '4038'
     tcms_test_case = '94950'
 
-
     @istest
-    @tcms(tcms_plan_id, tcms_test_case)
+    @tcms(TCMS_PLAN_ID, tcms_test_case)
     def change_domain_status_test(self):
         """ test checks if detaching/attaching storage domains works properly
         including that it is impossible to detach active domain
@@ -141,11 +140,10 @@ class TestCase94954(TestCase):
     https://tcms.engineering.redhat.com/case/94954/?from_plan=4038
     """
     __test__ = True
-    tcms_plan_id = '4038'
     tcms_test_case = '94954'
 
     @istest
-    @tcms(tcms_plan_id, tcms_test_case)
+    @tcms(TCMS_PLAN_ID, tcms_test_case)
     def change_master_domain_test(self):
         """ test checks if changing master domain works correctly
         """
