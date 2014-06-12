@@ -1016,7 +1016,7 @@ def checkVmHasCdromAttached(positive, vmName):
                                     get_href=True)
 
     if not cdroms:
-        VM_API.logger.error('There are no cdroms attached to vm %s', vmName)
+        VM_API.logger.warning('There are no cdroms attached to vm %s', vmName)
         return not positive
     return positive
 
@@ -1882,6 +1882,48 @@ def changeCDWhileRunning(vm_name, cdrom_image):
     cdrom, status = CDROM_API.update(cdroms[0], newCdrom, True, current=True)
 
     return status
+
+
+def attach_cdrom_vm(positive, vm_name, cdrom_image):
+    """
+    Attach a cdrom image to a vm
+    Author: cmestreg
+     * vm_name: name of the vm
+     * cdrom_image: name of the image to attach to
+    Returns: True in case of success/False otherwise
+    """
+    cdroms = getCdRomsObjList(vm_name)
+    newCdrom = data_st.CdRom()
+    newCdrom.set_file(data_st.File(id=cdrom_image))
+
+    cdrom, status = CDROM_API.update(cdroms[0], newCdrom, positive)
+    return status
+
+
+def getCdRomsObjList(vm_name, href=False):
+    """
+    Description: Returns a list of cdrom objects
+    Author: cmestreg
+    Parameters:
+        * vm_name: name of the vm
+        * href: boolean, return href link or not
+    Returns a list of cdrom object
+    """
+    vmObj = VM_API.find(vm_name)
+    return CDROM_API.getElemFromLink(vmObj, link_name='cdroms',
+                                     attr='cdrom', get_href=href)
+
+
+def remove_cdrom_vm(positive, vm_name):
+    """
+    Description: Removes the cdrom object from the vm
+    Author: cmestreg
+    Parameters:
+        * vm_name: name of the vm to remove the cdrom from
+    Returns: True is action succeeded, False otherwise
+    """
+    cdroms = getCdRomsObjList(vm_name)
+    return CDROM_API.delete(cdroms[0], positive)
 
 
 def _createVmForClone(

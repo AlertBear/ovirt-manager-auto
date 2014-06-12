@@ -151,8 +151,11 @@ def _prepareStorageDomainObject(positive, **kwargs):
             Storage(
                 type_=storage_type, path=kwargs.pop('path', None),
                 address=kwargs.pop('address', None),
-                vfs_type=kwargs.pop('vfs_type', None)))
-        storage_format = ENUMS['storage_format_version_v3']
+                vfs_type=kwargs.pop('vfs_type', None)
+            )
+        )
+        storage_format = kwargs.pop(
+            'storage_format', ENUMS['storage_format_version_v3'])
         sd.set_storage_format(storage_format)
     elif storage_type == ENUMS['storage_type_gluster']:
         sd.set_storage(
@@ -461,7 +464,8 @@ def removeStorageDomain(positive, storagedomain, host, format='false',
 
 @is_action()
 def importStorageDomain(positive, type, storage_type, address, path, host,
-                        nfs_version=None, nfs_retrans=None, nfs_timeo=None):
+                        nfs_version=None, nfs_retrans=None, nfs_timeo=None,
+                        vfs_type=None, storage_format=None):
     '''
     Description: import storage domain (similar to create function, but not
     providing name)
@@ -478,10 +482,13 @@ def importStorageDomain(positive, type, storage_type, address, path, host,
 
     sdStorage = Storage(type_=storage_type, address=address, path=path,
                         nfs_version=nfs_version, nfs_retrans=nfs_retrans,
-                        nfs_timeo=nfs_timeo)
+                        nfs_timeo=nfs_timeo, vfs_type=vfs_type,
+                        )
     h = Host(name=host)
 
     sd = StorageDomain(type_=type, host=h, storage=sdStorage)
+    if storage_format:
+        sd.set_storage_format(storage_format)
     sd, status = util.create(sd, positive)
 
     return status
@@ -1100,16 +1107,19 @@ def findNonMasterStorageDomains(positive, datacenter):
 
 
 @is_action()
-def findIsoStorageDomains(datacenter):
+def findIsoStorageDomains(datacenter=None):
     '''
-    Description: find all iso storage domains
+    Description: find all iso storage domains in datacenter only if specified
     Author: cmestreg
     Parameters:
         * datacenter - datacenter name
     Return: List of all iso storage domains
     '''
 
-    sdObjList = getDCStorages(datacenter, False)
+    if datacenter:
+        sdObjList = getDCStorages(datacenter, False)
+    else:
+        sdObjList = util.get(absLink=False)
 
     isoDomains = [sdObj.get_name() for sdObj in sdObjList if
                   sdObj.get_type() == ENUMS['storage_dom_type_iso']]
