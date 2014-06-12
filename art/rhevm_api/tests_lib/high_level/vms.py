@@ -233,3 +233,41 @@ def get_vm_ip(vm_name, start_vm=True):
         raise errors.VMException("Vm %s still not have ip" %
                                  vm_name)
     return result.get('ip')
+
+
+def start_vm_on_specific_host(vm, host):
+    """
+    Start vm on specific host
+    **Author**: alukiano
+    **Parameters**:
+        * *vm* - vm name
+        * *host* - host name
+    **Returns**: True if vm started successfully on host,
+                 otherwise False
+    """
+    logging.info("Update vm %s to run on host %s", vm, host)
+    if not vms.updateVm(True, vm, placement_host=host):
+        return False
+    logging.info("Start vm %s", vm)
+    return vms.startVm(True, vm)
+
+
+def start_vms_on_specific_host(
+        vm_list, max_workers, host,
+        wait_for_status=ENUMS['vm_state_powering_up'],
+        wait_for_ip=True):
+    """
+    Description: Starts all vms in vm_list. Throws an exception if it fails
+
+    Parameters:
+        * vm_list - List of vm names
+        * max_workers - In how many threads should vms start
+        * host name
+        * wait_for_status - from ENUMS, to which state we wait for
+        * wait_for_ip - Boolean, wait to get an ip from the vm
+    """
+    logging.info("Update vms %s to run on host %s", vm_list, host)
+    for vm_name in vm_list:
+        if not vms.updateVm(True, vm_name, placement_host=host):
+            return False
+    return vms.start_vms(vm_list, max_workers, wait_for_status, wait_for_ip)
