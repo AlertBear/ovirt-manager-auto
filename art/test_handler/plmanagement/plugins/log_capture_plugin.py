@@ -18,8 +18,9 @@ Configuration Options:
     | **enabled** - to enable the plugin (true/false)
     | **level** - logging level, default: debug
     | **record_name** - xml node name in results file, default: captured_log
-    | **fmt** - a string which describes the log  message format, for an example:
-        '#(asctime)s - #(threadName)s - #(name)s - #(levelname)s - #(message)s')
+    | **fmt** - a string which describes the log  message format, for an
+    |           example: '#(asctime)s - #(threadName)s - #(name)s
+    |                    - #(levelname)s - #(message)s')
 """
 
 import re
@@ -27,11 +28,13 @@ import logging
 
 from art.test_handler.plmanagement import Component, implements, ThreadScope
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
-from art.test_handler.plmanagement.interfaces.tests_listener import ITestCaseHandler
+from art.test_handler.plmanagement.interfaces.tests_listener import \
+    ITestCaseHandler
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
-from art.test_handler.plmanagement.interfaces.report_formatter import IResultExtension
+from art.test_handler.plmanagement.interfaces.report_formatter import \
+    IResultExtension
 from art.test_handler.plmanagement.interfaces.config_validator import\
-                                                    IConfigValidation
+    IConfigValidation
 
 
 LOGS = 'LOG_CAPTURE'
@@ -45,9 +48,9 @@ DEFAULT_LEVEL = 'debug'
 ATTR_NAME = 'captured_log'
 
 
-class LogCaptureHandler(logging.StreamHandler):
+class LogCaptureHandler(logging.Handler):
     def __init__(self):
-        super(LogCaptureHandler, self).__init__(logging.DEBUG)
+        logging.Handler.__init__(self, logging.DEBUG)
         self.th_scope = ThreadScope()
 
     def set_test_case(self, t):
@@ -67,8 +70,14 @@ class LogCaptureHandler(logging.StreamHandler):
         if self.th_scope.tc is None:
             return
         log = getattr(self.th_scope.tc, ATTR_NAME, str())
-        log += super(LogCaptureHandler, self).emit(rec) + '\n'
+        log += self.format(rec) + '\n'
         setattr(self.th_scope.tc, ATTR_NAME, log)
+
+    def format(self, rec):
+        data = logging.Handler.format(self, rec)
+        if isinstance(data, unicode):
+            data = data.encode('UTF-8', 'replace')
+        return data
 
 
 class LogCapture(Component):
@@ -138,9 +147,9 @@ class LogCapture(Component):
         params['author_email'] = 'lbednar@redhat.com'
         params['description'] = 'Log capturing for ART'
         params['long_description'] = 'Log capturing plugin for ART. '\
-                                'It collects logs related to running test_case.'
-        params['py_modules'] = ['art.test_handler.plmanagement.plugins.log_capture_plugin']
-
+            'It collects logs related to running test_case.'
+        params['py_modules'] = \
+            ['art.test_handler.plmanagement.plugins.log_capture_plugin']
 
     def config_spec(self, spec, val_funcs):
         section_spec = spec.get(LOGS, {})
@@ -148,5 +157,3 @@ class LogCapture(Component):
         section_spec[record_name] = 'string(default=%s)' % ATTR_NAME
         section_spec[logging_level] = 'string(default=%s)' % DEFAULT_LEVEL
         spec[LOGS] = section_spec
-
-
