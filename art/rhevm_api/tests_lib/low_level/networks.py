@@ -36,6 +36,8 @@ VNIC_PROFILE_API = get_api('vnic_profile', 'vnicprofiles')
 MGMT_NETWORK = "rhevm"
 PROC_NET_DIR = "/proc/net"
 NETWORK_NAME = "NET"
+ETHTOOL_OFFLOAD = ("tcp-segmentation-offload", "udp-fragmentation-offload")
+ETHTOOL_CMD = "ethtool"
 
 logger = logging.getLogger('networks')
 
@@ -1073,3 +1075,30 @@ def check_bond_mode(host, user, password, interface, mode):
         return False
     bond_mode = output.split()[1]
     return bond_mode == str(mode)
+
+
+def check_ethtool_opts(host, user, password, nic, opts, value):
+    """
+    Checks the ethtool_opts of specific network interface
+    **Author**: gcheresh
+        **Parameters**:
+        *  *host* - machine ip address or fqdn of the machine
+        *  *user* - root user on the  machine
+        *  *password* - password for the user
+        *  *nic* - NIC name with specific ethtool opts configured
+        *  *opts* - ethtool_opts name to check
+        *  *value - value of ethtool_opts to compare to
+    **Return**: True if the value for ethtool_opts is equal to the value
+    provided, False otherwise
+    """
+    cmd = [ETHTOOL_CMD, "-k", nic] if opts in ETHTOOL_OFFLOAD else (
+        [ETHTOOL_CMD, nic])
+    machine_obj = Machine(host, user, password).util(LINUX)
+    rc, output = machine_obj.runCmd(cmd)
+    if not rc:
+        logger.error("Can't run %s command", " ".join(cmd))
+        return False
+    for line in output.splitlines():
+        if opts in line:
+            return line.split(": ")[1] == value
+    return False
