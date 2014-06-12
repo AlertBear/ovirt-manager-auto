@@ -318,8 +318,8 @@ class RhevmCli(CliConnection):
     _tracebackMsgSearch = "Traceback (most recent call last):"
     _rhevmOutputErrorKeys = ['error', 'status', 'reason', 'detail']
     _debugMsg = "send:.*header:.*(\r\r\n\r)"
-    _errorStatusMsgSearch = "=+ ERROR.*status:.*reason:.*detail:.* (?==+)"
-    _errorParametersMsgSearch = "=+ ERROR.* (?==+)"
+    _errorStatusMsgSearch = "ERROR.*status:.*reason:.*detail:.*"
+    _errorParametersMsgSearch = "ERROR.*"
     _errorSyntaxMsgSearch = "\*\*\* Unknown syntax.*"
     _insiderSearch = "status:.*reason:.*detail:.*"
     _eol = '\r\n'
@@ -334,7 +334,7 @@ class RhevmCli(CliConnection):
     _cliRootCommands = ['action', 'add', 'list', 'remove', 'show', 'update']
     _cliTrashPattern = "[\[\]\\\?]"
     _command = RHEVM_SHELL
-    _autocompletionSeparators = ['send:', '====']
+    _autocompletionSeparators = ['send:', '====', 'ERROR']
 
     def __init__(self, logger, uri, user, userDomain, password,
                  secure, sslKeyFile, sslCertFile, sslCaFile, logFile,
