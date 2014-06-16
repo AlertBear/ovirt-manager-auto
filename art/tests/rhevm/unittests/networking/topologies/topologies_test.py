@@ -6,6 +6,7 @@ Testing Topologies feature.
 import config
 import logging
 from nose.tools import istest
+from art.test_handler.tools import tcms
 from art.unittest_lib import BaseTestCase as TestCase
 from art.rhevm_api.tests_lib.low_level.vms import \
     updateNic, startVm, stopVm, waitForIP
@@ -60,6 +61,7 @@ class TopologiesCase01(TestCase):
             raise NetworkException("Fail to start VM")
 
     @istest
+    @tcms(4139, 385829)
     def vlan_network_01_virtio(self):
         """
         Check connectivity to VLAN network with virtIO driver
@@ -67,6 +69,7 @@ class TopologiesCase01(TestCase):
         check_vm_connect_and_log(driver="virtIO", vlan=True)
 
     @istest
+    @tcms(4139, 385831)
     def vlan_network_02_e1000(self):
         """
         Check connectivity to VLAN network with e1000 driver
@@ -78,6 +81,7 @@ class TopologiesCase01(TestCase):
         check_vm_connect_and_log(driver="e1000", vlan=True)
 
     @istest
+    @tcms(4139, 385834)
     def vlan_network_03_rtl8139(self):
         """
         Check connectivity to VLAN network with rtl8139 driver
@@ -153,6 +157,7 @@ class TopologiesCase02(TestCase):
             raise NetworkException("Fail to start VM")
 
     @istest
+    @tcms(4139, 385844)
     def vlan_over_bond_network_01_virtio(self):
         """
         Check connectivity to VLAN over BOND mode 1 network with virtIO driver
@@ -161,6 +166,7 @@ class TopologiesCase02(TestCase):
                                  mode=config.BOND_MODES[1])
 
     @istest
+    @tcms(4139, 386258)
     def vlan_over_bond_network_02_e1000(self):
         """
         Check connectivity to VLAN over BOND mode 1 network with e1000 driver
@@ -172,6 +178,7 @@ class TopologiesCase02(TestCase):
                                  mode=config.BOND_MODES[1])
 
     @istest
+    @tcms(4139, 386260)
     def vlan_over_bond_network_03_rtl8139(self):
         """
         Check connectivity to VLAN over BOND mode 1 network with rtl8139
@@ -237,6 +244,7 @@ class TopologiesCase03(TestCase):
             raise NetworkException("Fail to start VM")
 
     @istest
+    @tcms(4139, 385847)
     def bond_network_01_virtio(self):
         """
         Check connectivity to BOND mode 2 network with virtIO driver
@@ -244,6 +252,7 @@ class TopologiesCase03(TestCase):
         check_vm_connect_and_log(driver="virtIO", mode=config.BOND_MODES[2])
 
     @istest
+    @tcms(4139, 386261)
     def bond_network_02_e1000(self):
         """
         Check connectivity to BOND mode 2 network with e1000 driver
@@ -254,6 +263,7 @@ class TopologiesCase03(TestCase):
         check_vm_connect_and_log(driver="e1000", mode=config.BOND_MODES[2])
 
     @istest
+    @tcms(4139, 386262)
     def bond_network_03_rtl8139(self):
         """
         Check connectivity to BOND mode 2 network with rtl8139 driver
@@ -314,6 +324,7 @@ class TopologiesCase04(TestCase):
             raise NetworkException("Fail to start VM")
 
     @istest
+    @tcms(4139, 385848)
     def bond_network_01_virtio(self):
         """
         Check connectivity to BOND mode 4 network with virtIO driver
@@ -321,6 +332,7 @@ class TopologiesCase04(TestCase):
         check_vm_connect_and_log(driver="virtIO", mode=config.BOND_MODES[4])
 
     @istest
+    @tcms(4139, 386264)
     def bond_network_02_e1000(self):
         """
         Check connectivity to BOND mode 4 network with e1000 driver
@@ -331,6 +343,7 @@ class TopologiesCase04(TestCase):
         check_vm_connect_and_log(driver="e1000", mode=config.BOND_MODES[4])
 
     @istest
+    @tcms(4139, 386265)
     def bond_network_03_rtl8139(self):
         """
         Check connectivity to BOND mode 4 network with rtl8139 driver
@@ -391,6 +404,7 @@ class TopologiesCase05(TestCase):
             raise NetworkException("Fail to start VM")
 
     @istest
+    @tcms(4139, 385852)
     def bond_network_01_virtio(self):
         """
         Check connectivity to BOND mode 3 network with virtIO driver
@@ -398,6 +412,7 @@ class TopologiesCase05(TestCase):
         check_vm_connect_and_log(driver="virtIO", mode=config.BOND_MODES[3])
 
     @istest
+    @tcms(4139, 386266)
     def bond_network_02_e1000(self):
         """
         Check connectivity to BOND mode 3 network with e1000 driver
@@ -408,6 +423,7 @@ class TopologiesCase05(TestCase):
         check_vm_connect_and_log(driver="e1000", mode=config.BOND_MODES[3])
 
     @istest
+    @tcms(4139, 386267)
     def bond_network_03_rtl8139(self):
         """
         Check connectivity to BOND mode 3 network with rtl8139 driver
@@ -443,6 +459,10 @@ class TopologiesCase05(TestCase):
 class TopologiesCase06(TestCase):
     """
     Check connectivity to BOND mode 0 network
+    This is non-VM network test, we check connectivity from host to
+    red-vds1.qa.lab.tlv.redhat.com IP 172.16.200.2.
+    If this case fail check that red-vds1.qa.lab.tlv.redhat.com is up and eth1
+    configured with IP 172.16.200.2
     """
     __test__ = len(config.HOST_NICS) > 3
 
@@ -456,6 +476,7 @@ class TopologiesCase06(TestCase):
             raise NetworkException("Cannot create and attach network")
 
     @istest
+    @tcms(4139, 385855)
     def bond_non_vm_network(self):
         """
         Check connectivity to BOND mode 0 network
@@ -477,6 +498,10 @@ class TopologiesCase06(TestCase):
 class TopologiesCase07(TestCase):
     """
     Check connectivity to BOND mode 5 network
+    This is non-VM network test, we check connectivity from host to
+    red-vds1.qa.lab.tlv.redhat.com IP 172.16.200.2.
+    If this case fail check that red-vds1.qa.lab.tlv.redhat.com is up and eth1
+    configured with IP 172.16.200.2
     """
     __test__ = len(config.HOST_NICS) > 3
 
@@ -490,6 +515,7 @@ class TopologiesCase07(TestCase):
             raise NetworkException("Cannot create and attach network")
 
     @istest
+    @tcms(4139, 385856)
     def bond_non_vm_network(self):
         """
         Check connectivity to BOND mode 5 network
@@ -511,6 +537,10 @@ class TopologiesCase07(TestCase):
 class TopologiesCase08(TestCase):
     """
     Check connectivity to BOND mode 6 network
+    This is non-VM network test, we check connectivity from host to
+    red-vds1.qa.lab.tlv.redhat.com IP 172.16.200.2.
+    If this case fail check that red-vds1.qa.lab.tlv.redhat.com is up and eth1
+    configured with IP 172.16.200.2
     """
     __test__ = len(config.HOST_NICS) > 3
 
@@ -524,6 +554,7 @@ class TopologiesCase08(TestCase):
             raise NetworkException("Cannot create and attach network")
 
     @istest
+    @tcms(4139, 385857)
     def bond_non_vm_network(self):
         """
         Check connectivity to BOND mode 6 network
