@@ -1,5 +1,5 @@
 from art.core_api import is_action
-from art.core_api.apis_utils import data_st
+from art.core_api.apis_utils import data_st, TimeoutingSampler
 from art.rhevm_api.utils.test_utils import get_api
 from art.test_handler.settings import opts
 import logging
@@ -9,6 +9,8 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 JOBS_API = get_api('job', 'jobs')
 STEPS_API = get_api('step', 'steps')
 LOGGER = logging.getLogger(__name__)
+TASK_TIMEOUT = 600
+TASK_POLL = 5
 
 
 @is_action()
@@ -40,6 +42,36 @@ def check_recent_job(positive, description, last_jobs_num=None,
         return True, last_job
     else:
         return False, None, None
+
+
+@is_action()
+def get_active_jobs():
+    jobs = JOBS_API.get(absLink=False)
+
+    jobs = filter(lambda j: (j.get_status().get_state() ==
+                             ENUMS['job_started']), jobs)
+
+    LOGGER.info("Active jobs: %s", [j.get_description() for j in jobs])
+
+    return jobs
+
+
+@is_action("waitForJobs")
+def wait_for_jobs(timeout=TASK_TIMEOUT, sleep=TASK_POLL):
+    """
+    Description: Waits until all tasks in data-center are finished
+    Author: ratamir
+    Parameters:
+        * timeout - max seconds to wait
+        * sleep - polling interval
+    """
+    LOGGER.info("Waiting for jobs")
+    sampler = TimeoutingSampler(
+        timeout, sleep, get_active_jobs)
+    for jobs in sampler:
+        if not jobs:
+            LOGGER.info("All jobs are gone")
+            return
 
 
 @is_action()
