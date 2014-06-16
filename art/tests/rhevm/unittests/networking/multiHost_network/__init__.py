@@ -28,7 +28,7 @@ def setup_package():
                         cluster=config.CLUSTER_NAME,
                         lun_address=config.LUN_ADDRESS,
                         lun_target=config.LUN_TARGET,
-                        luns=config.LUN, version=config.VERSION,
+                        luns=config.LUN, version=config.COMP_VERSION,
                         vm_password=config.HOSTS_PW,
                         vmName=config.VM_NAME[0],
                         template_name=config.TEMPLATE_NAME,
