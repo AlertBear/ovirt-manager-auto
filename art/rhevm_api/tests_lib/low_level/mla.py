@@ -18,6 +18,7 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 from art.core_api.apis_utils import getDS
+from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.utils.test_utils import get_api, split
 from art.core_api import is_action
 from art.test_handler.settings import opts
@@ -51,14 +52,21 @@ permisUtil = get_api('permission', 'permissions')
 diskUtil = get_api('disk', 'disks')
 vnicUtil = get_api('vnic_profile', 'vnicprofiles')
 
-try:
-    versionCaps = permitUtil.get(absLink=False)
-    if isinstance(versionCaps, list):
-        versionCaps = versionCaps[0]
-    PERMITS = versionCaps.get_permits().get_permit()
-except KeyError:
-    util.logger.warn("Can't get list of permissions from capabilities")
-    pass
+
+def getPermits():
+    '''
+    Description: collect permissions
+    Author: imeerovi
+    Parameters: None
+    Return: Permissions list
+    '''
+    try:
+        versionCaps = permitUtil.get(absLink=False)
+        if isinstance(versionCaps, list):
+            versionCaps = versionCaps[0]
+    except KeyError:
+        raise EntityNotFound("Can't get list of permissions from capabilities")
+    return versionCaps.get_permits().get_permit()
 
 
 @is_action()
@@ -75,7 +83,7 @@ def checkSystemPermits(positive):
 
     confPermits = CONF_PERMITS.values()
 
-    for permit in PERMITS:
+    for permit in getPermits():
         if permit.get_name() not in confPermits:
             util.logger.error(
                 "Permit '{0}' doesn't appear in permission list: {1}".format(
@@ -105,7 +113,7 @@ def _prepareRoleObject(**kwargs):
     if permits:
         permitsList = split(permits)
         for permit in permitsList:
-            permitObj = permitUtil.find(permit, collection=PERMITS)
+            permitObj = permitUtil.find(permit, collection=getPermits())
             rolePermits.add_permit(permitObj)
         role.set_permits(rolePermits)
 
@@ -163,7 +171,7 @@ def addRolePermissions(positive, role, permit):
     '''
 
     roleObj = util.find(role)
-    permitObj = permitUtil.find(permit, collection=PERMITS)
+    permitObj = permitUtil.find(permit, collection=getPermits())
     rolePermits = util.getElemFromLink(roleObj, link_name='permits',
                                        attr='permit', get_href=True)
     rolePermit = Permit()
