@@ -100,7 +100,6 @@ class CLICommandFailure(APIException):
     '''
 
     def __init__(self, message, err=None):
-        super(CLICommandFailure, self).__init__(message)
         self.status = None
         self.reason = None
         self.detail = None
@@ -109,6 +108,9 @@ class CLICommandFailure(APIException):
             self.status = err.status
             self.reason = err.reason
             self.detail = err.detail
+        elif err:
+            message = " ".join([str(message), str(err)])
+        super(CLICommandFailure, self).__init__(message)
 
 
 class CLITracebackError(APIException):

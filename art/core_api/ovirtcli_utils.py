@@ -315,12 +315,13 @@ class RhevmCli(CliConnection):
     _query_id_re = 'id(\s+):'
     _id_extract_re = 'id(\\s+):(\\s+)(\S*)'
     _status_extract_re = '.*: (\w+).*'
-    _tracebackMsgSearch = "Traceback (most recent call last):"
+    _tracebackMsgPattern = "Traceback (most recent call last):"
     _rhevmOutputErrorKeys = ['error', 'status', 'reason', 'detail']
     _debugMsg = "send:.*header:.*(\r\r\n\r)"
-    _errorStatusMsgSearch = "ERROR.*status:.*reason:.*detail:.*"
-    _errorParametersMsgSearch = "ERROR.*"
-    _errorSyntaxMsgSearch = "\*\*\* Unknown syntax.*"
+    _errorStatusMsgPattern = "ERROR.*status:.*reason:.*detail:.*"
+    _errorParametersMsgPattern = "ERROR.*"
+    _errorSyntaxMsgPattern = "\*\*\* Unknown syntax.*"
+    _errorIncompleteCommandPattern = "error:.*incomplete command.*"
     _insiderSearch = "status:.*reason:.*detail:.*"
     _eol = '\r\n'
     _rhevmLoginPrompt = "Password:"
@@ -474,14 +475,17 @@ class RhevmCli(CliConnection):
         Returns: validated output
         """
         # looking for error - to change to more generic map style
-        tracebackMsg = self._tracebackMsgSearch in output
-        errorStatusMsg = re.search(self._errorStatusMsgSearch,
+        tracebackMsg = self._tracebackMsgPattern in output
+        errorStatusMsg = re.search(self._errorStatusMsgPattern,
                                    output, flags=re.DOTALL)
-        errorParametersMsg = re.search(self._errorParametersMsgSearch,
+        errorParametersMsg = re.search(self._errorParametersMsgPattern,
                                        output, flags=re.DOTALL)
-        errorSyntaxMsg = re.search(self._errorSyntaxMsgSearch,
+        errorSyntaxMsg = re.search(self._errorSyntaxMsgPattern,
                                    output, flags=re.DOTALL)
+        errorIncompleteCommandMsg = re.search(
+            self._errorIncompleteCommandPattern, output, flags=re.DOTALL)
         debugMsg = re.search(self._debugMsg, output, flags=re.DOTALL)
+
         if tracebackMsg:
             raise CLITracebackError(self.outputCleaner(output))
         if debugMsg:
@@ -498,10 +502,13 @@ class RhevmCli(CliConnection):
                 self.outputCleaner(errorStatusMsg.group(0))), err)
         elif errorParametersMsg:
             raise CLICommandFailure('Wrong parameters:', self.outputCleaner(
-                                    errorParametersMsg.group(0)))
+                errorParametersMsg.group(0)))
         elif errorSyntaxMsg:
             raise CLICommandFailure('Wrong syntax:', self.outputCleaner(
-                                    errorSyntaxMsg.group(0)))
+                errorSyntaxMsg.group(0)))
+        elif errorIncompleteCommandMsg:
+            raise CLICommandFailure('Incomplete command:', self.outputCleaner(
+                errorIncompleteCommandMsg.group(0)))
 
         return self.outputCleaner(output)
 
@@ -664,34 +671,50 @@ in Context dictionary:\n{2}".format(cmd_type, object_name, self.contextDict)
                                            autocompletion_params):
                 validated_command.append(cmd_params[starting_position])
                 needed_param = True
+
+            # WA for mismatches in generated command (will happen due to
+            # differences between art autogeneration and sdk autogeneration)
+            # like wrong --vm-domain-user-user_name instead of correct
+            # --vm-domain-user-username
+            if not needed_param and '_' in cmd_params[starting_position]:
+                param = cmd_params[starting_position].replace('--', '')
+                search_pattern = param.replace('_', '_?')
+                data_to_search = ' '.join(autocompletion_params)
+                try:
+                    correct_param = re.findall(search_pattern,
+                                               data_to_search)[0]
+                except IndexError:
+                    pass
+                else:
+                    self.logger.debug("Fixing %s with %s", param,
+                                      correct_param)
+                    if not correct_param.startswith('--'):
+                        correct_param = "--%s" % correct_param
+                    validated_command.append(correct_param)
+                    needed_param = True
+
             starting_position += 1
 
-            # collections or booleans
+            if not needed_param:
+                continue
+
+            # taking care of matching parameters values
+            # collections, booleans, integers
             if '=' in cmd_params[starting_position] or \
-                    cmd_params[starting_position] in ['true', 'false']:
-                if needed_param:
-                    validated_command.append(cmd_params[starting_position])
+                    cmd_params[starting_position] in ['true', 'false'] or \
+                    cmd_params[starting_position].isdigit():
+                validated_command.append(cmd_params[starting_position])
                 starting_position += 1
                 continue
-            # integers
-            try:
-                int(cmd_params[starting_position], 10)
-                if needed_param:
-                    validated_command.append(cmd_params[starting_position])
-                starting_position += 1
-                continue
-            except ValueError:
-                pass
+
             # strings
             # situation like '--cpu-id', "'Intel", 'Nehalem', "Family'",
             while not cmd_params[starting_position].endswith("'"):
-                if needed_param:
-                    validated_command.append(cmd_params[starting_position])
+                validated_command.append(cmd_params[starting_position])
                 starting_position += 1
             # string without spaces or end of big string with spaces
             else:
-                if needed_param:
-                    validated_command.append(cmd_params[starting_position])
+                validated_command.append(cmd_params[starting_position])
                 starting_position += 1
 
         return ' '.join(validated_command)
