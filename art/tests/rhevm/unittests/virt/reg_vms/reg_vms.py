@@ -828,6 +828,16 @@ class VmSnapshots(BaseVmWithDisk):
     vm_name = 'snapshot_vm'
     snapshot_dsc = ['snapshot_1', 'snapshot_2']
 
+    @classmethod
+    def teardown_class(cls):
+        """ Remove the VM from export storage. """
+        if not vm_api.removeVmFromExportDomain(
+                True, cls.vm_name, config.dc_name, config.export_storage):
+            raise errors.VMException(
+                "Failed to remove VM %s from export storage %s"
+                % (cls.vm_name, config.export_storage))
+        super(VmSnapshots, cls).teardown_class()
+
     @tcms('13398', '366363')
     @istest
     def basic_vm_snapshots(self):
