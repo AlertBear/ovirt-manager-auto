@@ -24,7 +24,7 @@ from contextlib import contextmanager
 from art.core_api import http, template_parser, validator, measure_time
 from art.core_api.apis_exceptions import EntityNotFound, APIException,\
     APILoginError
-from art.core_api.apis_utils import APIUtil, parse, data_st, \
+from art.core_api.apis_utils import APIUtil, parse, data_st,\
     NEGATIVE_CODES_CREATE, NEGATIVE_CODES, DEF_TIMEOUT, DEF_SLEEP
 from art.test_handler import settings
 
@@ -195,6 +195,17 @@ class RestUtil(APIUtil):
                     "Element '{0}' not found at {1}".format(elm, ret['body']))
             return parsedResp
 
+    def parseDetail(self, ret):
+        '''
+        Description: parsing the error details from ret
+        Author: Kobi Hakimi
+        Parameter:
+            ret - the string to parse from it the error details
+        Return: the error details which we got it as xml node skip the
+                last 2 chars '</'
+        '''
+        return ret['body'].split('detail>')[1][:-2]
+
     def create(self, entity, positive,
                expected_pos_status=[200, 201, 202],
                expected_neg_status=NEGATIVE_CODES_CREATE,
@@ -280,6 +291,8 @@ class RestUtil(APIUtil):
                 return ret['body'], True
 
         else:
+            self.printErrorMsg('create', ret['status'], ret['reason'],
+                               self.parseDetail(ret))
             if not validator.compareResponseCode(
                     ret['status'], expected_neg_status, self.logger):
                 return None, False
@@ -335,6 +348,8 @@ class RestUtil(APIUtil):
                 return None, False
 
         else:
+            self.printErrorMsg('update', ret['status'], ret['reason'],
+                               self.parseDetail(ret))
             if not validator.compareResponseCode(
                     ret['status'], expected_neg_status, self.logger):
                 return None, False
@@ -387,6 +402,8 @@ class RestUtil(APIUtil):
                     ret['status'], expected_pos_status, self.logger):
                 return False
         else:
+            self.printErrorMsg('delete', ret['status'], ret['reason'],
+                               self.parseDetail(ret))
             if not validator.compareResponseCode(
                     ret['status'], expected_neg_status, self.logger):
                 return False
@@ -559,6 +576,8 @@ class RestUtil(APIUtil):
                     self.logger):
                 return False
         else:
+            self.printErrorMsg('syncAction', ret['status'], ret['reason'],
+                               self.parseDetail(ret))
             if not validator.compareResponseCode(ret['status'], negative_stat,
                                                  self.logger):
                 return False

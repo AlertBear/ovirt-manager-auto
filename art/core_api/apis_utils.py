@@ -228,6 +228,26 @@ class APIUtil(object):
             self.logger.error(TIMEOUT_MSG_TMPL)
             return False
 
+    def printErrorMsg(self, operation, status='', reason='', detail='',
+                      trace=''):
+        '''
+        Description: print detailed error message.
+        Author: khakimi
+        Parameters:
+            operation = the operation which failed (create/update...)
+            status = status code (400...)
+            reason = error reason (Bad Request...)
+            detail = error details
+            trace = stack trace
+        '''
+        error_msg = ['Failed to {0} element:\n'.format(operation)]
+        error_msg.append('\tStatus: {0}\n'.format(status) if status else '')
+        error_msg.append('\tReason: {0}\n'.format(reason) if reason else '')
+        error_msg.append('\tDetail: {0}\n'.format(detail) if detail else '')
+        error_msg.append('\tTrace: {0}\n'.format(trace) if trace else '')
+
+        logger.error(''.join(error_msg))
+
 
 class TimeoutingSampler(object):
     '''

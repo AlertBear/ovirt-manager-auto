@@ -189,49 +189,6 @@ def get_getters_and_setters(python_object=None, java_object=None):
     return (python_getters, python_setters, java_getters, java_setters)
 
 
-def parse_java_error(java_error, op_code, logger):
-    """
-    Description: function that converts java error to object that has
-                 code, reason, detail, java_traceback fields
-    Author: imeerovi
-    Parameters:
-        * java_error - java_sdk.JavaError object
-        * op_code - operation name (like create, delete, update ..)
-        * logger - reference to logger
-    """
-    detail = ''
-    try:
-        extra_details = False
-        # extracting message
-        for line in filter(lambda x: len(x) > 0,
-                           java_error.args[0].toString().splitlines()):
-            if extra_details is False:
-                name, value = line.split(':', 1)
-            else:
-                detail = '\n\t\t'.join([detail, line])
-            if 'code' in name:
-                status = int(value.strip())
-            elif 'reason' in name:
-                reason = value.strip()
-            elif extra_details is False:
-                detail = value.strip()
-                extra_details = True
-
-        # getting traceback
-        java_traceback = '\n\t'.join([trace.toString() for trace
-                                      in java_error.args[0].stackTrace])
-        # printing it
-        errorMsg = "\nFailed to {0} a new element:\n\tStatus: {1}\n\t\
-Reason: {2}\n\tDetail: {3}\nTrace:\n\t{4}"
-        logger.error(errorMsg.format(op_code, status, reason, detail,
-                                     java_traceback))
-    except Exception as e:
-        logger.error('Caught Exception %s', e)
-        logger.error('Possible internal error: %s', str(java_error))
-
-    return api_error(reason=reason, status=status, detail=detail)
-
-
 def python_primitives_converter(java_datatype, data):
     """
     Description: function that converts python primitives to java ones
@@ -1034,7 +991,7 @@ element:%(elm)s " % {'col': self.collection_name,
                 return python_response, False
 
         except java_sdk.JavaError as e:
-            parse_java_error(e, 'create', self.logger)
+            self.parse_java_error(e, 'create')
             if positive:
                 return None, False
 
@@ -1124,7 +1081,7 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
                 return None, False
 
         except java_sdk.JavaError as e:
-            e = parse_java_error(e, 'update', self.logger)
+            e = self.parse_java_error(e, 'update')
             if positive or not validator.compareResponseCode(
                     e.status, expected_neg_status, self.logger):
                 return None, False
@@ -1174,7 +1131,7 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
                     java_entity.delete()
 
         except java_sdk.JavaError as e:
-            parse_java_error(e, 'delete', self.logger)
+            self.parse_java_error(e, 'delete')
             if positive:
                 return False
             return True
@@ -1367,7 +1324,7 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
                 act = getattr(java_entity, action)(
                     java_action_entity, str(self.getCorrelationId()))
         except java_sdk.JavaError as e:
-            parse_java_error(e, 'syncAction', self.logger)
+            self.parse_java_error(e, 'syncAction')
             if positive:
                 return False
             return True
@@ -1460,4 +1417,42 @@ currently status is '%s' ", status, element_status)
                           self.element_name, element_status)
         return False
 
-#APIUtil.register(JavaSdkUtil)
+    def parse_java_error(self, java_error, op_code):
+        """
+        Description: function that converts java error to object that has
+                     code, reason, detail, java_traceback fields
+        Author: imeerovi
+        Parameters:
+            * java_error - java_sdk.JavaError object
+            * op_code - operation name (like create, delete, update ..)
+        """
+        detail = ''
+        try:
+            extra_details = False
+            # extracting message
+            for line in filter(lambda x: len(x) > 0,
+                               java_error.args[0].toString().splitlines()):
+                if extra_details is False:
+                    name, value = line.split(':', 1)
+                else:
+                    detail = '\n\t\t'.join([detail, line])
+                if 'code' in name:
+                    status = int(value.strip())
+                elif 'reason' in name:
+                    reason = value.strip()
+                elif extra_details is False:
+                    detail = value.strip()
+                    extra_details = True
+
+            # getting traceback
+            java_traceback = '\n\t'.join([trace.toString() for trace
+                                          in java_error.args[0].stackTrace])
+            super(JavaSdkUtil, self).printErrorMsg(op_code, status, reason,
+                                                   detail, java_traceback)
+        except Exception as e:
+            self.logger.error('Caught Exception %s', e)
+            self.logger.error('Possible internal error: %s', str(java_error))
+
+        return api_error(reason=reason, status=status, detail=detail)
+
+# APIUtil.register(JavaSdkUtil)

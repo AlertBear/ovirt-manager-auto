@@ -176,10 +176,8 @@ class SdkUtil(APIUtil):
                 return response, False
 
         except RequestError as e:
+            self.printErrorMsg('create', e.status, e.reason, e.detail)
             if positive:
-                errorMsg = ("Failed to create a new element, status: %s, "
-                            "reason: %s, details: %s")
-                self.logger.error(errorMsg, e.status, e.reason, e.detail)
                 return None, False
 
         return response, True
@@ -284,9 +282,7 @@ class SdkUtil(APIUtil):
                 response = origEntity.update(**matrix_params)
             self.logger.info(self.element_name + " was updated")
         except RequestError as e:
-            errorMsg = ("Failed to update an element, status: %s, "
-                        "reason: %s, details: %s")
-            self.logger.error(errorMsg, e.status, e.reason, e.detail)
+            self.printErrorMsg('update', e.status, e.reason, e.detail)
             if positive or not validator.compareResponseCode(
                     e.status, expected_neg_status, self.logger):
                 return None, False
@@ -318,10 +314,8 @@ class SdkUtil(APIUtil):
                 with measure_time('DELETE'):
                     entity.delete(correlation_id=self.getCorrelationId())
         except RequestError as e:
+            self.printErrorMsg('delete', e.status, e.reason, e.detail)
             if positive:
-                errorMsg = ("Failed to delete an element, status: %s, "
-                            "reason: %s, details: %s")
-                self.logger.error(errorMsg, e.status, e.reason, e.detail)
                 return False
 
         return True
@@ -433,11 +427,8 @@ class SdkUtil(APIUtil):
                 act = getattr(entity, action)(act,
                                               correlation_id=correlation_id)
         except RequestError as e:
+            self.printErrorMsg('syncAction', e.status, e.reason, e.detail)
             if positive:
-                errorMsg = ("Failed to run an action '%s', status: %s,reason: "
-                            "%s, details: %s")
-                self.logger.error(errorMsg, action, e.status, e.reason,
-                                  e.detail)
                 return False
             else:
                 return True

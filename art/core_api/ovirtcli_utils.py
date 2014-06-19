@@ -889,8 +889,7 @@ class CliUtil(RestUtil):
             self.logger.error("%s", e)
             return response, False
         except CLICommandFailure as e:
-            errorMsg = "Failed to create a new element, details: {0}"
-            self.logger.error(errorMsg.format(e))
+            self.printErrorMsg('create', e.status, e.reason, e.detail)
             if positive:
                 return response, False
         else:
@@ -986,8 +985,7 @@ class CliUtil(RestUtil):
             self.logger.error("%s", e)
             return response, False
         except CLICommandFailure as e:
-            errorMsg = "Failed to update a new element, details: {0}"
-            self.logger.error(errorMsg.format(e))
+            self.printErrorMsg('update', status=e.status)
             if positive or not validator.compareResponseCode(
                     e.status, expected_neg_status, self.logger):
                 return None, False
@@ -1081,8 +1079,7 @@ class CliUtil(RestUtil):
             self.logger.error("%s", e)
             return False
         except CLICommandFailure as e:
-            errorMsg = "Failed to delete an element, details: {0}"
-            self.logger.error(errorMsg.format(e))
+            self.printErrorMsg('delete', e.status, e.reason, e.detail)
             if positive:
                 return False
 
@@ -1268,9 +1265,8 @@ class CliUtil(RestUtil):
             self.logger.error("%s", e)
             return False
         except CLICommandFailure as e:
+            self.printErrorMsg('syncAction', e.status, e.reason, e.detail)
             if positive:
-                errorMsg = "Failed to perform an action, details: {0}"
-                self.logger.error(errorMsg.format(e))
                 return False
             else:
                 return True
