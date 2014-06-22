@@ -8,11 +8,9 @@ from nose.tools import istest
 from art.unittest_lib import BaseTestCase as TestCase
 from art.test_handler.tools import tcms
 import logging
-from art.rhevm_api.tests_lib.high_level.storagedomains import addNFSDomain
 from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.utils.test_utils import get_api
-from art.test_handler.exceptions import NetworkException,\
-    StorageDomainException, VMException
+from art.test_handler.exceptions import NetworkException, VMException
 from art.test_handler.settings import opts
 
 import config
@@ -23,19 +21,12 @@ from art.rhevm_api.tests_lib.low_level.hosts import \
     checkNetworkFilteringDumpxml, genSNNic, sendSNRequest, waitForHostsStates,\
     waitForSPM
 from art.rhevm_api.tests_lib.low_level.vms import addNic,\
-    removeNic, startVm,\
-    checkVMConnectivity, waitForVmsStates, importVm, removeVm,\
-    exportVm, shutdownVm, removeVmFromExportDomain, getVmNicLinked,\
-    getVmNicPlugged, updateNic
+    removeNic, getVmNicLinked, getVmNicPlugged, updateNic
 from art.rhevm_api.tests_lib.low_level.networks import \
     updateClusterNetwork, isVMNetwork, isNetworkRequired,\
     updateNetwork, addVnicProfile, removeVnicProfile, removeNetwork
 from art.rhevm_api.utils.test_utils import checkMTU,\
     checkSpoofingFilterRuleByVer
-from art.rhevm_api.tests_lib.low_level.storagedomains import\
-    removeStorageDomain, detachStorageDomain, deactivateStorageDomain
-from art.unittest_lib.network import skipBOND
-
 
 HOST_API = get_api('host', 'hosts')
 VM_API = get_api('vm', 'vms')
@@ -185,8 +176,7 @@ class SanityCase03_CheckingVMNetworks_vlan(TestCase):
 
 class SanityCase04_CheckingVMNetworks_bond(TestCase):
     """
-    Check VM network & NON_VM network (bond test):
-    Creating network sw164 on bond, composed of eth2 & eth3 as VM network than:
+    Check VM network & NON_VM network:
     1. Check that the creation of the network created a proper network (VM).
     2. Update sw164 to be NON_VM
     3. Check that the update of the network is proper (NON_VM).
@@ -331,7 +321,7 @@ class SanityCase05_CheckingPortMirroring_vlan(TestCase):
 ########################################################################
 
 
-class SanityCase07_CheckingRequiredNetwork_vlan(TestCase):
+class SanityCase06_CheckingRequiredNetwork_vlan(TestCase):
     """
     Checking required network (vlan test):
     Creating network sw162 as required and attaching it to the host(eth1),
@@ -407,7 +397,7 @@ class SanityCase07_CheckingRequiredNetwork_vlan(TestCase):
 ########################################################################
 
 
-class SanityCase08_CheckingRequiredNetwork_bond(TestCase):
+class SanityCase07_CheckingRequiredNetwork_bond(TestCase):
     """
     Checking required network (bond test):
     Creating network sw163 as required and attaching it to the host
@@ -417,7 +407,7 @@ class SanityCase08_CheckingRequiredNetwork_bond(TestCase):
     3. Checking that the network is non-required
     Finally, removing the network from the setup.
     """
-    __test__ = True
+    __test__ = len(config.HOST_NICS) > 3
 
     @classmethod
     def setup_class(cls):
@@ -481,7 +471,7 @@ class SanityCase08_CheckingRequiredNetwork_bond(TestCase):
 
 ########################################################################
 
-class SanityCase09_CheckingJumboFrames_vlan(TestCase):
+class SanityCase08_CheckingJumboFrames_vlan(TestCase):
     """
     Checking Jumbo Frame (vlan test):
     Creating and adding sw162 (MTU 9000) & sw163 (MTU 3500) to the host
@@ -576,14 +566,14 @@ class SanityCase09_CheckingJumboFrames_vlan(TestCase):
 ########################################################################
 
 
-class SanityCase10_CheckingJumboFrames_bond(TestCase):
+class SanityCase09_CheckingJumboFrames_bond(TestCase):
     """
     Checking Jumbo Frame (vlan test):
     Creating and adding sw162 (MTU 7000) to the host
     on eth2 & eth3, then checking that MTU on sw162 is really 7000
     Finally, removing sw162 from the setup
     """
-    __test__ = True
+    __test__ = len(config.HOST_NICS) > 3
 
     @classmethod
     def setup_class(cls):
@@ -639,7 +629,7 @@ class SanityCase10_CheckingJumboFrames_bond(TestCase):
 ########################################################################
 
 
-class SanityCase11_CheckingNetworkFilter_vlan(TestCase):
+class SanityCase10_CheckingNetworkFilter_vlan(TestCase):
     """
     Checking Network Filter (vlan test):
     Creating network sw162 and adding it to the host on eth1, then:
@@ -742,7 +732,7 @@ class SanityCase11_CheckingNetworkFilter_vlan(TestCase):
 ########################################################################
 
 
-class SanityCase12_CheckingLinking_vlan(TestCase):
+class SanityCase11_CheckingLinking_vlan(TestCase):
     """
     Checking Linking Nic (vlan test):
     Creating 4 networks (sw162, sw163, sw164 & sw165) and adding them to
@@ -838,7 +828,7 @@ class SanityCase12_CheckingLinking_vlan(TestCase):
 ########################################################################
 
 
-class SanityCase13_CheckingLinking_bond(TestCase):
+class SanityCase12_CheckingLinking_bond(TestCase):
     """
     Checking Linking Nic (bond test):
     Creating 4 networks (sw162, sw163, sw164 & sw165) and adding them to
@@ -847,7 +837,7 @@ class SanityCase13_CheckingLinking_bond(TestCase):
     1. Checking that all the permutations of plugged & linked are correct
     Finally, Removing the nics and networks.
     """
-    __test__ = True
+    __test__ = len(config.HOST_NICS) > 3
 
     @classmethod
     def setup_class(cls):
@@ -938,183 +928,11 @@ class SanityCase13_CheckingLinking_bond(TestCase):
 ########################################################################
 
 
-class SanityCase14_CheckingImportExport_vlan(TestCase):
-    """
-    Checking import/export (vlan test):
-    Creating and adding:
-        Network: Create and attach sw162 to the host
-        Storage: Adding import/export domain
-    Then,
-    1. Checking connectivity to vm
-    2. Shutting down vm
-    3. Exporting vm to the import/ export domain
-    4. Removing the vm
-    5. Importing vm from the import/ export domain
-    6. Starting vm
-    7. Checking connectivity to vm
-    Finally, Removing import/ export domain & network sw162
-    """
-    __test__ = False
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Creating and adding:
-            Network: Create and attach network sw162 to the host
-            Storage: Adding import/export domain
-        """
-        logger.info("Create network and attach it to the host")
-        local_dict = {config.VLAN_NETWORKS[0]: {'vlan_id': config.VLAN_ID[0],
-                                                'nic': config.HOST_NICS[1],
-                                                'required': 'false'}}
-
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
-                                        host=config.HOSTS[0],
-                                        network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0],
-                                                   config.HOST_NICS[1]]):
-            raise NetworkException("Cannot create and attach network")
-
-        logger.info("Adding storage domain")
-        if not addNFSDomain(host=config.HOSTS[0],
-                            storage=config.EXPORT_STORAGE_NAME,
-                            data_center=config.DC_NAME,
-                            address=config.EXPORT_STORAGE_ADDRESS,
-                            path=config.EXPORT_STORAGE_PATH,
-                            sd_type='export'):
-            raise StorageDomainException("Cannot add storage domain to DC")
-
-    @istest
-    def checkImportExportVM(self):
-        """
-        We check connectivity to the vm, shutting it down, exporting it to
-        import/ export domain, removing it from the rhevm, importing the vm
-        from the import/ export domain, starting vm and then checking
-        connectivity to vm
-        """
-        logger.info("Checking connectivity with %s", config.VM_NAME[0])
-        self.assertTrue(checkVMConnectivity(positive=True,
-                                            vm=config.VM_NAME[0],
-                                            osType="rhel",
-                                            attempt=60,
-                                            interval=3,
-                                            user=config.HOSTS_USER,
-                                            password=config.HOSTS_PW,
-                                            nic='nic1'),
-                        "Connectivity with %s failed" % config.VM_NAME[0])
-
-        logger.info("Shutting down %s", config.VM_NAME[0])
-        if not shutdownVm(positive=True,
-                          vm=config.VM_NAME[0]):
-            logger.error("Failed to shut down %s", config.VM_NAME[0])
-            return False
-
-        logger.info("Waiting for %s to reach down state", config.VM_NAME[0])
-        if not waitForVmsStates(positive=True,
-                                names=config.VM_NAME[0],
-                                timeout=config.TIMEOUT,
-                                states='down'):
-            logger.error("VM's state is incorrect")
-            return False
-
-        logger.info("Exporting %s to %s",
-                    config.VM_NAME[0], config.EXPORT_STORAGE_NAME)
-        self.assertTrue(exportVm(positive=True,
-                                 vm=config.VM_NAME[0],
-                                 storagedomain=config.EXPORT_STORAGE_NAME),
-                        "Exporting " + config.VM_NAME[0] + " to " +
-                        config.EXPORT_STORAGE_NAME + " failed")
-
-        logger.info("Removing %s", config.VM_NAME[0])
-        if not removeVm(positive=True,
-                        vm=config.VM_NAME[0]):
-            logger.error("Unable to remove VM")
-            return False
-
-        logger.info("Importing %s from %s",
-                    config.VM_NAME[0], config.EXPORT_STORAGE_NAME)
-        self.assertTrue(importVm(positive=True,
-                                 vm=config.VM_NAME[0],
-                                 import_storagedomain=
-                                 config.DC_NAME + '_data_domain0',
-                                 export_storagedomain=
-                                 config.EXPORT_STORAGE_NAME,
-                                 cluster=config.CLUSTER_NAME),
-                        "Importing " + config.VM_NAME[0] + " from " +
-                        config.EXPORT_STORAGE_NAME + " failed")
-
-        logger.info("Waiting for %s to reach down state", config.VM_NAME[0])
-        if not waitForVmsStates(positive=True,
-                                names=config.VM_NAME[0],
-                                timeout=config.TIMEOUT,
-                                states='down'):
-            logger.error("VM's state is incorrect")
-            return False
-
-        logger.info("Starting %s", config.VM_NAME[0])
-        if not startVm(positive=True,
-                       vm=config.VM_NAME[0]):
-            logger.error("VM failed to start")
-            return False
-
-        logger.info("Checking connectivity with %s", config.VM_NAME[0])
-        self.assertTrue(checkVMConnectivity(positive=True,
-                                            vm=config.VM_NAME[0],
-                                            osType="rhel",
-                                            attempt=60,
-                                            interval=3,
-                                            user=config.HOSTS_USER,
-                                            password=config.HOSTS_PW,
-                                            nic='nic1'),
-                        "Connectivity with %s failed" % config.VM_NAME[0])
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Removing import/ export domain & network sw162
-        """
-        logger.info("Starting the teardown_class")
-        logger.info("Removing %s from export domain", config.VM_NAME[0])
-        if not removeVmFromExportDomain(positive=True,
-                                        vm=config.VM_NAME[0],
-                                        datacenter=config.DC_NAME,
-                                        export_storagedomain=
-                                        config.EXPORT_STORAGE_NAME):
-            logger.error("removing %s from export domain failed",
-                         config.DC_NAME)
-            return False
-
-        if not (removeNetFromSetup(host=config.HOSTS[0],
-                                   auto_nics=[config.HOST_NICS[0]],
-                                   network=[config.VLAN_NETWORKS[0]])):
-            raise NetworkException("Cannot remove network from setup")
-
-        logger.info("Deactivating storage domain (import/export)")
-        if not (deactivateStorageDomain(positive=True,
-                                        datacenter=config.DC_NAME,
-                                        storagedomain=
-                                        config.EXPORT_STORAGE_NAME)):
-            raise NetworkException("Cannot deactivate storage domain")
-
-        logger.info("Detaching storage domain")
-        if not (detachStorageDomain(positive=True,
-                                    datacenter=config.DC_NAME,
-                                    storagedomain=config.EXPORT_STORAGE_NAME)):
-            raise NetworkException("Cannot detach storage domain")
-
-        logger.info("Removing storage domain")
-        if not (removeStorageDomain(positive=True,
-                                    storagedomain=config.EXPORT_STORAGE_NAME,
-                                    host=config.HOSTS[0])):
-            raise NetworkException("Cannot remove storage domain")
-
-
-class SanityCase15_275464(TestCase):
+class SanityCase13_275464(TestCase):
     """
     Positive: Creates bridged network over bond on Host with custom name
     """
-    __test__ = True
+    __test__ = len(config.HOST_NICS) > 3
 
     @classmethod
     def setup_class(cls):
@@ -1198,11 +1016,11 @@ class SanityCase15_275464(TestCase):
             raise NetworkException("Cannot create and attach network")
 
 
-class SanityCase16_275471_bondMaxLength(TestCase):
+class SanityCase14_275471_bondMaxLength(TestCase):
     """
     Negative: Bond with exceeded name length (more than 15 chars)
     """
-    __test__ = True
+    __test__ = len(config.HOST_NICS) > 3
 
     @classmethod
     def setup_class(cls):
@@ -1236,11 +1054,11 @@ class SanityCase16_275471_bondMaxLength(TestCase):
         pass
 
 
-class SanityCase17_275471_bondPrefix(TestCase):
+class SanityCase15_275471_bondPrefix(TestCase):
     """
     Negative:  Try to create bond with wrong prefix
     """
-    __test__ = True
+    __test__ = len(config.HOST_NICS) > 3
 
     @classmethod
     def setup_class(cls):
@@ -1274,11 +1092,11 @@ class SanityCase17_275471_bondPrefix(TestCase):
         pass
 
 
-class SanityCase18_275471_bondSuffix(TestCase):
+class SanityCase16_275471_bondSuffix(TestCase):
     """
     Negative: Try to create bond with wrong suffix
     """
-    __test__ = True
+    __test__ = len(config.HOST_NICS) > 3
 
     @classmethod
     def setup_class(cls):
@@ -1312,11 +1130,11 @@ class SanityCase18_275471_bondSuffix(TestCase):
         pass
 
 
-class SanityCase19_275471_bondEmpty(TestCase):
+class SanityCase17_275471_bondEmpty(TestCase):
     """
     Negative: Try to create bond with empty name
     """
-    __test__ = True
+    __test__ = len(config.HOST_NICS) > 3
 
     @classmethod
     def setup_class(cls):
@@ -1350,11 +1168,11 @@ class SanityCase19_275471_bondEmpty(TestCase):
         pass
 
 
-class SanityCase20_275813_MoreThen5BONDS(TestCase):
+class SanityCase18_275813_MoreThen5BONDS(TestCase):
     """
     Negative: Create more then 5 BONDS using dummy interfaces
     """
-    __test__ = True
+    __test__ = len(config.HOST_NICS) > 3
 
     @classmethod
     def setup_class(cls):
@@ -1422,14 +1240,3 @@ class SanityCase20_275813_MoreThen5BONDS(TestCase):
 ########################################################################
 
 ########################################################################
-
-
-skipBOND([SanityCase04_CheckingVMNetworks_bond,
-          SanityCase08_CheckingRequiredNetwork_bond,
-          SanityCase10_CheckingJumboFrames_bond,
-          SanityCase13_CheckingLinking_bond,
-          SanityCase15_275464,
-          SanityCase16_275471_bondMaxLength,
-          SanityCase17_275471_bondPrefix,
-          SanityCase18_275471_bondSuffix,
-          SanityCase19_275471_bondEmpty], config.HOST_NICS)

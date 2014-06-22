@@ -21,13 +21,10 @@ from art.rhevm_api.tests_lib.high_level.networks import\
     checkICMPConnectivity, getIpOnHostNic
 from art.rhevm_api.tests_lib.low_level.networks import\
     updateClusterNetwork
-from art.rhevm_api.tests_lib.low_level.hosts import \
-    ifdownNic, ifupNic, activateHost, waitForHostsStates,\
-    setHostToNonOperational
+from art.rhevm_api.tests_lib.low_level.hosts import setHostToNonOperational
 from art.rhevm_api.tests_lib.low_level.vms import addNic, removeNic,\
-    updateNic, waitForVMState, getVmHost
+    updateNic, getVmHost
 from art.rhevm_api.tests_lib.high_level.vms import check_vm_migration
-from art.unittest_lib.network import skipBOND
 HOST_API = get_api('host', 'hosts')
 VM_API = get_api('vm', 'vms')
 
@@ -46,7 +43,7 @@ NETMASK = '255.255.255.0'
 ########################################################################
 
 
-class Migration_Case1_256582_250476(TestCase):
+class Migration_Case01_256582_250476(TestCase):
     """
     Verify dedicated regular network migration
     """
@@ -144,7 +141,7 @@ class Migration_Case1_256582_250476(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class Migration_Case2_250464(TestCase):
+class Migration_Case02_250464(TestCase):
     """
     Verify default migration when no migration network specified
     """
@@ -219,7 +216,7 @@ class Migration_Case2_250464(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class Migration_Case3_250466_256583(TestCase):
+class Migration_Case03_250466_256583(TestCase):
     """
     Verify dedicated migration over tagged network over NIC
     """
@@ -329,7 +326,7 @@ class Migration_Case3_250466_256583(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class Migration_Case4_260555_260554(TestCase):
+class Migration_Case04_260555_260554(TestCase):
     """
     Verify dedicated migration over non-VM network over NIC
     """
@@ -426,7 +423,7 @@ class Migration_Case4_260555_260554(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class Migration_Case5_250810(TestCase):
+class Migration_Case05_250810(TestCase):
     """
     Verify dedicated regular network migration when its also display network
     """
@@ -495,7 +492,7 @@ class Migration_Case5_250810(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class Migration_Case6_250915(TestCase):
+class Migration_Case06_250915(TestCase):
     """
     Verify dedicated regular network migration when the net reside on the VM
     """
@@ -574,7 +571,7 @@ class Migration_Case6_250915(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class Migration_Case7_285179(TestCase):
+class Migration_Case07_285179(TestCase):
     """
     Verify migration over mgmt network when migration network is not attached.
     to Hosts Migration Network is attached only to DC and Cluster
@@ -633,11 +630,11 @@ class Migration_Case7_285179(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class Migration_Case8_260607(TestCase):
+class Migration_Case08_260607(TestCase):
     """
     Verify dedicated regular network migration over Bond
     """
-    __test__ = True
+    __test__ = len(config.HOST_NICS) > 3
 
     @classmethod
     def setup_class(cls):
@@ -736,11 +733,11 @@ class Migration_Case8_260607(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class Migration_Case9_260606(TestCase):
+class Migration_Case09_260606(TestCase):
     """
     Verify dedicated regular non-vm network migration over Bond
     """
-    __test__ = True
+    __test__ = len(config.HOST_NICS) > 3
 
     @classmethod
     def setup_class(cls):
@@ -847,7 +844,7 @@ class Migration_Case10_260608(TestCase):
     """
     Verify dedicated regular tagged network migration over Bond
     """
-    __test__ = True
+    __test__ = len(config.HOST_NICS) > 3
 
     @classmethod
     def setup_class(cls):
@@ -950,81 +947,7 @@ class Migration_Case10_260608(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class Migration_Case11_260611(TestCase):
-    """
-    Test is false till it will run on specific hosts with configured MTU
-    Verify dedicated regular tagged network migration over Bond with MTU 9000
-    """
-    __test__ = False
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create logical tagged network on DC/Cluster with MTU 9000
-        Configure it as migration network and attach it to Bond on the Host
-        """
-        local_dict = {None: {'nic': 'bond0', 'mode': 1,
-                             'slaves': [config.HOST_NICS[2],
-                                        config.HOST_NICS[3]]},
-                      config.VLAN_NETWORKS[0]: {'nic': 'bond0', 'mtu': 9000,
-                                                'vlan_id': config.VLAN_ID[0],
-                                                'required': 'true',
-                                                'cluster_usages': 'migration',
-                                                'bootproto': 'static',
-                                                'address': [SOURCE_IP,
-                                                            DEST_IP],
-                                                'netmask': [NETMASK,
-                                                       NETMASK]},
-                      config.NETWORKS[1]: {'nic': config.HOST_NICS[1],
-                                           'required': 'true'}}
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME,
-                                        cluster=config.CLUSTER_NAME,
-                                        host=config.HOSTS,
-                                        network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0]]):
-            raise NetworkException("Cannot create and attach network")
-
-    @istest
-    @tcms(8735, 256582)
-    def dedicated_migration(self):
-        """
-        Check migration over dedicated tagged network over bond
-        """
-        orig_host = getHost(config.VM_NAME[0])
-        logger.info("Start migration from %s ", orig_host)
-        src, dst = find_ip(vm=config.VM_NAME[0],
-                           host_list=config.HOSTS,
-                           nic='.'.join([config.BOND[0], config.VLAN_ID[0]]))
-        if not checkICMPConnectivity(host=orig_host, user=config.HOSTS_USER,
-                                     password=config.HOSTS_PW[0], ip=dst):
-            logger.error("ICMP wasn't established")
-        with TrafficMonitor(machine=orig_host, user=config.HOSTS_USER,
-                            password=config.HOSTS_PW[0],
-                            nic='.'.join([config.BOND[0], config.VLAN_ID[0]]),
-                            src=src, dst=dst,
-                            protocol='tcp', numPackets=NUM_PACKETS) as monitor:
-            monitor.addTask(check_vm_migration,
-                            vm_names=config.VM_NAME[0],
-                            orig_host=orig_host, vm_user=config.HOSTS_USER,
-                            host_password=config.HOSTS_PW[0],
-                            vm_password=config.HOSTS_PW[0],
-                            os_type='rhel')
-        self.assertTrue(monitor.getResult())
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove network from the setup.
-        """
-        logger.info("Remove networks from setup")
-        if not removeNetFromSetup(host=config.HOSTS,
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.VLAN_NETWORKS[0],
-                                           config.NETWORKS[1]]):
-            raise NetworkException("Cannot remove network from setup")
-
-
-class Migration_Case12_250469(TestCase):
+class Migration_Case11_250469(TestCase):
     """
     Verify  migration over mgmt network when dedicated migration network is
     removed
@@ -1109,7 +1032,7 @@ class Migration_Case12_250469(TestCase):
             raise NetworkException("Cannot remove network from setup")
 
 
-class Migration_Case13_260613(TestCase):
+class Migration_Case12_260613(TestCase):
     """
     Verify when dedicated regular network migration is not configured on the
     Host the migration will occur on the mgmt network network
@@ -1189,6 +1112,3 @@ def getHost(vm):
     if not rc:
         raise NetworkException("Cannot get host that VM resides on")
     return out['vmHoster']
-
-skipBOND([Migration_Case8_260607, Migration_Case9_260606,
-          Migration_Case10_260608], config.HOST_NICS)
