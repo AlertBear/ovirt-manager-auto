@@ -595,5 +595,5 @@ class UnittestLoader(Component):
                                           'default="configs/default.conf")')
         section_spec[NOSE_API_SELECTOR] = \
             'boolean(default=%s)' % DEFAULT_STATE
-        section_spec[NOSE_TAGS] = 'list(default=list())'
+        section_spec[NOSE_TAGS] = 'force_list(default=list())'
         section_spec[NOSE_TAG_EXPRESSIONS] = 'expr_list(default=list())'
