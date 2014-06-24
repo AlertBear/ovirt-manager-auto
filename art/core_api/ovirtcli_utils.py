@@ -1137,6 +1137,15 @@ class CliUtil(RestUtil):
                    " ".join(createCommandLineOptionFromDict(params,
                                                             long_glue=' ')))
 
+        if href:
+            try:
+                ownerId, ownerName, entityName = self._getHrefData(href)
+            except EntityNotFound:
+                self.logger.warning("Cannot parse %s", href)
+            else:
+                queryCmd = '{0} --{1}-identifier "{2}"'.format(
+                    queryCmd, ownerId[:-1], entityName)
+
         if all_content:
             queryCmd = "%s all_content %s" % (queryCmd, all_content)
 
