@@ -1176,16 +1176,6 @@ class VmTemplate(BaseVmWithDiskTemplate):
     template_name = 'basic_template'
     counter = 0
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove created vm and remove template
-        """
-        super(VmTemplate, cls).teardown_class()
-        logger.info("Remove template %s", cls.template_name)
-        if not template_api.removeTemplate(True, cls.template_name):
-            raise errors.TemplateException("Failed to remove template")
-
     @istest
     def create_vm_from_template(self):
         """
