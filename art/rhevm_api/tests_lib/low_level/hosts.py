@@ -35,14 +35,13 @@ from art.rhevm_api.tests_lib.low_level.networks import getClusterNetwork, \
     create_properties
 from art.rhevm_api.tests_lib.low_level.datacenters import \
     waitForDataCenterState
-from art.rhevm_api.tests_lib.low_level.vms import startVm, stopVm, stopVms, \
-    startVms, waitForIP, getVmHost, get_vm_state
+from art.rhevm_api.tests_lib.low_level.vms import stopVm, getVmHost, \
+    get_vm_state
 from art.test_handler import find_test_file
 from art.rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.test_handler import settings
 from art.core_api import is_action
-from art.rhevm_api.utils.guest import runLoadOnGuest
 from random import choice
 import shlex
 
@@ -154,176 +153,6 @@ def getRandPM(positive, cluster, size):
         return False, {'pmList': None}
 
 
-@is_action()
-def measureKSMThreshold(positive, poolname, pool_size, vm_num, host, host_user,
-                        host_passwd, guest_user, guest_passwd, vm_mem,
-                        loadType, port, load=None, allocationSize=None,
-                        protocol=None, clientVMs=None, extra=None,
-                        timeout=600):
-    """
-    Description: starts VMs until the KSM daemon starts on the host.
-    After the KSM is engaged, it shuts down all the started VMs.
-    Author: adarazs
-    Parameters:
-      * poolname - the basename of the pool
-      * pool_size - how many VMs are in the pool
-      * vm_num - expected KSM threshold
-      * host - name of the host
-      * host_user - user name for the host
-      * host_passwd - password for the user
-      * guest_user - username for the guest
-      * guest_passwd - password for the guest user
-      * vm_mem - the memory in bytes that an individual VM gets
-      * rest of the parameters - according to vms.runLoadOnGuest function
-    Return: True if the calculated and measured VM number equals,
-    False on error or otherwise
-    """
-    HOST_API.logger.info("Expected threshold is %s", vm_num)
-    if checkKSMRun(host, host_user, host_passwd, timeout=10):
-        HOST_API.logger.error('KSM is running at the start of the test')
-        return False
-    status = True
-    started_count = 0
-    iterations = int(vm_num) + 1 if pool_size > int(vm_num) else int(vm_num)
-    for vm_index in range(iterations):
-        ksm_timeout = 10 if vm_index < int(vm_num) - 2 else 60
-        vm_name = "%s-%s" % (poolname, str(vm_index + 1))
-        HOST_API.logger.debug('Starting VM: %s', vm_name)
-        if not startVm(True, vm_name, wait_for_status=None):
-            HOST_API.logger.error('Failed to start VM: %s', vm_name)
-        query = "name={0} and status=up or name={0}" \
-                " and status=poweringup".format(vm_name)
-        HOST_API.logger.info("Running memory load on VM %s", vm_name)
-        VM_API.waitForQuery(query, timeout=timeout, sleep=10)
-        load_status = runLoadOnGuest(True, targetVM=vm_name, osType='linux',
-                                     username=guest_user,
-                                     password=guest_passwd, loadType=loadType,
-                                     duration=0, port=port, load=load,
-                                     allocationSize=allocationSize,
-                                     protocol=protocol, clientVMs=clientVMs,
-                                     extra=extra, stopLG=False)
-        if not load_status[0]:
-            HOST_API.logger.error("Error running load on VM")
-            return False
-        # time for stats to refresh in the REST API
-        HOST_API.logger.debug("Checking if KSM is running on the host")
-        if checkKSMRun(host, host_user, host_passwd, timeout=ksm_timeout):
-            started_count = vm_index + 1
-            HOST_API.logger.info("KSM threshold found at %d guests",
-                                 started_count)
-            break
-        else:
-            HOST_API.logger.info("KSM is not running at %d guests",
-                                 vm_index + 1)
-    if int(vm_num) == started_count:
-        HOST_API.logger.info("Calculated and real threshold equals")
-    elif abs(int(vm_num) - started_count) <= 1:
-        HOST_API.logger.info("Difference between calculated and "
-                             "real threshold is 1.")
-    else:
-        status = False
-        HOST_API.logger.error("Calculated and real threshold differs")
-    HOST_API.logger.debug("Stopping the previously started VMs")
-    for vm_index in range(started_count):
-        vm_name = "%s-%s" % (poolname, str(vm_index + 1))
-        if not stopVm(True, vm_name):
-            status = False
-    return status, {'actual_thres': started_count}
-
-
-@is_action()
-def verifyKSMThreshold(positive, poolname, vm_num, host, host_user,
-                       host_passwd, guest_user, guest_passwd, vm_mem,
-                       loadType, port, load=None, allocationSize=None,
-                       protocol=None, clientVMs=None, extra=None,
-                       timeout=600):
-    """
-    Description: starts all of the calculated VMs at once and check if
-    it was enough to trigger the KSM routines. Shuts down the started
-    VMs after that.
-    Author: adarazs
-    Parameters:
-      * poolname - the basename of the pool
-      * vm_num - expected KSM threshold
-      * host - name of the host
-      * host_user - user name for the host
-      * host_passwd - password for the user
-      * guest_user - username for the guest
-      * guest_passwd - password for the guest user
-      * vm_mem - the memory in bytes that an individual VM gets
-      * rest of the parameters - according to vms.runLoadOnGuest function
-    Return: True if the calculated and measured VM number equals,
-    False on error or otherwise
-    """
-    # wait for host to settle down before previous test
-    time.sleep(10)
-    HOST_API.logger.info("Measured threshold is %s", vm_num)
-    if checkKSMRun(host, host_user, host_passwd, timeout=10):
-        HOST_API.logger.error('KSM is running at the start of the test')
-        return False
-    status = True
-    vm_list = []
-    for vm_index in range(int(vm_num)):
-        vm_name = "%s-%s" % (poolname, str(vm_index + 1))
-        vm_list.append(vm_name)
-    HOST_API.logger.debug('Starting VMs')
-    if not startVms(','.join(vm_list)):
-        HOST_API.logger.error('Failed to start VMs')
-        return False
-    query = ' or '.join(['name={0} and status=up or'
-                         ' name={0} and status=poweringup'.format(vm_name) for
-                         vm_name in vm_list])
-    VM_API.waitForQuery(query, timeout=timeout, sleep=10)
-    for vm_name in vm_list:
-        load_status = runLoadOnGuest(True, targetVM=vm_name, osType='linux',
-                                     username=guest_user,
-                                     password=guest_passwd, loadType=loadType,
-                                     duration=0, port=port, load=load,
-                                     allocationSize=allocationSize,
-                                     protocol=protocol, clientVMs=clientVMs,
-                                     extra=extra, stopLG=False)
-        if not load_status[0]:
-            HOST_API.logger.error("Error running load on VM")
-            return False
-    # time for stats to refresh in the REST API
-    HOST_API.logger.debug("Checking if KSM is running on the host")
-    if checkKSMRun(host, host_user, host_passwd, timeout=60):
-        HOST_API.logger.info("Calculated threshold triggered KSM")
-    else:
-        status = False
-        HOST_API.logger.error("Calculated threshold not triggered KSM")
-    HOST_API.logger.debug("Stopping the previously started VMs")
-    if not stopVms(','.join(vm_list)):
-        HOST_API.logger.error('Failed to stop VMs')
-        return False
-    return status
-
-
-def isHostSaturated(host, max_cpu=95, max_mem=95):
-    """
-    Description: checks if the host if saturated with VMs
-    Author: adarazs
-    Parameters:
-      * host - name of a host
-    Return: status (True if the host is saturated, False otherwise)
-    """
-    HOST_API.find(host)
-    stats = getStat(host, ELEMENT, COLLECTION, ["memory.used", "memory.total",
-                                                "cpu.current.system",
-                                                "cpu.current.user"])
-    cpu_sum = stats["cpu.current.system"] + stats["cpu.current.user"]
-    mem_percent = stats["memory.used"] / float(stats["memory.total"]) * 100.0
-    if cpu_sum > max_cpu or mem_percent > max_mem:
-        if cpu_sum > max_cpu:
-            HOST_API.logger.info("Host %s reached the CPU saturation point",
-                                 host)
-        else:
-            HOST_API.logger.info("Host %s reached the memory saturation point",
-                                 host)
-        return True
-    return False
-
-
 def getHostState(host):
     """
     Description: Returns a host's state
@@ -351,66 +180,6 @@ def isHostUp(positive, host):
     if (host_status == ENUMS['host_state_up']) == positive:
         return True
     return False
-
-
-@is_action()
-def saturateHost(positive, poolname, vm_total, host, host_user,
-                 host_passwd, guest_user, guest_passwd, loadType, port,
-                 load=None, allocationSize=None, protocol=None,
-                 clientVMs=None, extra=None):
-    """
-    Description: starts VMs until the host gets saturated
-    when that happens, it shuts down all the started VMs
-    Author: adarazs
-    Parameters:
-      * poolname - the basename of the pool
-      * vm_total - how many VMs are in the pool
-      * host - name of the host
-      * host_user - user name for the host
-      * host_passwd - password for the user
-      * guest_user - username for the guest
-      * guest_passwd - password for the guest user
-      * rest of the parameters - according to vms.runLoadOnGuest function
-    Return: False on error, True otherwise
-    """
-    if isHostSaturated(host):
-        HOST_API.logger.error('Host is already saturated at the start of'
-                              ' the test')
-        return False
-    status = True
-    for vm_index in range(vm_total):
-        vm_name = "%s-%s" % (poolname, str(vm_index + 1))
-        HOST_API.logger.debug('Starting VM: %s', vm_name)
-        if not startVm(True, vm_name, wait_for_status=None):
-            HOST_API.logger.error('Failed to start VM: %s', vm_name)
-        HOST_API.logger.debug("Waiting for the guest %s to get IP address",
-                              vm_name)
-        if not waitForIP(vm=vm_name)[0]:
-            HOST_API.logger.error("Guest %s did not get IP.", vm_name)
-            return False
-        load_status = runLoadOnGuest(True, targetVM=vm_name, osType='linux',
-                                     username=guest_user,
-                                     password=guest_passwd, loadType=loadType,
-                                     duration=0, port=port, load=load,
-                                     allocationSize=allocationSize,
-                                     protocol=protocol, clientVMs=clientVMs,
-                                     extra=extra, stopLG=False)
-        if not load_status[0]:
-            HOST_API.logger.error("Error running load on VM")
-            return False
-        # time for stats to refresh in the REST API
-        time.sleep(10)
-        HOST_API.logger.debug("Checking for host saturation")
-        if isHostSaturated(host):
-            started_count = vm_index + 1
-            HOST_API.logger.info("Saturation point found at %d guests",
-                                 started_count)
-            break
-    HOST_API.logger.debug("Stopping the previously started VMs")
-    for vm_index in range(vm_total):
-        vm_name = "%s-%s" % (poolname, str(vm_index + 1))
-        stopVm(True, vm_name)
-    return status, {"satnum": started_count}
 
 
 @is_action()

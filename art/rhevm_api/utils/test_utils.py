@@ -200,64 +200,21 @@ def getStat(name, elm_name, collection_name, stat_types):
     return values
 
 
-def lookingForIpAdressByEntityName(entity, ipVar="ip", nameVar="vmName", expTime=60*10, cache=ThreadSafeDict()):
-    '''
-    Description: Decorator replaces non-defined ipVar parameter.
-                 Result is cached until expTime, for continuous calling
-    Parameters:
-     * entity - name of entity (vms, hosts)
-     * ipVar - name of variable represents IP for specific entity
-     * nameVar - name of variable used to define entity name
-     * expTime - expiration time (seconds)
-    '''
-    def wrapper(f):
-        if entity not in ('vms', 'hosts'):
-            raise AttributeError("entity='%s' is not supported now" % entity)
-
-        try:
-            sub = re.compile('^((.*)%s\s*([=-]).*)$' % ipVar, re.M)
-            f.func_doc = sub.sub(r'\1\n\2%s \3 name of entity (can supply %s)' % \
-                    (nameVar, ipVar), f.func_doc, 1)
-        except Exception as ex:
-            logger.warn("failed to add '%s' into doc-string of '%s': %s", nameVar, f.func_name, ex)
-
-        @wraps(f)
-        def wrappered_call(*args, **kwargs):
-            if kwargs.get(ipVar, None) is None and nameVar in kwargs:
-                if kwargs[nameVar] is None:
-                    raise AttributeError("missing target machine: %s or %s" % (ipVar, nameVar))
-
-                cEntry = "%s-%s" % (entity, kwargs[nameVar])
-                with cache:
-                    cRecord = cache.get(cEntry, {'ip': None, 'exp': 0})
-                    if cRecord['exp'] < time.time():
-
-                        cRecord['ip'] = getIpByEntityName(entity, kwargs[nameVar], varName='ip')[1]['ip']
-
-                        if cRecord['ip'] is None:
-                            raise AttributeError("failed to retrieve IP by %s='%s'" % (nameVar, kwargs[nameVar]))
-
-                        cRecord['exp'] = time.time() + expTime
-                        cache[cEntry] = cRecord
-
-                    kwargs[ipVar] = cRecord['ip']
-                del kwargs[nameVar]
-
-            return f(*args, **kwargs)
-        return wrappered_call
-    return wrapper
-
-
 @is_action('validateEntityStatus')
 def validateElementStatus(positive, element, collection, elementName,
-                                        expectedStatus, dcName=None):
+                          expectedStatus, dcName=None):
     '''
-    The function validateElementStatus compare the status of given element with expected status.
+    The function validateElementStatus compare the status of given element with
+    expected status.
         element = specific element (host,datacenter...)
-        elementName = the name of element (<host name> in case of given element is a host)
-        expectedStatus = expected status(es) of element (The status of element that we are expecting)
-        dcName = the name of Data Center (to retrieve the status of storage domain entity, None by default)
-    return values : Boolean value (True/False ) True in case of succes otherwise False
+        elementName = the name of element (<host name> in case of given element
+                      is a host)
+        expectedStatus = expected status(es) of element (The status of element
+                        that we are expecting)
+        dcName = the name of Data Center (to retrieve the status of storage
+                 domain entity, None by default)
+    return values : Boolean value (True/False ) True in case of success
+                    otherwise False
     '''
     attribute = "state"
     util = get_api(element, collection)
@@ -1088,28 +1045,6 @@ def checkHostConnectivity(positive, ip, user, password, osType, attempt=1, inter
     except Exception as err:
         logger.error(str(err))
         return False, {'elapsedTime' :-1}
-
-
-@is_action()
-def resetMapperEntityNamesToIpAddress(entity='.+', entityName='.+', expTime=None):
-    """
-    Description: Removes all/specific record (entityName -> ip-address) from cache
-    Parameters:
-     * entity - type of entity (e.g.: vms), you can use regexpr
-     * entityName - name of entity, you can use regexpr
-     * expTime - sets expiration time for cached records (seconds)
-    """
-    ipVar, nameVar, oldExpTime, cache = lookingForIpAdressByEntityName.func_defaults
-    with cache:
-        reg = re.compile('^%s-%s$' % (entity, entityName))
-        elms = [x for x in cache.keys() if reg.match(x)]
-        for elm in elms:
-            del cache[elm]
-
-    if expTime is None:
-        expTime = oldExpTime
-    lookingForIpAdressByEntityName.func_defaults = (ipVar, nameVar, expTime, cache)
-    return True
 
 
 @is_action()
