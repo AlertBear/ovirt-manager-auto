@@ -30,9 +30,7 @@ from art.core_api.apis_exceptions import APITimeout, EntityNotFound
 import utilities.ssh_session as ssh_session
 import re
 import tempfile
-from utilities.utils import getIpAddressByHostName, getHostName, readConfFile
-# TODO: remove both compareCollectionSize, dump_entity is not needed
-from art.core_api.validator import compareCollectionSize, dump_entity
+from utilities.utils import getIpAddressByHostName, getHostName
 from art.rhevm_api.tests_lib.low_level.networks import getClusterNetwork
 from art.rhevm_api.tests_lib.low_level.datacenters import \
     waitForDataCenterState
@@ -1811,9 +1809,10 @@ def checkSPMElectionRandomness(positive, hosts, attempt_number=5,
     status = True
     for spms in hosts_pairs.keys():
         if not len(set(spms)) > 1:
-            logger.warning("SPM randomness test failed, but due to the nature"
-                           "of this test, there's a small chance of that"
-                           "happening at every run")
+            HOST_API.logger.warning(
+                "SPM randomness test failed, but due to the nature "
+                "of this test, there's a small chance of that "
+                "happening at every run")
             status = False
 
     return status == positive

@@ -46,7 +46,7 @@ from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils.threads import runParallel
 from art.rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
 from art.test_handler.settings import opts
-from art.test_handler.exceptions import NetworkException, CanNotFindIP
+from art.test_handler.exceptions import CanNotFindIP
 from art.test_handler import exceptions
 from utilities.jobs import Job, JobsSet
 from utilities.utils import pingToVms, makeVmList
@@ -180,20 +180,20 @@ def _prepareVmObject(**kwargs):
     if os_type is not None:
         os_type = ENUMS.get(os_type.lower(), os_type.lower())
         apply_os = True
-    os = data_st.OperatingSystem(type_=os_type)
+    os_type = data_st.OperatingSystem(type_=os_type)
     for opt_name in 'kernel', 'initrd', 'cmdline':
         opt_val = kwargs.pop(opt_name, None)
         if opt_val:
             apply_os = True
-            setattr(os, opt_name, opt_val)
+            setattr(os_type, opt_name, opt_val)
     boot_seq = kwargs.pop('boot', None)
     if boot_seq:
         if isinstance(boot_seq, basestring):
             boot_seq = boot_seq.split()
-        os.set_boot([data_st.Boot(dev=boot_dev) for boot_dev in boot_seq])
+        os_type.set_boot([data_st.Boot(dev=boot_dev) for boot_dev in boot_seq])
         apply_os = True
     if apply_os:
-        vm.set_os(os)
+        vm.set_os(os_type)
 
     # type
     vm.set_type(kwargs.pop('type', None))
@@ -1495,12 +1495,12 @@ def runVmOnce(positive, vm, pause=None, display_type=None, stateless=None,
         vm_for_action.set_floppies(floppies)
 
     if None is not boot_dev:
-        os = data_st.OperatingSystem()
+        os_type = data_st.OperatingSystem()
         # boot_dev_seq = data_st.Boot()
         for dev in boot_dev.split(","):
             # boot_dev_seq.set_dev(dev)
-            os.add_boot(data_st.Boot(dev=dev))
-        vm_for_action.set_os(os)
+            os_type.add_boot(data_st.Boot(dev=dev))
+        vm_for_action.set_os(os_type)
 
     if None is not host:
         raise NotImplementedError(

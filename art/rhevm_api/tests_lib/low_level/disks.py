@@ -17,8 +17,6 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 import logging
-import time
-import types
 from utilities.machine import Machine
 
 from art.core_api.apis_exceptions import EntityNotFound, APITimeout
@@ -27,7 +25,6 @@ from art.rhevm_api.data_struct.data_structures import Fault
 from art.rhevm_api.utils.test_utils import get_api, split, waitUntilGone
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from art.core_api import is_action
-from art.test_handler.exceptions import DiskException, CanNotResolveActionPath
 from art.test_handler.settings import opts
 
 GBYTE = 1024 ** 3

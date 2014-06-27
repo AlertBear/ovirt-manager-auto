@@ -437,7 +437,7 @@ def attachHostToCluster(positive, host, cluster):
     util.logger.info("Attach Host %s to Cluster %s" % (host, cluster))
     # Find cluster
     try:
-        clObj = util.find(cluster)
+        util.find(cluster)
         hostObj = hostUtil.find(host)
     except EntityNotFound:
         return not positive
