@@ -1,5 +1,6 @@
 """
-A collection of wrappers which allow the usage of general utils functions and storage API in the REST framework.
+A collection of wrappers which allow the usage of general utils functions and
+storage API in the REST framework.
 """
 import logging
 import os
@@ -15,12 +16,14 @@ log = logging.getLogger("storage_api")
 
 FILE_HANDLER_TIMEOUT = 15
 
-def setupIptables(source, userName, password, dest, command, chain, \
+
+def setupIptables(source, userName, password, dest, command, chain,
                   target, protocol='all', persistently=False, *ports):
     """Wrapper for utilities.machine.setupIptables() method."""
     hostObj = machine.Machine(source, userName, password).util('linux')
-    return hostObj.setupIptables(dest, command, chain, target, \
+    return hostObj.setupIptables(dest, command, chain, target,
                                  protocol, persistently, *ports)
+
 
 @is_action('blockConnection')
 def blockOutgoingConnection(source, userName, password, dest, port=None):
@@ -35,11 +38,11 @@ def blockOutgoingConnection(source, userName, password, dest, port=None):
     Return: True if commands succeeds, false otherwise.
     '''
     if port is None:
-         return setupIptables(source, userName, password, dest, '--append',
-                       'OUTPUT', 'DROP')
+        return setupIptables(source, userName, password, dest, '--append',
+                             'OUTPUT', 'DROP')
     else:
-         return setupIptables(source, userName, password, dest, '--append',
-                              'OUTPUT', 'DROP', 'all', False, port)
+        return setupIptables(source, userName, password, dest, '--append',
+                             'OUTPUT', 'DROP', 'all', False, port)
 
 
 @is_action('unblockConnection')
@@ -58,18 +61,19 @@ def unblockOutgoingConnection(source, userName, password, dest, port=None):
         return setupIptables(source, userName, password, dest, '--delete',
                              'OUTPUT', 'DROP')
     else:
-        return setupIptables(source, userName, password, dest,'--delete',
+        return setupIptables(source, userName, password, dest, '--delete',
                              'OUTPUT', 'DROP', 'all', False, port)
+
 
 def blockIncomingConnection(source, userName, password, dest):
     """Warpper for blocking incoming connection from any server to host."""
-    return setupIptables(source, userName, password, dest, \
+    return setupIptables(source, userName, password, dest,
                          '--append', 'INPUT', 'DROP')
 
 
 def unblockIncomingConnection(source, userName, password, dest):
     """Warpper for unblocking incoming connection from any server to host."""
-    return setupIptables(source, userName, password, dest, \
+    return setupIptables(source, userName, password, dest,
                          '--delete', 'INPUT', 'DROP')
 
 
@@ -95,7 +99,7 @@ def sendTargets(initiator, user, password, portal, targetName, login=True):
                 False otherwise
     """
     hostObj = machine.Machine(initiator, user, password).util('linux')
-    rc, targets = hostObj.sendTargetsDiscovery(portal)
+    rc = hostObj.sendTargetsDiscovery(portal)[0]
     if rc and login:
         return hostObj.loginTarget(portal, targetName)
 
@@ -182,9 +186,9 @@ def getStorageDomainInfo(vds_name, user, passwd, sp_uuid, option='none'):
 
 
 @is_action()
-def generateSDMetadataCorruption(vds_name, username, passwd, sd_name, \
-                                 md_backup_path=None, md_tag="MDT_TYPE", \
-                                 md_tag_bad_value=st_util.CORRUPTION_STRING, \
+def generateSDMetadataCorruption(vds_name, username, passwd, sd_name,
+                                 md_backup_path=None, md_tag="MDT_TYPE",
+                                 md_tag_bad_value=st_util.CORRUPTION_STRING,
                                  bs=st_util.BS, count=st_util.COUNT):
     """
         Generate metadata corruption on storage domain.
@@ -196,7 +200,8 @@ def generateSDMetadataCorruption(vds_name, username, passwd, sd_name, \
          * sd_name - storage domain name
          * md_backup_path - full metadata backup path
          * md_tag - metadata tag ("TYPE" by default)
-         * md_tag_bad_value - new value for md_tag (corruption_string by default)
+         * md_tag_bad_value - new value for md_tag
+                             (corruption_string by default)
          * bs - block size (1024 by default)
          * count - number of blocks (1 by default)
         Return: True and dictionary with storage domain object with all \
@@ -204,7 +209,6 @@ def generateSDMetadataCorruption(vds_name, username, passwd, sd_name, \
         Throws: ValueError, st_util.SDMetadataError
     """
     sd_obj = None
-    sd_info = {}
     obj = st_util.SD(vds_name, username, passwd)
     uuid = obj.getSDUuidByName(sd_name)
     if uuid is None:
@@ -220,7 +224,7 @@ def generateSDMetadataCorruption(vds_name, username, passwd, sd_name, \
         msg = "unsupported storage domain type: {0}."
         raise ValueError(msg.format(sd_info['type']))
 
-    sd_info = sd_obj.generateMDCorruption(md_backup_path, md_tag, \
+    sd_info = sd_obj.generateMDCorruption(md_backup_path, md_tag,
                                           md_tag_bad_value, bs, count)
     if not sd_info:
         msg = "failed to corrupt metadata of storage domain {0} with uuid {1}"
@@ -243,7 +247,8 @@ def restoreSDOriginalMetadata(sd_obj):
 
 
 @is_action()
-def getVolumeInfo(vds_name, user, passwd, dc_uuid, sd_uuid, image_uuid, volume_uuid):
+def getVolumeInfo(vds_name, user, passwd, dc_uuid, sd_uuid, image_uuid,
+                  volume_uuid):
     """
         Retrieve volume info.
         Author: egerman
@@ -301,8 +306,9 @@ def getVmsInfo(vds_name, user, passwd, dc_uuid, sd_uuid):
 
 
 @is_action()
-def spmStart(positive, vds_name, user, passwd, sp_uuid, prev_id=-1, prev_lver=-1, \
-             recovery_mode=0, scsi_fencing='False', max_host_id=0, version=2):
+def spmStart(
+        positive, vds_name, user, passwd, sp_uuid, prev_id=-1, prev_lver=-1,
+        recovery_mode=0, scsi_fencing='False', max_host_id=0, version=2):
     """
         Start SPM on VDS host.
         Author: egerman
@@ -321,9 +327,9 @@ def spmStart(positive, vds_name, user, passwd, sp_uuid, prev_id=-1, prev_lver=-1
                 False otherwise
     """
     vds_obj = VdsLinuxMachine(vds_name, user, passwd).vdsObj
-    res = vds_obj.startSpm(sp_uuid, prev_id, prev_lver, \
-                          recovery_mode, scsi_fencing, max_host_id, version)
-    return not positive ^ res
+    res = vds_obj.startSpm(sp_uuid, prev_id, prev_lver,
+                           recovery_mode, scsi_fencing, max_host_id, version)
+    return positive == res
 
 
 def getVolumesList(vds_name, user, passwd, dc_uuid, sd_uuid, images):
@@ -345,7 +351,7 @@ def getVolumesList(vds_name, user, passwd, dc_uuid, sd_uuid, images):
 
 @is_action()
 def checkZerosOnDevice(positive, lun_id, host, username, password,
-                       size=1024*1024, timeout=FILE_HANDLER_TIMEOUT):
+                       size=1024 * 1024, timeout=FILE_HANDLER_TIMEOUT):
     """
     Description: Check that lun contains zeros at the first and last 1MiB
     Author: jlibosva
@@ -364,16 +370,16 @@ def checkZerosOnDevice(positive, lun_id, host, username, password,
     with m.ssh as ssh_con:
         with ssh_con.getFileHandler(timeout) as fh:
             if not fh.exists(dm_path):
-                log.error("LUN device with id %s doesn't exist in device mapper,"
-                          "please check that lun is connected to the host.",
-                          lun_id)
+                log.error(
+                    "LUN device with id %s doesn't exist in device mapper,"
+                    "please check that lun is connected to the host.",
+                    lun_id)
                 return False
 
             file_ = fh.open(dm_path, 'rb')
             beginning = file_.read(size)
             size = len(beginning)
-            expected = size*'\0'
+            expected = size * '\0'
             file_.seek(size, os.SEEK_END)
             end = file_.read(size)
     return (expected == beginning == end) == positive
-
