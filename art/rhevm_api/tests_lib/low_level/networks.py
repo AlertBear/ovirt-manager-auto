@@ -1102,3 +1102,36 @@ def check_ethtool_opts(host, user, password, nic, opts, value):
         if opts in line:
             return line.split(": ")[1] == value
     return False
+
+
+def check_bridge_file_exist(host, user, password, bridge_name):
+    """
+    Checks if the bridge file exists for specific network
+    **Author**: gcheresh
+        **Parameters**:
+        *  *host* - machine ip address or fqdn of the machine
+        *  *user* - root user on the  machine
+        *  *password* - password for the user
+        *  *bridge_name* - name of the bridge file to check if exists
+    **Return**: True if the bridge_name file exists, False otherwise
+    """
+    machine_obj = Machine(host, user, password).util(LINUX)
+    bridge_file = os.path.join(SYS_CLASS_NET_DIR, bridge_name, 'bridge')
+    return machine_obj.isFileExists(bridge_file)
+
+
+def create_properties(**kwargs):
+    """
+    Creates Properties object that contains list of different property objects
+    **Author**: gcheresh
+        **Parameters**:
+        *  *kwargs* - dictionary of (network customer property: value)
+        elements
+    **Return**: Properties object
+    """
+    properties_obj = data_st.Properties()
+    for key, val in kwargs.iteritems():
+        if kwargs.get("bridge_opts") or kwargs.get("ethtool_opts"):
+            property_obj = data_st.Property(name=key, value=val)
+            properties_obj.add_property(property_obj)
+    return properties_obj

@@ -31,7 +31,8 @@ import utilities.ssh_session as ssh_session
 import re
 import tempfile
 from utilities.utils import getIpAddressByHostName, getHostName
-from art.rhevm_api.tests_lib.low_level.networks import getClusterNetwork
+from art.rhevm_api.tests_lib.low_level.networks import getClusterNetwork, \
+    create_properties
 from art.rhevm_api.tests_lib.low_level.datacenters import \
     waitForDataCenterState
 from art.rhevm_api.tests_lib.low_level.vms import startVm, stopVm, stopVms, \
@@ -185,7 +186,7 @@ def measureKSMThreshold(positive, poolname, pool_size, vm_num, host, host_user,
     started_count = 0
     iterations = int(vm_num) + 1 if pool_size > int(vm_num) else int(vm_num)
     for vm_index in range(iterations):
-        ksm_timeout = 10 if vm_index < int(vm_num)-2 else 60
+        ksm_timeout = 10 if vm_index < int(vm_num) - 2 else 60
         vm_name = "%s-%s" % (poolname, str(vm_index + 1))
         HOST_API.logger.debug('Starting VM: %s', vm_name)
         if not startVm(True, vm_name, wait_for_status=None):
@@ -212,7 +213,8 @@ def measureKSMThreshold(positive, poolname, pool_size, vm_num, host, host_user,
                                  started_count)
             break
         else:
-            HOST_API.logger.info("KSM is not running at %d guests", vm_index+1)
+            HOST_API.logger.info("KSM is not running at %d guests",
+                                 vm_index + 1)
     if int(vm_num) == started_count:
         HOST_API.logger.info("Calculated and real threshold equals")
     elif abs(int(vm_num) - started_count) <= 1:
@@ -1018,6 +1020,9 @@ def _prepareHostNicObject(**kwargs):
     if 'override_configuration' in kwargs:
         nic_obj.set_override_configuration(kwargs.get(
             'override_configuration'))
+    if kwargs.get('properties'):
+        properties_obj = create_properties(**kwargs.get('properties'))
+        nic_obj.set_properties(properties_obj)
 
     address = kwargs.get('address')
     netmask = kwargs.get('netmask')
@@ -2464,7 +2469,7 @@ def getKSMStats(positive, host, host_user, host_passwd, vm_num, mem_ovrcmt,
         ksm_thres_const = int(match_obj.group(1)) * MEGABYTE
     else:
         ksm_thres_const = ksm_const
-    if (total_mem * (ksm_thres_coeff/100) > ksm_thres_const):
+    if (total_mem * (ksm_thres_coeff / 100) > ksm_thres_const):
         vm_load = int(((100 - ksm_thres_coeff) / 100.0) * vm_mem)
     else:
         vm_load = int(((total_mem - ksm_thres_const) / float(total_mem))
@@ -2716,8 +2721,7 @@ def change_mom_rpc_port(host, host_user, host_pwd, port=8080):
         host, host_user, host_pwd).util(machine.LINUX)
     rc, out = host_machine.runCmd(['sed', '-i',
                                    's/rpc-port: [-0-9]\\+/rpc-port: ' +
-                                   str(port)+'/',
-                                   MOM_CONF])
+                                   str(port) + '/', MOM_CONF])
     if not rc:
         HOST_API.logger.error(
             "Failed to edit rpc port for mom on host %s ", host)

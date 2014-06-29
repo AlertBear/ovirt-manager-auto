@@ -196,6 +196,7 @@ def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
                     if boot is Static
                 *  *profile_required* - flag to create or not VNIC profile
                     for the network
+                *  * properties* - property of bridge_opts and/or ethtool_opts
         **Returns**: True value if succeeded in creating and adding net list
                 to DC/Cluster and Host with all the parameters
     '''
@@ -246,7 +247,8 @@ def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
                                netmask=netmask_list.pop(0)
                                if netmask_list else None,
                                gateway=gateway_list.pop(0)
-                               if gateway_list else None)
+                               if gateway_list else None,
+                               properties=net_param.get('properties', None))
 
             if not rc:
                 logger.error("Cannot generate network object")
