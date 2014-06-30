@@ -29,7 +29,8 @@ from art.core_api import validator, measure_time
 from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.data_struct.data_structures import ClassesMapping
 from art.core_api.apis_exceptions import APIException, APILoginError
-from art.core_api.apis_utils import APIUtil, NEGATIVE_CODES, api_error
+from art.core_api.apis_utils import APIUtil, NEGATIVE_CODES, api_error,\
+    ApiOperation
 
 import java_sdk
 import java
@@ -991,7 +992,7 @@ element:%(elm)s " % {'col': self.collection_name,
                 return python_response, False
 
         except java_sdk.JavaError as e:
-            self.parse_java_error(e, 'create')
+            self.parse_java_error(e, ApiOperation.create)
             if positive:
                 return None, False
 
@@ -1051,7 +1052,8 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
             if correlation_id is not None or current is not None or async:
                 correlation_id = str(correlation_id)
                 upd_method_args_length, sorted_upd_method_args_list = \
-                    self.__java_method_selector(java_entity, 'update')
+                    self.__java_method_selector(java_entity,
+                                                ApiOperation.update)
                 if upd_method_args_length == 1:
                     with measure_time('PUT'):
                         response = java_entity.update(correlation_id)
@@ -1081,7 +1083,7 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
                 return None, False
 
         except java_sdk.JavaError as e:
-            e = self.parse_java_error(e, 'update')
+            e = self.parse_java_error(e, ApiOperation.update)
             if positive or not validator.compareResponseCode(
                     e.status, expected_neg_status, self.logger):
                 return None, False
@@ -1131,7 +1133,7 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
                     java_entity.delete()
 
         except java_sdk.JavaError as e:
-            self.parse_java_error(e, 'delete')
+            self.parse_java_error(e, ApiOperation.delete)
             if positive:
                 return False
             return True
@@ -1324,7 +1326,7 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
                 act = getattr(java_entity, action)(
                     java_action_entity, str(self.getCorrelationId()))
         except java_sdk.JavaError as e:
-            self.parse_java_error(e, 'syncAction')
+            self.parse_java_error(e, ApiOperation.syncAction)
             if positive:
                 return False
             return True
@@ -1334,17 +1336,8 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
                 self.logger.error(errorMsg.format(action))
                 return False
 
-        if async:
-            if not validator.compareActionStatus(act.status.state,
-                                                 ["pending", "complete"],
-                                                 self.logger):
-                return False
-        else:
-            if not validator.compareActionStatus(act.status.state,
-                                                 ["complete"], self.logger):
-                return False
-
-        return True
+        return validator.compareAsyncActionStatus(
+            async, act.status.state, self.logger)
 
     @jvm_thread_care
     def waitForElemStatus(self, elm, status, timeout=DEF_TIMEOUT,

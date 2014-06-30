@@ -25,8 +25,19 @@ from art.core_api import http, template_parser, validator, measure_time
 from art.core_api.apis_exceptions import EntityNotFound, APIException,\
     APILoginError
 from art.core_api.apis_utils import APIUtil, parse, data_st,\
-    NEGATIVE_CODES_CREATE, NEGATIVE_CODES, DEF_TIMEOUT, DEF_SLEEP
+    NEGATIVE_CODES_CREATE, NEGATIVE_CODES, DEF_TIMEOUT, DEF_SLEEP, ApiOperation
 from art.test_handler import settings
+
+
+class RespKey(object):
+    '''
+    Description: Class to represent the Responds Keys (like Enum)
+    Author: khakimi
+    '''
+    status = 'status'
+    reason = 'reason'
+    body = 'body'
+    trace = 'trace'
 
 
 class RestUtil(APIUtil):
@@ -115,16 +126,17 @@ class RestUtil(APIUtil):
            * href - url of the request
            * ret - reponse object containing the body
         '''
-        if ret['body']:
+        if ret[RespKey.body]:
             try:
-                doc = etree.fromstring(ret['body'])
+                doc = etree.fromstring(ret[RespKey.body])
                 self.xsd.assertValid(doc)
             except etree.DocumentInvalid as err:
                 error_obj = (href, ret, err)
                 self.xsd_schema_errors.append(error_obj)
             except etree.XMLSyntaxError as err:
                 self.logger.error('Failed parsing response for XSD validations'
-                                  'error: %s. body: %s' % (err, ret['body']))
+                                  'error: %s. body: %s' %
+                                  (err, ret[RespKey.body]))
 
     def buildUrl(self, href, current=None):
         '''
@@ -167,7 +179,7 @@ class RestUtil(APIUtil):
                           {'uri': href})
         ret = self.api.GET(href)
 
-        if not validator.compareResponseCode(ret['status'],
+        if not validator.compareResponseCode(ret[RespKey.status],
                                              [200, 201], self.logger):
             return None
 
@@ -175,14 +187,14 @@ class RestUtil(APIUtil):
             self.validateResponseViaXSD(href, ret)
 
         self.logger.debug("Response body for GET request is: %s ",
-                          ret['body'])
+                          ret[RespKey.body])
 
         if noParse:
-            return ret['body']
+            return ret[RespKey.body]
 
         parsedResp = None
         try:
-            parsedResp = parse(ret['body'])
+            parsedResp = parse(ret[RespKey.body])
         except etree.XMLSyntaxError:
             self.logger.error("Cant parse xml response")
             return None
@@ -191,8 +203,8 @@ class RestUtil(APIUtil):
             return getattr(parsedResp, elm)
         else:
             if listOnly:
-                self.logger.error(
-                    "Element '{0}' not found at {1}".format(elm, ret['body']))
+                self.logger.error("Element '{0}' not found at {1} \
+                ".format(elm, ret[RespKey.body]))
             return parsedResp
 
     def parseDetail(self, ret):
@@ -200,11 +212,42 @@ class RestUtil(APIUtil):
         Description: parsing the error details from ret
         Author: Kobi Hakimi
         Parameter:
-            ret - the string to parse from it the error details
+            * ret - the string to parse from it the error details
         Return: the error details which we got it as xml node skip the
                 last 2 chars '</'
         '''
-        return ret['body'].split('detail>')[1][:-2]
+        try:
+            return ret[RespKey.body].split('detail>')[1][:-2]
+        except IndexError:
+            self.logger.error("Details was not found on body")
+            return None
+
+    def responseCodesMatch(self, positive, operation, expected_pos_status,
+                           expected_neg_status, ret):
+        '''
+        Description: print error in case its not positive status and compare
+                     the current status with expected positive and negative
+                     response codes
+        Author: Kobi Hakimi
+        Parameter:
+            * positive - if positive or negative verification should be done
+            * operation - describe from which operation this method called
+            * expected_pos_status - LIST OF expected positive status
+            * expected_neg_status - LIST OF expected negative status
+            * ret - the return value of rest command.
+        Return: True if the expected status and the actual status match
+                otherwise return False
+        '''
+        if ret[RespKey.status] not in expected_pos_status:
+            reason = ret[RespKey.reason] if(RespKey.reason in
+                                            ret.keys()) else None
+            self.printErrorMsg(operation, ret[RespKey.status], reason,
+                               self.parseDetail(ret))
+        expected_statuses = (
+            expected_pos_status if positive else expected_neg_status)
+
+        return validator.compareResponseCode(ret[RespKey.status],
+                                             expected_statuses, self.logger)
 
     def create(self, entity, positive,
                expected_pos_status=[200, 201, 202],
@@ -258,47 +301,41 @@ class RestUtil(APIUtil):
             with measure_time('POST'):
                 ret = self.api.POST(post_url, entity)
 
+        if not self.responseCodesMatch(positive, ApiOperation.create,
+                                       expected_pos_status,
+                                       expected_neg_status, ret):
+            return None, False
+
         if not self.opts['validate']:
             return None, True
 
         collection = self.get(href, listOnly=True, elm=coll_elm_name)
 
         self.logger.debug("Response body for CREATE request is: %s ",
-                          ret['body'])
+                          ret[RespKey.body])
 
         if positive:
-            if not validator.compareResponseCode(
-                    ret['status'], expected_pos_status, self.logger):
-                return None, False
-
-            if ret['body']:
+            if ret[RespKey.body]:
                 self.logger.info("New entity was added")
-                actlEntity = validator.dump_entity(parse(ret['body']),
-                                                    self.element_name)
+                actlEntity = validator.dump_entity(parse(ret[RespKey.body]),
+                                                   self.element_name)
 
-                expEntity = entity if not expectedEntity\
-                            else validator.dump_entity(expectedEntity,
-                                                       self.element_name)
-                if not validator.compareElements(parse(expEntity),
-                parse(actlEntity), self.logger, self.element_name):
+                expEntity = entity if not expectedEntity else (
+                    validator.dump_entity(expectedEntity, self.element_name))
+                if not validator.compareElements(
+                        parse(expEntity), parse(actlEntity), self.logger,
+                        self.element_name):
                     return None, False
 
                 if not async:
                     self.find(parse(actlEntity).id, 'id',
-                    collection=collection, absLink=False)
+                              collection=collection, absLink=False)
 
             else:
-                return ret['body'], True
-
-        else:
-            self.printErrorMsg('create', ret['status'], ret['reason'],
-                               self.parseDetail(ret))
-            if not validator.compareResponseCode(
-                    ret['status'], expected_neg_status, self.logger):
-                return None, False
+                return ret[RespKey.body], True
 
         self.validateResponseViaXSD(href, ret)
-        return parse(ret['body']), True
+        return parse(ret[RespKey.body]), True
 
     def update(self, origEntity, newEntity, positive,
                expected_pos_status=[200, 201],
@@ -330,32 +367,27 @@ class RestUtil(APIUtil):
             with measure_time('PUT'):
                 ret = self.api.PUT(put_url, entity)
 
+        if not self.responseCodesMatch(positive, ApiOperation.update,
+                                       expected_pos_status,
+                                       expected_neg_status, ret):
+            return None, False
+
         if not self.opts['validate']:
             return None, True
 
         self.logger.debug("Response body for PUT request is: %s ",
-                          ret['body'])
+                          ret[RespKey.body])
 
         if positive:
-            if not validator.compareResponseCode(
-                    ret['status'], expected_pos_status, self.logger):
-                return None, False
-
             self.logger.info(self.element_name + " was updated")
 
             if not validator.compareElements(parse(entity),
-            parse(ret['body']), self.logger, self.element_name):
-                return None, False
-
-        else:
-            self.printErrorMsg('update', ret['status'], ret['reason'],
-                               self.parseDetail(ret))
-            if not validator.compareResponseCode(
-                    ret['status'], expected_neg_status, self.logger):
+                                             parse(ret[RespKey.body]),
+                                             self.logger, self.element_name):
                 return None, False
 
         self.validateResponseViaXSD(origEntity.href, ret)
-        return parse(ret['body']), True
+        return parse(ret[RespKey.body]), True
 
     def delete(self, entity, positive, body=None, element_name=None,
                expected_pos_status=[200, 202, 204],
@@ -391,22 +423,16 @@ class RestUtil(APIUtil):
                 with measure_time('DELETE'):
                     ret = self.api.DELETE(entity.href)
 
+        if not self.responseCodesMatch(positive, ApiOperation.delete,
+                                       expected_pos_status,
+                                       expected_neg_status, ret):
+            return False
+
         if not self.opts['validate']:
             return True
 
         self.logger.debug("Response body for DELETE request is: %s ",
-                          ret['body'])
-
-        if positive:
-            if not validator.compareResponseCode(
-                    ret['status'], expected_pos_status, self.logger):
-                return False
-        else:
-            self.printErrorMsg('delete', ret['status'], ret['reason'],
-                               self.parseDetail(ret))
-            if not validator.compareResponseCode(
-                    ret['status'], expected_neg_status, self.logger):
-                return False
+                          ret[RespKey.body])
 
         self.validateResponseViaXSD(entity.href, ret)
         return True
@@ -498,15 +524,16 @@ class RestUtil(APIUtil):
                 self.api.headers.pop('All-content')
 
         self.logger.debug(
-            "Response body for QUERY request is: %s " % ret['body'])
+            "Response body for QUERY request is: %s " % ret[RespKey.body])
 
-        if not validator.compareResponseCode(ret['status'], expected_status,
+        if not validator.compareResponseCode(ret[RespKey.status],
+                                             expected_status,
                                              self.logger):
             return None
 
         self.validateResponseViaXSD(href, ret)
 
-        return getattr(parse(ret['body']), self.element_name)
+        return getattr(parse(ret[RespKey.body]), self.element_name)
 
     def syncAction(self, entity, action, positive, async=False,
                    positive_async_stat=[200, 202],
@@ -548,38 +575,25 @@ class RestUtil(APIUtil):
             with measure_time('POST'):
                 ret = self.api.POST(actionHref, actionBody)
 
+        if not self.responseCodesMatch(positive, ApiOperation.syncAction,
+                                       positive_sync_stat, negative_stat, ret):
+            return False
+
         if not self.opts['validate']:
             return True
 
         self.logger.debug("Response body for action request is: %s ",
-                          ret['body'])
+                          ret[RespKey.body])
         resp_action = None
         try:
-            resp_action = parse(ret['body'])
+            resp_action = parse(ret[RespKey.body])
         except etree.XMLSyntaxError:
             self.logger.error("Cant parse xml response")
             return False
 
-        if positive and not async:
-            if not validator.compareResponseCode(
-                    ret['status'], positive_sync_stat, self.logger):
-                return False
-            if resp_action and not validator.compareActionStatus(
-                    resp_action.status.state, ["complete"], self.logger):
-                return False
-        elif positive and async:
-            if not validator.compareResponseCode(
-                    ret['status'], positive_async_stat, self.logger):
-                return False
-            if resp_action and not validator.compareActionStatus(
-                    resp_action.status.state, ["pending", "complete"],
-                    self.logger):
-                return False
-        else:
-            self.printErrorMsg('syncAction', ret['status'], ret['reason'],
-                               self.parseDetail(ret))
-            if not validator.compareResponseCode(ret['status'], negative_stat,
-                                                 self.logger):
+        if positive:
+            if resp_action and not validator.compareAsyncActionStatus(
+                    async, resp_action.status.state, self.logger):
                 return False
 
         self.validateResponseViaXSD(actionHref, ret)

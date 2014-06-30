@@ -26,7 +26,7 @@ from abc import ABCMeta, abstractmethod
 from time import strftime, sleep
 from art.rhevm_api.data_struct.data_structures import ClassesMapping
 from art.core_api.rest_utils import RestUtil
-from art.core_api.apis_utils import NEGATIVE_CODES, api_error
+from art.core_api.apis_utils import NEGATIVE_CODES, api_error, ApiOperation
 from art.core_api.apis_exceptions import CLIError, CLITimeout,\
     CLICommandFailure, UnsupportedCLIEngine, CLITracebackError,\
     CLIAutoCompletionFailure, EntityNotFound, APILoginError
@@ -912,7 +912,8 @@ class CliUtil(RestUtil):
             self.logger.error("%s", e)
             return response, False
         except CLICommandFailure as e:
-            self.printErrorMsg('create', e.status, e.reason, e.detail)
+            self.printErrorMsg(ApiOperation.create,
+                               e.status, e.reason, e.detail)
             if positive:
                 return response, False
         else:
@@ -1008,7 +1009,7 @@ class CliUtil(RestUtil):
             self.logger.error("%s", e)
             return response, False
         except CLICommandFailure as e:
-            self.printErrorMsg('update', status=e.status)
+            self.printErrorMsg(ApiOperation.update, status=e.status)
             if positive or not validator.compareResponseCode(
                     e.status, expected_neg_status, self.logger):
                 return None, False
@@ -1102,7 +1103,8 @@ class CliUtil(RestUtil):
             self.logger.error("%s", e)
             return False
         except CLICommandFailure as e:
-            self.printErrorMsg('delete', e.status, e.reason, e.detail)
+            self.printErrorMsg(ApiOperation.delete,
+                               e.status, e.reason, e.detail)
             if positive:
                 return False
 
@@ -1288,7 +1290,8 @@ class CliUtil(RestUtil):
             self.logger.error("%s", e)
             return False
         except CLICommandFailure as e:
-            self.printErrorMsg('syncAction', e.status, e.reason, e.detail)
+            self.printErrorMsg(ApiOperation.syncAction,
+                               e.status, e.reason, e.detail)
             if positive:
                 return False
             else:
@@ -1306,12 +1309,5 @@ class CliUtil(RestUtil):
 
         actionState = actionStateMatch[0]
 
-        if not async:
-            return validator.compareActionStatus(actionState,
-                                                 ["complete"], self.logger)
-        else:
-            return validator.compareActionStatus(actionState,
-                                                 ["pending", "complete"],
-                                                 self.logger)
-
-        return True
+        return validator.compareAsyncActionStatus(async, actionState,
+                                                  self.logger)

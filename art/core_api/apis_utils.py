@@ -49,6 +49,17 @@ logger = logging.getLogger('api_utils')
 api_error = namedtuple('api_error', 'reason status detail')
 
 
+class ApiOperation(object):
+    '''
+    Description: Class to represent the API Operations (like Enum)
+    Author: khakimi
+    '''
+    create = 'create'
+    update = 'update'
+    delete = 'delete'
+    syncAction = 'syncAction'
+
+
 def getDS(ds_name):
     if hasattr(data_st, ds_name):
         return getattr(data_st, ds_name)
@@ -60,7 +71,8 @@ class APIUtil(object):
     Basic class for API functionality
     '''
     __metaclass__ = abc.ABCMeta
-    __api_methods = ['create', 'update', 'delete', 'syncAction']
+    __api_methods = [ApiOperation.create, ApiOperation.update,
+                     ApiOperation.delete, ApiOperation.syncAction]
 
     def __init__(self, element, collection, **kwargs):
         self.opts = kwargs['opts'] if 'opts' in kwargs else settings.opts
@@ -228,17 +240,17 @@ class APIUtil(object):
             self.logger.error(TIMEOUT_MSG_TMPL)
             return False
 
-    def printErrorMsg(self, operation, status='', reason='', detail='',
-                      trace=''):
+    def printErrorMsg(self, operation, status=None, reason=None, detail=None,
+                      trace=None):
         '''
         Description: print detailed error message.
         Author: khakimi
         Parameters:
-            operation = the operation which failed (create/update...)
-            status = status code (400...)
-            reason = error reason (Bad Request...)
-            detail = error details
-            trace = stack trace
+            * operation - the operation which failed (create/update...)
+            * status - status code (400...)
+            * reason - error reason (Bad Request...)
+            * detail - error details
+            * trace - stack trace
         '''
         error_msg = ['Failed to {0} element:\n'.format(operation)]
         error_msg.append('\tStatus: {0}\n'.format(status) if status else '')

@@ -209,6 +209,19 @@ def compareActionStatus(status, expected, logger):
         return False
 
 
+def compareAsyncActionStatus(async, state, logger):
+    '''
+    Description: compare action status, depends on if it sync or not.
+    Author: khakimi
+    Parameters:
+        * async - True if async False otherwise
+        * state - the current state
+    Return: True if state in expected, False otherwise
+    '''
+    expected = ["pending", "complete"] if async else ["complete"]
+    return compareActionStatus(state, expected, logger)
+
+
 def compareCollectionSize(collection, expectedSize, logger):
 
     if collection is not None:

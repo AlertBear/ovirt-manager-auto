@@ -21,7 +21,7 @@ import time
 import logging
 from art.core_api import validator, measure_time
 from art.core_api.apis_utils import data_st, NEGATIVE_CODES, DEF_TIMEOUT, \
-    DEF_SLEEP
+    DEF_SLEEP, ApiOperation
 from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api.apis_exceptions import APIException, APILoginError
 from ovirtsdk import api as sdkApi
@@ -176,7 +176,8 @@ class SdkUtil(APIUtil):
                 return response, False
 
         except RequestError as e:
-            self.printErrorMsg('create', e.status, e.reason, e.detail)
+            self.printErrorMsg(ApiOperation.create,
+                               e.status, e.reason, e.detail)
             if positive:
                 return None, False
 
@@ -282,7 +283,8 @@ class SdkUtil(APIUtil):
                 response = origEntity.update(**matrix_params)
             self.logger.info(self.element_name + " was updated")
         except RequestError as e:
-            self.printErrorMsg('update', e.status, e.reason, e.detail)
+            self.printErrorMsg(ApiOperation.update,
+                               e.status, e.reason, e.detail)
             if positive or not validator.compareResponseCode(
                     e.status, expected_neg_status, self.logger):
                 return None, False
@@ -314,7 +316,8 @@ class SdkUtil(APIUtil):
                 with measure_time('DELETE'):
                     entity.delete(correlation_id=self.getCorrelationId())
         except RequestError as e:
-            self.printErrorMsg('delete', e.status, e.reason, e.detail)
+            self.printErrorMsg(ApiOperation.delete,
+                               e.status, e.reason, e.detail)
             if positive:
                 return False
 
@@ -427,7 +430,8 @@ class SdkUtil(APIUtil):
                 act = getattr(entity, action)(act,
                                               correlation_id=correlation_id)
         except RequestError as e:
-            self.printErrorMsg('syncAction', e.status, e.reason, e.detail)
+            self.printErrorMsg(ApiOperation.syncAction,
+                               e.status, e.reason, e.detail)
             if positive:
                 return False
             else:
@@ -438,17 +442,8 @@ class SdkUtil(APIUtil):
                 self.logger.error(errorMsg, action)
                 return False
 
-        if async:
-            if not validator.compareActionStatus(act.status.state,
-                                                 ["pending", "complete"],
-                                                 self.logger):
-                return False
-        else:
-            if not validator.compareActionStatus(act.status.state,
-                                                 ["complete"], self.logger):
-                return False
-
-        return True
+        return validator.compareAsyncActionStatus(async, act.status.state,
+                                                  self.logger)
 
     def waitForElemStatus(self, elm, status, timeout=DEF_TIMEOUT,
                           ignoreFinalStates=False, collection=None):
