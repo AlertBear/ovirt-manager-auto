@@ -224,7 +224,6 @@ class TestCaseAfterUpdateDeviceFail(TestCaseVnic):
     """ after_update_device_fail hook """
     __test__ = True
 
-    FAIL_NIC = 'net1'
     NONEXISTENT = 'xxxyxxx'
     UPDATE_FAIL = ('vdsClient -s 0 vmUpdateDevice %s deviceType=interface '
                    'alias=%s network=%s')
@@ -233,8 +232,16 @@ class TestCaseAfterUpdateDeviceFail(TestCaseVnic):
     def setUp(self):
         """ update fail nic """
         super(TestCaseAfterUpdateDeviceFail, self).setUp()
+        cmd_nic = ('virsh -r dumpxml %s | '
+                   'awk \"/<interface type=\'bridge\'>/,/<\/interface>/\" | '
+                   'grep alias | grep -oP "(?<=<alias name=\').*?(?=\'/>)"')
+        fail_nic = runMachineCommand(True, ip=config.HOSTS[0],
+                                     user=config.HOSTS_USER,
+                                     password=config.HOSTS_PW,
+                                     cmd=cmd_nic % config.VM_NAME[0]
+                                     )[1]['out'][:-2].split()[0]
         vm_id = vms.VM_API.find(config.VM_NAME[0]).get_id()
-        cmd = self.UPDATE_FAIL % (vm_id, self.FAIL_NIC, self.NONEXISTENT)
+        cmd = self.UPDATE_FAIL % (vm_id, fail_nic, self.NONEXISTENT)
         self.assertFalse(
             runMachineCommand(True, ip=config.HOSTS[0],
                               user=config.HOSTS_USER,
