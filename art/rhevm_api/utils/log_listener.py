@@ -153,9 +153,9 @@ class LogListener():
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
 
-        except RuntimeError:
+        except RuntimeError as ex:
             logger.info("Can't run command %s on %s, exception is %s", 'tail',
-                        files_to_watch, RuntimeError.message)
+                        files_to_watch, ex)
         recv = ""
         while True:
             try:

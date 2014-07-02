@@ -153,6 +153,31 @@ def getRandPM(positive, cluster, size):
         return False, {'pmList': None}
 
 
+def isHostSaturated(host, max_cpu=95, max_mem=95):
+    """
+    Description: checks if the host if saturated with VMs
+    Author: adarazs
+    Parameters:
+      * host - name of a host
+    Return: status (True if the host is saturated, False otherwise)
+    """
+    HOST_API.find(host)
+    stats = getStat(host, ELEMENT, COLLECTION, ["memory.used", "memory.total",
+                                                "cpu.current.system",
+                                                "cpu.current.user"])
+    cpu_sum = stats["cpu.current.system"] + stats["cpu.current.user"]
+    mem_percent = stats["memory.used"] / float(stats["memory.total"]) * 100.0
+    if cpu_sum > max_cpu or mem_percent > max_mem:
+        if cpu_sum > max_cpu:
+            HOST_API.logger.info("Host %s reached the CPU saturation point",
+                                 host)
+        else:
+            HOST_API.logger.info("Host %s reached the memory saturation point",
+                                 host)
+        return True
+    return False
+
+
 def getHostState(host):
     """
     Description: Returns a host's state
@@ -1545,63 +1570,6 @@ def checkSPMPresence(positive, hosts):
         return not(positive)
 
 
-@is_action()
-def checkSPMElectionRandomness(positive, hosts, attempt_number=5,
-                               spm_priority='1'):
-    """
-    Description: checks whether SPM host is being chosen randomly when hosts
-                 have the same SPM priority
-    Author: pdufek
-    Parameters:
-    * hosts - the list of hosts to be gone through
-    * attempt_number - the number of runs to check election randomness
-    * spm_priority - SPM priority to be set to all hosts for this test
-    Returns: True (success - SPM host is being chosen randomly)
-             False (failure)
-    """
-    hosts_pairs = {}
-    for host in hosts.split(','):
-        setSPMPriority(True, host, spm_priority)
-    deactivateHosts(True, hosts)
-
-    hosts = sorted(hosts.split(','))
-    for host in hosts:
-        running_hosts = hosts[:]
-        running_hosts.remove(host)
-        activation_order = running_hosts[:]
-        activation_order.insert(0, host)
-        running_hosts = tuple(running_hosts)
-
-        for i in xrange(attempt_number):
-            for h in activation_order:
-                activateHost(True, h)
-            time.sleep(45)  # waiting due to SPM contending
-            deactivateHost(True, host)
-            time.sleep(45)
-            try:
-                spm = _getSPMHostname(running_hosts)
-            except EntityNotFound, e:
-                HOST_API.logger.error(e.message)
-                return False
-            if running_hosts not in hosts_pairs:
-                hosts_pairs[running_hosts] = [spm]
-            else:
-                hosts_pairs[running_hosts].append(spm)
-            deactivateHosts(True, ','.join(running_hosts))
-
-    status = True
-    for spms in hosts_pairs.keys():
-        if not len(set(spms)) > 1:
-            HOST_API.logger.warning(
-                "SPM randomness test failed, but due to the nature "
-                "of this test, there's a small chance of that "
-                "happening at every run"
-            )
-            status = False
-
-    return status == positive
-
-
 def _getSPMHostname(hosts):
     """
     Description: get SPM host from the list of hosts
@@ -2504,7 +2472,8 @@ def change_mom_rpc_port(host, host_user, host_pwd, port=8080):
         host, host_user, host_pwd).util(machine.LINUX)
     rc, out = host_machine.runCmd(['sed', '-i',
                                    's/rpc-port: [-0-9]\\+/rpc-port: ' +
-                                   str(port) + '/', MOM_CONF])
+                                   str(port) + '/',
+                                   MOM_CONF])
     if not rc:
         HOST_API.logger.error(
             "Failed to edit rpc port for mom on host %s ", host)

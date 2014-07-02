@@ -884,7 +884,7 @@ class JavaSdkUtil(APIUtil):
                 python_results.append(JavaTranslator(entity))
         except AttributeError as exc:
             raise EntityNotFound("Can't get collection '{0}': {1}".
-                                 format(collection, exc.message))
+                                 format(collection, exc))
 
         return python_results
 

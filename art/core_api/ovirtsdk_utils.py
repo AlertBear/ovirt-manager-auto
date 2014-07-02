@@ -127,7 +127,7 @@ class SdkUtil(APIUtil):
             results = self.__getCollection(collection).list()
         except AttributeError as exc:
             raise EntityNotFound("Can't get collection '{0}': {1}".
-                                 format(collection, exc.message))
+                                 format(collection, exc))
 
         return results
 
