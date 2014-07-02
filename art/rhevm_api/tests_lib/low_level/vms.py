@@ -3017,7 +3017,7 @@ def pingVm(vm_ip=None):
     '''
     Ping VM.
 
-    retreives ip for vmName using LookUpVMIpByName and sends
+    retreives ip for vmName using lookingForIpAdressByEntityName and sends
     totally VM_PING_ATTEMPTS_COUNT ICMP Echo requests, expecting at least one
     ICMP Echo reply.
 
