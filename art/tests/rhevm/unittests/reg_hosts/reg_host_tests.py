@@ -304,14 +304,8 @@ class ReinstallHost(TestHostInMaintenance):
     @tcms('9608', '275961')
     def reinstall_host(self):
         logger.info("reinstall host: %s", HOST)
-        # host_os check is wa for temp change in installHost function
-        # need to change this when installHost has single behaviour any os
-        # expected on rhevm 3.4.1
-        if config.HOST_OS not in [self.os_rhevh, self.os_rhel]:
-            raise HostException("unexpected host type for host: %s" % HOST)
-        rhevh = (config.HOST_OS == self.os_rhevh)
         if not hosts.installHost(True, host=HOST, root_password=HOST_PW,
-                                 iso_image=config.ISO_IMAGE, rhevh=rhevh):
+                                 iso_image=config.ISO_IMAGE):
             raise HostException("re installation of host: %s failed" % HOST)
 
 
@@ -349,21 +343,12 @@ class ReinstallActiveHost(TestActiveHost):
     """
     __test__ = True
 
-    os_rhel = 'rhel'
-    os_rhevh = 'rhevh'
-
     @istest
     @tcms('9608', '275964')
     def reinstall_active_host(self):
         logger.info("attempting to re install host: %s ", HOST)
-        # host_os check is wa for temp change in installHost function
-        # need to change this when installHost has single behaviour any os
-        # expected on rhevm 3.4.1
-        if config.HOST_OS not in [self.os_rhevh, self.os_rhel]:
-            raise HostException("unexpected host type for host: %s" % HOST)
-        rhevh = (config.HOST_OS == self.os_rhevh)
         if not hosts.installHost(False, host=HOST, root_password=HOST_PW,
-                                 iso_image=config.ISO_IMAGE, rhevh=rhevh):
+                                 iso_image=config.ISO_IMAGE):
             raise HostException("re install host: %s worked although "
                                 "host is active" % HOST)
 
