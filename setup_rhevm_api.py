@@ -69,6 +69,7 @@ DATA_FILES = [
         'art/tests/rhevm/unittests/hooks/*.py',
         'art/tests/rhevm/unittests/virt/*/*.py',
         'art/tests/rhevm/unittests/infra/*/*.py',
+        'art/tests/rhevm/unittests/infra/*/*/*.py',
         'art/tests/rhevm/unittests/mom/*.py',
 ]
 
