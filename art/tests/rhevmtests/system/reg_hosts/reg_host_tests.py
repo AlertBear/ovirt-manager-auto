@@ -6,12 +6,11 @@ Checks host deployment, updating and authentication methods
 import art.rhevm_api.tests_lib.low_level.hosts as hosts
 from art.rhevm_api.utils.test_utils import get_api
 from art.core_api.apis_exceptions import EntityNotFound
-from art.test_handler.settings import opts
 from art.test_handler.tools import tcms
 from art.unittest_lib import CoreSystemTest as TestCase
 from nose.tools import istest
 from art.unittest_lib import attr
-import config
+from rhevmtests.system.reg_hosts import config
 import logging
 from art.test_handler.exceptions import HostException
 from art.rhevm_api.tests_lib.high_level.hosts import \
@@ -21,13 +20,12 @@ from art.rhevm_api.tests_lib.high_level.hosts import \
 HOST_API = get_api('host', 'hosts')
 VM_API = get_api('vm', 'vms')
 DISK_SIZE = 3 * 1024 * 1024 * 1024
-ENUMS = opts['elements_conf']['RHEVM Enums']
-PINNED = ENUMS['vm_affinity_pinned']
-HOST_CONNECTING = ENUMS['host_state_connecting']
-VM_DOWN = ENUMS['vm_state_down']
+PINNED = config.ENUMS['vm_affinity_pinned']
+HOST_CONNECTING = config.ENUMS['host_state_connecting']
+VM_DOWN = config.ENUMS['vm_state_down']
 HOST = config.HOSTS[0]
 HOST2 = config.HOSTS[1]
-HOST_PW = config.HOST_PASSWORD
+HOST_PW = config.HOSTS_PW
 PM1_TYPE = config.PM1_TYPE
 PM2_TYPE = config.PM2_TYPE
 PM1_ADDRESS = config.PM1_ADDRESS
@@ -51,7 +49,7 @@ def _add_host_if_missing():
         except EntityNotFound:
             logger.info("adding host %s", HOST)
             if not hosts.addHost(True, name=HOST, address=HOST,
-                                 root_password=config.HOST_PASSWORD,
+                                 root_password=HOST_PW,
                                  port=54321, cluster=config.CLUSTER_NAME,
                                  wait=False):
                 raise HostException("Add host %s failed" % HOST)

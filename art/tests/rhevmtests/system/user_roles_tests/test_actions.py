@@ -3,7 +3,7 @@
 __test__ = True
 
 import logging
-import config
+from rhevmtests.system.user_roles_tests import config
 import roles
 import art.test_handler.exceptions as errors
 from art.test_handler.tools import bz

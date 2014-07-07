@@ -17,7 +17,7 @@ from art.unittest_lib import CoreSystemTest as TestCase
 from time import sleep
 from os import path
 
-import config
+from rhevmtests.system.hooks import config
 import logging
 
 LOGGER = logging.getLogger(__name__)
@@ -39,10 +39,12 @@ HOTUNPLUG_NIC = 'hotunplug_nic'
 
 
 def setup_module():
-    assert vms.createVm(True, config.VM_NAME, '', cluster=config.CLUSTER_NAME,
+    assert vms.createVm(True, config.VM_NAME[0], '',
+                        cluster=config.CLUSTER_NAME,
                         display_type=config.DISPLAY_TYPE,
                         template=config.TEMPLATE_NAME)
-    assert vms.startVm(True, vm=config.VM_NAME, wait_for_status=config.VM_UP,
+    assert vms.startVm(True, vm=config.VM_NAME[0],
+                       wait_for_status=config.VM_UP,
                        wait_for_ip=True)
     assert networks.addVnicProfile(True, name=PROFILE_A,
                                    cluster=config.CLUSTER_NAME,
@@ -60,7 +62,7 @@ def setup_module():
                                    cluster=config.CLUSTER_NAME,
                                    network=config.MGMT_BRIDGE,
                                    custom_properties='speed=abc')
-    assert vms.addNic(True, vm=config.VM_NAME, name=UPDATE_NIC,
+    assert vms.addNic(True, vm=config.VM_NAME[0], name=UPDATE_NIC,
                       network=config.MGMT_BRIDGE, vnic_profile=PROFILE_A,
                       linked=True)
     assert vms.addNic(True, vm=config.VM_NAME, name=HOTUNPLUG_NIC,
@@ -68,10 +70,11 @@ def setup_module():
 
 
 def teardown_module():
-    assert runMachineCommand(True, ip=config.HOST, user=config.VM_LINUX_USER,
-                             password=config.VM_LINUX_PASSWORD,
+    assert runMachineCommand(True, ip=config.HOSTS[0],
+                             user=config.VM_LINUX_USER,
+                             password=config.VM_LINUX_PW,
                              cmd=REMOVE_HOOKS)[0]
-    assert vms.removeVm(True, config.VM_NAME, stopVM='true')
+    assert vms.removeVm(True, config.VM_NAME[0], stopVM='true')
 
 
 class TestCaseVnic(TestCase):
@@ -82,7 +85,7 @@ class TestCaseVnic(TestCase):
         my_hook = '%s.hook' % name
         scriptName = '%s.%s' % (name, 'py')
         hooks.createPythonScriptToVerifyCustomHook(
-            ip=config.HOST, password=config.HOST_PASSWORD,
+            ip=config.HOSTS[0], password=config.HOST_PASSWORD,
             scriptName=scriptName, customHook=self.CUSTOM_HOOK,
             target=path.join(HOOK_PATH, name),
             outputFile=path.join(TMP, my_hook))
@@ -90,8 +93,8 @@ class TestCaseVnic(TestCase):
     def _create_one_line_shell_script(self, name):
         my_hook = '%s.hook' % name
         scriptName = '%s.%s' % (name, 'sh')
-        hooks.createOneLineShellScript(ip=config.HOST,
-                                       password=config.HOST_PASSWORD,
+        hooks.createOneLineShellScript(ip=config.HOSTS[0],
+                                       password=config.HOSTS_PW[0],
                                        scriptName=scriptName, command='touch',
                                        arguments=path.join(TMP, my_hook),
                                        target=path.join(HOOK_PATH, name))
@@ -113,7 +116,7 @@ class TestCaseVnic(TestCase):
             my_hook = '%s.hook' % name
             LOGGER.info("Checking existence of %s%s", TMP, my_hook)
             ret = hooks.checkForFileExistenceAndContent(
-                True, ip=config.HOST, password=config.HOST_PASSWORD,
+                True, ip=config.HOSTS[0], password=config.HOSTS_PW[0],
                 filename=path.join(TMP, my_hook),
                 content=(SPEED if t == SCRIPT_TYPE.PYTHON else None))
             result = result or (not ret)
@@ -124,8 +127,8 @@ class TestCaseVnic(TestCase):
         """ remove created script """
         for name, t in self.HOOK_NAMES.iteritems():
             hook_name = '%s/%s.%s' % (name, name, t)
-            test_utils.removeFileOnHost(positive=True, ip=config.HOST,
-                                        password=config.HOST_PASSWORD,
+            test_utils.removeFileOnHost(positive=True, ip=config.HOSTS[0],
+                                        password=config.HOSTS_PW[0],
                                         filename=path.join(HOOK_PATH,
                                                            hook_name))
 
@@ -232,7 +235,7 @@ class TestCaseAfterUpdateDeviceFail(TestCaseVnic):
         vm_id = vms.VM_API.find(config.VM_NAME).get_id()
         cmd = self.UPDATE_FAIL % (vm_id, self.FAIL_NIC, self.NONEXISTENT)
         self.assertFalse(
-            runMachineCommand(True, ip=config.HOST,
+            runMachineCommand(True, ip=config.HOSTS[0],
                               user=config.VM_LINUX_USER,
                               password=config.VM_LINUX_PASSWORD,
                               cmd=cmd)[0])

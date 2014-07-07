@@ -7,7 +7,7 @@ import logging
 from art.rhevm_api.tests_lib.high_level.datacenters import build_setup
 from art.unittest_lib import BaseTestCase as TestCase
 
-import config as cfg
+from rhevmtests.system.upgradeSanity import config
 
 LOGGER = logging.getLogger(__name__)
 
@@ -16,7 +16,7 @@ def setup_module():
     """
     Build datacenter
     """
-    params = cfg.PARAMETERS
+    params = config.PARAMETERS
     build_setup(config=params, storage=params,
                 storage_type=params.get('storage_type'),
                 basename=params.get('basename'))

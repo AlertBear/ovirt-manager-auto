@@ -6,7 +6,7 @@ import logging
 from utilities.machine import LINUX, Machine
 from art.unittest_lib import attr
 from art.unittest_lib import CoreSystemTest as TestCase
-import config as cfg
+from rhevmtests.system.reportsInstallationSanity import config
 
 
 LOGGER = logging.getLogger(__name__)
@@ -18,9 +18,9 @@ SERVICE_IS_NOT_RUNNING_MSG = "Service %s is not running"
 SERVICE_IS_RUNNING_MSG = "Service %s is running"
 FILE_DOES_NOT_EXIST_MSG = "File %s does not exist"
 
-MACHINE = Machine(host=cfg.RHEVM_MACHINE,
-                  user=cfg.USERNAME_ROOT,
-                  password=cfg.VDC_ROOT_PASSWORD).util(LINUX)
+MACHINE = Machine(host=config.RHEVM_MACHINE,
+                  user=config.USERNAME_ROOT,
+                  password=config.VDC_ROOT_PASSWORD).util(LINUX)
 
 
 def is_dwh_running(machine):

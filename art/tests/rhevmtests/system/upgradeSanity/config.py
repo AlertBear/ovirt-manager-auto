@@ -3,8 +3,8 @@ __test__ = False
 import logging
 
 from art.test_handler.settings import opts
-
 from art.test_handler.settings import ART_CONFIG
+from rhevmtests.system.config import *  # flake8: noqa
 
 LOGGER = logging.getLogger(__name__)
 
@@ -15,9 +15,9 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 VARS = opts['elements_conf']['RHEVM Utilities']
 STORAGE_TYPE = PARAMETERS['storage_type']
 
-basename = PARAMETERS.get('basename', None)
-DC_NAME = PARAMETERS.get('datacenter_name', 'datacenter_%s' % basename)
-CLUSTER_NAME = PARAMETERS.get('cluster_name', 'cluster_%s' % basename)
+basename = 'upgradeTest'
+DC_NAME = 'datacenter_upgradeTest'
+CLUSTER_NAME = 'cluster_name_upgradeTest'
 CPU_NAME = PARAMETERS['cpu_name']
 DATA_NAME = PARAMETERS.get('data_domain_name', '%s_storage' % basename)
 DATA_PATHS = PARAMETERS.as_list('data_domain_path')
@@ -35,6 +35,8 @@ SD_SUFFIX = '_sd'
 SETUP_PACKAGE = 'rhevm-setup'
 STORAGE_NAME = DC_NAME + SD_SUFFIX + "0"
 VM_NAME = ''.join([PARAMETERS.get('basename', ''), 'Vm'])
+
+
 
 REST_CONNECTION = ART_CONFIG['REST_CONNECTION']
 RHEVM_NAME = REST_CONNECTION['host']

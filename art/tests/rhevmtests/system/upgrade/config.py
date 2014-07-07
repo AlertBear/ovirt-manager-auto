@@ -2,6 +2,7 @@ __test__ = False
 
 from art.test_handler.settings import ART_CONFIG
 from art.test_handler.settings import opts
+from rhevmtests.system.config import *  # flake8: noqa
 
 TEST_NAME = "Upgrade"
 PARAMETERS = ART_CONFIG['PARAMETERS']

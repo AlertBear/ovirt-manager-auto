@@ -11,7 +11,7 @@ from utilities.rhevm_tools.setup import SetupUtility
 
 from art.unittest_lib import attr
 
-import config as cfg
+from rhevmtests.system.upgradeSanity import config
 
 LOGGER = logging.getLogger(__name__)
 
@@ -23,11 +23,11 @@ class UpgradeSanityUpgrade(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.machine = Setup(cfg.VDC,
-                            cfg.HOSTS_USER,
-                            cfg.VDC_PASSWORD,
-                            dbpassw=cfg.PGPASS,
-                            conf=cfg.VARS)
+        cls.machine = Setup(config.VDC,
+                            config.HOSTS_USER,
+                            config.VDC_PASSWORD,
+                            dbpassw=config.PGPASS,
+                            conf=config.VARS)
         cls.ut = SetupUtility(cls.machine)
         with cls.ut.setup.ssh as ssh:
             _, tempfile, _ = ssh.runCmd(['mktemp'])
@@ -42,13 +42,13 @@ class UpgradeSanityUpgrade(TestCase):
 
     def create_answer_file(self):
         params = self.ut.setup.getInstallParams('__default__',
-                                                cfg.ANSWERS)
+                                                config.ANSWERS)
         self.ut.setup.fillAnswerFile(self.answerfile, **params)
-        LOGGER.info("%s: install setup with %s", cfg.VDC, pformat(params))
+        LOGGER.info("%s: install setup with %s", config.VDC, pformat(params))
 
     def test_upgrade(self):
         """ Perform the upgrade of the setup """
-        self.machine.yum(cfg.SETUP_PACKAGE, 'update')
+        self.machine.yum(config.SETUP_PACKAGE, 'update')
         self.create_answer_file()
         self.ut(config_append=self.answerfile)
         self.ut.testInstallation()

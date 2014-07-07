@@ -9,7 +9,7 @@ __test__ = True
 
 import time
 import logging
-import config
+from rhevmtests.system.authentication import config
 from art.unittest_lib import CoreSystemTest as TestCase
 from nose.tools import istest
 from art.unittest_lib import attr

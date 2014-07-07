@@ -1,4 +1,4 @@
-from rhevm_utils import base
+from rhevmtests.system.rhevm_utils import base
 from utilities.rhevm_tools.config import ConfigUtility
 from utilities.rhevm_tools import errors
 from art.test_handler.tools import tcms

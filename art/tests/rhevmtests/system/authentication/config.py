@@ -2,13 +2,12 @@
 
 __test__ = False
 
-from art.test_handler.settings import ART_CONFIG
-
+from rhevmtests.system.config import *  # flake8: noqa
 
 def getUserWithDomain(user_name, user_domain):
     return '%s@%s' % (user_name, user_domain)
 
-PARAMETERS = ART_CONFIG['PARAMETERS']
+#PARAMETERS = ART_CONFIG['PARAMETERS']
 REST = ART_CONFIG['REST_CONNECTION']
 
 OVIRT_ROOT = 'root'

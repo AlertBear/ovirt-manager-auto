@@ -6,7 +6,7 @@ from art.rhevm_api.tests_lib.low_level import datacenters
 from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.low_level import mla
 
-import config
+from rhevmtests.system.user_roles_tests import config
 import inspect
 import test_actions
 import test_admin_negative

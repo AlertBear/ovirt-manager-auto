@@ -8,52 +8,73 @@ __test__ = False
 # Our chance to access config object of config file
 from art.test_handler.settings import ART_CONFIG
 import logging
+from rhevmtests.system.config import *  # flake8: noqa
+
 # Name of the test
-TESTNAME = "Guest Tools"
+TEST_NAME = "GuestTools"
 log = logging.getLogger('setup')
-PARAMETERS = ART_CONFIG['PARAMETERS']
-STORAGE_TYPE = PARAMETERS['storage_type']
+# PARAMETERS = ART_CONFIG['PARAMETERS']
+#STORAGE_TYPE = PARAMETERS['storage_type']
 
 
 # STORAGE_CONF = ART_CONFIG[STORAGE_TYPE.upper()]
 
-DATA_CENTER_NAME = PARAMETERS.get('dc_name', "datacenter_%s" % TESTNAME)
+#DC_NAME = 'DatacenterForGT'
 
 # VM_NAME = PARAMETERS.get('vm_name', 'vm_name')
 
 # Workers for thread pool
 MAX_WORKERS = PARAMETERS.get('max_workers', 16)
 
-COMPATIBILITY_VERSION = PARAMETERS['compatibility_version']
-CLUSTER_NAME = PARAMETERS['cluster_name']
-STORAGE_DOMAIN = PARAMETERS['storage_domain']
-ISO_STORAGE_DOMAIN = PARAMETERS['iso_storage_domain']
-EXPORT_STORAGE_DOMAIN = PARAMETERS['export_storage_domain']
-VDS = PARAMETERS['vds']
-VDS_PASSWORD = PARAMETERS['vds_password']
+#COMPATIBILITY_VERSION = PARAMETERS['compatibility_version']
+#CLUSTER_NAME = 'ClusterForGT'
+STORAGE_DOMAIN = 'nfs_0'
+ISO_STORAGE_DOMAIN = 'iso'
+EXPORT_STORAGE_DOMAIN = 'tlv-export'
+#VDS = PARAMETERS['vds']
+#VDS_PASSWORD = PARAMETERS['vds_password']
 VM_USER = PARAMETERS['VM_user']
 VM_PASSWORD = PARAMETERS['VM_password']
 TOOLSVERSION = PARAMETERS['toolsVersion']
-WIN7_TOOLS_DICT = PARAMETERS['WIN7_tools_dict']
-WINXP_TOOLS_DICT = PARAMETERS['WINXP_tools_dict']
-VM_LIST = PARAMETERS['VM_list']
-CD_WITH_TOOLS = PARAMETERS['cd_with_tools']
-SUBNET_CLASS = PARAMETERS['subnet_class']
-SKIP_UNINSTALL = PARAMETERS['skip_uninstall']
-SKIP_INSTALL = PARAMETERS['skip_install']
+WINXP_TOOLS_DICT = '{"RHEV-Tools":"3.2.8", "RHEV-Agent":"3.2.5",\
+                     "RHEV-Serial":"3.2.4", "RHEV-Network":"3.2.4",\
+                     "RHEV-Spice-Agent":"3.2.5", "RHEV-USB":"3.2.3",\
+                     "RHEV-SSO":"3.2.4", "RHEV-Spice":"3.2.3"}'
+WIN7_TOOLS_DICT = '{ "RHEV-Tools":"3.2.8", "RHEV-Agent":"3.2.5",\
+                     "RHEV-Serial":"3.2.4", "RHEV-Network":"3.2.4",\
+                     "RHEV-Spice-Agent":"3.2.5", "RHEV-USB":"3.2.3",\
+                     "RHEV-SSO":"3.2.4", "RHEV-Spice":"3.2.3"}'
+VM_LIST = '{"Windows7":"x64"}'
+CD_WITH_TOOLS = 'RHEV-toolsSetup_3.3_10.iso'
+SUBNET_CLASS = 10
+SKIP_UNINSTALL = 0
+SKIP_INSTALL = 1
 
-WIN7_TEMPLATE_NAME = PARAMETERS['win7_template_name']
-WIN7_IMPORTED_TEMPLATE_NAME = PARAMETERS['win7_imported_template_name']
-WIN7_VM_NAME = PARAMETERS['win7_VM_name']
-WIN7_32_TEMPLATE_NAME = PARAMETERS['win7_32_template_name']
-WIN7_32_IMPORTED_TEMPLATE_NAME = PARAMETERS['win7_32_imported_template_name']
-WIN7_32_VM_NAME = PARAMETERS['win7_32_VM_name']
-WINXP_TEMPLATE_NAME = PARAMETERS['winXP_template_name']
-WINXP_IMPORTED_TEMPLATE_NAME = PARAMETERS['winXP_imported_template_name']
-WINXP_VM_NAME = PARAMETERS['winXP_VM_name']
 
-EXPORT_DOMAIN_ADDRESS = PARAMETERS['exportaddress']
-ISO_DOMAIN_ADDRESS = PARAMETERS['isoaddress']
-EXPORT_DOMAIN_PATH = PARAMETERS['exportpath']
-ISO_DOMAIN_PATH = PARAMETERS['isopath']
+WIN7_TEMPLATE_NAME = 'dk-win7-64'
+WIN7_IMPORTED_TEMPLATE_NAME = 'dk-win7-64'
+WIN7_VM_NAME = "GTwin764"
+
+WIN7_32_TEMPLATE_NAME = 'dk-win7-32'
+WIN7_32_IMPORTED_TEMPLATE_NAME = 'dk-win7-32'
+WIN7_32_VM_NAME = 'GTwin732'
+
+
+WINXP_TEMPLATE_NAME = 'dk-winxp'
+WINXP_IMPORTED_TEMPLATE_NAME = 'dk-winxp'
+WINXP_VM_NAME = 'GTwinXP'
+
+
+
+
+
+
 MGMT_BRIDGE = PARAMETERS['mgmt_bridge']
+
+
+EXPORT_DOMAIN_ADDRESS = 'lion.qa.lab.tlv.redhat.com'
+ISO_DOMAIN_ADDRESS = 'lion.qa.lab.tlv.redhat.com'
+EXPORT_DOMAIN_PATH = '/export/virt-qe-export'
+ISO_DOMAIN_PATH = '/export/guest_tools'
+
+

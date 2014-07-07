@@ -6,7 +6,7 @@ Authentication of expired users, users from group and correct users.
 
 __test__ = True
 
-import config
+from rhevmtests.system.authentication import config
 import test_base as base
 from art.unittest_lib import attr
 

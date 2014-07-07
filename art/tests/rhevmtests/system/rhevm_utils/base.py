@@ -19,9 +19,9 @@ VM_API = get_api('vm', 'vms')
 # also for another purposes.
 try:
     # PGPASS, PREPARE_CONF should move to test conf file, once possible.
-    from unittest_conf import (config, PGPASS, REST_API_HOST)
-
-    if not config:
+    # from unittest_conf import (config, PGPASS, REST_API_HOST)
+    from rhevmtests.system.rhevm_utils import unittest_conf
+    if not unittest_conf.config:
         raise ImportError()
 except ImportError:
     # from unittest_conf import config
@@ -43,14 +43,14 @@ BASE_SNAPSHOT = 'working_snapshot'
 
 VARS = opts[CONFIG_ELEMENTS][CONFIG_SECTION]
 
-from art.test_handler.settings import ART_CONFIG
+# from art.test_handler.settings import ART_CONFIG
 
 
 def setup_module():
     """
     Build datacenter
     """
-    params = ART_CONFIG['PARAMETERS']
+    params = unittest_conf.ART_CONFIG['PARAMETERS']
     build_setup(config=params, storage=params,
                 storage_type=params.get('data_center_type'),
                 basename=params.get('basename'))
@@ -60,7 +60,7 @@ def teardown_module():
     """
     Clean datacenter
     """
-    params = ART_CONFIG['PARAMETERS']
+    params = unittest_conf.ART_CONFIG['PARAMETERS']
     dc_name = params.get('dc_name', 'datacenter_%s' % params.get('basename'))
     cleanDataCenter(True, dc_name, vdc=params.get('host'),
                     vdc_password=params.get('vdc_password'))
@@ -86,11 +86,12 @@ class RHEVMUtilsTestCase(TestCase):
         """
         dispatch setup for the cleanup and setup tests
         """
-        cls.installation = ART_CONFIG['PARAMETERS'].get('installation')
-        cls.machine = Setup(REST_API_HOST,
+        cls.installation = \
+            unittest_conf.ART_CONFIG['PARAMETERS'].get('installation')
+        cls.machine = Setup(unittest_conf.REST_API_HOST,
                             'root',
                             config['testing_env']['host_pass'],
-                            dbpassw=PGPASS,
+                            dbpassw=unittest_conf.PGPASS,
                             conf=VARS)
         if cls.utility in ['setup', 'cleanup']:
             cls.c = config[cls.utility]

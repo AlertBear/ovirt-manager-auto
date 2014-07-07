@@ -3,6 +3,7 @@ Setup for regression hosts test
 """
 
 import logging
+from rhevmtests.system.reg_hosts import config
 from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 from art.test_handler.exceptions import DataCenterException
 import art.rhevm_api.tests_lib.high_level.datacenters as datacenters
@@ -17,7 +18,6 @@ def setup_package():
     """
     Prepare environment
     """
-    import config
     logger.info("Creating data center, cluster, adding host and storage")
     if not datacenters.build_setup(config.PARAMETERS, config.PARAMETERS,
                                    config.STORAGE_TYPE, config.TEST_NAME):
@@ -28,7 +28,7 @@ def teardown_package():
     """
     Cleans the environment
     """
-    import config
     if not cleanDataCenter(positive=True, datacenter=config.DC_NAME,
-                           vdc=config.VDC, vdc_password=config.VDC_PASSWORD):
+                           vdc=config.VDC_HOST,
+                           vdc_password=config.VDC_ROOT_PASSWORD):
         raise DataCenterException("Cannot remove setup")

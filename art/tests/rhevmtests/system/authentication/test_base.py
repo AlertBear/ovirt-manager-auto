@@ -2,7 +2,7 @@
 # Check test_rhds.py how to use it.
 __test__ = False
 
-import config as cfg
+from rhevmtests.system.authentication import config
 import logging
 from art.unittest_lib import CoreSystemTest as TestCase
 from nose.tools import istest
@@ -26,12 +26,12 @@ def connectionTest():
 
 
 def loginAsAdmin():
-    users.loginAsUser(cfg.OVIRT_USERNAME, cfg.OVIRT_DOMAIN,
-                      cfg.USER_PASSWORD, False)
+    users.loginAsUser(config.OVIRT_USERNAME, config.OVIRT_DOMAIN,
+                      config.USER_PASSWORD, False)
 
 
 def loginAsUser(user_name, domain, filter_=True):
-    users.loginAsUser(user_name, domain, cfg.USER_PASSWORD, filter_)
+    users.loginAsUser(user_name, domain, config.USER_PASSWORD, filter_)
 
 
 def addUser(user_name, domain):
@@ -43,12 +43,13 @@ class BaseNormalUserAndGroupUser(TestCase):
     __test__ = False
 
     def setUp(self):
-        addUser(cfg.REGULAR_NAME(self.domain), self.domain)
-        users.addGroup(True, group_name=cfg.GROUP(self.domain))
-        mla.addClusterPermissionsToGroup(True, cfg.GROUP(self.domain),
-                                         cfg.MAIN_CLUSTER_NAME, role=USERROLE)
-        mla.addClusterPermissionsToUser(True, cfg.REGULAR_NAME(self.domain),
-                                        cfg.MAIN_CLUSTER_NAME,
+        addUser(config.REGULAR_NAME(self.domain), self.domain)
+        users.addGroup(True, group_name=config.GROUP(self.domain))
+        mla.addClusterPermissionsToGroup(True, config.GROUP(self.domain),
+                                         config.MAIN_CLUSTER_NAME,
+                                         role=USERROLE)
+        mla.addClusterPermissionsToUser(True, config.REGULAR_NAME(self.domain),
+                                        config.MAIN_CLUSTER_NAME,
                                         role=USERROLE, domain=self.domain)
 
     @istest
@@ -57,21 +58,22 @@ class BaseNormalUserAndGroupUser(TestCase):
         msg_f = "%s user can't log in."
         msg_t = "%s user can log in."
 
-        loginAsUser(cfg.REGULAR_NAME(self.domain), self.domain)
+        loginAsUser(config.REGULAR_NAME(self.domain), self.domain)
         self.assertTrue(connectionTest(), msg_f % 'Regular')
         LOGGER.info(msg_t % 'Regular')
 
-        loginAsUser(cfg.USER_FROM_GROUP(self.domain), self.domain)
+        loginAsUser(config.USER_FROM_GROUP(self.domain), self.domain)
         self.assertTrue(connectionTest(), msg_f % 'Group')
         LOGGER.info(msg_t % 'Group')
 
     def tearDown(self):
         loginAsAdmin()
-        users.removeUser(positive=True, user=cfg.REGULAR_NAME(self.domain),
+        users.removeUser(positive=True, user=config.REGULAR_NAME(self.domain),
                          domain=self.domain)
-        users.removeUser(positive=True, user=cfg.USER_FROM_GROUP(self.domain),
+        users.removeUser(positive=True,
+                         user=config.USER_FROM_GROUP(self.domain),
                          domain=self.domain)
-        users.deleteGroup(positive=True, group_name=cfg.GROUP(self.domain))
+        users.deleteGroup(positive=True, group_name=config.GROUP(self.domain))
 
 
 class BaseExpiredAccount(TestCase):
@@ -79,22 +81,24 @@ class BaseExpiredAccount(TestCase):
     __test__ = False
 
     def setUp(self):
-        addUser(cfg.EXPIRED_ACC_NAME(self.domain), self.domain)
+        addUser(config.EXPIRED_ACC_NAME(self.domain), self.domain)
         mla.addClusterPermissionsToUser(
-            True, cfg.EXPIRED_ACC_NAME(self.domain), cfg.MAIN_CLUSTER_NAME,
+            True, config.EXPIRED_ACC_NAME(self.domain),
+            config.MAIN_CLUSTER_NAME,
             role=USERROLE, domain=self.domain)
 
     @istest
     def expiredAccount(self):
         """ Login as user with expired password """
         msg = "User with expired acc can login."
-        loginAsUser(cfg.EXPIRED_ACC_NAME(self.domain), self.domain)
+        loginAsUser(config.EXPIRED_ACC_NAME(self.domain), self.domain)
         self.assertTrue(not connectionTest(), msg)
         LOGGER.info("User with expired account can't login.")
 
     def tearDown(self):
         loginAsAdmin()
-        users.removeUser(positive=True, user=cfg.EXPIRED_ACC_NAME(self.domain),
+        users.removeUser(positive=True,
+                         user=config.EXPIRED_ACC_NAME(self.domain),
                          domain=self.domain)
 
 
@@ -103,22 +107,24 @@ class BaseExpiredPassword(TestCase):
     __test__ = False
 
     def setUp(self):
-        addUser(cfg.EXPIRED_PSW_NAME(self.domain), self.domain)
+        addUser(config.EXPIRED_PSW_NAME(self.domain), self.domain)
         mla.addClusterPermissionsToUser(
-            True, cfg.EXPIRED_PSW_NAME(self.domain), cfg.MAIN_CLUSTER_NAME,
+            True, config.EXPIRED_PSW_NAME(self.domain),
+            config.MAIN_CLUSTER_NAME,
             role=USERROLE, domain=self.domain)
 
     @istest
     def expiredPassword(self):
         """ Login as user with disabled account """
         msg = "User with expired psw can login."
-        loginAsUser(cfg.EXPIRED_PSW_NAME(self.domain), self.domain, True)
+        loginAsUser(config.EXPIRED_PSW_NAME(self.domain), self.domain, True)
         self.assertTrue(not connectionTest(), msg)
         LOGGER.info("User with expired password can't login.")
 
     def tearDown(self):
         loginAsAdmin()
-        users.removeUser(positive=True, user=cfg.EXPIRED_PSW_NAME(self.domain),
+        users.removeUser(positive=True,
+                         user=config.EXPIRED_PSW_NAME(self.domain),
                          domain=self.domain)
 
 
@@ -127,26 +133,27 @@ class BaseGroupsPersistency(TestCase):
     __test__ = False
 
     def setUp(self):
-        users.addGroup(True, group_name=cfg.GROUP(self.domain))
-        mla.addClusterPermissionsToGroup(True, cfg.GROUP(self.domain),
-                                         cfg.MAIN_CLUSTER_NAME)
+        users.addGroup(True, group_name=config.GROUP(self.domain))
+        mla.addClusterPermissionsToGroup(True, config.GROUP(self.domain),
+                                         config.MAIN_CLUSTER_NAME)
 
     @istest
     def basePersistencyOfGroupRights(self):
         """ After user removal, check that his group persist """
-        loginAsUser(cfg.USER_FROM_GROUP(self.domain), self.domain, False)
+        loginAsUser(config.USER_FROM_GROUP(self.domain), self.domain, False)
         self.assertTrue(connectionTest(), 'User from group cant log in')
         LOGGER.info('User from group logged in')
         loginAsAdmin()
-        users.removeUser(positive=True, user=cfg.USER_FROM_GROUP(self.domain),
+        users.removeUser(positive=True,
+                         user=config.USER_FROM_GROUP(self.domain),
                          domain=self.domain)
-        self.assertTrue(users.groupExists(True, cfg.GROUP(self.domain)),
+        self.assertTrue(users.groupExists(True, config.GROUP(self.domain)),
                         "Group was removed with user")
         LOGGER.info("Group persisted after user from group was removed.")
 
     def tearDown(self):
         loginAsAdmin()
-        users.deleteGroup(True, group_name=cfg.GROUP(self.domain))
+        users.deleteGroup(True, group_name=config.GROUP(self.domain))
 
 
 class BaseUserWithManyGroups(TestCase):
@@ -154,22 +161,22 @@ class BaseUserWithManyGroups(TestCase):
     __test__ = False
 
     def setUp(self):
-        addUser(cfg.WITH_MANY_GROUPS_NAME(self.domain), self.domain)
+        addUser(config.WITH_MANY_GROUPS_NAME(self.domain), self.domain)
         mla.addClusterPermissionsToUser(
-            True, cfg.WITH_MANY_GROUPS_NAME(self.domain),
-            cfg.MAIN_CLUSTER_NAME, role=USERROLE, domain=self.domain)
+            True, config.WITH_MANY_GROUPS_NAME(self.domain),
+            config.MAIN_CLUSTER_NAME, role=USERROLE, domain=self.domain)
 
     @istest
     def userWithManyGroups(self):
         """ Check that user with many groups can login """
-        loginAsUser(cfg.WITH_MANY_GROUPS_NAME(self.domain), self.domain)
+        loginAsUser(config.WITH_MANY_GROUPS_NAME(self.domain), self.domain)
         self.assertTrue(connectionTest(),
                         "User with many groups can't connect to system")
 
     def tearDown(self):
         loginAsAdmin()
         users.removeUser(positive=True, domain=self.domain,
-                         user=cfg.WITH_MANY_GROUPS_NAME(self.domain))
+                         user=config.WITH_MANY_GROUPS_NAME(self.domain))
 
 
 class BaseSearchForUsersAndGroups(TestCase):

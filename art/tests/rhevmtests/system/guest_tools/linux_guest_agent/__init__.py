@@ -5,7 +5,7 @@ from art.test_handler.settings import opts
 from art.rhevm_api.utils.test_utils import get_api
 import art.rhevm_api.utils.test_utils as utils
 import logging
-
+from rhevmtests.system.guest_tools.linux_guest_agent import config
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 LOGGER = logging.getLogger(__name__)
@@ -13,17 +13,16 @@ VM_API = get_api('vm', 'vms')
 
 
 def setup_package():
-    import config
     datacenters.build_setup(
         config.PARAMETERS, config.PARAMETERS,
-        config.STORAGE_TYPE, config.TESTNAME)
+        config.STORAGE_TYPE, config.TEST_NAME)
     storagedomains.importStorageDomain(
         True, type='export',
         storage_type='nfs',
         address=config.EXPORT_DOMAIN_ADDRESS,
-        host=config.VDS[0],
+        host=config.HOSTS[0],
         path=config.EXPORT_DOMAIN_PATH)
-    h_sd.attach_and_activate_domain(config.DATA_CENTER_NAME,
+    h_sd.attach_and_activate_domain(config.DC_NAME,
                                     config.EXPORT_STORAGE_DOMAIN)
     # Prepare templates/vms
     for os, template in config.TEMPLATES.iteritems():
@@ -53,11 +52,10 @@ def setup_package():
 
 
 def teardown_package():
-    import config
     for os, template in config.TEMPLATES.iteritems():
         vms.removeVm(True, vm='vm_%s' % template['name'], stopVM='true')
         templates.removeTemplate(True, template['name'])
 
     h_sd.remove_storage_domain(config.EXPORT_STORAGE_DOMAIN,
-                               config.DATA_CENTER_NAME, config.VDS[0])
-    storagedomains.cleanDataCenter(True, config.DATA_CENTER_NAME)
+                               config.DC_NAME, config.HOSTS[0])
+    storagedomains.cleanDataCenter(True, config.DC_NAME)

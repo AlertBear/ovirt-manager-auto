@@ -17,7 +17,7 @@ from nose.tools import istest
 from art.rhevm_api.tests_lib.low_level import vms
 from art.unittest_lib import attr
 import art.test_handler.exceptions as errors
-import config
+from rhevmtests.system.soft_fencing import config
 import logging
 from utilities.rhevm_tools.base import Setup
 

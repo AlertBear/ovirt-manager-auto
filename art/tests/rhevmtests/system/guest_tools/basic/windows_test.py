@@ -10,7 +10,7 @@ from unittest2 import skipIf
 import os
 
 import art.rhevm_api.utils.test_utils as utils
-import config
+from rhevmtests.system.guest_tools.basic import config
 import art.rhevm_api.tests_lib.low_level.vms as vms
 import art.rhevm_api.tests_lib.low_level.templates as template
 
