@@ -30,6 +30,7 @@ from art.rhevm_api.utils.test_utils import restartVdsmd
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 from rhevmtests.storage.helpers import host_to_use
 from art.test_handler import exceptions
+from art.test_handler.settings import opts
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,7 @@ MIN_UNUSED_LUNS = 1
 # The delta between the expected storage domain size and the actual size (
 # given that engine returns the SD total size in GB as an integer)
 SD_SIZE_DELTA = 1 * config.GB + 10 * config.MB
+ISCSI = config.STORAGE_TYPE_ISCSI
 
 
 class BaseCase(TestCase):
@@ -304,7 +306,8 @@ class TestCase286775(BaseCase):
     https://tcms.engineering.redhat.com/case/286775
     """
     # test case only relevant to iscsi domains
-    __test__ = BaseCase.storage == config.STORAGE_TYPE_ISCSI
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     apis = BaseCase.apis - set(['sdk'])
     tcms_test_case = '286775'
     new_sd_name = "storage_domain_%s" % tcms_test_case

@@ -12,8 +12,11 @@ from art.rhevm_api.tests_lib.low_level import clusters
 from art.rhevm_api.tests_lib.low_level import datacenters
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
 from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.settings import opts
 
 LOGGER = logging.getLogger(__name__)
+NFS = config.STORAGE_TYPE_NFS
+
 
 api = test_utils.get_api('storage_connection', 'storageconnections')
 sd_api = test_utils.get_api('storage_domain', 'storagedomains')
@@ -190,7 +193,18 @@ class TestCase288707(TestCasePosixFS):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = (config.STORAGE_TYPE.startswith('posixfs'))
+    __test__ = (
+        (
+            'posixfs_nfs' or
+            'posixfs_gluster' or
+            'posixfs_mixed' or
+            'posixfs_pnfs'
+            in opts['storages']
+        )
+    )
+    storages = set(
+        ['posixfs_nfs', 'posixfs_gluster', 'posixfs_mixed', 'posixfs_pnfs']
+    )
     tcms_plan_id = '9985'
     tcms_test_case = '288707'
     sd_name = "sd_%s" % tcms_test_case
@@ -209,7 +223,8 @@ class TestCase288597(TestCaseNFS):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = (config.STORAGE_TYPE == 'nfs')
+    __test__ = (NFS in opts['storages'])
+    storages = set([NFS])
     tcms_plan_id = '9985'
     tcms_test_case = '288597'
     sd_name = "sd_%s" % tcms_test_case
@@ -228,7 +243,18 @@ class TestCase289001(TestCasePosixFS):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = (config.STORAGE_TYPE.startswith('posixfs'))
+    __test__ = (
+        (
+            'posixfs_nfs' or
+            'posixfs_gluster' or
+            'posixfs_mixed' or
+            'posixfs_pnfs'
+            in opts['storages']
+        )
+    )
+    storages = set(
+        ['posixfs_nfs', 'posixfs_gluster', 'posixfs_mixed', 'posixfs_pnfs']
+    )
     tcms_plan_id = '9985'
     tcms_test_case = '289001'
     sd_name = "sd_%s" % tcms_test_case
@@ -249,7 +275,8 @@ class TestCase288991(TestCaseNFS):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = (config.STORAGE_TYPE == 'nfs')
+    __test__ = (NFS in opts['storages'])
+    storages = set([NFS])
     tcms_plan_id = '9985'
     tcms_test_case = '288991'
     sd_name = "sd_%s" % tcms_test_case
@@ -270,7 +297,8 @@ class TestCase288710(TestCaseNFS):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = (config.STORAGE_TYPE == 'nfs')
+    __test__ = (NFS in opts['storages'])
+    storages = set([NFS])
     tcms_plan_id = '9985'
     tcms_test_case = '288710'
     sd_name = "sd_%s" % tcms_test_case
@@ -347,7 +375,8 @@ class TestCase293074(TestCaseNFS):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = (config.STORAGE_TYPE == 'nfs')
+    __test__ = (NFS in opts['storages'])
+    storages = set([NFS])
     tcms_plan_id = '9985'
     tcms_test_case = '293074'
     sd_name = "sd_%s" % tcms_test_case
@@ -400,7 +429,8 @@ class TestCase288708(TestCaseLocalFS):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = (config.STORAGE_TYPE == 'localfs')
+    __test__ = ('localfs' in opts['storages'])
+    storages = set(['localfs'])
     tcms_plan_id = '9985'
     tcms_test_case = '288708'
     path = "/home/manage_conn_test_%s" % tcms_test_case
@@ -459,7 +489,8 @@ class TestCase289228(TestCaseLocalFS):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = (config.STORAGE_TYPE == 'localfs')
+    __test__ = ('localfs' in opts['storages'])
+    storages = set(['localfs'])
     tcms_plan_id = '9985'
     tcms_test_case = '289228'
     path = "/home/manage_conn_test_%s" % tcms_test_case

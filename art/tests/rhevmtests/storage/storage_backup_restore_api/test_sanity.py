@@ -80,7 +80,7 @@ class BaseTestCase(TestCase):
     tcms_test_case = None
 
     def setUp(self):
-        self.vm_names = VM_NAMES[TestCase.storage]
+        self.vm_names = VM_NAMES[self.storage]
         vms.start_vms(self.vm_names, 2, wait_for_ip=False)
         vms.waitForVmsStates(True, self.vm_names)
         if not vms.attach_backup_disk_to_vm(self.vm_names[0],
@@ -281,7 +281,7 @@ class TestCase304134(BaseTestCase):
     tcms_test_case = '304134'
 
     def setUp(self):
-        self.vm_names = VM_NAMES[TestCase.storage]
+        self.vm_names = VM_NAMES[self.storage]
         vms.stop_vms_safely([self.vm_names[1]])
         logger.info("Succeeded to stop vm %s", self.vm_names[1])
 
@@ -332,7 +332,7 @@ class TestCase304156(BaseTestCase):
     tcms_test_case = '304156'
 
     def setUp(self):
-        self.vm_names = VM_NAMES[TestCase.storage]
+        self.vm_names = VM_NAMES[self.storage]
         vms.start_vms(self.vm_names, 2, wait_for_ip=False)
         vms.waitForVmsStates(True, self.vm_names)
 
@@ -384,7 +384,7 @@ class TestCase304159(BaseTestCase):
     snap_desc = None
 
     def setUp(self):
-        self.vm_names = VM_NAMES[TestCase.storage]
+        self.vm_names = VM_NAMES[self.storage]
         self.snap_desc = helpers.SNAPSHOT_TEMPLATE_DESC % self.vm_names[0]
         super(TestCase304159, self).setUp()
 
@@ -427,7 +427,7 @@ class TestCase304161(TestCase):
     second_snapshot = ""
 
     def setUp(self):
-        self.vm_names = VM_NAMES[TestCase.storage]
+        self.vm_names = VM_NAMES[self.storage]
         self.first_snapshot = helpers.SNAPSHOT_TEMPLATE_DESC \
             % self.vm_names[0]
 
@@ -574,7 +574,7 @@ class TestCase304168(TestCase):
     blocked = False
 
     def setUp(self):
-        self.vm_names = VM_NAMES[TestCase.storage]
+        self.vm_names = VM_NAMES[self.storage]
 
         self.storage_domains = storagedomains.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage)
@@ -696,7 +696,7 @@ class TestCase304197(TestCase):
     tcms_test_case = '304197'
 
     def setUp(self):
-        self.vm_names = VM_NAMES[TestCase.storage]
+        self.vm_names = VM_NAMES[self.storage]
         vms.start_vms(self.vm_names, 2, wait_for_ip=False)
         assert vms.waitForVmsStates(True, self.vm_names)
         self.vm_machine_ip = get_vm_ip(self.vm_names[1])
@@ -834,7 +834,7 @@ class TestCase322485(TestCase):
     snapshot_template_name = "%s-snapshot"
 
     def setUp(self):
-        self.vm_names = VM_NAMES[TestCase.storage]
+        self.vm_names = VM_NAMES[self.storage]
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_attach_multiple_disks(self):
@@ -901,7 +901,7 @@ class TestCase322486(TestCase):
     tcms_test_case = '322486'
 
     def setUp(self):
-        self.vm_names = VM_NAMES[TestCase.storage]
+        self.vm_names = VM_NAMES[self.storage]
         vms.stop_vms_safely(self.vm_names)
         logger.info("Succeeded to stop vms %s", ', '.join(self.vm_names))
         self.vm_disks = vms.getVmDisks(self.vm_names[0])
@@ -960,7 +960,7 @@ class TestCase322487(BaseTestCase):
     tcms_test_case = '322487'
 
     def setUp(self):
-        self.vm_names = VM_NAMES[TestCase.storage]
+        self.vm_names = VM_NAMES[self.storage]
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_attach_the_same_disk_twice_to_a_VM(self):
@@ -999,7 +999,7 @@ class TestCase322886(TestCase):
     } if TestCase.storage == config.STORAGE_TYPE_ISCSI else None
 
     def setUp(self):
-        self.vm_names = VM_NAMES[TestCase.storage]
+        self.vm_names = VM_NAMES[self.storage]
         vms.waitForDisksStat(self.vm_names[0])
         vms.waitForDisksStat(self.vm_names[1])
         vms.start_vms(self.vm_names, 2, wait_for_ip=False)

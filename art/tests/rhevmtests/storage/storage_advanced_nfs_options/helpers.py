@@ -38,6 +38,7 @@ VERSION_31 = '3.1'
 DEFAULT_NFS_RETRANS = 6
 DEFAULT_NFS_TIMEOUT = 600
 DEFAULT_DC_TIMEOUT = 1500
+NFS = config.STORAGE_TYPE_NFS
 
 
 def _verify_one_option(real, expected):
@@ -210,6 +211,7 @@ class TestCaseNFSOptions(TestCase):
     password = None
     cl_name = None
     host_for_dc = None
+    storages = set([NFS])
 
     @classmethod
     def setup_class(cls):
@@ -296,7 +298,7 @@ class TestCaseNFSOptions(TestCase):
         """
         logger.info("Creating %s datacenter", version)
         if not ll_dc.addDataCenter(
-                True, name=self.dc_name, storage_type=config.STORAGE_TYPE_NFS,
+                True, name=self.dc_name, storage_type=NFS,
                 version=version
         ):
             self.fail("Adding %s datacenter failed" % self.dc_name)

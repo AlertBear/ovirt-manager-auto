@@ -6,6 +6,7 @@ import logging
 from art.rhevm_api.tests_lib.low_level import disks, storagedomains, vms
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.unittest_lib import StorageTest as TestCase, attr
+from art.test_handler.settings import opts
 
 ENUMS = config.ENUMS
 
@@ -19,15 +20,19 @@ class TestCase174621(TestCase):
     Expected system: 2 vms with state down
     """
     # Gluster doesn't support shareable disks
-    __test__ = TestCase.storage != config.STORAGE_TYPE_GLUSTER
+    __test__ = (
+        config.STORAGE_TYPE_NFS in opts['storages']
+        or config.STORAGE_TYPE_ISCSI in opts['storages']
+    )
+    storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
 
     tcms_plan_id = '6458'
     tcms_test_case = '174621'
-    vm_1 = config.VM1_NAME % TestCase.storage
-    vm_2 = config.VM2_NAME % TestCase.storage
     disk_name = "shareableDisk"
 
     def setUp(self):
+        self.vm_1 = config.VM1_NAME % self.storage
+        self.vm_2 = config.VM2_NAME % self.storage
         """Start the two vms and get the storage_domain name"""
         self.storage_domain = storagedomains.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage)[0]
@@ -91,8 +96,11 @@ class TestCase275816(TestCase):
     https://tcms.engineering.redhat.com/case/275816/?from_plan=9583
     """
     # Gluster doesn't support shareable disks
-    __test__ = TestCase.storage != config.STORAGE_TYPE_GLUSTER
-
+    __test__ = (
+        config.STORAGE_TYPE_NFS in opts['storages']
+        or config.STORAGE_TYPE_ISCSI in opts['storages']
+    )
+    storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
     tcms_plan_id = '9583'
     tcms_test_case = '275816'
     disk_name = None

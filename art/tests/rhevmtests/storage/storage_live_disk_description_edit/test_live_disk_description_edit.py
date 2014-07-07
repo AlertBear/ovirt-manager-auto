@@ -27,6 +27,7 @@ from rhevmtests.storage.storage_live_disk_description_edit import config
 from rhevmtests.storage.storage_live_disk_description_edit.helpers import (
     verify_vm_disk_description,
 )
+from art.test_handler.settings import opts
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,8 @@ VM_SUSPENDED_DESCRIPTION = "vm_suspended_on_disk_description"
 ALIAS = "alias"
 DESCRIPTION = "description"
 DESCRIPTION_ORIG = "description_orig"
+ISCSI = config.STORAGE_TYPE_ISCSI
+NFS = config.STORAGE_TYPE_NFS
 
 vm_main_arguments = {
     'positive': True, 'vmName': VM1_NAME,
@@ -176,7 +179,8 @@ class TestCase396316(BaseClassEditDescription):
     Edit Disk description for a machine on a block domain
     https://tcms.engineering.redhat.com/case/396316/?from_plan=14844 (block)
     """
-    __test__ = BaseClassEditDescription.storage in config.BLOCK_TYPES
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '396316'
     bz = {'1211314': {'engine': ['cli'], 'version': ['3.5', '3.6']}}
 
@@ -200,7 +204,8 @@ class TestCase396321(BaseClassEditDescription):
     Edit Disk description for a machine on a file domain
     https://tcms.engineering.redhat.com/case/396321/?from_plan=14844
     """
-    __test__ = BaseClassEditDescription.storage not in config.BLOCK_TYPES
+    __test__ = (NFS in opts['storages'])
+    storages = set([NFS])
     tcms_test_case = '396321'
     bz = {'1211314': {'engine': ['cli'], 'version': ['3.5', '3.6']}}
 

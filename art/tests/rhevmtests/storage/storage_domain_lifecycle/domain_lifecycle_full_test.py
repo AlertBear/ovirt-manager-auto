@@ -17,6 +17,8 @@ from art.rhevm_api.utils.test_utils import get_api, wait_for_tasks
 from rhevmtests.storage.helpers import create_vm_or_clone
 from art.test_handler import exceptions
 from sys import modules
+from art.test_handler.settings import opts
+
 
 TCMS_PLAN_ID = '6458'
 logger = logging.getLogger(__name__)
@@ -34,6 +36,7 @@ CLUSTER_API = get_api('cluster', 'clusters')
 CLI_CMD_DF = 'df -H'
 TEN_GB = 10 * config.GB
 DATA_CENTER_TIMEOUT = 60 * 5
+NFS = config.STORAGE_TYPE_NFS
 
 ProvisionContext = vms.ProvisionContext
 
@@ -290,7 +293,8 @@ class TestCase174613(TestCase):
     is working properly
     https://tcms.engineering.redhat.com/case/174613/
     """
-    __test__ = (config.STORAGE_TYPE == ENUMS['storage_type_nfs'])
+    __test__ = (NFS in opts['storages'])
+    storages = set([NFS])
     tcms_plan_id = '5849'
     tcms_test_case = '174613'
     nfs_retrans = 5
@@ -399,7 +403,10 @@ class TestCase147888(TestCase):
     domain are blocked
     https://tcms.engineering.redhat.com/case/147888/
     """
-    __test__ = TestCase.storage == config.STORAGE_TYPE_NFS
+    __test__ = (NFS in opts['storages'])
+
+    storages = set([NFS])
+
     tcms_plan_id = '5849'
     tcms_test_case = '147888'
 
@@ -937,7 +944,7 @@ for storage_type in config.STORAGE_SELECTOR:
                 'storage_format': storage_format,
                 'upgraded_storage_format': storage_v3_format
             }
-            new_class = type(class_name, (TYPE_TO_CLASS[config.STORAGE_TYPE],),
+            new_class = type(class_name, (TYPE_TO_CLASS[storage_type],),
                              class_attrs)
             setattr(__THIS_MODULE, class_name, new_class)
     delattr(__THIS_MODULE, 'new_class')

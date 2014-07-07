@@ -11,7 +11,7 @@ CLI Options
 -----------
   --test-tag name=value
   --test-tag-expr "python expression"  [nose_tag_expression]_
-  --with-nose-apiselector  mutiplies test-cases per each rhevm api
+  --with-multiplier  multiplies test-cases per each rhevm api/storage
 
 Configuration Options:
 ----------------------
@@ -21,7 +21,8 @@ Configuration Options:
     | **[UNITTEST]**
     | **nose_config** path to file with nose configuration
     | **nose_custom_paths** path to nose customization (nose custom plugins)
-    | **nose_apiselector** - enable/disable api selector plugin
+    | **nose_test_multiplier_enabled** - enable/disable api/storage
+    |                                    selector plugin
     | **tags** - list of tags
     | **tag_expressions** - list of tag's expressions [nose_tag_expression]_
     | **exclude** - list of expressions which module should be excluded
@@ -110,7 +111,7 @@ DEFAULT_NOSE_CUSTOM_PATHS = [
 
 NOSE_CUSTOMIZATION_PATHS = 'nose_custom_paths'
 NOSE_CONFIG_PATH = 'nose_config'
-NOSE_API_SELECTOR = 'nose_apiselector'
+NOSE_TEST_MULTIPLIER = 'nose_test_multiplier_enabled'
 NOSE_TAGS = 'tags'
 NOSE_TAG_EXPRESSIONS = 'tag_expressions'
 NOSE_EXCLUDE = 'exclude'
@@ -241,6 +242,10 @@ class UTestCase(TestCase):
     @property
     def api(self):
         return getattr(self.t.test, 'api', None)
+
+    @property
+    def storage(self):
+        return getattr(self.t.test, 'storage', None)
 
 
 class UTestGroup(TestGroup):
@@ -466,21 +471,18 @@ class UnittestLoader(Component):
         self.conf = conf
         self.conf[CONFIG_PARAMS].merge(self.conf[REST_CONNECTION])
         self.system_engine = self.conf[RUN_SEC]['system_engine']
+        self.storage_type = self.conf[RUN_SEC]['storage_type']
 
         TestResult.ATTRIBUTES['module_name'] = ('mod_name', None, None)
         TestResult.ATTRIBUTES['test_action'] = ('test_action', None, None)
         TestResult.ATTRIBUTES['iter_num'] = ('serial', None, None)
 
-        #configuring nose
         self._configure_nose(params, conf)
 
     def _configure_nose(self, params, conf):
         # init config
         self.nose_conf = NoseConfig(env=os.environ,
                                     plugins=NosePluginManager())
-        # init log (maybe to pass loggingConfig in future)
-        #self.nose_conf.configureLogging()
-        #logger.info("Nose log: %s", conf[UNITTEST_SEC]['nose_log'])
 
         custom_paths = conf[UNITTEST_SEC][NOSE_CUSTOMIZATION_PATHS]
 
@@ -492,9 +494,10 @@ class UnittestLoader(Component):
         nose_config_path = conf[UNITTEST_SEC][NOSE_CONFIG_PATH]
         nose_config_path = locate_file(nose_config_path, custom_paths)
         nose_args = ['nosetests', '-c', nose_config_path]
-        if params.nose_apiselector_enabled or \
-                conf[UNITTEST_SEC].as_bool(NOSE_API_SELECTOR):
-            nose_args.append('--with-apiselector')
+
+        if (params.test_matrix or
+                conf[UNITTEST_SEC].as_bool(NOSE_TEST_MULTIPLIER)):
+            nose_args.append("--with-testmultiplier")
 
         # Add tags
         if params.test_tags is not None:
@@ -548,9 +551,9 @@ class UnittestLoader(Component):
                            help="python expression "
                            "like: 'team == \"storage\" and tier == 0'",
                            default=None)
-        group.add_argument('--with-nose-apiselector', action='store_true',
-                           dest='nose_apiselector_enabled',
-                           help="enable nose apiselector plugin")
+        group.add_argument('--with-multiplier', action='store_true',
+                           dest='test_matrix',
+                           help="enable nose test multiplier plugin")
 
     def pre_test_result_reported(self, res, tc):
         res.add_result_attribute('module_name', 'mod_name', 'Module Name', '')
@@ -566,6 +569,9 @@ class UnittestLoader(Component):
         st_msg(tc.format_attr('status'))
         res['engine-api'] = tc.attrs.get('api', opts['engine'])
 
+        res['engine-api'] = tc.attrs.get('api', opts['engine'])
+        res['storage'] = tc.attrs.get('storage', opts['storage_type'])
+
     def pre_group_result_reported(self, res, tg):
         pass
 
@@ -574,11 +580,20 @@ class UnittestLoader(Component):
 
     def pre_test_group(self, test_group):
         api = test_group.attrs.get('api', None)
+
         if not isinstance(api, basestring):
             return
         if opts['engine'] != api:
             opts['engine'] = api
             logger.info("The API backend switched to %s", api)
+
+        storage = test_group.attrs.get('storage', None)
+
+        if not isinstance(storage, basestring):
+            return
+        if opts['storage_type'] != storage:
+            opts['storage_type'] = storage
+            logger.info("The storage type switched to %s", storage)
 
     def post_test_group(self, test_group):
         """
@@ -606,6 +621,10 @@ class UnittestLoader(Component):
                 "The API backend switched to %s", self.system_engine,
             )
 
+        if opts['storage_type']:
+            opts['storage_type'] = None
+            logger.info("The storage type reset to None")
+
     def test_group_skipped(self, test_group):
         pass
 
@@ -623,7 +642,7 @@ class UnittestLoader(Component):
         params['long_description'] = cls.__doc__
         params['requires'] = ['python-nose >= 0.11.0', 'python-unittest2']
         params['data_files'] = ['nose_customization/'
-                                'plugins/api_selector_plugin.py',
+                                'plugins/testmultiplier_plugin.py',
                                 'nose_customization/configs/default.conf']
         params['py_modules'] = [
             'art.test_handler.plmanagement.plugins.'
@@ -637,7 +656,7 @@ class UnittestLoader(Component):
             ('list(default=list(%s))' % ','.join(DEFAULT_NOSE_CUSTOM_PATHS))
         section_spec[NOSE_CONFIG_PATH] = ('string('
                                           'default="configs/default.conf")')
-        section_spec[NOSE_API_SELECTOR] = \
+        section_spec[NOSE_TEST_MULTIPLIER] = \
             'boolean(default=%s)' % DEFAULT_STATE
         section_spec[NOSE_TAGS] = 'force_list(default=list())'
         section_spec[NOSE_TAG_EXPRESSIONS] = 'expr_list(default=list())'

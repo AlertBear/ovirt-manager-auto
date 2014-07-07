@@ -21,6 +21,7 @@ from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 from utilities import machine
 from utilities.rhevm_tools.base import Utility, Setup
+from art.test_handler.settings import opts
 
 logger = logging.getLogger(__name__)
 
@@ -221,7 +222,11 @@ class TestCase50769Shared(BaseCaseIsoDomains):
     # The Posix ISO domain fails to Detach and can only be removed by using
     # the Destroy option (which the code doesn't do)
     # Gluster doesn't support being used as an ISO domain
-    __test__ = TestCase.storage != config.STORAGE_TYPE_GLUSTER
+    __test__ = (
+        config.STORAGE_TYPE_NFS in opts['storages']
+        or config.STORAGE_TYPE_ISCSI in opts['storages']
+    )
+    storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
     # TODO: Ticket is open for CLI support in ejecting CD:
     # https://projects.engineering.redhat.com/browse/RHEVM-2163
     apis = TestCase.apis - set(['cli'])

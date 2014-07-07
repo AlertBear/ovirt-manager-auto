@@ -26,8 +26,8 @@ HOOKWITHSLEEPFILENAME = tempfile.mkstemp()[1]
 HOOKPRINTFILENAME = tempfile.mkstemp()[1]
 HOOKJPEG = tempfile.mkstemp(suffix=".jpeg")[1]
 
-DISKS_TO_PLUG = ["disk_to_plug_%s" % x for x in range(10)]
-UNATTACHED_DISK = "unattached_disk"
+DISKS_TO_PLUG = dict()
+UNATTACHED_DISKS_PER_STORAGE_TYPE = dict()
 TEXT = 'Hello World!'
 DISKS_WAIT_TIMEOUT = 300
 
@@ -85,6 +85,8 @@ def create_vm_with_disks(storage_domain, storage_type):
             name of the vm created
     """
     vm_name = config.VM_NAME % storage_type
+    unattached_disk = 'unattached_disk_%s' % storage_type
+
     create_vm_or_clone(
         True, vm_name, vm_name, cluster=config.CLUSTER_NAME,
         nic=config.NIC_NAME[0], storageDomainName=storage_domain,
@@ -98,17 +100,34 @@ def create_vm_with_disks(storage_domain, storage_type):
         image=config.COBBLER_PROFILE, network=config.MGMT_BRIDGE,
         useAgent=config.USE_AGENT)
 
-    for disk_name in DISKS_TO_PLUG + [UNATTACHED_DISK]:
+    DISKS_TO_PLUG.update({storage_type: []})
+    for index in xrange(10):
+        DISKS_TO_PLUG[storage_type].append(
+            (
+                "disk_to_plug_%s_%s" % (storage_type, str(index))
+            )
+        )
+
+    UNATTACHED_DISKS_PER_STORAGE_TYPE.update({storage_type: []})
+    UNATTACHED_DISKS_PER_STORAGE_TYPE[storage_type].append(unattached_disk)
+
+    all_disks_to_add = (
+        DISKS_TO_PLUG[storage_type] +
+        UNATTACHED_DISKS_PER_STORAGE_TYPE[storage_type]
+    )
+    for disk_name in all_disks_to_add:
         disks.addDisk(
             True, alias=disk_name, size=config.GB,
             storagedomain=storage_domain,
             format=config.DISK_FORMAT_COW, interface=config.INTERFACE_VIRTIO)
 
     disks.wait_for_disks_status(
-        DISKS_TO_PLUG + [UNATTACHED_DISK], timeout=DISKS_WAIT_TIMEOUT,
+        all_disks_to_add,
+        timeout=DISKS_WAIT_TIMEOUT,
     )
-    for disk_name in DISKS_TO_PLUG:
+    for disk_name in DISKS_TO_PLUG[storage_type]:
         disks.attachDisk(True, disk_name, vm_name, False)
+
     return vm_name
 
 
@@ -152,7 +171,7 @@ class HotplugHookTest(TestCase):
             * check if correct hooks were called
     """
     hook_dir = None
-    vm_name = config.VM_NAME % TestCase.storage
+    vm_name = None
     __test__ = False
     active_disk = None
     hooks = {}
@@ -217,6 +236,8 @@ class HotplugHookTest(TestCase):
             * put disks in correct state
             * install new hook(s)
         """
+        self.use_disks = DISKS_TO_PLUG[self.storage]
+        self.vm_name = config.VM_NAME % self.storage
         assert vms.waitForVMState(self.vm_name)
         self.host_name = vms.getVmHost(self.vm_name)[1]['vmHoster']
         self.host_address = getHostIP(self.host_name)

@@ -12,11 +12,13 @@ from utilities.rhevm_tools.log_collector import LogCollectorUtility
 import logging
 
 from integration.rhevm_utils import base
+from art.test_handler.settings import opts
 
 LOG_COLLECTOR_TEST_PLAN = 3748
 NAME = 'log_collector'
 LOGGER = logging.getLogger(__name__)
 DISK_SIZE = 6 * 1024 * 1024 * 1024
+ISCSI = unittest_conf.STORAGE_TYPE_ISCSI
 
 
 def setup_module():
@@ -214,7 +216,8 @@ class LogCollectorMoreDCs(LogCollectorTestCaseBase):
 class LogCollectorRegressionBz1058894(LogCollectorTestCaseBase):
     """ Regression tests for the log-collector """
 
-    __test__ = unittest_conf.STORAGE_TYPE == 'iscsi'
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
 
     def setUp(self):
         if unittest_conf.GOLDEN_ENV:

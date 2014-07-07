@@ -44,6 +44,7 @@ from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.test_handler import exceptions
 from art.unittest_lib import attr
 from art.unittest_lib.common import StorageTest as TestCase
+from art.test_handler.settings import opts
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +75,7 @@ vmArgs = {'positive': True,
           }
 
 not_bootable = lambda d: (not d.get_bootable()) and (d.get_active())
+ISCSI = config.STORAGE_TYPE_ISCSI
 
 
 def setup_module():
@@ -300,7 +302,8 @@ class TestCase332473(BaseTestCase):
     Attach a RO direct LUN disk to vm and try to write to the disk
     https://tcms.engineering.redhat.com/case/332473/?from_plan=12049
     """
-    __test__ = BaseTestCase.storage in config.BLOCK_TYPES
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '332473'
     bz = {'1194695': {'engine': ['rest', 'sdk'], 'version': ["3.5"]}}
 
@@ -366,7 +369,11 @@ class TestCase332474(DefaultEnvironment):
     https://tcms.engineering.redhat.com/case/332474/?from_plan=12049
     """
     # Gluster doesn't support shareable disks
-    __test__ = TestCase.storage != config.STORAGE_TYPE_GLUSTER
+    __test__ = (
+        config.STORAGE_TYPE_NFS in opts['storages']
+        or config.STORAGE_TYPE_ISCSI in opts['storages']
+    )
+    storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
     tcms_test_case = '332474'
     test_vm_name = ''
 
@@ -421,7 +428,11 @@ class TestCase337630(DefaultEnvironment):
     https://tcms.engineering.redhat.com/case/337630/?from_plan=12049
     """
     # Gluster doesn't support shareable disks
-    __test__ = TestCase.storage != config.STORAGE_TYPE_GLUSTER
+    __test__ = (
+        config.STORAGE_TYPE_NFS in opts['storages']
+        or config.STORAGE_TYPE_ISCSI in opts['storages']
+    )
+    storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
     tcms_test_case = '337630'
     snapshot_description = 'test_snap'
     test_vm_name = ''

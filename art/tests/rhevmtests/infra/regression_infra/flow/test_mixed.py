@@ -25,6 +25,8 @@ from art.core_api.apis_exceptions import EntityNotFound, EngineTypeError
 from art.test_handler.tools import bz  # pylint: disable=E0611
 
 from rhevmtests.infra.regression_infra import config
+from art.test_handler.settings import opts
+
 
 logger = logging.getLogger(__name__)
 ENUMS = config.ENUMS
@@ -36,7 +38,7 @@ class TestCaseMixed(TestCase):
     Scenario tests
     """
 
-    __test__ = (config.STORAGE_TYPE == 'nfs')
+    __test__ = (ENUMS['storage_type_nfs'] in opts['storages'])
     tag_name = config.TAG_1_NAME
 
     @classmethod

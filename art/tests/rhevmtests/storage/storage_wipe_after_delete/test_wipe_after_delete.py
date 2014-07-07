@@ -32,7 +32,7 @@ from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.unittest_lib import attr
 from rhevmtests.storage.storage_wipe_after_delete import config
 from rhevmtests.storage.helpers import create_vm_or_clone
-
+from art.test_handler.settings import opts
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +67,7 @@ vmArgs = {'positive': True,
 
 VM_NAME = config.VM_NAME + "_%s"
 VMS_NAMES = []
+ISCSI = config.STORAGE_TYPE_ISCSI
 
 
 def setup_module():
@@ -125,9 +126,10 @@ class CommonUsage(BaseTestCase):
     Base class
     """
     __test__ = False
-    vm_name = VM_NAME % BaseTestCase.storage
+    vm_name = None
 
     def setUp(self):
+        self.vm_name = VM_NAME % self.storage
         self.storage_domain = getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage)[0]
 
@@ -241,7 +243,8 @@ class TestCase379367(CommonUsage):
     Checking functionality - checked box
     https://tcms.engineering.redhat.com/case/379367/
     """
-    __test__ = config.STORAGE_TYPE in config.BLOCK_TYPES
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '379367'
     disk_name = None
     regex = 'dd oflag=direct if=/dev/zero of=.*/%s'

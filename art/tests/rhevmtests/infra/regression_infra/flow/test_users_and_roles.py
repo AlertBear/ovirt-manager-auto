@@ -10,6 +10,7 @@ import logging
 
 from nose.tools import istest
 from art.unittest_lib import attr
+from art.test_handler.settings import opts
 
 from art.unittest_lib import BaseTestCase as TestCase
 from art.rhevm_api.tests_lib.low_level import users, tags, general, mla
@@ -22,6 +23,7 @@ from .. import config
 logger = logging.getLogger(__name__)
 ENUMS = config.ENUMS
 PERMITS = config.PERMITS
+NFS = opts['elements_conf']['RHEVM Enums']['storage_type_nfs']
 
 
 @attr(team='automationInfra', tier=0)
@@ -30,7 +32,9 @@ class TestCaseUserAndRoles(TestCase):
     Scenario tests
     """
 
-    __test__ = (config.STORAGE_TYPE == 'nfs')
+    __test__ = (NFS in opts['storages'])
+
+    storages = set([NFS])
 
     bz = {'1213393': {'engine': ['cli'], 'version': ['3.6']}}
 

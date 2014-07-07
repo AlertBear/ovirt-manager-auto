@@ -23,6 +23,7 @@ from art.rhevm_api.utils.storage_api import (
 )
 from art.test_handler.settings import plmanager
 from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.settings import opts
 
 # Automatic setup and teardown on failure
 automatic_rebuild = True
@@ -52,7 +53,8 @@ DC_PROBLEM_TIMEOUT = 600
 MASTER_DOMAIN = "master_domain"
 STORAGE_DOMAINS = list()
 
-IS_ISCSI_TEST = config.STORAGE_TYPE == config.ENUMS['storage_type_iscsi']
+ISCSI = config.STORAGE_TYPE_ISCSI
+IS_ISCSI_TEST = (ISCSI in opts['storages'])
 
 
 def handle_bz_854140(dc_name, domain_name, result):
@@ -157,7 +159,7 @@ def setup_iscsi():
                     addresses_list[index], targets_list[index], lun)
         assert storagedomains.addStorageDomain(
             True, name=sd_name, type=config.ENUMS['storage_dom_type_data'],
-            storage_type=config.ENUMS['storage_type_iscsi'],
+            storage_type=ISCSI,
             host=host, lun=lun, lun_address=addresses_list[index],
             lun_target=targets_list[index], lun_port=3260)
 
@@ -209,7 +211,7 @@ def setup_module():
     assert hosts.activateHost(True, host)
     if config.STORAGE_TYPE == config.ENUMS['storage_type_nfs']:
         setup_nfs()
-    elif config.STORAGE_TYPE == config.ENUMS['storage_type_iscsi']:
+    elif config.STORAGE_TYPE == ISCSI:
         setup_iscsi()
 
 
@@ -306,6 +308,7 @@ class CorruptMetadata(DataCenterWithSD):
     Trigger a corruption in the metadata, for example "echo 1 > metadata".
     """
     __test__ = IS_ISCSI_TEST or BZ_967749_FIXED
+    storages = set([ISCSI])
     tcms_plan_id = '2461'
     tcms_test_case = '87133'
     vm_name = None

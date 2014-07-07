@@ -11,6 +11,7 @@ from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level.hosts import (
     getSPMHost, waitForSPM, select_host_as_spm,
 )
+from art.test_handler.settings import opts
 
 logger = logging.getLogger(__name__)
 TCMS_PLAN_ID = '6458'
@@ -18,6 +19,7 @@ TCMS_PLAN_ID = '6458'
 SPM_TIMEOUT = 600
 SPM_SLEEP = 5
 MIN_UNUSED_LUNS = 2
+ISCSI = config.STORAGE_TYPE_ISCSI
 
 
 def setup_module():
@@ -51,7 +53,8 @@ class TestCase94947(TestCase):
     storage sanity test, create and extend a Data domain
     https://tcms.engineering.redhat.com/case/94947/
     """
-    __test__ = TestCase.storage in config.BLOCK_TYPES
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '94947'
 
     def setUp(self):
@@ -112,7 +115,7 @@ class TestCase94947(TestCase):
             "override_luns": True
         }
         logger.info("Extending storage domain %s", self.sd_name)
-        storagedomains.extend_storage_domain(self.sd_name, config.STORAGE_TYPE,
+        storagedomains.extend_storage_domain(self.sd_name, self.storage,
                                              self.spm_host, **extend_lun)
         ll_st_domains.wait_for_change_total_size(self.sd_name,
                                                  self.domain_size)

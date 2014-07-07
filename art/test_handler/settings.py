@@ -234,6 +234,9 @@ def readTestRunOpts(path, redefs):
     opts['cli_optional_params'] = cliSection['optional_params']
     opts['validate_cli_command'] = cliSection['validate_cli_command']
     opts['cli_exit_timeout'] = cliSection['cli_exit_timeout']
+    opts['storages'] = runSection['storages']
+    opts['api'] = runSection['system_engine']
+    opts['storage_type'] = runSection['storage_type']
 
     return config
 

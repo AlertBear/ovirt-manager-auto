@@ -12,10 +12,12 @@ from art.rhevm_api.tests_lib.high_level import storagedomains as hl_st
 
 from art.test_handler.tools import tcms   # pylint: disable=E0611
 from art.unittest_lib import attr
+from art.test_handler.settings import opts
 
 
 logger = logging.getLogger(__name__)
 ENUMS = helpers.ENUMS
+NFS = config.STORAGE_TYPE_NFS
 
 
 def setup_module():
@@ -67,8 +69,7 @@ class TestCase166613(helpers.TestCaseStandardOperations):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = (helpers.TestCaseStandardOperations.storage ==
-                config.STORAGE_TYPE_NFS)
+    __test__ = (NFS in opts['storages'])
     tcms_plan_id = '5849'
     tcms_test_case = '166613'
     dc_v30_name = 'dc_v30_%s' % tcms_test_case
@@ -134,8 +135,7 @@ class TestCase148672(helpers.TestCaseStandardOperations):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = (helpers.TestCaseStandardOperations.storage ==
-                config.STORAGE_TYPE_NFS)
+    __test__ = (NFS in opts['storages'])
     tcms_plan_id = '5849'
     tcms_test_case = '148672'
     sd_1 = 'test_%s_1' % tcms_test_case
@@ -174,7 +174,7 @@ class TestCase166615(helpers.TestCaseNFSOptions):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = helpers.TestCaseNFSOptions.storage == config.STORAGE_TYPE_NFS
+    __test__ = (NFS in opts['storages'])
     tcms_plan_id = '5849'
     tcms_test_case = '166615'
     dc_v30_name = 'dc_v30_%s' % tcms_test_case
@@ -189,7 +189,7 @@ class TestCase166615(helpers.TestCaseNFSOptions):
         logger.info("Creating 3.0 datacenter")
         if not ll_dc.addDataCenter(
                 True, name=cls.dc_v30_name,
-                storage_type=config.STORAGE_TYPE_NFS,
+                storage_type=NFS,
                 version=helpers.VERSION_30):
             raise exceptions.DataCenterException(
                 "Adding 3.0 datacenter failed")
@@ -278,7 +278,7 @@ class TestCase148697(helpers.TestCaseNFSOptions):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = helpers.TestCaseNFSOptions.storage == config.STORAGE_TYPE_NFS
+    __test__ = (NFS in opts['storages'])
     tcms_plan_id = '5849'
     tcms_test_case = '148697'
     nfs_retrans = 7

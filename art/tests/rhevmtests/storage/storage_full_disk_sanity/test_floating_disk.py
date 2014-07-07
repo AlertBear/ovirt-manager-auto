@@ -21,12 +21,12 @@ class TestCase174614(TestCase):
     __test__ = True
 
     disk_name = "floating"
-    vm_1 = config.VM1_NAME % TestCase.storage
-    vm_2 = config.VM2_NAME % TestCase.storage
     tcms_plan_id = '6458'
     tcms_test_case = '174614'
 
     def setUp(self):
+        self.vm_1 = config.VM1_NAME % self.storage
+        self.vm_2 = config.VM2_NAME % self.storage
         """Get the sd and make sure the VM's are down"""
         self.storage_domain = storagedomains.getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage)[0]

@@ -14,6 +14,8 @@ secure=boolean(default=True)
 elements_conf = path_to_config(default='conf/elements.conf')
 validate=boolean(default=True)
 vdsm_transport_protocol = option('xml', 'stomp', default=None)
+storages = force_list(default=list('nfs', 'iscsi', 'glusterfs'))
+storage_type = option('nfs', 'iscsi', 'fcp', 'glusterfs', 'posixfs_nfs', 'posixfs_gluster', 'posixfs_mixed', 'localfs', 'posixfs_pnfs', default=None)
 
 [REST_CONNECTION]
 scheme = option('http', 'https', default='http')

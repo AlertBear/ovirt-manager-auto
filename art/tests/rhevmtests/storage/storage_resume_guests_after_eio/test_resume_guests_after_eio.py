@@ -10,6 +10,7 @@ from art.rhevm_api.tests_lib.low_level.vms import (
 )
 from art.rhevm_api.utils import storage_api
 from rhevmtests.storage.helpers import perform_dd_to_disk
+from art.test_handler.settings import opts
 
 import config
 
@@ -23,6 +24,8 @@ GB = 1024 ** 3
 
 VM_USER = config.VMS_LINUX_USER
 VM_PASSWORD = config.VMS_LINUX_PW
+NFS = config.STORAGE_TYPE_NFS
+ISCSI = config.STORAGE_TYPE_ISCSI
 
 
 def _wait_for_vm_booted(
@@ -180,7 +183,8 @@ class TestNoSpaceLeftOnDevice(TestResumeGuests):
 
 @attr(tier=3)
 class TestCase285357(TestCaseBlockedConnection):
-    __test__ = (TestCaseBlockedConnection.storage == 'nfs')
+    __test__ = (NFS in opts['storages'])
+    storages = set([NFS])
     tcms_test_case = '285357'
     bz = {'1138144': {'engine': ['rest', 'sdk'], 'version': ["3.5"]}}
 
@@ -194,7 +198,8 @@ class TestCase285357(TestCaseBlockedConnection):
 
 @attr(tier=1)
 class TestCase285370(TestNoSpaceLeftOnDevice):
-    __test__ = (TestNoSpaceLeftOnDevice.storage == 'nfs')
+    __test__ = (NFS in opts['storages'])
+    storages = set([NFS])
     tcms_test_case = '285370'
     left_space = 10 * GB
     bz = {'1024353': {'engine': ['rest', 'sdk'], 'version': ["3.5"]}}
@@ -209,7 +214,8 @@ class TestCase285370(TestNoSpaceLeftOnDevice):
 
 @attr(tier=3)
 class TestCase285371(TestCaseBlockedConnection):
-    __test__ = (TestCaseBlockedConnection.storage == 'iscsi')
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '285371'
     bz = {'1138144': {'engine': ['rest', 'sdk'], 'version': ["3.5"]}}
 
@@ -223,7 +229,8 @@ class TestCase285371(TestCaseBlockedConnection):
 
 @attr(tier=1)
 class TestCase285372(TestNoSpaceLeftOnDevice):
-    __test__ = (TestNoSpaceLeftOnDevice.storage == 'iscsi')
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '285372'
 
     def setUp(self):
@@ -276,7 +283,8 @@ class TestCase285372(TestNoSpaceLeftOnDevice):
 
 @attr(tier=3)
 class TestCase285375(TestCaseBlockedConnection):
-    __test__ = (TestCaseBlockedConnection.storage == 'fcp')
+    __test__ = ('fcp' in opts['storages'])
+    storages = set(['fcp'])
     tcms_test_case = '285375'
     bz = {'1138144': {'engine': ['rest', 'sdk'], 'version': ["3.5"]}}
 
@@ -290,7 +298,8 @@ class TestCase285375(TestCaseBlockedConnection):
 
 @attr(tier=1)
 class TestCase285376(TestNoSpaceLeftOnDevice):
-    __test__ = (TestNoSpaceLeftOnDevice.storage == 'fcp')
+    __test__ = ('fcp' in opts['storages'])
+    storages = set(['fcp'])
     tcms_test_case = '285376'
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)

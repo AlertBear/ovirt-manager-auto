@@ -29,10 +29,10 @@ from helpers import (
 
 from art.unittest_lib import StorageTest as BaseTestCase
 from art.unittest_lib import attr
-
 from rhevmtests.storage.helpers import (
     create_vm_or_clone, perform_dd_to_disk, host_to_use,
 )
+from art.test_handler.settings import opts
 
 logger = logging.getLogger(__name__)
 
@@ -85,6 +85,7 @@ CMD_ERROR_INVALID_VOL_UUID = "Volume does not exist: ('incorrect',)"
 
 CMD_ERROR_NO_SPACE_LEFT = "No space left on device"
 CMD_ERROR_VOLUME_DOES_NOT_EXIST = "Volume does not exist"
+ISCSI = config.STORAGE_TYPE_ISCSI
 
 
 def setup_module():
@@ -407,7 +408,8 @@ class TestCase388747(BasicEnvironment):
     Prepare image with all the correct parameters
     https://tcms.engineering.redhat.com/case/388747/?from_plan=14466
     """
-    __test__ = BasicEnvironment.storage in config.BLOCK_TYPES
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '388747'
     disk_count = 2
 
@@ -435,7 +437,8 @@ class TestCase388748(BasicEnvironment):
     Prepare image with no parameters
     https://tcms.engineering.redhat.com/case/388748/?from_plan=14466
     """
-    __test__ = BasicEnvironment.storage in config.BLOCK_TYPES
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '388748'
     disk_count = 2
 
@@ -481,7 +484,8 @@ class TestCase389851(BasicEnvironment):
     Prepare image with optional flag unset
     https://tcms.engineering.redhat.com/case/388851/?from_plan=14466
     """
-    __test__ = BasicEnvironment.storage in config.BLOCK_TYPES
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '389851'
     disk_count = 2
     snapshot_success = False
@@ -527,7 +531,8 @@ class TestCase389852(BasicEnvironment):
     Prepare image with 1 erroneous flag value
     https://tcms.engineering.redhat.com/case/389852/?from_plan=14466
     """
-    __test__ = BasicEnvironment.storage in config.BLOCK_TYPES
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '389852'
     disk_count = 1
     bz = {'1130995': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
@@ -571,7 +576,8 @@ class TestCase389853(BasicEnvironment):
     Prepare image with several erroneous parameters
     https://tcms.engineering.redhat.com/case/389853/?from_plan=14466
     """
-    __test__ = BasicEnvironment.storage in config.BLOCK_TYPES
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '389853'
     disk_count = 2
     bz = {'1130995': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
@@ -609,7 +615,8 @@ class TestCase389921(BasicEnvironment):
     Prepare image on VM with multiple disks
     https://tcms.engineering.redhat.com/case/389921/?from_plan=14466
     """
-    __test__ = BasicEnvironment.storage in config.BLOCK_TYPES
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '389921'
     disk_count = 5
     snapshot_success = False
@@ -653,7 +660,8 @@ class TestCase389922(BasicEnvironment):
     Prepare image on VM with disks from different Storage Domains
     https://tcms.engineering.redhat.com/case/389922/?from_plan=14466
     """
-    __test__ = BasicEnvironment.storage in config.BLOCK_TYPES
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '389922'
     disk_count = 4
     snapshot_success = False
@@ -714,7 +722,8 @@ class TestCase389923(BasicEnvironment):
     Prepare image for Disks on a VM created from template
     https://tcms.engineering.redhat.com/case/389923/?from_plan=14466
     """
-    __test__ = BasicEnvironment.storage in config.BLOCK_TYPES
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '389923'
     disk_count = 3
 
@@ -771,7 +780,8 @@ class TestCase389924(BasicEnvironment):
     Prepare image with 1 disk missing/corrupted from VM
     https://tcms.engineering.redhat.com/case/389924/?from_plan=14466
     """
-    __test__ = BasicEnvironment.storage in config.BLOCK_TYPES
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '389924'
     disk_count = 4
     vm_name = VM2_NAME
@@ -862,7 +872,8 @@ class TestCase389927(BasicEnvironment):
     Prepare image followed by Tear Down, then run Prepare image once more
     https://tcms.engineering.redhat.com/case/389927/?from_plan=14466
     """
-    __test__ = BasicEnvironment.storage in config.BLOCK_TYPES
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '389927'
     disk_count = 5
 
@@ -890,7 +901,8 @@ class TestCase389931(BasicEnvironment):
     Prepare image followed by Tear down
     https://tcms.engineering.redhat.com/case/389931/?from_plan=14466
     """
-    __test__ = BasicEnvironment.storage in config.BLOCK_TYPES
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '389931'
     disk_count = 5
 
@@ -924,7 +936,8 @@ class TestCase389935(BasicEnvironment):
     Tear down image with a powered off VM
     https://tcms.engineering.redhat.com/case/389935/?from_plan=14466
     """
-    __test__ = BasicEnvironment.storage in config.BLOCK_TYPES
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '389935'
     disk_count = 5
 
@@ -946,7 +959,8 @@ class TestCase389936(BasicEnvironment):
     Tear down image with all flags set
     https://tcms.engineering.redhat.com/case/389936/?from_plan=14466
     """
-    __test__ = BasicEnvironment.storage in config.BLOCK_TYPES
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '389936'
     disk_count = 5
 
@@ -968,7 +982,8 @@ class TestCase389939(BasicEnvironment):
     Tear down image with optional flags unset
     https://tcms.engineering.redhat.com/case/389939/?from_plan=14466
     """
-    __test__ = BasicEnvironment.storage in config.BLOCK_TYPES
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '389939'
     disk_count = 5
 
@@ -994,7 +1009,8 @@ class TestCase389940(BasicEnvironment):
     Tear down image with 1 erroneous flag value
     https://tcms.engineering.redhat.com/case/389940/?from_plan=14466
     """
-    __test__ = BasicEnvironment.storage in config.BLOCK_TYPES
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '389940'
     disk_count = 1
     bz = {'1130995': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}
@@ -1037,7 +1053,8 @@ class TestCase389943(BasicEnvironment):
     Tear down image with several erroneous parameters
     https://tcms.engineering.redhat.com/case/389943/?from_plan=14466
     """
-    __test__ = BasicEnvironment.storage in config.BLOCK_TYPES
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '389943'
     disk_count = 2
     bz = {'1130995': {'engine': ['rest', 'sdk'], 'version': ['3.5']}}

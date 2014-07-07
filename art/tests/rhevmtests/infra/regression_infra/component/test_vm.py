@@ -10,6 +10,7 @@ import logging
 
 from nose.tools import istest
 from art.test_handler.tools import bz  # pylint: disable=E0611
+from art.test_handler.settings import opts
 from art.unittest_lib import attr
 
 from art.unittest_lib import BaseTestCase as TestCase
@@ -21,6 +22,7 @@ from rhevmtests.infra.regression_infra import help_functions
 
 logger = logging.getLogger(__name__)
 ENUMS = config.ENUMS
+NFS = opts['elements_conf']['RHEVM Enums']['storage_type_nfs']
 
 
 def setup_module():
@@ -28,7 +30,7 @@ def setup_module():
     Setup prerequisites for testing scenario:
     create data center, cluster, host & storage domain
     """
-    if not config.STORAGE_TYPE == 'nfs':
+    if NFS not in opts['storages']:
         logger.info("Storage type is not NFS, skipping tests")
         raise SkipTest
     help_functions.utils.reverse_env_list = []
@@ -52,7 +54,9 @@ class TestCaseVM(TestCase):
     """
     vm tests
     """
-    __test__ = (config.STORAGE_TYPE == 'nfs')
+    __test__ = (NFS in opts['storages'])
+
+    storages = set([NFS])
 
     @istest
     def t01_create_vm(self):

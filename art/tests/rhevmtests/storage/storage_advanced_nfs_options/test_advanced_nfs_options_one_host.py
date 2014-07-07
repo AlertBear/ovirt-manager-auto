@@ -3,12 +3,15 @@ import helpers
 import logging
 
 from art.unittest_lib import attr
+
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_st
 from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.settings import opts
 
 logger = logging.getLogger(__name__)
 ENUMS = helpers.ENUMS
+NFS = config.STORAGE_TYPE_NFS
 
 
 @attr(tier=1)
@@ -20,7 +23,7 @@ class TestCase232975(helpers.TestCaseNFSOptions):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = helpers.TestCaseNFSOptions.storage == config.STORAGE_TYPE_NFS
+    __test__ = (NFS in opts['storages'])
     tcms_plan_id = '5849'
     tcms_test_case = '232975'
     export_domain = 'test_%s_export' % tcms_test_case
@@ -55,7 +58,7 @@ class TestCase232975(helpers.TestCaseNFSOptions):
         """
         sd_type = ENUMS['storage_dom_type_export']
         ll_st.importStorageDomain(
-            True, sd_type, config.STORAGE_TYPE_NFS, self.export_address,
+            True, sd_type, NFS, self.export_address,
             self.export_path, self.host, self.nfs_version, self.nfs_retrans,
             self.nfs_timeout)
         result = ll_st.get_options_of_resource(
@@ -80,7 +83,7 @@ class TestCase148670(helpers.TestCaseNFSOptions):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = helpers.TestCaseNFSOptions.storage == config.STORAGE_TYPE_NFS
+    __test__ = (NFS in opts['storages'])
     tcms_plan_id = '5849'
     tcms_test_case = '148670'
     nfs_address = config.NFS_ADDRESSES[0]
@@ -153,7 +156,7 @@ class TestCase148641(helpers.TestCaseNFSOptions):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = helpers.TestCaseNFSOptions.storage == config.STORAGE_TYPE_NFS
+    __test__ = (NFS in opts['storages'])
     tcms_plan_id = '5849'
     tcms_test_case = '148641'
 
@@ -185,7 +188,7 @@ class TestCase153290(helpers.TestCaseNFSOptions):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = helpers.TestCaseNFSOptions.storage == config.STORAGE_TYPE_NFS
+    __test__ = (NFS in opts['storages'])
     tcms_plan_id = '5849'
     tcms_test_case = '153290'
     nfs_retrans = 7
@@ -231,7 +234,7 @@ class TestCase153368(helpers.TestCaseNFSOptions):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = helpers.TestCaseNFSOptions.storage == config.STORAGE_TYPE_NFS
+    __test__ = (NFS in opts['storages'])
     tcms_plan_id = '5849'
     tcms_test_case = '153368'
 
@@ -279,7 +282,7 @@ class TestCase166534(helpers.TestCaseNFSOptions):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = helpers.TestCaseNFSOptions.storage == config.STORAGE_TYPE_NFS
+    __test__ = (NFS in opts['storages'])
     tcms_plan_id = '5849'
     tcms_test_case = '166534'
     nfs_retrans = 7
@@ -313,7 +316,7 @@ class TestCase166534(helpers.TestCaseNFSOptions):
 
         logger.info("Importing storage domain")
         ll_st.importStorageDomain(
-            True, sd_type, config.STORAGE_TYPE_NFS, address, path, self.host)
+            True, sd_type, NFS, address, path, self.host)
         logger.info("Attaching storage domain")
         ll_st.attachStorageDomain(True, datacenter, self.name)
 
@@ -343,7 +346,7 @@ class TestCase166616(helpers.TestCaseNFSOptions):
 
     **Author**: Katarzyna Jachim
     """
-    __test__ = helpers.TestCaseNFSOptions.storage == config.STORAGE_TYPE_NFS
+    __test__ = (NFS in opts['storages'])
     tcms_plan_id = '5849'
     tcms_test_case = '166616'
     nfs_retrans = 7

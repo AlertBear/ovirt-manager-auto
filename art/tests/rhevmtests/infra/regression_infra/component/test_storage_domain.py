@@ -9,6 +9,7 @@ test_storage_domain
 import logging
 from nose.tools import istest
 from art.test_handler.tools import bz  # pylint: disable=E0611
+from art.test_handler.settings import opts
 from art.unittest_lib import attr
 
 from art.unittest_lib import BaseTestCase as TestCase
@@ -19,6 +20,7 @@ from rhevmtests.infra.regression_infra import help_functions
 
 logger = logging.getLogger(__name__)
 ENUMS = config.ENUMS
+NFS = opts['elements_conf']['RHEVM Enums']['storage_type_nfs']
 
 
 @attr(team='automationInfra', tier=0)
@@ -27,9 +29,10 @@ class TestCaseStorageDomain(TestCase):
     Storage domain tests
     """
 
-    __test__ = (config.STORAGE_TYPE == 'nfs')
+    __test__ = (NFS in opts['storages'])
 
     sd_name = config.STORAGE_DOMAIN_NAME
+    storages = set([NFS])
 
     @classmethod
     def setup_class(cls):

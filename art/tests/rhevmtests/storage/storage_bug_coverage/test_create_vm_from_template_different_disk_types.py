@@ -14,6 +14,7 @@ from art.rhevm_api.tests_lib.low_level import (
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 import art.test_handler.exceptions as errors
+from art.test_handler.settings import opts
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +28,7 @@ TEMPLATE_DIRECT_LUN = 'direct_lun_template'
 LUN_ADDRESS = None
 LUN_TARGET = None
 LUN_ID = None
+ISCSI = config.STORAGE_TYPE_ISCSI
 
 
 def setup_module():
@@ -92,9 +94,10 @@ class TestCase231819(TestCase):
 
     https://tcms.engineering.redhat.com/case/231819/?from_plan=2339
     """
-    __test__ = TestCase.storage in config.BLOCK_TYPES
+    __test__ = (ISCSI in opts['storages'])
     tcms_plan_id = '2339'
     tcms_test_case = '231819'
+    storages = set([ISCSI])
 
     def setUp(self):
         """ Create vms and templates"""
@@ -175,7 +178,7 @@ class TestCase231819(TestCase):
             "lun_address": LUN_ADDRESS,
             "lun_target": LUN_TARGET,
             "lun_id": LUN_ID,
-            "type_": config.STORAGE_TYPE_ISCSI,
+            "type_": ISCSI,
         }
 
         if not disks.addDisk(True, **direct_lun_disk_kwargs):

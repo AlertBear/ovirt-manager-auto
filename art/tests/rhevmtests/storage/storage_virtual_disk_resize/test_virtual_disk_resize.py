@@ -38,6 +38,7 @@ from art.rhevm_api.utils.log_listener import watch_logs
 from art.rhevm_api.utils.storage_api import flushIptables
 from art.test_handler import exceptions
 from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.settings import opts
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,8 @@ FILE_TO_WATCH = "/var/log/vdsm/vdsm.log"
 REGEX = "lvextend"
 
 TEST_PLAN_ID = '9949'
+NFS = config.STORAGE_TYPE_NFS
+ISCSI = config.STORAGE_TYPE_ISCSI
 
 disk_args = {
     # Fixed arguments
@@ -472,7 +475,8 @@ class TestCase287466(BasicResize):
     Virtual disk resize - preallocated  block disk
     https://tcms.engineering.redhat.com/case/287466/?from_plan=9949
     """
-    __test__ = BasicResize.storage in config.BLOCK_TYPES
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '287466'
 
     def setUp(self):
@@ -502,7 +506,8 @@ class TestCase297017(BasicResize):
     Virtual disk resize - Thin block disk
     https://tcms.engineering.redhat.com/case/297017/?from_plan=9949
     """
-    __test__ = BasicResize.storage in config.BLOCK_TYPES
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '297017'
 
     def setUp(self):
@@ -532,7 +537,8 @@ class TestCase287467(BasicResize):
     Virtual disk resize - preallocated file disk
     https://tcms.engineering.redhat.com/case/287467/?from_plan=9949
     """
-    __test__ = BasicResize.storage not in config.BLOCK_TYPES
+    __test__ = (NFS in opts['storages'])
+    storages = set([NFS])
     tcms_test_case = '287467'
 
     def setUp(self):
@@ -562,7 +568,8 @@ class TestCase297018(BasicResize):
     Virtual disk resize - Thin file disk
     https://tcms.engineering.redhat.com/case/297018/?from_plan=9949
     """
-    __test__ = BasicResize.storage not in config.BLOCK_TYPES
+    __test__ = (NFS in opts['storages'])
+    storages = set([NFS])
     tcms_test_case = '297018'
 
     def setUp(self):
@@ -592,7 +599,8 @@ class TestCase297090(BasicResize):
     block connectivity from host to storage domain - preallocated disk
     https://tcms.engineering.redhat.com/case/297090/?from_plan=9949
     """
-    __test__ = BasicResize.storage in config.BLOCK_TYPES
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '297090'
 
     def setUp(self):
@@ -623,7 +631,8 @@ class TestCase297089(BasicResize):
     block connectivity from host to storage domain - sparse disk
     https://tcms.engineering.redhat.com/case/297089/?from_plan=9949
     """
-    __test__ = BasicResize.storage in config.BLOCK_TYPES
+    __test__ = __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '297089'
 
     def setUp(self):
@@ -654,7 +663,11 @@ class TestCase287468(BasicResize):
     Resize shared disk
     https://tcms.engineering.redhat.com/case/287468/?from_plan=9949
     """
-    __test__ = BasicResize.storage != config.STORAGE_TYPE_GLUSTER
+    __test__ = (
+        config.STORAGE_TYPE_NFS in opts['storages']
+        or config.STORAGE_TYPE_ISCSI in opts['storages']
+    )
+    storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
     tcms_test_case = '287468'
     test_vm_name = "vm_%s" % tcms_test_case
 
@@ -718,7 +731,8 @@ class TestCase287469(BasicResize):
     Extend disk to more than available capacity
     https://tcms.engineering.redhat.com/case/287469/?from_plan=9949
     """
-    __test__ = BasicResize.storage in config.BLOCK_TYPES
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '287469'
 
     def setUp(self):
@@ -822,7 +836,8 @@ class TestCase287477(BasicResize):
     Increase and decrease multiple disks
     https://tcms.engineering.redhat.com/case/287477/?from_plan=9949
     """
-    __test__ = BasicResize.storage in config.BLOCK_TYPES
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '287477'
     vm_name = "vm_%s_%s"
     vm_count = 3
@@ -871,7 +886,8 @@ class TestCase287478(BasicResize):
     https://tcms.engineering.redhat.com/case/287478/?from_plan=9949
     Currently __test__ = False - disk shrink doesn't support
     """
-    __test__ = BasicResize.storage in config.BLOCK_TYPES
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '287478'
     vm_name = "vm_%s_%s"
     vm_count = 2

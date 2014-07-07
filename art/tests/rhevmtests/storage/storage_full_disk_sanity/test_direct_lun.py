@@ -33,6 +33,7 @@ import common
 
 from art.test_handler import exceptions
 from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.settings import opts
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,7 @@ BASE_KWARGS = {
     "bootable": False,
     "type_": config.STORAGE_TYPE,
 }
+ISCSI = config.STORAGE_TYPE_ISCSI
 
 
 def setup_module():
@@ -64,14 +66,17 @@ class DirectLunAttachTestCase(TestCase):
     """
     # This tests are only desing to run on ISCSI
     # TODO: Enable for FC when our environment is stable
-    __test__ = TestCase.storage == config.STORAGE_TYPE_ISCSI
-    vm_name = config.VM1_NAME % TestCase.storage
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
+    vm_name = None
     tcms_test_case = ""
 
     def setUp(self):
         """
         Build disk's parameters
         """
+        self.vm_name = config.VM1_NAME % self.storage
+        BASE_KWARGS.update({'type_': self.storage})
         self.disk_alias = "direct_lun_%s" % self.tcms_test_case
 
         self.storage_domains = getStorageDomainNamesForType(

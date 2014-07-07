@@ -20,13 +20,14 @@ from art.rhevm_api.tests_lib.low_level.storagedomains import (
 from art.rhevm_api.tests_lib.low_level import datacenters as ll_dc
 from art.rhevm_api.tests_lib.low_level import vms, disks, templates, hosts
 from art.rhevm_api.tests_lib.high_level.disks import delete_disks
+from art.test_handler.settings import opts
 
 LOGGER = logging.getLogger(__name__)
 ENUMS = config.ENUMS
 
 FILE_WITH_RESULTS = helpers.FILE_WITH_RESULTS
 DISKS_TO_PLUG = helpers.DISKS_TO_PLUG
-UNATTACHED_DISK = helpers.UNATTACHED_DISK
+UNATTACHED_DISK = helpers.UNATTACHED_DISKS_PER_STORAGE_TYPE
 TEXT = helpers.TEXT
 
 DISK_INTERFACES = (ENUMS['interface_virtio'],)
@@ -104,8 +105,19 @@ def teardown_module():
     LOGGER.info("Removing disks %s", DISK_NAMES)
     delete_disks(DISK_NAMES)
 
-    plug_disks = [disk for disk in ([helpers.UNATTACHED_DISK] +
-                  helpers.DISKS_TO_PLUG)if disks.checkDiskExists(True, disk)]
+    plug_disks = []
+    for disks_per_storage in (
+            helpers.UNATTACHED_DISKS_PER_STORAGE_TYPE.values()
+    ):
+        for disk in disks_per_storage:
+            if disks.checkDiskExists(True, disk):
+                plug_disks += disk
+
+    for disks_per_storage in helpers.DISKS_TO_PLUG.values():
+        for disk in disks_per_storage:
+            if disks.checkDiskExists(True, disk):
+                plug_disks += disk
+
     LOGGER.info("Removing disks from plug tests %s", plug_disks)
     delete_disks(plug_disks)
 
@@ -130,13 +142,13 @@ class TestCase286224(helpers.HotplugHookTest):
     __test__ = True
     active_disk = False
     action = [vms.activateVmDisk]
-    use_disks = DISKS_TO_PLUG[0:1]
     hooks = {'before_disk_hotplug': [helpers.HOOKFILENAME]}
 
     @tcms(9940, 286224)
     def test_before_disk_hotplug(self):
         """ Check if before_disk_hotplug is called
         """
+        self.use_disks = DISKS_TO_PLUG[self.storage][0:1]
         self.perform_action_and_verify_hook_called()
 
 
@@ -150,13 +162,13 @@ class TestCase286365(helpers.HotplugHookTest):
     __test__ = True
     active_disk = False
     action = [vms.activateVmDisk]
-    use_disks = DISKS_TO_PLUG[1:2]
     hooks = {'after_disk_hotplug': [helpers.HOOKFILENAME]}
 
     @tcms(9940, 286365)
     def test_after_disk_hotplug(self):
         """ Check if after_disk_hotplug is called
         """
+        self.use_disks = DISKS_TO_PLUG[self.storage][1:2]
         self.perform_action_and_verify_hook_called()
 
 
@@ -170,13 +182,13 @@ class TestCase286366(helpers.HotplugHookTest):
     __test__ = True
     active_disk = True
     action = [vms.deactivateVmDisk]
-    use_disks = DISKS_TO_PLUG[2:3]
     hooks = {'before_disk_hotunplug': [helpers.HOOKFILENAME]}
 
     @tcms(9940, 286366)
     def test_before_disk_hotunplug(self):
         """ Check if before_disk_hotunplug is called
         """
+        self.use_disks = DISKS_TO_PLUG[self.storage][2:3]
         self.perform_action_and_verify_hook_called()
 
 
@@ -190,13 +202,13 @@ class TestCase286368(helpers.HotplugHookTest):
     __test__ = True
     active_disk = True
     action = [vms.deactivateVmDisk]
-    use_disks = DISKS_TO_PLUG[3:4]
     hooks = {'after_disk_hotunplug': [helpers.HOOKFILENAME]}
 
     @tcms(9940, 286368)
     def test_after_disk_hotunplug(self):
         """ Check if after_disk_hotunplug is called
         """
+        self.use_disks = DISKS_TO_PLUG[self.storage][3:4]
         self.perform_action_and_verify_hook_called()
 
 
@@ -210,7 +222,6 @@ class TestCase286226(helpers.HotplugHookTest):
     __test__ = True
     active_disk = False
     action = [vms.activateVmDisk]
-    use_disks = DISKS_TO_PLUG
     hooks = {'after_disk_hotplug': [helpers.HOOKWITHSLEEPFILENAME]}
 
     @tcms(9940, 286226)
@@ -218,13 +229,17 @@ class TestCase286226(helpers.HotplugHookTest):
         """ try to hotplug 10 tests concurrently and check that all hooks
         were called
         """
+        self.use_disks = DISKS_TO_PLUG[self.storage]
         self.perform_action_and_verify_hook_called()
 
     def verify_hook_called(self):
         result = self.get_hooks_result_file()
         LOGGER.info(
-            "Hook should have been called %s times" % len(DISKS_TO_PLUG))
-        self.assertEqual(len(result), len(DISKS_TO_PLUG), result)
+            "Hook should have been called %s times" % len(
+                DISKS_TO_PLUG[self.storage]
+            )
+        )
+        self.assertEqual(len(result), len(DISKS_TO_PLUG[self.storage]), result)
 
 
 @attr(tier=1)
@@ -237,7 +252,6 @@ class TestCase287480(helpers.HotplugHookTest):
     __test__ = True
     active_disk = True
     action = [vms.deactivateVmDisk]
-    use_disks = DISKS_TO_PLUG
     hooks = {'after_disk_hotunplug': [helpers.HOOKWITHSLEEPFILENAME]}
 
     @tcms(9940, 287480)
@@ -245,13 +259,17 @@ class TestCase287480(helpers.HotplugHookTest):
         """ Unplug concurrently 10 disks and check if after_unplug hook
             were called 10 times
         """
+        self.use_disks = DISKS_TO_PLUG[self.storage]
         self.perform_action_and_verify_hook_called()
 
     def verify_hook_called(self):
         result = self.get_hooks_result_file()
         LOGGER.info(
-            "Hook should have been called %s times" % len(DISKS_TO_PLUG))
-        self.assertEqual(len(result), len(DISKS_TO_PLUG), result)
+            "Hook should have been called %s times" % len(
+                DISKS_TO_PLUG[self.storage]
+            )
+        )
+        self.assertEqual(len(result), len(DISKS_TO_PLUG[self.storage]), result)
 
 
 @attr(tier=1)
@@ -265,7 +283,6 @@ class TestCase287249(helpers.HotplugHookTest):
     __test__ = True
     active_disk = False
     action = [vms.activateVmDisk]
-    use_disks = [UNATTACHED_DISK]
     hooks = {'before_disk_hotplug': [helpers.HOOKFILENAME]}
 
     def perform_action(self):
@@ -285,6 +302,7 @@ class TestCase287249(helpers.HotplugHookTest):
     def test_before_disk_hotplug_attaching_new_disk(self):
         """ Check if after_disk_hotunplug is called
         """
+        self.use_disks = UNATTACHED_DISK[self.storage]
         self.perform_action_and_verify_hook_called()
 
     def tearDown(self):
@@ -307,7 +325,6 @@ class TestCase287481(helpers.HotplugHookTest):
     __test__ = True
     active_disk = False
     action = [vms.activateVmDisk]
-    use_disks = DISKS_TO_PLUG[4:5]
     hooks = {'after_disk_hotplug': [helpers.HOOKJPEG]}
 
     def perform_action(self):
@@ -341,6 +358,7 @@ class TestCase287481(helpers.HotplugHookTest):
         """ check that activate succeed and hook fails if hook is binary
             executable file
         """
+        self.use_disks = DISKS_TO_PLUG[self.storage][4:5]
         self.perform_action_and_verify_hook_called()
 
 
@@ -354,7 +372,6 @@ class TestCase286369(helpers.HotplugHookTest):
     __test__ = True
     active_disk = False
     action = None
-    use_disks = DISKS_TO_PLUG[5:6]
     hooks = {'after_disk_hotunplug': [helpers.HOOKFILENAME],
              'after_disk_hotplug': [helpers.HOOKFILENAME]}
 
@@ -375,6 +392,7 @@ class TestCase286369(helpers.HotplugHookTest):
     def test_non_executable_hooks(self):
         """ check that vdsm skip a hook file if it is non-executable
         """
+        self.use_disks = DISKS_TO_PLUG[self.storage][5:6]
         self.perform_action_and_verify_hook_called()
 
 
@@ -388,7 +406,6 @@ class TestCase286243(helpers.HotplugHookTest):
     __test__ = True
     active_disk = False
     action = None
-    use_disks = DISKS_TO_PLUG[6:7]
     hooks = {
         'after_disk_hotplug': [
             helpers.HOOKFILENAME, helpers.HOOKPRINTFILENAME],
@@ -412,6 +429,7 @@ class TestCase286243(helpers.HotplugHookTest):
     def test_multiple_hooks(self):
         """ Multiple hooks for one action, checks that all will be called
         """
+        self.use_disks = DISKS_TO_PLUG[self.storage][6:7]
         self.perform_action_and_verify_hook_called()
 
 
@@ -426,7 +444,6 @@ class TestCase286861(helpers.HotplugHookTest):
     tcms_test_case = '286861'
     active_disk = False
     action = None
-    use_disks = DISKS_TO_PLUG[7:8]
     hooks = {'before_disk_hotplug': [helpers.HOOKWITHSLEEPFILENAME]}
 
     def perform_action(self):
@@ -449,6 +466,7 @@ class TestCase286861(helpers.HotplugHookTest):
     def test_multiple_hooks(self):
         """ Restart vdsm during before_disk_hotplug, action should fail
         """
+        self.use_disks = DISKS_TO_PLUG[self.storage][7:8]
         self.perform_action_and_verify_hook_called()
 
     def tearDown(self):
@@ -461,7 +479,6 @@ class TestCase286861(helpers.HotplugHookTest):
 class BasePlugDiskTest(TestCase):
 
     __test__ = False
-    template_name = config.TEMPLATE_NAME % TestCase.storage
 
     @classmethod
     def setup_class(cls):
@@ -469,6 +486,7 @@ class BasePlugDiskTest(TestCase):
         Clone a vm of each supported OS type and wait for VM boot to complete
         """
         LOGGER.info("setup class %s" % cls.__name__)
+        cls.template_name = config.TEMPLATE_NAME % cls.storage
         cls.disks = []
         cls.vm_names = []
         cls.storage_domain = getStorageDomainNamesForType(
@@ -576,7 +594,11 @@ class TestCase231521(BasePlugDiskTest):
 class TestCase139348(BasePlugDiskTest):
     """Hotplug floating disk (shareable and non-shareable)"""
     # Gluster doesn't support shareable disks
-    __test__ = TestCase.storage != config.STORAGE_TYPE_GLUSTER
+    __test__ = (
+        config.STORAGE_TYPE_NFS in opts['storages']
+        or config.STORAGE_TYPE_ISCSI in opts['storages']
+    )
+    storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
     tcms_plan_id = '5291'
     tcms_test_case = '139348'
 
@@ -610,7 +632,11 @@ class TestCase174616(TestCase):
     test ensure hotplug works fine
     """
     # Gluster doesn't support shareable disks
-    __test__ = TestCase.storage != config.STORAGE_TYPE_GLUSTER
+    __test__ = (
+        config.STORAGE_TYPE_NFS in opts['storages']
+        or config.STORAGE_TYPE_ISCSI in opts['storages']
+    )
+    storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
 
     tcms_plan_id = '6458'
     tcms_test_case = '174616'
@@ -618,7 +644,6 @@ class TestCase174616(TestCase):
     disk_count = 2
     first_vm = 'first'
     second_vm = 'second'
-    template_name = config.TEMPLATE_NAME % TestCase.storage
     first_disk_name = 'non-shareable_virtio_disk'
     second_disk_name = 'shareable_virtio_disk'
     disks_aliases = [first_disk_name, second_disk_name]
@@ -631,6 +656,7 @@ class TestCase174616(TestCase):
         """
         Create 2 VMs, 2 virtio disks and one of them is shareable
         """
+        cls.template_name = config.TEMPLATE_NAME % cls.storage
         cls.vm_names = []
         cls.storage_domain = getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, cls.storage)[0]

@@ -61,6 +61,7 @@ from rhevmtests.storage.storage_live_migration import helpers
 from rhevmtests.helpers import get_golden_template_name
 
 import rhevmtests.storage.helpers as storage_helpers
+from art.test_handler.settings import opts
 
 
 logger = logging.getLogger(__name__)
@@ -109,6 +110,7 @@ vmArgs = {'positive': True,
 LOCAL_LUN = []
 LOCAL_LUN_ADDRESS = []
 LOCAL_LUN_TARGET = []
+ISCSI = config.STORAGE_TYPE_ISCSI
 
 # TOOD: Once the patch for test_failure is merged and tested change the
 # tearDown of the test to only log during the execution and raise the
@@ -195,7 +197,6 @@ class BaseTestCase(StorageTest):
     """
     A class with a simple setUp
     """
-    vm_name = config.VM_NAME % StorageTest.storage
     vm_sd = None
 
     # VM's bootable disk default parameters
@@ -207,6 +208,7 @@ class BaseTestCase(StorageTest):
         """
         Get all the storage domains from a specific domain type
         """
+        self.vm_name = config.VM_NAME % self.storage
         self.storage_domains = getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage)
         if config.GOLDEN_ENV:
@@ -579,7 +581,11 @@ class TestCase166166(BaseTestCase):
     https://tcms.engineering.redhat.com/case/166166
     """
     # Gluster doesn't support shareable disks
-    __test__ = BaseTestCase.storage != config.STORAGE_TYPE_GLUSTER
+    __test__ = (
+        config.STORAGE_TYPE_NFS in opts['storages']
+        or config.STORAGE_TYPE_ISCSI in opts['storages']
+    )
+    storages = set([config.STORAGE_TYPE_ISCSI, config.STORAGE_TYPE_NFS])
     tcms_test_case = '166166'
     test_vm_name = 'test_vm_%s' % tcms_test_case
     permutation = {}
@@ -1119,7 +1125,8 @@ class TestCase231544(CommonUsage):
     Wipe after delete
     https://tcms.engineering.redhat.com/case/231544/?from_plan=6128
     """
-    __test__ = CommonUsage.storage in config.BLOCK_TYPES
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '231544'
     disk_name = "disk_%s" % tcms_test_case
     regex = 'dd oflag=direct if=/dev/zero of=.*/%s'
@@ -1611,8 +1618,7 @@ class TestCase373597(BaseTestCase):
     Extend storage domain while lsm
     https://tcms.engineering.redhat.com/case/373597/?from_plan=6128
     """
-    __test__ = BaseTestCase.storage in config.BLOCK_TYPES
-    __test__ = False  # Needs 4 iscsi storage domains
+    __test__ = False  # Needs 4 iscsi storage domains (only on block device)
     tcms_test_case = '373597'
 
     def generate_sd_dict(self, index):

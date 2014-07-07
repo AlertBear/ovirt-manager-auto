@@ -39,6 +39,8 @@ from utilities.machine import Machine, LINUX
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.test_handler import exceptions
 from rhevmtests.storage.storage_single_disk_snapshot import config
+from art.test_handler.settings import opts
+
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +49,7 @@ ENUMS = config.ENUMS
 TEST_PLAN_ID = '12057'
 ACTIVE_VM = 'Active VM'
 VM_NAMES = []
+ISCSI = config.STORAGE_TYPE_ISCSI
 
 vmArgs = {
     'positive': True, 'vmDescription': config.VM_NAME % "description",
@@ -116,12 +119,12 @@ class BasicEnvironment(BaseTestCase):
     cmd_create = 'echo "test_txt" > %s/test_file'
     cm_del = 'rm -f %s/test_file'
     umount_cmd = 'umount %s'
-    vm_name = config.VM_NAME % BaseTestCase.storage
 
     def setUp(self):
         """
         Creating disks for case
         """
+        self.vm_name = config.VM_NAME % self.storage
         self.storage_domain = getStorageDomainNamesForType(
             config.DATA_CENTER_NAME, self.storage)[0]
         start_vms([self.vm_name], 1, wait_for_ip=False)
@@ -281,7 +284,8 @@ class TestCase333023(BasicEnvironment):
     """
     # TODO: Change implementation of get_amount_of_volumes() to work with
     # non block devices
-    __test__ = BasicEnvironment.storage in config.BLOCK_TYPES
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '333023'
 
     def setUp(self):
@@ -965,7 +969,8 @@ class TestCase336105(BasicEnvironment):
     """
     # TODO: Change implementation of get_amount_of_volumes() to work with
     # non block devices
-    __test__ = BasicEnvironment.storage in config.BLOCK_TYPES
+    __test__ = (ISCSI in opts['storages'])
+    storages = set([ISCSI])
     tcms_test_case = '336105'
     snap_1 = 'snapshot_1'
     snap_2 = 'snapshot_2'

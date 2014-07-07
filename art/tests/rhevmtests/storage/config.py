@@ -27,6 +27,8 @@ VM_PASSWORD = VMS_LINUX_PW
 
 NUMBER_OF_DISKS = int(PARAMETERS.get('no_of_disks', 8))
 
+STORAGES_MATRIX = opts['storages']
+
 # Storage domain names
 STORAGE_DEVICE_TYPE_MAP = {
     STORAGE_TYPE_POSIX: STORAGE_TYPE_NFS,  # posix   -> nfs_devices
@@ -54,8 +56,8 @@ if not GOLDEN_ENV:
 else:
     # XXX WA until the multi selector plugin is merge
     # Get the list of sds that would the test run with testmultiplier
-    STORAGE_SELECTOR = [STORAGE_TYPE_ISCSI]
-    STORAGE_TYPE = STORAGE_TYPE_ISCSI
+    STORAGE_SELECTOR = STORAGES_MATRIX
+    STORAGE_TYPE = 'golden_env'
     NUMBER_OF_SDS = 3
 
 SD_NAMES_LIST = []
