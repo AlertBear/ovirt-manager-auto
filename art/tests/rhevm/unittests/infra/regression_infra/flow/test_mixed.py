@@ -9,7 +9,7 @@ test_mixed
 import logging
 
 from nose.tools import istest
-from nose.plugins.attrib import attr
+from art.unittest_lib import attr
 
 from art.unittest_lib import BaseTestCase as TestCase
 from art.rhevm_api.tests_lib.low_level import (hosts,
@@ -22,7 +22,7 @@ from art.rhevm_api.utils.xpath_utils import XPathMatch
 from art.core_api.apis_exceptions import EngineTypeError
 from art.test_handler.tools import bz
 
-from .. import config
+from regression_infra import config
 
 logger = logging.getLogger(__name__)
 ENUMS = config.ENUMS

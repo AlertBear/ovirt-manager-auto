@@ -7,7 +7,7 @@ __test__ = False
 
 
 from art.test_handler import settings
-from . import ART_CONFIG
+from art.test_handler.settings import ART_CONFIG
 
 PARAMETERS = ART_CONFIG['PARAMETERS']
 REST_CONNECTION = ART_CONFIG['REST_CONNECTION']

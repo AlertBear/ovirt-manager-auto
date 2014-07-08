@@ -8,8 +8,8 @@ Flow cases setup & teardown
 
 import logging
 
-from .. import config
-from .. import help_functions
+from regression_infra import config
+from regression_infra import help_functions
 from art.test_handler.exceptions import SkipTest
 
 logger = logging.getLogger(__name__)

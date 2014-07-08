@@ -9,13 +9,13 @@ test_storage_domain
 import logging
 
 from nose.tools import istest
-from nose.plugins.attrib import attr
+from art.unittest_lib import attr
 
 from art.unittest_lib import BaseTestCase as TestCase
 from art.rhevm_api.tests_lib.low_level import datacenters, storagedomains
 
-from .. import config
-from .. import help_functions
+from regression_infra import config
+from regression_infra import help_functions
 
 logger = logging.getLogger(__name__)
 ENUMS = config.ENUMS

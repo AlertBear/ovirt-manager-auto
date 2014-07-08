@@ -9,7 +9,7 @@ test_users_and_roles
 import logging
 
 from nose.tools import istest
-from nose.plugins.attrib import attr
+from art.unittest_lib import attr
 
 from art.unittest_lib import BaseTestCase as TestCase
 from art.rhevm_api.tests_lib.low_level import users, tags, general, mla

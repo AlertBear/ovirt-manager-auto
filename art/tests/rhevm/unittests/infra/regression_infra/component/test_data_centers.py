@@ -12,12 +12,12 @@ command:
 import logging
 
 from nose.tools import istest
-from nose.plugins.attrib import attr
+from art.unittest_lib import attr
 
 from art.unittest_lib import BaseTestCase as TestCase
 from art.rhevm_api.tests_lib.high_level.datacenters import datacenters
 
-from .. import config
+from regression_infra import config
 
 logger = logging.getLogger(__name__)
 
