@@ -6,7 +6,7 @@ Then new VM from this template is checked, if it matches the template type.
 """
 
 from nose.tools import istest
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import ComputeTest as TestCase
 import logging
 
 from art.rhevm_api.tests_lib.low_level import vms
@@ -21,6 +21,7 @@ from art.test_handler.settings import opts
 from art.test_handler.tools import tcms
 from random import choice
 import config
+from art.unittest_lib import attr
 
 HOST_API = get_api('host', 'hosts')
 VM_API = get_api('vm', 'vms')
@@ -49,6 +50,7 @@ BASIC_PARAMETERS = {'name': TEMPLATE_VM, 'cluster': config.cluster_name}
 ########################################################################
 
 
+@attr(tier=0)
 class BaseTemplateClass(TestCase):
     """
     Base class that create vm and template from it

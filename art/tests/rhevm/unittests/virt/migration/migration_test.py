@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import config
 import logging
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import ComputeTest as TestCase
 from nose.tools import istest
 from art.test_handler.tools import tcms
 from art.test_handler.settings import opts
@@ -15,6 +15,7 @@ import art.rhevm_api.tests_lib.high_level.vms as high_vm_api
 import art.rhevm_api.tests_lib.low_level.hosts as host_api
 import art.rhevm_api.tests_lib.high_level.hosts as high_host_api
 from art.rhevm_api.utils.test_utils import getStat, raise_if_exception
+from art.unittest_lib import attr
 
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
@@ -54,6 +55,7 @@ class NegativeVmMigration(TestCase):
                                                  cls.init_cluster)
 
 
+@attr(tier=0)
 class MigrateVmOnOtherCluster(NegativeVmMigration):
     """
     Negative: Migrate vm to another cluster in the same datacenter
@@ -71,6 +73,7 @@ class MigrateVmOnOtherCluster(NegativeVmMigration):
                                           host=config.migration_host_1))
 
 
+@attr(tier=0)
 class MigrateVmOnOtherDatacenter(NegativeVmMigration):
     """
     Negative: Migrate vm on another datacenter
@@ -88,6 +91,7 @@ class MigrateVmOnOtherDatacenter(NegativeVmMigration):
                                           host=config.migration_host_1))
 
 
+@attr(tier=0)
 class MigrateVmOnSameHost(NegativeVmMigration):
     """
     Negative: Migrate vm on the same host
@@ -104,6 +108,7 @@ class MigrateVmOnSameHost(NegativeVmMigration):
                                           host=config.migration_host_0))
 
 
+@attr(tier=1)
 class MigrationOverloadHost(TestCase):
     """
     Negative: Have two hosts, put one host to maintenance will create overload
@@ -183,6 +188,7 @@ class MigrationOverloadHost(TestCase):
             raise errors.HostException("Failed to activate host")
 
 
+@attr(tier=0)
 class HostToMaintenanceMigration(TestCase):
     """
     Check if all vms migrated when host move to maintenance
@@ -227,6 +233,7 @@ class HostToMaintenanceMigration(TestCase):
         vm_api.stop_vms_safely(config.vm_names[:5], max_workers=5)
 
 
+@attr(tier=1)
 class MigrateVMsSimultausly(TestCase):
     """
     Migrate several VMs simultanuasly

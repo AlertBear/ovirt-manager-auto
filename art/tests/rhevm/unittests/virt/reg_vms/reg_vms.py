@@ -4,7 +4,7 @@ Regression Vms Test - Basic tests to check vms functionality
 
 import config
 import logging
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import ComputeTest as TestCase
 from nose.tools import istest
 from art.test_handler.tools import bz, tcms
 from art.test_handler.settings import opts
@@ -17,6 +17,7 @@ import art.rhevm_api.tests_lib.low_level.templates as template_api
 import art.rhevm_api.tests_lib.high_level.storagedomains as high_sd_api
 from art.rhevm_api.utils.test_utils import update_vm_status_in_database
 from art.rhevm_api.tests_lib.low_level.mla import addVmPoolPermissionToUser
+from art.unittest_lib import attr
 
 
 MB = 1024 * 1024
@@ -118,6 +119,7 @@ class BaseVmWithDiskTemplate(BaseVmWithDisk):
             raise errors.TemplateException("Failed to remove template")
 
 
+@attr(tier=0)
 class AddVm(TestCase):
     """
     Add vms with different parameters test cases
@@ -292,6 +294,7 @@ class AddVm(TestCase):
                                       cluster=config.cluster_name))
 
 
+@attr(tier=0)
 class UpdateVm(BaseVm):
     """
     Upgrade vms with different parameters test cases
@@ -370,6 +373,7 @@ class UpdateVm(BaseVm):
         self.assertTrue(vm_api.updateVm(True, vm_update,
                                         name=self.vm_name))
 
+    @attr(tier=1)
     @istest
     def update_vm_affinity_to_migratable_with_host(self):
         """
@@ -380,6 +384,7 @@ class UpdateVm(BaseVm):
                                         placement_affinity=affinity,
                                         placement_host=config.host_0))
 
+    @attr(tier=1)
     @istest
     def update_vm_affinity_to_user_migratable_with_host(self):
         """
@@ -390,6 +395,7 @@ class UpdateVm(BaseVm):
                                         placement_affinity=affinity,
                                         placement_host=config.host_0))
 
+    @attr(tier=1)
     @istest
     def update_vm_affinity_to_pinned_with_host(self):
         """
@@ -400,6 +406,7 @@ class UpdateVm(BaseVm):
                                         placement_affinity=affinity,
                                         placement_host=config.host_0))
 
+    @attr(tier=1)
     @istest
     def update_vm_affinity_to_migratable_to_any_host(self):
         """
@@ -410,6 +417,7 @@ class UpdateVm(BaseVm):
                                         placement_host=ANY_HOST,
                                         placement_affinity=affinity))
 
+    @attr(tier=1)
     @istest
     def update_vm_affinity_to_user_migratable_to_any_host(self):
         """
@@ -539,6 +547,7 @@ class UpdateVm(BaseVm):
         self.assertFalse(vm_api.updateVm(True, self.vm_name, memory=512*MB))
 
 
+@attr(tier=0)
 class UpdateRunningVm(BaseVmWithDisk):
     """
     Update parameters of a running VM.
@@ -577,6 +586,7 @@ class UpdateRunningVm(BaseVmWithDisk):
             vm_api.updateVm(True, self.vm_name, description="TEST"))
 
 
+@attr(tier=0)
 class DifferentVmTestCases(TestCase):
     """
     Create, update and delete vms with different parameters
@@ -591,6 +601,7 @@ class DifferentVmTestCases(TestCase):
         if not vm_api.remove_all_vms_from_cluster(config.cluster_name):
             raise errors.VMException("Failed to remove all vms")
 
+    @attr(tier=1)
     @istest
     def remove_locked_vm(self):
         """
@@ -618,6 +629,7 @@ class DifferentVmTestCases(TestCase):
         logger.info("Check if vm %s have cdrom", vm_name)
         self.assertTrue(vm_api.checkVmHasCdromAttached(True, vm_name))
 
+    @attr(tier=1)
     @istest
     def retrieve_vm_statistics(self):
         """
@@ -631,6 +643,7 @@ class DifferentVmTestCases(TestCase):
         self.assertTrue(vm_api.checkVmStatistics(True, vm_name))
 
 
+@attr(tier=1)
 class VmNetwork(BaseVm):
     """
     Add, update and remove network from vm
@@ -661,6 +674,7 @@ class VmNetwork(BaseVm):
                                          nic=self.nics[2]))
 
 
+@attr(tier=0)
 class VmDisk(BaseVm):
     """
     Add different types of disks to vm
@@ -670,6 +684,7 @@ class VmDisk(BaseVm):
     disk_interfaces = [ENUMS['interface_virtio'], ENUMS['interface_ide']]
     disk_formats = [ENUMS['format_cow'], ENUMS['format_raw']]
 
+    @attr(tier=1)
     @istest
     def add_raw_ide_disk_without_sparse(self):
         """
@@ -682,6 +697,7 @@ class VmDisk(BaseVm):
                                        interface=ENUMS['interface_virtio'],
                                        sparse=False))
 
+    @attr(tier=1)
     @istest
     def add_bootable_cow_ide_data_disk(self):
         """
@@ -707,6 +723,7 @@ class VmDisk(BaseVm):
                                        interface=ENUMS['interface_virtio'],
                                        sparse=True))
 
+    @attr(tier=1)
     @istest
     def add_disks_with_different_interfaces_and_formats(self):
         """
@@ -735,6 +752,7 @@ class VmDisk(BaseVm):
         super(VmDisk, cls).teardown_class()
 
 
+@attr(tier=0)
 class BasicVmActions(BaseVmWithDisk):
     """
     Check basic vm operations, like start, suspend, stop and ticket
@@ -768,6 +786,7 @@ class BasicVmActions(BaseVmWithDisk):
                                          self.ticket_expire_time))
 
 
+@attr(tier=0)
 class AutomaticManualVmMigration(BaseVmWithDisk):
     """
     Check manual and automatic vm migration
@@ -820,6 +839,7 @@ class AutomaticManualVmMigration(BaseVmWithDisk):
         super(AutomaticManualVmMigration, cls).teardown_class()
 
 
+@attr(tier=0)
 class VmSnapshots(BaseVmWithDisk):
     """
     Create, restore and remove vm snapshots
@@ -859,6 +879,7 @@ class VmSnapshots(BaseVmWithDisk):
                     self.snapshot_dsc[0], self.vm_name)
 
 
+@attr(tier=0)
 class ImportExportVm(BaseVmWithDisk):
     """
     Check different cases for import/export vm
@@ -914,6 +935,7 @@ class ImportExportVm(BaseVmWithDisk):
                                       config.nfs_storage_0))
 
 
+@attr(tier=0)
 class VmDisplay(TestCase):
     """
     Create vms with different display types, run it and check
@@ -987,6 +1009,7 @@ class VmDisplay(TestCase):
         self.assertTrue(self._check_display_parameters(self.vm_names[1]))
 
 
+@attr(tier=0)
 class RunVmOnce(BaseVmWithDisk):
     """
     Run once vm with different parameters
@@ -1101,6 +1124,7 @@ class RunVmOnce(BaseVmWithDisk):
         if not vm_api.stopVm(True, self.vm_name):
             raise errors.VMException("Failed to stop vm")
 
+    @attr(tier=1)
     @istest
     def run_once_vm_with_attached_floppy(self):
         """
@@ -1116,6 +1140,7 @@ class RunVmOnce(BaseVmWithDisk):
             raise errors.VMException("Failed to stop vm")
 
 
+@attr(tier=0)
 class VmPool(BaseVmWithDiskTemplate):
     """
     Basic test to check vm pools functionality
@@ -1167,6 +1192,7 @@ class VmPool(BaseVmWithDiskTemplate):
         self.assertTrue(vm_pool_api.removeVmPool(True, self.new_vm_pool))
 
 
+@attr(tier=0)
 class VmTemplate(BaseVmWithDiskTemplate):
     """
     Create vm from template with different parameters
