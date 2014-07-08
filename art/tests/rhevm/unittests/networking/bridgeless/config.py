@@ -4,7 +4,7 @@ Bridgeless (Non-VM) network config module
 
 __test__ = False
 
-from . import ART_CONFIG
+from art.test_handler.settings import ART_CONFIG
 from art.test_handler.settings import opts
 
 TEST_NAME = "Bridgeless_Network"
