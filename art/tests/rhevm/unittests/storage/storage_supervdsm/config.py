@@ -3,9 +3,7 @@ Config module for storage supervdsm
 """
 __test__ = False
 
-from art.test_handler.settings import opts
-from art.rhevm_api.utils import test_utils
-from . import ART_CONFIG
+from art.test_handler.settings import ART_CONFIG
 
 PARAMETERS = ART_CONFIG['PARAMETERS']
 

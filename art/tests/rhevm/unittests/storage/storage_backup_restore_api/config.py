@@ -5,7 +5,7 @@ Config module for storage backup restore api
 __test__ = False
 
 from art.rhevm_api.utils import test_utils
-from . import ART_CONFIG
+from art.test_handler.settings import ART_CONFIG
 from art.test_handler.settings import opts
 
 

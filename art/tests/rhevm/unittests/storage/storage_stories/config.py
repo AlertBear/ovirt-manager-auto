@@ -3,9 +3,7 @@ Config module for storage sanity tests
 """
 __test__ = False
 
-from art.test_handler.settings import opts
-from art.rhevm_api.utils import test_utils
-from . import ART_CONFIG
+from art.test_handler.settings import ART_CONFIG, opts
 
 GB = 1024 ** 3
 

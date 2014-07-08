@@ -5,7 +5,7 @@ Config module for storage read only disks
 __test__ = False
 
 from art.rhevm_api.utils import test_utils
-from . import ART_CONFIG
+from art.test_handler.settings import ART_CONFIG
 from art.test_handler.settings import opts
 
 

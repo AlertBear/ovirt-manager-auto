@@ -4,7 +4,7 @@ Config module for full snapshot test
 
 __test__ = False
 
-from . import ART_CONFIG
+from art.test_handler.settings import ART_CONFIG
 from art.test_handler.settings import opts
 
 # Name of the test

@@ -7,7 +7,7 @@ __test__ = False
 
 import copy
 from art.test_handler.settings import opts
-from . import ART_CONFIG
+from art.test_handler.settings import ART_CONFIG
 
 GB = 1024 ** 3
 

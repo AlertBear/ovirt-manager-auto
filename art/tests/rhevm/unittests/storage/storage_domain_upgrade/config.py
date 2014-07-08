@@ -5,7 +5,7 @@ Config module for storage domain upgrade
 __test__ = False
 
 from art.test_handler.settings import opts
-from . import ART_CONFIG
+from art.test_handler.settings import ART_CONFIG
 
 # Name of the test
 TESTNAME = "storage_domain_upgrade"

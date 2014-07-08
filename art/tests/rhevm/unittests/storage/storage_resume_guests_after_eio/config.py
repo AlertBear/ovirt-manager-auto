@@ -6,7 +6,7 @@ __test__ = False
 
 from art.rhevm_api.utils import test_utils
 from art.test_handler.settings import opts
-from . import ART_CONFIG
+from art.test_handler.settings import ART_CONFIG
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 

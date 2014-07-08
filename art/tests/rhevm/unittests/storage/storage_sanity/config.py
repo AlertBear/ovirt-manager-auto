@@ -4,7 +4,7 @@ Config module for storage sanity tests
 __test__ = False
 
 from art.test_handler.settings import opts
-from . import ART_CONFIG
+from art.test_handler.settings import ART_CONFIG
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 

@@ -1,4 +1,4 @@
-from . import ART_CONFIG
+from art.test_handler.settings import ART_CONFIG
 from art.test_handler.settings import opts
 from art.rhevm_api.utils import test_utils
 

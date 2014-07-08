@@ -5,7 +5,7 @@ __test__ = False
 
 from art.test_handler.settings import opts
 from art.rhevm_api.utils import test_utils
-from . import ART_CONFIG
+from art.test_handler.settings import ART_CONFIG
 
 GB = 1024 ** 3
 

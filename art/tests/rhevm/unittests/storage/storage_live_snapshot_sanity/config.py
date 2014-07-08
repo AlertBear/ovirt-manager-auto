@@ -4,7 +4,7 @@ Config module for storage live snapshot sanity
 
 __test__ = False
 
-from . import ART_CONFIG
+from art.test_handler.settings import ART_CONFIG
 
 # Name of the test
 TESTNAME = "storage_live_snapshot_sanity"
