@@ -33,6 +33,7 @@ from art.test_handler.plmanagement.manager import PluginManager
 from art.test_handler import find_config_file
 
 opts = {}
+ART_CONFIG = ConfigObj()
 """ A options global for all REST tests. """
 plmanager = None
 RC_RANGE = [2, 9]
@@ -142,6 +143,7 @@ def readTestRunOpts(path, redefs):
     '''
 
     global opts
+    global ART_CONFIG
 
     if not os.path.exists(path):
         raise IOError("Configuration file doesn't exist: %s" % path)
@@ -159,7 +161,8 @@ def readTestRunOpts(path, redefs):
                         _inspec=True)
     validator = ARTConfigValidator(conf.load(), spec.load(), initPlmanager())
 
-    config = validator()
+    ART_CONFIG = validator()
+    config = ART_CONFIG
 
     opts['headers'] = config.get('HTTP_HEADERS', {})
 
