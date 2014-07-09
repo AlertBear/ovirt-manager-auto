@@ -11,6 +11,7 @@ import art.test_handler.exceptions as exceptions
 
 LOGGER = logging.getLogger(__name__)
 
+
 # Some helping function
 def function_that_fails(vm_name):
     """
@@ -34,4 +35,3 @@ class NegativeTestCase(TestCase):
         """
         self.assertRaises(exceptions.VMException, function_that_fails,
                           self.vm_name)
-

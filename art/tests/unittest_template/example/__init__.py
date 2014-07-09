@@ -23,8 +23,8 @@ def setup_package():
     datacenters.build_setup(config.PARAMETERS, config.STORAGE_CONF,
                             config.STORAGE_TYPE, config.TESTNAME)
 
+
 def teardown_package():
     import config
     # Here put your tear-down action for whole bunch of tests
     cleanDataCenter(True, config.DATA_CENTER_NAME)
-

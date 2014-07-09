@@ -21,4 +21,3 @@ VM_NAME = PARAMETERS.get('vm_name', 'vm_name')
 
 # Workers for thread pool
 MAX_WORKERS = PARAMETERS.get('max_workers', 16)
-

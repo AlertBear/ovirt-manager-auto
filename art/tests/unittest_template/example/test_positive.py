@@ -18,6 +18,7 @@ VM_API = get_api('vms', 'vm')
 
 SKIP_THAT_TEST = True
 
+
 def function_that_does_nothing():
     """
     This function does nothing
@@ -43,7 +44,7 @@ class PositiveTestCase(TestCase):
     """
     This is positive test case with several actions
     """
-    __test__ = True # nose.loader will collect it
+    __test__ = True  # nose.loader will collect it
     my_variable = 'var'
 
     @classmethod
@@ -55,7 +56,6 @@ class PositiveTestCase(TestCase):
     @classmethod
     def teardown_class(cls):
         "tear down class"
-
 
     @istest
     @skipIf(SKIP_THAT_TEST, "example reasons")
@@ -139,6 +139,3 @@ class ParallelTestCase(TestCase):
                 raise res.exception()
             if not res.result():
                 LOGGER.warn("Number %d seems like five", index)
-
-
-
