@@ -4,7 +4,7 @@ Testing Import/Export feature.
 created for testing.
 """
 from art.rhevm_api.tests_lib.low_level.hosts import sendSNRequest
-from networking import config
+from rhevmtests import config
 import logging
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase

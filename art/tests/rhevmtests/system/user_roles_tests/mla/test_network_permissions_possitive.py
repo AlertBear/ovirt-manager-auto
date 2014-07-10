@@ -8,7 +8,7 @@ if user is permittied for it.
 __test__ = True
 
 import logging
-from user_roles_tests import config as cfg
+from rhevmtests.system.user_roles_tests import config as cfg
 from user_roles_tests.roles import role
 from nose.tools import istest
 from art.test_handler.tools import tcms, bz

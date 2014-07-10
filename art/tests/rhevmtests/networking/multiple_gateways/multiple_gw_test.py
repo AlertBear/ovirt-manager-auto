@@ -10,7 +10,7 @@ from nose.tools import istest
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
 import logging
-from networking import config
+from rhevmtests import config
 from art.rhevm_api.utils.test_utils import get_api
 from art.test_handler.exceptions import NetworkException, ClusterException
 from art.test_handler.settings import opts
@@ -36,7 +36,7 @@ IP = config.SOURCE_IP
 NETMASK = config.NETMASK
 GATEWAY = config.MG_GATEWAY
 SUBNET = config.SUBNET
-TIMEOUT = config.TIMEOUT
+TIMEOUT = config.CONNECT_TIMEOUT
 
 ########################################################################
 

@@ -15,8 +15,8 @@ from art.unittest_lib import BaseTestCase as TestCase
 from art.rhevm_api.tests_lib.low_level import vms, templates
 from art.test_handler.exceptions import SkipTest
 
-from regression_infra import config
-from regression_infra import help_functions
+from rhevmtests.infra.regression_infra import config
+from rhevmtests.infra.regression_infra import help_functions
 
 logger = logging.getLogger(__name__)
 ENUMS = config.ENUMS

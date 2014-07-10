@@ -1,11 +1,12 @@
 """
 Config module for storage SPM priority sanity
 """
-from art.test_handler.settings import opts
 
 __test__ = False
 
+from art.test_handler.settings import opts
 from art.test_handler.settings import ART_CONFIG
+
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 

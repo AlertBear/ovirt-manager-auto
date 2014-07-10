@@ -6,7 +6,7 @@ Tests if permissions are correctly inherited/viewed/assigned/removed.
 
 __test__ = True
 
-from user_roles_tests import config
+from rhevmtests.system.user_roles_tests import config
 from user_roles_tests.roles import role
 from nose.tools import istest
 from art.test_handler.tools import bz, tcms

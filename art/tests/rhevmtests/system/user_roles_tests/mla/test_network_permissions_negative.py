@@ -8,7 +8,7 @@ if user is not permittied for it.
 __test__ = True
 
 import logging
-from user_roles_tests import config
+from rhevmtests.system.user_roles_tests import config
 from user_roles_tests.roles import role
 from nose.tools import istest
 from art.unittest_lib import BaseTestCase as TestCase

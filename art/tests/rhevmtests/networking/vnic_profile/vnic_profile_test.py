@@ -1,7 +1,7 @@
 #! /usr/bin/python
 
 import logging
-from networking import config
+from rhevmtests import config
 from nose.tools import istest
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase

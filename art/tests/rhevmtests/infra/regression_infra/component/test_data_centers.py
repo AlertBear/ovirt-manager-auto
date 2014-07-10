@@ -17,7 +17,7 @@ from art.unittest_lib import attr
 from art.unittest_lib import BaseTestCase as TestCase
 from art.rhevm_api.tests_lib.high_level.datacenters import datacenters
 
-from regression_infra import config
+from rhevmtests.infra.regression_infra import config
 
 logger = logging.getLogger(__name__)
 

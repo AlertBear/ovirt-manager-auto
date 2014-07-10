@@ -25,7 +25,7 @@ CLUSTER_NAME = PARAMETERS.setdefault("cluster_name", DEFAULT_CLUSTER_NAME)
 FAKE_CLUSTER_NAME = PARAMETERS['fake_cluster_name']
 
 HOST_NICS = PARAMETERS.as_list('host_nics')
-VM_BASE_NAME = PARAMETERS['vm_name']
+VM_BASE_NAME = PARAMETERS.as_list('vm_name')[0]
 VM_CNT = PARAMETERS['vm_cnt']
 BULK_VM_CNT = PARAMETERS['bulk_vm_cnt']
 

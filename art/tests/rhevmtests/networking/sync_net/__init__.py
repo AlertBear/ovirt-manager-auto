@@ -3,7 +3,7 @@ Sync network feature test
 """
 
 import logging
-from networking import config
+from rhevmtests import config
 from art.rhevm_api.tests_lib.low_level.hosts import removeHost
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.low_level.datacenters import removeDataCenter

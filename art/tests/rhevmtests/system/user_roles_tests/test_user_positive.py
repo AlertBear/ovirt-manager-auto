@@ -5,7 +5,7 @@ Then every test case try to create object it should test.
 For every possitive action that user role has try to do this action.
 '''
 
-from user_roles_tests import test_actions
+from rhevmtests.system.user_roles_tests import test_actions
 
 
 def setUpModule():

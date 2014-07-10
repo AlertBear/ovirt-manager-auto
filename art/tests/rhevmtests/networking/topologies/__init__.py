@@ -3,7 +3,7 @@ Topologies Test
 """
 
 import logging
-from networking import config
+from rhevmtests import config
 from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 from art.rhevm_api.tests_lib.high_level.networks import prepareSetup
 from art.rhevm_api.tests_lib.low_level.vms import stopVm
@@ -46,6 +46,6 @@ def teardown_package():
     Cleans the environment
     """
     if not cleanDataCenter(positive=True, datacenter=config.DC_NAME[0],
-                           vdc=config.VDC,
+                           vdc=config.VDC_HOST,
                            vdc_password=config.VDC_ROOT_PASSWORD):
         raise NetworkException("Cannot remove setup")

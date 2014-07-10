@@ -8,7 +8,7 @@ from art.rhevm_api.tests_lib.low_level.vms import updateNic, stopVm, startVm,\
 from art.rhevm_api.utils.test_utils import sendICMP, configureTempStaticIp
 from art.test_handler.exceptions import VMException
 
-from networking import config
+from rhevmtests import config
 
 
 def send_and_capture_traffic(srcVM, srcIP, dstIP,

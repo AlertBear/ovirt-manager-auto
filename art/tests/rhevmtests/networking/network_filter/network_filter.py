@@ -3,7 +3,7 @@ Testing NetworkFilter feature.
 1 DC, 1 Cluster, 1 Hosts and 1 VM will be created for testing.
 """
 
-from networking import config
+from rhevmtests import config
 import logging
 from nose.tools import istest
 from art.unittest_lib import NetworkTest as TestCase, attr
@@ -54,7 +54,7 @@ class NetworkFilterCase01(TestCase):
         Check that Network Filter is enabled by default on engine
         """
         logger.info("Check that Network Filter is enabled on engine")
-        if not checkSpoofingFilterRuleByVer(host=config.VDC,
+        if not checkSpoofingFilterRuleByVer(host=config.VDC_HOST,
                                             user=config.HOSTS_USER,
                                             passwd=config.HOSTS_PW):
             raise NetworkException("Network Filter is disabled on engine")
@@ -302,7 +302,7 @@ class NetworkFilterCase05(TestCase):
             raise NetworkException("fail to stop the VM")
 
         logger.info("Disabling network filter on engine")
-        if not setNetworkFilterStatus(enable=False, host=config.VDC,
+        if not setNetworkFilterStatus(enable=False, host=config.VDC_HOST,
                                       user=config.VDC_USER,
                                       passwd=config.VDC_ROOT_PASSWORD):
             raise NetworkException("Failed to disable network filter")
@@ -344,7 +344,7 @@ class NetworkFilterCase05(TestCase):
         Enabling network filter on engine
         """
         logger.info("Enabling network filter on engine")
-        if not setNetworkFilterStatus(enable=True, host=config.VDC,
+        if not setNetworkFilterStatus(enable=True, host=config.VDC_HOST,
                                       user=config.VDC_USER,
                                       passwd=config.VDC_ROOT_PASSWORD):
             raise NetworkException("Failed to enable network filter")

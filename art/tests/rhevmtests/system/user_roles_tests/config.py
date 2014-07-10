@@ -121,11 +121,12 @@ HOST_INSTALL_TIMEOUT = 90*10
 # Objects
 DISK_NAME = PARAMETERS.get('disk_name')
 DISK_NAME1 = PARAMETERS.get('disk_name1')
-VM_NAME = PARAMETERS.get('vm_name')
-VM_NAME1 = PARAMETERS.get('vm_name1')
-VM_NAME2 = PARAMETERS.get('vm_name2')
-VM_NAME3 = PARAMETERS.get('vm_name3')
-VM_NAME4 = PARAMETERS.get('vm_name4')
+VM_NAMES = PARAMETERS.as_list('vm_name')
+VM_NAME = VM_NAMES[0]
+VM_NAME1 = VM_NAMES[1]
+VM_NAME2 = VM_NAMES[2]
+VM_NAME3 = VM_NAMES[3]
+VM_NAME4 = VM_NAMES[4]
 VM_NO_DISK = PARAMETERS.get('vm_no_disk')
 TEMPLATE_NAME = PARAMETERS.get('template_name')
 TEMPLATE_NAME2 = PARAMETERS.get('template_name2')

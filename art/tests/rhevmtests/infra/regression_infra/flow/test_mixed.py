@@ -22,7 +22,7 @@ from art.rhevm_api.utils.xpath_utils import XPathMatch
 from art.core_api.apis_exceptions import EngineTypeError
 from art.test_handler.tools import bz
 
-from regression_infra import config
+from rhevmtests.infra.regression_infra import config
 
 logger = logging.getLogger(__name__)
 ENUMS = config.ENUMS

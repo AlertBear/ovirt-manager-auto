@@ -5,7 +5,7 @@ Jubmo frames will be tested for untagged, tagged, bond scenarios.
 It will cover scenarios for VM/non-VM networks.
 """
 
-from networking import config
+from rhevmtests import config
 import logging
 from art.unittest_lib import NetworkTest as TestCase
 from nose.tools import istest

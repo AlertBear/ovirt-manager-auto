@@ -4,7 +4,7 @@ Import Export Test
 """
 
 import logging
-from networking import config
+from rhevmtests import config
 from art.rhevm_api.tests_lib.high_level.storagedomains import addNFSDomain,\
     detach_and_deactivate_domain, attach_and_activate_domain
 from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
@@ -173,7 +173,7 @@ def teardown_package():
     for i in range(2):
         logger.info("Removing setup: %s", config.DC_NAME[i])
         if not cleanDataCenter(positive=True, datacenter=config.DC_NAME[i],
-                               vdc=config.VDC,
+                               vdc=config.VDC_HOST,
                                vdc_password=config.VDC_ROOT_PASSWORD):
             raise NetworkException("Cannot remove setup: %s" %
                                    config.DC_NAME[i])

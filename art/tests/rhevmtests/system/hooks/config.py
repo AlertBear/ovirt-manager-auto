@@ -34,7 +34,7 @@ HOST_PASSWORD = PARAMETERS.as_list('vds_password')[0]
 
 HOST_NICS = PARAMETERS.as_list('host_nics')
 
-VM_BASE_NAME = PARAMETERS.get('vm_name', 'hooks')
+VM_BASE_NAME = PARAMETERS.as_list('vm_name')[0]
 VM_NAME = 'vm_%s' % BASENAME
 VM_UP = ENUMS['vm_state_up']
 

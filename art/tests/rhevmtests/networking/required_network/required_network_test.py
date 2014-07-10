@@ -3,7 +3,7 @@ Testing RequiredNetwork network feature.
 1 DC, 1 Cluster, 1 Hosts will be created for testing.
 """
 import logging
-from networking import config
+from rhevmtests import config
 from art.unittest_lib import NetworkTest as TestCase, attr
 from art.rhevm_api.tests_lib.high_level.networks import (
     createAndAttachNetworkSN,

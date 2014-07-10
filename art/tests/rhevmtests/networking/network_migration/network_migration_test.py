@@ -15,7 +15,7 @@ from art.rhevm_api.utils.test_utils import get_api, checkTraffic
 from art.test_handler.exceptions import NetworkException, VMException
 from art.test_handler.settings import opts
 
-from networking import config
+from rhevmtests import config
 from art.rhevm_api.tests_lib.high_level.networks import\
     createAndAttachNetworkSN, removeNetFromSetup, TrafficMonitor,\
     checkICMPConnectivity

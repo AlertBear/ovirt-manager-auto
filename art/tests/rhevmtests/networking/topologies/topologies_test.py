@@ -3,7 +3,7 @@ Testing Topologies feature.
 1 DC, 1 Cluster, 1 Hosts and 1 VM will be created for testing.
 """
 
-from networking import config
+from rhevmtests import config
 import logging
 from nose.tools import istest
 from art.test_handler.tools import tcms
@@ -623,7 +623,7 @@ def check_connectivity(vlan=False, vm=True):
         if not ip:
             return False
 
-        host = config.VDC if not vlan else config.HOSTS[0]
+        host = config.VDC_HOST if not vlan else config.HOSTS[0]
         return checkICMPConnectivity(host, config.HOSTS_USER,
                                      config.HOSTS_PW, ip["ip"])
 

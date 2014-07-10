@@ -13,7 +13,7 @@ from art.rhevm_api.tests_lib.low_level.datacenters import addDataCenter, \
     removeDataCenter
 from art.unittest_lib import NetworkTest as TestCase
 import logging
-from networking import config
+from rhevmtests import config
 import time
 from art.rhevm_api.utils.test_utils import checkMTU
 from art.test_handler.exceptions import NetworkException
@@ -85,11 +85,14 @@ class MultiHostCase01(TestCase):
                                    "VLAN %s" % config.VLAN_ID[0])
 
         logger.info("Wait till the Host is updated with the change")
-        sample1 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
-                                    func=checkHostNicParameters,
-                                    host=config.HOSTS[0],
-                                    nic=config.HOST_NICS[1],
-                                    **vlan_dict1)
+        sample1 = TimeoutingSampler(
+            timeout=config.SAMPLER_TIMEOUT,
+            sleep=1,
+            func=checkHostNicParameters,
+            host=config.HOSTS[0],
+            nic=config.HOST_NICS[1],
+            **vlan_dict1
+        )
         if not sample1.waitForFuncStatus(result=True):
             raise NetworkException("Couldn't get correct VLAN interface on "
                                    "host")
@@ -111,11 +114,14 @@ class MultiHostCase01(TestCase):
                                    "VLAN %s" % config.VLAN_ID[1])
 
         logger.info("Wait till the Host is updated with the change")
-        sample2 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
-                                    func=checkHostNicParameters,
-                                    host=config.HOSTS[0],
-                                    nic=config.HOST_NICS[1],
-                                    **vlan_dict2)
+        sample2 = TimeoutingSampler(
+            timeout=config.SAMPLER_TIMEOUT,
+            sleep=1,
+            func=checkHostNicParameters,
+            host=config.HOSTS[0],
+            nic=config.HOST_NICS[1],
+            **vlan_dict2
+        )
         if not sample2.waitForFuncStatus(result=True):
             raise NetworkException("Couldn't get correct vlan interface on "
                                    "host")
@@ -204,11 +210,14 @@ class MultiHostCase02(TestCase):
                                    config.MTU[0])
 
         logger.info("Wait till the Host is updated with the change")
-        sample1 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
-                                    func=checkHostNicParameters,
-                                    host=config.HOSTS[0],
-                                    nic=config.HOST_NICS[1],
-                                    **mtu_dict1)
+        sample1 = TimeoutingSampler(
+            timeout=config.SAMPLER_TIMEOUT,
+            sleep=1,
+            func=checkHostNicParameters,
+            host=config.HOSTS[0],
+            nic=config.HOST_NICS[1],
+            **mtu_dict1
+        )
         if not sample1.waitForFuncStatus(result=True):
             raise NetworkException("Couldn't get correct MTU on host")
 
@@ -235,11 +244,14 @@ class MultiHostCase02(TestCase):
                                    config.MTU[-1])
 
         logger.info("Wait till the Host is updated with the change")
-        sample2 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
-                                    func=checkHostNicParameters,
-                                    host=config.HOSTS[0],
-                                    nic=config.HOST_NICS[1],
-                                    **mtu_dict2)
+        sample2 = TimeoutingSampler(
+            timeout=config.SAMPLER_TIMEOUT,
+            sleep=1,
+            func=checkHostNicParameters,
+            host=config.HOSTS[0],
+            nic=config.HOST_NICS[1],
+            **mtu_dict2
+        )
         if not sample2.waitForFuncStatus(result=True):
             raise NetworkException("Couldn't get correct MTU on host")
 
@@ -315,11 +327,14 @@ class MultiHostCase03(TestCase):
                                    "network")
 
         logger.info("Wait till the Host is updated with the change")
-        sample1 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
-                                    func=checkHostNicParameters,
-                                    host=config.HOSTS[0],
-                                    nic=config.HOST_NICS[1],
-                                    **bridge_dict1)
+        sample1 = TimeoutingSampler(
+            timeout=config.SAMPLER_TIMEOUT,
+            sleep=1,
+            func=checkHostNicParameters,
+            host=config.HOSTS[0],
+            nic=config.HOST_NICS[1],
+            **bridge_dict1
+        )
         if not sample1.waitForFuncStatus(result=True):
             raise NetworkException("Network is VM network and should be "
                                    "Non-VM")
@@ -338,11 +353,14 @@ class MultiHostCase03(TestCase):
             raise NetworkException("Cannot update network to be VM network")
 
         logger.info("Wait till the Host is updated with the change")
-        sample2 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
-                                    func=checkHostNicParameters,
-                                    host=config.HOSTS[0],
-                                    nic=config.HOST_NICS[1],
-                                    **bridge_dict2)
+        sample2 = TimeoutingSampler(
+            timeout=config.SAMPLER_TIMEOUT,
+            sleep=1,
+            func=checkHostNicParameters,
+            host=config.HOSTS[0],
+            nic=config.HOST_NICS[1],
+            **bridge_dict2
+        )
         if not sample2.waitForFuncStatus(result=True):
             raise NetworkException("Network is not a VM network but should be")
 
@@ -417,7 +435,7 @@ class MultiHostCase04(TestCase):
         if not sendSNRequest(True, host=config.HOSTS[0],
                              auto_nics=[config.HOST_NICS[0]],
                              check_connectivity="true",
-                             connectivity_timeout=config.TIMEOUT,
+                             connectivity_timeout=config.CONNECT_TIMEOUT,
                              force="false"):
             raise NetworkException("Cannot remove Network from Host")
 
@@ -557,11 +575,14 @@ class MultiHostCase05(TestCase):
                                    "and unplugged NIC of running VM")
 
         logger.info("Wait till the Host is updated with the change")
-        sample1 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
-                                    func=checkHostNicParameters,
-                                    host=config.HOSTS[0],
-                                    nic=config.HOST_NICS[1],
-                                    **mtu_dict1)
+        sample1 = TimeoutingSampler(
+            timeout=config.SAMPLER_TIMEOUT,
+            sleep=1,
+            func=checkHostNicParameters,
+            host=config.HOSTS[0],
+            nic=config.HOST_NICS[1],
+            **mtu_dict1
+        )
         if not sample1.waitForFuncStatus(result=True):
             raise NetworkException("Couldn't get correct MTU on host")
 
@@ -591,11 +612,14 @@ class MultiHostCase05(TestCase):
                                    "running VM" % config.VLAN_ID[0])
 
         logger.info("Wait till the Host is updated with the change")
-        sample1 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
-                                    func=checkHostNicParameters,
-                                    host=config.HOSTS[0],
-                                    nic=config.HOST_NICS[1],
-                                    **vlan_dict1)
+        sample1 = TimeoutingSampler(
+            timeout=config.SAMPLER_TIMEOUT,
+            sleep=1,
+            func=checkHostNicParameters,
+            host=config.HOSTS[0],
+            nic=config.HOST_NICS[1],
+            **vlan_dict1
+        )
         if not sample1.waitForFuncStatus(result=True):
             raise NetworkException("Couldn't get correct VLAN interface on "
                                    "host")
@@ -639,11 +663,14 @@ class MultiHostCase05(TestCase):
                                    config.MTU[-1])
 
         logger.info("Wait till the Host is updated with the change")
-        sample1 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
-                                    func=checkHostNicParameters,
-                                    host=config.HOSTS[0],
-                                    nic=config.HOST_NICS[1],
-                                    **mtu_dict1)
+        sample1 = TimeoutingSampler(
+            timeout=config.SAMPLER_TIMEOUT,
+            sleep=1,
+            func=checkHostNicParameters,
+            host=config.HOSTS[0],
+            nic=config.HOST_NICS[1],
+            **mtu_dict1
+        )
         if not sample1.waitForFuncStatus(result=True):
             raise NetworkException("Couldn't update with correct MTU on host")
 
@@ -721,11 +748,14 @@ class MultiHostCase06(TestCase):
                                    config.MTU[0])
 
         logger.info("Wait till the Host is updated with the change")
-        sample1 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
-                                    func=checkHostNicParameters,
-                                    host=config.HOSTS[0],
-                                    nic=config.HOST_NICS[1],
-                                    **mtu_dict1)
+        sample1 = TimeoutingSampler(
+            timeout=config.SAMPLER_TIMEOUT,
+            sleep=1,
+            func=checkHostNicParameters,
+            host=config.HOSTS[0],
+            nic=config.HOST_NICS[1],
+            **mtu_dict1
+        )
         if not sample1.waitForFuncStatus(result=True):
             raise NetworkException("Couldn't get correct MTU on host")
 
@@ -754,11 +784,14 @@ class MultiHostCase06(TestCase):
                                    "Template" % config.VLAN_ID[0])
 
         logger.info("Wait till the Host is updated with the change")
-        sample1 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
-                                    func=checkHostNicParameters,
-                                    host=config.HOSTS[0],
-                                    nic=config.HOST_NICS[1],
-                                    **vlan_dict1)
+        sample1 = TimeoutingSampler(
+            timeout=config.SAMPLER_TIMEOUT,
+            sleep=1,
+            func=checkHostNicParameters,
+            host=config.HOSTS[0],
+            nic=config.HOST_NICS[1],
+            **vlan_dict1
+        )
         if not sample1.waitForFuncStatus(result=True):
             raise NetworkException("Couldn't get correct VLAN interface on "
                                    "host")
@@ -787,11 +820,14 @@ class MultiHostCase06(TestCase):
                                    config.MTU[-1])
 
         logger.info("Wait till the Host is updated with the change")
-        sample1 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
-                                    func=checkHostNicParameters,
-                                    host=config.HOSTS[0],
-                                    nic=config.HOST_NICS[1],
-                                    **mtu_dict1)
+        sample1 = TimeoutingSampler(
+            timeout=config.SAMPLER_TIMEOUT,
+            sleep=1,
+            func=checkHostNicParameters,
+            host=config.HOSTS[0],
+            nic=config.HOST_NICS[1],
+            **mtu_dict1
+        )
         if not sample1.waitForFuncStatus(result=True):
             raise NetworkException("Couldn't update with correct MTU on host")
 
@@ -859,12 +895,16 @@ class MultiHostCase07(TestCase):
         logger.info("Check that both Hosts are updated with correct MTU "
                     "value")
         for host in config.HOSTS:
-            sample1.append(TimeoutingSampler(timeout=config.TIMEOUT,
-                                             sleep=1,
-                                             func=checkHostNicParameters,
-                                             host=host,
-                                             nic=config.HOST_NICS[1],
-                                             **mtu_dict1))
+            sample1.append(
+                TimeoutingSampler(
+                    timeout=config.SAMPLER_TIMEOUT,
+                    sleep=1,
+                    func=checkHostNicParameters,
+                    host=host,
+                    nic=config.HOST_NICS[1],
+                    **mtu_dict1
+                )
+            )
         for i in range(2):
             if not sample1[i].waitForFuncStatus(result=True):
                 raise NetworkException("Couldn't get correct MTU on host")
@@ -914,12 +954,16 @@ class MultiHostCase07(TestCase):
 
         logger.info("Check correct MTU on both Hosts")
         for host in config.HOSTS:
-            sample1.append(TimeoutingSampler(timeout=config.TIMEOUT,
-                                             sleep=1,
-                                             func=checkHostNicParameters,
-                                             host=host,
-                                             nic=config.HOST_NICS[1],
-                                             **mtu_dict1))
+            sample1.append(
+                TimeoutingSampler(
+                    timeout=config.SAMPLER_TIMEOUT,
+                    sleep=1,
+                    func=checkHostNicParameters,
+                    host=host,
+                    nic=config.HOST_NICS[1],
+                    **mtu_dict1
+                )
+            )
         for i in range(2):
             if not sample1[i].waitForFuncStatus(result=True):
                 raise NetworkException("Couldn't get correct MTU on host")
@@ -1001,12 +1045,16 @@ class MultiHostCase08(TestCase):
         logger.info("Check that both Hosts are updated with correct MTU "
                     "value")
         for host in config.HOSTS:
-            sample1.append(TimeoutingSampler(timeout=config.TIMEOUT,
-                                             sleep=1,
-                                             func=checkHostNicParameters,
-                                             host=host,
-                                             nic=config.HOST_NICS[1],
-                                             **mtu_dict1))
+            sample1.append(
+                TimeoutingSampler(
+                    timeout=config.SAMPLER_TIMEOUT,
+                    sleep=1,
+                    func=checkHostNicParameters,
+                    host=host,
+                    nic=config.HOST_NICS[1],
+                    **mtu_dict1
+                )
+            )
         for i in range(2):
             if not sample1[i].waitForFuncStatus(result=True):
                 raise NetworkException("Couldn't get correct MTU on host")
@@ -1057,12 +1105,16 @@ class MultiHostCase08(TestCase):
 
         logger.info("Check correct MTU on both Hosts")
         for host in config.HOSTS:
-            sample1.append(TimeoutingSampler(timeout=config.TIMEOUT,
-                                             sleep=1,
-                                             func=checkHostNicParameters,
-                                             host=host,
-                                             nic=config.HOST_NICS[1],
-                                             **mtu_dict1))
+            sample1.append(
+                TimeoutingSampler(
+                    timeout=config.SAMPLER_TIMEOUT,
+                    sleep=1,
+                    func=checkHostNicParameters,
+                    host=host,
+                    nic=config.HOST_NICS[1],
+                    **mtu_dict1
+                )
+            )
         for i in range(2):
             if not sample1[i].waitForFuncStatus(result=True):
                 raise NetworkException("Couldn't get correct MTU on host")
@@ -1142,11 +1194,14 @@ class MultiHostCase09(TestCase):
                                    "VLAN %s" % config.VLAN_ID[0])
 
         logger.info("Wait till the Host is updated with the change")
-        sample1 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
-                                    func=checkHostNicParameters,
-                                    host=config.HOSTS[0],
-                                    nic=config.BOND[0],
-                                    **vlan_dict1)
+        sample1 = TimeoutingSampler(
+            timeout=config.SAMPLER_TIMEOUT,
+            sleep=1,
+            func=checkHostNicParameters,
+            host=config.HOSTS[0],
+            nic=config.BOND[0],
+            **vlan_dict1
+        )
         if not sample1.waitForFuncStatus(result=True):
             raise NetworkException("Couldn't get correct vlan interface on "
                                    "host")
@@ -1168,11 +1223,14 @@ class MultiHostCase09(TestCase):
                                    "VLAN %s" % config.VLAN_ID[1])
 
         logger.info("Wait till the Host is updated with the change")
-        sample2 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
-                                    func=checkHostNicParameters,
-                                    host=config.HOSTS[0],
-                                    nic=config.BOND[0],
-                                    **vlan_dict2)
+        sample2 = TimeoutingSampler(
+            timeout=config.SAMPLER_TIMEOUT,
+            sleep=1,
+            func=checkHostNicParameters,
+            host=config.HOSTS[0],
+            nic=config.BOND[0],
+            **vlan_dict2
+        )
         if not sample2.waitForFuncStatus(result=True):
             raise NetworkException("Couldn't get correct vlan interface on "
                                    "host")
@@ -1265,11 +1323,14 @@ class MultiHostCase10(TestCase):
                                    config.MTU[0])
 
         logger.info("Wait till the Host is updated with the change")
-        sample1 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
-                                    func=checkHostNicParameters,
-                                    host=config.HOSTS[0],
-                                    nic=config.BOND[0],
-                                    **mtu_dict1)
+        sample1 = TimeoutingSampler(
+            timeout=config.SAMPLER_TIMEOUT,
+            sleep=1,
+            func=checkHostNicParameters,
+            host=config.HOSTS[0],
+            nic=config.BOND[0],
+            **mtu_dict1
+        )
         if not sample1.waitForFuncStatus(result=True):
             raise NetworkException("Couldn't get correct MTU on host")
 
@@ -1296,11 +1357,14 @@ class MultiHostCase10(TestCase):
                                    config.MTU[-1])
 
         logger.info("Wait till the Host is updated with the change")
-        sample2 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
-                                    func=checkHostNicParameters,
-                                    host=config.HOSTS[0],
-                                    nic=config.BOND[0],
-                                    **mtu_dict2)
+        sample2 = TimeoutingSampler(
+            timeout=config.SAMPLER_TIMEOUT,
+            sleep=1,
+            func=checkHostNicParameters,
+            host=config.HOSTS[0],
+            nic=config.BOND[0],
+            **mtu_dict2
+        )
         if not sample2.waitForFuncStatus(result=True):
             raise NetworkException("Couldn't get correct MTU on host")
 
@@ -1380,11 +1444,14 @@ class MultiHostCase11(TestCase):
             raise NetworkException("Cannot update network to be non-VM net")
 
         logger.info("Wait till the Host is updated with the change")
-        sample1 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
-                                    func=checkHostNicParameters,
-                                    host=config.HOSTS[0],
-                                    nic=config.BOND[0],
-                                    **bridge_dict1)
+        sample1 = TimeoutingSampler(
+            timeout=config.SAMPLER_TIMEOUT,
+            sleep=1,
+            func=checkHostNicParameters,
+            host=config.HOSTS[0],
+            nic=config.BOND[0],
+            **bridge_dict1
+        )
         if not sample1.waitForFuncStatus(result=True):
             raise NetworkException("Network is VM network and should be "
                                    "Non-VM")
@@ -1403,11 +1470,14 @@ class MultiHostCase11(TestCase):
             raise NetworkException("Cannot update network to be VM net")
 
         logger.info("Wait till the Host is updated with the change")
-        sample2 = TimeoutingSampler(timeout=config.TIMEOUT, sleep=1,
-                                    func=checkHostNicParameters,
-                                    host=config.HOSTS[0],
-                                    nic=config.BOND[0],
-                                    **bridge_dict2)
+        sample2 = TimeoutingSampler(
+            timeout=config.SAMPLER_TIMEOUT,
+            sleep=1,
+            func=checkHostNicParameters,
+            host=config.HOSTS[0],
+            nic=config.BOND[0],
+            **bridge_dict2
+        )
         if not sample2.waitForFuncStatus(result=True):
             raise NetworkException("Network is not a VM network but should be")
 

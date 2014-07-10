@@ -14,8 +14,8 @@ from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from art.core_api.apis_exceptions import EntityNotFound, EngineTypeError
 
-from regression_infra import config
-from regression_infra import help_functions
+from rhevmtests.infra.regression_infra import config
+from rhevmtests.infra.regression_infra import help_functions
 
 logger = logging.getLogger(__name__)
 

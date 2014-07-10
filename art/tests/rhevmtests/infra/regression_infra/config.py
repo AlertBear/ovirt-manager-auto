@@ -40,7 +40,7 @@ STORAGE_DOMAIN_NAME = PARAMETERS['storage_domain_name']
 DATA_DOMAIN_ADDRESS = PARAMETERS.as_list('data_domain_address')[0]
 DATA_DOMAIN_PATH = PARAMETERS.as_list('data_domain_path')[0]
 
-VM_NAME = PARAMETERS['vm_name']
+VM_NAME = PARAMETERS.as_list('vm_name')[0]
 TEMPLATE_NAME = PARAMETERS['template_name']
 
 USER_VDCADMIN = PARAMETERS['vdc_user']

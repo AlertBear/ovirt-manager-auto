@@ -3,7 +3,7 @@ Linking feature test
 """
 
 import logging
-from networking import config
+from rhevmtests import config
 from art.rhevm_api.tests_lib.low_level.storagedomains import\
     cleanDataCenter
 from art.test_handler.exceptions import\
@@ -73,6 +73,6 @@ def teardown_package():
     Cleans the environment
     """
     if not cleanDataCenter(positive=True, datacenter=config.DC_NAME[0],
-                           vdc=config.VDC,
+                           vdc=config.VDC_HOST,
                            vdc_password=config.VDC_ROOT_PASSWORD):
         raise DataCenterException("Cannot remove setup")

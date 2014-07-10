@@ -7,7 +7,7 @@ This will cover scenario for create/remove/editin/using roles.
 import logging
 import time
 
-from user_roles_tests import config
+from rhevmtests.system.user_roles_tests import config
 from user_roles_tests.roles import role as role_e
 from nose.tools import istest
 from art.unittest_lib import BaseTestCase as TestCase
