@@ -144,9 +144,28 @@ class TestCaseHost(TestCase):
         the test sets the host to maintenance mode & removes it
         """
         logger.info('Remove host')
-        status = hosts.deactivateHost(positive=True,
-                                      host=self.host_name)
+        status = hosts.deactivateHost(positive=True, host=self.host_name)
         self.assertTrue(status, 'Set active host to maintenance')
-        status = hosts.removeHost(positive=True,
-                                  host=self.host_name)
+        status = hosts.removeHost(positive=True, host=self.host_name)
         self.assertTrue(status, 'Remove host')
+
+    def _add_host_enforce_protocol(self, protocol):
+        logger.info('Add host - %s protocol', protocol)
+        status = hosts.addHost(
+            positive=True, name=config.HOST_NAME, wait=True, reboot=False,
+            root_password=config.VDS_PASSWORD, cluster=config.CLUSTER_1_NAME,
+            vdcPort=config.VDC_PORT, protocol=protocol)
+        self.assertTrue(status, 'Add host - %s protocol' % protocol)
+        logger.info('Remove host')
+        status = hosts.deactivateHost(positive=True, host=config.HOST_NAME)
+        self.assertTrue(status, 'Set active host to maintenance')
+        status = hosts.removeHost(positive=True, host=config.HOST_NAME)
+        self.assertTrue(status, 'Remove host')
+
+    @istest
+    def t08_add_host_stomp_protocol(self):
+        self._add_host_enforce_protocol("stomp")
+
+    @istest
+    def t09_add_host_xml_protocol(self):
+        self._add_host_enforce_protocol("xml")
