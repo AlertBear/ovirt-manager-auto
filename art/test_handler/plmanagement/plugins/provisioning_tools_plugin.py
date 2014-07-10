@@ -87,7 +87,7 @@ class ProvisioningTools(Component):
         section_spec = spec.setdefault(PROVISIONING_TOOLS, {})
         section_spec['enabled'] = 'boolean(default=%s)' % DEFAULT_STATE
         section_spec['provisioning_tool'] = \
-            'option("cobbler", "foreman", default="cobbler")'
+            'option("cobbler", "foreman", default="foreman")'
         cobbler_spec = section_spec.setdefault('COBBLER', {})
         cobbler_spec['api'] = "string(default=None)"
         cobbler_spec['user'] = "string(default=None)"
