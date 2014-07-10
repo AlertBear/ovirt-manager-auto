@@ -12,6 +12,8 @@ all: core_rpm rhevm_api_rpm gluster_api_rpm jasper_api_rpm plugins_rpms rhevm_qe
 
 test:
 	git diff $(TARGET_BRANCH) | flake8 --diff
+	flake8 art/tests
+	flake8 nose_customization
 
 core_rpm:
 	python $(CORE) $(SETUP_ACTION) $(SETUP_ACTION_OPTS)
