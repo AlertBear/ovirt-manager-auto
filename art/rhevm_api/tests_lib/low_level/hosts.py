@@ -512,6 +512,7 @@ def addHost(positive, name, wait=True, vdcPort=None, rhel_like=True,
                                             using vdsm-reg on hypervisor
        * reboot - True - to reboot host after install.
                   False- host won't reboot after install.
+       * protocol - vdsm trasport protocol (stomp / xml)
     Return: True if host     added and test is    positive,
             True if host not added and test isn't positive,
             False otherwise.
