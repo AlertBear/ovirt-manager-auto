@@ -8,6 +8,7 @@ with valid/invalid names, IPs, netmask, VLAN, usages.
 from nose.tools import istest
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
+from art.test_handler.tools import tcms
 import logging
 from art.rhevm_api.tests_lib.high_level.networks import \
     createAndAttachNetworkSN, removeAllNetworks
@@ -57,6 +58,7 @@ class Test01(IOTestCaseBase):
     __test__ = True
 
     @istest
+    @tcms(14499, 390936)
     def check_network_names(self):
         """
         Positive: Should succeed creating networks with valid names
@@ -108,6 +110,7 @@ class Test02(IOTestCaseBase):
     __test__ = True
 
     @istest
+    @tcms(14499, 390938)
     def check_invalid_ips(self):
         """
         Negative: Trying to create networks with invalid IPs
@@ -142,14 +145,15 @@ class Test02(IOTestCaseBase):
 @attr(tier=1)
 class Test03(IOTestCaseBase):
     """
-    Negative: Trying to create networks with invalid netmasks
+    Negative: Trying to create networks with invalid netmask
     """
     __test__ = True
 
     @istest
+    @tcms(14499, 390940)
     def check_invalid_netmask(self):
         """
-        Negative: Trying to create networks with invalid netmasks
+        Negative: Trying to create networks with invalid netmask
         """
         invalid_netmasks = [["255.255.255.260"],
                             ["255.255.260.0"],
@@ -186,6 +190,7 @@ class Test04(IOTestCaseBase):
     __test__ = True
 
     @istest
+    @tcms(14499, 390942)
     def check_netmask_without_ip(self):
         """
         Negative: Trying to create a network with netmask but without an
@@ -215,6 +220,7 @@ class Test05(IOTestCaseBase):
     __test__ = True
 
     @istest
+    @tcms(14499, 393107)
     def check_static_ip_without_netmask(self):
         """
         Negative: Trying to create a network with static IP but without netmask
@@ -244,6 +250,7 @@ class Test06(IOTestCaseBase):
     __test__ = True
 
     @istest
+    @tcms(14499, 390944)
     def check_mtu(self):
         """
         Positive: Creating networks with valid MTUs and adding them to a
@@ -291,6 +298,7 @@ class Test07(IOTestCaseBase):
     __test__ = True
 
     @istest
+    @tcms(14499, 390946)
     def check_invalid_usages(self):
         """
         Trying to create a network with invalid usages value
@@ -313,6 +321,7 @@ class Test08(IOTestCaseBase):
     __test__ = True
 
     @istest
+    @tcms(14499, 390948)
     def check_vlan_ids(self):
         """
         Positive: Creating networks with valid VLAN IDs & adding them to a
@@ -377,6 +386,7 @@ class Test09(IOTestCaseBase):
                                    (initial_name, config.DC_NAME[0]))
 
     @istest
+    @tcms(14499, 390950)
     def edit_network_name(self, initial_name=initial_name):
         """
         Positive: Should succeed editing network to valid name
@@ -432,6 +442,7 @@ class Test10(IOTestCaseBase):
                                    (default_name, config.DC_NAME[0]))
 
     @istest
+    @tcms(14499, 390952)
     def edit_network_tag(self, default_name=default_name):
         """
         Positive: Should succeed editing network to valid VLAN tags
@@ -486,6 +497,7 @@ class Test11(IOTestCaseBase):
                                    (default_name, config.DC_NAME[0]))
 
     @istest
+    @tcms(14499, 390954)
     def edit_vm_network(self, default_name=default_name):
         """
         Positive: Should succeed changing VM network to non-VM network
