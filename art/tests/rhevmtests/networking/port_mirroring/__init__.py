@@ -42,6 +42,7 @@ def setup_package():
                         placement_host=config.HOSTS[0],
                         vmName=config.VM_NAME[0],
                         mgmt_network=config.MGMT_BRIDGE,
+                        vm_network=config.MGMT_BRIDGE,
                         template_name=config.TEMPLATE_NAME[0]):
         raise DataCenterException("Cannot create setup")
 

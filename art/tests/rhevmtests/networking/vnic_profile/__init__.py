@@ -33,6 +33,7 @@ def setup_package():
                         vm_password=config.HOSTS_PW,
                         vmName=config.VM_NAME[0],
                         mgmt_network=config.MGMT_BRIDGE,
+                        vm_network=config.MGMT_BRIDGE,
                         template_name=config.TEMPLATE_NAME[0]):
         raise NetworkException("Cannot create setup")
 
