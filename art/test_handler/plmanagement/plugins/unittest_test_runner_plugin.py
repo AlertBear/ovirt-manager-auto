@@ -265,8 +265,7 @@ class UTestGroup(TestGroup):
                              self.test_name, exc_info=True)
                 self.status = self.TEST_STATUS_ERROR
                 self.incr_exc()
-                self.error += 1
-                raise StopIteration(str(ex))
+                raise SkipTest(str(ex))
             for c in self.context:
                 if isinstance(c, Failure):
                     logger.error("There is critical failure in test module, "
@@ -316,8 +315,7 @@ class UTestSuite(TestSuite):
                              self.test_name, exc_info=True)
                 self.status = self.TEST_STATUS_ERROR
                 self.incr_exc()
-                self.error += 1
-                raise StopIteration(str(ex))
+                raise SkipTest(str(ex))
             for c in self.context:
                 if isinstance(c, Failure):
                     logger.error("There is critical failure in test module, "

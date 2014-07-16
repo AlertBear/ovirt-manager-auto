@@ -255,18 +255,21 @@ class TestRunner(object):
         finally:
             self.plmanager.test_suites.post_test_suite(test_suite)
 
-    def _run_test_elm(self, test_elm):
+    def _run_test_elm(self, test_elm, skip=False):
         if isinstance(test_elm, TestGroup):
-            self._run_test_group(test_elm)
+            self._run_test_group(test_elm, skip)
         elif isinstance(test_elm, TestCase):
-            self._run_test_case(test_elm)
+            if not skip:
+                self._run_test_case(test_elm)
+            else:
+                self._skip_test_case(test_elm)
         else:
-            assert False, "Test Element must be TestCase or "\
-                "TestGroup not %s" % type(test_elm)
+            assert False, ("Test Element must be TestCase or "
+                           "TestGroup not %s" % type(test_elm))
 
     def _run_test_case(self, test_case):
-        assert isinstance(test_case, TestCase), \
-            "test_elm must be TestCase, not %s" % type(test_case)
+        assert isinstance(test_case, TestCase), ("test_elm must be TestCase,"
+                                                 "not %s" % type(test_case))
         test_case.start_time = datetime.now(tzutc())
         logger.info(TEST_CASES_SEPARATOR)
         try:
@@ -292,27 +295,40 @@ class TestRunner(object):
                     logger.error("Test Case execution failed: %s",
                                  test_case.exc)
             self.plmanager.results_collector.add_test_result(test_case)
-        if test_case.vital and \
-                test_case.status != test_case.TEST_STATUS_PASSED:
+        if (test_case.vital and
+                test_case.status != test_case.TEST_STATUS_PASSED):
             raise VitalTestFailed(test_case.test_name)
-        if test_case.vital4group and test_case.status != \
-                test_case.TEST_STATUS_PASSED:
+        if (test_case.vital4group and test_case.status !=
+                test_case.TEST_STATUS_PASSED):
             raise Vital4GroupTestFailed(test_case.test_name)
 
-    def _run_test_group(self, test_group):
-        assert isinstance(test_group, TestGroup), \
-                "test_elm must be TestGroup, not %s" % type(test_group)
+    def _skip_test_case(self, test_case):
+        assert isinstance(test_case, TestCase), ("test_elm must be TestCase,"
+                                                 " not %s" % type(test_case))
+        test_case.start_time = test_case.end_time = datetime.now(tzutc())
+        logger.info(TEST_CASES_SEPARATOR)
+        test_case.status = test_case.TEST_STATUS_SKIPPED
+        test_case.exc = SkipTest
+        logger.info("Skipped: %s, the reason: %s",
+                    test_case.test_name, SkipTest)
+        self.plmanager.results_collector.add_test_result(test_case)
+
+    def _run_test_group(self, test_group, skip=False):
+        assert isinstance(test_group, TestGroup), ("test_elm must be "
+                                                   "TestGroup, not %s" %
+                                                   type(test_group))
         test_group.start_time = datetime.now(tzutc())
         try:
-            self.plmanager.test_groups.pre_test_group(test_group)
-            logger.info(TEST_CASES_SEPARATOR)
+            if not skip:
+                self.plmanager.test_groups.pre_test_group(test_group)
+                logger.info(TEST_CASES_SEPARATOR)
+                self.plmanager.test_skippers.should_be_test_group_skipped(
+                    test_group)
             logger.info("Starting %s", test_group)
-            self.plmanager.test_skippers.should_be_test_group_skipped(
-                test_group)
             if test_group.workers == 1:
                 for test_elm in test_group:
                     try:
-                        self._run_test_elm(test_elm)
+                        self._run_test_elm(test_elm, skip)
                     except Vital4GroupTestFailed:
                         logger.error('Vital for group test failed: %s',
                                      test_elm.test_name)
@@ -320,34 +336,23 @@ class TestRunner(object):
                                     test_group.test_name)
                         raise SkipTest
 
-                    if test_elm.status == _TestElm.TEST_STATUS_PASSED:
-                        test_group.passed += 1
-                    elif test_elm.status == _TestElm.TEST_STATUS_FAILED:
-                        test_group.failed += 1
-                    elif test_elm.status == _TestElm.TEST_STATUS_SKIPPED:
-                        test_group.skipped += 1
-                    elif test_elm.status == _TestElm.TEST_STATUS_ERROR:
-                        test_group.error += 1
-                    else:
-                        assert False, "status has to be defined for "\
-                            "each TestElement: %s" % test_elm.status
+                    self._report_test_case_status(test_elm, test_group)
             elif test_group.workers > 1:
-                self.__run_test_group_in_parallel(test_group)
+                self.__run_test_group_in_parallel(test_group, skip)
                 for test_elm in test_group:
                     logger.warning("%s", test_elm.status)
             else:
-                assert False, 'number of workers must be positive not %s' % \
-                    test_group.workers
+                assert False, ('number of workers must be positive not %s' %
+                               test_group.workers)
         except TimeoutExpiredError as e:
             test_group.status = test_group.TEST_STATUS_ERROR
             logger.error("Failed: %s, the reason: %s", test_group.test_name, e)
         except SkipTest as s:
             test_group.status = test_group.TEST_STATUS_SKIPPED
             logger.info("Skipped: %s, the reason: %s", test_group.test_name, s)
-            # raise SkipTest("FIXME: I don't know what should I do here:
-            # %s" % s)
-            # TODO: what will we do here?, maybe we should go over whole
-            # content and mark everything as Skipped.
+            for test_elm in test_group:
+                self._run_test_elm(test_elm, skip=True)
+                self._report_test_case_status(test_elm, test_group)
         finally:
             test_group.end_time = datetime.now(tzutc())
             self.plmanager.test_groups.post_test_group(test_group)
@@ -356,14 +361,16 @@ class TestRunner(object):
             self.plmanager.results_collector.add_test_result(test_group)
 
         if test_group.vital:
-            if test_group.failed != 0 or \
-                    test_group.skipped != 0 or \
-                    test_group.error != 0:
+            if (test_group.failed != 0 or
+                    test_group.skipped != 0 or
+                    test_group.error != 0):
                 raise VitalTestFailed(test_group.test_name)
         if test_group.error > 0:
             test_group.status = _TestElm.TEST_STATUS_ERROR
         elif test_group.failed > 0:
             test_group.status = _TestElm.TEST_STATUS_FAILED
+        elif test_group.skipped > 0:
+            test_group.status = _TestElm.TEST_STATUS_SKIPPED
         else:
             test_group.status = _TestElm.TEST_STATUS_PASSED
 
@@ -371,10 +378,10 @@ class TestRunner(object):
             logger.error("Test Group failed: %s: %s", test_group.test_name,
                          test_group.exc)
 
-    def __run_test_group_in_parallel(self, test_group):
+    def __run_test_group_in_parallel(self, test_group, skip=False):
         logger.debug("Start running tests in parallel. join timeout = %s",
                      self._default_join_timeout)
-        jobs = [Job(target=self._run_test_elm, args=(x,))
+        jobs = [Job(target=self._run_test_elm, args=(x, skip,))
                 for x in test_group]
         if not jobs:
             return
@@ -386,3 +393,17 @@ class TestRunner(object):
             if isinstance(job.exception, VitalTestFailed):
                 raise job.exception
         # TODO: check whether something finished with exception
+
+    def _report_test_case_status(self, test_elm, test_group):
+        if isinstance(test_elm, TestCase):
+            if test_elm.status == _TestElm.TEST_STATUS_PASSED:
+                test_group.passed += 1
+            elif test_elm.status == _TestElm.TEST_STATUS_FAILED:
+                test_group.failed += 1
+            elif test_elm.status == _TestElm.TEST_STATUS_SKIPPED:
+                test_group.skipped += 1
+            elif test_elm.status == _TestElm.TEST_STATUS_ERROR:
+                test_group.error += 1
+            else:
+                assert False, ("status has to be defined for "
+                               "each TestElement: %s" % test_elm.status)

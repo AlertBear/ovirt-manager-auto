@@ -8,7 +8,7 @@ This plugin counts number of passed, skipped and failed test cases
 """
 
 import logging
-from art.test_handler.test_runner import _TestElm
+from art.test_handler.test_runner import _TestElm, TestCase
 from art.test_handler.plmanagement import Component, implements
 from art.test_handler.plmanagement.interfaces.application import (
     IApplicationListener
@@ -44,6 +44,8 @@ class TestsResultsSummary(Component):
                     related to test_case
          * test_case - TestCase object
         """
+        if not isinstance(result, TestCase):
+            return
         if result['status'] == _TestElm.TEST_STATUS_PASSED:
             self.passed += 1
         elif result['status'] == _TestElm.TEST_STATUS_FAILED:
