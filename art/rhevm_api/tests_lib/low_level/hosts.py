@@ -993,12 +993,13 @@ def _prepareHostNicObject(**kwargs):
     """
     preparing Host Nic object
     Author: atal
+    if update exists in kwargs the nic_obj should be updated and not created
     return: Host Nic data structure object
     """
-
     add = True
-    if 'nic' in kwargs:
-        nic_obj = kwargs.get('nic')
+    if 'update' in kwargs:
+        nic_obj = kwargs.get('update')
+        kwargs['name'] = nic_obj.get_name()
         add = False
     else:
         nic_obj = data_st.HostNIC()
@@ -1278,7 +1279,7 @@ def genSNNic(nic, **kwargs):
         * gateway - gateway address incase of static protocol
     return True, dict with host nic element.
     """
-    kwargs.update([('name', nic)])
+    kwargs.update({'name': nic})
     nic_obj = _prepareHostNicObject(**kwargs)
 
     return True, {'host_nic': nic_obj}

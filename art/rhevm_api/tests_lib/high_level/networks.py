@@ -985,3 +985,45 @@ def create_basic_setup(datacenter, storage_type, version, cluster=None,
                            cluster=cluster):
                 return False
     return True
+
+
+def update_network_host(host, nic, auto_nics, save_config=True, **kwargs):
+    """
+    Description: Updates network on Host NIC
+    Author: gcheresh
+    Parameters:
+       *  *host* - Host name
+       *  *nic* - Interface with network to be updated
+       *  *auto_nics* - List of NICs, beside the NIC to be updated
+       *  *save_config* - Flag to save configuration after update
+       *  *kwargs* - dictionary of parameters to be updated on existing network
+           Example for kwargs:
+           {"address": "10.10.10.10", "netmask": "255.255.255.0",
+           "boot_protocol": "static",
+           "properties": {"bridge_opts": "Priority=7smax_age=1998",
+                       "ethtool_opts": "--offload eth2 rx on"}}
+    **Return**: True if update succeeded, otherwise False
+    """
+    nic_obj = getHostNic(host=host, nic=nic)
+    kwargs.update({'update': nic_obj})
+    rc, out = genSNNic(nic=nic_obj, **kwargs)
+    if not rc:
+        logger.error("Cannot generate network object for nic")
+        return False
+
+    logger.info("Sending SN request to host %s", host)
+    if not sendSNRequest(True,
+                         host=host,
+                         nics=[out['host_nic']],
+                         auto_nics=auto_nics,
+                         check_connectivity='true',
+                         connectivity_timeout=60, force='false'):
+        logger.error("Failed to send SN request to host %s", host)
+        return False
+
+    if save_config:
+        logger.info("Saving network configuration on host %s" % host)
+        if not commitNetConfig(True, host=host):
+            logger.error("Couldn't save network configuration")
+            return False
+    return True
