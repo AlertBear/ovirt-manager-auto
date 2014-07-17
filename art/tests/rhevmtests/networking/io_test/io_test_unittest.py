@@ -11,7 +11,7 @@ from art.unittest_lib import NetworkTest as TestCase
 from art.test_handler.tools import tcms
 import logging
 from art.rhevm_api.tests_lib.high_level.networks import \
-    createAndAttachNetworkSN, removeAllNetworks
+    createAndAttachNetworkSN, remove_all_networks
 from art.rhevm_api.tests_lib.low_level.networks import \
     addNetwork, addNetworkToCluster, updateNetwork, createNetworkInDataCenter
 from art.test_handler.exceptions import NetworkException
@@ -42,10 +42,14 @@ class IOTestCaseBase(TestCase):
     @classmethod
     def teardown_class(cls):
         """
-        Remove networks from the setup.
+        Remove networks from the setup and clean up host
         """
         logger.info("Starting teardown")
-        if not removeAllNetworks(config.DC_NAME[0]):
+        if not (remove_all_networks(datacenter=config.DC_NAME[0],
+                                    mgmt_network=config.MGMT_BRIDGE) and
+                createAndAttachNetworkSN(host=config.HOSTS[0],
+                                         network_dict={},
+                                         auto_nics=[config.HOST_NICS[0]])):
             raise NetworkException("Cannot remove network from setup")
 
 
@@ -91,7 +95,6 @@ class Test01(IOTestCaseBase):
                 positive=True, network=networkName,
                 cluster=config.CLUSTER_NAME[0]), "Cannot add network %s to "
                                                  "Cluster" % networkName)
-
         for networkName in invalid_names:
             logger.info("Trying to create networks with the name %s - should"
                         " fail", networkName)
@@ -108,6 +111,19 @@ class Test02(IOTestCaseBase):
     Negative: Trying to create networks with invalid IPs
     """
     __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Add new network
+        """
+        local_dict = {'invalid_ips': {'required': 'false'}}
+
+        logger.info("Add Network to setup")
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
+                                        network_dict=local_dict):
+            raise NetworkException("Cannot create new Network")
 
     @istest
     @tcms(14499, 390938)
@@ -134,9 +150,7 @@ class Test02(IOTestCaseBase):
                                           'required': 'false'}}
 
             self.assertFalse(
-                createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                         cluster=config.CLUSTER_NAME[0],
-                                         host=config.HOSTS[0],
+                createAndAttachNetworkSN(host=config.HOSTS[0],
                                          network_dict=local_dict,
                                          auto_nics=[config.HOST_NICS[0]]),
                 "Network with invalid IP (%s) was created" % invalid_ip)
@@ -148,6 +162,19 @@ class Test03(IOTestCaseBase):
     Negative: Trying to create networks with invalid netmask
     """
     __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Add new network
+        """
+        local_dict = {'invalid_netmask': {'required': 'false'}}
+
+        logger.info("Add Network to setup")
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
+                                        network_dict=local_dict):
+            raise NetworkException("Cannot create new Network")
 
     @istest
     @tcms(14499, 390940)
@@ -173,9 +200,7 @@ class Test03(IOTestCaseBase):
                                               'required': 'false'}}
 
             self.assertFalse(
-                createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                         cluster=config.CLUSTER_NAME[0],
-                                         host=config.HOSTS[0],
+                createAndAttachNetworkSN(host=config.HOSTS[0],
                                          network_dict=local_dict,
                                          auto_nics=[config.HOST_NICS[0]]),
                 "Network invalid_netmask with invalid ip (%s) was created"

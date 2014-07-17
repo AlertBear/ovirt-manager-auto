@@ -25,7 +25,8 @@ from art.rhevm_api.tests_lib.low_level.clusters import addCluster
 from utilities import machine
 from art.rhevm_api.utils.test_utils import restartVdsmd, sendICMP
 from art.rhevm_api.tests_lib.low_level.networks import addNetwork,\
-    getClusterNetwork, removeNetwork, addNetworkToCluster, NET_API,\
+    getClusterNetwork, getNetworksInDataCenter, removeNetwork,\
+    addNetworkToCluster, NET_API,\
     DC_API, updateNetwork, getClusterNetworks, MGMT_NETWORK
 from art.rhevm_api.tests_lib.low_level.hosts import sendSNRequest,\
     commitNetConfig, genSNNic, getHostNic, addHost
@@ -788,45 +789,55 @@ class TrafficMonitor(object):
                                 ', '.join(filter(None, [args, kwargs])))
 
 
-def removeAllNetworks(datacenter=None, cluster=None):
-    '''
+def remove_all_networks(datacenter=None, cluster=None,
+                        mgmt_network=MGMT_NETWORK):
+    """
     Description: Remove all networks from DC/CL or from entire setup
     If cluster is specified - remove all network from specified cluster
     Elif datacenter is specified - remove all networks from specified DC
     If no datacenter or cluster are specified remove all networks from all DCs
     In all cases we don't remove rhevm network
     **Author**: myakove
+    **Editor**: mpavlik
     **Parameters**:
         *  *datacenter* - name of the datacenter
         *  *cluster* - name of the cluster
-    '''
-    networks_list = []
+        *  *mgmt_netowrk* - name of management network (to be excluded from
+        removal)
+
+    **Returns**: True if removing networks succeeded, otherwise False
+    """
+    networks_to_remove = []
 
     if cluster:
         cl_networks = getClusterNetworks(cluster)
-        cl_networks_list = NET_API.get(cl_networks)
-        for net in cl_networks_list:
-            networks_list.append(net.name)
+        networks_list = NET_API.get(cl_networks)
+        removal_area = "cluster " + cluster
+
+    elif datacenter:
+        networks_list = getNetworksInDataCenter(datacenter)
+        removal_area = "datacenter " + datacenter
 
     else:
-        dc_networks_list = NET_API.get(absLink=False)
-        for net in dc_networks_list:
-            if datacenter:
-                dc_obj = DC_API.find(datacenter)
-                if net.get_data_center().get_id() == dc_obj.get_id():
-                    networks_list.append(net.name)
+        networks_list = NET_API.get(absLink=False)
+        removal_area = "all clusters and all data centers"
 
-            else:
-                for net in dc_networks_list:
-                    networks_list.append(net.name)
+    for net in networks_list:
+        if net.name != mgmt_network:
+            networks_to_remove.append(net.name)
 
-    networks_to_remove = filter(lambda x: x != MGMT_NETWORK, networks_list)
+    if not networks_to_remove:
+        logger.info("There is no network to be removed")
+        return True
 
-    logger.info("Removing networks")
-    if not removeMultiNetworks(True, networks_to_remove):
-        return False
+    network = "network" if len(networks_to_remove) == 1 else "networks: "
 
-    return True
+    logger.info("Removing %s %s from %s",
+                network,
+                ', '.join(networks_to_remove),
+                removal_area)
+
+    return removeMultiNetworks(True, networks_to_remove)
 
 
 def networkTeardown(datacenter, storagedomain, hosts=list(), auto_nics=list(),
