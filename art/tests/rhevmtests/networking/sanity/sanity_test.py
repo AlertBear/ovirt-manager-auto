@@ -685,7 +685,7 @@ class SanityCase10(TestCase):
         logger.info("Checking that spoofing filter is enabled")
         self.assertTrue(checkSpoofingFilterRuleByVer(
             host=config.VDC_HOST,
-            user=config.VDC_USER,
+            user=config.VDC_ROOT_USER,
             passwd=config.VDC_ROOT_PASSWORD),
             "Spoofing filter is not enabled")
 

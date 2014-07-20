@@ -6,6 +6,8 @@ __test__ = False
 
 from art.test_handler.settings import ART_CONFIG, opts
 
+GOLDEN_ENV = False
+
 # RHEVM related constants
 ENUMS = opts['elements_conf']['RHEVM Enums']
 PERMITS = opts['elements_conf']['RHEVM Permits']
@@ -19,14 +21,15 @@ REST_CONNECTION = ART_CONFIG['REST_CONNECTION']
 PRODUCT_NAME = PARAMETERS['product_name']
 
 # ENGINE SECTION
-VDC_HOST = ART_CONFIG['REST_CONNECTION']['host']
+VDC_HOST = REST_CONNECTION['host']
 VDC_ROOT_PASSWORD = PARAMETERS.get('vdc_root_password')
-VDC_PASSWORD = ART_CONFIG['REST_CONNECTION']['password']
-VDC_USER = "root"
+VDC_ROOT_USER = "root"
+VDC_PASSWORD = REST_CONNECTION['password']
 VDC_PORT = REST_CONNECTION['port']
 VDC_ADMIN_USER = REST_CONNECTION['user']
 VDC_ADMIN_DOMAIN = REST_CONNECTION['user_domain']
 ENGINE_ENTRY_POINT = REST_CONNECTION['entry_point']
+
 # DATA CENTER SECTION
 DC_NAME = ["".join([TEST_NAME, "_DC", str(i)]) for i in range(5)]
 # CLUSTER SECTION
@@ -67,6 +70,7 @@ COBBLER_PROFILE = PARAMETERS.get('cobbler_profile', None)
 COBBLER_ADDRESS = PARAMETERS.get('cobbler_address', None)
 COBBLER_USER = PARAMETERS.get('cobbler_user', None)
 COBBLER_PASSWD = PARAMETERS.get('cobbler_passwd', None)
+INSTALLATION = PARAMETERS.get('installation', 'true')
 PGPASS = "123456"
 MB = 1024 ** 2
 GB = 1024 ** 3
@@ -77,3 +81,6 @@ DISK_INTERFACE = ENUMS['interface_virtio']
 AD_USER_DOMAIN = PARAMETERS['ad_user_domain']
 AD_USERNAME = PARAMETERS['ad_user']
 AD_USER_NO_ROLES = PARAMETERS['no_roles_user']
+
+# MISC PARAMETERS
+MAX_WORKERS = PARAMETERS.get('max_workers', 10)

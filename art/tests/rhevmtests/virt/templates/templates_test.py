@@ -20,7 +20,7 @@ import art.test_handler.exceptions as errors
 from art.test_handler.settings import opts
 from art.test_handler.tools import tcms
 from random import choice
-import config
+from rhevmtests.virt import config
 from art.unittest_lib import attr
 
 HOST_API = get_api('host', 'hosts')
@@ -367,7 +367,7 @@ class VMOs(BaseTemplateVMClass):
         logger.info("Default OS type is %s", cls.default_os)
         # Get list of all possible OS types, and exclude default
         cap = CAP_API.get(absLink=False)
-        version = config.version.split('.')
+        version = config.COMP_VERSION.split('.')
         version_caps = [v for v in cap if str(v.get_major()) == version[0] and
                         str(v.get_minor()) == version[1]][0]
         os_list = version_caps.get_os_types().get_os_type()
@@ -721,7 +721,7 @@ class VMBoot(BaseTemplateVMClass):
             cls.default_boot = blank_temp.get_os().get_boot()[0].get_dev()
         logger.info("Default boot device is %s", cls.default_boot)
         cap = CAP_API.get(absLink=False)
-        version = config.version.split('.')
+        version = config.COMP_VERSION.split('.')
         version_caps = [v for v in cap if str(v.get_major()) == version[0] and
                         str(v.get_minor()) == version[1]][0]
         boot_types = version_caps.get_boot_devices().get_boot_device()
@@ -774,7 +774,7 @@ class VMDomain(BaseTemplateVMClass):
     template_name = 'template_domain'
     copy_vm = 'domain_copy'
     vm_parameters = BASIC_PARAMETERS.copy()
-    vm_parameters['domainName'] = config.domain_name
+    vm_parameters['domainName'] = config.VDC_ADMIN_DOMAIN
 
     @istest
     def check_domain_inheritance_template(self):
@@ -833,14 +833,14 @@ class NegativeTemplateCases(BaseTemplateClass):
                     cls.additional_datacenter)
         if not dcs.addDataCenter(True, name=cls.additional_datacenter,
                                  local=False,
-                                 version=config.version):
+                                 version=config.COMP_VERSION):
             raise errors.DataCenterException("Datacenter creation failed")
         logger.info("Add cluster to datacenter %s", cls.additional_cluster)
         if not clusters.addCluster(True,
                                    name=cls.additional_cluster,
-                                   version=config.version,
+                                   version=config.COMP_VERSION,
                                    data_center=cls.additional_datacenter,
-                                   cpu=config.cpu_name):
+                                   cpu=config.CPU_NAME):
             raise errors.ClusterException("Cluster creation failed")
         super(NegativeTemplateCases, cls).setup_class()
 
@@ -1029,7 +1029,7 @@ class TemplateNic(BaseTemplateClass):
         """
         Add, edit and remove nic from template
         """
-        network = config.cluster_network
+        network = config.MGMT_BRIDGE
         logger.info("Add nic %s to template %s",
                     self.template_name, self.nic)
         self.assertTrue(templates.addTemplateNic(True, self.template_name,

@@ -2,7 +2,7 @@
 Regression Vms Test - Basic tests to check vms functionality
 """
 
-import config
+from rhevmtests.virt import config
 import logging
 from art.unittest_lib import ComputeTest as TestCase
 from nose.tools import istest
@@ -267,7 +267,7 @@ class AddVm(TestCase):
         """
         vm_name = 'domain_vm'
         self.assertTrue(vm_api.addVm(True, name=vm_name,
-                                     domainName=config.user_domain,
+                                     domainName=config.VDC_ADMIN_DOMAIN,
                                      cluster=config.cluster_name))
 
     @istest
@@ -382,7 +382,7 @@ class UpdateVm(BaseVm):
         affinity = ENUMS['vm_affinity_migratable']
         self.assertTrue(vm_api.updateVm(True, self.vm_name,
                                         placement_affinity=affinity,
-                                        placement_host=config.host_0))
+                                        placement_host=config.HOSTS[0]))
 
     @attr(tier=1)
     @istest
@@ -393,7 +393,7 @@ class UpdateVm(BaseVm):
         affinity = ENUMS['vm_affinity_user_migratable']
         self.assertTrue(vm_api.updateVm(True, self.vm_name,
                                         placement_affinity=affinity,
-                                        placement_host=config.host_0))
+                                        placement_host=config.HOSTS[0]))
 
     @attr(tier=1)
     @istest
@@ -404,7 +404,7 @@ class UpdateVm(BaseVm):
         affinity = ENUMS['vm_affinity_pinned']
         self.assertTrue(vm_api.updateVm(True, self.vm_name,
                                         placement_affinity=affinity,
-                                        placement_host=config.host_0))
+                                        placement_host=config.HOSTS[0]))
 
     @attr(tier=1)
     @istest
@@ -611,11 +611,11 @@ class DifferentVmTestCases(TestCase):
         logger.info("Add new vm %s", vm_name)
         if not vm_api.addVm(True, name=vm_name, cluster=config.cluster_name):
             raise errors.VMException("Failed to create vm")
-        update_vm_status_in_database(vm_name, vdc=config.VDC,
+        update_vm_status_in_database(vm_name, vdc=config.VDC_HOST,
                                      status=int(ENUMS['vm_status_locked_db']),
-                                     vdc_pass=config.VDC_PASSWORD)
-        self.assertTrue(vm_api.remove_locked_vm(vm_name, vdc=config.VDC,
-                                                vdc_pass=config.VDC_PASSWORD))
+                                     vdc_pass=config.VDC_ROOT_PASSWORD)
+        self.assertTrue(vm_api.remove_locked_vm(vm_name, vdc=config.VDC_HOST,
+                        vdc_pass=config.VDC_ROOT_PASSWORD))
 
     @istest
     def check_vm_cdrom(self):
@@ -660,12 +660,12 @@ class VmNetwork(BaseVm):
         logger.info("Add nic %s to vm %s", self.nics[0], self.vm_name)
         self.assertTrue(vm_api.addNic(True, vm=self.vm_name,
                                       name=self.nics[0],
-                                      network=config.cluster_network))
+                                      network=config.MGMT_BRIDGE))
         logger.info("Add additional nic %s to vm %s",
                     self.nics[1], self.vm_name)
         self.assertTrue(vm_api.addNic(True, vm=self.vm_name,
                                       name=self.nics[1],
-                                      network=config.cluster_network))
+                                      network=config.MGMT_BRIDGE))
         logger.info("Update nic %s name to %s", self.nics[1], self.nics[2])
         self.assertTrue(vm_api.updateNic(True, vm=self.vm_name,
                                          nic=self.nics[1], name=self.nics[2]))
@@ -1027,20 +1027,20 @@ class RunVmOnce(BaseVmWithDisk):
         logger.info("Add nic %s to vm %s", nic_name, cls.vm_name)
         if not vm_api.addNic(True, vm=cls.vm_name,
                              name=nic_name,
-                             network=config.cluster_network):
+                             network=config.MGMT_BRIDGE):
             raise errors.VMException("Failed to add nic to vm")
         logger.info("Import iso storage domain %s:%s",
-                    config.shared_iso_domain_address,
-                    config.shared_iso_domain_path)
+                    config.SHARED_ISO_DOMAIN_ADDRESS,
+                    config.SHARED_ISO_DOMAIN_PATH)
         if not sd_api.importStorageDomain(True, ENUMS['storage_dom_type_iso'],
                                           ENUMS['storage_type_nfs'],
-                                          config.shared_iso_domain_address,
-                                          config.shared_iso_domain_path,
-                                          config.host_0):
+                                          config.SHARED_ISO_DOMAIN_ADDRESS,
+                                          config.SHARED_ISO_DOMAIN_PATH,
+                                          config.HOSTS[0]):
             raise errors.StorageDomainException("Failed to add shared iso "
                                                 "domain storage")
         high_sd_api.attach_and_activate_domain(config.dc_name,
-                                               config.shared_iso_domain_name)
+                                               config.SHARED_ISO_DOMAIN_NAME)
 
     @classmethod
     def teardown_class(cls):
@@ -1049,11 +1049,11 @@ class RunVmOnce(BaseVmWithDisk):
         """
         high_sd_api.detach_and_deactivate_domain(config.dc_name,
                                                  config.
-                                                 shared_iso_domain_name)
+                                                 SHARED_ISO_DOMAIN_NAME)
         logger.info("Remove shared iso domain %s",
-                    config.shared_iso_domain_name)
-        if not sd_api.removeStorageDomain(True, config.shared_iso_domain_name,
-                                          config.host_0):
+                    config.SHARED_ISO_DOMAIN_NAME)
+        if not sd_api.removeStorageDomain(True, config.SHARED_ISO_DOMAIN_NAME,
+                                          config.HOSTS[0]):
             raise errors.StorageDomainException("Failed to remove iso domain")
         if vm_api.get_vm_state(cls.vm_name) == ENUMS['vm_state_paused']:
             logger.info("Stop %s vm", cls.vm_name)
@@ -1068,15 +1068,15 @@ class RunVmOnce(BaseVmWithDisk):
         Run once vm with specific domain
         """
         logger.info("Run once vm %s with domain %s",
-                    self.vm_name, config.user_domain)
+                    self.vm_name, config.VDC_ADMIN_DOMAIN)
         if not vm_api.runVmOnce(True, self.vm_name,
-                                domainName=config.user_domain,
-                                user_name=config.username,
-                                password=config.password):
+                                domainName=config.VDC_ADMIN_DOMAIN,
+                                user_name=config.VDC_ADMIN_USER,
+                                password=config.VDC_PASSWORD):
             raise errors.VMException("Failed to run vm")
         vm_obj = vm_api.get_vm_obj(self.vm_name)
         logger.info("Check if vm domain is correct")
-        self.assertTrue(vm_obj.get_domain() == config.user_domain)
+        self.assertTrue(vm_obj.get_domain() == config.VDC_ADMIN_DOMAIN)
         logger.info("Stop vm %s", self.vm_name)
         if not vm_api.stopVm(True, self.vm_name):
             raise errors.VMException("Failed to stop vm")
@@ -1092,7 +1092,7 @@ class RunVmOnce(BaseVmWithDisk):
             logger.info("Run once vm %s boot from %s",
                         self.vm_name, boot_device)
             if not vm_api.runVmOnce(True, self.vm_name,
-                                    cdrom_image=config.cdrom_image_1,
+                                    cdrom_image=config.CDROM_IMAGE_1,
                                     boot_dev=boot_device):
                 raise errors.VMException("Failed to run vm")
             logger.info("Check if vm first boot device is correct")
@@ -1111,7 +1111,7 @@ class RunVmOnce(BaseVmWithDisk):
         logger.info("Run once vm %s in pause mode with attached cd",
                     self.vm_name)
         if not vm_api.runVmOnce(True, self.vm_name,
-                                cdrom_image=config.cdrom_image_1,
+                                cdrom_image=config.CDROM_IMAGE_1,
                                 pause='true'):
             raise errors.VMException("Failed to run vm")
         logger.info("Check if vm state is paused")
@@ -1119,7 +1119,7 @@ class RunVmOnce(BaseVmWithDisk):
                                               state=ENUMS['vm_state_paused']))
         logger.info("Change vm %s cd", self.vm_name)
         self.assertTrue(vm_api.changeCDWhileRunning(self.vm_name,
-                                                    config.cdrom_image_2))
+                                                    config.CDROM_IMAGE_2))
         logger.info("Stop vm %s", self.vm_name)
         if not vm_api.stopVm(True, self.vm_name):
             raise errors.VMException("Failed to stop vm")
@@ -1131,9 +1131,9 @@ class RunVmOnce(BaseVmWithDisk):
         Run once vm with attached floppy
         """
         logger.info("Run once vm %s with attached floppy %s",
-                    self.vm_name, config.floppy_image)
+                    self.vm_name, config.FLOPPY_IMAGE)
         self.assertTrue(vm_api.runVmOnce(True, self.vm_name,
-                                         floppy_image=config.floppy_image,
+                                         floppy_image=config.FLOPPY_IMAGE,
                                          pause='true'))
         logger.info("Stop vm %s", self.vm_name)
         if not vm_api.stopVm(True, self.vm_name):
@@ -1165,7 +1165,7 @@ class VmPool(BaseVmWithDiskTemplate):
                                               size=2))
         logger.info("Add user role to vm pool %s", self.pool_name)
         self.assertTrue(
-            addVmPoolPermissionToUser(True, user=config.username,
+            addVmPoolPermissionToUser(True, user=config.USERNAME,
                                       vmpool=self.pool_name,
                                       role=ENUMS['role_name_user_role']))
         logger.info("Update vm pool %s with new parameters", self.pool_name)

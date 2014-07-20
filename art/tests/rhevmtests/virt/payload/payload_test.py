@@ -16,7 +16,7 @@ import art.rhevm_api.tests_lib.high_level.vms as high_vms
 from art.rhevm_api.tests_lib.low_level.hooks import \
     checkForFileExistenceAndContent
 from art.rhevm_api.utils.resource_utils import runMachineCommand
-import config
+from rhevmtests.virt import config
 
 
 logger = logging.getLogger(__name__)
@@ -34,6 +34,7 @@ VM_DSC = 'payload test'
 TMP_DIR = '/tmp'
 TIMEOUT = 60
 CONN_TIMEOUT = 30
+TCMS_PLAN_ID = 7775
 
 
 @attr(tier=0)
@@ -45,31 +46,32 @@ class Payloads(TestCase):
     payload_filename = None
     payload_content = None
     payload_type = None
+    vm_name = "payloads_vm"
 
     @classmethod
     def teardown_class(cls):
         """
         Stop and remove vm after each test case
         """
-        logging.info("Stop vm %s", config.payload_vm)
-        if not vms.stopVm(True, config.payload_vm):
+        logging.info("Stop vm %s", cls.vm_name)
+        if not vms.stopVm(True, cls.vm_name):
             raise errors.VMException("Failed to stop vm %s" %
-                                     config.payload_vm)
-        logging.info("Remove vm %s", config.payload_vm)
-        if not vms.removeVm(True, config.payload_vm):
+                                     cls.vm_name)
+        logging.info("Remove vm %s", cls.vm_name)
+        if not vms.removeVm(True, cls.vm_name):
             raise errors.VMException("Failed to remove vm %s" %
-                                     config.payload_vm)
+                                     cls.vm_name)
         logging.info("Clean files from engine machine after existence check")
         filename = os.path.join(TMP_DIR, cls.payload_filename)
         cmd = "rm -f %s" % filename
         logging.info("Remove file %s from engine machine" % filename)
-        status, out = runMachineCommand(True, ip=config.source_host,
-                                        user=config.host_user,
-                                        password=config.host_password,
+        status, out = runMachineCommand(True, ip=config.VDC_HOST,
+                                        user=config.VDC_ROOT_USER,
+                                        password=config.VDC_ROOT_PASSWORD,
                                         cmd=cmd)
         if not status:
             raise errors.VMException("Failed to run command %s on engine %s" %
-                                     (cmd, config.VDC))
+                                     (cmd, config.VDC_HOST))
 
     @classmethod
     def _create_vm_with_payloads(cls):
@@ -78,44 +80,44 @@ class Payloads(TestCase):
         """
         logging.info("Add new vm %s with payloads"
                      "(type=%s, filename=%s,"" content=%s)",
-                     config.payload_vm, cls.payload_type,
+                     cls.vm_name, cls.payload_type,
                      cls.payload_filename, cls.payload_content)
-        if not vms.addVm(True, name=config.payload_vm,
-                         cluster=config.cluster_name,
-                         template=config.template_name,
+        if not vms.addVm(True, name=cls.vm_name,
+                         cluster=config.CLUSTER_NAME[0],
+                         template=config.TEMPLATE_NAME[0],
                          payloads=[(cls.payload_type, cls.payload_filename,
                                     cls.payload_content)]):
             raise errors.VMException("Failed to add vm %s" %
-                                     config.payload_vm)
+                                     cls.vm_name)
 
     @classmethod
     def _update_vm_with_payloads(cls):
         """
         First create vm without payloads and after it update it with payloads
         """
-        logging.info("Add new vm %s without payloads", config.payload_vm)
-        if not vms.addVm(True, name=config.payload_vm,
-                         cluster=config.cluster_name,
-                         template=config.template_name):
+        logging.info("Add new vm %s without payloads", cls.vm_name)
+        if not vms.addVm(True, name=cls.vm_name,
+                         cluster=config.CLUSTER_NAME[0],
+                         template=config.TEMPLATE_NAME[0]):
             raise errors.VMException("Failed to add vm %s" %
-                                     config.payload_vm)
+                                     cls.vm_name)
         logging.info("Update vm %s with payloads"
                      "(type=%s, filename=%s,"" content=%s)",
-                     config.payload_vm, cls.payload_type,
+                     cls.vm_name, cls.payload_type,
                      cls.payload_filename, cls.payload_content)
-        if not vms.updateVm(True, config.payload_vm,
+        if not vms.updateVm(True, cls.vm_name,
                             payloads=[(cls.payload_type,
                                        cls.payload_filename,
                                        cls.payload_content)]):
             raise errors.VMException("Failed to update vm %s with payloads" %
-                                     config.payload_vm)
+                                     cls.vm_name)
 
     @classmethod
     def _get_vm_ip(cls):
         """
         Start vm and return vm ip
         """
-        return high_vms.get_vm_ip(config.payload_vm)
+        return high_vms.get_vm_ip(cls.vm_name)
 
     @classmethod
     def _check_existence_of_payload(cls, payload_device):
@@ -125,33 +127,35 @@ class Payloads(TestCase):
         payload_dir = os.path.join(TMP_DIR, cls.payload_type)
         ip = cls._get_vm_ip()
         logging.info("Create new directory %s on vm %s and modprobe device",
-                     payload_dir, config.payload_vm)
+                     payload_dir, cls.vm_name)
         cmd = 'mkdir %s && modprobe %s' % (payload_dir, cls.payload_type)
-        status, out = runMachineCommand(True, ip=ip, user=config.vm_user,
-                                        password=config.vm_password, cmd=cmd)
+        status, out = runMachineCommand(True, ip=ip,
+                                        user=config.VMS_LINUX_USER,
+                                        password=config.VMS_LINUX_PW, cmd=cmd)
         if not status:
             raise errors.VMException("Failed to run command %s on vm %s: %s" %
-                                     (cmd, config.payload_vm, out))
+                                     (cmd, cls.vm_name, out))
         logging.info("Mount device %s to directory %s",
                      payload_device, payload_dir)
         cmd = 'mount %s %s' % (payload_device, payload_dir)
-        status, out = runMachineCommand(True, ip=ip, user=config.vm_user,
-                                        password=config.vm_password,
+        status, out = runMachineCommand(True, ip=ip,
+                                        user=config.VMS_LINUX_USER,
+                                        password=config.VMS_LINUX_PW,
                                         cmd=cmd, timeout=TIMEOUT,
                                         conn_timeout=CONN_TIMEOUT)
         if not status:
             raise errors.VMException("Failed to run command %s on vm %s: %s" %
-                                     (cmd, config.payload_vm, out))
+                                     (cmd, cls.vm_name, out))
         logging.info("Check if file content exist on vm %s",
-                     config.payload_vm)
+                     cls.vm_name)
         filename = os.path.join(payload_dir, cls.payload_filename)
         if not checkForFileExistenceAndContent(True, ip=ip,
-                                               user=config.vm_user,
-                                               password=config.vm_password,
+                                               user=config.VMS_LINUX_USER,
+                                               password=config.VMS_LINUX_PW,
                                                filename=filename,
                                                content=cls.payload_content):
             logging.error("File %s does not exist on vm %s",
-                          filename, config.payload_vm)
+                          filename, cls.vm_name)
             return False
         return True
 
@@ -200,7 +204,7 @@ class CreateVmWithCdromPayload(PayloadViaCreate):
     payload_content = PAYLOADS_CONTENT[0]
     payload_type = PAYLOADS_TYPE[0]
 
-    @tcms(config.TCMS_PLAN_ID, '222049')
+    @tcms(TCMS_PLAN_ID, '222049')
     @istest
     def check_existence_of_payload(self):
         """
@@ -208,13 +212,13 @@ class CreateVmWithCdromPayload(PayloadViaCreate):
         """
         self.assertTrue(self._check_existence_of_payload(PAYLOADS_DEVICES[0]))
 
-    @tcms(config.TCMS_PLAN_ID, '304572')
+    @tcms(TCMS_PLAN_ID, '304572')
     @istest
     def check_object_existence(self):
         """
         Check if payload object exist under vm
         """
-        self.assertTrue(vms.getVmPayloads(True, config.payload_vm)[0])
+        self.assertTrue(vms.getVmPayloads(True, self.vm_name)[0])
 
 
 class UpdateVmWithCdromPayloadAndCheckPayloadObject(PayloadViaUpdate):
@@ -226,7 +230,7 @@ class UpdateVmWithCdromPayloadAndCheckPayloadObject(PayloadViaUpdate):
     payload_content = PAYLOADS_CONTENT[1]
     payload_type = PAYLOADS_TYPE[0]
 
-    @tcms(config.TCMS_PLAN_ID, '222050')
+    @tcms(TCMS_PLAN_ID, '222050')
     @istest
     def check_existence_of_payload(self):
         """
@@ -246,7 +250,7 @@ class CdromPayloadComplexContent(PayloadViaUpdate):
     payload_content = PAYLOADS_CONTENT[4]
     payload_type = PAYLOADS_TYPE[0]
 
-    @tcms(config.TCMS_PLAN_ID, '304571')
+    @tcms(TCMS_PLAN_ID, '304571')
     @istest
     def check_existence_of_payload(self):
         """
@@ -264,7 +268,7 @@ class CreateVmWithFloppyPayload(PayloadViaCreate):
     payload_content = PAYLOADS_CONTENT[2]
     payload_type = PAYLOADS_TYPE[1]
 
-    @tcms(config.TCMS_PLAN_ID, '302730')
+    @tcms(TCMS_PLAN_ID, '302730')
     @istest
     def check_existence_of_payload(self):
         """
@@ -282,7 +286,7 @@ class UpdateVmWithFloppyPayload(PayloadViaUpdate):
     payload_content = PAYLOADS_CONTENT[3]
     payload_type = PAYLOADS_TYPE[1]
 
-    @tcms(config.TCMS_PLAN_ID, '302731')
+    @tcms(TCMS_PLAN_ID, '302731')
     @istest
     def check_existence_of_payload(self):
         """

@@ -40,10 +40,14 @@ def setup_module():
                                     cluster=config.CLUSTER_NAME)
     assert vms.removeVm(True, config.VM_NAME[0])
 
-    machine = Machine(config.VDC_HOST, config.VDC_USER,
+    machine = Machine(config.VDC_HOST, config.VDC_ROOT_USER,
                       config.VDC_ROOT_PASSWORD).util(LINUX)
-    setup = Setup(config.VDC_HOST, config.VDC_USER, config.VDC_ROOT_PASSWORD,
-                  dbpassw=config.PGPASS, conf=config.VARS)
+    setup = Setup(
+        config.VDC_HOST,
+        config.VDC_ROOT_USER,
+        config.VDC_ROOT_PASSWORD,
+        dbpassw=config.PGPASS,
+        conf=config.VARS)
     config_util = ConfigUtility(setup)
     config_util(set=config.CUSTOM_PROPERTY, cver=config.VER)
     config_util(set=config.CUSTOM_PROPERTY_VNIC, cver=config.VER)

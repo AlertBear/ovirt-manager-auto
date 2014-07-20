@@ -303,7 +303,7 @@ class NetworkFilterCase05(TestCase):
 
         logger.info("Disabling network filter on engine")
         if not setNetworkFilterStatus(enable=False, host=config.VDC_HOST,
-                                      user=config.VDC_USER,
+                                      user=config.VDC_ROOT_USER,
                                       passwd=config.VDC_ROOT_PASSWORD):
             raise NetworkException("Failed to disable network filter")
 
@@ -345,7 +345,7 @@ class NetworkFilterCase05(TestCase):
         """
         logger.info("Enabling network filter on engine")
         if not setNetworkFilterStatus(enable=True, host=config.VDC_HOST,
-                                      user=config.VDC_USER,
+                                      user=config.VDC_ROOT_USER,
                                       passwd=config.VDC_ROOT_PASSWORD):
             raise NetworkException("Failed to enable network filter")
 
