@@ -1865,32 +1865,28 @@ def validateHostExist(positive, host):
 
 
 @is_action()
-def getHostCompatibilityVersion(positive, host):
+def getHostCompatibilityVersion(host):
     """
     Description: Get Host compatibility version
-    Author: istein
+    Author: istein, gickowic
     Parameters:
        * host - host name
-    Return: True and compatibilty version or False and None
+    Return: Compatibility version if found else None
     """
 
+    # check if given hostname exists in the setup
     try:
         hostObj = HOST_API.find(host)
     except EntityNotFound:
-        return False, {'hostCompatibilityVersion': None}
+        return None
 
+    # Since host returned from API supplies the cluster ID, cluster *must*
+    # exist in rhevm - no need to check
     clId = hostObj.get_cluster().get_id()
-    try:
-        clObj = CL_API.find(clId, 'id')
-    except EntityNotFound:
-        return False, {'hostCompatibilityVersion': None}
+    clObj = CL_API.find(clId, 'id')
 
     cluster = clObj.get_name()
-    status, clCompVer = getClusterCompatibilityVersion(positive, cluster)
-    if not status:
-        return False, {'hostCompatibilityVersion': None}
-    hostCompatibilityVersion = clCompVer['clusterCompatibilityVersion']
-    return True, {'hostCompatibilityVersion': hostCompatibilityVersion}
+    return getClusterCompatibilityVersion(cluster)
 
 
 @is_action()
@@ -2003,22 +1999,22 @@ def getOsInfo(host, root_password=''):
     return True, {'osName': osName}
 
 
-def getClusterCompatibilityVersion(positive, cluster):
+def getClusterCompatibilityVersion(cluster):
     """
     Description: Get Cluster compatibility version
-    Author: istein
+    Author: istein, gickowic
     Parameters:
        * cluster - cluster name
-    Return: True and compatibilty version or False and None
+    Return: Compatibilty version or None
     """
     try:
         clusterObj = CL_API.find(cluster)
     except EntityNotFound as err:
         HOST_API.logger.error(err)
-        return False, {'clusterCompatibilityVersion': None}
+        return None
     clVersion = '{0}.{1}'.format(clusterObj.get_version().get_major(),
                                  clusterObj.get_version().get_minor())
-    return True, {'clusterCompatibilityVersion': clVersion}
+    return clVersion
 
 
 @is_action()

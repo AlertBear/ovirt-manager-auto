@@ -92,6 +92,25 @@ def _prepareStorageDomainObject(positive, **kwargs):
 
     storage_type = kwargs.pop('storage_type', None)
 
+    # Set storage domain metadata format - only for data domains
+    if type_ and type_.lower() == ENUMS['storage_dom_type_data']:
+        storage_format = kwargs.pop('storage_format', None)
+        if host and storage_format is None:
+            hostCompVer = getHostCompatibilityVersion(host)
+            if not hostCompVer:
+                util.logger.error("Can't determine storage domain version")
+                return False
+            if hostCompVer == '2.2':
+                storage_format = ENUMS['storage_format_version_v1']
+            elif hostCompVer == '3.0':
+                # NFS does not support storage metadata format V2
+                storage_format = (ENUMS['storage_format_version_v2'] if
+                                  storage_type == ENUMS['storage_type_iscsi']
+                                  else ENUMS['storage_format_version_v1'])
+            else:
+                storage_format = ENUMS['storage_format_version_v3']
+        sd.set_storage_format(storage_format)
+
     if 'storage_connection' in kwargs:
         storage = Storage()
         storage.id = kwargs.pop('storage_connection')
@@ -100,14 +119,6 @@ def _prepareStorageDomainObject(positive, **kwargs):
         sd.set_storage(Storage(
             type_=storage_type, path=kwargs.pop('path', None)))
     elif storage_type == ENUMS['storage_type_nfs']:
-        storage_format = kwargs.pop('storage_format', None)
-        if storage_format is None:
-            status, hostCompVer = getHostCompatibilityVersion(positive, host)
-            if type_ and type_.lower() == ENUMS['storage_dom_type_data']:
-                if hostCompVer['hostCompatibilityVersion'] in ['2.2', '3.0']:
-                    storage_format = ENUMS['storage_format_version_v1']
-                else:
-                    storage_format = ENUMS['storage_format_version_v3']
         sd.set_storage(
             Storage(
                 type_=storage_type, path=kwargs.pop('path', None),
@@ -116,7 +127,6 @@ def _prepareStorageDomainObject(positive, **kwargs):
                 nfs_retrans=kwargs.pop('nfs_retrans', None),
                 nfs_timeo=kwargs.pop('nfs_timeo', None),
                 mount_options=kwargs.pop('mount_options', None)))
-        sd.set_storage_format(storage_format)
     elif storage_type == ENUMS['storage_type_iscsi']:
         lun = kwargs.pop('lun', None)
         lun_address = getIpAddressByHostName(kwargs.pop('lun_address', None))
@@ -126,22 +136,6 @@ def _prepareStorageDomainObject(positive, **kwargs):
             id=lun, address=lun_address, target=lun_target, port=lun_port)
         sd.set_storage(
             Storage(type_=storage_type, logical_unit=[logical_unit]))
-
-        if type_ and type_.lower() == ENUMS['storage_dom_type_data']:
-            if 'storage_format' in kwargs:
-                sd.set_storage_format(kwargs.pop('storage_format'))
-            elif host:
-                status, hostCompVer = getHostCompatibilityVersion(
-                    positive, host)
-                if not status:
-                    util.logger.error("Can't determine storage domain version")
-                    return False
-                if hostCompVer['hostCompatibilityVersion'] == '2.2':
-                    sd.set_storage_format(ENUMS['storage_format_version_v1'])
-                elif hostCompVer['hostCompatibilityVersion'] == '3.0':
-                    sd.storage_format = ENUMS['storage_format_version_v2']
-                else:
-                    sd.storage_format = ENUMS['storage_format_version_v3']
     elif storage_type == ENUMS['storage_type_fcp']:
         logical_unit = LogicalUnit(id=kwargs.pop('lun', None))
         sd.set_storage(Storage(logical_unit=logical_unit))
@@ -154,17 +148,6 @@ def _prepareStorageDomainObject(positive, **kwargs):
                 vfs_type=kwargs.pop('vfs_type', None)
             )
         )
-        storage_format = kwargs.pop(
-            'storage_format', ENUMS['storage_format_version_v3'])
-        sd.set_storage_format(storage_format)
-    elif storage_type == ENUMS['storage_type_gluster']:
-        sd.set_storage(
-            Storage(
-                type_=storage_type, path=kwargs.pop('path', None),
-                address=kwargs.pop('address', None),
-                vfs_type=kwargs.pop('vfs_type', None)))
-        storage_format = ENUMS['storage_format_version_v3']
-        sd.set_storage_format(storage_format)
 
     return sd
 
