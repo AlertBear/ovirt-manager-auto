@@ -27,21 +27,25 @@ import time
 from threading import Thread
 
 from art.core_api import is_action
-from art.core_api.apis_exceptions import APITimeout, EntityNotFound, \
-    TestCaseError
+from art.core_api.apis_exceptions import (
+    APITimeout, EntityNotFound, TestCaseError
+)
 from art.core_api.apis_utils import data_st, TimeoutingSampler, getDS
 from art.rhevm_api.tests_lib.high_level.disks import delete_disks
-from art.rhevm_api.tests_lib.low_level.disks import _prepareDiskObject, \
-    getVmDisk, getObjDisks, get_other_storage_domain, waitForDisksState,\
-    get_disk_storage_domain_name
+from art.rhevm_api.tests_lib.low_level.disks import (
+    _prepareDiskObject, getVmDisk, getObjDisks, get_other_storage_domain,
+    waitForDisksState, get_disk_storage_domain_name
+)
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
-from art.rhevm_api.tests_lib.low_level.networks import getVnicProfileObj, \
-    MGMT_NETWORK
+from art.rhevm_api.tests_lib.low_level.networks import (
+    getVnicProfileObj, MGMT_NETWORK
+)
 from art.rhevm_api.utils.name2ip import LookUpVMIpByName
-from art.rhevm_api.utils.test_utils import searchForObj, getImageByOsType, \
-    convertMacToIpAddress, checkHostConnectivity,\
-    update_vm_status_in_database, get_api, split,\
+from art.rhevm_api.utils.test_utils import (
+    searchForObj, getImageByOsType, convertMacToIpAddress,
+    checkHostConnectivity, update_vm_status_in_database, get_api, split,
     waitUntilPingable, restoringRandomState, waitUntilGone
+)
 from art.rhevm_api.utils.provisioning_utils import ProvisionProvider
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
@@ -103,6 +107,9 @@ logger = logging.getLogger(__name__)
 xpathMatch = is_action('xpathVms', id_name='xpathMatch')(XPathMatch(VM_API))
 xpathVmsLinks = is_action(
     'xpathVmsLinks', id_name='xpathVmsLinks')(XPathLinks(VM_API))
+
+
+ProvisionContext = ProvisionProvider.Context()
 
 
 class DiskNotFound(Exception):
@@ -2133,33 +2140,35 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
     if installation:
         floppy = None
         if image is None:
-            (status, res) = getImageByOsType(positive, os_type, slim)
+            status, res = getImageByOsType(positive, os_type, slim)
             if not status:
                 return False
             image = res['osBoot']
             floppy = res['floppy']
 
-        if not unattendedInstallation(positive, vmName, image, nic=nic,
-                                      floppyImage=floppy, hostname=hostname):
-            return False
-        if not waitForVMState(vmName):
-            return False
-        mac = getVmMacAddress(positive, vmName, nic=nic)
-        if not mac[0]:
-            return False
+        try:
+            if not unattendedInstallation(
+                positive, vmName, image, nic=nic, floppyImage=floppy,
+                hostname=hostname,
+            ):
+                return False
+            if not waitForVMState(vmName):
+                return False
+            mac = getVmMacAddress(positive, vmName, nic=nic)
+            if not mac[0]:
+                return False
 
-        if useAgent:
-            ip = waitForIP(vmName)[1]['ip']
+            if useAgent:
+                ip = waitForIP(vmName)[1]['ip']
 
-        logger.debug("%s has ip %s", vmName, ip)
-        if not checkVMConnectivity(positive, vmName, os_type,
-                                   attempt=attempt, interval=interval,
-                                   nic=nic, user=user, password=password,
-                                   ip=ip):
-            return False
-
-        if not removeSystem(mac[1]['macAddress']):
-            return False
+            logger.debug("%s has ip %s", vmName, ip)
+            if not checkVMConnectivity(
+                positive, vmName, os_type, attempt=attempt, interval=interval,
+                nic=nic, user=user, password=password, ip=ip,
+            ):
+                return False
+        finally:
+            ProvisionContext.clear()
         return True
     else:
         if (start.lower() == 'true'):
@@ -2269,26 +2278,30 @@ def unattendedInstallation(positive, vm, image, nic='nic1', hostname=None,
                     should be removed
     Return: status (True if VM started to insall OS, False otherwise).
     '''
-    boot_dev = 'cdrom'
     if re.search('rhel', image, re.I):
         status, mac = getVmMacAddress(positive, vm, nic=nic)
         if not status:
             return False
-
-        if not ProvisionProvider.add_system(mac=mac['macAddress'],
-                                            os_name=image):
+        if not ProvisionContext.add_system(
+            mac=mac['macAddress'],
+            os_name=image
+        ):
             return False
-
         if hostname:
-            if not ProvisionProvider.set_host_name(name=mac['macAddress'],
-                                                   hostname=hostname):
+            if not ProvisionContext.set_host_name(
+                name=mac['macAddress'],
+                hostname=hostname
+            ):
                 return False
 
         boot_dev = 'hd,network'
-        image = None
-
-    return runVmOnce(positive, vm, cdrom_image=image, floppy_image=floppyImage,
-                     boot_dev=boot_dev)
+        return runVmOnce(positive, vm, boot_dev=boot_dev)
+    else:
+        boot_dev = 'cdrom'
+        return runVmOnce(
+            positive, vm, cdrom_image=image, floppy_image=floppyImage,
+            boot_dev=boot_dev,
+        )
 
 
 @is_action()

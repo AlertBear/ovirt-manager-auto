@@ -213,7 +213,6 @@ class ProvisionProvider(object):
     Description: User API for provisioning tools
     Author: imeerovi
     """
-
     provisioning_tool = None
     provisioning_tool_api = None
     provisioning_tool_user = None
@@ -222,6 +221,66 @@ class ProvisionProvider(object):
     provisioning_profiles = None
 
     __metaclass__ = ProvisionProvidersType
+
+    class Context(object):
+        """
+        This wrapper cache systems which were managed via this interface.
+        And it provides method which unamage these systems.
+
+        The usage is:
+
+        with ProvisionProvider.Context() as c:
+            c.add_system(xx, yy)
+            c.add_system(zz, aa)
+            # watch the installation process
+        # you are done
+        """
+        def __init__(self):
+            super(ProvisionProvider.Context, self).__init__()
+            self.systems = {}
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, type_, value, tb):
+            self.clear()
+
+        @staticmethod
+        def unify_mac(mac):
+            return ''.join(x for x in mac.lower() if x not in [':', '-'])
+
+        def add_system(self, mac, os_name):
+            umac = self.unify_mac(mac)
+            if umac in self.systems:
+                logger.info("The mac %s is already managed -> removing", mac)
+                try:
+                    self.remove_system(mac)
+                except Exception as ex:
+                    logger.error(
+                        "The mac %s couldn't be unmanaged: %s", mac, ex
+                    )
+            result = ProvisionProvider.add_system(mac, os_name)
+            self.systems[umac] = mac
+            return result
+
+        def remove_system(self, mac):
+            umac = self.unify_mac(mac)
+            self.systems.pop(umac, None)
+            return ProvisionProvider.remove_system(mac)
+
+        def clear(self):
+            """
+            Removes all systems which were intrumented in this context
+            """
+            while self.systems:
+                umac, mac = self.systems.popitem()
+                try:
+                    self.remove_system(mac)
+                except Exception as ex:
+                    logger.error("Can not remove system %s: %s", umac, ex)
+
+        def set_host_name(self, *args, **kwargs):
+            return ProvisionProvider.set_host_name(*args, **kwargs)
 
     @classmethod
     @contextmanager
@@ -271,11 +330,21 @@ class ProvisionProvider(object):
         Returns: return value of add_system method of provisioning api
                  that it used
         """
-        with cls.api_connection(cls.add_system.__func__.__name__, mac,
-                                os_name) as api:
-            return getattr(cls.provisioning_tool,
-                           'add_system')(api, mac, cls.common_parameters,
-                                         cls.provisioning_profiles[os_name])
+
+        with cls.api_connection(
+            cls.add_system.__func__.__name__,
+            mac,
+            os_name
+        ) as api:
+            return getattr(
+                cls.provisioning_tool,
+                'add_system'
+            )(
+                api,
+                mac,
+                cls.common_parameters,
+                cls.provisioning_profiles[os_name]
+            )
 
     @classmethod
     def remove_system(cls, mac):
@@ -290,10 +359,14 @@ class ProvisionProvider(object):
         Returns: return value of remove_system method of provisioning api
                  that it used
         """
-        with cls.api_connection(cls.remove_system.__func__.__name__,
-                                mac) as api:
-            return getattr(cls.provisioning_tool,
-                           'remove_system')(api, mac)
+        with cls.api_connection(
+            cls.remove_system.__func__.__name__,
+            mac
+        ) as api:
+            return getattr(
+                cls.provisioning_tool,
+                'remove_system'
+            )(api, mac)
 
     @classmethod
     def set_host_name(cls, *args, **kwargs):
