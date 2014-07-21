@@ -648,7 +648,7 @@ class TestCase343383(IscsiNfsSD):
             'size': config.DISK_SIZE,
             'sparse': False,
             'format': config.DISK_FORMAT_RAW,
-            'interface': config.IDE,
+            'interface': config.INTERFACE_IDE,
             'storagedomain': self.non_master[0],
         }
         assert ll_disks.addDisk(True, **disk_args)

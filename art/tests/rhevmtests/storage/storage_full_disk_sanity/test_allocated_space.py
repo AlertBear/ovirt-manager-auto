@@ -430,7 +430,7 @@ class TestCase286779(BaseCase):
                         % self.disk_name)
 
         logger.info('Restarting vdsm on host %s', config.HOSTS[0])
-        self.assertTrue(restartVdsmd(config.HOSTS[0], config.VDS_PASSWORDS[0]),
+        self.assertTrue(restartVdsmd(config.HOSTS[0], config.VDS_PASSWORD),
                         'Unable to restart vdsm on host %s' % config.HOSTS[0])
 
         logger.info('Waiting for host to come back up')

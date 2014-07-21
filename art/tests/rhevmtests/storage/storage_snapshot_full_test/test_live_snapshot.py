@@ -15,14 +15,13 @@ from art.rhevm_api.tests_lib.low_level import templates
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.utils.test_utils import get_api, prepareDataForVm, \
     raise_if_exception, wait_for_tasks
-from art.test_handler.settings import opts
 from art.test_handler.tools import tcms
 import helpers
 import config
 
 
 LOGGER = logging.getLogger(__name__)
-ENUMS = opts['elements_conf']['RHEVM Enums']
+ENUMS = config.ENUMS
 VM_API = get_api('vm', 'vms')
 
 
@@ -53,7 +52,7 @@ def setup_module():
         'cluster': config.CLUSTER_NAME,
         'nic': 'nic1',
         'nicType': ENUMS['nic_type_virtio'],
-        'storageDomainName': config.SD_NAME,
+        'storageDomainName': config.SD_NAME_0,
         'size': 3 * config.GB,
         'diskInterface': ENUMS['interface_virtio'],
         'volumeFormat': ENUMS['format_cow'],
@@ -67,11 +66,9 @@ def setup_module():
         'display_type': ENUMS['display_type_spice'],
         'start': True,
         'installation': True,
-        'user': config.PARAMETERS['vm_linux_user'],
-        'password': config.PARAMETERS['vm_linux_password'],
-        'image': config.PARAMETERS['cobbler_profile'],
-        'network': config.PARAMETERS['mgmt_bridge'],
-        'useAgent': config.PARAMETERS.as_bool('useAgent'),
+        'image': config.COBBLER_PROFILE,
+        'network': config.MGMT_BRIDGE,
+        'useAgent': config.USE_AGENT,
         # CUSTOM ARGUMENTS
         'vmName': VM_ON_SPM,
         'placement_host': SPM,
@@ -223,7 +220,7 @@ class LiveSnapshotMultipleDisks(LiveSnapshot):
         for vm_name in VM_LIST:
             assert vms.addDisk(
                 True, vm=vm_name, size=3 * config.GB, wait='True',
-                storagedomain=config.SD_NAME, type=ENUMS['disk_type_data'],
+                storagedomain=config.SD_NAME_0, type=ENUMS['disk_type_data'],
                 interface=ENUMS['interface_ide'], format=ENUMS['format_cow'],
                 sparse='true')
         super(LiveSnapshotMultipleDisks, cls).setup_class()
@@ -361,7 +358,7 @@ class PreviewSnapshot(BaseTestCase):
         LOGGER.info('shutting down vm')
         shutdown_vm_if_up(VM_ON_SPM)
         LOGGER.info('Undo snapshot preview for snapshot %s', SNAP_1)
-        assert vms.undo_snapshot_preview(True, VM_ON_SPM, SNAP_1)
+        assert vms.undo_snapshot_preview(True, VM_ON_SPM)
         super(PreviewSnapshot, cls).teardown_class()
 
 
@@ -532,10 +529,10 @@ class LiveSnapshotOnVMCreatedFromTemplate(BaseTestCase):
             cluster=config.CLUSTER_NAME)
         assert vms.addVm(
             True, name='vm_thin', description='', cluster=config.CLUSTER_NAME,
-            storagedomain=config.SD_NAME, template='template_test')
+            storagedomain=config.SD_NAME_0, template='template_test')
         assert vms.addVm(
             True, name='vm_clone', description='', cluster=config.CLUSTER_NAME,
-            storagedomain=config.SD_NAME, template='template_test',
+            storagedomain=config.SD_NAME_0, template='template_test',
             disk_clone='True')
         vms.start_vms(['vm_thin', 'vm_clone'], config.MAX_WORKERS)
 

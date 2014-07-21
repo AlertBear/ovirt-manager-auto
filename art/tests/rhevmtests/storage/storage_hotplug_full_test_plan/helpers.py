@@ -20,7 +20,6 @@ LOGGER = logging.getLogger(__name__)
 
 ENUMS = config.ENUMS
 
-VM_NAME = "vm_hotplug_hooks"
 FILE_WITH_RESULTS = "/tmp/hook.txt"
 
 HOOKFILENAME = tempfile.mkstemp()[1]
@@ -31,6 +30,7 @@ HOOKJPEG = tempfile.mkstemp(suffix=".jpeg")[1]
 DISKS_TO_PLUG = ["disk_to_plug_%s" % x for x in range(10)]
 UNATTACHED_DISK = "unattached_disk"
 TEXT = 'Hello World!'
+VM_NAME = config.VM_NAME[0]
 
 MAIN_HOOK_DIR = "/usr/libexec/vdsm/hooks/"
 ALL_AVAILABLE_HOOKS = [
@@ -88,7 +88,7 @@ def create_vm_with_disks():
         diskInterface=config.INTERFACE_VIRTIO,
         cpu_cores=config.CPU_CORES, nicType=config.NIC_TYPE_VIRTIO,
         display_type=config.DISPLAY_TYPE, os_type=config.OS_TYPE,
-        user=config.VM_LINUX_USER, password=config.VM_LINUX_PASSWORD,
+        user=config.VMS_LINUX_USER, password=config.VMS_LINUX_PW,
         type=config.VM_TYPE_DESKTOP, installation=True, slim=True,
         image=config.COBBLER_PROFILE, network=config.MGMT_BRIDGE,
         useAgent=config.USE_AGENT)

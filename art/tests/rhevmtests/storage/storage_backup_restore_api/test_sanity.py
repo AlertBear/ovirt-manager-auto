@@ -99,6 +99,7 @@ class CreateTemplateFromVM(BaseTestCase):
     """
     __test__ = False
     template_name = "%s-template"
+    vm_name_for_template = None
 
     def create_template(self):
         """
@@ -540,10 +541,10 @@ class TestCase304168(TestCase):
     def setup_class(cls):
 
         status, cls.master_domain_ip = storagedomains.getDomainAddress(
-            True, config.SD_NAME)
+            True, config.SD_NAME_0)
         if not status:
             raise exceptions.SkipTest("Unable to get storage domain %s "
-                                      "address" % config.SD_NAME)
+                                      "address" % config.SD_NAME_0)
 
         vms.stop_vms_safely([helpers.VM_NAMES[1]])
         logger.info("Succeeded to stop vm %s", helpers.VM_NAMES[1])
@@ -570,7 +571,7 @@ class TestCase304168(TestCase):
         vms.waitForVmsStates(True, [helpers.VM_NAMES[1]])
 
         logger.info("Blocking connectivity from host %s to storage domain %s",
-                    config.HOSTS[0], config.SD_NAME)
+                    config.HOSTS[0], config.SD_NAME_0)
 
         status = st_api.blockOutgoingConnection(
             config.HOSTS[0], 'root', config.VDS_PASSWORD[0],
@@ -593,17 +594,20 @@ class TestCase304168(TestCase):
         Detach backup disk
         """
         logger.info("Unblocking connectivity from host %s to storage domain "
-                    "%s", config.HOSTS[0], config.SD_NAME)
+                    "%s", config.HOSTS[0], config.SD_NAME_0)
 
         status = st_api.unblockOutgoingConnection(
             config.HOSTS[0], 'root', config.VDS_PASSWORD[0],
             self.master_domain_ip['address'])
 
         if not status:
-            raise exceptions.HostException("Failed to unblock connectivity "
-                                           "from host %s to storage "
-                                           "domain %s"
-                                           % (config.HOSTS[0], config.SD_NAME))
+            raise exceptions.HostException(
+                "Failed to unblock connectivity from host %s to "
+                "storage domain %s" % (
+                    config.HOSTS[0],
+                    config.SD_NAME_0
+                )
+            )
 
         # TODO: temporary solution for bug -
         # https://bugzilla.redhat.com/show_bug.cgi?id=1063336
@@ -616,11 +620,11 @@ class TestCase304168(TestCase):
         vms.stop_vms_safely([helpers.VM_NAMES[1]])
         logger.info("Succeeded to stop vm %s", helpers.VM_NAMES[1])
 
-        if not vms.moveVm(True, helpers.VM_NAMES[1], config.SD_NAME):
+        if not vms.moveVm(True, helpers.VM_NAMES[1], config.SD_NAME_0):
             raise exceptions.VMException("Failed to move vm %s to storage "
                                          "domain %s"
                                          % (helpers.VM_NAMES[1],
-                                            config.SD_NAME))
+                                            config.SD_NAME_0))
 
         logger.info('Detaching backup disk')
         disks_objs = vms.get_snapshot_disks(
@@ -677,7 +681,7 @@ class TestCase304197(TestCase):
                                           % helpers.VM_NAMES[0])
 
         self.assertTrue(vms.addDisk(
-            True, helpers.VM_NAMES[1], 6 * helpers.GB, True, config.SD_NAME,
+            True, helpers.VM_NAMES[1], 6 * config.GB, True, config.SD_NAME_0,
             interface=config.DISK_INTERFACE_VIRTIO),
             "Failed to add backup disk to backup vm %s" % helpers.VM_NAMES[1])
 
@@ -690,8 +694,8 @@ class TestCase304197(TestCase):
         vm_machine_ip = vms.get_vm_ip(helpers.VM_NAMES[1])
 
         linux_machine = Machine(
-            host=vm_machine_ip, user=config.VM_LINUX_USER,
-            password=config.VM_LINUX_PASSWORD).util('linux')
+            host=vm_machine_ip, user=config.VMS_LINUX_USER,
+            password=config.VMS_LINUX_PW).util('linux')
 
         devices = linux_machine.get_storage_devices()
 
@@ -776,8 +780,8 @@ class TestCase322485(TestCase):
          Create a snapshot to source VM and
          try to attach all source VM's snapshot disks to backup VM
         """
-        vms.addDisk(True, helpers.VM_NAMES[0], 6 * helpers.GB, True,
-                    config.SD_NAME,
+        vms.addDisk(True, helpers.VM_NAMES[0], 6 * config.GB, True,
+                    config.SD_NAME_0,
                     interface=config.DISK_INTERFACE_VIRTIO)
         vms.addSnapshot(
             True, vm=helpers.VM_NAMES[0],
@@ -863,10 +867,10 @@ class TestCase322486(TestCase):
         """
         vm_disks = vms.getVmDisks(helpers.VM_NAMES[0])
         logger.info("Moving disk %s to SD %s", vm_disks[0].get_alias(),
-                    config.SD_NAME)
+                    config.SD_NAME_0)
         disks.waitForDisksState(vm_disks[0].get_alias())
         vms.move_vm_disk(helpers.VM_NAMES[0], vm_disks[0].get_alias(),
-                         config.SD_NAME, wait=True)
+                         config.SD_NAME_0, wait=True)
         disks.waitForDisksState(vm_disks[0].get_alias())
 
 

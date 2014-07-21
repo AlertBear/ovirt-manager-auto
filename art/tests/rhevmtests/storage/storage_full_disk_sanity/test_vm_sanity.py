@@ -47,7 +47,7 @@ def _prepare_data(sparse, vol_format, template_names):
     LOGGER.info("Waiting for ip of %s" % vm_name)
     vm_ip = vms.waitForIP(vm_name)[1]['ip']
     LOGGER.info("Setting persistent network")
-    assert test_utils.setPersistentNetwork(vm_ip, config.VM_LINUX_PASSWORD)
+    assert test_utils.setPersistentNetwork(vm_ip, config.VMS_LINUX_PW)
     LOGGER.info("Stopping VM %s" % vm_name)
     if not vms.stopVm(True, vm_name):
         raise exceptions.VMException("Stopping vm %s failed" % vm_name)
@@ -204,7 +204,7 @@ class TestReadLock(TestCase):
         LOGGER.info("Waiting for ip of %s" % cls.vm_name)
         vm_ip = vms.waitForIP(cls.vm_name)[1]['ip']
         LOGGER.info("Setting persistent network")
-        assert test_utils.setPersistentNetwork(vm_ip, config.VM_LINUX_PASSWORD)
+        assert test_utils.setPersistentNetwork(vm_ip, config.VMS_LINUX_PW)
 
         LOGGER.info("Shutting down %s" % cls.vm_name)
         if not vms.shutdownVm(True, cls.vm_name, async='false'):

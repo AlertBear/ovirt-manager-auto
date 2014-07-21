@@ -20,7 +20,6 @@ logger = logging.getLogger(__name__)
 
 ENUMS = config.ENUMS
 
-DISK_NAME_FORMAT = '%s_%s_%s_disk'
 DISKS_NAMES = list()
 DISK_TIMEOUT = 250
 FILTER = '[sv]d'

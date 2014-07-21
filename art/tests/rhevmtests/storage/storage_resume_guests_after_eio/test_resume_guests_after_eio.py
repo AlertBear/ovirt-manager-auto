@@ -18,8 +18,8 @@ FILE_TO_WRITE = "/tmp/resume_guests_tests"
 
 GB = 1024 ** 3
 
-VM_USER = config.VM_LINUX_USER
-VM_PASSWORD = config.VM_LINUX_PASSWORD
+VM_USER = config.VMS_LINUX_USER
+VM_PASSWORD = config.VMS_LINUX_PW
 
 
 def _wait_for_vm_booted(
@@ -37,7 +37,8 @@ class TestResumeGuests(TestCase):
         """
         cmd = "dd of=%s if=/dev/urandom &" % FILE_TO_WRITE
         LOGGER.info("Starting writing process")
-        assert vms.run_cmd_on_vm(config.VM_NAME, cmd, VM_USER, VM_PASSWORD)[0]
+        assert vms.run_cmd_on_vm(
+            config.VM_NAME[0], cmd, VM_USER, VM_PASSWORD)[0]
         # give it time to really start writing
         time.sleep(10)
 
@@ -46,17 +47,17 @@ class TestResumeGuests(TestCase):
         """
         # restart vm - this way we will also kill dd
         LOGGER.info("Stopping the VM")
-        assert vms.stopVm(True, config.VM_NAME)
+        assert vms.stopVm(True, config.VM_NAME[0])
 
         LOGGER.info("Starting the VM")
         assert vms.startVm(
-            True, config.VM_NAME, config.ENUMS['vm_state_up'], True, 3600)
+            True, config.VM_NAME[0], config.ENUMS['vm_state_up'], True, 3600)
 
         cmd = "rm -f %s" % FILE_TO_WRITE
         LOGGER.info("Removing file %s we were writing to" % FILE_TO_WRITE)
         # big timeout as rm may take a lot of time in case of big files
         assert vms.run_cmd_on_vm(
-            config.VM_NAME, cmd, VM_USER, VM_PASSWORD, 3600)[0]
+            config.VM_NAME[0], cmd, VM_USER, VM_PASSWORD, 3600)[0]
 
     def break_storage(self):
         pass
@@ -74,19 +75,19 @@ class TestResumeGuests(TestCase):
             vm_name, config.ENUMS['vm_state_up'], timeout=1800)
         LOGGER.info("VM is up, waiting for connectivity")
         assert _wait_for_vm_booted(
-            config.VM_NAME, config.OS_TYPE, config.VM_LINUX_USER,
-            config.VM_LINUX_PASSWORD)
+            config.VM_NAME[0], config.OS_TYPE, VM_USER,
+            VM_PASSWORD)
         LOGGER.info("VM is accessible")
 
     def run(self):
         LOGGER.info("Breaking storage")
         self.break_storage()
-        LOGGER.info("Checking if VM %s is paused", config.VM_NAME)
-        self.check_vm_paused(config.VM_NAME)
+        LOGGER.info("Checking if VM %s is paused", config.VM_NAME[0])
+        self.check_vm_paused(config.VM_NAME[0])
         LOGGER.info("Fixing storage")
         self.fix_storage()
-        LOGGER.info("Checking if VM %s is unpaused", config.VM_NAME)
-        self.check_vm_unpaused(config.VM_NAME)
+        LOGGER.info("Checking if VM %s is unpaused", config.VM_NAME[0])
+        self.check_vm_unpaused(config.VM_NAME[0])
         LOGGER.info("Test finished successfully")
 
 

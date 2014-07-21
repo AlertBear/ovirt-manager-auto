@@ -1,79 +1,28 @@
-from art.test_handler.settings import ART_CONFIG
-from art.test_handler.settings import opts
+from rhevmtests.storage.config import * # flake8: noqa
 
 __test__ = False
-
-GB = 1024 ** 3
-
-PARAMETERS = ART_CONFIG['PARAMETERS']
 
 # Name of the test
 TESTNAME = PARAMETERS.get('basename', 'DCMixedTypeTest')
 
-ENUMS = opts['elements_conf']['RHEVM Enums']
-SD_ACTIVE = ENUMS['storage_domain_state_active']
+# TODO: Remove
+VDC_PASSWORD = VDC_ROOT_PASSWORD
 
-VM_UP = ENUMS['vm_state_up']
-VM_DOWN = ENUMS['vm_state_down']
+# TODO: remove
+HOST = HOSTS[0]
+HOST_ADMIN = HOSTS_USER
+HOST_PASSWORD = HOSTS_PW
 
-HOST_UP = ENUMS['host_state_up']
-SNAPSHOT_OK = ENUMS['snapshot_state_ok']
-
-VDC = PARAMETERS.get('host', None)
-VDC_PASSWORD = PARAMETERS.get('vdc_root_password', None)
-
-STORAGE_TYPE = PARAMETERS['storage_type']
-DATA_CENTER_NAME = PARAMETERS.get('dc_name', 'datacenter_%s' % TESTNAME)
-CLUSTER_NAME = PARAMETERS.get('cluster_name', 'cluster_%s' % TESTNAME)
-
-
-if STORAGE_TYPE.startswith(ENUMS['storage_type_posixfs']):
-    STORAGE_TYPE = (PARAMETERS['storage_type']).split("_")[0]
-    PARAMETERS['storage_type'] = STORAGE_TYPE
-
-HOST = PARAMETERS.as_list('vds')[0]
-HOST_ADMIN = PARAMETERS.as_list('vds_admin')[0]
-HOST_PASSWORD = PARAMETERS.as_list('vds_password')[0]
-
-DISK_SIZE = 4 * GB
-
-VM_USER = PARAMETERS.get('vm_linux_user')
-VM_PASSWORD = PARAMETERS.get('vm_linux_password')
-
-# Cobbler info
-COBBLER_ADDRESS = PARAMETERS.get('cobbler_address', None)
-COBBLER_PASSWD = PARAMETERS.get('cobbler_passwd', None)
-COBBLER_USER = PARAMETERS.get('cobbler_user', None)
-COBBLER_PROFILE = PARAMETERS['cobbler_profile']
-
-IDE = ENUMS['interface_ide']
-VIRTIO = ENUMS['interface_virtio']
-VIRTIO_SCSI = ENUMS['interface_virtio_scsi']
-
-MGMT_BRIDGE = PARAMETERS['mgmt_bridge']
-
-DISK_FORMAT_COW = ENUMS['format_cow']
-DISK_FORMAT_RAW = ENUMS['format_raw']
-
-FC_SD_TYPE = ENUMS['storage_type_fcp']
-ISCSI_SD_TYPE = ENUMS['storage_type_iscsi']
-NFS_SD_TYPE = ENUMS['storage_type_nfs']
+# TODO: remove
+FC_SD_TYPE = STORAGE_TYPE_FCP
+ISCSI_SD_TYPE = STORAGE_TYPE_ISCSI
+NFS_SD_TYPE = STORAGE_TYPE_NFS
 
 FC_SD_NAME_1 = "fc_sd"
 ISCSI_SD_NAME_1 = "iscsi_sd"
 ISCSI_SD_NAME_2 = "iscsi_sd2"
 NFS_SD_NAME_1 = "nfs_sd"
 GLUSTER_SD_NAME_1 = "gluster"
-
-PATH = PARAMETERS.as_list('data_domain_path')
-ADDRESS = PARAMETERS.as_list('data_domain_address')
-
-LUN = PARAMETERS.as_list('lun')
-LUN_ADDRESS = PARAMETERS.as_list('lun_address')
-LUN_TARGET = PARAMETERS.as_list('lun_target')
-LUN_PORT = 3260
-
-EXPORT_DOMAIN_NAME = PARAMETERS.get('export_domain_name', 'export_domain')
 
 NFS_DOMAIN = {
     'name': NFS_SD_NAME_1,
@@ -125,5 +74,5 @@ FC_DOMAIN = {
 }
 
 POSIX_DOMAIN = NFS_DOMAIN.copy()
-POSIX_DOMAIN['storage_type'] = ENUMS['storage_type_posixfs']
-POSIX_DOMAIN['vfs_type'] = NFS_SD_TYPE
+POSIX_DOMAIN['storage_type'] = STORAGE_TYPE_POSIX
+POSIX_DOMAIN['vfs_type'] = STORAGE_TYPE_NFS

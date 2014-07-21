@@ -20,7 +20,6 @@ logger = logging.getLogger(__name__)
 
 ENUMS = config.ENUMS
 
-DISK_NAME_FORMAT = '%s_%s_%s_disk'
 DISKS_NAMES = list()
 DISK_TIMEOUT = 250
 
@@ -64,7 +63,7 @@ def add_new_disk(sd_name, permutation, shared=False):
     DISKS_NAMES.append(disk_args['alias'])
 
 
-def start_creating_disks_for_test(shared=False, sd_name=config.SD_NAME):
+def start_creating_disks_for_test(shared=False, sd_name=config.SD_NAME_0):
     """
     Begins asynchronous creation of disks of all permutations of disk
     interfaces, formats and allocation policies
@@ -111,7 +110,7 @@ def prepare_disks_for_vm(vm_name, disks_to_prepare, read_only=False):
 
 
 def add_new_disk_for_test(vm_name, alias, provisioned_size=(1 * config.GB),
-                          sparse=False, disk_format=config.FORMAT_RAW,
+                          sparse=False, disk_format=config.RAW_DISK,
                           wipe_after_delete=False, attach=False):
             """
             Prepares disk for given vm
@@ -124,7 +123,7 @@ def add_new_disk_for_test(vm_name, alias, provisioned_size=(1 * config.GB),
                 'format': disk_format,
                 'sparse': sparse,
                 'wipe_after_delete': wipe_after_delete,
-                'storagedomain': config.SD_NAME
+                'storagedomain': config.SD_NAME_0
             }
 
             if not addDisk(True, **disk_params):

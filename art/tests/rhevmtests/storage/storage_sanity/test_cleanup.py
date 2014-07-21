@@ -33,9 +33,9 @@ class TestCase99062(TestCase):
             config=config.PARAMETERS,
             storage=config.PARAMETERS,
             storage_type=config.STORAGE_TYPE,
-            basename=config.BASENAME)
+            basename=config.TESTNAME)
 
-        SHARED_ISO = config.STORAGE['PARAMETERS.shared_iso_domain']
+        SHARED_ISO = config.STORAGE_SECTION['PARAMETERS.shared_iso_domain']
 
         assert hl_sd.addNFSDomain(
             host=self.host,

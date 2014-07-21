@@ -23,11 +23,10 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 
 VM_IP_ADDRESSES = dict()
 BASE_SNAP_DESC = "base_snap"  # Base snapshot description
-GB = 1024 ** 3
 VM_NAME_TEMPLATE = 'vm_%s'
 SNAPSHOT_TEMPLATE_DESC = 'snap_%s'
 RESTORED_VM = "restored_vm"
-VM_DISK_SIZE = 6 * GB
+VM_DISK_SIZE = 6 * config.GB
 SHOULD_CREATE_SNAPSHOT = (True, False)
 TRANSIENT_DIR_PATH = "/var/lib/vdsm/transient"
 DD_COMMAND = 'dd if=/dev/%s of=/dev/%s bs=1M oflag=direct'
@@ -40,7 +39,7 @@ vm_args = {
     'cluster': config.CLUSTER_NAME,
     'nic': 'nic1',
     'nicType': ENUMS['nic_type_virtio'],
-    'storageDomainName': config.SD_NAME,
+    'storageDomainName': config.SD_NAME_0,
     'size': VM_DISK_SIZE,
     'diskInterface': ENUMS['interface_virtio'],
     'volumeFormat': ENUMS['format_cow'],
@@ -48,7 +47,7 @@ vm_args = {
     'bootable': True,
     'type': ENUMS['vm_type_desktop'],
     'os_type': 'RHEL_6x64',
-    'memory': GB,
+    'memory': config.GB,
     'cpu_socket': 1,
     'cpu_cores': 1,
     'display_type': ENUMS['display_type_spice'],
@@ -139,8 +138,8 @@ def copy_backup_disk(vm_ip, source_disk, destination_disk,
     """
     vm_machine = Machine(
         host=vm_ip,
-        user=config.VM_LINUX_USER,
-        password=config.VM_LINUX_PASSWORD).util('linux')
+        user=config.VMS_LINUX_USER,
+        password=config.VMS_LINUX_PW).util('linux')
 
     command = DD_COMMAND % (source_disk, destination_disk)
 

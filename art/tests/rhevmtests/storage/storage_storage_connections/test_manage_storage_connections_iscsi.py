@@ -778,7 +778,7 @@ class TestCase289552(TestCase):
             cpu_socket=config.CPU_SOCKET,
             cpu_cores=config.CPU_CORES, nicType=config.NIC_TYPE_VIRTIO,
             display_type=config.DISPLAY_TYPE, os_type=config.OS_TYPE,
-            user=config.VM_LINUX_USER, password=config.VM_LINUX_PASSWORD,
+            user=config.VMS_LINUX_USER, password=config.VMS_LINUX_PW,
             type=config.VM_TYPE_DESKTOP, installation=True, slim=True,
             image=config.COBBLER_PROFILE, network=config.MGMT_BRIDGE)
 
@@ -792,7 +792,7 @@ class TestCase289552(TestCase):
             cpu_socket=config.CPU_SOCKET,
             cpu_cores=config.CPU_CORES, nicType=config.NIC_TYPE_VIRTIO,
             display_type=config.DISPLAY_TYPE, os_type=config.OS_TYPE,
-            user=config.VM_LINUX_USER, password=config.VM_LINUX_PASSWORD,
+            user=config.VMS_LINUX_USER, password=config.VMS_LINUX_PW,
             type=config.VM_TYPE_DESKTOP, installation=True, slim=True,
             image=config.COBBLER_PROFILE, network=config.MGMT_BRIDGE)
 
@@ -878,7 +878,7 @@ class TestCase289552(TestCase):
         storageconnections.remove_all_storage_connections()
         datacenters.build_setup(
             config.PARAMETERS, config.PARAMETERS, config.STORAGE_TYPE,
-            basename=config.BASENAME)
+            basename=config.TESTNAME)
 
 
 @attr(tier=0)

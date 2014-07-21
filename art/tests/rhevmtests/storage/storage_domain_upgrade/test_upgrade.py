@@ -27,7 +27,7 @@ VM_API = get_api('vm', 'vms')
 SD_API = get_api('storage_domain', 'storagedomains')
 CLUSTER_API = get_api('cluster', 'clusters')
 
-GB = 1024 ** 3
+GB = config.GB
 TEN_GB = 10 * GB
 
 
@@ -139,10 +139,7 @@ class TestUpgrade(TestCase):
             display_type=config.ENUMS['display_type_spice'],
             network=config.PARAMETERS['mgmt_bridge'])
         assert llvms.unattendedInstallation(
-            True, self.vm_name, config.PARAMETERS['cobbler_profile'], nic=nic,
-            cobblerAddress=config.PARAMETERS.get('cobbler_address', None),
-            cobblerUser=config.PARAMETERS.get('cobbler_user', None),
-            cobblerPasswd=config.PARAMETERS.get('cobbler_passwd', None))
+            True, self.vm_name, config.COBBLER_PROFILE, nic=nic)
         assert llvms.waitForVMState(self.vm_name)
         # getVmMacAddress returns (bool, dict(macAddress=<desired_mac>))
         mac = llvms.getVmMacAddress(True, self.vm_name, nic=nic)[1]

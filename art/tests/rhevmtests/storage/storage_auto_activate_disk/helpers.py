@@ -95,7 +95,7 @@ def get_all_disk_permutation(block=True, shared=False):
                         continue
                     if disk_format is config.DISK_FORMAT_COW and not sparse:
                         continue
-                    if shared and disk_format == config.FORMAT_COW:
+                    if shared and disk_format == config.DISK_FORMAT_COW:
                         continue
                     permutation = {'disk_format': disk_format,
                                    'interface': interface,

@@ -19,7 +19,7 @@ def setup_module():
         config=config.PARAMETERS,
         storage=config.PARAMETERS,
         storage_type=config.STORAGE_TYPE,
-        basename=config.BASENAME,
+        basename=config.TESTNAME,
         local=config.LOCAL)
 
 

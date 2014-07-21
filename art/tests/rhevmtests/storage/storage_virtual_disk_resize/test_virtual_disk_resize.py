@@ -50,31 +50,28 @@ disk_args = {
     # Fixed arguments
     'provisioned_size': config.DISK_SIZE,
     'wipe_after_delete': config.BLOCK_FS,
-    'storagedomain': config.SD_NAME,
+    'storagedomain': config.SD_NAME_0,
     'bootable': False,
     'shareable': False,
     'active': True,
     'size': config.DISK_SIZE,
     'interface': config.VIRTIO,
     # Custom arguments - change for each disk
-    'format': config.FORMAT_COW,
+    'format': config.COW_DISK,
     'sparse': True,
     'alias': "%s_disk"}
 
 
 vmArgs = {'positive': True,
-          'vmName': config.VM_NAME,
-          'vmDescription': config.VM_NAME,
+          'vmName': config.VM_NAME[0],
+          'vmDescription': config.VM_NAME[0],
           'diskInterface': config.VIRTIO,
-          'volumeFormat': config.FORMAT_COW,
+          'volumeFormat': config.COW_DISK,
           'cluster': config.CLUSTER_NAME,
           'storageDomainName': None,
           'installation': True,
           'size': config.DISK_SIZE,
           'nic': 'nic1',
-          'cobblerAddress': config.COBBLER_ADDRESS,
-          'cobblerUser': config.COBBLER_USER,
-          'cobblerPasswd': config.COBBLER_PASSWORD,
           'image': config.COBBLER_PROFILE,
           'useAgent': True,
           'os_type': config.ENUMS['rhel6'],
@@ -104,10 +101,10 @@ def setup_module():
 
     if not createVm(**vmArgs):
         raise exceptions.VMException('Unable to create vm %s for test'
-                                     % config.VM_NAME)
+                                     % config.VM_NAME[0])
 
-    logger.info('Shutting down VM %s', config.VM_NAME)
-    stop_vms_safely([config.VM_NAME])
+    logger.info('Shutting down VM %s', config.VM_NAME[0])
+    stop_vms_safely([config.VM_NAME[0]])
 
 
 def teardown_module():
@@ -124,7 +121,7 @@ class DisksPermutationEnvironment(BaseTestCase):
     A class with common setup and teardown methods
     """
     __test__ = False
-    vm = config.VM_NAME
+    vm = config.VM_NAME[0]
     shared = False
     new_size = (config.DISK_SIZE + config.GB)
 
@@ -133,7 +130,7 @@ class DisksPermutationEnvironment(BaseTestCase):
         Creating all possible combinations of disks for test
         """
         helpers.DISKS_NAMES = create_all_legal_disk_permutations(
-            config.SD_NAME, shared=self.shared, block=config.BLOCK_FS,
+            config.SD_NAME_0, shared=self.shared, block=config.BLOCK_FS,
             size=config.DISK_SIZE)
         assert waitForDisksState(helpers.DISKS_NAMES, timeout=TASK_TIMEOUT)
         stop_vms_safely([self.vm])
@@ -152,7 +149,7 @@ class DisksPermutationEnvironment(BaseTestCase):
                 raise exceptions.DiskException("Failed to remove disk %s"
                                                % disk)
             logger.info("Disk %s removed successfully", disk)
-        sd_disks = getStorageDomainDisks(config.SD_NAME, get_href=False)
+        sd_disks = getStorageDomainDisks(config.SD_NAME_0, get_href=False)
         disks_to_remove = [d.get_alias for d in sd_disks if
                            (not d.get_bootable)]
         for disk in disks_to_remove:
@@ -170,7 +167,7 @@ class BasicResize(BaseTestCase):
     A class with common setup and teardown methods
     """
     __test__ = False
-    vm = config.VM_NAME
+    vm = config.VM_NAME[0]
     new_size = (config.DISK_SIZE + config.GB)
     host_ip = None
     disk_name = ''
@@ -207,7 +204,7 @@ class BasicResize(BaseTestCase):
         logger.info("dd to disk %s", self.disk_name)
         helpers.verify_write_operation_to_disk(self.vm)
 
-        disks_objs = getVmDisks(config.VM_NAME)
+        disks_objs = getVmDisks(config.VM_NAME[0])
         disk_obj = [disk_obj for disk_obj in disks_objs if
                     (not disk_obj.get_bootable())][0]
         datacenter_obj = get_data_center(config.DC_NAME)
@@ -220,12 +217,13 @@ class BasicResize(BaseTestCase):
                                           datacenter_obj)
         self.assertEqual(lv_size, self.new_size / config.GB)
 
-        devices, boot_device = helpers.get_vm_storage_devices(config.VM_NAME)
+        devices, boot_device = helpers.get_vm_storage_devices(
+            config.VM_NAME[0])
 
         start_vms([self.vm], max_workers=1, wait_for_ip=False)
         waitForVMState(self.vm)
         for device in devices:
-            size = helpers.get_vm_device_size(config.VM_NAME, device)
+            size = helpers.get_vm_device_size(config.VM_NAME[0], device)
             self.assertEqual(int(size), (self.new_size / config.GB))
 
     def block_connection_case(self):
@@ -264,7 +262,7 @@ class BasicResize(BaseTestCase):
         assert waitForDisksState(self.disk_name, timeout=TASK_TIMEOUT)
         waitForHostsStates(True, config.HOSTS[0])
 
-        disks_objs = getVmDisks(config.VM_NAME)
+        disks_objs = getVmDisks(config.VM_NAME[0])
         disk_obj = [disk_obj for disk_obj in disks_objs if
                     (not disk_obj.get_bootable())][0]
         datacenter_obj = get_data_center(config.DC_NAME)
@@ -277,12 +275,13 @@ class BasicResize(BaseTestCase):
                                           datacenter_obj)
         self.assertEqual(lv_size, self.new_size / config.GB)
 
-        devices, boot_device = helpers.get_vm_storage_devices(config.VM_NAME)
+        devices, boot_device = helpers.get_vm_storage_devices(
+            config.VM_NAME[0])
 
         start_vms([self.vm], max_workers=1, wait_for_ip=False)
         waitForVMState(self.vm)
         for device in devices:
-            size = helpers.get_vm_device_size(config.VM_NAME, device)
+            size = helpers.get_vm_device_size(config.VM_NAME[0], device)
             self.assertEqual(int(size), (self.new_size / config.GB))
 
     def multiple_disks(self, vm_names):
@@ -340,18 +339,19 @@ class TestCase336099(DisksPermutationEnvironment):
                                     % (disk, self.new_size))
         assert waitForDisksState(helpers.DISKS_NAMES, timeout=TASK_TIMEOUT)
 
-        devices, boot_device = helpers.get_vm_storage_devices(config.VM_NAME)
+        devices, boot_device = helpers.get_vm_storage_devices(
+            config.VM_NAME[0])
 
         start_vms([self.vm], max_workers=1, wait_for_ip=False)
         waitForVMState(self.vm)
         for device in devices:
-            size = helpers.get_vm_device_size(config.VM_NAME, device)
+            size = helpers.get_vm_device_size(config.VM_NAME[0], device)
             self.assertEqual(int(size), (self.new_size / config.GB))
 
     def tearDown(self):
         super(TestCase336099, self).tearDown()
 
-        if not removeSnapshot(True, config.VM_NAME, self.snap_description):
+        if not removeSnapshot(True, config.VM_NAME[0], self.snap_description):
             raise exceptions.SnapshotException("Failed to remove snapshot %s"
                                                % self.snap_description)
 
@@ -414,7 +414,7 @@ class TestCase336100(DisksPermutationEnvironment):
 
         super(TestCase336100, self).tearDown()
 
-        if not removeSnapshot(True, config.VM_NAME, self.snap_description):
+        if not removeSnapshot(True, config.VM_NAME[0], self.snap_description):
             raise exceptions.SnapshotException("Failed to remove snapshot %s"
                                                % self.snap_description)
 
@@ -435,7 +435,7 @@ class TestCase287466(BasicResize):
         self.disk_args['alias'] = 'disk_%s' % self.tcms_test_case
         self.disk_name = self.disk_args['alias']
         self.disk_args['sparse'] = False
-        self.disk_args['format'] = config.FORMAT_RAW
+        self.disk_args['format'] = config.RAW_DISK
         super(TestCase287466, self).setUp()
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
@@ -465,7 +465,7 @@ class TestCase297017(BasicResize):
         self.disk_args['alias'] = 'disk_%s' % self.tcms_test_case
         self.disk_name = self.disk_args['alias']
         self.disk_args['sparse'] = True
-        self.disk_args['format'] = config.FORMAT_COW
+        self.disk_args['format'] = config.COW_DISK
         super(TestCase297017, self).setUp()
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
@@ -495,7 +495,7 @@ class TestCase287467(BasicResize):
         self.disk_args['alias'] = 'disk_%s' % self.tcms_test_case
         self.disk_name = self.disk_args['alias']
         self.disk_args['sparse'] = False
-        self.disk_args['format'] = config.FORMAT_RAW
+        self.disk_args['format'] = config.RAW_DISK
         super(TestCase287467, self).setUp()
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
@@ -525,7 +525,7 @@ class TestCase297018(BasicResize):
         self.disk_args['alias'] = 'disk_%s' % self.tcms_test_case
         self.disk_name = self.disk_args['alias']
         self.disk_args['sparse'] = True
-        self.disk_args['format'] = config.FORMAT_COW
+        self.disk_args['format'] = config.COW_DISK
         super(TestCase297018, self).setUp()
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
@@ -555,7 +555,7 @@ class TestCase297090(BasicResize):
         self.disk_args['alias'] = 'disk_%s' % self.tcms_test_case
         self.disk_name = self.disk_args['alias']
         self.disk_args['sparse'] = False
-        self.disk_args['format'] = config.FORMAT_RAW
+        self.disk_args['format'] = config.RAW_DISK
         super(TestCase297090, self).setUp()
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
@@ -586,7 +586,7 @@ class TestCase297089(BasicResize):
         self.disk_args['alias'] = 'disk_%s' % self.tcms_test_case
         self.disk_name = self.disk_args['alias']
         self.disk_args['sparse'] = False
-        self.disk_args['format'] = config.FORMAT_RAW
+        self.disk_args['format'] = config.RAW_DISK
         super(TestCase297089, self).setUp()
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
@@ -618,7 +618,7 @@ class TestCase287468(BasicResize):
         self.disk_args['alias'] = 'disk_%s' % self.tcms_test_case
         self.disk_name = self.disk_args['alias']
         self.disk_args['sparse'] = False
-        self.disk_args['format'] = config.FORMAT_RAW
+        self.disk_args['format'] = config.RAW_DISK
         self.disk_args['shareable'] = True
         super(TestCase287468, self).setUp()
         self.test_vm_name = 'test_%s' % self.tcms_test_case
@@ -683,7 +683,7 @@ class TestCase287469(BasicResize):
         self.disk_args['alias'] = 'disk_%s' % self.tcms_test_case
         self.disk_name = self.disk_args['alias']
         self.disk_args['sparse'] = False
-        self.disk_args['format'] = config.FORMAT_RAW
+        self.disk_args['format'] = config.RAW_DISK
         super(TestCase287469, self).setUp()
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
@@ -722,7 +722,7 @@ class TestCase297085(BasicResize):
         self.disk_args['alias'] = 'disk_%s' % self.tcms_test_case
         self.disk_name = self.disk_args['alias']
         self.disk_args['sparse'] = True
-        self.disk_args['format'] = config.FORMAT_COW
+        self.disk_args['format'] = config.COW_DISK
         super(TestCase297085, self).setUp()
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
@@ -755,7 +755,7 @@ class TestCase297085(BasicResize):
         helpers.verify_write_operation_to_disk(self.vm)
         logger.info("Getting volume size")
 
-        disks_objs = getVmDisks(config.VM_NAME)
+        disks_objs = getVmDisks(config.VM_NAME[0])
         disk_obj = [disk_obj for disk_obj in disks_objs if
                     (not disk_obj.get_bootable())][0]
         datacenter_obj = get_data_center(config.DC_NAME)
@@ -843,7 +843,7 @@ class TestCase287478(BasicResize):
         vmArgs['installation'] = False
 
         logger.info('Creating vm and installing OS on it')
-        sd_list = [config.SD_NAME, config.SD_NAME_1]
+        sd_list = [config.SD_NAME_0, config.SD_NAME_1]
 
         for i, sd in zip(range(self.vm_count), sd_list):
             self.vm_name = "vm_%s_%s"

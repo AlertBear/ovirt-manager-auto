@@ -62,14 +62,11 @@ def _create_vm(vm_name, storage_domain, interface, install_os):
     if install_os:
         vmArgs.update({
             'nic': 'nic1',
-            'cobblerAddress': config.COBBLER_ADDRESS,
-            'cobblerUser': config.COBBLER_USER,
-            'cobblerPasswd': config.COBBLER_PASSWORD,
             'image': config.COBBLER_PROFILE,
             'useAgent': True,
             'os_type': config.ENUMS['rhel6'],
-            'user': config.VM_LINUX_USER,
-            'password': config.VM_LINUX_PASSWORD
+            'user': config.VMS_LINUX_USER,
+            'password': config.VMS_LINUX_PW
         })
 
     logger.info('Creating vm %s', vm_name)
@@ -79,7 +76,7 @@ def _create_vm(vm_name, storage_domain, interface, install_os):
         vm_ip = waitForIP(vm=vm_name)[1]['ip']
         logger.info('Got IP %s for vm %s', vm_ip, vm_name)
         logger.info('Setting persistent network on vm %s', vm_name)
-        assert setPersistentNetwork(vm_ip, config.VM_LINUX_PASSWORD)
+        assert setPersistentNetwork(vm_ip, config.VMS_LINUX_PW)
         logger.info('Stopping vm %s', vm_name)
         assert stopVm(True, vm_name)
 

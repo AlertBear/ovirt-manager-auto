@@ -45,8 +45,8 @@ def setup_module():
     logger.info('Creating vm and installing OS on it')
 
     vmArgs = {'positive': True,
-              'vmName': config.VM_NAME,
-              'vmDescription': config.VM_NAME,
+              'vmName': config.VM_NAME[0],
+              'vmDescription': config.VM_NAME[0],
               'diskInterface': config.ENUMS['interface_virtio'],
               'volumeFormat': config.ENUMS['format_cow'],
               'cluster': config.CLUSTER_NAME,
@@ -54,9 +54,6 @@ def setup_module():
               'installation': True,
               'size': config.DISK_SIZE,
               'nic': 'nic1',
-              'cobblerAddress': config.COBBLER_ADDRESS,
-              'cobblerUser': config.COBBLER_USER,
-              'cobblerPasswd': config.COBBLER_PASSWD,
               'image': config.COBBLER_PROFILE,
               'useAgent': True,
               'os_type': config.ENUMS['rhel6'],
@@ -66,16 +63,16 @@ def setup_module():
 
     if not createVm(**vmArgs):
         raise errors.VMException('Unable to create vm %s for test'
-                                 % config.VM_NAME)
+                                 % config.VM_NAME[0])
 
     logger.info('Creating base snapshot %s for vm %s', config.BASE_SNAPSHOT,
-                config.VM_NAME)
-    if not addSnapshot(True, config.VM_NAME, config.BASE_SNAPSHOT):
+                config.VM_NAME[0])
+    if not addSnapshot(True, config.VM_NAME[0], config.BASE_SNAPSHOT):
         raise errors.VMException('Unable to create base snapshot for vm %s'
-                                 % config.VM_NAME)
+                                 % config.VM_NAME[0])
 
-    logger.info('Shutting down VM %s', config.VM_NAME)
-    shutdown_vm_if_up(config.VM_NAME)
+    logger.info('Shutting down VM %s', config.VM_NAME[0])
+    shutdown_vm_if_up(config.VM_NAME[0])
 
 
 class DCWithStoragesActive(TestCase):
@@ -90,7 +87,7 @@ class DCWithStoragesActive(TestCase):
     master_sd = None
     non_master_sd = None
     base_snapshot = config.BASE_SNAPSHOT
-    vm = config.VM_NAME
+    vm = config.VM_NAME[0]
 
     @classmethod
     def setup_class(cls):
@@ -358,7 +355,7 @@ class TestCase294435(ReturnToSnapshot):
         """
         logger.info('Undo preview snapshot %s on vm %s', cls.memory_snapshot,
                     cls.vm)
-        assert undo_snapshot_preview(True, cls.vm, cls.memory_snapshot, True)
+        assert undo_snapshot_preview(True, cls.vm, True)
         wait_for_vm_snapshots(cls.vm, config.SNAPSHOT_OK)
         super(TestCase294435, cls).teardown_class()
 
@@ -465,8 +462,8 @@ class TestCase294439(VMWithMemoryStateSnapshot):
                         'Could not power vm %s off' % self.vm)
 
         logger.info('Undoing snapshot preview')
-        self.assertTrue(undo_snapshot_preview(True, self.vm,
-                                              self.memory_snapshot))
+        self.assertTrue(undo_snapshot_preview(True, self.vm))
+
         self.previewed_snapshot = None
 
         logger.info('Previewing second snapshot (%s) on vm %s',
@@ -500,7 +497,7 @@ class TestCase294439(VMWithMemoryStateSnapshot):
         if cls.previewed_snapshot:
             logger.info('Undoing preview snapshot for snapshot %s',
                         cls.previewed_snapshot)
-            assert undo_snapshot_preview(True, cls.vm, cls.previewed_snapshot)
+            assert undo_snapshot_preview(True, cls.vm)
             cls.previewed_snapshot = None
         super(TestCase294439, cls).teardown_class()
 
@@ -514,7 +511,7 @@ class TestCase294617(VMWithMemoryStateSnapshot):
     __test__ = True
     persist_network = True
     tcms_test_case = '294617'
-    cloned_vm_name = '%s_cloned' % config.VM_NAME
+    cloned_vm_name = '%s_cloned' % config.VM_NAME[0]
 
     @istest
     @tcms(TCMS_TEST_PLAN, tcms_test_case)
@@ -602,7 +599,7 @@ class TestCase294624(VMWithMemoryStateSnapshot):
     persist_network = True
 
     tcms_test_case = '294624'
-    original_vm = '%s_original' % config.VM_NAME
+    original_vm = '%s_original' % config.VM_NAME[0]
 
     @classmethod
     def setup_class(cls):

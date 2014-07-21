@@ -3028,7 +3028,6 @@ def undo_snapshot_preview(positive, vm, ensure_vm_down=False):
     Author: gickowic
     Parameters:
        * vm - vm where snapshot preview should be undone
-       * description - snapshot name that is currently previewed
     Return: status (True if snapshot preview was undone, False otherwise)
     """
     if ensure_vm_down:

@@ -9,6 +9,7 @@ from art.rhevm_api.tests_lib.low_level.datacenters import removeDataCenter
 from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.utils.test_utils import get_api
+from rhevmtests.storage.storage_spm_negative import config
 
 LOGGER = logging.getLogger(__name__)
 
@@ -37,27 +38,25 @@ def setup_package():
     """
     Prepares host in a cluster and creates all storage domain given by config.
     """
-    import config
     assert _check_test_requirements(config)
     luns = config.PARAMETERS.as_list('lun')
     domain_address = config.PARAMETERS.as_list('data_domain_address')
     config.PARAMETERS['lun'] = list()
     config.PARAMETERS['data_domain_address'] = list()
     LOGGER.info("Preparing datacenter %s with hosts %s",
-                config.DC_NAME, config.PARAMETERS['vds'])
+                config.DATA_CENTER_NAME, config.PARAMETERS['vds'])
     build_setup(config.PARAMETERS, config.PARAMETERS, config.STORAGE_TYPE,
                 config.TESTNAME)
     config.PARAMETERS['lun'] = luns
     config.PARAMETERS['data_domain_address'] = domain_address
-    LOGGER.info("Removing datacenter %s", config.DC_NAME)
-    assert removeDataCenter(True, config.DC_NAME)
+    LOGGER.info("Removing datacenter %s", config.DATA_CENTER_NAME)
+    assert removeDataCenter(True, config.DATA_CENTER_NAME)
 
 
 def teardown_package():
     """
     Removes unattached storage domains, host and cluster
     """
-    import config
     storage_domains = SD_API.get(absLink=False)
     host = config.PARAMETERS.as_list('vds')[0]
     unattached = [sd for sd in storage_domains

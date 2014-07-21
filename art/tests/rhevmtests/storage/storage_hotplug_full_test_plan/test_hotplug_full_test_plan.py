@@ -28,7 +28,6 @@ from art.unittest_lib import StorageTest as TestCase
 LOGGER = logging.getLogger(__name__)
 
 FILE_WITH_RESULTS = helpers.FILE_WITH_RESULTS
-VM_NAME = helpers.VM_NAME
 DISKS_TO_PLUG = helpers.DISKS_TO_PLUG
 UNATTACHED_DISK = helpers.UNATTACHED_DISK
 TEXT = helpers.TEXT
@@ -36,10 +35,10 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 
 DISK_INTERFACES = (ENUMS['interface_virtio'],)
 
-VM_NAME_FORMAT = "%s-%sVM"
-
-DISK_NAME_FORMAT = '%s_%s_%s_disk'
 positive = True
+
+
+VM_NAME = config.VM_NAME[0]
 
 
 def setup_module():
@@ -49,7 +48,7 @@ def setup_module():
     LOGGER.info("setup_module")
     datacenters.build_setup(
         config=config.PARAMETERS, storage=config.PARAMETERS,
-        storage_type=config.STORAGE_TYPE, basename=config.BASENAME)
+        storage_type=config.STORAGE_TYPE)
 
     helpers.create_local_files_with_hooks()
     helpers.create_vm_with_disks()
@@ -71,7 +70,7 @@ def setup_module():
 
     vdc = config.VDC
     vdc_password = config.VDC_PASSWORD
-    dc_name = config.DEFAULT_DATA_CENTER_NAME
+    dc_name = config.DATA_CENTER_NAME
     if vdc is not None and vdc_password is not None:
         LOGGER.info("Waiting for vms to be installed and "
                     "templates to be created")
@@ -93,7 +92,7 @@ def teardown_module():
     helpers.remove_hook_files()
 
     cleanDataCenter(
-        True, config.DEFAULT_DATA_CENTER_NAME, vdc=config.VDC,
+        True, config.DATA_CENTER_NAME, vdc=config.VDC,
         vdc_password=config.VDC_PASSWORD)
 
 
@@ -478,8 +477,11 @@ class TestCase134134(TestCase):
         Try to plug in a new virtIO disk while OS is running
         """
         for template in config.TEMPLATE_NAMES:
-            vm_name = VM_NAME_FORMAT % (template, self.__class__.__name__)
-            disk_name = DISK_NAME_FORMAT % (
+            vm_name = config.VM_NAME_FORMAT % (
+                template,
+                self.__class__.__name__
+            )
+            disk_name = config.DISK_NAME_FORMAT % (
                 template, ENUMS["interface_virtio"], "shareable")
             LOGGER.info("Attempting to hotplug disk %s to VM %s" %
                         (disk_name, vm_name))
@@ -723,13 +725,15 @@ class TestCase139348(TestCase):
         for template in config.TEMPLATE_NAMES:
             for disk_interface in DISK_INTERFACES:
                 for shareable in (True, False):
-                    disk_name = DISK_NAME_FORMAT % (
+                    disk_name = config.DISK_NAME_FORMAT % (
                         template,
                         disk_interface,
                         'shareable' if shareable else 'non-shareable')
 
-                    vm_name = VM_NAME_FORMAT % (template,
-                                                self.__class__.__name__)
+                    vm_name = config.VM_NAME_FORMAT % (
+                        template,
+                        self.__class__.__name__
+                    )
 
                     LOGGER.info("attempting to plug disk %s to vm %s" %
                                 (disk_name, vm_name))
@@ -796,16 +800,24 @@ class TestCase244310(TestCase):
         for (first_vm, second_vm), template in zip(self.vm_pairs,
                                                    config.TEMPLATE_NAMES):
             LOGGER.info("VMs are: %s, %s" % (first_vm, second_vm))
-            disk_name = DISK_NAME_FORMAT % (template,
-                                            ENUMS['interface_virtio'],
-                                            'shareable')
-            LOGGER.info("Plugging disk %s into vm %s (first vm)" %
-                        (disk_name, first_vm))
+            disk_name = config.DISK_NAME_FORMAT % (
+                template,
+                ENUMS['interface_virtio'],
+                'shareable'
+            )
+            LOGGER.info(
+                "Plugging disk %s into vm %s (first vm)",
+                disk_name,
+                first_vm
+            )
             first_plug_status = disks.attachDisk(positive,
                                                  alias=disk_name,
                                                  vmName=first_vm)
-            LOGGER.info("Plugging disk %s into vm %s (second vm)" %
-                        (disk_name, second_vm))
+            LOGGER.info(
+                "Plugging disk %s into vm %s (second vm)",
+                disk_name,
+                second_vm
+            )
             second_plug_status = disks.attachDisk(positive,
                                                   alias=disk_name,
                                                   vmName=second_vm)
@@ -838,12 +850,14 @@ class TestCase244314(TestCase):
         cls.vm_pairs = []
 
         def _create_vms_and_disks(template):
-            disk_name = DISK_NAME_FORMAT % (template,
-                                            ENUMS['interface_virtio'],
-                                            'shareable')
+            disk_name = config.DISK_NAME_FORMAT % (
+                template,
+                ENUMS['interface_virtio'],
+                'shareable'
+            )
             vm_name = common.create_vm_from_template(template, cls.__name__)
             new_name = vm_name + "1"
-            LOGGER.info("renaming vm %s to %s" % (vm_name, new_name))
+            LOGGER.info("renaming vm %s to %s", vm_name, new_name)
             if not vms.updateVm(positive, vm=vm_name, name=new_name):
                 raise exceptions.VMException("Unable to rename vm %s to %s" %
                                              (vm_name, new_name))
@@ -876,17 +890,24 @@ class TestCase244314(TestCase):
         Unplug shared disk from a single VM while it is still plugged to
         another vm
         """
-        for (first_vm, second_vm), template in zip(self.vm_pairs,
-                                                   config.TEMPLATE_NAMES):
-            disk_name = DISK_NAME_FORMAT % (template,
-                                            ENUMS['interface_virtio'],
-                                            'shareable')
-            LOGGER.info("Unplugging disk %s from vm %s" %
-                        (disk_name, first_vm))
+        for (first_vm, second_vm), template in zip(
+            self.vm_pairs,
+            config.TEMPLATE_NAMES
+        ):
+            disk_name = config.DISK_NAME_FORMAT % (
+                template,
+                ENUMS['interface_virtio'],
+                'shareable'
+            )
+            LOGGER.info(
+                "Unplugging disk %s from vm %s",
+                disk_name,
+                first_vm
+            )
             unplug_status = vms.deactivateVmDisk(positive,
                                                  diskAlias=disk_name,
                                                  vm=first_vm)
-            LOGGER.info("Disk %s unplugged from vm %s" % (disk_name, first_vm))
+            LOGGER.info("Disk %s unplugged from vm %s", disk_name, first_vm)
             self.assertTrue(unplug_status)
 
     @classmethod
@@ -953,7 +974,7 @@ class TestCase174616(TestCase):
                 raise exceptions.DiskException("Unable to add disk %s"
                                                % cls.disks_aliases[index])
             wait_for_tasks(config.VDC, config.VDC_PASSWORD,
-                           config.DEFAULT_DATA_CENTER_NAME)
+                           config.DATA_CENTER_NAME)
 
             if not disks.attachDisk(positive, alias=cls.disks_aliases[index],
                                     vmName=cls.first_vm, active=False):
@@ -1004,7 +1025,7 @@ class TestCase174616(TestCase):
                 self.assertTrue(status)
 
         wait_for_tasks(config.VDC, config.VDC_PASSWORD,
-                       config.DEFAULT_DATA_CENTER_NAME)
+                       config.DATA_CENTER_NAME)
 
         for vm in self.vm_names:
             inactive_disks = [disk for disk in vms.getVmDisks(vm)

@@ -67,15 +67,12 @@ def create_vm_and_template(cobbler_image, template_name):
     if not vms.createVm(config.positive,
                         vmName=vm_name,
                         vmDescription=vm_name,
-                        cluster=config.DEFAULT_CLUSTER_NAME,
+                        cluster=config.CLUSTER_NAME,
                         nic="nic1",
                         storageDomainName=config.STORAGE_DOMAIN_NAME,
                         size=10 * config.GB,
                         diskInterface=config.ENUMS['interface_virtio'],
                         memory=2 * config.GB,
-                        cobblerAddress=config.COBBLER_ADDRESS,
-                        cobblerUser=config.COBBLER_USER,
-                        cobblerPasswd=config.COBBLER_PASSWORD,
                         image=cobbler_image,
                         installation=True,
                         useAgent=True,
@@ -90,7 +87,7 @@ def create_vm_and_template(cobbler_image, template_name):
 
     logger.info("Setting network to be persistent")
     if not utils.setPersistentNetwork(host=vm_ip,
-                                      password=config.VM_LINUX_PASSWORD):
+                                      password=config.VMS_LINUX_PW):
         raise exceptions.VMException("Unable to set network persistent vm %s" %
                                      vm_name)
     logging.info("Network settings changed successfully")
@@ -103,7 +100,7 @@ def create_vm_and_template(cobbler_image, template_name):
     logger.info("Creating template %s from vm %s" % (template_name, vm_name))
     if not templates.createTemplate(config.positive, vm=vm_name,
                                     name=template_name,
-                                    cluster=config.DEFAULT_CLUSTER_NAME):
+                                    cluster=config.CLUSTER_NAME):
         raise exceptions.TemplateException("Unable to create template %s" %
                                            template_name)
 
@@ -143,7 +140,7 @@ def create_vm_from_template(template_name, class_name):
                         vmDescription=vm_name,
                         template=template_name,
                         start='false',
-                        cluster=config.DEFAULT_CLUSTER_NAME,
+                        cluster=config.CLUSTER_NAME,
                         network=config.MGMT_BRIDGE):
         raise exceptions.VMException("Unable to clone vm %s from template %s" %
                                      (vm_name, template_name))

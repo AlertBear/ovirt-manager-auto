@@ -76,6 +76,7 @@ class BaseCaseIsoDomains(TestCase):
     """
     local = None
     machine = None
+    vm_name = None
     storagedomains = []
 
     @classmethod

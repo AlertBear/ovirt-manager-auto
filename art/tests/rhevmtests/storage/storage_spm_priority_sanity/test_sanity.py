@@ -14,7 +14,6 @@ import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 from art.rhevm_api.utils.test_utils import get_api, toggleServiceOnHost,\
     raise_if_false
 
-from art.test_handler.settings import opts
 from art.test_handler.tools import tcms, bz
 from art.test_handler import exceptions
 from art.test_handler.handler_lib.utils import no_datatype_validation
@@ -26,7 +25,7 @@ import config
 
 
 LOGGER = logging.getLogger(__name__)
-ENUMS = opts['elements_conf']['RHEVM Enums']
+ENUMS = config.ENUMS
 HOST_API = get_api('host', 'hosts')
 
 BZ986961_NOT_FIXED = not is_bz_state('986961')

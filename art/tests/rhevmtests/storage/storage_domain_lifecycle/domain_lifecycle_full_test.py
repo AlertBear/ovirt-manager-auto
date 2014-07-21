@@ -64,8 +64,7 @@ def setup_module():
 
     datacenters.build_setup(config=config.PARAMETERS,
                             storage=config.PARAMETERS,
-                            storage_type=config.STORAGE_TYPE,
-                            basename=config.BASENAME)
+                            storage_type=config.STORAGE_TYPE)
 
     logger.info("Adding temporary cluster %s for upgrade tests to default dc ",
                 config.TMP_CLUSTER_NAME)
@@ -535,13 +534,10 @@ class TestUpgrade(TestCase):
             bootable=True, wipe_after_delete=False,
             type=config.ENUMS['vm_type_server'], os_type="rhel6x64",
             memory=1073741824, cpu_socket=1, cpu_cores=1,
-            display_type=config.ENUMS['display_type_spice'],
-            network=config.PARAMETERS['mgmt_bridge'])
+            display_type=config.DISPLAY_TYPE,
+            network=config.MGMT_BRIDGE)
         assert vms.unattendedInstallation(
-            True, self.vm_name, config.PARAMETERS['cobbler_profile'], nic=nic,
-            cobblerAddress=config.PARAMETERS.get('cobbler_address', None),
-            cobblerUser=config.PARAMETERS.get('cobbler_user', None),
-            cobblerPasswd=config.PARAMETERS.get('cobbler_passwd', None))
+            True, self.vm_name, config.COBBLER_PROFILE, nic=nic)
         assert vms.waitForVMState(self.vm_name)
         # getVmMacAddress returns (bool, dict(macAddress=<desired_mac>))
         mac = vms.getVmMacAddress(True, self.vm_name, nic=nic)[1]

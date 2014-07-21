@@ -3,21 +3,9 @@ Config module for storage sanity tests
 """
 __test__ = False
 
-from art.test_handler.settings import opts
-from art.test_handler.settings import ART_CONFIG
+from rhevmtests.storage.config import * # flake8: noqa
 
-ENUMS = opts['elements_conf']['RHEVM Enums']
-
-PARAMETERS = ART_CONFIG['PARAMETERS']
-
-# DC info
-STORAGE_TYPE = PARAMETERS['storage_type']
-
-STORAGE = ART_CONFIG['STORAGE']
-
-if STORAGE_TYPE.split("_")[0] == ENUMS['storage_type_posixfs']:
-    STORAGE_TYPE, VFS_TYPE = (PARAMETERS['storage_type']).split("_")
-    PARAMETERS['vfs_type'] = VFS_TYPE
+TESTNAME = "storage_sanity_unittest"
 
 if PARAMETERS.get('extend_lun', None):
     EXTEND_LUN = {
@@ -28,22 +16,11 @@ if PARAMETERS.get('extend_lun', None):
 else:
     EXTEND_LUN = None
 
-FIRST_HOST = PARAMETERS.as_list('vds')[0]
+FIRST_HOST = HOSTS[0]
 
-BASENAME = "%sTestStorage" % STORAGE_TYPE
-
-DATA_CENTER_NAME = 'datacenter_%s' % BASENAME
-CLUSTER_NAME = 'cluster_%s' % BASENAME
-
-VDC = PARAMETERS.get('host', None)
-VDC_PASSWORD = PARAMETERS.get('vdc_root_password', None)
-VDS_PASSWORD = PARAMETERS.get('vds_password', None)
-
-HOSTS = PARAMETERS.as_list('vds')
+# TODO: remove
+VDC_PASSWORD = VDC_ROOT_PASSWORD
+VDS_PASSWORD = HOSTS_PW
 
 HOST_NONOPERATIONAL = ENUMS["search_host_state_non_operational"]
 HOST_NONRESPONSIVE = ENUMS["search_host_state_non_responsive"]
-
-COMPATIBILITY_VERSION = PARAMETERS['compatibility_version']
-
-LOCAL = True if STORAGE_TYPE == ENUMS['storage_type_local'] else False

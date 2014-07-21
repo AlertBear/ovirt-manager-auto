@@ -87,6 +87,12 @@ class RestartOvirt(TestCase):
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
         self.check_action_failed()
 
+    def check_action_failed(self):
+        pass
+
+    def perform_action(self):
+        pass
+
 
 class TestCase288728(RestartOvirt):
     """
@@ -101,23 +107,33 @@ class TestCase288728(RestartOvirt):
 
     def tearDown(self):
         super(TestCase288728, self).tearDown()
-        if vms.validateSnapshot(True, config.VM_NAME, self.snapshot_name):
-            vms.stopVm(True, config.VM_NAME)
+        if vms.validateSnapshot(True, config.VM_NAME[0], self.snapshot_name):
+            vms.stopVm(True, config.VM_NAME[0])
             self.assertTrue(
-                vms.removeSnapshot(True, config.VM_NAME, self.snapshot_name),
-                "Removing snapshot %s failed" % self.snapshot_name)
-            vms.startVm(True, config.VM_NAME, config.ENUMS['vm_state_up'])
+                vms.removeSnapshot(
+                    True,
+                    config.VM_NAME[0],
+                    self.snapshot_name
+                ),
+                "Removing snapshot %s failed" % self.snapshot_name
+            )
+            vms.startVm(True, config.VM_NAME[0], config.ENUMS['vm_state_up'])
         test_utils.wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
 
     def perform_action(self):
         self.assertTrue(
-            vms.addSnapshot(True, config.VM_NAME, self.snapshot_name, False),
+            vms.addSnapshot(
+                True,
+                config.VM_NAME[0],
+                self.snapshot_name,
+                False
+            ),
             "Adding snapshot %s failed" % self.snapshot_name)
 
     def check_action_failed(self):
         self.assertFalse(
-            vms.validateSnapshot(True, config.VM_NAME, self.snapshot_name),
+            vms.validateSnapshot(True, config.VM_NAME[0], self.snapshot_name),
             "Snapshot %s exists!" % self.snapshot_name)
 
     @tcms(tcms_plan_id, tcms_test_case)
@@ -166,18 +182,18 @@ class TestCase288964(RestartOvirt):
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
 
     def perform_action(self):
-        assert vms.suspendVm(True, config.VM_NAME, False)
+        assert vms.suspendVm(True, config.VM_NAME[0], False)
 
     def check_action_failed(self):
         vms.wait_for_vm_states(
-            config.VM_NAME,
+            config.VM_NAME[0],
             [config.ENUMS['vm_state_up'], config.ENUMS['vm_state_down'],
              config.ENUMS['vm_state_suspended']])
-        status = vms.VM_API.find(config.VM_NAME).get_status().get_state()
+        status = vms.VM_API.find(config.VM_NAME[0]).get_status().get_state()
         self.assertEqual(
             status, config.ENUMS['vm_state_up'],
             "VM %s status incorrect, is: %s, should be: %s" % (
-                config.VM_NAME, status, config.ENUMS['vm_state_up']))
+                config.VM_NAME[0], status, config.ENUMS['vm_state_up']))
 
     @tcms(tcms_plan_id, tcms_test_case)
     def test_restart_before_tasks_start(self):

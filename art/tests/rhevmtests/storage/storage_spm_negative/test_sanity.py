@@ -139,9 +139,13 @@ def setup_iscsi():
     host = config.PARAMETERS.as_list('vds')[0]
     LOGGER.info("Creating iSCSI master storage domain %s", MASTER_DOMAIN)
     assert addISCSIDataDomain(
-        host, MASTER_DOMAIN, config.DC_NAME, config.PARAMETERS['master_lun'],
+        host,
+        MASTER_DOMAIN,
+        config.DATA_CENTER_NAME,
+        config.PARAMETERS['master_lun'],
         config.PARAMETERS['master_lun_address'],
-        config.PARAMETERS['master_lun_target'])
+        config.PARAMETERS['master_lun_target']
+    )
     addresses_list = config.PARAMETERS.as_list('lun_address')
     targets_list = config.PARAMETERS.as_list('lun_target')
     for index, lun in enumerate(config.PARAMETERS.as_list('lun')):
@@ -165,7 +169,7 @@ def setup_nfs():
     """
     host = config.PARAMETERS.as_list('vds')[0]
     LOGGER.info("Creating NFS master storage domain %s", MASTER_DOMAIN)
-    assert addNFSDomain(host, MASTER_DOMAIN, config.DC_NAME,
+    assert addNFSDomain(host, MASTER_DOMAIN, config.DATA_CENTER_NAME,
                         config.PARAMETERS['master_export_address'],
                         config.PARAMETERS['master_export_path'])
     address_list = config.PARAMETERS.as_list('data_domain_address')
@@ -189,16 +193,16 @@ def setup_module():
     according to storage_domain type adds one storage domain to datacenter
     """
     host = config.PARAMETERS.as_list('vds')[0]
-    LOGGER.info("Adding datacenter %s", config.DC_NAME)
+    LOGGER.info("Adding datacenter %s", config.DATA_CENTER_NAME)
     assert datacenters.addDataCenter(
-        True, name=config.DC_NAME, storage_type=config.STORAGE_TYPE,
+        True, name=config.DATA_CENTER_NAME, storage_type=config.STORAGE_TYPE,
         version=config.PARAMETERS['compatibility_version'])
     LOGGER.info("Putting host to maintenance")
     assert hosts.deactivateHost(True, host)
     LOGGER.info("Assigning cluster %s to datacenter %s",
-                config.CLUSTER_NAME, config.DC_NAME)
+                config.CLUSTER_NAME, config.DATA_CENTER_NAME)
     assert clusters.updateCluster(
-        True, cluster=config.CLUSTER_NAME, data_center=config.DC_NAME)
+        True, cluster=config.CLUSTER_NAME, data_center=config.DATA_CENTER_NAME)
     LOGGER.info("Activating host")
     assert hosts.activateHost(True, host)
     if config.STORAGE_TYPE == config.ENUMS['storage_type_nfs']:
@@ -212,12 +216,15 @@ def teardown_module():
     Removes storage domains from data-center to unassigned and removes
     data-center
     """
-    wait_for_tasks(config.SETUP_ADDRESS, config.SETUP_PASSWORD, config.DC_NAME)
+    wait_for_tasks(config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
     LOGGER.info("Putting datacenter to maintenance")
-    assert storagedomains.deactivateStorageDomain(True, config.DC_NAME,
-                                                  MASTER_DOMAIN)
+    assert storagedomains.deactivateStorageDomain(
+        True,
+        config.DATA_CENTER_NAME,
+        MASTER_DOMAIN
+    )
     LOGGER.info("Removing datacenter")
-    assert datacenters.removeDataCenter(True, config.DC_NAME)
+    assert datacenters.removeDataCenter(True, config.DATA_CENTER_NAME)
 
 
 class DataCenterWithSD(TestCase):
@@ -227,7 +234,7 @@ class DataCenterWithSD(TestCase):
     __test__ = False
     automatic_rebuild = True
     host = config.HOSTS[0]
-    password = config.VDS_PASSWORDS[0]
+    password = config.VDS_PASSWORD
     master_domain = MASTER_DOMAIN
     non_master = None
 
@@ -238,11 +245,17 @@ class DataCenterWithSD(TestCase):
         """
         cls.non_master = STORAGE_DOMAINS[0]
         LOGGER.info("Attaching domain %s to datacenter %s", cls.non_master,
-                    config.DC_NAME)
+                    config.DATA_CENTER_NAME)
         assert storagedomains.attachStorageDomain(
-            True, datacenter=config.DC_NAME, storagedomain=cls.non_master)
+            True,
+            datacenter=config.DATA_CENTER_NAME,
+            storagedomain=cls.non_master
+        )
         assert storagedomains.activateStorageDomain(
-            True, datacenter=config.DC_NAME, storagedomain=cls.non_master)
+            True,
+            datacenter=config.DATA_CENTER_NAME,
+            storagedomain=cls.non_master
+        )
         cls.vm_name = "vm_%s" % cls.__name__
         create_installing_vm(cls.vm_name)
 
@@ -254,21 +267,29 @@ class DataCenterWithSD(TestCase):
         """
         LOGGER.info("Removing vm %s", cls.vm_name)
         assert vms.removeVm(True, vm=cls.vm_name, stopVM='true')
-        wait_for_tasks(config.SETUP_ADDRESS, config.SETUP_PASSWORD,
-                       config.DC_NAME)
-        non_master = storagedomains.getDCStorage(config.DC_NAME,
+        wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                       config.DATA_CENTER_NAME)
+        non_master = storagedomains.getDCStorage(config.DATA_CENTER_NAME,
                                                  cls.non_master)
         if non_master.status.state == \
                 config.ENUMS['storage_domain_state_active']:
             LOGGER.info("Deactivating storage domain %s", non_master.name)
-            assert storagedomains.deactivateStorageDomain(True, config.DC_NAME,
-                                                          non_master.name)
-        non_master = storagedomains.getDCStorage(config.DC_NAME,
-                                                 non_master.name)
+            assert storagedomains.deactivateStorageDomain(
+                True,
+                config.DATA_CENTER_NAME,
+                non_master.name
+            )
+        non_master = storagedomains.getDCStorage(
+            config.DATA_CENTER_NAME,
+            non_master.name
+        )
         LOGGER.info("Detaching domain %s that is in %s status",
                     non_master.name, non_master.status.state)
-        assert storagedomains.detachStorageDomain(True, config.DC_NAME,
-                                                  non_master.name)
+        assert storagedomains.detachStorageDomain(
+            True,
+            config.DATA_CENTER_NAME,
+            non_master.name
+        )
 
 
 class CorruptMetadata(DataCenterWithSD):
@@ -290,21 +311,25 @@ class CorruptMetadata(DataCenterWithSD):
         LOGGER.info("Generating metadata corruption on domain %s",
                     self.master_domain)
         result, sd_obj = generateSDMetadataCorruption(
-            vds_name=self.host, username=config.VDS_ROOT,
+            vds_name=self.host, username=config.VDS_USER,
             passwd=self.password, sd_name=self.master_domain,
             md_tag=config.MASTER_VERSION_TAG, md_tag_bad_value='-1')
         LOGGER.info("sd_obj is %s", sd_obj)
         self.assertTrue(result)
         LOGGER.info("Waiting for data center recovery")
         self.assertTrue(datacenters.waitForDataCenterState(
-            config.DC_NAME, config.ENUMS['data_center_state_contend'],
+            config.DATA_CENTER_NAME, config.ENUMS['data_center_state_contend'],
             timeout=DC_PROBLEM_TIMEOUT))
         LOGGER.info("Waiting until DC is recovered")
-        self.assertTrue(datacenters.waitForDataCenterState(config.DC_NAME))
+        self.assertTrue(
+            datacenters.waitForDataCenterState(
+                config.DATA_CENTER_NAME
+            )
+        )
         LOGGER.info("Waiting until old master domain %s becomes inactive",
                     self.master_domain)
         self.assertTrue(storagedomains.waitForStorageDomainStatus(
-            True, dataCenterName=config.DC_NAME,
+            True, dataCenterName=config.DATA_CENTER_NAME,
             storageDomainName=self.master_domain,
             expectedStatus=config.ENUMS['storage_domain_state_inactive'],
             timeOut=1800))
@@ -313,12 +338,12 @@ class CorruptMetadata(DataCenterWithSD):
         LOGGER.info("Checking that domain %s is master domain",
                     self.non_master)
         self.assertTrue(storagedomains.isStorageDomainMaster(
-            True, dataCenterName=config.DC_NAME,
+            True, dataCenterName=config.DATA_CENTER_NAME,
             storageDomainName=self.non_master))
         LOGGER.info("Validating up status of datacenter")
         self.assertTrue(validateElementStatus(
             True, element='data_center', collection='datacenters',
-            elementName=config.DC_NAME,
+            elementName=config.DATA_CENTER_NAME,
             expectedStatus=config.ENUMS['data_center_state_up']))
         LOGGER.info("Validating that current master domain %s is active",
                     self.non_master)
@@ -326,18 +351,31 @@ class CorruptMetadata(DataCenterWithSD):
             True, element='storagedomain',
             collection='storagedomains', elementName=self.non_master,
             expectedStatus=config.ENUMS['storage_domain_state_active'],
-            dcName=config.DC_NAME))
+            dcName=config.DATA_CENTER_NAME))
         LOGGER.info("Trying to activate former master domain %s",
                     MASTER_DOMAIN)
-        self.assertFalse(storagedomains.activateStorageDomain(
-            True, datacenter=config.DC_NAME, storagedomain=MASTER_DOMAIN))
+        self.assertFalse(
+            storagedomains.activateStorageDomain(
+                True,
+                datacenter=config.DATA_CENTER_NAME,
+                storagedomain=MASTER_DOMAIN
+            )
+        )
         LOGGER.info("Restoring metadata on domain %s", MASTER_DOMAIN)
         restoreSDOriginalMetadata(sd_obj=sd_obj['sd_obj'])
         LOGGER.info("Activating former master %s", MASTER_DOMAIN)
         activate_result = storagedomains.activateStorageDomain(
-            True, datacenter=config.DC_NAME, storagedomain=MASTER_DOMAIN)
-        self.assertTrue(handle_bz_854140(config.DC_NAME, MASTER_DOMAIN,
-                                         activate_result))
+            True,
+            datacenter=config.DATA_CENTER_NAME,
+            storagedomain=MASTER_DOMAIN
+        )
+        self.assertTrue(
+            handle_bz_854140(
+                config.DATA_CENTER_NAME,
+                MASTER_DOMAIN,
+                activate_result
+            )
+        )
 
 
 class WrongMasterVersion(DataCenterWithSD):
@@ -358,53 +396,57 @@ class WrongMasterVersion(DataCenterWithSD):
         """
         LOGGER.info("Changing master version to 999")
         result, sd_obj = generateSDMetadataCorruption(
-            vds_name=self.host, username=config.VDS_ROOT,
+            vds_name=self.host, username=config.VDS_USER,
             passwd=self.password, sd_name=self.master_domain,
             md_tag=config.MASTER_VERSION_TAG, md_tag_bad_value='999')
         self.assertTrue(result)
         LOGGER.info("Waiting for inactive master storage")
         self.assertTrue(storagedomains.waitForStorageDomainStatus(
-            True, dataCenterName=config.DC_NAME,
+            True, dataCenterName=config.DATA_CENTER_NAME,
             storageDomainName=self.master_domain,
             expectedStatus=config.ENUMS['storage_domain_state_inactive'],
             timeOut=DC_PROBLEM_TIMEOUT))
         LOGGER.info("Waiting for datacenter to come up")
-        self.assertTrue(datacenters.waitForDataCenterState(config.DC_NAME))
+        self.assertTrue(
+            datacenters.waitForDataCenterState(
+                config.DATA_CENTER_NAME
+            )
+        )
         LOGGER.info("Checking that host is spm")
         self.assertTrue(hosts.checkHostSpmStatus(True, self.host))
         LOGGER.info("Checking that another storage domain was selected as "
                     "master")
         self.assertTrue(storagedomains.isStorageDomainMaster(
-            True, dataCenterName=config.DC_NAME,
+            True, dataCenterName=config.DATA_CENTER_NAME,
             storageDomainName=self.non_master))
         LOGGER.info("Validating former master storage domain is inactive")
         self.assertTrue(validateElementStatus(
             True, element='storagedomain',
             collection='storagedomains', elementName=self.master_domain,
             expectedStatus=config.ENUMS['storage_domain_state_inactive'],
-            dcName=config.DC_NAME))
+            dcName=config.DATA_CENTER_NAME))
         LOGGER.info("Waiting for current master to come up")
         self.assertTrue(storagedomains.waitForStorageDomainStatus(
-            True, dataCenterName=config.DC_NAME,
+            True, dataCenterName=config.DATA_CENTER_NAME,
             storageDomainName=self.non_master,
             expectedStatus=config.ENUMS['storage_domain_state_active'],
             timeOut=60))
         LOGGER.info("Activating former master - should fail")
         self.assertFalse(storagedomains.activateStorageDomain(
-            True, datacenter=config.DC_NAME,
+            True, datacenter=config.DATA_CENTER_NAME,
             storagedomain=self.master_domain))
         LOGGER.info("Restoring original metadata")
         restoreSDOriginalMetadata(sd_obj=sd_obj['sd_obj'])
         LOGGER.info("Activating former master with restored metadata")
         self.assertTrue(storagedomains.activateStorageDomain(
-            True, datacenter=config.DC_NAME,
+            True, datacenter=config.DATA_CENTER_NAME,
             storagedomain=self.master_domain))
         LOGGER.info("Validating former master is active")
         self.assertTrue(validateElementStatus(
             True, element='storagedomain', collection='storagedomains',
             elementName=self.master_domain,
             expectedStatus=config.ENUMS['storage_domain_state_active'],
-            dcName=config.DC_NAME))
+            dcName=config.DATA_CENTER_NAME))
 
 
 class FailedReconstructWith2Domains(DataCenterWithSD):
@@ -432,39 +474,51 @@ class FailedReconstructWith2Domains(DataCenterWithSD):
         LOGGER.info("Creating MDT corruption, setting %s to -1",
                     config.MASTER_VERSION_TAG)
         result, sd_obj = generateSDMetadataCorruption(
-            vds_name=self.host, username=config.VDS_ROOT,
+            vds_name=self.host, username=config.VDS_USER,
             passwd=self.password, sd_name=self.master_domain,
             md_tag=config.MASTER_VERSION_TAG, md_tag_bad_value='-1')
         self.assertTrue(result)
         LOGGER.info("Waiting for DC to come to problematic")
-        self.assertTrue(datacenters.waitForDataCenterState(
-            config.DC_NAME, config.ENUMS['data_center_state_problematic'],
-            timeout=DC_PROBLEM_TIMEOUT))
+        self.assertTrue(
+            datacenters.waitForDataCenterState(
+                config.DATA_CENTER_NAME,
+                config.ENUMS['data_center_state_problematic'],
+                timeout=DC_PROBLEM_TIMEOUT
+            )
+        )
         LOGGER.info("Triggering reconstruct failure")
         self.assertTrue(restartVdsmd(self.host, self.password))
         LOGGER.info("Waiting for DC to come to problematic")
-        self.assertTrue(datacenters.waitForDataCenterState(
-            config.DC_NAME, config.ENUMS['data_center_state_problematic'],
-            timeout=DC_PROBLEM_TIMEOUT))
+        self.assertTrue(
+            datacenters.waitForDataCenterState(
+                config.DATA_CENTER_NAME,
+                config.ENUMS['data_center_state_problematic'],
+                timeout=DC_PROBLEM_TIMEOUT
+            )
+        )
         LOGGER.info("Waiting for DC becoming up")
-        self.assertTrue(datacenters.waitForDataCenterState(config.DC_NAME))
+        self.assertTrue(
+            datacenters.waitForDataCenterState(
+                config.DATA_CENTER_NAME
+            )
+        )
         LOGGER.info("Checking that host is SPM")
         self.assertTrue(hosts.checkHostSpmStatus(True, self.host))
         LOGGER.info("Checking that domain %s is master domain",
                     self.non_master)
         self.assertTrue(storagedomains.isStorageDomainMaster(
-            True, dataCenterName=config.DC_NAME,
+            True, dataCenterName=config.DATA_CENTER_NAME,
             storageDomainName=self.non_master))
         LOGGER.info("Checking that domain %s is not a master domain",
                     self.non_master)
         self.assertFalse(storagedomains.isStorageDomainMaster(
-            True, dataCenterName=config.DC_NAME,
+            True, dataCenterName=config.DATA_CENTER_NAME,
             storageDomainName=self.master_domain))
         LOGGER.info("Restoring original metadata")
         restoreSDOriginalMetadata(sd_obj=sd_obj['sd_obj'])
         LOGGER.info("Activating former master")
         self.assertTrue(storagedomains.activateStorageDomain(
-            True, datacenter=config.DC_NAME,
+            True, datacenter=config.DATA_CENTER_NAME,
             storagedomain=self.master_domain))
 
 
@@ -490,21 +544,32 @@ class ReconstructWith2UnreachableDomainsAnd1ReachableDomain(DataCenterWithSD):
         """
         cls.non_master2 = STORAGE_DOMAINS[1]
         LOGGER.info("Attaching domain %s to datacenter %s", cls.non_master2,
-                    config.DC_NAME)
+                    config.DATA_CENTER_NAME)
         assert storagedomains.attachStorageDomain(
-            True, datacenter=config.DC_NAME, storagedomain=cls.non_master2)
+            True,
+            datacenter=config.DATA_CENTER_NAME,
+            storagedomain=cls.non_master2
+        )
         assert storagedomains.activateStorageDomain(
-            True, datacenter=config.DC_NAME, storagedomain=cls.non_master2)
+            True,
+            datacenter=config.DATA_CENTER_NAME,
+            storagedomain=cls.non_master2
+        )
         LOGGER.info("Deactivating master domain %s in order to have master "
                     "domain on domain that is on same server as other one",
                     cls.master_domain)
         assert storagedomains.deactivateStorageDomain(
-            True, config.DC_NAME, cls.master_domain)
+            True, config.DATA_CENTER_NAME, cls.master_domain)
         LOGGER.info("Activating former master %s", cls.master_domain)
         assert storagedomains.activateStorageDomain(
-            True, datacenter=config.DC_NAME, storagedomain=cls.master_domain)
-        super(ReconstructWith2UnreachableDomainsAnd1ReachableDomain,
-              cls).setup_class()
+            True,
+            datacenter=config.DATA_CENTER_NAME,
+            storagedomain=cls.master_domain
+        )
+        super(
+            ReconstructWith2UnreachableDomainsAnd1ReachableDomain,
+            cls
+        ).setup_class()
 
     @classmethod
     def teardown_class(cls):
@@ -516,28 +581,36 @@ class ReconstructWith2UnreachableDomainsAnd1ReachableDomain(DataCenterWithSD):
         if cls.is_blocked:
             LOGGER.info("Unblocking connection from %s to %s", cls.host,
                         config.STORAGE_SERVERS[0])
-            unblockOutgoingConnection(cls.host, config.VDS_ROOT,
+            unblockOutgoingConnection(cls.host, config.VDS_USER,
                                       cls.password, config.STORAGE_SERVERS[0])
             datacenters.waitForDataCenterState(
-                config.DC_NAME, config.ENUMS['data_center_state_up'],
+                config.DATA_CENTER_NAME, config.ENUMS['data_center_state_up'],
                 timeout=300)
         super(ReconstructWith2UnreachableDomainsAnd1ReachableDomain,
               cls).teardown_class()
-        wait_for_tasks(config.SETUP_ADDRESS, config.SETUP_PASSWORD,
-                       config.DC_NAME)
+        wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                       config.DATA_CENTER_NAME)
         non_master = storagedomains.getDCStorage(
-            config.DC_NAME, cls.non_master2)
+            config.DATA_CENTER_NAME, cls.non_master2)
         if non_master.status.state == \
                 config.ENUMS['storage_domain_state_active']:
             LOGGER.info("Deactivating storage domain %s", non_master.name)
-            assert storagedomains.deactivateStorageDomain(True, config.DC_NAME,
-                                                          non_master.name)
-        non_master = storagedomains.getDCStorage(config.DC_NAME,
-                                                 non_master.name)
+            assert storagedomains.deactivateStorageDomain(
+                True,
+                config.DATA_CENTER_NAME,
+                non_master.name
+            )
+        non_master = storagedomains.getDCStorage(
+            config.DATA_CENTER_NAME,
+            non_master.name
+        )
         LOGGER.info("Detaching domain %s that is in %s status",
                     non_master.name, non_master.status.state)
-        assert storagedomains.detachStorageDomain(True, config.DC_NAME,
-                                                  non_master.name)
+        assert storagedomains.detachStorageDomain(
+            True,
+            config.DATA_CENTER_NAME,
+            non_master.name
+        )
 
     @tcms(tcms_plan_id, tcms_test_case)
     def test_reconstruct_on_third_domain(self):
@@ -546,39 +619,46 @@ class ReconstructWith2UnreachableDomainsAnd1ReachableDomain(DataCenterWithSD):
         Reconstruct should be performed on the third domain that still has
         access to host
         """
-        storages = storagedomains.getDCStorages(config.DC_NAME, False)
+        storages = storagedomains.getDCStorages(config.DATA_CENTER_NAME, False)
         cur_master = [sd for sd in storages if sd.get_master()][0]
         non_master_name = self.non_master2 \
             if cur_master.name == self.non_master else self.non_master
         future_master_name = self.master_domain
         LOGGER.info("Blocking outgoing connection from host %s to server %s",
                     self.host, config.STORAGE_SERVERS[0])
-        self.assertTrue(blockOutgoingConnection(self.host, config.VDS_ROOT,
+        self.assertTrue(blockOutgoingConnection(self.host, config.VDS_USER,
                         self.password, config.STORAGE_SERVERS[0]))
         self.is_blocked = True
         LOGGER.info("Waiting until connected non-master %s goes active",
                     future_master_name)
         self.assertTrue(storagedomains.waitForStorageDomainStatus(
-            True, dataCenterName=config.DC_NAME,
+            True, dataCenterName=config.DATA_CENTER_NAME,
             storageDomainName=future_master_name,
             expectedStatus=config.ENUMS['storage_domain_state_active'],
             timeOut=DC_PROBLEM_TIMEOUT))
         LOGGER.info("Waiting until current master %s is inactive",
                     cur_master.name)
         self.assertTrue(storagedomains.waitForStorageDomainStatus(
-            True, dataCenterName=config.DC_NAME,
+            True, dataCenterName=config.DATA_CENTER_NAME,
             storageDomainName=cur_master.name,
             expectedStatus=config.ENUMS['storage_domain_state_inactive'],
             timeOut=1800))
         LOGGER.info("Waiting until other non-master %s is inactive",
                     non_master_name)
         self.assertTrue(storagedomains.waitForStorageDomainStatus(
-            True, dataCenterName=config.DC_NAME,
+            True, dataCenterName=config.DATA_CENTER_NAME,
             storageDomainName=non_master_name,
             expectedStatus=config.ENUMS['storage_domain_state_inactive'],
             timeOut=1800))
-        LOGGER.info("Waiting for DC %s to come up", config.DC_NAME)
-        self.assertTrue(datacenters.waitForDataCenterState(config.DC_NAME))
+        LOGGER.info(
+            "Waiting for DC %s to come up",
+            config.DATA_CENTER_NAME
+        )
+        self.assertTrue(
+            datacenters.waitForDataCenterState(
+                config.DATA_CENTER_NAME
+            )
+        )
         LOGGER.info("Validating host %s is up", self.host)
         host_obj = HOST_API.find(self.host)
         LOGGER.debug("Host %s has status %s", self.host, host_obj.status.state)
@@ -586,20 +666,20 @@ class ReconstructWith2UnreachableDomainsAnd1ReachableDomain(DataCenterWithSD):
         LOGGER.info("Waiting until current master %s is inactive",
                     cur_master.name)
         self.assertTrue(storagedomains.waitForStorageDomainStatus(
-            True, dataCenterName=config.DC_NAME,
+            True, dataCenterName=config.DATA_CENTER_NAME,
             storageDomainName=cur_master.name,
             expectedStatus=config.ENUMS['storage_domain_state_inactive'],
             timeOut=1800))
         LOGGER.info("Waiting until other non-master %s is inactive",
                     non_master_name)
         self.assertTrue(storagedomains.waitForStorageDomainStatus(
-            True, dataCenterName=config.DC_NAME,
+            True, dataCenterName=config.DATA_CENTER_NAME,
             storageDomainName=non_master_name,
             expectedStatus=config.ENUMS['storage_domain_state_inactive'],
             timeOut=1800))
         LOGGER.info("Unblocking connection from %s to %s", self.host,
                     config.STORAGE_SERVERS[0])
-        self.assertTrue(unblockOutgoingConnection(self.host, config.VDS_ROOT,
+        self.assertTrue(unblockOutgoingConnection(self.host, config.VDS_USER,
                         self.password, config.STORAGE_SERVERS[0]))
         self.is_blocked = False
         LOGGER.info("Validating host %s is up", self.host)
@@ -610,17 +690,27 @@ class ReconstructWith2UnreachableDomainsAnd1ReachableDomain(DataCenterWithSD):
         LOGGER.info("Activating storage domain %s that had troubles",
                     cur_master.name)
         activate_result = storagedomains.activateStorageDomain(
-            True, datacenter=config.DC_NAME,
+            True, datacenter=config.DATA_CENTER_NAME,
             storagedomain=cur_master.name)
-        self.assertTrue(handle_bz_854140(config.DC_NAME, cur_master.name,
-                                         activate_result))
+        self.assertTrue(
+            handle_bz_854140(
+                config.DATA_CENTER_NAME,
+                cur_master.name,
+                activate_result
+            )
+        )
         LOGGER.info("Activating storage domain %s that was in troubles",
                     non_master_name)
         activate_result = storagedomains.activateStorageDomain(
-            True, datacenter=config.DC_NAME,
+            True, datacenter=config.DATA_CENTER_NAME,
             storagedomain=non_master_name)
-        self.assertTrue(handle_bz_854140(config.DC_NAME, non_master_name,
-                                         activate_result))
+        self.assertTrue(
+            handle_bz_854140(
+                config.DATA_CENTER_NAME,
+                non_master_name,
+                activate_result
+            )
+        )
 
 
 class FailedReconstructWith1Domain(DataCenterWithSD):
@@ -652,7 +742,7 @@ class FailedReconstructWith1Domain(DataCenterWithSD):
         if cls.is_blocked:
             LOGGER.info("Unblocking connection from %s to %s", cls.host,
                         config.STORAGE_SERVERS[-1])
-            unblockOutgoingConnection(cls.host, config.VDS_ROOT,
+            unblockOutgoingConnection(cls.host, config.VDS_USER,
                                       cls.password, config.STORAGE_SERVERS[-1])
         LOGGER.info("Removing vm %s", cls.vm_name)
         assert vms.removeVm(True, vm=cls.vm_name, stopVM='true')
@@ -667,13 +757,17 @@ class FailedReconstructWith1Domain(DataCenterWithSD):
         LOGGER.info("Blocking outgoing connection from host %s to server %s",
                     self.host, config.STORAGE_SERVERS[-1])
         self.assertTrue(blockOutgoingConnection(
-            self.host, config.VDS_ROOT, self.password,
+            self.host, config.VDS_USER, self.password,
             config.STORAGE_SERVERS[-1]))
         self.is_blocked = True
         LOGGER.info("Waiting for DC to come to maintenance")
-        self.assertTrue(datacenters.waitForDataCenterState(
-            config.DC_NAME, config.ENUMS['data_center_state_problematic'],
-            timeout=DC_PROBLEM_TIMEOUT))
+        self.assertTrue(
+            datacenters.waitForDataCenterState(
+                config.DATA_CENTER_NAME,
+                config.ENUMS['data_center_state_problematic'],
+                timeout=DC_PROBLEM_TIMEOUT
+            )
+        )
         LOGGER.info("Waiting until host is connecting")
         self.assertTrue(hosts.waitForHostsStates(
             True, self.host,
@@ -683,7 +777,7 @@ class FailedReconstructWith1Domain(DataCenterWithSD):
             True, self.host,
             states=config.ENUMS['search_host_state_up']))
         LOGGER.info("Validating that DC is still problematic")
-        dc_obj = DC_API.find(config.DC_NAME)
+        dc_obj = DC_API.find(config.DATA_CENTER_NAME)
         LOGGER.info("DC is %s", dc_obj.status.state)
         self.assertTrue(
             dc_obj.status.state ==
@@ -691,34 +785,38 @@ class FailedReconstructWith1Domain(DataCenterWithSD):
         LOGGER.info("Waiting for master storage domain %s to become inactive",
                     self.master_domain)
         self.assertTrue(storagedomains.waitForStorageDomainStatus(
-            True, dataCenterName=config.DC_NAME,
+            True, dataCenterName=config.DATA_CENTER_NAME,
             storageDomainName=self.master_domain,
             expectedStatus=config.ENUMS['storage_domain_state_inactive'],
             timeOut=1800))
         LOGGER.info("Unblocking connection from %s to %s", self.host,
                     config.STORAGE_SERVERS[-1])
-        self.assertTrue(unblockOutgoingConnection(self.host, config.VDS_ROOT,
+        self.assertTrue(unblockOutgoingConnection(self.host, config.VDS_USER,
                         self.password, config.STORAGE_SERVERS[-1]))
         self.is_blocked = False
         LOGGER.info("Waiting for master domain to become active")
         self.assertTrue(
             storagedomains.waitForStorageDomainStatus(
-                True, dataCenterName=config.DC_NAME,
+                True, dataCenterName=config.DATA_CENTER_NAME,
                 storageDomainName=self.master_domain,
                 expectedStatus=config.ENUMS['storage_domain_state_active'],
                 timeOut=1800))
         LOGGER.info("Waiting until DC is up")
-        self.assertTrue(datacenters.waitForDataCenterState(config.DC_NAME))
+        self.assertTrue(
+            datacenters.waitForDataCenterState(
+                config.DATA_CENTER_NAME
+            )
+        )
         LOGGER.info("Validating that host is up")
         host_obj = HOST_API.find(self.host)
         self.assertTrue(host_obj.status.state == config.ENUMS['host_state_up'])
         LOGGER.info("Validate master domain %s is UP", self.master_domain)
-        sd_obj = storagedomains.getDCStorage(config.DC_NAME,
+        sd_obj = storagedomains.getDCStorage(config.DATA_CENTER_NAME,
                                              self.master_domain)
         self.assertTrue(
             sd_obj.status.state == config.ENUMS['storage_domain_state_active'])
         LOGGER.info("Validate that DC is UP")
-        dc_obj = DC_API.find(config.DC_NAME)
+        dc_obj = DC_API.find(config.DATA_CENTER_NAME)
         LOGGER.info("DC is %s", dc_obj.status.state)
         self.assertTrue(
             dc_obj.status.state == config.ENUMS['data_center_state_up'])
@@ -754,7 +852,7 @@ class SPMStopsResponding(DataCenterWithSD):
             LOGGER.info("Starting vdsm on %s", cls.host)
             startVdsmd(cls.host, cls.password)
             datacenters.waitForDataCenterState(
-                config.DC_NAME, config.ENUMS['data_center_state_up'],
+                config.DATA_CENTER_NAME, config.ENUMS['data_center_state_up'],
                 timeout=300)
         LOGGER.info("Removing vm %s", cls.vm_name)
         assert vms.removeVm(True, vm=cls.vm_name, stopVM='true')
@@ -776,14 +874,14 @@ class SPMStopsResponding(DataCenterWithSD):
                 states=config.ENUMS['search_host_state_non_responsive']))
         LOGGER.info("Waiting for DC to come to maintenance")
         self.assertTrue(datacenters.waitForDataCenterState(
-            config.DC_NAME,
+            config.DATA_CENTER_NAME,
             config.ENUMS['data_center_state_problematic'],
             timeout=DC_PROBLEM_TIMEOUT))
         LOGGER.info("Waiting for master storage domain %s to become inactive",
                     self.master_domain)
         self.assertTrue(
             storagedomains.waitForStorageDomainStatus(
-                True, dataCenterName=config.DC_NAME,
+                True, dataCenterName=config.DATA_CENTER_NAME,
                 storageDomainName=self.master_domain,
                 expectedStatus=config.ENUMS['storage_domain_state_unknown'],
                 timeOut=1800))
@@ -794,22 +892,26 @@ class SPMStopsResponding(DataCenterWithSD):
         self.assertTrue(
             storagedomains.waitForStorageDomainStatus(
                 True,
-                dataCenterName=config.DC_NAME,
+                dataCenterName=config.DATA_CENTER_NAME,
                 storageDomainName=self.master_domain,
                 expectedStatus=config.ENUMS['storage_domain_state_active'],
                 timeOut=1800))
         LOGGER.info("Waiting until DC is up")
-        self.assertTrue(datacenters.waitForDataCenterState(config.DC_NAME))
+        self.assertTrue(
+            datacenters.waitForDataCenterState(
+                config.DATA_CENTER_NAME
+            )
+        )
         LOGGER.info("Validating that host is up")
         host_obj = HOST_API.find(self.host)
         self.assertTrue(host_obj.status.state == config.ENUMS['host_state_up'])
         LOGGER.info("Validate master domain %s is UP", self.master_domain)
-        sd_obj = storagedomains.getDCStorage(config.DC_NAME,
+        sd_obj = storagedomains.getDCStorage(config.DATA_CENTER_NAME,
                                              self.master_domain)
         self.assertTrue(
             sd_obj.status.state == config.ENUMS['storage_domain_state_active'])
         LOGGER.info("Validate that DC is UP")
-        dc_obj = DC_API.find(config.DC_NAME)
+        dc_obj = DC_API.find(config.DATA_CENTER_NAME)
         LOGGER.info("DC is %s", dc_obj.status.state)
         self.assertTrue(
             dc_obj.status.state == config.ENUMS['data_center_state_up'])

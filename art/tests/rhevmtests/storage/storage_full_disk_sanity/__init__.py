@@ -6,6 +6,8 @@ import logging
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import storagedomains, vms
 
+from rhevmtests.storage.storage_full_disk_sanity import config
+
 logger = logging.getLogger(__name__)
 
 
@@ -15,11 +17,10 @@ def setup_module():
     the config file
     """
     # Important:config has to be loaded here because how unittests plugin works
-    import config
     logger.info("SETTING UP environment")
     datacenters.build_setup(
         config=config.PARAMETERS, storage=config.PARAMETERS,
-        storage_type=config.STORAGE_TYPE, basename=config.BASENAME)
+        storage_type=config.STORAGE_TYPE)
 
     from common import _create_vm
     logger.info("Creating two VMs for the tests environment")
@@ -35,7 +36,6 @@ def teardown_module():
     removes created datacenter, storages etc.
     """
     # Important:config has to be loaded here because how unittests plugin works
-    import config
     logger.info("TEARING DOWN - cleanDataCenter")
     storagedomains.cleanDataCenter(
         True, config.DATA_CENTER_NAME, vdc=config.VDC,

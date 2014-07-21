@@ -13,10 +13,9 @@ from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import disks
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.tests_lib.low_level import templates
+from rhevmtests.storage.storage_async_tasks import config
 
 LOGGER = logging.getLogger(__name__)
-
-GB = 1024 ** 3
 
 
 def setup_module():
@@ -24,12 +23,11 @@ def setup_module():
     Creates datacenter, adds hosts, clusters, storages according to
     the config file
     """
-    import config
     assert datacenters.build_setup(
         config.PARAMETERS, config.PARAMETERS, config.STORAGE_TYPE,
-        basename=config.BASENAME)
+        basename=config.TESTNAME)
 
-    vm_name = config.VM_NAME
+    vm_name = config.VM_NAME[0]
     storage_domain_name = storagedomains.getDCStorages(
         config.DATA_CENTER_NAME, False)[0].name
     LOGGER.info("Storage domain: %s" % storage_domain_name)
@@ -38,24 +36,22 @@ def setup_module():
         True, vm_name, vm_name, cluster=config.CLUSTER_NAME,
         nic=config.HOST_NICS[0], storageDomainName=storage_domain_name,
         size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
-        volumeType=True, volumeFormat=config.ENUMS['format_cow'],
-        diskInterface=config.INTERFACE_VIRTIO, memory=GB,
+        volumeType=True, volumeFormat=config.COW_DISK,
+        diskInterface=config.INTERFACE_VIRTIO, memory=config.GB,
         cpu_socket=config.CPU_SOCKET, cpu_cores=config.CPU_CORES,
         nicType=config.NIC_TYPE_VIRTIO, display_type=config.DISPLAY_TYPE,
-        os_type=config.OS_TYPE, user=config.VM_LINUX_USER,
-        password=config.VM_LINUX_PASSWORD, type=config.VM_TYPE_DESKTOP,
-        installation=True, slim=True, cobblerAddress=config.COBBLER_ADDRESS,
-        cobblerUser=config.COBBLER_USER,
-        cobblerPasswd=config.COBBLER_PASSWORD,
-        image=config.COBBLER_PROFILE, network=config.MGMT_BRIDGE,
-        useAgent=config.USE_AGENT)
+        os_type=config.OS_TYPE, user=config.VMS_LINUX_USER,
+        password=config.VMS_LINUX_PW, type=config.VM_TYPE_DESKTOP,
+        installation=True, slim=True, image=config.COBBLER_PROFILE,
+        network=config.MGMT_BRIDGE, useAgent=config.USE_AGENT)
 
     assert vms.stopVm(True, vm_name)
     disk_names = []
     for i in range(config.NUMBER_OF_DISKS - 1):
-        disk_name = "%s_disk_%s" % (config.BASENAME, i)
+        disk_name = "%s_disk_%s" % (config.TESTNAME, i)
         assert disks.addDisk(
-            True, alias=disk_name, size=GB, storagedomain=storage_domain_name,
+            True, alias=disk_name, size=config.GB,
+            storagedomain=storage_domain_name,
             format=config.ENUMS['format_cow'],
             interface=config.INTERFACE_VIRTIO)
         disk_names.append(disk_name)
@@ -75,7 +71,6 @@ def teardown_module():
     """
     Removes created datacenter, storages etc.
     """
-    import config
     storagedomains.cleanDataCenter(
         True, config.DATA_CENTER_NAME, vdc=config.VDC,
         vdc_password=config.VDC_PASSWORD)

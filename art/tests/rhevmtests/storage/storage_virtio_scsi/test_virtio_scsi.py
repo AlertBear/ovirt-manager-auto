@@ -30,7 +30,7 @@ def setup_module():
     build_setup(config.PARAMETERS,
                 config.PARAMETERS,
                 config.STORAGE_TYPE,
-                config.BASENAME)
+                config.TESTNAME)
 
 
 def teardown_module():

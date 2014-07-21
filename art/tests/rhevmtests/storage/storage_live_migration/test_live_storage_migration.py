@@ -39,14 +39,13 @@ from art.rhevm_api.utils.test_utils import get_api, setPersistentNetwork, \
 from art.test_handler import exceptions
 
 from art.test_handler.tools import tcms
-from art.test_handler.settings import opts
 import config
 
 logger = logging.getLogger(__name__)
 
 VM_API = get_api('vm', 'vms')
 
-ENUMS = opts['elements_conf']['RHEVM Enums']
+ENUMS = config.ENUMS
 
 BLOCK_TYPES = (ENUMS['storage_type_iscsi'], ENUMS['storage_type_fcp'])
 
@@ -58,15 +57,14 @@ MIGRATION_TIMEOUT = 10 * 60
 TASK_TIMEOUT = 1500
 LIVE_MIGRATION_TIMEOUT = 30 * 60
 DISK_TIMEOUT = 900
-CLUSTER_NAME = config.CLUSTER_NAME
 LIVE_MIGRATE_LARGE_SIZE = 3600
 
 FILE_TO_WATCH = "/var/log/vdsm/vdsm.log"
 
-SD_NAME_0 = config.SD_NAME
+SD_NAME_0 = config.SD_NAME_0
 SD_NAME_1 = config.SD_NAME_1
 SD_NAME_2 = config.SD_NAME_2
-GB = config.GB
+
 SDK_ENGINE = 'sdk'
 VMS_PID_LIST = 'pgrep qemu'
 
@@ -76,15 +74,12 @@ vmArgs = {'positive': True,
           'vmName': config.VM_NAME,
           'vmDescription': config.VM_NAME,
           'diskInterface': config.VIRTIO,
-          'volumeFormat': config.FORMAT_COW,
+          'volumeFormat': config.COW_DISK,
           'cluster': config.CLUSTER_NAME,
           'storageDomainName': None,
           'installation': True,
           'size': config.DISK_SIZE,
           'nic': 'nic1',
-          'cobblerAddress': config.COBBLER_ADDRESS,
-          'cobblerUser': config.COBBLER_USER,
-          'cobblerPasswd': config.COBBLER_PASSWORD,
           'image': config.COBBLER_PROFILE,
           'useAgent': True,
           'os_type': config.ENUMS['rhel6'],
@@ -354,7 +349,7 @@ class TestCase166090(BaseTestCase):
                     self.test_templates[0], self.base_vm, target_domain)
         assert templates.createTemplate(
             True, True, vm=self.base_vm, name=self.test_templates[0],
-            cluster=CLUSTER_NAME, storagedomain=target_domain)
+            cluster=config.CLUSTER_NAME, storagedomain=target_domain)
 
         second_domain = disks.get_other_storage_domain(
             disks_objs[0].get_alias())
@@ -367,7 +362,7 @@ class TestCase166090(BaseTestCase):
                     self.test_templates[1], self.base_vm, target_domain)
         assert templates.createTemplate(True, True, vm=self.base_vm,
                                         name=self.test_templates[1],
-                                        cluster=CLUSTER_NAME,
+                                        cluster=config.CLUSTER_NAME,
                                         storagedomain=target_domain)
 
         templates.copy_template_disks(
@@ -390,7 +385,7 @@ class TestCase166090(BaseTestCase):
 
             target_sd = dsks[0].storage_domains.storage_domain[0].get_name()
 
-            if not vms.addVm(True, name=vm_name, cluster=CLUSTER_NAME,
+            if not vms.addVm(True, name=vm_name, cluster=config.CLUSTER_NAME,
                              storagedomain=target_sd,
                              template=template):
                 raise exceptions.VMException(
@@ -509,10 +504,10 @@ class TestCase166166(BaseTestCase):
                                              % self.test_vm_name)
             self.permutation['alias'] = 'disk_for_test'
             self.permutation['interface'] = config.VIRTIO
-            self.permutation['format'] = config.FORMAT_RAW
+            self.permutation['format'] = config.RAW_DISK
             self.permutation['sparse'] = False
             logger.info('Adding new disk')
-            helpers.add_new_disk(sd_name=config.SD_NAME,
+            helpers.add_new_disk(sd_name=config.SD_NAME_0,
                                  permutation=self.permutation, shared=True)
             helpers.prepare_disks_for_vm(self.test_vm_name,
                                          helpers.DISKS_NAMES)
@@ -734,7 +729,7 @@ class TestCase166173(CommonUsage):
         Prepares a floating disk
         """
         helpers.add_new_disk_for_test(config.VM_NAME, self.disk_name,
-                                      provisioned_size=(60 * GB),
+                                      provisioned_size=(60 * config.GB),
                                       wipe_after_delete=True, attach=True)
         start_vms([config.VM_NAME], 1, wait_for_ip=False)
         waitForVMState(config.VM_NAME)
@@ -829,7 +824,7 @@ class TestCase166180(CommonUsage):
         waitForVMState(config.VM_NAME)
         helpers.add_new_disk_for_test(
             config.VM_NAME, self.disk_name_pattern, sparse=True,
-            disk_format=config.FORMAT_COW)
+            disk_format=config.COW_DISK)
 
     def _test_plugged_disk(self, vm_name, activate=True):
         """
@@ -904,7 +899,7 @@ class TestCase168768(BaseTestCase):
         waitForVMState(config.VM_NAME)
         helpers.add_new_disk_for_test(
             config.VM_NAME, self.disk_alias, sparse=True,
-            disk_format=config.FORMAT_COW)
+            disk_format=config.COW_DISK)
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_attach_disk_during_lsm(self):
@@ -995,9 +990,9 @@ class TestCase174424(CommonUsage):
             """
             disk_params = {
                 'alias': self.disk_name,
-                'provisioned_size': 1 * GB,
+                'provisioned_size': 1 * config.GB,
                 'interface': config.VIRTIO,
-                'format': config.FORMAT_RAW,
+                'format': config.RAW_DISK,
                 'sparse': False,
                 'wipe_after_delete': False,
                 'storagedomain': None
@@ -1828,7 +1823,7 @@ class TestCase174421(BaseTestCase):
         live_migrate_vm_disk(config.VM_NAME, vm_disk, target_sd, wait=False)
         helpers.add_new_disk_for_test(
             config.VM_NAME, self.disk_name,
-            provisioned_size=sd_size - (1 * GB))
+            provisioned_size=sd_size - (1 * config.GB))
 
         wait_for_jobs()
         self.assertFalse(verify_vm_disk_moved(config.VM_NAME, vm_disk,
@@ -1858,10 +1853,10 @@ class TestCase174426(CommonUsage):
             """
             disk_params = {
                 'alias': self.disk_name,
-                'provisioned_size': 1 * GB,
+                'provisioned_size': 1 * config.GB,
                 'active': True,
                 'interface': config.VIRTIO,
-                'format': config.FORMAT_COW,
+                'format': config.COW_DISK,
                 'sparse': True,
                 'wipe_after_delete': False,
                 'storagedomain': None

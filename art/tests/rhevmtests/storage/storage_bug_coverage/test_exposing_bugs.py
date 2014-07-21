@@ -18,7 +18,7 @@ from art.rhevm_api.tests_lib.low_level import datacenters as ll_dc
 from art.rhevm_api.tests_lib.low_level import vms as ll_vms
 from art.rhevm_api.tests_lib.low_level import templates
 from art.rhevm_api.tests_lib.low_level import storagedomains
-from art.rhevm_api.tests_lib.low_level import disks
+from art.rhevm_api.tests_lib.low_level import disks as ll_disks
 from art.rhevm_api.tests_lib.low_level import hosts
 
 from art.test_handler.tools import bz, tcms
@@ -28,10 +28,10 @@ import config
 
 logger = logging.getLogger(__name__)
 
+GB = config.GB
 ENUMS = config.ENUMS
+
 BZID = "1066834"
-GB = 1024**3
-VM_NAME = "vm_%s" % BZID
 STORAGE_DOMAIN_API = test_utils.get_api('storage_domain', 'storagedomains')
 VDSM_RESPAWN_FILE = '/usr/share/vdsm/respawn'
 LINUX = test_utils.LINUX
@@ -49,7 +49,7 @@ def setup_module():
     """
     datacenters.build_setup(
         config=config.PARAMETERS, storage=config.PARAMETERS,
-        storage_type=config.STORAGE_TYPE, basename=config.BASENAME)
+        storage_type=config.STORAGE_TYPE)
 
 
 def teardown_module():
@@ -73,7 +73,7 @@ class TestCase355191(TestCase):
     __test__ = True
 
     def _create_vm(
-            vm_name, disk_interface, sparse=True,
+            self, vm_name, disk_interface, sparse=True,
             volume_format=ENUMS['format_cow'],
             vm_type=config.VM_TYPE_DESKTOP):
         """
@@ -91,8 +91,8 @@ class TestCase355191(TestCase):
             diskInterface=disk_interface, memory=GB,
             cpu_socket=config.CPU_SOCKET, cpu_cores=config.CPU_CORES,
             nicType=config.NIC_TYPE_VIRTIO, display_type=config.DISPLAY_TYPE,
-            os_type=config.OS_TYPE, user=config.VM_LINUX_USER,
-            password=config.VM_LINUX_PASSWORD, type=vm_type,
+            os_type=config.OS_TYPE, user=config.VMS_LINUX_USER,
+            password=config.VMS_LINUX_PW, type=vm_type,
             installation=False,
             slim=True, network=config.MGMT_BRIDGE, useAgent=config.USE_AGENT,
             bootable=True)
@@ -101,7 +101,10 @@ class TestCase355191(TestCase):
         """
         Create a vm with a bootable disk
         """
-        assert self._create_vm(VM_NAME, ENUMS['interface_virtio_scsi'])
+        assert self._create_vm(
+            config.VM_NAME[0],
+            ENUMS['interface_virtio_scsi']
+        )
         self.storage_domain = storagedomains.getDCStorages(
             config.DATA_CENTER_NAME, False)[0].get_name()
 
@@ -111,7 +114,7 @@ class TestCase355191(TestCase):
         """
         Verify adding a second bootable disk should fail
         """
-        disks = ll_vms.getVmDisks(VM_NAME)
+        disks = ll_vms.getVmDisks(config.VM_NAME[0])
         assert len(disks) == 1
         assert disks[0].get_bootable()
 
@@ -119,19 +122,19 @@ class TestCase355191(TestCase):
         logger.info("Adding a new non bootable disk works")
         self.second_disk = "second_disk_%s" % BZID
         assert ll_vms.addDisk(
-            True, VM_NAME, GB, wait=True,
+            True, config.VM_NAME[0], GB, wait=True,
             storagedomain=self.storage_domain, bootable=False,
             alias=self.second_disk)
 
-        disks = ll_vms.getVmDisks(VM_NAME)
+        disks = ll_vms.getVmDisks(config.VM_NAME[0])
         assert len(disks) == self.expected_disk_number
         assert False in [disk.get_bootable() for disk in disks]
 
         logger.info("Adding a second bootable disk to vm %s should fail",
-                    VM_NAME)
+                    config.VM_NAME[0])
         self.bootable_disk = "bootable_disk_%s" % BZID
         self.assertTrue(ll_vms.addDisk(
-            False, VM_NAME, GB, wait=True, alias=self.bootable_disk,
+            False, config.VM_NAME[0], GB, wait=True, alias=self.bootable_disk,
             storagedomain=self.storage_domain, bootable=True),
             "Shouldn't be possible to add a second bootable disk")
 
@@ -141,9 +144,9 @@ class TestCase355191(TestCase):
         """
         # If it fails, the disk are still being added, wait for them
         disks_aliases = [disk.get_alias() for disk in ll_vms.getVmDisks(
-            VM_NAME)]
-        disks.waitForDisksState(disksNames=disks_aliases)
-        assert ll_vms.removeVm(True, VM_NAME)
+            config.VM_NAME[0])]
+        ll_disks.waitForDisksState(disksNames=disks_aliases)
+        assert ll_vms.removeVm(True, config.VM_NAME[0])
 
 
 """
@@ -252,8 +255,8 @@ class TestCase289683(TestCase):
             cpu_socket=config.CPU_SOCKET, cpu_cores=config.CPU_CORES,
             nicType=config.NIC_TYPE_VIRTIO, highly_available=True,
             display_type=config.DISPLAY_TYPE,
-            os_type=config.OS_TYPE, user=config.VM_LINUX_USER,
-            password=config.VM_LINUX_PASSWORD, type=config.VM_TYPE_SERVER,
+            os_type=config.OS_TYPE, user=config.VMS_LINUX_USER,
+            password=config.VMS_LINUX_PW, type=config.VM_TYPE_SERVER,
             slim=True, nic=config.HOST_NICS[0], volumeType=True,
             volumeFormat=ENUMS['format_cow'], useAgent=config.USE_AGENT,
             image=config.COBBLER_PROFILE, network=config.MGMT_BRIDGE,
@@ -287,7 +290,7 @@ class TestCase289683(TestCase):
 
     def _shutdown_machine(self, ip):
         machine = test_utils.Machine(
-            ip, config.VM_LINUX_USER, config.VM_LINUX_PASSWORD).util(LINUX)
+            ip, config.VMS_LINUX_USER, config.VMS_LINUX_PW).util(LINUX)
         machine.shutdown()
 
     @tcms(tcms_plan_id, tcms_test_case)
@@ -387,15 +390,16 @@ class TestCase320223(TestCase):
     template_name = "template_from_%s" % vm_name
     vm_from_template = "vm_from_template"
 
+    @classmethod
     def _create_vm(
-            vm_name, vm_description, disk_interface,
+            cls, vm_name, vm_description, disk_interface,
             sparse=True, volume_format=ENUMS['format_cow']):
         """ helper function for creating vm
         (passes common arguments, mostly taken from the configuration file)
         """
         logger.info("Creating VM %s" % vm_name)
         storage_domain_name = storagedomains.getDCStorages(
-            config.DEFAULT_DATA_CENTER_NAME, False)[0].name
+            config.DATA_CENTER_NAME, False)[0].name
         logger.info("storage domain: %s" % storage_domain_name)
         return ll_vms.createVm(
             True, vm_name, vm_description, cluster=config.CLUSTER_NAME,
@@ -406,11 +410,8 @@ class TestCase320223(TestCase):
             cpu_socket=config.CPU_SOCKET,
             cpu_cores=config.CPU_CORES, nicType=config.NIC_TYPE_VIRTIO,
             display_type=config.DISPLAY_TYPE, os_type=config.OS_TYPE,
-            user=config.VM_LINUX_USER, password=config.VM_LINUX_PASSWORD,
+            user=config.VMS_LINUX_USER, password=config.VMS_LINUX_PW,
             type=config.VM_TYPE_DESKTOP, installation=True, slim=True,
-            cobblerAddress=config.COBBLER_ADDRESS,
-            cobblerUser=config.COBBLER_USER,
-            cobblerPasswd=config.COBBLER_PASSWORD,
             image=config.COBBLER_PROFILE,
             network=config.MGMT_BRIDGE, useAgent=config.USE_AGENT,
             attempt=3, interval=20)
@@ -454,8 +455,8 @@ class TestCase320223(TestCase):
         engine_ip = getIpAddressByHostName(engine)
         engine_object = Machine(
             host=engine_ip,
-            user=config.VM_LINUX_USER,
-            password=config.VM_LINUX_PASSWORD).util('linux')
+            user=config.VMS_LINUX_USER,
+            password=config.VMS_LINUX_PW).util('linux')
 
         self.assertTrue(restartOvirtEngine(engine_object, 5, 30, 75),
                         "Failed restarting ovirt-engine")
@@ -547,8 +548,8 @@ class TestCase315489(TestCase):
             cpu_socket=config.CPU_SOCKET, cpu_cores=config.CPU_CORES,
             nicType=config.NIC_TYPE_VIRTIO, highly_available=True,
             display_type=config.DISPLAY_TYPE,
-            os_type=config.OS_TYPE, user=config.VM_LINUX_USER,
-            password=config.VM_LINUX_PASSWORD, type=config.VM_TYPE_SERVER,
+            os_type=config.OS_TYPE, user=config.VMS_LINUX_USER,
+            password=config.VMS_LINUX_PW, type=config.VM_TYPE_SERVER,
             slim=True, nic=config.HOST_NICS[0], volumeType=True,
             volumeFormat=ENUMS['format_cow'], useAgent=config.USE_AGENT,
             image=config.COBBLER_PROFILE, network=config.MGMT_BRIDGE,
@@ -626,19 +627,19 @@ class TestCase275816(TestCase):
                 placement_host=config.HOSTS[0])
             self.vm_names.append(vm_name)
         storage_domain_name = storagedomains.getDCStorages(
-            config.DEFAULT_DATA_CENTER_NAME, False)[0].name
+            config.DATA_CENTER_NAME, False)[0].name
         self.disk_name = 'disk_%s' % self.tcms_test_case
         logger.info("Creating disk")
-        assert disks.addDisk(
+        assert ll_disks.addDisk(
             True, alias=self.disk_name, shareable=True, bootable=False,
             size=self.disk_size, storagedomain=storage_domain_name,
             format=ENUMS['format_raw'], interface=ENUMS['interface_ide'],
             sparse=False)
-        assert disks.waitForDisksState(self.disk_name)
+        assert ll_disks.waitForDisksState(self.disk_name)
         logger.info("Disk created")
 
         for vm in self.vm_names:
-            assert disks.attachDisk(True, self.disk_name, vm, True)
+            assert ll_disks.attachDisk(True, self.disk_name, vm, True)
 
         assert ll_vms.startVms(",".join(self.vm_names))
 
@@ -647,7 +648,7 @@ class TestCase275816(TestCase):
         for vm in cls.vm_names:
             ll_vms.removeVm(True, vm, stopVM='true')
         if cls.disk_name is not None:
-            disks.deleteDisk(True, cls.disk_name)
+            ll_disks.deleteDisk(True, cls.disk_name)
 
 
 """
@@ -678,7 +679,7 @@ class TestCase284324(TestCase):
             True, config.DATA_CENTER_NAME)[1]['masterDomain']
         disk_name = "disk_%s" % self.tcms_test_case
 
-        assert disks.addDisk(
+        assert ll_disks.addDisk(
             False, alias=disk_name, shareable=False, bootable=False,
             size=1 * GB, storagedomain=master_domain, sparse=None,
             format=ENUMS['format_raw'], interface=ENUMS['interface_ide'])
@@ -726,11 +727,9 @@ class TestCase280628(TestCase):
             diskType=config.DISK_TYPE_SYSTEM, memory=GB,
             cpu_socket=config.CPU_SOCKET, cpu_cores=config.CPU_CORES,
             nicType=config.NIC_TYPE_VIRTIO, display_type=config.DISPLAY_TYPE,
-            os_type=config.OS_TYPE, user=config.VM_LINUX_USER,
-            password=config.VM_LINUX_PASSWORD, type=config.VM_TYPE_DESKTOP,
-            slim=True, cobblerAddress=config.COBBLER_ADDRESS,
-            cobblerUser=config.COBBLER_USER, placement_host=spm_host,
-            cobblerPasswd=config.COBBLER_PASSWORD, volumeType=False,
+            os_type=config.OS_TYPE, user=config.VMS_LINUX_USER,
+            password=config.VMS_LINUX_PW, type=config.VM_TYPE_DESKTOP,
+            slim=True, placement_host=spm_host, volumeType=False,
             volumeFormat=ENUMS['format_raw'],
             image=config.COBBLER_PROFILE, network=config.MGMT_BRIDGE,
             useAgent=config.USE_AGENT)

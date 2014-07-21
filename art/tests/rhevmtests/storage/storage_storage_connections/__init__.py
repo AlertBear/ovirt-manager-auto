@@ -15,6 +15,7 @@ from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.low_level import clusters
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.tests_lib.low_level import storageconnections
+from rhevmtests.storage.storage_storage_connections import config
 
 LOGGER = logging.getLogger(__name__)
 sd_api = test_utils.get_api('storage_domain', 'storagedomains')
@@ -24,10 +25,9 @@ def setup_module():
     """ creates datacenter, adds hosts, clusters, storages according to
         the config file
     """
-    import config
     datacenters.build_setup(
         config.PARAMETERS, config.PARAMETERS, config.STORAGE_TYPE,
-        basename=config.BASENAME,
+        basename=config.TESTNAME,
         local=config.STORAGE_TYPE == config.ENUMS['storage_type_local'])
     # for iscsi tests we want to have an empty DC
     if config.STORAGE_TYPE == 'iscsi':
@@ -45,7 +45,6 @@ def setup_module():
 def teardown_module():
     """ removes created datacenter, storages etc.
     """
-    import config
     if not storagedomains.cleanDataCenter(True, config.DATA_CENTER_NAME):
         LOGGER.info("Tear down - removing data center")
         ll_dc.removeDataCenter(True, config.DATA_CENTER_NAME)

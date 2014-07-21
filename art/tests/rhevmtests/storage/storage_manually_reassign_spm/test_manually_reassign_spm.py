@@ -26,7 +26,7 @@ def setup_module():
     Build datacenter
     """
     build_setup(config=config.PARAMETERS, storage=config.PARAMETERS,
-                storage_type=config.STORAGE_TYPE, basename=config.BASENAME)
+                storage_type=config.STORAGE_TYPE, basename=config.TESTNAME)
 
     assert deactivateHosts(True, config.HOSTS)
 

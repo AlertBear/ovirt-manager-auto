@@ -16,17 +16,16 @@ from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.utils.resource_utils import copyDataToVm, verifyDataOnVm
 from art.rhevm_api.utils.test_utils import get_api, prepareDataForVm, \
     removeDirOnHost, raise_if_exception, wait_for_tasks, setPersistentNetwork
-from art.test_handler.settings import opts
 from art.test_handler.tools import bz
 import config
 
 
 LOGGER = logging.getLogger(__name__)
-ENUMS = opts['elements_conf']['RHEVM Enums']
+ENUMS = config.ENUMS
 VM_API = get_api('vm', 'vms')
 
 
-GB = 1024 ** 3
+GB = config.GB
 BASE_SNAP = "base_snap"  # Base snapshot description
 SNAP_1 = 'spm_snapshot1'
 ACTIVE_SNAP = 'Active VM'
@@ -48,8 +47,8 @@ def verify_data_on_vm(positive, vm_name, path):
     return verifyDataOnVm(
         positive,
         ip=VM_IP_ADDRESSES[vm_name],
-        user=config.PARAMETERS['vm_linux_user'],
-        password=config.PARAMETERS['vm_linux_password'],
+        user=config.VMS_LINUX_USER,
+        password=config.VMS_LINUX_PW,
         osType='linux',
         dest=DEST_DIR,
         destToCompare=path)
@@ -61,8 +60,8 @@ def copy_data_to_vm(vm_name, path):
     """
     assert copyDataToVm(
         ip=VM_IP_ADDRESSES[vm_name],
-        user=config.PARAMETERS['vm_linux_user'],
-        password=config.PARAMETERS['vm_linux_password'],
+        user=config.VMS_LINUX_USER,
+        password=config.VMS_LINUX_PW,
         osType='linux',
         src=path,
         dest=DEST_DIR)
@@ -79,8 +78,8 @@ def remove_dir_on_host(vm_name, dirname):
     assert removeDirOnHost(
         True,
         ip=VM_IP_ADDRESSES[vm_name],
-        user=config.PARAMETERS['vm_linux_user'],
-        password=config.PARAMETERS['vm_linux_password'],
+        user=config.VMS_LINUX_USER,
+        password=config.VMS_LINUX_PW,
         osType='linux',
         dirname=dirname)
 
@@ -98,7 +97,7 @@ def setup_module():
         vm_ip = vms.waitForIP(vm_name)[1]['ip']
         VM_IP_ADDRESSES[vm_name] = vm_ip
         assert setPersistentNetwork(
-            vm_ip, config.PARAMETERS['vm_linux_password'])
+            vm_ip, config.VMS_LINUX_PW)
         assert vms.stopVm(True, vm_name)
         assert vms.addSnapshot(True, vm=vm_name, description=BASE_SNAP)
 
@@ -114,7 +113,7 @@ def setup_module():
         'cluster': config.CLUSTER_NAME,
         'nic': 'nic1',
         'nicType': ENUMS['nic_type_virtio'],
-        'storageDomainName': config.SD_NAME,
+        'storageDomainName': config.SD_NAME_0,
         'size': 3 * GB,
         'diskInterface': ENUMS['interface_virtio'],
         'volumeFormat': ENUMS['format_cow'],
@@ -128,11 +127,11 @@ def setup_module():
         'display_type': ENUMS['display_type_spice'],
         'start': True,
         'installation': True,
-        'user': config.PARAMETERS['vm_linux_user'],
-        'password': config.PARAMETERS['vm_linux_password'],
-        'image': config.PARAMETERS['cobbler_profile'],
-        'network': config.PARAMETERS['mgmt_bridge'],
-        'useAgent': config.PARAMETERS.as_bool('useAgent'),
+        'user': config.VMS_LINUX_USER,
+        'password': config.VMS_LINUX_PW,
+        'image': config.COBBLER_PROFILE,
+        'network': config.MGMT_BRIDGE,
+        'useAgent': config.USE_AGENT,
         # CUSTOM ARGUMENTS
         'vmName': VM_ON_SPM,
         'placement_host': SPM,
@@ -270,7 +269,7 @@ class LiveSnapshotMultipleDisks(LiveSnapshot):
         for vm_name in VM_LIST:
             assert vms.addDisk(
                 True, vm=vm_name, size=3 * GB, wait='True',
-                storagedomain=config.SD_NAME, type=ENUMS['disk_type_data'],
+                storagedomain=config.SD_NAME_0, type=ENUMS['disk_type_data'],
                 interface=ENUMS['interface_ide'], format=ENUMS['format_cow'],
                 sparse='true')
         super(LiveSnapshotMultipleDisks, cls).setup_class()
@@ -533,10 +532,10 @@ class LiveSnapshotOnVMCreatedFromTemplate(BaseTestCase):
             cluster=config.CLUSTER_NAME)
         assert vms.addVm(
             True, name='vm_thin', description='', cluster=config.CLUSTER_NAME,
-            storagedomain=config.SD_NAME, template='template_test')
+            storagedomain=config.SD_NAME_0, template='template_test')
         assert vms.addVm(
             True, name='vm_clone', description='', cluster=config.CLUSTER_NAME,
-            storagedomain=config.SD_NAME, template='template_test',
+            storagedomain=config.SD_NAME_0, template='template_test',
             disk_clone='True')
         vms.start_vms(['vm_thin', 'vm_clone'], config.MAX_WORKERS)
 

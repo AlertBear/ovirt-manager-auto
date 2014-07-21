@@ -21,7 +21,6 @@ logger = logging.getLogger(__name__)
 
 ENUMS = config.ENUMS
 
-DISK_NAME_FORMAT = '%s_%s_%s_disk'
 DISKS_NAMES = list()
 DISK_TIMEOUT = 250
 
@@ -65,7 +64,7 @@ def add_new_disk(sd_name, permutation, shared=False):
     DISKS_NAMES.append(disk_args['alias'])
 
 
-def start_creating_disks_for_test(shared=False, sd_name=config.SD_NAME):
+def start_creating_disks_for_test(shared=False, sd_name=config.SD_NAME_0):
     """
     Begins asynchronous creation of disks of all permutations of disk
     interfaces, formats and allocation policies

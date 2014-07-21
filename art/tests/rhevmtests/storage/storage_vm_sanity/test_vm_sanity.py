@@ -34,7 +34,7 @@ def setup_module():
     """
     datacenters.build_setup(
         config=config.PARAMETERS, storage=config.PARAMETERS,
-        storage_type=config.STORAGE_TYPE, basename=config.BASENAME)
+        storage_type=config.STORAGE_TYPE, basename=config.TESTNAME)
 
 
 def teardown_module():
@@ -53,7 +53,7 @@ def _create_vm(vm_name, vm_description, disk_interface,
     """
     LOGGER.info("Creating VM %s" % vm_name)
     storage_domain_name = storagedomains.getDCStorages(
-        config.DEFAULT_DATA_CENTER_NAME, False)[0].name
+        config.DATA_CENTER_NAME, False)[0].name
     LOGGER.info("storage domain: %s" % storage_domain_name)
     return vms.createVm(
         True, vm_name, vm_description, cluster=config.CLUSTER_NAME,
@@ -66,9 +66,8 @@ def _create_vm(vm_name, vm_description, disk_interface,
         display_type=config.DISPLAY_TYPE, os_type=config.OS_TYPE,
         user=config.VM_LINUX_USER, password=config.VM_LINUX_PASSWORD,
         type=vm_type, installation=True, slim=True,
-        cobblerAddress=config.COBBLER_ADDRESS, cobblerUser=config.COBBLER_USER,
-        cobblerPasswd=config.COBBLER_PASSWORD, image=config.COBBLER_PROFILE,
-        network=config.MGMT_BRIDGE, useAgent=config.USE_AGENT)
+        image=config.COBBLER_PROFILE, network=config.MGMT_BRIDGE,
+        useAgent=config.USE_AGENT)
 
 
 @attr(tier=1)

@@ -48,7 +48,7 @@ def setup_module():
 
     datacenters.build_setup(
         config=config.PARAMETERS, storage=config.PARAMETERS,
-        storage_type=config.STORAGE_TYPE, basename=config.BASENAME)
+        storage_type=config.STORAGE_TYPE)
 
     # Restore second lun
     config.PARAMETERS['lun_address'] = lun_address_backup
@@ -190,4 +190,4 @@ class TestCase231819(TestCase):
         Wait for un-finished tasks
         """
         test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
-                                  config.DEFAULT_DATA_CENTER_NAME)
+                                  config.DATA_CENTER_NAME)

@@ -12,14 +12,15 @@ from art.rhevm_api.tests_lib.high_level import datacenters as hl_dc
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st
 from art.rhevm_api.tests_lib.low_level import hosts as ll_hosts
 
+from rhevmtests.storage.storage_advanced_nfs_options import config
+
 
 def setup_module():
     """ creates datacenter, adds hosts, clusters, storages according to
     the config file
     """
-    import config
-    hl_dc.build_setup(config.PARAMETERS, config.STORAGE,
-                      config.STORAGE_TYPE, basename=config.BASENAME)
+    hl_dc.build_setup(config.PARAMETERS, config.STORAGE_CONF,
+                      config.STORAGE_TYPE, basename=config.TESTNAME)
 
     if len(config.HOSTS) > 1:
         # we need one host for 3.0 data center
@@ -36,5 +37,4 @@ def setup_module():
 def teardown_module():
     """ removes created datacenter, storages etc.
     """
-    import config
     ll_st.cleanDataCenter(True, config.DATA_CENTER_NAME)

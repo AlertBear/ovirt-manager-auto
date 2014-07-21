@@ -10,6 +10,7 @@ import art.rhevm_api.tests_lib.low_level.hosts as llhosts
 import art.rhevm_api.tests_lib.low_level.storagedomains as llstoragedomains
 from art.rhevm_api.utils.test_utils import get_api
 from art.test_handler import exceptions
+from rhevmtests.storage.storage_domain_upgrade import config
 
 LOGGER = logging.getLogger("storage-domain-upgrade")
 
@@ -22,7 +23,6 @@ def setup_package():
         1) creates data-center with temporary cluster
         2) adds host to temporary cluster
     """
-    import config
     LOGGER.info("Running package setup")
     assert lldatacenters.addDataCenter(
         True, name='temp_dc', storage_type=config.ENUMS['storage_type_nfs'],
@@ -54,7 +54,6 @@ def teardown_package():
     """
     Cleans the environment
     """
-    import config
     LOGGER.info("Running package teardown")
     assert llstoragedomains.removeDataCenter(True, 'temp_dc')
     for host in HOST_API.get(absLink=False):

@@ -29,7 +29,7 @@ VM_API = get_api('vm', 'vms')
 SD_API = get_api('storage_domain', 'storagedomains')
 CLUSTER_API = get_api('cluster', 'clusters')
 
-GB = 1024 ** 3
+GB = config.GB
 TEN_GB = 10 * GB
 
 
@@ -57,7 +57,7 @@ def setup_module():
     datacenters.build_setup(config=config.PARAMETERS,
                             storage=config.PARAMETERS,
                             storage_type=config.STORAGE_TYPE,
-                            basename=config.BASENAME)
+                            basename=config.TESTNAME)
 
     if config.STORAGE_TYPE == config.STORAGE_TYPE_NFS:
         config.PARAMETERS['data_domain_path'] = domain_path

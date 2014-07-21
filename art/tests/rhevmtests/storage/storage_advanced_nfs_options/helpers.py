@@ -204,6 +204,10 @@ class TestCaseNFSOptions(TestCase):
     **Author**: Katarzyna Jachim
     """
     __test__ = False
+    dc_name = None
+    host = None
+    password = None
+    cl_name = None
 
     @classmethod
     def teardown_class(cls):
@@ -321,6 +325,16 @@ class TestCaseStandardOperations(TestCaseNFSOptions):
     """ Base class for tests performing 'standard operations' (see docstring
     of perform_standard_operations for particulars).
     """
+    sd_1 = None
+    sd_2 = None
+    sd_exp = None
+    disk_1 = None
+    disk_2 = None
+    vm_1 = None
+    vm_2 = None
+    host_2 = None
+    template = None
+
     def setUp(self):
         """ Prepares environment - creates storage domains with different
         NFS options, vms, a template etc.
