@@ -3674,7 +3674,7 @@ def get_snapshot_disks(vm, snapshot):
     Return: list of disks, or raise EntityNotFound exception
     """
     snap_obj = _getVmSnapshot(vm, snapshot)
-    disks = DISKS_API.getElemFromLink(snap_obj.get_vm())
+    disks = DISKS_API.getElemFromLink(snap_obj)
     return disks
 
 
