@@ -66,6 +66,8 @@ class TestCaseDataCenter(TestCase):
 
     __test__ = True
 
+    dc_name = config.DATA_CENTER_1_NAME
+
     @istest
     def t01_create_shared_data_center(self):
         """
@@ -115,6 +117,7 @@ class TestCaseDataCenter(TestCase):
             name=config.DATA_CENTER_1_NAME_UPDATED,
             description='Data Center Description')
         self.assertTrue(status, 'Update data center name and description')
+        self.__class__.dc_name = config.DATA_CENTER_1_NAME_UPDATED
 
     @istest
     def t06_remove_temporary_data_center(self):
@@ -131,12 +134,11 @@ class TestCaseDataCenter(TestCase):
         """
         test if Search for data center works properly
         """
-        dc_updated_name = config.DATA_CENTER_1_NAME_UPDATED
-        log_msg = 'Search for %s data center' % dc_updated_name
+        log_msg = 'Search for %s data center' % self.dc_name
         logger.info(log_msg)
         status = datacenters.searchForDataCenter(positive=True,
                                                  query_key='name',
-                                                 query_val=dc_updated_name,
+                                                 query_val=self.dc_name,
                                                  key_name='name')
         self.assertTrue(status, log_msg)
 
@@ -149,7 +151,7 @@ class TestCaseDataCenter(TestCase):
         create_datacenter(True, config.DATA_CENTER_3_NAME, True)
 
         logger.info('Remove few temporary data centers')
-        dcs_to_remove = ','.join([config.DATA_CENTER_1_NAME_UPDATED,
+        dcs_to_remove = ','.join([self.dc_name,
                                  config.DATA_CENTER_2_NAME,
                                  config.DATA_CENTER_3_NAME])
         status = datacenters.removeDataCenters(positive=True,

@@ -146,6 +146,7 @@ def removeDataCenterAsynch(positive, datacenter, queue):
     try:
         dc = util.find(datacenter)
     except EntityNotFound:
+        util.logger.error('Failed to find DC %s', datacenter)
         queue.put(False)
         return False
 
