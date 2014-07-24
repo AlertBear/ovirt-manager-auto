@@ -9,13 +9,14 @@ __test__ = True
 import logging
 import time
 import art.test_handler.exceptions as errors
+from art.core_api.apis_exceptions import EntityNotFound
 
 from rhevmtests.system.user_roles_tests import config
 from rhevmtests.system.user_roles_tests.roles import role
 from nose.tools import istest
 from art.unittest_lib import BaseTestCase as TestCase
 
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.high_level import storagedomains
 from art.rhevm_api.tests_lib.high_level import disks as h_disks
 from art.rhevm_api.tests_lib.low_level import users, vms, disks, mla
@@ -35,11 +36,21 @@ def loginAsAdmin():
 
 def setUpModule():
     users.addUser(True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
+    storagedomains.addNFSDomain(config.MAIN_HOST_NAME,
+                                config.ALT1_STORAGE_NAME,
+                                config.MAIN_DC_NAME,
+                                config.ALT1_STORAGE_ADDRESS,
+                                config.ALT1_STORAGE_PATH)
 
 
 def tearDownModule():
     loginAsAdmin()
     users.removeUser(True, config.USER_NAME)
+    test_utils.wait_for_tasks(config.VDC_HOST, config.VDC_ROOT_PASSWORD,
+                              config.MAIN_DC_NAME)
+    storagedomains.remove_storage_domain(config.ALT1_STORAGE_NAME,
+                                         config.MAIN_DC_NAME,
+                                         config.MAIN_HOST_NAME)
 
 
 class DPCase147121(TestCase):
@@ -104,8 +115,6 @@ class DPCase14722_2(TestCase):
         mla.addStoragePermissionsToUser(True, config.USER_NAME,
                                         config.MAIN_STORAGE_NAME,
                                         role=role.UserRole)
-
-    def setUp(self):
         users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
                           config.USER_PASSWORD, filter=True)
 
@@ -123,7 +132,10 @@ class DPCase14722_2(TestCase):
 
     def tearDown(self):
         loginAsAdmin()
-        h_disks.delete_disks([config.DISK_NAME])
+        try:
+            h_disks.delete_disks([config.DISK_NAME])
+        except EntityNotFound:
+            pass
         mla.removeUserPermissionsFromSD(True, config.MAIN_STORAGE_NAME,
                                         config.USER1)
 
@@ -302,6 +314,9 @@ class DPCase147125(TestCase):
     """
     __test__ = True
 
+    # FIXME: https://projects.engineering.redhat.com/browse/RHEVM-1727
+    apis = TestCase.apis - set(['cli'])
+
     def setUp(self):
         self.disk_name = '%s%s' % (config.VM_NAME, '_Disk1')
         vms.createVm(
@@ -367,11 +382,13 @@ class DPCase147126(TestCase):
         self.assertTrue(
             disks.deleteDisk(True, config.DISK_NAME),
             "User with delete_disk action group can't remove disk.")
-        disks.waitForDisksGone(True, config.DISK_NAME)
         LOGGER.info("User with delete_disk action group can remove disk.")
 
     def tearDown(self):
         loginAsAdmin()
+        if disks.checkDiskExists(True, config.DISK_NAME):
+            disks.deleteDisk(True, config.DISK_NAME)
+        disks.waitForDisksGone(True, config.DISK_NAME)
         mla.removeUserPermissionsFromSD(True, config.MAIN_STORAGE_NAME,
                                         config.USER1)
 
@@ -397,7 +414,8 @@ class DPCase147127(TestCase):
         users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
                           config.USER_PASSWORD, filter=True)
         self.assertTrue(
-            vms.updateVmDisk(True, config.VM_NAME, self.disk_name, name='xyz'),
+            vms.updateVmDisk(True, config.VM_NAME, self.disk_name,
+                             interface='ide'),
             "User can't update vm disk.")
         LOGGER.info("User can update vm disk.")
 
@@ -420,10 +438,6 @@ class DPCase147128(TestCase):
             network=config.MGMT_BRIDGE)
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME,
                                    role=role.StorageAdmin)
-        storagedomains.addNFSDomain(
-            config.MAIN_HOST_NAME, config.ALT1_STORAGE_NAME,
-            config.MAIN_DC_NAME, config.ALT1_STORAGE_ADDRESS,
-            config.ALT1_STORAGE_PATH)
 
     @tcms(TCMS_PLAN_ID, 147128)
     @istest
@@ -479,9 +493,6 @@ class DPCase147128(TestCase):
                                         config.USER1)
         test_utils.wait_for_tasks(config.VDC_HOST, config.VDC_ROOT_PASSWORD,
                                   config.MAIN_DC_NAME)
-        storagedomains.remove_storage_domain(config.ALT1_STORAGE_NAME,
-                                             config.MAIN_DC_NAME,
-                                             config.MAIN_HOST_NAME)
 
 
 class DPCase147129(TestCase):
@@ -499,6 +510,7 @@ class DPCase147129(TestCase):
 
     @tcms(TCMS_PLAN_ID, 147129)
     @istest
+    @bz(1153043)
     def addDiskToVm(self):
         """ add disk to vm with and without permissions """
         users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
@@ -550,6 +562,9 @@ class DPCase147130(TestCase):
     disks and on the vm.
     """
     __test__ = True
+
+    # FIXME: https://projects.engineering.redhat.com/browse/RHEVM-1727
+    apis = DPCase147125.apis - set(['cli'])
 
     def setUp(self):
         vms.createVm(
@@ -624,17 +639,17 @@ class DPCase147137(TestCase):
 
         self.assertTrue(
             vms.updateVmDisk(True, config.VM_NO_DISK, config.DISK_NAME,
-                             name='xyz'),
+                             interface='ide'),
             "User can't update vm shared disk.")
         LOGGER.info("User can update vm shared disk.")
 
-        self.assertTrue(
-            disks.deleteDisk(True, 'xyz'), "User can't remove shared disk.")
+        self.assertTrue(disks.deleteDisk(True, config.DISK_NAME),
+                        "User can't remove shared disk.")
         LOGGER.info("User can remove shared disk.")
 
     def tearDown(self):
         loginAsAdmin()
-        disks.waitForDisksGone(True, 'xyz')
+        disks.waitForDisksGone(True, config.DISK_NAME)
         vms.removeVm(True, config.VM_NO_DISK),
         mla.removeUserPermissionsFromSD(True, config.MAIN_STORAGE_NAME,
                                         config.USER1)

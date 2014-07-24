@@ -401,7 +401,9 @@ def waitForDisksGone(positive, disksNames, timeout=DEFAULT_DISK_TIMEOUT,
         * sleep - how often it should poll the state
     Return: True if disks are gone before timeout runs out, False otherwise
     """
-    return waitUntilGone(positive, disksNames, DISKS_API, timeout, sleep)
+    return waitUntilGone(
+        positive, disksNames, DISKS_API, timeout, sleep, search_by='alias'
+    )
 
 
 @is_action()

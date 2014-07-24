@@ -12,10 +12,12 @@ from nose.tools import istest
 from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from art.unittest_lib import BaseTestCase as TestCase
 from art.rhevm_api.tests_lib.high_level import storagedomains as h_sd
+from art.rhevm_api.utils import test_utils
 from art.rhevm_api.tests_lib.low_level import \
     users, vms, disks, vmpools, templates, mla, clusters, datacenters, hosts,\
     storagedomains
 import logging
+import time
 
 LOGGER = logging.getLogger(__name__)
 TCMS_PLAN_ID = 2602
@@ -58,6 +60,11 @@ def setUpModule():
         True, alias=config.DISK_NAME, interface='virtio', format='cow',
         provisioned_size=config.GB, storagedomain=config.MAIN_STORAGE_NAME)
     disks.waitForDisksState(config.DISK_NAME)
+    h_sd.addNFSDomain(
+        config.MAIN_HOST_NAME, config.ALT2_STORAGE_NAME,
+        config.MAIN_DC_NAME, config.ALT2_STORAGE_ADDRESS,
+        config.ALT2_STORAGE_PATH
+    )
 
 
 def tearDownModule():
@@ -69,11 +76,17 @@ def tearDownModule():
     disks.deleteDisk(True, config.DISK_NAME)
     disks.waitForDisksGone(True, config.DISK_NAME)
     vmpools.detachVms(True, config.VMPOOL_NAME)
-    import time
-    time.sleep(20)
-    vms.removeVm(True, '%s-%s' % (config.VMPOOL_NAME, 1))
+    vm_name = '%s-1' % config.VMPOOL_NAME
+    vms.wait_for_vm_to_be_detached(True, vm_name)
+    vms.waitForVMState(vm_name, state='down')
+    vms.removeVm(True, vm_name)
     vmpools.removeVmPool(True, config.VMPOOL_NAME)
     templates.removeTemplate(True, config.TEMPLATE_NAME)
+    test_utils.wait_for_tasks(config.VDC_HOST, config.VDC_ROOT_PASSWORD,
+                              config.MAIN_DC_NAME)
+    storagedomains.remove_storage_domain(config.ALT2_STORAGE_NAME,
+                                         config.MAIN_DC_NAME,
+                                         config.MAIN_HOST_NAME)
 
 
 class PermissionsCase54408(TestCase):
@@ -243,6 +256,7 @@ class PermissionsCase54425(TestCase):
             r = role_obj.get_name()
             LOGGER.info("Testing role - %s" % r)
             # Get roles perms, to check for manipulate_permissions
+            role_obj = mla.util.find(r)  # multi user switching hack
             rolePermits = mla.util.getElemFromLink(
                 role_obj, link_name='permits', attr='permit', get_href=False)
             perms = [p.get_name() for p in rolePermits]
@@ -312,7 +326,11 @@ class PermissionsCase54446(TestCase):
 
     @classmethod
     def setUpClass(self):
-        users.addGroup(True, config.GROUP_NAME)
+        users.addGroup(
+            True,
+            config.GROUP_NAME,
+            config.USER_DOMAIN
+        )
         mla.addClusterPermissionsToGroup(True, config.GROUP_NAME,
                                          config.MAIN_CLUSTER_NAME,
                                          role.UserVmManager)
@@ -426,7 +444,11 @@ class PermissionsCase108233(TestCase):
 
     @classmethod
     def setUpClass(self):
-        users.addGroup(True, config.GROUP_NAME)
+        users.addGroup(
+            True,
+            config.GROUP_NAME,
+            config.USER_DOMAIN
+        )
         mla.addClusterPermissionsToGroup(True, config.GROUP_NAME,
                                          config.MAIN_CLUSTER_NAME,
                                          role.UserRole)
@@ -478,6 +500,9 @@ class PermissionsCase109086(TestCase):
         vms.waitForVMState('%s-%s' % (config.VMPOOL_NAME, 1), state='up')
         loginAsUser(config.USER_NAME)
         self.assertTrue(vmpools.stopVmPool(True, config.VMPOOL_NAME))
+        loginAsAdmin()
+        vms.waitForVMState('%s-%s' % (config.VMPOOL_NAME, 1), state='down')
+        time.sleep(10)  # Didn't find any reliable way how to wait.
 
 
 # create a StorageDomain with templates and VMs
@@ -487,22 +512,20 @@ class PermissionsCase111082(TestCase):
     """ Test if perms removed after object is removed """
     __test__ = True
 
+    apis = set(['rest'])
+
     @classmethod
     def setUpClass(self):
-        h_sd.addNFSDomain(
-            config.MAIN_HOST_NAME, config.ALT1_STORAGE_NAME,
-            config.MAIN_DC_NAME, config.ALT1_STORAGE_ADDRESS,
-            config.ALT1_STORAGE_PATH)
         vms.createVm(
             True, config.VM_NAME1, '', cluster=config.MAIN_CLUSTER_NAME,
-            storageDomainName=config.ALT1_STORAGE_NAME, size=config.GB,
+            storageDomainName=config.ALT2_STORAGE_NAME, size=config.GB,
             network=config.MGMT_BRIDGE)
         templates.createTemplate(
             True, vm=config.VM_NAME1, name=config.TEMPLATE_NAME2,
             cluster=config.MAIN_CLUSTER_NAME)
         disks.addDisk(
             True, alias=config.DISK_NAME1, interface='virtio', format='cow',
-            provisioned_size=config.GB, storagedomain=config.ALT1_STORAGE_NAME)
+            provisioned_size=config.GB, storagedomain=config.ALT2_STORAGE_NAME)
         disks.waitForDisksState(config.DISK_NAME1)
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME1)
         mla.addPermissionsForTemplate(
@@ -517,7 +540,6 @@ class PermissionsCase111082(TestCase):
             True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
 
     @istest
-    @bz(892642)
     @tcms(TCMS_PLAN_ID, 111082)
     def permsRemovedAfterObjectRemove(self):
         """ perms removed after object is removed """
@@ -528,9 +550,9 @@ class PermissionsCase111082(TestCase):
             return roleNAid in perm_ids
 
         storagedomains.deactivateStorageDomain(True, config.MAIN_DC_NAME,
-                                               config.ALT1_STORAGE_NAME)
+                                               config.ALT2_STORAGE_NAME)
         storagedomains.removeStorageDomain(
-            True, config.ALT1_STORAGE_NAME,
+            True, config.ALT2_STORAGE_NAME,
             config.MAIN_HOST_NAME, destroy=True)
         # When destroying SD, then also vm is destroyed
         # vms.removeVm(True, config.VM_NAME1)

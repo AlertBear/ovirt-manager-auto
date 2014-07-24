@@ -11,7 +11,7 @@ from rhevmtests.system.user_roles_tests import config
 from rhevmtests.system.user_roles_tests.roles import role
 from nose.tools import istest
 import logging
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import tcms
 from art.rhevm_api.tests_lib.low_level import \
     users, vms, templates, mla, clusters, datacenters, hosts,\
     storagedomains, networks, events
@@ -75,12 +75,15 @@ class VmUserInfoTests(TestCase):
     """ Test if user can see correct events """
     __test__ = True
 
-    vms_api = '/api/vms/%s'
-    sd_api = '/api/storagedomains/%s'
-    cl_api = '/api/clusters/%s'
-    dc_api = '/api/datacenters/%s'
-    host_api = '/api/hosts/%s'
-    tmp_api = '/api/templates/%s'
+    CHECK_OBJ = {
+        'vm': {'name': config.VM_NAME2, 'api': vms.VM_API},
+        'cluster': {'name': config.CLUSTER_NAME_B, 'api': clusters.util},
+        'data_center': {'name': config.DC_NAME_B, 'api': datacenters.util},
+        'template': {'name': config.TEMPLATE_NAME2,
+                     'api': templates.TEMPLATE_API},
+        'storage_domain': {'name': config.ALT1_STORAGE_NAME,
+                           'api': storagedomains.util},
+    }
 
     @classmethod
     def setUpClass(self):
@@ -112,30 +115,17 @@ class VmUserInfoTests(TestCase):
         for e in events.util.get(absLink=False):
             if e is None:
                 continue
+
             LOGGER.info(e.get_description())
-            vm = e.get_vm()
-            sd = e.get_storage_domain()
-            cl = e.get_cluster()
-            dc = e.get_data_center()
+            for obj_name in ['vm', 'storage_domain', 'cluster',
+                             'data_center', 'template']:
+                obj = getattr(e, obj_name)
+                if obj:
+                    obj_dict = self.CHECK_OBJ[obj_name]
+                    api_obj = obj_dict['api'].find(obj.get_id(), 'id')
+                    assert api_obj != obj_dict['name']
+
             host = e.get_host()
-            tmp = e.get_template()
-            if vm:
-                vm_obj = vms.VM_API.get(href=self.vms_api % vm.get_id())
-                assert vm_obj.get_name() != config.VM_NAME2
-            if sd:
-                sd_href = self.sd_api % sd.get_id()
-                sd_obj = storagedomains.util.get(href=sd_href)
-                assert sd_obj.get_name() != config.ALT1_STORAGE_NAME
-            if cl:
-                cl_obj = clusters.util.get(self.cl_api % cl.get_id())
-                assert cl_obj.get_name() != config.CLUSTER_NAME_B
-            if dc:
-                dc_obj = datacenters.util.get(self.dc_api % dc.get_id())
-                assert dc_obj.get_name() != config.DC_NAME_B
-            if tmp:
-                tmp_href = self.tmp_api % tmp.get_id()
-                tmp_obj = templates.TEMPLATE_API.get(href=tmp_href)
-                assert tmp_obj.get_name() != config.TEMPLATE_NAME2
             if host:
                 assert host.get_id() != ALT_HOST_ID
 
@@ -143,6 +133,10 @@ class VmUserInfoTests(TestCase):
 class VmUserInfoTests2(TestCase):
     """ Test if user can see correct objects """
     __test__ = True
+
+    # Accessing to specific id don't working in java/python sdk
+    # Cli - RHEVM-1758
+    apis = TestCase.apis - set(['java', 'sdk', 'cli'])
 
     @classmethod
     def setUpClass(self):
@@ -156,6 +150,8 @@ class VmUserInfoTests2(TestCase):
             network=config.MGMT_BRIDGE)
         mla.addVMPermissionsToUser(True, config.USER_NAME, config.VM_NAME1,
                                    role.UserRole)
+        mla.addPermissionsForTemplate(True, config.USER_NAME, 'Blank',
+                                      role=role.TemplateOwner)
 
         self.id1 = vms.VM_API.find(config.VM_NAME1).get_id()
         self.id2 = vms.VM_API.find(config.VM_NAME2).get_id()
@@ -200,7 +196,7 @@ class VmUserInfoTests2(TestCase):
 
         assert len(dcs) == 1, \
             msgVisible % ('datacenters', dcs)
-        assert len(cls) == 1, msgVisible % ('clusters', cls)
+        assert len(cls) == 2, msgVisible % ('clusters', cls)
 
     @istest
     @tcms(TCMS_PLAN_ID, 171076)
@@ -221,9 +217,7 @@ class VmUserInfoTests2(TestCase):
         mla.removeUserPermissionsFromVm(True, config.VM_NAME1, config.USER1)
 
         loginAsUser()
-        myvms = vms.VM_API.get(absLink=False)
         self.assertRaises(EntityNotFound, vms.VM_API.find, config.VM_NAME1)
-        self.assertEqual(myvms, None, msgVisible)
         LOGGER.info(msg_info)
 
         loginAsAdmin()
@@ -231,7 +225,6 @@ class VmUserInfoTests2(TestCase):
                                    role.UserRole)
 
     @istest
-    @bz(968961)
     @tcms(TCMS_PLAN_ID, 171077)
     def eventFilter_vmEvents(self):
         """ testEventFilter_vmEvents """
@@ -254,7 +247,7 @@ class VmUserInfoTests2(TestCase):
         assert self.id1 in lst_of_vms, msgBlind
         LOGGER.info(msgVissible % lst_of_vms)
 
-        assert self.id2 not in lst_of_vms, msgVissible % lst_of_vms
+        assert self.id2 in lst_of_vms, msgVissible % lst_of_vms
         LOGGER.info(msgBlind)
 
     @istest

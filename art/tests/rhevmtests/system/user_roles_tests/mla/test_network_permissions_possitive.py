@@ -84,6 +84,8 @@ class PositiveNetworkPermissions231821(NetworkingPossitive):
 class PositiveNetworkPermissions231822(NetworkingPossitive):
     __test__ = True
 
+    apis = NetworkingPossitive.apis - set(['java'])
+
     def setUp(self):
         assert networks.addNetwork(True, name=config.NETWORK_NAME1,
                                    data_center=config.MAIN_DC_NAME)
@@ -266,6 +268,8 @@ class PositiveNetworkPermissions231827(NetworkingPossitive):
 
 class PositiveNetworkPermissions231830(NetworkingPossitive):
     __test__ = True
+
+    apis = set(['rest'])
 
     def setUp(self):
         assert networks.addNetwork(True, name=config.NETWORK_NAME1,
@@ -517,6 +521,7 @@ class PositiveNetworkPermissions236408(NetworkingPossitive):
 
     @istest
     @tcms(TCMS_PLAN_ID_POS, 236408)
+    @bz(1153043)
     def addVNICToTemplate(self):
         """ Add a VNIC to template """
         loginAsUser(config.USER_NAME)

@@ -1784,7 +1784,8 @@ def checkTraffic(machine, user, password, nic, src, dst, dupCheck=False,
     return found
 
 
-def waitUntilGone(positive, names, api, timeout, samplingPeriod):
+def waitUntilGone(positive, names, api, timeout,
+                  samplingPeriod, search_by='name'):
     '''
     Wait for objects to disappear from the setup. This function will block up
     to `timeout` seconds, sampling the given API every `samplingPeriod`
@@ -1800,7 +1801,7 @@ def waitUntilGone(positive, names, api, timeout, samplingPeriod):
         objlist = split(names)
     else:
         objlist = names
-    query = ' or '.join(['name="%s"' % templ for templ in objlist])
+    query = ' or '.join(['%s="%s"' % (search_by, templ) for templ in objlist])
     sampler = TimeoutingSampler(timeout, samplingPeriod, api.query, query)
 
     sampler.timeout_exc_args = "Objects didn't disappear in %d secs" % timeout,

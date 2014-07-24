@@ -296,6 +296,7 @@ class Case_change_vm_custom_properties(BaseTest):
 
     @istest
     @logMe
+    @bz(1091688)
     def change_vm_custom_properties(self):
         """ change_vm_custom_properties """
         self.assertTrue(vms.updateVm(self.positive, VM_NAME,
@@ -321,6 +322,9 @@ class Case_create_vm(BaseTest):
 @attr(tier=2)
 class Case_delete_vm(BaseTest):
     __test__ = True
+
+    # FIXME: https://projects.engineering.redhat.com/browse/RHEVM-1727
+    apis = BaseTest.apis - set(['cli'])
 
     def setUp(self):
         vms.createVm(True, VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
@@ -353,6 +357,7 @@ class Case_edit_vm_properties(BaseTest):
 
     @istest
     @logMe
+    @bz(1091688)
     def edit_vm_properties(self):
         """ edit_vm_properties """
         self.assertTrue(vms.updateVm(self.positive, VM_NAME,

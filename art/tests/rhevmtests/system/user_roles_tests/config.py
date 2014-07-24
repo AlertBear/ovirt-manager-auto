@@ -29,10 +29,10 @@ ALT2_HOST_CPU_TYPE = CPU_NAME
 
 # Networks
 NETWORK_NAME = 'rhevm'
-NETWORK_NAME1 = PARAMETERS.get('rhevm1')
-NETWORK_NAME2 = PARAMETERS.get('rhevm2')
-NETWORK_NAME3 = PARAMETERS.get('rhevm3')
-NETWORK_NAME4 = PARAMETERS.get('rhevm4')
+NETWORK_NAME1 = 'rhevm1'
+NETWORK_NAME2 = 'rhevm2'
+NETWORK_NAME3 = 'rhevm3'
+NETWORK_NAME4 = 'rhevm4'
 
 # Storages
 MAIN_STORAGE_TYPE = PARAMETERS.get('storage_type')
@@ -75,7 +75,7 @@ USER3 = 'userportal3@qa.lab.tlv.redhat.com'
 USER = USER1
 
 GROUP_USER = 'q-student'
-GROUP_NAME = 'qa.lab.tlv.redhat.com/Users/q-Students'
+GROUP_NAME = 'Users/q-Students@qa.lab.tlv.redhat.com'
 
 # Misc
 MAIN_DC_NAME = 'users_dc'

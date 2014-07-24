@@ -5,7 +5,6 @@ This will cover scenario for create/remove/editin/using roles.
 '''
 
 import logging
-import time
 
 from rhevmtests.system.user_roles_tests import config
 from rhevmtests.system.user_roles_tests.roles import role as role_e
@@ -62,7 +61,7 @@ def tearDownModule():
     disks.deleteDisk(True, config.DISK_NAME)
     disks.waitForDisksGone(True, config.DISK_NAME)
     vmpools.detachVms(True, config.VMPOOL_NAME)
-    time.sleep(20)
+    vms.wait_for_vm_to_be_detached(True, '%s-%s' % (config.VMPOOL_NAME, 1))
     vms.removeVm(True, '%s-%s' % (config.VMPOOL_NAME, 1))
     vmpools.removeVmPool(True, config.VMPOOL_NAME)
     templates.removeTemplate(True, config.TEMPLATE_NAME)
@@ -74,6 +73,9 @@ class RoleCase54413(TestCase):
     Check that only users which are permitted to create role, can create role.
     """
     __test__ = True
+
+    # https://projects.engineering.redhat.com/browse/RHEVM-1754
+    apis = TestCase.apis - set(['java', 'sdk'])
 
     @tcms(TCMS_PLAN_ID, 54413)
     @istest
@@ -144,9 +146,11 @@ class RoleCase54401(TestCase):
     """
     __test__ = True
 
+    # FIXME: RHEVM-1758
+    apis = TestCase.apis - set(['cli'])
+
     @tcms(TCMS_PLAN_ID, 54401)
     @istest
-    @bz(990985)
     def editRole(self):
         """ Try to update role and check if role is updated correctly """
         mla.addRole(True, name=config.USER_ROLE, permits='login')
@@ -169,7 +173,7 @@ class RoleCase54401(TestCase):
         # 4.Edit new user's role.
         users.loginAsUser(
             config.USER_NAME, config.USER_DOMAIN, config.USER_PASSWORD,
-            filter='true')
+            filter=True)
         self.assertRaises(
             vms.EntityNotFound,
             vms.startVm,
@@ -210,6 +214,9 @@ class RoleCase54401(TestCase):
 class RoleCase54415(TestCase):
     """ Try to get list of roles as user and non-admin user """
     __test__ = True
+
+    # https://projects.engineering.redhat.com/browse/RHEVM-1754
+    apis = TestCase.apis - set(['java', 'sdk'])
 
     @tcms(TCMS_PLAN_ID, 54415)
     @istest
