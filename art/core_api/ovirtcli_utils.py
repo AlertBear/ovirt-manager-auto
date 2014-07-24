@@ -49,6 +49,7 @@ ACTION_WAIVER = []
 COMPLEX_TO_BASE_CLASSES_DICT = {'HostNIC': 'nic'}
 MAX_TIMEOUT_FOR_FILE_READ = 10
 POLLING_TIMEOUT_FOR_FILE_READ = 0.5
+KB = 1024
 
 
 def threadSafeRun(func):
@@ -102,6 +103,7 @@ class CliConnection(object):
     def __init__(self, command, prompt, timeout, logFile=None):
         self._prompt = prompt
         self.cliConnection = pe.spawn(command, timeout=timeout)
+        self.cliConnection.maxread = KB * 8
         self.cliConnection.setecho(False)
         timestamp = strftime('%Y%m%d_%H%M%S')
         # we want log file to be singleton
