@@ -11,6 +11,7 @@ GOLDEN_ENV = False
 # RHEVM related constants
 ENUMS = opts['elements_conf']['RHEVM Enums']
 PERMITS = opts['elements_conf']['RHEVM Permits']
+RHEVM_UTILS_ENUMS = opts['elements_conf']['RHEVM Utilities']
 
 TEST_NAME = "Global"
 

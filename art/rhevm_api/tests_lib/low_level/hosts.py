@@ -2572,3 +2572,29 @@ def get_mom_statistics(host, host_user, host_pwd, port=8080,
             return rc, out
         return rc, stats_dict
     return rc, out
+
+
+def get_host_object(host_name):
+    """
+    This function get host object by host name.
+
+    :param host_name: Name of host.
+    :type host_name: str.
+    :returns: Host object.
+    """
+    return HOST_API.find(host_name)
+
+
+def get_host_topology(host_name):
+    """
+    This function get host topology object by host name.
+
+    :param host_name: Name of host.
+    :type host_name: str.
+    :returns: Host topology object.
+    :raises: EntityNotFound
+    """
+    host_obj = get_host_object(host_name)
+    if not host_obj:
+        raise EntityNotFound("No host with name %s" % host_name)
+    return host_obj.cpu.topology

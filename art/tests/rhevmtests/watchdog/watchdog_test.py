@@ -11,10 +11,9 @@ Tests covers:
     Triggering watchdog actions (dump, none, pause, poweroff, reset)
 """
 
-from art.unittest_lib import BaseTestCase as TestCase
+from art.unittest_lib import ComputeTest as TestCase
 
 import logging
-import config
 import re
 import time
 
@@ -34,6 +33,8 @@ from art.unittest_lib.common import is_bz_state
 
 from utilities import machine
 from nose.plugins.attrib import attr
+
+from rhevmtests.watchdog import config
 
 HOST_API = get_api('host', 'hosts')
 VM_API = get_api('vm', 'vms')
@@ -58,21 +59,22 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 ########################################################################
 
 
+@attr(tier=0)
 class WatchdogVM(TestCase):
-    '''
+    """
     Base class for vm watchdog operations
-    '''
-    def killWatchdog(self, vm_name, sleep_time=WATCHDOG_TIMER):
-        '''
+    """
+    def kill_watchdog(self, vm_name, sleep_time=WATCHDOG_TIMER):
+        """
         Kill watchdog process
         Author: lsvaty
         Parameters:
             * vm_name - name of VM to grep lspci on
             * sleep_time - time to sleep after watchdog is killed
-        '''
+        """
         vm_machine = vms.get_vm_machine(vm_name,
-                                        config.VM_USER,
-                                        config.VM_PASSWD)
+                                        config.VMS_LINUX_USER,
+                                        config.VMS_LINUX_PW)
         rc, out = vm_machine.runCmd(['killall', '-9', 'watchdog'])
 
         self.assertTrue(rc, "Error on `killall -9 watchdog` output: " + out)
@@ -80,17 +82,17 @@ class WatchdogVM(TestCase):
         logger.info("Watchdog process killed, waiting for %ds", sleep_time)
         time.sleep(sleep_time)
 
-    def lspciWatchdog(self, positive, vm_name):
-        '''
+    def lspci_watchdog(self, positive, vm_name):
+        """
         Detect watchdog
         Author: lsvaty
         Parameters:
             * vm_name - name of VM to grep lspci on
             * positive - True if should succeed
-        '''
+        """
         vm_machine = vms.get_vm_machine(vm_name,
-                                        config.VM_USER,
-                                        config.VM_PASSWD)
+                                        config.VMS_LINUX_USER,
+                                        config.VMS_LINUX_PW)
         rc, output = vm_machine.runCmd(['lspci', '|', 'grep', '-i',
                                         config.WATCHDOG_MODEL[1:]])
         if positive:
@@ -107,15 +109,15 @@ class WatchdogVM(TestCase):
 #                             Functions                                #
 ########################################################################
 
-def changeWatchdogAction(vm, action):
-    '''
+def change_watchdog_action(vm, action):
+    """
     Change action of watchdog
     Author: lsvaty
     Parameters:
         * vm - vm name
         * action - action of watchdog card
     Return value: True on success otherwise False
-    '''
+    """
     if not vms.stopVm(positive=True, vm=vm, async='false'):
         logger.error("Can't shutdown VM")
         return False
@@ -135,13 +137,13 @@ def changeWatchdogAction(vm, action):
     return True
 
 
-def installWatchdog(vm_machine):
-    '''
+def install_watchdog(vm_machine):
+    """
     Install watchdog and enable service
     Author: lsvaty
     Parameters:
         * vm_machine - vm machine
-    '''
+    """
     rc, output = vm_machine.runCmd(['rhnreg_ks',
                                     '--activationkey=' +
                                     config.ACTIVATION_KEY,
@@ -189,17 +191,18 @@ def installWatchdog(vm_machine):
     return True
 
 
-def runWatchdogService(vm):
-    '''
+def run_watchdog_service(vm):
+    """
     Check if watchdog service is running if not install and run
     Author: lsvaty
     Parameters:
         *vm - name of vm
-    '''
-    vm_machine = vms.get_vm_machine(vm, config.VM_USER, config.VM_PASSWD)
+    """
+    vm_machine = vms.get_vm_machine(vm, config.VMS_LINUX_USER,
+                                    config.VMS_LINUX_PW)
     output = vm_machine.getServiceStatus('watchdog')
 
-    if output != "running" and not installWatchdog(vm_machine):
+    if output != "running" and not install_watchdog(vm_machine):
         raise errors.VMException("Watchdog installation failed")
 
 ########################################################################
@@ -207,8 +210,7 @@ def runWatchdogService(vm):
 ########################################################################
 
 
-@attr(team=ENUMS['team_compute'], tier=0)
-class Watchdog_CRUD(WatchdogVM):
+class WatchdogCRUD(WatchdogVM):
     """
     Create Vm with watchdog
     """
@@ -217,14 +219,14 @@ class Watchdog_CRUD(WatchdogVM):
 
     @classmethod
     def setup_class(cls):
-        '''
+        """
         Create VM
-        '''
+        """
         if not vms.createVm(positive=True, vmName=cls.vm_name,
                             vmDescription="Watchdog VM",
-                            cluster=config.CLUSTER_NAME,
-                            storageDomainName=config.DATA_NAME[0],
-                            size=DISK_SIZE, nic=config.NIC,
+                            cluster=config.CLUSTER_NAME[0],
+                            storageDomainName=config.STORAGE_NAME[0],
+                            size=DISK_SIZE, nic=config.NIC_NAME[0],
                             memory=MEMORY_SIZE):
             raise errors.VMException("Cannot create vm %s" % cls.vm_name)
         logger.info("Successfully created VM")
@@ -235,7 +237,7 @@ class Watchdog_CRUD(WatchdogVM):
                 cobblerUser=config.COBBLER_USER,
                 cobblerPasswd=config.COBBLER_USER,
                 image=config.COBBLER_PROFILE,
-                nic=config.NIC):
+                nic=config.NIC_NAME[0]):
             raise errors.VMException("Cannot install Linux OS")
         if not vms.waitForIP(cls.vm_name, timeout=7200, sleep=10)[0]:
             raise errors.VMException(
@@ -244,9 +246,9 @@ class Watchdog_CRUD(WatchdogVM):
 
     @tcms('9846', '295149')
     def test_add_watchdog(self):
-        '''
+        """
         Add watchdog to clean VM
-        '''
+        """
         self.assertTrue(vms.updateVm(vm=self.vm_name, positive=True,
                                      watchdog_model='i6300esb',
                                      watchdog_action='reset'),
@@ -260,16 +262,16 @@ class Watchdog_CRUD(WatchdogVM):
 
     @tcms('9846', '285329')
     def test_detect_watchdog(self):
-        '''
+        """
         Detect watchdog
-        '''
-        self.lspciWatchdog(True, self.vm_name)
+        """
+        self.lspci_watchdog(True, self.vm_name)
 
     @tcms('9846', '285331')
     def test_remove_watchdog(self):
-        '''
+        """
         Deleting watchdog model
-        '''
+        """
 
         self.assertTrue(vms.stopVm(positive=True,
                                    vm=self.vm_name),
@@ -283,14 +285,14 @@ class Watchdog_CRUD(WatchdogVM):
                                     wait_for_status=ENUMS['vm_state_up'],
                                     vm=self.vm_name), "VM did not start")
 
-        self.lspciWatchdog(False, self.vm_name)
+        self.lspci_watchdog(False, self.vm_name)
         logger.info("Watchdog successfully deleted")
 
     @classmethod
     def teardown_class(cls):
-        '''
+        """
         Remove CRUD VM
-        '''
+        """
         if not vms.removeVm(positive=True, vm=cls.vm_name, stopVm=True):
             raise errors.VMException("Cannot remove vm %s" % cls.vm_name)
         logger.info("Watchdog CRUD VM removed")
@@ -298,8 +300,7 @@ class Watchdog_CRUD(WatchdogVM):
 #####################################################################
 
 
-@attr(team=ENUMS['team_compute'], tier=0)
-class Watchdog_install(TestCase):
+class WatchdogInstall(TestCase):
     """
     Install VM watchdog
     """
@@ -308,17 +309,16 @@ class Watchdog_install(TestCase):
 
     @tcms('9846', '295157')
     def test_install_watchdog(self):
-        '''
+        """
         Install watchdog and enable service
-        '''
-        runWatchdogService(config.VM_NAME)
-        logger.info("Watchdog install test successfull")
+        """
+        run_watchdog_service(config.VM_NAME[0])
+        logger.info("Watchdog install test successful")
 
 #######################################################################
 
 
-@attr(team=ENUMS['team_compute'], tier=0)
-class Watchdog_test_none(WatchdogVM):
+class WatchdogTestNone(WatchdogVM):
     """
     Test action none
     """
@@ -327,43 +327,42 @@ class Watchdog_test_none(WatchdogVM):
 
     @classmethod
     def setup_class(cls):
-        '''
+        """
         Change action to none
-        '''
-        changeWatchdogAction(config.VM_NAME, 'none')
-        runWatchdogService(config.VM_NAME)
+        """
+        change_watchdog_action(config.VM_NAME[0], 'none')
+        run_watchdog_service(config.VM_NAME[0])
 
     @tcms('9846', '285346')
     def test_action_none(self):
-        '''
+        """
         Test action none, wm should stay in kernel panic
-        '''
-        self.assertTrue(vms.waitForVMState(config.VM_NAME),
+        """
+        self.assertTrue(vms.waitForVMState(config.VM_NAME[0]),
                         "Vm not in up status")
 
-        self.killWatchdog(config.VM_NAME)
+        self.kill_watchdog(config.VM_NAME[0])
 
-        self.assertTrue(vms.waitForVMState(config.VM_NAME),
+        self.assertTrue(vms.waitForVMState(config.VM_NAME[0]),
                         "Watchdog action none did not succeed")
 
-        self.lspciWatchdog(True, config.VM_NAME)
+        self.lspci_watchdog(True, config.VM_NAME[0])
 
         logger.info("Watchdog action none succeeded")
 
     @classmethod
     def teardown_class(cls):
-        '''
+        """
         Set watchdog VM to starting state
-        '''
+        """
         logger.info("rebooting VM")
-        if not vms.rebootVm(positive=True, vm=config.VM_NAME):
-            raise errors.VMException("Cannot reboot VM %s" % config.VM_NAME)
+        if not vms.rebootVm(positive=True, vm=config.VM_NAME[0]):
+            raise errors.VMException("Cannot reboot VM %s" % config.VM_NAME[0])
 
 #######################################################################
 
 
-@attr(team=ENUMS['team_compute'], tier=0)
-class Watchdog_test_reset(WatchdogVM):
+class WatchdogTestReset(WatchdogVM):
     """
     Test action reset
     """
@@ -372,22 +371,22 @@ class Watchdog_test_reset(WatchdogVM):
 
     @classmethod
     def setup_class(cls):
-        '''
+        """
         Set action to reset
-        '''
-        changeWatchdogAction(config.VM_NAME, 'reset')
-        runWatchdogService(config.VM_NAME)
+        """
+        change_watchdog_action(config.VM_NAME[0], 'reset')
+        run_watchdog_service(config.VM_NAME[0])
 
     @tcms('9846', '285336')
     def test_action_reset(self):
-        '''
+        """
         Test action reset
-        '''
-        self.killWatchdog(config.VM_NAME, 0)
+        """
+        self.kill_watchdog(config.VM_NAME[0], 0)
 
-        vm_machine = vms.get_vm_machine(config.VM_NAME,
-                                        config.VM_USER,
-                                        config.VM_PASSWD)
+        vm_machine = vms.get_vm_machine(config.VM_NAME[0],
+                                        config.VMS_LINUX_USER,
+                                        config.VMS_LINUX_PW)
 
         args = ['lspci', '|', 'grep', '-i', 'watchdog'],
 
@@ -405,18 +404,17 @@ class Watchdog_test_reset(WatchdogVM):
 
     @classmethod
     def teardown_class(cls):
-        '''
+        """
         Set watchdog VM to starting state
-        '''
+        """
         logger.info("rebooting VM")
-        if not vms.rebootVm(positive=True, vm=config.VM_NAME):
-            raise errors.VMException("Cannot reboot VM %s" % config.VM_NAME)
+        if not vms.rebootVm(positive=True, vm=config.VM_NAME[0]):
+            raise errors.VMException("Cannot reboot VM %s" % config.VM_NAME[0])
 
 #######################################################################
 
 
-@attr(team=ENUMS['team_compute'], tier=0)
-class Watchdog_test_poweroff(WatchdogVM):
+class WatchdogTestPoweroff(WatchdogVM):
     """
     Test action poweroff
     """
@@ -425,37 +423,36 @@ class Watchdog_test_poweroff(WatchdogVM):
 
     @classmethod
     def setup_class(cls):
-        '''
+        """
         Change action to poweroff
-        '''
-        changeWatchdogAction(config.VM_NAME, 'poweroff')
-        runWatchdogService(config.VM_NAME)
+        """
+        change_watchdog_action(config.VM_NAME[0], 'poweroff')
+        run_watchdog_service(config.VM_NAME[0])
 
     @tcms('9846', '285335')
     def test_action_poweroff(self):
-        '''
+        """
         Test action poweroff
-        '''
-        self.killWatchdog(config.VM_NAME)
+        """
+        self.kill_watchdog(config.VM_NAME[0])
 
-        self.assertTrue(vms.waitForVMState(config.VM_NAME,
+        self.assertTrue(vms.waitForVMState(config.VM_NAME[0],
                                            state=ENUMS['vm_state_down']),
                         "Watchdog action poweroff failed")
 
     @classmethod
     def teardown_class(cls):
-        '''
+        """
         Set watchdog VM to starting state
-        '''
+        """
         logger.info("rebooting VM")
-        if not vms.rebootVm(positive=True, vm=config.VM_NAME):
-            raise errors.VMException("Cannot reboot VM %s" % config.VM_NAME)
+        if not vms.rebootVm(positive=True, vm=config.VM_NAME[0]):
+            raise errors.VMException("Cannot reboot VM %s" % config.VM_NAME[0])
 
 #######################################################################
 
 
-@attr(team=ENUMS['team_compute'], tier=0)
-class Watchdog_test_pause(WatchdogVM):
+class WatchdogTestPause(WatchdogVM):
     """
     Test action pause
     """
@@ -464,20 +461,20 @@ class Watchdog_test_pause(WatchdogVM):
 
     @classmethod
     def setup_class(cls):
-        '''
+        """
         Change action to pause
-        '''
-        changeWatchdogAction(config.VM_NAME, 'pause')
-        runWatchdogService(config.VM_NAME)
+        """
+        change_watchdog_action(config.VM_NAME[0], 'pause')
+        run_watchdog_service(config.VM_NAME[0])
 
     @tcms('9846', '285339')
     def test_action_pause(self):
-        '''
+        """
         Test action pause
-        '''
-        self.killWatchdog(config.VM_NAME)
+        """
+        self.kill_watchdog(config.VM_NAME[0])
 
-        self.assertTrue(vms.waitForVMState(config.VM_NAME,
+        self.assertTrue(vms.waitForVMState(config.VM_NAME[0],
                                            state='paused'),
                         "Watchdog action pause failed")
 
@@ -485,18 +482,17 @@ class Watchdog_test_pause(WatchdogVM):
 
     @classmethod
     def teardown_class(cls):
-        '''
+        """
         Set watchdog VM to starting state
-        '''
+        """
         logger.info("rebooting VM")
-        if not vms.rebootVm(positive=True, vm=config.VM_NAME):
-            raise errors.VMException("Cannot reboot VM %s" % config.VM_NAME)
+        if not vms.rebootVm(positive=True, vm=config.VM_NAME[0]):
+            raise errors.VMException("Cannot reboot VM %s" % config.VM_NAME[0])
 
 #######################################################################
 
 
-@attr(team=ENUMS['team_compute'], tier=0)
-class Watchdog_test_dump(WatchdogVM):
+class WatchdogTestDump(WatchdogVM):
     """
     Test action dump
     """
@@ -505,18 +501,18 @@ class Watchdog_test_dump(WatchdogVM):
 
     @classmethod
     def setup_class(cls):
-        '''
+        """
         Change action to dump
-        '''
-        changeWatchdogAction(config.VM_NAME, 'dump')
-        runWatchdogService(config.VM_NAME)
+        """
+        change_watchdog_action(config.VM_NAME[0], 'dump')
+        run_watchdog_service(config.VM_NAME[0])
 
     @tcms('9846', '285345')
     def test_action_dump(self):
-        '''
+        """
         Test action pause
-        '''
-        host_machine = machine.Machine(config.HOSTS[0], config.VDS_ADMIN[0],
+        """
+        host_machine = machine.Machine(config.HOSTS[0], config.HOSTS_USER,
                                        config.HOSTS_PW[0]).util(machine.LINUX)
 
         rc, output = host_machine.runCmd(
@@ -536,9 +532,9 @@ class Watchdog_test_dump(WatchdogVM):
         logger.info("files in dumpath: %s", output)
         logs_count = int(output)
 
-        self.killWatchdog(config.VM_NAME)
+        self.kill_watchdog(config.VM_NAME[0])
 
-        self.lspciWatchdog(True, config.VM_NAME)
+        self.lspci_watchdog(True, config.VM_NAME[0])
 
         logger.info("Watchdog action dump successful")
 
@@ -552,18 +548,18 @@ class Watchdog_test_dump(WatchdogVM):
 
     @classmethod
     def teardown_class(cls):
-        '''
+        """
         Set watchdog VM to starting state
-        '''
+        """
         logger.info("rebooting VM")
-        if not vms.rebootVm(positive=True, vm=config.VM_NAME):
-            raise errors.VMException("Cannot reboot VM %s" % config.VM_NAME)
+        if not vms.rebootVm(positive=True, vm=config.VM_NAME[0]):
+            raise errors.VMException("Cannot reboot VM %s" % config.VM_NAME[0])
 
 ######################################################################
 
 
-@attr(team=ENUMS['team_compute'], tier=1)
-class Watchdog_general_VM_subtab(TestCase):
+@attr(tier=1)
+class WatchdogGeneralVMSubtab(TestCase):
     """
     Watchdog info in generat subtab
     """
@@ -573,16 +569,16 @@ class Watchdog_general_VM_subtab(TestCase):
     @bz('996521')
     @tcms('9846', '285333')
     def test_general_subtab(self):
-        '''
+        """
         Test if watchdog model and action are in general subtab of VM tab
-        '''
+        """
         self.assertTrue(is_bz_state('996521'), "BZ#996521 not closed.")
 
 #######################################################################
 
 
-@attr(team=ENUMS['team_compute'], tier=1)
-class Watchdog_migration(TestCase):
+@attr(tier=1)
+class WatchdogMigration(TestCase):
     """
     Test watchdog with migration of vm
     """
@@ -591,49 +587,49 @@ class Watchdog_migration(TestCase):
 
     @classmethod
     def setup_class(cls):
-        '''
+        """
         Change watchdog action to poweroff
-        '''
-        changeWatchdogAction(config.VM_NAME, 'poweroff')
-        runWatchdogService(config.VM_NAME)
+        """
+        change_watchdog_action(config.VM_NAME[0], 'poweroff')
+        run_watchdog_service(config.VM_NAME[0])
 
     @tcms('9846', '294620')
     def test_migration(self):
-        '''
+        """
         Test migration of VM.
         Timestamp of watchdog on fist host should move to other host or
         be deleted
-        '''
+        """
         if (len(config.HOSTS)) < 2:
             raise errors.SkipTest("Too few hosts.")
 
         logger.info("Migrating VM")
         self.assertTrue(
             vms.migrateVm(positive=True,
-                          vm=config.VM_NAME,
+                          vm=config.VM_NAME[0],
                           host=config.HOSTS[1],
                           force=True),
             "Migration Failed")
         logger.info("Migrating successfull")
         time.sleep(WATCHDOG_TIMER)
-        self.assertTrue(vms.waitForVMState(config.VM_NAME),
+        self.assertTrue(vms.waitForVMState(config.VM_NAME[0]),
                         "Watchdog was triggered")
         logger.info("Migration of vm did not trigger watchdog")
 
     @classmethod
     def teardown_class(cls):
-        '''
+        """
         Set watchdog VM to starting state
-        '''
+        """
         logger.info("rebooting VM")
-        if not vms.rebootVm(positive=True, vm=config.VM_NAME):
-            raise errors.VMException("Cannot reboot VM %s" % config.VM_NAME)
+        if not vms.rebootVm(positive=True, vm=config.VM_NAME[0]):
+            raise errors.VMException("Cannot reboot VM %s" % config.VM_NAME[0])
 
 #######################################################################
 
 
-@attr(team=ENUMS['team_compute'], tier=1)
-class Watchdog_high_availability(WatchdogVM):
+@attr(tier=1)
+class WatchdogHighAvailability(WatchdogVM):
     """
     Action poweroff with vm that is highly available
     """
@@ -642,61 +638,61 @@ class Watchdog_high_availability(WatchdogVM):
 
     @classmethod
     def setup_class(cls):
-        '''
+        """
         Test high availability with action shutdown
-        '''
-        if not vms.stopVm(positive=True, vm=config.VM_NAME):
-            raise errors.VMException("Cannot stop VM %s" % config.VM_NAME)
+        """
+        if not vms.stopVm(positive=True, vm=config.VM_NAME[0]):
+            raise errors.VMException("Cannot stop VM %s" % config.VM_NAME[0])
 
-        if not vms.updateVm(positive=True, vm=config.VM_NAME,
+        if not vms.updateVm(positive=True, vm=config.VM_NAME[0],
                             placement_affinity=ENUMS['vm_affinity_migratable'],
                             highly_available='true'):
             raise errors.VMException(
                 "Vm %s not set to automatic migratable \
-                and highly available" % config.VM_NAME)
+                and highly available" % config.VM_NAME[0])
 
-        if not vms.startVm(positive=True, vm=config.VM_NAME):
-            raise errors.VMException("Cannot start VM %s" % config.VM_NAME)
-        changeWatchdogAction(config.VM_NAME, 'poweroff')
-        runWatchdogService(config.VM_NAME)
+        if not vms.startVm(positive=True, vm=config.VM_NAME[0]):
+            raise errors.VMException("Cannot start VM %s" % config.VM_NAME[0])
+        change_watchdog_action(config.VM_NAME[0], 'poweroff')
+        run_watchdog_service(config.VM_NAME[0])
 
     @tcms('9846', '294619')
     def test_high_availability(self):
-        '''
+        """
         Test action poweroff with Vm set to highly available.
-        '''
+        """
 
         logger.info("Killing watchdog process")
 
-        self.killWatchdog(config.VM_NAME)
+        self.kill_watchdog(config.VM_NAME[0])
 
-        self.assertTrue(vms.waitForVMState(config.VM_NAME),
+        self.assertTrue(vms.waitForVMState(config.VM_NAME[0]),
                         "VM did not start as high available")
 
         logger.info("Vm started successfully")
 
     @classmethod
     def teardown_class(cls):
-        '''
+        """
         Run the VM to start state
-        '''
+        """
         logger.info("rebooting VM")
-        if not vms.stopVm(positive=True, vm=config.VM_NAME):
-            raise errors.VMException("Cannot stop VM %s" % config.VM_NAME)
+        if not vms.stopVm(positive=True, vm=config.VM_NAME[0]):
+            raise errors.VMException("Cannot stop VM %s" % config.VM_NAME[0])
         if not vms.updateVm(
-                positive=True, vm=config.VM_NAME,
+                positive=True, vm=config.VM_NAME[0],
                 placement_affinity=ENUMS['vm_affinity_user_migratable'],
                 highly_available='false'):
-            raise errors.VMException("Cannot eddit vm %s" % config.VM_NAME)
+            raise errors.VMException("Cannot eddit vm %s" % config.VM_NAME[0])
 
-        if not vms.startVm(positive=True, vm=config.VM_NAME):
-            raise errors.VMException("Cannot start VM %s" % config.VM_NAME)
+        if not vms.startVm(positive=True, vm=config.VM_NAME[0]):
+            raise errors.VMException("Cannot start VM %s" % config.VM_NAME[0])
 
 #######################################################################
 
 
-@attr(team=ENUMS['team_compute'], tier=1)
-class Watchdog_events(WatchdogVM):
+@attr(tier=1)
+class WatchdogEvents(WatchdogVM):
     """
     Event in logs
     """
@@ -705,20 +701,20 @@ class Watchdog_events(WatchdogVM):
 
     @classmethod
     def setup_class(cls):
-        '''
+        """
         Change watchdog action to reset
-        '''
-        changeWatchdogAction(config.VM_NAME, 'reset')
-        runWatchdogService(config.VM_NAME)
+        """
+        change_watchdog_action(config.VM_NAME[0], 'reset')
+        run_watchdog_service(config.VM_NAME[0])
 
     @tcms('9846', '294615')
     def test_event(self):
-        '''
+        """
         Test if event is displayed in log file
-        '''
+        """
         engine_machine = machine.Machine(
-            config.ENGINE, config.ENGINE_USER,
-            config.ENGINE_PASSWD).util(machine.LINUX)
+            config.VDC_HOST, config.VDC_USER,
+            config.VDC_ROOT_PASSWORD).util(machine.LINUX)
         logger.info("Saving backup of log")
         rc, out = engine_machine.runCmd(
             ['cp', ENGINE_LOG,
@@ -726,7 +722,7 @@ class Watchdog_events(WatchdogVM):
 
         self.assertTrue(rc, "Cannot read watchdog_test_event.log")
 
-        self.killWatchdog(config.VM_NAME)
+        self.kill_watchdog(config.VM_NAME[0])
 
         rc, out = engine_machine.runCmd(
             ['diff', '/var/log/ovirt-engine/engine.log',
@@ -738,23 +734,22 @@ class Watchdog_events(WatchdogVM):
 
     @classmethod
     def teardown_class(cls):
-        '''
+        """
         Remove used file
-        '''
+        """
         # reboot VM
         engine_machine = machine.Machine(
-            config.ENGINE, config.ENGINE_USER,
-            config.ENGINE_PASSWD).util(machine.LINUX)
-        rc, out = engine_machine.runCmd(['rm', 'watchdog_test_event.log'])
+            config.VDC_HOST, config.VDC_USER,
+            config.VDC_ROOT_PASSWORD).util(machine.LINUX)
+        _, _ = engine_machine.runCmd(['rm', 'watchdog_test_event.log'])
         logger.info("rebooting VM")
-        if not vms.rebootVm(positive=True, vm=config.VM_NAME):
-            raise errors.VMException("Cannot reboot VM %s" % config.VM_NAME)
+        if not vms.rebootVm(positive=True, vm=config.VM_NAME[0]):
+            raise errors.VMException("Cannot reboot VM %s" % config.VM_NAME[0])
 
 #######################################################################
 
 
-@attr(team=ENUMS['team_compute'], tier=0)
-class Watchdog_CRUD_template(WatchdogVM):
+class WatchdogCRUDTemplate(WatchdogVM):
     """
     CRUD test for template
     """
@@ -766,14 +761,14 @@ class Watchdog_CRUD_template(WatchdogVM):
 
     @classmethod
     def setup_class(cls):
-        '''
+        """
         Create Template
-        '''
+        """
         if not vms.createVm(positive=True, vmName=cls.vm_name_master,
                             vmDescription="Watchdog VM",
-                            cluster=config.CLUSTER_NAME,
-                            storageDomainName=config.DATA_NAME[0],
-                            size=DISK_SIZE, nic=config.NIC,
+                            cluster=config.CLUSTER_NAME[0],
+                            storageDomainName=config.STORAGE_NAME[0],
+                            size=DISK_SIZE, nic=config.NIC_NAME[0],
                             memory=MEMORY_SIZE,
                             vnic_profile='rhevm'):
             raise errors.VMException(
@@ -787,14 +782,14 @@ class Watchdog_CRUD_template(WatchdogVM):
                 cobblerUser=config.COBBLER_USER,
                 cobblerPasswd=config.COBBLER_USER,
                 image=config.COBBLER_PROFILE,
-                nic=config.NIC):
+                nic=config.NIC_NAME[0]):
             raise errors.VMException("Cannot install Linux OS")
 
-        status, machine = vms.waitForIP(cls.vm_name_master,
-                                        timeout=7200,
-                                        sleep=10)
+        status, guest = vms.waitForIP(cls.vm_name_master,
+                                      timeout=7200,
+                                      sleep=10)
 
-        if not setPersistentNetwork(machine['ip'], config.VM_PASSWD):
+        if not setPersistentNetwork(guest['ip'], config.VMS_LINUX_PW):
             raise errors.VMException("Cannot set persistent network")
 
         if not (vms.stopVm(positive=True, vm=cls.vm_name_master)):
@@ -810,9 +805,9 @@ class Watchdog_CRUD_template(WatchdogVM):
 
     @tcms('9846', '294476')
     def test_add_watchdog_template(self):
-        '''
+        """
         Add watchdog to clean template
-        '''
+        """
         self.assertTrue(templates.updateTemplate(template=self.template_name,
                                                  positive=True,
                                                  vmDescription="template vm",
@@ -823,12 +818,12 @@ class Watchdog_CRUD_template(WatchdogVM):
 
     @tcms('9846', ' 285330')
     def test_detect_watchdog_template(self):
-        '''
+        """
         Detect watchdog
-        '''
+        """
         self.assertTrue(vms.createVm(positive=True, vmName=self.vm_name1,
                                      vmDescription="Watchdog VM",
-                                     cluster=config.CLUSTER_NAME,
+                                     cluster=config.CLUSTER_NAME[0],
                                      template=self.template_name),
                         "Cannot create vm")
 
@@ -837,13 +832,13 @@ class Watchdog_CRUD_template(WatchdogVM):
                         "Vm not in status down after creation from template")
 
         vms.startVm(positive=True, vm=self.vm_name1)
-        self.lspciWatchdog(True, self.vm_name1)
+        self.lspci_watchdog(True, self.vm_name1)
 
     @tcms('9846', ' 294457')
     def test_remove_watchdog_template(self):
-        '''
+        """
         Deleting watchdog model
-        '''
+        """
         self.assertTrue(templates.updateTemplate(template=self.template_name,
                                                  positive=True,
                                                  watchdog_model=''),
@@ -851,7 +846,7 @@ class Watchdog_CRUD_template(WatchdogVM):
 
         self.assertTrue(vms.createVm(positive=True, vmName=self.vm_name2,
                                      vmDescription="tempalte vm",
-                                     cluster=config.CLUSTER_NAME,
+                                     cluster=config.CLUSTER_NAME[0],
                                      template=self.template_name),
                         "Cannot create vm")
 
@@ -860,7 +855,7 @@ class Watchdog_CRUD_template(WatchdogVM):
                         "Vm not in status down after creation from template")
         vms.startVm(positive=True, vm=self.vm_name2)
 
-        self.lspciWatchdog(False, self.vm_name2)
+        self.lspci_watchdog(False, self.vm_name2)
         logger.info("Watchdog removed from template")
 
     @classmethod

@@ -24,7 +24,7 @@ Include CRUD tests, different limitations of storage, memory and vcpu tests
 __test__ = True
 
 import logging
-import config
+from rhevmtests.quota_tests import config
 
 from common import DB
 from nose.tools import istest
@@ -88,6 +88,8 @@ QUOTA3_DESC = 'quota_3_desc'
 TCMS_PLAN_ID = 8029
 MB = 1024 * 1024
 GB = 1024 * MB
+DISK_FORMAT = config.ENUMS['format_cow']
+DISK_INTERFACE = config.ENUMS['interface_virtio']
 
 test = QuotaTest()  # raut object to CRUD quota
 db = DB(None)  # db instance to access db to check resources
@@ -95,18 +97,18 @@ db = DB(None)  # db instance to access db to check resources
 
 def setup_module():
     # Setup db
-    db.setup = Setup(config.OVIRT_ADDRESS, config.OVIRT_ROOT,
-                     config.OVIRT_ROOT_PASSWORD, conf=config.DB_NAME)
+    db.setup = Setup(config.VDC_HOST, config.VDC_ROOT_USER,
+                     config.VDC_ROOT_PASSWORD)
 
     # Create quota
     test.set_up()
-    test.create_quota(config.MAIN_DC_NAME, QUOTA_NAME)
+    test.create_quota(config.DC_NAME[0], QUOTA_NAME)
     test.tear_down()
 
 
 def teardown_module():
     test.set_up()
-    test.remove_quota(config.MAIN_DC_NAME, QUOTA_NAME)
+    test.remove_quota(config.DC_NAME[0], QUOTA_NAME)
     test.tear_down()
 
 
@@ -125,7 +127,7 @@ class QuotaTestCRUD(TestCase):
     @classmethod
     def tearDownClass(cls):
         """ Delete/release resources of test """
-        test.edit_quota(config.MAIN_DC_NAME, QUOTA_NAME,
+        test.edit_quota(config.DC_NAME[0], QUOTA_NAME,
                         mem_limit=0, vcpu_limit=0, storage_limit=0)
         test.tear_down()
 
@@ -133,7 +135,7 @@ class QuotaTestCRUD(TestCase):
     @tcms(TCMS_PLAN_ID, 231136)
     def a_create_quota(self):
         """ Create Quota with some limits """
-        test.create_quota(config.MAIN_DC_NAME, QUOTA2_NAME,
+        test.create_quota(config.DC_NAME[0], QUOTA2_NAME,
                           description=QUOTA_DESC,
                           mem_limit=1024, vcpu_limit=1,
                           storage_limit=10)
@@ -143,7 +145,7 @@ class QuotaTestCRUD(TestCase):
     @tcms(TCMS_PLAN_ID, 231138)
     def b_edit_quota(self):
         """ Edit Quota """
-        test.edit_quota(config.MAIN_DC_NAME, QUOTA2_NAME,
+        test.edit_quota(config.DC_NAME[0], QUOTA2_NAME,
                         description=QUOTA_DESC,
                         mem_limit=2048, vcpu_limit=2, storage_limit=20)
         self.assertTrue(db.check_quota_limits(QUOTA2_NAME, mem_size_mb=2048,
@@ -155,7 +157,7 @@ class QuotaTestCRUD(TestCase):
     @tcms(TCMS_PLAN_ID, 231141)
     def c_copy_quota(self):
         """ Copy Quota """
-        test.copy_quota(config.MAIN_DC_NAME, QUOTA_NAME, name=QUOTA3_NAME,
+        test.copy_quota(config.DC_NAME[0], QUOTA_NAME, name=QUOTA3_NAME,
                         description=QUOTA3_DESC)
         self.assertTrue(db.check_quota_exists(QUOTA3_NAME))
 
@@ -164,9 +166,9 @@ class QuotaTestCRUD(TestCase):
     def d_delete_quota(self):
         """ Delete Quota """
         # TODO: Check if quota can be removed even when some object have
-        test.remove_quota(config.MAIN_DC_NAME, QUOTA2_NAME)
+        test.remove_quota(config.DC_NAME[0], QUOTA2_NAME)
         self.assertFalse(db.check_quota_exists(QUOTA2_NAME))
-        test.remove_quota(config.MAIN_DC_NAME, QUOTA3_NAME)
+        test.remove_quota(config.DC_NAME[0], QUOTA3_NAME)
         self.assertFalse(db.check_quota_exists(QUOTA3_NAME))
 
 
@@ -183,11 +185,11 @@ class QuotaTestMode(TestCase):
         """ Create and setup resources for tests """
         q_id = db.get_quota_id_by_name(QUOTA_NAME)
         assert vms.createVm(True, VM_NAME, '',
-                            cluster=config.MAIN_CLUSTER_NAME,
-                            storageDomainName=config.MAIN_STORAGE_NAME,
+                            cluster=config.CLUSTER_NAME[0],
+                            storageDomainName=config.STORAGE_NAME[0],
                             size=10*GB, memory=512*MB, vm_quota=q_id,
-                            disk_quota=q_id, nic=config.NIC,
-                            network=config.cluster_network)
+                            disk_quota=q_id, nic=config.NIC_NAME[0],
+                            network=config.MGMT_BRIDGE)
 
     @classmethod
     def tearDownClass(cls):
@@ -200,7 +202,7 @@ class QuotaTestMode(TestCase):
         """ Quota RAM limit """
         # Create VM with RAM 1024, quota level to 1024MB, try to run VM
         test.set_up()
-        test.edit_quota(config.MAIN_DC_NAME, QUOTA_NAME,
+        test.edit_quota(config.DC_NAME[0], QUOTA_NAME,
                         mem_limit=1024, vcpu_limit=0, storage_limit=0)
         test.tear_down()
         self.assertTrue(vms.startVm(True, VM_NAME))
@@ -238,7 +240,7 @@ class QuotaTestMode(TestCase):
         # set RAM to unlimited - same for RAM
         db.update_quota(QUOTA_NAME, grace_vds_group_percentage=100)
         test.set_up()
-        test.edit_quota(config.MAIN_DC_NAME, QUOTA_NAME,
+        test.edit_quota(config.DC_NAME[0], QUOTA_NAME,
                         mem_limit=0, vcpu_limit=1, storage_limit=0)
         test.tear_down()
         self.assertTrue(vms.startVm(True, VM_NAME))
@@ -272,15 +274,15 @@ class QuotaTestMode(TestCase):
         # Disable cluster quota
         db.update_quota(QUOTA_NAME, grace_vds_group_percentage=20)
         test.set_up()
-        test.edit_quota(config.MAIN_DC_NAME, QUOTA_NAME,
+        test.edit_quota(config.DC_NAME[0], QUOTA_NAME,
                         mem_limit=0, vcpu_limit=0, storage_limit=20)
         test.tear_down()
         q_id = db.get_quota_id_by_name(QUOTA_NAME)
         self.assertTrue(disks.addDisk(True, alias=DISK_NAME,
                                       provisioned_size=10*GB,
-                                      interface=config.DISK_INTERFACE,
-                                      format=config.DISK_FORMAT,
-                                      storagedomain=config.MAIN_STORAGE_NAME,
+                                      interface=DISK_INTERFACE,
+                                      format=DISK_FORMAT,
+                                      storagedomain=config.STORAGE_NAME[0],
                                       quota=q_id))
         self.assertTrue(delete_disks([DISK_NAME]))
 
@@ -291,9 +293,9 @@ class QuotaTestMode(TestCase):
         q_id = db.get_quota_id_by_name(QUOTA_NAME)
         self.assertTrue(disks.addDisk(True, alias=DISK_NAME,
                                       provisioned_size=14*GB,
-                                      interface=config.DISK_INTERFACE,
-                                      format=config.DISK_FORMAT,
-                                      storagedomain=config.MAIN_STORAGE_NAME,
+                                      interface=DISK_INTERFACE,
+                                      format=DISK_FORMAT,
+                                      storagedomain=config.STORAGE_NAME[0],
                                       quota=q_id))
         self.assertTrue(delete_disks([DISK_NAME]))
         # TODO: check if warning event was generated
@@ -305,14 +307,14 @@ class QuotaTestMode(TestCase):
         q_id = db.get_quota_id_by_name(QUOTA_NAME)
         self.assertTrue(disks.addDisk(self.positive, alias=DISK_NAME,
                         provisioned_size=15*GB,
-                        interface=config.DISK_INTERFACE,
-                        format=config.DISK_FORMAT,
-                        storagedomain=config.MAIN_STORAGE_NAME,
+                        interface=DISK_INTERFACE,
+                        format=DISK_FORMAT,
+                        storagedomain=config.STORAGE_NAME[0],
                         quota=q_id))
         if self.positive:
             self.assertTrue(delete_disks([DISK_NAME]))
         test.set_up()
-        test.edit_quota(config.MAIN_DC_NAME, QUOTA_NAME,
+        test.edit_quota(config.DC_NAME[0], QUOTA_NAME,
                         mem_limit=0, vcpu_limit=0, storage_limit=0)
         test.tear_down()
         # TODO: check if warning event was generated
@@ -323,7 +325,7 @@ class QuotaTestMode(TestCase):
         """ Delete quota in use """
         test.set_up()
         self.assertRaises(GeneralException,
-                          test.remove_quota, config.MAIN_DC_NAME, QUOTA_NAME)
+                          test.remove_quota, config.DC_NAME[0], QUOTA_NAME)
         test.tear_down()
 
 
@@ -338,7 +340,7 @@ class QuotaTestEnforced(QuotaTestMode):
     # Create and setup resources for tests
     @classmethod
     def setUpClass(cls):
-        db.set_dc_quota_mode(config.MAIN_DC_NAME, QUOTA_ENFORCED)
+        db.set_dc_quota_mode(config.DC_NAME[0], QUOTA_ENFORCED)
         super(QuotaTestEnforced, cls).setUpClass()
 
 
@@ -353,7 +355,7 @@ class QuotaTestAudit(QuotaTestMode):
     # Create and setup resources for tests
     @classmethod
     def setUpClass(cls):
-        db.set_dc_quota_mode(config.MAIN_DC_NAME, QUOTA_AUDIT)
+        db.set_dc_quota_mode(config.DC_NAME[0], QUOTA_AUDIT)
         super(QuotaTestAudit, cls).setUpClass()
 
 
@@ -371,21 +373,21 @@ class QuotaTestObjectWithoutQuota(TestCase):
     @classmethod
     def setUpClass(cls):
         """ Create and setup resources for tests """
-        db.set_dc_quota_mode(config.MAIN_DC_NAME, QUOTA_NONE)
+        db.set_dc_quota_mode(config.DC_NAME[0], QUOTA_NONE)
         # Create vm with no quota
         assert vms.createVm(True, VM_NAME, '',
-                            cluster=config.MAIN_CLUSTER_NAME,
-                            storageDomainName=config.MAIN_STORAGE_NAME,
-                            size=10*GB, memory=2*GB, nic=config.NIC,
-                            network=config.cluster_network)
+                            cluster=config.CLUSTER_NAME[0],
+                            storageDomainName=config.STORAGE_NAME[0],
+                            size=10*GB, memory=2*GB, nic=config.NIC_NAME[0],
+                            network=config.MGMT_BRIDGE)
         # Create disk with no quota
         assert disks.addDisk(True, alias=DISK_NAME, provisioned_size=10*GB,
-                             interface=config.DISK_INTERFACE,
-                             format=config.DISK_FORMAT,
-                             storagedomain=config.MAIN_STORAGE_NAME)
+                             interface=DISK_INTERFACE,
+                             format=DISK_FORMAT,
+                             storagedomain=config.STORAGE_NAME[0])
         assert disks.waitForDisksState(DISK_NAME)
 
-        db.set_dc_quota_mode(config.MAIN_DC_NAME, cls.mode)
+        db.set_dc_quota_mode(config.DC_NAME[0], cls.mode)
 
     @classmethod
     def tearDownClass(cls):
@@ -437,7 +439,7 @@ class QuotaTestObjectWithoutQuota(TestCase):
         self.assertTrue(
             templates.createTemplate(self.positive, vm=VM_NAME,
                                      name=TEMPLATE_NAME,
-                                     cluster=config.MAIN_CLUSTER_NAME))
+                                     cluster=config.CLUSTER_NAME[0]))
         if self.positive:
             self.assertTrue(templates.removeTemplate(True, TEMPLATE_NAME))
 
@@ -476,12 +478,12 @@ class QuotaConsumptionCalc(TestCase):
     @classmethod
     def setUpClass(cls):
         """ Create and setup resources for tests """
-        db.set_dc_quota_mode(config.MAIN_DC_NAME, QUOTA_ENFORCED)
+        db.set_dc_quota_mode(config.DC_NAME[0], QUOTA_ENFORCED)
         q_id = db.get_quota_id_by_name(QUOTA_NAME)
-        vms.createVm(True, VM_NAME, '', cluster=config.MAIN_CLUSTER_NAME,
-                     storageDomainName=config.MAIN_STORAGE_NAME, size=10*GB,
+        vms.createVm(True, VM_NAME, '', cluster=config.CLUSTER_NAME[0],
+                     storageDomainName=config.STORAGE_NAME[0], size=10*GB,
                      memory=GB, vm_quota=q_id, disk_quota=q_id,
-                     nic=config.NIC, network=config.cluster_network)
+                     nic=config.NIC_NAME[0], network=config.MGMT_BRIDGE)
 
     @classmethod
     def tearDownClass(cls):
@@ -495,11 +497,11 @@ class QuotaConsumptionCalc(TestCase):
         q_id = db.get_quota_id_by_name(QUOTA_NAME)
         self.assertTrue(
             vms.createVm(True, TMP_VM_NAME, '',
-                         cluster=config.MAIN_CLUSTER_NAME,
-                         storageDomainName=config.MAIN_STORAGE_NAME,
+                         cluster=config.CLUSTER_NAME[0],
+                         storageDomainName=config.STORAGE_NAME[0],
                          size=10*GB, memory=2*GB, vm_quota=q_id,
-                         disk_quota=q_id, nic=config.NIC,
-                         network=config.cluster_network))
+                         disk_quota=q_id, nic=config.NIC_NAME[0],
+                         network=config.MGMT_BRIDGE))
         self.assertTrue(db.check_global_consumption(QUOTA_NAME,
                                                     mem_size_mb_usage=0,
                                                     virtual_cpu_usage=0,

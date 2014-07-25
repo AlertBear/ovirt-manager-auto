@@ -22,6 +22,7 @@ Can be turned off using the SKIP_MAIN_TEARDOWN option in config. Run only once
 per whole test run, since it is very slow.
 """
 
+import os
 import logging
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
@@ -35,14 +36,11 @@ def setup_package():
     Create the main datacenter and cluster, installs a host and starts it,
     creates and activates main storage.
     """
-    import config
-    if config.SKIP_MAIN_SETUP:
-        LOGGER.info("Skipping global setup")
-        return
-
-    LOGGER.info("Building setup...")
-    datacenters.build_setup(config.PARAMETERS, config.PARAMETERS,
-                            config.MAIN_STORAGE_TYPE, config.TEST_NAME)
+    if os.environ.get("JENKINS_URL"):
+        import config
+        LOGGER.info("Building setup...")
+        datacenters.build_setup(config.PARAMETERS, config.PARAMETERS,
+                                config.STORAGE_TYPE, config.TEST_NAME)
 
 
 def teardown_package():
@@ -53,11 +51,8 @@ def teardown_package():
 
     Can be skipped by setting the config variable `SKIP_MAIN_TEARDOWN`.
     """
-    import config
-    if config.SKIP_MAIN_TEARDOWN:
-        LOGGER.info("Skipping global teardown")
-        return
-
-    LOGGER.info("Teardown...")
-    cleanDataCenter(True, config.MAIN_DC_NAME, vdc=config.OVIRT_ADDRESS,
-                    vdc_password=config.OVIRT_ROOT_PASSWORD)
+    if os.environ.get("JENKINS_URL"):
+        import config
+        LOGGER.info("Teardown...")
+        cleanDataCenter(True, config.DC_NAME[0], vdc=config.VDC_HOST,
+                        vdc_password=config.VDC_PASSWORD)

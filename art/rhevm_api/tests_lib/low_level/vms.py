@@ -173,9 +173,9 @@ def _prepareVmObject(**kwargs):
             cpu.set_cpu_tune(data_st.CpuTune())
         elif vcpu_pinning:
             cpu.set_cpu_tune(
-                data_st.CpuTune([data_st.VCpuPin(vcpu, cpu_set)
-                                 for vcpu, cpu_set
-                                 in vcpu_pinning.iteritems()]))
+                data_st.CpuTune([data_st.VCpuPin(elm.keys()[0],
+                                                 elm.values()[0])
+                                 for elm in vcpu_pinning]))
         if cpu_mode is not None and cpu_mode == "":
             cpu.set_mode("CUSTOM")
         elif cpu_mode:
@@ -707,8 +707,10 @@ def startVms(vms, wait_for_status=ENUMS['vm_state_powering_up']):
       * vms - Names of VMs to start.
     Returns: True iff all VMs started.
     '''
+    if isinstance(vms, basestring):
+        vms = split(vms)
     jobs = [Job(target=startVm,
-                args=(True, vm, wait_for_status)) for vm in split(vms)]
+                args=(True, vm, wait_for_status)) for vm in vms]
     js = JobsSet()
     js.addJobs(jobs)
     js.start()
