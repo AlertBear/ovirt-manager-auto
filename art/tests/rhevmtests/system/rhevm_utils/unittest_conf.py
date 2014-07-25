@@ -64,6 +64,7 @@ ANSWERS = {
     'OVESETUP_DB/user': 'str:engine',
     'OVESETUP_DB/password': 'str:123456',
     'OVESETUP_DB/port': 'int:5432',
+    'OVESETUP_ENGINE_CORE/enable': 'bool:True',
     'OVESETUP_SYSTEM/nfsConfigEnabled': 'bool:True',
     'OVESETUP_SYSTEM/memCheckEnabled': 'bool:False',
     'OVESETUP_RHEVM_SUPPORT/redhatSupportProxyEnabled': 'bool:False',
@@ -98,6 +99,7 @@ ANSWERS['__default__'] = (
     'OVESETUP_DB/password',
     'OVESETUP_DB/port',
     'OVESETUP_DB/fixDbViolations',
+    'OVESETUP_ENGINE_CORE/enable',
     'OVESETUP_SYSTEM/nfsConfigEnabled',
     'OVESETUP_SYSTEM/memCheckEnabled',
     'OVESETUP_RHEVM_SUPPORT/redhatSupportProxyEnabled',
@@ -136,7 +138,12 @@ CLEANUP_ANSWERS = {
     'OVESETUP_DB/password': 'str:123456',
     'OVESETUP_DB/cleanupRemove': 'bool:True',
     'OVESETUP_DB/port': 'str:5432',
+    'OVESETUP_ENGINE_CORE/enable': 'bool:False',
     'OVESETUP_REMOVE/removeAll': 'bool:True',
+    'OVESETUP_REMOVE/confirmUninstallGroups': 'bool:True',
+    'OVESETUP_REMOVE/engineDatabase': 'bool:True',
+    'OVESETUP_REMOVE/removeEngine': 'bool:True',
+    'OVESETUP_REMOVE/removeOptions': 'multi-str:'
 }
 
 CLEANUP_ANSWERS['__default__'] = (
@@ -152,7 +159,12 @@ CLEANUP_ANSWERS['__default__'] = (
     'OVESETUP_DB/password',
     'OVESETUP_DB/cleanupRemove',
     'OVESETUP_DB/port',
+    'OVESETUP_ENGINE_CORE/enable',
     'OVESETUP_REMOVE/removeAll',
+    'OVESETUP_REMOVE/confirmUninstallGroups',
+    'OVESETUP_REMOVE/engineDatabase',
+    'OVESETUP_REMOVE/removeEngine',
+    'OVESETUP_REMOVE/removeOptions'
 )
 
 SETUP = {
