@@ -281,6 +281,7 @@ class UTestGroup(TestGroup):
         finally:
             logger.info("TEST GROUP tearDown: %s", self.test_name)
             try:
+                self.context.was_setup = True
                 self.context.tearDown()
             except Exception:
                 self.incr_exc()
@@ -331,6 +332,7 @@ class UTestSuite(TestSuite):
         finally:
             logger.info("TEST SUITE tearDown: %s", self.test_name)
             try:
+                self.context.was_setup = True
                 self.context.tearDown()
             except Exception:
                 self.incr_exc()
