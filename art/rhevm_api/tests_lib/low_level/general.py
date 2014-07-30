@@ -177,24 +177,11 @@ def checkSummary(positive, domain):
     if not validator.compareCollectionSize(hosts, sumHostsAct, util.logger):
         status = False
 
-    users = userUtil.get(absLink=False)
-    sumUsersTotal = getAll.get_summary().get_users().total
-    util.logger.info('Comparing total users number')
-    if not validator.compareCollectionSize(users, sumUsersTotal, util.logger):
-        status = False
-
-    users_active = []
-    domainObj = domUtil.find(domain)
-    for user in users:
-        domainUser = util.getElemFromElemColl(
-            domainObj, user.get_name(), 'users', 'user')
-        if domainUser:
-            users_active.append(user)
-
+    users = userUtil.query(constraint='Active=True')
     util.logger.info('Comparing active users number')
     sumUsersActive = getAll.get_summary().get_users().active
     if not validator.compareCollectionSize(
-            users_active, sumUsersActive, util.logger):
+            users, sumUsersActive, util.logger):
         status = False
 
     util.logger.info('Comparing total storages number')
