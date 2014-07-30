@@ -16,33 +16,37 @@
 # License along with this software; if not, write to the Free
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-from utilities.machine import Machine
 
-from art.core_api.apis_utils import getDS
-from art.rhevm_api.utils.test_utils import get_api, split, getStat, \
-    searchElement, searchForObj, stopVdsmd, startVdsmd
 import time
+import shlex
 import json
-from utilities import machine
-from art.core_api.apis_utils import TimeoutingSampler, data_st
-from art.core_api.apis_exceptions import APITimeout, EntityNotFound
-from utilities.rhevm_tools import errors
 import re
 import tempfile
+
+from utilities.rhevm_tools import errors
 from utilities.utils import getIpAddressByHostName, getHostName
+from utilities.machine import Machine
+from utilities import machine
+from utilities.rhevm_tools.base import Setup
+
+from art.core_api.apis_utils import TimeoutingSampler, data_st
+from art.core_api.apis_exceptions import APITimeout, EntityNotFound
+from art.core_api.apis_utils import getDS
+from art.core_api import is_action
+
+from art.test_handler import find_test_file
+from art.test_handler import settings
+
+from art.rhevm_api.utils.test_utils import get_api, split, getStat, \
+    searchElement, searchForObj, stopVdsmd, startVdsmd
 from art.rhevm_api.tests_lib.low_level.networks import getClusterNetwork, \
     create_properties
 from art.rhevm_api.tests_lib.low_level.datacenters import \
     waitForDataCenterState
 from art.rhevm_api.tests_lib.low_level.vms import stopVm, getVmHost, \
     get_vm_state
-from utilities.rhevm_tools.base import Setup
-from art.test_handler import find_test_file
 from art.rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
 from art.rhevm_api.utils.resource_utils import runMachineCommand
-from art.test_handler import settings
-from art.core_api import is_action
-import shlex
 
 ELEMENT = 'host'
 COLLECTION = 'hosts'
@@ -90,6 +94,23 @@ search_for = ["<filterref filter='no-mac-spoofing'/>",
               "<filterref filter='no-arp-mac-spoofing'/>"]
 
 
+class HostObject(object):
+    def __init__(self, name, password, ip=None, nics=None):
+        self.name = name
+        self.password = password
+        self.ip = ip
+        self.nics = nics
+        if self.ip is None:
+            self.ip = getHostIP(self.name)
+        self.up_nics = []
+        if self.nics is None:
+            all_nics = getHostNicsList(self.name)
+            self.nics = sorted([x.get_name() for x in all_nics])
+            self.up_nics = [
+                x.get_name() for x in all_nics
+                if x.get_status().get_state() == 'up']
+
+
 def get_host_list():
     hostUtil = get_api('host', 'hosts')
     return hostUtil.get(absLink=False)
@@ -126,7 +147,7 @@ def getHostState(host):
     Author: cmestreg
     Parameters:
         * host - host to check
-    Return: Returns the host's states [str] or EntityNotFound
+    Return: Returns the host's states [str] or raises EntityNotFound
     """
     return HOST_API.find(host).get_status().get_state()
 
@@ -135,10 +156,36 @@ def getHostIP(host):
     """
     Description: Returns IP of a host with given name in RHEVM
     Parameters:
-    * host - host name in rhevm to check
+        * host - host name in rhevm to check
     Return: Returns the host IP [str] or raises EntityNotFound
     """
     return HOST_API.find(host).get_address()
+
+
+def getHostCluster(host):
+    """
+    Description: Returns name of cluster with given host
+    Parameters:
+        * host - host name in rhevm to check
+    Return: Returns the cluster name [str] or raises EntityNotFound
+    """
+    host_obj = HOST_API.find(host)
+    cluster = CL_API.get(host_obj.get_cluster().get_href())
+    return cluster.get_name()
+
+
+def getHostDC(host):
+    """
+    Description: Returns name of data center with given host
+    Parameters:
+        * host - host name in rhevm to check
+    Return: Returns the data center name [str] or raises EntityNotFound
+    """
+    HOST_API.logger.info("Host: %s", host)
+    cl_name = getHostCluster(host)
+    cl_obj = CL_API.find(cl_name)
+    dc = DC_API.get(cl_obj.get_data_center().get_href())
+    return dc.get_name()
 
 
 def isHostUp(positive, host):
@@ -657,7 +704,8 @@ def installOvirtHost(positive, host, user_name, password, vdc, port=443,
     if not vdcHostName:
         HOST_API.logger.error("Can't get hostname from %s" % vdc)
 
-    hostObj = machine.Machine(host, user_name, password).util('linux')
+    ip = getHostIP(host)
+    hostObj = machine.Machine(ip, user_name, password).util('linux')
     if not hostObj.isConnective():
         HOST_API.logger.error("No connectivity to the host %s" % host)
         return False
@@ -992,7 +1040,7 @@ def runDelayedControlService(positive, host, host_user, host_passwd, service,
     Description: Restarts a service on the host after a delay
     Author: adarazs
     Parameters:
-      * host - name of the host
+      * host - ip or fqdn of the host
       * host_user - user name for the host
       * host_passwd - password for the user
       * service - the name of the service (eg. vdsmd)
@@ -1522,9 +1570,8 @@ def ifdownNic(host, root_password, nic, wait=True):
     Turning remote machine interface down
     Author: atal
     Parameters:
-        * host - host name
-        * ip - ip of remote machine
-        * user/password - to login remote machine
+        * host - ip or fqdn of name
+        * root_password - to login remote machine
         * nic - interface name. make sure you're not trying to disable rhevm
           network!
     return True/False
@@ -1545,9 +1592,8 @@ def ifupNic(host, root_password, nic, wait=True):
     Turning remote machine interface up
     Author: atal
     Parameters:
-        * host - host name
-        * ip - ip of remote machine
-        * user/password - to login remote machine
+        * host - ip or fqdn
+        * root_password - to login remote machine
         * nic - interface name.
     return True/False
     """
@@ -1567,7 +1613,7 @@ def getOsInfo(host, root_password=''):
     Description: get OS info wrapper.
     Author: atal
     Parameters:
-       * host - name of a new host
+       * host - ip or fqdn
        * root_password - password of root user (required, can be empty only
          for negative tests)
     Return: True with OS info string if succeeded, False and None otherwise
@@ -1656,7 +1702,7 @@ def checkNetworkFiltering(positive, host, user, passwd):
                  test_case 198901
     Author: awinter
     Parameters:
-      * host - name of the host
+      * host - ip or fqdn
       * user - user name for the host
       * passwd - password for the user
     return: True if network filtering is enabled, False otherwise
@@ -1708,7 +1754,7 @@ def checkNetworkFilteringDumpxml(positive, host, user, passwd, vm, nics):
                  test_case 198914
     Author: awinter
     Parameters:
-      * host - name of the host
+      * host - ip or fqdn
       * user - user name for the host
       * passwd - password for the user
       * vm - name of the vm
@@ -1731,7 +1777,7 @@ def checkNetworkFilteringEbtables(positive, host, user, passwd, nics, vm_macs):
                  test_case 198920
     Author: awinter
     Parameters:
-      *  *host - name of the host
+      *  *host - ip or fqdn
       *  *user - user name for the host
       *  *passwd - password for the user
       *  *nics - number of nics
@@ -1858,26 +1904,24 @@ def setHostToNonOperational(orig_host, host_password, nic):
         **Returns**: True if Host became non-operational by putting NIC down,
                      otherwise False
     """
-    if not ifdownNic(host=orig_host, root_password=host_password,
-                     nic=nic):
+    ip = getHostIP(orig_host)
+    if not ifdownNic(host=ip, root_password=host_password, nic=nic):
         return False
 
-    if not waitForHostsStates(True, names=orig_host,
-                              states='non_operational',
-                              timeout=TIMEOUT):
-        return False
-    return True
+    return waitForHostsStates(True, names=orig_host, states='non_operational',
+                              timeout=TIMEOUT)
 
 
 def start_vdsm(host, password, datacenter):
     """
     Start vdsm. Before that stop all vms and deactivate host.
     Parameters:
-      * host - host name/ip
+      * host - host name in RHEVM
       * password - password of host
       * datacenter - datacenter of host
     """
-    if not startVdsmd(vds=host, password=password):
+    ip = getHostIP(host)
+    if not startVdsmd(vds=ip, password=password):
         HOST_API.logger.error("Unable to start vdsm on host %s", host)
         return False
     if not activateHost(True, host):
@@ -1891,7 +1935,7 @@ def stop_vdsm(host, password):
     """
     Stop vdsm. Before that stop all vms and deactivate host.
     Parameters:
-      * host - host name/ip
+      * host - host name in RHEVM
       * password - password of host
     """
     for vm in VM_API.get(absLink=False):
@@ -1905,7 +1949,8 @@ def stop_vdsm(host, password):
     if not deactivateHost(True, host):
         HOST_API.logger.error("Unable to deactivate host %s", host)
         return False
-    return stopVdsmd(vds=host, password=password)
+    ip = getHostIP(host)
+    return stopVdsmd(vds=ip, password=password)
 
 
 def kill_qemu_process(vm_name, host, user, password):

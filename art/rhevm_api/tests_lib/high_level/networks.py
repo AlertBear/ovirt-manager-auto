@@ -535,7 +535,6 @@ def createDummyInterface(host, username, password, num_dummy=1):
     **Returns**: True if creation of the dummy interface succeeded,
                  otherwise False
     """
-
     host_obj = machine.Machine(host, username, password).util(machine.LINUX)
 
     dummy_list = [MODPROBE_CMD, 'dummy', 'numdummies=' + str(num_dummy)]
