@@ -575,8 +575,9 @@ class RestUtil(APIUtil):
             with measure_time('POST'):
                 ret = self.api.POST(actionHref, actionBody)
 
+        positive_stat = positive_async_stat if async else positive_sync_stat
         if not self.responseCodesMatch(positive, ApiOperation.syncAction,
-                                       positive_sync_stat, negative_stat, ret):
+                                       positive_stat, negative_stat, ret):
             return False
 
         if not self.opts['validate']:
