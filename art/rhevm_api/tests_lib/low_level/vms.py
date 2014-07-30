@@ -881,17 +881,32 @@ def detachVm(positive, vm):
     return status
 
 
-def getVmDisks(vm):
+def getVmDisks(vm, storage_domain=None):
     """
-    Description: Returns list of a vm's disks as data_structs objects, sorted
-    according to the disks' aliases
-    Parameters:
-        * vm - name of the vm to get disks
-    Return: list of disk objects attached to the vm
+    Returns a list of the vm's disks formatted as data structured objects,
+    and sorted based on the disk aliases
     Raises: EntityNotFound if vm does not exist
+
+    __author__ = cmestreg
+    :param vm: name of the vm which the disks will be retrieved
+    :type vm: str
+    :param storage_domain: name of the storage domain. This is needed in
+    case the vm's disks are stored in an export domain
+    :type storage_domain: str
+    :return: list of disks' objects attached to the vm
+    :rtype: list
     """
-    vmObj = VM_API.find(vm)
-    disks = VM_API.getElemFromLink(vmObj, link_name='disks', attr='disk',
+    if storage_domain:
+        storage_domain_obj = STORAGE_DOMAIN_API.find(storage_domain)
+        storage_domain_vms = VM_API.getElemFromLink(
+            storage_domain_obj, link_name='vms', attr='vm', get_href=False,
+        )
+        vm_obj = VM_API.find(vm, collection=storage_domain_vms)
+
+    else:
+        vm_obj = VM_API.find(vm)
+
+    disks = VM_API.getElemFromLink(vm_obj, link_name='disks', attr='disk',
                                    get_href=False)
     disks.sort(key=lambda disk: disk.get_alias())
     return disks
@@ -1826,55 +1841,78 @@ def exportVm(positive, vm, storagedomain, exclusive='false',
 
 @is_action()
 def importVm(positive, vm, export_storagedomain, import_storagedomain,
-             cluster, name=None, async=False, timeout=VM_ACTION_TIMEOUT):
-    '''
-    Description: import vm
-    Author: edolinin
-    Parameters:
-       * vm - vm to import
-       * cluster - name of cluster
-       * export_storagedomain -storage domain where to export vm from
-       * import_storagedomain -storage domain where to import vm to
-       * name - new name of imported VM
-    Return: status (True if vm was imported properly, False otherwise)
-    '''
-    expStorDomObj = STORAGE_DOMAIN_API.find(export_storagedomain)
-    sdVms = VM_API.getElemFromLink(expStorDomObj, link_name='vms', attr='vm',
-                                   get_href=False)
-    vmObj = VM_API.find(vm, collection=sdVms)
+             cluster, name=None, async=False, collapse=False, clone=False,
+             timeout=VM_ACTION_TIMEOUT):
+    """
+    Import a vm from an export domain
 
-    expectedStatus = vmObj.status.state
-    expectedName = vmObj.get_name()
+    __author__ = "edolinin, cmestreg"
+    :param positive: True when importVm is expected to succeed, False
+    otherwise
+    :type positive: bool
+    :param vm: name of the vm to import
+    :type vm: str
+    :param export_storagedomain: storage domain where to export vm from
+    :type export_storagedomain: str
+    :param import_storagedomain: storage domain where to import vm to
+    :type import_storagedomain: str
+    :param cluster: name of cluster to import the vm into
+    :type cluster: str
+    :param name: new name for the imported vm
+    :type name: str
+    :param async: if the action should be asynchronous
+    :param async: bool
+    :param collapse: if the snapshots should be collapsed, default False
+    :type collapse: bool
+    :param clone: if the disk should be cloned, default False
+    :type clone: bool
+    :return: True if vm was imported properly, False otherwise
+    :rtype: bool
+    """
+    export_domain_obj = STORAGE_DOMAIN_API.find(export_storagedomain)
+    sd_vms = VM_API.getElemFromLink(
+        export_domain_obj, link_name='vms', attr='vm', get_href=False,
+    )
+    vm_obj = VM_API.find(vm, collection=sd_vms)
+
+    expected_status = vm_obj.get_status().get_state()
+    expected_name = vm_obj.get_name()
 
     sd = data_st.StorageDomain(name=import_storagedomain)
     cl = data_st.Cluster(name=cluster)
 
-    actionParams = {
+    action_params = {
         'storage_domain': sd,
         'cluster': cl,
         'async': async
     }
 
-    actionName = 'import'
+    action_name = 'import'
     if opts['engine'] in ('cli', 'sdk'):
-        actionName = 'import_vm'
+        action_name = 'import_vm'
 
-    if name is not None:
-        newVm = data_st.VM()
-        newVm.name = name
-        newVm.snapshots = data_st.Snapshots()
-        newVm.snapshots.collapse_snapshots = True
-        actionParams['clone'] = True
-        actionParams['vm'] = newVm
-        expectedName = name
+    new_vm = data_st.VM()
+    if name:
+        new_vm.set_name(name)
+        clone = True
+        expected_name = name
 
-    status = VM_API.syncAction(vmObj, actionName, positive, **actionParams)
+    if clone:
+        action_params['clone'] = True
+        collapse = True
+
+    if collapse:
+        new_vm.snapshots = data_st.Snapshots()
+        new_vm.snapshots.collapse_snapshots = True
+        action_params['vm'] = new_vm
+
+    status = VM_API.syncAction(vm_obj, action_name, positive, **action_params)
 
     if async:
         return status
 
     if status and positive:
-        return waitForVMState(expectedName, expectedStatus, timeout=timeout)
+        return waitForVMState(expected_name, expected_status, timeout=timeout)
     return status
 
 
