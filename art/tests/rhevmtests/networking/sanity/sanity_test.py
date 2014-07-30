@@ -20,9 +20,9 @@ from art.rhevm_api.tests_lib.high_level.networks import\
     deleteDummyInterface
 from art.rhevm_api.tests_lib.low_level.hosts import \
     checkNetworkFilteringDumpxml, genSNNic, sendSNRequest, waitForHostsStates,\
-    waitForSPM
+    waitForSPM, getHostCluster, getHostDC
 from art.rhevm_api.tests_lib.low_level.vms import addNic,\
-    removeNic, getVmNicLinked, getVmNicPlugged, updateNic
+    removeNic, getVmNicLinked, getVmNicPlugged, updateNic, get_vms_from_cluster
 from art.rhevm_api.tests_lib.low_level.networks import \
     updateClusterNetwork, isVMNetwork, isNetworkRequired,\
     updateNetwork, addVnicProfile, removeVnicProfile, removeNetwork
@@ -74,6 +74,8 @@ class SanityCase02(TestCase):
     and finally, remove the network.
     """
     __test__ = True
+    host = config.NETWORK_HOSTS[0]
+    vlan = config.VLAN_NETWORKS[0]
 
     @istest
     def check_static_ip(self):
@@ -81,19 +83,19 @@ class SanityCase02(TestCase):
         Create vlan sw162 with static ip (1.1.1.1) on eth1
         """
         logger.info("Create network and attach it to the host")
-        local_dict = {config.VLAN_NETWORKS[0]: {'vlan_id': config.VLAN_ID[0],
-                                                'nic': config.HOST_NICS[1],
-                                                'required': 'false',
-                                                'bootproto': 'static',
-                                                'address': ['1.1.1.1'],
-                                                'netmask': ['255.255.255.0']}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS[0],
+        local_dict = {self.vlan: {'vlan_id': config.VLAN_ID[0],
+                                  'nic': self.host.nics[1],
+                                  'required': 'false',
+                                  'bootproto': 'static',
+                                  'address': ['1.1.1.1'],
+                                  'netmask': ['255.255.255.0']}}
+
+        if not createAndAttachNetworkSN(data_center=getHostDC(self.host.name),
+                                        cluster=getHostCluster(self.host.name),
+                                        host=self.host.name,
                                         network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0],
-                                                   config.HOST_NICS[1]]):
+                                        auto_nics=self.host.nics[:2]):
             raise NetworkException("Cannot create and attach network")
 
     @classmethod
@@ -102,9 +104,10 @@ class SanityCase02(TestCase):
         Remove network sw162 from the setup
         """
         logger.info("Starting the teardown_class")
-        if not (removeNetFromSetup(host=config.HOSTS[0],
-                                   auto_nics=[config.HOST_NICS[0]],
-                                   network=[config.VLAN_NETWORKS[0]])):
+
+        if not (removeNetFromSetup(host=cls.host.name,
+                                   auto_nics=[cls.host.nics[0]],
+                                   network=[cls.vlan])):
             raise NetworkException("Cannot remove network from setup")
 
 ########################################################################
@@ -122,6 +125,9 @@ class SanityCase03(TestCase):
     Finally, removing the networks.
     """
     __test__ = True
+    host = config.NETWORK_HOSTS[0]
+    vlan1 = config.VLAN_NETWORKS[0]
+    vlan2 = config.VLAN_NETWORKS[1]
 
     @classmethod
     def setup_class(cls):
@@ -129,21 +135,21 @@ class SanityCase03(TestCase):
         Create vm network sw162 & non-vm network sw163
         Attach to the host as multi-networks with vlan (eth1)
         """
-        logger.info("Create networks and attach them to the host")
-        local_dict = {config.VLAN_NETWORKS[0]: {'vlan_id': config.VLAN_ID[0],
-                                                'nic': config.HOST_NICS[1],
-                                                'required': 'false'},
-                      config.VLAN_NETWORKS[1]: {'vlan_id': config.VLAN_ID[1],
-                                                'usages': '',
-                                                'nic': config.HOST_NICS[1],
-                                                'required': 'false'}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS[0],
+        logger.info("Create networks and attach them to the host")
+        local_dict = {cls.vlan1: {'vlan_id': config.VLAN_ID[0],
+                                  'nic': cls.host.nics[1],
+                                  'required': 'false'},
+                      cls.vlan2: {'vlan_id': config.VLAN_ID[1],
+                                  'usages': '',
+                                  'nic': cls.host.nics[1],
+                                  'required': 'false'}}
+
+        if not createAndAttachNetworkSN(data_center=getHostDC(cls.host.name),
+                                        cluster=getHostCluster(cls.host.name),
+                                        host=cls.host.name,
                                         network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0],
-                                                   config.HOST_NICS[1]]):
+                                        auto_nics=cls.host.nics[:2]):
             raise NetworkException("Cannot create and attach network")
 
     @istest
@@ -151,15 +157,15 @@ class SanityCase03(TestCase):
         """
         Checking that sw162 is a vm network & sw163 is a non-vm network
         """
-        logger.info("Checking bridged network %s", config.VLAN_NETWORKS[0])
-        self.assertTrue(isVMNetwork(network=config.VLAN_NETWORKS[0],
-                                    cluster=config.CLUSTER_NAME[0]),
-                        "%s is not VM Network" % config.VLAN_NETWORKS[0])
+        logger.info("Checking bridged network %s", self.vlan1)
+        self.assertTrue(isVMNetwork(network=self.vlan1,
+                                    cluster=getHostCluster(self.host.name)),
+                        "%s is not VM Network" % self.vlan1)
 
-        logger.info("Checking bridged network %s", config.VLAN_NETWORKS[1])
-        self.assertFalse((isVMNetwork(network=config.VLAN_NETWORKS[1],
-                                      cluster=config.CLUSTER_NAME[0])),
-                         "%s is not NON_VM network" % config.VLAN_NETWORKS[1])
+        logger.info("Checking bridged network %s", self.vlan2)
+        self.assertFalse(isVMNetwork(network=self.vlan2,
+                                     cluster=getHostCluster(self.host.name)),
+                         "%s is not NON_VM network" % self.vlan2)
 
     @classmethod
     def teardown_class(cls):
@@ -167,10 +173,9 @@ class SanityCase03(TestCase):
         Removing networks from the setup
         """
         logger.info("Starting the teardown_class")
-        if not (removeNetFromSetup(host=config.HOSTS[0],
-                                   auto_nics=[config.HOST_NICS[0]],
-                                   network=[config.VLAN_NETWORKS[0],
-                                            config.VLAN_NETWORKS[1]])):
+        if not (removeNetFromSetup(host=cls.host.name,
+                                   auto_nics=[cls.host.nics[0]],
+                                   network=[cls.vlan1, cls.vlan2])):
             raise NetworkException("Cannot remove network from setup")
 
 ########################################################################
@@ -188,6 +193,8 @@ class SanityCase04(TestCase):
     Finally, removing the networks.
     """
     __test__ = True
+    vlan = config.VLAN_NETWORKS[2]
+    host = config.NETWORK_HOSTS[0]
 
     @classmethod
     def setup_class(cls):
@@ -195,11 +202,11 @@ class SanityCase04(TestCase):
         Create vm network sw164
         """
         logger.info("Create network and attach it to the host")
-        local_dict = {config.VLAN_NETWORKS[2]: {'vlan_id': config.VLAN_ID[2],
-                                                'required': 'false'}}
+        local_dict = {cls.vlan: {'vlan_id': config.VLAN_ID[2],
+                                 'required': 'false'}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
+        if not createAndAttachNetworkSN(data_center=getHostDC(cls.host.name),
+                                        cluster=getHostCluster(cls.host.name),
                                         network_dict=local_dict):
             raise NetworkException("Cannot create and attach network")
 
@@ -209,27 +216,23 @@ class SanityCase04(TestCase):
         Checking that sw164 is a vm network, Changing it to non_vm network
         and checking that it is not non_vm
         """
-        logger.info("Checking bridged network %s", config.VLAN_NETWORKS[2])
-        self.assertTrue(isVMNetwork(network=config.VLAN_NETWORKS[2],
-                                    cluster=config.CLUSTER_NAME[0]),
-                        "%s is NON_VM network when it should be VM"
-                        % config.VLAN_NETWORKS[2])
+        cluster = getHostCluster(self.host.name)
+        logger.info("Checking bridged network %s", self.vlan)
+        self.assertTrue(isVMNetwork(network=self.vlan,
+                                    cluster=getHostCluster(self.host.name)),
+                        "%s is NON_VM network but it should be VM" % self.vlan)
 
-        logger.info("Updating %s to be NON_VM network",
-                    config.VLAN_NETWORKS[2])
-        if not updateNetwork(positive=True,
-                             network=config.VLAN_NETWORKS[2],
-                             cluster=config.CLUSTER_NAME[0], usages=''):
-            logger.error("Failed to update %s to be NON_VM network",
-                         config.VLAN_NETWORKS[2])
+        logger.info("Updating %s to be NON_VM network", self.vlan)
+        if not updateNetwork(positive=True, network=self.vlan, usages='',
+                             cluster=cluster):
+            logger.error("Failed to update %s to be NON_VM network", self.vlan)
             return False
 
-        logger.info("Checking bridged network %s", config.VLAN_NETWORKS[2])
+        logger.info("Checking bridged network %s", self.vlan)
 
-        self.assertFalse(isVMNetwork(network=config.VLAN_NETWORKS[2],
-                                     cluster=config.CLUSTER_NAME[0]),
-                         "%s is VM network when it should be NON_VM"
-                         % config.VLAN_NETWORKS[2])
+        self.assertFalse(
+            isVMNetwork(network=self.vlan, cluster=cluster),
+            "%s is VM network when it should be NON_VM" % self.vlan)
 
     @classmethod
     def teardown_class(cls):
@@ -237,7 +240,7 @@ class SanityCase04(TestCase):
         Removing sw164 network from the setup
         """
         logger.info("Starting the teardown_class")
-        if not removeNetwork(True, config.VLAN_NETWORKS[2]):
+        if not removeNetwork(True, cls.vlan):
             raise NetworkException("Cannot remove network from setup")
 
 ########################################################################
@@ -254,6 +257,12 @@ class SanityCase05(TestCase):
     Finally, remove nic and network
     """
     __test__ = True
+    vlan = config.VLAN_NETWORKS[0]
+    host = config.NETWORK_HOSTS[0]
+    cluster = getHostCluster(host.name)
+    vm = get_vms_from_cluster(cluster)[0]
+    nic = "nic2"
+    vnic_profile = config.VNIC_PROFILE[0]
 
     @classmethod
     def setup_class(cls):
@@ -262,38 +271,34 @@ class SanityCase05(TestCase):
         """
         logger.info("Create profile with network sw162 and port mirroring"
                     "enabled and attach it to the host")
-        local_dict = {config.VLAN_NETWORKS[0]: {'vlan_id': config.VLAN_ID[0],
-                                                'nic': config.HOST_NICS[1],
-                                                'required': 'false'}}
+        local_dict = {cls.vlan: {'vlan_id': config.VLAN_ID[0],
+                                 'nic': cls.host.nics[1],
+                                 'required': 'false'}}
+        cluster = getHostCluster(cls.host.name)
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS[0],
+        if not createAndAttachNetworkSN(data_center=getHostDC(cls.host.name),
+                                        cluster=cluster, host=cls.host.name,
                                         network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0],
-                                                   config.HOST_NICS[1]]):
+                                        auto_nics=cls.host.nics[:2]):
             raise NetworkException("Cannot create and attach network")
 
         logger.info("Create profile with %s network and port mirroring"
-                    "enabled",
-                    config.VLAN_NETWORKS[0])
-        if not addVnicProfile(positive=True, name=config.VNIC_PROFILE[0],
-                              cluster=config.CLUSTER_NAME[0],
-                              network=config.VLAN_NETWORKS[0],
+                    "enabled", cls.vlan)
+        if not addVnicProfile(positive=True, name=cls.vnic_profile,
+                              cluster=cluster, network=cls.vlan,
                               port_mirroring=True):
             logger.error("Failed to add %s profile with %s network to %s",
-                         config.VNIC_PROFILE[0], config.VLAN_NETWORKS[0],
-                         config.CLUSTER_NAME[0])
+                         config.VNIC_PROFILE[0], cls.vlan, cluster)
 
     @istest
     def attach_vnic_to_vm(self):
         """
         Attaching vnic to VM
         """
-        if not addNic(positive=True, vm=config.VM_NAME[0], name='nic2',
-                      network=config.VLAN_NETWORKS[0]):
+        if not addNic(positive=True, vm=self.vm, name=self.nic,
+                      network=self.vlan):
             logger.error("Adding nic2 failed")
-            return False
+            raise NetworkException("Adding nic2 failed")
 
     @classmethod
     def teardown_class(cls):
@@ -301,26 +306,23 @@ class SanityCase05(TestCase):
         Remove nic and network from the setup
         """
         logger.info("Starting the teardown_class")
-        if not updateNic(positive=True,
-                         vm=config.VM_NAME[0],
-                         nic='nic2',
-                         plugged=False):
+        if not updateNic(positive=True, vm=cls.vm, nic=cls.nic, plugged=False):
             logger.error("Unplug nic2 failed")
             return False
 
-        if not removeNic(positive=True, vm=config.VM_NAME[0], nic='nic2'):
+        if not removeNic(positive=True, vm=cls.vm, nic=cls.nic):
             logger.error("Removing nic2 failed")
             return False
 
-        if not (removeNetFromSetup(host=config.HOSTS[0],
-                                   auto_nics=[config.HOST_NICS[0]],
-                                   network=[config.VLAN_NETWORKS[0]])):
+        if not (removeNetFromSetup(host=cls.host.name,
+                                   auto_nics=[cls.host.nics[0]],
+                                   network=[cls.vlan])):
             raise NetworkException("Cannot remove network from setup")
 
         if not removeVnicProfile(positive=True,
-                                 vnic_profile_name=config.VNIC_PROFILE[0],
-                                 network=config.VLAN_NETWORKS[0]):
-            logger.error("Failed to remove %s profile", config.VNIC_PROFILE[0])
+                                 vnic_profile_name=cls.vnic_profile,
+                                 network=cls.vlan):
+            logger.error("Failed to remove %s profile", cls.vnic_profile)
 
 ########################################################################
 
@@ -339,6 +341,10 @@ class SanityCase06(TestCase):
     Finally, removing the network from the setup.
     """
     __test__ = True
+    vlan = config.VLAN_NETWORKS[0]
+    host = config.NETWORK_HOSTS[0]
+    cluster = getHostCluster(host.name)
+    dc = getHostDC(host.name)
 
     @classmethod
     def setup_class(cls):
@@ -346,16 +352,15 @@ class SanityCase06(TestCase):
         Creating network sw162 as required and attaching it to the host
         """
         logger.info("Create network and attach it to the host")
-        local_dict = {config.VLAN_NETWORKS[0]: {'vlan_id': config.VLAN_ID[0],
-                                                'nic': config.HOST_NICS[1],
-                                                'required': 'true'}}
+        local_dict = {cls.vlan: {'vlan_id': config.VLAN_ID[0],
+                                 'nic': cls.host.nics[1],
+                                 'required': 'true'}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS[0],
+        if not createAndAttachNetworkSN(data_center=cls.dc,
+                                        cluster=cls.cluster,
+                                        host=cls.host.name,
                                         network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0],
-                                                   config.HOST_NICS[1]]):
+                                        auto_nics=cls.host.nics[:2]):
             raise NetworkException("Cannot create and attach network")
 
     @istest
@@ -365,27 +370,20 @@ class SanityCase06(TestCase):
         updating network to be not required and checking
         that the network is non-required
         """
-        logger.info("network = %s, cluster = %s", config.VLAN_NETWORKS[0],
-                    config.CLUSTER_NAME[0])
-        self.assertTrue(isNetworkRequired(network=config.VLAN_NETWORKS[0],
-                                          cluster=config.CLUSTER_NAME[0]),
-                        "Network %s is non-required, Should be required"
-                        % config.VLAN_NETWORKS[0])
+        logger.info("network = %s, cluster = %s", self.vlan, self.cluster)
+        self.assertTrue(
+            isNetworkRequired(network=self.vlan, cluster=self.cluster),
+            "Network %s is non-required, Should be required" % self.vlan)
 
-        if not updateClusterNetwork(positive=True,
-                                    cluster=config.CLUSTER_NAME[0],
-                                    network=config.VLAN_NETWORKS[0],
-                                    required=False):
-            logger.error("Updating %s to non-required failed"
-                         % config.VLAN_NETWORKS[0])
+        if not updateClusterNetwork(positive=True, cluster=self.cluster,
+                                    network=self.vlan, required=False):
+            logger.error("Updating %s to non-required failed", self.vlan)
             return False
 
-        logger.info("network = %s, cluster = %s", config.VLAN_NETWORKS[0],
-                    config.CLUSTER_NAME[0])
-        self.assertFalse(isNetworkRequired(network=config.VLAN_NETWORKS[0],
-                                           cluster=config.CLUSTER_NAME[0]),
-                         "Network %s is required, Should be non-required"
-                         % config.VLAN_NETWORKS[0])
+        logger.info("network = %s, cluster = %s", self.vlan, self.cluster)
+        self.assertFalse(
+            isNetworkRequired(network=self.vlan, cluster=self.cluster),
+            "Network %s is required, Should be non-required" % self.vlan)
 
     @classmethod
     def teardown_class(cls):
@@ -393,9 +391,9 @@ class SanityCase06(TestCase):
         Remove network from the setup
         """
         logger.info("Starting the teardown_class")
-        if not (removeNetFromSetup(host=config.HOSTS[0],
-                                   auto_nics=[config.HOST_NICS[0]],
-                                   network=[config.VLAN_NETWORKS[0]])):
+        if not (removeNetFromSetup(host=cls.host.name,
+                                   auto_nics=[cls.host.nics[0]],
+                                   network=[cls.vlan])):
             raise NetworkException("Cannot remove network from setup")
 
 
@@ -415,24 +413,29 @@ class SanityCase07(TestCase):
     3. Checking that the network is non-required
     Finally, removing the network from the setup.
     """
-    __test__ = len(config.HOST_NICS) > 3
+    host = config.NETWORK_HOSTS[0]
+    __test__ = len(host.nics) > 3
+    bond = config.BOND[0]
+    cluster = getHostCluster(host.name)
+    dc = getHostDC(host.name)
+    vlan = config.VLAN_NETWORKS[1]
 
     @classmethod
     def setup_class(cls):
         logger.info("Create network and attach it to the host")
-        local_dict = {None: {'nic': config.BOND[0],
+        local_dict = {None: {'nic': cls.bond,
                              'mode': 1,
-                             'slaves': [config.HOST_NICS[2],
-                                        config.HOST_NICS[3]]},
-                      config.VLAN_NETWORKS[1]: {'nic': config.BOND[0],
+                             'slaves': [cls.host.nics[2],
+                                        cls.host.nics[3]]},
+                      config.VLAN_NETWORKS[1]: {'nic': cls.bond,
                                                 'vlan_id': config.VLAN_ID[1],
                                                 'required': 'true'}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS[0],
+        if not createAndAttachNetworkSN(data_center=cls.dc,
+                                        cluster=cls.cluster,
+                                        host=cls.host.name,
                                         network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0]]):
+                                        auto_nics=[cls.host.nics[0]]):
             raise NetworkException("Cannot create and attach network")
 
     @istest
@@ -441,28 +444,20 @@ class SanityCase07(TestCase):
         Verifying that the network is required, updating network to be
         not required and then checking that the network is non-required
         """
-        logger.info("network = %s, cluster = %s", config.VLAN_NETWORKS[1],
-                    config.CLUSTER_NAME[0])
-        self.assertTrue(isNetworkRequired(network=config.VLAN_NETWORKS[1],
-                                          cluster=config.CLUSTER_NAME[0]),
-                        "Network %s is non-required, Should be required"
-                        % config.VLAN_NETWORKS[1])
+        logger.info("network = %s, cluster = %s", self.vlan, self.cluster)
+        self.assertTrue(
+            isNetworkRequired(network=self.vlan, cluster=self.cluster),
+            "Network %s is non-required, Should be required" % self.vlan)
 
-        if not updateClusterNetwork(positive=True,
-                                    cluster=config.CLUSTER_NAME[0],
-                                    network=config.VLAN_NETWORKS[1],
-                                    required=False):
-            logger.error("Updating %s to non-required failed"
-                         % config.VLAN_NETWORKS[1])
+        if not updateClusterNetwork(positive=True, cluster=self.cluster,
+                                    network=self.vlan, required=False):
+            logger.error("Updating %s to non-required failed", self.vlan)
             return False
 
-        logger.info("network = %s, cluster = %s",
-                    config.VLAN_NETWORKS[1],
-                    config.CLUSTER_NAME[0])
-        self.assertFalse(isNetworkRequired(network=config.VLAN_NETWORKS[1],
-                                           cluster=config.CLUSTER_NAME[0]),
-                         "Network %s is required, Should be non-required"
-                         % config.VLAN_NETWORKS[1])
+        logger.info("network = %s, cluster = %s", self.vlan, self.cluster)
+        self.assertFalse(
+            isNetworkRequired(network=self.vlan, cluster=self.cluster),
+            "Network %s is required, Should be non-required" % self.vlan)
 
     @classmethod
     def teardown_class(cls):
@@ -470,9 +465,9 @@ class SanityCase07(TestCase):
         Removing the network from the setup.
         """
         logger.info("Starting the teardown_class")
-        if not (removeNetFromSetup(host=config.HOSTS[0],
-                                   auto_nics=[config.HOST_NICS[0]],
-                                   network=[config.VLAN_NETWORKS[1]])):
+        if not (removeNetFromSetup(host=cls.host.name,
+                                   auto_nics=[cls.host.nics[0]],
+                                   network=[cls.vlan])):
             raise NetworkException("Cannot remove network from setup")
 
 
@@ -492,6 +487,14 @@ class SanityCase08(TestCase):
     Finally, removing sw162 & sw163 from the setup
     """
     __test__ = True
+    vlan_1 = config.VLAN_NETWORKS[0]
+    vlan_2 = config.VLAN_NETWORKS[1]
+    host = config.NETWORK_HOSTS[0]
+    cluster = getHostCluster(host.name)
+    dc = getHostDC(host.name)
+    vlan_id_1 = config.VLAN_ID[0]
+    vlan_id_2 = config.VLAN_ID[1]
+    nic = host.nics[1]
 
     @classmethod
     def setup_class(cls):
@@ -500,21 +503,20 @@ class SanityCase08(TestCase):
         on eth1
         """
         logger.info("Create networks and attach them to the host")
-        local_dict = {config.VLAN_NETWORKS[0]: {'vlan_id': config.VLAN_ID[0],
-                                                'nic': config.HOST_NICS[1],
-                                                'required': 'false',
-                                                'mtu': 9000},
-                      config.VLAN_NETWORKS[1]: {'vlan_id': config.VLAN_ID[1],
-                                                'nic': config.HOST_NICS[1],
-                                                'required': 'false',
-                                                'mtu': 3500}}
+        local_dict = {cls.vlan_1: {'vlan_id': cls.vlan_id_1,
+                                   'nic': cls.nic,
+                                   'required': 'false',
+                                   'mtu': 9000},
+                      cls.vlan_2: {'vlan_id': cls.vlan_id_2,
+                                   'nic': cls.nic,
+                                   'required': 'false',
+                                   'mtu': 3500}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS[0],
+        if not createAndAttachNetworkSN(data_center=cls.dc,
+                                        cluster=cls.cluster,
+                                        host=cls.host.name,
                                         network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0],
-                                                   config.HOST_NICS[1]]):
+                                        auto_nics=cls.host.nics[:2]):
             raise NetworkException("Cannot create and attach network")
 
     @istest
@@ -522,42 +524,37 @@ class SanityCase08(TestCase):
         """
         Check that MTU on sw162 and sw163 is really 9000 & 1500
         """
-        self.assertTrue(checkMTU(host=config.HOSTS[0],
-                                 user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW,
-                                 mtu=9000,
-                                 physical_layer=False,
-                                 network=config.VLAN_NETWORKS[0],
-                                 nic=config.HOST_NICS[1],
-                                 vlan=config.VLAN_ID[0]),
-                        "%s is not configured with MTU 9000"
-                        % config.VLAN_NETWORKS[0])
+        self.assertTrue(checkMTU(host=self.host.ip,
+                                 user=self.host.user,
+                                 password=self.host.password,
+                                 mtu=9000, physical_layer=False,
+                                 network=self.vlan_1, nic=self.nic,
+                                 vlan=self.vlan_id_1),
+                        "%s is not configured with MTU 9000" % self.vlan_1)
 
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=9000,
-                                 nic=config.HOST_NICS[1]))
+        self.assertTrue(checkMTU(host=self.host.ip, user=self.host.user,
+                                 password=self.host.password, mtu=9000,
+                                 nic=self.nic))
 
-        self.assertTrue(updateNetwork(positive=True,
-                                      network=config.VLAN_NETWORKS[0],
+        self.assertTrue(updateNetwork(positive=True, network=self.vlan_1,
                                       mtu=1500),
-                        "%s was not updated" % config.VLAN_NETWORKS[0])
+                        "%s was not updated" % self.vlan_1)
 
         sample = TimeoutingSampler(timeout=60, sleep=1,
-                                   func=checkMTU, host=config.HOSTS[0],
-                                   user=config.HOSTS_USER,
-                                   password=config.HOSTS_PW,
-                                   mtu=1500,
-                                   physical_layer=False,
-                                   network=config.VLAN_NETWORKS[0],
-                                   nic=config.HOST_NICS[1],
-                                   vlan=config.VLAN_ID[0])
+                                   func=checkMTU, host=self.host.ip,
+                                   user=self.host.user,
+                                   password=self.host.password,
+                                   mtu=1500, physical_layer=False,
+                                   network=self.vlan_1,
+                                   nic=self.nic,
+                                   vlan=self.vlan_id_1)
 
         if not sample.waitForFuncStatus(result=True):
             raise NetworkException("Couldn't get correct MTU")
 
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=3500,
-                                 nic=config.HOST_NICS[1]))
+        self.assertTrue(checkMTU(host=self.host.ip, user=self.host.user,
+                                 password=self.host.password, mtu=3500,
+                                 nic=self.nic))
 
     @classmethod
     def teardown_class(cls):
@@ -565,10 +562,9 @@ class SanityCase08(TestCase):
         Removing sw162 & sw163 from the setup
         """
         logger.info("Starting the teardown_class")
-        if not (removeNetFromSetup(host=config.HOSTS[0],
-                                   auto_nics=[config.HOST_NICS[0]],
-                                   network=[config.VLAN_NETWORKS[0],
-                                            config.VLAN_NETWORKS[1]])):
+        if not (removeNetFromSetup(host=cls.host.name,
+                                   auto_nics=[cls.host.nics[0]],
+                                   network=[cls.vlan_1, cls.vlan_2])):
             raise NetworkException("Cannot remove network from setup")
 
 ########################################################################
@@ -584,7 +580,13 @@ class SanityCase09(TestCase):
     on eth2 & eth3, then checking that MTU on sw162 is really 7000
     Finally, removing sw162 from the setup
     """
-    __test__ = len(config.HOST_NICS) > 3
+    host = config.NETWORK_HOSTS[0]
+    __test__ = len(host.nics) > 3
+    bond = config.BOND[0]
+    vlan = config.VLAN_NETWORKS[0]
+    vlan_id = config.VLAN_ID[0]
+    cluster = getHostCluster(host.name)
+    dc = getHostDC(host.name)
 
     @classmethod
     def setup_class(cls):
@@ -592,20 +594,19 @@ class SanityCase09(TestCase):
         Creating and adding sw162 (MTU 7000) to the host on eth2 & eth3
         """
         logger.info("Create network and attach it to the host")
-        local_dict = {None: {'nic': config.BOND[0],
+        local_dict = {None: {'nic': cls.bond,
                              'mode': 1,
-                             'slaves': [config.HOST_NICS[2],
-                                        config.HOST_NICS[3]]},
-                      config.VLAN_NETWORKS[0]: {'nic': config.BOND[0],
-                                                'vlan_id': config.VLAN_ID[0],
+                             'slaves': cls.host.nics[2:4]},
+                      config.VLAN_NETWORKS[0]: {'nic': cls.bond,
+                                                'vlan_id': cls.vlan_id,
                                                 'mtu': 7000,
                                                 'required': 'false'}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS[0],
+        if not createAndAttachNetworkSN(data_center=cls.dc,
+                                        cluster=cls.cluster,
+                                        host=cls.host.name,
                                         network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0]]):
+                                        auto_nics=[cls.host.nics[0]]):
             raise NetworkException("Cannot create and attach network")
 
     @istest
@@ -613,16 +614,12 @@ class SanityCase09(TestCase):
         """
         Check that MTU on sw162 is really 7000
         """
-        logger.info("Checking that %s was created with mtu = 7000"
-                    % config.VLAN_NETWORKS[0])
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=7000,
-                                 physical_layer=False,
-                                 network=config.VLAN_NETWORKS[0],
-                                 nic=config.BOND[0],
-                                 vlan=config.VLAN_ID[0]),
-                        "%s is not configured with mtu = 7000"
-                        % config.VLAN_NETWORKS[0])
+        logger.info("Checking that %s was created with mtu = 7000", self.vlan)
+        self.assertTrue(checkMTU(host=self.host.ip, user=self.host.user,
+                                 password=self.host.password, mtu=7000,
+                                 physical_layer=False, network=self.vlan,
+                                 nic=self.bond, vlan=self.vlan_id),
+                        "%s is not configured with mtu = 7000" % self.vlan)
 
     @classmethod
     def teardown_class(cls):
@@ -630,9 +627,9 @@ class SanityCase09(TestCase):
         Remove network from the setup
         """
         logger.info("Starting the teardown_class")
-        if not (removeNetFromSetup(host=config.HOSTS[0],
-                                   auto_nics=[config.HOST_NICS[0]],
-                                   network=[config.VLAN_NETWORKS[0]])):
+        if not (removeNetFromSetup(host=cls.host.name,
+                                   auto_nics=[cls.host.nics[0]],
+                                   network=[cls.vlan])):
             raise NetworkException("Cannot remove network from setup")
 
 ########################################################################
@@ -657,6 +654,13 @@ class SanityCase10(TestCase):
     """
     Need investigation, this test always fails
     """
+    host = config.NETWORK_HOSTS[0]
+    vlan = config.VLAN_NETWORKS[0]
+    vlan_id = config.VLAN_ID[0]
+    cluster = getHostCluster(host.name)
+    dc = getHostDC(host.name)
+    vm = get_vms_from_cluster(cluster)[0]
+    vm_nic = 'nic2'
 
     @classmethod
     def setup_class(cls):
@@ -664,16 +668,15 @@ class SanityCase10(TestCase):
         Creating network sw162 and adding it to the host on eth1
         """
         logger.info("Create network and attach it to the host")
-        local_dict = {config.VLAN_NETWORKS[0]: {'vlan_id': config.VLAN_ID[0],
-                                                'nic': config.HOST_NICS[1],
-                                                'required': 'false'}}
+        local_dict = {cls.vlan: {'vlan_id': cls.vlan_id,
+                                 'nic': cls.host.nics[1],
+                                 'required': 'false'}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS[0],
+        if not createAndAttachNetworkSN(data_center=cls.dc,
+                                        cluster=cls.cluster,
+                                        host=cls.host.name,
                                         network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0],
-                                                   config.HOST_NICS[1]]):
+                                        auto_nics=cls.host.nics[:2]):
             raise NetworkException("Cannot create and attach network")
 
     @istest
@@ -683,10 +686,11 @@ class SanityCase10(TestCase):
         the rhevm's version.
         """
         logger.info("Checking that spoofing filter is enabled")
-        self.assertTrue(checkSpoofingFilterRuleByVer(
-            host=config.VDC_HOST,
-            user=config.VDC_ROOT_USER,
-            passwd=config.VDC_ROOT_PASSWORD),
+        self.assertTrue(
+            checkSpoofingFilterRuleByVer(
+                host=config.VDC_HOST,
+                user=config.VDC_ROOT_USER,
+                passwd=config.VDC_ROOT_PASSWORD),
             "Spoofing filter is not enabled")
 
     @istest
@@ -695,27 +699,31 @@ class SanityCase10(TestCase):
         Checking that network spoofing filter is enabled on the vm
         """
         logger.info("Checking that spoofing filter is enabled via dumpxml")
-        self.assertTrue(checkNetworkFilteringDumpxml(
-            positive=True,
-            host=config.HOSTS[0],
-            user=config.HOSTS_USER,
-            passwd=config.HOSTS_PW,
-            vm=config.VM_NAME[0],
-            nics='1'), "DumpXML for 1 nic return wrong output")
+        self.assertTrue(
+            checkNetworkFilteringDumpxml(
+                positive=True,
+                host=self.host.ip,
+                user=self.host.user,
+                passwd=self.host.password,
+                vm=self.vm,
+                nics='1'),
+            "DumpXML for 1 nic return wrong output")
 
         # Add nic is part of the test.
-        if not addNic(positive=True, vm=config.VM_NAME[0], name='nic2',
-                      network=config.VLAN_NETWORKS[0]):
+        if not addNic(positive=True, vm=self.vm, name=self.vm_nic,
+                      network=self.vlan):
             logger.error("Adding nic2 failed")
             return False
 
-        self.assertTrue(checkNetworkFilteringDumpxml(
-            positive=True,
-            host=config.HOSTS[0],
-            user=config.HOSTS_USER,
-            passwd=config.HOSTS_PW,
-            vm=config.VM_NAME[0],
-            nics='2'), "DumpXML for 2 nics return wrong output")
+        self.assertTrue(
+            checkNetworkFilteringDumpxml(
+                positive=True,
+                host=self.host.ip,
+                user=self.host.user,
+                passwd=self.host.password,
+                vm=self.vm,
+                nics='2'),
+            "DumpXML for 2 nics return wrong output")
 
     @classmethod
     def teardown_class(cls):
@@ -723,20 +731,18 @@ class SanityCase10(TestCase):
         Remove nic2 and sw162 from the setup
         """
         logger.info("Starting the teardown_class")
-        if not updateNic(positive=True,
-                         vm=config.VM_NAME[0],
-                         nic='nic2',
+        if not updateNic(positive=True, vm=cls.vm, nic=cls.vm_nic,
                          plugged=False):
             logger.error("Unplug nic2 failed")
             return False
 
-        if not removeNic(positive=True, vm=config.VM_NAME[0], nic='nic2'):
+        if not removeNic(positive=True, vm=cls.vm, nic=cls.vm_nic):
             logger.error("Removing nic2 failed")
             return False
 
-        if not (removeNetFromSetup(host=config.HOSTS[0],
-                                   auto_nics=[config.HOST_NICS[0]],
-                                   network=[config.VLAN_NETWORKS[0]])):
+        if not (removeNetFromSetup(host=cls.host.name,
+                                   auto_nics=[cls.host.nics[0]],
+                                   network=[cls.vlan])):
             raise NetworkException("Cannot remove network from setup")
 
 ########################################################################
@@ -755,6 +761,18 @@ class SanityCase11(TestCase):
     Finally, Removing the nics and networks.
     """
     __test__ = True
+    host = config.NETWORK_HOSTS[0]
+    vlan_1 = config.VLAN_NETWORKS[0]
+    vlan_2 = config.VLAN_NETWORKS[1]
+    vlan_3 = config.VLAN_NETWORKS[2]
+    vlan_4 = config.VLAN_NETWORKS[3]
+    vlan_id_1 = config.VLAN_ID[0]
+    vlan_id_2 = config.VLAN_ID[1]
+    vlan_id_3 = config.VLAN_ID[2]
+    vlan_id_4 = config.VLAN_ID[3]
+    cluster = getHostCluster(host.name)
+    dc = getHostDC(host.name)
+    vm = get_vms_from_cluster(cluster)[0]
 
     @classmethod
     def setup_class(cls):
@@ -764,36 +782,35 @@ class SanityCase11(TestCase):
         plugged & linked) and attaching them to the vm
         """
         logger.info("Create networks and attach them to the host")
-        local_dict = {config.VLAN_NETWORKS[0]: {'vlan_id': config.VLAN_ID[0],
-                                                'nic': config.HOST_NICS[1],
-                                                'required': 'false'},
-                      config.VLAN_NETWORKS[1]: {'vlan_id': config.VLAN_ID[1],
-                                                'nic': config.HOST_NICS[1],
-                                                'required': 'false'},
-                      config.VLAN_NETWORKS[2]: {'vlan_id': config.VLAN_ID[2],
-                                                'nic': config.HOST_NICS[1],
-                                                'required': 'false'},
-                      config.VLAN_NETWORKS[3]: {'vlan_id': config.VLAN_ID[3],
-                                                'nic': config.HOST_NICS[1],
-                                                'required': 'false'}}
+        local_dict = {cls.vlan_1: {'vlan_id': cls.vlan_id_1,
+                                   'nic': cls.host.nics[1],
+                                   'required': 'false'},
+                      cls.vlan_2: {'vlan_id': cls.vlan_id_2,
+                                   'nic': cls.host.nics[1],
+                                   'required': 'false'},
+                      cls.vlan_3: {'vlan_id': cls.vlan_id_3,
+                                   'nic': cls.host.nics[1],
+                                   'required': 'false'},
+                      cls.vlan_4: {'vlan_id': cls.vlan_id_4,
+                                   'nic': cls.host.nics[1],
+                                   'required': 'false'}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS[0],
+        if not createAndAttachNetworkSN(data_center=cls.dc,
+                                        cluster=cls.cluster,
+                                        host=cls.host.name,
                                         network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0],
-                                                   config.HOST_NICS[1]]):
+                                        auto_nics=cls.host.nics[:2]):
             raise NetworkException("Cannot create and attach network")
 
         logger.info("Create VNICs with different plugged/linked permutations")
         plug_link_param_list = [('true', 'true'), ('true', 'false'),
                                 ('false', 'true'), ('false', 'false')]
         for i in range(len(plug_link_param_list)):
-            if not addNic(True, config.VM_NAME[0], name='nic'+str(i+2),
+            if not addNic(True, cls.vm, name='nic' + str(i + 2),
                           network=config.VLAN_NETWORKS[i],
                           plugged=plug_link_param_list[i][0],
                           linked=plug_link_param_list[i][1]):
-                raise VMException("Cannot add nic%s to VM" % (i+2))
+                raise VMException("Cannot add nic%s to VM" % (i + 2))
 
     @istest
     def check_combination_plugged_linked_values(self):
@@ -802,16 +819,16 @@ class SanityCase11(TestCase):
         """
         logger.info("Checking Linked on nic2, nic4 is True")
         for nic_name in ('nic2', 'nic4'):
-            self.assertTrue(getVmNicLinked(config.VM_NAME[0], nic=nic_name))
+            self.assertTrue(getVmNicLinked(self.vm, nic=nic_name))
         logger.info("Checking Plugged on nic2, nic3 is True")
         for nic_name in ('nic2', 'nic3'):
-            self.assertTrue(getVmNicPlugged(config.VM_NAME[0], nic=nic_name))
+            self.assertTrue(getVmNicPlugged(self.vm, nic=nic_name))
         logger.info("Checking Linked on nic3, nic5 is False")
         for nic_name in ('nic3', 'nic5'):
-            self.assertFalse(getVmNicLinked(config.VM_NAME[0], nic=nic_name))
+            self.assertFalse(getVmNicLinked(self.vm, nic=nic_name))
         logger.info("Checking Plugged on nic5, nic4 is False")
         for nic_name in ('nic4', 'nic5'):
-            self.assertFalse(getVmNicPlugged(config.VM_NAME[0], nic=nic_name))
+            self.assertFalse(getVmNicPlugged(self.vm, nic=nic_name))
 
     @classmethod
     def teardown_class(cls):
@@ -822,18 +839,16 @@ class SanityCase11(TestCase):
         logger.info("Updating all the networks beside mgmt network to "
                     "unplugged")
         for nic_name in ('nic2', 'nic3'):
-            updateNic(True, config.VM_NAME[0], nic_name, plugged=False)
+            updateNic(True, cls.vm, nic_name, plugged=False)
         logger.info("Removing all the VNICs besides mgmt network")
         for i in range(4):
-            if not removeNic(True, config.VM_NAME[0], "nic"+str(i+2)):
+            if not removeNic(True, cls.vm, "nic" + str(i + 2)):
                 raise NetworkException("Cannot remove nic from setup")
         logger.info("Starting the teardown_class")
-        if not (removeNetFromSetup(host=config.HOSTS[0],
-                                   auto_nics=[config.HOST_NICS[0]],
-                                   network=[config.VLAN_NETWORKS[0],
-                                            config.VLAN_NETWORKS[1],
-                                            config.VLAN_NETWORKS[2],
-                                            config.VLAN_NETWORKS[3]])):
+        if not (removeNetFromSetup(host=cls.host.name,
+                                   auto_nics=[cls.host.nics[0]],
+                                   network=[cls.vlan_1, cls.vlan_2,
+                                            cls.vlan_3, cls.vlan_4])):
             raise NetworkException("Cannot remove network from setup")
 
 ########################################################################
@@ -851,7 +866,23 @@ class SanityCase12(TestCase):
     1. Checking that all the permutations of plugged & linked are correct
     Finally, Removing the nics and networks.
     """
-    __test__ = len(config.HOST_NICS) > 3
+    host = config.NETWORK_HOSTS[0]
+    vlan_1 = config.VLAN_NETWORKS[0]
+    vlan_2 = config.VLAN_NETWORKS[1]
+    vlan_3 = config.VLAN_NETWORKS[2]
+    vlan_4 = config.VLAN_NETWORKS[3]
+    vlan_id_1 = config.VLAN_ID[0]
+    vlan_id_2 = config.VLAN_ID[1]
+    vlan_id_3 = config.VLAN_ID[2]
+    vlan_id_4 = config.VLAN_ID[3]
+
+    cluster = getHostCluster(host.name)
+    dc = getHostDC(host.name)
+    vm = get_vms_from_cluster(cluster)[0]
+    vm_nic = 'nic2'
+    bond = config.BOND[0]
+
+    __test__ = len(host.nics) > 3
 
     @classmethod
     def setup_class(cls):
@@ -861,40 +892,38 @@ class SanityCase12(TestCase):
         & linked) and attaching them to the vm
         """
         logger.info("Create network and attach it to the host")
-        local_dict = {None: {'nic': config.BOND[0],
+        local_dict = {None: {'nic': cls.bond,
                              'mode': 1,
-                             'slaves': [config.HOST_NICS[2],
-                                        config.HOST_NICS[3]]},
-                      config.VLAN_NETWORKS[0]: {'nic': config.BOND[0],
-                                                'vlan_id': config.VLAN_ID[0],
-                                                'required': 'false'},
-                      config.VLAN_NETWORKS[1]: {'nic': config.BOND[0],
-                                                'vlan_id': config.VLAN_ID[1],
-                                                'required': 'false'},
-                      config.VLAN_NETWORKS[2]: {'nic': config.BOND[0],
-                                                'vlan_id': config.VLAN_ID[2],
-                                                'required': 'false'},
-                      config.VLAN_NETWORKS[3]: {'nic': config.BOND[0],
-                                                'vlan_id': config.VLAN_ID[3],
-                                                'required': 'false'}}
+                             'slaves': cls.host.nics[2:4]},
+                      cls.vlan_1: {'nic': cls.bond,
+                                   'vlan_id': cls.vlan_id_1,
+                                   'required': 'false'},
+                      cls.vlan_2: {'nic': cls.bond,
+                                   'vlan_id': cls.vlan_id_2,
+                                   'required': 'false'},
+                      cls.vlan_3: {'nic': cls.bond,
+                                   'vlan_id': cls.vlan_id_3,
+                                   'required': 'false'},
+                      cls.vlan_4: {'nic': cls.bond,
+                                   'vlan_id': cls.vlan_id_4,
+                                   'required': 'false'}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS[0],
+        if not createAndAttachNetworkSN(data_center=cls.dc,
+                                        cluster=cls.cluster,
+                                        host=cls.host.name,
                                         network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0],
-                                                   config.HOST_NICS[1]]):
+                                        auto_nics=cls.host.nics[:2]):
             raise NetworkException("Cannot create and attach network")
 
         logger.info("Create VNICs with different plugged/linked permutations")
         plug_link_param_list = [('true', 'true'), ('true', 'false'),
                                 ('false', 'true'), ('false', 'false')]
         for i in range(len(plug_link_param_list)):
-            if not addNic(True, config.VM_NAME[0], name='nic'+str(i+2),
+            if not addNic(True, cls.vm, name='nic' + str(i + 2),
                           network=config.VLAN_NETWORKS[i],
                           plugged=plug_link_param_list[i][0],
                           linked=plug_link_param_list[i][1]):
-                raise VMException("Cannot add nic%s to VM" % (i+2))
+                raise VMException("Cannot add nic%s to VM" % (i + 2))
 
     @istest
     def check_combination_plugged_linked_values(self):
@@ -903,16 +932,16 @@ class SanityCase12(TestCase):
         """
         logger.info("Checking Linked on nic2, nic4 is True")
         for nic_name in ('nic2', 'nic4'):
-            self.assertTrue(getVmNicLinked(config.VM_NAME[0], nic=nic_name))
+            self.assertTrue(getVmNicLinked(self.vm, nic=nic_name))
         logger.info("Checking Plugged on nic2, nic3 is True")
         for nic_name in ('nic2', 'nic3'):
-            self.assertTrue(getVmNicPlugged(config.VM_NAME[0], nic=nic_name))
+            self.assertTrue(getVmNicPlugged(self.vm, nic=nic_name))
         logger.info("Checking Linked on nic3, nic5 is False")
         for nic_name in ('nic3', 'nic5'):
-            self.assertFalse(getVmNicLinked(config.VM_NAME[0], nic=nic_name))
+            self.assertFalse(getVmNicLinked(self.vm, nic=nic_name))
         logger.info("Checking Plugged on nic5, nic4 is False")
         for nic_name in ('nic4', 'nic5'):
-            self.assertFalse(getVmNicPlugged(config.VM_NAME[0], nic=nic_name))
+            self.assertFalse(getVmNicPlugged(self.vm, nic=nic_name))
 
     @classmethod
     def teardown_class(cls):
@@ -923,18 +952,16 @@ class SanityCase12(TestCase):
         logger.info("Updating all the networks besides mgmt network to "
                     "unplugged")
         for nic_name in ('nic2', 'nic3'):
-            updateNic(True, config.VM_NAME[0], nic_name, plugged=False)
+            updateNic(True, cls.vm, nic_name, plugged=False)
         logger.info("Removing all the VNICs beside mgmt network")
         for i in range(4):
-            if not removeNic(True, config.VM_NAME[0], "nic"+str(i+2)):
+            if not removeNic(True, cls.vm, "nic" + str(i + 2)):
                 raise NetworkException("Cannot remove nic from setup")
         logger.info("Starting the teardown_class")
-        if not (removeNetFromSetup(host=config.HOSTS[0],
-                                   auto_nics=[config.HOST_NICS[0]],
-                                   network=[config.VLAN_NETWORKS[0],
-                                            config.VLAN_NETWORKS[1],
-                                            config.VLAN_NETWORKS[2],
-                                            config.VLAN_NETWORKS[3]])):
+        if not (removeNetFromSetup(host=cls.host.name,
+                                   auto_nics=[cls.host.nics[0]],
+                                   network=[cls.vlan_1, cls.vlan_2,
+                                            cls.vlan_3, cls.vlan_4])):
             raise NetworkException("Cannot remove network from setup")
 
 ########################################################################
@@ -947,7 +974,15 @@ class SanityCase13(TestCase):
     """
     Positive: Creates bridged network over bond on Host with custom name
     """
-    __test__ = len(config.HOST_NICS) > 3
+    host = config.NETWORK_HOSTS[0]
+    vlan_1 = config.VLAN_NETWORKS[0]
+
+    vlan_id_1 = config.VLAN_ID[0]
+
+    cluster = getHostCluster(host.name)
+    dc = getHostDC(host.name)
+
+    __test__ = len(host.nics) > 3
 
     @classmethod
     def setup_class(cls):
@@ -956,18 +991,17 @@ class SanityCase13(TestCase):
         """
 
         local_dict = {None: {'nic': 'bond012345', 'mode': 1,
-                             'slaves': [config.HOST_NICS[2],
-                                        config.HOST_NICS[3]]},
-                      config.VLAN_NETWORKS[0]: {'nic': 'bond012345',
-                                                'mtu': 5000,
-                                                'vlan_id': config.VLAN_ID[0],
-                                                'required': 'false'}}
+                             'slaves': cls.host.nics[2:4]},
+                      cls.vlan_1: {'nic': 'bond012345',
+                                   'mtu': 5000,
+                                   'vlan_id': cls.vlan_id_1,
+                                   'required': 'false'}}
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS[0],
+        if not createAndAttachNetworkSN(data_center=cls.dc,
+                                        cluster=cls.cluster,
+                                        host=cls.host.name,
                                         network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0]]):
+                                        auto_nics=[cls.host.nics[0]]):
             raise NetworkException("Cannot create and attach network")
 
     @istest
@@ -978,45 +1012,48 @@ class SanityCase13(TestCase):
         """
         logger.info("Checking physical and logical layers for Jumbo bond ")
         logger.info("Checking logical layer of sw1 over bond")
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=5000,
+        self.assertTrue(checkMTU(host=self.host.ip,
+                                 user=self.host.user,
+                                 password=self.host.password, mtu=5000,
                                  physical_layer=False,
-                                 network=config.VLAN_NETWORKS[0],
+                                 network=self.vlan_1,
                                  bond='bond012345',
                                  bridged=True))
         logger.info("Checking physical layer of sw1 over bond ")
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=5000,
+        self.assertTrue(checkMTU(host=self.host.ip,
+                                 user=self.host.user,
+                                 password=self.host.password, mtu=5000,
                                  bond='bond012345',
-                                 bond_nic1=config.HOST_NICS[2],
-                                 bond_nic2=config.HOST_NICS[3],
+                                 bond_nic1=self.host.nics[2],
+                                 bond_nic2=self.host.nics[3],
                                  bridged=True))
         logger.info("Changing the bond mode to  mode4")
-        rc, out = genSNNic(nic='bond012345', network=config.VLAN_NETWORKS[0],
-                           slaves=[config.HOST_NICS[2],
-                                   config.HOST_NICS[3]], mode=4)
+        rc, out = genSNNic(nic='bond012345', network=self.vlan_1,
+                           slaves=self.host.nics[2:4], mode=4)
 
         if not rc:
             raise NetworkException("Cannot generate network object")
-        sendSNRequest(positive=True, host=config.HOSTS[0],
+        sendSNRequest(positive=True, host=self.host.name,
                       nics=[out['host_nic']],
-                      auto_nics=[config.HOST_NICS[0]],
+                      auto_nics=[self.host.nics[0]],
                       check_connectivity='true',
                       connectivity_timeout=60, force='false')
         logger.info("Checking layers after bond mode change")
         logger.info("Checking logical layer after bond mode change")
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=5000,
+        self.assertTrue(checkMTU(host=self.host.ip,
+                                 user=self.host.user,
+                                 password=self.host.password, mtu=5000,
                                  physical_layer=False,
-                                 network=config.VLAN_NETWORKS[0],
+                                 network=self.vlan_1,
                                  bond='bond012345',
                                  bridged=True))
         logger.info("Checking physical layer after bond mode change")
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=5000,
+        self.assertTrue(checkMTU(host=self.host.ip,
+                                 user=self.host.user,
+                                 password=self.host.password, mtu=5000,
                                  bond='bond012345',
-                                 bond_nic1=config.HOST_NICS[2],
-                                 bond_nic2=config.HOST_NICS[3], bridged=True))
+                                 bond_nic1=self.host.nics[2],
+                                 bond_nic2=self.host.nics[3], bridged=True))
 
     @classmethod
     def teardown_class(cls):
@@ -1024,10 +1061,10 @@ class SanityCase13(TestCase):
         Remove networks from the setup
         """
         logger.info("Starting the teardown_class")
-        if not removeNetFromSetup(host=config.HOSTS[0],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.VLAN_NETWORKS[0]],
-                                  data_center=config.DC_NAME[0]):
+        if not removeNetFromSetup(host=cls.host.name,
+                                  auto_nics=[cls.host.nics[0]],
+                                  network=[cls.vlan_1],
+                                  data_center=cls.dc):
             raise NetworkException("Cannot create and attach network")
 
 
@@ -1036,6 +1073,14 @@ class SanityCase14(TestCase):
     """
     Negative: Bond with exceeded name length (more than 15 chars)
     """
+    host = config.NETWORK_HOSTS[0]
+    vlan_1 = config.VLAN_NETWORKS[0]
+
+    vlan_id_1 = config.VLAN_ID[0]
+
+    cluster = getHostCluster(host.name)
+    dc = getHostDC(host.name)
+
     __test__ = len(config.HOST_NICS) > 3
 
     @classmethod
@@ -1051,16 +1096,15 @@ class SanityCase14(TestCase):
         logger.info("Generating bond012345678901 object with 2 NIC")
         net_obj = []
         rc, out = genSNNic(nic='bond012345678901',
-                           slaves=[config.HOST_NICS[2],
-                                   config.HOST_NICS[3]])
+                           slaves=self.host.nics[2:4])
         if not rc:
             raise NetworkException("Cannot generate SNNIC object")
         net_obj.append(out['host_nic'])
 
         logger.info("sending SNRequest: bond012345678901")
-        self.assertTrue(sendSNRequest(False, host=config.HOSTS[0],
+        self.assertTrue(sendSNRequest(False, host=self.host.name,
                                       nics=net_obj,
-                                      auto_nics=[config.HOST_NICS[0]],
+                                      auto_nics=[self.host.nics[0]],
                                       check_connectivity='true',
                                       connectivity_timeout=TIMEOUT,
                                       force='false'))
@@ -1075,6 +1119,14 @@ class SanityCase15(TestCase):
     """
     Negative:  Try to create bond with wrong prefix
     """
+    host = config.NETWORK_HOSTS[0]
+    vlan_1 = config.VLAN_NETWORKS[0]
+
+    vlan_id_1 = config.VLAN_ID[0]
+
+    cluster = getHostCluster(host.name)
+    dc = getHostDC(host.name)
+
     __test__ = len(config.HOST_NICS) > 3
 
     @classmethod
@@ -1090,16 +1142,15 @@ class SanityCase15(TestCase):
         logger.info("Generating NET1515 object with 2 NIC bond")
         net_obj = []
         rc, out = genSNNic(nic='NET1515',
-                           slaves=[config.HOST_NICS[2],
-                                   config.HOST_NICS[3]])
+                           slaves=self.host.nics[2:4])
         if not rc:
             raise NetworkException("Cannot generate SNNIC object")
         net_obj.append(out['host_nic'])
 
         logger.info("sending SNRequest: NET1515")
-        self.assertTrue(sendSNRequest(False, host=config.HOSTS[0],
+        self.assertTrue(sendSNRequest(False, host=self.host.name,
                                       nics=net_obj,
-                                      auto_nics=[config.HOST_NICS[0]],
+                                      auto_nics=[self.host.nics[0]],
                                       check_connectivity='true',
                                       connectivity_timeout=TIMEOUT,
                                       force='false'))
@@ -1114,6 +1165,14 @@ class SanityCase16(TestCase):
     """
     Negative: Try to create bond with wrong suffix
     """
+    host = config.NETWORK_HOSTS[0]
+    vlan_1 = config.VLAN_NETWORKS[0]
+
+    vlan_id_1 = config.VLAN_ID[0]
+
+    cluster = getHostCluster(host.name)
+    dc = getHostDC(host.name)
+
     __test__ = len(config.HOST_NICS) > 3
 
     @classmethod
@@ -1129,16 +1188,15 @@ class SanityCase16(TestCase):
         logger.info("Generating bond1! object with 2 NIC bond")
         net_obj = []
         rc, out = genSNNic(nic='bond1!',
-                           slaves=[config.HOST_NICS[2],
-                                   config.HOST_NICS[3]])
+                           slaves=self.host.nics[2:4])
         if not rc:
             raise NetworkException("Cannot generate SNNIC object")
         net_obj.append(out['host_nic'])
 
         logger.info("sending SNRequest: bond1!")
-        self.assertTrue(sendSNRequest(False, host=config.HOSTS[0],
+        self.assertTrue(sendSNRequest(False, host=self.host.name,
                                       nics=net_obj,
-                                      auto_nics=[config.HOST_NICS[0]],
+                                      auto_nics=[self.host.nics[0]],
                                       check_connectivity='true',
                                       connectivity_timeout=TIMEOUT,
                                       force='false'))
@@ -1153,6 +1211,14 @@ class SanityCase17(TestCase):
     """
     Negative: Try to create bond with empty name
     """
+    host = config.NETWORK_HOSTS[0]
+    vlan_1 = config.VLAN_NETWORKS[0]
+
+    vlan_id_1 = config.VLAN_ID[0]
+
+    cluster = getHostCluster(host.name)
+    dc = getHostDC(host.name)
+
     __test__ = len(config.HOST_NICS) > 3
 
     @classmethod
@@ -1168,16 +1234,15 @@ class SanityCase17(TestCase):
         logger.info("Generating bond object with 2 NIC bond and empty name")
         net_obj = []
         rc, out = genSNNic(nic='',
-                           slaves=[config.HOST_NICS[2],
-                                   config.HOST_NICS[3]])
+                           slaves=self.host.nics[2:4])
         if not rc:
             raise NetworkException("Cannot generate SNNIC object")
         net_obj.append(out['host_nic'])
 
         logger.info("sending SNRequest: empty bond name")
-        self.assertTrue(sendSNRequest(False, host=config.HOSTS[0],
+        self.assertTrue(sendSNRequest(False, host=self.host.name,
                                       nics=net_obj,
-                                      auto_nics=[config.HOST_NICS[0]],
+                                      auto_nics=[self.host.nics[0]],
                                       check_connectivity='true',
                                       connectivity_timeout=TIMEOUT,
                                       force='false'))
@@ -1192,6 +1257,14 @@ class SanityCase18(TestCase):
     """
     Negative: Create more then 5 BONDS using dummy interfaces
     """
+    host = config.NETWORK_HOSTS[0]
+    vlan_1 = config.VLAN_NETWORKS[0]
+
+    vlan_id_1 = config.VLAN_ID[0]
+
+    cluster = getHostCluster(host.name)
+    dc = getHostDC(host.name)
+
     __test__ = len(config.HOST_NICS) > 3
 
     @classmethod
@@ -1200,9 +1273,9 @@ class SanityCase18(TestCase):
         Create dummy interface for BONDS
         """
         logger.info("Creating 20 dummy interfaces")
-        if not createDummyInterface(host=config.HOSTS[0],
-                                    username=config.HOSTS_USER,
-                                    password=config.HOSTS_PW,
+        if not createDummyInterface(host=cls.host.ip,
+                                    username=cls.host.user,
+                                    password=cls.host.password,
                                     num_dummy=20):
             logger.error("Faild to create dummy interfaces")
 
@@ -1224,15 +1297,15 @@ class SanityCase18(TestCase):
             net_obj.append(out['host_nic'])
             idx += 2
 
-        logger.info("Wait for %s to be UP", config.HOSTS[0])
-        if not waitForHostsStates(True, config.HOSTS[0], states='up',
+        logger.info("Wait for %s to be UP", self.host.name)
+        if not waitForHostsStates(True, self.host.name, states='up',
                                   timeout=600):
-            logger.error("%s is not in UP state", config.HOSTS[0])
+            logger.error("%s is not in UP state", self.host.name)
 
         logger.info("sending SNRequest: 10 bonds on dummy interfaces")
-        if not sendSNRequest(True, host=config.HOSTS[0],
+        if not sendSNRequest(True, host=self.host.name,
                              nics=net_obj,
-                             auto_nics=[config.HOST_NICS[0]],
+                             auto_nics=[self.host.nics[0]],
                              check_connectivity='true',
                              connectivity_timeout=TIMEOUT,
                              force='false'):
@@ -1243,18 +1316,18 @@ class SanityCase18(TestCase):
         """
         Delete all bonds and dummy interfaces
         """
-        if not deleteDummyInterface(host=config.HOSTS[0],
-                                    username=config.HOSTS_USER,
-                                    password=config.HOSTS_PW):
+        if not deleteDummyInterface(host=cls.host.ip,
+                                    username=cls.host.user,
+                                    password=cls.host.password):
             logger.error("Failed to delete dummy interfaces")
 
-        logger.info("Wait for %s to be UP", config.HOSTS[0])
-        if not waitForHostsStates(True, config.HOSTS[0], states='up',
+        logger.info("Wait for %s to be UP", cls.host.name)
+        if not waitForHostsStates(True, cls.host.name, states='up',
                                   timeout=600):
-            logger.error("%s is not in UP state", config.HOSTS[0])
+            logger.error("%s is not in UP state", cls.host.name)
 
-        if not waitForSPM(config.DC_NAME[0], 600, 30):
-            logger.error("No SPM in %s", config.DC_NAME[0])
+        if not waitForSPM(cls.dc, 600, 30):
+            logger.error("No SPM in %s", cls.dc)
             return False
 
 ########################################################################

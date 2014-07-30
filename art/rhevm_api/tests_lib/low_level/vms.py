@@ -4089,3 +4089,20 @@ def get_vm_device_size(vm_name, user, password, device_name):
     logger.info("Device %s size: %s GB", device_name, device_size)
 
     return device_size
+
+
+def get_vms_from_cluster(cluster):
+    """
+    Description: Gets all VM added to the given cluster
+
+    Parameters:
+        * cluster - cluster name
+    """
+    logging.info("Getting all vms in cluster %s", cluster)
+    cluster_id = CLUSTER_API.find(cluster).get_id()
+    all_vms = VM_API.get(absLink=False)
+    vms_in_cluster = [
+        x.get_name() for x in all_vms
+        if x.get_cluster().get_id() == cluster_id]
+    logging.info("Vms in cluster: %s", vms_in_cluster)
+    return vms_in_cluster

@@ -94,8 +94,9 @@ search_for = ["<filterref filter='no-mac-spoofing'/>",
 
 
 class HostObject(object):
-    def __init__(self, name, password, ip=None, nics=None):
+    def __init__(self, name, password, ip=None, nics=None, user="root"):
         self.name = name
+        self.user = user
         self.password = password
         self.ip = ip
         self.nics = nics
@@ -1765,6 +1766,7 @@ def checkNetworkFilteringDumpxml(positive, host, user, passwd, vm, nics):
     """
     host_obj = machine.Machine(host, user, passwd).util(machine.LINUX)
     res, out = host_obj.runVirshCmd(['dumpxml', '%s' % vm])
+    HOST_API.logger.debug("Output of dumpxml: %s", out)
     if not out.count(
             "<filterref filter='vdsm-no-mac-spoofing'/>") == int(nics):
         return not positive

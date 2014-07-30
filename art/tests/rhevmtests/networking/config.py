@@ -19,12 +19,15 @@ if GOLDEN_ENV:
 
 # Global parameters
 MTU = [9000, 5000, 2000, 1500]
-VNIC_PROFILE = PARAMETERS.as_list('vnic_profile')
 NETMASK = '255.255.255.0'
+
+VNIC_PROFILE = PARAMETERS.as_list('vnic_profile')
 VLAN_NETWORKS = PARAMETERS.as_list('vlan_networks')
 VLAN_ID = PARAMETERS.as_list('vlan_id')
 BOND = PARAMETERS.as_list('bond')
 NETWORKS = PARAMETERS.as_list('networks')
+# Topologies parameters
+BOND_MODES = PARAMETERS.as_list("bond_modes")
 
 # Network Custom Priority parameters
 BRIDGE_OPTS = OrderedDict({"priority": ["32768", "1"],
@@ -65,9 +68,8 @@ J_VLAN_ID = ['201', '202', '203', '204', '205']
 IMP_MORE_THAN_ONCE_VM = "MoreThanOnceVM"
 IMP_MORE_THAN_ONCE_TEMP = "MoreThanOnceTEMPLATE"
 EXPORT_TYPE = ENUMS['storage_dom_type_export']
-EXPORT_STORAGE_NAME = "Export"
-EXPORT_STORAGE_ADDRESS = PARAMETERS.as_list('export_domain_address')[0]
-EXPORT_STORAGE_PATH = PARAMETERS.as_list('export_domain_path')[0]
+# take following parameters from global config:
+# EXPORT_STORAGE_NAME, EXPORT_STORAGE_ADDRESS, EXPORT_STORAGE_PATH
 
 # Topologies parameters
 ADDR_AND_MASK = ["172.16.200.100", "255.255.255.0"]
