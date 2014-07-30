@@ -21,11 +21,9 @@ from art.unittest_lib.common import is_bz_state
 
 BZ1099987_NOT_FIXED = not is_bz_state('1099987')
 LOGGER = logging.getLogger(__name__)
-
 TEST_FOLDER = '/root/do_not_remove'
 CN = 'cn=Manager,dc=brq-openldap,dc=rhev,dc=lab,dc=eng,dc=brq,dc=redhat,dc=com'
-
-CMD = "ldapmodify -v -D '" + CN + "' -h $(hostname) -w 123456 -f %s"
+CMD = "ldapmodify -v -D '%s' -h $(hostname) -w %s -f %s"
 
 
 def addUser(user_name):
@@ -194,7 +192,8 @@ class LDAPCase289071(TestCase):
         """ Update information """
         self.assertTrue(
             runMachineCommand(True, ip=config.LDAP_DOMAIN,
-                              cmd=CMD % self.UPDATE_USER1,
+                              cmd=CMD % (CN, config.LDAP_PASSWORD,
+                                         self.UPDATE_USER1),
                               user=config.OVIRT_ROOT,
                               password=config.LDAP_PASSWORD)[0])
         user = self._find_user_in_directory(self.new_name)
@@ -207,7 +206,8 @@ class LDAPCase289071(TestCase):
 
     def tearDown(self):
         runMachineCommand(True, ip=config.LDAP_DOMAIN,
-                          cmd=CMD % self.UPDATE_USER2,
+                          cmd=CMD % (CN, config.LDAP_PASSWORD,
+                                     self.UPDATE_USER2),
                           user=config.OVIRT_ROOT,
                           password=config.LDAP_PASSWORD)
         users.removeUser(True, user=config.LDAP_TESTING_USER_NAME,
@@ -303,7 +303,7 @@ class LDAPCase289078(TestCase):
         LOGGER.info("User from group can log in.")
         # Remove group from user
         runMachineCommand(True, ip=config.LDAP_DOMAIN,
-                          cmd=CMD % self.DEL_GROUP,
+                          cmd=CMD % (CN, config.LDAP_PASSWORD, self.DEL_GROUP),
                           user=config.OVIRT_ROOT,
                           password=config.LDAP_PASSWORD)
         loginAsAdmin()
@@ -314,7 +314,7 @@ class LDAPCase289078(TestCase):
         LOGGER.info("User can't login after group removal.")
         # Add group to user
         runMachineCommand(True, ip=config.LDAP_DOMAIN,
-                          cmd=CMD % self.ADD_GROUP,
+                          cmd=CMD % (CN, config.LDAP_PASSWORD, self.ADD_GROUP),
                           user=config.OVIRT_ROOT,
                           password=config.LDAP_PASSWORD)
         loginAsAdmin()
@@ -345,7 +345,8 @@ class LDAPCase289078(TestCase):
                               user=config.OVIRT_ROOT,
                               password=config.LDAP_PASSWORD)
             runMachineCommand(True, ip=config.LDAP_DOMAIN,
-                              cmd=CMD % self.ADD_GROUP,
+                              cmd=CMD % (CN, config.LDAP_PASSWORD,
+                                         self.ADD_GROUP),
                               user=config.OVIRT_ROOT,
                               password=config.LDAP_PASSWORD)
         users.deleteGroup(positive=True, group_name=config.LDAP_GROUP2)
