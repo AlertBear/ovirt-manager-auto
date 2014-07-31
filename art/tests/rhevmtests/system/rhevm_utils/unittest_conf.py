@@ -8,13 +8,19 @@ from rhevmtests.system.config import *  # flake8: noqa
 
 params = ART_CONFIG['PARAMETERS']
 VM_NAME = params.get('vm_name')
-ISO_UP_CONF = params.get('iso_up_conf_file')
-LOG_COL_CONF = params.get('log_col_conf_file')
-IMAGE_UP_CONF = params.get('image_up_conf_file')
+ISO_UP_CONF = params.get('iso_up_conf_file',
+                         '/etc/ovirt-engine/imageuploader.conf')
+LOG_COL_CONF = params.get('log_col_conf_file',
+                          '/etc/ovirt-engine/logcollector.conf')
+IMAGE_UP_CONF = params.get('image_up_conf_file',
+                           '/etc/ovirt-engine/imageuploader.conf')
 
 rest_conn = ART_CONFIG['REST_CONNECTION']
 REST_API_PASS = rest_conn.get('password')
 REST_API_HOST = rest_conn.get('host')
+
+NEW_CLUSTER_NAME = params.get('new_cluster_name', 'golden_setup_new_cluster')
+NEW_DC_NAME = params.get('new_datacenter_name', 'golden_setup_new_dc')
 
 # workaround to skip sdk for now
 MAIN_SETUP = "https://lilach-rhel.qa.lab.tlv.redhat.com:443/api"

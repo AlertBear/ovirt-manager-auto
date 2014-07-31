@@ -74,8 +74,8 @@ class RHEVMUtilsTestCase(TestCase):
         cls.installation = \
             unittest_conf.ART_CONFIG['PARAMETERS'].get('installation')
         cls.machine = Setup(unittest_conf.REST_API_HOST,
-                            'root',
-                            config['testing_env']['host_pass'],
+                            unittest_conf.VDC_ROOT_USER,
+                            unittest_conf.VDC_ROOT_PASSWORD,
                             dbpassw=unittest_conf.PGPASS,
                             conf=VARS)
         if cls.utility in ['setup', 'cleanup']:
