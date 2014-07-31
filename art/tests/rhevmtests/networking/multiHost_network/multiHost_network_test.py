@@ -13,7 +13,7 @@ from art.rhevm_api.tests_lib.low_level.datacenters import addDataCenter, \
     removeDataCenter
 from art.unittest_lib import NetworkTest as TestCase
 import logging
-from rhevmtests import config
+from rhevmtests.networking import config
 import time
 from art.rhevm_api.utils.test_utils import checkMTU
 from art.test_handler.exceptions import NetworkException

@@ -3,7 +3,7 @@ RequiredNetwork Test
 """
 
 import logging
-from rhevmtests import config
+from rhevmtests.networking import config
 from art.rhevm_api.tests_lib.low_level.clusters import removeCluster
 from art.rhevm_api.tests_lib.low_level.datacenters import removeDataCenter
 from art.rhevm_api.tests_lib.low_level.hosts import removeHost

@@ -3,7 +3,7 @@ VNIC profile feature test
 """
 
 import logging
-from rhevmtests import config
+from rhevmtests.networking import config
 from art.rhevm_api.tests_lib.low_level.storagedomains import\
     cleanDataCenter
 

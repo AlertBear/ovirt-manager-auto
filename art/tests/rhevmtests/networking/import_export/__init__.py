@@ -4,7 +4,7 @@ Import Export Test
 """
 
 import logging
-from rhevmtests import config
+from rhevmtests.networking import config
 from art.rhevm_api.tests_lib.high_level.storagedomains import addNFSDomain,\
     detach_and_deactivate_domain, attach_and_activate_domain
 from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter

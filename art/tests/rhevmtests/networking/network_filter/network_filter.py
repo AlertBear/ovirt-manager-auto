@@ -3,7 +3,7 @@ Testing NetworkFilter feature.
 1 DC, 1 Cluster, 1 Hosts and 1 VM will be created for testing.
 """
 
-from rhevmtests import config
+from rhevmtests.networking import config
 import logging
 from nose.tools import istest
 from art.unittest_lib import NetworkTest as TestCase, attr

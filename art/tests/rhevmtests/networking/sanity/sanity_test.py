@@ -14,7 +14,7 @@ from art.rhevm_api.utils.test_utils import get_api
 from art.test_handler.exceptions import NetworkException, VMException
 from art.test_handler.settings import opts
 
-from rhevmtests import config
+from rhevmtests.networking import config
 from art.rhevm_api.tests_lib.high_level.networks import\
     createAndAttachNetworkSN, removeNetFromSetup, createDummyInterface,\
     deleteDummyInterface

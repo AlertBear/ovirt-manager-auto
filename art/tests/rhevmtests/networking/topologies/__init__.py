@@ -3,7 +3,7 @@ Topologies Test
 """
 
 import logging
-from rhevmtests import config
+from rhevmtests.networking import config
 from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 from art.rhevm_api.tests_lib.high_level.networks import prepareSetup
 from art.rhevm_api.tests_lib.low_level.vms import stopVm

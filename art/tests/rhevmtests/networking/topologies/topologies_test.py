@@ -3,7 +3,7 @@ Testing Topologies feature.
 1 DC, 1 Cluster, 1 Hosts and 1 VM will be created for testing.
 """
 
-from rhevmtests import config
+from rhevmtests.networking import config
 import logging
 from nose.tools import istest
 from art.test_handler.tools import tcms

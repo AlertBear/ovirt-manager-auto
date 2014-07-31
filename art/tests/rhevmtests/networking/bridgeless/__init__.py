@@ -3,7 +3,7 @@ Bridgeless network feature test
 """
 
 import logging
-from rhevmtests import config
+from rhevmtests.networking import config
 from art.rhevm_api.tests_lib.high_level.networks import create_basic_setup
 from art.rhevm_api.tests_lib.low_level.clusters import removeCluster
 from art.rhevm_api.tests_lib.low_level.datacenters import removeDataCenter

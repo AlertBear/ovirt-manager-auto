@@ -9,7 +9,7 @@ from nose.tools import istest
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
 import logging
-from rhevmtests import config
+from rhevmtests.networking import config
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.high_level.networks import\
     createAndAttachNetworkSN, removeNetFromSetup

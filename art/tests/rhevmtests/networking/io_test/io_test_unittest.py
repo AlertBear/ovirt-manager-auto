@@ -17,7 +17,7 @@ from art.rhevm_api.tests_lib.low_level.networks import \
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.utils.test_utils import get_api
 from art.test_handler.settings import opts
-from rhevmtests import config
+from rhevmtests.networking import config
 
 
 HOST_API = get_api('host', 'hosts')

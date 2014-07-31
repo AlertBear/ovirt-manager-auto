@@ -3,7 +3,7 @@ MultiHost networking feature test
 """
 
 import logging
-from rhevmtests import config
+from rhevmtests.networking import config
 from art.rhevm_api.tests_lib.low_level.storagedomains import\
     cleanDataCenter
 from art.rhevm_api.tests_lib.low_level.vms import addVm

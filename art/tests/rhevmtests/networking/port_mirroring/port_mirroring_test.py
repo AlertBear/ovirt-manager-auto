@@ -16,7 +16,7 @@ from utils import send_and_capture_traffic, set_port_mirroring, \
     return_vms_to_original_host
 from art.rhevm_api.tests_lib.low_level.hosts import waitForHostsStates
 
-from rhevmtests import config
+from rhevmtests.networking import config
 
 logger = logging.getLogger(__name__)
 
