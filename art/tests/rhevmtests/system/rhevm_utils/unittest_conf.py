@@ -3,7 +3,6 @@ from configobj import ConfigObj
 global config
 config = ConfigObj(raise_errors=True)
 
-#from art.test_handler.settings import ART_CONFIG
 from rhevmtests.system.config import *  # flake8: noqa
 
 

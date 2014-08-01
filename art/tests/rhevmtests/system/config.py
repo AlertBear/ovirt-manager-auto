@@ -24,16 +24,6 @@ OS_TYPE = test_utils.convertOsNameToOsTypeElement(
 
 USE_AGENT = PARAMETERS['useAgent']
 
-
-
-#SHARED_ISO_DOMAIN_ADDRESS = PARAMETERS.get('shared_iso_domain_address')
-#SHARED_ISO_DOMAIN_PATH = PARAMETERS.get('shared_iso_domain_path')
-#SHARED_ISO_DOMAIN_NAME = PARAMETERS.get('shared_iso_domain_name')
-
-#DOMAIN_NAME = PARAMETERS.get('domain_name', 'internal')
-#USERNAME = PARAMETERS.get('username')
-#PASSWORD = PARAMETERS.get('password')
-
 CDROM_IMAGE_1 = PARAMETERS.get('cdrom_image_1')
 CDROM_IMAGE_2 = PARAMETERS.get('cdrom_image_2')
 FLOPPY_IMAGE = PARAMETERS.get('floppy_image')
@@ -57,14 +47,6 @@ CUSTOM_PROPERTY_VNIC = ("""CustomDeviceProperties='{type=interface;"""
 VM_TEMPLATE_FOR_TEST = 'vm-templ-for-test'
 VM_FOR_TEMPLATE = 'vm_for_template'
 
-#STORAGE_DOMAIN_NAME = "testing"
-
-
-
-
-#PARAMETERS = ART_CONFIG['PARAMETERS']
-#REST = ART_CONFIG['REST_CONNECTION']
 CONFIG_ELEMENTS = 'elements_conf'
 CONFIG_SECTION = 'RHEVM Utilities'
-#RHEVM_ENUMS = 'RHEVM Enums'
 VARS = opts[CONFIG_ELEMENTS][CONFIG_SECTION]

@@ -4,7 +4,6 @@ Config module for Guest Agent
 
 __test__ = False
 
-from art.test_handler.settings import ART_CONFIG
 from utilities.enum import Enum
 from rhevmtests.system.config import *  # flake8: noqa
 
@@ -14,21 +13,11 @@ eOS = Enum(RHEL_6_64b='RHEL_6_64b', RHEL_6_32b='RHEL_6_32b',
            UBUNTU_14_04_64b='UBUNTU_14_04_64b',
            SUSE_13_1_64b='SUSE_13_1_64b')
 TEST_NAME = "RHEL_guest_agent"
-#PARAMETERS = ART_CONFIG['PARAMETERS']
-#STORAGE_TYPE = PARAMETERS['storage_type']
-#DC_NAME = 'dc_name', "datacenter_%s" % TEST_NAME
-#COMPATIBILITY_VERSION = PARAMETERS['compatibility_version']
-#CLUSTER_NAME = 'ClusterAgent'
 STORAGE_DOMAIN = 'nfs_0'
 EXPORT_STORAGE_DOMAIN = 'tlv-export'
-# VDS = PARAMETERS.as_list('vds')
-# VDS_PASSWORD = PARAMETERS.as_list('vds_password')
-# USER_ROOT = PARAMETERS['user_root']
-# USER_PASSWORD = PARAMETERS['user_password']
 EXPORT_DOMAIN_ADDRESS = 'lion.qa.lab.tlv.redhat.com'
 EXPORT_DOMAIN_PATH = '/export/virt-qe-export'
 SUBNET_CLASS = '10'
-#MGMT_BRIDGE = PARAMETERS['mgmt_bridge']
 INSTALL_TIMEOUT = PARAMETERS.get('install_timeout', 480)
 TIMEOUT = PARAMETERS.get('timeout', 320)
 
@@ -37,7 +26,6 @@ TEMPLATES = {eOS.RHEL_6_64b: {'name': 'rhel6_x64'},
              eOS.RHEL_5_64b: {'name': 'rhel5_x64'},
              eOS.RHEL_5_32b: {'name': 'rhel5_x86'},
              eOS.UBUNTU_14_04_64b: {'name': 'ubuntu_14_04'}}
-# eOS.SUSE_13_1_64b: {'name': PARAMETERS['suse_13_1_64b']}}
 
 AGENT_SERVICE_NAME = 'ovirt-guest-agent'
 
