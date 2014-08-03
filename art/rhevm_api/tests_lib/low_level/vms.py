@@ -1877,14 +1877,8 @@ def changeCDWhileRunning(vm_name, cdrom_image):
     Return (True if reponse code is 200 for change request,
             False otherwise)
     '''
-    vmObj = VM_API.find(vm_name)
-    cdroms = CDROM_API.getElemFromLink(vmObj, link_name='cdroms',
-                                       attr='cdrom', get_href=False)
-    if not cdroms:
-        VM_API.logger.error('There is no cdrom attached to vm')
-        return False
-
-    newCdrom = cdroms[0]
+    cdroms = getCdRomsObjList(vm_name)
+    newCdrom = data_st.CdRom()
     newCdrom.set_file(data_st.File(id=cdrom_image))
 
     cdrom, status = CDROM_API.update(cdroms[0], newCdrom, True, current=True)
