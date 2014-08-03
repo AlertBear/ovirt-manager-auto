@@ -27,6 +27,7 @@ def setup_module():
     Setup prerequisites for testing cluster functionality:
     create data center
     """
+    help_functions.utils.reverse_env_list = []
     help_functions.utils.add_dc()
 
 
@@ -35,7 +36,7 @@ def teardown_module():
     Tear down prerequisites for testing cluster functionality:
     remove data center
     """
-    help_functions.utils.remove_dc()
+    help_functions.utils.clean_environment()
 
 
 @attr(team='automationInfra', tier=0)

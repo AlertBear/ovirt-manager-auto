@@ -30,6 +30,7 @@ def setup_module():
     if not config.STORAGE_TYPE == 'nfs':
         logger.info("Storage type is not NFS, skipping tests")
         raise SkipTest
+    help_functions.utils.reverse_env_list = []
     help_functions.utils.add_dc()
     help_functions.utils.add_cluster()
     help_functions.utils.add_host()
@@ -42,12 +43,7 @@ def teardown_module():
     Tear down prerequisites for testing host functionality:
     remove data center, cluster, host & storage domain
     """
-    help_functions.utils.deactivate_sd()
-    help_functions.utils.remove_dc()
-    help_functions.utils.remove_sd()
-    help_functions.utils.deactivate_host()
-    help_functions.utils.remove_host()
-    help_functions.utils.remove_cluster()
+    help_functions.utils.clean_environment()
 
 
 @attr(team='automationInfra', tier=0)

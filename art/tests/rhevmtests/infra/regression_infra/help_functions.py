@@ -32,18 +32,17 @@ class utils(object):
     reverse_env_list = []
 
     @staticmethod
-    def add_dc(removeOnFailure=True):
+    def add_dc():
         logger.info('Add data center')
         status = datacenters.addDataCenter(
             positive=True, name=config.DATA_CENTER_1_NAME,
             local=False, version=config.COMPATIBILITY_VERSION)
         utils.reverse_env_list.append(utils.remove_dc)
         if not status:
-            utils.clean_environment('add data center', removeOnFailure)
             raise DataCenterException('Failed to add data center')
 
     @staticmethod
-    def add_cluster(removeOnFailure=True):
+    def add_cluster():
         logger.info('Add cluster')
         status = clusters.addCluster(
             positive=True, name=config.CLUSTER_1_NAME, cpu=config.CPU_NAME,
@@ -51,11 +50,10 @@ class utils(object):
             version=config.COMPATIBILITY_VERSION, on_error='migrate')
         utils.reverse_env_list.append(utils.remove_cluster)
         if not status:
-            utils.clean_environment('add cluster', removeOnFailure)
             raise ClusterException('Failed to add cluster')
 
     @staticmethod
-    def add_host(removeOnFailure=True):
+    def add_host():
         logger.info('Add host')
         status = hosts.addHost(
             positive=True, name=config.HOST_NAME, wait=True, reboot=False,
@@ -63,12 +61,11 @@ class utils(object):
             vdcPort=config.VDC_PORT)
         utils.reverse_env_list.append(utils.remove_host)
         if not status:
-            utils.clean_environment('add host', removeOnFailure)
             raise HostException('Failed to add host')
         utils.reverse_env_list.append(utils.deactivate_host)
 
     @staticmethod
-    def create_sd(removeOnFailure=True):
+    def create_sd():
         logger.info('Create storage domain')
         status = storagedomains.addStorageDomain(
             positive=True, name=config.STORAGE_DOMAIN_NAME,
@@ -80,32 +77,29 @@ class utils(object):
         utils.reverse_env_list.append(utils.remove_sd)
         utils.reverse_env_list.append(utils.remove_dc)
         if not status:
-            utils.clean_environment('add storage domain', removeOnFailure)
             raise StorageDomainException('Failed to add storage domain')
         utils.reverse_env_list.append(utils.deactivate_sd)
 
     @staticmethod
-    def attach_sd(removeOnFailure=True):
+    def attach_sd():
         logger.info('Attach storage domain')
         status = storagedomains.attachStorageDomain(
             positive=True, datacenter=config.DATA_CENTER_1_NAME,
             storagedomain=config.STORAGE_DOMAIN_NAME)
         if not status:
-            utils.clean_environment('attach SD', removeOnFailure)
             raise StorageDomainException('Failed to attach storage domain')
 
     @staticmethod
-    def create_vm(removeOnFailure=True):
+    def create_vm():
         logger.info('Create vm')
         status = vms.addVm(positive=True, name=config.VM_NAME,
                            cluster=config.CLUSTER_1_NAME)
         utils.reverse_env_list.append(utils.remove_vm)
         if not status:
-            utils.clean_environment('add VM', removeOnFailure)
             raise VMException('Failed to add VM')
 
     @staticmethod
-    def add_disk_to_vm(removeOnFailure=True):
+    def add_disk_to_vm():
         logger.info('Add disk to vm')
         status = vms.addDisk(positive=True, vm=config.VM_NAME, size=2147483648,
                              storagedomain=config.STORAGE_DOMAIN_NAME,
@@ -114,18 +108,16 @@ class utils(object):
                              interface=ENUMS['interface_ide'])
         utils.reverse_env_list.append(utils.remove_disk_from_vm)
         if not status:
-            utils.clean_environment('add disk to VM', removeOnFailure)
             raise VMException('Failed to add disk to VM')
 
     @staticmethod
-    def create_template(removeOnFailure=True):
+    def create_template():
         logger.info('Create template')
         status = templates.createTemplate(
             positive=True, vm=config.VM_NAME, name=config.TEMPLATE_NAME,
             cluster=config.CLUSTER_1_NAME)
         utils.reverse_env_list.append(utils.remove_template)
         if not status:
-            utils.clean_environment('create template', removeOnFailure)
             raise TemplateException('Failed to create template')
 
     @staticmethod
@@ -200,14 +192,13 @@ class utils(object):
             raise ClusterException('Failed to remove cluster')
 
     @staticmethod
-    def clean_environment(entity, removeOnFailure=True):
-        if removeOnFailure:
-            logger.info('Failed to %s - cleaning environment' % entity)
-            while utils.reverse_env_list:
-                component_to_clean = utils.reverse_env_list.pop()
-                try:
-                    component_to_clean()
-                except EntityNotFound:
-                    logger.info('Failed to perform operation ' +
-                                component_to_clean.__name__ +
-                                ' - EntityNotFound exception caught')
+    def clean_environment():
+        logger.info('cleaning environment')
+        while utils.reverse_env_list:
+            component_to_clean = utils.reverse_env_list.pop()
+            try:
+                component_to_clean()
+            except EntityNotFound:
+                logger.info('Failed to perform operation ' +
+                            component_to_clean.__name__ +
+                            ' - EntityNotFound exception caught')

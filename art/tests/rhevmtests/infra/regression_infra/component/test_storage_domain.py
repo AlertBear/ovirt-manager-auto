@@ -37,6 +37,7 @@ class TestCaseStorageDomain(TestCase):
         Setup prerequisites for testing scenario:
         create data center, cluster & host
         """
+        help_functions.utils.reverse_env_list = []
         help_functions.utils.add_dc()
         help_functions.utils.add_cluster()
         help_functions.utils.add_host()
@@ -47,9 +48,7 @@ class TestCaseStorageDomain(TestCase):
         Tear down prerequisites for testing host functionality:
         remove data center, cluster & host
         """
-        help_functions.utils.deactivate_host()
-        help_functions.utils.remove_host()
-        help_functions.utils.remove_cluster()
+        help_functions.utils.clean_environment()
 
     @istest
     def t01_create_storage_domain_wrong_type(self):
