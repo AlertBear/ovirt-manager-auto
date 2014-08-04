@@ -14,23 +14,8 @@ from art.rhevm_api.utils.test_utils import get_api
 VM_API = get_api('vm', 'vms')
 
 
-# Folowing 'try-except' blocks are here because this modules are needed only
-# for nose test framework, but you can use this module
-# also for another purposes.
-try:
-    # PGPASS, PREPARE_CONF should move to test conf file, once possible.
-    # from unittest_conf import (config, PGPASS, REST_API_HOST)
-    from rhevmtests.system.rhevm_utils import unittest_conf
-    if not unittest_conf.config:
-        raise ImportError()
-except ImportError:
-    # from unittest_conf import config
-    config = {}
-try:
-    from nose.tools import istest
-except ImportError:
-    def istest(f):
-        return f
+from rhevmtests.system.rhevm_utils import unittest_conf
+config = unittest_conf.config
 
 from utilities.rhevm_tools.base import Setup
 from art.test_handler.settings import opts
