@@ -41,8 +41,7 @@ SAMPLER_TIMEOUT = 60
 CONNECT_TIMEOUT = 60
 VMS_LINUX_USER = PARAMETERS.as_list('vm_linux_user')[0]
 VMS_LINUX_PW = PARAMETERS.as_list('vm_linux_password')[0]
-VM_NAME = ["".join([TEST_NAME, '_', elm]) for elm in
-           PARAMETERS.as_list('vm_name')]
+VM_NAME = ["_".join([TEST_NAME, 'vm', str(num)]) for num in xrange(1, 6)]
 TEMPLATE_NAME = ["".join([TEST_NAME, "_Template", str(i)]) for i in range(2)]
 STORAGE_NAME = ["".join([elm, "_data_domain0"]) for elm in DC_NAME]
 LUN_TARGET = PARAMETERS.as_list('lun_target')
