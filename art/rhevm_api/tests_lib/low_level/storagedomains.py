@@ -860,6 +860,9 @@ def cleanDataCenter(
                          storage_domain.get_name())
         floating_disks = getStorageDomainDisks(storage_domain.get_name(),
                                                False)
+        floating_disks = filter(
+            lambda w: w.get_name() != ENUMS['ovf_disk_alias'], floating_disks
+        )
         if floating_disks:
             floating_disks_list = [disk.get_alias() for disk in floating_disks]
             for disk in floating_disks_list:
