@@ -233,6 +233,7 @@ def readTestRunOpts(path, redefs):
     opts['cli_log_file'] = cliSection['cli_log_file']
     opts['cli_optional_params'] = cliSection['optional_params']
     opts['validate_cli_command'] = cliSection['validate_cli_command']
+    opts['cli_exit_timeout'] = cliSection['cli_exit_timeout']
 
     return config
 

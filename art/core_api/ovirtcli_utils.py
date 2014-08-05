@@ -127,13 +127,13 @@ class CliConnection(object):
         Author: imeerovi
         """
 
-    def logout(self):
+    def logout(self, timeout):
         """
         Description: cli logout
         Author: imeerovi
         """
         try:
-            self.sendCmd('exit', timeout=30)
+            self.sendCmd('exit', timeout=timeout)
         except CLIError:
             logger.debug('logged out from cli')
         else:
@@ -785,6 +785,7 @@ class CliUtil(RestUtil):
     """
     _shells = {RHEVM_SHELL: RhevmCli, OVIRT_SHELL: OvirtCli}
     _cliInit = None
+    _exitTimeout = None
 
     def __init__(self, element, collection):
         super(CliUtil, self).__init__(element, collection)
@@ -825,6 +826,7 @@ class CliUtil(RestUtil):
                 raise APILoginError(e)
 
             self.__class__._cliInit = self.cli
+            self.__class__._exitTimeout = self.opts['cli_exit_timeout']
         else:
             self.cli = self._cliInit
         super(CliUtil, self).login()
@@ -839,7 +841,7 @@ class CliUtil(RestUtil):
         """
         if cls._cliInit:
             try:
-                cls._cliInit.logout()
+                cls._cliInit.logout(cls._exitTimeout)
                 cls._cliInit = None
             finally:
                 super(CliUtil, cls).logout()
