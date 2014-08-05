@@ -965,12 +965,12 @@ class CliUtil(RestUtil):
         collHref, collection = None, None
 
         if origEntity.name and re.match(IP_FORMAT, origEntity.name):
-            name = "'%s'" % origEntity.name
+            entity_id = "'%s'" % origEntity.name
         else:
-            name = origEntity.name
+            entity_id = origEntity.id
 
         updateCmd = "update {0} {1} {2}".format(self.cli_element_name,
-                                                name, updateBody)
+                                                entity_id, updateBody)
 
         try:
             ownerId, ownerName, entityName = self._getHrefData(origEntity.href)
@@ -1069,7 +1069,7 @@ class CliUtil(RestUtil):
             addBody = validator.cliEntety(body, self.element_name)
 
         deleteCmd = 'remove {0} "{1}" {2}'.format(self.cli_element_name,
-                                                  entity.name, addBody)
+                                                  entity.id, addBody)
 
         if not async:
             deleteCmd = '{0} --async false'.format(deleteCmd)
