@@ -43,9 +43,12 @@ def create_datacenter(is_positive, dc_name, is_local):
         * is_local - True for localFS DC type, False for shared DC type
     Return: status (True if data center was added properly, False otherwise)
     """
-    com_version = config.COMPATIBILITY_VERSION
-    return datacenters.addDataCenter(is_positive, name=dc_name,
-                                     local=is_local, version=com_version)
+    return datacenters.addDataCenter(
+        is_positive,
+        name=dc_name,
+        local=is_local,
+        version=config.COMP_VERSION
+    )
 
 
 def remove_datacenter(dc_name):

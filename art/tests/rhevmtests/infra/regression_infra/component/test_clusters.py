@@ -76,7 +76,7 @@ class TestCaseCluster(TestCase):
         status = clusters.addCluster(positive=True, name=config.CLUSTER_1_NAME,
                                      cpu=config.CPU_NAME,
                                      data_center=config.DATA_CENTER_1_NAME,
-                                     version=config.COMPATIBILITY_VERSION,
+                                     version=config.COMP_VERSION,
                                      on_error='migrate')
         self.assertTrue(status, 'Add cluster')
 
@@ -90,7 +90,7 @@ class TestCaseCluster(TestCase):
         status = clusters.addCluster(positive=False, cpu=config.CPU_NAME,
                                      name=config.CLUSTER_1_NAME,
                                      data_center=config.DATA_CENTER_1_NAME,
-                                     version=config.COMPATIBILITY_VERSION,
+                                     version=config.COMP_VERSION,
                                      on_error='migrate')
         self.assertTrue(status, 'Add existing cluster')
 
@@ -104,7 +104,7 @@ class TestCaseCluster(TestCase):
         status = clusters.addCluster(positive=False, cpu='badConfig',
                                      name=config.CLUSTER_2_NAME,
                                      data_center=config.DATA_CENTER_1_NAME,
-                                     version=config.COMPATIBILITY_VERSION,
+                                     version=config.COMP_VERSION,
                                      on_error='migrate')
         self.assertTrue(status, 'Add cluster - wrong cpu')
 
@@ -118,7 +118,7 @@ class TestCaseCluster(TestCase):
         status = clusters.addCluster(positive=True, name=config.CLUSTER_2_NAME,
                                      cpu=config.CPU_NAME, mem_ovrcmt_prc='75',
                                      data_center=config.DATA_CENTER_1_NAME,
-                                     version=config.COMPATIBILITY_VERSION,
+                                     version=config.COMP_VERSION,
                                      on_error='do_not_migrate')
         self.assertTrue(status, 'Add cluster - specific memory overcommit')
 
@@ -132,7 +132,7 @@ class TestCaseCluster(TestCase):
         status = clusters.addCluster(
             positive=False, name=config.CLUSTER_3_NAME, cpu=config.CPU_NAME,
             data_center=config.DATA_CENTER_1_NAME,
-            version=config.COMPATIBILITY_VERSION,
+            version=config.COMP_VERSION,
             scheduling_policy='badConfig',
             thrhld_low='20', thrhld_high='60', duration='180')
         self.assertTrue(status, 'Add cluster - wrong scheduling policy')
@@ -147,7 +147,7 @@ class TestCaseCluster(TestCase):
         status = clusters.addCluster(
             positive=True, name=config.CLUSTER_3_NAME, cpu=config.CPU_NAME,
             data_center=config.DATA_CENTER_1_NAME,
-            version=config.COMPATIBILITY_VERSION,
+            version=config.COMP_VERSION,
             scheduling_policy=ENUMS['scheduling_policy_power_saving'],
             thrhld_low='20', thrhld_high='60', duration='180')
         self.assertTrue(status, 'Add cluster - scheduling policy power_saving')
@@ -162,7 +162,7 @@ class TestCaseCluster(TestCase):
         status = clusters.addCluster(
             positive=True, name=config.CLUSTER_4_NAME, cpu=config.CPU_NAME,
             data_center=config.DATA_CENTER_1_NAME,
-            version=config.COMPATIBILITY_VERSION,
+            version=config.COMP_VERSION,
             scheduling_policy=ENUMS['scheduling_policy_evenly_distributed'],
             thrhld_high='60', duration='180')
         self.assertTrue(status, 'Add cluster - scheduling policy '
@@ -307,7 +307,7 @@ class TestCaseCluster(TestCase):
         logger.info('Add data center')
         status = datacenters.addDataCenter(
             positive=True, name=config.DATA_CENTER_2_NAME,
-            local=False, version=config.COMPATIBILITY_VERSION)
+            local=False, version=config.COMP_VERSION)
         self.assertTrue(status, 'Add data center')
         logger.info('Update cluster data center')
         test_status = clusters.updateCluster(
@@ -466,8 +466,8 @@ class TestCaseCluster(TestCase):
         logger.info('Check cluster capabilities property'
                     'contains \'Transparent-Huge-Pages Memory Policy\'')
 
-        version_major = str(config.COMPATIBILITY_VERSION).split(".")[0]
-        version_minor = str(config.COMPATIBILITY_VERSION).split(".")[1]
+        version_major = str(config.COMP_VERSION).split(".")[0]
+        version_minor = str(config.COMP_VERSION).split(".")[1]
         xpathMatch = XPathMatch(clusters.CLUSTER_API)
         expr = 'count(/capabilities/version[@major=' + version_major + \
                ' and @minor=' + version_minor + ']/ \

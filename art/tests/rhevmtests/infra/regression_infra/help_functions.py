@@ -36,7 +36,7 @@ class utils(object):
         logger.info('Add data center')
         status = datacenters.addDataCenter(
             positive=True, name=config.DATA_CENTER_1_NAME,
-            local=False, version=config.COMPATIBILITY_VERSION)
+            local=False, version=config.COMP_VERSION)
         utils.reverse_env_list.append(utils.remove_dc)
         if not status:
             raise DataCenterException('Failed to add data center')
@@ -47,7 +47,7 @@ class utils(object):
         status = clusters.addCluster(
             positive=True, name=config.CLUSTER_1_NAME, cpu=config.CPU_NAME,
             data_center=config.DATA_CENTER_1_NAME,
-            version=config.COMPATIBILITY_VERSION, on_error='migrate')
+            version=config.COMP_VERSION, on_error='migrate')
         utils.reverse_env_list.append(utils.remove_cluster)
         if not status:
             raise ClusterException('Failed to add cluster')
@@ -57,7 +57,7 @@ class utils(object):
         logger.info('Add host')
         status = hosts.addHost(
             positive=True, name=config.HOST_NAME, wait=True, reboot=False,
-            root_password=config.VDS_PASSWORD, cluster=config.CLUSTER_1_NAME,
+            root_password=config.HOSTS_PW, cluster=config.CLUSTER_1_NAME,
             vdcPort=config.VDC_PORT)
         utils.reverse_env_list.append(utils.remove_host)
         if not status:

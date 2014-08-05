@@ -72,7 +72,7 @@ class TestCaseHost(TestCase):
         logger.info('Add host')
         status = hosts.addHost(
             positive=True, name=config.HOST_NAME, wait=True, reboot=False,
-            root_password=config.VDS_PASSWORD, cluster=config.CLUSTER_1_NAME,
+            root_password=config.HOSTS_PW, cluster=config.CLUSTER_1_NAME,
             vdcPort=config.VDC_PORT)
         self.assertTrue(status, 'Add host')
 
@@ -153,7 +153,7 @@ class TestCaseHost(TestCase):
         logger.info('Add host - %s protocol', protocol)
         status = hosts.addHost(
             positive=True, name=config.HOST_NAME, wait=True, reboot=False,
-            root_password=config.VDS_PASSWORD, cluster=config.CLUSTER_1_NAME,
+            root_password=config.HOSTS_PW, cluster=config.CLUSTER_1_NAME,
             vdcPort=config.VDC_PORT, protocol=protocol)
         self.assertTrue(status, 'Add host - %s protocol' % protocol)
         logger.info('Remove host')

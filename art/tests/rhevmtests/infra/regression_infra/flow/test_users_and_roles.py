@@ -349,9 +349,11 @@ class TestCaseUserAndRoles(TestCase):
         """
         logger.info('Check definition of blank template')
         xpathMatch = XPathMatch(general.util)
-        expr = 'count(/api/special_objects/link[@rel="templates/blank" and '\
-               '@href="/%s/templates/'\
-               '00000000-0000-0000-0000-000000000000"])' % config.ENTRY_POINT
+        expr = (
+            'count(/api/special_objects/link[@rel="templates/blank" and '
+            '@href="/%s/templates/00000000-0000-0000-0000-000000000000"])' %
+            config.ENGINE_ENTRY_POINT
+        )
         try:
             status = xpathMatch(True, 'api', expr)
             self.assertTrue(status, 'Check definition of blank template')
@@ -365,9 +367,11 @@ class TestCaseUserAndRoles(TestCase):
         """
         logger.info('Check definition of tag root object')
         xpathMatch = XPathMatch(general.util)
-        expr = ('count(/api/special_objects/link[@rel="tags/root" and '
-                '@href="/%s/tags/'
-                '00000000-0000-0000-0000-000000000000"])' % config.ENTRY_POINT)
+        expr = (
+            'count(/api/special_objects/link[@rel="tags/root" and '
+            '@href="/%s/tags/00000000-0000-0000-0000-000000000000"])' %
+            config.ENGINE_ENTRY_POINT
+        )
         try:
             status = xpathMatch(True, 'api', expr)
             self.assertTrue(status, 'Check definition of tag root object')

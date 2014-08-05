@@ -8,18 +8,25 @@ from art.test_handler.settings import ART_CONFIG, opts
 
 # RHEVM related constants
 ENUMS = opts['elements_conf']['RHEVM Enums']
+PERMITS = opts['elements_conf']['RHEVM Permits']
 
 TEST_NAME = "Global"
 
 PARAMETERS = ART_CONFIG['PARAMETERS']
 STORAGE_CONF = ART_CONFIG['STORAGE']
+REST_CONNECTION = ART_CONFIG['REST_CONNECTION']
 
+PRODUCT_NAME = PARAMETERS['product_name']
 
 # ENGINE SECTION
 VDC_HOST = ART_CONFIG['REST_CONNECTION']['host']
 VDC_ROOT_PASSWORD = PARAMETERS.get('vdc_root_password')
 VDC_PASSWORD = ART_CONFIG['REST_CONNECTION']['password']
 VDC_USER = "root"
+VDC_PORT = REST_CONNECTION['port']
+VDC_ADMIN_USER = REST_CONNECTION['user']
+VDC_ADMIN_DOMAIN = REST_CONNECTION['user_domain']
+ENGINE_ENTRY_POINT = REST_CONNECTION['entry_point']
 # DATA CENTER SECTION
 DC_NAME = ["".join([TEST_NAME, "_DC", str(i)]) for i in range(5)]
 # CLUSTER SECTION
@@ -28,15 +35,16 @@ CPU_NAME = PARAMETERS['cpu_name']
 CPU_CORES = PARAMETERS['cpu_cores']
 CPU_SOCKET = PARAMETERS['cpu_socket']
 COMP_VERSION = PARAMETERS['compatibility_version']
+# HOST SECTION
+HOSTS = PARAMETERS.as_list('vds')
+HOSTS_PW = PARAMETERS.as_list('vds_password')[0]
+HOSTS_USER = 'root'
+HOST_OS = PARAMETERS['host_os']
 # STORAGE SECTION
 STORAGE_TYPE = PARAMETERS['storage_type']
 UNCOMP_DC_NAME = PARAMETERS.get("dc_name", "%s_DC30" % TEST_NAME)
 UNCOMP_CL_NAME = ["".join([CLUSTER_NAME[0], "CL3", str(i)]) for i in range(2)]
 VERSION = ["3.0", "3.1", "3.2", "3.3", "3.4"]
-HOSTS = PARAMETERS.as_list('vds')
-HOSTS_PW = PARAMETERS.as_list('vds_password')[0]
-HOSTS_USER = 'root'
-HOST_OS = PARAMETERS['host_os']
 SAMPLER_TIMEOUT = 60
 CONNECT_TIMEOUT = 60
 VMS_LINUX_USER = PARAMETERS.as_list('vm_linux_user')[0]
@@ -65,3 +73,7 @@ GB = 1024 ** 3
 DISK_SIZE = 5 * GB
 DISK_TYPE_SYSTEM = ENUMS['disk_type_system']
 DISK_INTERFACE = ENUMS['interface_virtio']
+# USERS & ROLES
+AD_USER_DOMAIN = PARAMETERS['ad_user_domain']
+AD_USERNAME = PARAMETERS['ad_user']
+AD_USER_NO_ROLES = PARAMETERS['no_roles_user']
