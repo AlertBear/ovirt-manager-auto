@@ -11,7 +11,7 @@ import time
 import art.test_handler.exceptions as errors
 
 from rhevmtests.system.user_roles_tests import config
-from user_roles_tests.roles import role
+from rhevmtests.system.user_roles_tests.roles import role
 from nose.tools import istest
 from art.unittest_lib import BaseTestCase as TestCase
 
@@ -29,8 +29,8 @@ TCMS_PLAN_ID = 5767
 
 def loginAsAdmin():
     users.loginAsUser(
-        config.OVIRT_USERNAME, config.OVIRT_DOMAIN,
-        config.OVIRT_PASSWORD, filter=False)
+        config.VDC_ADMIN_USER, config.VDC_ADMIN_DOMAIN,
+        config.VDC_PASSWORD, filter=False)
 
 
 def setUpModule():
@@ -458,7 +458,7 @@ class DPCase147128(TestCase):
                          config.ALT1_STORAGE_NAME)
         time.sleep(5)
         disks.waitForDisksState(self.disk_name)
-        test_utils.wait_for_tasks(config.OVIRT_IP, config.OVIRT_ROOT_PSW,
+        test_utils.wait_for_tasks(config.VDC_HOST, config.VDC_ROOT_PASSWORD,
                                   config.MAIN_DC_NAME)
         LOGGER.info("User with perms on target sd and disk can move disk.")
 
@@ -472,7 +472,7 @@ class DPCase147128(TestCase):
                                         config.USER1)
         mla.removeUserPermissionsFromSD(True, config.ALT1_STORAGE_NAME,
                                         config.USER1)
-        test_utils.wait_for_tasks(config.OVIRT_IP, config.OVIRT_ROOT_PSW,
+        test_utils.wait_for_tasks(config.VDC_HOST, config.VDC_ROOT_PASSWORD,
                                   config.MAIN_DC_NAME)
         storagedomains.remove_storage_domain(config.ALT1_STORAGE_NAME,
                                              config.MAIN_DC_NAME,

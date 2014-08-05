@@ -9,7 +9,7 @@ __test__ = True
 
 import logging
 from rhevmtests.system.user_roles_tests import config
-from user_roles_tests.roles import role
+from rhevmtests.system.user_roles_tests.roles import role
 from nose.tools import istest
 from art.test_handler.tools import tcms, bz
 from art.core_api.apis_exceptions import EntityNotFound

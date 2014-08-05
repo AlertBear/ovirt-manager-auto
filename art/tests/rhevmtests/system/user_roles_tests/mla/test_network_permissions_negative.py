@@ -9,7 +9,7 @@ __test__ = True
 
 import logging
 from rhevmtests.system.user_roles_tests import config
-from user_roles_tests.roles import role
+from rhevmtests.system.user_roles_tests.roles import role
 from nose.tools import istest
 from art.unittest_lib import BaseTestCase as TestCase
 from art.test_handler.tools import tcms
@@ -33,8 +33,8 @@ def loginAsUser(userName, filter_=True):
 
 
 def loginAsAdmin():
-    users.loginAsUser(config.OVIRT_USERNAME, config.OVIRT_DOMAIN,
-                      config.OVIRT_PASSWORD, filter=False)
+    users.loginAsUser(config.VDC_ADMIN_USER, config.VDC_ADMIN_DOMAIN,
+                      config.VDC_PASSWORD, filter=False)
 
 
 def setUpModule():

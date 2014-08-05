@@ -8,7 +8,7 @@ if he has not permissions.
 __test__ = True
 
 from rhevmtests.system.user_roles_tests import config
-from user_roles_tests.roles import role
+from rhevmtests.system.user_roles_tests.roles import role
 from nose.tools import istest
 import logging
 from art.test_handler.tools import bz, tcms
@@ -67,8 +67,8 @@ def loginAsUser(**kwargs):
 
 def loginAsAdmin():
     users.loginAsUser(
-        config.OVIRT_USERNAME, config.OVIRT_DOMAIN,
-        config.OVIRT_PASSWORD, filter=False)
+        config.VDC_ADMIN_USER, config.VDC_ADMIN_DOMAIN,
+        config.VDC_PASSWORD, filter=False)
 
 
 class VmUserInfoTests(TestCase):

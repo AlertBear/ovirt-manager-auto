@@ -7,7 +7,7 @@ Tests if permissions are correctly inherited/viewed/assigned/removed.
 __test__ = True
 
 from rhevmtests.system.user_roles_tests import config
-from user_roles_tests.roles import role
+from rhevmtests.system.user_roles_tests.roles import role
 from nose.tools import istest
 from art.test_handler.tools import bz, tcms
 from art.unittest_lib import BaseTestCase as TestCase
@@ -34,8 +34,8 @@ def loginAsUser(user_name, filter=True):
 
 def loginAsAdmin():
     users.loginAsUser(
-        config.OVIRT_USERNAME, config.OVIRT_DOMAIN,
-        config.OVIRT_PASSWORD, filter=False)
+        config.VDC_ADMIN_USER, config.VDC_ADMIN_DOMAIN,
+        config.VDC_PASSWORD, filter=False)
 
 
 def setUpModule():
@@ -203,9 +203,9 @@ class PermissionsCase5441854419(TestCase):
     def removalOfSuperUser(self):
         """ test removal of SuperUser """
         msg = "Unable to remove admin@internal or his SuperUser permissions."
-        admin = '%s@%s' % (config.OVIRT_USERNAME, config.OVIRT_DOMAIN)
+        admin = '%s@%s' % (config.VDC_ADMIN_USER, config.VDC_ADMIN_DOMAIN)
         assert users.removeUser(
-            False, config.OVIRT_USERNAME, config.OVIRT_DOMAIN)
+            False, config.VDC_ADMIN_USER, config.VDC_ADMIN_DOMAIN)
         assert mla.removeUserRoleFromDataCenter(
             False, config.MAIN_DC_NAME, admin, role.SuperUser)
         LOGGER.info(msg)

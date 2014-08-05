@@ -8,7 +8,7 @@ import logging
 import time
 
 from rhevmtests.system.user_roles_tests import config
-from user_roles_tests.roles import role as role_e
+from rhevmtests.system.user_roles_tests.roles import role as role_e
 from nose.tools import istest
 from art.unittest_lib import BaseTestCase as TestCase
 
@@ -25,8 +25,8 @@ TCMS_PLAN_ID = 2597
 
 def loginAsAdmin():
     users.loginAsUser(
-        config.OVIRT_USERNAME, config.OVIRT_DOMAIN,
-        config.OVIRT_PASSWORD, filter=False)
+        config.VDC_ADMIN_USER, config.VDC_ADMIN_DOMAIN,
+        config.VDC_PASSWORD, filter=False)
 
 
 def setUpModule():

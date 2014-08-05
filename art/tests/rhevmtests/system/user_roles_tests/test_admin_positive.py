@@ -8,9 +8,9 @@ For every possitive action that admin role has try to do this action.
 from rhevmtests.system.user_roles_tests import test_actions
 
 
-def setUpModule():
-    test_actions.setUpModule()
+def setup_module():
+    test_actions.setup_module()
 
 
-def tearDownModule():
-    test_actions.tearDownModule()
+def teardown_module():
+    test_actions.teardown_module()

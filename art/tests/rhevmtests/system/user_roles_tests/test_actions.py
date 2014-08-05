@@ -43,7 +43,7 @@ DETACH_TIMEOUT = 10
 MY_HOSTS = [config.MAIN_HOST_NAME, config.ALT1_HOST_ADDRESS]
 
 
-def setUpModule():
+def setup_module():
     """ Prepare testing setup """
     reload(config)
     global ISO_NAME
@@ -74,7 +74,7 @@ def setUpModule():
         config.ALT1_STORAGE_ADDRESS, config.ALT1_STORAGE_PATH)
 
 
-def tearDownModule():
+def teardown_module():
     users.removeUser(True, config.USER_NAME)
 
 
@@ -84,8 +84,8 @@ def loginAsUser(filter_=True):
 
 
 def loginAsAdmin():
-    users.loginAsUser(config.OVIRT_USERNAME, config.OVIRT_DOMAIN,
-                      config.OVIRT_PASSWORD, filter=False)
+    users.loginAsUser(config.VDC_ADMIN_USER, config.VDC_ADMIN_DOMAIN,
+                      config.VDC_PASSWORD, filter=False)
 
 
 def my_ie(method, *args, **kwargs):
@@ -194,7 +194,7 @@ class Case_edit_storage_pool_configuration(BaseTest):
     def setUp(self):
         datacenters.addDataCenter(True, name=config.DC_NAME_B,
                                   storage_type=config.MAIN_STORAGE_TYPE,
-                                  version=config.OVIRT_VERSION)
+                                  version=config.COMP_VERSION)
         mla.addPermissionsForDataCenter(True, config.USER_NAME,
                                         config.DC_NAME_B, role=self.role)
 
@@ -218,7 +218,7 @@ class Case_delete_storage_pool(BaseTest):
     def setUp(self):
         datacenters.addDataCenter(True, name=config.DC_NAME_B,
                                   storage_type=config.MAIN_STORAGE_TYPE,
-                                  version=config.OVIRT_VERSION)
+                                  version=config.COMP_VERSION)
         mla.addPermissionsForDataCenter(True, config.USER_NAME,
                                         config.DC_NAME_B, role=self.role)
 
@@ -272,7 +272,7 @@ class Case_create_storage_pool(BaseTest):
         self.assertTrue(
             datacenters.addDataCenter(self.positive, name=config.DC_NAME_B,
                                       storage_type=config.MAIN_STORAGE_TYPE,
-                                      version=config.OVIRT_VERSION))
+                                      version=config.COMP_VERSION))
 
 
 @attr(tier=2)
