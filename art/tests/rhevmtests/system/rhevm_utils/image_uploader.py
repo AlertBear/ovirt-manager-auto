@@ -1,4 +1,4 @@
-from rhevm_utils import base
+from rhevmtests.system.rhevm_utils import base
 from unittest_conf import (
     REST_API_PASS, IMAGE_UP_CONF, EXPORT_DOMAIN_NAME, DC_NAME)
 from art.unittest_lib import attr

@@ -1,4 +1,4 @@
-from rhevm_utils.base import RHEVMUtilsTestCase
+from rhevmtests.system.rhevm_utils.base import RHEVMUtilsTestCase
 
 from art.test_handler import exceptions
 from art.test_handler.tools import tcms, bz

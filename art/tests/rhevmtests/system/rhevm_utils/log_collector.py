@@ -12,7 +12,7 @@ from utilities.rhevm_tools.log_collector import LogCollectorUtility
 from art.test_handler.settings import ART_CONFIG
 import logging
 
-import rhevm_utils.base as base
+from rhevmtests.system.rhevm_utils import base
 
 LOG_COLLECTOR_TEST_PLAN = 3748
 NAME = 'log_collector'

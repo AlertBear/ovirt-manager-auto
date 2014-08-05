@@ -1,4 +1,4 @@
-from rhevm_utils.base import RHEVMUtilsTestCase
+from rhevmtests.system.rhevm_utils.base import RHEVMUtilsTestCase
 from utilities.rhevm_tools.upgrade import UpgradeUtility
 
 NAME = 'upgrade'

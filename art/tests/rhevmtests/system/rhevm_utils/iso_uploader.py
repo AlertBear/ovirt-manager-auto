@@ -1,6 +1,6 @@
 import sys
 
-from rhevm_utils import base
+from rhevmtests.system.rhevm_utils import base
 from unittest_conf import (REST_API_HOST,
                            REST_API_PASS,
                            ISO_UP_CONF,

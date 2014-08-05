@@ -2,7 +2,7 @@
     rhevm cleanup module
 """
 
-from rhevm_utils import base
+from rhevmtests.system.rhevm_utils import base
 from utilities.rhevm_tools.cleanup import CleanUpUtility
 import os
 import logging
