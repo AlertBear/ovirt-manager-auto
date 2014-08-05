@@ -141,13 +141,16 @@ class LDAPCase289069(TestCase):
     """ Try to search via REST with firstname, lastname """
     __test__ = True
 
+    # FIXME: https://projects.engineering.redhat.com/browse/RHEVM-1615
+    apis = TestCase.apis - set(['java', 'sdk'])
+
     def setUp(self):
         domainID = users.domUtil.find(config.LDAP_DOMAIN).get_id()
         self.query = '/api/domains/' + domainID + '/%s?search={query}'
 
     @istest
     @tcms(config.LDAP_TCMS_PLAN_ID, 289069)
-    @bz(1117240)
+    @bz(1125161)
     def searchForUsersAndGroups(self):
         """ Search within domain for users and groups """
         self.assertTrue(
@@ -188,6 +191,7 @@ class LDAPCase289071(TestCase):
 
     @istest
     @tcms(config.LDAP_TCMS_PLAN_ID, 289071)
+    @bz(1125161)
     def updateInformation(self):
         """ Update information """
         self.assertTrue(
@@ -227,6 +231,7 @@ class LDAPCase289072(TestCase):
 
     @istest
     @tcms(config.LDAP_TCMS_PLAN_ID, 289072)
+    @bz(1125161)
     def persistencyOfGroupRights(self):
         """ Persistency of group rights """
         loginAsUser(config.LDAP_USER_FROM_GROUP, True)

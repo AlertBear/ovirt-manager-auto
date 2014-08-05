@@ -24,7 +24,7 @@ AD2_USER_NAME = ACTIVE_DIRECTORY.get('ad2_user_name', None)
 
 # IPA
 IPA_DOMAIN = str(IPA.get('ipa_domain', None))
-IPA_PASSWORD = '123456'
+IPA_PASSWORD = str(IPA.get('ipa_password', None))
 
 # TODO ADD expired_acc_name if none skip?
 IPA_WITH_MANY_GROUPS_NAME = IPA.get('ipa_with_many_groups_name', None)

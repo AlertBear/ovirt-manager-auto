@@ -147,6 +147,7 @@ class IPACase93881(TestCase):
 
     @istest
     @tcms(config.IPA_TCMS_PLAN_ID, 93881)
+    @bz(1123545)
     def loginFormats(self):
         """ Login formats """
         msg_f = "Login format %s doesn't not work."
@@ -200,6 +201,7 @@ class IPACase109146(TestCase):
 
     @istest
     @tcms(config.IPA_TCMS_PLAN_ID, 109146)
+    @bz(1125161)
     def persistencyOfGroupRights(self):
         """ Persistency of group rights """
         loginAsUser(config.IPA_WITH_GROUP_NAME, False)
@@ -223,9 +225,12 @@ class IPACase93882(TestCase):
     """ Try to search via REST with firstname, lastname """
     __test__ = True
 
+    # FIXME: https://projects.engineering.redhat.com/browse/RHEVM-1615
+    apis = TestCase.apis - set(['java', 'sdk'])
+
     @istest
     @tcms(config.IPA_TCMS_PLAN_ID, 93882)
-    @bz(1117240)
+    @bz(1125161)
     def search(self):
         """ Search """
         domain_id = users.domUtil.find(config.IPA_DOMAIN.lower()).get_id()

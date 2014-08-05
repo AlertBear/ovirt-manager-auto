@@ -142,6 +142,7 @@ class BaseGroupsPersistency(TestCase):
                                          config.MAIN_CLUSTER_NAME)
 
     @istest
+    @bz(1125161)
     def basePersistencyOfGroupRights(self):
         """ After user removal, check that his group persist """
         loginAsUser(config.USER_FROM_GROUP(self.domain), self.domain, False)
@@ -191,12 +192,14 @@ class BaseSearchForUsersAndGroups(TestCase):
     name = None
     last_name = None
 
+    apis = TestCase.apis - set(['java', 'sdk'])
+
     def setUp(self):
         domainID = users.domUtil.find(self.domain).get_id()
         self.query = '/api/domains/' + domainID + '/%s?search={query}'
 
     @istest
-    @bz(1117240)
+    @bz(1125161)
     def searchForUsersAndGroups(self):
         """ Search within domain for users and groups """
         self.assertTrue(

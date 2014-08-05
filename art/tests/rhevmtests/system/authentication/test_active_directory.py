@@ -16,7 +16,7 @@ from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.low_level import mla, users, general
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils import test_utils
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from test_base import connectionTest
 from utilities.machine import LINUX, Machine
 
@@ -116,6 +116,7 @@ class ActiveDirectory(TestCase):
 
     @istest
     @tcms(config.AD_TCMS_PLAN_ID, 91742)
+    @bz(1125161)
     def fetchingGroupsWithUser(self):
         """ Fetching user groups when logging with UPN """
         user_name = config.USER_FROM_GROUP(self.domain)
