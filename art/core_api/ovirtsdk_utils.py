@@ -163,8 +163,12 @@ class SdkUtil(APIUtil):
         response = None
         try:
             with measure_time('POST'):
-                response = collection.add(entity,
-                                          **self.getReqMatrixParams(current))
+                response = collection.add(
+                    entity,
+                    **self.getReqMatrixParams(
+                        current,
+                        api_operation=ApiOperation.create)
+                )
 
             if not async:
                 self.find(response.id, 'id', collection=collection.list())
@@ -278,7 +282,8 @@ class SdkUtil(APIUtil):
                           dumpedEntity)
 
         try:
-            matrix_params = self.getReqMatrixParams(current)
+            matrix_params = self.getReqMatrixParams(
+                current, api_operation=ApiOperation.update)
             with measure_time('PUT'):
                 response = origEntity.update(**matrix_params)
             self.logger.info(self.element_name + " was updated")
@@ -309,12 +314,13 @@ class SdkUtil(APIUtil):
 
         try:
             self.logger.debug("DELETE entity: {0}".format(entity.get_id()))
+            correlation_id = self.getCorrelationId(ApiOperation.delete)
             if body:
                 with measure_time('DELETE'):
-                    entity.delete(body, correlation_id=self.getCorrelationId())
+                    entity.delete(body, correlation_id=correlation_id)
             else:
                 with measure_time('DELETE'):
-                    entity.delete(correlation_id=self.getCorrelationId())
+                    entity.delete(correlation_id=correlation_id)
         except RequestError as e:
             self.printErrorMsg(ApiOperation.delete,
                                e.status, e.reason, e.detail)
@@ -425,7 +431,7 @@ class SdkUtil(APIUtil):
             pass
 
         try:
-            correlation_id = self.getCorrelationId()
+            correlation_id = self.getCorrelationId(ApiOperation.syncAction)
             with measure_time('POST'):
                 act = getattr(entity, action)(act,
                                               correlation_id=correlation_id)

@@ -940,7 +940,7 @@ element:%(elm)s " % {'col': self.collection_name,
                                       entity_name)()
                 translator_to_java(entity, java_entity)
             # getting correlation id and running
-            correlation_id = self.getCorrelationId()
+            correlation_id = self.getCorrelationId(ApiOperation.create)
 
             # setting expect status
             expect = "201-created"
@@ -1046,7 +1046,7 @@ element:%(elm)s " % {'col': self.collection_name,
 element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
 
         # getting correlation id and running
-        correlation_id = self.getCorrelationId()
+        correlation_id = self.getCorrelationId(ApiOperation.update)
 
         try:
             if correlation_id is not None or current is not None or async:
@@ -1108,7 +1108,8 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
         Return: status (True if DELETE test succeeded, False otherwise)
         '''
 
-        correlation_id = str(self.getCorrelationId() or "666")
+        correlation_id = str(self.getCorrelationId(ApiOperation.delete)
+                             or "666")
 
         try:
             self.logger.debug("DELETE entity: {0}".format(entity.get_id()))
@@ -1123,7 +1124,7 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
                     java_entity.delete(java_body, async, correlation_id)
             # if async is False and no correlation id defined - we got default
             # behavior (last case)
-            elif async or self.getCorrelationId():
+            elif async or self.getCorrelationId(ApiOperation.delete):
                 # public Response delete(Boolean async, String correlationId)
                 with measure_time('DELETE'):
                     java_entity.delete(async, correlation_id)
@@ -1324,7 +1325,8 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
             translator_to_java(act, java_action_entity)
             with measure_time('POST'):
                 act = getattr(java_entity, action)(
-                    java_action_entity, str(self.getCorrelationId()))
+                    java_action_entity,
+                    str(self.getCorrelationId(ApiOperation.syncAction)))
         except java_sdk.JavaError as e:
             self.parse_java_error(e, ApiOperation.syncAction)
             if positive:

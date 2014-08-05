@@ -884,7 +884,7 @@ class CliUtil(RestUtil):
                 createCmd = "add {0} --{1}-identifier '{2}' {3} \
 --expect '201-created'".format(self.cli_element_name, ownerId.rstrip('s'),
                                entityName, addEntity)
-        correlationId = self.getCorrelationId()
+        correlationId = self.getCorrelationId(ApiOperation.create)
         if correlationId:
             createCmd = "%s --correlation_id '%s'" % (createCmd, correlationId)
 
@@ -978,7 +978,7 @@ class CliUtil(RestUtil):
             collHref = '/api/{0}s/{1}/{2}s'.format(ownerName,
                                                    ownerId, entityName)
 
-        correlationId = self.getCorrelationId()
+        correlationId = self.getCorrelationId(ApiOperation.update)
         if correlationId:
             updateCmd = "%s --correlation_id '%s'" % (updateCmd, correlationId)
 
@@ -1077,7 +1077,7 @@ class CliUtil(RestUtil):
                 "--async false".format(entityName, entity.id, ownerName,
                                        ownerId, addBody)
 
-        correlationId = self.getCorrelationId()
+        correlationId = self.getCorrelationId(ApiOperation.delete)
         if correlationId:
             deleteCmd = "%s --correlation_id '%s'" % (deleteCmd, correlationId)
 
@@ -1274,7 +1274,7 @@ class CliUtil(RestUtil):
                         format(entityName, entity.id, action, ownerName,
                                ownerId, addParams, cli_act)
 
-        correlationId = self.getCorrelationId()
+        correlationId = self.getCorrelationId(ApiOperation.syncAction)
         if correlationId:
             actionCmd = "%s --correlation_id '%s'" % (actionCmd, correlationId)
 

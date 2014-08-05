@@ -21,7 +21,6 @@ import sys
 import time
 import abc
 import logging
-import inspect
 from collections import namedtuple
 from utilities.utils import generateShortGuid
 from art.core_api.apis_exceptions import APITimeout, EntityNotFound
@@ -129,36 +128,38 @@ class APIUtil(object):
     def logger(self):
         return logging.getLogger(self.collection_name)
 
-    def getCorrelationId(self):
+    def getCorrelationId(self, api_operation=None):
         '''
         Description: builds unique correlation id
-        Parameters: None
+        Parameters:
+            * api_operation - the api operation performed
         Return: correlation id
         '''
         # backward compatibility
         if CORRELATION_ID in self.opts[HEADERS]:
             return self.opts[HEADERS][CORRELATION_ID]
 
-        funcs_names_stack = [func[3] for func in inspect.stack()]
-        api_func_name = filter(lambda func: func in self.__api_methods,
-                               funcs_names_stack)[0]
-        test_func_name = funcs_names_stack[funcs_names_stack.index(
-            api_func_name) + 1]
-
+        if api_operation is None:
+            api_operation = 'unknown_api'
         correlation_id = "_".join(
-            [generateShortGuid(), test_func_name,
-             api_func_name])[:MAX_CORRELATION_ID_LENGTH]
+            [
+                self.collection_name,
+                api_operation,
+                generateShortGuid()
+            ]
+        )[:MAX_CORRELATION_ID_LENGTH]
 
         return correlation_id
 
-    def getReqMatrixParams(self, current=None):
+    def getReqMatrixParams(self, current=None, api_operation=None):
         '''
         Description: build dict of matrix parameters for request
         Parameters:
            * current - boolean current value (True/False)
+           * api_operation - the api operation performed
         Return: dict of parameters: correlation_id, current
         '''
-        add_params = dict(correlation_id=self.getCorrelationId())
+        add_params = dict(correlation_id=self.getCorrelationId(api_operation))
         if current is not None:
             add_params['current'] = current
         return add_params
@@ -224,11 +225,12 @@ class APIUtil(object):
         Author: jhenner
         '''
 
-        MSG = 'Waiting for query `%s` and event_id %s up to %d seconds, sampling every %d second.'
+        MSG = ('Waiting for query `%s` and event_id %s up to %d seconds,'
+               'sampling every %d second.')
         self.logger.info(MSG % (query, event_id, timeout, sleep))
         sampler = TimeoutingSampler(timeout, sleep, self.query)
-        TIMEOUT_MSG_TMPL = "Timeout when waiting for query '{0}' on '{1}'"\
-                                        .format(query, self.collection_name)
+        TIMEOUT_MSG_TMPL = ("Timeout when waiting for query '{0}' on '{1}'"
+                            .format(query, self.collection_name))
         sampler.timeout_exc_args = TIMEOUT_MSG_TMPL.format(query, event_id),
         sampler.func_args = query, [200, 201], href, event_id
 

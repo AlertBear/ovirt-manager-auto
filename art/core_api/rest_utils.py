@@ -99,17 +99,18 @@ class RestUtil(APIUtil):
         cls._restInit = None
 
     @contextmanager
-    def correlationIdContext(self):
+    def correlationIdContext(self, api_operation):
         """
         Description: context management for getting correlation id
         Author: imeerovi
-        Parameters: None
+        Parameters:
+            * api_operation - the api operation performed
         Returns: correlation-id
         """
         with self.__class__.context_lock:
             try:
                 self.api.headers['Correlation-Id'] = super(
-                    RestUtil, self).getCorrelationId()
+                    RestUtil, self).getCorrelationId(api_operation)
                 self.logger.info("Using Correlation-Id: %s",
                                  self.api.headers['Correlation-Id'])
                 yield
@@ -297,7 +298,7 @@ class RestUtil(APIUtil):
             {'uri': post_url, 'body': entity})
 
         # TODO: fix this nasty nested with when we will move to python 2.7
-        with self.correlationIdContext():
+        with self.correlationIdContext(ApiOperation.create):
             with measure_time('POST'):
                 ret = self.api.POST(post_url, entity)
 
@@ -363,7 +364,7 @@ class RestUtil(APIUtil):
             {'uri': put_url, 'body': entity})
 
         # TODO: fix this nasty nested with when we will move to python 2.7
-        with self.correlationIdContext():
+        with self.correlationIdContext(ApiOperation.update):
             with measure_time('PUT'):
                 ret = self.api.PUT(put_url, entity)
 
@@ -406,7 +407,7 @@ class RestUtil(APIUtil):
                                    request
         Return: status (True if DELETE test succeeded, False otherwise)
         '''
-        with self.correlationIdContext():
+        with self.correlationIdContext(ApiOperation.delete):
             if body:
                 if not element_name:
                     element_name = self.element_name
@@ -571,7 +572,7 @@ class RestUtil(APIUtil):
             {'uri': actionHref, 'body': actionBody})
 
         # TODO: fix this nasty nested with when we will move to python 2.7
-        with self.correlationIdContext():
+        with self.correlationIdContext(ApiOperation.syncAction):
             with measure_time('POST'):
                 ret = self.api.POST(actionHref, actionBody)
 
