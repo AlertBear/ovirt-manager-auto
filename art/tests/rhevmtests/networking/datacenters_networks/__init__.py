@@ -9,6 +9,8 @@ from art.rhevm_api.tests_lib.low_level.datacenters import removeDataCenter
 logger = logging.getLogger("Datacenter_Networks")
 #################################################
 
+config.DC_NAME = ["".join([config.TEST_NAME, "_DC", str(i)]) for i in range(2)]
+
 
 def setup_package():
     """
