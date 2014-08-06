@@ -519,6 +519,18 @@ def addVmPoolPermissionToUser(positive, user, vmpool, role, domain=None):
     return addPermitsToUser(positive, user, domain, role, poolObj, 'vmpool')
 
 
+def findUserByUserName(user_name):
+    '''
+    Description: Find user by usernam:
+    Parameters:
+     * user_name: user_name of user
+    return User object if found else None
+    '''
+    users = userUtil.query('{0}={1}'.format('usrname', user_name))
+    user = filter(lambda u: u.get_user_name() == user_name, users) or [None]
+    return user[0]
+
+
 def removeUserRoleFromObject(positive, obj, user_name, role_name):
     '''
     Description: remove user's role from object
@@ -530,8 +542,11 @@ def removeUserRoleFromObject(positive, obj, user_name, role_name):
     status = True
     role_id = util.find(role_name).get_id()
     permits = permisUtil.getElemFromLink(obj, get_href=False)
-    user = userUtil.query('{0}={1}'.format('usrname', user_name))[0].get_id()
+    user = findUserByUserName(user_name)
+    if user is None:
+        return not positive
 
+    user = user.get_id()
     for perm in permits:
         if perm.get_user().get_id() == user and \
                 perm.get_role().get_id() == role_id and \
@@ -848,9 +863,7 @@ def hasUserOrGroupPermissionsOnObject(name, obj, role, group=False):
     if group:
         user = groupUtil.find(name)
     else:
-        users = userUtil.query('{0}={1}'.format('usrname', name))
-        user = filter(lambda u: u.get_user_name() == name, users) or [None]
-        user = user[0]
+        user = findUserByUserName(name)
 
     if user is None:
         return False
