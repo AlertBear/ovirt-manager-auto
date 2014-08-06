@@ -54,8 +54,8 @@ TESTING_ENV = {
 
 ANSWERS = {
     # KEYWORDS FOR OTOPI ANSWERFILE
-    'OSETUP_RPMDISTRO/enableUpgrade': 'none:None',
-    'OVESETUP_CORE/engineStop': 'none:None',
+    'OSETUP_RPMDISTRO/enableUpgrade': 'bool:False',
+    'OVESETUP_CORE/engineStop': 'bool:True',
     'OVESETUP_DIALOG/confirmSettings': 'bool:True',
     'OVESETUP_DB/database': 'str:engine',
     'OVESETUP_DB/secured': 'bool:False',
