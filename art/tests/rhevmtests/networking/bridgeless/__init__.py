@@ -18,6 +18,10 @@ def setup_package():
     """
     Prepare environment
     """
+    if config.GOLDEN_ENV:
+        logger.info("Running on golden env, no setup")
+        return
+
     logger.info("Create setup with datacenter, cluster and host")
     if not create_basic_setup(datacenter=config.DC_NAME[0],
                               storage_type=config.STORAGE_TYPE,
@@ -32,6 +36,10 @@ def teardown_package():
     """
     Cleans the environment
     """
+    if config.GOLDEN_ENV:
+        logger.info("Running on golden env, no teardown")
+        return
+
     logger.info("Removing DC/Cluster and host")
     if not removeDataCenter(positive=True, datacenter=config.DC_NAME[0]):
         raise NetworkException("Failed to remove datacenter")
