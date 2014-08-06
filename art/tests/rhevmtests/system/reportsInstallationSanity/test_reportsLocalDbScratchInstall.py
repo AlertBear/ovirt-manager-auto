@@ -18,8 +18,8 @@ SERVICE_IS_NOT_RUNNING_MSG = "Service %s is not running"
 SERVICE_IS_RUNNING_MSG = "Service %s is running"
 FILE_DOES_NOT_EXIST_MSG = "File %s does not exist"
 
-MACHINE = Machine(host=config.RHEVM_MACHINE,
-                  user=config.USERNAME_ROOT,
+MACHINE = Machine(host=config.VDC_HOST,
+                  user=config.VDC_ROOT_USER,
                   password=config.VDC_ROOT_PASSWORD).util(LINUX)
 
 
