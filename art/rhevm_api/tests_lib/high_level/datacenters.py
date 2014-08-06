@@ -30,10 +30,10 @@ def build_setup(config, storage, storage_type, basename="testname",
         * basename - baseword for naming objects in setup
     Returns names of created storage domains
     """
-    datacenter_name = config.get('DC_NAME', 'datacenter_%s' % basename)
-    cluster_name = config.get('CLUSTER_NAME', 'cluster_%s' % basename)
-    config['DC_NAME'] = datacenter_name
-    config['CLUSTER_NAME'] = cluster_name
+    datacenter_name = config.get('dc_name', '%s_DC_1' % basename)
+    cluster_name = config.get('cluster_name', '%s_Cluster_1' % basename)
+    config['dc_name'] = datacenter_name
+    config['cluster_name'] = cluster_name
 
     if not datacenters.addDataCenter(True, name=datacenter_name,
                                      storage_type=storage_type, local=local,

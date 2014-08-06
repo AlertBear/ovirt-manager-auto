@@ -32,9 +32,9 @@ VDC_ADMIN_DOMAIN = REST_CONNECTION['user_domain']
 ENGINE_ENTRY_POINT = REST_CONNECTION['entry_point']
 
 # DATA CENTER SECTION
-DC_NAME = ["".join([TEST_NAME, "_DC", str(i)]) for i in range(5)]
+DC_NAME = ["_".join([TEST_NAME, "DC", str(i)]) for i in range(1, 6)]
 # CLUSTER SECTION
-CLUSTER_NAME = ["".join([TEST_NAME, "_Cluster", str(i)]) for i in range(5)]
+CLUSTER_NAME = ["_".join([TEST_NAME, "Cluster", str(i)]) for i in range(1, 6)]
 CPU_NAME = PARAMETERS['cpu_name']
 CPU_CORES = PARAMETERS['cpu_cores']
 CPU_SOCKET = PARAMETERS['cpu_socket']
@@ -55,7 +55,21 @@ VMS_LINUX_USER = PARAMETERS.as_list('vm_linux_user')[0]
 VMS_LINUX_PW = PARAMETERS.as_list('vm_linux_password')[0]
 VM_NAME = ["_".join([TEST_NAME, 'vm', str(num)]) for num in xrange(1, 6)]
 TEMPLATE_NAME = ["".join([TEST_NAME, "_Template", str(i)]) for i in range(2)]
-STORAGE_NAME = ["".join([elm, "_data_domain0"]) for elm in DC_NAME]
+STORAGE_NAME = [
+    "_".join(
+        [
+            STORAGE_TYPE.lower(),
+            str(i)
+        ]
+    ) for i in xrange(
+        int(
+            STORAGE_CONF.get(
+                "%s_devices" % STORAGE_TYPE.lower(),
+                0
+            )
+        )
+    )
+]
 LUN_TARGET = PARAMETERS.as_list('lun_target')
 LUN_ADDRESS = PARAMETERS.as_list('lun_address')
 LUN = PARAMETERS.as_list('lun')
