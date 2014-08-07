@@ -28,7 +28,7 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 PINNED = ENUMS['vm_affinity_pinned']
 HOST_CONNECTING = ENUMS['host_state_connecting']
 VM_DOWN = ENUMS['vm_state_down']
-DB_NAME_CONF = {'RHEVM_DB_NAME': config.db_name}
+DB_NAME_CONF = {'RHEVM_DB_NAME': config.DB_ENGINE_NAME}
 JOB = 'SshSoftFencing'
 
 
@@ -41,8 +41,8 @@ logger = logging.getLogger(__name__)
 
 def _check_host_state(host, service, job_status):
     logger.info("Stop %s on host %s", service, host)
-    if not runDelayedControlService(True, host, config.host_user,
-                                    config.host_password,
+    if not runDelayedControlService(True, host, config.HOSTS_USER,
+                                    config.HOSTS_PW,
                                     service=service, command='stop'):
         raise errors.HostException("Trying to stop %s "
                                    "on host %s failed" % (service, host))
@@ -60,10 +60,15 @@ def _check_host_state(host, service, job_status):
 
 
 def _delete_job_from_db():
-    dbConn = Setup(host=config.VDC, user=config.host_user,
-                   passwd=config.host_password, dbuser=config.db_user,
-                   dbpassw=config.db_pass, product=config.PRODUCT_RHEVM,
-                   conf=DB_NAME_CONF)
+    dbConn = Setup(
+        host=config.VDC_HOST,
+        user=config.VDC_ROOT_USER,
+        passwd=config.VDC_ROOT_PASSWORD,
+        dbuser=config.DB_ENGINE_USER,
+        dbpassw=config.DB_ENGINE_PASSWORD,
+        product=config.PRODUCT_NAME,
+        conf=DB_NAME_CONF
+    )
     sql = '%s FROM job WHERE action_type=\'SshSoftFencing\''
     if dbConn.psql(sql, 'SELECT *'):
         dbConn.psql(sql, 'DELETE')
@@ -161,8 +166,8 @@ class CheckVmAfterSoftFencing(SoftFencing):
         logger.info("Create new vm")
         if not vms.createVm(positive=True, vmName=cls.vm_test,
                             vmDescription="Test VM",
-                            cluster=config.cluster_name,
-                            storageDomainName=config.data_name[0],
+                            cluster=config.CLUSTER_NAME[0],
+                            storageDomainName=config.STORAGE_NAME[0],
                             size=DISK_SIZE, nic='nic1',
                             diskInterface=ENUMS['interface_virtio'],
                             placement_host=config.host_with_pm,
@@ -234,8 +239,8 @@ class SoftFencingToHostNoProxies(SoftFencing):
         super(SoftFencingToHostNoProxies, cls).teardown_class()
         logger.info("Add host that was removed")
         if not addHost(True, config.host_without_pm,
-                       root_password=config.host_password,
-                       cluster=config.cluster_name):
+                       root_password=config.HOSTS_PW,
+                       cluster=config.CLUSTER_NAME[0]):
             raise errors.HostException("Add host %s was failed"
                                        % config.host_without_pm)
         logger.info("Wait for host %s", config.host_without_pm)

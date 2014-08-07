@@ -31,6 +31,20 @@ VDC_ADMIN_USER = REST_CONNECTION['user']
 VDC_ADMIN_DOMAIN = REST_CONNECTION['user_domain']
 ENGINE_ENTRY_POINT = REST_CONNECTION['entry_point']
 
+# DATABASE SECTION - TODO: make it configurable
+DB_ENGINE_HOST = VDC_HOST
+DB_ENGINE_NAME = "engine"
+DB_ENGINE_USER = "engine"
+DB_ENGINE_PASSWORD = "123456"
+DB_DWH_HOST = VDC_HOST
+DB_DWH_NAME = "ovirt_engine_history"
+DB_DWH_USER = "ovirt_engine_history"
+DB_DWH_PASSWORD = "123456"
+DB_REPORTS_HOST = VDC_HOST
+DB_REPORTS_NAME = "ovirt_engine_reports"
+DB_REPORTS_USER = "ovirt_engine_reports"
+DB_REPORTS_PASSWORD = "123456"
+
 # DATA CENTER SECTION
 DC_NAME = ["_".join([TEST_NAME, "DC", str(i)]) for i in range(1, 6)]
 # CLUSTER SECTION
