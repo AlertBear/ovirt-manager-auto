@@ -20,21 +20,21 @@ CDROM_IMAGE_2 = PARAMETERS.get('cdrom_image_2')
 FLOPPY_IMAGE = PARAMETERS.get('floppy_image')
 
 # Datacenter names
-dc_name = PARAMETERS.get('dc_name', 'datacenter_%s' % TEST_NAME)
-second_dc_name = PARAMETERS.get('second_dc_name', 'second_datacenter_%s'
-                                                  % TEST_NAME)
+#dc_name = PARAMETERS.get('dc_name', 'datacenter_%s' % TEST_NAME)
+#second_dc_name = PARAMETERS.get('second_dc_name', 'second_datacenter_%s'
+#                                                  % TEST_NAME)
 # Cluster names
-cluster_name = PARAMETERS.get('cluster_name', 'cluster_%s' % TEST_NAME)
-additional_cluster_names = ['%s_%d' %
-                            (cluster_name, i) for i in range(2)]
+#cluster_name = PARAMETERS.get('cluster_name', 'cluster_%s' % TEST_NAME)
+#additional_cluster_names = ['%s_%d' %
+#                            (cluster_name, i) for i in range(2)]
 # Storage names
 storage_name = PARAMETERS.get('storage_name', '%s_%d' % (STORAGE_TYPE, 0))
 nfs_storage_0 = PARAMETERS.get('storage_name_0', '%s_0' % STORAGE_TYPE)
 nfs_storage_1 = PARAMETERS.get('storage_name_1', '%s_1' % STORAGE_TYPE)
 export_storage = PARAMETERS.get('export_storage', 'export_domain')
-DATA_PATHS = PARAMETERS.as_list('data_domain_path')
-STORAGE_NAME = ["%s_%d" % (STORAGE_TYPE.lower(), index) for index in
-                range(len(DATA_PATHS))]
+#DATA_PATHS = PARAMETERS.as_list('data_domain_path')
+#STORAGE_NAME = ["%s_%d" % (STORAGE_TYPE.lower(), index) for index in
+#                range(len(DATA_PATHS))]
 
 # #################################################
 # Following paramaters are virt specific paramaters

@@ -32,31 +32,31 @@ def setup_package():
                                        config.STORAGE_TYPE, config.TEST_NAME):
             raise errors.DataCenterException("Setup environment failed")
         logger.info("Add additional cluster %s to datacenter %s",
-                    config.additional_cluster_names[0], config.second_dc_name)
+                    config.CLUSTER_NAME[1], config.DC_NAME[0])
         if not cluster_api.addCluster(True,
-                                      name=config.additional_cluster_names[0],
+                                      name=config.CLUSTER_NAME[1],
                                       version=config.COMP_VERSION,
-                                      data_center=config.dc_name,
+                                      data_center=config.DC_NAME[0],
                                       cpu=config.CPU_NAME):
             raise errors.ClusterException("Cluster creation failed")
-        logger.info("Create additional datacenter %s", config.second_dc_name)
-        if not dc_api.addDataCenter(True, name=config.second_dc_name,
+        logger.info("Create additional datacenter %s", config.DC_NAME[1])
+        if not dc_api.addDataCenter(True, name=config.DC_NAME[1],
                                     local=True,
                                     version=config.COMP_VERSION):
             raise errors.DataCenterException("Datacenter creation failed")
         logger.info("Add cluster to datacenter %s",
-                    config.second_dc_name)
+                    config.DC_NAME[1])
         if not cluster_api.addCluster(True,
-                                      name=config.additional_cluster_names[1],
+                                      name=config.CLUSTER_NAME[2],
                                       version=config.COMP_VERSION,
-                                      data_center=config.second_dc_name,
+                                      data_center=config.DC_NAME[1],
                                       cpu=config.CPU_NAME):
             raise errors.ClusterException("Cluster creation failed")
-        # Temporary update clusters to memeory over commitment of 0%
+        # Temporary update clusters to memory over commitment of 0%
         # Need to be removed once ART default will be 0%
-        for cluster_name in [config.cluster_name,
-                             config.additional_cluster_names[0],
-                             config.additional_cluster_names[1]]:
+        for cluster_name in [config.CLUSTER_NAME[0],
+                             config.CLUSTER_NAME[1],
+                             config.CLUSTER_NAME[2]]:
             logger.info('Update cluster %s to mem_ovrcmt_prc=0', cluster_name)
             if not cluster_api.updateCluster(
                     True, cluster_name, mem_ovrcmt_prc=0):
@@ -69,8 +69,8 @@ def setup_package():
                 results.append(executor.submit(
                     vm_api.createVm, positive=True, vmName=vm_name,
                     vmDescription=config.VM_DESCRIPTION,
-                    cluster=config.cluster_name,
-                    storageDomainName=config.storage_name,
+                    cluster=config.CLUSTER_NAME[0],
+                    storageDomainName=config.STORAGE_NAME[0],
                     size=config.DISK_SIZE,
                     nic='nic1', network=config.MGMT_BRIDGE,
                     installation=config.INSTALLATION,
@@ -94,20 +94,20 @@ def teardown_package():
     if os.environ.get("JENKINS_URL"):
         logger.info("Teardown...")
         logging.info("Remove cluster %s from datacenter %s",
-                     config.additional_cluster_names[1],
-                     config.second_dc_name)
+                     config.CLUSTER_NAME[2],
+                     config.DC_NAME[1])
         if not cluster_api.removeCluster(True,
-                                         config.additional_cluster_names[1]):
+                                         config.CLUSTER_NAME[2]):
             raise errors.ClusterException("Failed to remove cluster")
-        logging.info("Remove additional datacenter %s", config.second_dc_name)
-        if not dc_api.removeDataCenter(True, config.second_dc_name):
+        logging.info("Remove additional datacenter %s", config.DC_NAME[1])
+        if not dc_api.removeDataCenter(True, config.DC_NAME[1]):
             raise errors.DataCenterException("Failed to remove datacenter" %
-                                             config.second_dc_name)
+                                             config.DC_NAME[1])
         logging.info("Remove additional cluster %s from datacenter %s",
-                     config.additional_cluster_names[0], config.dc_name)
+                     config.CLUSTER_NAME[1], config.DC_NAME[0])
         if not cluster_api.removeCluster(True,
-                                         config.additional_cluster_names[0]):
+                                         config.CLUSTER_NAME[1]):
             raise errors.ClusterException("Failed to remove cluster")
-        if not cleanDataCenter(True, config.dc_name, vdc=config.VDC_HOST,
+        if not cleanDataCenter(True, config.DC_NAME[0], vdc=config.VDC_HOST,
                                vdc_password=config.VDC_ROOT_PASSWORD):
             raise errors.DataCenterException("Clean up environment failed")

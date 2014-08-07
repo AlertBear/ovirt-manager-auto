@@ -45,7 +45,7 @@ class BaseVm(TestCase):
         """
         logger.info("Add new vm %s", cls.vm_name)
         if not vm_api.addVm(True, name=cls.vm_name,
-                            cluster=config.cluster_name,
+                            cluster=config.CLUSTER_NAME[0],
                             memory=1536*MB):
             raise errors.VMException("Failed to create vm %s" % cls.vm_name)
 
@@ -55,7 +55,7 @@ class BaseVm(TestCase):
         Remove all vms from cluster
         """
         logger.info("Remove all vms")
-        if not vm_api.remove_all_vms_from_cluster(config.cluster_name):
+        if not vm_api.remove_all_vms_from_cluster(config.CLUSTER_NAME[0]):
             raise errors.VMException("Failed to remove all vms")
 
 
@@ -73,7 +73,8 @@ class BaseVmWithDisk(BaseVm):
         super(BaseVmWithDisk, cls).setup_class()
         logger.info("Add disk to vm %s", cls.vm_name)
         if not vm_api.addDisk(True, vm=cls.vm_name, size=GB,
-                              storagedomain=config.nfs_storage_0,
+                              storagedomain=config.STORAGE_NAME[0],
+
                               type=ENUMS['disk_type_system'],
                               format=ENUMS['format_cow'],
                               interface=ENUMS['interface_virtio']):
@@ -132,7 +133,7 @@ class AddVm(TestCase):
         Remove all created vms
         """
         logger.info("Remove all vms")
-        if not vm_api.remove_all_vms_from_cluster(config.cluster_name):
+        if not vm_api.remove_all_vms_from_cluster(config.CLUSTER_NAME[0]):
             raise errors.VMException("Failed to remove all vms")
 
     @istest
@@ -141,7 +142,7 @@ class AddVm(TestCase):
         Add vm with custom boot sequence
         """
         vm_name = 'boot_vm'
-        if not vm_api.addVm(True, name=vm_name, cluster=config.cluster_name,
+        if not vm_api.addVm(True, name=vm_name, cluster=config.CLUSTER_NAME[0],
                             os_type=ENUMS['rhel6x64'],
                             boot=['network', 'hd']):
             raise errors.VMException("Failed to add vm")
@@ -159,7 +160,7 @@ class AddVm(TestCase):
         """
         vm_name = 'default_vm'
         self.assertTrue(vm_api.addVm(True, name=vm_name,
-                                     cluster=config.cluster_name))
+                                     cluster=config.CLUSTER_NAME[0]))
 
     @istest
     def add_ha_server_vm(self):
@@ -170,7 +171,7 @@ class AddVm(TestCase):
         self.assertTrue(vm_api.addVm(True, name=vm_name,
                                      highly_available='true',
                                      type=ENUMS['vm_type_server'],
-                                     cluster=config.cluster_name))
+                                     cluster=config.CLUSTER_NAME[0]))
 
     @istest
     def add_stateless_vm(self):
@@ -179,7 +180,7 @@ class AddVm(TestCase):
         """
         vm_name = 'stateless_vm'
         self.assertTrue(vm_api.addVm(True, name=vm_name, stateless='true',
-                                     cluster=config.cluster_name))
+                                     cluster=config.CLUSTER_NAME[0]))
 
     @istest
     def add_vm_with_custom_property(self):
@@ -188,7 +189,7 @@ class AddVm(TestCase):
         """
         vm_name = 'custom_property_vm'
         self.assertTrue(vm_api.addVm(True, name=vm_name,
-                                     cluster=config.cluster_name,
+                                     cluster=config.CLUSTER_NAME[0],
                                      custom_properties='sndbuf=111'))
 
     @istest
@@ -198,7 +199,7 @@ class AddVm(TestCase):
         """
         vm_name = 'guaranteed_memory_vm'
         self.assertTrue(vm_api.addVm(True, name=vm_name,
-                                     cluster=config.cluster_name,
+                                     cluster=config.CLUSTER_NAME[0],
                                      memory=2*GB, memory_guaranteed=2*GB))
 
     @tcms('13398', '366252')
@@ -209,7 +210,7 @@ class AddVm(TestCase):
         """
         vm_name = 'disk_vm'
         self.assertTrue(vm_api.addVm(True, name=vm_name,
-                                     cluster=config.cluster_name,
+                                     cluster=config.CLUSTER_NAME[0],
                                      disk_type=ENUMS['disk_type_data'],
                                      size=2*GB, format=ENUMS['format_cow'],
                                      interface=ENUMS['interface_virtio']))
@@ -221,7 +222,7 @@ class AddVm(TestCase):
         """
         vm_name = 'os_parameters_vm'
         self.assertTrue(vm_api.addVm(True, name=vm_name,
-                                     cluster=config.cluster_name,
+                                     cluster=config.CLUSTER_NAME[0],
                                      kernel='/kernel-path',
                                      initrd='/initrd-path',
                                      cmdline='rd_NO_LUKS rd_NO_MD'))
@@ -234,7 +235,7 @@ class AddVm(TestCase):
         vm_name = 'rhel_vm'
         logger.info("Positive: Add vm with Rhel OS type")
         self.assertTrue(vm_api.addVm(True, name=vm_name,
-                                     cluster=config.cluster_name,
+                                     cluster=config.CLUSTER_NAME[0],
                                      os_type=ENUMS['rhel6x64']))
 
     @istest
@@ -244,7 +245,7 @@ class AddVm(TestCase):
         """
         vm_name = 'xp_vm'
         self.assertTrue(vm_api.addVm(True, name=vm_name,
-                                     cluster=config.cluster_name,
+                                     cluster=config.CLUSTER_NAME[0],
                                      os_type=ENUMS['windowsxp']))
 
     @istest
@@ -254,8 +255,8 @@ class AddVm(TestCase):
         """
         vm_name = 'disk_specific_vm'
         self.assertTrue(vm_api.addVm(True, name=vm_name,
-                                     cluster=config.cluster_name,
-                                     storagedomain=config.nfs_storage_0,
+                                     cluster=config.CLUSTER_NAME[0],
+                                     storagedomain=config.STORAGE_NAME[0],
                                      disk_type=ENUMS['disk_type_data'],
                                      size=2*GB, format=ENUMS['format_cow'],
                                      interface=ENUMS['interface_virtio']))
@@ -268,7 +269,7 @@ class AddVm(TestCase):
         vm_name = 'domain_vm'
         self.assertTrue(vm_api.addVm(True, name=vm_name,
                                      domainName=config.VDC_ADMIN_DOMAIN,
-                                     cluster=config.cluster_name))
+                                     cluster=config.CLUSTER_NAME[0]))
 
     @istest
     def add_vm_with_name_that_already_exist(self):
@@ -278,11 +279,11 @@ class AddVm(TestCase):
         vm_name = 'vm_name_negative'
         logger.info("Add vm %s", vm_name)
         if not vm_api.addVm(True, name=vm_name,
-                            cluster=config.cluster_name):
+                            cluster=config.CLUSTER_NAME[0]):
             raise errors.VMException("Failed to add vm")
         logger.info("Create vm with name that already exist")
         self.assertFalse(vm_api.addVm(True, name=vm_name,
-                                      cluster=config.cluster_name))
+                                      cluster=config.CLUSTER_NAME[0]))
 
     @istest
     def add_vm_with_wrong_number_of_displays(self):
@@ -291,7 +292,7 @@ class AddVm(TestCase):
         """
         vm_name = 'display_vm_negative'
         self.assertFalse(vm_api.addVm(True, name=vm_name, display_monitors=36,
-                                      cluster=config.cluster_name))
+                                      cluster=config.CLUSTER_NAME[0]))
 
 
 @attr(tier=0)
@@ -312,17 +313,17 @@ class UpdateVm(BaseVm):
         """
         logger.info("Add new vm %s with rhel os parameter", cls.rhel_to_xp_vm)
         if not vm_api.addVm(True, name=cls.rhel_to_xp_vm,
-                            cluster=config.cluster_name,
+                            cluster=config.CLUSTER_NAME[0],
                             os_type=ENUMS['rhel6x64']):
             raise errors.VMException("Failed to add vm")
         logger.info("Add new vm %s with rhel os parameter", cls.rhel_to_7_vm)
         if not vm_api.addVm(True, name=cls.rhel_to_7_vm,
-                            cluster=config.cluster_name,
+                            cluster=config.CLUSTER_NAME[0],
                             os_type=ENUMS['rhel6x64']):
             raise errors.VMException("Failed to add vm")
         logger.info("Add new vm %s with rhel os parameter", cls.xp_to_rhel_vm)
         if not vm_api.addVm(True, name=cls.xp_to_rhel_vm,
-                            cluster=config.cluster_name,
+                            cluster=config.CLUSTER_NAME[0],
                             os_type=ENUMS['windowsxp']):
             raise errors.VMException("Failed to add vm")
         super(UpdateVm, cls).setup_class()
@@ -442,11 +443,11 @@ class UpdateVm(BaseVm):
         """
         Update vm cluster
         """
-        cluster = config.additional_cluster_names[0]
+        cluster = config.CLUSTER_NAME[1]
         self.assertTrue(vm_api.updateVm(True, self.vm_name,
                                         cluster=cluster))
         self.assertTrue(vm_api.updateVm(True, self.vm_name,
-                                        cluster=config.cluster_name))
+                                        cluster=config.CLUSTER_NAME[0]))
 
     @istest
     def update_vm_memory(self):
@@ -525,7 +526,7 @@ class UpdateVm(BaseVm):
         vm_exist_name = 'exist_vm'
         logger.info("Add new vm %s", vm_exist_name)
         if not vm_api.addVm(True, name=vm_exist_name,
-                            cluster=config.cluster_name):
+                            cluster=config.CLUSTER_NAME[0]):
             raise errors.VMException("Failed to add vm")
         logger.info("Update vm name to existing one")
         self.assertFalse(vm_api.updateVm(True, self.vm_name,
@@ -598,7 +599,7 @@ class DifferentVmTestCases(TestCase):
         """
         Remove all created vms
         """
-        if not vm_api.remove_all_vms_from_cluster(config.cluster_name):
+        if not vm_api.remove_all_vms_from_cluster(config.CLUSTER_NAME[0]):
             raise errors.VMException("Failed to remove all vms")
 
     @attr(tier=1)
@@ -609,7 +610,8 @@ class DifferentVmTestCases(TestCase):
         """
         vm_name = 'locked_vm'
         logger.info("Add new vm %s", vm_name)
-        if not vm_api.addVm(True, name=vm_name, cluster=config.cluster_name):
+        if not vm_api.addVm(True, name=vm_name,
+                            cluster=config.CLUSTER_NAME[0]):
             raise errors.VMException("Failed to create vm")
         update_vm_status_in_database(vm_name, vdc=config.VDC_HOST,
                                      status=int(ENUMS['vm_status_locked_db']),
@@ -624,7 +626,8 @@ class DifferentVmTestCases(TestCase):
         """
         vm_name = 'cdrom_vm'
         logger.info("Add new vm %s", vm_name)
-        if not vm_api.addVm(True, name=vm_name, cluster=config.cluster_name):
+        if not vm_api.addVm(True, name=vm_name,
+                            cluster=config.CLUSTER_NAME[0]):
             raise errors.VMException("Failed to create vm")
         logger.info("Check if vm %s have cdrom", vm_name)
         self.assertTrue(vm_api.checkVmHasCdromAttached(True, vm_name))
@@ -637,7 +640,8 @@ class DifferentVmTestCases(TestCase):
         """
         vm_name = 'statistic_vm'
         logger.info("Add new vm %s", vm_name)
-        if not vm_api.addVm(True, name=vm_name, cluster=config.cluster_name):
+        if not vm_api.addVm(True, name=vm_name,
+                            cluster=config.CLUSTER_NAME[0]):
             raise errors.VMException("Failed to create vm")
         logger.info("Check vm %s statistics", vm_name)
         self.assertTrue(vm_api.checkVmStatistics(True, vm_name))
@@ -691,7 +695,7 @@ class VmDisk(BaseVm):
         Add raw virtio disk to vm without sparse
         """
         self.assertTrue(vm_api.addDisk(True, vm=self.vm_name, size=GB,
-                                       storagedomain=config.nfs_storage_0,
+                                       storagedomain=config.STORAGE_NAME[0],
                                        type=ENUMS['disk_type_system'],
                                        format=ENUMS['format_raw'],
                                        interface=ENUMS['interface_virtio'],
@@ -704,7 +708,7 @@ class VmDisk(BaseVm):
         Add bootable cow ide data disk to vm
         """
         self.assertTrue(vm_api.addDisk(True, vm=self.vm_name, size=GB,
-                                       storagedomain=config.nfs_storage_0,
+                                       storagedomain=config.STORAGE_NAME[0],
                                        type=ENUMS['disk_type_data'],
                                        format=ENUMS['format_cow'],
                                        interface=ENUMS['interface_ide'],
@@ -717,7 +721,7 @@ class VmDisk(BaseVm):
         Add sparse cow virtio data disk to vm
         """
         self.assertTrue(vm_api.addDisk(True, vm=self.vm_name, size=GB,
-                                       storagedomain=config.nfs_storage_0,
+                                       storagedomain=config.STORAGE_NAME[0],
                                        type=ENUMS['disk_type_data'],
                                        format=ENUMS['format_cow'],
                                        interface=ENUMS['interface_virtio'],
@@ -735,7 +739,7 @@ class VmDisk(BaseVm):
                             " format %s and interface %s",
                             self.vm_name, disk_format, disk_interface)
                 result = vm_api.addDisk(True, vm=self.vm_name, size=GB,
-                                        storagedomain=config.nfs_storage_0,
+                                        storagedomain=config.STORAGE_NAME[0],
                                         type=ENUMS['disk_type_data'],
                                         format=disk_format,
                                         interface=disk_interface)
@@ -852,7 +856,7 @@ class VmSnapshots(BaseVmWithDisk):
     def teardown_class(cls):
         """ Remove the VM from export storage. """
         if not vm_api.removeVmFromExportDomain(
-                True, cls.vm_name, config.dc_name, config.export_storage):
+                True, cls.vm_name, config.DC_NAME[0], config.export_storage):
             raise errors.VMException(
                 "Failed to remove VM %s from export storage %s"
                 % (cls.vm_name, config.export_storage))
@@ -891,7 +895,7 @@ class ImportExportVm(BaseVmWithDisk):
     def teardown_class(cls):
         """ Remove the VM from export storage. """
         if not vm_api.removeVmFromExportDomain(
-                True, cls.vm_name, config.dc_name, config.export_storage):
+                True, cls.vm_name, config.DC_NAME[0], config.export_storage):
             raise errors.VMException(
                 "Failed to remove VM %s from export storage %s"
                 % (cls.vm_name, config.export_storage))
@@ -920,19 +924,19 @@ class ImportExportVm(BaseVmWithDisk):
         logger.info("Import exported vm %s", self.vm_name)
         self.assertTrue(vm_api.importVm(True, self.vm_name,
                                         config.export_storage,
-                                        config.nfs_storage_0,
-                                        config.cluster_name))
+                                        config.STORAGE_NAME[0],
+                                        config.CLUSTER_NAME[0]))
         logger.info("Negative: Import existed vm")
         self.assertFalse(vm_api.importVm(True, self.vm_name,
                                          config.export_storage,
-                                         config.nfs_storage_0,
-                                         config.cluster_name))
+                                         config.STORAGE_NAME[0],
+                                         config.CLUSTER_NAME[0]))
         logger.info("Move vm to storage domain %s", config.nfs_storage_1)
         self.assertTrue(vm_api.moveVm(True, self.vm_name,
-                                      config.nfs_storage_1))
-        logger.info("Move vm to storage domain %s", config.nfs_storage_0)
+                                      config.STORAGE_NAME[1]))
+        logger.info("Move vm to storage domain %s", config.STORAGE_NAME[0])
         self.assertTrue(vm_api.moveVm(True, self.vm_name,
-                                      config.nfs_storage_0))
+                                      config.STORAGE_NAME[0]))
 
 
 @attr(tier=0)
@@ -955,11 +959,11 @@ class VmDisplay(TestCase):
             vm_name = '%s_vm' % display_type
             logger.info("Add new vm %s", vm_name)
             if not vm_api.addVm(True, name=vm_name,
-                                cluster=config.cluster_name,
+                                cluster=config.CLUSTER_NAME[0],
                                 display_type=display_type):
                 raise errors.VMException("Failed to add vm")
             if not vm_api.addDisk(True, vm=vm_name, size=GB,
-                                  storagedomain=config.nfs_storage_0,
+                                  storagedomain=config.STORAGE_NAME[0],
                                   type=ENUMS['disk_type_system'],
                                   format=ENUMS['format_cow'],
                                   interface=ENUMS['interface_virtio']):
@@ -1039,7 +1043,7 @@ class RunVmOnce(BaseVmWithDisk):
                                           config.HOSTS[0]):
             raise errors.StorageDomainException("Failed to add shared iso "
                                                 "domain storage")
-        high_sd_api.attach_and_activate_domain(config.dc_name,
+        high_sd_api.attach_and_activate_domain(config.DC_NAME[0],
                                                config.SHARED_ISO_DOMAIN_NAME)
 
     @classmethod
@@ -1047,7 +1051,7 @@ class RunVmOnce(BaseVmWithDisk):
         """
         Remove share iso domain and remove vm
         """
-        high_sd_api.detach_and_deactivate_domain(config.dc_name,
+        high_sd_api.detach_and_deactivate_domain(config.DC_NAME[0],
                                                  config.
                                                  SHARED_ISO_DOMAIN_NAME)
         logger.info("Remove shared iso domain %s",
@@ -1161,7 +1165,7 @@ class VmPool(BaseVmWithDiskTemplate):
                     self.template_name)
         self.assertTrue(vm_pool_api.addVmPool(True, name=self.pool_name,
                                               template=self.template_name,
-                                              cluster=config.cluster_name,
+                                              cluster=config.CLUSTER_NAME[0],
                                               size=2))
         logger.info("Add user role to vm pool %s", self.pool_name)
         self.assertTrue(
@@ -1209,7 +1213,7 @@ class VmTemplate(BaseVmWithDiskTemplate):
         """
         vm_name = 'new_template_vm'
         self.assertTrue(vm_api.addVm(True, name=vm_name,
-                                     cluster=config.cluster_name,
+                                     cluster=config.CLUSTER_NAME[0],
                                      template=self.template_name))
 
     @istest
@@ -1219,9 +1223,9 @@ class VmTemplate(BaseVmWithDiskTemplate):
         """
         vm_name = 'storage_template_vm'
         self.assertTrue(vm_api.addVm(True, name=vm_name,
-                                     cluster=config.cluster_name,
+                                     cluster=config.CLUSTER_NAME[0],
                                      template=self.template_name,
-                                     storagedomain=config.nfs_storage_0))
+                                     storagedomain=config.STORAGE_NAME[0]))
 
     @istest
     def create_vm_from_template_with_wrong_sd(self):
@@ -1230,9 +1234,9 @@ class VmTemplate(BaseVmWithDiskTemplate):
         """
         vm_name = 'storage_negative_vm'
         self.assertFalse(vm_api.addVm(True, name=vm_name,
-                                      cluster=config.cluster_name,
+                                      cluster=config.CLUSTER_NAME[0],
                                       template=self.template_name,
-                                      storagedomain=config.nfs_storage_1))
+                                      storagedomain=config.STORAGE_NAME[1]))
 
     @istest
     def clone_vm_from_template(self):
@@ -1242,4 +1246,4 @@ class VmTemplate(BaseVmWithDiskTemplate):
         vm_name = 'clone_vm'
         self.assertTrue(vm_api.cloneVmFromTemplate(True, vm_name,
                                                    self.template_name,
-                                                   config.cluster_name))
+                                                   config.CLUSTER_NAME[0]))

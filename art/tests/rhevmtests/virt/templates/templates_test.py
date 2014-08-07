@@ -45,7 +45,7 @@ USER_MIGRATABLE = ENUMS['vm_affinity_user_migratable']
 PINNED = ENUMS['vm_affinity_pinned']
 SPICE = ENUMS['display_type_spice']
 VNC = ENUMS['display_type_vnc']
-BASIC_PARAMETERS = {'name': TEMPLATE_VM, 'cluster': config.cluster_name}
+BASIC_PARAMETERS = {'name': TEMPLATE_VM, 'cluster': config.CLUSTER_NAME[1]}
 
 ########################################################################
 
@@ -103,7 +103,7 @@ class BaseTemplateVMClass(BaseTemplateClass):
         """
         super(BaseTemplateVMClass, cls).setup_class()
         if not vms.addVm(positive=True, name=cls.copy_vm,
-                         cluster=config.cluster_name,
+                         cluster=config.CLUSTER_NAME[1],
                          template=cls.template_name):
             raise errors.VMException("Cannot create vm %s from template"
                                      % cls.copy_vm)
@@ -861,7 +861,7 @@ class NegativeTemplateCases(BaseTemplateClass):
         """
         logger.info("Add disk to vm %s", self.vm_name)
         if not vms.addDisk(True, self.vm_name, GB,
-                           storagedomain=config.nfs_storage_0):
+                           storagedomain=config.STORAGE_NAME[0]):
             raise errors.VMException("Failed add disk to vm")
         cluster = self.additional_cluster
         self.assertFalse(templates.createTemplate(positive=True,
@@ -924,7 +924,7 @@ class BasicTemplate(BaseTemplateClass):
         """
         Create new template on specific storage domain
         """
-        sd = config.nfs_storage_1
+        sd = config.STORAGE_NAME[1]
         self.assertTrue(templates.createTemplate(positive=True,
                                                  vm=self.vm_name,
                                                  name=self.storage_template,
@@ -1008,8 +1008,8 @@ class ImportExportTemplate(BaseTemplateClass):
         logger.info("Import template %s from export domain")
         self.assertTrue(templates.importTemplate(True, self.template_name,
                                                  config.export_storage,
-                                                 config.nfs_storage_0,
-                                                 config.cluster_name))
+                                                 config.STORAGE_NAME[0],
+                                                 config.CLUSTER_NAME[1]))
 
 ########################################################################
 

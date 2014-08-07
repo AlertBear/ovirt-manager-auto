@@ -29,7 +29,7 @@ class NegativeVmMigration(TestCase):
     Basis class for vm migration negative test cases
     """
     __test__ = False
-    init_cluster = config.cluster_name
+    init_cluster = config.CLUSTER_NAME[0]
     cluster_name = None
 
     @classmethod
@@ -63,7 +63,7 @@ class MigrateVmOnOtherCluster(NegativeVmMigration):
     Negative: Migrate vm to another cluster in the same datacenter
     """
     __test__ = True
-    cluster_name = config.additional_cluster_names[0]
+    cluster_name = config.CLUSTER_NAME[1]
 
     @tcms(TCMS_PLAN_ID, '301654')
     @istest
@@ -81,7 +81,7 @@ class MigrateVmOnOtherDatacenter(NegativeVmMigration):
     Negative: Migrate vm on another datacenter
     """
     __test__ = True
-    cluster_name = config.additional_cluster_names[1]
+    cluster_name = config.CLUSTER_NAME[2]
 
     @tcms(TCMS_PLAN_ID, '301655')
     @istest
@@ -126,8 +126,8 @@ class MigrationOverloadHost(TestCase):
         amount of memory
         """
         return vm_api.createVm(True, vm_name, config.VM_DESCRIPTION,
-                               cluster=config.cluster_name, memory=memory,
-                               storageDomainName=config.storage_name,
+                               cluster=config.CLUSTER_NAME[0], memory=memory,
+                               storageDomainName=config.STORAGE_NAME[0],
                                network=config.MGMT_BRIDGE,
                                size=config.DISK_SIZE, nic='nic1')
 
