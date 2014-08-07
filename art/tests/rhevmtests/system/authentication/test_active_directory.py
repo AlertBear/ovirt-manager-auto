@@ -71,7 +71,7 @@ class ActiveDirectory(TestCase):
 
     @classmethod
     def teardown_class(cls):
-        users.loginAsUser(config.OVIRT_USERNAME, config.OVIRT_DOMAIN,
+        users.loginAsUser(config.VDC_ADMIN_USER, config.VDC_ADMIN_DOMAIN,
                           config.USER_PASSWORD, False)
         for username in [config.TEST_USER(cls.domain), config.AD2_USER,
                          config.EXPIRED_PSW_NAME(cls.domain),
@@ -84,7 +84,7 @@ class ActiveDirectory(TestCase):
         assert users.deleteGroup(True, config.GROUP(cls.domain))
 
     def setUp(self):
-        users.loginAsUser(config.OVIRT_USERNAME, config.OVIRT_DOMAIN,
+        users.loginAsUser(config.VDC_ADMIN_USER, config.VDC_ADMIN_DOMAIN,
                           config.USER_PASSWORD, False)
 
     @istest
@@ -125,34 +125,34 @@ class ActiveDirectory(TestCase):
         user, domain = config.NORMAL_USER(self.domain).split('@')
 
         self.assertTrue(
-            runMachineCommand(True, ip=config.OVIRT_ADDRESS, cmd=auth,
-                              user=config.OVIRT_ROOT,
-                              password=config.OVIRT_ROOT_PASSWORD)[0],
+            runMachineCommand(True, ip=config.VDC_HOST, cmd=auth,
+                              user=config.HOSTS_USER,
+                              password=config.VDC_PASSWORD)[0],
             "Run cmd %s failed." % auth)
-        machine = Machine(config.OVIRT_ADDRESS, config.OVIRT_ROOT,
-                          config.OVIRT_ROOT_PASSWORD).util(LINUX)
+        machine = Machine(config.VDC_HOST, config.HOSTS_USER,
+                          config.VDC_PASSWORD).util(LINUX)
         test_utils.restartOvirtEngine(machine, 5, 25, 70)
         self.assertTrue(
-            runMachineCommand(True, ip=config.OVIRT_ADDRESS,
+            runMachineCommand(True, ip=config.VDC_HOST,
                               cmd=TCP_DUMP,
-                              user=config.OVIRT_ROOT,
-                              password=config.OVIRT_ROOT_PASSWORD)[0],
+                              user=config.HOSTS_USER,
+                              password=config.VDC_PASSWORD)[0],
             "Run cmd %s failed." % TCP_DUMP)
 
         users.loginAsUser(user, domain, self.PASSWORD, True)
         self.assertTrue(connectionTest())
         time.sleep(20)
 
-        status = runMachineCommand(True, ip=config.OVIRT_ADDRESS,
+        status = runMachineCommand(True, ip=config.VDC_HOST,
                                    cmd=CHECK_DUMP % user,
-                                   user=config.OVIRT_ROOT,
-                                   password=config.OVIRT_ROOT_PASSWORD)
+                                   user=config.HOSTS_USER,
+                                   password=config.VDC_PASSWORD)
         self.assertTrue(status[0] == result, "Run cmd %s failed." % CHECK_DUMP)
 
         self.assertTrue(
-            runMachineCommand(True, ip=config.OVIRT_ADDRESS, cmd=CLEAN,
-                              user=config.OVIRT_ROOT,
-                              password=config.OVIRT_ROOT_PASSWORD)[0],
+            runMachineCommand(True, ip=config.VDC_HOST, cmd=CLEAN,
+                              user=config.HOSTS_USER,
+                              password=config.VDC_PASSWORD)[0],
             "Run cmd %s failed." % CLEAN)
         LOGGER.info("Authorization passed.")
 

@@ -43,7 +43,7 @@ def loginAsUser(user_name, filter_):
 
 
 def loginAsAdmin():
-    users.loginAsUser(config.OVIRT_USERNAME, config.OVIRT_DOMAIN,
+    users.loginAsUser(config.VDC_ADMIN_USER, config.VDC_ADMIN_DOMAIN,
                       config.USER_PASSWORD, False)
 
 
@@ -271,7 +271,7 @@ class IPACase93883(TestCase):
         self.assertTrue(
             runMachineCommand(True, ip=config.IPA_DOMAIN.lower(),
                               cmd=KINIT % config.USER_PASSWORD,
-                              user=config.OVIRT_ROOT,
+                              user=config.HOSTS_USER,
                               password=config.IPA_PASSWORD)[0])
 
     @istest
@@ -286,7 +286,7 @@ class IPACase93883(TestCase):
             runMachineCommand(True, ip=config.IPA_DOMAIN.lower(),
                               cmd=UPDATE_USER % (config.IPA_TESTING_USER_NAME,
                                                  new_last_name, new_name),
-                              user=config.OVIRT_ROOT,
+                              user=config.HOSTS_USER,
                               password=config.IPA_PASSWORD)[0])
         user = self._find_user_in_directory(new_name)
         self.assertTrue(user.get_name() == new_name)
@@ -297,7 +297,7 @@ class IPACase93883(TestCase):
                           cmd=UPDATE_USER % (config.IPA_TESTING_USER_NAME,
                                              self.user.get_last_name(),
                                              self.user.get_name()),
-                          user=config.OVIRT_ROOT,
+                          user=config.HOSTS_USER,
                           password=config.IPA_PASSWORD)
         users.removeUser(True, user=config.IPA_TESTING_USER_NAME,
                          domain=config.IPA_DOMAIN)

@@ -7,14 +7,6 @@ from rhevmtests.system.config import *  # flake8: noqa
 def getUserWithDomain(user_name, user_domain):
     return '%s@%s' % (user_name, user_domain)
 
-REST = ART_CONFIG['REST_CONNECTION']
-
-OVIRT_ROOT = 'root'
-OVIRT_ADDRESS = REST.get('host', None)
-OVIRT_ROOT_PASSWORD = PARAMETERS.get('vdc_password', None)
-OVIRT_USERNAME = REST.get('user', None)
-OVIRT_DOMAIN = REST.get('user_domain', None)
-OVIRT_PASSWORD = REST.get('password', None)
 USER_PASSWORD = PARAMETERS.get('user_password', None)
 
 AD1_DOMAIN = PARAMETERS.get('ad1_domain', None)
