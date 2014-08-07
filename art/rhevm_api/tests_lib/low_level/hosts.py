@@ -27,7 +27,6 @@ from utilities import machine
 import utilities.postgresConnection as psql
 from art.core_api.apis_utils import TimeoutingSampler, data_st
 from art.core_api.apis_exceptions import APITimeout, EntityNotFound
-import utilities.ssh_session as ssh_session
 import re
 import tempfile
 from utilities.utils import getIpAddressByHostName, getHostName
@@ -42,7 +41,6 @@ from art.rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.test_handler import settings
 from art.core_api import is_action
-from random import choice
 import shlex
 
 ELEMENT = 'host'
@@ -94,63 +92,6 @@ search_for = ["<filterref filter='no-mac-spoofing'/>",
 def get_host_list():
     hostUtil = get_api('host', 'hosts')
     return hostUtil.get(absLink=False)
-
-
-@is_action('getDCHosts')
-def get_dc_hosts(datacenter, get_href=True):
-    """
-    Description: Returns all hosts for the given datacenter
-    Parameters:
-      * datacenter - name of datacenter
-      * get_href - True to get link, otherwise return object
-    Returns: list of hosts in datacenter. list contains objects or links
-    according to get_href
-    """
-    dcObj = DC_API.find(datacenter)
-    all_hosts = HOST_API.get(absLink=False)
-    dc_hosts = []
-    for host in all_hosts:
-
-        # Host object's cluster contains only ID when returned from API,
-        # get the actual cluster to have all cluster members including DC
-        cluster = CL_API.get(host.get_cluster().get_href())
-
-        # check if cluster's DC matches requested DC
-        if cluster.get_data_center().get_id() == dcObj.get_id():
-            host_to_append = host.get_href() if get_href else host
-            dc_hosts.append(host_to_append)
-
-    return dc_hosts
-
-
-@is_action()
-def getRandPM(positive, cluster, size):
-    """
-    Description: get all power management types, and create random list of
-    given size.
-    Author: alukiano
-    Parameters:
-      * positive - True
-      * cluster -  name of the cluster
-      * size - size of list
-    Return: Random list with types of power management by given size
-    """
-    pm_list = list()
-    rand_list = list()
-    cluster_obj = CL_API.find(cluster)
-    minor_v = cluster_obj.get_version().get_minor()
-    major_v = cluster_obj.get_version().get_major()
-    cap = CAP_API.get(absLink=False)
-    version = [v for v in cap if v.get_major() == major_v and
-               v.get_minor() == minor_v][0]
-    for power_manager in version.get_power_managers().get_power_management():
-        pm_list.append(power_manager.get_type())
-    for i in range(size):
-        rand_list.append(choice(pm_list))
-    if rand_list:
-        return True, {'pmList': rand_list}
-    else:
-        return False, {'pmList': None}
 
 
 def isHostSaturated(host, max_cpu=95, max_mem=95):
@@ -881,49 +822,6 @@ def getHostNicsList(host):
                                     get_href=False)
 
 
-def getHostNicsAction(host):
-
-    host_obj = HOST_API.find(host)
-    return HOST_API.getElemFromLink(host_obj, 'nics', 'actions',
-                                    get_href=False)
-
-
-def hostNicsNetworksMapper(host):
-    """
-    Description: creates mapping between host's NICs and networks
-    Author: pdufek
-    Parameters:
-        * host - the name of the host
-    Returns: dictionary (key: NIC name, value: assigned network)
-    """
-    nic_objs = getHostNicsList(host)
-    nics_to_networks = {}
-
-    for nic in nic_objs:
-        nics_to_networks[nic.name] = getattr(nic, 'network', None)
-
-    return nics_to_networks
-
-
-# FIXME: remove "positive" if not in use!
-@is_action()
-def getFreeInterface(positive, host):
-    """
-    Description: get host's free interface (not assigned to any network)
-    Author: pdufek
-    Parameters:
-        * host - the name of the host
-    Returns: NIC name or EntityNotFound exception
-    """
-    for nic, network in hostNicsNetworksMapper(host).iteritems():
-        if network is None:
-            if not any(hostNic for hostNic in
-                       hostNicsNetworksMapper(host).keys() if re.search(
-                           '%s\.\d' % nic, hostNic)):
-                return True, {'freeNic': nic}
-    return False, {'freeNic': None}
-
-
 @is_action()
 def attachHostNic(positive, host, nic, network):
     """
@@ -943,23 +841,6 @@ def attachHostNic(positive, host, nic, network):
     cl_net = getClusterNetwork(cluster, network)
 
     return HOST_API.syncAction(host_nic, "attach", positive, network=cl_net)
-
-
-@is_action()
-def attachMultiNicsToHost(positive, host, nic, networks):
-    """
-    Attaching multiple nics to single host
-    Author: atal
-    Parameters:
-        * host - host name
-        * nic - nic name
-        * networks - network name list
-    return True/False
-    """
-    for net in networks:
-        if not attachHostNic(positive, host, nic, net):
-            return False
-    return True
 
 
 @is_action()
@@ -1008,57 +889,6 @@ def detachHostNic(positive, host, nic, network=None):
 
 
 @is_action()
-def detachMultiVlansFromBond(positive, host, nic, networks):
-    """
-    Detaching multiple networks from bonded host nic
-    Author: atal
-    Parameters:
-        * host - host name
-        * nic - nic name
-        * networks - networks name list'
-    return True/False
-    """
-    regex = re.compile('\w(\d+)', re.I)
-    for net in networks:
-        match = regex.search(net)
-        if not match:
-            return False
-        if not detachHostNic(positive, host, nic + '.' + match.group(1), net):
-            return False
-    return True
-
-
-@is_action()
-def addBond(positive, host, name, **kwargs):
-    """
-    Description: add bond to a host
-    Author: edolinin (maintain by atal)
-    Parameters:
-        * name - bond name
-        * network - network name
-        * boot_protocol - static, none or dhcp
-        * address - ip address incase of static protocol
-        * netmask - netmask incase of static protocol
-        * gateway - gateway address incase of static protocol
-        * slaves - bonding slaves list as a string with commas
-        * mode - bonding mode (int), added as option
-        * miimon - another int for bonding options
-        * check_connectivity - boolean and working only for management int.
-         supported modes are: 1,2,4,5. using underscore due to XML syntax
-         limitations
-    Return: status (True if bond was attached properly to host,
-    False otherwise)
-    """
-    kwargs.update([('name', name)])
-
-    nic_obj = _prepareHostNicObject(**kwargs)
-    host_nics = getHostNics(host)
-    res, status = HOST_NICS_API.create(nic_obj, positive, collection=host_nics)
-
-    return status
-
-
-@is_action()
 def genSNNic(nic, **kwargs):
     """
     generate a host_nic element of types regular or vlaned
@@ -1074,33 +904,6 @@ def genSNNic(nic, **kwargs):
     return True, dict with host nic element.
     """
     kwargs.update({'name': nic})
-    nic_obj = _prepareHostNicObject(**kwargs)
-
-    return True, {'host_nic': nic_obj}
-
-
-@is_action()
-def genSNBond(name, **kwargs):
-    """
-    Deprecated - use genSNNic().
-    generate a host_nic element of type bond.
-    Author: atal
-    params:
-        * name - bond name
-        * network - network name
-        * boot_protocol - static, none or dhcp
-        * address - ip address incase of static protocol
-        * netmask - netmask incase of static protocol
-        * gateway - gateway address incase of static protocol
-        * slaves - bonding slaves list as a string with commas
-        * mode - bonding mode (int), added as option
-        * miimon - another int for bonding options
-        * check_connectivity - boolean and working only for management int.
-         supported modes are: 1,2,4,5. using underscore due to XML syntax
-         limitations
-    return True, dict with host nic element.
-    """
-    kwargs.update([('name', name)])
     nic_obj = _prepareHostNicObject(**kwargs)
 
     return True, {'host_nic': nic_obj}
@@ -1128,20 +931,6 @@ def sendSNRequest(positive, host, nics=[], auto_nics=[], **kwargs):
                                     positive,
                                     host_nics=host_nics,
                                     **kwargs)
-
-
-@is_action()
-def isSyncNetwork(host, nic):
-    """
-    Description: Validating if Network sync.
-    Author: atal
-    Parameters:
-        * host - host name
-        * nic - nic name
-    Return: return True if network sync else False
-    """
-    nic_obj = getHostNic(host, nic)
-    return nic_obj.get_custom_configuration()
 
 
 @is_action()
@@ -1205,30 +994,6 @@ def runDelayedControlService(positive, host, host_user, host_passwd, service,
 
 
 @is_action()
-def checkDelayedControlService(positive, host, host_user, host_passwd):
-    """
-    Description: Check if a previous service command succeeded or not
-    Tester is responsible to wait enough before checking the result.
-    Author: adarazs
-    Parameters:
-      * host - name of the host
-      * host_user - user name for the host
-      * host_passwd - password for the user
-    Return: True if the command ran successfully, False otherwise,
-    inverted in case of negative test
-    """
-    cmd = ('cat /tmp/delayed-stdout')
-    host_obj = machine.Machine(host, host_user, host_passwd).util('linux')
-    output = host_obj.runCmd(cmd.split())
-    if not output[0]:
-        HOST_API.logger.error("Failed to check for service control command"
-                              " result.")
-    if int(output[1]) != 0:
-        HOST_API.logger.error("Last service control command failed.")
-    return output[0] == positive
-
-
-@is_action()
 def addTagToHost(positive, host, tag):
     """
     Description: add tag to a host
@@ -1266,52 +1031,6 @@ def removeTagFromHost(positive, host, tag):
         HOST_API.logger.error("Tag {0} is not found at host {1}".format(tag,
                                                                         host))
         return False
-
-
-@is_action()
-def checkHostStatistics(positive, host):
-    """
-    Description: check hosts statistics (existence and format)
-    Author: edolinin
-    Parameters:
-    * host - name of a host
-    Return: status (True if all statistics were a success, False otherwise)
-    """
-
-    hostObj = HOST_API.find(host)
-    expectedStatistics = ['memory.total', 'memory.used', 'memory.free',
-                          'memory.buffers', 'memory.cached', 'swap.total',
-                          'swap.free', 'swap.used', 'swap.cached',
-                          'ksm.cpu.current', 'cpu.current.user',
-                          'cpu.current.system', 'cpu.current.idle',
-                          'cpu.load.avg.5m']
-
-    numOfExpStat = len(expectedStatistics)
-    status = True
-    statistics = HOST_API.getElemFromLink(hostObj, link_name='statistics',
-                                          attr='statistic')
-
-    for stat in statistics:
-        datum = str(stat.get_values().get_value()[0].get_datum())
-        if not re.match('(\d+\.\d+)|(\d+)', datum):
-            HOST_API.logger.error('Wrong value for '
-                                  + stat.get_name() + ': ' + datum)
-            status = False
-        else:
-            HOST_API.logger.info('Correct value for '
-                                 + stat.get_name() + ': ' + datum)
-
-        if stat.get_name() in expectedStatistics:
-            expectedStatistics.remove(stat.get_name())
-
-    if len(expectedStatistics) == 0:
-        HOST_API.logger.info('All ' + str(numOfExpStat) + ' statistics appear')
-    else:
-        HOST_API.logger.error('The following statistics are missing: '
-                              + str(expectedStatistics))
-        status = False
-
-    return status
 
 
 @is_action()
@@ -1505,39 +1224,6 @@ def setSPMPriorityInDB(
 
 
 @is_action()
-def setSPMStatus(positive, hostName, spmStatus):
-    """
-    Description: set SPM status on host
-    Author: imeerovi
-    Parameters:
-    * hostName - name/ip of host
-    * spmPriority - expected value of SPM status on host
-    Return: True if spm value is set OK.
-            False in other case.
-    """
-
-    attribute = 'storage_manager'
-    hostObj = HOST_API.find(hostName)
-
-    if not hasattr(hostObj, attribute):
-        HOST_API.logger.error("Element host %s doesn't have attribute %s",
-                              hostName, attribute)
-        return False
-
-    HOST_API.logger.info("setSPMStatus - SPM Value of host is set to %s is %s",
-                         hostName, spmStatus)
-
-    # Update host
-    HOST_API.logger.info("Updating Host %s", hostName)
-    updateStat = updateHost(positive=positive, host=hostName,
-                            storage_manager=spmStatus)
-    if not updateStat:
-        return False
-
-    return hostObj.get_storage_manager().get_valueOf_() == spmStatus
-
-
-@is_action()
 def checkHostsForSPM(positive, hosts, expected_spm_host):
     """
     Description: checks whether SPM is expected host or not
@@ -1660,29 +1346,6 @@ def getHSMHost(hosts):
 
 
 @is_action()
-def checkHostSubelementPresence(positive, host, element_path):
-    """
-    Checks the presence of element specified by element_path.
-    return: True if the host has the tags in path, False otherwise.
-    """
-
-    hostObj = HOST_API.find(host)
-    actual_tag = hostObj
-    path = []
-    for subelem_name in element_path.split('.'):
-        if not hasattr(actual_tag, subelem_name):
-            msg = "Element host %s doesn't have any subelement '%s' at path" \
-                  " '%s'."
-            HOST_API.logger.error(msg % (host, subelem_name, '.'.join(path)))
-            return False
-        path += (subelem_name,)
-        actual_tag = getattr(actual_tag, subelem_name)
-    HOST_API.logger.info("checkHostAttribute - tag %s in host %s has value"
-                         " '%s'" % ('.'.join(path), host, actual_tag))
-    return True
-
-
-@is_action()
 def getHost(positive, dataCenter='Default', spm=True, hostName=None):
     """
     Locate and return SPM or HSM host from specific data center (given by name)
@@ -1766,52 +1429,6 @@ def getHostNicAttr(host, nic, attr):
             return False, {'attrValue': None}
 
     return True, {'attrValue': nic_obj}
-
-
-@is_action()
-def countHostNics(host):
-    """
-    Count the number of a Host network interfaces
-    Author: atal
-    Parameters:
-       * host - name of a host
-    return: True and counter if the function succeeded, otherwise False
-    and None
-    """
-    nics = getHostNicsList(host)
-    return True, {'nicsNumber': len(nics)}
-
-
-def get_host_nic_statistics(host, nic):
-    """
-    Get statistics for host network interface
-    Parameters:
-       * host - name of a host
-       * nic - name of the host NIC
-    return: dict of a host NIC statistics
-    transmit/receive rates are in Mbps
-    transmit/receive errors are in packets
-    """
-
-    nic_obj = getHostNic(host, nic)
-    stats = HOST_NICS_API.getElemFromLink(nic_obj, "statistics", "statistic",
-                                          get_href=False)
-
-    current_rx = stats[0].get_values().value[0].get_datum()
-    current_rx_mbps = int(current_rx * 8 / 1024 / 1000)
-
-    current_tx = stats[1].get_values().value[0].get_datum()
-    current_tx_mbps = int(current_tx * 8 / 1024 / 1000)
-
-    errors_total_rx = long(stats[2].get_values().value[0].get_datum())
-    errors_total_tx = long(stats[3].get_values().value[0].get_datum())
-
-    stat_dict = {stats[0].name: current_rx_mbps,
-                 stats[1].name: current_tx_mbps,
-                 stats[2].name: errors_total_rx,
-                 stats[3].name: errors_total_tx}
-
-    return stat_dict
 
 
 # FIXME: remove this function - not being used at all, even not in actions.conf
@@ -1926,26 +1543,6 @@ def ifupNic(host, root_password, nic, wait=True):
 
 
 @is_action()
-def checkIfNicStateIs(host, user, password, nic, state):
-    """
-    Check if given nic state same as given state
-    Author: atal
-    Parameters:
-        * ip - ip of remote machine
-        * user/password - to login remote machine
-        * nic - interface name.
-        * state - state user like to check (up|down)
-    return True/False
-    """
-    host_obj = machine.Machine(getIpAddressByHostName(host), user,
-                               password).util('linux')
-    regex = re.compile(state, re.I)
-    if regex.match(host_obj.getNicState(nic)) is not None:
-        return True
-    return False
-
-
-@is_action()
 def getOsInfo(host, root_password=''):
     """
     Description: get OS info wrapper.
@@ -2027,41 +1624,6 @@ def waitForHostPmOperation(positive, host, vdc='localhost', dbuser='postgres',
                              ' be permitted.' % timeToWait)
         time.sleep(timeToWait)
     return returnVal
-
-
-@is_action()
-def checkKSMRun(host, host_user, host_passwd, timeout=120, sleep=1):
-    """
-    Description: Samples KSM run file every few seconds, telling if
-    KSM is running or not
-    Author: ibegun
-    Parameters:
-      * host - name of the host
-      * host_user - user name for the host
-      * host_passwd - password for the user
-    Return: True if KSM is running, False otherwise
-    """
-    starttime = time.time()
-    HOST_API.logger.info('Checking if KSM is running: checking every'
-                         ' {0} seconds, for {1} seconds.'.format(str(sleep),
-                                                                 str(timeout)))
-    host_obj = machine.Machine(host, host_user, host_passwd).util('linux')
-    while time.time() - starttime < timeout:
-        output = host_obj.runCmd(['cat', KSM_STATUSFILE])
-        if not output[0]:
-            HOST_API.logger.error("Can't read '/sys/kernel/mm/ksm/run' on %s",
-                                  host)
-            return False
-    # check if there's a 1 or a 0 in the file
-        match_obj = re.search('([01])[\n\r]*$', output[1])
-        status = match_obj.group(1) == '1'
-        if status:
-            HOST_API.logger.info('KSM is running.')
-            return True
-        else:
-            time.sleep(sleep)
-    HOST_API.logger.info('KSM is not running.')
-    return False
 
 
 @is_action()
@@ -2172,62 +1734,6 @@ def checkNetworkFilteringEbtables(positive, host, user, passwd, nics, vm_macs):
         HOST_API.logger.error("Mac not found in ebtables")
         return not positive
     return positive
-
-
-@is_action()
-def getKSMStats(positive, host, host_user, host_passwd, vm_num, mem_ovrcmt,
-                ksm_const, ksm_coeff):
-    """
-    Gather information from the host in order to trigger KSM on host with
-    given number of VM's.
-
-    **Author**: ibegun
-
-    **Parameters**:
-        * *host* - IP of host
-        * *host_user* - user name for the host
-        * *host_passwd* - password for the user
-        * *vm_num* - exptected VM threshold
-        * *mem_ovrcmt* - cluster's memory overcommit policy (100, 150 or 200)
-        * *ksm_const* - default value for KSM threshold const
-        * *ksm_coeff* - default value for KSM threshold coefficient
-
-    **Returns**: On success, returns information for triggering KSM on host
-    with given number of VM's. Otherwise, returns False.
-    """
-    stats = getStat(host, ELEMENT, COLLECTION, ['memory.total', 'memory.free'])
-    total_mem = stats['memory.total']
-    free_mem = stats['memory.free']
-    vm_mem = (((free_mem + int(vm_num) - 1) / int(vm_num)) / MEGABYTE) \
-        * MEGABYTE
-    pool_size = (int(vm_num) * int(mem_ovrcmt) + 99) / 100
-    # let's find out the thresholds for KSM on the host and default to
-    # the known defaults if there are no custom settings
-    host_obj = machine.Machine(host, host_user, host_passwd).util('linux')
-    ksmtuned_output = host_obj.runCmd(['cat', KSMTUNED_CONF])
-    if ksmtuned_output[0] is False:
-        HOST_API.logger.error("Can't read {0}".format(KSMTUNED_CONF))
-        return False
-    match_obj = re.search('[^#]*\W*KSM_THRES_COEF=([0-9]+)',
-                          ksmtuned_output[1])
-    if match_obj is not None:
-        ksm_thres_coeff = int(match_obj.group(1))
-    else:
-        ksm_thres_coeff = ksm_coeff
-    match_obj = re.search('[^#]*\W*KSM_THRES_CONST=([0-9]+)',
-                          ksmtuned_output[1])
-    if match_obj is not None:
-        ksm_thres_const = int(match_obj.group(1)) * MEGABYTE
-    else:
-        ksm_thres_const = ksm_const
-    if (total_mem * (ksm_thres_coeff / 100) > ksm_thres_const):
-        vm_load = int(((100 - ksm_thres_coeff) / 100.0) * vm_mem)
-    else:
-        vm_load = int(((total_mem - ksm_thres_const) / float(total_mem))
-                      * vm_mem)
-    vm_load = int(vm_load / MEGABYTE + 0.5)
-    return True, {'vm_mem': vm_mem, 'vm_load': vm_load,
-                  'pool_size': pool_size}
 
 
 def cleanHostStorageSession(hostObj, **kwargs):
@@ -2341,30 +1847,6 @@ def setHostToNonOperational(orig_host, host_password, nic):
     return True
 
 
-@is_action()
-def open_host_port(hosts, user, passwd, port, protocol='tcp', chain='INPUT'):
-    """
-    Open given port on all hosts
-    **Author**: alukiano
-
-    **Parameters**:
-        * *hosts* - list of hosts
-        * *port* - port to open
-    **Returns**: True, if opening was success, False else
-    """
-    add_port = ['iptables', '-I', chain, '-p', protocol,
-                '--dport', port, '-j', 'ACCEPT']
-    for host in hosts:
-        HOST_API.logger.info("Run %s command on host %s",
-                             " ".join(add_port), host)
-        host_obj = machine.Machine(host, user, passwd).util(machine.LINUX)
-        res, out = host_obj.runCmd(add_port)
-        if not res:
-            HOST_API.logger.info("Run command failed")
-            return False
-    return True
-
-
 def start_vdsm(host, password, datacenter):
     """
     Start vdsm. Before that stop all vms and deactivate host.
@@ -2428,32 +1910,6 @@ def kill_qemu_process(vm_name, host, user, password):
         HOST_API.logger.info("QEMU pid: %s", qemu_pid)
 
         return linux_machine.runCmd(shlex.split('kill -9 %s', qemu_pid))
-
-
-def add_label_to_hostnic(nic, label, host):
-    """
-    Description: Add network label to host nic
-    Author: myakove
-    Parameters:
-       *  *nic* - nic name
-       *  *label* - label name
-       *  *host* - host name
-    **Return**: status (True if label was added properly, False otherwise)
-    """
-    try:
-        host_nic = getHostNic(host, nic)
-    except EntityNotFound as e:
-        HOST_API.logger.error(e)
-        return False
-
-    labels_href = HOST_NICS_API.getElemFromLink(host_nic, "labels", "label",
-                                                get_href=True)
-    label_obj = data_st.Label()
-    label_obj.set_id(label)
-    status = HOST_NICS_API.create(entity=label_obj, positive=True,
-                                  collection=labels_href,
-                                  coll_elm_name="label")[1]
-    return status
 
 
 @is_action()
