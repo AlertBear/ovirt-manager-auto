@@ -24,6 +24,8 @@ Configuration Options:
     | **nose_apiselector** - enable/disable api selector plugin
     | **tags** - list of tags
     | **tag_expressions** - list of tag's expressions [nose_tag_expression]_
+    | **exclude** - list of expressions which module should be excluded
+        [nose_exclude]_
 
 How to start
 ------------
@@ -35,6 +37,7 @@ should look like.
 .. [unittets_example] ART/art/tests/unittest_template/example
 .. [nose_tag_expression] http://nose.readthedocs.org/en/latest/plugins/\
 attrib.html#expression-evaluation
+.. [nose_exclude] http://nose.readthedocs.org/en/latest/usage.html#cmdoption-e
 
 """
 
@@ -110,6 +113,7 @@ NOSE_CONFIG_PATH = 'nose_config'
 NOSE_API_SELECTOR = 'nose_apiselector'
 NOSE_TAGS = 'tags'
 NOSE_TAG_EXPRESSIONS = 'tag_expressions'
+NOSE_EXCLUDE = 'exclude'
 
 ITER_NUM = 0
 
@@ -485,6 +489,10 @@ class UnittestLoader(Component):
         for expr in test_tag_exprs:
             nose_args.extend(['-A', expr])
 
+        # Exclude test patterns
+        for expr in conf[UNITTEST_SEC].as_list(NOSE_EXCLUDE):
+            nose_args.extend(['-e', expr])
+
         self.nose_conf.configure(nose_args)
 
     def _load_nose_custom_plugins(self, path):
@@ -599,3 +607,4 @@ class UnittestLoader(Component):
             'boolean(default=%s)' % DEFAULT_STATE
         section_spec[NOSE_TAGS] = 'force_list(default=list())'
         section_spec[NOSE_TAG_EXPRESSIONS] = 'expr_list(default=list())'
+        section_spec[NOSE_EXCLUDE] = 'force_list(default=list())'
