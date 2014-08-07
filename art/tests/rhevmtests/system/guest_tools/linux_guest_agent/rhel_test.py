@@ -2,8 +2,8 @@
 Test installation and uninstallation of guest agent on RHEL 5/6 32b/64b
 """
 import os
-import config
-import common
+from rhevmtests.system.guest_tools.linux_guest_agent import config
+from rhevmtests.system.guest_tools.linux_guest_agent import common
 import logging
 from nose.tools import istest
 from art.test_handler.tools import tcms

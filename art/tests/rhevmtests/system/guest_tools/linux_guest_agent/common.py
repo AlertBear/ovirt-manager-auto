@@ -1,6 +1,6 @@
 import ast
 import logging
-import config
+from rhevmtests.system.guest_tools.linux_guest_agent import config
 from art.unittest_lib import BaseTestCase as TestCase
 from art.test_handler.settings import opts
 from art.rhevm_api.tests_lib.low_level import vms
@@ -20,8 +20,8 @@ def runOnHost(cmd, vm_name):
     LOGGER.info(cmd)
     vm_obj = VM_API.find(vm_name)
     running_host_ip = HOST_API.find(vm_obj.host.id, 'id').get_address()
-    return runMachineCommand(True, ip=running_host_ip, user=config.USER_ROOT,
-                             password=config.VDS_PASSWORD[0], cmd=cmd)
+    return runMachineCommand(True, ip=running_host_ip, user=config.HOSTS_USER,
+                             password=config.HOSTS_PW, cmd=cmd)
 
 
 def start_vdsm(vm_name):

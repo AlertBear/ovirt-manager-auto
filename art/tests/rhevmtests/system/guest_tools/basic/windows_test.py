@@ -51,10 +51,10 @@ class Windows(TestCase):
             True, template=cls.templateNameStorage,
             export_storagedomain=config.EXPORT_STORAGE_DOMAIN,
             import_storagedomain=config.STORAGE_DOMAIN,
-            cluster=config.CLUSTER_NAME, name=cls.template)
+            cluster=config.CLUSTER_NAME[0], name=cls.template)
         vms.createVm(True, vmName=cls.vmName,
                      vmDescription="VM for %s class" % cls.__name__,
-                     cluster=config.CLUSTER_NAME,
+                     cluster=config.CLUSTER_NAME[0],
                      template=cls.template, network=config.MGMT_BRIDGE)
         vms.runVmOnce(True, cls.vmName, cdrom_image=config.CD_WITH_TOOLS)
         vms.waitForVMState(vm=cls.vmName, state='up')
@@ -66,7 +66,12 @@ class Windows(TestCase):
             True, cls.mac, subnetClassB=config.SUBNET_CLASS)[1].get('ip', None)
         os.environ[STAFCONVDIR] = STAF_PATH
         cls.machine = utils.createMachine(
-            True, host=config.VDS, ip=cls.ip, os='windows', platf=cls.platf)
+            True,
+            host=config.HOSTS[0],
+            ip=cls.ip,
+            os='windows',
+            platf=cls.platf
+        )
 
     @classmethod
     def teardown_class(cls, Vm):

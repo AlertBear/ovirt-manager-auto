@@ -1,9 +1,9 @@
 '''
 Suse guest agent test
 '''
-import config
 import logging
-import common
+from rhevmtests.system.guest_tools.linux_guest_agent import config
+from rhevmtests.system.guest_tools.linux_guest_agent import common
 from utilities.machine import eServiceHandlers
 from nose.tools import istest
 from art.test_handler.tools import tcms

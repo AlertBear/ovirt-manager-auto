@@ -8,10 +8,10 @@ __test__ = False
 import logging
 from rhevmtests.system.config import *  # flake8: noqa
 
+log = logging.getLogger('setup')
+
 # Name of the test
 TEST_NAME = "Guest_Tools"
-log = logging.getLogger('setup')
-MAX_WORKERS = PARAMETERS.get('max_workers', 16)
 STORAGE_DOMAIN = 'nfs_0'
 ISO_STORAGE_DOMAIN = 'iso'
 EXPORT_STORAGE_DOMAIN = 'tlv-export'
@@ -19,7 +19,7 @@ WIN7_TEMPLATE_NAME = 'dk-win7-64'
 WIN7_IMPORTED_TEMPLATE_NAME = 'dk-win7-64'
 WIN7_VM_NAME = "GTwin764"
 VM_USER = 'admin'
-TOOLSVERSION = 3.3.5
+TOOLSVERSION = "3.3.5"
 TOOLS_DICT = '{ "RHEV-Tools":"3.2.8"   , "RHEV-Agent":"3.2.5"  , "RHEV-Serial":"3.2.4", \
                 "RHEV-Network":"3.2.4" , "RHEV-Block":"3.2.4"  , "RHEV-Spice-Agent":"3.2.5", \
                 "RHEV-USB":"3.2.3"     , "RHEV-SSO":"3.2.4"    , "RHEV-Spice":"3.2.3"}'
@@ -32,12 +32,12 @@ ISO_DOMAIN_ADDRESS = 'lion.qa.lab.tlv.redhat.com'
 EXPORT_DOMAIN_PATH = '/export/virt-qe-export'
 ISO_DOMAIN_PATH = '/export/guest_tools'
 
-win7_32_template_name = dk-win7-32
-win7_32_imported_template_name = dk-win7-32
-win7_32_VM_name = "GTwin732"
-winXP_template_name = dk-winxp
-winXP_imported_template_name = dk-winxp
-winXP_VM_name = "GTwinXP"
+WIN7_32_TEMPLATE_NAME = "dk-win7-32"
+WIN7_32_IMPORTED_TEMPLATE_NAME = "dk-win7-32"
+WIN7_32_VM_NAME = "GTwin732"
+WINXP_TEMPLATE_NAME = "dk-winxp"
+WINXP_IMPORTED_TEMPLATE_NAME = "dk-winxp"
+WINXP_VM_NAME = "GTwinXP"
 
 WIN7_tools_dict = """{"RHEV-Agent":"3.3.3",
 "RHEV-Block":"3.3.1", "RHEV-Network":"3.3.1",
@@ -46,5 +46,5 @@ WIN7_tools_dict = """{"RHEV-Agent":"3.3.3",
 WINXP_tools_dict = """{"RHEV-Tools":"3.2.8", "RHEV-Agent":"3.2.5",
 "RHEV-Serial":"3.2.4", "RHEV-Network":"3.2.4", "RHEV-Spice-Agent":"3.2.5",
 "RHEV-USB":"3.2.3", "RHEV-SSO":"3.2.4", "RHEV-Spice":"3.2.3"}"""
-skip_install = 0
-skip_uninstall = 1
+SKIP_INSTALL = 0
+SKIP_UNINSTALL = 1

@@ -14,7 +14,7 @@ Purpose of this doc string is also description of test suite.
 import art.rhevm_api.tests_lib.high_level.datacenters as datacenters
 from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 import art.rhevm_api.tests_lib.low_level.storagedomains as storagedomains
-from rhevmtests.system import config
+from rhevmtests.system.guest_tools.basic import config
 
 
 def setup_package():

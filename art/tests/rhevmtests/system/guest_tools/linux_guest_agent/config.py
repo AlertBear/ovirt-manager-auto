@@ -5,7 +5,7 @@ Config module for Guest Agent
 __test__ = False
 
 from utilities.enum import Enum
-from rhevmtests.system.config import *  # flake8: noqa
+from rhevmtests.system.guest_tools.config import *  # flake8: noqa
 
 
 eOS = Enum(RHEL_6_64b='RHEL_6_64b', RHEL_6_32b='RHEL_6_32b',
@@ -13,11 +13,6 @@ eOS = Enum(RHEL_6_64b='RHEL_6_64b', RHEL_6_32b='RHEL_6_32b',
            UBUNTU_14_04_64b='UBUNTU_14_04_64b',
            SUSE_13_1_64b='SUSE_13_1_64b')
 TEST_NAME = "RHEL_guest_agent"
-STORAGE_DOMAIN = 'nfs_0'
-EXPORT_STORAGE_DOMAIN = 'tlv-export'
-EXPORT_DOMAIN_ADDRESS = 'lion.qa.lab.tlv.redhat.com'
-EXPORT_DOMAIN_PATH = '/export/virt-qe-export'
-SUBNET_CLASS = '10'
 INSTALL_TIMEOUT = PARAMETERS.get('install_timeout', 480)
 TIMEOUT = PARAMETERS.get('timeout', 320)
 
