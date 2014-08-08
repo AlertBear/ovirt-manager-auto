@@ -41,6 +41,7 @@ class Windows(TestCase):
     template = None
     platf = None
     toolsDict = None
+    templateNameStorage = None
 
     @classmethod
     def setup_class(cls):

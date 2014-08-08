@@ -53,9 +53,13 @@ def runPackagerCommand(machine, package_manager, command, *args):
 class MyLinuxMachine(machine.LinuxMachine):
 
     def __init__(self, ip, service_handler=machine.eServiceHandlers.SERVICE):
-        super(MyLinuxMachine, self).__init__(ip, config.USER_ROOT,
-                                             config.USER_PASSWORD, local=False,
-                                             serviceHandler=service_handler)
+        super(MyLinuxMachine, self).__init__(
+            ip,
+            config.GUEST_ROOT_USER,
+            config.GUEST_ROOT_PASSWORD,
+            local=False,
+            serviceHandler=service_handler
+        )
 
 
 class BasePostInstall(TestCase):

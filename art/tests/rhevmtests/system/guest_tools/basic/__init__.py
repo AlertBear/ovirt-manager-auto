@@ -27,13 +27,13 @@ def setup_package():
     storagedomains.importStorageDomain(True, type='iso',
                                        storage_type='nfs',
                                        address=config.ISO_DOMAIN_ADDRESS,
-                                       host=config.VDS,
+                                       host=config.HOSTS[0],
                                        path=config.ISO_DOMAIN_PATH)
     storagedomains.importStorageDomain(
         True, type='export',
         storage_type='nfs',
         address=config.EXPORT_DOMAIN_ADDRESS,
-        host=config.VDS,
+        host=config.HOSTS[0],
         path=config.EXPORT_DOMAIN_PATH)
     storagedomains.attachStorageDomain(True, config.DC_NAME,
                                        config.EXPORT_STORAGE_DOMAIN)
@@ -61,8 +61,8 @@ def teardown_package():
         storagedomain=config.ISO_STORAGE_DOMAIN)
     storagedomains.removeStorageDomain(
         True, storagedomain=config.EXPORT_STORAGE_DOMAIN,
-        host=config.VDS, format='False')
+        host=config.HOSTS[0], format='False')
     storagedomains.removeStorageDomain(
         True, storagedomain=config.ISO_STORAGE_DOMAIN,
-        host=config.VDS, format='False')
+        host=config.HOSTS[0], format='False')
     cleanDataCenter(True, config.DC_NAME)
