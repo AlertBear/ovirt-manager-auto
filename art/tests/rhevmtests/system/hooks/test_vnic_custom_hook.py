@@ -71,8 +71,8 @@ def setup_module():
 
 def teardown_module():
     assert runMachineCommand(True, ip=config.HOSTS[0],
-                             user=config.VM_LINUX_USER,
-                             password=config.VM_LINUX_PW,
+                             user=config.HOSTS_USER,
+                             password=config.HOSTS_PW,
                              cmd=REMOVE_HOOKS)[0]
     assert vms.removeVm(True, config.VM_NAME[0], stopVM='true')
 
@@ -80,12 +80,13 @@ def teardown_module():
 class TestCaseVnic(TestCase):
     __test__ = False
     CUSTOM_HOOK = 'speed'
+    HOOK_NAMES = None
 
     def _create_python_script_to_verify_custom_hook(self, name):
         my_hook = '%s.hook' % name
         scriptName = '%s.%s' % (name, 'py')
         hooks.createPythonScriptToVerifyCustomHook(
-            ip=config.HOSTS[0], password=config.HOST_PASSWORD,
+            ip=config.HOSTS[0], password=config.HOSTS_PW,
             scriptName=scriptName, customHook=self.CUSTOM_HOOK,
             target=path.join(HOOK_PATH, name),
             outputFile=path.join(TMP, my_hook))
@@ -94,7 +95,7 @@ class TestCaseVnic(TestCase):
         my_hook = '%s.hook' % name
         scriptName = '%s.%s' % (name, 'sh')
         hooks.createOneLineShellScript(ip=config.HOSTS[0],
-                                       password=config.HOSTS_PW[0],
+                                       password=config.HOSTS_PW,
                                        scriptName=scriptName, command='touch',
                                        arguments=path.join(TMP, my_hook),
                                        target=path.join(HOOK_PATH, name))
@@ -116,7 +117,7 @@ class TestCaseVnic(TestCase):
             my_hook = '%s.hook' % name
             LOGGER.info("Checking existence of %s%s", TMP, my_hook)
             ret = hooks.checkForFileExistenceAndContent(
-                True, ip=config.HOSTS[0], password=config.HOSTS_PW[0],
+                True, ip=config.HOSTS[0], password=config.HOSTS_PW,
                 filename=path.join(TMP, my_hook),
                 content=(SPEED if t == SCRIPT_TYPE.PYTHON else None))
             result = result or (not ret)
@@ -128,7 +129,7 @@ class TestCaseVnic(TestCase):
         for name, t in self.HOOK_NAMES.iteritems():
             hook_name = '%s/%s.%s' % (name, name, t)
             test_utils.removeFileOnHost(positive=True, ip=config.HOSTS[0],
-                                        password=config.HOSTS_PW[0],
+                                        password=config.HOSTS_PW,
                                         filename=path.join(HOOK_PATH,
                                                            hook_name))
 
@@ -236,8 +237,8 @@ class TestCaseAfterUpdateDeviceFail(TestCaseVnic):
         cmd = self.UPDATE_FAIL % (vm_id, self.FAIL_NIC, self.NONEXISTENT)
         self.assertFalse(
             runMachineCommand(True, ip=config.HOSTS[0],
-                              user=config.VM_LINUX_USER,
-                              password=config.VM_LINUX_PASSWORD,
+                              user=config.HOSTS_USER,
+                              password=config.HOSTS_PW,
                               cmd=cmd)[0])
 
     @istest
