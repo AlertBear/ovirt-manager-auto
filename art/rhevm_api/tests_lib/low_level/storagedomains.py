@@ -328,9 +328,11 @@ def activateStorageDomain(positive, datacenter, storagedomain, wait=True):
     async = 'false' if wait else 'true'
     status = util.syncAction(storDomObj, "activate", positive, async=async)
     if status and positive and wait:
-        return util.waitForElemStatus(storDomObj, "active", 180,
-                                      collection=getDCStorages(datacenter,
-                                                               False))
+        return waitForStorageDomainStatus(
+            True, datacenter, storagedomain,
+            ENUMS['storage_domain_state_active'],
+            180,
+        )
     return status
 
 
@@ -338,7 +340,7 @@ def activateStorageDomain(positive, datacenter, storagedomain, wait=True):
 def deactivateStorageDomain(positive, datacenter, storagedomain, wait=True):
     '''
     Description: deactivate storage domain
-    Author: edolinin
+    Author: cmestreg
     Parameters:
        * datacenter - name of data center to use
        * storagedomain - name of storage domain that should be deactivated
@@ -352,9 +354,11 @@ def deactivateStorageDomain(positive, datacenter, storagedomain, wait=True):
     async = 'false' if wait else 'true'
     status = util.syncAction(storDomObj, "deactivate", positive, async=async)
     if positive and status and wait:
-        return util.waitForElemStatus(storDomObj, "inactive maintenance", 180,
-                                      collection=getDCStorages(datacenter,
-                                                               False))
+        return waitForStorageDomainStatus(
+            True, datacenter, storagedomain,
+            ENUMS['storage_domain_state_maintenance'],
+            180,
+        )
     return status
 
 
