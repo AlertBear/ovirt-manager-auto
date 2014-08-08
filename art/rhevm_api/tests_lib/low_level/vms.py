@@ -17,7 +17,6 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 from concurrent.futures import ThreadPoolExecutor
-from copy import deepcopy
 import logging
 from operator import and_
 from Queue import Queue
@@ -41,11 +40,10 @@ from art.rhevm_api.tests_lib.low_level.networks import getVnicProfileObj, \
 from art.rhevm_api.utils.name2ip import LookUpVMIpByName
 from art.rhevm_api.utils.test_utils import searchForObj, getImageByOsType, \
     convertMacToIpAddress, checkHostConnectivity,\
-    update_vm_status_in_database, get_api, split, getAllImages,\
+    update_vm_status_in_database, get_api, split,\
     waitUntilPingable, restoringRandomState, waitUntilGone
 from art.rhevm_api.utils.provisioning_utils import ProvisionProvider
 from art.rhevm_api.utils.resource_utils import runMachineCommand
-from art.rhevm_api.utils.threads import runParallel
 from art.rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
 from art.test_handler.settings import opts
 from art.test_handler.exceptions import CanNotFindIP
@@ -1126,47 +1124,6 @@ def addNic(positive, vm, **kwargs):
 
 
 @is_action()
-def isVmNicActive(positive, vm, nic):
-    '''
-    Description: Check if VM NIC is active
-    Author: atal
-    Parameters:
-        * vm - vm name
-        * nic - nic name
-    return: True if nic is active, False otherwise.
-    '''
-    nic_obj = getVmNic(vm, nic)
-    if not nic_obj:
-        logger.error("%s does not exist on %s", nic, vm)
-        return False
-    return nic_obj.get_active() == positive
-
-
-@is_action()
-def addVmNics(positive, vm, namePrefix, networks):
-    '''
-    Adding multipe nics with different network each one
-    Author: atal
-    Parameters:
-        * vm - vm name
-        * namePrefix - the prefix for each VM nic name
-        * networks - list of network names
-    return True with VM nic names list alse False with empty list
-    '''
-    vm_nics = []
-    regex = re.compile('\w(\d+)', re.I)
-    for net in networks:
-        match = regex.search(net)
-        if not match:
-            return False, {'vmNics': None}
-        name = namePrefix + str(match.group(1))
-        vm_nics.append(name)
-        if not addNic(positive, vm, name=name, network=net):
-            return False, {'vmNics': None}
-    return True, {'vmNics': vm_nics}
-
-
-@is_action()
 def updateVmDisk(positive, vm, disk, **kwargs):
     '''
     Description: Update already existing vm disk
@@ -1443,24 +1400,6 @@ def removeSnapshot(positive, vm, description,
 
 
 @is_action()
-def snapshotContainsDisks(vm, snapshot, expected_disk_count):
-    """
-    Description: Compares current amount of disks in snapshot collection
-                 with expected_disk_count
-    Parameters:
-        * vm - vm's name
-        * snapshot - snapshot's description
-        * expected_disk_count - expected count of disks in collection
-    Author: jlibosva
-    Return: True if expected count is the same as count in collection
-    """
-    snap_obj = _getVmSnapshot(vm, snapshot)
-    disks = DISKS_API.get(href='%s/disks' % (snap_obj.href), absLink=True)
-
-    return len(disks) == expected_disk_count
-
-
-@is_action()
 def runVmOnce(positive, vm, pause=None, display_type=None, stateless=None,
               cdrom_image=None, floppy_image=None, boot_dev=None, host=None,
               domainName=None, user_name=None, password=None):
@@ -1585,36 +1524,6 @@ def suspendVm(positive, vm, wait=True):
     if wait and positive:
         return VM_API.waitForElemStatus(vmObj, 'suspended', VM_ACTION_TIMEOUT)
     return True
-
-
-@is_action()
-def suspendVms(vms):
-    '''
-    Suspend several vms simultaneously. Only action response is checked, no
-    checking for vm SUSPENDED status is performed.
-
-    Parameters:
-      * vms - Names of VMs to suspend.
-    Returns: True iff all VMs suspended.
-    '''
-    jobs = [Job(target=suspendVm, args=(True, vm)) for vm in split(vms)]
-    js = JobsSet()
-    js.addJobs(jobs)
-    js.start()
-    js.join()
-
-    status = True
-    for job in jobs:
-        if job.exception:
-            status = False
-            logger.error('Suspending vm %s failed: %s.',
-                         job.args[1], job.exception)
-        elif not job.result:
-            status = False
-            logger.error('Suspending vm %s failed.', job.args[1])
-        else:
-            logger.info('Suspending vm %s succeed.', job.args[1])
-    return status
 
 
 @is_action()
@@ -2287,30 +2196,6 @@ def waitForIP(vm, timeout=600, sleep=DEF_SLEEP):
     return False, {'ip': None}
 
 
-# TODO: replace with generic "async create requests" mechanism
-@is_action()
-def createVms(positive, amount=2, **kwargs):
-    """
-    Create and start (if specified) multiple VMs.
-    NOTE: this is a temporary solution for create multiple
-        VMs request, should be replaced in the near future.
-    Author: mbenenso
-    Parameters:
-       * amount - amount of VMs to create
-       * **kwargs - exact set of parameters as for @createVM function
-    Return: list of createVm results for each VM
-    """
-    targetsList = [createVm] * amount
-    paramsList = []
-    for i in xrange(amount):
-        currParams = deepcopy(kwargs)
-        currParams['positive'] = positive
-        currParams['vmName'] += "_%s" % i
-        currParams["async"] = True
-        paramsList.append(currParams)
-    return runParallel(targetsList, paramsList)
-
-
 @is_action()
 def getVmMacAddress(positive, vm, nic='nic1'):
     '''Function return mac address of vm with specific nic'''
@@ -2365,21 +2250,6 @@ def removeSystem(mac, cobblerAddress=None, cobblerUser=None,
 
 
 @is_action()
-def cobblerRemoveSystem(mac, cobblerAddress=None, cobblerUser=None,
-                        cobblerPasswd=None):
-    '''
-    Description: wrapper for 3.1 compatibility:
-    Author: imeerovi
-    Parameters:
-       * mac - mac address of system to remove
-       * cobbler* - backward compatibility with cobbler provisioning,
-                    should be removed
-    Return: True if remove succseeded and False otherwise.
-    '''
-    return removeSystem(mac)
-
-
-@is_action()
 def unattendedInstallation(positive, vm, image, nic='nic1', hostname=None,
                            floppyImage=None, cobblerAddress=None,
                            cobblerUser=None, cobblerPasswd=None):
@@ -2417,24 +2287,6 @@ def unattendedInstallation(positive, vm, image, nic='nic1', hostname=None,
 
     return runVmOnce(positive, vm, cdrom_image=image, floppy_image=floppyImage,
                      boot_dev=boot_dev)
-
-
-@is_action('waitUntilVmQuery')
-def waitUntilQuery(vm, query, timeout=VM_IMAGE_OPT_TIMEOUT,
-                   sleep=VM_SAMPLING_PERIOD):
-    """
-    Description: Waits until object given by query above VM is found
-    Parameters:
-        * vm - name of vm
-        * query - query above given VM
-        * timeout - how long should wait
-        * sleep - polling interval
-    Author: jlibosva
-    Return: True if VM was found in given timeout interval, false otherwise
-    """
-    query = ' and '.join(["name=%s" % vm, query]) if query else "name=%s" % vm
-
-    return VM_API.waitForQuery(query, timeout=timeout, sleep=sleep)
 
 
 @is_action()
@@ -2587,133 +2439,6 @@ def checkVMConnectivity(positive, vm, osType, attempt=1, interval=1,
     VM_API.logger.info(
         "VM: %s TYPE: %s, IP: %s, VLAN: %s, NIC: %s Connectivity Status: %s",
         vm, osType, ip, vlan, nic, status)
-    return status
-
-
-@is_action()
-def checkMultiVMsConnectivity(positive, vms, osType, attempt=1, interval=1,
-                              nic='nic1', user=None, password=None):
-    '''
-    Description: check Multi VMs Connectivity
-    Author: Tomer
-    Editor: atal
-    Parameters:
-       * vms - string of VMs seperate by comma or space.
-       * osType - os type element rhel/windows.
-       * attempt - number of attempts to connect .
-       * interval - interval between attempts
-    Return: status (True if al vm succeed, False otherwise).
-    '''
-    status = True
-    for vm in split(vms):
-        if not checkVMConnectivity(positive, vm, osType, attempt,
-                                   interval, nic, user, password):
-            VM_API.logger.error(
-                'Missing connectivity with %s, nic %s', vm, nic)
-            status = False
-    return status
-
-
-@is_action()
-def checkVmMultiNicsConnectivity(positive, vm, osType, nics, attempt=1,
-                                 interval=1, user=None, password=None):
-    '''
-    checking VM multiple nics connectivity
-    Author: atal
-    Parameters:
-        * vm - vm name
-        * osType - OS type name
-        * nics - a list of VM nics nam (a name like "nic162"
-                                        represent vlan 162)
-        * attampt/insterval - a retry params
-        * user - remote host user login
-        * password - remote host password login
-    return True/False
-    '''
-    status = True
-    for nic in nics:
-        if not checkVMConnectivity(positive, vm, osType, attempt,
-                                   interval, nic, user, password):
-            VM_API.logger.error('No connection to %s on %s' % (vm, nic))
-            status = False
-    return status
-
-
-@is_action()
-def addMultiNicsToVM(positive, vm, nicTypes, network, nicPrefix='vmNic'):
-    '''
-    Adding multiple Nics to vm with different randome type.
-    Author: atal
-    Parameters:
-        * vm - vm name
-        * nicTypes - straing, contains different nic types separated by ','
-                     (exp: 'e1000,virtio')
-        * nicPrefix - prefix for the nic name.
-    Return: status (True if vm was moved properly, False otherwise)
-    '''
-    for idx, item in enumerate(nicTypes.split(',')):
-        status = addNic(positive, vm=vm, name=nicPrefix + str(idx),
-                        network=network, interface=item.strip())
-    return status
-
-
-@is_action()
-def getVmNicAttr(vm, nic, attr):
-    '''
-    get host's nic attribute value
-    Author: atal
-    Parameters:
-       * host - name of a host
-       * nic - name of nic we'd like to check
-       * attr - attribute of nic we would like to recive.
-                attr can dive deeper as a string with DOTS ('.').
-    return: True if the function succeeded, otherwise False
-    '''
-    try:
-        nic_obj = getVmNic(vm, nic)
-    except EntityNotFound:
-        return False, {'attrValue': None}
-
-    for tag in attr.split('.'):
-        try:
-            nic_obj = getattr(nic_obj, tag)
-        except AttributeError as err:
-            VM_API.logger.error(str(err))
-            return False, {'attrValue': None}
-    return True, {'attrValue': nic_obj}
-
-
-@is_action()
-def addIfcfgFile(positive, vm, user, password, nic='nic1', nic_name='eth1',
-                 onboot='yes', bootProto='dhcp', nic_ip='',
-                 nic_netmask='255.255.255.0', nic_gateway=''):
-    '''
-    Only for Linux VM
-    Adding network ifcfg file to support new added nic
-    Author: atal
-        * vm - vm name
-        * user/password - vm credentials
-        * nic - connectint through VM nic (exp 'nic1')
-        * nic_name - new network name (ifcfg-<nic>)
-        * vlan - vlan id in case phisical nic connected to network switch
-        * onboot/bootProto/nic_ip/nic_netmask/nic_gateway -
-          Regular initscripts parameters
-    return: True if the function succeeded, otherwise False
-    '''
-    status, mac = getVmMacAddress(positive, vm, nic=nic)
-    if not status:
-        return False
-    res, vlan = getVmNicVlanId(vm, nic)
-    status, ip = convertMacToIpAddress(positive, mac=mac['macAddress'],
-                                       vlan=vlan['vlan_id'])
-    if not status:
-        return False
-
-    vm = Machine(ip['ip'], user, password).util('linux')
-    status = vm.addNicConfFile(nic_name, onboot, bootProto, nic_ip,
-                               nic_netmask, nic_gateway)
-    VM_API.logger.info('Adding nic: %s to VM: %s Status: %s',
-                       nic_name, vm, status)
     return status
 
 
@@ -2911,31 +2636,6 @@ def removeVmFromExportDomain(positive, vm, datacenter,
 
 
 @is_action()
-def lockVm(positive, vm_name, ip, user, password, db_user, unlock=False):
-    '''
-    Description: locks VM in DB
-    Author: pdufek
-    Parameters:
-    * vm_name - the name of the VM
-    * ip - IP of the machine where DB resides
-    * user - username for remote access
-    * password - password for remote access
-    * unlock - unlock VM instead of lock
-    Returns: True (successfully set) / False (failure)
-    '''
-    cmd = 'psql engine %s -c \"UPDATE vm_dynamic SET status=%d WHERE '\
-          'vm_guid=(SELECT vm_guid FROM vm_static WHERE vm_name=\'%s\');\"' \
-          % (db_user, 0 if (unlock is not None) and unlock else 15, vm_name)
-    status = runMachineCommand(positive, ip=ip, user=user, password=password,
-                               cmd=cmd)
-    if not status[0]:
-        log_fce = VM_API.logger.error if (positive is not None) and positive \
-            else VM_API.logger.info
-        log_fce('Command \'%s\' failed: %s' % (cmd, status[1]['out']))
-    return status[0] == positive
-
-
-@is_action()
 def waitForVmsDisks(vm, disks_status=ENUMS['disk_state_ok'], timeout=600,
                     sleep=10):
     """
@@ -2986,33 +2686,6 @@ def getVmPayloads(positive, vm, **kwargs):
         return False, {'property_object': None}
 
     return True, {'property_object': property_object}
-
-
-@is_action()
-def compareDisksCountOfVm(positive, vds, vds_username, vds_password, dc_name,
-                          storage_domain_name, vm_name, expected_count):
-    """
-    Description: Compare count of disks on vm specified by storage domain and
-                 datacenter according expected_count
-    Author: jlibosva
-    Parameters:
-        * positive - True if count should match
-        * vds - name of hosts we want to use
-        * vds_username - user which we will use for SSH session
-        * vds_password - password for vds_username user
-        * dc_name - name of DC that has attached storage storage_name
-        * storage_domain_name - name of storage that VM has disks on
-        * vm_name - name of vm
-        * expected_count - expected count of disks
-    Returns: positive == (count_of_disks(vm) == expected_count)
-    """
-    dc = DC_API.find(dc_name)
-    sd = STORAGE_DOMAIN_API.find(storage_domain_name)
-    vm = VM_API.find(vm_name)
-    images = getAllImages(vds, vds_username, vds_password, dc.id,
-                          sd.id, vm.id)
-
-    return positive == (len(images) == expected_count)
 
 
 @is_action('pingVm')
@@ -3152,43 +2825,6 @@ def migrateVmsSimultaneously(positive, vm_name, range_low, range_high, hosts,
 
         logger.info('Succeed to migrate all the VMs.')
         return True
-
-
-@is_action()
-def provisioningRemoveMultiSystem(positive, vms, nic='nic1'):
-    '''
-    Description: Remove Multi systems from provisioning tool.
-    Author: imeerovi
-    Parameters:
-       * vms - string of VMs seperate by comma or space.
-       * nic - vm nic
-    Return: status (True if all systems removed, False otherwise).
-    '''
-    if not isinstance(vms, str):
-        logger.error('VMs parameter error, Only string is accepted ')
-        return False
-    vmsList = split(vms)
-
-    for vm in vmsList:
-        status, mac = getVmMacAddress(positive, vm, nic=nic)
-        wasRemoved = removeSystem(mac['macAddress'])
-        if not (wasRemoved and status):
-            return False
-    return True
-
-
-@is_action()
-def cobblerRemoveMultiSystem(positive, vms, cobblerAddress, cobblerUser,
-                             cobblerPasswd, nic='nic1'):
-    '''
-    ***Depricated, used for 3.1 compatibility***
-    Description: Remove Multi systems from cobbler.
-    Author: Tomer
-    Parameters:
-       * vms - string of VMs seperate by comma or space.
-    Return: status (True if all systems removed, False otherwise).
-    '''
-    return provisioningRemoveMultiSystem(positive, vms, nic)
 
 
 @is_action('moveVmDisk')
