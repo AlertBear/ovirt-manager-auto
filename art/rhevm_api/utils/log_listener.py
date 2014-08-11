@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 class Timeout():
     """Timeout class using ALARM signal."""
+
     class Timeout(Exception):
         pass
 
@@ -23,7 +24,7 @@ class Timeout():
         signal.alarm(self.sec)
 
     def __exit__(self, *args):
-        signal.alarm(0)    # disable alarm
+        signal.alarm(0)  # disable alarm
 
     def raise_timeout(self, *args):
         raise Timeout.Timeout()
@@ -80,28 +81,30 @@ class LogListener():
         if "ip_for_execute_command" is None then command will executes on the
         same host as the file
         """
-
+        rc = None
         if not run_locally:
             if ip_for_execute_command:
-                machine_for_command = Machine(host=ip_for_execute_command,
-                                              user=remote_username,
-                                              password=
-                                              remote_password).util('linux')
+                machine_for_command = Machine(
+                    host=ip_for_execute_command, user=remote_username,
+                    password=remote_password).util('linux')
             else:
                 machine_for_command = self.machine
 
             logger.info("run command %s on ip %s", command_to_exec,
                         ip_for_execute_command)
-            machine_for_command.runCmd(command_to_exec, timeout=90, bg=False,
-                                       conn_timeout=90, cmd_list=False)
+            rc, out = machine_for_command.runCmd(command_to_exec, timeout=90,
+                                                 bg=False,
+                                                 conn_timeout=90,
+                                                 cmd_list=False)
 
         else:
             try:
                 logger.info("run command %s locally", command_to_exec)
-                os.system(command_to_exec)
+                rc = not bool(os.system(command_to_exec))
             except RuntimeError, ex:
                 logger.info("Can't run command %s, exception is %s",
                             command_to_exec, ex)
+        return rc
 
     def watch_for_remote_changes(self, files_to_watch, regex):
         """
@@ -216,8 +219,9 @@ def watch_logs(files_to_watch, regex, command_to_exec, time_out=None,
         * remote_password - the password for the remote machine that the
         command executes on
 
-    Returns: True if the regex has found and the command was successfully
-    executes, False otherwise
+    Returns: (found_regex,cmd_rc)
+            found_regex - True if the regex was found , False otherwise
+            cmd_rc - True if command exit successfully , False otherwise
 
     -  In case that "ip_for_execute_command" is None -> assign "ip" to it so
        that
@@ -238,6 +242,7 @@ def watch_logs(files_to_watch, regex, command_to_exec, time_out=None,
     listener = LogListener(ip_for_files, username, password)
 
     found_regex = None
+    cmd_rc = None
     try:
         if time_out:
             with Timeout(time_out):
@@ -254,12 +259,13 @@ def watch_logs(files_to_watch, regex, command_to_exec, time_out=None,
                     files_to_watch)
 
     if found_regex:
-        listener.execute_command(run_locally, command_to_exec,
-                                 ip_for_execute_command,
-                                 remote_username, remote_password)
+        cmd_rc = listener.execute_command(run_locally, command_to_exec,
+                                          ip_for_execute_command,
+                                          remote_username, remote_password)
     else:
         logger.debug("Didn't find regex %s in files %s" % (regex,
                                                            files_to_watch))
+    return found_regex, cmd_rc
 
 
 def main():
@@ -378,6 +384,7 @@ def main():
                remote_password=remote_password)
 
     logger.info("Done !!!")
+
 
 if __name__ == '__main__':
     main()

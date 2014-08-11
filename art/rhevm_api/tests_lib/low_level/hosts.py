@@ -131,6 +131,16 @@ def getHostState(host):
     return HOST_API.find(host).get_status().get_state()
 
 
+def getHostIP(host):
+    """
+    Description: Returns IP of a host with given name in RHEVM
+    Parameters:
+    * host - host name in rhevm to check
+    Return: Returns the host IP [str] or raises EntityNotFound
+    """
+    return HOST_API.find(host).get_address()
+
+
 def isHostUp(positive, host):
     """
     Description: Checks if host is up
@@ -223,7 +233,7 @@ def _check_hypervisor(positive, host, cluster):
     except EntityNotFound:
         return False
 
-    if host.get_status() == ENUMS['search_host_state_pending_approval'] and\
+    if host.get_status() == ENUMS['search_host_state_pending_approval'] and \
             positive:
         return approveHost(True, host, cluster)
     return False
@@ -392,7 +402,7 @@ def updateHost(positive, host, **kwargs):
             agents = None
             use_agents = kwargs.get('agents')
             for pm_agent_type, pm_agent_addr, pm_agent_usr, pm_agent_passwd, \
-                pm_agent_opts, pm_agent_concurrent, pm_agent_order in\
+                pm_agent_opts, pm_agent_concurrent, pm_agent_order in \
                     use_agents:
                 agent_obj = Agent(type_=pm_agent_type, address=pm_agent_addr,
                                   username=pm_agent_usr,
@@ -762,7 +772,7 @@ def _prepareHostNicObject(**kwargs):
     if 'network' in kwargs:
         nic_obj.set_network(data_st.Network(name=kwargs.get('network')))
 
-    if 'boot_protocol'in kwargs:
+    if 'boot_protocol' in kwargs:
         nic_obj.set_boot_protocol(kwargs.get('boot_protocol'))
 
     if 'override_configuration' in kwargs:
@@ -815,20 +825,17 @@ def _prepareHostNicObject(**kwargs):
 
 
 def getHostNic(host, nic):
-
     host_obj = HOST_API.find(host)
     return HOST_API.getElemFromElemColl(host_obj, nic, 'nics', 'host_nic')
 
 
 def getHostNics(host):
-
     host_obj = HOST_API.find(host)
     return HOST_API.getElemFromLink(host_obj, 'nics', 'host_nic',
                                     get_href=True)
 
 
 def getHostNicsList(host):
-
     host_obj = HOST_API.find(host)
     return HOST_API.getElemFromLink(host_obj, 'nics', 'host_nic',
                                     get_href=False)
@@ -994,7 +1001,7 @@ def runDelayedControlService(positive, host, host_user, host_passwd, service,
     Return: True if the command is sent successfully, False otherwise,
     or inverted in case of negative test
     """
-    cmd = '( sleep %d; service %s %s 1>/dev/null; echo $? )'\
+    cmd = '( sleep %d; service %s %s 1>/dev/null; echo $? )' \
           % (delay, service, command)
     host_obj = machine.Machine(host, host_user, host_passwd).util('linux')
     output = host_obj.runCmd(cmd.split(), bg=('/tmp/delayed-stdout',
@@ -1071,7 +1078,7 @@ def checkHostSpmStatus(positive, hostName):
 
     # due to differences between the return types of java and python sdk
     # checks for spmStatus in a set with different possible return values
-    #  as a workaround
+    # as a workaround
     return (spmStatus in ('true', True, 'True')) == positive
 
 
@@ -1229,8 +1236,8 @@ def setSPMPriorityInDB(
     status = runMachineCommand(True, ip=ip, user=user, password=password,
                                cmd=cmd)
     if not status[0]:
-        log_fce = HOST_API.logger.error if (positive is not None) and \
-            positive else HOST_API.logger.info
+        log_fce = HOST_API.logger.error \
+            if (positive is not None) and positive else HOST_API.logger.info
         log_fce('Command \'%s\' failed: %s' % (cmd, status[1]['out']))
     return status[0] == positive
 
@@ -1265,7 +1272,7 @@ def checkSPMPresence(positive, hosts):
         if checkHostSpmStatus(True, host):
             return positive
     else:
-        return not(positive)
+        return not (positive)
 
 
 def _getSPMHostname(hosts):
@@ -1389,8 +1396,8 @@ def getHost(positive, dataCenter='Default', spm=True, hostName=None):
             spmStatus = checkHostSpmStatus(positive, host.name)
             if spm and spmStatus:
                 return True, {'hostName': host.name}
-            elif not spm and not spmStatus and (
-                    not hostName or hostName == host.name):
+            elif not spm and not spmStatus and (not hostName
+                                                or hostName == host.name):
                 return True, {'hostName': host.name}
     return False, {'hostName': None}
 
@@ -1759,7 +1766,7 @@ def cleanHostStorageSession(hostObj, **kwargs):
     **Parameters**:
       **hostObj* - Object represnts the hostObj
     """
-#   check if there is an active session
+    # check if there is an active session
     check_iscsi_active_session = ['iscsiadm', '-m', 'session']
     HOST_API.logger.info("Run %s to check if there are active iscsi sessions"
                          % " ".join(check_iscsi_active_session))
@@ -1791,7 +1798,7 @@ def killProcesses(hostObj, procName, **kwargs):
       **hostObj* - Object represnts the hostObj
       **procName* - process to kill
     """
-#   check if there is zombie qemu proccess
+    # check if there is zombie qemu proccess
     pgrep_proc = ['pgrep', procName]
     HOST_API.logger.info("Run %s to check there are running processes.."
                          % " ".join(pgrep_proc))
@@ -1902,29 +1909,29 @@ def stop_vdsm(host, password):
 
 
 def kill_qemu_process(vm_name, host, user, password):
-        """
-        Description: kill qemu process of a given vm
-        Parameters:
-            * vm_name - the vm name that wish to find its qemu proc
-            * host - ip or fqdn of host rum qemu process
-            * user - username for  host
-            * password - password for host
-        Author: ratamir
-        Return:
-            pid, or raise EntityNotFound exception
-        """
-        linux_machine = Machine(
-            host=host, user=user,
-            password=password).util('linux')
+    """
+    Description: kill qemu process of a given vm
+    Parameters:
+        * vm_name - the vm name that wish to find its qemu proc
+        * host - ip or fqdn of host rum qemu process
+        * user - username for  host
+        * password - password for host
+    Author: ratamir
+    Return:
+        pid, or raise EntityNotFound exception
+    """
+    linux_machine = Machine(
+        host=host, user=user,
+        password=password).util('linux')
 
-        cmd = FIND_QEMU % vm_name
-        status, output = linux_machine.runCmd(shlex.split(cmd))
-        if not status:
-            raise RuntimeError("Output: %s" % output)
-        qemu_pid = output.split()[1]
-        HOST_API.logger.info("QEMU pid: %s", qemu_pid)
+    cmd = FIND_QEMU % vm_name
+    status, output = linux_machine.runCmd(shlex.split(cmd))
+    if not status:
+        raise RuntimeError("Output: %s" % output)
+    qemu_pid = output.split()[1]
+    HOST_API.logger.info("QEMU pid: %s", qemu_pid)
 
-        return linux_machine.runCmd(shlex.split('kill -9 %s', qemu_pid))
+    return linux_machine.runCmd(shlex.split('kill -9 %s', qemu_pid))
 
 
 @is_action()
@@ -2038,3 +2045,26 @@ def get_host_topology(host_name):
     if not host_obj:
         raise EntityNotFound("No host with name %s" % host_name)
     return host_obj.cpu.topology
+
+
+def run_command(host, user, password, cmd):
+    """
+    Description: ssh to user@hostname and run cmd on cli
+
+    Parameters:
+        * host_name - str , the name of the host
+        * user - str , a string of the login user
+        * password - str , a string of the login password
+        * cmd - str , a string of the command to run
+
+    Returns :
+        * out - str , the command's output.
+    """
+    connection = machine.Machine(host=getHostIP(host),
+                                 user=user,
+                                 password=password).util(machine.LINUX)
+    rc, out = connection.runCmd(shlex.split(cmd))
+    if not rc:
+        raise RuntimeError("Output: %s" % out)
+
+    return out

@@ -4,6 +4,8 @@
 All test-exposing bugs
 """
 import logging
+import os
+from art.rhevm_api.utils.log_listener import watch_logs
 from art.unittest_lib.common import StorageTest as TestCase
 from art.unittest_lib import attr
 from art.rhevm_api.utils import test_utils
@@ -12,7 +14,6 @@ from art.rhevm_api.utils.name2ip import LookUpVMIpByName
 from art.rhevm_api.utils.test_utils import restartOvirtEngine
 from utilities.utils import getIpAddressByHostName
 from utilities.machine import Machine
-
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import datacenters as ll_dc
 from art.rhevm_api.tests_lib.low_level import vms as ll_vms
@@ -32,10 +33,33 @@ GB = config.GB
 ENUMS = config.ENUMS
 
 BZID = "1066834"
+VM_NAME = "vm_%s" % BZID
 STORAGE_DOMAIN_API = test_utils.get_api('storage_domain', 'storagedomains')
 VDSM_RESPAWN_FILE = '/usr/share/vdsm/respawn'
 LINUX = test_utils.LINUX
 
+VM_PASSWORD = config.VMS_LINUX_PW
+VM_USER = config.VMS_LINUX_USER
+
+VDSM_LOG_FILE = "/var/log/vdsm/vdsm.log"
+IO_ERROR_TIMEOUT = 10
+IO_ERROR_READ_RETRIES = 10
+IO_ERROR_IN_VDSM_LOG_REGEX = "new extend msg created"
+
+# Install fake dd
+CLI_CMD_MV_DD = 'mv /bin/dd /usr/bin/dd.real'
+CLI_CMD_LN_DD = 'ln -sf /usr/bin/dd.fake /bin/dd'
+CLI_CMD_TRIGGER_IO_ERR = 'touch /tmp/dd.error'
+
+# UnInstall fake dd
+CLI_CMD_DISABLE_IO_ERR = 'rm /tmp/dd.error'
+CLI_CMD_UNLINK_DD = 'unlink /bin/dd'
+CLI_CMD_MV_REAL_DD_BACK = 'mv -f /usr/bin/dd.real /bin/dd'
+CLI_CMD_RM_FAKE_DD = 'rm -f /usr/bin/dd.fake'
+
+FILE_REMOVE_FAILURE = 'No such file or directory'
+CLI_CMD_GENERATE_BIG_FILE = 'dd if=/dev/urandom of=sample1.txt bs=64M count=32'
+GENERATE_BIG_FILE_TIMEOUT = 60 * 5
 
 """
 TCMS Test Case 355191 355191, exposing BZ 1066834
@@ -74,7 +98,7 @@ class TestCase355191(TestCase):
 
     def _create_vm(
             self, vm_name, disk_interface, sparse=True,
-            volume_format=ENUMS['format_cow'],
+            volume_format=config.DISK_FORMAT_COW,
             vm_type=config.VM_TYPE_DESKTOP):
         """
         helper function for creating vm (passes common arguments, mostly taken
@@ -92,8 +116,8 @@ class TestCase355191(TestCase):
             cpu_socket=config.CPU_SOCKET, cpu_cores=config.CPU_CORES,
             nicType=config.NIC_TYPE_VIRTIO, display_type=config.DISPLAY_TYPE,
             os_type=config.OS_TYPE, user=config.VMS_LINUX_USER,
-            password=config.VMS_LINUX_PW, type=vm_type,
-            installation=False,
+            password=config.VMS_LINUX_PW,
+            type=vm_type, installation=False,
             slim=True, network=config.MGMT_BRIDGE, useAgent=config.USE_AGENT,
             bootable=True)
 
@@ -133,10 +157,11 @@ class TestCase355191(TestCase):
         logger.info("Adding a second bootable disk to vm %s should fail",
                     config.VM_NAME[0])
         self.bootable_disk = "bootable_disk_%s" % BZID
-        self.assertTrue(ll_vms.addDisk(
-            False, config.VM_NAME[0], GB, wait=True, alias=self.bootable_disk,
-            storagedomain=self.storage_domain, bootable=True),
-            "Shouldn't be possible to add a second bootable disk")
+        self.assertTrue(ll_vms.addDisk(False, config.VM_NAME[0], GB, wait=True,
+                                       alias=self.bootable_disk,
+                                       storagedomain=self.storage_domain,
+                                       bootable=True),
+                        "Shouldn't be possible to add a second bootable disk")
 
     def tearDown(self):
         """
@@ -182,7 +207,7 @@ class TestCase305452(TestCase):
         if not ll_vms.addDisk(True, config.VM_BASE_NAME, config.DISK_SIZE,
                               storagedomain=config.DOMAIN_NAME_1):
             raise errors.DiskException("Cannot create disk for vm %s" %
-                                       config .VM_BASE_NAME)
+                                       config.VM_BASE_NAME)
 
     @classmethod
     def tearDown(self):
@@ -219,6 +244,7 @@ class TestCase305452(TestCase):
         test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
                                   config.DATA_CENTER_NAME)
 
+
 """
 Test elect spm before start vm
 Test exposing BZ 969343
@@ -254,11 +280,11 @@ class TestCase289683(TestCase):
             installation=True, diskType=config.DISK_TYPE_SYSTEM, memory=GB,
             cpu_socket=config.CPU_SOCKET, cpu_cores=config.CPU_CORES,
             nicType=config.NIC_TYPE_VIRTIO, highly_available=True,
-            display_type=config.DISPLAY_TYPE,
-            os_type=config.OS_TYPE, user=config.VMS_LINUX_USER,
-            password=config.VMS_LINUX_PW, type=config.VM_TYPE_SERVER,
+            display_type=config.DISPLAY_TYPE, os_type=config.OS_TYPE,
+            user=config.VMS_LINUX_USER, password=config.VMS_LINUX_PW,
+            type=config.VM_TYPE_SERVER,
             slim=True, nic=config.HOST_NICS[0], volumeType=True,
-            volumeFormat=ENUMS['format_cow'], useAgent=config.USE_AGENT,
+            volumeFormat=config.DISK_FORMAT_COW, useAgent=config.USE_AGENT,
             image=config.COBBLER_PROFILE, network=config.MGMT_BRIDGE,
             placement_host=host)
 
@@ -291,8 +317,8 @@ class TestCase289683(TestCase):
             self.vm_ips.append(LookUpVMIpByName('ip', 'name').get_ip(name))
 
     def _shutdown_machine(self, ip):
-        machine = test_utils.Machine(
-            ip, config.VMS_LINUX_USER, config.VMS_LINUX_PW).util(LINUX)
+        machine = test_utils.Machine(ip, config.VMS_LINUX_USER,
+                                     config.VMS_LINUX_PW).util(LINUX)
         machine.shutdown()
 
     @tcms(tcms_plan_id, tcms_test_case)
@@ -395,7 +421,7 @@ class TestCase320223(TestCase):
     @classmethod
     def _create_vm(
             cls, vm_name, vm_description, disk_interface,
-            sparse=True, volume_format=ENUMS['format_cow']):
+            sparse=True, volume_format=config.DISK_FORMAT_COW):
         """ helper function for creating vm
         (passes common arguments, mostly taken from the configuration file)
         """
@@ -455,10 +481,8 @@ class TestCase320223(TestCase):
 
         engine = config.VDC
         engine_ip = getIpAddressByHostName(engine)
-        engine_object = Machine(
-            host=engine_ip,
-            user=config.VMS_LINUX_USER,
-            password=config.VMS_LINUX_PW).util('linux')
+        engine_object = Machine(host=engine_ip, user=config.VMS_LINUX_USER,
+                                password=config.VMS_LINUX_PW).util('linux')
 
         self.assertTrue(restartOvirtEngine(engine_object, 5, 30, 75),
                         "Failed restarting ovirt-engine")
@@ -466,9 +490,7 @@ class TestCase320223(TestCase):
 
         # Wait until VM is down
         self.assertTrue(
-            ll_vms.waitForVMState(
-                self.vm_name,
-                state=config.VM_DOWN_STATE),
+            ll_vms.waitForVMState(self.vm_name, state=config.VM_DOWN_STATE),
             "image status won't change to down")
 
         logger.info("starting vm %s", self.vm_name)
@@ -485,7 +507,7 @@ class TestCase320223(TestCase):
                     self.template_name)
 
         logger.info("adding new vm %s from template %s",
-                    self.vm_from_template,  self.template_name)
+                    self.vm_from_template, self.template_name)
         self.assertTrue(
             ll_vms.addVm(
                 positive=True,
@@ -549,11 +571,11 @@ class TestCase315489(TestCase):
             installation=True, diskType=config.DISK_TYPE_SYSTEM, memory=GB,
             cpu_socket=config.CPU_SOCKET, cpu_cores=config.CPU_CORES,
             nicType=config.NIC_TYPE_VIRTIO, highly_available=True,
-            display_type=config.DISPLAY_TYPE,
-            os_type=config.OS_TYPE, user=config.VMS_LINUX_USER,
-            password=config.VMS_LINUX_PW, type=config.VM_TYPE_SERVER,
+            display_type=config.DISPLAY_TYPE, os_type=config.OS_TYPE,
+            user=config.VMS_LINUX_USER, password=config.VMS_LINUX_PW,
+            type=config.VM_TYPE_SERVER,
             slim=True, nic=config.HOST_NICS[0], volumeType=True,
-            volumeFormat=ENUMS['format_cow'], useAgent=config.USE_AGENT,
+            volumeFormat=config.DISK_FORMAT_COW, useAgent=config.USE_AGENT,
             image=config.COBBLER_PROFILE, network=config.MGMT_BRIDGE,
             placement_host=host)
 
@@ -587,6 +609,7 @@ class TestCase315489(TestCase):
     def tearDown(self):
         # delete vm
         assert ll_vms.removeVm(True, self.vm_name_base, **{'stopVM': 'true'})
+
 
 """
 Test exposing BZ 960430
@@ -665,9 +688,9 @@ class TestCase280628(TestCase):
             cpu_socket=config.CPU_SOCKET, cpu_cores=config.CPU_CORES,
             nicType=config.NIC_TYPE_VIRTIO, display_type=config.DISPLAY_TYPE,
             os_type=config.OS_TYPE, user=config.VMS_LINUX_USER,
-            password=config.VMS_LINUX_PW, type=config.VM_TYPE_DESKTOP,
-            slim=True, placement_host=spm_host, volumeType=False,
-            volumeFormat=ENUMS['format_raw'],
+            password=config.VMS_LINUX_PW,
+            type=config.VM_TYPE_DESKTOP, slim=True, placement_host=spm_host,
+            volumeType=False, volumeFormat=ENUMS['format_raw'],
             image=config.COBBLER_PROFILE, network=config.MGMT_BRIDGE,
             useAgent=config.USE_AGENT)
         logger.info("Stopping VM")
@@ -690,3 +713,152 @@ class TestCase280628(TestCase):
     @classmethod
     def teardown_class(cls):
         ll_vms.removeVm(True, cls.vm_name, stopVM='true')
+
+
+def _create_vm(vm_name, vm_description, disk_interface,
+               sparse=True, volume_format=config.DISK_FORMAT_COW,
+               vm_type=config.VM_TYPE_DESKTOP):
+    """ helper function for creating vm (passes common arguments, mostly taken
+    from the configuration file)
+    """
+    logger.info("Creating VM %s", vm_name)
+    storage_domain_name = storagedomains.getDCStorages(
+        config.DATA_CENTER_NAME, False)[0].name
+    logger.info("storage domain: %s", storage_domain_name)
+    return ll_vms.createVm(
+        True, vm_name, vm_description, cluster=config.CLUSTER_NAME,
+        nic=config.HOST_NICS[0], storageDomainName=storage_domain_name,
+        size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
+        volumeType=sparse, volumeFormat=volume_format,
+        diskInterface=disk_interface, memory=GB, cpu_socket=config.CPU_SOCKET,
+        cpu_cores=config.CPU_CORES, nicType=config.NIC_TYPE_VIRTIO,
+        display_type=config.DISPLAY_TYPE, os_type=config.OS_TYPE,
+        user=config.VMS_LINUX_USER, password=config.VMS_LINUX_PW, type=vm_type,
+        installation=True,
+        slim=True, cobblerAddress=config.COBBLER_ADDRESS,
+        cobblerUser=config.COBBLER_USER,
+        cobblerPasswd=config.COBBLER_PASSWD, image=config.COBBLER_PROFILE,
+        network=config.MGMT_BRIDGE, useAgent=config.USE_AGENT)
+
+
+@attr(tier=2)
+class TestCase398664(TestCase):
+    """
+    Test exposing https://bugzilla.redhat.com/show_bug.cgi?id=1119664
+    """
+    __test__ = True
+    tcms_plan_id = '9583'
+    tcms_test_case = '398664'
+    vm_name = "vm_%s" % tcms_test_case
+    snap_name = "snap_%s" % tcms_test_case
+
+    def setUp(self):
+        # on the spm host - trigger "read error" by manipulating dd behaviour
+        self.spm_host_name = hosts.getSPMHost(config.HOSTS)
+        self.spm_host_ip = hosts.getHostIP(self.spm_host_name)
+        connection = Machine(host=self.spm_host_ip, user=config.HOSTS_USER,
+                             password=config.HOSTS_PW).util('linux')
+
+        # put all other hosts in maintenance
+        for host in config.HOSTS:
+            if host != self.spm_host_name:
+                hosts.deactivateHost(True, host)
+
+        # create a vm with 1 thin provision disk
+        logger.info("Create a vm named %s ", self.vm_name)
+        if not _create_vm(self.vm_name, self.vm_name,
+                          config.INTERFACE_VIRTIO):
+            raise errors.VMException(
+                "Creation of VM %s failed!" % self.vm_name)
+
+        logger.info("Waiting for vm %s state 'up'", self.vm_name)
+        if not ll_vms.waitForVMState(self.vm_name):
+            raise errors.VMException("Waiting for VM %s status 'up' failed"
+                                     % self.vm_name)
+
+        # Installation :
+        # cp dd.fake /usr/bin/dd.fake
+        assert connection.copyTo(os.path.join(os.path.dirname(__file__),
+                                              'dd.fake'), '/usr/bin/')
+
+        # mv /bin/dd /usr/bin/dd.real
+        # ln -sf /usr/bin/dd.fake /bin/dd
+        # touch /tmp/dd.error
+        hosts.run_command(self.spm_host_name, config.HOSTS_USER,
+                          config.HOSTS_PW, CLI_CMD_MV_DD)
+        hosts.run_command(self.spm_host_name, config.HOSTS_USER,
+                          config.HOSTS_PW, CLI_CMD_LN_DD)
+        hosts.run_command(self.spm_host_name, config.HOSTS_USER,
+                          config.HOSTS_PW, CLI_CMD_TRIGGER_IO_ERR)
+
+    def tearDown(self):
+        # Uninstalling:
+        # rm -f /tmp/dd.error
+        # unlink /bin/dd
+        # mv -f /usr/bin/dd.real /bin/dd
+        # rm -f /usr/bin/dd.fake
+        output = hosts.run_command(self.spm_host_name, config.HOSTS_USER,
+                                   config.HOSTS_PW, CLI_CMD_DISABLE_IO_ERR)
+        if FILE_REMOVE_FAILURE not in output:
+            hosts.run_command(self.spm_host_name, config.HOSTS_USER,
+                              config.HOSTS_PW, CLI_CMD_UNLINK_DD)
+            hosts.run_command(self.spm_host_name, config.HOSTS_USER,
+                              config.HOSTS_PW, CLI_CMD_MV_REAL_DD_BACK)
+            hosts.run_command(self.spm_host_name, config.HOSTS_USER,
+                              config.HOSTS_PW, CLI_CMD_RM_FAKE_DD)
+
+        logger.info("Shutting down %s", self.vm_name)
+        if not ll_vms.stopVm(True, self.vm_name):
+            raise errors.VMException("shutting down %s failed" % self.vm_name)
+
+        logger.info("Waiting for vm %s state 'down'", self.vm_name)
+        if not ll_vms.waitForVMState(self.vm_name, state=config.VM_DOWN):
+            raise errors.VMException(
+                "Waiting for VM %s status 'down' failed" % self.vm_name)
+
+        logger.info("removing vm's %s state 'down'", self.vm_name)
+        if not ll_vms.remove_all_vms_from_cluster(config.CLUSTER_NAME):
+            raise errors.VMException(
+                "Waiting for VM %s status 'down' failed" % self.vm_name)
+
+        # reactivate all none SPM hosts
+        for host in config.HOSTS:
+            if host != self.spm_host_name:
+                hosts.activateHost(True, host, True)
+
+    @tcms(tcms_plan_id, tcms_test_case)
+    def test_io_error(self):
+        """
+        Simulate IO Read Error while expand request
+        Covers https://bugzilla.redhat.com/show_bug.cgi?id=1119664
+        # Setup :
+        # create a vm with 1 thin provision disk
+        # on the host - trigger "read error" by manipulating dd beheviure
+        #Test steps :
+        # on the vm , run a dd command to make the the HD expend.
+        # parse /var/log/vdsm.log for making sure that an expand request
+        # starts and fails.
+        """
+
+        logger.info("Running dd of some 2G, to trigger extend request, "
+                    "this may take few minutes .")
+
+        # on the vm , run a dd command to make the the HD expend.
+        # dd if=/dev/urandom of=sample1.txt bs=64M count=32
+        rc, out = ll_vms.run_cmd_on_vm(self.vm_name, CLI_CMD_GENERATE_BIG_FILE,
+                                       config.VMS_LINUX_USER,
+                                       config.VMS_LINUX_PW,
+                                       GENERATE_BIG_FILE_TIMEOUT)
+        logger.info("\n Generating a big file on vm, the output is %s \n", out)
+
+        # parse /var/log/vdsm.log for making sure that an expand request
+        for i in range(1, IO_ERROR_READ_RETRIES):
+            regex_flag, rc = watch_logs(VDSM_LOG_FILE,
+                                        IO_ERROR_IN_VDSM_LOG_REGEX,
+                                        '', IO_ERROR_TIMEOUT,
+                                        self.spm_host_ip,
+                                        config.HOSTS_USER,
+                                        config.HOSTS_PW)
+        self.assertTrue(regex_flag,
+                        "Couldn't find expend request for %s sec" %
+                        IO_ERROR_TIMEOUT)

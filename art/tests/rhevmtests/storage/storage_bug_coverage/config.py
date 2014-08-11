@@ -7,4 +7,4 @@ __test__ = False
 from rhevmtests.storage.config import * # flake8: noqa
 
 # TODO remove
-DOMAIN_NAME_1 = SD_NAME_0
+DOMAIN_NAME_1 = SD_NAMES_LIST[0]
