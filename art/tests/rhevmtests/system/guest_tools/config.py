@@ -11,7 +11,6 @@ from rhevmtests.system.config import *  # flake8: noqa
 log = logging.getLogger('setup')
 
 # Name of the test
-TEST_NAME = "Guest_Tools"
 STORAGE_DOMAIN = 'nfs_0'
 ISO_STORAGE_DOMAIN = 'iso'
 EXPORT_STORAGE_DOMAIN = 'tlv-export'

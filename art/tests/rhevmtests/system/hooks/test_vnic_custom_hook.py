@@ -40,32 +40,32 @@ HOTUNPLUG_NIC = 'hotunplug_nic'
 
 def setup_module():
     assert vms.createVm(True, config.VM_NAME[0], '',
-                        cluster=config.CLUSTER_NAME,
+                        cluster=config.CLUSTER_NAME[0],
                         display_type=config.DISPLAY_TYPE,
                         template=config.TEMPLATE_NAME)
     assert vms.startVm(True, vm=config.VM_NAME[0],
                        wait_for_status=config.VM_UP,
                        wait_for_ip=True)
     assert networks.addVnicProfile(True, name=PROFILE_A,
-                                   cluster=config.CLUSTER_NAME,
+                                   cluster=config.CLUSTER_NAME[0],
                                    network=config.MGMT_BRIDGE,
                                    custom_properties=CUSTOM_PROPERTIES)
     assert networks.addVnicProfile(True, name=PROFILE_B,
-                                   cluster=config.CLUSTER_NAME,
+                                   cluster=config.CLUSTER_NAME[0],
                                    network=config.MGMT_BRIDGE,
                                    custom_properties=CUSTOM_PROPERTIES2)
     assert networks.addVnicProfile(False, name=PROFILE_BAD_A,
-                                   cluster=config.CLUSTER_NAME,
+                                   cluster=config.CLUSTER_NAME[0],
                                    network=config.MGMT_BRIDGE,
                                    custom_properties='test=250')
     assert networks.addVnicProfile(False, name=PROFILE_BAD_B,
-                                   cluster=config.CLUSTER_NAME,
+                                   cluster=config.CLUSTER_NAME[0],
                                    network=config.MGMT_BRIDGE,
                                    custom_properties='speed=abc')
     assert vms.addNic(True, vm=config.VM_NAME[0], name=UPDATE_NIC,
                       network=config.MGMT_BRIDGE, vnic_profile=PROFILE_A,
                       linked=True)
-    assert vms.addNic(True, vm=config.VM_NAME, name=HOTUNPLUG_NIC,
+    assert vms.addNic(True, vm=config.VM_NAME[0], name=HOTUNPLUG_NIC,
                       network=config.MGMT_BRIDGE, vnic_profile=PROFILE_A)
 
 
@@ -148,14 +148,14 @@ class TestCaseAfterBeforeNicHotplug(TestCaseVnic):
     def setUp(self):
         """ hot plug nic """
         super(TestCaseAfterBeforeNicHotplug, self).setUp()
-        assert vms.addNic(True, vm=config.VM_NAME, name=self.NIC_NAME,
+        assert vms.addNic(True, vm=config.VM_NAME[0], name=self.NIC_NAME,
                           network=config.MGMT_BRIDGE, vnic_profile=PROFILE_A)
 
     def tearDown(self):
         """ remove created nic """
-        assert vms.stopVm(True, config.VM_NAME)
-        assert vms.removeNic(True, config.VM_NAME, self.NIC_NAME)
-        assert vms.startVm(True, vm=config.VM_NAME,
+        assert vms.stopVm(True, config.VM_NAME[0])
+        assert vms.removeNic(True, config.VM_NAME[0], self.NIC_NAME)
+        assert vms.startVm(True, vm=config.VM_NAME[0],
                            wait_for_status=config.VM_UP,
                            wait_for_ip=True)
         super(TestCaseAfterBeforeNicHotplug, self).tearDown()
@@ -181,12 +181,12 @@ class TestCaseAfterBeforeNicHotunplug(TestCaseVnic):
     def setUp(self):
         """ hot unplug nic """
         super(TestCaseAfterBeforeNicHotunplug, self).setUp()
-        assert vms.hotUnplugNic(True, vm=config.VM_NAME, nic=HOTUNPLUG_NIC)
+        assert vms.hotUnplugNic(True, vm=config.VM_NAME[0], nic=HOTUNPLUG_NIC)
 
     def tearDown(self):
         """ plug nic back """
         super(TestCaseAfterBeforeNicHotunplug, self).tearDown()
-        assert vms.hotPlugNic(True, config.VM_NAME, HOTUNPLUG_NIC)
+        assert vms.hotPlugNic(True, config.VM_NAME[0], HOTUNPLUG_NIC)
 
     @istest
     @tcms(PLAN, 295128)
@@ -208,7 +208,7 @@ class TestCaseAfterBeforeUpdateDevice(TestCaseVnic):
     def setUp(self):
         """ update nic """
         super(TestCaseAfterBeforeUpdateDevice, self).setUp()
-        assert vms.updateNic(True, vm=config.VM_NAME, nic=UPDATE_NIC,
+        assert vms.updateNic(True, vm=config.VM_NAME[0], nic=UPDATE_NIC,
                              linked=False, network=config.MGMT_BRIDGE,
                              vnic_profile=PROFILE_A)
 
@@ -233,7 +233,7 @@ class TestCaseAfterUpdateDeviceFail(TestCaseVnic):
     def setUp(self):
         """ update fail nic """
         super(TestCaseAfterUpdateDeviceFail, self).setUp()
-        vm_id = vms.VM_API.find(config.VM_NAME).get_id()
+        vm_id = vms.VM_API.find(config.VM_NAME[0]).get_id()
         cmd = self.UPDATE_FAIL % (vm_id, self.FAIL_NIC, self.NONEXISTENT)
         self.assertFalse(
             runMachineCommand(True, ip=config.HOSTS[0],

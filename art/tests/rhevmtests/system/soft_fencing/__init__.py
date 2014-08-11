@@ -35,9 +35,9 @@ def teardown_package():
     """
     logger.info("Teardown...")
     logger.info("Wait until datacenter up")
-    if not waitForDataCenterState(config.DC_NAME):
+    if not waitForDataCenterState(config.DC_NAME[0]):
         raise errors.DataCenterException("Datacenter down")
-    if not cleanDataCenter(positive=True, datacenter=config.DC_NAME,
+    if not cleanDataCenter(positive=True, datacenter=config.DC_NAME[0],
                            vdc=config.VDC_HOST,
                            vdc_password=config.VDC_ROOT_PASSWORD):
         raise errors.DataCenterException("Cannot remove setup")

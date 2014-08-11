@@ -50,7 +50,7 @@ def _add_host_if_missing():
             logger.info("adding host %s", HOST)
             if not hosts.addHost(True, name=HOST, address=HOST,
                                  root_password=HOST_PW,
-                                 port=54321, cluster=config.CLUSTER_NAME,
+                                 port=54321, cluster=config.CLUSTER_NAME[0],
                                  wait=False):
                 raise HostException("Add host %s failed" % HOST)
 

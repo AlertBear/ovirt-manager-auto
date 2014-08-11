@@ -35,29 +35,29 @@ def setup_package():
         address=config.EXPORT_DOMAIN_ADDRESS,
         host=config.HOSTS[0],
         path=config.EXPORT_DOMAIN_PATH)
-    storagedomains.attachStorageDomain(True, config.DC_NAME,
+    storagedomains.attachStorageDomain(True, config.DC_NAME[0],
                                        config.EXPORT_STORAGE_DOMAIN)
-    storagedomains.attachStorageDomain(True, config.DC_NAME,
+    storagedomains.attachStorageDomain(True, config.DC_NAME[0],
                                        config.ISO_STORAGE_DOMAIN)
-    storagedomains.activateStorageDomain(True, config.DC_NAME,
+    storagedomains.activateStorageDomain(True, config.DC_NAME[0],
                                          config.EXPORT_STORAGE_DOMAIN)
-    storagedomains.activateStorageDomain(True, config.DC_NAME,
+    storagedomains.activateStorageDomain(True, config.DC_NAME[0],
                                          config.ISO_STORAGE_DOMAIN)
 
 
 def teardown_package():
     # Here put your tear-down action for whole bunch of tests
     storagedomains.deactivateStorageDomain(
-        True, datacenter=config.DC_NAME,
+        True, datacenter=config.DC_NAME[0],
         storagedomain=config.ISO_STORAGE_DOMAIN)
     storagedomains.deactivateStorageDomain(
-        True, datacenter=config.DC_NAME,
+        True, datacenter=config.DC_NAME[0],
         storagedomain=config.EXPORT_STORAGE_DOMAIN)
     storagedomains.detachStorageDomain(
-        True, datacenter=config.DC_NAME,
+        True, datacenter=config.DC_NAME[0],
         storagedomain=config.EXPORT_STORAGE_DOMAIN)
     storagedomains.detachStorageDomain(
-        True, datacenter=config.DC_NAME,
+        True, datacenter=config.DC_NAME[0],
         storagedomain=config.ISO_STORAGE_DOMAIN)
     storagedomains.removeStorageDomain(
         True, storagedomain=config.EXPORT_STORAGE_DOMAIN,
@@ -65,4 +65,4 @@ def teardown_package():
     storagedomains.removeStorageDomain(
         True, storagedomain=config.ISO_STORAGE_DOMAIN,
         host=config.HOSTS[0], format='False')
-    cleanDataCenter(True, config.DC_NAME)
+    cleanDataCenter(True, config.DC_NAME[0])

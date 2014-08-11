@@ -22,7 +22,7 @@ def setup_package():
         address=config.EXPORT_DOMAIN_ADDRESS,
         host=config.HOSTS[0],
         path=config.EXPORT_DOMAIN_PATH)
-    h_sd.attach_and_activate_domain(config.DC_NAME,
+    h_sd.attach_and_activate_domain(config.DC_NAME[0],
                                     config.EXPORT_STORAGE_DOMAIN)
     # Prepare templates/vms
     for os, template in config.TEMPLATES.iteritems():
@@ -31,9 +31,9 @@ def setup_package():
             True, template=template['name'],
             export_storagedomain=config.EXPORT_STORAGE_DOMAIN,
             import_storagedomain=config.STORAGE_DOMAIN,
-            cluster=config.CLUSTER_NAME, name=template['name'])
+            cluster=config.CLUSTER_NAME[0], name=template['name'])
         assert vms.createVm(True, vm_name, vm_name,
-                            cluster=config.CLUSTER_NAME,
+                            cluster=config.CLUSTER_NAME[0],
                             template=template['name'],
                             network=config.MGMT_BRIDGE)
         assert vms.startVm(True, vm_name,
@@ -57,5 +57,5 @@ def teardown_package():
         templates.removeTemplate(True, template['name'])
 
     h_sd.remove_storage_domain(config.EXPORT_STORAGE_DOMAIN,
-                               config.DC_NAME, config.HOSTS[0])
-    storagedomains.cleanDataCenter(True, config.DC_NAME)
+                               config.DC_NAME[0], config.HOSTS[0])
+    storagedomains.cleanDataCenter(True, config.DC_NAME[0])

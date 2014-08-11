@@ -28,7 +28,7 @@ def teardown_package():
     """
     Cleans the environment
     """
-    if not cleanDataCenter(positive=True, datacenter=config.DC_NAME,
+    if not cleanDataCenter(positive=True, datacenter=config.DC_NAME[0],
                            vdc=config.VDC_HOST,
                            vdc_password=config.VDC_ROOT_PASSWORD):
         raise DataCenterException("Cannot remove setup")

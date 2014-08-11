@@ -12,7 +12,6 @@ eOS = Enum(RHEL_6_64b='RHEL_6_64b', RHEL_6_32b='RHEL_6_32b',
            RHEL_5_64b='RHEL_5_64b', RHEL_5_32b='RHEL_5_32b',
            UBUNTU_14_04_64b='UBUNTU_14_04_64b',
            SUSE_13_1_64b='SUSE_13_1_64b')
-TEST_NAME = "RHEL_guest_agent"
 INSTALL_TIMEOUT = PARAMETERS.get('install_timeout', 480)
 TIMEOUT = PARAMETERS.get('timeout', 320)
 

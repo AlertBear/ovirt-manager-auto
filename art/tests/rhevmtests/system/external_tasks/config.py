@@ -6,6 +6,7 @@ __test__ = False
 
 from rhevmtests.system.config import *  # flake8: noqa
 
+SYSTEM_BASE_NAME = "SYSTEM"
 
 EXTERNAL_JOB_DESCRIPTION = PARAMETERS.get('job_description', 'job_%s' %
                                           SYSTEM_BASE_NAME)

@@ -27,7 +27,7 @@ TMP = '/var/tmp'
 
 def setup_module():
     assert vms.createVm(True, config.VM_NAME[0], '',
-                        cluster=config.CLUSTER_NAME,
+                        cluster=config.CLUSTER_NAME[0],
                         display_type=config.DISPLAY_TYPE,
                         template=config.TEMPLATE_NAME,
                         custom_properties=CUSTOM_HOOK)
@@ -44,7 +44,7 @@ def check_vdsmd():
     if not test_utils.isVdsmdRunning(config.HOSTS[0], config.HOSTS_USER,
                                      config.HOSTS_PW):
         hosts.start_vdsm(config.HOSTS[0], config.HOSTS_PW,
-                         config.DC_NAME)
+                         config.DC_NAME[0])
 
 
 def check_vm():

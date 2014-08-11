@@ -7,7 +7,7 @@ from rhevmtests.system.config import *  # flake8: noqa
 def getUserWithDomain(user_name, user_domain):
     return '%s@%s' % (user_name, user_domain)
 
-USER_PASSWORD = PARAMETERS.get('user_password', None)
+USER_PASSWORD = 123456
 
 AD1_DOMAIN = PARAMETERS.get('ad1_domain', None)
 AD2_DOMAIN = PARAMETERS.get('ad2_domain', None)
@@ -106,7 +106,7 @@ def NORMAL_USER(domain):
 def TEST_USER(domain):
     return getParamFromDomain('user', domain)
 
-MAIN_CLUSTER_NAME = PARAMETERS.get('cluster_name', None)
+MAIN_CLUSTER_NAME = CLUSTER_NAME[0]
 AD_TCMS_PLAN_ID = 2112
 IPA_TCMS_PLAN_ID = 3999
 RHDS_TCMS_PLAN_ID = 5859

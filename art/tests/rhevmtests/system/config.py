@@ -7,7 +7,6 @@ from rhevmtests.config import *  # flake8: noqa
 from art.rhevm_api.utils import test_utils
 
 
-SYSTEM_BASE_NAME = "CoreSystem"
 PM1_TYPE = 'ipmilan'
 PM2_TYPE = 'apc-snmp'
 PM1_ADDRESS = '10.35.35.35'
@@ -31,10 +30,8 @@ FLOPPY_IMAGE = PARAMETERS.get('floppy_image')
 TEMPLATE_NAME = ["".join([TEST_NAME, '_', elm]) for elm in
                  PARAMETERS.as_list('template_name')]
 
-INSTALLATION = PARAMETERS.get('installation', 'true')
+INSTALLATION = True
 
-DC_NAME = PARAMETERS.get('dc_name', 'datacenter_%s' % SYSTEM_BASE_NAME)
-CLUSTER_NAME = PARAMETERS.get('cluster_name', 'cluster_%s' % SYSTEM_BASE_NAME)
 TEMPLATE_NAME = PARAMETERS.get('template', 'hooks_template')
 TCMS_PLAN_CUSTOM = 10054
 TCMS_PLAN_VNIC = 10167

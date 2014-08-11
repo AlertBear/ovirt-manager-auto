@@ -11,12 +11,12 @@ def setup_module():
     datacenters.build_setup(config=config.PARAMETERS,
                             storage=config.PARAMETERS,
                             storage_type=config.STORAGE_TYPE,
-                            basename=config.SYSTEM_BASE_NAME)
+                            basename=config.TEST_NAME)
 
     storage_domain = storagedomains.getDCStorages(
-        config.DC_NAME, False)[0].get_name()
+        config.DC_NAME[0], False)[0].get_name()
     assert vms.createVm(
-        True, config.VM_NAME[0], '', cluster=config.CLUSTER_NAME,
+        True, config.VM_NAME[0], '', cluster=config.CLUSTER_NAME[0],
         nic=config.HOST_NICS[0], storageDomainName=storage_domain,
         size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
         diskInterface=config.DISK_INTERFACE, memory=config.GB,
@@ -37,7 +37,7 @@ def setup_module():
     assert vms.stopVm(True, vm=config.VM_NAME[0])
     assert templates.createTemplate(True, vm=config.VM_NAME[0],
                                     name=config.TEMPLATE_NAME,
-                                    cluster=config.CLUSTER_NAME)
+                                    cluster=config.CLUSTER_NAME[0])
     assert vms.removeVm(True, config.VM_NAME[0])
 
     machine = Machine(config.VDC_HOST, config.VDC_ROOT_USER,
@@ -55,6 +55,6 @@ def setup_module():
 
 
 def teardown_module():
-    storagedomains.cleanDataCenter(True, config.DC_NAME,
+    storagedomains.cleanDataCenter(True, config.DC_NAME[0],
                                    vdc=config.VDC_HOST,
                                    vdc_password=config.VDC_ROOT_PASSWORD)
