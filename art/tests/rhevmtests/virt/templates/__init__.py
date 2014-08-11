@@ -36,6 +36,6 @@ def teardown_package():
         return
     if os.environ.get("JENKINS_URL"):
         logger.info("Teardown...")
-        dc_name = config.DC_name
+        dc_name = config.dc_name[0]
         cleanDataCenter(True, dc_name, vdc=config.VDC_HOST,
                         vdc_password=config.VDC_ROOT_PASSWORD)
