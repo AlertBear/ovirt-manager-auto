@@ -713,7 +713,7 @@ class WatchdogEvents(WatchdogVM):
         Test if event is displayed in log file
         """
         engine_machine = machine.Machine(
-            config.VDC_HOST, config.VDC_USER,
+            config.VDC_HOST, config.VDC_ROOT_USER,
             config.VDC_ROOT_PASSWORD).util(machine.LINUX)
         logger.info("Saving backup of log")
         rc, out = engine_machine.runCmd(
@@ -739,7 +739,7 @@ class WatchdogEvents(WatchdogVM):
         """
         # reboot VM
         engine_machine = machine.Machine(
-            config.VDC_HOST, config.VDC_USER,
+            config.VDC_HOST, config.VDC_ROOT_USER,
             config.VDC_ROOT_PASSWORD).util(machine.LINUX)
         _, _ = engine_machine.runCmd(['rm', 'watchdog_test_event.log'])
         logger.info("rebooting VM")
