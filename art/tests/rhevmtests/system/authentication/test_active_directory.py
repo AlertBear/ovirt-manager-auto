@@ -46,6 +46,8 @@ def addUserWithClusterPermissions(user_name):
 class ActiveDirectory(TestCase):
     __test__ = False
 
+    PASSWORD = None
+
     def __init__(self, *args, **kwargs):
         super(ActiveDirectory, self).__init__(*args, **kwargs)
         self.product = RHEVM
