@@ -26,7 +26,7 @@ def connectionTest():
 
 
 def loginAsAdmin():
-    users.loginAsUser(config.OVIRT_USERNAME, config.OVIRT_DOMAIN,
+    users.loginAsUser(config.VDC_ADMIN_USER, config.VDC_ADMIN_DOMAIN,
                       config.USER_PASSWORD, False)
 
 
@@ -41,6 +41,7 @@ def addUser(user_name, domain):
 class BaseNormalUserAndGroupUser(TestCase):
     """ Login as normal user and user from group. """
     __test__ = False
+    domain = None
 
     def setUp(self):
         addUser(config.REGULAR_NAME(self.domain), self.domain)
@@ -79,6 +80,7 @@ class BaseNormalUserAndGroupUser(TestCase):
 class BaseExpiredAccount(TestCase):
     """ Login as user with expired account """
     __test__ = False
+    domain = None
 
     def setUp(self):
         addUser(config.EXPIRED_ACC_NAME(self.domain), self.domain)
@@ -105,6 +107,7 @@ class BaseExpiredAccount(TestCase):
 class BaseExpiredPassword(TestCase):
     """ Login as user with expired password """
     __test__ = False
+    domain = None
 
     def setUp(self):
         addUser(config.EXPIRED_PSW_NAME(self.domain), self.domain)
@@ -131,6 +134,7 @@ class BaseExpiredPassword(TestCase):
 class BaseGroupsPersistency(TestCase):
     """ Persistency of group rights """
     __test__ = False
+    domain = None
 
     def setUp(self):
         users.addGroup(True, group_name=config.GROUP(self.domain))
@@ -159,6 +163,7 @@ class BaseGroupsPersistency(TestCase):
 class BaseUserWithManyGroups(TestCase):
     """ Login as user with many groups """
     __test__ = False
+    domain = None
 
     def setUp(self):
         addUser(config.WITH_MANY_GROUPS_NAME(self.domain), self.domain)
@@ -182,6 +187,9 @@ class BaseUserWithManyGroups(TestCase):
 class BaseSearchForUsersAndGroups(TestCase):
     """ Search within domain for users and groups """
     __test__ = False
+    domain = None
+    name = None
+    last_name = None
 
     def setUp(self):
         domainID = users.domUtil.find(self.domain).get_id()

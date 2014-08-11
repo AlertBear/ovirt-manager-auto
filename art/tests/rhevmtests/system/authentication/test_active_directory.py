@@ -47,6 +47,7 @@ class ActiveDirectory(TestCase):
     __test__ = False
 
     PASSWORD = None
+    domain = None
 
     def __init__(self, *args, **kwargs):
         super(ActiveDirectory, self).__init__(*args, **kwargs)
