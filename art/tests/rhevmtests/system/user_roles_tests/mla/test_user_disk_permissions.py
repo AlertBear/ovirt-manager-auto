@@ -173,6 +173,9 @@ class DPCase147122(TestCase):
 class DPCase147123(TestCase):
     """ General subcalss for TestCase 147123 """
     __test__ = False
+    disk_role = None
+    vm_role = None
+    pos = None
 
     def setUp(self):
         disks.addDisk(True, alias=config.DISK_NAME, interface='virtio',
@@ -246,6 +249,8 @@ class DPCase147124(TestCase):
     General case for detach disk
     """
     __test__ = False
+    tested_role = None
+    pos = None
 
     def setUp(self):
         self.disk_name = '%s%s' % (config.VM_NAME, '_Disk1')

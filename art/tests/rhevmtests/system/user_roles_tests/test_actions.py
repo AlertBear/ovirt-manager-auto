@@ -141,6 +141,10 @@ def logMe(func):
 
 class BaseTest(TestCase):
     __test__ = False
+    role = None
+    positive = None
+    perms = None
+    filter_ = None
 
     @classmethod
     def setUpClass(self):
