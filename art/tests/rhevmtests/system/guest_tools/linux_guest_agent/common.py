@@ -65,6 +65,9 @@ class MyLinuxMachine(machine.LinuxMachine):
 class BasePostInstall(TestCase):
     """ rhevm-guest-agent post-install """
 
+    os = None
+    cmd_chkconf = None
+
     def post_install(self):
         """ rhevm-guest-agent post-install """
         self.machine = config.TEMPLATES[self.os]['machine']
@@ -82,6 +85,7 @@ class BaseUninstallGA(TestCase):
     package_manager = 'yum'
     package = 'ovirt-guest-agent'
     remove_command = 'remove'
+    os = None
 
     def uninstall(self):
         """ uninstall guest agent """
@@ -98,6 +102,7 @@ class BaseUninstallGA(TestCase):
 
 class BaseServiceTest(TestCase):
     """ rhevm-guest-agent service test """
+    os = None
 
     def service_test(self):
         """ rhevm-guest-agent start-stop-restart-status """
@@ -117,6 +122,9 @@ class BaseServiceTest(TestCase):
 class BaseAgentDataUpdate(TestCase):
     """ rhevm-guest-agent agent function agent data update """
 
+    def agent_data(self):
+        raise NotImplementedError("User should implement it in child class!")
+
     def agent_data_update(self):
         """ rhevm-guest-agent data update """
         self.agent_data()
@@ -129,6 +137,13 @@ class BaseAgentDataUpdate(TestCase):
 
 class BaseFunctionContinuity(TestCase):
     """ rhevm-guest-agent agent function continuity """
+    os = None
+
+    def _isAgentRunning(self):
+        raise NotImplementedError("User should implement it in child class!")
+
+    def agent_data(self):
+        raise NotImplementedError("User should implement it in child class!")
 
     def function_continuity(self):
         """ rhevm-guest-agent function continuity """
@@ -155,6 +170,9 @@ class BaseAgentData(TestCase):
     success_msg = "%s of guest agent was successfull on %s"
     stats = 'vdsClient -s 0 getVmStats'
     iface_dict = []
+    os = None
+    application_list = None
+    list_app = None
 
     def _check_fqdn(self):
         cmd = "%s %s | egrep %s | grep -Po '(?<== )[A-Za-z0-9-.]*'"
