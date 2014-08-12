@@ -105,10 +105,10 @@ class ImageUploaderTestCase(base.RHEVMUtilsTestCase):
     def test_image_uploader_upload_inactive(self):
         """ image_uploader_upload_inactive """
         assert self.ut.setRestConnPassword(NAME, IMAGE_UP_CONF, REST_API_PASS)
-        deactivateStorageDomain(True, DC_NAME, EXPORT_DOMAIN_NAME)
+        deactivateStorageDomain(True, DC_NAME[0], EXPORT_DOMAIN_NAME)
         try:
             self.ut(IMAGE_UPLOAD_COMMAND, IMAGE_UPLOAD_FILE_PATH,
                     e=EXPORT_DOMAIN_NAME, ovf_id=None)
             self.ut.autoTest()
         finally:
-            activateStorageDomain(True, DC_NAME, EXPORT_DOMAIN_NAME)
+            activateStorageDomain(True, DC_NAME[0], EXPORT_DOMAIN_NAME)
