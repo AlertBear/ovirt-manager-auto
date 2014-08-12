@@ -75,10 +75,9 @@ class Windows(TestCase):
         )
 
     @classmethod
-    def teardown_class(cls, Vm):
+    def teardown_class(cls):
         "tear down class"
-        vms.removeVm(
-            True, vm=cls.vmName, stopVM='true')
+        vms.removeVm(True, vm=cls.vmName, stopVM='true')
 
     @istest
     @skipIf(SKIP_INSTALL, "skiping installation")
