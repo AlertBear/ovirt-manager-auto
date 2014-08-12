@@ -9,6 +9,8 @@ import logging
 from nose.tools import istest
 
 from art.unittest_lib import BaseTestCase as TestCase
+from automation_unittests.test_runner_setup_teardown.verify_results \
+    import VerifyTeardownResults
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +26,7 @@ class TestCaseClassTeardown(TestCase):
     @classmethod
     def teardown_class(cls):
         logger.info('************** teardown class **************')
+        VerifyTeardownResults.increase_teardown_counter()
 
     @istest
     def t01(self):

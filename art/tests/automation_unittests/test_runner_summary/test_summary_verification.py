@@ -11,7 +11,7 @@ from nose.tools import istest
 from art.unittest_lib import BaseTestCase as TestCase
 
 from art.test_handler.exceptions import SkipTest
-from tests.automation_unittests.verify_results import VerifyUnittestResults
+from automation_unittests.verify_results import VerifyUnittestResults
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ class TestSummary1(TestCase):
     @classmethod
     def setup_class(cls):
         logger.info('************** setup class **************')
-        raise Exception
+        raise Exception('Raise exception in class setup')
 
     @classmethod
     def teardown_class(cls):
@@ -55,7 +55,7 @@ class TestSummary2(TestCase):
     @istest
     def t03(self):
         logger.info('************** test will skip **************')
-        raise SkipTest
+        raise SkipTest('test should be skipped')
 
 
 class VerifyResults(VerifyUnittestResults):
