@@ -34,6 +34,7 @@ CL_API = get_api("cluster", "clusters")
 DC_API = get_api("data_center", "datacenters")
 VNIC_PROFILE_API = get_api('vnic_profile', 'vnicprofiles')
 LABEL_API = get_api('label', 'labels')
+HOST_NICS_API = get_api('host_nic', 'host_nics')
 MGMT_NETWORK = "rhevm"
 PROC_NET_DIR = "/proc/net"
 NETWORK_NAME = "NET"
@@ -1007,29 +1008,77 @@ class NetworkInfoDispatcher(object):
         return net_info
 
 
-def add_label_to_network(network, label, datacenter=None, cluster=None):
+def create_label(label):
     """
-    Description: Add network label to network
-    Author: myakove
+    Description: Create label object with provided id
+    Author: gcheresh
     Parameters:
-       *  *network* - network name
-       *  *label* - label name
-       *  *datacenter* - datacenter that the network resides on
-       *  *cluster* - cluster that the network resides on
+        *  *label* - label id to create label object
+    **Return**: label object with provided id
+    """
+    label_obj = data_st.Label()
+    label_obj.set_id(label)
+    return label_obj
+
+
+def add_label(**kwargs):
+    """
+    Description: Add network label to the network in the list provided or to
+    the NIC on the host for a dictionary of host: [nics] items
+    Example: add_label(networks=['vlan0'], host_nic_dict={
+            'silver-vdsb.qa.lab.tlv.redhat.com': ['eth3']}, label='vl1')
+    Author: gcheresh
+    Parameters:
+        *  *kwargs* - will include the following:
+        *  *label* - label to be added to network or NIC on the Host:
+        if string is provided will create a new label, otherwise expect
+        already existed Label object
+        *  *networks* - list of networks with labels
+        *  *host_nic_dict - dictionary with hosts as keys and a list of host
+        interfaces as a value for that key
+        *  *datacenter* - for network parameter datacenter that networks
+        resides on
+        *  *cluster* - for cluster parameter cluster that the network
+        resides on
     **Return**: status (True if label was added properly, False otherwise)
     """
+    networks = kwargs.get("networks")
+    host_nic_dict = kwargs.get("host_nic_dict")
+    label = kwargs.get("label")
+    status = True
+    if isinstance(label, basestring):
+        label_obj = create_label(label)
+    else:
+        label_obj = label
     try:
-        net = findNetwork(network, data_center=datacenter, cluster=cluster)
+        if networks:
+            for network in networks:
+                entity_obj = findNetwork(network,
+                                         data_center=kwargs.get("datacenter"),
+                                         cluster=kwargs.get("cluster"))
+                labels_href = NET_API.getElemFromLink(entity_obj, "labels",
+                                                      "label", get_href=True)
+                if not LABEL_API.create(entity=label_obj, positive=True,
+                                        collection=labels_href,
+                                        coll_elm_name="label")[1]:
+                    status = False
+        if host_nic_dict:
+            for host in host_nic_dict:
+                for nic in host_nic_dict.get(host):
+                    entity_obj = ll.hosts.getHostNic(host=host, nic=nic)
+                    labels_href = HOST_NICS_API.getElemFromLink(entity_obj,
+                                                                "labels",
+                                                                "label",
+                                                                get_href=True)
+                    if not LABEL_API.create(entity=label_obj, positive=True,
+                                            collection=labels_href,
+                                            coll_elm_name="label")[1]:
+                        status = False
+
     except EntityNotFound as e:
         logger.error(e)
         return False
 
-    labels_href = NET_API.getElemFromLink(net, "labels", "label",
-                                          get_href=True)
-    label_obj = data_st.Label()
-    label_obj.set_id(label)
-    status = NET_API.create(entity=label_obj, positive=True,
-                            collection=labels_href, coll_elm_name="label")[1]
     return status
 
 
@@ -1057,6 +1106,14 @@ def get_label_objects(**kwargs):
     networks = kwargs.get("networks")
     host_nic_dict = kwargs.get("host_nic_dict")
     try:
+        if host_nic_dict:
+            for host in host_nic_dict:
+                for nic in host_nic_dict.get(host):
+                    entity_obj = ll.hosts.getHostNic(host=host, nic=nic)
+                    label_obj = HOST_NICS_API.getElemFromLink(entity_obj,
+                                                              "labels",
+                                                              "label")
+                    label_list.extend(label_obj)
         if networks:
             for network in networks:
                 entity_obj = findNetwork(network,
@@ -1066,13 +1123,6 @@ def get_label_objects(**kwargs):
                                                     "label")
                 label_list.extend(label_obj)
 
-        if host_nic_dict:
-            for host in host_nic_dict:
-                for nic in host_nic_dict.get(host):
-                    entity_obj = ll.hosts.getHostNic(host=host, nic=nic)
-                    label_obj = NET_API.getElemFromLink(entity_obj, "labels",
-                                                        "label")
-                    label_list.extend(label_obj)
         if not networks and not host_nic_dict:
             raise EntityNotFound("No correct key was provided")
     except EntityNotFound as e:
