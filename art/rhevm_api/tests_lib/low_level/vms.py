@@ -3555,9 +3555,9 @@ def remove_vm_disks(vm_name, disk_name=None):
                        if specified method will remove just this disk
     **Returns**: True, if removed all disks successfully, otherwise False
     """
-    vm_disks = getVmDisks(vm_name)
+    vm_disks = [disk.get_name() for disk in getVmDisks(vm_name)]
     if disk_name:
-        vm_disks = [disk for disk in vm_disks if disk.get_name() == disk_name]
+        vm_disks = [disk for disk in vm_disks if disk == disk_name]
     return delete_disks(vm_disks)
 
 
