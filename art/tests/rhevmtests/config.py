@@ -53,8 +53,10 @@ DB_REPORTS_PASSWORD = "123456"
 
 # DATA CENTER SECTION
 DC_NAME = ["_".join([TEST_NAME, "DC", str(i)]) for i in range(1, 6)]
+PARAMETERS['dc_name'] = DC_NAME[0]
 # CLUSTER SECTION
 CLUSTER_NAME = ["_".join([TEST_NAME, "Cluster", str(i)]) for i in range(1, 6)]
+PARAMETERS['cluster_name'] = CLUSTER_NAME[0]
 CPU_NAME = PARAMETERS['cpu_name']
 CPU_CORES = PARAMETERS['cpu_cores']
 CPU_SOCKET = PARAMETERS['cpu_socket']
