@@ -26,20 +26,23 @@ def setup_package():
         logger.info("Building setup...")
         datacenters.build_setup(config.PARAMETERS, config.PARAMETERS,
                                 config.STORAGE_TYPE, config.TEST_NAME)
-        if not vms.createVm(positive=True, vmName=config.VM_NAME[0],
-                            vmDescription="Watchdog VM",
-                            cluster=config.CLUSTER_NAME[0],
-                            storageDomainName=config.STORAGE_NAME[0],
-                            size=6 * 1024 ** 3, nic=config.NIC_NAME[0],
-                            memory=2 * 1024 ** 3,
-                            watchdog_model=config.WATCHDOG_MODEL,
-                            watchdog_action='none',
-                            placement_affinity=AFFINITY,
-                            placement_host=config.HOSTS[0],
-                            vnic_profile='rhevm'):
+
+        if not vms.createVm(
+            positive=True, vmName=config.VM_NAME[0],
+            vmDescription="Watchdog VM",
+            cluster=config.CLUSTER_NAME[0],
+            storageDomainName=config.STORAGE_NAME[0],
+            size=6 * config.GB, nic=config.NIC_NAME[0],
+            memory=2 * config.GB,
+            placement_affinity=AFFINITY,
+            placement_host=config.HOSTS[0],
+            network=config.MGMT_BRIDGE
+        ):
             raise errors.VMException("Cannot add VM")
-        if not vms.unattendedInstallation(True, config.VM_NAME[0],
-                                          config.PROVISIONING_PROFILE):
+        if not vms.unattendedInstallation(
+            True, config.VM_NAME[0],
+            image=config.COBBLER_PROFILE
+        ):
             raise errors.VMException("Cannot install Linux OS")
 
 
@@ -49,5 +52,5 @@ def teardown_package():
     """
     if os.environ.get("JENKINS_URL"):
         logger.info("Teardown...")
-        cleanDataCenter(True, config.DC_NAME, vdc=config.VDC_HOST,
-                        vdc_password=config.VDC_PASSWORD)
+        cleanDataCenter(True, config.DC_NAME[0], vdc=config.VDC_HOST,
+                        vdc_password=config.VDC_ROOT_PASSWORD)

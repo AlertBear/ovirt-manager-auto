@@ -469,8 +469,9 @@ def removeVm(positive, vm, **kwargs):
         body = data_st.Action(force=True)
 
     vmObj = VM_API.find(vm)
+    vmStatus = vmObj.get_status().get_state().lower()
     stopVM = kwargs.pop('stopVM', 'false')
-    if stopVM.lower() == 'true' and vmObj.status.state.lower() != 'down':
+    if str(stopVM).lower() == 'true' and vmStatus != ENUMS['vm_state_down']:
         if not stopVm(positive, vm):
             return False
     status = VM_API.delete(vmObj, positive, body=body, element_name='action')
@@ -531,9 +532,13 @@ def removeVms(positive, vms, stop='false', timeout=180):
         vmsList = vms
     if not vmsList:
         raise ValueError("vms cannot be empty")
+
+    if str(stop).lower() == 'true':
+        stopVms(vmsList)
+
     for i in vmsList:
         t = Thread(target=removeVmAsynch, name='VM removing',
-                   args=(positive, tasksQ, resultsQ, (stop.lower() == 'true')))
+                   args=(positive, tasksQ, resultsQ))
         threads.add(t)
         t.daemon = False
         t.start()

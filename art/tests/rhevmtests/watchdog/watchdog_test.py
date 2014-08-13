@@ -26,10 +26,9 @@ from art.core_api.apis_utils import TimeoutingSampler
 
 
 import art.test_handler.exceptions as errors
-from art.test_handler.settings import opts
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 
-from art.unittest_lib.common import is_bz_state
+from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.unittest_lib.common import is_bz_state, bz
 
 from utilities import machine
 from nose.plugins.attrib import attr
@@ -42,17 +41,13 @@ VM_API = get_api('vm', 'vms')
 logger = logging.getLogger(__name__)
 
 
-GB = 1024 ** 3
-DISK_SIZE = 6 * GB
-MEMORY_SIZE = 2 * GB
+MEMORY_SIZE = 2 * config.GB
 WATCHDOG_TIMEOUT = 600
 WATCHDOG_TIMER = 120  # default time of triggering watchdog * 2
 WATCHDOG_SAMPLING = 10  # sampling time of watchdog
 MIGRATION_TIME = 20  # time of migration
 QEMU_CONF = '/etc/libvirt/qemu.conf'
 ENGINE_LOG = '/var/log/ovirt-engine/engine.log'
-
-ENUMS = opts['elements_conf']['RHEVM Enums']
 
 ########################################################################
 #                        Base classes                                  #
@@ -119,20 +114,23 @@ def change_watchdog_action(vm, action):
     Return value: True on success otherwise False
     """
     if not vms.stopVm(positive=True, vm=vm, async='false'):
-        logger.error("Can't shutdown VM")
-        return False
+        logger.error(
+            "Can't shutdown VM, VM is down after failure of previous test")
 
-    if not vms.updateVm(vm=vm, positive=True,
-                        watchdog_model=config.WATCHDOG_MODEL,
-                        watchdog_action=action):
-        logger.error("Can't update watchdog action")
-        return False
+    if not vms.updateVm(
+        vm=vm, positive=True,
+        watchdog_model=config.WATCHDOG_MODEL,
+        watchdog_action=action
+    ):
+        raise errors.VMException("Failed to update watchdog on vm")
 
-    if not vms.startVm(positive=True,
-                       vm=vm,
-                       wait_for_status=ENUMS['vm_state_up']):
-        logger.error("Can't start VM")
-        return False
+    if not vms.startVm(
+        positive=True,
+        vm=vm,
+        wait_for_status=config.ENUMS['vm_state_up']
+    ):
+        raise errors.VMException(
+            "Failed to start VM after changing watchdog action")
 
     return True
 
@@ -198,6 +196,11 @@ def run_watchdog_service(vm):
     Parameters:
         *vm - name of vm
     """
+    if not vms.checkVmState(True, vm, config.ENUMS['vm_state_up']):
+        logger.warning("Vm was not running, starting VM")
+        if not vms.startVm(True, vm):
+            raise errors.VMException("Failed to start vm %s" % vm)
+
     vm_machine = vms.get_vm_machine(vm, config.VMS_LINUX_USER,
                                     config.VMS_LINUX_PW)
     output = vm_machine.getServiceStatus('watchdog')
@@ -222,25 +225,30 @@ class WatchdogCRUD(WatchdogVM):
         """
         Create VM
         """
-        if not vms.createVm(positive=True, vmName=cls.vm_name,
-                            vmDescription="Watchdog VM",
-                            cluster=config.CLUSTER_NAME[0],
-                            storageDomainName=config.STORAGE_NAME[0],
-                            size=DISK_SIZE, nic=config.NIC_NAME[0],
-                            memory=MEMORY_SIZE):
+        if not vms.createVm(
+            positive=True, vmName=cls.vm_name,
+            vmDescription="Watchdog VM",
+            cluster=config.CLUSTER_NAME[0],
+            storageDomainName=config.STORAGE_NAME[0],
+            size=config.DISK_SIZE, nic=config.NIC_NAME[0],
+            memory=MEMORY_SIZE,
+            network=config.MGMT_BRIDGE
+        ):
             raise errors.VMException("Cannot create vm %s" % cls.vm_name)
         logger.info("Successfully created VM")
 
         if not vms.unattendedInstallation(
-                positive=True, vm=cls.vm_name,
-                image=config.COBBLER_PROFILE,
-                nic=config.NIC_NAME[0]):
+            positive=True, vm=cls.vm_name,
+            image=config.COBBLER_PROFILE,
+            nic=config.NIC_NAME[0]
+        ):
             raise errors.VMException("Cannot install Linux OS")
         if not vms.waitForIP(cls.vm_name, timeout=7200, sleep=10)[0]:
             raise errors.VMException(
                 "Cannot obtain IP for vm %s" % cls.vm_name)
         vms.stopVm(positive=True, vm=cls.vm_name, async='false')
 
+    @bz({'1107992': ['java']})
     @tcms('9846', '295149')
     def test_add_watchdog(self):
         """
@@ -251,19 +259,25 @@ class WatchdogCRUD(WatchdogVM):
                                      watchdog_action='reset'),
                         "Can't add watchdog model")
 
-        self.assertTrue(vms.startVm(positive=True,
-                                    wait_for_status=ENUMS['vm_state_up'],
-                                    vm=self.vm_name), "VM did not start")
+        self.assertTrue(vms.startVm(
+            positive=True,
+            wait_for_status=config.ENUMS['vm_state_up'],
+            vm=self.vm_name), "VM did not start")
 
         logger.info("Watchdog added to VM")
 
+    @bz({'1107992': ['java']})
     @tcms('9846', '285329')
     def test_detect_watchdog(self):
         """
         Detect watchdog
         """
+        self.assertTrue(
+            vms.checkVmState(True, self.vm_name, config.ENUMS['vm_state_up']),
+            "VM is not running")
         self.lspci_watchdog(True, self.vm_name)
 
+    @bz({'1107992': ['java']})
     @tcms('9846', '285331')
     def test_remove_watchdog(self):
         """
@@ -278,9 +292,10 @@ class WatchdogCRUD(WatchdogVM):
                                      watchdog_model=''),
                         "Can't delete watchdog model")
 
-        self.assertTrue(vms.startVm(positive=True,
-                                    wait_for_status=ENUMS['vm_state_up'],
-                                    vm=self.vm_name), "VM did not start")
+        self.assertTrue(vms.startVm(
+            positive=True,
+            wait_for_status=config.ENUMS['vm_state_up'],
+            vm=self.vm_name), "VM did not start")
 
         self.lspci_watchdog(False, self.vm_name)
         logger.info("Watchdog successfully deleted")
@@ -290,7 +305,7 @@ class WatchdogCRUD(WatchdogVM):
         """
         Remove CRUD VM
         """
-        if not vms.removeVm(positive=True, vm=cls.vm_name, stopVm=True):
+        if not vms.removeVm(positive=True, vm=cls.vm_name, stopVM=True):
             raise errors.VMException("Cannot remove vm %s" % cls.vm_name)
         logger.info("Watchdog CRUD VM removed")
 
@@ -390,9 +405,11 @@ class WatchdogTestReset(WatchdogVM):
         time.sleep(WATCHDOG_TIMER)
 
         rc = False
-        for rc, output in TimeoutingSampler(WATCHDOG_TIMEOUT,
-                                            WATCHDOG_SAMPLING,
-                                            vm_machine.runCmd, *args):
+        for rc, output in TimeoutingSampler(
+            WATCHDOG_TIMEOUT,
+            WATCHDOG_SAMPLING,
+            vm_machine.runCmd, *args
+        ):
             if rc:
                 logger.info('Vm successfully rebooted.')
                 break
@@ -433,9 +450,10 @@ class WatchdogTestPoweroff(WatchdogVM):
         """
         self.kill_watchdog(config.VM_NAME[0])
 
-        self.assertTrue(vms.waitForVMState(config.VM_NAME[0],
-                                           state=ENUMS['vm_state_down']),
-                        "Watchdog action poweroff failed")
+        self.assertTrue(
+            vms.waitForVMState(config.VM_NAME[0],
+                               state=config.ENUMS['vm_state_down']),
+            "Watchdog action poweroff failed")
 
     @classmethod
     def teardown_class(cls):
@@ -563,7 +581,7 @@ class WatchdogGeneralVMSubtab(TestCase):
 
     __test__ = True
 
-    @bz('996521')
+    @bz({'996521': None})
     @tcms('9846', '285333')
     def test_general_subtab(self):
         """
@@ -641,9 +659,11 @@ class WatchdogHighAvailability(WatchdogVM):
         if not vms.stopVm(positive=True, vm=config.VM_NAME[0]):
             raise errors.VMException("Cannot stop VM %s" % config.VM_NAME[0])
 
-        if not vms.updateVm(positive=True, vm=config.VM_NAME[0],
-                            placement_affinity=ENUMS['vm_affinity_migratable'],
-                            highly_available='true'):
+        if not vms.updateVm(
+            positive=True, vm=config.VM_NAME[0],
+            placement_affinity=config.ENUMS['vm_affinity_migratable'],
+            highly_available='true'
+        ):
             raise errors.VMException(
                 "Vm %s not set to automatic migratable \
                 and highly available" % config.VM_NAME[0])
@@ -677,9 +697,10 @@ class WatchdogHighAvailability(WatchdogVM):
         if not vms.stopVm(positive=True, vm=config.VM_NAME[0]):
             raise errors.VMException("Cannot stop VM %s" % config.VM_NAME[0])
         if not vms.updateVm(
-                positive=True, vm=config.VM_NAME[0],
-                placement_affinity=ENUMS['vm_affinity_user_migratable'],
-                highly_available='false'):
+            positive=True, vm=config.VM_NAME[0],
+            placement_affinity=config.ENUMS['vm_affinity_user_migratable'],
+            highly_available='false'
+        ):
             raise errors.VMException("Cannot eddit vm %s" % config.VM_NAME[0])
 
         if not vms.startVm(positive=True, vm=config.VM_NAME[0]):
@@ -761,22 +782,25 @@ class WatchdogCRUDTemplate(WatchdogVM):
         """
         Create Template
         """
-        if not vms.createVm(positive=True, vmName=cls.vm_name_master,
-                            vmDescription="Watchdog VM",
-                            cluster=config.CLUSTER_NAME[0],
-                            storageDomainName=config.STORAGE_NAME[0],
-                            size=DISK_SIZE, nic=config.NIC_NAME[0],
-                            memory=MEMORY_SIZE,
-                            vnic_profile='rhevm'):
+        if not vms.createVm(
+            positive=True, vmName=cls.vm_name_master,
+            vmDescription="Watchdog VM",
+            cluster=config.CLUSTER_NAME[0],
+            storageDomainName=config.STORAGE_NAME[0],
+            size=config.DISK_SIZE, nic=config.NIC_NAME[0],
+            memory=MEMORY_SIZE,
+            network=config.MGMT_BRIDGE
+        ):
             raise errors.VMException(
                 "Cannot create vm %s" % cls.vm_name_master)
 
         logger.info("Successfully created VM %s" % cls.vm_name_master)
 
         if not vms.unattendedInstallation(
-                positive=True, vm=cls.vm_name_master,
-                image=config.COBBLER_PROFILE,
-                nic=config.NIC_NAME[0]):
+            positive=True, vm=cls.vm_name_master,
+            image=config.COBBLER_PROFILE,
+            nic=config.NIC_NAME[0]
+        ):
             raise errors.VMException("Cannot install Linux OS")
 
         status, guest = vms.waitForIP(cls.vm_name_master,
@@ -793,10 +817,12 @@ class WatchdogCRUDTemplate(WatchdogVM):
                 positive=True,
                 wait=True,
                 vm=cls.vm_name_master,
-                name=cls.template_name):
+                name=cls.template_name
+        ):
             raise errors.VMException(
                 "Cannot add template %s" % cls.template_name)
 
+    @bz({'1107992': ['java'], '1129840': ['cli']})
     @tcms('9846', '294476')
     def test_add_watchdog_template(self):
         """
@@ -810,6 +836,7 @@ class WatchdogCRUDTemplate(WatchdogVM):
                         "Can't add watchdog model to template")
         logger.info("Watchdog added to template")
 
+    @bz({'1107992': ['java'], '1129840': ['cli']})
     @tcms('9846', ' 285330')
     def test_detect_watchdog_template(self):
         """
@@ -821,13 +848,15 @@ class WatchdogCRUDTemplate(WatchdogVM):
                                      template=self.template_name),
                         "Cannot create vm")
 
-        self.assertTrue(vms.waitForVMState(self.vm_name1,
-                                           state=ENUMS['vm_state_down']),
-                        "Vm not in status down after creation from template")
+        self.assertTrue(
+            vms.waitForVMState(self.vm_name1,
+                               state=config.ENUMS['vm_state_down']),
+            "Vm not in status down after creation from template")
 
         vms.startVm(positive=True, vm=self.vm_name1)
         self.lspci_watchdog(True, self.vm_name1)
 
+    @bz({'1107992': ['java'], '1129840': ['cli']})
     @tcms('9846', ' 294457')
     def test_remove_watchdog_template(self):
         """
@@ -844,9 +873,10 @@ class WatchdogCRUDTemplate(WatchdogVM):
                                      template=self.template_name),
                         "Cannot create vm")
 
-        self.assertTrue(vms.waitForVMState(self.vm_name2,
-                                           state=ENUMS['vm_state_down']),
-                        "Vm not in status down after creation from template")
+        self.assertTrue(
+            vms.waitForVMState(self.vm_name2,
+                               state=config.ENUMS['vm_state_down']),
+            "Vm not in status down after creation from template")
         vms.startVm(positive=True, vm=self.vm_name2)
 
         self.lspci_watchdog(False, self.vm_name2)
@@ -854,13 +884,20 @@ class WatchdogCRUDTemplate(WatchdogVM):
 
     @classmethod
     def teardown_class(cls):
-        for vm_name in [cls.vm_name_master, cls.vm_name1, cls.vm_name2]:
-            if not vms.removeVm(positive=True, vm=vm_name, stopVM=True):
-                raise errors.VMException("Cannot remove vm %s" % vm_name)
+        try:
+            statusVM = vms.removeVms(
+                True, [cls.vm_name_master, cls.vm_name1, cls.vm_name2],
+                stop=True)
+        except Exception as ex:
+                logger.warning("caught: %s", ex)
+
         if not templates.removeTemplate(
-                positive=True, template=cls.template_name):
+            positive=True, template=cls.template_name
+        ):
             raise errors.VMException("Cannot remove template")
         logger.info("template removed")
 
+        if not statusVM:
+            raise errors.VMException("Failed to remove vms")
 
 ######################################################################
