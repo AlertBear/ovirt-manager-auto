@@ -2,9 +2,7 @@
 import os
 import shlex
 import logging
-from traceback import format_exc
 from utilities.machine import Machine
-import art.test_handler.settings as settings
 from art.core_api import is_action
 from art.rhevm_api.utils.test_utils import cleanupData
 from art.rhevm_api.utils.name2ip import name2ip, LookUpVMIpByName
@@ -54,7 +52,7 @@ def copyDataToVm(ip, user, password, osType, src, dest):
         machine = Machine(ip, user, password).util(osType)
         return machine.copyTo(src, dest, 300)
     except Exception as err:
-        logger.error("copy data to %s: %s" % (ip, err))
+        logger.error("copy data to %s: %s", ip, err)
     return False
 
 
@@ -78,44 +76,12 @@ def verifyDataOnVm(positive, ip, user, password, osType, dest, destToCompare):
         machine = Machine(ip, user, password).util(osType)
         srcLocal = "{0}/{1}".format(dest, os.path.basename(destToCompare))
         if not machine.copyFrom(srcLocal, dest, 300, exc_info=positive):
-            logger.error("copy data from %s" % ip)
+            logger.error("copy data from %s", ip)
             return False == positive
-        logger.info("compare: %s to %s" % (srcLocal, destToCompare))
+        logger.info("compare: %s to %s", srcLocal, destToCompare)
         res = machine.compareDirs(srcLocal, destToCompare)
         cleanupData(srcLocal)
         return res == positive
-    except Exception as err:
-        logger.error("verify data on %s: %s" % (ip, err))
+    except Exception as ex:
+        logger.error("can not verify data on %s: %s", ip, ex)
     return False == positive
-
-
-@is_action('runBenchmarkOnVm', id_name='runBenchmarkOnVm')
-@LookUpVMIpByName("ip", "vmName")
-def runBenchmarkOnVm(positive, ip, user, password, netPath, benchmark, type, timeoutMin):
-    '''
-    Execute Phoronix benchmark on VM
-    Parameters:
-        * ip - VM ip
-        * user - VM user for remote access
-        * password - VM password for remote access
-        * netPath - network path of the benchmark
-        * benchmark - benchmark script path
-        * type - benchmark type
-        * timeoutMin - waiting for benchmark termination timeout
-    Return value:
-        * status
-    '''
-    try:
-        vm = Machine(ip, user, password).util('linux')
-        cmd = ['python', netPath + benchmark, netPath + settings.opts['results'], type]
-        rc, pid = vm.runCmd(cmd, bg=True)
-        if not rc:
-            logger.error("execute benchmark on VM %s" % ip)
-            return False
-        logger.info("wait for benchmark (pid=%s) termination on VM %s" % (pid, ip))
-        return vm.waitForProcessTermination(pid=pid, attempts=int(timeoutMin), sleepTime=60)
-    except:
-        logger.error("run benchmark on VM: %s" % format_exc())
-        return False
-
-
