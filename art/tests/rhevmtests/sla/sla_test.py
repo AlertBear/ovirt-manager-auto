@@ -16,6 +16,7 @@ from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.low_level import clusters
 import art.test_handler.exceptions as errors
 from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.plmanagement.plugins.bz_plugin import bz
 from art.unittest_lib import ComputeTest as TestCase
 from art.unittest_lib import attr
 
@@ -34,7 +35,26 @@ VM_BASIC_PARAMETERS = {'cluster': config.CLUSTER_NAME[0],
                        'size': DISK_SIZE, 'nic': config.NIC_NAME[0],
                        'network': config.MGMT_BRIDGE}
 
+# Bugs
+# 1) Bug 1111128 - If I have vm with domain(also when it empty),
+#    update vm via python SDK failed
+# 2) Bug 1088914 - Not possible change vm cpu pinning via cli
+# 3) Bug 1135976 - Edit pinned vm placement option clear vm cpu pinning options
+#    without any error message
+
 ########################################################################
+
+
+def adapt_vcpu_pinning_to_cli(vcpu_pinning):
+    if config.opts['engine'] in 'cli':
+        cli_vcpu_pinning = []
+        for pinning in vcpu_pinning:
+            for key, value in pinning.iteritems():
+                cli_value = value.replace(',', '\,')
+                pinning[key] = cli_value
+            cli_vcpu_pinning.append(pinning)
+        return cli_vcpu_pinning
+    return vcpu_pinning
 
 
 def get_pinned_cpu_info(host, host_user, host_pwd, vm, vcpu):
@@ -241,6 +261,7 @@ class CPUHostCase2(BasicSlaClass):
     protected = False
 
     @istest
+    @bz({'1091688': {'engine': ['sdk'], 'version': ['3.5']}})
     @tcms('8140', '274202')
     def set_cpuhost_user_migratable(self):
         """
@@ -299,13 +320,14 @@ class CPUHostCase4(BasicSlaClass):
                                 'cpu_mode': HOST_PASSTHROUGH})
 
     @istest
+    @bz({'1091688': {'engine': ['sdk'], 'version': ['3.5']}})
     @tcms('8140', '274226')
     def set_non_migratable_cpuhost_no_host(self):
         """
         Attempt to change a non migratable VM with CPU host
         to have no specific host to run on.
         """
-        logger.info("Attempting to change VM to have no speific host to "
+        logger.info("Attempting to change VM to have no specific host to "
                     "run on.")
         self.assertTrue(vms.updateVm(True, self.vm_name,
                                      placement_host=ANY_HOST))
@@ -329,6 +351,7 @@ class CPUHostCase5(BasicSlaClass):
                                 'cpu_mode': HOST_PASSTHROUGH})
 
     @istest
+    @bz({'1091688': {'engine': ['sdk'], 'version': ['3.5']}})
     @tcms('8140', '274227')
     def set_pinned_cpuhost_vm_user_migratable(self):
         """
@@ -369,7 +392,7 @@ class CPUHostCase6(BasicSlaClass):
         self.assertTrue(vms.waitForVMState(self.vm_name, state=UP),
                         "Cannot start vm %s" % self.vm_name)
         logger.info("Successfully started VM.")
-        value = get_qemu_value(config.HOSTS[0], 'root', config.HOSTS_PW[0],
+        value = get_qemu_value(config.HOSTS[0], 'root', config.HOSTS_PW,
                                self.vm_name, 'cpu')
         self.assertTrue(value, "Cannot check host processes")
         self.assertTrue(value == "host", "-cpu value is not 'host'")
@@ -416,8 +439,9 @@ class BasicThreadSlaClass(BasicSlaClass):
         total_cores_number = cls.cpu_cores
         if cls.cpu_threads:
             total_cores_number *= cls.cpu_threads
+        # In 3.5 we have limit on number of cores per socket, 16 for one socket
         if cls.negative:
-            total_cores_number *= 2
+            cls.cpu_sockets *= 2
         logger.info("Updating vm {0} to have {1} cores."
                     .format(cls.vm_name, total_cores_number * cls.cpu_sockets))
         if not vms.updateVm(True, cls.vm_name, cpu_socket=cls.cpu_sockets,
@@ -449,6 +473,7 @@ class ThreadsOff(BasicThreadSlaClass):
 
     @istest
     @tcms('9520', '274230')
+    @bz({'1070890': {'engine': None, 'version': ['3.5']}})
     def cores_as_threads_off(self):
         """
         Setting VM with number of cores equal to number of
@@ -472,6 +497,7 @@ class NegativeThreadsOff(BasicThreadSlaClass):
 
     @istest
     @tcms('9520', '274231')
+    @bz({'1091688': {'engine': ['sdk'], 'version': ['3.5']}})
     def cores_as_threads_off(self):
         """
         Negative: Setting VM with number of cores equal to double the number of
@@ -496,6 +522,7 @@ class ThreadsOn(BasicThreadSlaClass):
 
     @istest
     @tcms('9520', '274234')
+    @bz({'1070890': {'engine': None, 'version': ['3.5']}})
     def cores_as_threads_on1(self):
         """
         Setting VM with number of cores equal to double the number of
@@ -557,6 +584,7 @@ class CPUPinCase1(BasicSlaClass):
         logger.info("Number of cores per socket on host: %s" % cls.cores)
 
     @istest
+    @bz({'1091688': {'engine': ['sdk'], 'version': ['3.5']}})
     @tcms('6302', '233224')
     def cpupin_format1(self):
         """
@@ -569,6 +597,7 @@ class CPUPinCase1(BasicSlaClass):
         logger.info("Successfully changed VCPU pinning to 0#0.")
 
     @istest
+    @bz({'1091688': {'engine': ['sdk'], 'version': ['3.5']}})
     @tcms('6302', '233224')
     def cpupin_format2(self):
         """
@@ -597,17 +626,22 @@ class CPUPinCase1(BasicSlaClass):
     @attr(tier=1)
     @istest
     @tcms('6302', '233224')
+    @bz({'1091688': {'engine': ['sdk'], 'version': ['3.5']},
+         '1088914': {'engine': ['cli'], 'version': ['3.5']}})
     def cpupin_format4(self):
         """
         Negative: Set pinning to 0#^1,^2
         """
+        vcpu_pinning = adapt_vcpu_pinning_to_cli([{'0': '^1,^2'}])
         logger.info("Setting VCPU pinning to 0#^1,^2")
-        self.assertFalse(vms.updateVm(False, self.vm_name,
-                                      vcpu_pinning=[{'0': '^1,^2'}]),
+        self.assertFalse(vms.updateVm(True, self.vm_name,
+                                      vcpu_pinning=vcpu_pinning),
                          "Successfully changed VCPU pinning")
         logger.info("Unable to change VCPU pinning to 0#^1,^2.")
 
     @istest
+    @bz({'1091688': {'engine': ['sdk'], 'version': ['3.5']},
+         '1088914': {'engine': ['cli'], 'version': ['3.5']}})
     @tcms('6302', '233224')
     def cpupin_format5(self):
         """
@@ -615,13 +649,16 @@ class CPUPinCase1(BasicSlaClass):
         """
         if (self.cores * self.sockets) < 4:
             raise errors.SkipTest("Too few CPU cores")
+        vcpu_pinning = adapt_vcpu_pinning_to_cli([{'0': '0-3,^1'}])
         logger.info("Setting VCPU pinning to 0#0-3,^1")
         self.assertTrue(vms.updateVm(True, self.vm_name,
-                                     vcpu_pinning=[{'0': '0-3,^1'}]),
+                                     vcpu_pinning=vcpu_pinning),
                         "Failed to change VCPU pinning")
         logger.info("Successfully changed VCPU pinning to 0#0-3,^1.")
 
     @istest
+    @bz({'1091688': {'engine': ['sdk'], 'version': ['3.5']},
+         '1088914': {'engine': ['cli'], 'version': ['3.5']}})
     @tcms('6302', '233224')
     def cpupin_format6(self):
         """
@@ -629,13 +666,16 @@ class CPUPinCase1(BasicSlaClass):
         """
         if (self.cores * self.sockets) < 4:
             raise errors.SkipTest("Too few CPU cores")
+        vcpu_pinning = adapt_vcpu_pinning_to_cli([{'0': '0-3,^1,^2'}])
         logger.info("Setting VCPU pinning to 0#0-3,^1,^2")
         self.assertTrue(vms.updateVm(True, self.vm_name,
-                                     vcpu_pinning=[{'0': '0-3,^1,^2'}]),
+                                     vcpu_pinning=vcpu_pinning),
                         "Failed to change VCPU pinning")
         logger.info("Successfully changed VCPU pinning to 0#0-3,^1,^2.")
 
     @istest
+    @bz({'1091688': {'engine': ['sdk'], 'version': ['3.5']},
+         '1088914': {'engine': ['cli'], 'version': ['3.5']}})
     @tcms('6302', '233224')
     def cpupin_format7(self):
         """
@@ -643,9 +683,10 @@ class CPUPinCase1(BasicSlaClass):
         """
         if (self.cores * self.sockets) < 4:
             raise errors.SkipTest("Too few CPU cores")
+        vcpu_pinning = adapt_vcpu_pinning_to_cli([{'0': '1,2,3'}])
         logger.info("Setting VCPU pinning to 0#1,2,3")
         self.assertTrue(vms.updateVm(True, self.vm_name,
-                                     vcpu_pinning=[{'0': '1,2,3'}]),
+                                     vcpu_pinning=vcpu_pinning),
                         "Failed to change VCPU pinning")
         logger.info("Successfully changed VCPU pinning to 0#1,2,3.")
 
@@ -657,9 +698,10 @@ class CPUPinCase1(BasicSlaClass):
         """
         if (self.cores * self.sockets) < 8:
             raise errors.SkipTest("Too few CPU cores")
+        vcpu_pinning = adapt_vcpu_pinning_to_cli([{'0': '0-3,5-7'}])
         logger.info("Setting VCPU pinning to 0#0-3,5-7")
         self.assertTrue(vms.updateVm(True, self.vm_name,
-                                     vcpu_pinning=[{'0': '0-3,5-7'}]),
+                                     vcpu_pinning=vcpu_pinning),
                         "Failed to change VCPU pinning")
         logger.info("Successfully changed VCPU pinning to 0#0-3,5-7.")
 
@@ -671,9 +713,10 @@ class CPUPinCase1(BasicSlaClass):
         """
         if (self.cores * self.sockets) < 8:
             raise errors.SkipTest("Too few CPU cores")
+        vcpu_pinning = adapt_vcpu_pinning_to_cli([{'0': '0-2,4-5,6-7'}])
         logger.info("Setting VCPU pinning to 0#0-2,4-5,6-7")
         self.assertTrue(vms.updateVm(True, self.vm_name,
-                                     vcpu_pinning=[{'0': '0-2,4-5,6-7'}]),
+                                     vcpu_pinning=vcpu_pinning),
                         "Failed to change VCPU pinning")
         logger.info("Successfully changed VCPU pinning to 0#0-2,4-5,6-7.")
 
@@ -685,9 +728,10 @@ class CPUPinCase1(BasicSlaClass):
         """
         if (self.cores * self.sockets) < 8:
             raise errors.SkipTest("Too few CPU cores")
+        vcpu_pinning = adapt_vcpu_pinning_to_cli([{'0': '0-3,^2,5-7'}])
         logger.info("Setting VCPU pinning to 0#0-3,^2,5-7")
         self.assertTrue(vms.updateVm(True, self.vm_name,
-                                     vcpu_pinning=[{'0': '0-3,^2,5-7'}]),
+                                     vcpu_pinning=vcpu_pinning),
                         "Failed to change VCPU pinning")
         logger.info("Successfully changed VCPU pinning to 0#0-3,^2,5-7.")
 
@@ -699,9 +743,10 @@ class CPUPinCase1(BasicSlaClass):
         """
         if (self.cores * self.sockets) < 8:
             raise errors.SkipTest("Too few CPU cores")
+        vcpu_pinning = adapt_vcpu_pinning_to_cli([{'0': '0-3,^2,5-7,^6'}])
         logger.info("Setting VCPU pinning to 0#0-3,^2,5-7,^6")
         self.assertTrue(vms.updateVm(True, self.vm_name,
-                                     vcpu_pinning=[{'0': '0-3,^2,5-7,^6'}]),
+                                     vcpu_pinning=vcpu_pinning),
                         "Failed to change VCPU pinning")
         logger.info("Successfully changed VCPU pinning to 0#0-3,^2,5-7,^6.")
 
@@ -714,9 +759,10 @@ class CPUPinCase1(BasicSlaClass):
         """
         if (self.cores * self.sockets) < 2:
             raise errors.SkipTest("Too few CPU cores")
+        vcpu_pinning = adapt_vcpu_pinning_to_cli([{'0': '0'}, {'0': '1'}])
         logger.info("Setting VCPU pinning to 0#0_0#1")
         self.assertFalse(vms.updateVm(True, self.vm_name,
-                         vcpu_pinning=[{'0': '0'}, {'0': '1'}]))
+                         vcpu_pinning=vcpu_pinning))
         logger.info("Successfully changed VCPU pinning to 0#0_0#1.")
 
     @istest
@@ -735,23 +781,25 @@ class CPUPinCase1(BasicSlaClass):
     @tcms('6302', '233224')
     def cpupin_format14(self):
         """
-        Negative: Letter instead of vCPU
+        Negative: Letter instead of pCPU
         """
-        logger.info("Setting VCPU pinning to A#0")
-        self.assertFalse(vms.updateVm(True, self.vm_name,
-                                      vcpu_pinning=[{'A': '0'}]),
-                         "Successfully changed VCPU pinning")
-        logger.info("Unable to change VCPU pinning to A#0.")
+        try:
+            vms.updateVm(True, self.vm_name, vcpu_pinning=[{'A': '0'}])
+            self.assertTrue(False, "Successfully changed VCPU pinning to A#0")
+        except ValueError:
+            logger.info("Unable to change VCPU pinning to A#0.")
 
     @istest
+    @bz({'1088914': {'engine': ['cli'], 'version': ['3.5']}})
     @tcms('6302', '233224')
     def cpupin_format15(self):
         """
         Negative: Pinning to empty range
         """
+        vcpu_pinning = adapt_vcpu_pinning_to_cli([{'0': '0-1,^0,^1'}])
         logger.info("Setting VCPU pinning to 0#0-1,^0,^1")
         self.assertFalse(vms.updateVm(True, self.vm_name,
-                                      vcpu_pinning=[{'0': '0-1,^0,^1'}]),
+                                      vcpu_pinning=vcpu_pinning),
                          "Successfully changed VCPU pinning")
         logger.info("Unable to change VCPU pinning to 0#0-1,^0,^1.")
 
@@ -832,6 +880,7 @@ class CPUPinCase3(BasicSlaClass):
                                 'vcpu_pinning': [{'0': '0'}]})
 
     @istest
+    @bz({'1135976': {'engine': None, 'version': ['3.5']}})
     @tcms('6302', '232941')
     def set_pinned_cpupin_vm_migratable(self):
         """
@@ -890,6 +939,7 @@ class CPUPinCase5(BasicSlaClass):
                                 'vcpu_pinning': [{'0': '0'}]})
 
     @istest
+    @bz({'1135976': {'engine': None, 'version': ['3.5']}})
     @tcms('6302', '274164')
     def set_pinned_cpupin_vm_user_migratable(self):
         """
@@ -927,6 +977,7 @@ class CPUPinCase6(BasicSlaClass):
         """
         Create a non migratable
         """
+        super(CPUPinCase6, cls).setup_class()
         sockets = hosts.get_host_topology(config.HOSTS[0]).sockets
         logger.info("Number of sockets on host: %s" % sockets)
         cores = hosts.get_host_topology(config.HOSTS[0]).cores
@@ -934,6 +985,7 @@ class CPUPinCase6(BasicSlaClass):
         cls.total_cores = sockets * cores
 
     @istest
+    @bz({'1091688': {'engine': ['sdk'], 'version': ['3.5']}})
     @tcms('6302', '232936')
     def check_random_pinning(self):
         """
@@ -948,12 +1000,12 @@ class CPUPinCase6(BasicSlaClass):
                                        - 1)
             logger.info("Setting CPU pinning to 0#%s" % expected_pin)
             self.assertTrue(vms.updateVm(True, self.vm_name,
-                                         vcpu_pinning={'0': expected_pin}),
+                                         vcpu_pinning=[{'0': expected_pin}]),
                             "Failed to update VM.")
             self.assertTrue(vms.startVm(True, self.vm_name),
                             "Failed to start VM.")
             res = get_pinned_cpu_info(config.HOSTS[0], config.HOSTS_USER,
-                                      config.HOSTS_PW[0], self.vm_name, '0')
+                                      config.HOSTS_PW, self.vm_name, '0')
             self.assertTrue(res, "Failed to get VM CPU pinning stats.")
             self.assertTrue(vms.stopVm(True, self.vm_name),
                             "Failed to stop VM.")
@@ -993,9 +1045,14 @@ class CPUPinCase7(BasicSlaClass):
         logger.info("Number of sockets on host: %s" % sockets)
         cores = hosts.get_host_topology(config.HOSTS[0]).cores
         logger.info("Number of cores per socket on host: %s" % cores)
+        logger.info("Update vm")
+        if not vms.updateVm(True, cls.vm_name,
+                            cpu_cores=cores, cpu_socket=sockets):
+            raise errors.VMException("Failed to update vm")
         cls.total_cores = sockets * cores
 
     @istest
+    @bz({'1070890': {'engine': None, 'version': ['3.5']}})
     @tcms('6302', '232944')
     def check_pinning_load(self):
         """
@@ -1003,7 +1060,7 @@ class CPUPinCase7(BasicSlaClass):
         """
         if self.total_cores < 1:
             raise errors.SkipTest("Too few cores.")
-        pinning = [dict((str(i), '0')) for i in xrange(self.total_cores)]
+        pinning = [{str(i): '0'} for i in xrange(self.total_cores)]
         logger.info("Pinning all vCPU's to pCPU #0.")
         self.assertTrue(vms.updateVm(True, self.vm_name,
                                      vcpu_pinning=pinning),
@@ -1012,7 +1069,7 @@ class CPUPinCase7(BasicSlaClass):
                         "Failed to start VM.")
         for i in range(self.total_cores):
             pin_info = get_pinned_cpu_info(config.HOSTS[0], config.HOSTS_USER,
-                                           config.HOSTS_PW[0],
+                                           config.HOSTS_PW,
                                            self.vm_name, i)
             self.assertTrue(pin_info[0],
                             "Could not retrieve VM pinning information.")

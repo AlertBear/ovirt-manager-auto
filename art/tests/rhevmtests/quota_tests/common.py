@@ -22,9 +22,12 @@
 
 __test__ = False
 
+from contextlib import contextmanager
 import logging
 import uuid
+
 from art.rhevm_api.tests_lib.low_level import disks
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -227,3 +230,27 @@ class DB(object):
         sql = "SELECT %s FROM %s WHERE %s = '%s'"
         return self.setup.psql(sql, 'vds_group_id', 'vds',
                                'vds_group_name', cluster_name)
+
+
+@contextmanager
+def ui_setup(test):
+    """ Context manager that runs set_up() and tear_down() methods
+    before and after the actual test case.
+    Meant primarily for RAUT (Selenium) test cases auto-setup and teardown.
+    Teardown is executed even in case of errors in the set_up() or test itself.
+
+    Usage:
+      from raut.tests.webadmin.quota import QuotaTest
+
+      quota_test = QuotaTest()
+      with ui_setup(quota_test) as quota_gui:
+          quota_gui.create_quota(...)
+      # or just simply...
+      with ui_setup(quota_test):
+          quota_test.create_quota(...)
+    """
+    try:
+        test.set_up()
+        yield test
+    finally:
+        test.tear_down()
