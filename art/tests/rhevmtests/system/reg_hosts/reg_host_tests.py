@@ -74,8 +74,7 @@ class TestPowerManagement(TestCase):
 
     @classmethod
     def teardown_class(cls):
-        if not remove_power_management(host=HOST, pm_type=PM2_TYPE):
-            remove_power_management(host=HOST, pm_type=PM1_TYPE)
+        remove_power_management(host=HOST, pm_type=PM1_TYPE)
 
 
 class TestActiveHost(TestCase):
@@ -197,7 +196,10 @@ class TestUpdatePowerManagementType(TestPowerManagement):
     def update_power_management_type(self):
         logger.info("Update power management type "
                     "to %s  on host: %s", PM2_TYPE, HOST)
-        if not hosts.updateHost(True, host=HOST, pm='true', pm_type=PM2_TYPE):
+        if not hosts.updateHost(True, host=HOST, pm='true', pm_type=PM2_TYPE,
+                                pm_address=self.pm_address,
+                                pm_username=self.pm_user,
+                                pm_password=self.pm_password):
             raise HostException("Cannot change power management type"
                                 " in host: %s" % HOST)
 
@@ -220,7 +222,10 @@ class TestUpdatePowerManagementInvalidType(TestPowerManagement):
         logger.info("Update power management type to %s"
                     "on host: %s", self.invalid_type, HOST)
         if not hosts.updateHost(False, host=HOST, pm='true',
-                                pm_type=self.invalid_type):
+                                pm_type=self.invalid_type,
+                                pm_address=self.pm_address,
+                                pm_username=self.pm_user,
+                                pm_password=self.pm_password):
             raise HostException("Power management type changed successfully"
                                 "although provided with an invalid type")
 
@@ -466,12 +471,10 @@ class AddSecondaryPowerManagement(TestPowerManagement):
     """
     __test__ = True
 
-    @classmethod
-    def setup_class(cls):
-        logger.info("Add primary power management to host: %s", HOST)
-        add_power_management(host=HOST, pm_type=PM1_TYPE,
-                             pm_address=PM1_ADDRESS, pm_user=PM1_USER,
-                             pm_password=PM1_PASS)
+    pm_type = PM1_TYPE
+    pm_address = PM1_ADDRESS
+    pm_user = PM1_USER
+    pm_password = PM1_PASS
 
     @istest
     @tcms('9608', '282899')

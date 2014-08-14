@@ -8,7 +8,7 @@ from art.rhevm_api.utils import test_utils
 
 
 PM1_TYPE = 'ipmilan'
-PM2_TYPE = 'apc-snmp'
+PM2_TYPE = 'apc_snmp'
 PM1_ADDRESS = '10.35.35.35'
 PM2_ADDRESS = '10.11.11.11'
 PM1_USER = 'user1'
