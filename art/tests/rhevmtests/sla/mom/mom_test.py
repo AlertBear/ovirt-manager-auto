@@ -8,10 +8,10 @@ Tests covers:
         KSM with migration of VMs
         and stopping KSM by migrating VM
     Balloon
-        testing infaltion and deflation of ballooning on
+        testing inflation and deflation of ballooning on
         1 VM, 2 VMs with different memories options, different OS,
         VM with memory set to max guaranteed memory, VM without guest
-        agent, multipls VMs on one hsot with ballooning enabled
+        agent, multiple VMs on one host with ballooning enabled
 """
 
 from art.unittest_lib import SlaTest as TestCase
@@ -30,7 +30,7 @@ import art.test_handler.exceptions as errors
 
 from art.test_handler import find_test_file
 from art.test_handler.settings import opts
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from art.rhevm_api.utils.test_utils import getStat
 
 from nose.plugins.attrib import attr
@@ -46,8 +46,6 @@ ITERS_NEG = 10  # number of iterations for negative testcases
 RESTART_VDSM_INDEX = 10  # index of restarting VDSM
 GB = 1024 ** 3
 MEM_OVERCMT = 200
-BALLOON_POOL = "balloon"
-KSM_POOL = "ksm"
 HOST_ALLOC_PATH = '/tmp/hostAlloc.py'
 ALLOC_SCRIPT_LOCAL = 'tests/rhevmtests/sla/mom/hostAlloc.py'
 CUR = 0
@@ -297,7 +295,7 @@ class MOM(TestCase):
             multimem - adjusts test for multimemory case
             host_id - id of host in config.HOSTS
         """
-        iterations = ITERS
+        iterations = ITERS_MULTIMEM if multimem else ITERS
         if not positive:
             iterations = ITERS_NEG
 
@@ -311,6 +309,10 @@ class MOM(TestCase):
                     return True
                 sleep(sleep_time)
                 continue
+
+            for vm in vm_list:
+                logger.info("VM stats: max - %d, current - %d",
+                            mem_dict[vm][MAX], mem_dict[vm][CUR])
 
             if not positive:
                 vm = vm_list[0]
@@ -361,10 +363,10 @@ class KSM(MOM):
 
         logger.info("Running KSM tests on host %s memory - %s B",
                     config.HOSTS[0], str(host_mem))
-        for vm_index in range(int(config.KSM_VM_NUM)):
-            vm = "%s-%s" % (KSM_POOL, str(vm_index + 1))
+        for vm_index in range(int(config.VM_NUM)):
+            vm = "%s-%s" % (config.POOL_NAME, str(vm_index + 1))
             cls.vm_list.append(vm)
-            vm_mem = round(host_mem*2/config.KSM_VM_NUM/GB)*GB
+            vm_mem = round(host_mem*2/config.VM_NUM/GB)*GB
             if not vms.updateVm(
                     True, vm, placement_host=config.HOSTS[0],
                     placement_affinity=ENUMS['vm_affinity_user_migratable'],
@@ -429,10 +431,10 @@ class KSM(MOM):
         """
         logger.info("Running Vms that should trigger KSM: %s",
                     " ,".join(self.threshold_list))
-        vms.start_vms(self.threshold_list, config.KSM_VM_NUM)
+        vms.start_vms(self.threshold_list, config.VM_NUM)
         logger.info("VMs started, waiting %d for start of VM and guest agent",
-                    sleep_time)
-        sleep(sleep_time)
+                    sleep_time*self.threshold[0])
+        sleep(sleep_time*self.threshold[0])
         self.assertTrue(
             self.ksm_running(
                 config.HOSTS[0], config.HOSTS_USER, config.HOSTS_PW),
@@ -450,8 +452,8 @@ class KSM(MOM):
             self.assertTrue(vms.migrateVm(True, vm, force=True),
                             "Failed to migrate VM %s" % vm)
 
-        logger.info("Waiting %d s", sleep_time)
-        sleep(sleep_time)
+        logger.info("Waiting %d s", sleep_time*self.threshold[0])
+        sleep(sleep_time*self.threshold[0])
         self.assertFalse(
             self.ksm_running(
                 config.HOSTS[0], config.HOSTS_USER, config.HOSTS_PW),
@@ -475,8 +477,8 @@ class KSM(MOM):
                 vms.migrateVm(True, vm, force=True),
                 "Cannot migrate VM %s" % vm)
 
-        logger.info("Waiting %d s", sleep_time)
-        sleep(sleep_time)
+        logger.info("Waiting %d s", sleep_time*self.threshold[0])
+        sleep(sleep_time*self.threshold[0])
         self.assertFalse(
             self.ksm_running(
                 config.HOSTS[0], config.HOSTS_USER, config.HOSTS_PW),
@@ -529,10 +531,10 @@ class Balloon(MOM):
                 ksm_enabled=False):
             raise errors.VMException("Failed to update cluster")
         # vms for ballooning
-        list_id = range(int(config.BALLOON_VM_NUM))
-        vm_list = ["%s-%s" % (BALLOON_POOL, str(i+1)) for i in list_id]
-        vm_list.append(config.W7)
-        vm_list.append(config.W2K)
+        list_id = range(int(config.VM_NUM))
+        vm_list = ["%s-%s" % (config.POOL_NAME, str(i+1)) for i in list_id]
+        # vm_list.append(config.W7)
+        # vm_list.append(config.W2K)
         for vm in vm_list:
             if not vms.updateVm(
                     True, vm, placement_host=config.HOSTS[1],
@@ -546,7 +548,7 @@ class Balloon(MOM):
         """
         Tests inflation and deflation of balloon
         """
-        self.vm_list = ["%s-1" % BALLOON_POOL]
+        self.vm_list = ["%s-1" % config.POOL_NAME]
         self.balloon_usage(self.vm_list)
 
     @tcms('9860', '326211')
@@ -555,20 +557,22 @@ class Balloon(MOM):
         Tests inflation and deflation of balloon on 2 VMs
         with different memories
         """
-        self.vm_list = ["%s-%d" % (BALLOON_POOL, i+1) for i in range(2)]
+        self.vm_list = ["%s-%d" % (config.POOL_NAME, i+1) for i in range(2)]
         self.assertTrue(
             vms.updateVm(True, self.vm_list[1], memory_guaranteed=int(GB/2)),
             "Vm update failed")
 
         self.balloon_usage(self.vm_list, 1, True)
 
-    @tcms('9860', '326212')
-    def test_c_balloon_multi_os(self):
-        """
-        Test usage of balloon on different OS types
-        """
-        self.vm_list = ["balloon-1", config.W7, config.W2K]
-        self.balloon_usage(self.vm_list)
+    # @bz({'1125331': {'engine': ['cli'], 'version': None},
+    #      '1132833': {'engine': None, 'version': None}})
+    # @tcms('9860', '326212')
+    # def test_c_balloon_multi_os(self):
+    #     """
+    #     Test usage of balloon on different OS types
+    #     """
+    #     self.vm_list = ["balloon-1", config.W7, config.W2K]
+    #     self.balloon_usage(self.vm_list)
 
     @attr(tier=0)
     @tcms('9860', '326216')
@@ -577,7 +581,7 @@ class Balloon(MOM):
         Negative test case of balloon with minimum
         guaranteed memory set to maximum memory
         """
-        vm = "balloon-1"
+        vm = "%s-%d" % (config.POOL_NAME, 1)
         self.vm_list = [vm]
         self.assertTrue(
             vms.updateVm(True, vm, memory=2*GB, memory_guaranteed=2*GB),
@@ -588,12 +592,13 @@ class Balloon(MOM):
         self.balloon_usage_negative(vm)
 
     @attr(tier=0)
+    @bz({'1184135': {'engine': None, 'version': None}})
     @tcms('9860', '326214')
     def test_e_balloon_no_agent(self):
         """
         Negative test case to test balloon without agent
         """
-        vm = "balloon-1"
+        vm = "%s-%d" % (config.POOL_NAME, 1)
         self.vm_list = [vm]
         self.assertTrue(
             vms.updateVm(True, vm, memory=2*GB, memory_guaranteed=GB),
@@ -620,8 +625,8 @@ class Balloon(MOM):
         """
         Test ballooning with multiple (8) small VMs
         """
-        list_id = range(config.BALLOON_VM_NUM)
-        self.vm_list = ["%s-%d" % (BALLOON_POOL, i+1) for i in list_id]
+        list_id = range(config.VM_NUM)
+        self.vm_list = ["%s-%d" % (config.POOL_NAME, i+1) for i in list_id]
         for vm in self.vm_list:
             self.assertTrue(
                 vms.updateVm(True, vm, memory=int(GB/4),

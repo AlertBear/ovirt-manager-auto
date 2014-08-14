@@ -9,8 +9,8 @@ import art.rhevm_api.tests_lib.high_level.datacenters as datacenters
 import art.rhevm_api.tests_lib.low_level.storagedomains as storagedomains
 import art.rhevm_api.tests_lib.low_level.vms as vms
 import art.rhevm_api.tests_lib.low_level.templates as templates
-import art.rhevm_api.tests_lib.low_level.vmpools as pools
 import art.rhevm_api.tests_lib.low_level.hosts as hosts
+import art.rhevm_api.tests_lib.low_level.vmpools as pools
 import art.test_handler.exceptions as errors
 
 from art.rhevm_api.utils.test_utils import setPersistentNetwork
@@ -19,7 +19,6 @@ from art.test_handler.settings import opts
 logger = logging.getLogger("MOM")
 ENUMS = opts['elements_conf']['RHEVM Enums']
 RHEL_TEMPLATE = "rhel_template"
-IMPORT_TIMEOUT = 1800
 
 #################################################
 
@@ -46,11 +45,12 @@ def setup_package():
                     os_type=config.OS_TYPE):
                 raise errors.VMException("Failed to create vm")
             logger.info("Wait for vm %s ip", config.VM_NAME[0])
-            if not vms.waitForIP(config.VM_NAME[0]):
+            rc, out = vms.waitForIP(config.VM_NAME[0])
+            if not rc:
                 raise errors.VMException("Vm still not have ip")
-            logger.info("Seal vm %s", config.VM_NAME[0])
+            logger.info("Seal vm %s - ip %s", config.VM_NAME[0], out['ip'])
             if not setPersistentNetwork(
-                    config.VM_NAME[0], config.VMS_LINUX_PW
+                    out['ip'], config.VMS_LINUX_PW
             ):
                 raise errors.VMException("Failed to set persistent network")
             logger.info("Stop vm %s", config.VM_NAME[0])
@@ -67,83 +67,25 @@ def setup_package():
         else:
             rhel_template = config.TEMPLATE_NAME[0]
 
-        if not storagedomains.importStorageDomain(
-                True, type=ENUMS['storage_dom_type_export'],
-                storage_type=ENUMS['storage_type_nfs'],
-                host=config.HOSTS[0], address=config.MOM_EXPORT_ADDRESS,
-                path=config.MOM_EXPORT_PATH):
-            raise errors.StorageDomainException("Failed to import "
-                                                "storage domain")
-
-        if not storagedomains.attachStorageDomain(
-                True, datacenter=config.DC_NAME[0],
-                storagedomain=config.MOM_EXPORT_DOMAIN):
-            raise errors.StorageDomainException(
-                "Failed to attach export storage domain")
-
-        if not storagedomains.activateStorageDomain(
-                True, datacenter=config.DC_NAME[0],
-                storagedomain=config.MOM_EXPORT_DOMAIN):
-            raise errors.StorageDomainException(
-                "Failed to activate export storage domain")
-
-        if not storagedomains.waitForStorageDomainStatus(
-                True, config.DC_NAME[0], config.MOM_EXPORT_DOMAIN,
-                ENUMS['storage_domain_state_active']):
-            raise errors.StorageDomainException(
-                "Failed to activate export storage domain")
-
-        for vm in [config.W7, config.W2K]:
-            if not vms.importVm(True, vm,
-                                export_storagedomain=config.MOM_EXPORT_DOMAIN,
-                                import_storagedomain=config.STORAGE_NAME[0],
-                                cluster=config.CLUSTER_NAME[0], async=True):
-                raise errors.VMException("Failed to import vm %s" % vm)
         # create VMs for KSM and balloon
-        for name, vm_num, in [
-                ("ksm", config.KSM_VM_NUM),
-                ("balloon", config.BALLOON_VM_NUM)]:
-            logger.info("Create vms pool %s", name)
-            if not pools.addVmPool(
-                    True, name=name, size=vm_num,
-                    cluster=config.CLUSTER_NAME[0],
-                    template=rhel_template, description="%s pool" % name):
-                raise errors.VMException("Failed creation of pool for %s" %
-                                         name)
-            # detach VMs from pool to be editable
-            logger.info("Detach vms from vms pool %s", name)
-            if not pools.detachVms(True, name):
-                raise errors.VMException("Failed to detach VMs from %s pool" %
-                                         name)
-            logger.info("Remove vms pool %s", name)
-            if not pools.removeVmPool(True, name):
-                raise errors.VMException("Failed to remove vms pool")
-
-        for vm_name in (config.W7, config.W2K):
-            if not vms.waitForVMState(
-                    vm_name, state=ENUMS['vm_state_down'],
-                    timeout=IMPORT_TIMEOUT
-            ):
-                raise errors.VMException("Failed to import vm %s" % vm_name)
-
-        # safely detach export storage domain
-        if not storagedomains.deactivateStorageDomain(
-                True, config.DC_NAME[0], config.MOM_EXPORT_DOMAIN):
-            raise errors.StorageDomainException(
-                "Failed to deactivate export domain %s" %
-                config.MOM_EXPORT_DOMAIN
-            )
-        if not storagedomains.detachStorageDomain(
-                True, config.DC_NAME[0], config.MOM_EXPORT_DOMAIN):
-            raise errors.StorageDomainException(
-                "Failed to detach export domain %s" % config.MOM_EXPORT_DOMAIN
-            )
-        if not storagedomains.removeStorageDomain(
-                True, config.MOM_EXPORT_DOMAIN, config.HOSTS[0]
+        logger.info("Create vms pool %s", config.POOL_NAME)
+        if not pools.addVmPool(
+                True, name=config.POOL_NAME, size=config.VM_NUM,
+                cluster=config.CLUSTER_NAME[0],
+                template=rhel_template,
+                description="%s pool" % config.POOL_NAME
         ):
-            raise errors.StorageDomainException(
-                "Failed to remove storage domain %s" % config.MOM_EXPORT_DOMAIN
+            raise errors.VMException(
+                "Failed creation of pool for %s" % config.POOL_NAME
             )
+        # detach VMs from pool to be editable
+        logger.info("Detach vms from vms pool %s", config.POOL_NAME)
+        if not pools.detachVms(True, config.POOL_NAME):
+            raise errors.VMException("Failed to detach VMs from %s pool" %
+                                     config.POOL_NAME)
+        logger.info("Remove vms pool %s", config.POOL_NAME)
+        if not pools.removeVmPool(True, config.POOL_NAME):
+            raise errors.VMException("Failed to remove vms from pool")
 
         # disable swapping on hosts for faster tests
         for host, pwd in [(config.HOSTS[0], config.HOSTS_PW),
@@ -156,19 +98,21 @@ def setup_package():
                 raise errors.HostException(
                     "Failed to turn off swap on host %s"
                     ", output - %s" % (host, out))
-            if not hosts.set_mom_script(host, 'root', pwd):
+            if not hosts.set_mom_script(host, config.HOSTS_USER, pwd):
                 raise errors.HostException("Failed to set script for mom rpc "
                                            "on host %s" % host)
 
             logger.info("changing rpc port for mom to 8080 on host %s", host)
             if not hosts.change_mom_rpc_port(
-                    host, host_user='root', host_pwd=pwd, port=8080):
+                host, host_user=config.HOSTS_USER, host_pwd=pwd, port=8080
+            ):
                 raise errors.HostException("Failed to change RPC port "
                                            "for mom on host %s" % host)
 
         if not storagedomains.waitForStorageDomainStatus(
-                True, config.DC_NAME[0], config.STORAGE_NAME[0],
-                ENUMS['storage_domain_state_active']):
+            True, config.DC_NAME[0], config.STORAGE_NAME[0],
+            ENUMS['storage_domain_state_active']
+        ):
             raise errors.StorageDomainException(
                 "Failed to activate storage domain "
                 "after restart of VDSM on hosts")
@@ -204,19 +148,20 @@ def teardown_package():
         for host, pwd in [(config.HOSTS[0], config.HOSTS_PW),
                           (config.HOSTS[1], config.HOSTS_PW)]:
 
-            if not hosts.change_mom_rpc_port(host, 'root', pwd, -1):
+            if not hosts.change_mom_rpc_port(host, config.HOSTS_USER, pwd, -1):
                 raise errors.HostException("Failed to set mom port for rpc "
                                            "to default")
             logger.info("MOM port for rpc changed to default on host %s", host)
-            rc, out = hosts.remove_mom_script(host, 'root', pwd)
+            rc, out = hosts.remove_mom_script(host, config.HOSTS_USER, pwd)
             if not rc:
                 raise errors.HostException("Failed to remove script for mom "
                                            "on host %s - output %s" %
                                            (host, out))
 
         if not storagedomains.waitForStorageDomainStatus(
-                True, config.DC_NAME[0], config.STORAGE_NAME[0],
-                ENUMS['storage_domain_state_active']):
+            True, config.DC_NAME[0], config.STORAGE_NAME[0],
+            ENUMS['storage_domain_state_active']
+        ):
             raise errors.StorageDomainException(
                 "Failed to activate storage domain "
                 "after restart of VDSM on hosts")

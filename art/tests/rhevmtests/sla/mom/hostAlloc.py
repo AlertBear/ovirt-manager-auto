@@ -1,4 +1,4 @@
 import sys
+import time
 foo = " " * int(sys.argv[1])
-while True:
-    pass
+time.sleep(1800)  # max test time
