@@ -349,7 +349,9 @@ class VMOs(BaseTemplateVMClass):
     """
     OS inheritance
     """
-    __test__ = True
+    # Disable this class from running for BZ 1109546.
+    # bz decorator do not skip setup/teardown
+    __test__ = False
     template_name = 'template_OS'
     copy_vm = 'OS_copy'
     vm_parameters = BASIC_PARAMETERS.copy()
