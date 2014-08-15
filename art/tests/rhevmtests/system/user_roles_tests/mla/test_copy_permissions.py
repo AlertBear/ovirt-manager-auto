@@ -12,7 +12,7 @@ from art.unittest_lib import BaseTestCase as TestCase
 from nose.tools import istest
 from rhevmtests.system.user_roles_tests import config
 from rhevmtests.system.user_roles_tests.roles import role
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level import vms, users, templates, mla
 
 TCMS_PLAN_ID = '9798'

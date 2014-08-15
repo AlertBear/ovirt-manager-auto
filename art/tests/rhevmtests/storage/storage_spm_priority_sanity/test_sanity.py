@@ -14,7 +14,7 @@ import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 from art.rhevm_api.utils.test_utils import get_api, toggleServiceOnHost,\
     raise_if_false
 
-from art.test_handler.tools import tcms, bz
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from art.test_handler import exceptions
 from art.test_handler.handler_lib.utils import no_datatype_validation
 from art.unittest_lib.common import is_bz_state

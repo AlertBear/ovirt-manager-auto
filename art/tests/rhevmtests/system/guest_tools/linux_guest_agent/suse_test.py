@@ -6,7 +6,7 @@ from rhevmtests.system.guest_tools.linux_guest_agent import config
 from rhevmtests.system.guest_tools.linux_guest_agent import common
 from utilities.machine import eServiceHandlers
 from nose.tools import istest
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 
 eOS = config.eOS
 package_manager = '/usr/bin/zypper'

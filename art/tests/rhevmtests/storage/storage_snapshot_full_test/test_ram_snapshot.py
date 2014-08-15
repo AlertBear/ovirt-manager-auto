@@ -24,7 +24,7 @@ from art.rhevm_api.tests_lib.low_level.vms import updateVm, \
 from art.rhevm_api.utils.name2ip import LookUpVMIpByName
 from art.rhevm_api.utils.test_utils import setPersistentNetwork
 from art.test_handler import exceptions as errors
-from art.test_handler.tools import tcms, bz
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from helpers import is_pid_running_on_vm
 import config
 import helpers

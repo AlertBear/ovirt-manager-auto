@@ -11,7 +11,7 @@ from rhevmtests.networking import config
 from nose.tools import istest
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.low_level.networks import \
     getNetworksInDataCenter, getNetworkInDataCenter, \

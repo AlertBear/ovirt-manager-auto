@@ -4,7 +4,7 @@ from nose.tools import istest
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.high_level import storagedomains
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st_domains
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 import config
 
 logger = logging.getLogger(__name__)

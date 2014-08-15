@@ -10,7 +10,7 @@ import logging
 from art.unittest_lib import NetworkTest as TestCase
 from nose.tools import istest
 from art.unittest_lib import attr
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.rhevm_api.utils.test_utils import checkMTU
 from art.rhevm_api.tests_lib.low_level.hosts import genSNNic, sendSNRequest
 from art.rhevm_api.tests_lib.high_level.vms import check_vm_migration

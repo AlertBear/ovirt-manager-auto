@@ -19,7 +19,7 @@ from art.rhevm_api.tests_lib.low_level.templates import createTemplate, \
     removeTemplate
 from art.rhevm_api.tests_lib.low_level.vms import createVm, removeVm
 from art.rhevm_api.utils.test_utils import restartVdsmd
-from art.test_handler.tools import tcms, bz
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 import config
 import logging
 

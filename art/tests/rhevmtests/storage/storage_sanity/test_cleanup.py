@@ -2,7 +2,7 @@ import logging
 import config
 
 from art.core_api.apis_exceptions import EntityNotFound
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.unittest_lib import StorageTest as TestCase
 from art.unittest_lib import attr
 

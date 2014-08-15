@@ -46,7 +46,7 @@ from utilities.errors import GeneralException
 
 # BZ, TCMS plugins
 try:
-    from art.test_handler.tools import bz
+    from art.test_handler.tools import bz  # pylint: disable=E0611
 except ImportError:
     # noinspection PyUnusedLocal
     def bz(*ids):
@@ -55,7 +55,7 @@ except ImportError:
         return decorator
 
 try:
-    from art.test_handler.tools import tcms
+    from art.test_handler.tools import tcms  # pylint: disable=E0611
 except ImportError:
     # noinspection PyUnusedLocal
     def tcms(*ids):

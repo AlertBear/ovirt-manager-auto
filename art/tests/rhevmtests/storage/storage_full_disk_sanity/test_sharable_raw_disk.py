@@ -4,7 +4,7 @@ Storage VM Floating Disk
 import logging
 from art.unittest_lib import StorageTest as TestCase, attr
 from art.rhevm_api.tests_lib.low_level import disks, storagedomains
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 import config
 
 VM_1, VM_2 = config.VM1_NAME, config.VM2_NAME

@@ -6,14 +6,11 @@ from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_st
 from art.test_handler.exceptions import SkipTest
 from art.test_handler.handler_lib.utils import no_datatype_validation
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from art.test_handler.settings import opts
-
 
 import helpers
 import config
-
-from art.test_handler.tools import bz
 
 LOGGER = logging.getLogger(__name__)
 ENUMS = helpers.ENUMS

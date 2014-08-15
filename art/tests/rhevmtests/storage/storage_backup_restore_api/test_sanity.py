@@ -19,7 +19,7 @@ from art.rhevm_api.utils import test_utils as utils
 
 from utilities.machine import Machine
 
-from art.test_handler.tools import tcms, bz
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from art.test_handler import exceptions
 
 import helpers

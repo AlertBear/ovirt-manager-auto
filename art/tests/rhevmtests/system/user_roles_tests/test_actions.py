@@ -6,7 +6,7 @@ import logging
 from rhevmtests.system.user_roles_tests import config
 import roles
 import art.test_handler.exceptions as errors
-from art.test_handler.tools import bz
+from art.test_handler.tools import bz  # pylint: disable=E0611
 from nose.tools import istest
 from art.unittest_lib import attr
 from functools import wraps

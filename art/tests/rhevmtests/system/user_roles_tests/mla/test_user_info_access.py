@@ -11,7 +11,7 @@ from rhevmtests.system.user_roles_tests import config
 from rhevmtests.system.user_roles_tests.roles import role
 from nose.tools import istest
 import logging
-from art.test_handler.tools import bz, tcms
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level import \
     users, vms, templates, mla, clusters, datacenters, hosts,\
     storagedomains, networks, events

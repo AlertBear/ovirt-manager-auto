@@ -9,7 +9,7 @@ import random
 import logging
 from nose.tools import istest
 from art.unittest_lib import attr
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.unittest_lib import ComputeTest as TestCase
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as vm_api

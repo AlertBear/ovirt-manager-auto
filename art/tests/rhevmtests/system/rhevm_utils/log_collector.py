@@ -5,7 +5,7 @@ import art.rhevm_api.tests_lib.low_level.storagedomains as llstoragedomains
 import art.rhevm_api.tests_lib.low_level.vms as llvms
 
 from art.test_handler.exceptions import VMException
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.unittest_lib import attr
 from unittest_conf import REST_API_PASS, LOG_COL_CONF
 from utilities.rhevm_tools.log_collector import LogCollectorUtility

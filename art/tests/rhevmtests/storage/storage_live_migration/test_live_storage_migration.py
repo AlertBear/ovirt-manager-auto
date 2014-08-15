@@ -38,7 +38,7 @@ from art.rhevm_api.utils.test_utils import get_api, setPersistentNetwork, \
     restartVdsmd
 from art.test_handler import exceptions
 
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 import config
 
 logger = logging.getLogger(__name__)

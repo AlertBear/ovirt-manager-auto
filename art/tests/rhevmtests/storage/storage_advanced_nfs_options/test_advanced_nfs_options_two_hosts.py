@@ -7,7 +7,7 @@ from art.rhevm_api.tests_lib.low_level import clusters as ll_cl
 from art.rhevm_api.tests_lib.high_level import hosts as hl_hosts
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st
 from art.rhevm_api.tests_lib.high_level import storagedomains as hl_st
-from art.test_handler.tools import tcms, bz
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from art.unittest_lib import attr
 
 import helpers

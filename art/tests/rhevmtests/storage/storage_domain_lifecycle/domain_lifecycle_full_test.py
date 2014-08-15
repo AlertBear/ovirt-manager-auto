@@ -11,7 +11,7 @@ from art.unittest_lib import attr
 from art.rhevm_api.tests_lib.high_level import hosts as hi_hosts
 from art.rhevm_api.tests_lib.high_level import datacenters, storagedomains
 from utilities.utils import getIpAddressByHostName
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 import art.rhevm_api.utils.storage_api as st_api
 import art.rhevm_api.utils.iptables as ip_action
 

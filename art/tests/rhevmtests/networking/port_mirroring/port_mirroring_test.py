@@ -7,7 +7,7 @@ import logging
 
 from art.test_handler.exceptions import VMException
 from art.test_handler.settings import opts
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level.vms import updateNic, migrateVm, \
     getVmNicPortMirroring
 from art.rhevm_api.utils.test_utils import configureTempStaticIp, \

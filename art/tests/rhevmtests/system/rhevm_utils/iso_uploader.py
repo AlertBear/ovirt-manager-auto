@@ -8,7 +8,7 @@ from unittest_conf import (REST_API_HOST,
                            LOCAL_ISO_DOMAIN_NAME)
 from utilities.rhevm_tools.iso_uploader import ISOUploadUtility
 from art.unittest_lib import attr
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 
 
 ISO_UPLOADER_TEST_PLAN = 3741

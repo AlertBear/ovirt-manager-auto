@@ -5,7 +5,7 @@ External Tasks test
 from art.unittest_lib import CoreSystemTest as TestCase
 from nose.tools import istest
 from art.unittest_lib import attr
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 import art.test_handler.exceptions as errors
 from art.rhevm_api.utils.test_utils import get_api
 import art.rhevm_api.tests_lib.low_level.jobs as job_api

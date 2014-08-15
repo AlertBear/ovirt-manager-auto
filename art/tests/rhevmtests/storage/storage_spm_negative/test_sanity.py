@@ -19,7 +19,7 @@ from art.rhevm_api.utils.storage_api import generateSDMetadataCorruption, \
     restoreSDOriginalMetadata, blockOutgoingConnection, \
     unblockOutgoingConnection
 from art.test_handler.settings import plmanager
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 import config
 
 # Automatic setup and teardown on failure

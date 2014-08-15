@@ -15,7 +15,7 @@ from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.low_level import clusters
 import art.test_handler.exceptions as errors
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.unittest_lib import ComputeTest as TestCase
 from art.unittest_lib import attr
 

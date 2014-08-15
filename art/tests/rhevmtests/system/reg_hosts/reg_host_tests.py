@@ -6,7 +6,7 @@ Checks host deployment, updating and authentication methods
 import art.rhevm_api.tests_lib.low_level.hosts as hosts
 from art.rhevm_api.utils.test_utils import get_api
 from art.core_api.apis_exceptions import EntityNotFound
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.unittest_lib import CoreSystemTest as TestCase
 from nose.tools import istest
 from art.unittest_lib import attr

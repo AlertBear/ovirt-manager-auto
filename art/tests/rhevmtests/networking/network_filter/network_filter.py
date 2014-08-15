@@ -16,7 +16,7 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     updateNic,
     hotUnplugNic,
 )
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.rhevm_api.utils.test_utils import setNetworkFilterStatus
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.low_level.hosts import \

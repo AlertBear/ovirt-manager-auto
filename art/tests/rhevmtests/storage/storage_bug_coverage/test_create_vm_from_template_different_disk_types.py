@@ -12,7 +12,7 @@ from art.rhevm_api.tests_lib.low_level import vms as ll_vms
 from art.rhevm_api.tests_lib.low_level import templates
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.tests_lib.low_level import disks
-from art.test_handler.tools import tcms, bz
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 import art.test_handler.exceptions as errors
 
 import config

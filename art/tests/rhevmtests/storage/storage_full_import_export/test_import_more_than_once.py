@@ -8,7 +8,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 
 from art.unittest_lib import StorageTest as TestCase, attr
-from art.test_handler.tools import tcms, bz
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from art.rhevm_api.utils.test_utils import get_api, setPersistentNetwork
 from art.rhevm_api.tests_lib.low_level import storagedomains, vms, templates
 

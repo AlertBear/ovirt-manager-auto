@@ -6,7 +6,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 import time
 
-from art.test_handler.tools import bz, tcms
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from art.unittest_lib import attr
 
 from art.rhevm_api.utils import test_utils as utils

@@ -15,7 +15,7 @@ from art.rhevm_api.tests_lib.low_level import templates
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.utils.test_utils import get_api, prepareDataForVm, \
     raise_if_exception, wait_for_tasks
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 import helpers
 import config
 

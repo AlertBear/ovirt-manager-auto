@@ -6,7 +6,7 @@ from art.rhevm_api.utils import test_utils
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.low_level import datacenters
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from nose.plugins.attrib import attr
 
 import config

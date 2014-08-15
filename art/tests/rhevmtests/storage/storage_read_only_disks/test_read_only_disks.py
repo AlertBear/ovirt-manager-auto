@@ -31,7 +31,7 @@ from art.rhevm_api.tests_lib.low_level.vms import createVm, addSnapshot, \
 from art.rhevm_api.utils.storage_api import blockOutgoingConnection,\
     unblockOutgoingConnection
 
-from art.test_handler.tools import tcms, bz
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from art.test_handler import exceptions
 from art.unittest_lib import attr
 

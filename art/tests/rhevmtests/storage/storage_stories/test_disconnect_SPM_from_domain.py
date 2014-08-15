@@ -3,7 +3,7 @@ from art.unittest_lib import StorageTest as TestCase, attr
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st_domains
 from art.rhevm_api.tests_lib.high_level import datacenters
 from utilities.utils import getIpAddressByHostName
-from art.test_handler.tools import tcms, bz
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 import art.rhevm_api.utils.storage_api as st_api
 from art.rhevm_api.utils.test_utils import get_api
 import art.rhevm_api.utils.iptables as ip_action

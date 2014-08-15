@@ -3,7 +3,7 @@ from art.unittest_lib import attr
 import logging
 from concurrent.futures import ThreadPoolExecutor
 
-from art.test_handler.tools import tcms, bz
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 
 from art.rhevm_api.utils import test_utils
 from art.rhevm_api.tests_lib.low_level import storagedomains

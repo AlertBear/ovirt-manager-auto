@@ -24,7 +24,7 @@ from art.rhevm_api.utils import test_utils
 from art.rhevm_api.utils.storage_api import blockOutgoingConnection, \
     unblockOutgoingConnection
 
-from art.test_handler.tools import tcms, bz
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from art.test_handler.settings import opts
 
 logger = logging.getLogger(__name__)

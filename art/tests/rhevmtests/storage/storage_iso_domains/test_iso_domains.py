@@ -18,7 +18,7 @@ import art.rhevm_api.tests_lib.low_level.vms as ll_vms
 
 from art.rhevm_api.utils import test_utils
 
-from art.test_handler.tools import tcms, bz
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 
 from utilities import machine
 from utilities.rhevm_tools.base import Utility, Setup

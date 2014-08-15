@@ -14,7 +14,7 @@ from art.rhevm_api.tests_lib.high_level.networks import removeNetFromSetup, \
     createAndAttachNetworkSN
 from art.rhevm_api.tests_lib.low_level.templates import importTemplate, \
     removeTemplate, check_vnic_on_template_nic
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.test_handler.exceptions import NetworkException
 
 logger = logging.getLogger(__name__)

@@ -14,7 +14,7 @@ from rhevmtests.networking import config
 from art.rhevm_api.utils.test_utils import get_api
 from art.test_handler.exceptions import NetworkException, ClusterException
 from art.test_handler.settings import opts
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level.datacenters import\
     waitForDataCenterState
 from art.rhevm_api.tests_lib.low_level.clusters import\

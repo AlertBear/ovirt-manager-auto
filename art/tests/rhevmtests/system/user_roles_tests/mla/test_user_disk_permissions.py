@@ -15,7 +15,7 @@ from rhevmtests.system.user_roles_tests.roles import role
 from nose.tools import istest
 from art.unittest_lib import BaseTestCase as TestCase
 
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.high_level import storagedomains
 from art.rhevm_api.tests_lib.high_level import disks as h_disks
 from art.rhevm_api.tests_lib.low_level import users, vms, disks, mla

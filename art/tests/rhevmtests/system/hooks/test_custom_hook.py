@@ -8,7 +8,7 @@ __test__ = True
 from art.rhevm_api.tests_lib.low_level import hooks, vms, hosts
 from art.rhevm_api.utils.resource_utils import runMachineCommand
 from art.rhevm_api.utils import test_utils
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from nose.tools import istest
 from art.unittest_lib import attr
 from os import path

@@ -14,7 +14,7 @@ from art.rhevm_api.tests_lib.low_level.hosts import select_host_as_spm, \
     waitForSPM, checkHostSpmStatus, activateHosts, isHostUp
 from art.rhevm_api.utils.storage_api import blockOutgoingConnection, \
     unblockOutgoingConnection
-from art.test_handler.tools import tcms, bz
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 
 logger = logging.getLogger(__name__)
 

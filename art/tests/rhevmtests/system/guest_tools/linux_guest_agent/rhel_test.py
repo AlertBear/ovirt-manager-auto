@@ -6,7 +6,7 @@ from rhevmtests.system.guest_tools.linux_guest_agent import config
 from rhevmtests.system.guest_tools.linux_guest_agent import common
 import logging
 from nose.tools import istest
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 
 package_manager = '/usr/bin/yum'
 repo_path = '/etc/yum.repos.d/'

@@ -17,7 +17,7 @@ from art.rhevm_api.tests_lib.low_level import vms, disks
 from art.rhevm_api.tests_lib.low_level import templates
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.utils import log_listener
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 
 import config
 

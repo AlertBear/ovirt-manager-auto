@@ -7,7 +7,7 @@ from art.rhevm_api.tests_lib.low_level import vms, disks
 from art.rhevm_api.tests_lib.high_level import vms as hi_vms
 from art.rhevm_api.utils import test_utils
 import art.test_handler.exceptions as exceptions
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.unittest_lib import StorageTest as TestCase, attr
 import config
 import logging

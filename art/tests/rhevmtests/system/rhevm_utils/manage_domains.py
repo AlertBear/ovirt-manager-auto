@@ -1,7 +1,7 @@
 from rhevmtests.system.rhevm_utils.base import RHEVMUtilsTestCase
 
 from art.test_handler import exceptions
-from art.test_handler.tools import tcms, bz
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 
 from datetime import datetime, timedelta
 from os.path import relpath

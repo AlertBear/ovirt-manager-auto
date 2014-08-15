@@ -11,7 +11,7 @@ from art.rhevm_api.tests_lib.low_level.jobs import check_recent_job
 from art.rhevm_api.tests_lib.low_level.vms import checkVmState
 from art.rhevm_api.utils.test_utils import get_api
 from art.test_handler.settings import opts
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.unittest_lib import CoreSystemTest as TestCase
 from nose.tools import istest
 from art.rhevm_api.tests_lib.low_level import vms

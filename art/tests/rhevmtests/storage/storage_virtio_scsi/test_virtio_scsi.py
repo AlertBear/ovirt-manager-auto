@@ -14,7 +14,7 @@ from art.rhevm_api.tests_lib.low_level.vms import createVm, stopVm, removeVm,\
     cloneVmFromTemplate, addSnapshot, addVm, waitForVmsDisks, getVmDisks
 from art.rhevm_api.tests_lib.low_level.disks import getStorageDomainDisks
 from art.rhevm_api.utils.test_utils import setPersistentNetwork
-from art.test_handler.tools import tcms, bz
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 import config
 import logging
 

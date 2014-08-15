@@ -27,7 +27,7 @@ from art.core_api.apis_utils import TimeoutingSampler
 
 import art.test_handler.exceptions as errors
 from art.test_handler.settings import opts
-from art.test_handler.tools import bz, tcms
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 
 from art.unittest_lib.common import is_bz_state
 

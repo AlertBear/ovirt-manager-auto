@@ -10,7 +10,7 @@ from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
 import logging
 from rhevmtests.networking import config
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.rhevm_api.utils.test_utils import get_api
 
 from art.test_handler.settings import opts

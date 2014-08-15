@@ -30,7 +30,7 @@ from art.test_handler import exceptions
 from threading import Thread
 import time
 
-from art.test_handler.tools import tcms, bz
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 
 import helpers
 import config

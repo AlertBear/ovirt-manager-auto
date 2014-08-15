@@ -15,7 +15,7 @@ from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import disks
 from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.low_level import storagedomains
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 
 from common import _create_vm
 

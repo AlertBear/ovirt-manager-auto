@@ -30,7 +30,7 @@ import art.test_handler.exceptions as errors
 
 from art.test_handler import find_test_file
 from art.test_handler.settings import opts
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.rhevm_api.utils.test_utils import getStat
 
 from utilities import machine

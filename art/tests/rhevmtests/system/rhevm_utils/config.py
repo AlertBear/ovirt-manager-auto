@@ -1,7 +1,7 @@
 from rhevmtests.system.rhevm_utils import base
 from utilities.rhevm_tools.config import ConfigUtility
 from utilities.rhevm_tools import errors
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.unittest_lib import attr
 
 CONFIG_TEST_PLAN = 3727

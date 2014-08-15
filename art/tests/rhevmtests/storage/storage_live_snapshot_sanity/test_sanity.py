@@ -16,7 +16,7 @@ from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.utils.resource_utils import copyDataToVm, verifyDataOnVm
 from art.rhevm_api.utils.test_utils import get_api, prepareDataForVm, \
     removeDirOnHost, raise_if_exception, wait_for_tasks, setPersistentNetwork
-from art.test_handler.tools import bz
+from art.test_handler.tools import bz  # pylint: disable=E0611
 import config
 
 

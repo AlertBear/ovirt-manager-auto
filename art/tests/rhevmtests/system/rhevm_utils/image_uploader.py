@@ -5,7 +5,7 @@ from art.unittest_lib import attr
 from utilities.rhevm_tools.image_uploader import ImageUploadUtility
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
     activateStorageDomain, deactivateStorageDomain)
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 
 
 IMAGE_UPLOADER_TEST_PLAN = 5200

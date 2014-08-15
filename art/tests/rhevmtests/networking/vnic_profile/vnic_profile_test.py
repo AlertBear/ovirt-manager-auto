@@ -10,7 +10,7 @@ from art.unittest_lib import NetworkTest as TestCase
 from art.rhevm_api.utils.test_utils import get_api
 from art.test_handler.exceptions import NetworkException, DataCenterException,\
     VMException
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.tests_lib.low_level.datacenters import\
     addDataCenter, removeDataCenter
