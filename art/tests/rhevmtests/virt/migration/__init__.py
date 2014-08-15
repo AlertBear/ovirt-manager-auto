@@ -75,9 +75,6 @@ def setup_package():
                     nic='nic1', network=config.MGMT_BRIDGE,
                     installation=config.INSTALLATION,
                     image=config.COBBLER_PROFILE,
-                    cobblerAddress=config.COBBLER_ADDRESS,
-                    cobblerUser=config.COBBLER_USER,
-                    cobblerPasswd=config.COBBLER_PASSWD,
                     user=config.VMS_LINUX_USER,
                     password=config.VMS_LINUX_PW,
                     os_type='RHEL6x64', useAgent=True))

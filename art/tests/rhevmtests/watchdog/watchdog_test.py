@@ -233,9 +233,6 @@ class WatchdogCRUD(WatchdogVM):
 
         if not vms.unattendedInstallation(
                 positive=True, vm=cls.vm_name,
-                cobblerAddress=config.COBBLER_ADDRESS,
-                cobblerUser=config.COBBLER_USER,
-                cobblerPasswd=config.COBBLER_USER,
                 image=config.COBBLER_PROFILE,
                 nic=config.NIC_NAME[0]):
             raise errors.VMException("Cannot install Linux OS")
@@ -778,9 +775,6 @@ class WatchdogCRUDTemplate(WatchdogVM):
 
         if not vms.unattendedInstallation(
                 positive=True, vm=cls.vm_name_master,
-                cobblerAddress=config.COBBLER_ADDRESS,
-                cobblerUser=config.COBBLER_USER,
-                cobblerPasswd=config.COBBLER_USER,
                 image=config.COBBLER_PROFILE,
                 nic=config.NIC_NAME[0]):
             raise errors.VMException("Cannot install Linux OS")

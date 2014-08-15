@@ -38,9 +38,6 @@ def create_vm(vm_name, sd_name, template_name=config.TEMPLATE_NAME,
             display_type=config.DISPLAY_TYPE, os_type=config.OS_TYPE,
             user=config.VM_LINUX_USER, password=config.VM_LINUX_PASSWORD,
             type=config.VM_TYPE_DESKTOP, installation=is_install, slim=True,
-            cobblerAddress=config.COBBLER_ADDRESS,
-            cobblerUser=config.COBBLER_USER,
-            cobblerPasswd=config.COBBLER_PASSWORD,
             image=config.COBBLER_PROFILE, network=config.MGMT_BRIDGE,
             useAgent=config.USE_AGENT, start='true', attempt=10)
     except Exception as ex:

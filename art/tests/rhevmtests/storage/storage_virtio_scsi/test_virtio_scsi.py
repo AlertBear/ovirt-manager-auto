@@ -69,9 +69,6 @@ def _create_vm(vm_name, storage_domain, interface, install_os):
     if install_os:
         vmArgs.update({
             'nic': 'nic1',
-            'cobblerAddress': config.COBBLER_ADDRESS,
-            'cobblerUser': config.COBBLER_USER,
-            'cobblerPasswd': config.COBBLER_PASSWD,
             'image': config.COBBLER_PROFILE,
             'useAgent': True,
             'os_type': config.ENUMS['rhel6'],

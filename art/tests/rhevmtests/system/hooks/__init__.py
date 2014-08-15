@@ -25,10 +25,8 @@ def setup_module():
         display_type=config.DISPLAY_TYPE,
         os_type=config.OS_TYPE, user=config.VMS_LINUX_USER,
         password=config.VMS_LINUX_PW, installation=True,
-        slim=True, cobblerAddress=config.COBBLER_ADDRESS,
-        cobblerUser=config.COBBLER_USER,
-        cobblerPasswd=config.COBBLER_PASSWD, useAgent=True,
-        image=config.COBBLER_PROFILE, network=config.MGMT_BRIDGE)
+        slim=True, useAgent=True, image=config.COBBLER_PROFILE,
+        network=config.MGMT_BRIDGE)
 
     ip = vms.waitForIP(config.VM_NAME[0])
     assert ip[0]
