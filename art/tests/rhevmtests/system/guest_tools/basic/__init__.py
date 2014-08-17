@@ -34,7 +34,8 @@ def setup_package():
         storage_type='nfs',
         address=config.EXPORT_DOMAIN_ADDRESS,
         host=config.HOSTS[0],
-        path=config.EXPORT_DOMAIN_PATH)
+        path=config.EXPORT_DOMAIN_PATH,
+        clean_export_domain_metadata=True)
     storagedomains.attachStorageDomain(True, config.DC_NAME[0],
                                        config.EXPORT_STORAGE_DOMAIN)
     storagedomains.attachStorageDomain(True, config.DC_NAME[0],

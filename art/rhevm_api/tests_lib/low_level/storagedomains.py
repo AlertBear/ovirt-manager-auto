@@ -44,7 +44,7 @@ from utilities.utils import getIpAddressByHostName
 from art.core_api import is_action
 from art.test_handler.settings import opts
 from art.test_handler import exceptions
-from utilities import sshConnection
+from utilities import sshConnection, machine
 
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
@@ -449,10 +449,31 @@ def removeStorageDomain(positive, storagedomain, host, format='false',
     return util.delete(storDomObj, positive, st)
 
 
+def cleanExportDomainMetadata(address, path):
+    '''
+    Fix up metadata on export storage domain to be importable.
+    Parameters:
+     * address - address of storage domain
+     * path - path to mount directory
+    Return: cmd result
+    '''
+    clean_cmd = ['sed', '-i', '-e', 's/^POOL_UUID=.*/POOL_UUID=/', '-e',
+                 '/^_SHA_CKSUM=/ d']
+    metadata_path = "$(find %s -name metadata)"
+    machineObj = machine.Machine().util(machine.LINUX)
+    sd = '%s:%s' % (address, path)
+    with machineObj.mount(sd) as mounted_path:
+        clean_cmd.append(metadata_path % mounted_path)
+        util.logger.debug("Cleaning export storage domain %s. %s",
+                          sd, clean_cmd)
+        return machineObj.runCmd(clean_cmd)
+
+
 @is_action()
 def importStorageDomain(positive, type, storage_type, address, path, host,
                         nfs_version=None, nfs_retrans=None, nfs_timeo=None,
-                        vfs_type=None, storage_format=None):
+                        vfs_type=None, storage_format=None,
+                        clean_export_domain_metadata=False):
     '''
     Description: import storage domain (similar to create function, but not
     providing name)
@@ -463,9 +484,17 @@ def importStorageDomain(positive, type, storage_type, address, path, host,
        * address - storage domain address (for ISCSI)
        * path - storage domain path (for NFS)
        * host - host to use
+       * clean_export_domain_metadata - if True clear export domain metadata
     Return: status (True if storage domain was imported properly,
                     False otherwise)
     '''
+    if clean_export_domain_metadata:
+        ret = cleanExportDomainMetadata(address, path)
+        util.logger.debug("Cleaning export storage domain: %s", ret[1])
+        if not ret[0]:
+            warn_msg = ("Clean of export domain metadata %s:%s failed,"
+                        "may cause issues.")
+            util.logger.warn(warn_msg, address, path)
 
     sdStorage = Storage(type_=storage_type, address=address, path=path,
                         nfs_version=nfs_version, nfs_retrans=nfs_retrans,
