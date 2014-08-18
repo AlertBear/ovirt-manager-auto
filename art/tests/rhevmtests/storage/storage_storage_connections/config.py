@@ -13,10 +13,7 @@ TESTNAME = "manage_storage_conn"
 
 STORAGE = copy.deepcopy(ART_CONFIG['PARAMETERS'])
 
-# TODO: remove
-PASSWORDS = HOSTS_PW
-
-if STORAGE_TYPE == 'iscsi':
+if STORAGE_TYPE == STORAGE_TYPE_ISCSI:
     CONNECTIONS = []
     CONNECTIONS.append({
         'lun_address': PARAMETERS.as_list('lun_address')[0],
@@ -41,4 +38,4 @@ if STORAGE_TYPE == 'nfs' or STORAGE_TYPE.startswith('posixfs'):
         'data_domain_address')[0]
     PARAMETERS['data_domain_path'] = PARAMETERS.as_list('data_domain_path')[0]
     HOST_FOR_MNT = HOSTS[1]
-    PASSWD_FOR_MNT = PASSWORDS[1]
+    PASSWD_FOR_MNT = HOST_PW

@@ -73,8 +73,8 @@ def start_creating_disks_for_test(shared=False, sd_name=config.SD_NAME_0):
     DISKS_NAMES = []
     logger.info("Disks: %s", DISKS_NAMES)
     logger.info("Creating all disks")
-    DISK_PERMUTATIONS = get_all_disk_permutation(block=config.BLOCK_FS,
-                                                 shared=shared)
+    DISK_PERMUTATIONS = get_all_disk_permutation(
+        block=config.BLOCK_FS, shared=shared)
     for permutation in DISK_PERMUTATIONS:
         add_new_disk(sd_name=sd_name, permutation=permutation, shared=shared)
 

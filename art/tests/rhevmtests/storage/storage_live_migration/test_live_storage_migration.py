@@ -79,10 +79,10 @@ vmArgs = {'positive': True,
           'storageDomainName': None,
           'installation': True,
           'size': config.DISK_SIZE,
-          'nic': 'nic1',
+          'nic': config.HOST_NICS[0],
           'image': config.COBBLER_PROFILE,
           'useAgent': True,
-          'os_type': config.ENUMS['rhel6'],
+          'os_type': config.OS_TYPE,
           'user': config.VM_USER,
           'password': config.VM_PASSWORD,
           'network': config.MGMT_BRIDGE
@@ -100,7 +100,7 @@ def setup_module():
     after the build_setup finish, we return to the original lists
     """
     logger.info("Preparing datacenter %s with hosts %s",
-                config.DC_NAME, config.VDC)
+                config.DATA_CENTER_NAME, config.VDC)
 
     if config.STORAGE_TYPE == config.STORAGE_TYPE_ISCSI:
         luns = config.LUNS
@@ -114,7 +114,7 @@ def setup_module():
         config.PARAMETERS['lun'] = luns
 
     vmArgs['storageDomainName'] = \
-        get_master_storage_domain_name(config.DC_NAME)
+        get_master_storage_domain_name(config.DATA_CENTER_NAME)
 
     logger.info('Creating vm and installing OS on it')
 
@@ -131,7 +131,7 @@ def teardown_module():
     Clean datacenter
     """
     logger.info('Cleaning datacenter')
-    cleanDataCenter(True, config.DC_NAME, vdc=config.VDC,
+    cleanDataCenter(True, config.DATA_CENTER_NAME, vdc=config.VDC,
                     vdc_password=config.VDC_PASSWORD)
 
 
@@ -204,7 +204,7 @@ class AllPermutationsDisks(BaseTestCase):
         vm_disks = getVmDisks(self.vm)
         boot_disk = [d.get_alias() for d in vm_disks if d.get_bootable()][0]
 
-        clean_all_disks_from_dc(config.DC_NAME, [boot_disk])
+        clean_all_disks_from_dc(config.DATA_CENTER_NAME, [boot_disk])
         remove_all_vm_lsm_snapshots(self.vm)
         logger.info("Finished testCase")
 
@@ -940,9 +940,9 @@ class TestCase168839(BaseTestCase):
         self.target_sd = get_other_storage_domain(self.vm_disk.get_alias(),
                                                   config.VM_NAME)
 
-        deactivateStorageDomain(True, config.DC_NAME, self.target_sd)
+        deactivateStorageDomain(True, config.DATA_CENTER_NAME, self.target_sd)
         assert waitForStorageDomainStatus(
-            True, config.DC_NAME, self.target_sd,
+            True, config.DATA_CENTER_NAME, self.target_sd,
             ENUMS['storage_domain_state_maintenance'])
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
@@ -958,7 +958,8 @@ class TestCase168839(BaseTestCase):
 
     def tearDown(self):
         wait_for_jobs()
-        assert activateStorageDomain(True, config.DC_NAME, self.target_sd)
+        assert activateStorageDomain(
+            True, config.DATA_CENTER_NAME, self.target_sd)
         if self.succeeded:
             remove_all_vm_lsm_snapshots(config.VM_NAME)
 
@@ -1071,7 +1072,7 @@ class TestCase231544(CommonUsage):
         disk_obj = getVmDisk(config.VM_NAME, self.disk_name)
         self.regex = self.regex % disk_obj.get_image_id()
         watch_logs(FILE_TO_WATCH, self.regex, '', LIVE_MIGRATION_TIMEOUT,
-                   self.host_ip, 'root', config.VDC_PASSWORD)
+                   self.host_ip, config.HOSTS_USER, config.HOSTS_PW)
         wait_for_jobs()
 
     def tearDown(self):
@@ -1100,7 +1101,7 @@ class TestCase232947(AllPermutationsDisks):
         live_migrate_vm_disk(config.VM_NAME, disk_name, target_sd,
                              wait=False)
         watch_logs(FILE_TO_WATCH, regex, '', MIGRATION_TIMEOUT,
-                   self.host_ip, 'root', config.VDC_PASSWORD)
+                   self.host_ip, config.HOSTS_USER, config.HOSTS_PW)
         assert stopVm(True, config.VM_NAME)
         waitForDisksState(disk_name, timeout=LIVE_MIGRATION_TIMEOUT)
         wait_for_jobs()
@@ -1552,11 +1553,11 @@ class TestCase168840(BaseTestCase):
         status, target_sd_ip = getDomainAddress(True, target_sd)
         assert status
         self.target_sd_ip = target_sd_ip['address']
-        self.username = 'root'
-        self.password = config.VDS_PASSWORD[0]
+        self.username = config.HOSTS_USER
+        self.password = config.HOSTS_PW
         self.source_ip = host_ip
         self._migrate_vm_disk_and_block_connection(
-            vm_disk, host_ip, 'root', config.VDS_PASSWORD[0], target_sd,
+            vm_disk, host_ip, config.HOSTS_USER, config.HOSTS_PW, target_sd,
             target_sd_ip)
         status = verify_vm_disk_moved(config.VM_NAME, vm_disk, source_sd,
                                       target_sd)
@@ -1595,7 +1596,7 @@ class TestCase168836(SimpleCase):
         """
         spm_host = getSPMHost(config.HOSTS)
         live_migrate_vm(config.VM_NAME, wait=False)
-        restartVdsmd(spm_host, config.VDS_PASSWORD[0])
+        restartVdsmd(spm_host, config.HOSTS_PW)
         wait_for_jobs()
 
 
@@ -1629,7 +1630,7 @@ class TestCase174418(SimpleCase):
         spm_host = getSPMHost(config.HOSTS)
         live_migrate_vm(config.VM_NAME, wait=False)
         logger.info("Rebooting host (SPM) %s", spm_host)
-        assert rebootHost(True, spm_host, 'root', config.VDS_PASSWORD[0])
+        assert rebootHost(True, spm_host, config.HOSTS_USER, config.HOSTS_PW)
         waitForDisksState(vm_disk, timeout=DISK_TIMEOUT)
 
         status = verify_vm_disk_moved(config.VM_NAME, vm_disk, source_sd)
@@ -1654,7 +1655,7 @@ class TestCase174418(SimpleCase):
         hsm_host = [x for x in config.HOSTS if x not in spm_host][0]
         live_migrate_vm(config.VM_NAME, wait=False)
         logger.info("Rebooting host (SPM) %s", spm_host)
-        assert rebootHost(True, hsm_host, 'root', config.VDS_PASSWORD[0])
+        assert rebootHost(True, hsm_host, config.HOSTS_USER, config.HOSTS_PW)
 
         waitForDisksState(vm_disk, timeout=DISK_TIMEOUT)
 
@@ -1687,7 +1688,7 @@ class TestCase174419(BaseTestCase):
 
         live_migrate_vm(config.VM_NAME, wait=False)
         logger.info("Rebooting host %s", host)
-        assert rebootHost(True, host, 'root', config.VDS_PASSWORD[0])
+        assert rebootHost(True, host, config.HOSTS_USER, config.HOSTS_PW)
         waitForDisksState(vm_disk, timeout=DISK_TIMEOUT)
 
         status = verify_vm_disk_moved(config.VM_NAME, vm_disk, source_sd)
@@ -1740,8 +1741,8 @@ class TestCase174420(BaseTestCase):
 
     def _kill_vm_pid(self):
         host = getVmHost(config.VM_NAME)[1]['vmHoster']
-        host_machine = Machine(host=host, user=config.VDS_USER[0],
-                               password=config.VDS_PASSWORD[0]).util('linux')
+        host_machine = Machine(host=host, user=config.HOSTS_USER,
+                               password=config.HOSTS_PW).util('linux')
         host_machine.kill_qemu_process(config.VM_NAME)
 
     def perform_action(self):
@@ -1886,9 +1887,10 @@ class TestCase174426(CommonUsage):
         self.disks_names = []
         stop_vms_safely([config.VM_NAME])
         self._prepare_disks_for_vm(config.VM_NAME)
-        assert deactivateStorageDomain(True, config.DC_NAME, SD_NAME_2)
+        assert deactivateStorageDomain(
+            True, config.DATA_CENTER_NAME, SD_NAME_2)
 
-        waitForStorageDomainStatus(True, config.DC_NAME, SD_NAME_2,
+        waitForStorageDomainStatus(True, config.DATA_CENTER_NAME, SD_NAME_2,
                                    config.SD_MAINTENANCE)
         wait_for_jobs()
 
@@ -1929,9 +1931,9 @@ class TestCase174426(CommonUsage):
         """
         Removes disks and snapshots
         """
-        assert activateStorageDomain(True, config.DC_NAME, SD_NAME_2)
+        assert activateStorageDomain(True, config.DATA_CENTER_NAME, SD_NAME_2)
         wait_for_jobs()
-        waitForStorageDomainStatus(True, config.DC_NAME, SD_NAME_2,
+        waitForStorageDomainStatus(True, config.DATA_CENTER_NAME, SD_NAME_2,
                                    ENUMS['storage_domain_state_active'])
         self._remove_disks(self.disks_names)
         remove_all_vm_lsm_snapshots(config.VM_NAME)
@@ -2001,8 +2003,8 @@ class TestCase280750(SimpleCase):
         start_vms([config.VM_NAME], 1, wait_for_ip=False)
         waitForVMState(config.VM_NAME)
         host = getVmHost(config.VM_NAME)[1]['vmHoster']
-        host_machine = Machine(host=host, user=config.VDS_USER[0],
-                               password=config.VDS_PASSWORD[0]).util('linux')
+        host_machine = Machine(host=host, user=config.HOSTS_USER,
+                               password=config.HOSTS_PW).util('linux')
 
         live_migrate_vm(config.VM_NAME, wait=False)
         sleep(5)
@@ -2023,8 +2025,8 @@ class TestCase280750(SimpleCase):
         start_vms([config.VM_NAME], 1, wait_for_ip=False)
         waitForVMState(config.VM_NAME)
         host = getVmHost(config.VM_NAME)[1]['vmHoster']
-        host_machine = Machine(host=host, user=config.VDS_USER[0],
-                               password=config.VDS_PASSWORD[0]).util('linux')
+        host_machine = Machine(host=host, user=config.HOSTS_USER,
+                               password=config.HOSTS_PW).util('linux')
 
         live_migrate_vm(config.VM_NAME, wait=True)
         live_migrate_vm(config.VM_NAME, wait=False)
@@ -2097,7 +2099,7 @@ class TestCase281152(BaseTestCase):
         self.vm_args['installation'] = False
         for index in range(self.vm_count):
             self.vm_args['storageDomainName'] = \
-                get_master_storage_domain_name(config.DC_NAME)
+                get_master_storage_domain_name(config.DATA_CENTER_NAME)
             self.vm_args['vmName'] = self.vm_name % (index,
                                                      self.tcms_test_case)
 
@@ -2188,11 +2190,11 @@ class TestCase281145(BaseTestCase):
         status, target_sd_ip = getDomainAddress(True, target_sd)
         assert status
         self.target_sd_ip = target_sd_ip['address']
-        self.username = 'root'
-        self.password = config.VDS_PASSWORD[0]
+        self.username = config.HOSTS_USER
+        self.password = config.HOSTS_PW
         self.source_ip = hsm_ip
         self._migrate_vm_disk_and_block_connection(
-            vm_disk, hsm_ip, 'root', config.VDS_PASSWORD[0], target_sd,
+            vm_disk, hsm_ip, config.HOSTS_USER, config.HOSTS_PW, target_sd,
             target_sd_ip)
         status = verify_vm_disk_moved(config.VM_NAME, vm_disk, source_sd,
                                       target_sd)
@@ -2240,8 +2242,8 @@ class TestCase281142(BaseTestCase):
         status, target_sd_ip = getDomainAddress(True, target_sd)
         assert status
         self.target_sd_ip = target_sd_ip['address']
-        self.username = 'root'
-        self.password = config.VDS_PASSWORD[0]
+        self.username = config.HOSTS_USER
+        self.password = config.HOSTS_PW
         self.source_ip = host_ip
 
         status = blockOutgoingConnection(host_ip, self.username, self.password,

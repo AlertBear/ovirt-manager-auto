@@ -8,7 +8,7 @@ from art.rhevm_api.tests_lib.high_level.storagedomains import \
 from art.rhevm_api.tests_lib.low_level.datacenters import \
     waitForDataCenterState
 from art.rhevm_api.tests_lib.low_level.disks import addDisk, deleteDisk, \
-    getStorageDomainDisks, waitForDisksState, move_disk
+    waitForDisksState, move_disk, get_disk_obj
 from art.rhevm_api.tests_lib.low_level.hosts import waitForHostsStates, \
     waitForSPM
 from art.rhevm_api.tests_lib.low_level.storagedomains import \
@@ -44,7 +44,6 @@ class BaseCase(TestCase):
 
     disk_types = (THIN_PROVISION, PREALLOCATED)
     disk_sizes = [160 * config.GB, 7 * config.GB]
-    disk_names = []
 
     current_allocated_size = {}
     current_total_size = {}
@@ -57,6 +56,7 @@ class BaseCase(TestCase):
         """
         Creates disks of given types and sizes and updates expected details
         """
+        self.disk_names = []
         for disk_type, disk_size, domain in zip(self.disk_types,
                                                 self.disk_sizes,
                                                 self.disk_domains):
@@ -189,8 +189,7 @@ class TestCase286305(BaseCase):
         """
         Remove the disks that were created
         """
-        disk_names = ['%s_disk' % disk_type for disk_type in self.disk_types]
-        for name in disk_names:
+        for name in self.disk_names:
             logger.info('Removing disk %s', name)
             self.assertTrue(deleteDisk(True, name))
 
@@ -223,12 +222,12 @@ class TestCase286768(BaseCase):
         """
         Delete both disks
         """
-        for disk in getStorageDomainDisks(self.master_domain, False):
-            if disk.get_alias() in self.disk_names:
-                logger.info('Removing disk %s', disk.get_alias())
-                self.assertTrue(deleteDisk(True, disk.get_alias()))
-                self.expected_allocated_size[self.master_domain] -= \
-                    disk.get_size()
+        for disk_name in self.disk_names:
+            disk = get_disk_obj(disk_name)
+            logger.info('Removing disk %s', disk.get_alias())
+            self.assertTrue(deleteDisk(True, disk.get_alias()))
+            self.expected_allocated_size[self.master_domain] -= \
+                disk.get_size()
 
 
 # TBD: Remove this when is implemented in the main story, storage sanity
@@ -258,12 +257,17 @@ class TestCase286772(BaseCase):
         """
         Move disks from master domain to second domain
         """
-        for disk in getStorageDomainDisks(self.master_domain, False):
+        for disk_name in self.disk_names:
+            disk = get_disk_obj(disk_name)
             logger.info('Moving disk %s from domain %s to domain %s',
                         disk.get_alias(), self.master_domain,
                         self.nonmaster_domain)
-            self.assertTrue(move_disk(disk.get_alias(), self.master_domain,
-                                      self.nonmaster_domain))
+            self.assertTrue(
+                move_disk(
+                    disk_name=disk.get_alias(),
+                    target_domain=self.nonmaster_domain
+                )
+            )
             self.expected_allocated_size[self.master_domain] -= disk.get_size()
             self.expected_allocated_size[self.nonmaster_domain] += \
                 disk.get_size()
@@ -279,8 +283,7 @@ class TestCase286772(BaseCase):
         """
         Delete disks that were created in setup
         """
-        disk_names = ['%s_disk' % disk_type for disk_type in self.disk_types]
-        for name in disk_names:
+        for name in self.disk_names:
             logger.info('Removing disk %s', name)
             self.assertTrue(deleteDisk(True, name))
 
@@ -293,7 +296,7 @@ class TestCase286775(BaseCase):
     """
 
     # test case only relevant to iscsi domains
-    __test__ = config.STORAGE_TYPE == 'iscsi'
+    __test__ = config.STORAGE_TYPE == config.STORAGE_TYPE_ISCSI
     # disable since there's a bug while extending twice the storage domain
     # cmestreg: enable once this issue is resolved
     apis = BaseCase.apis - set(['sdk'])
@@ -306,7 +309,7 @@ class TestCase286775(BaseCase):
         logger.info('Extending master domain')
         extend_luns = config.EXTEND_LUNS.pop()
         extend_storage_domain(self.master_domain,
-                              config.ISCSI_DOMAIN,
+                              config.STORAGE_TYPE,
                               config.HOSTS[0],
                               **extend_luns)
         self.expected_total_size[self.master_domain] += \
@@ -430,7 +433,7 @@ class TestCase286779(BaseCase):
                         % self.disk_name)
 
         logger.info('Restarting vdsm on host %s', config.HOSTS[0])
-        self.assertTrue(restartVdsmd(config.HOSTS[0], config.VDS_PASSWORD),
+        self.assertTrue(restartVdsmd(config.HOSTS[0], config.HOSTS_PW),
                         'Unable to restart vdsm on host %s' % config.HOSTS[0])
 
         logger.info('Waiting for host to come back up')
@@ -478,7 +481,7 @@ class TestCaseUsedSpace(BaseCase):
         for extend_lun in config.EXTEND_LUNS:
             logger.info('Extending master domain')
             extend_storage_domain(self.master_domain,
-                                  config.ISCSI_DOMAIN,
+                                  config.STORAGE_TYPE,
                                   config.HOSTS[0],
                                   **extend_lun)
 

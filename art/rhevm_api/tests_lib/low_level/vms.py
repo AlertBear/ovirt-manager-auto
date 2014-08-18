@@ -1129,8 +1129,8 @@ def updateVmDisk(positive, vm, disk, **kwargs):
     Description: Update already existing vm disk
     Parameters:
       * vm - vm where disk should be updated
-      * disk - disk name that should be updated
-      * name - new name of the disk
+      * disk - name of the disk that should be updated
+      * alias - new name of the disk
       * interface - IDE or virtio
       * bootable - True or False whether disk should be bootable
       * shareable - True or False whether disk should be sharable

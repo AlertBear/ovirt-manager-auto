@@ -72,8 +72,8 @@ class TestCase68536(TestCase):
 
         logger.info("Blocking connectivity from SPM : %s to master domain : "
                     "%s", self.spm, self.master_domain_ip)
-        found = st_api.blockOutgoingConnection(self.spm, 'root',
-                                               config.VDS_PASSWORD[0],
+        found = st_api.blockOutgoingConnection(self.spm, config.HOSTS_USER,
+                                               config.HOSTS_PW,
                                                self.master_domain_ip)
         self.assertTrue(found, "block connectivity to master domain failed")
 
@@ -105,6 +105,6 @@ class TestCase68536(TestCase):
         """
         logger.info("unblocking connectivity from SPM : %s to master domain : "
                     "%s", cls.spm, cls.master_domain_ip)
-        st_api.unblockOutgoingConnection(cls.spm, 'root',
-                                         config.VDS_PASSWORD[0],
+        st_api.unblockOutgoingConnection(cls.spm, config.HOSTS_USER,
+                                         config.HOSTS_PW,
                                          cls.master_domain_ip)

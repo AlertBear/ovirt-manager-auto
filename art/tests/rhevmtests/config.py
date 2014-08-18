@@ -72,7 +72,22 @@ HOST_OS = PARAMETERS['host_os']
 
 
 # STORAGE SECTION
+# Storage types
+STORAGE_TYPE_NFS = ENUMS['storage_type_nfs']
+STORAGE_TYPE_ISCSI = ENUMS['storage_type_iscsi']
+STORAGE_TYPE_FCP = ENUMS['storage_type_fcp']
+STORAGE_TYPE_LOCAL = ENUMS['storage_type_local']
+STORAGE_TYPE_POSIX = ENUMS['storage_type_posixfs']
+STORAGE_TYPE_GLANCE = ENUMS['storage_type_glance']
+
 STORAGE_TYPE = PARAMETERS['storage_type']
+
+STORAGE_TYPE_PROVIDERS = [STORAGE_TYPE_GLANCE]
+# We provision for posix with the subtype, like: "posixfs_subfix"
+# For the moment just revert back
+if STORAGE_TYPE.startswith(STORAGE_TYPE_POSIX):
+    STORAGE_TYPE = STORAGE_TYPE_POSIX
+
 UNCOMP_DC_NAME = PARAMETERS.get("dc_name", "%s_DC30" % TEST_NAME)
 UNCOMP_CL_NAME = ["".join([CLUSTER_NAME[0], "CL3", str(i)]) for i in range(2)]
 VERSION = ["3.0", "3.1", "3.2", "3.3", "3.4"]
@@ -97,13 +112,6 @@ STORAGE_NAME = [
         )
     )
 ]
-
-# Storage types
-STORAGE_TYPE_NFS = ENUMS['storage_type_nfs']
-STORAGE_TYPE_ISCSI = ENUMS['storage_type_iscsi']
-STORAGE_TYPE_FCP = ENUMS['storage_type_fcp']
-STORAGE_TYPE_LOCAL = ENUMS['storage_type_local']
-STORAGE_TYPE_POSIX = ENUMS['storage_type_posixfs']
 
 # run on local DC?
 LOCAL = STORAGE_TYPE == STORAGE_TYPE_LOCAL

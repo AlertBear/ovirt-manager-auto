@@ -100,10 +100,6 @@ class TestCase281164(TestCase):
 
         LOGGER.info("Get SPM and password")
         host = hosts.getSPMHost(config.HOSTS)
-        password = None
-        for h, p in zip(config.HOSTS, config.PASSWORDS):
-            if h == host:
-                password = p
 
         LOGGER.info("Start importing template")
         assert templates.importTemplate(
@@ -117,7 +113,7 @@ class TestCase281164(TestCase):
             timeout=10, sleep=1)
 
         LOGGER.info("Restarting VDSM")
-        assert test_utils.restartVdsmd(host, password)
+        assert test_utils.restartVdsmd(host, config.HOSTS_PW)
 
         LOGGER.info("Waiting for host %s to be down", host)
         assert hosts.waitForHostsStates(False, host)

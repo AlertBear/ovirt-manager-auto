@@ -4,7 +4,7 @@ Storage VM Floating Disk
 import logging
 from art.unittest_lib import StorageTest as TestCase, attr
 from art.rhevm_api.tests_lib.low_level import disks, storagedomains
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 import config
 
 VM_1, VM_2 = config.VM1_NAME, config.VM2_NAME
@@ -87,21 +87,22 @@ class TestCase275816(TestCase):
 
     tcms_plan_id = '9583'
     tcms_test_case = '275816'
-    vm_names = []
     disk_name = None
     disk_size = 1 * config.GB
 
+    @bz("834893")
     @tcms(tcms_plan_id, tcms_test_case)
     def test_several_vms_with_same_shared_disk_on_one_host_test(self):
         """ tests if running a few VMs with the same shared disk on the same
             host works correctly
         """
+        self.vm_names = []
         for i in range(4):
             vm_name = "vm_%s_%s" % (self.tcms_test_case, i)
             nic = "nic_%s" % i
             vms.createVm(
                 True, vm_name, vm_name, config.CLUSTER_NAME, nic=nic,
-                placement_host=config.HOSTS[0])
+                placement_host=config.HOSTS[0], network=config.MGMT_BRIDGE)
             self.vm_names.append(vm_name)
         storage_domain_name = storagedomains.getDCStorages(
             config.DATA_CENTER_NAME, False)[0].name

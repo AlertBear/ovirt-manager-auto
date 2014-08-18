@@ -200,7 +200,7 @@ class TestCase305452(TestCase):
         logger.info("Adding a non-ascii character to the disk name")
         disk_name = u"DiskNonAsciié"
         disk_params = {"disk": "%s_Disk1" % config.VM_BASE_NAME,
-                       "name": disk_name}
+                       "alias": disk_name}
         self.assertTrue(ll_vms.updateVmDisk(True, config.VM_BASE_NAME,
                                             **disk_params))
 
@@ -266,6 +266,8 @@ class TestCase289683(TestCase):
         """
         create 6 VMs
         """
+        self.vm_names = []
+        self.vm_ips = []
         self.original_perms = None
         master_domain = storagedomains.findMasterStorageDomain(
             True, config.DATA_CENTER_NAME)[1]['masterDomain']
@@ -308,9 +310,8 @@ class TestCase289683(TestCase):
         master_domain = storagedomains.findMasterStorageDomain(
             True, config.DATA_CENTER_NAME)[1]['masterDomain']
         self.spm_host = hosts.getSPMHost(config.HOSTS)
-        index = config.HOSTS.index(self.spm_host)
-        self.spm_admin = config.ADMINS[index]
-        self.spm_password = config.PASSWORDS[index]
+        self.spm_admin = config.HOSTS_USER
+        self.spm_password = config.HOSTS_PW
 
         logger.info("Stopping vdsm")
         test_utils.stopVdsmd(self.spm_host, self.spm_password)
@@ -362,12 +363,13 @@ class TestCase289683(TestCase):
         logger.info("Wait from VMs being up")
         assert ll_vms.waitForVmsStates(True, ",".join(self.vm_names))
 
-        def tearDown(self):
-            machine = test_utils.Machine(
-                self.spm_host, self.spm_admin, self.spm_password).util(LINUX)
-            if self.original_perms is not None:
-                machine.runCmd(
-                    ['chmod', self.original_perms, VDSM_RESPAWN_FILE])
+    def tearDown(self):
+        machine = test_utils.Machine(
+            self.spm_host, self.spm_admin, self.spm_password).util(LINUX)
+        if self.original_perms is not None:
+            machine.runCmd(
+                ['chmod', self.original_perms, VDSM_RESPAWN_FILE])
+        ll_vms.removeVms(True, self.vm_names)
 
 
 """
@@ -585,71 +587,6 @@ class TestCase315489(TestCase):
     def tearDown(self):
         # delete vm
         assert ll_vms.removeVm(True, self.vm_name_base, **{'stopVM': 'true'})
-
-
-"""
-Test exposing BZ 834893 - running several VMs with the same shared disk on one
-host should not fail
-
-TCMS plan: https://tcms.engineering.redhat.com/plan/9583
-"""
-
-
-@attr(tier=1)
-class TestCase275816(TestCase):
-    """
-    test exposing https://bugzilla.redhat.com/show_bug.cgi?id=834893
-    scenario:
-    * creates 4 VMs with nics but without disks
-    * creates a shared disks
-    * attaches the disk to the vms one at a time
-    * runs all the vms on one host
-
-    https://tcms.engineering.redhat.com/case/275816/?from_plan=9583
-    """
-    __test__ = True
-    tcms_plan_id = '9583'
-    tcms_test_case = '275816'
-    vm_names = []
-    disk_name = None
-    disk_size = 1 * GB
-
-    @tcms(tcms_plan_id, tcms_test_case)
-    def test_several_vms_with_same_shared_disk_on_one_host_test(self):
-        """ tests if running a few VMs with the same shared disk on the same
-            host works correctly
-        """
-        for i in range(4):
-            vm_name = "vm_%s_%s" % (self.tcms_test_case, i)
-            nic = "nic_%s" % i
-            ll_vms.createVm(
-                True, vm_name, vm_name, config.CLUSTER_NAME, nic=nic,
-                placement_host=config.HOSTS[0])
-            self.vm_names.append(vm_name)
-        storage_domain_name = storagedomains.getDCStorages(
-            config.DATA_CENTER_NAME, False)[0].name
-        self.disk_name = 'disk_%s' % self.tcms_test_case
-        logger.info("Creating disk")
-        assert ll_disks.addDisk(
-            True, alias=self.disk_name, shareable=True, bootable=False,
-            size=self.disk_size, storagedomain=storage_domain_name,
-            format=ENUMS['format_raw'], interface=ENUMS['interface_ide'],
-            sparse=False)
-        assert ll_disks.waitForDisksState(self.disk_name)
-        logger.info("Disk created")
-
-        for vm in self.vm_names:
-            assert ll_disks.attachDisk(True, self.disk_name, vm, True)
-
-        assert ll_vms.startVms(",".join(self.vm_names))
-
-    @classmethod
-    def teardown_class(cls):
-        for vm in cls.vm_names:
-            ll_vms.removeVm(True, vm, stopVM='true')
-        if cls.disk_name is not None:
-            ll_disks.deleteDisk(True, cls.disk_name)
-
 
 """
 Test exposing BZ 960430

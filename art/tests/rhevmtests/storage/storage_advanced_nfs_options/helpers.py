@@ -220,7 +220,12 @@ class TestCaseNFSOptions(TestCase):
         storage_domains = STORAGE_DOMAIN_API.get(absLink=False)
         LOGGER.info("All storage domains: %s" %
                     ",".join([x.name for x in storage_domains]))
-        non_master_sds = [x for x in storage_domains if not x.get_master()]
+        # Filtering out image storage domains
+        non_master_sds = filter(
+            lambda w: not w.get_master() and
+            w.get_storage().get_type() not in config.STORAGE_TYPE_PROVIDERS,
+            storage_domains,
+        )
 
         for storage_domain in non_master_sds:
             LOGGER.info("Removing storage domain %s" % storage_domain.name)
@@ -250,7 +255,7 @@ class TestCaseNFSOptions(TestCase):
             host = config.HOSTS[0]
 
         if password is None:
-            password = config.PASSWORDS[0]
+            password = config.HOSTS_PW
 
         if datacenter is None:
             datacenter = config.DATA_CENTER_NAME
@@ -389,7 +394,7 @@ class TestCaseStandardOperations(TestCaseNFSOptions):
 
         if config.HOST_FOR_30_DC == self.host_2:  # if we don't have more...
             hl_hosts.add_hosts(
-                [self.host_2], [config.PASSWORDS[-1]], config.CLUSTER_NAME)
+                [self.host_2], [config.HOSTS_PW], config.CLUSTER_NAME)
 
         self.assertTrue(ll_templ.createTemplate(
             True, vm=self.vm_1, name=self.template,

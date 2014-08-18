@@ -19,13 +19,13 @@ def setup_package():
         config.PARAMETERS, config.PARAMETERS, config.STORAGE_TYPE,
         config.TESTNAME)
     storage_domain_name = storagedomains.getDCStorages(
-        config.DC_NAME, False)[0].name
+        config.DATA_CENTER_NAME, False)[0].name
     LOGGER.info("Creating VM %s" % config.VM_NAME[0])
     assert vms.createVm(
         True, config.VM_NAME[0], config.VM_NAME[0],
         cluster=config.CLUSTER_NAME,
         nic=config.HOST_NICS[0], storageDomainName=storage_domain_name,
-        size=config.DISK_SIZE * config.GB, diskType=config.DISK_TYPE_SYSTEM,
+        size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
         volumeType=True, volumeFormat=config.COW_DISK,
         diskInterface=config.INTERFACE_IDE, memory=config.GB,
         cpu_socket=config.CPU_SOCKET, cpu_cores=config.CPU_CORES,
@@ -43,4 +43,5 @@ def teardown_package():
     Cleans the environment
     """
     assert storagedomains.cleanDataCenter(
-        True, config.DC_NAME, vdc=config.VDC, vdc_password=config.VDC_PASSWORD)
+        True, config.DATA_CENTER_NAME, vdc=config.VDC,
+        vdc_password=config.VDC_PASSWORD)

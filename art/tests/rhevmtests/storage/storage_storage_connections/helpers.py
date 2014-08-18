@@ -30,11 +30,7 @@ class ChangeVdsmPermissions(object):
 
 
 def get_user_and_passwd_for_host(host):
-    for (tmp_host, password) in zip(
-            config.HOSTS, config.PASSWORDS):
-        if tmp_host == host:
-            return 'root', password
-    return None, None
+    return config.HOSTS_USER, config.HOSTS_PW
 
 
 def copy_nfs_sd(addr_from, path_from, addr_to, path_to, host, user, passwd):

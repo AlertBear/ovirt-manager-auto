@@ -30,12 +30,15 @@ def setup_module():
         basename=config.TESTNAME,
         local=config.STORAGE_TYPE == config.ENUMS['storage_type_local'])
     # for iscsi tests we want to have an empty DC
-    if config.STORAGE_TYPE == 'iscsi':
+    if config.STORAGE_TYPE == config.STORAGE_TYPE_ISCSI:
         # if there is an automatically added iso domain - remove it
         sds = sd_api.get(absLink=False)
         for sd in sds:
-            assert storagedomains.removeStorageDomain(
-                True, sd.name, config.HOSTS[0])
+            # Don't remove sds by providers
+            if sd.get_storage().get_type() not in \
+                    config.STORAGE_TYPE_PROVIDERS:
+                assert storagedomains.removeStorageDomain(
+                    True, sd.get_name(), config.HOSTS[0])
     if config.STORAGE_TYPE == 'nfs':
         # remove second host, we will need it for manual copying sds
         assert hosts.deactivateHost(True, config.HOSTS[1])

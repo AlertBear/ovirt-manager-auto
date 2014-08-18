@@ -20,7 +20,6 @@ FIRST_HOST = HOSTS[0]
 
 # TODO: remove
 VDC_PASSWORD = VDC_ROOT_PASSWORD
-VDS_PASSWORD = HOSTS_PW
 
 HOST_NONOPERATIONAL = ENUMS["search_host_state_non_operational"]
 HOST_NONRESPONSIVE = ENUMS["search_host_state_non_responsive"]

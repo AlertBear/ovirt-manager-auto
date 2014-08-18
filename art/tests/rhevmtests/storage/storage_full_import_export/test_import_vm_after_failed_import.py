@@ -90,10 +90,6 @@ class TestCase281163(TestCase):
 
         logger.info("Get SPM and password")
         host = hosts.getSPMHost(config.HOSTS)
-        password = None
-        for h, p in zip(config.HOSTS, config.PASSWORDS):
-            if h == host:
-                password = p
 
         logger.info("Start importing VM")
         assert vms.importVm(
@@ -102,7 +98,7 @@ class TestCase281163(TestCase):
 
         assert vms.waitForVMState(self.vm_name, ENUMS['vm_state_image_locked'])
         logger.info("Restarting VDSM")
-        assert test_utils.restartVdsmd(host, password)
+        assert test_utils.restartVdsmd(host, config.HOSTS_PW)
         logger.info("Waiting for host %s to get up", host)
         assert hosts.waitForHostsStates(True, host)
 

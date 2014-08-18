@@ -52,16 +52,17 @@ def _create_vm(vm_name, storage_domain, interface, install_os):
         'vmName': vm_name,
         'vmDescription': vm_name,
         'diskInterface': interface,
-        'volumeFormat': config.ENUMS['format_cow'],
+        'volumeFormat': config.DISK_FORMAT_COW,
         'cluster': config.CLUSTER_NAME,
         'storageDomainName': storage_domain,
         'installation': install_os,
-        'size': DISK_SIZE
+        'size': DISK_SIZE,
+        'network': config.MGMT_BRIDGE,
     }
 
     if install_os:
         vmArgs.update({
-            'nic': 'nic1',
+            'nic': config.HOST_NICS[0],
             'image': config.COBBLER_PROFILE,
             'useAgent': True,
             'os_type': config.ENUMS['rhel6'],

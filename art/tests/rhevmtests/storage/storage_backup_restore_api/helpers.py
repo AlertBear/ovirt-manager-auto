@@ -37,7 +37,7 @@ vm_args = {
     'vmName': "",
     'vmDescription': '',
     'cluster': config.CLUSTER_NAME,
-    'nic': 'nic1',
+    'nic': config.HOST_NICS[0],
     'nicType': ENUMS['nic_type_virtio'],
     'storageDomainName': config.SD_NAME_0,
     'size': VM_DISK_SIZE,
@@ -118,8 +118,8 @@ def is_transient_directory_empty():
     """
     LOGGER.info("Checking transient directory")
     vdsm_machine = Machine(
-        host=config.HOSTS[0], user=config.VDS_USER[0],
-        password=config.VDS_PASSWORD[0]).util('linux')
+        host=config.HOSTS[0], user=config.HOSTS_USER,
+        password=config.HOSTS_PW).util('linux')
 
     return vdsm_machine.is_dir_empty(dir_path=TRANSIENT_DIR_PATH)
 

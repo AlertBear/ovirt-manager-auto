@@ -25,7 +25,8 @@ OPERATION_FINISHED = False
 class RestartOvirt(TestCase):
     __test__ = False
     ovirt_host = test_utils.Machine(
-        config.VDC, 'root', config.VDC_PASSWORD).util('linux')
+        config.VDC, config.VDC_ROOT_USER, config.VDC_PASSWORD).util(
+        'linux')
 
     def tearDown(self):
         test_utils.wait_for_tasks(
@@ -49,7 +50,7 @@ class RestartOvirt(TestCase):
         cmd = ':'
         log_listener.watch_logs(
             ENGINE_LOG, regex, cmd, ip_for_files=config.VDC,
-            username='root', password=config.VDC_PASSWORD)
+            username=config.VDC_ROOT_USER, password=config.VDC_PASSWORD)
         OPERATION_FINISHED = True
         test_utils.restartOvirtEngine(self.ovirt_host, 10, 30, 75)
         LOGGER.info("ovirt-engine restarted")
@@ -80,7 +81,7 @@ class RestartOvirt(TestCase):
         cmd = ':'
         log_listener.watch_logs(
             VDSM_LOG, regex, cmd, ip_for_files=config.HOSTS[0],
-            username='root', password=config.PASSWORDS[0], time_out=300)
+            username=config.HOSTS_USER, password=config.HOSTS_PW, time_out=300)
         test_utils.restartOvirtEngine(self.ovirt_host, 10, 30, 75)
         LOGGER.info("ovirt-engine restarted")
         test_utils.wait_for_tasks(

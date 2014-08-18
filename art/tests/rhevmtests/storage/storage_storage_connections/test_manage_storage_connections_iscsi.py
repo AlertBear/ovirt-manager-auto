@@ -65,8 +65,10 @@ def _restore_empty_dc():
         assert hosts.waitForHostsStates(True, config.HOSTS[0])
     unattached_sds = sd_api.get(absLink=False)
     for sd in unattached_sds:
-        assert storagedomains.removeStorageDomain(
-            True, sd.name, config.HOSTS[0])
+        if sd.get_storage().get_type() not in \
+                config.STORAGE_TYPE_PROVIDERS:
+            assert storagedomains.removeStorageDomain(
+                True, sd.name, config.HOSTS[0])
     assert storageconnections.remove_all_storage_connections()
 
 
@@ -546,7 +548,8 @@ class TestCase288963(TestCase):
         assert len(all_conn) == 1
 #        assert len(conn_disk) == 1
 #        assert _compare_connections(all_conn, conn_disk)
-        disks.deleteDisk(True, alias)
+        assert disks.deleteDisk(True, alias)
+        self.disks.remove(alias)
 
     @tcms(tcms_plan_id, tcms_test_case)
     @bz(1012944)
@@ -554,6 +557,7 @@ class TestCase288963(TestCase):
         """ Verify that GET call works for various connection/storage domains
         combinations
         """
+        self.disks = []
         LOGGER.info("Verifying get for no connections")
         self.verify_no_connections()
 

@@ -50,8 +50,9 @@ def teardown_module():
     """
     Removes created datacenter, storages etc.
     """
-    storagedomains.cleanDataCenter(True, config.DC_NAME, vdc=config.VDC,
-                                   vdc_password=config.VDC_PASSWORD)
+    storagedomains.cleanDataCenter(
+        True, config.DATA_CENTER_NAME, vdc=config.VDC,
+        vdc_password=config.VDC_PASSWORD)
 
 
 class BaseTestCase(TestCase):
@@ -189,16 +190,16 @@ class TestCase303854(BaseTestCase):
 
         snapshot_disk = disks_objs[0]
 
-        datacenter_obj = get_data_center(config.DC_NAME)
+        datacenter_obj = get_data_center(config.DATA_CENTER_NAME)
         checksum_before = disks.checksum_disk(config.HOSTS[0],
-                                              config.VDS_USER[0],
-                                              config.VDS_PASSWORD[0],
+                                              config.HOSTS_USER,
+                                              config.HOSTS_PW,
                                               snapshot_disk,
                                               datacenter_obj)
 
         logger.info("Restarting VDSM...")
         host_name = vms.getVmHost(helpers.VM_NAMES[0])[1]['vmHoster']
-        self.assertTrue(utils.restartVdsmd(host_name, config.VDS_PASSWORD[0]),
+        self.assertTrue(utils.restartVdsmd(host_name, config.HOSTS_PW),
                         "Failed restarting VDSM service")
         hosts.waitForHostsStates(True, config.HOSTS[0])
         logger.info("Successfully restarted VDSM service")
@@ -215,8 +216,8 @@ class TestCase303854(BaseTestCase):
         engine = config.VDC
         engine_object = Machine(
             host=engine,
-            user=config.VDS_USER[0],
-            password=config.VDS_PASSWORD[0]).util('linux')
+            user=config.HOSTS_USER,
+            password=config.HOSTS_PW).util('linux')
 
         logger.info("Restarting ovirt-engine...")
         self.assertTrue(utils.restartOvirtEngine(engine_object, 5, 30, 30),
@@ -239,10 +240,10 @@ class TestCase303854(BaseTestCase):
         snapshot_disk = disks_objs[0]
 
         logger.info("Verifying disk is not corrupted")
-        datacenter_obj = get_data_center(config.DC_NAME)
+        datacenter_obj = get_data_center(config.DATA_CENTER_NAME)
         checksum_after = disks.checksum_disk(config.HOSTS[0],
-                                             config.VDS_USER[0],
-                                             config.VDS_PASSWORD[0],
+                                             config.HOSTS_USER,
+                                             config.HOSTS_PW,
                                              snapshot_disk,
                                              datacenter_obj)
 
@@ -574,7 +575,7 @@ class TestCase304168(TestCase):
                     config.HOSTS[0], config.SD_NAME_0)
 
         status = st_api.blockOutgoingConnection(
-            config.HOSTS[0], 'root', config.VDS_PASSWORD[0],
+            config.HOSTS[0], config.HOSTS_USER, config.HOSTS_PW,
             self.master_domain_ip['address'])
 
         if status:
@@ -597,7 +598,7 @@ class TestCase304168(TestCase):
                     "%s", config.HOSTS[0], config.SD_NAME_0)
 
         status = st_api.unblockOutgoingConnection(
-            config.HOSTS[0], 'root', config.VDS_PASSWORD[0],
+            config.HOSTS[0], config.HOSTS_USER, config.HOSTS_PW,
             self.master_domain_ip['address'])
 
         if not status:
@@ -613,7 +614,7 @@ class TestCase304168(TestCase):
         # https://bugzilla.redhat.com/show_bug.cgi?id=1063336
 
         host_obj = vms.getVmHost(helpers.VM_NAMES[0])[1]['vmHoster']
-        utils.restartVdsmd(host_obj, config.VDS_PASSWORD[0])
+        utils.restartVdsmd(host_obj, config.HOSTS_PW)
 
         hosts.waitForHostsStates(True, config.HOSTS[0])
 

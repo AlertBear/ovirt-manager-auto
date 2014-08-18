@@ -10,10 +10,6 @@ from rhevmtests.storage.config import * # flake8: noqa
 TESTNAME = "storage_spm_priority_sanity"
 
 # Hosts settings
-# TODO: remove
-HOSTS_PWD = HOSTS_PW
-VDS_ROOT = HOSTS_USER
-VDS_PASSWORDS = HOSTS_PW
 
 # Priority range
 MAX_VALUE = PARAMETERS.get('max_value', 10)

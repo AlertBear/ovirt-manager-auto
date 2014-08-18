@@ -11,7 +11,6 @@ from art.unittest_lib import attr
 
 from art.rhevm_api.utils import test_utils as utils
 import art.test_handler.exceptions as exceptions
-from art.test_handler.settings import opts
 from art.rhevm_api.utils.test_utils import wait_for_tasks
 
 import art.rhevm_api.tests_lib.high_level.datacenters as datacenters
@@ -26,19 +25,17 @@ import common
 from art.unittest_lib import StorageTest as TestCase
 
 LOGGER = logging.getLogger(__name__)
+ENUMS = config.ENUMS
 
 FILE_WITH_RESULTS = helpers.FILE_WITH_RESULTS
 DISKS_TO_PLUG = helpers.DISKS_TO_PLUG
 UNATTACHED_DISK = helpers.UNATTACHED_DISK
 TEXT = helpers.TEXT
-ENUMS = opts['elements_conf']['RHEVM Enums']
 
 DISK_INTERFACES = (ENUMS['interface_virtio'],)
+VM_NAME = config.VM_NAME[0]
 
 positive = True
-
-
-VM_NAME = config.VM_NAME[0]
 
 
 def setup_module():

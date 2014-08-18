@@ -123,12 +123,12 @@ class TestCase174611(BaseTestCase):
         Unblock connection.
         Check that the host is UP again.
         """
-        ip_action.block_and_wait(config.FIRST_HOST, config.VDS_USER[0],
-                                 config.VDS_PASSWORD[0], self.master_domain_ip,
+        ip_action.block_and_wait(config.FIRST_HOST, config.HOSTS_USER,
+                                 config.HOSTS_PW, self.master_domain_ip,
                                  config.FIRST_HOST)
 
-        ip_action.unblock_and_wait(config.FIRST_HOST, config.VDS_USER[0],
-                                   config.VDS_PASSWORD[0],
+        ip_action.unblock_and_wait(config.FIRST_HOST, config.HOSTS_USER,
+                                   config.HOSTS_PW,
                                    self.master_domain_ip,
                                    config.FIRST_HOST)
 
@@ -140,8 +140,8 @@ class TestCase174611(BaseTestCase):
         logger.info('Unblocking connections')
         try:
             st_api.unblockOutgoingConnection(config.FIRST_HOST,
-                                             config.VDS_USER[0],
-                                             config.VDS_PASSWORD[0],
+                                             config.HOSTS_USER,
+                                             config.HOSTS_PW,
                                              cls.master_domain_ip)
         except exceptions.NetworkException, msg:
             logging.info("Connection already unblocked. reason: %s", msg)

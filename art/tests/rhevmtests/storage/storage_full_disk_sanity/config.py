@@ -18,10 +18,8 @@ SNAPSHOT_NAME = PARAMETERS.get('snapshot_name', 'full_disk_snapshot')
 # TODO: remove
 ISCSI_DOMAIN = "iscsi_domain"
 
-# TODO: remove
-STORAGE_SECTION = STORAGE_CONF
 if STORAGE_TYPE == STORAGE_TYPE_ISCSI:
-    EXTEND_LUN = STORAGE_SECTION['PARAMETERS.extend_lun']
+    EXTEND_LUN = STORAGE_CONF['PARAMETERS.extend_lun']
     # Size of device (in GB)
     EXTEND_SIZE = int(EXTEND_LUN['devices_capacity'])
     EXTEND_LUN_ADDRESS = PARAMETERS.as_list("extend_lun_address")

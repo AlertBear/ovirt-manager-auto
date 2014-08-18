@@ -29,7 +29,7 @@ class RestartVDSM(TestCase):
         self.perform_action()
         LOGGER.info("Restarting VDSM")
         assert test_utils.restartVdsmd(
-            config.HOSTS[0], config.PASSWORDS[0])
+            config.HOSTS[0], config.HOSTS_PW)
         LOGGER.info("VDSM restarted")
         hosts.waitForHostsStates(True, config.HOSTS[0])
         test_utils.wait_for_tasks(
@@ -46,9 +46,10 @@ class RestartVDSM(TestCase):
         cmd = 'service vdsmd restart'
         log_listener.watch_logs(
             ENGINE_LOG, regex, cmd, ip_for_files=config.VDC,
-            username='root', password=config.VDC_PASSWORD,
-            ip_for_execute_command=config.HOSTS[0], remote_username='root',
-            remote_password=config.PASSWORDS[0], time_out=300)
+            username=config.VDC_ROOT_USER, password=config.VDC_PASSWORD,
+            ip_for_execute_command=config.HOSTS[0],
+            remote_username=config.HOSTS_USER, remote_password=config.HOSTS_PW,
+            time_out=300)
         LOGGER.info("VDSM restarted")
         hosts.waitForHostsStates(True, config.HOSTS[0])
         test_utils.wait_for_tasks(

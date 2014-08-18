@@ -54,8 +54,8 @@ def restart_vdsm(host_index):
     Restarts vdsm on the host given by index
     """
     assert toggleServiceOnHost(
-        True, host=config.HOSTS[host_index], user='root',
-        password=config.HOSTS_PWD[host_index], service='vdsmd',
+        True, host=config.HOSTS[host_index], user=config.HOSTS_USER,
+        password=config.HOSTS_PW, service='vdsmd',
         action='restart')
 
 
@@ -86,7 +86,8 @@ class BaseTestCase(TestCase):
         """
         Tests that host is spm
         """
-        ll_hosts.waitForSPM(config.DC_NAME, SPM_TIMEOUT, POLLING_INTERVAL)
+        ll_hosts.waitForSPM(
+            config.DATA_CENTER_NAME, SPM_TIMEOUT, POLLING_INTERVAL)
         LOGGER.info("Ensuring host %s is SPM", host)
         if not ll_hosts.checkHostSpmStatus(True, host):
             raise exceptions.HostException("Host %s is not an "
@@ -99,13 +100,14 @@ class BaseTestCase(TestCase):
         LOGGER.info("Deactivating host %s", host)
         assert hosts.deactivate_host_if_up(host)
         LOGGER.debug("Waiting until DC is up")
-        assert datacenters.waitForDataCenterState(config.DC_NAME) or \
+        assert datacenters.waitForDataCenterState(config.DATA_CENTER_NAME) or \
             BZ986961_NOT_FIXED
         # WA BZ#986961
         if BZ986961_NOT_FIXED:
             LOGGER.info("Due to BZ#986961 waiting until one of hosts is "
                         "selected as SPM")
-            assert ll_hosts.waitForSPM(config.DC_NAME, 600, POLLING_INTERVAL)
+            assert ll_hosts.waitForSPM(
+                config.DATA_CENTER_NAME, 600, POLLING_INTERVAL)
 
     def _maintenance_and_activate_all_hosts(self):
         # Deactivate all hosts
@@ -117,7 +119,8 @@ class BaseTestCase(TestCase):
         assert ll_hosts.activateHosts(True, config.HOSTS)
 
         # Wait for a spm to be chosen
-        assert datacenters.waitForDataCenterState(config.DC_NAME) or \
+        assert datacenters.waitForDataCenterState(
+            config.DATA_CENTER_NAME) or \
             BZ986961_NOT_FIXED
 
     def _get_new_spm(self, spm, expected):
@@ -136,7 +139,7 @@ class BaseTestCase(TestCase):
         """
         cls._set_priorities()
         LOGGER.debug("Waiting for SPM")
-        assert ll_hosts.waitForSPM(config.DC_NAME,
+        assert ll_hosts.waitForSPM(config.DATA_CENTER_NAME,
                                    SPM_TIMEOUT,
                                    POLLING_INTERVAL)
 
@@ -198,7 +201,7 @@ class DCUp(AllHostsUp):
     @classmethod
     def setup_class(cls):
         super(DCUp, cls).setup_class()
-        assert ll_hosts.waitForSPM(config.DC_NAME,
+        assert ll_hosts.waitForSPM(config.DATA_CENTER_NAME,
                                    SPM_TIMEOUT,
                                    POLLING_INTERVAL)
 
@@ -267,7 +270,7 @@ class SPMPriorityMinusOne(AllHostsUp):
         """
         assert ll_hosts.setSPMPriority(
             True, config.HOSTS[0], DEFAULT_SPM_PRIORITY)
-        assert datacenters.waitForDataCenterState(config.DC_NAME)
+        assert datacenters.waitForDataCenterState(config.DATA_CENTER_NAME)
         super(SPMPriorityMinusOne, cls).teardown_class()
 
 
@@ -386,7 +389,7 @@ class RandomSelection(DCUp):
         former_spm = ll_hosts._getSPMHostname(config.HOSTS)
         self._maintenance_and_wait_for_dc(former_spm)
         assert ll_hosts.activateHost(True, former_spm)
-        assert ll_hosts.waitForSPM(config.DC_NAME,
+        assert ll_hosts.waitForSPM(config.DATA_CENTER_NAME,
                                    SPM_TIMEOUT,
                                    POLLING_INTERVAL)
         new_spm = ll_hosts._getSPMHostname(config.HOSTS)
@@ -534,7 +537,8 @@ class TwoHost(AllHostsUp):
         """
         if not ll_hosts.isHostUp(True, config.HOSTS[2]):
             ll_hosts.activateHost(True, config.HOSTS[2])
-        ll_hosts.select_host_as_spm(True, config.HOSTS[2], config.DC_NAME)
+        ll_hosts.select_host_as_spm(
+            True, config.HOSTS[2], config.DATA_CENTER_NAME)
         assert ll_hosts.setSPMPriority(True, config.HOSTS[0], '4')
         assert ll_hosts.setSPMPriority(True, config.HOSTS[1], '5')
         if ll_hosts.waitForHostsStates(True, config.HOSTS[2], timeout=10):
@@ -739,8 +743,8 @@ class StorageDisconnect(DCUp):
         """
         Unblock outgoing connection
         """
-        if not unblockOutgoingConnection(config.HOSTS[2], config.VDS_ROOT,
-                                         config.VDS_PASSWORDS[-1],
+        if not unblockOutgoingConnection(config.HOSTS[2], config.HOSTS_USER,
+                                         config.HOSTS_PW,
                                          config.STORAGE_SERVERS[-1]):
             logging.debug("Failed to unblock outgoing connection")
 
@@ -756,7 +760,7 @@ class StorageDisconnect(DCUp):
 
         self._check_host_for_spm(config.HOSTS[2])
         self.assertTrue(blockOutgoingConnection(
-            config.HOSTS[2], config.VDS_ROOT, config.VDS_PASSWORDS[-1],
+            config.HOSTS[2], config.HOSTS_USER, config.HOSTS_PW,
             config.STORAGE_SERVERS[-1]))
         self._check_no_spm()
 

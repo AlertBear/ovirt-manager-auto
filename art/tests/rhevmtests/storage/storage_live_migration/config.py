@@ -19,9 +19,5 @@ VM_PASSWORD = VMS_LINUX_PW
 
 LIVE_SNAPSHOT_DESCRIPTION = ENUMS['live_snapshot_description']
 
-# TODO: remove this
-VDS_PASSWORD = HOSTS_PW
-VDS_USER = HOSTS_USER
-
 # allocation policies
 SPARSE = True

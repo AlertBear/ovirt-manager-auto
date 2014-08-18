@@ -103,14 +103,14 @@ class TestCaseBlockedConnection(TestResumeGuests):
         LOGGER.info(
             "Blocking outgoing connection from %s to %s", self.host, self.sd)
         assert storage_api.blockOutgoingConnection(
-            self.host, 'root', config.HOSTS_PWD[0], self.sd)
+            self.host, config.HOSTS_USER, config.HOSTS_PW, self.sd)
 
     def fix_storage(self):
         """ unblock connection from host to storage server
         """
         LOGGER.info("Unblocking connection from %s to %s", self.host, self.sd)
         assert storage_api.unblockOutgoingConnection(
-            self.host, 'root', config.HOSTS_PWD[0], self.sd)
+            self.host, config.HOSTS_USER, config.HOSTS_PW, self.sd)
         self.host = None
         self.sd = None
 
@@ -122,7 +122,7 @@ class TestCaseBlockedConnection(TestResumeGuests):
             LOGGER.info(
                 "Unblocking connection from %s to %s", self.host, self.sd)
             assert storage_api.unblockOutgoingConnection(
-                self.host, 'root', config.HOSTS_PWD[0], self.sd)
+                self.host, config.HOSTS_USER, config.HOSTS_PW, self.sd)
         super(TestCaseBlockedConnection, self).tearDown()
 
 
@@ -134,7 +134,7 @@ class TestNoSpaceLeftOnDevice(TestResumeGuests):
         """ create a very big disk on the storage domain
         """
         master = storagedomains.findMasterStorageDomain(
-            True, config.DC_NAME)[1]['masterDomain']
+            True, config.DATA_CENTER_NAME)[1]['masterDomain']
         domain = storagedomains.util.find(master)
         LOGGER.info("Master domain: %s", master)
         sd_size = domain.available
@@ -161,7 +161,7 @@ class TestNoSpaceLeftOnDevice(TestResumeGuests):
         """
         LOGGER.info("Tear down - removing disk if needed")
         master = storagedomains.findMasterStorageDomain(
-            True, config.DC_NAME)[1]['masterDomain']
+            True, config.DATA_CENTER_NAME)[1]['masterDomain']
         disk_names = [
             x.alias for x in disks.getStorageDomainDisks(master, False)]
         LOGGER.info("All disks: %s" % disk_names)

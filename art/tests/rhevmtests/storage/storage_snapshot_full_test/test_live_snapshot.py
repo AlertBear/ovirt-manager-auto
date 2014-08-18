@@ -43,14 +43,14 @@ def setup_module():
     """
     global SPM
     global HSM
-    assert hosts.waitForSPM(config.DC_NAME, timeout=100, sleep=10)
+    assert hosts.waitForSPM(config.DATA_CENTER_NAME, timeout=100, sleep=10)
     SPM = hosts.returnSPMHost(config.HOSTS)[1]['spmHost']
     HSM = hosts.getAnyNonSPMHost(config.HOSTS)[1]['hsmHost']
     vm_args = {
         'positive': True,
         'vmDescription': '',
         'cluster': config.CLUSTER_NAME,
-        'nic': 'nic1',
+        'nic': config.HOST_NICS[0],
         'nicType': ENUMS['nic_type_virtio'],
         'storageDomainName': config.SD_NAME_0,
         'size': 3 * config.GB,
@@ -547,7 +547,7 @@ class LiveSnapshotOnVMCreatedFromTemplate(BaseTestCase):
         wait_for_tasks(
             vdc=config.PARAMETERS['host'],
             vdc_password=config.PARAMETERS['vdc_root_password'],
-            datacenter=config.DC_NAME)
+            datacenter=config.DATA_CENTER_NAME)
 
     @tcms(BaseTestCase.tcms_plan_id, tcms_test_case)
     def test_snapshot_on_thin_vm(self):

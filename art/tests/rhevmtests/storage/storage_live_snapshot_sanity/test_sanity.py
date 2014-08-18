@@ -104,27 +104,27 @@ def setup_module():
     global SPM
     global HSM
     vds_string = ','.join(config.PARAMETERS.as_list('vds'))
-    assert hosts.waitForSPM(config.DC_NAME, timeout=100, sleep=10)
+    assert hosts.waitForSPM(config.DATA_CENTER_NAME, timeout=100, sleep=10)
     SPM = hosts.returnSPMHost(vds_string)[1]['spmHost']
     HSM = hosts.getAnyNonSPMHost(vds_string)[1]['hsmHost']
     vm_args = {
         'positive': True,
         'vmDescription': '',
         'cluster': config.CLUSTER_NAME,
-        'nic': 'nic1',
+        'nic': config.HOST_NICS[0],
         'nicType': ENUMS['nic_type_virtio'],
         'storageDomainName': config.SD_NAME_0,
-        'size': 3 * GB,
-        'diskInterface': ENUMS['interface_virtio'],
-        'volumeFormat': ENUMS['format_cow'],
+        'size': config.DISK_SIZE,
+        'diskInterface': config.INTERFACE_VIRTIO,
+        'volumeFormat': config.COW_DISK,
         'volumeType': True,  # This means sparse
         'bootable': True,
-        'type': ENUMS['vm_type_desktop'],
-        'os_type': "rhel6x64",
+        'type': config.VM_TYPE_DESKTOP,
+        'os_type': config.OS_TYPE,
         'memory': GB,
         'cpu_socket': 1,
         'cpu_cores': 1,
-        'display_type': ENUMS['display_type_spice'],
+        'display_type': config.DISPLAY_TYPE,
         'start': True,
         'installation': True,
         'user': config.VMS_LINUX_USER,
@@ -550,7 +550,7 @@ class LiveSnapshotOnVMCreatedFromTemplate(BaseTestCase):
         wait_for_tasks(
             vdc=config.PARAMETERS['host'],
             vdc_password=config.PARAMETERS['vdc_root_password'],
-            datacenter=config.DC_NAME)
+            datacenter=config.DATA_CENTER_NAME)
 
     def test_snapshot_on_thin_vm(self):
         """

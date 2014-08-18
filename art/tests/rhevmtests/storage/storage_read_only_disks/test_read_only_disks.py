@@ -48,6 +48,7 @@ ENUMS = config.ENUMS
 READ_ONLY = 'Read-only'
 NOT_PERMITTED = 'Operation not permitted'
 
+
 vmArgs = {'positive': True,
           'vmName': config.VM_NAME[0],
           'vmDescription': config.VM_NAME[0],
@@ -57,7 +58,7 @@ vmArgs = {'positive': True,
           'storageDomainName': None,
           'installation': True,
           'size': config.DISK_SIZE,
-          'nic': 'nic1',
+          'nic': config.HOST_NICS[0],
           'image': config.COBBLER_PROFILE,
           'useAgent': True,
           'os_type': config.ENUMS['rhel6'],
@@ -81,7 +82,7 @@ def setup_module():
     after the build_setup finish, we return to the original lists
     """
     logger.info("Preparing datacenter %s with hosts %s",
-                config.DC_NAME, config.VDC)
+                config.DATA_CENTER_NAME, config.VDC)
 
     if config.STORAGE_TYPE == config.STORAGE_TYPE_NFS:
         domain_path = config.PATH
@@ -100,7 +101,7 @@ def setup_module():
         config.PARAMETERS['lun'] = luns
 
     vmArgs['storageDomainName'] = \
-        get_master_storage_domain_name(config.DC_NAME)
+        get_master_storage_domain_name(config.DATA_CENTER_NAME)
 
     logger.info('Creating vm and installing OS on it')
 
@@ -117,7 +118,7 @@ def teardown_module():
     Clean datacenter
     """
     logger.info('Cleaning datacenter')
-    cleanDataCenter(True, config.DC_NAME, vdc=config.VDC,
+    cleanDataCenter(True, config.DATA_CENTER_NAME, vdc=config.VDC,
                     vdc_password=config.VDC_PASSWORD)
 
 
@@ -310,7 +311,7 @@ class TestCase332474(DefaultEnvironment):
         self.test_vm_name = 'test_%s' % self.tcms_test_case
         vmArgs['vmName'] = self.test_vm_name
         vmArgs['storageDomainName'] = \
-            get_master_storage_domain_name(config.DC_NAME)
+            get_master_storage_domain_name(config.DATA_CENTER_NAME)
 
         logger.info('Creating vm and installing OS on it')
         if not createVm(**vmArgs):
@@ -365,7 +366,7 @@ class TestCase337630(DefaultEnvironment):
         self.test_vm_name = 'test_%s' % self.tcms_test_case
         vmArgs['vmName'] = self.test_vm_name
         vmArgs['storageDomainName'] = \
-            get_master_storage_domain_name(config.DC_NAME)
+            get_master_storage_domain_name(config.DATA_CENTER_NAME)
 
         logger.info('Creating vm and installing OS on it')
         if not createVm(**vmArgs):
@@ -532,7 +533,7 @@ class TestCase332489(DefaultEnvironment):
             self.assertTrue(status, "Write operation to RO disk succeeded")
             logger.info("Failed to write to read only disk")
 
-        master_domain = get_master_storage_domain_name(config.DC_NAME)
+        master_domain = get_master_storage_domain_name(config.DATA_CENTER_NAME)
         logger.info("Master domain found : %s", master_domain)
 
         found, self.master_domain_ip = getDomainAddress(True, master_domain)
@@ -543,8 +544,8 @@ class TestCase332489(DefaultEnvironment):
         host_ip = getIpAddressByHostName(config.HOSTS[0])
         logger.info("Blocking connection from vdsm to storage domain")
         status = blockOutgoingConnection(host_ip,
-                                         config.VDS_USER[0],
-                                         config.VDS_PASSWORD[0],
+                                         config.HOSTS_USER,
+                                         config.HOSTS_PW,
                                          master_domain_ip)
         if status:
             self.blocked = True
@@ -554,8 +555,8 @@ class TestCase332489(DefaultEnvironment):
 
         logger.info("Unblocking connection from vdsm to storage domain")
         status = unblockOutgoingConnection(host_ip,
-                                           config.VDS_USER[0],
-                                           config.VDS_PASSWORD[0],
+                                           config.HOSTS_USER,
+                                           config.HOSTS_PW,
                                            master_domain_ip)
         if status:
             self.blocked = False
@@ -581,8 +582,8 @@ class TestCase332489(DefaultEnvironment):
 
             logger.info("Unblocking connection from vdsm to storage domain")
             status = unblockOutgoingConnection(config.HOSTS[0],
-                                               config.VDS_USER[0],
-                                               config.VDS_PASSWORD[0],
+                                               config.HOSTS_USER,
+                                               config.HOSTS_PW,
                                                self.master_domain_ip)
 
             if not status:
@@ -711,8 +712,9 @@ class TestCase332480(DefaultEnvironment):
         helpers.prepare_disks_for_vm(config.VM_NAME[0], helpers.DISKS_NAMES,
                                      read_only=True)
 
-        master_domain = get_master_storage_domain_name(config.DC_NAME)
-        self.export_domain = findExportStorageDomains(config.DC_NAME)[0]
+        master_domain = get_master_storage_domain_name(config.DATA_CENTER_NAME)
+        self.export_domain = findExportStorageDomains(
+            config.DATA_CENTER_NAME)[0]
 
         logger.info("Exporting vm %s", config.VM_NAME[0])
         start_vms([config.VM_NAME[0]], max_workers=1, wait_for_ip=True)
@@ -735,7 +737,7 @@ class TestCase332480(DefaultEnvironment):
     def tearDown(self):
         assert removeVm(True, self.imported_vm, stopVM='true', wait=True)
         assert removeVmFromExportDomain(
-            True, vm=config.VM_NAME[0], datacenter=config.DC_NAME,
+            True, vm=config.VM_NAME[0], datacenter=config.DATA_CENTER_NAME,
             export_storagedomain=self.export_domain)
         super(TestCase332480, self).tearDown()
 
@@ -765,8 +767,9 @@ class TestCase334878(DefaultEnvironment):
         """
         helpers.prepare_disks_for_vm(config.VM_NAME[0], helpers.DISKS_NAMES,
                                      read_only=True)
-        master_domain = get_master_storage_domain_name(config.DC_NAME)
-        self.export_domain = findExportStorageDomains(config.DC_NAME)[0]
+        master_domain = get_master_storage_domain_name(config.DATA_CENTER_NAME)
+        self.export_domain = findExportStorageDomains(
+            config.DATA_CENTER_NAME)[0]
 
         logger.info("Exporting vm %s", config.VM_NAME[0])
         start_vms([config.VM_NAME[0]], max_workers=1, wait_for_ip=True)
@@ -799,7 +802,7 @@ class TestCase334878(DefaultEnvironment):
         stop_vms_safely([self.imported_vm_1, self.imported_vm_2])
         removeVms(True, [self.imported_vm_1, self.imported_vm_2])
         assert removeVmFromExportDomain(
-            True, vm=config.VM_NAME[0], datacenter=config.DC_NAME,
+            True, vm=config.VM_NAME[0], datacenter=config.DATA_CENTER_NAME,
             export_storagedomain=self.export_domain)
         super(TestCase334878, self).tearDown()
 
@@ -1189,7 +1192,7 @@ class TestCase332481(DefaultEnvironment):
         helpers.prepare_disks_for_vm(config.VM_NAME[0], helpers.DISKS_NAMES,
                                      read_only=True)
 
-        sd = get_master_storage_domain_name(config.DC_NAME)
+        sd = get_master_storage_domain_name(config.DATA_CENTER_NAME)
 
         stop_vms_safely([config.VM_NAME[0]])
 
@@ -1532,8 +1535,8 @@ class TestCase334921(DefaultEnvironment):
                                             read_only=True)
         logger.info("Killing qemu process")
         status = kill_qemu_process(config.VM_NAME[0], config.HOSTS[0],
-                                   config.VDS_USER[0],
-                                   config.VDS_PASSWORD[0])
+                                   config.HOSTS_USER,
+                                   config.HOSTS_PW)
         self.assertTrue(status, "Failed to kill qemu process")
         logger.info("qemu process killed")
         start_vms([config.VM_NAME[0]], 1, wait_for_ip=False)

@@ -213,9 +213,8 @@ class HotplugHookTest(TestCase):
         LOGGER.info("Host: %s" % self.address)
 
         LOGGER.info("Looking for username and password")
-        index = config.HOSTS.index(self.address)
-        self.user = config.ADMINS[index]
-        self.password = config.PASSWORDS[index]
+        self.user = config.HOSTS_USER
+        self.password = config.HOSTS_PW
 
         LOGGER.info("Creating 'machine' object")
         self.machine = machine.LinuxMachine(

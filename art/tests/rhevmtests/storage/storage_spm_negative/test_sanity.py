@@ -107,7 +107,7 @@ def create_installing_vm(vm_name):
         'positive': True,
         'vmDescription': '',
         'cluster': config.CLUSTER_NAME,
-        'nic': 'nic1',
+        'nic': config.HOST_NICS[0],
         'nicType': config.ENUMS['nic_type_virtio'],
         'storageDomainName': MASTER_DOMAIN,
         'size': 5 * GB,
@@ -234,7 +234,7 @@ class DataCenterWithSD(TestCase):
     __test__ = False
     automatic_rebuild = True
     host = config.HOSTS[0]
-    password = config.VDS_PASSWORD
+    password = config.HOSTS_PW
     master_domain = MASTER_DOMAIN
     non_master = None
 
@@ -311,7 +311,7 @@ class CorruptMetadata(DataCenterWithSD):
         LOGGER.info("Generating metadata corruption on domain %s",
                     self.master_domain)
         result, sd_obj = generateSDMetadataCorruption(
-            vds_name=self.host, username=config.VDS_USER,
+            vds_name=self.host, username=config.HOSTS_USER,
             passwd=self.password, sd_name=self.master_domain,
             md_tag=config.MASTER_VERSION_TAG, md_tag_bad_value='-1')
         LOGGER.info("sd_obj is %s", sd_obj)
@@ -396,7 +396,7 @@ class WrongMasterVersion(DataCenterWithSD):
         """
         LOGGER.info("Changing master version to 999")
         result, sd_obj = generateSDMetadataCorruption(
-            vds_name=self.host, username=config.VDS_USER,
+            vds_name=self.host, username=config.HOSTS_USER,
             passwd=self.password, sd_name=self.master_domain,
             md_tag=config.MASTER_VERSION_TAG, md_tag_bad_value='999')
         self.assertTrue(result)
@@ -474,7 +474,7 @@ class FailedReconstructWith2Domains(DataCenterWithSD):
         LOGGER.info("Creating MDT corruption, setting %s to -1",
                     config.MASTER_VERSION_TAG)
         result, sd_obj = generateSDMetadataCorruption(
-            vds_name=self.host, username=config.VDS_USER,
+            vds_name=self.host, username=config.HOSTS_USER,
             passwd=self.password, sd_name=self.master_domain,
             md_tag=config.MASTER_VERSION_TAG, md_tag_bad_value='-1')
         self.assertTrue(result)
@@ -581,7 +581,7 @@ class ReconstructWith2UnreachableDomainsAnd1ReachableDomain(DataCenterWithSD):
         if cls.is_blocked:
             LOGGER.info("Unblocking connection from %s to %s", cls.host,
                         config.STORAGE_SERVERS[0])
-            unblockOutgoingConnection(cls.host, config.VDS_USER,
+            unblockOutgoingConnection(cls.host, config.HOSTS_USER,
                                       cls.password, config.STORAGE_SERVERS[0])
             datacenters.waitForDataCenterState(
                 config.DATA_CENTER_NAME, config.ENUMS['data_center_state_up'],
@@ -626,7 +626,7 @@ class ReconstructWith2UnreachableDomainsAnd1ReachableDomain(DataCenterWithSD):
         future_master_name = self.master_domain
         LOGGER.info("Blocking outgoing connection from host %s to server %s",
                     self.host, config.STORAGE_SERVERS[0])
-        self.assertTrue(blockOutgoingConnection(self.host, config.VDS_USER,
+        self.assertTrue(blockOutgoingConnection(self.host, config.HOSTS_USER,
                         self.password, config.STORAGE_SERVERS[0]))
         self.is_blocked = True
         LOGGER.info("Waiting until connected non-master %s goes active",
@@ -679,7 +679,7 @@ class ReconstructWith2UnreachableDomainsAnd1ReachableDomain(DataCenterWithSD):
             timeOut=1800))
         LOGGER.info("Unblocking connection from %s to %s", self.host,
                     config.STORAGE_SERVERS[0])
-        self.assertTrue(unblockOutgoingConnection(self.host, config.VDS_USER,
+        self.assertTrue(unblockOutgoingConnection(self.host, config.HOSTS_USER,
                         self.password, config.STORAGE_SERVERS[0]))
         self.is_blocked = False
         LOGGER.info("Validating host %s is up", self.host)
@@ -742,7 +742,7 @@ class FailedReconstructWith1Domain(DataCenterWithSD):
         if cls.is_blocked:
             LOGGER.info("Unblocking connection from %s to %s", cls.host,
                         config.STORAGE_SERVERS[-1])
-            unblockOutgoingConnection(cls.host, config.VDS_USER,
+            unblockOutgoingConnection(cls.host, config.HOSTS_USER,
                                       cls.password, config.STORAGE_SERVERS[-1])
         LOGGER.info("Removing vm %s", cls.vm_name)
         assert vms.removeVm(True, vm=cls.vm_name, stopVM='true')
@@ -757,7 +757,7 @@ class FailedReconstructWith1Domain(DataCenterWithSD):
         LOGGER.info("Blocking outgoing connection from host %s to server %s",
                     self.host, config.STORAGE_SERVERS[-1])
         self.assertTrue(blockOutgoingConnection(
-            self.host, config.VDS_USER, self.password,
+            self.host, config.HOSTS_USER, self.password,
             config.STORAGE_SERVERS[-1]))
         self.is_blocked = True
         LOGGER.info("Waiting for DC to come to maintenance")
@@ -791,7 +791,7 @@ class FailedReconstructWith1Domain(DataCenterWithSD):
             timeOut=1800))
         LOGGER.info("Unblocking connection from %s to %s", self.host,
                     config.STORAGE_SERVERS[-1])
-        self.assertTrue(unblockOutgoingConnection(self.host, config.VDS_USER,
+        self.assertTrue(unblockOutgoingConnection(self.host, config.HOSTS_USER,
                         self.password, config.STORAGE_SERVERS[-1]))
         self.is_blocked = False
         LOGGER.info("Waiting for master domain to become active")

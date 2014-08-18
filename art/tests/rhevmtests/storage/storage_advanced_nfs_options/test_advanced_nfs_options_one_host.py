@@ -31,7 +31,7 @@ class TestCase232975(helpers.TestCaseNFSOptions):
     export_domain = 'test_%s_export' % tcms_test_case
     iso_domain = 'test_%s_iso' % tcms_test_case
     host = config.HOSTS[0]
-    password = config.PASSWORDS[0]
+    password = config.HOSTS_PW
     datacenter = config.DATA_CENTER_NAME
     nfs_version = 'v3'
     nfs_timeout = 60
@@ -387,7 +387,7 @@ class TestCase166534(helpers.TestCaseNFSOptions):
         """
         name = 'test_%s_create' % self.tcms_test_case
         host = config.HOSTS[0]
-        password = config.PASSWORDS[0]
+        password = config.HOSTS_PW
         address = config.NFS_ADDRESS[0]
         path = config.NFS_PATH[0]
         datacenter = config.DATA_CENTER_NAME

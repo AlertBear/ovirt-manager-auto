@@ -18,4 +18,4 @@ def teardown_package():
     """
     Cleans the environment
     """
-    assert storagedomains.cleanDataCenter(True, config.DC_NAME)
+    assert storagedomains.cleanDataCenter(True, config.DATA_CENTER_NAME)

@@ -36,7 +36,7 @@ class TestCase166613(helpers.TestCaseStandardOperations):
     sd_2 = 'test_%s_2' % tcms_test_case
     sd_exp = 'test_%s_exp' % tcms_test_case
     host = config.HOSTS[0]
-    password = config.PASSWORDS[0]
+    password = config.HOSTS_PW
     disk_1 = 'test_%s_disk_1' % tcms_test_case
     disk_2 = 'test_%s_disk_2' % tcms_test_case
     vm_1 = 'vm_%s_1' % tcms_test_case
@@ -134,7 +134,7 @@ class TestCase166615(helpers.TestCaseNFSOptions):
     dc_v30_name = 'dc_v30_%s' % tcms_test_case
     cl_name = 'cluster_%s' % tcms_test_case
     host = config.HOST_FOR_30_DC
-    password = config.PASSWORDS[-1]
+    password = config.HOSTS_PW
 
     @classmethod
     def setup_class(cls):
@@ -241,7 +241,7 @@ class TestCase148697(helpers.TestCaseNFSOptions):
         self.dc_name = None
         self.cl_name = None
         self.host = config.HOST_FOR_30_DC
-        self.password = config.PASSWORDS[-1]
+        self.password = config.HOSTS_PW
         hl_st.create_nfs_domain_with_options(
             self.sd_name, ENUMS['storage_dom_type_data'], config.HOSTS[0],
             self.nfs_address, self.nfs_path, retrans=self.nfs_retrans,

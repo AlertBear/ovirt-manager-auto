@@ -27,4 +27,5 @@ def _create_vm(vm_name, disk_interface=config.VIRTIO_SCSI,
         nicType=config.NIC_TYPE_VIRTIO, display_type=config.DISPLAY_TYPE,
         os_type=config.OS_TYPE, user=config.VMS_LINUX_USER,
         password=config.VMS_LINUX_PW, type=vm_type, installation=True,
-        slim=True, image=config.COBBLER_PROFILE, useAgent=config.USE_AGENT)
+        slim=True, image=config.COBBLER_PROFILE, useAgent=config.USE_AGENT,
+        network=config.MGMT_BRIDGE)

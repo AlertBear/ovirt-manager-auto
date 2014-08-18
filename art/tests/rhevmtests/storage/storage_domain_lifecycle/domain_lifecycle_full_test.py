@@ -207,13 +207,13 @@ class TestCase174610(BaseTestCase):
         Unblock connection.
         Check that the host is UP again.
         """
-        ip_action.block_and_wait(self.engine_ip, config.VDS_USER[0],
-                                 config.VDS_PASSWORD[0], config.FIRST_HOST,
+        ip_action.block_and_wait(self.engine_ip, config.HOSTS_USER,
+                                 config.HOSTS_PW, config.FIRST_HOST,
                                  config.FIRST_HOST,
                                  config.HOST_NONRESPONSIVE)
 
-        ip_action.unblock_and_wait(self.engine_ip, config.VDS_USER[0],
-                                   config.VDS_PASSWORD[0], config.FIRST_HOST,
+        ip_action.unblock_and_wait(self.engine_ip, config.HOSTS_USER,
+                                   config.HOSTS_PW, config.FIRST_HOST,
                                    config.FIRST_HOST)
 
     @classmethod
@@ -224,8 +224,8 @@ class TestCase174610(BaseTestCase):
         logger.info('Unblocking connections')
         try:
             st_api.unblockOutgoingConnection(cls.engine_ip,
-                                             config.VDS_USER[0],
-                                             config.VDS_PASSWORD[0],
+                                             config.HOSTS_USER,
+                                             config.HOSTS_PW,
                                              config.FIRST_HOST)
         except exceptions.NetworkException, msg:
             logging.info("Connection already unblocked. reason: %s", msg)
@@ -278,7 +278,7 @@ class TestCase174613(TestCase):
 
             storagedomains.create_nfs_domain_and_verify_options(
                 [storage], host=config.FIRST_HOST,
-                password=config.VDS_PASSWORD[0],
+                password=config.HOSTS_PW,
                 datacenter=config.DATA_CENTER_NAME)
 
             version = self.nfs_version

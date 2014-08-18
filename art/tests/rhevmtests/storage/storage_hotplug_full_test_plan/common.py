@@ -68,7 +68,7 @@ def create_vm_and_template(cobbler_image, template_name):
                         vmName=vm_name,
                         vmDescription=vm_name,
                         cluster=config.CLUSTER_NAME,
-                        nic="nic1",
+                        nic=config.HOST_NICS[0],
                         storageDomainName=config.STORAGE_DOMAIN_NAME,
                         size=10 * config.GB,
                         diskInterface=config.ENUMS['interface_virtio'],
@@ -121,7 +121,8 @@ def start_installing_vms_for_test():
     results = []
 
     with ThreadPoolExecutor(config.MAX_WORKERS) as executor:
-        for image, template_name in zip(config.IMAGES, config.TEMPLATE_NAMES):
+        for image, template_name in zip([config.COBBLER_PROFILE],
+                                        config.TEMPLATE_NAMES):
             results.append(executor.submit(create_vm_and_template,
                                            image,
                                            template_name))

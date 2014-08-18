@@ -38,7 +38,7 @@ def setup_module():
     Create datacenter with 2 hosts, 2 storage domains and 1 export domain
     Create vm and install OS on it, with snapshot after OS installation
     """
-    rc, masterSD = findMasterStorageDomain(True, config.DC_NAME)
+    rc, masterSD = findMasterStorageDomain(True, config.DATA_CENTER_NAME)
     assert rc
     masterSD = masterSD['masterDomain']
 
@@ -53,7 +53,7 @@ def setup_module():
               'storageDomainName': masterSD,
               'installation': True,
               'size': config.DISK_SIZE,
-              'nic': 'nic1',
+              'nic': config.HOST_NICS[0],
               'image': config.COBBLER_PROFILE,
               'useAgent': True,
               'os_type': config.ENUMS['rhel6'],
@@ -94,12 +94,12 @@ class DCWithStoragesActive(TestCase):
         """
         Ensure DC is up, all storages are active and SPM is elected
         """
-        logger.info('Checking DC %s state', config.DC_NAME)
-        if not waitForDataCenterState(config.DC_NAME):
+        logger.info('Checking DC %s state', config.DATA_CENTER_NAME)
+        if not waitForDataCenterState(config.DATA_CENTER_NAME):
             raise errors.DataCenterException('DC %s is not up' %
-                                             config.DC_NAME)
+                                             config.DATA_CENTER_NAME)
 
-        storage_domains = getDCStorages(config.DC_NAME,
+        storage_domains = getDCStorages(config.DATA_CENTER_NAME,
                                         get_href=False)
 
         logger.info('Ensuring all domains are up')
@@ -584,7 +584,7 @@ class TestCase294623(VMWithMemoryStateSnapshot):
         """
         logger.info('Removing vm %s from export domain %s', cls.vm,
                     config.EXPORT_DOMAIN)
-        removeVmFromExportDomain(True, cls.vm, config.DC_NAME,
+        removeVmFromExportDomain(True, cls.vm, config.DATA_CENTER_NAME,
                                  config.EXPORT_DOMAIN)
         super(TestCase294623, cls).teardown_class()
 
@@ -658,7 +658,7 @@ class TestCase294624(VMWithMemoryStateSnapshot):
         """
         logger.info('Removing vm %s from export domain %s', cls.vm,
                     config.EXPORT_DOMAIN)
-        removeVmFromExportDomain(True, cls.vm, config.DC_NAME,
+        removeVmFromExportDomain(True, cls.vm, config.DATA_CENTER_NAME,
                                  config.EXPORT_DOMAIN)
         logger.info('Stopping vm %s', cls.vm)
         assert stopVm(True, cls.vm)

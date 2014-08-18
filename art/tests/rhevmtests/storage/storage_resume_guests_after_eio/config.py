@@ -8,9 +8,6 @@ from rhevmtests.storage.config import * # flake8: noqa
 
 TESTNAME = "storage_resume_guests_eio"
 
-# TODO: removed
-HOSTS_PWD = HOSTS_PW
-
 # TODO: what is this used for?
 PARAMETERS['data_domain_address'] = PARAMETERS['static_domain_address']
 PARAMETERS['data_domain_path'] = PARAMETERS['static_domain_path']
