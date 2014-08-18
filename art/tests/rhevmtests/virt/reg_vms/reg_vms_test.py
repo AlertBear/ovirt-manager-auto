@@ -6,7 +6,7 @@ from rhevmtests.virt import config
 import logging
 from art.unittest_lib import ComputeTest as TestCase
 from nose.tools import istest
-from art.test_handler.tools import bz, tcms  # pylint: disable=E0611
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as vm_api
@@ -18,7 +18,7 @@ import art.rhevm_api.tests_lib.high_level.storagedomains as high_sd_api
 from art.rhevm_api.utils.test_utils import update_vm_status_in_database
 from art.rhevm_api.tests_lib.low_level.mla import addVmPoolPermissionToUser
 from art.unittest_lib import attr
-
+from art.unittest_lib.common import bz
 
 MB = 1024 * 1024
 GB = 1024 * MB
@@ -438,7 +438,8 @@ class UpdateVm(BaseVm):
         self.assertTrue(vm_api.updateVm(True, self.vm_name,
                                         description="TEST"))
 
-    @istest
+    # Disable this case till RHEVM-1695 resolved
+    # @istest
     def update_vm_cluster(self):
         """
         Update vm cluster
@@ -456,6 +457,7 @@ class UpdateVm(BaseVm):
         """
         self.assertTrue(vm_api.updateVm(True, self.vm_name, memory=2*GB))
 
+    @bz({'1082594': ['cli']})
     @istest
     def update_vm_guranteed_memory(self):
         """
@@ -507,7 +509,7 @@ class UpdateVm(BaseVm):
     @istest
     def update_vnc_vm_number_of_monitors(self):
         """
-        Negative: Update vnc display type vm number of monitors
+        Positive & Negative: Update vnc display type & num of monitors
         """
         display_type = ENUMS['display_type_vnc']
         logger.info("Update vm %s display type to %s",
@@ -576,15 +578,6 @@ class UpdateRunningVm(BaseVmWithDisk):
         if not vm_api.stopVm(True, cls.vm_name):
             raise errors.VMException("Failed to stop VM")
         super(UpdateRunningVm, cls).teardown_class()
-
-    @istest
-    def update_vm_description(self):
-        """
-        Update description of a running VM.
-        """
-        logger.info("Updating description of VM %s", self.vm_name)
-        self.assertTrue(
-            vm_api.updateVm(True, self.vm_name, description="TEST"))
 
 
 @attr(tier=0)
@@ -1049,8 +1042,14 @@ class RunVmOnce(BaseVmWithDisk):
     @classmethod
     def teardown_class(cls):
         """
-        Remove share iso domain and remove vm
+        Remove share iso domain, Stop and Remove VM
         """
+        # Stop VM if required it is not down
+        if vm_api.get_vm_state(cls.vm_name) not in (ENUMS['vm_state_down'],):
+            logger.info("Stop %s vm", cls.vm_name)
+            if not vm_api.stopVm(True, cls.vm_name):
+                raise errors.VMException("Failed to stop vm")
+        # Remove iso domain
         high_sd_api.detach_and_deactivate_domain(config.DC_NAME[0],
                                                  config.
                                                  SHARED_ISO_DOMAIN_NAME)
@@ -1059,13 +1058,9 @@ class RunVmOnce(BaseVmWithDisk):
         if not sd_api.removeStorageDomain(True, config.SHARED_ISO_DOMAIN_NAME,
                                           config.HOSTS[0]):
             raise errors.StorageDomainException("Failed to remove iso domain")
-        if vm_api.get_vm_state(cls.vm_name) == ENUMS['vm_state_paused']:
-            logger.info("Stop %s vm", cls.vm_name)
-            if not vm_api.stopVm(True, cls.vm_name):
-                raise errors.VMException("Failed to stop vm")
         super(RunVmOnce, cls).teardown_class()
 
-    @bz('1095635')
+    @bz({'1117783': None})
     @istest
     def run_once_vm_with_specific_domain(self):
         """
@@ -1227,6 +1222,7 @@ class VmTemplate(BaseVmWithDiskTemplate):
                                      template=self.template_name,
                                      storagedomain=config.STORAGE_NAME[0]))
 
+    @bz({'1082977': ['cli']})
     @istest
     def create_vm_from_template_with_wrong_sd(self):
         """
