@@ -59,6 +59,7 @@ DATA_FILES = [
     'art/tests/rhevmtests/infra/*/*.py',
     'art/tests/rhevmtests/infra/*/*/*.py',
     'art/tests/rhevmtests/mom/*.py',
+    'art/tests/rhevmtests/ha_reservation/*.py',
     'art/tests/rhevmtests/system/*.py',
     'art/tests/rhevmtests/system/*/*.py',
 ]

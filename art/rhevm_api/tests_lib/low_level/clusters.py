@@ -132,6 +132,9 @@ def _prepareClusterObject(**kwargs):
     if 'ksm_enabled' in kwargs:
         cl.set_ksm(KSM(enabled=kwargs.pop('ksm_enabled')))
 
+    if 'ha_reservation' in kwargs:
+        cl.set_ha_reservation(kwargs.pop('ha_reservation'))
+
     return cl
 
 
@@ -210,6 +213,7 @@ def updateCluster(positive, cluster, **kwargs):
                     only cores
        * ballooning_enabled - if True, enables ballooning on cluster
        * ksm_enabled - if True, enables KSM on cluster
+       * ha_reservation - if True, enables Ha Reservation on cluster
     Return: status (True if cluster was removed properly, False otherwise)
     '''
 
