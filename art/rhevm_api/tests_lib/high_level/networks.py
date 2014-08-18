@@ -975,7 +975,7 @@ def create_basic_setup(datacenter, storage_type, version, cluster=None,
        *  *version* - Version of the datacenter/cluster
        *  *cluster* - Cluster name
        *  *cpu* - CPU type for cluster
-       *  *host* - Host name
+       *  *host* - Host name or a list of Host names
        *  *host_password* - Password for the host
     **Return**: True if setup creation succeeded, otherwise False
     """
@@ -991,10 +991,12 @@ def create_basic_setup(datacenter, storage_type, version, cluster=None,
             return False
 
         if host:
-            if not addHost(positive=True, name=host,
-                           root_password=host_password,
-                           cluster=cluster):
-                return False
+            host_list = [host] if isinstance(host, basestring) else host
+            for host in host_list:
+                if not addHost(positive=True, name=host,
+                               root_password=host_password,
+                               cluster=cluster):
+                    return False
     return True
 
 
