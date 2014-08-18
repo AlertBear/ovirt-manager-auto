@@ -53,10 +53,11 @@ class Payloads(TestCase):
         """
         Stop and remove vm after each test case
         """
-        logging.info("Stop vm %s", cls.vm_name)
-        if not vms.stopVm(True, cls.vm_name):
-            raise errors.VMException("Failed to stop vm %s" %
-                                     cls.vm_name)
+        if vms.get_vm_state(cls.vm_name) not in (ENUMS['vm_state_down'],):
+            logging.info("Stop vm %s", cls.vm_name)
+            if not vms.stopVm(True, cls.vm_name):
+                raise errors.VMException("Failed to stop vm %s" %
+                                         cls.vm_name)
         logging.info("Remove vm %s", cls.vm_name)
         if not vms.removeVm(True, cls.vm_name):
             raise errors.VMException("Failed to remove vm %s" %
