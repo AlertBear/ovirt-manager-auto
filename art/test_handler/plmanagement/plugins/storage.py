@@ -650,10 +650,11 @@ class StorageUtils:
                     self.__remove_nas_device(self.storages['export'][
                         storageSection]['ip'], device, fsType)
 
-    def getStorageManager(self, type, serverIp):
-        return self.storageServers[type] if type in self.storageServers else \
-            createStorageManager([serverIp], type.upper(),
-                                 self.storageConfigFile)
+    def getStorageManager(self, storage_type, serverIp):
+        if storage_type not in self.storageServers:
+            self.storageServers[storage_type] = createStorageManager(
+                [serverIp], storage_type.upper(), self.storageConfigFile)
+        return self.storageServers[storage_type]
 
     def __create_nas_device(self, storageServerIp, deviceName, fsType):
         '''
