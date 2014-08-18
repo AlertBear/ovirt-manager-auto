@@ -179,7 +179,7 @@ class PythonExprAction(argparse.Action):
 class UTestCase(TestCase):
     skip_exceptions = (USkipTest, USkipTest2, SkipTest)
 
-    def __init__(self, t):
+    def __init__(self, t, skip=False):
         super(UTestCase, self).__init__()
         self.mod_name, self.test_action = t.address()[1:]
         self.t = t
@@ -196,41 +196,47 @@ class UTestCase(TestCase):
         except AttributeError:
             logger.error("Test case %s has missing documentation string!",
                          self.test_name)
+        self.skip = skip
         # TODO: set another atts
 
     def __call__(self):
-        try:
-            logger.info("setUp: %s", self.test_name)
+        if not self.skip:
             try:
-                self.t.test.setUp()
-                logger.info(self.format_attr('test_name'))
-                logger.info('Test description: %s', self.description)
-                logger.info(self.format_attr('serial'))
-                self.t.plugins.startTest(self.t.test)
-                self.f()
-                self.status = self.TEST_STATUS_PASSED
-            except AssertionError:
-                self.incr_exc()
-                self.status = self.TEST_STATUS_FAILED
-            except self.skip_exceptions as ex:
-                self.status = self.TEST_STATUS_SKIPPED
-                raise SkipTest(str(ex))
-            except Exception:
-                self.status = self.TEST_STATUS_ERROR
-                self.incr_exc()
+                logger.info("setUp: %s", self.test_name)
+                try:
+                    self.t.test.setUp()
+                    logger.info(self.format_attr('test_name'))
+                    logger.info('Test description: %s', self.description)
+                    logger.info(self.format_attr('serial'))
+                    self.t.plugins.startTest(self.t.test)
+                    self.f()
+                    self.status = self.TEST_STATUS_PASSED
+                except AssertionError:
+                    self.incr_exc()
+                    self.status = self.TEST_STATUS_FAILED
+                except self.skip_exceptions as ex:
+                    self.status = self.TEST_STATUS_SKIPPED
+                    raise SkipTest(str(ex))
+                except Exception:
+                    self.status = self.TEST_STATUS_ERROR
+                    self.incr_exc()
+                finally:
+                    self.t.plugins.stopTest(self.t.test)
             finally:
-                self.t.plugins.stopTest(self.t.test)
-        finally:
-            logger.info("tearDown: %s", self.test_name)
-            try:
-                self.t.test.tearDown()
-            except Exception:
-                self.incr_exc()
-                self.status = self.TEST_STATUS_FAILED
-            if self.status in (self.TEST_STATUS_FAILED,
-                               self.TEST_STATUS_ERROR):
-                if self.t.test.vital4group:
-                    self.vital4group = True
+                logger.info("tearDown: %s", self.test_name)
+                try:
+                    self.t.test.tearDown()
+                except Exception:
+                    self.incr_exc()
+                    self.status = self.TEST_STATUS_FAILED
+                if self.status in (self.TEST_STATUS_FAILED,
+                                   self.TEST_STATUS_ERROR):
+                    if self.t.test.vital4group:
+                        self.vital4group = True
+        else:
+            logger.info(self.format_attr('test_name'))
+            logger.info('Test description: %s', self.description)
+            logger.info(self.format_attr('serial'))
 
     def __str__(self):
         return "Test Action: %s; Test Name: %s" % (self.test_action,
@@ -242,7 +248,7 @@ class UTestCase(TestCase):
 
 
 class UTestGroup(TestGroup):
-    def __init__(self, c):
+    def __init__(self, c, skip=False):
         super(UTestGroup, self).__init__()
         self.context = c
         self.tcms_plan_id = getattr(c.context, TCMS_PLAN_ID, None)
@@ -252,6 +258,7 @@ class UTestGroup(TestGroup):
         except AttributeError:
             logger.error("Test class %s has missing documentation string!",
                          self.test_name)
+        self.skip = skip
 
     def __iter__(self):
         try:
@@ -259,12 +266,14 @@ class UTestGroup(TestGroup):
             logger.info("TEST GROUP setUp: %s", self.test_name)
             logger.info('Group description: %s', self.description)
             try:
-                self.context.setUp()
+                if not self.skip:
+                    self.context.setUp()
             except Exception as ex:
                 logger.error("TEST GROUP setUp ERROR: %s: %s", ex,
                              self.test_name, exc_info=True)
                 self.status = self.TEST_STATUS_ERROR
                 self.incr_exc()
+                self.skip = True
                 raise SkipTest(str(ex))
             for c in self.context:
                 if isinstance(c, Failure):
@@ -272,23 +281,26 @@ class UTestGroup(TestGroup):
                                  "please see nose.log for more info: %s", c)
                     continue
                 elif isinstance(c, Test):
-                    test_elm = UTestCase(c)
+                    test_elm = UTestCase(c, self.skip)
                 elif None is c.context:
                     continue
                 else:
                     if not c.countTestCases():
                         continue
-                    test_elm = UTestGroup(c)
+                    test_elm = UTestGroup(c, self.skip)
                 test_elm.parent = self.context
                 yield test_elm
         finally:
-            logger.info("TEST GROUP tearDown: %s", self.test_name)
             try:
-                self.context.was_setup = True
-                self.context.tearDown()
-            except Exception:
+                if not self.skip:
+                    logger.info("TEST GROUP tearDown: %s", self.test_name)
+                    self.context.was_setup = True
+                    self.context.tearDown()
+            except Exception as e:
                 self.incr_exc()
                 self.status = self.TEST_STATUS_FAILED
+                logger.error("Teardown failed: %s, the reason: %s",
+                             self.test_name, e)
             logger.info(TEST_CASES_SEPARATOR)
 
     def __str__(self):
@@ -301,6 +313,7 @@ class UTestSuite(TestSuite):
         self.context = context
         self.tcms_plan_id = getattr(context.context, TCMS_PLAN_ID, None)
         self.test_name = self.context.context.__name__
+        self.skip = False
 
     def __iter__(self):
         if not self.context.countTestCases():
@@ -309,33 +322,37 @@ class UTestSuite(TestSuite):
             logger.info(TEST_CASES_SEPARATOR)
             logger.info("TEST SUITE setUp: %s", self.test_name)
             try:
-                self.context.setUp()
+                if not self.skip:
+                    self.context.setUp()
             except Exception as ex:
                 logger.error("TEST SUITE setUp ERROR: %s: %s", ex,
                              self.test_name, exc_info=True)
                 self.status = self.TEST_STATUS_ERROR
                 self.incr_exc()
+                self.skip = True
                 raise SkipTest(str(ex))
+
             for c in self.context:
                 if isinstance(c, Failure):
                     logger.error("There is critical failure in test module, "
                                  "please see nose.log for more info: %s", c)
                     continue
                 elif isinstance(c, Test):
-                    test_elm = UTestCase(c)
+                    test_elm = UTestCase(c, self.skip)
                 elif None is c.context:
                     continue
                 else:
                     if not c.countTestCases():
                         continue
-                    test_elm = UTestGroup(c)
+                    test_elm = UTestGroup(c, self.skip)
                 test_elm.parent = self.context
                 yield test_elm
         finally:
             logger.info("TEST SUITE tearDown: %s", self.test_name)
             try:
-                self.context.was_setup = True
-                self.context.tearDown()
+                if not self.skip:
+                    self.context.was_setup = True
+                    self.context.tearDown()
             except Exception:
                 self.incr_exc()
                 self.status = self.TEST_STATUS_FAILED

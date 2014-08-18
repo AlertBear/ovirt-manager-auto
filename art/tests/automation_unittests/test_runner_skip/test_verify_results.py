@@ -7,7 +7,7 @@ Created on May 12, 2014
 import logging
 
 from nose.tools import istest
-from tests.automation_unittests.verify_results import VerifyUnittestResults
+from automation_unittests.verify_results import VerifyUnittestResults
 
 
 logger = logging.getLogger(__name__)

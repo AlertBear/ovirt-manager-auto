@@ -29,11 +29,13 @@ class TestCase3(TestCase):
 
     @classmethod
     def setup_class(cls):
-        logger.info('************** setup class **************')
+        logger.info('*********** SETUP CLASS SHOULD NOT EXECUTE ***********')
+        raise Exception('setup class should be skipped')
 
     @classmethod
     def teardown_class(cls):
-        logger.info('************** teardown class **************')
+        logger.info('********** TEARDOWN CLASS SHOULD NOT EXECUTE **********')
+        raise Exception('teardown class should be skipped')
 
     @istest
     def t01(self):
@@ -47,12 +49,13 @@ class TestCase4(TestCase):
 
     @classmethod
     def setup_class(cls):
-        logger.info('************** setup class **************')
+        logger.info('*********** SETUP CLASS SHOULD NOT EXECUTE ***********')
         raise Exception('Raise exception in class setup')
 
     @classmethod
     def teardown_class(cls):
-        logger.info('************** teardown class **************')
+        logger.info('********** TEARDOWN CLASS SHOULD NOT EXECUTE **********')
+        raise Exception('teardown class should be skipped')
 
     @istest
     def t01(self):
