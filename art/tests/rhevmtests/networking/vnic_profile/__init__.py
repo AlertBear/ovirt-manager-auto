@@ -30,7 +30,7 @@ def setup_package():
                         lun_address=config.LUN_ADDRESS[0],
                         lun_target=config.LUN_TARGET[0],
                         luns=config.LUN[0], version=config.COMP_VERSION,
-                        vm_password=config.HOSTS_PW,
+                        vm_password=config.VMS_LINUX_PW,
                         vmName=config.VM_NAME[0],
                         mgmt_network=config.MGMT_BRIDGE,
                         vm_network=config.MGMT_BRIDGE,

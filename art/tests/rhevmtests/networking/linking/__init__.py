@@ -51,7 +51,7 @@ def setup_package():
                         luns=config.LUN[0], version=config.COMP_VERSION,
                         vmName=config.VM_NAME[0],
                         template_name=config.TEMPLATE_NAME[0],
-                        vm_password=config.HOSTS_PW,
+                        vm_password=config.VMS_LINUX_PW,
                         mgmt_network=config.MGMT_BRIDGE,
                         vm_network=config.MGMT_BRIDGE,
                         auto_nics=[config.HOST_NICS[0]]):

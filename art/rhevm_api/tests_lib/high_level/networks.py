@@ -20,32 +20,48 @@
 import logging
 import re
 import os
-from art.rhevm_api.tests_lib.high_level.hosts import add_hosts
-from art.rhevm_api.tests_lib.low_level.clusters import addCluster, \
-    removeCluster
+from configobj import ConfigObj
 
 from utilities import machine
 from art.rhevm_api.utils.test_utils import restartVdsmd, sendICMP
-from art.rhevm_api.tests_lib.low_level.networks import addNetwork,\
-    getClusterNetwork, getNetworksInDataCenter, removeNetwork,\
-    addNetworkToCluster, NET_API,\
-    DC_API, updateNetwork, getClusterNetworks, MGMT_NETWORK
-from art.rhevm_api.tests_lib.low_level.hosts import sendSNRequest,\
-    commitNetConfig, genSNNic, getHostNic, removeHost
+from art.rhevm_api.tests_lib.low_level.networks import (
+    addNetwork, getClusterNetwork, getNetworksInDataCenter, removeNetwork,
+    addNetworkToCluster, NET_API, DC_API, updateNetwork, getClusterNetworks,
+    MGMT_NETWORK,
+)
+from art.rhevm_api.tests_lib.low_level.hosts import (
+    sendSNRequest, commitNetConfig, genSNNic, getHostNic, removeHost,
+)
 from art.rhevm_api.tests_lib.low_level.templates import createTemplate
-from art.rhevm_api.tests_lib.low_level.vms import getVmMacAddress,\
-    startVm, stopVm, createVm, waitForVmsStates
-from art.rhevm_api.utils.test_utils import convertMacToIpAddress,\
-    setPersistentNetwork
-from art.rhevm_api.tests_lib.low_level.storagedomains import createDatacenter,\
-    waitForStorageDomainStatus, cleanDataCenter
-from art.rhevm_api.tests_lib.low_level.datacenters import\
-    waitForDataCenterState, addDataCenter, removeDataCenter
-from art.test_handler.exceptions import DataCenterException, HostException
+from art.rhevm_api.tests_lib.low_level.vms import (
+    getVmMacAddress, startVm, stopVm, createVm, waitForVmsStates,
+)
+from art.rhevm_api.utils.test_utils import (
+    convertMacToIpAddress, setPersistentNetwork,
+)
+from art.rhevm_api.tests_lib.low_level.storagedomains import (
+    waitForStorageDomainStatus, cleanDataCenter,
+)
+from art.rhevm_api.tests_lib.low_level.clusters import (
+    addCluster, removeCluster,
+)
+from art.rhevm_api.tests_lib.high_level.storagedomains import (
+    create_storages,
+)
+from art.rhevm_api.tests_lib.high_level.hosts import (
+    add_hosts,
+)
+from art.rhevm_api.tests_lib.low_level.datacenters import (
+    waitForDataCenterState, addDataCenter, removeDataCenter,
+)
+from art.test_handler.exceptions import (
+    DataCenterException, HostException, ClusterException,
+    StorageDomainException,
+)
 from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api import is_action
 from art.test_handler.settings import opts
-from art.rhevm_api.utils.test_utils import checkTraffic
+from art.rhevm_api.utils.test_utils import checkTraffic, split
 from utilities.jobs import Job, JobsSet
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
@@ -316,8 +332,7 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
                  diskType='system', auto_nics=[HOST_NICS[0]],
                  vm_user='root', vm_password=None,
                  vmName=None, vmDescription='linux vm',
-                 cobblerAddress=None, cobblerUser=None,
-                 cobblerPasswd=None, nicType='virtio', display_type='spice',
+                 nicType='virtio', display_type='spice',
                  os_type='RHEL6x64', image=RHEL_IMAGE,
                  nic='nic1', size=DISK_SIZE, useAgent=True,
                  template_name=None, attempt=ATTEMPTS,
@@ -351,9 +366,6 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
             *  *auto_nics* - a list of nics
             *  *vmName* - VM name, if not None create VM
             *  *vmDescription* - Decription of VM
-            *  *cobblerAddress* - IP or hostname of cobbler server
-            *  *cobblerUser* - username for cobbler
-            *  *cobblerPasswd* - password for cobbler
             *  *display_type* - type of vm display (VNC or SPICE)
             *  *nicType* - type of the NIC (virtio, RTL or e1000)
             *  *os_type* - type of the OS
@@ -373,23 +385,50 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
             *  *mgmt_network* - management network
         **Returns**: True if creation of the setup succeeded, otherwise False
     """
+    hostArray = split(hosts)
+
     if vmName and bridgeless:
         if vm_network == mgmt_network:
             logger.error("vm network name can't be %s when using"
                          "bridgeless management network", mgmt_network)
             return False
 
-    if not createDatacenter(True, hosts=hosts, cpuName=cpuName,
-                            username=username, password=password,
-                            datacenter=datacenter, cluster=cluster,
-                            version=version, local=local,
-                            storage_type=storage_type,
-                            lun_address=lun_address, lun_target=lun_target,
-                            luns=luns, lun_port=lun_port):
-        logger.error("Couldn't create setup (DC, Cluster, Storage, Host)")
-        return False
+    if not addDataCenter(
+        True, name=datacenter, storage_type=storage_type,
+        local=local, version=version,
+    ):
+        raise DataCenterException(
+            "addDataCenter %s with storage type %s and version %s failed." % (
+                datacenter,
+                storage_type,
+                version,
+            )
+        )
+    logger.info("Datacenter %s was created successfully", datacenter)
 
-    hostArray = hosts.split(',')
+    if not addCluster(
+        True, name=cluster, cpu=cpuName, data_center=datacenter,
+        version=version,
+    ):
+        raise ClusterException(
+            "addCluster %s with cpu_type %s and version %s "
+            "to datacenter %s failed" % (
+                cluster, cpuName, version, datacenter
+            )
+        )
+    logger.info("Cluster %s was created successfully", cluster)
+
+    add_hosts(hostArray, [password] * len(hostArray), cluster)
+
+    storage = ConfigObj()
+    storage['lun_address'] = [lun_address]
+    storage['lun_target'] = [lun_target]
+    storage['lun'] = split(luns)
+
+    if not create_storages(
+        storage, storage_type, hostArray[0], datacenter
+    ):
+        raise StorageDomainException("Can not add storages: %s" % storage)
 
     if bridgeless:
         logger.info("Updating %s to bridgeless network", mgmt_network)
@@ -449,9 +488,7 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
                         display_type=display_type, os_type=os_type,
                         image=image, user=vm_user,
                         password=vm_password, installation=True,
-                        cobblerAddress=cobblerAddress,
-                        cobblerUser=cobblerUser,
-                        cobblerPasswd=cobblerPasswd, network=vm_network,
+                        network=vm_network,
                         useAgent=True, diskType=diskType,
                         attempt=attempt, interval=interval,
                         placement_host=placement_host,
@@ -569,7 +606,7 @@ def deleteDummyInterface(host, username, password):
     else:
         rc, out = host_obj.runCmd(dummy_remove)
     if not rc:
-        logger.error("Removing dummy support failed ERR: %s",
+        logger.error("Removing dummy support from %s failed ERR: %s",
                      VDSM_CONF_FILE, out)
         return False
     logger.info("Dummy support removed")

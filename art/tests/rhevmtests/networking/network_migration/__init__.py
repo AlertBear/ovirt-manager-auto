@@ -21,7 +21,7 @@ def setup_package():
     """
     if not prepareSetup(hosts=",".join(config.HOSTS), cpuName=config.CPU_NAME,
                         username=config.HOSTS_USER,
-                        password=",".join([config.HOSTS_PW, config.HOSTS_PW]),
+                        password=config.HOSTS_PW,
                         datacenter=config.DC_NAME[0],
                         storageDomainName=config.STORAGE_NAME[0],
                         storage_type=config.STORAGE_TYPE,

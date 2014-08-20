@@ -4,7 +4,6 @@ Consolidated network config module
 
 __test__ = False
 
-from art.test_handler.settings import ART_CONFIG, opts
 from rhevmtests.config import *  # flake8: noqa
 from collections import OrderedDict
 
@@ -76,4 +75,3 @@ BOND_MODES = PARAMETERS.as_list("bond_modes")
 
 # Labels parameters
 LABEL_LIST = ["_".join(["label", str(elm)]) for elm in range(10)]
-

@@ -27,7 +27,7 @@ def setup_package():
     logger.info("Creating data center, cluster, adding host and storage")
     if not prepareSetup(hosts=",".join(config.HOSTS), cpuName=config.CPU_NAME,
                         username=config.HOSTS_USER,
-                        password=",".join([config.HOSTS_PW, config.HOSTS_PW]),
+                        password=config.HOSTS_PW,
                         datacenter=config.DC_NAME[0],
                         storageDomainName=config.STORAGE_NAME[0],
                         storage_type=config.STORAGE_TYPE,
@@ -38,7 +38,7 @@ def setup_package():
                         placement_host=config.HOSTS[0],
                         vmName=config.VM_NAME[0],
                         template_name=config.TEMPLATE_NAME[0],
-                        vm_password=config.HOSTS_PW,
+                        vm_password=config.VMS_LINUX_PW,
                         mgmt_network=config.MGMT_BRIDGE,
                         auto_nics=[config.HOST_NICS[0]]):
         raise NetworkException("Cannot create setup")
