@@ -81,7 +81,7 @@ class MigrateVmOnOtherDatacenter(NegativeVmMigration):
     Negative: Migrate vm on another datacenter
     """
     __test__ = True
-    cluster_name = config.CLUSTER_NAME[2]
+    cluster_name = config.ADDITIONAL_CL_NAME
 
     @tcms(TCMS_PLAN_ID, '301655')
     @istest

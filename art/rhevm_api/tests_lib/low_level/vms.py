@@ -3501,22 +3501,26 @@ def get_vm_boot_sequence(vm_name):
     return [boot.get_dev() for boot in boots]
 
 
-def remove_all_vms_from_cluster(cluster_name):
+def remove_all_vms_from_cluster(cluster_name, skip=None):
     """
     Remove all exists vms from specific cluster
     **Author**: alukiano
 
     **Parameters**:
         * *cluster_name* - cluster name
+        * *skip* - list of names of vms which should be left
     **Returns**: True, if all vms removed from cluster, False otherwise
     """
+    if skip is None:
+        skip = []
     vms_in_cluster = []
     cluster_name_query = "name=%s" % cluster_name
     cluster_obj = CLUSTER_API.query(cluster_name_query)[0]
     all_vms_obj = VM_API.get(absLink=False)
     for vm_obj in all_vms_obj:
         if vm_obj.get_cluster().get_id() == cluster_obj.get_id():
-            vms_in_cluster.append(vm_obj.get_name())
+            if vm_obj.get_name() not in skip:
+                vms_in_cluster.append(vm_obj.get_name())
     if not removeVms(True, vms_in_cluster):
         return False
     return True

@@ -46,7 +46,7 @@ class BaseVm(TestCase):
         logger.info("Add new vm %s", cls.vm_name)
         if not vm_api.addVm(True, name=cls.vm_name,
                             cluster=config.CLUSTER_NAME[0],
-                            memory=1536*MB):
+                            memory=1536 * MB):
             raise errors.VMException("Failed to create vm %s" % cls.vm_name)
 
     @classmethod
@@ -55,7 +55,8 @@ class BaseVm(TestCase):
         Remove all vms from cluster
         """
         logger.info("Remove all vms")
-        if not vm_api.remove_all_vms_from_cluster(config.CLUSTER_NAME[0]):
+        if not vm_api.remove_all_vms_from_cluster(config.CLUSTER_NAME[0],
+                                                  config.VM_NAME):
             raise errors.VMException("Failed to remove all vms")
 
 
@@ -133,7 +134,8 @@ class AddVm(TestCase):
         Remove all created vms
         """
         logger.info("Remove all vms")
-        if not vm_api.remove_all_vms_from_cluster(config.CLUSTER_NAME[0]):
+        if not vm_api.remove_all_vms_from_cluster(config.CLUSTER_NAME[0],
+                                                  config.VM_NAME):
             raise errors.VMException("Failed to remove all vms")
 
     @istest
@@ -592,7 +594,8 @@ class DifferentVmTestCases(TestCase):
         """
         Remove all created vms
         """
-        if not vm_api.remove_all_vms_from_cluster(config.CLUSTER_NAME[0]):
+        if not vm_api.remove_all_vms_from_cluster(config.CLUSTER_NAME[0],
+                                                  config.VM_NAME):
             raise errors.VMException("Failed to remove all vms")
 
     @attr(tier=1)
@@ -1026,16 +1029,18 @@ class RunVmOnce(BaseVmWithDisk):
                              name=nic_name,
                              network=config.MGMT_BRIDGE):
             raise errors.VMException("Failed to add nic to vm")
-        logger.info("Import iso storage domain %s:%s",
+        if not config.GOLDEN_ENV:
+            logger.info("Import iso storage domain %s:%s",
+                        config.SHARED_ISO_DOMAIN_ADDRESS,
+                        config.SHARED_ISO_DOMAIN_PATH)
+            if not sd_api.importStorageDomain(
+                    True, ENUMS['storage_dom_type_iso'],
+                    ENUMS['storage_type_nfs'],
                     config.SHARED_ISO_DOMAIN_ADDRESS,
-                    config.SHARED_ISO_DOMAIN_PATH)
-        if not sd_api.importStorageDomain(True, ENUMS['storage_dom_type_iso'],
-                                          ENUMS['storage_type_nfs'],
-                                          config.SHARED_ISO_DOMAIN_ADDRESS,
-                                          config.SHARED_ISO_DOMAIN_PATH,
-                                          config.HOSTS[0]):
-            raise errors.StorageDomainException("Failed to add shared iso "
-                                                "domain storage")
+                    config.SHARED_ISO_DOMAIN_PATH,
+                    config.HOSTS[0]):
+                raise errors.StorageDomainException("Failed to add shared iso "
+                                                    "domain storage")
         high_sd_api.attach_and_activate_domain(config.DC_NAME[0],
                                                config.SHARED_ISO_DOMAIN_NAME)
 
@@ -1053,11 +1058,13 @@ class RunVmOnce(BaseVmWithDisk):
         high_sd_api.detach_and_deactivate_domain(config.DC_NAME[0],
                                                  config.
                                                  SHARED_ISO_DOMAIN_NAME)
-        logger.info("Remove shared iso domain %s",
-                    config.SHARED_ISO_DOMAIN_NAME)
-        if not sd_api.removeStorageDomain(True, config.SHARED_ISO_DOMAIN_NAME,
-                                          config.HOSTS[0]):
-            raise errors.StorageDomainException("Failed to remove iso domain")
+        if not config.GOLDEN_ENV:
+            logger.info("Remove shared iso domain %s",
+                        config.SHARED_ISO_DOMAIN_NAME)
+            if not sd_api.removeStorageDomain(
+                    True, config.SHARED_ISO_DOMAIN_NAME, config.HOSTS[0]):
+                raise errors.StorageDomainException(
+                    "Failed to remove iso domain")
         super(RunVmOnce, cls).teardown_class()
 
     @bz({'1117783': None})
@@ -1186,9 +1193,9 @@ class VmPool(BaseVmWithDiskTemplate):
                     self.new_vm_pool)
         self.assertFalse(vm_pool_api.removeVmPool(True, self.new_vm_pool))
         logger.info("Detach all vms from vm pool %s", self.new_vm_pool)
-        self.assertTrue(vm_pool_api.detachVms(True, self.new_vm_pool))
+        vm_pool_api.detachVms(True, self.new_vm_pool)
         logger.info("Remove vm pool %s", self.new_vm_pool)
-        self.assertTrue(vm_pool_api.removeVmPool(True, self.new_vm_pool))
+        vm_pool_api.removeVmPool(True, self.new_vm_pool)
 
 
 @attr(tier=0)
