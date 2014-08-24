@@ -361,7 +361,7 @@ class RolesCase54412(TestCase):
     __test__ = True
 
     @tcms(TCMS_PLAN_ID, 54412)
-    @bz(949950, 977304)
+    @bz({949950: {}, 977304: {}})
     @istest
     def rolesHiearchy(self):
         """ Check if permissions are correctly inherited from objects """

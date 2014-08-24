@@ -28,10 +28,9 @@ automatic_rebuild = True
 try:
     BZ_PLUGIN = [pl for pl in plmanager.configurables
                  if pl.name == "Bugzilla"][0]
-    BZ_854140_NOT_FIXED = not BZ_PLUGIN.is_state('854140',
-                                                 BZ_PLUGIN.const_list)
-    BZ_958044_FIXED = BZ_PLUGIN.is_state('958044', BZ_PLUGIN.const_list)
-    BZ_967749_FIXED = BZ_PLUGIN.is_state('967749', BZ_PLUGIN.const_list)
+    BZ_854140_NOT_FIXED = not BZ_PLUGIN.is_state('854140')
+    BZ_958044_FIXED = BZ_PLUGIN.is_state('958044')
+    BZ_967749_FIXED = BZ_PLUGIN.is_state('967749')
 except IndexError:
     BZ_854140_NOT_FIXED = False
     BZ_958044_FIXED = True

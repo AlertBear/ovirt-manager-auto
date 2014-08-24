@@ -28,7 +28,7 @@ Configuration File Options
     | **user**  Equivalent to bz-user CLI option
     | **password**  Equivalent to bz-pass CLI option
     | **url**  Equivalent to bz-host CLI option
-    | **constant_list**  List of bug states which should be not skipped
+    | **constant_list**  String of bug states which should not be skipped
     | **path_to_issuedb** Path to file where are you can map bugs to cases
 
 Usage
@@ -56,27 +56,32 @@ Issues DB syntax
 
 import re
 import copy
+from functools import wraps
+
 from art.test_handler.exceptions import SkipTest
-from art.test_handler.plmanagement import Component, implements, get_logger,\
+from art.test_handler.plmanagement import (
+    Component,
+    implements,
+    get_logger,
     PluginError
-from art.test_handler.plmanagement.interfaces.application import\
-    IConfigurable, IApplicationListener
-from art.test_handler.plmanagement.interfaces.tests_listener import\
-    ITestCaseHandler, ITestGroupHandler, ITestSkipper
+)
+from art.test_handler.plmanagement.interfaces.application import (
+    IConfigurable,
+    IApplicationListener
+)
+
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
-from art.test_handler.plmanagement.interfaces.config_validator import\
+from art.test_handler.plmanagement.interfaces.config_validator import (
     IConfigValidation
-import art.test_handler.settings as settings
+)
+from art.test_handler.settings import initPlmanager, opts
 from art.test_handler import find_config_file
+
 from utilities.issuesdb import IssuesDB
 
 
 logger = get_logger('bugzilla')
 
-
-RUN = 'RUN'
-REST = 'REST_CONNECTION'
-PARAMETERS = 'PARAMETERS'
 BZ_OPTION = 'BUGZILLA'
 ENGINE = 'engine'
 PRODUCT = 'product'
@@ -90,8 +95,24 @@ DEFAULT_STATE = False
 RHEVM_RPM = 'rhevm'
 OVIRT_RPM = 'ovirt-engine'
 
-INFO_TAGS = ('version', 'build_id', 'bug_status', 'product', 'short_desc',
+INFO_TAGS = ('version',
+             'build_id',
+             'bug_status',
+             'product',
+             'short_desc',
              'component')
+
+SKIP_FOR_RESOLUTION = [
+    'NOTABUG',
+    'WONTFIX',
+    'DEFERRED',
+    'WORKSFORME',
+    'RAWHIDE',
+    'UPSTREAM',
+    'CANTFIX',
+    'INSUFFICIENT_DATA',
+    'NEXTRELEASE'
+]
 
 CLI = 'cli'
 SDK = 'sdk'
@@ -102,18 +123,57 @@ RHEVM_PRODUCT = 'Red Hat Enterprise Virtualization Manager'
 OVIRT_PRODUCT = 'oVirt'
 
 BZ_ID = 'bz'
+BZ_DICT = 'bz_dict'
 
 URL_RE = re.compile("^(https?://[^/]+)")
 
 
-def bz_decorator(*ids):
+def bz(bug_dict):
     """
-    Bugzilla decorator
+    Decorator function to skip test case, when we have opened bug for it.
+
+    * parameters:
+        ** bug_dict: {'bug_id': {
+                        'engine': ['cli', 'java'],
+                        'version': ['3.4', '3.5']
+                        }
+                    }
+    * raises: SkipTest
+    * returns: function object
     """
-    def decorator(func):
-        setattr(func, BZ_ID, ','.join([str(i) for i in ids]))
-        return func
-    return decorator
+    def real_bz(func):
+
+        def check_should_skip(bz_id, engine=None, version=None):
+            plmanager = initPlmanager()
+            BZ_PLUGIN = [pl for pl in plmanager.application_liteners
+                         if pl.name == "Bugzilla"][0]
+            try:
+                BZ_PLUGIN.should_be_skipped(bz_id, engine, version)
+            except BugzillaSkipTest:
+                logger.warn("Skipping test because BZ%s for "
+                            "engine %s, version %s",
+                            bz_id, opts['engine'], version)
+                raise
+
+        @wraps(func)
+        def skip_if_bz(*args, **kwargs):
+            try:
+                # backward compatible for @bz(bug_id) structure
+                if not isinstance(bug_dict, dict):
+                    logger.info("This bz is in old structure "
+                                "- consider changing it")
+                    check_should_skip(bug_dict)
+                # @bz new structure
+                else:
+                    for bz_id, options in bug_dict.iteritems():
+                        engine = options.get('engine')
+                        version = options.get('version')
+                        check_should_skip(bz_id, engine, version)
+                return func(*args, **kwargs)
+            except IndexError:
+                logger.warning("Failed to get Bugzilla plugin")
+        return skip_if_bz
+    return real_bz
 
 
 def expect_list(bug, item_name, default=None):
@@ -176,8 +236,10 @@ class Bugzilla(Component):
     """
     Plugin provides access to bugzilla site.
     """
-    implements(IConfigurable, IApplicationListener, ITestCaseHandler,
-               ITestGroupHandler, ITestSkipper, IConfigValidation, IPackaging)
+    implements(IConfigurable,
+               IApplicationListener,
+               IConfigValidation,
+               IPackaging)
 
     name = "Bugzilla"
     enabled = True
@@ -216,9 +278,8 @@ class Bugzilla(Component):
         self.bugzilla = bugzilla.Bugzilla44(url=self.url)
         self.bugzilla.login(self.user, self.passwd)
 
-        self.const_list = bz_cfg.get('constant_list', "Closed, Verified")
-        self.const_list = set(self.const_list.upper().replace(',', ' ').
-                              split())
+        self.const_list = bz_cfg.get('constant_list', "Closed,Verified")
+        self.const_list = self.const_list.upper().replace(',', ' ').split()
 
         self.build_id = None  # where should I get it
         self.product = bz_cfg[PRODUCT]
@@ -240,17 +301,17 @@ class Bugzilla(Component):
 
     def __register_functions(self):
         from art.test_handler import tools
-        setattr(tools, BZ_ID, bz_decorator)
+        setattr(tools, BZ_ID, bz)
 
-    def is_state(self, bz_id, *states):
+    def is_state(self, bz_id):
         """
-        Returns True/False accordingly
+        Returns True is the bug is in state specified in self.const_list
+        by default it will return true if verified or closed
         Parameters:
          * bz_id - bugzilla ID
-         * staties - expected states
         """
         bug = self.bz(bz_id)
-        return bug.bug_status in states
+        return bug.bug_status in self.const_list
 
     def bz(self, bz_id):
         """
@@ -271,18 +332,81 @@ class Bugzilla(Component):
         logger.info(msg)
         return bug
 
+    def on_application_start(self):
+        pass
+
     def on_application_exit(self):
         if self.bugzilla is not None:
             self.bugzilla.logout()
 
-    def on_application_start(self):
-        pass
-
     def on_plugins_loaded(self):
         pass
 
+    def should_be_skipped(self, bz_id, engines=None, versions=None):
+        """
+        Raises BugzillaSkipTest if the bug is in non-resolved state
+        (not verified or closed) and it's open for the current running engine
+        and its in the specified version or was fixed in later version
+        * parameters:
+            ** bz_id the id of the bug
+            ** engines list of relevant engines for this bug
+            ** versions list of relevant versions for this bug
+        * raises: BugzillaSkipTest exception if the test should get skipped
+        * return: None if the test should not skip
+        """
+        # get bz object
+        try:
+            bz = self.bz(bz_id)
+        except BugNotFound as ex:
+            logger.error("failed to get BZ<%s> info: %s", bz_id, ex)
+            return
+
+        while bz.bug_status == 'CLOSED' and bz.resolution == 'DUPLICATE':
+            try:
+                bz_id = bz.dupe_of
+                bz = self.bz(bz.dupe_of)
+            except BugNotFound as ex:
+                logger.error("failed to get duplicate BZ<%s> info: %s",
+                             bz.bz_id, ex)
+                return
+
+        # check if the bz is open for the current engine
+        engine_in = engines is None or opts['engine'] in engines
+
+        if versions is None:
+            from art.rhevm_api.tests_lib.low_level import general
+            versions = ["%d.%d" % general.getSystemVersion()]
+
+        for version in versions:
+            self.version = Version(version)
+            # if the bug is open & should skip for engine &
+            # relevant for this version
+            if (not self.is_state(bz_id) and engine_in and
+                    self.__check_version(bz)):
+                logger.info("skipping due to in_state=%s, engine_in=%s",
+                            self.is_state(bz_id), engine_in)
+                raise BugzillaSkipTest(bz, self.url)
+
+            # if the bug is closed on current release resolution, but was fixed
+            # in later version
+            if bz.bug_status == 'CLOSED':
+                if self.__check_fixed_at(bz) and engine_in:
+                    raise BugzillaSkipTest(bz, self.url)
+
+        for version in versions:
+            self.version = Version(version)
+            # if the bug is closed but should skip due to resolution cause
+            if (bz.bug_status == 'CLOSED' and engine_in and
+                    self.__check_version(bz) and
+                    bz.resolution in SKIP_FOR_RESOLUTION):
+                logger.info("skipping due to in_state=%s, resolution=%s",
+                            self.is_state(bz_id), bz.resolution)
+                raise BugzillaSkipTest(bz, self.url)
+
     def __check_version(self, bug):
-        """Skip?"""
+        """
+        Returns True if the bug is related to this version
+        """
         if getattr(bug, 'version', None):
             version = expect_list(bug, 'version')
             version = [x for x in version if x != 'unspecified']
@@ -298,10 +422,10 @@ class Bugzilla(Component):
         return True
 
     def __check_fixed_at(self, bug):
-        '''
+        """
         Returns True if the bug was fixed at a later version,
         hence should be skipped.
-        '''
+        """
         if getattr(bug, "target_release", None):
             fixed_at = bug.target_release[0]
             if fixed_at == NONE_VER:
@@ -316,35 +440,6 @@ class Bugzilla(Component):
 
         return False
 
-    def __deal_with_comp_and_version(self, bug, active_comp):
-        comp = expect_list(bug, 'component', '')
-        if comp and comp[0]:
-            comp = comp.pop()
-        else:
-            comp = ''
-
-        if self.version is None:
-            from art.rhevm_api.tests_lib.low_level.general\
-                import getSystemVersion
-            self.version = Version("%d.%d" % getSystemVersion())
-
-        if 'ovirt-engine' in comp:
-            comp = transform_ovirt_comp(comp)
-            if comp in (SDK, CLI) and active_comp == REST:
-                return False
-            if comp == SDK and active_comp in (SDK, CLI):
-                return self.__check_version(bug)
-            if comp == CLI and active_comp == comp:
-                return self.__check_version(bug)
-            if comp == CLI and active_comp in (SDK, REST):
-                return False
-            return self.__check_version(bug)
-        # different component, why not to skip it
-        return True
-
-    def __is_open(self, bug):
-        return bug.bug_status not in self.const_list
-
     def __is_related_product(self, bug):
         product = getattr(bug, 'product', '')
         # there could be bug which is not related to RHEVM or oVirt
@@ -355,79 +450,6 @@ class Bugzilla(Component):
                 logger.warn(msg, bug.id, self.product, product)
                 return False
         return True
-
-    def _get_engine_name(self, test):
-        engine = getattr(test, 'api', None)
-        if not engine:
-            engine = settings.opts['engine']
-        return engine
-
-    def _should_be_skipped(self, test):
-        if not getattr(test, 'bz', False):
-            bz_ids = []
-        else:
-            bz_ids = test.bz.replace(',', ' ').split()
-
-        if self.issuedb:
-            bz_ids += self.issuedb.lookup(test.test_name, self.config_name)
-
-        active_comp = self._get_engine_name(test)
-        for bz_id in bz_ids:
-            try:
-                bz = self.bz(bz_id)
-            except Exception as ex:
-                logger.error("failed to get BZ<%s> info: %s", bz_id, ex)
-                continue
-
-            # NOTE: https://projects.engineering.redhat.com/browse/RHEVM-1189
-            # if not self.__is_related_product(bz):
-            #     continue
-
-            skipped = self.__deal_with_comp_and_version(bz, active_comp)
-            if not self.__is_open(bz):
-                skipped &= self.__check_fixed_at(bz)
-            if skipped:
-                raise BugzillaSkipTest(bz, self.url)
-
-    def should_be_test_case_skipped(self, test_case):
-        pass
-        #self._should_be_skipped(test_case)
-
-    def should_be_test_group_skipped(self, test_group):
-        pass
-        #self._should_be_skipped(test_group)
-
-    def pre_test_case(self, t):
-        pass
-
-    def __set_status(self, elm):
-        try:
-            self._should_be_skipped(elm)
-        except SkipTest as ex:
-            st = getattr(elm, 'status', elm.TEST_STATUS_FAILED)
-            if st in (elm.TEST_STATUS_FAILED, elm.TEST_STATUS_ERROR):
-                # NOTE: many test_cases running with sdk_engine ends with
-                # ERROR status instead of FAIL so it is needed to be able skip
-                # also these test_cases. I am not happy with that because
-                # status ERROR is dedicated for different purpose, but current
-                # design is not able to handle in better way.
-                logger.info("Test marked as Skipped due to: %s", ex)
-                elm.status = elm.TEST_STATUS_SKIPPED
-
-    def post_test_case(self, t):
-        self.__set_status(t)
-
-    def pre_test_group(self, g):
-        pass
-
-    def post_test_group(self, g):
-        self.__set_status(g)
-
-    def test_group_skipped(self, g):
-        pass
-
-    def test_case_skipped(self, t):
-        pass
 
     @classmethod
     def is_enabled(cls, params, conf):

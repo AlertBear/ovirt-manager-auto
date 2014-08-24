@@ -186,7 +186,7 @@ class TestCase286226(helpers.HotplugHookTest):
     use_disks = DISKS_TO_PLUG
     hooks = {'after_disk_hotplug': [helpers.HOOKWITHSLEEPFILENAME]}
 
-    @bz(1003649, 991742)
+    @bz({1003649: {}, 991742: {}})
     @tcms(9940, 286226)
     def test_after_disk_hotplug_10_disks_concurrently(self):
         """ try to hotplug 10 tests concurrently and check that all hooks
@@ -214,7 +214,7 @@ class TestCase287480(helpers.HotplugHookTest):
     use_disks = DISKS_TO_PLUG
     hooks = {'after_disk_hotunplug': [helpers.HOOKWITHSLEEPFILENAME]}
 
-    @bz(1003649, 991742)
+    @bz({1003649: {}, 991742: {}})
     @tcms(9940, 287480)
     def test_after_disk_hotunplug_10_disks_concurrently(self):
         """ Unplug concurrently 10 disks and check if after_unplug hook
