@@ -74,3 +74,6 @@ NET2_TEMP_IP = '6.6.6.100'
 # Topologies parameters
 BOND_MODES = PARAMETERS.as_list("bond_modes")
 
+# Labels parameters
+LABEL_LIST = ["_".join(["label", str(elm)]) for elm in range(10)]
+

@@ -67,3 +67,14 @@ def get_host(vm):
     if not rc:
         raise NetworkException("Cannot get host that VM resides on")
     return out['vmHoster']
+
+
+def vlan_int_name(interface, vlan):
+    """
+        Description: Build the name for tagged interface or bond
+            **Parameters**:
+                *  *interface* - interface name
+                *  *vlan* - vlan id
+            Return: interface.vlan name format
+        """
+    return ".".join([interface, vlan])

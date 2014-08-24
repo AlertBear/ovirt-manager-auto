@@ -20,7 +20,9 @@
 import logging
 import re
 import os
-from art.rhevm_api.tests_lib.low_level.clusters import addCluster
+from art.rhevm_api.tests_lib.high_level.hosts import add_hosts
+from art.rhevm_api.tests_lib.low_level.clusters import addCluster, \
+    removeCluster
 
 from utilities import machine
 from art.rhevm_api.utils.test_utils import restartVdsmd, sendICMP
@@ -29,7 +31,7 @@ from art.rhevm_api.tests_lib.low_level.networks import addNetwork,\
     addNetworkToCluster, NET_API,\
     DC_API, updateNetwork, getClusterNetworks, MGMT_NETWORK
 from art.rhevm_api.tests_lib.low_level.hosts import sendSNRequest,\
-    commitNetConfig, genSNNic, getHostNic, addHost
+    commitNetConfig, genSNNic, getHostNic, removeHost
 from art.rhevm_api.tests_lib.low_level.templates import createTemplate
 from art.rhevm_api.tests_lib.low_level.vms import getVmMacAddress,\
     startVm, stopVm, createVm, waitForVmsStates
@@ -38,8 +40,8 @@ from art.rhevm_api.utils.test_utils import convertMacToIpAddress,\
 from art.rhevm_api.tests_lib.low_level.storagedomains import createDatacenter,\
     waitForStorageDomainStatus, cleanDataCenter
 from art.rhevm_api.tests_lib.low_level.datacenters import\
-    waitForDataCenterState, addDataCenter
-from art.test_handler.exceptions import DataCenterException
+    waitForDataCenterState, addDataCenter, removeDataCenter
+from art.test_handler.exceptions import DataCenterException, HostException
 from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api import is_action
 from art.test_handler.settings import opts
@@ -967,7 +969,7 @@ def create_basic_setup(datacenter, storage_type, version, cluster=None,
                        cpu=None, host=None, host_password=None):
     """
     Description: Create basic setup with datacenter and optional cluster and
-    host
+    hosts
     Author: myakove
     Parameters:
        *  *datacenter* - Datacenter name
@@ -982,21 +984,52 @@ def create_basic_setup(datacenter, storage_type, version, cluster=None,
     if not addDataCenter(positive=True, name=datacenter,
                          storage_type=storage_type,
                          version=version):
+        logger.error("Failed to add DC")
         return False
 
     if cluster:
         if not addCluster(positive=True, name=cluster,
                           cpu=cpu, data_center=datacenter,
                           version=version):
+            logger.error("Failed to add Cluster")
             return False
 
         if host:
             host_list = [host] if isinstance(host, basestring) else host
-            for host in host_list:
-                if not addHost(positive=True, name=host,
-                               root_password=host_password,
-                               cluster=cluster):
-                    return False
+            try:
+                add_hosts(hosts_list=host_list, cluster=cluster,
+                          passwords=[host_password] * len(host_list))
+            except HostException:
+                logger.error("Failed to add host")
+                return False
+    return True
+
+
+def remove_basic_setup(datacenter, cluster=None, hosts=None):
+    """
+       Description: Remove basic setup with datacenter and optional cluster and
+       hosts
+       Author: gcheresh
+       Parameters:
+          *  *datacenter* - Datacenter name
+          *  *cluster* - Cluster name
+          *  *host* - Host name or a list of Host names
+       **Return**: True if setup removal succeeded, otherwise False
+       """
+    if cluster:
+        for host in hosts:
+            if not removeHost(positive=True, host=host,
+                              deactivate=True):
+                logger.error("Failed to remove host %s ", host)
+                return False
+
+        if not removeCluster(positive=True, cluster=cluster):
+            logger.error("Failed to remove Cluster")
+            return False
+
+    if not removeDataCenter(positive=True, datacenter=datacenter):
+        logger.error("Failed to remove DC")
+        return False
     return True
 
 

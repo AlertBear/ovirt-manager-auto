@@ -879,7 +879,7 @@ def check_network_on_nic(network, host, nic):
     """
     try:
         nic_obj_id = ll.hosts.getHostNic(host, nic).get_network().get_id()
-        net_obj_id = NET_API.find(network).get_id
+        net_obj_id = NET_API.find(network).get_id()
     except (EntityNotFound, AttributeError) as e:
         logger.error(e)
         return False
@@ -1061,6 +1061,7 @@ def add_label(**kwargs):
                 if not LABEL_API.create(entity=label_obj, positive=True,
                                         collection=labels_href,
                                         coll_elm_name="label")[1]:
+                    logger.error("Can't add label to the network %s", network)
                     status = False
         if host_nic_dict:
             for host in host_nic_dict:
@@ -1073,6 +1074,8 @@ def add_label(**kwargs):
                     if not LABEL_API.create(entity=label_obj, positive=True,
                                             collection=labels_href,
                                             coll_elm_name="label")[1]:
+                        logger.error("Can't add label to the NIC %s on Host "
+                                     "%s", nic, host)
                         status = False
 
     except EntityNotFound as e:
