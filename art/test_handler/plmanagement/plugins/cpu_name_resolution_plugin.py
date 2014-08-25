@@ -132,11 +132,16 @@ class AutoCpuNameResolution(Component):
                 model_name += name[4:].replace(' ', '_')
                 vendor = 'AMD'
             elif 'IBM POWER' in name:
-                model_name += "%s%s_%s" % tuple(name.split()[1:])
+                split_name = name.split()
+                if len(split_name) == 4:
+                    model_name += "%s%s_%s" % tuple(split_name[1:])
+                elif len(split_name) == 3:
+                    model_name += "%s%s" % tuple(split_name[1:])
+                else:
+                    logger.warning("Unknown model name: %s", name)
                 vendor = 'IBM POWER'
             else:
-#                raise CpuPluginError('Unknown vendor of %s' % name)
-                logger.warning('Unknown vendor of %s' % name)
+                logger.warning('Unknown vendor of %s', name)
                 continue
             self.cpus_model_mapping[model_name] = {'name': name,
                                                    'level': level,
