@@ -31,12 +31,18 @@ NUMBER_OF_DISKS = int(PARAMETERS.get('no_of_disks', 8))
 
 # Storage domain names
 STORAGE_DEVICE_TYPE_MAP = {
-    STORAGE_TYPE_POSIX: STORAGE_TYPE_NFS,  # posix are nfs_devices
+    STORAGE_TYPE_POSIX: STORAGE_TYPE_NFS,  # posix   -> nfs_devices
+    STORAGE_TYPE_LOCAL: "local",           # localfs -> local_devices
 }
 
 STORAGE_DEVICE_NAME = STORAGE_DEVICE_TYPE_MAP.get(STORAGE_TYPE, STORAGE_TYPE)
 
-NUMBER_OF_SDS = int(STORAGE_CONF.get('%s_devices' % STORAGE_DEVICE_NAME))
+if STORAGE_TYPE == STORAGE_TYPE_LOCAL:
+    # defined in conf as list of directories
+    NUMBER_OF_SDS = len(
+        STORAGE_CONF.as_list('%s_devices' % STORAGE_DEVICE_NAME))
+else:
+    NUMBER_OF_SDS = int(STORAGE_CONF.get('%s_devices' % STORAGE_DEVICE_NAME))
 
 SD_NAMES_LIST = []
 for idx in range(NUMBER_OF_SDS):
