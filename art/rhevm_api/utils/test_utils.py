@@ -1270,8 +1270,7 @@ def runSQLQueryOnSetup(vdc, vdc_pass, query,
 
 def get_running_tasks(vdc, vdc_pass, sp_id, db_name, db_user):
     """
-    Description: Gets tuple (task_id, storage_pool_id) for all tasks running
-                 in rhevm
+    Description: Gets taks_id for all tasks running in rhevm
     Parameters:
         * vdc - ip or hostname of rhevm
         * vdc_pass - root password for rhevm machine
@@ -1279,7 +1278,7 @@ def get_running_tasks(vdc, vdc_pass, sp_id, db_name, db_user):
         * db_name - name of the rhevm database
         * db_user - name of the user of database
     """
-    query = "select task_id, task_params_class from " \
+    query = "select task_id from " \
             "async_tasks where storage_pool_id = '%s'" % sp_id
     tasks = runSQLQueryOnSetup(vdc, vdc_pass, query, db_user, db_name)
     logger.debug("Query %s returned list: %s", query, tasks)
