@@ -38,4 +38,4 @@ if STORAGE_TYPE == 'nfs' or STORAGE_TYPE.startswith('posixfs'):
         'data_domain_address')[0]
     PARAMETERS['data_domain_path'] = PARAMETERS.as_list('data_domain_path')[0]
     HOST_FOR_MNT = HOSTS[1]
-    PASSWD_FOR_MNT = HOST_PW
+    PASSWD_FOR_MNT = HOSTS_PW
