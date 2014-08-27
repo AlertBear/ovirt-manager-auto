@@ -119,7 +119,7 @@ def NORMAL_USER(domain):
 def TEST_USER(domain):
     return getParamFromDomain('user', domain)
 
-MAIN_CLUSTER_NAME = CLUSTER_NAME[0]
+MAIN_CLUSTER_NAME = 'Default'
 AD_TCMS_PLAN_ID = 2112
 IPA_TCMS_PLAN_ID = 3999
 RHDS_TCMS_PLAN_ID = 5859
