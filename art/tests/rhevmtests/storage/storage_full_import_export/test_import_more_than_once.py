@@ -146,8 +146,8 @@ class TestCase174617(TestCase):
         """
         * Remove vms/template created
         """
-        logger.info("Rremoving vms and templates")
-        vmsList = ",".join([self.vm_name, self.from_vm1, self.from_vm2,
+        logger.info("Removing vms and templates")
+        vmsList = ",".join([self.from_vm1, self.from_vm2,
                            self.vm_cloned1, self.vm_cloned2])
         vms.removeVms(True, vmsList, stop='true')
 

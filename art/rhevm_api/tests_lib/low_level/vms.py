@@ -1724,6 +1724,7 @@ def importVm(positive, vm, export_storagedomain, import_storagedomain,
     vmObj = VM_API.find(vm, collection=sdVms)
 
     expectedStatus = vmObj.status.state
+    expectedName = vmObj.get_name()
 
     sd = data_st.StorageDomain(name=import_storagedomain)
     cl = data_st.Cluster(name=cluster)
@@ -1745,16 +1746,15 @@ def importVm(positive, vm, export_storagedomain, import_storagedomain,
         newVm.snapshots.collapse_snapshots = True
         actionParams['clone'] = True
         actionParams['vm'] = newVm
+        expectedName = name
 
     status = VM_API.syncAction(vmObj, actionName, positive, **actionParams)
 
     if async:
         return status
 
-    # TODO: replace sleep with true diagnostic
-    time.sleep(30)
     if status and positive:
-        return VM_API.waitForElemStatus(vmObj, expectedStatus, 300)
+        return waitForVMState(expectedName, expectedStatus)
     return status
 
 
