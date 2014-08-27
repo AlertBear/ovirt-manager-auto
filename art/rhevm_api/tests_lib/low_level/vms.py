@@ -2020,7 +2020,9 @@ def checkVmStatistics(positive, vm):
         logger.info('All ' + str(numOfExpStat) + ' statistics appear')
     else:
         logger.error(
-            'The following statistics are missing:', expectedStatistics)
+            'The following statistics are missing: %s',
+            expectedStatistics,
+        )
         status = False
 
     return status
