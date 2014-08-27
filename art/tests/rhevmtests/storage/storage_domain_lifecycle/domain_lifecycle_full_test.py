@@ -207,28 +207,36 @@ class TestCase174610(BaseTestCase):
         Unblock connection.
         Check that the host is UP again.
         """
-        ip_action.block_and_wait(self.engine_ip, config.HOSTS_USER,
-                                 config.HOSTS_PW, config.FIRST_HOST,
-                                 config.FIRST_HOST,
-                                 config.HOST_NONRESPONSIVE)
+        assert ip_action.block_and_wait(self.engine_ip, config.HOSTS_USER,
+                                        config.HOSTS_PW, config.FIRST_HOST,
+                                        config.FIRST_HOST,
+                                        config.HOST_NONRESPONSIVE)
 
-        ip_action.unblock_and_wait(self.engine_ip, config.HOSTS_USER,
-                                   config.HOSTS_PW, config.FIRST_HOST,
-                                   config.FIRST_HOST)
+        assert ip_action.unblock_and_wait(self.engine_ip, config.HOSTS_USER,
+                                          config.HOSTS_PW, config.FIRST_HOST,
+                                          config.FIRST_HOST)
 
     @classmethod
     def teardown_class(cls):
         """
         unblock all connections that were blocked during the test
         """
-        logger.info('Unblocking connections')
-        try:
-            st_api.unblockOutgoingConnection(cls.engine_ip,
-                                             config.HOSTS_USER,
-                                             config.HOSTS_PW,
-                                             config.FIRST_HOST)
-        except exceptions.NetworkException, msg:
-            logging.info("Connection already unblocked. reason: %s", msg)
+        def everything_ok():
+            return ll_datacenters.waitForDataCenterState(
+                config.DATA_CENTER_NAME) and hosts.isHostUp(
+                True, config.FIRST_HOST)
+
+        if not everything_ok():
+            logger.info('Unblocking connections, something went wront')
+            try:
+                st_api.unblockOutgoingConnection(cls.engine_ip,
+                                                 config.HOSTS_USER,
+                                                 config.HOSTS_PW,
+                                                 config.FIRST_HOST)
+            except exceptions.NetworkException, msg:
+                logging.info("Connection already unblocked. reason: %s", msg)
+
+        assert everything_ok()
 
 
 @attr(tier=0)
@@ -310,8 +318,8 @@ class TestCase174631(TestCase):
     @classmethod
     def setup_class(cls):
         logger.info('Creating vm and installing OS on it')
-        if not _create_vm(config.VM_NAME,
-                          config.VM_NAME,
+        if not _create_vm(config.VM_NAME[0],
+                          config.VM_NAME[0],
                           config.INTERFACE_VIRTIO_SCSI):
                 raise exceptions.VMException("Failed to create VM")
 
@@ -325,10 +333,10 @@ class TestCase174631(TestCase):
                 raise exceptions.StorageDomainException(
                     "Failed to attach SD %s" % sd)
 
-        logger.info('Shutting down VM %s', config.VM_NAME)
-        if not vms.stopVm(True, config.VM_NAME):
+        logger.info('Shutting down VM %s', config.VM_NAME[0])
+        if not vms.stopVm(True, config.VM_NAME[0]):
             raise exceptions.VMException("Failed to shutdown vm %s"
-                                         % config.VM_NAME)
+                                         % config.VM_NAME[0])
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_multiple_disks_on_different_sd(self):
@@ -347,7 +355,7 @@ class TestCase174631(TestCase):
                 else:
                     # policy_allocation = True --> sparse
                     policy_allocation = True
-                self.assertTrue(vms.addDisk(True, config.VM_NAME,
+                self.assertTrue(vms.addDisk(True, config.VM_NAME[0],
                                             config.DISK_SIZE, True, sd,
                                             type=ENUMS['disk_type_data'],
                                             interface=self.interfaces[index],
@@ -355,21 +363,21 @@ class TestCase174631(TestCase):
                                             sparse=policy_allocation),
                                 "Failed to add disk")
 
-        self.assertTrue(vms.startVm(True, config.VM_NAME),
-                        "Failed to start vm %s" % config.VM_NAME)
+        self.assertTrue(vms.startVm(True, config.VM_NAME[0]),
+                        "Failed to start vm %s" % config.VM_NAME[0])
 
-        self.assertTrue(vms.stopVm(True, config.VM_NAME),
-                        "Failed to stop vm %s" % config.VM_NAME)
+        self.assertTrue(vms.stopVm(True, config.VM_NAME[0]),
+                        "Failed to stop vm %s" % config.VM_NAME[0])
 
     @classmethod
     def teardown_class(cls):
         """
         Removes disks, vm and SDs
         """
-        logger.info('Removing vm %s', config.VM_NAME)
-        if not vms.removeVm(True, config.VM_NAME, wait=True):
+        logger.info('Removing vm %s', config.VM_NAME[0])
+        if not vms.removeVm(True, config.VM_NAME[0], wait=True):
             raise exceptions.VMException(
-                "Failed to remove vm %s" % config.VM_NAME)
+                "Failed to remove vm %s" % config.VM_NAME[0])
 
         wait_for_tasks(config.VDC, config.VDC_PASSWORD,
                        config.DATA_CENTER_NAME)

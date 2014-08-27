@@ -76,8 +76,9 @@ def block_and_wait(source, s_user, s_pass, destination,
         * wait_for_entity - the ip or fdqn of the machine that we wait
                             for its state
         * expected_state - the state that we wait for
+    Return: True if operation executed successfully , False otherwise
     """
-    _perform_iptables_action_and_wait(
+    return _perform_iptables_action_and_wait(
         BLOCK, source, s_user, s_pass,
         destination, wait_for_entity, expected_state)
 
@@ -98,8 +99,9 @@ def unblock_and_wait(source, s_user, s_pass, destination,
         * wait_for_entity - the ip or fdqn of the machine that we wait
                             for its state
         * expected_state - the state that we wait for
+    Return: True if operation executed successfully , False otherwise
     """
 
-    _perform_iptables_action_and_wait(
+    return _perform_iptables_action_and_wait(
         UNBLOCK, source, s_user, s_pass,
         destination, wait_for_entity, expected_state)
