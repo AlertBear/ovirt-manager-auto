@@ -242,7 +242,7 @@ class BasicResize(BaseTestCase):
         self.block_cmd = self.block_cmd % master_domain_ip
 
         t = Thread(target=watch_logs, args=(
-            FILE_TO_WATCH, REGEX, self.block_cmd, 600,
+            FILE_TO_WATCH, REGEX, self.block_cmd, None,
             self.host_ip, config.HOSTS_USER, config.HOSTS_PW))
         t.start()
 
@@ -735,7 +735,7 @@ class TestCase297085(BasicResize):
         """
         host_ip = getIpAddressByHostName(config.HOSTS[0])
         t = Thread(target=watch_logs, args=(
-            FILE_TO_WATCH, self.look_for_regex, self.stop_libvirt, 600,
+            FILE_TO_WATCH, self.look_for_regex, self.stop_libvirt, None,
             host_ip, config.HOSTS_USER, config.HOSTS_PW))
         t.start()
 

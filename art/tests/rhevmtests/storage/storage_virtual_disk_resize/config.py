@@ -27,3 +27,5 @@ VDC_PASSWORD = VDC_ROOT_PASSWORD
 
 # allocation policies
 SPARSE = True
+
+DISK_SIZE = 6 * GB
