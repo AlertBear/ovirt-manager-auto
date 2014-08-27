@@ -8,7 +8,7 @@ ENUMS = config.ENUMS
 
 
 def _create_vm(vm_name, disk_interface,
-               sparse=True, volume_format=ENUMS['format_cow'],
+               sparse=True, volume_format=config.COW_DISK,
                vm_type=config.VM_TYPE_DESKTOP):
     """
     helper function for creating vm (passes common arguments, mostly taken

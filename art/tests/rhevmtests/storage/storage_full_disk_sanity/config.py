@@ -37,3 +37,7 @@ if STORAGE_TYPE == STORAGE_TYPE_ISCSI:
             "lun_addresses": [address],
             "lun_list": [lun],
         })
+
+    DIRECT_LUN = PARAMETERS.get('direct_lun')
+    DIRECT_LUN_ADDRESS = PARAMETERS.get('direct_lun_address')
+    DIRECT_LUN_TARGET = PARAMETERS.get('direct_lun_target')
