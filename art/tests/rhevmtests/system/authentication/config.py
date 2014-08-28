@@ -14,7 +14,7 @@ OpenLDAP = ART_CONFIG['OpenLDAP']
 def getUserWithDomain(user_name, user_domain):
     return '%s@%s' % (user_name, user_domain)
 
-USER_PASSWORD = 123456
+USER_PASSWORD = '123456'
 
 # TLV domain
 AD1_DOMAIN = ACTIVE_DIRECTORY.get('ad1_domain', None)
