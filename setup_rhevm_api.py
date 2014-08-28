@@ -18,6 +18,7 @@ DEPS = [
     'python >= 2.6',
     'python-lxml',
     'python-pip',
+    'python-repoze-lru >= 0.6',
 ]
 
 
@@ -27,6 +28,7 @@ SUB_MODULES = [
     'rhevm_api.tests_lib',
     'rhevm_api.tests_lib.low_level',
     'rhevm_api.tests_lib.high_level',
+    'rhevm_api.resources',
     'rhevm_api.data_struct',
     'unittest_lib',
 ]
