@@ -912,6 +912,13 @@ class NetworkInfoDispatcher(object):
                                                                    out))
         return out
 
+    def _all_interface(self):
+        rc, out = self._m.runCmd(
+            ['ls', '-la', '/sys/class/net', '|', 'grep', "'pci'", '|',
+             'grep', '-o', "'[^/]*$'"])
+        out = out.strip()
+        return out.splitlines()
+
     def find_host_default_gw(self):
         """
         Description: Find host default gateway
@@ -940,7 +947,7 @@ class NetworkInfoDispatcher(object):
                     ips.append(ip[0])
         return ips, ip_and_netmask
 
-    def findIp_by_default_gw(self, default_gw, ips_and_mask):
+    def find_ip_by_default_gw(self, default_gw, ips_and_mask):
         """
         Description: Find IP by default gateway
             **Parameters**:
@@ -985,6 +992,32 @@ class NetworkInfoDispatcher(object):
         out = self._cmd(["brctl", "show", "|", "grep", bridge])
         return out.split()[3]
 
+    def find_mac_by_int(self, interfaces):
+        """
+        Description: Find interfaces MAC by interface name
+            **Parameters**:
+            *  *interfaces* - list of interfaces
+        """
+        mac_list = list()
+        for interface in interfaces:
+            if interface not in self._all_interface():
+                return False
+            out = self._cmd(["ethtool", "-P", interface])
+            mac = out.split(": ")[1]
+            mac_list.append(mac.strip())
+        return mac_list
+
+    def find_mgmt_interface(self):
+        """
+        Description: Find host mgmt interface (interface with IP that lead
+        to default gateway)
+        """
+        host_ip = self.find_host_ips()
+        host_dg = self.find_host_default_gw()
+        host_ip_by_dg = self.find_ip_by_default_gw(host_dg, host_ip[1])
+        mgmt_int = self.find_int_by_ip(host_ip_by_dg)
+        return mgmt_int
+
     def get_host_net_info(self):
         """
         Get network info for host, return info for main IP.
@@ -994,7 +1027,7 @@ class NetworkInfoDispatcher(object):
         net_info["gateway"] = gateway
         ips, ips_and_mask = self.find_host_ips()
         if gateway is not None:
-            ip = self.findIp_by_default_gw(gateway, ips_and_mask)
+            ip = self.find_ip_by_default_gw(gateway, ips_and_mask)
             net_info["ip"] = ip
             if ip is not None:
                 interface = self.find_int_by_ip(ip)
