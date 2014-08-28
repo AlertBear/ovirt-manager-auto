@@ -210,8 +210,8 @@ EXPORT_STORAGE_NAME = "Export"
 EXPORT_STORAGE_ADDRESS = PARAMETERS.as_list('export_domain_address')[0]
 EXPORT_STORAGE_PATH = PARAMETERS.as_list('export_domain_path')[0]
 
-ISO_DOMAIN_ADDRESS = PARAMETERS.get("shared_iso_domain_address")
-ISO_DOMAIN_PATH = PARAMETERS.get("shared_iso_domain_path")
+ISO_DOMAIN_ADDRESS = PARAMETERS.as_list("tests_iso_domain_address")[0]
+ISO_DOMAIN_PATH = PARAMETERS.as_list("tests_iso_domain_path")[0]
 
 # USERS & ROLES
 AD_USER_DOMAIN = PARAMETERS['ad_user_domain']

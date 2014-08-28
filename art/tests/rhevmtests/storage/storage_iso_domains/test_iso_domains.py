@@ -37,7 +37,7 @@ def setup_module():
     setup = Setup(config.VDC, config.VDC_USER, config.VDC_PASSWORD)
     utility = Utility(setup)
     assert utility.setRestConnPassword(
-        "iso-uploader", config.ISO_UPLOADER_CONF_FILE, config.REST_PASS)
+        "iso-uploader", config.ISO_UPLOADER_CONF_FILE, config.VDC_PASSWORD)
 
 
 def create_vm(vm_name, master_domain):
