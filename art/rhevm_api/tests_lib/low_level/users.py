@@ -51,9 +51,6 @@ def addUser(positive, **kwargs):
     Parameters:
        * user_name - user account name
        * domain - user domain
-       * groups - list of groups separated by comma that should be added
-                to user
-       * role - role name that should be assigned to user
     Return: status (True if user was created properly, False otherwise)
     '''
 
@@ -62,13 +59,7 @@ def addUser(positive, **kwargs):
     userDomain = Domain(name=domain)
     userName = user_name + "@" + domain
 
-    userRoles = Roles()
-    if 'role' in kwargs:
-        for role in split(kwargs.pop('role')):
-            userRole = Role(name=role.strip())
-            userRoles.add_role(userRole)
-
-    user = User(domain=userDomain, user_name=userName, roles=userRoles)
+    user = User(domain=userDomain, user_name=userName)
     user, status = util.create(user, positive)
 
     return status

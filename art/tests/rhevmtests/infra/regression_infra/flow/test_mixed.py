@@ -22,7 +22,6 @@ from art.rhevm_api.tests_lib.low_level import (
 )
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from art.core_api.apis_exceptions import EngineTypeError
-from art.test_handler.tools import bz  # pylint: disable=E0611
 
 from rhevmtests.infra.regression_infra import config
 
@@ -48,7 +47,6 @@ class TestCaseMixed(TestCase):
         status = general.checkProductName(config.PRODUCT_NAME)
         self.assertTrue(status, 'Check product name')
 
-    @bz(811985)
     @istest
     def t02_create_user(self):
         """
@@ -57,8 +55,7 @@ class TestCaseMixed(TestCase):
         """
         logger.info('Add user')
         status = users.addUser(positive=True, user_name=config.USERNAME,
-                               domain=config.USER_DOMAIN,
-                               role=ENUMS['role_name_user_role'])
+                               domain=config.USER_DOMAIN)
         self.assertTrue(status, 'Add user')
 
     @istest
