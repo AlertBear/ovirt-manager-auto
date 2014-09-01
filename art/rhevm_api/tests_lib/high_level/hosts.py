@@ -4,7 +4,6 @@ High-level functions above data-center
 
 import logging
 from concurrent.futures import ThreadPoolExecutor
-
 from art.core_api import is_action
 import art.rhevm_api.tests_lib.low_level.hosts as hosts
 import art.test_handler.exceptions as errors
@@ -130,3 +129,14 @@ def remove_power_management(host, pm_type):
                             pm_password='', pm_address='', pm_username=''):
         raise errors.HostException("Cannot remove power management"
                                    " from host: %s" % host)
+
+
+def activate_host_if_not_up(host):
+    """
+    Activate the host if the host is not up
+    :param host: IP/FQDN of the host
+    :return: True if host was activated properly False otherwise
+    """
+    if not hosts.getHostState(host) == ENUMS["host_state_up"]:
+        return hosts.activateHost(True, host)
+    return True
