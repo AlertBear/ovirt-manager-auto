@@ -6,7 +6,7 @@ Checks host deployment, updating and authentication methods
 import art.rhevm_api.tests_lib.low_level.hosts as hosts
 from art.rhevm_api.utils.test_utils import get_api
 from art.core_api.apis_exceptions import EntityNotFound
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from art.unittest_lib import CoreSystemTest as TestCase
 from nose.tools import istest
 from art.unittest_lib import attr
@@ -15,6 +15,7 @@ import logging
 from art.test_handler.exceptions import HostException
 from art.rhevm_api.tests_lib.high_level.hosts import \
     add_power_management, remove_power_management
+from art.unittest_lib.common import is_bz_state
 
 
 HOST_API = get_api('host', 'hosts')
@@ -35,6 +36,8 @@ PM2_USER = config.PM2_USER
 PM1_PASS = config.PM1_PASS
 PM2_PASS = config.PM2_PASS
 HOST_FALSE_IP = config.HOST_FALSE_IP
+
+BZ_1136061_FIXED = is_bz_state('1136061')
 
 logger = logging.getLogger(__name__)
 
@@ -230,12 +233,13 @@ class TestUpdatePowerManagementInvalidType(TestPowerManagement):
                                 "although provided with an invalid type")
 
 
+@bz('1136061')
 @attr(tier=0)
 class SetSPMToLow(TestCase):
     """
     Positive - Set SPM priority on host to low
     """
-    __test__ = True
+    __test__ = BZ_1136061_FIXED
 
     @classmethod
     def setup_class(cls):

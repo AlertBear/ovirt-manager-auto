@@ -586,17 +586,19 @@ def installHost(positive, host, root_password, iso_image=None,
        * override_iptables - override iptables. gets true/false strings.
     Return: status (True if host was installed properly, False otherwise)
     """
-    state = ENUMS['host_state_maintenance']
+    state_maintenance = ENUMS['host_state_maintenance']
+    state_installing = ENUMS['host_state_installing']
     hostObj = HOST_API.find(host)
     status = HOST_API.syncAction(hostObj, "install", positive,
                                  root_password=root_password,
                                  image=iso_image,
                                  override_iptables=override_iptables.lower())
-    if not status:
-        return False
-    if not positive:
+    if status and not positive:
         return True
-    return HOST_API.waitForElemStatus(hostObj, state, 800)
+    if not (status and HOST_API.waitForElemStatus(hostObj, state_installing,
+                                                  800)):
+        return False
+    return HOST_API.waitForElemStatus(hostObj, state_maintenance, 800)
 
 
 @is_action()
