@@ -1,20 +1,20 @@
-'''
+"""
 Testing Linking/Plugging feature.
 1 DC, 1 Cluster, 1 Hosts and 2 VMs will be created for testing.
 Linking/Plugging will be tested for untagged, tagged, bond scenarios.
 It will cover scenarios for different states of VNIC on stopped/running VM.
-'''
+"""
+
+import logging
 
 from nose.tools import istest
+
 from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
-import logging
 from rhevmtests.networking import config
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.rhevm_api.utils.test_utils import get_api
-
 from art.test_handler.settings import opts
-
 from art.core_api.apis_utils import TimeoutingSampler
 from art.test_handler.exceptions import\
     VMException, NetworkException
@@ -25,6 +25,7 @@ from art.rhevm_api.tests_lib.low_level.networks import\
 from art.rhevm_api.tests_lib.low_level.vms import\
     addNic, getVmNicLinked, getVmNicPlugged, removeNic,\
     updateNic, getVmNicNetwork, startVm, waitForVmsStates, stopVm
+
 
 HOST_API = get_api('host', 'hosts')
 VM_API = get_api('vm', 'vms')
