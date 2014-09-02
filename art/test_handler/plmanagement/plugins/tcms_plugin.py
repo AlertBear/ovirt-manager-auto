@@ -179,11 +179,14 @@ class TCMS(Component):
     def pre_test_group(self, group):
         tcms_plan = getattr(group, TCMS_PLAN_ID, None)
         if tcms_plan:
+            logger.debug("Adding TCMS plan to list: %s", tcms_plan)
             self.tcms_plans.append(tcms_plan)
 
     def post_test_group(self, group):
         self.post_test_case(group)
         tcms_plan = getattr(group, TCMS_PLAN_ID, None)
+        logger.debug("Current TCMS plan: %s, all: %s",
+                     tcms_plan, self.tcms_plans)
         if tcms_plan and tcms_plan == self.tcms_plans[-1]:
             self.tcms_plans.pop()
 
