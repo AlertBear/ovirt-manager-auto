@@ -127,9 +127,13 @@ elif STORAGE_TYPE == STORAGE_TYPE_ISCSI:
     LUN_ADDRESS = PARAMETERS.as_list('lun_address')
     LUN_TARGET = PARAMETERS.as_list('lun_target')
     LUN_PORT = 3260
-elif STORAGE_TYPE == ENUMS['storage_type_posixfs']:
+elif STORAGE_TYPE == STORAGE_TYPE_POSIX:
     VFS_TYPE = (PARAMETERS['storage_type']).split("_")[1]
+    if VFS_TYPE == "pnfs":
+        VFS_TYPE = STORAGE_TYPE_NFS
+        PARAMETERS['data_domain_mount_options'] = "vers=4.1"
     PARAMETERS['vfs_type'] = VFS_TYPE
+
 LUN = PARAMETERS.as_list('lun')
 MGMT_BRIDGE = PARAMETERS.get('mgmt_bridge')
 HOST_NICS = PARAMETERS.as_list('host_nics')

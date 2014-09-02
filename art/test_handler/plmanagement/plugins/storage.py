@@ -38,17 +38,18 @@ FAIL_CREATE_MSG = 'Failed to create device of type {0}: {1}\n{2}'
 PASS_CREATE_MSG = 'Successfully created device of type {0}: {1}'
 
 MAIN_SECTION = 'PARAMETERS'
-DEV_TYPES = ('gluster', 'nfs', 'iso', 'export', 'iscsi', 'fcp')
+DEV_TYPES = ('gluster', 'nfs', 'iso', 'export', 'iscsi', 'fcp', 'pnfs')
 DEVICES_TARGET_PATHS = {'gluster': '%s.%s' % (MAIN_SECTION, 'data_domain'),
                         'nfs': '%s.%s' % (MAIN_SECTION, 'data_domain'),
+                        'pnfs': '%s.%s' % (MAIN_SECTION, 'data_domain'),
                         'export': '%s.%s' % (MAIN_SECTION, 'export_domain'),
                         'iso': '%s.%s' % (MAIN_SECTION, 'tests_iso_domain'),
                         'iscsi': '%s.%s' % (MAIN_SECTION, 'lun'),
                         'fcp': '%s.%s' % (MAIN_SECTION, 'lun'),
                         'local': '%s.%s' % (MAIN_SECTION, 'local_domain'),
                         }
-POSIXFS_COMPLIANT_TYPES = ['gluster', 'nfs']
-NAS_STORAGE_TYPES = ['gluster', 'nfs']
+POSIXFS_COMPLIANT_TYPES = ['gluster', 'nfs', 'pnfs']
+NAS_STORAGE_TYPES = ['gluster', 'nfs', 'pnfs']
 SAN_STORAGE_TYPES = ['iscsi', 'fcp']
 ISO_EXPORT_TYPE = 'iso_export_domain_nas'
 LOAD_BALANCING_CAPACITY = 'capacity'
@@ -259,6 +260,7 @@ class StorageUtils:
     def __init__(self, config, storageConfig=None):
 
         self.nfs_devices = {}
+        self.pnfs_devices = {}
         self.gluster_devices = {}
         self.iscsi_devices = {}
         self.fcp_devices = {}
@@ -291,6 +293,7 @@ class StorageUtils:
                          'local':   {},
                          'iso':     {},
                          'export':  {},
+                         'pnfs':    {},
                          }
 
         vdsServers = map(lambda x: getIpAddressByHostName(x),
@@ -304,7 +307,7 @@ class StorageUtils:
             addPasswords = [vdsPasswords[0]] * (numOfVds - numOfPassw)
             vdsPasswords.extend(addPasswords)
 
-        #fixme: exclude fcp
+        # fixme: exclude fcp
         if self.storage_type in SAN_STORAGE_TYPES or \
                 self.storage_type == 'none':
             for vds, password in zip(vdsServers, vdsPasswords):
@@ -414,6 +417,16 @@ class StorageUtils:
                                               storage_type)
                      for i in range(0, sectionParams['total'])
                      ]
+
+        elif storage_type == 'pnfs':
+            for storageSection, sectionParams in\
+                    self.storages[storage_type].iteritems():
+                self.pnfs_devices[storageSection] = [
+                    self.__create_nas_device(sectionParams['ip'],
+                                             self.host_group,
+                                             storage_type)
+                    for i in range(0, sectionParams['total'])
+                ]
 
     @getStorageServers()
     def _storageSetupSAN(self, storage_type):
@@ -551,7 +564,8 @@ class StorageUtils:
                                    iso=self.iso_devices,
                                    export=self.export_devices,
                                    iscsi=self.iscsi_devices,
-                                   fcp=self.fcp_devices).iteritems():
+                                   fcp=self.fcp_devices,
+                                   pnfs=self.pnfs_devices).iteritems():
             for target in filterNonEmptyDicts(devices):
                 targetData = self.storages[type_][target]
                 address = [targetData['ip']] * targetData['total']
@@ -608,6 +622,13 @@ class StorageUtils:
                     self.__remove_nas_device(
                         self.storages['nfs'][storageSection]['ip'], device,
                         'nfs')
+
+        for storageSection in self.storages['pnfs']:
+            if storageSection in self.pnfs_devices.keys():
+                for device in self.pnfs_devices[storageSection]:
+                    self.__remove_nas_device(
+                        self.storages['pnfs'][storageSection]['ip'], device,
+                        'pnfs')
 
         for stype in SAN_STORAGE_TYPES:
             for storageSection in self.storages[stype]:

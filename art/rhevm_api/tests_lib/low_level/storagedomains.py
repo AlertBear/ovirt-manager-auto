@@ -145,7 +145,8 @@ def _prepareStorageDomainObject(positive, **kwargs):
             Storage(
                 type_=storage_type, path=kwargs.pop('path', None),
                 address=kwargs.pop('address', None),
-                vfs_type=kwargs.pop('vfs_type', None)
+                vfs_type=kwargs.pop('vfs_type', None),
+                mount_options=kwargs.pop('mount_options', None),
             )
         )
 

@@ -221,7 +221,8 @@ def addLocalDataDomain(host, storage, data_center, path):
 
 
 @is_action()
-def addPosixfsDataDomain(host, storage, data_center, address, path, vfs_type):
+def addPosixfsDataDomain(host, storage, data_center, address, path, vfs_type,
+                         mount_options=None):
     """
     positive flow for adding posixfs storage including all the necessary steps
     Author: kjachim
@@ -234,12 +235,13 @@ def addPosixfsDataDomain(host, storage, data_center, address, path, vfs_type):
         * path - path for nfs mount
         * sd_type - type of storage domain: data, iso or export
         * vfs_type - ...
+        * mount_options - specific options
     return True if succeeded, False otherwise
     """
     if not storagedomains.addStorageDomain(
             True, host=host, name=storage, type=ENUMS['storage_dom_type_data'],
             address=address, storage_type=ENUMS['storage_type_posixfs'],
-            path=path, vfs_type=vfs_type):
+            path=path, vfs_type=vfs_type, mount_options=mount_options):
         logger.error('Failed to add posixfs storage %s to %s' % (path, host))
         return False
 
@@ -504,6 +506,8 @@ class PosixFSStorageAdder(StorageAdder):
         self.domain_paths = self.storage.as_list("data_domain_path")
         self.domain_addresses = self.storage.as_list("data_domain_address")
         self.no_of_data_storages = len(self.domain_paths)
+        self.mount_options = self.storage.get(
+            "data_domain_mount_options", None)
 
     def add_storage(self, i):
         """ Adds one posixfs data domain
@@ -511,7 +515,8 @@ class PosixFSStorageAdder(StorageAdder):
         name = "posixfs_%s" % i
         self._add_storage(
             addPosixfsDataDomain, self.host, name, self.datacenter,
-            self.domain_addresses[i], self.domain_paths[i], self.vfs_type)
+            self.domain_addresses[i], self.domain_paths[i], self.vfs_type,
+            self.mount_options)
         return name
 
 
