@@ -860,7 +860,7 @@ def _prepareHostNicObject(**kwargs):
             options = data_st.Options()
             options.add_option(data_st.Option(name='mode', value=mode))
             # for bond mode 1 miimon is reuqired
-            if mode == 1 and not miimon:
+            if (mode == 1 or mode == 2) and not miimon:
                 miimon = 100
 
             if miimon:
