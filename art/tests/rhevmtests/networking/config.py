@@ -6,6 +6,15 @@ __test__ = False
 
 from rhevmtests.config import *  # flake8: noqa
 from collections import OrderedDict
+from art.rhevm_api.tests_lib.low_level import hosts
+from art.rhevm_api.tests_lib.low_level import vms
+
+# Adjust parameters if running on golden environment
+if GOLDEN_ENV:
+    HOSTS = [host.name for host in NETWORK_HOSTS]
+    DC_NAME = [hosts.getHostDC(HOSTS[0])]
+    CLUSTER_NAME = [hosts.getHostCluster(HOSTS[0])]
+    VM_NAME = vms.get_vms_from_cluster(CLUSTER_NAME[0])
 
 # Global parameters
 MTU = [9000, 5000, 2000, 1500]
