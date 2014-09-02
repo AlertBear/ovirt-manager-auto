@@ -1200,11 +1200,11 @@ def setPersistentNetwork(host, password):
     vm_obj = Machine(host, 'root', password).util(LINUX)
 
     persistent_rule = "/etc/udev/rules.d/70-persistent-net.rules"
-    cmd = ["cat", "/dev/null", ">", persistent_rule]
+    cmd = ["rm", "-f", persistent_rule]
     rc, out = vm_obj.runCmd(cmd)
-    logger.debug('Running command %s : result %s' % (cmd, rc))
+    logger.debug('Running command %s : result %s', cmd, rc)
     if not rc:
-        logger.error('Failed to erase %s. %s' % (persistent_rule, out))
+        logger.error('Failed to erase %s. %s', persistent_rule, out)
         return False
 
     nics = set()
@@ -1213,25 +1213,35 @@ def setPersistentNetwork(host, password):
                              'grep', '-o', "'[^/]*$'"])
     out = out.strip()
     if not rc or not out:
-        logger.error('PCI interfaces do not exist in %s' % host)
+        logger.error('PCI interfaces do not exist in %s', host)
         return False
     nics |= set(out.splitlines())
 
     for nic in nics:
         nic = 'ifcfg-%s' % nic
-        ifcfg_tmp = os.path.join('/tmp', nic)
         ifcfg_path = os.path.join('/etc/sysconfig/network-scripts', nic)
+        lines_to_remove = ["HWADDR", "HOSTNAME", "DHCP_HOSTNAME", "UUID"]
 
-        cmd = ["sed", "/HWADDR/d", ifcfg_path, ">", ifcfg_tmp, ";", "mv",
-               ifcfg_tmp, ifcfg_path, "-f"]
-        logger.debug('Running command %s' % cmd)
-        rc, out = vm_obj.runCmd(cmd)
-        if not rc:
-            logger.error("Failed to remove HWADDR. %s" % out)
-            return False
+        for line in lines_to_remove:
+            cmd = ["sed", "-i", "/%s/d" % line, ifcfg_path]
+            logger.debug('Running command %s', cmd)
+            rc, out = vm_obj.runCmd(cmd)
+            if not rc:
+                logger.error("Failed to remove %s: %s", line, out)
+                return False
 
         rc, out = vm_obj.runCmd(['cat', ifcfg_path])
-        logger.debug('%s Final configurations: \n%s' % (nic, out))
+        logger.debug('%s Final configurations: \n%s', nic, out)
+
+    network_configuration = '/etc/sysconfig/network'
+    cmd = ["sed", "-i", "/HOSTNAME/d", network_configuration]
+    rc, out = vm_obj.runCmd(cmd)
+    if not rc:
+        logger.error("Failed to remove HOSTNAME from network config: %s", out)
+        return False
+
+    rc, out = vm_obj.runCmd(['cat', network_configuration])
+    logger.debug('Final network configurations: \n%s', out)
 
     return True
 
@@ -1248,7 +1258,7 @@ def getSetupHostname(vdc):
     is_local = vdc == "localhost" or vdc == "127.0.0.1"
     hostname = gethostname() if is_local else vdc
 
-    return True, { 'hostname' : hostname }
+    return True, {'hostname': hostname}
 
 
 def runSQLQueryOnSetup(vdc, vdc_pass, query,
