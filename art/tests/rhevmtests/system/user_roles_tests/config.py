@@ -63,9 +63,9 @@ LUN_TARGET = ''
 LUN_GUID = ''
 
 # Users
-USER_NAME = 'userportal1@qa.lab.tlv.redhat.com'
-USER_NAME2 = 'userportal2@qa.lab.tlv.redhat.com'
-USER_NAME3 = 'userportal3@qa.lab.tlv.redhat.com'
+USER_NAME = 'userportal1'
+USER_NAME2 = 'userportal2'
+USER_NAME3 = 'userportal3'
 USER_DOMAIN = 'qa.lab.tlv.redhat.com'
 USER_PASSWORD = '123456'
 
