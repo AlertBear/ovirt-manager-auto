@@ -54,7 +54,8 @@ PYTHON_IGNORE_LIST = ['get_link']
 STYLE_EXCEPTIONS_PYTHON_JAVA_METHODS = \
     {'get_valueOf_': 'isValue',
      'get_power_management': 'getPowerManagers',
-     'get_host_nic': 'getSlaves'
+     'get_host_nic': 'getSlaves',
+     'get_property': 'getProperties'
      }
 ACTION_EXCEPTIONS_PYTHON_JAVA_METHODS = \
     {'VM': {'export': 'exportVm'},
