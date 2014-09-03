@@ -166,16 +166,19 @@ def validateNetwork(positive, cluster, network, tag, val):
 
 
 @is_action()
-def removeMultiNetworks(positive, networks):
+def removeMultiNetworks(positive, networks, data_center=None):
     '''
-    Remove Multiple networks from cluster
+    Remove Multiple networks
     Author: atal
     Parameters:
+        * positive - expected state that the function should return
         * networks- a list of networks
-    return True/False
+        * data_center - In case more then one network with the same name
+                        exists.
+    return  True if remove networks succeeded, otherwise False
     '''
     for net in networks:
-        if not removeNetwork(positive, net):
+        if not removeNetwork(positive, net, data_center):
             logger.error("Failed to remove %s", net)
             return False
     return True
@@ -876,7 +879,7 @@ def remove_all_networks(datacenter=None, cluster=None,
                 ', '.join(networks_to_remove),
                 removal_area)
 
-    return removeMultiNetworks(True, networks_to_remove)
+    return removeMultiNetworks(True, networks_to_remove, datacenter)
 
 
 def networkTeardown(datacenter, storagedomain, hosts=list(), auto_nics=list(),
