@@ -42,6 +42,7 @@ class VNICProfileCase01(TestCase):
     is created with MGMT network name
     """
     __test__ = True
+    dc_name2 = "new_DC_35_case01"
 
     @classmethod
     def setup_class(cls):
@@ -49,7 +50,7 @@ class VNICProfileCase01(TestCase):
         Create new DC on the setup
         """
         logger.info("Add DC to setup")
-        if not addDataCenter(True, name=config.DC_NAME[1],
+        if not addDataCenter(True, name=cls.dc_name2,
                              version=config.COMP_VERSION,
                              storage_type=config.STORAGE_TYPE):
             raise DataCenterException("Cannot create new DataCenter")
@@ -62,7 +63,7 @@ class VNICProfileCase01(TestCase):
         """
         self.assertTrue(getVnicProfileObj(name=config.MGMT_BRIDGE,
                                           network=config.MGMT_BRIDGE,
-                                          data_center=config.DC_NAME[1]))
+                                          data_center=self.dc_name2))
 
     @classmethod
     def teardown_class(cls):
@@ -70,7 +71,7 @@ class VNICProfileCase01(TestCase):
         Remove DC from the setup.
         """
         logger.info("Remove DC from setup")
-        if not removeDataCenter(True, datacenter=config.DC_NAME[1]):
+        if not removeDataCenter(True, datacenter=cls.dc_name2):
             raise DataCenterException("Cannot remove DC from setup")
 
 
@@ -524,6 +525,7 @@ class VNICProfileCase09(TestCase):
     VNIC Profile on template
     """
     __test__ = True
+    vm_name2 = "new_VM_case09"
 
     @classmethod
     def setup_class(cls):
@@ -563,18 +565,18 @@ class VNICProfileCase09(TestCase):
                                        data_center=config.DC_NAME[0],
                                        network=None))
 
-        if not createVm(positive=True, vmName=config.VM_NAME[1],
+        if not createVm(positive=True, vmName=self.vm_name2,
                         vmDescription='',
                         cluster=config.CLUSTER_NAME[0],
                         template=config.TEMPLATE_NAME[0],
                         network=config.MGMT_BRIDGE):
             raise VMException("Couldn't create VM from template")
 
-        if not checkVmNicProfile(vm=config.VM_NAME[1],
+        if not checkVmNicProfile(vm=self.vm_name2,
                                  vnic_profile_name=config.NETWORKS[0],
                                  nic='nic2'):
             raise VMException("Couldn't get correct VNIC profile on VM ")
-        if not checkVmNicProfile(vm=config.VM_NAME[1],
+        if not checkVmNicProfile(vm=self.vm_name2,
                                  vnic_profile_name=None,
                                  nic='nic3'):
             raise VMException("Couldn't get empty VNIC profile on VM ")
@@ -589,8 +591,8 @@ class VNICProfileCase09(TestCase):
         3) Remove VNIC profile from the template
         4) Remove VNIC profile from the setup
         """
-        logger.info("Remove VM %s from setup" % config.VM_NAME[1])
-        if not removeVm(positive=True, vm=config.VM_NAME[1]):
+        logger.info("Remove created VM from setup")
+        if not removeVm(positive=True, vm=self.vm_name2):
             raise VMException("Couldn't remove VM from setup")
 
         logger.info("Try to remove network from setup and fail doing so "

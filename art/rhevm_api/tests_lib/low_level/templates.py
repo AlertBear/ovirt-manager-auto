@@ -46,6 +46,7 @@ VM_API = get_api('vm', 'vms')
 NIC_API = get_api('nic', 'nics')
 DISKS_API = get_api('disk', 'disks')
 WATCHDOG_API = get_api('watchdog', 'watchdogs')
+CLUSTER_API = get_api('cluster', 'clusters')
 
 Template = getDS('Template')
 Cluster = getDS('Cluster')
@@ -715,3 +716,19 @@ def copy_template_disks(positive, template, disks, storagedomain, async=True):
             raise exceptions.TemplateException(
                 "Copying of disk %s of template %s to storage domain %s "
                 "failed." % (disk.name, template, storagedomain))
+
+
+def get_template_from_cluster(cluster):
+    """
+    Description: Gets all templates added to the given cluster
+    Parameters:
+        * *cluster* - cluster name
+    **Returns**: List of templates for given cluster
+    """
+    logging.info("Getting all templates in cluster %s", cluster)
+    cluster_id = CLUSTER_API.find(cluster).get_id()
+    all_templates = TEMPLATE_API.get(absLink=False)
+    templates_in_cluster = [x.get_name() for x in all_templates if
+                            x.get_cluster().get_id() == cluster_id]
+    logging.info("Templates in cluster: %s", templates_in_cluster)
+    return templates_in_cluster
