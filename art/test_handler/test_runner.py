@@ -355,7 +355,8 @@ class TestRunner(object):
                 self._report_test_case_status(test_elm, test_group)
         finally:
             test_group.end_time = datetime.now(tzutc())
-            self.plmanager.test_groups.post_test_group(test_group)
+            if not skip:
+                self.plmanager.test_groups.post_test_group(test_group)
             logger.info("Finishing %s", test_group)
             logger.info(TEST_CASES_SEPARATOR)
             self.plmanager.results_collector.add_test_result(test_group)
