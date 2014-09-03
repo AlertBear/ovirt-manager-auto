@@ -259,6 +259,7 @@ class UTestGroup(TestGroup):
             logger.error("Test class %s has missing documentation string!",
                          self.test_name)
         self.skip = skip
+        self.skip_subs = skip
 
     def __iter__(self):
         try:
@@ -273,7 +274,7 @@ class UTestGroup(TestGroup):
                              self.test_name, exc_info=True)
                 self.status = self.TEST_STATUS_ERROR
                 self.incr_exc()
-                self.skip = True
+                self.skip_subs = True
                 raise SkipTest(str(ex))
             for c in self.context:
                 if isinstance(c, Failure):
@@ -281,13 +282,13 @@ class UTestGroup(TestGroup):
                                  "please see nose.log for more info: %s", c)
                     continue
                 elif isinstance(c, Test):
-                    test_elm = UTestCase(c, self.skip)
+                    test_elm = UTestCase(c, self.skip_subs)
                 elif None is c.context:
                     continue
                 else:
                     if not c.countTestCases():
                         continue
-                    test_elm = UTestGroup(c, self.skip)
+                    test_elm = UTestGroup(c, self.skip_subs)
                 test_elm.parent = self.context
                 yield test_elm
         finally:
@@ -313,7 +314,7 @@ class UTestSuite(TestSuite):
         self.context = context
         self.tcms_plan_id = getattr(context.context, TCMS_PLAN_ID, None)
         self.test_name = self.context.context.__name__
-        self.skip = False
+        self.skip_subs = False
 
     def __iter__(self):
         if not self.context.countTestCases():
@@ -322,14 +323,13 @@ class UTestSuite(TestSuite):
             logger.info(TEST_CASES_SEPARATOR)
             logger.info("TEST SUITE setUp: %s", self.test_name)
             try:
-                if not self.skip:
-                    self.context.setUp()
+                self.context.setUp()
             except Exception as ex:
                 logger.error("TEST SUITE setUp ERROR: %s: %s", ex,
                              self.test_name, exc_info=True)
                 self.status = self.TEST_STATUS_ERROR
                 self.incr_exc()
-                self.skip = True
+                self.skip_subs = True
                 raise SkipTest(str(ex))
 
             for c in self.context:
@@ -338,21 +338,20 @@ class UTestSuite(TestSuite):
                                  "please see nose.log for more info: %s", c)
                     continue
                 elif isinstance(c, Test):
-                    test_elm = UTestCase(c, self.skip)
+                    test_elm = UTestCase(c, self.skip_subs)
                 elif None is c.context:
                     continue
                 else:
                     if not c.countTestCases():
                         continue
-                    test_elm = UTestGroup(c, self.skip)
+                    test_elm = UTestGroup(c, self.skip_subs)
                 test_elm.parent = self.context
                 yield test_elm
         finally:
             logger.info("TEST SUITE tearDown: %s", self.test_name)
             try:
-                if not self.skip:
-                    self.context.was_setup = True
-                    self.context.tearDown()
+                self.context.was_setup = True
+                self.context.tearDown()
             except Exception:
                 self.incr_exc()
                 self.status = self.TEST_STATUS_FAILED
