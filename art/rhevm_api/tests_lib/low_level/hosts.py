@@ -802,11 +802,11 @@ def _prepareHostNicObject(**kwargs):
     if update exists in kwargs the nic_obj should be updated and not created
     return: Host Nic data structure object
     """
-    add = True
+    update = False
     if 'update' in kwargs:
         nic_obj = kwargs.get('update')
         kwargs['name'] = nic_obj.get_name()
-        add = False
+        update = True
     else:
         nic_obj = data_st.HostNIC()
 
@@ -831,18 +831,17 @@ def _prepareHostNicObject(**kwargs):
         properties_obj = create_properties(**kwargs.get('properties'))
         nic_obj.set_properties(properties_obj)
 
-    address = kwargs.get('address')
-    netmask = kwargs.get('netmask')
-    gateway = kwargs.get('gateway')
-    if (address or netmask or gateway) is not None:
-        ip_obj = data_st.IP() if add else nic_obj.get_ip()
-        if 'address' in kwargs:
-            ip_obj.set_address(kwargs.get('address'))
-        if 'netmask' in kwargs:
-            ip_obj.set_netmask(kwargs.get('netmask'))
-        if 'gateway' in kwargs:
-            ip_obj.set_gateway(kwargs.get('gateway'))
-        nic_obj.set_ip(ip_obj)
+    ip_obj = nic_obj.get_ip() if update else data_st.IP()
+    if 'address' in kwargs:
+        ip_obj.set_address(kwargs.get('address'))
+
+    if 'netmask' in kwargs:
+        ip_obj.set_netmask(kwargs.get('netmask'))
+
+    if 'gateway' in kwargs:
+        ip_obj.set_gateway(kwargs.get('gateway'))
+
+    nic_obj.set_ip(ip_obj)
 
     slave_list = kwargs.get('slaves')
     mode = kwargs.get('mode')
@@ -923,9 +922,9 @@ def updateHostNic(positive, host, nic, **kwargs):
         * nic - nic name that should be updated
         * network - network name
         * boot_protocol - static, none or dhcp
-        * address - ip address incase of static protocol
-        * netmask - netmask incase of static protocol
-        * gateway - gateway address incase of static protocol
+        * address - ip address in case of static protocol
+        * netmask - netmask in case of static protocol
+        * gateway - gateway address in case of static protocol
         * slaves - bonding slaves list as a string with commas
         * mode - bonding mode (int), added as option
         * miimon - another int for bonding options
@@ -934,7 +933,7 @@ def updateHostNic(positive, host, nic, **kwargs):
     """
 
     nic_obj = getHostNic(host, nic)
-    kwargs.update([('nic', nic_obj)])
+    kwargs.update([('update', nic_obj)])
     nic_new = _prepareHostNicObject(**kwargs)
     nic, status = HOST_NICS_API.update(nic_obj, nic_new, positive)
 
