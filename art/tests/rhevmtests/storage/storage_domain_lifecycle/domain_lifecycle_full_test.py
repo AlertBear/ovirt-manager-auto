@@ -20,7 +20,6 @@ from art.rhevm_api.utils.test_utils import get_api, wait_for_tasks
 from art.test_handler import exceptions
 from sys import modules
 
-
 import config
 
 TCMS_PLAN_ID = '6458'
@@ -36,7 +35,7 @@ HOST_API = get_api('host', 'hosts')
 VM_API = get_api('vm', 'vms')
 SD_API = get_api('storage_domain', 'storagedomains')
 CLUSTER_API = get_api('cluster', 'clusters')
-
+CLI_CMD_DF = 'df -H'
 GB = 1024 ** 3
 TEN_GB = 10 * GB
 
@@ -166,7 +165,8 @@ def _create_sds():
 
 
 def _create_vm(vm_name, vm_description, disk_interface,
-               sparse=True, volume_format=ENUMS['format_cow'],
+               sparse=True, volume_format=config.COW_DISK,
+               storageDomainName=config.SD_NAME_0,
                vm_type=config.VM_TYPE_DESKTOP):
     """
     helper function for creating vm (passes common arguments, mostly taken
@@ -175,7 +175,7 @@ def _create_vm(vm_name, vm_description, disk_interface,
     logger.info("Creating VM %s" % vm_name)
     return vms.createVm(
         True, vm_name, vm_description, cluster=config.CLUSTER_NAME,
-        nic=config.HOST_NICS[0], storageDomainName=config.SD_NAME_0,
+        nic=config.HOST_NICS[0], storageDomainName=storageDomainName,
         size=config.DISK_SIZE,
         diskType=config.DISK_TYPE_SYSTEM,
         volumeType=sparse, volumeFormat=volume_format,
@@ -251,9 +251,10 @@ class TestCase174613(TestCase):
     __test__ = (config.STORAGE_TYPE == ENUMS['storage_type_nfs'])
     tcms_plan_id = '12050'
     tcms_test_case = '174613'
-    nfs_retrans = 4
-    nfs_timeout = 900
+    nfs_retrans = 5
+    nfs_timeout = 10
     nfs_version = 'v3'
+    mount_options = 'sync'
     sd_names = config.SD_NAMES_LIST[1:]
 
     @istest
@@ -263,6 +264,7 @@ class TestCase174613(TestCase):
         test checks if creating NFS SD with defined values work fine
         """
         version = None
+        mount_options = None
         for index in range(1, 3):
             logger.info("creating storage domain #%s with values:"
                         "retrans = %d, timeout = %d, vers = %s",
@@ -277,10 +279,12 @@ class TestCase174613(TestCase):
                 path=config.PATH[index],
                 timeout_to_set=self.nfs_timeout,
                 retrans_to_set=self.nfs_retrans,
+                mount_options_to_set=mount_options,
                 vers_to_set=version,
                 expected_timeout=self.nfs_timeout,
                 expected_retrans=self.nfs_retrans,
                 expected_vers=version,
+                expected_mount_options=mount_options,
                 sd_type=ENUMS['storage_dom_type_data'])
 
             if not hosts.isHostUp(True, config.FIRST_HOST):
@@ -292,11 +296,164 @@ class TestCase174613(TestCase):
                 datacenter=config.DATA_CENTER_NAME)
 
             version = self.nfs_version
+            mount_options = self.mount_options
+
+        logger.info('Creating vm and installing OS on it')
+        if not _create_vm(config.VM_NAME[0],
+                          config.VM_NAME[0],
+                          config.INTERFACE_IDE,
+                          storageDomainName=config.SD_NAMES_LIST[2]):
+            raise exceptions.VMException("Failed to create VM")
+
+        logger.info("Waiting for vm %s state 'up'", config.VM_NAME[0])
+        if not vms.waitForVMState(config.VM_NAME[0]):
+            raise exceptions.VMException("Waiting for VM %s status 'up' failed"
+                                         % config.VM_NAME[0])
+
+        rc, out = vms.run_cmd_on_vm(config.VM_NAME[0], CLI_CMD_DF,
+                                    config.VMS_LINUX_USER, config.VMS_LINUX_PW)
+        if not rc:
+            raise exceptions.VMException("fail to run %s on %s, output is %s" %
+                                         CLI_CMD_DF, config.VM_NAME[0], out)
+        logger.info("%s output on %s, is %s",
+                    CLI_CMD_DF, config.VM_NAME[0], out)
 
     @classmethod
     def teardown_class(cls):
         """
-        Removes SD
+        Removes VM and SD
+        """
+
+        assert vms.stopVm(True, config.VM_NAME[0])
+
+        logger.info('Removing vm %s', config.VM_NAME)
+        if not vms.removeVm(True, config.VM_NAME[0], wait=True):
+            raise exceptions.VMException(
+                "Failed to remove vm %s" % config.VM_NAME)
+
+        logger.info('Removing storage domains')
+        assert ll_st_domains.removeStorageDomains(
+            True, cls.sd_names, config.FIRST_HOST)
+
+        logger.info("Getting info about mounted resources")
+        mounted_resources = storagedomains.get_mounted_nfs_resources(
+            host=config.FIRST_HOST,
+            password=config.HOSTS_PW)
+
+        for index in range(1, 3):
+            if ((config.ADDRESS[index], config.PATH[index]) in
+                    mounted_resources.keys()):
+                raise exceptions.StorageDomainException(
+                    "Mount of %s:%s was found on %s, although SD was removed" %
+                    config.ADDRESS[index],
+                    config.PATH[index],
+                    config.FIRST_HOST,
+                    config.SD_NAMES_LIST[index])
+
+
+@attr(tier=0)
+class TestCase147888(TestCase):
+    """
+    test check if bad and conflict parameters for creating storage
+    domain are blocked
+    https://tcms.engineering.redhat.com/case/147888/?from_plan=12050
+    """
+    __test__ = (config.STORAGE_TYPE == config.STORAGE_TYPE_NFS)
+    tcms_plan_id = '12050'
+    tcms_test_case = '147888'
+
+    sds_params = []
+    sds_params.append({
+        'nfs_version': 'v4',
+        'nfs_retrans': 6,
+        'nfs_timeout': 10,
+        'mount_options': 'vers=4',
+    })
+    sds_params.append({
+        'nfs_version': 'v4',
+        'nfs_retrans': 6,
+        'nfs_timeout': 10,
+        'mount_options': 'nfsvers=4',
+    })
+    sds_params.append({
+        'nfs_version': 'v4',
+        'nfs_retrans': 6,
+        'nfs_timeout': 10,
+        'mount_options': 'protocol_version=4',
+    })
+    sds_params.append({
+        'nfs_version': 'v4',
+        'nfs_retrans': 6,
+        'nfs_timeout': 10,
+        'mount_options': 'vfs_type=4',
+    })
+    sds_params.append({
+        'nfs_version': 'v4',
+        'nfs_retrans': 6,
+        'nfs_timeout': 10,
+        'mount_options': 'retrans=4',
+    })
+    sds_params.append({
+        'nfs_version': 'v4',
+        'nfs_retrans': 6,
+        'nfs_timeout': 10,
+        'mount_options': 'timeo=4',
+    })
+    sds_params.append({
+        'nfs_version': 'v4',
+        'nfs_retrans': 'A',
+        'nfs_timeout': 10,
+        'mount_options': None,
+    })
+
+    sd_names = config.SD_NAMES_LIST[1:]
+
+    @tcms(tcms_plan_id, tcms_test_case)
+    def test_create_sd_with_defined_values(self):
+        """
+        test check if bad and conflict parameters for creating storage
+        domain are blocked
+        """
+        for sd_params in self.sds_params:
+            logger.info("creating storage domain with values:"
+                        "retrans = %s, timeout = %d, vers = %s, "
+                        "mount_optiones = %s",
+                        sd_params['nfs_retrans'],
+                        sd_params['nfs_timeout'],
+                        sd_params['nfs_version'],
+                        sd_params['mount_options'])
+
+            storage = ll_st_domains.NFSStorage(
+                name=config.SD_NAMES_LIST[1],
+                address=config.ADDRESS[1],
+                path=config.PATH[1],
+                timeout_to_set=sd_params['nfs_timeout'],
+                retrans_to_set=sd_params['nfs_retrans'],
+                mount_options_to_set=sd_params['mount_options'],
+                vers_to_set=sd_params['nfs_version'],
+                expected_timeout=sd_params['nfs_timeout'],
+                expected_retrans=sd_params['nfs_retrans'],
+                expected_vers=sd_params['nfs_version'],
+                sd_type=ENUMS['storage_dom_type_data'])
+
+            if not hosts.isHostUp(True, config.FIRST_HOST):
+                hosts.activateHost(True, config.FIRST_HOST)
+
+            logger.info("Attempt to create domain %s with wrong params ",
+                        storage.name)
+            storagedomains.create_nfs_domain_with_options(
+                name=storage.name, sd_type=storage.sd_type,
+                host=config.FIRST_HOST, address=storage.address,
+                path=storage.path, version=storage.vers_to_set,
+                retrans=storage.retrans_to_set, timeo=storage.timeout_to_set,
+                mount_options=storage.mount_options_to_set,
+                datacenter=config.DATA_CENTER_NAME,
+                positive=False)
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Removes SD's
         """
         logger.info('Removing storage domains')
         assert ll_st_domains.removeStorageDomains(
@@ -323,7 +480,7 @@ class TestCase174631(TestCase):
         if not _create_vm(config.VM_NAME[0],
                           config.VM_NAME[0],
                           config.INTERFACE_VIRTIO_SCSI):
-                raise exceptions.VMException("Failed to create VM")
+            raise exceptions.VMException("Failed to create VM")
 
         logger.info('Creating 2 storage domains')
         if not _create_sds():
@@ -684,11 +841,11 @@ for dc_version in config.DC_VERSIONS:
         if dc_version == dc_upgrade_version:
             continue
         dc_upgrade_version_name = dc_upgrade_version.replace('.', '')
-        if config.DC_TYPE == config.ENUMS['storage_type_nfs']:
+        if config.STORAGE_TYPE == config.ENUMS['storage_type_nfs']:
             storage_format = config.ENUMS['storage_format_version_v1']
-        elif config.DC_TYPE == config.ENUMS['storage_type_iscsi']:
+        elif config.STORAGE_TYPE == config.ENUMS['storage_type_iscsi']:
             storage_format = config.ENUMS['storage_format_version_v2']
-        name_pattern = (config.DC_TYPE, dc_version_name,
+        name_pattern = (config.STORAGE_TYPE, dc_version_name,
                         dc_upgrade_version_name)
         class_name = "TestUpgrade%s%s%s" % name_pattern
         doc = "Test case upgrades %s datacenter from %s to %s" % name_pattern
@@ -703,7 +860,7 @@ for dc_version in config.DC_VERSIONS:
             'storage_format': storage_format,
             'upgraded_storage_format': storage_v3_format
         }
-        new_class = type(class_name, (TYPE_TO_CLASS[config.DC_TYPE],),
+        new_class = type(class_name, (TYPE_TO_CLASS[config.STORAGE_TYPE],),
                          class_attrs)
         setattr(__THIS_MODULE, class_name, new_class)
 delattr(__THIS_MODULE, 'new_class')

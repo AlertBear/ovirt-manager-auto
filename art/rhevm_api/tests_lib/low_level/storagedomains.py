@@ -22,23 +22,24 @@ import re
 from art.core_api.apis_exceptions import EntityNotFound
 from art.core_api.apis_utils import getDS, TimeoutingSampler
 from art.core_api.validator import compareCollectionSize
-from art.rhevm_api.tests_lib.low_level.clusters import addCluster, \
-    removeCluster, isHostAttachedToCluster, attachHostToCluster, \
-    connectClusterToDataCenter
-from art.rhevm_api.tests_lib.low_level.datacenters import addDataCenter, \
-    removeDataCenter
-from art.rhevm_api.tests_lib.low_level.disks import getStorageDomainDisks, \
-    deleteDisk, waitForDisksGone
-from art.rhevm_api.tests_lib.low_level.hosts import deactivateHost, \
-    removeHost, getHostCompatibilityVersion
-from art.rhevm_api.tests_lib.low_level.hosts import addHost, \
-    waitForHostsStates, getHost
+from art.rhevm_api.tests_lib.low_level.clusters import removeCluster
+from art.rhevm_api.tests_lib.low_level.datacenters import removeDataCenter
+from art.rhevm_api.tests_lib.low_level.disks import (
+    getStorageDomainDisks, deleteDisk, waitForDisksGone,
+)
+from art.rhevm_api.tests_lib.low_level.hosts import (
+    deactivateHost, removeHost, getHostCompatibilityVersion,
+)
+from art.rhevm_api.tests_lib.low_level.hosts import getHost
 from art.rhevm_api.tests_lib.low_level.vms import removeVms, stopVms
 from art.rhevm_api.tests_lib.low_level.templates import removeTemplates
-from art.rhevm_api.utils.storage_api import getVmsInfo, getImagesList, \
-    getVolumeInfo, getVolumesList
-from art.rhevm_api.utils.test_utils import validateElementStatus, get_api, \
-    searchForObj, getImageAndVolumeID, getAllImages, wait_for_tasks
+from art.rhevm_api.utils.storage_api import (
+    getVmsInfo, getImagesList, getVolumeInfo, getVolumesList,
+)
+from art.rhevm_api.utils.test_utils import (
+    validateElementStatus, get_api, searchForObj, getImageAndVolumeID,
+    getAllImages, wait_for_tasks,
+)
 from art.rhevm_api.utils.xpath_utils import XPathMatch
 from utilities.utils import getIpAddressByHostName
 from art.core_api import is_action
@@ -536,7 +537,7 @@ def removeStorageDomains(positive, storagedomains, host, format='true'):
         for sd in sds:
             if sd.get_name() in storagedomains:
                 if sd.get_master():
-                        continue
+                    continue
                 else:
                     deactivate_status = deactivateStorageDomain(positive,
                                                                 dc.get_name(),
@@ -907,13 +908,11 @@ def getDomainAddress(positive, storageDomain):
 
         # Check for iscsi storage domain
         if storageDomainObject.get_storage().get_type() == 'iscsi':
-
             # Return the address of the first LUN of the domain
-            return positive, {'address': storageDomainObject.get_storage().
-                              get_volume_group().get_logical_unit()[0].
-                              get_address()}
-        return positive, {'address': storageDomainObject.get_storage().
-                          get_address()}
+            return positive, {'address': storageDomainObject.get_storage(
+            ).get_volume_group().get_logical_unit()[0].get_address()}
+        return positive, {
+            'address': storageDomainObject.get_storage().get_address()}
 
     except EntityNotFound:
         return not positive, {'address': ''}
@@ -1504,7 +1503,8 @@ def _parse_mount_output_line(line):
         * *line*: one line of 'mount' output
 
     **Returns**:
-        * (address, path, timeo, retrans, nfsvers) in case it is nfs resource
+        * (address, path, timeo, retrans, nfsvers, sync) in case it is nfs
+        resource
         * None otherwise
 
     >>> output = "10.34.63.202:/mnt/export/nfs/lv2/kjachim/nfs01 on "
@@ -1537,6 +1537,9 @@ def _parse_mount_output_line(line):
         if "=" in option:
             name, value = option.split("=")
             nfs_options[name] = value
+        elif 'sync' == option:
+            nfs_options[option] = True
+
     # support rhel6.5 & rhel7
     # mount_2.17.2 (rhel6.5)
     if nfs_options.get('nfsvers', None):
@@ -1546,8 +1549,10 @@ def _parse_mount_output_line(line):
         nfsvers = nfs_options['vers']
     else:
         raise Exception("Unknown NFS protocol version number")
+
     return (address, path, int(nfs_options['timeo']),
-            int(nfs_options['retrans']), 'v' + nfsvers)
+            int(nfs_options['retrans']), 'v' + nfsvers,
+            'sync' in nfs_options.keys())
 
 
 @is_action()
@@ -1613,8 +1618,8 @@ def get_mounted_nfs_resources(host, password):
             (rc, out, err))
     mounted = _parse_mount_output(out)
     result = {}
-    for (address, path, timeo, retrans, nfsvers) in mounted:
-        result[(address, path)] = (timeo, retrans, nfsvers)
+    for (address, path, timeo, retrans, nfsvers, sync) in mounted:
+        result[(address, path)] = (timeo, retrans, nfsvers, sync)
     return result
 
 
@@ -1628,7 +1633,8 @@ def _verify_one_option(real, expected):
 @is_action()
 def verify_nfs_options(
         expected_timeout, expected_retrans, expected_nfsvers,
-        real_timeo, real_retrans, real_nfsvers):
+        expected_mount_options, real_timeo, real_retrans, real_nfsvers,
+        real_mount_options):
     """
     Verifies that the real nfs options are as expected.
 
@@ -1638,9 +1644,12 @@ def verify_nfs_options(
         * *expected_timeout*: expected NFS timeout
         * *expected_retrans*: expected # of retransmissions
         * *expected_nfsvers*: expected NFS protocol version
+        * *expected_mount_options*: expected additional mount options
         * *real_timeo*: NFS timeout returned by 'mount' command
         * *real_retrans*: # of retransmissions returned by 'mount' command
         * *real_nfsvers*: NFS protocol version returned by 'mount' command
+        * *real_mount_optiones*: sync value of NFS options returned by 'mount'
+        command
 
     **Returns**: None in case of success or tuple (param_name, expected, real)
     """
@@ -1650,6 +1659,9 @@ def verify_nfs_options(
         return ("retrans", expected_retrans, real_retrans)
     if not _verify_one_option(real_nfsvers, expected_nfsvers):
         return ("nfsvers", expected_nfsvers, real_nfsvers)
+    if expected_mount_options and "sync" in expected_mount_options:
+        if not _verify_one_option(real_mount_options, True):
+            return ("sync", True, real_mount_options)
 
 
 def get_storagedomain_names():
@@ -1672,6 +1684,7 @@ class NFSStorage(object):
         * *timeout_to_set*: value of the NFS timeout which should be passed to
                         RHEV-M when storage domain is created
         * *retrans_to_set*: # of retransmissions as above
+        * *mount_options_to_set*: # of mount_options_to_set as above
         * *vers_to_set*: NFS protocol version as above
         * *expected_timeout*: value of the NFS timeout which should be used by
                           RHEV-M when NFS resource is mounted on the host
@@ -1685,7 +1698,8 @@ class NFSStorage(object):
     """
     __allowed = ("name", "address", "path", "sd_type",
                  "timeout_to_set", "retrans_to_set", "vers_to_set",
-                 "expected_timeout", "expected_retrans", "expected_vers")
+                 "mount_options_to_set", "expected_timeout",
+                 "expected_retrans", "expected_vers", "expected_mount_options")
 
     def __init__(self, **kwargs):
         self.sd_type = ENUMS['storage_dom_type_data']

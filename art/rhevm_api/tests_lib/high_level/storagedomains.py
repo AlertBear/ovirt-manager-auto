@@ -82,7 +82,7 @@ def addISCSIDataDomain(host, storage, data_center, lun, lun_address,
             lun_address=lun_address, lun_target=lun_target, lun_port=lun_port,
             storage_format=storage_format):
         logger.error('Failed to add (%s, %s, %s) to %s' % (
-                     lun_address, lun_target, lun, host))
+            lun_address, lun_target, lun, host))
         return False
 
     status = storagedomains.attachStorageDomain(
@@ -597,7 +597,7 @@ def remove_storage_domain(name, datacenter, host, format_disk=False, vdc=None,
 @is_action()
 def create_nfs_domain_with_options(
         name, sd_type, host, address, path, version=None, retrans=None,
-        timeo=None, datacenter=None, positive=True):
+        timeo=None, mount_options=None, datacenter=None, positive=True):
     """
     Creates NFS storage domain with specified options. If datacenter is not
     None, also attaches to the specified datacenter.
@@ -612,7 +612,8 @@ def create_nfs_domain_with_options(
         * *address* - address of NFS server
         * *path* - path of the NFS resource on the server
         * *version* - NFS protocol version which should be used
-        * *retrans* - # retransmissions (NFS option)
+        * *retrans* - Retransmissions (NFS option)
+        * *mount_options* - # custom mount options (NFS option)
         * *timeo* - NFS timeout
         * *datacenter* - if not None: datacenter to which sd should be attached
 
@@ -625,7 +626,8 @@ def create_nfs_domain_with_options(
     if not storagedomains.addStorageDomain(
             positive, name=name, type=sd_type, host=host, address=address,
             storage_type=ENUMS['storage_type_nfs'], path=path,
-            nfs_version=version, nfs_retrans=retrans, nfs_timeo=timeo):
+            nfs_version=version, nfs_retrans=retrans, nfs_timeo=timeo,
+            mount_options=mount_options):
         storagedomains.Storage = old_storage  # just in case...
         raise errors.StorageDomainException(
             "Cannot add storage domain %s" % name)
@@ -675,47 +677,49 @@ def attach_and_activate_domain(datacenter, domain):
 @is_action('createNfsDomainAndVerifyOptions')
 def create_nfs_domain_and_verify_options(domain_list, host=None,
                                          password=None, datacenter=None):
-        """
-        Creates NFS domains with specified options, if datacenter is not
-        None - attaches them to this datacenter, then check that the specified
-        NFS resources are mounted on given host with required options.
+    """
+    Creates NFS domains with specified options, if datacenter is not
+    None - attaches them to this datacenter, then check that the specified
+    NFS resources are mounted on given host with required options.
 
-        **Author**: Katarzyna Jachim
+    **Author**: Katarzyna Jachim
 
-        **Parameters**:
-         * *domain_list*: list of objects of class NFSStorage, each of them
-                          describes one storage domain
-         * *host*: name of host on which storage domain should be mounted
-         * *password*: root password on the host
-         * *datacenter*: if not None - datacenter to which NFS storage domain
-                         should be attached
+    **Parameters**:
+     * *domain_list*: list of objects of class NFSStorage, each of them
+                      describes one storage domain
+     * *host*: name of host on which storage domain should be mounted
+     * *password*: root password on the host
+     * *datacenter*: if not None - datacenter to which NFS storage domain
+                     should be attached
 
-        **Returns**: nothing, raise StorageDomainException exception if the
-                     verification phase of this function fails
-        """
+    **Returns**: nothing, raise StorageDomainException exception if the
+                 verification phase of this function fails
+    """
 
-        for domain in domain_list:
-            logger.info("Creating nfs domain %s" % domain.name)
-            create_nfs_domain_with_options(
-                domain.name, domain.sd_type, host, domain.address,
-                domain.path, retrans=domain.retrans_to_set,
-                version=domain.vers_to_set, timeo=domain.timeout_to_set,
-                datacenter=datacenter)
+    for domain in domain_list:
+        logger.info("Creating nfs domain %s" % domain.name)
+        create_nfs_domain_with_options(
+            domain.name, domain.sd_type, host, domain.address,
+            domain.path, retrans=domain.retrans_to_set,
+            version=domain.vers_to_set, timeo=domain.timeout_to_set,
+            mount_options=domain.mount_options_to_set,
+            datacenter=datacenter)
 
-        logger.info("Getting info about mounted resources")
-        mounted_resources = storagedomains.get_mounted_nfs_resources(host,
-                                                                     password)
+    logger.info("Getting info about mounted resources")
+    mounted_resources = storagedomains.get_mounted_nfs_resources(host,
+                                                                 password)
 
-        logger.info("verifying nfs options")
-        for domain in domain_list:
-            nfs_timeo, nfs_retrans, nfs_vers = mounted_resources[
-                (domain.address, domain.path)]
-            result = storagedomains.verify_nfs_options(
-                domain.expected_timeout, domain.expected_retrans,
-                domain.expected_vers, nfs_timeo, nfs_retrans, nfs_vers)
-            if result:
-                raise errors.StorageDomainException(
-                    "Wrong NFS options! Expected %s: %s, real: %s" % result)
+    logger.info("verifying nfs options")
+    for domain in domain_list:
+        nfs_timeo, nfs_retrans, nfs_vers, nfs_sync = mounted_resources[
+            (domain.address, domain.path)]
+        result = storagedomains.verify_nfs_options(
+            domain.expected_timeout, domain.expected_retrans,
+            domain.expected_vers, domain.expected_mount_options, nfs_timeo,
+            nfs_retrans, nfs_vers, nfs_sync)
+        if result:
+            raise errors.StorageDomainException(
+                "Wrong NFS options! Expected %s: %s, real: %s" % result)
 
 
 @is_action('detachAndDeactivateDomain')

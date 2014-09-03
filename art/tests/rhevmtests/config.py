@@ -206,6 +206,9 @@ else:
         if VFS_TYPE == "pnfs":
             VFS_TYPE = STORAGE_TYPE_NFS
             PARAMETERS['data_domain_mount_options'] = "vers=4.1"
+            ADDRESS = PARAMETERS.as_list('data_domain_address')
+            PATH = PARAMETERS.as_list('data_domain_path')
+
         PARAMETERS['vfs_type'] = VFS_TYPE
 
 HOSTS_USER = 'root'

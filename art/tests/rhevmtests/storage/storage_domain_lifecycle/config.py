@@ -17,3 +17,8 @@ VM_PASSWORD = VMS_LINUX_PW
 
 FIRST_HOST = HOSTS[0]
 TMP_CLUSTER_NAME = 'tmp_cluster'
+
+if STORAGE_TYPE == STORAGE_TYPE_POSIX:
+    # force the posix to be mount as nfs
+    STORAGE_TYPE = STORAGE_TYPE_NFS
+
