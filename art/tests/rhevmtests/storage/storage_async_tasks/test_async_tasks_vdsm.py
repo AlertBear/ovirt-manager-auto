@@ -2,18 +2,32 @@ from art.unittest_lib import StorageTest as TestCase
 import logging
 
 from art.rhevm_api.utils import log_listener
-from art.rhevm_api.utils import test_utils
-from art.rhevm_api.tests_lib.low_level import vms
-from art.rhevm_api.tests_lib.low_level import hosts
-from art.rhevm_api.tests_lib.low_level import datacenters
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 from nose.plugins.attrib import attr
 
 import config
 import common
 
+from art.rhevm_api.tests_lib.low_level.vms import (
+    validateSnapshot, removeSnapshot,
+    addSnapshot, startVm, stop_vms_safely, waitForVMState, waitForVmsGone,
+    cloneVmFromTemplate, removeVm, VM_API,
+)
+
+from art.rhevm_api.tests_lib.low_level.vms import (
+    suspendVm, wait_for_vm_states, get_vm_state,
+)
+
+from art.rhevm_api.utils.test_utils import wait_for_tasks, restartVdsmd
+from art.rhevm_api.tests_lib.low_level.datacenters import (
+    wait_for_datacenter_state_api,
+)
+
 LOGGER = logging.getLogger(__name__)
 ENGINE_LOG = '/var/log/ovirt-engine/engine.log'
+SPM_TIMEOUT = 1200
+TIMEOUT = 300
+DATA_CENTER_INIT_TIMEOUT = 1200
 
 
 @attr(tier=2)
@@ -21,19 +35,22 @@ class RestartVDSM(TestCase):
     __test__ = False
 
     def tearDown(self):
-        datacenters.wait_for_datacenter_state_api(config.DATA_CENTER_NAME)
-        test_utils.wait_for_tasks(
+        wait_for_datacenter_state_api(config.DATA_CENTER_NAME,
+                                      timeout=DATA_CENTER_INIT_TIMEOUT)
+        wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
 
     def restart_before_tasks_start(self):
         self.perform_action()
         LOGGER.info("Restarting VDSM")
-        assert test_utils.restartVdsmd(
+        assert restartVdsmd(
             config.HOSTS[0], config.HOSTS_PW)
         LOGGER.info("VDSM restarted")
-        hosts.waitForHostsStates(True, config.HOSTS[0])
-        test_utils.wait_for_tasks(
+
+        wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
+        wait_for_datacenter_state_api(config.DATA_CENTER_NAME,
+                                      timeout=DATA_CENTER_INIT_TIMEOUT)
         self.check_action_failed()
 
     def restart_during_tasks(self, action_name):
@@ -49,10 +66,11 @@ class RestartVDSM(TestCase):
             username=config.VDC_ROOT_USER, password=config.VDC_PASSWORD,
             ip_for_execute_command=config.HOSTS[0],
             remote_username=config.HOSTS_USER, remote_password=config.HOSTS_PW,
-            time_out=300)
+            time_out=TIMEOUT)
         LOGGER.info("VDSM restarted")
-        hosts.waitForHostsStates(True, config.HOSTS[0])
-        test_utils.wait_for_tasks(
+        wait_for_datacenter_state_api(config.DATA_CENTER_NAME,
+                                      timeout=DATA_CENTER_INIT_TIMEOUT)
+        wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
         self.check_action_failed()
 
@@ -76,41 +94,42 @@ class TestCase287892(RestartVDSM):
 
     def tearDown(self):
         super(TestCase287892, self).tearDown()
-        if vms.validateSnapshot(True, config.VM_NAME[0], self.snapshot_name):
-            vms.stopVm(True, config.VM_NAME[0])
+        if validateSnapshot(True, config.VM_NAME[0], self.snapshot_name):
+            LOGGER.info("Stopping vm %s", config.VM_NAME[0])
+            stop_vms_safely([config.VM_NAME[0]])
+            waitForVMState(config.VM_NAME[0], config.VM_DOWN)
+
+            LOGGER.info("Removing snapshot %s", self.snapshot_name)
             self.assertTrue(
-                vms.removeSnapshot(
-                    True,
-                    config.VM_NAME[0],
-                    self.snapshot_name
-                ),
-                "Removing snapshot %s failed" % self.snapshot_name
-            )
-            vms.startVm(True, config.VM_NAME[0], config.ENUMS['vm_state_up'])
-        test_utils.wait_for_tasks(
+                removeSnapshot(True, config.VM_NAME[0], self.snapshot_name),
+                "Removing snapshot %s failed" % self.snapshot_name)
+
+            LOGGER.info("Starting vm %s", config.VM_NAME[0])
+            startVm(True, config.VM_NAME[0], config.VM_UP)
+
+        wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
+        wait_for_datacenter_state_api(config.DATA_CENTER_NAME,
+                                      timeout=DATA_CENTER_INIT_TIMEOUT)
 
     def perform_action(self):
         self.assertTrue(
-            vms.addSnapshot(
-                True,
-                config.VM_NAME[0],
-                self.snapshot_name,
-                False
-            ),
-            "Adding snapshot %s failed" % self.snapshot_name
-        )
+            addSnapshot(True, config.VM_NAME[0], self.snapshot_name, False),
+            "Adding snapshot %s failed" % self.snapshot_name)
 
     def check_action_failed(self):
-        self.assertFalse(
-            vms.validateSnapshot(True, config.VM_NAME[0], self.snapshot_name),
-            "Snapshot %s exists!" % self.snapshot_name)
+        self.assertTrue(
+            validateSnapshot(True, config.VM_NAME[0], self.snapshot_name),
+            "Snapshot %s doesn't exists!" % self.snapshot_name)
 
     @tcms(tcms_plan_id, tcms_test_case)
     def test_restart_before_tasks_start(self):
         """
         Restart VDSM before tasks were sent to it - snapshot creation
         """
+        stop_vms_safely([config.VM_NAME[0]])
+        waitForVMState(config.VM_NAME[0], config.VM_DOWN)
+
         self.restart_before_tasks_start()
 
     @tcms(tcms_plan_id, tcms_test_case)
@@ -119,6 +138,9 @@ class TestCase287892(RestartVDSM):
         Restart VDSM when only part of the tasks were finished
         - snapshot creation
         """
+        stop_vms_safely([config.VM_NAME[0]])
+        waitForVMState(config.VM_NAME[0], config.VM_DOWN)
+
         self.restart_during_tasks('CreateAllSnapshotsFromVm')
 
 
@@ -134,10 +156,10 @@ class TestCase287893(RestartVDSM):
     cloned_vm = 'vm_%s' % tcms_test_case
 
     def check_action_failed(self):
-        assert vms.waitForVmsGone(True, self.cloned_vm, 600)
+        assert waitForVmsGone(True, self.cloned_vm, 600)
 
     def perform_action(self):
-        return vms.cloneVmFromTemplate(
+        return cloneVmFromTemplate(
             True, self.cloned_vm, config.TEMPLATE_NAME, config.CLUSTER_NAME,
             wait=False)
 
@@ -146,9 +168,9 @@ class TestCase287893(RestartVDSM):
         Just in case: if one of the tests failed and vm was created - remove it
         """
         super(TestCase287893, self).tearDown()
-        if vms.VM_API.query("name=%s" % self.cloned_vm):
-            vms.removeVm(True, self.cloned_vm)
-        test_utils.wait_for_tasks(
+        if VM_API.query("name=%s" % self.cloned_vm):
+            removeVm(True, self.cloned_vm)
+        wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
 
     @tcms(tcms_plan_id, tcms_test_case)
@@ -178,18 +200,17 @@ class TestCase288203(RestartVDSM):
     tcms_test_case = '288203'
 
     def perform_action(self):
-        assert vms.suspendVm(True, config.VM_NAME[0], False)
+        assert suspendVm(True, config.VM_NAME[0], False)
 
     def check_action_failed(self):
-        vms.wait_for_vm_states(
+        wait_for_vm_states(
             config.VM_NAME[0],
-            [config.ENUMS['vm_state_up'], config.ENUMS['vm_state_down'],
-             config.ENUMS['vm_state_suspended']])
-        status = vms.VM_API.find(config.VM_NAME[0]).get_status().get_state()
-        self.assertEqual(
-            status, config.ENUMS['vm_state_up'],
-            "VM %s status incorrect, is: %s, should be: %s" % (
-                config.VM_NAME[0], status, config.ENUMS['vm_state_up']))
+            [config.VM_UP, config.VM_DOWN, config.VM_SUSPENDED])
+        status = get_vm_state(config.VM_NAME[0])
+
+        self.assertEqual(status, config.VM_UP,
+                         "VM %s status incorrect, is: %s, should be: %s" %
+                         (config.VM_NAME[0], status, config.VM_UP))
 
     def setUp(self):
         common.start_vm()
@@ -197,7 +218,7 @@ class TestCase288203(RestartVDSM):
     def tearDown(self):
         super(TestCase288203, self).tearDown()
         common.start_vm()
-        test_utils.wait_for_tasks(
+        wait_for_tasks(
             config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
 
 # commented out as it is failing
