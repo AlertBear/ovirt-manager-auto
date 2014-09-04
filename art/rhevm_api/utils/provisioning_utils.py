@@ -1,4 +1,5 @@
 import logging
+import socket
 from contextlib import contextmanager
 from abc import ABCMeta, abstractmethod
 
@@ -85,7 +86,8 @@ class ForemanProvisioning(ProvisioningAPI):
             * provisioning_profile - Foreman profile for specific OS image
         Returns: status of Foreman host provision create_host method
         """
-        name = 'ART-test-vm-%s' % generateShortGuid()
+        hostname = socket.gethostname().split(".")[0]
+        name = 'ART-test-vm-%s-%s' % (hostname, generateShortGuid())
         return api.create_host(
             name, mac, hostgroup=provisioning_profile['hostgroup'],
             common_parameters=common_parameters)
