@@ -19,23 +19,37 @@ from art.rhevm_api.utils.test_utils import checkMTU
 from art.test_handler.exceptions import NetworkException
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.core_api.apis_utils import TimeoutingSampler
-from art.rhevm_api.tests_lib.high_level.networks import\
-    createAndAttachNetworkSN, removeNetFromSetup, checkHostNicParameters
-from art.rhevm_api.tests_lib.low_level.networks import\
+from art.rhevm_api.tests_lib.high_level.networks import(
+    createAndAttachNetworkSN, remove_net_from_setup, checkHostNicParameters
+)
+from art.rhevm_api.tests_lib.low_level.networks import(
     updateNetwork, checkVlanNet, isVmHostNetwork
-from art.rhevm_api.tests_lib.low_level.hosts import sendSNRequest, \
-    deactivateHost, updateHost, activateHost, attachHostNic, detachHostNic
+)
+from art.rhevm_api.tests_lib.low_level.hosts import(
+    sendSNRequest, deactivateHost, updateHost, activateHost, attachHostNic,
+    detachHostNic
+)
 from art.rhevm_api.tests_lib.low_level.vms import addNic, removeNic, updateNic
-from art.rhevm_api.tests_lib.low_level.templates import addTemplateNic,\
-    removeTemplateNic
+from art.rhevm_api.tests_lib.low_level.templates import(
+    addTemplateNic, removeTemplateNic
+)
 
 logger = logging.getLogger(__name__)
+HOST_NICS = None  # filled in setup module
 
 ########################################################################
 
 ########################################################################
 #                             Test Cases                               #
 ########################################################################
+
+
+def setup_module():
+    """
+    obtain host NICs for the first Network Host
+    """
+    global HOST_NICS, NUM_NICS
+    HOST_NICS = config.VDS_HOSTS[0].nics
 
 
 @attr(tier=1)
@@ -52,15 +66,15 @@ class MultiHostCase01(TestCase):
         """
         Create untagged network on DC/Cluster/Host
         """
-        local_dict = {config.VLAN_NETWORKS[0]: {"nic": config.HOST_NICS[1],
+        local_dict = {config.VLAN_NETWORKS[0]: {"nic": 1,
                                                 "required": "false"}}
 
         logger.info("Attach network to DC/Cluster and Host")
         if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
                                         cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS[0],
+                                        host=config.VDS_HOSTS[0],
                                         network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0]]):
+                                        auto_nics=[0]):
             raise NetworkException("Cannot create and attach network")
 
     @istest
@@ -90,7 +104,7 @@ class MultiHostCase01(TestCase):
             sleep=1,
             func=checkHostNicParameters,
             host=config.HOSTS[0],
-            nic=config.HOST_NICS[1],
+            nic=HOST_NICS[1],
             **vlan_dict1
         )
         if not sample1.waitForFuncStatus(result=True):
@@ -98,9 +112,9 @@ class MultiHostCase01(TestCase):
                                    "host")
 
         logger.info("Check that the change is reflected to Host")
-        if not checkVlanNet(host=config.HOSTS[0], user=config.HOSTS_USER,
+        if not checkVlanNet(host=config.HOSTS_IP[0], user=config.HOSTS_USER,
                             password=config.HOSTS_PW,
-                            interface=config.HOST_NICS[1],
+                            interface=HOST_NICS[1],
                             vlan=config.VLAN_ID[0]):
             raise NetworkException("Host %s was not updated with correct "
                                    "VLAN %s" % (config.HOSTS[0],
@@ -119,7 +133,7 @@ class MultiHostCase01(TestCase):
             sleep=1,
             func=checkHostNicParameters,
             host=config.HOSTS[0],
-            nic=config.HOST_NICS[1],
+            nic=HOST_NICS[1],
             **vlan_dict2
         )
         if not sample2.waitForFuncStatus(result=True):
@@ -127,9 +141,9 @@ class MultiHostCase01(TestCase):
                                    "host")
 
         logger.info("Check that the change is reflected to Host")
-        if not checkVlanNet(host=config.HOSTS[0], user=config.HOSTS_USER,
+        if not checkVlanNet(host=config.HOSTS_IP[0], user=config.HOSTS_USER,
                             password=config.HOSTS_PW,
-                            interface=config.HOST_NICS[1],
+                            interface=HOST_NICS[1],
                             vlan=config.VLAN_ID[1]):
             raise NetworkException("Host %s was not updated with correct "
                                    "VLAN %s" % (config.HOSTS[0],
@@ -147,9 +161,9 @@ class MultiHostCase01(TestCase):
                                    "shouldn't")
 
         logger.info("Check that the change is reflected to Host")
-        if checkVlanNet(host=config.HOSTS[0], user=config.HOSTS_USER,
+        if checkVlanNet(host=config.HOSTS_IP[0], user=config.HOSTS_USER,
                         password=config.HOSTS_PW,
-                        interface=config.HOST_NICS[1],
+                        interface=HOST_NICS[1],
                         vlan=config.VLAN_ID[1]):
             raise NetworkException("Network on Host %s was not updated to be "
                                    "untagged" % config.HOSTS[0])
@@ -160,9 +174,9 @@ class MultiHostCase01(TestCase):
         Remove network from the setup.
         """
         logger.info("Remove networks from setup")
-        if not removeNetFromSetup(host=config.HOSTS[0],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.VLAN_NETWORKS[0]]):
+        if not remove_net_from_setup(host=config.VDS_HOSTS[0],
+                                     auto_nics=[0],
+                                     network=[config.VLAN_NETWORKS[0]]):
             raise NetworkException("Cannot remove network from setup")
 
 
@@ -179,15 +193,15 @@ class MultiHostCase02(TestCase):
         """
         Create and attach network on DC, Cluster and the host
         """
-        dict_dc1 = {config.NETWORKS[0]: {"nic": config.HOST_NICS[1],
+        dict_dc1 = {config.NETWORKS[0]: {"nic": 1,
                                          "required": "false"}}
 
         logger.info("Attach network to DC/Cluster/Host")
         if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
                                         cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS[0],
+                                        host=config.VDS_HOSTS[0],
                                         network_dict=dict_dc1,
-                                        auto_nics=[config.HOST_NICS[0]]):
+                                        auto_nics=[0]):
             raise NetworkException("Cannot create and attach network")
 
     @istest
@@ -215,7 +229,7 @@ class MultiHostCase02(TestCase):
             sleep=1,
             func=checkHostNicParameters,
             host=config.HOSTS[0],
-            nic=config.HOST_NICS[1],
+            nic=HOST_NICS[1],
             **mtu_dict1
         )
         if not sample1.waitForFuncStatus(result=True):
@@ -224,17 +238,19 @@ class MultiHostCase02(TestCase):
         logger.info("Check that the change is reflected to Host")
         logger.info("Checking logical layer of bridged network %s on host %s",
                     config.NETWORKS[0], config.HOSTS[0])
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
+        self.assertTrue(checkMTU(host=config.HOSTS_IP[0],
+                                 user=config.HOSTS_USER,
                                  password=config.HOSTS_PW, mtu=config.MTU[0],
                                  physical_layer=False,
                                  network=config.NETWORKS[0],
-                                 nic=config.HOST_NICS[1]))
+                                 nic=HOST_NICS[1]))
 
         logger.info("Checking physical layer of bridged network %s on host "
                     "%s", config.NETWORKS[0], config.HOSTS[0])
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
+        self.assertTrue(checkMTU(host=config.HOSTS_IP[0],
+                                 user=config.HOSTS_USER,
                                  password=config.HOSTS_PW, mtu=config.MTU[0],
-                                 nic=config.HOST_NICS[1]))
+                                 nic=HOST_NICS[1]))
 
         logger.info("Update MTU network with MTU %s", config.MTU[-1])
         if not updateNetwork(True, network=config.NETWORKS[0],
@@ -249,7 +265,7 @@ class MultiHostCase02(TestCase):
             sleep=1,
             func=checkHostNicParameters,
             host=config.HOSTS[0],
-            nic=config.HOST_NICS[1],
+            nic=HOST_NICS[1],
             **mtu_dict2
         )
         if not sample2.waitForFuncStatus(result=True):
@@ -258,17 +274,19 @@ class MultiHostCase02(TestCase):
         logger.info("Check that the change is reflected to Host")
         logger.info("Checking logical layer of bridged network %s on host "
                     "%s", config.NETWORKS[0], config.HOSTS[0])
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
+        self.assertTrue(checkMTU(host=config.HOSTS_IP[0],
+                                 user=config.HOSTS_USER,
                                  password=config.HOSTS_PW, mtu=config.MTU[-1],
                                  physical_layer=False,
                                  network=config.NETWORKS[0],
-                                 nic=config.HOST_NICS[1]))
+                                 nic=HOST_NICS[1]))
 
         logger.info("Checking physical layer of bridged network %s on host %s"
                     % (config.NETWORKS[0], config.HOSTS[0]))
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
+        self.assertTrue(checkMTU(host=config.HOSTS_IP[0],
+                                 user=config.HOSTS_USER,
                                  password=config.HOSTS_PW, mtu=config.MTU[-1],
-                                 nic=config.HOST_NICS[1]))
+                                 nic=HOST_NICS[1]))
 
     @classmethod
     def teardown_class(cls):
@@ -276,9 +294,9 @@ class MultiHostCase02(TestCase):
         Remove network from the setup.
         """
         logger.info("Remove network from setup")
-        if not removeNetFromSetup(host=config.HOSTS[0],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.NETWORKS[0]]):
+        if not remove_net_from_setup(host=config.VDS_HOSTS[0],
+                                     auto_nics=[0],
+                                     network=[config.NETWORKS[0]]):
             raise NetworkException("Cannot remove network from setup")
 
 
@@ -296,15 +314,15 @@ class MultiHostCase03(TestCase):
         Create and attach network on DC, Cluster and the host
         """
 
-        dict_dc1 = {config.NETWORKS[0]: {"nic": config.HOST_NICS[1],
+        dict_dc1 = {config.NETWORKS[0]: {"nic": 1,
                                          "required": "false"}}
 
         logger.info("Attach network to DC/Cluster/Host")
         if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
                                         cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS[0],
+                                        host=config.VDS_HOSTS[0],
                                         network_dict=dict_dc1,
-                                        auto_nics=[config.HOST_NICS[0]]):
+                                        auto_nics=[0]):
             raise NetworkException("Cannot create and attach network")
 
     @istest
@@ -332,7 +350,7 @@ class MultiHostCase03(TestCase):
             sleep=1,
             func=checkHostNicParameters,
             host=config.HOSTS[0],
-            nic=config.HOST_NICS[1],
+            nic=HOST_NICS[1],
             **bridge_dict1
         )
         if not sample1.waitForFuncStatus(result=True):
@@ -340,7 +358,7 @@ class MultiHostCase03(TestCase):
                                    "Non-VM")
 
         logger.info("Check that the change is reflected to Host")
-        if isVmHostNetwork(host=config.HOSTS[0], user=config.HOSTS_USER,
+        if isVmHostNetwork(host=config.HOSTS_IP[0], user=config.HOSTS_USER,
                            password=config.HOSTS_PW,
                            net_name=config.NETWORKS[0], conn_timeout=45):
             raise NetworkException("Network on host %s was not updated to be "
@@ -358,14 +376,14 @@ class MultiHostCase03(TestCase):
             sleep=1,
             func=checkHostNicParameters,
             host=config.HOSTS[0],
-            nic=config.HOST_NICS[1],
+            nic=HOST_NICS[1],
             **bridge_dict2
         )
         if not sample2.waitForFuncStatus(result=True):
             raise NetworkException("Network is not a VM network but should be")
 
         logger.info("Check that the change is reflected to Host")
-        if not isVmHostNetwork(host=config.HOSTS[0], user=config.HOSTS_USER,
+        if not isVmHostNetwork(host=config.HOSTS_IP[0], user=config.HOSTS_USER,
                                password=config.HOSTS_PW,
                                net_name=config.NETWORKS[0]):
             raise NetworkException("Network on host %s was not updated to be "
@@ -377,9 +395,9 @@ class MultiHostCase03(TestCase):
         Remove network from the setup.
         """
         logger.info("Remove network from setup")
-        if not removeNetFromSetup(host=config.HOSTS[0],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.NETWORKS[0]]):
+        if not remove_net_from_setup(host=config.VDS_HOSTS[0],
+                                     auto_nics=[0],
+                                     network=[config.NETWORKS[0]]):
             raise NetworkException("Cannot remove network from setup")
 
 
@@ -401,15 +419,15 @@ class MultiHostCase04(TestCase):
         Create and attach network on DC, Cluster and the host
         """
 
-        dict_dc1 = {config.NETWORKS[0]: {"nic": config.HOST_NICS[1],
+        dict_dc1 = {config.NETWORKS[0]: {"nic": 1,
                                          "required": "false"}}
 
         logger.info("Attach network to DC/Cluster/Host")
         if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
                                         cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS[0],
+                                        host=config.VDS_HOSTS[0],
                                         network_dict=dict_dc1,
-                                        auto_nics=[config.HOST_NICS[0]]):
+                                        auto_nics=[0]):
             raise NetworkException("Cannot create and attach network")
 
     @istest
@@ -433,7 +451,7 @@ class MultiHostCase04(TestCase):
 
         logger.info("Remove network from the Host")
         if not sendSNRequest(True, host=config.HOSTS[0],
-                             auto_nics=[config.HOST_NICS[0]],
+                             auto_nics=[config.VDS_HOSTS[0].nics[0]],
                              check_connectivity="true",
                              connectivity_timeout=config.CONNECT_TIMEOUT,
                              force="false"):
@@ -485,9 +503,9 @@ class MultiHostCase04(TestCase):
         Remove network from the setup.
         """
         logger.info("Remove network from setup")
-        if not removeNetFromSetup(host=config.HOSTS[0],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.NETWORKS[1]]):
+        if not remove_net_from_setup(host=config.VDS_HOSTS[0],
+                                     auto_nics=[0],
+                                     network=[config.NETWORKS[1]]):
             raise NetworkException("Cannot remove network from setup")
 
 
@@ -510,15 +528,15 @@ class MultiHostCase05(TestCase):
         non-running VMs
         """
 
-        dict_dc1 = {config.NETWORKS[0]: {"nic": config.HOST_NICS[1],
+        dict_dc1 = {config.NETWORKS[0]: {"nic": 1,
                                          "required": "false"}}
 
         logger.info("Attach network to DC/Cluster/Host")
         if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
                                         cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS[0],
+                                        host=config.VDS_HOSTS[0],
                                         network_dict=dict_dc1,
-                                        auto_nics=[config.HOST_NICS[0]]):
+                                        auto_nics=[0]):
             raise NetworkException("Cannot create and attach network")
 
         logger.info("Add network to running and non-running VMs")
@@ -580,7 +598,7 @@ class MultiHostCase05(TestCase):
             sleep=1,
             func=checkHostNicParameters,
             host=config.HOSTS[0],
-            nic=config.HOST_NICS[1],
+            nic=HOST_NICS[1],
             **mtu_dict1
         )
         if not sample1.waitForFuncStatus(result=True):
@@ -590,17 +608,19 @@ class MultiHostCase05(TestCase):
         logger.info("Checking logical layer of bridged network %s on host %s",
                     config.NETWORKS[0], config.HOSTS[0])
 
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
+        self.assertTrue(checkMTU(host=config.HOSTS_IP[0],
+                                 user=config.HOSTS_USER,
                                  password=config.HOSTS_PW, mtu=config.MTU[0],
                                  physical_layer=False,
                                  network=config.NETWORKS[0],
-                                 nic=config.HOST_NICS[1]))
+                                 nic=HOST_NICS[1]))
 
         logger.info("Checking physical layer of bridged network %s on host "
                     "%s", config.NETWORKS[0], config.HOSTS[0])
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
+        self.assertTrue(checkMTU(host=config.HOSTS_IP[0],
+                                 user=config.HOSTS_USER,
                                  password=config.HOSTS_PW, mtu=config.MTU[0],
-                                 nic=config.HOST_NICS[1]))
+                                 nic=HOST_NICS[1]))
 
         logger.info("Update network with VLAN %s", config.VLAN_ID[0])
         if not updateNetwork(True, network=config.NETWORKS[0],
@@ -617,7 +637,7 @@ class MultiHostCase05(TestCase):
             sleep=1,
             func=checkHostNicParameters,
             host=config.HOSTS[0],
-            nic=config.HOST_NICS[1],
+            nic=HOST_NICS[1],
             **vlan_dict1
         )
         if not sample1.waitForFuncStatus(result=True):
@@ -625,9 +645,9 @@ class MultiHostCase05(TestCase):
                                    "host")
 
         logger.info("Check that the change is reflected to Host")
-        if not checkVlanNet(host=config.HOSTS[0], user=config.HOSTS_USER,
+        if not checkVlanNet(host=config.HOSTS_IP[0], user=config.HOSTS_USER,
                             password=config.HOSTS_PW,
-                            interface=config.HOST_NICS[1],
+                            interface=HOST_NICS[1],
                             vlan=config.VLAN_ID[0]):
             raise NetworkException("Host %s was not updated with correct "
                                    "VLAN %s" % (config.HOSTS[0],
@@ -642,7 +662,7 @@ class MultiHostCase05(TestCase):
                                    "though it's attached to VM")
 
         logger.info("Check that the change is reflected to Host")
-        if not isVmHostNetwork(host=config.HOSTS[0], user=config.HOSTS_USER,
+        if not isVmHostNetwork(host=config.HOSTS_IP[0], user=config.HOSTS_USER,
                                password=config.HOSTS_PW,
                                net_name=config.NETWORKS[0]):
             raise NetworkException("Network on host %s was not updated to be "
@@ -668,7 +688,7 @@ class MultiHostCase05(TestCase):
             sleep=1,
             func=checkHostNicParameters,
             host=config.HOSTS[0],
-            nic=config.HOST_NICS[1],
+            nic=HOST_NICS[1],
             **mtu_dict1
         )
         if not sample1.waitForFuncStatus(result=True):
@@ -681,9 +701,9 @@ class MultiHostCase05(TestCase):
                                        config.VM_NAME[i])
 
         logger.info("Remove network from setup")
-        if not removeNetFromSetup(host=config.HOSTS[0],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.NETWORKS[0]]):
+        if not remove_net_from_setup(host=config.VDS_HOSTS[0],
+                                     auto_nics=[0],
+                                     network=[config.NETWORKS[0]]):
             raise NetworkException("Cannot remove network from setup")
 
 
@@ -703,15 +723,15 @@ class MultiHostCase06(TestCase):
         Create and attach network on DC, Cluster,Host and Template
         """
 
-        dict_dc1 = {config.NETWORKS[0]: {"nic": config.HOST_NICS[1],
+        dict_dc1 = {config.NETWORKS[0]: {"nic": 1,
                                          "required": "false"}}
 
         logger.info("Attach network to DC/Cluster/Host")
         if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
                                         cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS[0],
+                                        host=config.VDS_HOSTS[0],
                                         network_dict=dict_dc1,
-                                        auto_nics=[config.HOST_NICS[0]]):
+                                        auto_nics=[0]):
             raise NetworkException("Cannot create and attach network")
 
         logger.info("Attach NIC to the Template")
@@ -753,7 +773,7 @@ class MultiHostCase06(TestCase):
             sleep=1,
             func=checkHostNicParameters,
             host=config.HOSTS[0],
-            nic=config.HOST_NICS[1],
+            nic=HOST_NICS[1],
             **mtu_dict1
         )
         if not sample1.waitForFuncStatus(result=True):
@@ -763,17 +783,19 @@ class MultiHostCase06(TestCase):
         logger.info("Checking logical layer of bridged network %s on host %s"
                     % (config.NETWORKS[0], config.HOSTS[0]))
 
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
+        self.assertTrue(checkMTU(host=config.HOSTS_IP[0],
+                                 user=config.HOSTS_USER,
                                  password=config.HOSTS_PW, mtu=config.MTU[0],
                                  physical_layer=False,
                                  network=config.NETWORKS[0],
-                                 nic=config.HOST_NICS[1]))
+                                 nic=HOST_NICS[1]))
 
         logger.info("Checking physical layer of bridged network %s on host "
                     "%s", config.NETWORKS[0], config.HOSTS[0])
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
+        self.assertTrue(checkMTU(host=config.HOSTS_IP[0],
+                                 user=config.HOSTS_USER,
                                  password=config.HOSTS_PW, mtu=config.MTU[0],
-                                 nic=config.HOST_NICS[1]))
+                                 nic=HOST_NICS[1]))
 
         logger.info("Update network with VLAN %s", config.VLAN_ID[0])
         if not updateNetwork(True, network=config.NETWORKS[0],
@@ -789,7 +811,7 @@ class MultiHostCase06(TestCase):
             sleep=1,
             func=checkHostNicParameters,
             host=config.HOSTS[0],
-            nic=config.HOST_NICS[1],
+            nic=HOST_NICS[1],
             **vlan_dict1
         )
         if not sample1.waitForFuncStatus(result=True):
@@ -797,9 +819,9 @@ class MultiHostCase06(TestCase):
                                    "host")
 
         logger.info("Check that the change is reflected to Host")
-        if not checkVlanNet(host=config.HOSTS[0], user=config.HOSTS_USER,
+        if not checkVlanNet(host=config.HOSTS_IP[0], user=config.HOSTS_USER,
                             password=config.HOSTS_PW,
-                            interface=config.HOST_NICS[1],
+                            interface=HOST_NICS[1],
                             vlan=config.VLAN_ID[0]):
             raise NetworkException("Host %s was not updated with correct "
                                    "VLAN %s" % (config.HOSTS[0],
@@ -825,7 +847,7 @@ class MultiHostCase06(TestCase):
             sleep=1,
             func=checkHostNicParameters,
             host=config.HOSTS[0],
-            nic=config.HOST_NICS[1],
+            nic=HOST_NICS[1],
             **mtu_dict1
         )
         if not sample1.waitForFuncStatus(result=True):
@@ -840,9 +862,9 @@ class MultiHostCase06(TestCase):
                                     config.TEMPLATE_NAME[0]))
 
         logger.info("Remove network from setup")
-        if not removeNetFromSetup(host=config.HOSTS[0],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.NETWORKS[0]]):
+        if not remove_net_from_setup(host=config.VDS_HOSTS[0],
+                                     auto_nics=[0],
+                                     network=[config.NETWORKS[0]]):
             raise NetworkException("Cannot remove network from setup")
 
 
@@ -861,15 +883,15 @@ class MultiHostCase07(TestCase):
         Create network on DC/Cluster/Hosts
         """
 
-        local_dict = {config.VLAN_NETWORKS[0]: {"nic": config.HOST_NICS[1],
+        local_dict = {config.VLAN_NETWORKS[0]: {"nic": 1,
                                                 "required": "false"}}
 
         logger.info("Attach network to DC/Cluster and 2 Hosts")
         if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
                                         cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS,
+                                        host=config.VDS_HOSTS,
                                         network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0]]):
+                                        auto_nics=[0]):
             raise NetworkException("Cannot create and attach network")
 
     @istest
@@ -901,7 +923,7 @@ class MultiHostCase07(TestCase):
                     sleep=1,
                     func=checkHostNicParameters,
                     host=host,
-                    nic=config.HOST_NICS[1],
+                    nic=HOST_NICS[1],
                     **mtu_dict1
                 )
             )
@@ -910,8 +932,8 @@ class MultiHostCase07(TestCase):
                 raise NetworkException("Couldn't get correct MTU on host")
 
         logger.info("Check that the MTU change is reflected to both Hosts")
-        for host in config.HOSTS:
-            logger.info("Checking logical layer of bridged network %s on host"
+        for host in config.HOSTS_IP:
+            logger.info("Checking logical layer of bridged network %s on host "
                         "%s" % (config.VLAN_NETWORKS[0], host))
 
             self.assertTrue(checkMTU(host=host, user=config.HOSTS_USER,
@@ -919,20 +941,20 @@ class MultiHostCase07(TestCase):
                                      mtu=config.MTU[0],
                                      physical_layer=False,
                                      network=config.VLAN_NETWORKS[0],
-                                     nic=config.HOST_NICS[1]))
+                                     nic=HOST_NICS[1]))
 
             logger.info("Checking physical layer of bridged network %s on host"
                         " %s" % (config.NETWORKS[0], host))
             self.assertTrue(checkMTU(host=host, user=config.HOSTS_USER,
                                      password=config.HOSTS_PW,
                                      mtu=config.MTU[0],
-                                     nic=config.HOST_NICS[1]))
+                                     nic=HOST_NICS[1]))
 
         logger.info("Check that the VLAN change is reflected to both Hosts")
-        for host in config.HOSTS:
+        for host in config.HOSTS_IP:
             if not checkVlanNet(host=host, user=config.HOSTS_USER,
                                 password=config.HOSTS_PW,
-                                interface=config.HOST_NICS[1],
+                                interface=HOST_NICS[1],
                                 vlan=config.VLAN_ID[0]):
                 raise NetworkException("Host %s was not updated with correct "
                                        "VLAN %s" % (host, config.VLAN_ID[0]))
@@ -960,7 +982,7 @@ class MultiHostCase07(TestCase):
                     sleep=1,
                     func=checkHostNicParameters,
                     host=host,
-                    nic=config.HOST_NICS[1],
+                    nic=HOST_NICS[1],
                     **mtu_dict1
                 )
             )
@@ -968,9 +990,9 @@ class MultiHostCase07(TestCase):
             if not sample1[i].waitForFuncStatus(result=True):
                 raise NetworkException("Couldn't get correct MTU on host")
 
-        if not removeNetFromSetup(host=config.HOSTS,
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.VLAN_NETWORKS[0]]):
+        if not remove_net_from_setup(host=config.VDS_HOSTS,
+                                     auto_nics=[0],
+                                     network=[config.VLAN_NETWORKS[0]]):
             raise NetworkException("Cannot remove network from setup")
 
 
@@ -982,6 +1004,7 @@ class MultiHostCase08(TestCase):
     Make sure all the changes exist on both Hosts
     """
     __test__ = True
+    cl_name2 = "new_CL_case08"
 
     @classmethod
     def setup_class(cls):
@@ -991,35 +1014,35 @@ class MultiHostCase08(TestCase):
         """
 
         logger .info("Add additional Cluster %s under DC %s ",
-                     config.CLUSTER_NAME[1], config.DC_NAME[0])
-        if not addCluster(positive=True, name=config.CLUSTER_NAME[1],
+                     cls.cl_name2, config.DC_NAME[0])
+        if not addCluster(positive=True, name=cls.cl_name2,
                           cpu=config.CPU_NAME, data_center=config.DC_NAME[0],
                           version=config.COMP_VERSION):
             raise NetworkException("Cannot add Cluster %s under DC %s " %
-                                   (config.CLUSTER_NAME[1], config.DC_NAME[0]))
+                                   (cls.cl_name2, config.DC_NAME[0]))
 
         logger.info("Deactivate host %s, move it to other Cluster and "
                     "reactivate it", config.HOSTS[1])
         assert (deactivateHost(True, host=config.HOSTS[1]))
         if not updateHost(True, host=config.HOSTS[1],
-                          cluster=config.CLUSTER_NAME[1]):
+                          cluster=cls.cl_name2):
             raise NetworkException("Cannot move host to another Cluster")
         assert (activateHost(True, host=config.HOSTS[1]))
 
-        local_dict = {config.VLAN_NETWORKS[0]: {"nic": config.HOST_NICS[1],
+        local_dict = {config.VLAN_NETWORKS[0]: {"nic": 1,
                                                 "required": "false"}}
 
         logger.info("Attach network to DC/Cluster and 2 Hosts")
         if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
                                         cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS[0],
+                                        host=config.VDS_HOSTS[0],
                                         network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0]]):
+                                        auto_nics=[0]):
             raise NetworkException("Cannot create and attach network")
-        if not createAndAttachNetworkSN(cluster=config.CLUSTER_NAME[1],
-                                        host=config.HOSTS[1],
+        if not createAndAttachNetworkSN(cluster=cls.cl_name2,
+                                        host=config.VDS_HOSTS[1],
                                         network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0]]):
+                                        auto_nics=[0]):
             raise NetworkException("Cannot create and attach network")
 
     @istest
@@ -1051,7 +1074,7 @@ class MultiHostCase08(TestCase):
                     sleep=1,
                     func=checkHostNicParameters,
                     host=host,
-                    nic=config.HOST_NICS[1],
+                    nic=HOST_NICS[1],
                     **mtu_dict1
                 )
             )
@@ -1060,7 +1083,7 @@ class MultiHostCase08(TestCase):
                 raise NetworkException("Couldn't get correct MTU on host")
 
         logger.info("Check that the MTU change is reflected to both Hosts")
-        for host in config.HOSTS:
+        for host in config.HOSTS_IP:
             logger.info("Checking logical layer of bridged network %s on host"
                         "%s" % (config.VLAN_NETWORKS[0], host))
             self.assertTrue(checkMTU(host=host, user=config.HOSTS_USER,
@@ -1068,20 +1091,20 @@ class MultiHostCase08(TestCase):
                                      mtu=config.MTU[0],
                                      physical_layer=False,
                                      network=config.VLAN_NETWORKS[0],
-                                     nic=config.HOST_NICS[1]))
+                                     nic=HOST_NICS[1]))
 
             logger.info("Checking physical layer of bridged network %s on host"
                         " %s" % (config.NETWORKS[0], host))
             self.assertTrue(checkMTU(host=host, user=config.HOSTS_USER,
                                      password=config.HOSTS_PW,
                                      mtu=config.MTU[0],
-                                     nic=config.HOST_NICS[1]))
+                                     nic=HOST_NICS[1]))
 
         logger.info("Check that the VLAN change is reflected to both Hosts")
-        for host in config.HOSTS:
+        for host in config.HOSTS_IP:
             if not checkVlanNet(host=host, user=config.HOSTS_USER,
                                 password=config.HOSTS_PW,
-                                interface=config.HOST_NICS[1],
+                                interface=HOST_NICS[1],
                                 vlan=config.VLAN_ID[0]):
                 raise NetworkException("Host %s was not updated with correct "
                                        "VLAN %s" % (host, config.VLAN_ID[0]))
@@ -1111,7 +1134,7 @@ class MultiHostCase08(TestCase):
                     sleep=1,
                     func=checkHostNicParameters,
                     host=host,
-                    nic=config.HOST_NICS[1],
+                    nic=HOST_NICS[1],
                     **mtu_dict1
                 )
             )
@@ -1120,9 +1143,9 @@ class MultiHostCase08(TestCase):
                 raise NetworkException("Couldn't get correct MTU on host")
 
         logger.info("Remove network %s from setup", config.VLAN_NETWORKS[0])
-        if not removeNetFromSetup(host=config.HOSTS,
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.VLAN_NETWORKS[0]]):
+        if not remove_net_from_setup(host=config.VDS_HOSTS,
+                                     auto_nics=[0],
+                                     network=[config.VLAN_NETWORKS[0]]):
             raise NetworkException("Cannot remove network from setup")
 
         logger.info("Deactivate host, move it to original Cluster and "
@@ -1133,10 +1156,10 @@ class MultiHostCase08(TestCase):
             raise NetworkException("Cannot move host to another Cluster")
         assert (activateHost(True, host=config.HOSTS[1]))
 
-        logger.info("Remove cluster %s from setup", config.CLUSTER_NAME[1])
-        if not removeCluster(True, config.CLUSTER_NAME[1]):
+        logger.info("Remove cluster %s from setup", cls.cl_name2)
+        if not removeCluster(True, cls.cl_name2):
             raise NetworkException("Cannot remove Cluster %s from setup" %
-                                   config.CLUSTER_NAME[1])
+                                   cls.cl_name2)
 
 
 @attr(tier=1)
@@ -1149,7 +1172,7 @@ class MultiHostCase09(TestCase):
     Update tagged network to be untagged when that network is attached to
     the Host bond
     """
-    __test__ = len(config.HOST_NICS) > 3
+    __test__ = True
 
     @classmethod
     def setup_class(cls):
@@ -1157,17 +1180,15 @@ class MultiHostCase09(TestCase):
         Create untagged network on DC/Cluster/Host
         """
         local_dict = {config.VLAN_NETWORKS[0]: {"nic": config.BOND[0],
-                                                "slaves":
-                                                [config.HOST_NICS[2],
-                                                 config.HOST_NICS[3]],
+                                                "slaves": [2, 3],
                                                 "required": "false"}}
 
         logger.info("Attach network to DC/Cluster and bond on Host")
         if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
                                         cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS[0],
+                                        host=config.VDS_HOSTS[0],
                                         network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0]]):
+                                        auto_nics=[0]):
             raise NetworkException("Cannot create and attach network")
 
     @istest
@@ -1207,7 +1228,7 @@ class MultiHostCase09(TestCase):
                                    "host")
 
         logger.info("Check that the change is reflected to Host")
-        if not checkVlanNet(host=config.HOSTS[0], user=config.HOSTS_USER,
+        if not checkVlanNet(host=config.HOSTS_IP[0], user=config.HOSTS_USER,
                             password=config.HOSTS_PW,
                             interface=config.BOND[0],
                             vlan=config.VLAN_ID[0]):
@@ -1236,7 +1257,7 @@ class MultiHostCase09(TestCase):
                                    "host")
 
         logger.info("Check that the change is reflected to Host")
-        if not checkVlanNet(host=config.HOSTS[0], user=config.HOSTS_USER,
+        if not checkVlanNet(host=config.HOSTS_IP[0], user=config.HOSTS_USER,
                             password=config.HOSTS_PW,
                             interface=config.BOND[0],
                             vlan=config.VLAN_ID[1]):
@@ -1256,7 +1277,7 @@ class MultiHostCase09(TestCase):
                                    "shouldn't")
 
         logger.info("Check that the change is reflected to Host")
-        if checkVlanNet(host=config.HOSTS[0], user=config.HOSTS_USER,
+        if checkVlanNet(host=config.HOSTS_IP[0], user=config.HOSTS_USER,
                         password=config.HOSTS_PW,
                         interface=config.BOND[0],
                         vlan=config.VLAN_ID[1]):
@@ -1269,9 +1290,9 @@ class MultiHostCase09(TestCase):
         Remove network from the setup.
         """
         logger.info("Remove networks from setup")
-        if not removeNetFromSetup(host=config.HOSTS[0],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.VLAN_NETWORKS[0]]):
+        if not remove_net_from_setup(host=config.VDS_HOSTS[0],
+                                     auto_nics=[0],
+                                     network=[config.VLAN_NETWORKS[0]]):
             raise NetworkException("Cannot remove network from setup")
 
 
@@ -1283,7 +1304,7 @@ class MultiHostCase10(TestCase):
     Update network with another MTU value when that network is attached to
     the Host bond
     """
-    __test__ = len(config.HOST_NICS) > 3
+    __test__ = True
 
     @classmethod
     def setup_class(cls):
@@ -1291,16 +1312,15 @@ class MultiHostCase10(TestCase):
         Create and attach network on DC, Cluster and the host
         """
         local_dict = {config.NETWORKS[0]: {"nic": config.BOND[0],
-                                           "slaves": [config.HOST_NICS[2],
-                                                      config.HOST_NICS[3]],
+                                           "slaves": [2, 3],
                                            "required": "false"}}
 
         logger.info("Attach network to DC/Cluster/Host")
         if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
                                         cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS[0],
+                                        host=config.VDS_HOSTS[0],
                                         network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0]]):
+                                        auto_nics=[0]):
             raise NetworkException("Cannot create and attach network")
 
     @istest
@@ -1337,7 +1357,8 @@ class MultiHostCase10(TestCase):
         logger.info("Check that the change is reflected to Host")
         logger.info("Checking logical layer of bridged network %s on host %s"
                     % (config.NETWORKS[0], config.HOSTS[0]))
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
+        self.assertTrue(checkMTU(host=config.HOSTS_IP[0],
+                                 user=config.HOSTS_USER,
                                  password=config.HOSTS_PW, mtu=config.MTU[0],
                                  physical_layer=False,
                                  network=config.NETWORKS[0],
@@ -1345,7 +1366,8 @@ class MultiHostCase10(TestCase):
 
         logger.info("Checking physical layer of bridged network %s on host %s"
                     % (config.NETWORKS[0], config.HOSTS[0]))
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
+        self.assertTrue(checkMTU(host=config.HOSTS_IP[0],
+                                 user=config.HOSTS_USER,
                                  password=config.HOSTS_PW, mtu=config.MTU[0],
                                  nic=config.BOND[0]))
 
@@ -1371,7 +1393,8 @@ class MultiHostCase10(TestCase):
         logger.info("Check that the change is reflected to Host")
         logger.info("Checking logical layer of bridged network %s on host %s"
                     % (config.NETWORKS[0], config.HOSTS[0]))
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
+        self.assertTrue(checkMTU(host=config.HOSTS_IP[0],
+                                 user=config.HOSTS_USER,
                                  password=config.HOSTS_PW, mtu=config.MTU[-1],
                                  physical_layer=False,
                                  network=config.NETWORKS[0],
@@ -1379,7 +1402,8 @@ class MultiHostCase10(TestCase):
 
         logger.info("Checking physical layer of bridged network %s on host %s"
                     % (config.NETWORKS[0], config.HOSTS[0]))
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
+        self.assertTrue(checkMTU(host=config.HOSTS_IP[0],
+                                 user=config.HOSTS_USER,
                                  password=config.HOSTS_PW, mtu=config.MTU[-1],
                                  nic=config.BOND[0]))
 
@@ -1389,9 +1413,9 @@ class MultiHostCase10(TestCase):
         Remove network from the setup.
         """
         logger.info("Remove network from setup")
-        if not removeNetFromSetup(host=config.HOSTS[0],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.NETWORKS[0]]):
+        if not remove_net_from_setup(host=config.VDS_HOSTS[0],
+                                     auto_nics=[0],
+                                     network=[config.NETWORKS[0]]):
             raise NetworkException("Cannot remove network from setup")
 
 
@@ -1403,7 +1427,7 @@ class MultiHostCase11(TestCase):
     Update non-VM network to be VM network when that network is attached to
     the Host bond
     """
-    __test__ = len(config.HOST_NICS) > 3
+    __test__ = True
 
     @classmethod
     def setup_class(cls):
@@ -1412,16 +1436,15 @@ class MultiHostCase11(TestCase):
         """
 
         local_dict = {config.NETWORKS[0]: {"nic": config.BOND[0],
-                                           "slaves": [config.HOST_NICS[2],
-                                                      config.HOST_NICS[3]],
+                                           "slaves": [2, 3],
                                            "required": "false"}}
 
         logger.info("Attach network to DC/Cluster/Host")
         if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
                                         cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS[0],
+                                        host=config.VDS_HOSTS[0],
                                         network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0]]):
+                                        auto_nics=[0]):
             raise NetworkException("Cannot create and attach network")
 
     @istest
@@ -1457,7 +1480,7 @@ class MultiHostCase11(TestCase):
                                    "Non-VM")
 
         logger.info("Check that the change is reflected to Host")
-        if isVmHostNetwork(host=config.HOSTS[0], user=config.HOSTS_USER,
+        if isVmHostNetwork(host=config.HOSTS_IP[0], user=config.HOSTS_USER,
                            password=config.HOSTS_PW,
                            net_name=config.NETWORKS[0], conn_timeout=45):
             raise NetworkException("Network on host %s was not updated to be "
@@ -1482,7 +1505,7 @@ class MultiHostCase11(TestCase):
             raise NetworkException("Network is not a VM network but should be")
 
         logger.info("Check that the change is reflected to Host")
-        if not isVmHostNetwork(host=config.HOSTS[0], user=config.HOSTS_USER,
+        if not isVmHostNetwork(host=config.HOSTS_IP[0], user=config.HOSTS_USER,
                                password=config.HOSTS_PW,
                                net_name=config.NETWORKS[0]):
             raise NetworkException("Network on host %s was not updated to be "
@@ -1494,9 +1517,9 @@ class MultiHostCase11(TestCase):
         Remove network from the setup.
         """
         logger.info("Remove network from setup")
-        if not removeNetFromSetup(host=config.HOSTS[0],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.NETWORKS[0]]):
+        if not remove_net_from_setup(host=config.VDS_HOSTS[0],
+                                     auto_nics=[0],
+                                     network=[config.NETWORKS[0]]):
             raise NetworkException("Cannot remove network from setup")
 
 
@@ -1507,6 +1530,8 @@ class MultiHostCase12(TestCase):
     working
     """
     __test__ = True
+    UNCOMP_DC_NAME = "MultiHost_DC30"
+    UNCOMP_CL_NAME = "MultiHost_CL31"
 
     @classmethod
     def setup_class(cls):
@@ -1519,7 +1544,7 @@ class MultiHostCase12(TestCase):
         """
 
         logger.info("Create new DC with version 3.0 in the setup ")
-        if not addDataCenter(positive=True, name=config.UNCOMP_DC_NAME,
+        if not addDataCenter(positive=True, name=cls.UNCOMP_DC_NAME,
                              storage_type=config.STORAGE_TYPE,
                              version=config.VERSION[0], local=False):
             raise NetworkException("Couldn't add a new DC with %s version "
@@ -1527,36 +1552,31 @@ class MultiHostCase12(TestCase):
 
         logger.info("Create new Cluster with version %s in the setup ",
                     config.VERSION[1])
-        if not addCluster(positive=True, name=config.UNCOMP_CL_NAME[1],
+        if not addCluster(positive=True, name=cls.UNCOMP_CL_NAME,
                           cpu=config.CPU_NAME, version=config.VERSION[1],
-                          data_center=config.UNCOMP_DC_NAME):
+                          data_center=cls.UNCOMP_DC_NAME):
             raise NetworkException("Couldn't add a new Cluster with %s "
                                    "version to the setup" % config.VERSION[1])
 
         logger.info("Deactivate host, move it to the new DC %s and "
-                    "reactivate it", config.UNCOMP_DC_NAME)
+                    "reactivate it", cls.UNCOMP_DC_NAME)
         assert (deactivateHost(True, host=config.HOSTS[0]))
         if not updateHost(True, host=config.HOSTS[0],
-                          cluster=config.UNCOMP_CL_NAME[1]):
+                          cluster=cls.UNCOMP_CL_NAME):
             raise NetworkException("Cannot move host to another DC/Cluster")
         assert (activateHost(True, host=config.HOSTS[0]))
 
-        local_dict = {config.NETWORKS[0]: {"nic": config.HOST_NICS[1],
+        local_dict = {config.NETWORKS[0]: {"nic": 1,
                                            "required": "false"}}
-        logger.info("Attach network %s to DC and Cluster for Cluster "
+        logger.info("Attach network %s to DC and Cluster and Host for Cluster "
                     "version %s", config.NETWORKS[0], config.VERSION[1])
-        if not createAndAttachNetworkSN(data_center=config.UNCOMP_DC_NAME,
-                                        cluster=config.UNCOMP_CL_NAME[1],
-                                        network_dict=local_dict):
+        if not createAndAttachNetworkSN(data_center=cls.UNCOMP_DC_NAME,
+                                        cluster=cls.UNCOMP_CL_NAME,
+                                        host=config.VDS_HOSTS[0],
+                                        network_dict=local_dict,
+                                        auto_nics=[0]):
             raise NetworkException("Cannot create and attach network %s" %
                                    config.NETWORKS[0])
-
-        logger.info("Adding network %s to NIC %s", config.NETWORKS[0],
-                    config.HOST_NICS[1])
-        if not attachHostNic(True, config.HOSTS[0], config.HOST_NICS[1],
-                             config.NETWORKS[0]):
-            raise NetworkException("Cannot add network %s to Host NIC %s" %
-                                   (config.NETWORKS[0], config.HOST_NICS[1]))
 
     @tcms(12030, 331907)
     def test_move_host_unsupported_dc(self):
@@ -1568,16 +1588,16 @@ class MultiHostCase12(TestCase):
 
         logger.info("Update network with VLAN %s", config.VLAN_ID[1])
         if not updateNetwork(True, network=config.NETWORKS[0],
-                             data_center=config.UNCOMP_DC_NAME,
+                             data_center=self.UNCOMP_DC_NAME,
                              vlan_id=config.VLAN_ID[1]):
             raise NetworkException("Cannot update network to be tagged with "
                                    "VLAN %s" % config.VLAN_ID[1])
 
         logger.info("Check that the change is not reflected to Host")
         time.sleep(10)
-        if checkVlanNet(host=config.HOSTS[0], user=config.HOSTS_USER,
+        if checkVlanNet(host=config.HOSTS_IP[0], user=config.HOSTS_USER,
                         password=config.HOSTS_PW,
-                        interface=config.HOST_NICS[1],
+                        interface=HOST_NICS[1],
                         vlan=config.VLAN_ID[1]):
             raise NetworkException("Host %s was updated with VLAN %s, "
                                    "but shouldn't" % (config.HOSTS[0],
@@ -1594,31 +1614,31 @@ class MultiHostCase12(TestCase):
         logger.info("Deactivate host, remove network from Host")
         assert (deactivateHost(True, host=config.HOSTS[0]))
 
-        if not detachHostNic(True, config.HOSTS[0], config.HOST_NICS[1],
+        if not detachHostNic(True, config.HOSTS[0], HOST_NICS[1],
                              config.NETWORKS[0]):
-            raise NetworkException("Cannot remove network %s from Host" %
-                                   config.NETWORKS[0])
+            logger.error("Cannot remove network %s from Host" %
+                         config.NETWORKS[0])
 
         logger.info("move Host back to the original Cluster %s "
                     "and reactivate it", config.CLUSTER_NAME[0])
         if not updateHost(True, host=config.HOSTS[0],
                           cluster=config.CLUSTER_NAME[0]):
-            raise NetworkException("Cannot move host to the original DC")
+            logger.error("Cannot move host to the original DC")
 
         assert (activateHost(True, host=config.HOSTS[0]))
 
         logger.info("Removing the DC %s with 3.0 version",
-                    config.UNCOMP_DC_NAME)
+                    cls.UNCOMP_DC_NAME)
         if not removeDataCenter(positive=True,
-                                datacenter=config.UNCOMP_DC_NAME):
-            raise NetworkException("Failed to remove datacenter %s " %
-                                   config.UNCOMP_DC_NAME)
+                                datacenter=cls.UNCOMP_DC_NAME):
+            logger.error("Failed to remove datacenter %s " %
+                         cls.UNCOMP_DC_NAME)
 
         logger.info("Removing the Cluster with %s version", config.VERSION[1])
         if not removeCluster(positive=True,
-                             cluster=config.UNCOMP_CL_NAME[1]):
-            raise NetworkException("Failed to remove cluster with %s version"
-                                   % config.VERSION[1])
+                             cluster=cls.UNCOMP_CL_NAME):
+            logger.error("Failed to remove cluster with %s version"
+                         % config.VERSION[1])
 
 
 @attr(tier=1)
@@ -1628,6 +1648,8 @@ class MultiHostCase13(TestCase):
     working
     """
     __test__ = True
+    UNCOMP_DC_NAME = "MultiHost_DC30"
+    UNCOMP_CL_NAME = "MultiHost_CL30"
 
     @classmethod
     def setup_class(cls):
@@ -1640,7 +1662,7 @@ class MultiHostCase13(TestCase):
         """
 
         logger.info("Create new DC with version 3.0 in the setup ")
-        if not addDataCenter(positive=True, name=config.UNCOMP_DC_NAME,
+        if not addDataCenter(positive=True, name=cls.UNCOMP_DC_NAME,
                              storage_type=config.STORAGE_TYPE,
                              version=config.VERSION[0], local=False):
             raise NetworkException("Couldn't add a new DC with %s version "
@@ -1648,38 +1670,38 @@ class MultiHostCase13(TestCase):
 
         logger.info("Create new Cluster with version %s in the setup ",
                     config.VERSION[0])
-        if not addCluster(positive=True, name=config.UNCOMP_CL_NAME[0],
+        if not addCluster(positive=True, name=cls.UNCOMP_CL_NAME,
                           cpu=config.CPU_NAME, version=config.VERSION[0],
-                          data_center=config.UNCOMP_DC_NAME):
+                          data_center=cls.UNCOMP_DC_NAME):
             raise NetworkException("Couldn't add a new Cluster with %s "
                                    "version to the setup" % config.VERSION[0])
 
         logger.info("Deactivate host, move it to the new DC %s and "
-                    "reactivate it", config.UNCOMP_DC_NAME)
+                    "reactivate it", cls.UNCOMP_DC_NAME)
         assert (deactivateHost(True, host=config.HOSTS[0]))
         if not updateHost(True, host=config.HOSTS[0],
-                          cluster=config.UNCOMP_CL_NAME[0]):
+                          cluster=cls.UNCOMP_CL_NAME):
             raise NetworkException("Cannot move host to another DC/Cluster")
         assert (activateHost(True, host=config.HOSTS[0]))
 
-        local_dict = {config.VLAN_NETWORKS[0]: {"nic": config.HOST_NICS[1],
+        local_dict = {config.VLAN_NETWORKS[0]: {"nic": 1,
                                                 "vlan_id": config.VLAN_ID[0],
                                                 "required": "false"}}
         logger.info("Attach network %s to DC and Cluster for Cluster "
                     "version %s", config.VLAN_NETWORKS[0], config.VERSION[0])
-        if not createAndAttachNetworkSN(data_center=config.UNCOMP_DC_NAME,
-                                        cluster=config.UNCOMP_CL_NAME[0],
+        if not createAndAttachNetworkSN(data_center=cls.UNCOMP_DC_NAME,
+                                        cluster=cls.UNCOMP_CL_NAME,
                                         network_dict=local_dict):
             raise NetworkException("Cannot create and attach network %s" %
                                    config.VLAN_NETWORKS[0])
 
         logger.info("Adding network %s to NIC %s", config.VLAN_NETWORKS[0],
-                    config.HOST_NICS[1])
-        if not attachHostNic(True, config.HOSTS[0], config.HOST_NICS[1],
+                    HOST_NICS[1])
+        if not attachHostNic(True, config.HOSTS[0], HOST_NICS[1],
                              config.VLAN_NETWORKS[0]):
             raise NetworkException("Cannot add network %s to Host NIC %s" %
                                    (config.VLAN_NETWORKS[0],
-                                    config.HOST_NICS[1]))
+                                    HOST_NICS[1]))
 
     @tcms(12030, 331907)
     def test_move_host_unsupported_cl(self):
@@ -1691,16 +1713,16 @@ class MultiHostCase13(TestCase):
 
         logger.info("Update network with VLAN %s", config.VLAN_ID[1])
         if not updateNetwork(True, network=config.VLAN_NETWORKS[0],
-                             data_center=config.UNCOMP_DC_NAME,
+                             data_center=self.UNCOMP_DC_NAME,
                              vlan_id=config.VLAN_ID[1]):
             raise NetworkException("Cannot update network to be tagged with "
                                    "VLAN %s" % config.VLAN_ID[1])
 
         logger.info("Check that the change is not reflected to Host")
         time.sleep(10)
-        if checkVlanNet(host=config.HOSTS[0], user=config.HOSTS_USER,
+        if checkVlanNet(host=config.HOSTS_IP[0], user=config.HOSTS_USER,
                         password=config.HOSTS_PW,
-                        interface=config.HOST_NICS[1],
+                        interface=HOST_NICS[1],
                         vlan=config.VLAN_ID[1]):
             raise NetworkException("Host %s was updated with VLAN %s, "
                                    "but shouldn't"
@@ -1717,28 +1739,28 @@ class MultiHostCase13(TestCase):
         logger.info("Deactivate host, remove network from Host")
         assert (deactivateHost(True, host=config.HOSTS[0]))
         if not detachHostNic(True, config.HOSTS[0],
-                             ".".join([config.HOST_NICS[1],
+                             ".".join([HOST_NICS[1],
                                        config.VLAN_ID[0]]),
                              config.VLAN_NETWORKS[0]):
-            raise NetworkException("Cannot remove network from Host")
+            logger.error("Cannot remove network from Host")
 
         logger.info("move Host back to the original Cluster %s "
                     "and reactivate it", config.CLUSTER_NAME[0])
         if not updateHost(True, host=config.HOSTS[0],
                           cluster=config.CLUSTER_NAME[0]):
-            raise NetworkException("Cannot move host to the original DC")
+            logger.error("Cannot move host to the original DC")
 
         assert (activateHost(True, host=config.HOSTS[0]))
 
         logger.info("Removing the DC %s with 3.0 version",
-                    config.UNCOMP_DC_NAME)
+                    cls.UNCOMP_DC_NAME)
         if not removeDataCenter(positive=True,
-                                datacenter=config.UNCOMP_DC_NAME):
-            raise NetworkException("Failed to remove datacenter %s " %
-                                   config.UNCOMP_DC_NAME)
+                                datacenter=cls.UNCOMP_DC_NAME):
+            logger.error("Failed to remove datacenter %s " %
+                         cls.UNCOMP_DC_NAME)
 
         logger.info("Removing the Cluster with %s version", config.VERSION[0])
         if not removeCluster(positive=True,
-                             cluster=config.UNCOMP_CL_NAME[0]):
-            raise NetworkException("Failed to remove cluster with %s version"
-                                   % config.VERSION[0])
+                             cluster=cls.UNCOMP_CL_NAME):
+            logger.error("Failed to remove cluster with %s version"
+                         % config.VERSION[0])
