@@ -198,6 +198,6 @@ class AD_W2K12_R2(ActiveDirectory):
 @attr(tier=1)
 class AD_W2K8_R2(ActiveDirectory):
     """ AD 2008 """
-    __test__ = True
+    __test__ = False
     domain = config.W2K8R2_DOMAIN
     PASSWORD = config.W2K8R2_PASSWORD
