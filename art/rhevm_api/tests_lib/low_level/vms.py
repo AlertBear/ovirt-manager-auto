@@ -2184,7 +2184,7 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
 
 
 @is_action()
-def waitForIP(vm, timeout=600, sleep=DEF_SLEEP):
+def waitForIP(vm, timeout=1800, sleep=DEF_SLEEP):
     '''
     Description: Waits until agent starts reporting IP address
     Author: jlibosva
