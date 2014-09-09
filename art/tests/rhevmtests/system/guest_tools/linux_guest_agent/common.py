@@ -75,7 +75,7 @@ class BasePostInstall(TestCase):
         cmd_passwd = ['grep', 'ovirtagent', '/etc/{passwd,group}']
 
         self.assertTrue(self.machine.runCmd(cmd_ls)[0])
-        if hasattr(self, 'cmd_chkconf'):
+        if self.cmd_chkconf is not None:
             self.assertTrue(self.machine.runCmd(self.cmd_chkconf)[0])
         self.assertTrue(self.machine.runCmd(cmd_passwd)[0])
 
