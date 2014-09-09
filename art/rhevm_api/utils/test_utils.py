@@ -32,7 +32,7 @@ import shutil
 from socket import gethostname
 import string
 
-from functools import wraps
+from art.test_handler.exceptions import QueryNotFoundException
 import art.test_handler.settings as settings
 from utilities.rhevm_tools.base import Setup
 from art.core_api.validator import compareCollectionSize
@@ -1846,3 +1846,22 @@ def process_collection_parallel(collection, func, func_args, max_workers,
             raise result.exception()
         if need_result and not result.result():
             raise exc("Result %d from parallel process failed" % index)
+
+
+def get_obj_by_query(obj, query_text):
+    """
+    Get query results for object.
+    obj is object that have main tab in UI.
+    network main tab obj example: NET_API = get_api("network", "networks")
+    usage example to get rhevm network object under cluster <name>:
+    net_obj = NET_API = get_api("network", "networks")
+    query_text = "Cluster_network.cluster_name=<name> and name=rhevm"
+    query_res = get_obj_by_query(obj=net_obj, query_text=query_text)
+    :param obj: Object to query
+    :param query_text: Query text
+    :return:
+    """
+    res = obj.query(query_text)
+    if not res:
+        raise QueryNotFoundException("Query not found")
+    return res

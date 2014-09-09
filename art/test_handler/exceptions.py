@@ -145,3 +145,10 @@ class ResourceError(RHEVMEntityException):
 
 class CanNotFindIP(ResourceError, PluginError):
     pass
+
+
+class QueryNotFoundException(RHEVMEntityException):
+    """
+    Exception for query not found (get_obj_by_query)
+    """
+    pass
