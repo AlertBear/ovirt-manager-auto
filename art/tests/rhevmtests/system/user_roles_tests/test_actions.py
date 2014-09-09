@@ -919,7 +919,7 @@ class Case_configure_host_network(BaseTest):
 
 
 @attr(tier=2)
-class Case_maniputlate_host(BaseTest):
+class Case_manipulate_host(BaseTest):
     __test__ = True
 
     def tearDown(self):

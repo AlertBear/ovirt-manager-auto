@@ -69,9 +69,9 @@ USER_NAME3 = 'userportal3'
 USER_DOMAIN = 'qa.lab.tlv.redhat.com'
 USER_PASSWORD = '123456'
 
-USER1 = 'userportal1'
-USER2 = 'userportal2'
-USER3 = 'userportal3'
+USER1 = 'userportal1@qa.lab.tlv.redhat.com'
+USER2 = 'userportal2@qa.lab.tlv.redhat.com'
+USER3 = 'userportal3@qa.lab.tlv.redhat.com'
 USER = USER1
 
 GROUP_USER = 'q-student'
