@@ -317,7 +317,8 @@ class SdkUtil(APIUtil):
             correlation_id = self.getCorrelationId(ApiOperation.delete)
             if body:
                 with measure_time('DELETE'):
-                    entity.delete(body, correlation_id=correlation_id)
+                    entity.delete(self._translate_params(body),
+                                  correlation_id=correlation_id)
             else:
                 with measure_time('DELETE'):
                     entity.delete(correlation_id=correlation_id)
