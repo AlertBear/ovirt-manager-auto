@@ -24,7 +24,7 @@ TOOLS_DICT = '{ "RHEV-Tools":"3.2.8"   , "RHEV-Agent":"3.2.5"  , "RHEV-Serial":"
                 "RHEV-USB":"3.2.3"     , "RHEV-SSO":"3.2.4"    , "RHEV-Spice":"3.2.3"}'
 VM_LIST = '{"Windows7":"x64"}'
 CD_WITH_TOOLS = 'RHEV-toolsSetup_3.3_10.iso'
-SUBNET_CLASS = 10
+SUBNET_CLASS = '10'
 
 EXPORT_DOMAIN_ADDRESS = 'lion.qa.lab.tlv.redhat.com'
 ISO_DOMAIN_ADDRESS = 'lion.qa.lab.tlv.redhat.com'
