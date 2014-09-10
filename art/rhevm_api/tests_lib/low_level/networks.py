@@ -243,10 +243,16 @@ def getClusterNetwork(cluster, network):
                 EntityNotFound exception if it's not.
     """
     clusterObj = CL_API.find(cluster)
-    return CL_API.getElemFromElemColl(clusterObj,
-                                      network,
-                                      'networks',
-                                      'network')
+    cluster_net = CL_API.getElemFromElemColl(clusterObj,
+                                             network,
+                                             'networks',
+                                             'network')
+    dc_href = clusterObj.get_data_center().get_href()
+    dc_name = DC_API.get(dc_href).get_name()
+    dc_net = getNetworkInDataCenter(network, dc_name)
+    if dc_net.get_id() == cluster_net.get_id():
+        return dc_net
+    return False
 
 
 def getClusterNetworks(cluster, href=True):
