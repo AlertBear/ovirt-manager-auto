@@ -21,6 +21,8 @@ TIMEOUT = 120
 ATTEMPTS = 600
 INTERVAL = 2
 
+ProvisionContext = vms.ProvisionContext
+
 
 @is_action()
 def add_disk_to_machine(vm_name, interface, format_, sparse, storage_domain,
@@ -192,15 +194,18 @@ def prepare_vm_for_rhel_template(vm_name, vm_password, image):
     **Returns**: True if method success, otherwise False
     """
     logging.info("Install image %s on vm %s", vm_name, image)
-    if not vms.unattendedInstallation(True, vm_name, image):
-        logging.error("Installation of image %s on vm %s failed",
-                      image, vm_name)
-        return False
-    logging.info("Wait for vm %s ip", vm_name)
-    status, result = vms.waitForIP(vm_name)
-    if not status:
-        logging.error("Vm %s still not have ip", vm_name)
-        return False
+    try:
+        if not vms.unattendedInstallation(True, vm_name, image):
+            logging.error("Installation of image %s on vm %s failed",
+                          image, vm_name)
+            return False
+        logging.info("Wait for vm %s ip", vm_name)
+        status, result = vms.waitForIP(vm_name)
+        if not status:
+            logging.error("Vm %s still not have ip", vm_name)
+            return False
+    finally:
+        ProvisionContext.clear()
     logging.info("Seal vm %s", vm_name)
     if not setPersistentNetwork(result.get('ip'), vm_password):
         logging.error("Failed to seal vm %s", vm_name)

@@ -15,6 +15,7 @@ import art.rhevm_api.tests_lib.low_level.storagedomains as llstoragedomains
 import art.rhevm_api.tests_lib.low_level.vms as llvms
 import art.rhevm_api.tests_lib.high_level.storagedomains as hlstoragedomains
 from art.rhevm_api.utils.test_utils import get_api, wait_for_tasks
+
 import config
 
 __THIS_MODULE = modules[__name__]
@@ -29,6 +30,8 @@ CLUSTER_API = get_api('cluster', 'clusters')
 
 GB = config.GB
 TEN_GB = 10 * GB
+
+ProvisionContext = llvms.ProvisionContext
 
 
 def put_host_to_cluster(host, cluster):
@@ -138,14 +141,17 @@ class TestUpgrade(TestCase):
             memory=1073741824, cpu_socket=1, cpu_cores=1,
             display_type=config.ENUMS['display_type_spice'],
             network=config.PARAMETERS['mgmt_bridge'])
-        assert llvms.unattendedInstallation(
-            True, self.vm_name, config.COBBLER_PROFILE, nic=nic)
-        assert llvms.waitForVMState(self.vm_name)
-        # getVmMacAddress returns (bool, dict(macAddress=<desired_mac>))
-        mac = llvms.getVmMacAddress(True, self.vm_name, nic=nic)[1]
-        mac = mac['macAddress']
-        LOGGER.debug("Got mac of vm %s: %s", self.vm_name, mac)
-        assert llvms.removeSystem(mac)
+
+        try:
+            assert llvms.unattendedInstallation(
+                True, self.vm_name, config.COBBLER_PROFILE, nic=nic)
+            assert llvms.waitForVMState(self.vm_name)
+            # getVmMacAddress returns (bool, dict(macAddress=<desired_mac>))
+            mac = llvms.getVmMacAddress(True, self.vm_name, nic=nic)[1]
+            mac = mac['macAddress']
+            LOGGER.debug("Got mac of vm %s: %s", self.vm_name, mac)
+        finally:
+            ProvisionContext.clear()
 
         LOGGER.info("Upgrading data-center %s from version %s to version %s ",
                     self.dc_name, self.dc_version, self.dc_upgraded_version)

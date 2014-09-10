@@ -36,14 +36,12 @@ def setup_package():
             memory=2 * config.GB,
             placement_affinity=AFFINITY,
             placement_host=config.HOSTS[0],
-            network=config.MGMT_BRIDGE
+            network=config.MGMT_BRIDGE,
+            installation=True, image=config.COBBLER_PROFILE,
+            user="root", password=config.VMS_LINUX_PW,
+            os_type=config.OS_TYPE
         ):
             raise errors.VMException("Cannot add VM")
-        if not vms.unattendedInstallation(
-            True, config.VM_NAME[0],
-            image=config.COBBLER_PROFILE
-        ):
-            raise errors.VMException("Cannot install Linux OS")
 
 
 def teardown_package():

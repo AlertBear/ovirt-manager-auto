@@ -1,7 +1,6 @@
 """
 Storage related global config file
 """
-from art.rhevm_api.utils import test_utils
 from rhevmtests.config import *  # flake8: noqa
 
 __test__ = False
@@ -23,9 +22,6 @@ DISK_SIZE = int(PARAMETERS.setdefault('disk_size', 10737418240))
 
 VM_USER = VMS_LINUX_USER
 VM_PASSWORD = VMS_LINUX_PW
-
-OS_TYPE = test_utils.convertOsNameToOsTypeElement(
-    True, PARAMETERS['vm_os'])[1]['osTypeElement']
 
 NUMBER_OF_DISKS = int(PARAMETERS.get('no_of_disks', 8))
 

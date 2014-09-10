@@ -232,20 +232,14 @@ class WatchdogCRUD(WatchdogVM):
             storageDomainName=config.STORAGE_NAME[0],
             size=config.DISK_SIZE, nic=config.NIC_NAME[0],
             memory=MEMORY_SIZE,
-            network=config.MGMT_BRIDGE
+            network=config.MGMT_BRIDGE,
+            installation=True, image=config.COBBLER_PROFILE,
+            user="root", password=config.VMS_LINUX_PW,
+            os_type=config.OS_TYPE
         ):
             raise errors.VMException("Cannot create vm %s" % cls.vm_name)
         logger.info("Successfully created VM")
 
-        if not vms.unattendedInstallation(
-            positive=True, vm=cls.vm_name,
-            image=config.COBBLER_PROFILE,
-            nic=config.NIC_NAME[0]
-        ):
-            raise errors.VMException("Cannot install Linux OS")
-        if not vms.waitForIP(cls.vm_name, timeout=7200, sleep=10)[0]:
-            raise errors.VMException(
-                "Cannot obtain IP for vm %s" % cls.vm_name)
         vms.stopVm(positive=True, vm=cls.vm_name, async='false')
 
     @bz({'1107992': ['java']})
@@ -557,7 +551,7 @@ class WatchdogTestDump(WatchdogVM):
             ['ls', '-l', dump_path,  '|', 'wc', '-l'])
         self.assertTrue(rc, "Cannot read %s" % dump_path)
 
-        self.assertEqual(logs_count+1, int(output),
+        self.assertEqual(logs_count + 1, int(output),
                          "Dump file was not created")
         logger.info("dump file successfully created")
 
@@ -789,19 +783,16 @@ class WatchdogCRUDTemplate(WatchdogVM):
             storageDomainName=config.STORAGE_NAME[0],
             size=config.DISK_SIZE, nic=config.NIC_NAME[0],
             memory=MEMORY_SIZE,
-            network=config.MGMT_BRIDGE
+            network=config.MGMT_BRIDGE,
+            installation=True,
+            image=config.COBBLER_PROFILE,
+            user="root", password=config.VMS_LINUX_PW,
+            os_type=config.OS_TYPE
         ):
             raise errors.VMException(
                 "Cannot create vm %s" % cls.vm_name_master)
 
         logger.info("Successfully created VM %s" % cls.vm_name_master)
-
-        if not vms.unattendedInstallation(
-            positive=True, vm=cls.vm_name_master,
-            image=config.COBBLER_PROFILE,
-            nic=config.NIC_NAME[0]
-        ):
-            raise errors.VMException("Cannot install Linux OS")
 
         status, guest = vms.waitForIP(cls.vm_name_master,
                                       timeout=7200,

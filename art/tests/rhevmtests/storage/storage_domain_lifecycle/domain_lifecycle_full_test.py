@@ -40,6 +40,8 @@ CLUSTER_API = get_api('cluster', 'clusters')
 GB = 1024 ** 3
 TEN_GB = 10 * GB
 
+ProvisionContext = vms.ProvisionContext
+
 
 def setup_module():
     """
@@ -544,14 +546,16 @@ class TestUpgrade(TestCase):
             memory=1073741824, cpu_socket=1, cpu_cores=1,
             display_type=config.DISPLAY_TYPE,
             network=config.MGMT_BRIDGE)
-        assert vms.unattendedInstallation(
-            True, self.vm_name, config.COBBLER_PROFILE, nic=nic)
-        assert vms.waitForVMState(self.vm_name)
-        # getVmMacAddress returns (bool, dict(macAddress=<desired_mac>))
-        mac = vms.getVmMacAddress(True, self.vm_name, nic=nic)[1]
-        mac = mac['macAddress']
-        LOGGER.debug("Got mac of vm %s: %s", self.vm_name, mac)
-        assert vms.removeSystem(mac)
+        try:
+            assert vms.unattendedInstallation(
+                True, self.vm_name, config.COBBLER_PROFILE, nic=nic)
+            assert vms.waitForVMState(self.vm_name)
+            # getVmMacAddress returns (bool, dict(macAddress=<desired_mac>))
+            mac = vms.getVmMacAddress(True, self.vm_name, nic=nic)[1]
+            mac = mac['macAddress']
+            LOGGER.debug("Got mac of vm %s: %s", self.vm_name, mac)
+        finally:
+            ProvisionContext.clear()
 
         LOGGER.info("Upgrading data-center %s from version %s to version %s ",
                     self.dc_name, self.dc_version, self.dc_upgraded_version)

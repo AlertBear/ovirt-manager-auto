@@ -4,8 +4,6 @@
 __test__ = False
 
 from rhevmtests.config import *  # flake8: noqa
-from art.rhevm_api.utils import test_utils
-
 
 PM1_TYPE = 'ipmilan'
 PM2_TYPE = 'apc_snmp'
@@ -14,9 +12,6 @@ PM_TYPE_DEFAULT = 'apc'
 
 HOST_FALSE_IP = '10.1.1.256'
 ISO_IMAGE = PARAMETERS.get('iso_image', None)
-
-OS_TYPE = test_utils.convertOsNameToOsTypeElement(
-    True, PARAMETERS['vm_os'])[1]['osTypeElement']
 
 USE_AGENT = PARAMETERS['useAgent']
 

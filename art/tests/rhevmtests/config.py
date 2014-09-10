@@ -5,6 +5,7 @@ Consolidated config module
 __test__ = False
 
 from art.test_handler.settings import ART_CONFIG, opts
+from art.rhevm_api.utils import test_utils
 
 GOLDEN_ENV = False
 
@@ -225,23 +226,5 @@ AD_USER_NO_ROLES = PARAMETERS['no_roles_user']
 # MISC PARAMETERS
 MAX_WORKERS = PARAMETERS.get('max_workers', 10)
 
-# VERSION = ["3.3", "3.4"]  # import-export
-# DATA_NAME = PARAMETERS.get('data_domain_name', '%s_storage' % TEST_NAME)
-# DATA_PATHS = PARAMETERS.as_list('data_domain_path')
-# DATA_ADDRESSES = PARAMETERS.as_list('data_domain_address')
-# STORAGE_NAME = '%s_data_domain0' % DC_NAME
-# STORAGE_DOMAIN_NAME = '%s_data_domain0' % DC_NAME     portMirroring
-# DC_NAME = PARAMETERS.get('dc_name', '%s_DC' % TEST_NAME)
-# CLUSTER_NAME = PARAMETERS.get('cluster_name', '%s_Cluster' % TEST_NAME)
-# USE_AGENT = PARAMETERS['useAgent']
-# J_MTU = [5000, 9000, 2000, 1500]
-# VM_NIC_NAMES = ['nic1', 'nic2', 'nic3']   Jumbo
-# VM_NICS = ['nic1', 'nic2', 'nic3']    portMirroring
-# For profiles with port mirroring:
-# PM_VNIC_PROFILE = ['%s_PM' % net for net in [MGMT_BRIDGE] + VLAN_NETWORKS]
-# DISK_TYPE = ENUMS['disk_type_system']
-# IMP_VM = ["_".join([VM_NAME[i], "Imported"]) for i in range(2)]
-# VM_OS = PARAMETERS['vm_os']
-# NONOPERATIONAL = ENUMS['host_state_non_operational']
-# NONRESPONSIVE = ENUMS['host_state_non_responsive']
-# MAINTENANCE = ENUMS['host_state_maintenance']
+OS_TYPE = test_utils.convertOsNameToOsTypeElement(
+    True, PARAMETERS['vm_os'])[1]['osTypeElement']
