@@ -186,7 +186,7 @@ def findNetwork(network, data_center=None, cluster=None):
                 return net
         raise EntityNotFound('%s network does not exists!' % network)
     elif cluster:
-        return findNetworkByCluster(network, cluster)
+        return getClusterNetwork(cluster, network)
     else:
         return NET_API.find(network)
 
@@ -249,7 +249,7 @@ def getClusterNetwork(cluster, network):
                                       'network')
 
 
-def getClusterNetworks(cluster):
+def getClusterNetworks(cluster, href=True):
     """
     Get href of the cluster's networks.
     **Parameters**:
@@ -260,7 +260,7 @@ def getClusterNetworks(cluster):
     return CL_API.getElemFromLink(clusterObj,
                                   link_name='networks',
                                   attr='network',
-                                  get_href=True)
+                                  get_href=href)
 
 
 @is_action()
@@ -278,7 +278,7 @@ def addNetworkToCluster(positive, network, cluster, **kwargs):
        * display - deprecated. boolean, a spice display network.
     Return: status (True if network was attached properly, False otherwise)
     """
-    kwargs.update(net=findNetwork(network, cluster=cluster))
+    kwargs.update(net=findNetwork(network))
     net = _prepareClusterNetworkObj(**kwargs)
     cluster_nets = getClusterNetworks(cluster)
     res, status = NET_API.create(net,
@@ -878,12 +878,14 @@ def check_network_on_nic(network, host, nic):
     **Return**: True if network resides on Host NIC, otherwise False
     """
     try:
-        nic_obj_id = ll.hosts.getHostNic(host, nic).get_network().get_id()
+        nic_obj = ll.hosts.getHostNic(host, nic).get_network()
         net_obj_id = NET_API.find(network).get_id()
     except (EntityNotFound, AttributeError) as e:
         logger.error(e)
         return False
-    return nic_obj_id == net_obj_id
+    if nic_obj is not None:
+        return nic_obj.get_id() == net_obj_id
+    return False
 
 
 class NetworkInfoDispatcher(object):
