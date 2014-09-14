@@ -3,31 +3,11 @@ import re
 import subprocess
 import logging
 import os
-import signal
+import time
 from utilities.machine import Machine
 import argparse
 
 logger = logging.getLogger(__name__)
-
-
-class Timeout():
-    """Timeout class using ALARM signal."""
-
-    class Timeout(Exception):
-        pass
-
-    def __init__(self, sec):
-        self.sec = sec
-
-    def __enter__(self):
-        signal.signal(signal.SIGALRM, self.raise_timeout)
-        signal.alarm(self.sec)
-
-    def __exit__(self, *args):
-        signal.alarm(0)  # disable alarm
-
-    def raise_timeout(self, *args):
-        raise Timeout.Timeout()
 
 
 class LogListener():
@@ -39,10 +19,11 @@ class LogListener():
     on your local machine or on a remote machine
     """
 
-    def __init__(self, ip_for_files, username, password):
+    def __init__(self, ip_for_files, username, password, time_out=None):
         self.ssh = None
         self.channel = None
         self.machine = None
+        self.time_out = time_out
         logger.info("Trying to open a channel to ip: %s with username %s "
                     "and password %s" % (ip_for_files, username, password))
         if not self.set_connection_for_remote(ip_for_files, username,
@@ -117,7 +98,7 @@ class LogListener():
           execute the "tail -f" command through communication_
           components_list[1] (channel)
         """
-
+        start_time = time.time()
         try:
             logger.info("run 'tail -f' command on file/s %s", files_to_watch)
             self.channel.exec_command("tail -f " + files_to_watch)
@@ -126,6 +107,9 @@ class LogListener():
 
         recv = ""
         while True:
+            if self.time_out:
+                if self.time_out < time.time() - start_time:
+                    return False
             try:
                 # receive the output from the channel
                 recv = "".join([recv, self.channel.recv(1024)])
@@ -149,6 +133,7 @@ class LogListener():
         - True if the regex is found
         - False otherwise
         """
+        start_time = time.time()
         try:
             logger.info("run 'tail -f' command on file/s %s", files_to_watch)
             f = subprocess.Popen(['tail', '-F', files_to_watch,
@@ -161,6 +146,9 @@ class LogListener():
                         files_to_watch, ex)
         recv = ""
         while True:
+            if self.time_out:
+                if self.time_out < time.time() - start_time:
+                    return False
             try:
                 line = f.stdout.readline()
                 recv = "".join([recv, line])
@@ -239,24 +227,12 @@ def watch_logs(files_to_watch, regex, command_to_exec, time_out=None,
         remote_username = username
         remote_password = password
 
-    listener = LogListener(ip_for_files, username, password)
+    listener = LogListener(ip_for_files, username, password, time_out)
 
-    found_regex = None
     cmd_rc = None
-    try:
-        if time_out:
-            with Timeout(time_out):
-                found_regex = listener.watch_for_changes(run_locally,
-                                                         files_to_watch,
-                                                         regex)
-        else:
-            found_regex = listener.watch_for_changes(run_locally,
-                                                     files_to_watch,
-                                                     regex)
-    except Timeout.Timeout:
-        logger.info("Timeout: Did not find regex %s in files %s",
-                    regex,
-                    files_to_watch)
+    found_regex = listener.watch_for_changes(run_locally,
+                                             files_to_watch,
+                                             regex)
 
     if found_regex:
         cmd_rc = listener.execute_command(run_locally, command_to_exec,
@@ -311,7 +287,6 @@ def main():
           (e.g. -t 3)
 
     """
-
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
 
     usage = "usage: %prog [options] arg1 arg2"
