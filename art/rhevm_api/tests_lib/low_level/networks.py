@@ -247,8 +247,8 @@ def getClusterNetwork(cluster, network):
                                              network,
                                              'networks',
                                              'network')
-    dc_href = clusterObj.get_data_center().get_href()
-    dc_name = DC_API.get(dc_href).get_name()
+    dc_id = clusterObj.get_data_center().get_id()
+    dc_name = DC_API.find(dc_id, attribute='id').get_name()
     dc_net = getNetworkInDataCenter(network, dc_name)
     if dc_net.get_id() == cluster_net.get_id():
         return dc_net

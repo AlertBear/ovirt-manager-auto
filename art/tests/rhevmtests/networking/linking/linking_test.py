@@ -566,7 +566,6 @@ class LinkedCase7(TestCase):
         Change plugged, network and name at once on VNIC of VM
         """
         logger.info("Changing nic2 plugged, network and name params")
-
         if not updateNic(True, config.VM_NAME[1], "nic2", name='vnic2',
                          network=config.VLAN_NETWORKS[1],
                          vnic_profile=config.VLAN_NETWORKS[1],
@@ -603,7 +602,7 @@ class LinkedCase7(TestCase):
         logger.info("Test should fail updating")
         self.assertTrue(updateNic(False, config.VM_NAME[1], "nic2",
                                   interface=config.NIC_TYPE_RTL8139,
-                                  mac_address='11:22:33:44:55:66'),
+                                  mac_address='12:22:33:44:55:66'),
                         "Updating NIC with new MAC and int type succeded")
         if not updateNic(True, config.VM_NAME[1], "nic2",
                          network=config.VLAN_NETWORKS[1],
