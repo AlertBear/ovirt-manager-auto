@@ -30,9 +30,10 @@ DEFAULT_MULT_QUERIER = "=".join([KEY2, BRIDGE_OPTS[KEY2][0]])
 NM_SOURCE_IP = '101.1.1.1'
 NM_DEST_IP = '101.1.1.2'
 
-# MultiHost parameters
+# MultiHost and multiple_gw parameters
 SUBNET = "1.1.1.0"
 MG_GATEWAY = "1.1.1.254"
+MG_IP_ADDR = "1.1.1.1"
 
 # Network migration parameters
 FIREWALL_SRV = "iptables"

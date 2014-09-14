@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 
-IP = config.SOURCE_IP
+IP = config.MG_IP_ADDR
 NETMASK = config.NETMASK
 GATEWAY = config.MG_GATEWAY
 SUBNET = config.SUBNET
