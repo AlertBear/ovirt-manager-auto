@@ -9,7 +9,7 @@ from art.rhevm_api.tests_lib.high_level.networks import (
 )
 from art.test_handler.exceptions import NetworkException
 
-logger = logging.getLogger("NIC_Slave/Bond_fault_Event_Log_Network")
+logger = logging.getLogger("int_fault_event_init")
 
 
 def setup_package():
