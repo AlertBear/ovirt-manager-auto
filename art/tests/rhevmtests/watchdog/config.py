@@ -8,3 +8,5 @@ ACTIVATION_KEY = PARAMETERS.get('activation_key')
 REGISTER_URL = PARAMETERS.get('server_url')
 WATCHDOG_MODEL = PARAMETERS.get('watchdog_model')
 
+WATCHDOG_CRUD_VM = 'watchdog_vm_CRUD'
+WATCHDOG_TEMPLATE_VM = 'watchdog_vm_template_master'

@@ -26,22 +26,27 @@ def setup_package():
         logger.info("Building setup...")
         datacenters.build_setup(config.PARAMETERS, config.PARAMETERS,
                                 config.STORAGE_TYPE, config.TEST_NAME)
-
-        if not vms.createVm(
-            positive=True, vmName=config.VM_NAME[0],
-            vmDescription="Watchdog VM",
-            cluster=config.CLUSTER_NAME[0],
-            storageDomainName=config.STORAGE_NAME[0],
-            size=6 * config.GB, nic=config.NIC_NAME[0],
-            memory=2 * config.GB,
-            placement_affinity=AFFINITY,
-            placement_host=config.HOSTS[0],
-            network=config.MGMT_BRIDGE,
-            installation=True, image=config.COBBLER_PROFILE,
-            user="root", password=config.VMS_LINUX_PW,
-            os_type=config.OS_TYPE
+        for vm in (
+            config.VM_NAME[0], config.WATCHDOG_CRUD_VM,
+            config.WATCHDOG_TEMPLATE_VM
         ):
-            raise errors.VMException("Cannot add VM")
+            if not vms.createVm(
+                positive=True, vmName=vm,
+                vmDescription="Watchdog VM",
+                cluster=config.CLUSTER_NAME[0],
+                storageDomainName=config.STORAGE_NAME[0],
+                size=6 * config.GB, nic=config.NIC_NAME[0],
+                memory=2 * config.GB,
+                placement_affinity=AFFINITY,
+                placement_host=config.HOSTS[0],
+                network=config.MGMT_BRIDGE,
+                installation=True, image=config.COBBLER_PROFILE,
+                user="root", password=config.VMS_LINUX_PW,
+                os_type=config.OS_TYPE
+            ):
+                raise errors.VMException("Cannot add VM %s" % vm)
+            if not vms.stopVm(True, vm):
+                raise errors.VMException("Cannot stop VM %s" % vm)
 
 
 def teardown_package():

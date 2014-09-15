@@ -3791,7 +3791,7 @@ def get_vm_machine(vm_name, user, password):
         * password - password for user
     Return value: vm machine
     '''
-    status, got_ip = waitForIP(vm_name, timeout=7200, sleep=10)
+    status, got_ip = waitForIP(vm_name, timeout=600, sleep=10)
     if not status:
         status, mac = getVmMacAddress(True, vm_name,
                                       nic='nic1')
@@ -3813,8 +3813,7 @@ def rebootVm(positive, vm):
         * vm - name of VM
     Return: False if VM failed to start.
     '''
-    if not stopVm(positive=True, vm=vm):
-        logger.warning("VM was already down before reboot, starting VM")
+    stop_vms_safely([vm])
     return startVm(positive=True, vm=vm)
 
 
