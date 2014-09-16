@@ -1537,8 +1537,17 @@ def _parse_mount_output_line(line):
         if "=" in option:
             name, value = option.split("=")
             nfs_options[name] = value
+    # support rhel6.5 & rhel7
+    # mount_2.17.2 (rhel6.5)
+    if nfs_options.get('nfsvers', None):
+        nfsvers = nfs_options['nfsvers']
+    # mount_2.23.2 (rhel7)
+    elif nfs_options.get('vers', None):
+        nfsvers = nfs_options['vers']
+    else:
+        raise Exception("Unknown NFS protocol version number")
     return (address, path, int(nfs_options['timeo']),
-            int(nfs_options['retrans']), 'v' + nfs_options['nfsvers'])
+            int(nfs_options['retrans']), 'v' + nfsvers)
 
 
 @is_action()
