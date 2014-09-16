@@ -7,7 +7,7 @@ import logging
 from art.rhevm_api.tests_lib.high_level.datacenters import build_setup
 from art.unittest_lib import BaseTestCase as TestCase
 
-from rhevmtests.system.upgradeSanity import config
+from rhevm_upgrade import config
 
 LOGGER = logging.getLogger(__name__)
 

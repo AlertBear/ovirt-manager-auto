@@ -10,7 +10,7 @@ from art.test_handler.exceptions import VMException
 from art.unittest_lib import CoreSystemTest as TestCase
 from art.unittest_lib import attr
 
-from rhevmtests.system.upgradeSanity import config
+from rhevm_upgrade import config
 
 LOGGER = logging.getLogger(__name__)
 

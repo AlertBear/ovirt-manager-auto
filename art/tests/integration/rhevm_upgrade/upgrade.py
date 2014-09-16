@@ -11,7 +11,7 @@ from utilities.rhevm_tools.setup import SetupUtility
 
 from art.unittest_lib import attr
 
-from rhevmtests.system.upgradeSanity import config
+from rhevm_upgrade import config
 
 LOGGER = logging.getLogger(__name__)
 

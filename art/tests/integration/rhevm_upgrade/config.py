@@ -4,7 +4,6 @@ import logging
 
 from art.test_handler.settings import opts
 from art.test_handler.settings import ART_CONFIG
-from rhevmtests.system.config import *  # flake8: noqa
 
 LOGGER = logging.getLogger(__name__)
 
@@ -35,7 +34,6 @@ SD_SUFFIX = '_sd'
 SETUP_PACKAGE = 'rhevm-setup'
 STORAGE_NAME = DC_NAME + SD_SUFFIX + "0"
 VM_NAME = ''.join([PARAMETERS.get('basename', ''), 'Vm'])
-
 
 
 REST_CONNECTION = ART_CONFIG['REST_CONNECTION']
