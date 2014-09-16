@@ -219,6 +219,7 @@ class StartVmUnderClusterPolicy(TwoHostsTests):
         self._check_migration(config.HOSTS[1], NUM_OF_VMS_ON_HOST)
 
 
+@attr(tier=3)
 class HaVmStartOnHostAboveMaxLevel(TwoHostsTests):
     """
     Positive: Start vms under vm_evenly_distributed cluster policy,

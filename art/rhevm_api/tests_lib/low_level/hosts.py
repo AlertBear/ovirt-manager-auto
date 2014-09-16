@@ -2367,3 +2367,16 @@ def wait_until_num_of_hosts_in_state(num_of_hosts, timeout,
             num_of_hosts, state
         )
         return False
+
+
+def get_host_free_memory(host_name):
+    """
+    Get host free memory
+
+    :param host_name: host name
+    :type host_name: str
+    :returns: total host free memory
+    :rtype: int
+    """
+    stats = getStat(host_name, ELEMENT, COLLECTION, ["memory.free"])
+    return stats["memory.free"]

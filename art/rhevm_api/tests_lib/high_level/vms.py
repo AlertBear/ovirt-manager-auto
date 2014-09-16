@@ -294,14 +294,17 @@ def start_vms_on_specific_host(
 
 def calculate_memory_for_memory_filter(hosts_list):
     """
-    Calculate memory for vms to prevent more that one vm run on per host.
+    Calculate memory for vms to prevent more that one vm run on per host
 
-    :param hosts_list list of host names.
-    :type hosts_list: list.
-    :returns: list of memory for vms from big to small.
+    :param hosts_list list of hosts names
+    :type hosts_list: list
+    :returns: list of memory for vms from big to small
+    :rtype: dict
     """
-    mem_hosts = map(lambda host: hosts.get_host_max_scheduling_memory(host),
-                    hosts_list)
-    mem_hosts = map(lambda host_memory: (host_memory - GB) - host_memory % MB,
-                    mem_hosts)
+    mem_hosts = map(
+        lambda host: hosts.get_host_free_memory(host), hosts_list
+    )
+    mem_hosts = map(
+        lambda host_memory: (host_memory - GB) - host_memory % MB, mem_hosts
+    )
     return sorted(mem_hosts, reverse=True)

@@ -1140,12 +1140,11 @@ def _prepareNicObj(**kwargs):
         if kwargs.get('network') is None:
             nic_obj.set_vnic_profile(vnic_profile_obj)
         else:
-            vnic_profile_obj = getVnicProfileObj(kwargs.get('vnic_profile')
-                                                 if 'vnic_profile' in kwargs
-                                                 else
-                                                 kwargs.get('network'),
-                                                 kwargs.get('network'),
-                                                 cluster_obj.get_name())
+            vnic_profile_obj = getVnicProfileObj(
+                kwargs.get('vnic_profile') if 'vnic_profile' in kwargs
+                else kwargs.get('network'),
+                kwargs.get('network'), cluster_obj.get_name()
+            )
 
             nic_obj.set_vnic_profile(vnic_profile_obj)
 

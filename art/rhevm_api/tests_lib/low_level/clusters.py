@@ -95,9 +95,9 @@ def _prepareClusterObject(**kwargs):
             overcommit = MemoryOverCommit(percent=kwargs.pop('mem_ovrcmt_prc'))
 
         if kwargs.get('transparent_hugepages'):
-            transparentHugepages = \
-                TransparentHugePages(enabled=kwargs.
-                                     pop('transparent_hugepages'))
+            transparentHugepages = TransparentHugePages(
+                enabled=kwargs.pop('transparent_hugepages')
+            )
 
         memoryPolicy = MemoryPolicy(overcommit=overcommit,
                                     transparent_hugepages=transparentHugepages)
@@ -124,7 +124,7 @@ def _prepareClusterObject(**kwargs):
             )
 
         scheduling_policy = SchedulingPolicy(
-            policy=kwargs.pop('scheduling_policy'),
+            name=kwargs.pop('scheduling_policy'),
             thresholds=thresholds,
             properties=properties
         )
