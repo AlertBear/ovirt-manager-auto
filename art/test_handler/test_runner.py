@@ -308,9 +308,8 @@ class TestRunner(object):
         test_case.start_time = test_case.end_time = datetime.now(tzutc())
         logger.info(TEST_CASES_SEPARATOR)
         test_case.status = test_case.TEST_STATUS_SKIPPED
-        test_case.exc = SkipTest
         logger.info("Skipped: %s, the reason: %s",
-                    test_case.test_name, SkipTest)
+                    test_case.test_name, test_case.exc)
         self.plmanager.results_collector.add_test_result(test_case)
 
     def _run_test_group(self, test_group, skip=False):
@@ -329,12 +328,12 @@ class TestRunner(object):
                 for test_elm in test_group:
                     try:
                         self._run_test_elm(test_elm, skip)
-                    except Vital4GroupTestFailed:
+                    except Vital4GroupTestFailed as ex:
                         logger.error('Vital for group test failed: %s',
                                      test_elm.test_name)
                         logger.warn('Skipping all further tests in group: %s',
                                     test_group.test_name)
-                        raise SkipTest
+                        raise SkipTest(ex)
 
                     self._report_test_case_status(test_elm, test_group)
             elif test_group.workers > 1:
