@@ -35,7 +35,7 @@ DS_CLASS_MAPPER = {
     'RolePermits': 'Permits',
     'HostNicStatistics': 'Statistics',
     'DiskStatistics': 'Statistics',
-    'NetworkVnicProfile': 'VnicProfile',
+    'DataCenterNetworkVnicProfile': 'VnicProfile',
     'JobStep': 'Step',
     'HostNICLabels': 'Labels'
 }
