@@ -98,7 +98,7 @@ class TestCaseHost(TestCase):
         than returns it back to the original name
         """
         logger.info('Update host name')
-        new_name = 'Host_updated_name'
+        new_name = config.HOST_NAME + '_updated'
         status = hosts.updateHost(positive=True, host=config.HOST_NAME,
                                   name=new_name)
         self.assertTrue(status, 'Update host name')
