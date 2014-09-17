@@ -971,7 +971,7 @@ class SanityCase13(TestCase):
             raise NetworkException("Cannot create and attach network")
 
     @istest
-    @tcms(6957, 275464)
+    @tcms(14449, 275464)
     def bond_mode_change(self):
         """
         Check physical and logical levels for networks with Jumbo frames
@@ -1043,7 +1043,7 @@ class SanityCase14(TestCase):
             pass
 
     @istest
-    @tcms(6958, 275471)
+    @tcms(14449, 275471)
     def bond_max_length(self):
         """
         Create BOND: exceed allowed length (max 15 chars)
@@ -1082,7 +1082,7 @@ class SanityCase15(TestCase):
         pass
 
     @istest
-    @tcms(6958, 275471)
+    @tcms(14449, 275471)
     def bond_prefix(self):
         """
         Create BOND: use wrong prefix (eg. NET1515)
@@ -1121,7 +1121,7 @@ class SanityCase16(TestCase):
         pass
 
     @istest
-    @tcms(6958, 275471)
+    @tcms(14449, 275471)
     def bond_suffix(self):
         """
         Create BOND: use wrong suffix (e.g. bond1!)
@@ -1160,7 +1160,7 @@ class SanityCase17(TestCase):
         pass
 
     @istest
-    @tcms(6958, 275471)
+    @tcms(14449, 275471)
     def bond_empty(self):
         """
         Create BOND: leave name field empty
@@ -1207,7 +1207,7 @@ class SanityCase18(TestCase):
             logger.error("Faild to create dummy interfaces")
 
     @istest
-    @tcms(6957, 275813)
+    @tcms(14449, 275813)
     def dummy_bonds(self):
         """
         Create 10 BONDS using dummy interfaces
