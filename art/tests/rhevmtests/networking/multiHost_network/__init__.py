@@ -34,7 +34,8 @@ def setup_package():
                         template_name=config.TEMPLATE_NAME[0],
                         placement_host=config.HOSTS[0],
                         mgmt_network=config.MGMT_BRIDGE,
-                        vm_network=config.MGMT_BRIDGE):
+                        vm_network=config.MGMT_BRIDGE,
+                        auto_nics=[config.HOST_NICS[0]]):
         raise NetworkException("Cannot create setup")
 
     if not addVm(True, name=config.VM_NAME[1], cluster=config.CLUSTER_NAME[0],
