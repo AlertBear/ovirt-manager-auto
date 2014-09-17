@@ -78,7 +78,7 @@ DEFAULT_MTU = 1500
 VDSM_CONF_FILE = "/etc/vdsm/vdsm.conf"
 IFCFG_FILE_PATH = "/etc/sysconfig/network-scripts/"
 HOST_NICS = ["eth0", "eth1", "eth2", "eth3", "eth4", "eth5"]
-RHEL_IMAGE = "rhel6.5-agent3.4"
+RHEL_IMAGE = "rhel6.5-agent3.5"
 HYPERVISOR = "hypervisor"
 
 # command variables
