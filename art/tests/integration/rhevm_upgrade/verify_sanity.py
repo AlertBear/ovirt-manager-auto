@@ -41,4 +41,4 @@ class UpgradeSanityVerification(TestCase):
         assert checkVMConnectivity(True, config.VM_NAME, 'rhel',
                                    nic=config.NIC_NAME,
                                    user=config.VM_LINUX_USER,
-                                   password=config.VM_LINUX_PW)
+                                   password=config.VMS_LINUX_PW)

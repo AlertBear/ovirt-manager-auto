@@ -34,6 +34,7 @@ SD_SUFFIX = '_sd'
 SETUP_PACKAGE = 'rhevm-setup'
 STORAGE_NAME = DC_NAME + SD_SUFFIX + "0"
 VM_NAME = ''.join([PARAMETERS.get('basename', ''), 'Vm'])
+VMS_LINUX_PW = PARAMETERS.as_list('vm_linux_password')[0]
 
 
 REST_CONNECTION = ART_CONFIG['REST_CONNECTION']
