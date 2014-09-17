@@ -1057,7 +1057,7 @@ class SanityCase14(TestCase):
             raise NetworkException("Cannot generate SNNIC object")
         net_obj.append(out['host_nic'])
 
-        logger.info("sending SNReauest: bond012345678901")
+        logger.info("sending SNRequest: bond012345678901")
         self.assertTrue(sendSNRequest(False, host=config.HOSTS[0],
                                       nics=net_obj,
                                       auto_nics=[config.HOST_NICS[0]],
@@ -1096,7 +1096,7 @@ class SanityCase15(TestCase):
             raise NetworkException("Cannot generate SNNIC object")
         net_obj.append(out['host_nic'])
 
-        logger.info("sending SNReauest: NET1515")
+        logger.info("sending SNRequest: NET1515")
         self.assertTrue(sendSNRequest(False, host=config.HOSTS[0],
                                       nics=net_obj,
                                       auto_nics=[config.HOST_NICS[0]],
@@ -1135,7 +1135,7 @@ class SanityCase16(TestCase):
             raise NetworkException("Cannot generate SNNIC object")
         net_obj.append(out['host_nic'])
 
-        logger.info("sending SNReauest: bond1!")
+        logger.info("sending SNRequest: bond1!")
         self.assertTrue(sendSNRequest(False, host=config.HOSTS[0],
                                       nics=net_obj,
                                       auto_nics=[config.HOST_NICS[0]],
@@ -1174,7 +1174,7 @@ class SanityCase17(TestCase):
             raise NetworkException("Cannot generate SNNIC object")
         net_obj.append(out['host_nic'])
 
-        logger.info("sending SNReauest: empty bond name")
+        logger.info("sending SNRequest: empty bond name")
         self.assertTrue(sendSNRequest(False, host=config.HOSTS[0],
                                       nics=net_obj,
                                       auto_nics=[config.HOST_NICS[0]],
@@ -1229,7 +1229,7 @@ class SanityCase18(TestCase):
                                   timeout=600):
             logger.error("%s is not in UP state", config.HOSTS[0])
 
-        logger.info("sending SNReauest: 10 bonds on dummy interfaces")
+        logger.info("sending SNRequest: 10 bonds on dummy interfaces")
         if not sendSNRequest(True, host=config.HOSTS[0],
                              nics=net_obj,
                              auto_nics=[config.HOST_NICS[0]],
