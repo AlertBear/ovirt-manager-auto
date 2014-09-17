@@ -3,17 +3,17 @@ Testing RequiredNetwork network feature.
 1 DC, 1 Cluster, 1 Hosts will be created for testing.
 """
 import logging
+from art.rhevm_api.tests_lib.high_level.hosts import activate_host_if_not_up
 from rhevmtests.networking import config
 from art.unittest_lib import NetworkTest as TestCase, attr
 from art.rhevm_api.tests_lib.high_level.networks import (
     createAndAttachNetworkSN,
     validateNetwork,
-    removeNetFromSetup)
+    remove_all_networks)
 from art.rhevm_api.tests_lib.low_level.hosts import (
     ifdownNic,
     waitForHostsStates,
-    ifupNic,
-    activateHost)
+    ifupNic, getHostNicAttr)
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.tests_lib.low_level.networks import isNetworkRequired, \
@@ -28,8 +28,40 @@ logger = logging.getLogger(__name__)
 ########################################################################
 
 
+class TearDownRequiredNetwork(TestCase):
+    """
+    Teardown class for RequiredNetwork job
+    """
+    @classmethod
+    def teardown_class(cls):
+        logger.info("Set all host interfaces up")
+        for nic in config.HOST_NICS[1:]:
+            host_nic_stat = getHostNicAttr(config.HOSTS[0], nic,
+                                           'status.state')
+            if host_nic_stat[1]["attrValue"] == "up":
+                continue
+            logger.info("Set %s up", nic)
+            if not ifupNic(host=config.HOSTS[0], root_password=config.HOSTS_PW,
+                           nic=nic, wait=False):
+                raise NetworkException("Failed to turn %s up" % nic)
+
+        logger.info("Set host status to UP if not up")
+        if not activate_host_if_not_up(config.HOSTS[0]):
+            raise NetworkException("Failed to activate the host")
+
+        logger.info("Remove all networks from setup")
+        if not (remove_all_networks(datacenter=config.DC_NAME[0],
+                                    mgmt_network=config.MGMT_BRIDGE,
+                                    cluster=config.CLUSTER_NAME[0]) and
+                createAndAttachNetworkSN(host=config.HOSTS[0],
+                                         network_dict={},
+                                         auto_nics=[config.HOST_NICS[0]])):
+
+            raise NetworkException("Cannot remove network from setup")
+
+
 @attr(tier=1)
-class RequiredNetwork01(TestCase):
+class RequiredNetwork01(TearDownRequiredNetwork):
     """
     VM-Network
     Check that mgmt network is required by default and try to set it to
@@ -71,7 +103,7 @@ class RequiredNetwork01(TestCase):
 
 
 @attr(tier=1)
-class RequiredNetwork02(TestCase):
+class RequiredNetwork02(TearDownRequiredNetwork):
     """
     VM-Network
     Add sw1 as non-required, attach it to the host and check that sw1 status is
@@ -121,28 +153,12 @@ class RequiredNetwork02(TestCase):
                                   timeout=70):
             raise NetworkException("Host status is not UP")
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        Turn eth1 up and remove networks from setup
-        """
-        logger.info("Turn eth1 up")
-        if not ifupNic(host=config.HOSTS[0], root_password=config.HOSTS_PW,
-                       nic=config.HOST_NICS[1], wait=False):
-            raise NetworkException("Failed to turn eth1 up")
-
-        logger.info("Remove all networks from setup")
-        if not removeNetFromSetup(host=config.HOSTS[0],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.NETWORKS[0]],
-                                  data_center=config.DC_NAME[0]):
-            raise NetworkException("Failed to remove sw1 from setup")
 
 ##############################################################################
 
 
 @attr(tier=1)
-class RequiredNetwork03(TestCase):
+class RequiredNetwork03(TearDownRequiredNetwork):
     """
     VM-Network
     Set sw1 as required, turn eth1 down and check that host status is
@@ -181,32 +197,12 @@ class RequiredNetwork03(TestCase):
                                   states="non_operational", timeout=100):
             raise NetworkException("Host status is not non-operational")
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        Turn on eth1, set host status to up and remove sw1 from setup
-        """
-        logger.info("Turn eth1 up")
-        if not ifupNic(host=config.HOSTS[0], root_password=config.HOSTS_PW,
-                       nic=config.HOST_NICS[1], wait=False):
-            raise NetworkException("Failed to turn eth1 up")
-
-        logger.info("Set host status to UP")
-        if not activateHost(positive=True, host=config.HOSTS[0]):
-            raise NetworkException("Failed to set host status to UP")
-
-        logger.info("Remove all networks from setup")
-        if not removeNetFromSetup(host=config.HOSTS[0],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.NETWORKS[0]],
-                                  data_center=config.DC_NAME[0]):
-            raise NetworkException("Failed to remove networks from setup")
 
 ##############################################################################
 
 
 @attr(tier=1)
-class RequiredNetwork04(TestCase):
+class RequiredNetwork04(TearDownRequiredNetwork):
     """
     VLAN-OVER-BOND
     Add sw162 as required, attach it to the host and check that sw162 status is
@@ -214,26 +210,28 @@ class RequiredNetwork04(TestCase):
     Check that host is non-operational after ifdown required networks eth2
     and eth3
     """
-    __test__ = len(config.HOST_NICS) >= 4
+    __test__ = True
 
     @classmethod
     def setup_class(cls):
         """
         Create sw162 network as required and attach it to the host bond.
         """
-        local_dict = {None: {'nic': config.BOND[0], 'mode': 1,
-                             'slaves': [config.HOST_NICS[2],
-                                        config.HOST_NICS[3]]},
-                      config.VLAN_NETWORKS[0]: {'nic': config.BOND[0],
-                                                'vlan_id': config.VLAN_ID[0],
-                                                'required': 'true'}}
-        logger.info("Attach sw162 network to DC/Cluster/Host")
+        logger.info("Create and attach network over BOND")
+        local_dict = {None: {"nic": config.BOND[0],
+                             "slaves": [
+                                 config.HOST_NICS[2],
+                                 config.HOST_NICS[3]]},
+                      config.VLAN_NETWORKS[0]: {"nic": config.BOND[0],
+                                                "required": "true",
+                                                "vlan_id": config.VLAN_ID[0]}}
+
         if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
                                         cluster=config.CLUSTER_NAME[0],
                                         host=config.HOSTS[0],
                                         network_dict=local_dict,
                                         auto_nics=[config.HOST_NICS[0]]):
-            raise NetworkException("Cannot create and attach networks")
+            raise NetworkException("Cannot create and attach network")
 
     @tcms(5868, 166460)
     def test_1operational_nic_down(self):
@@ -266,34 +264,12 @@ class RequiredNetwork04(TestCase):
                                   states="non_operational", timeout=100):
             raise NetworkException("Host status is not non-operational")
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        Turn eth2 and eth3 up and remove networks from setup
-        """
-        logger.info("Turn eth2 and eth3 status to be up")
-        for i in range(2, 4):
-            if not ifupNic(host=config.HOSTS[0], root_password=config.HOSTS_PW,
-                           nic=config.HOST_NICS[i], wait=False):
-                raise NetworkException("Failed to turn up eth2 %s",
-                                       config.HOST_NICS[i])
-
-        logger.info("Set host status to UP")
-        if not activateHost(positive=True, host=config.HOSTS[0]):
-            raise NetworkException("Failed to activate host")
-
-        logger.info("Remove all networks from setup")
-        if not removeNetFromSetup(host=config.HOSTS[0],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.VLAN_NETWORKS[0]],
-                                  data_center=config.DC_NAME[0]):
-            raise NetworkException("Failed to remove networks from setup")
 
 ##############################################################################
 
 
 @attr(tier=1)
-class RequiredNetwork05(TestCase):
+class RequiredNetwork05(TearDownRequiredNetwork):
     """
     VLAN-Network
     Add sw162 as required, attach it to the host and check that sw1 status is
@@ -334,32 +310,12 @@ class RequiredNetwork05(TestCase):
                                   states="non_operational", timeout=100):
             raise NetworkException("Host status is not non-operational")
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        Turn eth1 up and remove networks from setup
-        """
-        logger.info("Turn up eth1")
-        if not ifupNic(host=config.HOSTS[0], root_password=config.HOSTS_PW,
-                       nic=config.HOST_NICS[1], wait=False):
-            raise NetworkException("Failed to turn up eth1")
-
-        logger.info("Set host status to UP")
-        if not activateHost(positive=True, host=config.HOSTS[0]):
-            raise NetworkException("Failed to activate host")
-
-        logger.info("Remove all networks from setup")
-        if not removeNetFromSetup(host=config.HOSTS[0],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.VLAN_NETWORKS[0]],
-                                  data_center=config.DC_NAME[0]):
-            raise NetworkException("Failed to remove networks from setup")
 
 ##############################################################################
 
 
 @attr(tier=1)
-class RequiredNetwork06(TestCase):
+class RequiredNetwork06(TearDownRequiredNetwork):
     """
     Non-VM-Network
     Add sw1 as required, attach it to the host.
@@ -398,26 +354,3 @@ class RequiredNetwork06(TestCase):
         if not waitForHostsStates(positive=True, names=config.HOSTS[0],
                                   states="non_operational", timeout=100):
             raise NetworkException("Host status is not non-operational")
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Turn eth1 up and remove networks from setup
-        """
-        logger.info("Turn up eth1")
-        if not ifupNic(host=config.HOSTS[0], root_password=config.HOSTS_PW,
-                       nic=config.HOST_NICS[1], wait=False):
-            raise NetworkException("Failed to turn up eth1")
-
-        logger.info("Set host status to UP")
-        if not activateHost(positive=True, host=config.HOSTS[0]):
-            raise NetworkException("Failed to activate host")
-
-        logger.info("Remove all networks from setup")
-        if not removeNetFromSetup(host=config.HOSTS[0],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.NETWORKS[0]],
-                                  data_center=config.DC_NAME[0]):
-            raise NetworkException("Failed to remove networks from setup")
-
-##############################################################################
