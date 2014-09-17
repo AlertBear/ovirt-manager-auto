@@ -186,7 +186,7 @@ def findNetwork(network, data_center=None, cluster=None):
                 return net
         raise EntityNotFound('%s network does not exists!' % network)
     elif cluster:
-        return getClusterNetwork(cluster, network)
+        return get_dc_network_by_cluster(cluster, network)
     else:
         return NET_API.find(network)
 
@@ -242,17 +242,11 @@ def getClusterNetwork(cluster, network):
     **Return**: Returns the network object if it's found or raises
                 EntityNotFound exception if it's not.
     """
-    clusterObj = CL_API.find(cluster)
-    cluster_net = CL_API.getElemFromElemColl(clusterObj,
-                                             network,
-                                             'networks',
-                                             'network')
-    dc_id = clusterObj.get_data_center().get_id()
-    dc_name = DC_API.find(dc_id, attribute='id').get_name()
-    dc_net = getNetworkInDataCenter(network, dc_name)
-    if dc_net.get_id() == cluster_net.get_id():
-        return dc_net
-    return False
+    cluster_obj = CL_API.find(cluster)
+    return CL_API.getElemFromElemColl(cluster_obj,
+                                      network,
+                                      'networks',
+                                      'network')
 
 
 def getClusterNetworks(cluster, href=True):
@@ -1305,3 +1299,20 @@ def create_properties(**kwargs):
             property_obj = data_st.Property(name=key, value=val)
             properties_obj.add_property(property_obj)
     return properties_obj
+
+
+def get_dc_network_by_cluster(cluster, network):
+    """
+    Find network on cluster and return the DC network object
+    :param cluster: Name of the cluster in which the network is located.
+    :param network: Name of the network.
+    :return: DC network object
+    """
+    cluster_obj = CL_API.find(cluster)
+    cluster_net = getClusterNetwork(cluster, network)
+    dc_id = cluster_obj.get_data_center().get_id()
+    dc_name = DC_API.find(dc_id, attribute='id').get_name()
+    dc_net = getNetworkInDataCenter(network, dc_name)
+    if dc_net.get_id() == cluster_net.get_id():
+        return dc_net
+    return False
