@@ -6,7 +6,7 @@ from rhevmtests.virt import config
 import logging
 from art.unittest_lib import ComputeTest as TestCase
 from nose.tools import istest
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as vm_api
@@ -18,7 +18,6 @@ import art.rhevm_api.tests_lib.high_level.storagedomains as high_sd_api
 from art.rhevm_api.utils.test_utils import update_vm_status_in_database
 from art.rhevm_api.tests_lib.low_level.mla import addVmPoolPermissionToUser
 from art.unittest_lib import attr
-from art.unittest_lib.common import bz
 
 MB = 1024 * 1024
 GB = 1024 * MB
@@ -459,7 +458,7 @@ class UpdateVm(BaseVm):
         """
         self.assertTrue(vm_api.updateVm(True, self.vm_name, memory=2*GB))
 
-    @bz({'1082594': ['cli']})
+    @bz({'1082594': {'engine': ['cli'], 'version': None}})
     @istest
     def update_vm_guranteed_memory(self):
         """
@@ -1067,7 +1066,7 @@ class RunVmOnce(BaseVmWithDisk):
                     "Failed to remove iso domain")
         super(RunVmOnce, cls).teardown_class()
 
-    @bz({'1117783': None})
+    @bz({'1117783': {'engine': None, 'version': None}})
     @istest
     def run_once_vm_with_specific_domain(self):
         """
@@ -1229,7 +1228,7 @@ class VmTemplate(BaseVmWithDiskTemplate):
                                      template=self.template_name,
                                      storagedomain=config.STORAGE_NAME[0]))
 
-    @bz({'1082977': ['cli']})
+    @bz({'1082977': {'engine': ['cli'], 'version': None}})
     @istest
     def create_vm_from_template_with_wrong_sd(self):
         """

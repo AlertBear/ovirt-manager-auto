@@ -311,6 +311,15 @@ class Bugzilla(Component):
          * bz_id - bugzilla ID
         """
         bug = self.bz(bz_id)
+        return self.is_state_by_bug(bug)
+
+    def is_state_by_bug(self, bug):
+        """
+        Returns True is the bug is in state specified in self.const_list
+        by default it will return true if verified or closed
+        Parameters:
+         * bug - bz object
+        """
         return bug.bug_status in self.const_list
 
     def bz(self, bz_id):
@@ -381,10 +390,10 @@ class Bugzilla(Component):
             self.version = Version(version)
             # if the bug is open & should skip for engine &
             # relevant for this version
-            if (not self.is_state(bz_id) and engine_in and
+            if (not self.is_state_by_bug(bz) and engine_in and
                     self.__check_version(bz)):
                 logger.info("skipping due to in_state=%s, engine_in=%s",
-                            self.is_state(bz_id), engine_in)
+                            self.is_state_by_bug(bz), engine_in)
                 raise BugzillaSkipTest(bz, self.url)
 
             # if the bug is closed on current release resolution, but was fixed

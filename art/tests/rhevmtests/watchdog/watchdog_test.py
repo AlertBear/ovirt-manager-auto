@@ -27,8 +27,8 @@ from art.core_api.apis_utils import TimeoutingSampler
 
 import art.test_handler.exceptions as errors
 
-from art.test_handler.tools import tcms  # pylint: disable=E0611
-from art.unittest_lib.common import is_bz_state, bz
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.unittest_lib.common import is_bz_state
 
 from utilities import machine
 from nose.plugins.attrib import attr
@@ -242,7 +242,7 @@ class WatchdogCRUD(WatchdogVM):
 
         vms.stopVm(positive=True, vm=cls.vm_name, async='false')
 
-    @bz({'1107992': ['java']})
+    @bz({'1107992': {'engine': ['java'], 'version': None}})
     @tcms('9846', '295149')
     def test_add_watchdog(self):
         """
@@ -260,7 +260,7 @@ class WatchdogCRUD(WatchdogVM):
 
         logger.info("Watchdog added to VM")
 
-    @bz({'1107992': ['java']})
+    @bz({'1107992': {'engine': ['java'], 'version': None}})
     @tcms('9846', '285329')
     def test_detect_watchdog(self):
         """
@@ -271,7 +271,7 @@ class WatchdogCRUD(WatchdogVM):
             "VM is not running")
         self.lspci_watchdog(True, self.vm_name)
 
-    @bz({'1107992': ['java']})
+    @bz({'1107992': {'engine': ['java'], 'version': None}})
     @tcms('9846', '285331')
     def test_remove_watchdog(self):
         """
@@ -575,7 +575,7 @@ class WatchdogGeneralVMSubtab(TestCase):
 
     __test__ = True
 
-    @bz({'996521': None})
+    @bz({'996521': {'engine': None, 'version': None}})
     @tcms('9846', '285333')
     def test_general_subtab(self):
         """
@@ -813,7 +813,8 @@ class WatchdogCRUDTemplate(WatchdogVM):
             raise errors.VMException(
                 "Cannot add template %s" % cls.template_name)
 
-    @bz({'1107992': ['java'], '1129840': ['cli']})
+    @bz({'1107992': {'engine': ['java'], 'version': None},
+         '1129840': {'engine': ['cli'], 'version': None}})
     @tcms('9846', '294476')
     def test_add_watchdog_template(self):
         """
@@ -827,7 +828,8 @@ class WatchdogCRUDTemplate(WatchdogVM):
                         "Can't add watchdog model to template")
         logger.info("Watchdog added to template")
 
-    @bz({'1107992': ['java'], '1129840': ['cli']})
+    @bz({'1107992': {'engine': ['java'], 'version': None},
+         '1129840': {'engine': ['cli'], 'version': None}})
     @tcms('9846', ' 285330')
     def test_detect_watchdog_template(self):
         """
@@ -847,7 +849,8 @@ class WatchdogCRUDTemplate(WatchdogVM):
         vms.startVm(positive=True, vm=self.vm_name1)
         self.lspci_watchdog(True, self.vm_name1)
 
-    @bz({'1107992': ['java'], '1129840': ['cli']})
+    @bz({'1107992': {'engine': ['java'], 'version': None},
+         '1129840': {'engine': ['cli'], 'version': None}})
     @tcms('9846', ' 294457')
     def test_remove_watchdog_template(self):
         """
