@@ -13,6 +13,7 @@ from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import mla
 from art.rhevm_api.tests_lib.low_level import clusters
 from art.rhevm_api.tests_lib.low_level import templates
+from art.rhevm_api.tests_lib.low_level import storagedomains
 import art.rhevm_api.tests_lib.low_level.datacenters as dcs
 
 from art.rhevm_api.utils.test_utils import get_api
@@ -45,7 +46,7 @@ USER_MIGRATABLE = ENUMS['vm_affinity_user_migratable']
 PINNED = ENUMS['vm_affinity_pinned']
 SPICE = ENUMS['display_type_spice']
 VNC = ENUMS['display_type_vnc']
-BASIC_PARAMETERS = {'name': TEMPLATE_VM, 'cluster': config.CLUSTER_NAME[1]}
+BASIC_PARAMETERS = {'name': TEMPLATE_VM, 'cluster': config.CLUSTER_NAME[0]}
 
 ########################################################################
 
@@ -103,7 +104,7 @@ class BaseTemplateVMClass(BaseTemplateClass):
         """
         super(BaseTemplateVMClass, cls).setup_class()
         if not vms.addVm(positive=True, name=cls.copy_vm,
-                         cluster=config.CLUSTER_NAME[1],
+                         cluster=config.CLUSTER_NAME[0],
                          template=cls.template_name):
             raise errors.VMException("Cannot create vm %s from template"
                                      % cls.copy_vm)
@@ -994,13 +995,15 @@ class ImportExportTemplate(BaseTemplateClass):
         """
         Import and export template
         """
+        export_domain = storagedomains.findExportStorageDomains(
+            config.DC_NAME[0])[0]
         logger.info("Export template %s", self.template_name)
         self.assertTrue(templates.exportTemplate(True, self.template_name,
-                                                 config.export_storage))
+                                                 export_domain))
         logger.info("Export template %s and override previous one",
                     self.template_name)
         self.assertTrue(templates.exportTemplate(True, self.template_name,
-                                                 config.export_storage,
+                                                 export_domain,
                                                  exclusive=True))
         logger.info("Remove template %s to be imported next")
         if not templates.removeTemplate(positive=True,
@@ -1009,9 +1012,9 @@ class ImportExportTemplate(BaseTemplateClass):
                                            self.template_name)
         logger.info("Import template %s from export domain")
         self.assertTrue(templates.importTemplate(True, self.template_name,
-                                                 config.export_storage,
+                                                 export_domain,
                                                  config.STORAGE_NAME[0],
-                                                 config.CLUSTER_NAME[1]))
+                                                 config.CLUSTER_NAME[0]))
 
 ########################################################################
 

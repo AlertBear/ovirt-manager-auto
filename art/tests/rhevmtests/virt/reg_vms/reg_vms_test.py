@@ -14,6 +14,7 @@ import art.rhevm_api.tests_lib.low_level.hosts as host_api
 import art.rhevm_api.tests_lib.low_level.vmpools as vm_pool_api
 import art.rhevm_api.tests_lib.low_level.storagedomains as sd_api
 import art.rhevm_api.tests_lib.low_level.templates as template_api
+from art.rhevm_api.tests_lib.low_level import storagedomains
 import art.rhevm_api.tests_lib.high_level.storagedomains as high_sd_api
 from art.rhevm_api.utils.test_utils import update_vm_status_in_database
 from art.rhevm_api.tests_lib.low_level.mla import addVmPoolPermissionToUser
@@ -850,11 +851,13 @@ class VmSnapshots(BaseVmWithDisk):
     @classmethod
     def teardown_class(cls):
         """ Remove the VM from export storage. """
+        export_domain = storagedomains.findExportStorageDomains(
+            config.DC_NAME[0])[0]
         if not vm_api.removeVmFromExportDomain(
-                True, cls.vm_name, config.DC_NAME[0], config.export_storage):
+                True, cls.vm_name, config.DC_NAME[0], export_domain):
             raise errors.VMException(
                 "Failed to remove VM %s from export storage %s"
-                % (cls.vm_name, config.export_storage))
+                % (cls.vm_name, export_domain))
         super(VmSnapshots, cls).teardown_class()
 
     @tcms('13398', '366363')
@@ -863,6 +866,8 @@ class VmSnapshots(BaseVmWithDisk):
         """
         Create, restore, export and remove snapshots
         """
+        export_domain = storagedomains.findExportStorageDomains(
+            config.DC_NAME[0])[0]
         logger.info("Create two new snapshots of vm %s", self.vm_name)
         for dsc in self.snapshot_dsc:
             self.assertTrue(vm_api.addSnapshot(True, self.vm_name, dsc))
@@ -872,7 +877,7 @@ class VmSnapshots(BaseVmWithDisk):
                                                self.snapshot_dsc[1]))
         logger.info("Export vm %s with discarded snapshots", self.vm_name)
         self.assertTrue(vm_api.exportVm(True, self.vm_name,
-                                        config.export_storage,
+                                        export_domain,
                                         discard_snapshots=True))
         logger.info("Remove snapshot %s of vm %s",
                     self.snapshot_dsc[0], self.vm_name)
@@ -889,11 +894,13 @@ class ImportExportVm(BaseVmWithDisk):
     @classmethod
     def teardown_class(cls):
         """ Remove the VM from export storage. """
+        export_domain = storagedomains.findExportStorageDomains(
+            config.DC_NAME[0])[0]
         if not vm_api.removeVmFromExportDomain(
-                True, cls.vm_name, config.DC_NAME[0], config.export_storage):
+                True, cls.vm_name, config.DC_NAME[0], export_domain):
             raise errors.VMException(
                 "Failed to remove VM %s from export storage %s"
-                % (cls.vm_name, config.export_storage))
+                % (cls.vm_name, export_domain))
         super(ImportExportVm, cls).teardown_class()
 
     @istest
@@ -906,24 +913,26 @@ class ImportExportVm(BaseVmWithDisk):
             4) Move vm to another sd
             5) Negative: import existed vm
         """
+        export_domain = storagedomains.findExportStorageDomains(
+            config.DC_NAME[0])[0]
         logger.info("Export vm %s", self.vm_name)
         self.assertTrue(vm_api.exportVm(True, self.vm_name,
-                                        config.export_storage))
+                                        export_domain))
         logger.info("Export vm %s, that override existing one", self.vm_name)
         self.assertTrue(vm_api.exportVm(True, self.vm_name,
-                                        config.export_storage,
+                                        export_domain,
                                         exclusive=True))
         logger.info("Remove vm %s", self.vm_name)
         if not vm_api.removeVm(True, self.vm_name):
             raise errors.VMException("Failed to remove vm")
         logger.info("Import exported vm %s", self.vm_name)
         self.assertTrue(vm_api.importVm(True, self.vm_name,
-                                        config.export_storage,
+                                        export_domain,
                                         config.STORAGE_NAME[0],
                                         config.CLUSTER_NAME[0]))
         logger.info("Negative: Import existed vm")
         self.assertFalse(vm_api.importVm(True, self.vm_name,
-                                         config.export_storage,
+                                         export_domain,
                                          config.STORAGE_NAME[0],
                                          config.CLUSTER_NAME[0]))
         logger.info("Move vm to storage domain %s", config.nfs_storage_1)
