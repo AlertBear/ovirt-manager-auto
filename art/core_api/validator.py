@@ -33,11 +33,13 @@ DS_CLASS_MAPPER = {
     'ClusterNetwork': 'Network',
     'VMCdRom': 'CdRom',
     'RolePermits': 'Permits',
+    'HostNICStatistics': 'Statistics',
     'HostNicStatistics': 'Statistics',
     'DiskStatistics': 'Statistics',
     'DataCenterNetworkVnicProfile': 'VnicProfile',
     'JobStep': 'Step',
-    'HostNICLabels': 'Labels'
+    'HostNICLabels': 'Labels',
+    'HostNicLabels': 'Labels'
 }
 
 
