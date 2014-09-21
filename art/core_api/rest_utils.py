@@ -255,7 +255,7 @@ class RestUtil(APIUtil):
                expected_neg_status=NEGATIVE_CODES_CREATE,
                expectedEntity=None, incrementBy=1,
                async=False, collection=None,
-               coll_elm_name=None, current=None):
+               coll_elm_name=None, current=None, compare=True):
         '''
         Description: implements POST method and verify the response
         Author: edolinin
@@ -272,7 +272,9 @@ class RestUtil(APIUtil):
            * async -sycnh or asynch request
            * collection - explicitely defined collection where to add an entity
            * coll_elm_name - name of collection element if it's different
-           from self.element_name
+                             from self.element_name
+           * compare - True by default and run compareElements,
+                       otherwise compareElements doesn't run
         Return: POST response (None on parse error.),
                 status (True if POST test succeeded, False otherwise.)
         '''
@@ -323,7 +325,8 @@ class RestUtil(APIUtil):
 
                 expEntity = entity if not expectedEntity else (
                     validator.dump_entity(expectedEntity, self.element_name))
-                if not validator.compareElements(
+
+                if compare and not validator.compareElements(
                         parse(expEntity), parse(actlEntity), self.logger,
                         self.element_name):
                     return None, False
@@ -334,13 +337,12 @@ class RestUtil(APIUtil):
 
             else:
                 return ret[RespKey.body], True
-
         self.validateResponseViaXSD(href, ret)
         return parse(ret[RespKey.body]), True
 
     def update(self, origEntity, newEntity, positive,
                expected_pos_status=[200, 201],
-               expected_neg_status=NEGATIVE_CODES, current=None):
+               expected_neg_status=NEGATIVE_CODES, current=None, compare=True):
         '''
         Description: implements PUT method and verify the response
         Author: edolinin
@@ -352,6 +354,8 @@ class RestUtil(APIUtil):
                                    request
            * expected_neg_status - list of expected statuses for negative
                                    request
+           * compare - True by default and run compareElements,
+                       otherwise compareElements doesn't run
         Return: PUT response, status (True if PUT test succeeded,
                                       False otherwise)
         '''
@@ -382,9 +386,9 @@ class RestUtil(APIUtil):
         if positive:
             self.logger.info(self.element_name + " was updated")
 
-            if not validator.compareElements(parse(entity),
-                                             parse(ret[RespKey.body]),
-                                             self.logger, self.element_name):
+            if compare and not validator.compareElements(
+                    parse(entity), parse(ret[RespKey.body]),
+                    self.logger, self.element_name):
                 return None, False
 
         self.validateResponseViaXSD(origEntity.href, ret)

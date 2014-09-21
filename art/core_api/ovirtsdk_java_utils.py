@@ -891,7 +891,8 @@ class JavaSdkUtil(APIUtil):
 
     @jvm_thread_care
     def create(self, entity, positive, expectedEntity=None, incrementBy=1,
-               async=False, collection=None, current=None, **kwargs):
+               async=False, collection=None, current=None, compare=True,
+               **kwargs):
         '''
         Description: creates a new element
         Author: imeerovi
@@ -902,6 +903,8 @@ class JavaSdkUtil(APIUtil):
                               sent
            * incrementBy - increment by number of elements
            * async -sycnh or asynch request
+           * compare - True by default and run compareElements,
+                       otherwise compareElements doesn't run
         Return: POST response (None on parse error.),
                 status (True if POST test succeeded, False otherwise.)
         '''
@@ -987,9 +990,9 @@ element:%(elm)s " % {'col': self.collection_name,
 
             self.logger.info("New entity was added successfully")
             exp_entity = entity if not expectedEntity else expectedEntity
-            if not validator.compareElements(exp_entity, python_response,
-                                             self.logger, self.element_name,
-                                             java_sdk_mode=True):
+            if compare and not validator.compareElements(
+                    exp_entity, python_response, self.logger,
+                    self.element_name, java_sdk_mode=True):
                 return python_response, False
 
         except java_sdk.JavaError as e:
@@ -1017,7 +1020,8 @@ element:%(elm)s " % {'col': self.collection_name,
 
     @jvm_thread_care
     def update(self, origEntity, newEntity, positive,
-               expected_neg_status=NEGATIVE_CODES, current=None, async=False):
+               expected_neg_status=NEGATIVE_CODES, current=None, async=False,
+               compare=True):
         '''
         Description: update an element
         Author: imeerovi
@@ -1027,6 +1031,8 @@ element:%(elm)s " % {'col': self.collection_name,
            * positive - if positive or negative verification should be done
            * expected_neg_status - list of expected statuses for negative
                                     request
+           * compare - True by default and run compareElements,
+                       otherwise compareElements doesn't run
         Return: PUT response, True if PUT test succeeded, False otherwise
         '''
         python_response = None
@@ -1078,9 +1084,11 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
             # translating of result to python
             python_response = JavaTranslator(response)
             self.logger.info("%s was updated", self.element_name)
-            if not validator.compareElements(
-                    newEntity, python_response, self.logger, self.element_name,
-                    java_sdk_mode=True):
+            compare_elements = True if not compare else (
+                validator.compareElements(newEntity, python_response,
+                                          self.logger, self.element_name,
+                                          java_sdk_mode=True))
+            if not compare_elements:
                 return None, False
 
         except java_sdk.JavaError as e:
@@ -1090,10 +1098,8 @@ element:%(elm)s " % {'col': self.collection_name, 'elm': dumpedEntity})
                 return None, False
             return None, True
 
-        if (positive and validator.compareElements(
-                newEntity, python_response, self.logger, self.element_name,
-                java_sdk_mode=True)) or (not positive and expected_neg_status
-                                         not in NEGATIVE_CODES):
+        if ((positive and compare_elements) or
+                (not positive and expected_neg_status not in NEGATIVE_CODES)):
             return python_response, True
 
         return None, False

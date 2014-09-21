@@ -132,7 +132,8 @@ class SdkUtil(APIUtil):
         return results
 
     def create(self, entity, positive, expectedEntity=None, incrementBy=1,
-               async=False, collection=None, current=None, **kwargs):
+               async=False, collection=None, current=None, compare=True,
+               **kwargs):
         '''
         Description: creates a new element
         Author: edolinin
@@ -143,6 +144,8 @@ class SdkUtil(APIUtil):
                               entity
            * incrementBy - increment by number of elements
            * async -sycnh or asynch request
+           * compare - True by default and run compareElements,
+                       otherwise compareElements doesn't run
         Return: POST response (None on parse error.),
                 status (True if POST test succeeded, False otherwise.)
         '''
@@ -175,8 +178,8 @@ class SdkUtil(APIUtil):
 
             self.logger.info("New entity was added successfully")
             expEntity = entity if not expectedEntity else expectedEntity
-            if not validator.compareElements(expEntity, response,
-                                             self.logger, self.element_name):
+            if compare and not validator.compareElements(
+                    expEntity, response, self.logger, self.element_name):
                 return response, False
 
         except RequestError as e:
@@ -249,7 +252,7 @@ class SdkUtil(APIUtil):
                 list_[i] = self._translate_params(value)
 
     def update(self, origEntity, newEntity, positive,
-               expected_neg_status=NEGATIVE_CODES, current=None):
+               expected_neg_status=NEGATIVE_CODES, current=None, compare=True):
         '''
         Description: update an element
         Author: edolinin
@@ -257,8 +260,10 @@ class SdkUtil(APIUtil):
            * origEntity - original entity
            * newEntity - entity for post body
            * positive - if positive or negative verification should be done
-            * expected_neg_status - list of expected statuses for negative
+           * expected_neg_status - list of expected statuses for negative
                                    request
+           * compare - True by default and run compareElements,
+                       otherwise compareElements doesn't run
         Return: PUT response, True if PUT test succeeded, False otherwise
         '''
         response = None
@@ -294,9 +299,10 @@ class SdkUtil(APIUtil):
                     e.status, expected_neg_status, self.logger):
                 return None, False
             return None, True
-
-        if (positive and validator.compareElements(
-                newEntity, response, self.logger, self.element_name)) or (
+        compare_elements = True if not compare else (
+            validator.compareElements(newEntity, response,
+                                      self.logger, self.element_name))
+        if (positive and compare_elements) or (
                 not positive and expected_neg_status not in NEGATIVE_CODES):
             return response, True
 

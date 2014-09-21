@@ -854,7 +854,7 @@ class CliUtil(RestUtil):
         return self.get(href, listOnly=True)
 
     def create(self, entity, positive, expectedEntity=None, incrementBy=1,
-               async=False, collection=None):
+               async=False, collection=None, compare=True):
         '''
         Description: creates a new element
         Author: edolinin
@@ -862,10 +862,12 @@ class CliUtil(RestUtil):
            * entity - entity for post body
            * positive - if positive or negative verification should be done
            * expectedEntity - if there are some expected entity different
-             from sent
+                              from sent
            * incrementBy - increment by number of elements
            * async -sync or async request
            * collection - collection to use for add command
+           * compare - True by default and run compareElements,
+                       otherwise compareElements doesn't run
         Return: POST response (None on parse error.),
                 status (True if POST test succeeded, False otherwise.)
         '''
@@ -936,7 +938,7 @@ class CliUtil(RestUtil):
 
                 expEntity = entity if not expectedEntity else expectedEntity
 
-                if response and not validator.compareElements(
+                if response and compare and not validator.compareElements(
                         expEntity, response, self.logger, self.element_name):
                     return response, False
 
@@ -944,7 +946,7 @@ class CliUtil(RestUtil):
         return response, True
 
     def update(self, origEntity, newEntity, positive,
-               expected_neg_status=NEGATIVE_CODES, current=None):
+               expected_neg_status=NEGATIVE_CODES, current=None, compare=True):
         '''
         Description: update an element
         Author: edolinin
@@ -954,6 +956,8 @@ class CliUtil(RestUtil):
            * positive - if positive or negative verification should be done
            * expected_neg_status - list of expected statuses for negative
                                    request
+           * compare - True by default and run compareElements,
+                       otherwise compareElements doesn't run
         Return: PUT response, True if PUT test succeeded, False otherwise
         '''
 
@@ -1029,9 +1033,9 @@ class CliUtil(RestUtil):
             split(':')[1].strip()
         response = self.find(elemId, attribute='id', collection=collection,
                              absLink=False)
-
-        if (positive and validator.compareElements(
-                newEntity, response, self.logger, self.element_name)) or (
+        compare_elements = True if not compare else validator.compareElements(
+            newEntity, response, self.logger, self.element_name)
+        if (positive and compare_elements) or (
                 not positive and expected_neg_status not in NEGATIVE_CODES):
             return response, True
 
