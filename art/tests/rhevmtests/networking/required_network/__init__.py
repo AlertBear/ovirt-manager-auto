@@ -14,7 +14,7 @@ logger = logging.getLogger("RequiredNetwork")
 
 def setup_package():
     """
-    Prepare environment
+    Prepare the environment
     """
     if config.GOLDEN_ENV:
         logger.info("Running on golden env, no setup")

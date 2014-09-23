@@ -1571,21 +1571,24 @@ def waitForHostNicState(host, nic, state, interval=1, attempts=1):
 def ifdownNic(host, root_password, nic, wait=True):
     """
     Turning remote machine interface down
-    Author: atal
-    Parameters:
-        * host - ip or fqdn of name
-        * root_password - to login remote machine
-        * nic - interface name. make sure you're not trying to disable rhevm
-          network!
-    return True/False
+    :param host: ip or fqdn of name
+    :param root_password: to login remote machine
+    :param nic: interface name. make sure you're not trying to disable rhevm
+           network!
+    :param wait: Wait for NIC status down
+    :return True/False
     """
     # must always run as a root in order to run ifdown
-    host_obj = machine.Machine(getIpAddressByHostName(host), 'root',
+    host_obj = machine.Machine(getIpAddressByHostName(host), "root",
                                root_password).util(machine.LINUX)
     if not host_obj.ifdown(nic):
         return False
     if wait:
-        return waitForHostNicState(host, nic, 'down', interval=5, attempts=10)
+        return wait_for_host_nic_status(
+            host=host, username="root", password=root_password, nic=nic,
+            status="down", interval=10, attempts=10
+        )
+
     return True
 
 
@@ -1593,20 +1596,22 @@ def ifdownNic(host, root_password, nic, wait=True):
 def ifupNic(host, root_password, nic, wait=True):
     """
     Turning remote machine interface up
-    Author: atal
-    Parameters:
-        * host - ip or fqdn
-        * root_password - to login remote machine
-        * nic - interface name.
-    return True/False
+    :param host: ip or fqdn
+    :param root_password: to login remote machine
+    :param nic: interface name.
+    :param wait: Wait for NIC status up
+    :return True/False
     """
     # must always run as a root in order to run ifup
-    host_obj = machine.Machine(getIpAddressByHostName(host), 'root',
+    host_obj = machine.Machine(getIpAddressByHostName(host), "root",
                                root_password).util(machine.LINUX)
     if not host_obj.ifup(nic):
         return False
     if wait:
-        return waitForHostNicState(host, nic, 'up', interval=5, attempts=10)
+        return wait_for_host_nic_status(
+            host=host, username="root", password=root_password, nic=nic,
+            status="up", interval=10, attempts=10
+        )
     return True
 
 
@@ -2144,3 +2149,64 @@ def count_host_active_vms(host, num_of_vms, timeout=300, sleep=10):
             "Timeout when waiting for number of vms %d on host %s",
             num_of_vms, host)
         return None
+
+
+def check_host_nic_status(host, username, password, nic, status):
+    """
+    Get NIC status from host
+    :param host: Host IP or FQDN
+    :param username: Host username
+    :param password: Host password
+    :param nic: NIC name
+    :param status: Status to check
+    :return: True/False
+    """
+    status = "yes" if status.lower() == "up" else "no"
+    host_obj = machine.Machine(host, username, password).util(machine.LINUX)
+    cmd = ["ethtool", nic]
+    rc, out = host_obj.runCmd(cmd)
+
+    if not rc:
+        return False
+
+    cmd_out = out.rsplit("\r\n\t", 1)[1].split(":")[-1].strip()
+    if cmd_out.lower() == status:
+        return True
+    return False
+
+
+def wait_for_host_nic_status(host, username, password, nic, status,
+                             interval=1, attempts=1):
+    """
+    Wait for host NIC status
+    :param host: host IP or FQDN
+    :param username: Host Username
+    :param password: Host password
+    :param nic: NIC name
+    :param status: Status to check
+    :param interval: Sleep in seconds between attempts
+    :param attempts: Number of attempts
+    :return: True/False
+    """
+    while attempts:
+        if check_host_nic_status(
+            host=host, username=username, password=password, nic=nic,
+            status=status
+        ):
+            return True
+        time.sleep(interval)
+        attempts -= 1
+    return False
+
+
+def get_host_name_from_engine(host_ip):
+    """
+    Get host name from engine by host IP
+    :param host_ip: resources.VDS object
+    :return: host.name or None
+    """
+    engine_hosts = HOST_API.get(absLink=False)
+    for host in engine_hosts:
+        if host.get_address() == host_ip or host.name == host_ip:
+            return host.name
+    return None
