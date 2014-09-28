@@ -289,26 +289,37 @@ def getDCStorage(datacenter, storagedomain):
 
 
 @is_action()
-def attachStorageDomain(positive, datacenter, storagedomain, wait=True):
-    '''
-    Description: attach storage domain to data center
-    Author: edolinin
-    Parameters:
-       * datacenter - name of data center to use
-       * storagedomain - name of storage domain that should be attached
-       * wait - if True, wait for the action to complete
-    Return: status (True if storage domain was attached properly,
-                    False otherwise)
-    '''
+def attachStorageDomain(positive, datacenter, storagedomain, wait=True,
+                        compare=True):
+    """
+    Attach storage domain to data center
+
+    :param positive: Determines whether the call for this function is
+    positive or negative
+    :type positive: bool
+    :param datacenter: name of data center to use
+    :type datacenter: str
+    :param storagedomain: name of storage domain that should be attached
+    :type storagedomain: str
+    :param wait: if True, wait for the action to complete
+    :type wait: bool
+    :param compare: When True, the validator will run when
+    calling util.create
+    :type compare: bool
+    :returns: True if storage domain was attached properly, False otherwise
+    :rtype: bool
+    """
     storDomObj = util.find(storagedomain)
     attachDom = StorageDomain(id=storDomObj.get_id())
 
     dcStorages = getDCStorages(datacenter)
     attachDom, status = util.create(
-        attachDom, positive, collection=dcStorages, async=(not wait))
+        attachDom, positive, collection=dcStorages, async=(not wait),
+        compare=compare
+    )
 
-    dcObj = dcUtil.find(datacenter)
     if status and positive and wait:
+        dcObj = dcUtil.find(datacenter)
         return dcUtil.waitForElemStatus(dcObj, "UP", 60, "datacenter")
     return status
 
@@ -476,16 +487,22 @@ def teardownStorageDomain(positive, storagedomain, host):
 @is_action()
 def removeStorageDomain(positive, storagedomain, host, format='false',
                         destroy=False):
-    '''
-    Description: remove storage domain
-    Author: edolinin
-    Parameters:
-       * storagedomain - storage domain name that should be removed
-       * host - host name/IP address to use
-       * format - format the content of storage domain ('false' by default)
-    Return: status (True if storage domain was removed properly,
-                    False otherwise)
-    '''
+    """
+    remove storage domain
+
+    __author__ = 'edolinin'
+    :param storagedomain: storage domain name that should be removed
+    :type storagedomain: str
+    :param host: host name/IP address to use
+    :type host: str
+    :param format: format the content of storage domain
+    :type format: str - 'true' or 'false'
+    :param destroy: remove the storage domain from DB without deleting it's
+    content
+    :type destroy: bool
+    :return: True if storage domain was removed properly, False otherwise
+    :rtype: bool
+    """
     format_bool = format.lower() == "true"
 
     storDomObj = util.find(storagedomain)
@@ -497,10 +514,8 @@ def removeStorageDomain(positive, storagedomain, host, format='false',
     if destroy:
         st.set_destroy(True)
 
-    # Format domain if explicitly asked or
-    # in case of data domain during a positive flow
-    if format_bool or (positive and storDomObj.get_type() ==
-                       ENUMS['storage_dom_type_data']):
+    st.set_format('false')
+    if format_bool:
         st.set_format('true')
 
     return util.delete(storDomObj, positive, st)
@@ -852,22 +867,29 @@ def getDomainAddress(positive, storageDomain):
 
 @is_action()
 def findNonMasterStorageDomains(positive, datacenter):
-    '''
-    Description: find all non-master data storage domains
-    Author: gickowic
-    Parameters:
-        * datacenter - datacenter name
-    Return: List of non-master data storage domains, empty string if none found
-    '''
+    """
+    Find all non-master data storage domains
 
-    sdObjList = getDCStorages(datacenter, False)
+    :param positive: Represents if the call for this function is positive or
+    negative
+    :type positive: bool
+    :param datacenter: datacenter name
+    :type datacenter: str
+    :returns: tuple of status, and list of non-master data storage domains,
+              empty string if no non-master data domains is found
+    :rtype: tuple
+    """
+
+    sd_obj_list = getDCStorages(datacenter, False)
 
     # Filter out master domain and ISO/Export domains
-    nonMasterDomains = [sdObj.get_name() for sdObj in sdObjList if
-                        sdObj.get_type() == ENUMS['storage_dom_type_data']
-                        and not sdObj.get_master()]
-    if nonMasterDomains:
-        return positive, {'nonMasterDomains': nonMasterDomains}
+    non_master_domains = [
+        sd_object.get_name() for sd_object in sd_obj_list if
+        sd_object.get_type() == ENUMS['storage_dom_type_data']
+        and not sd_object.get_master()
+    ]
+    if non_master_domains and positive:
+        return positive, {'nonMasterDomains': non_master_domains}
     return not positive, {'nonMasterDomains': ''}
 
 
@@ -1413,6 +1435,123 @@ def get_free_space(storagedomain):
     """
     sdObj = util.find(storagedomain)
     return sdObj.get_available()
+
+
+@is_action()
+def importBlockStorageDomain(host, lun_address, lun_target):
+    """
+    Import an iscsi storage domain
+
+    __author__ = "ratamir"
+    :param host: host name to use for import
+    :type host: str
+    :param lun_address: lun address
+    :type lun_address: str
+    :param lun_target: lun target
+    :type lun_target: str
+    :return: True if the import succeeded or False otherwise
+    """
+    if not iscsiDiscover('True', host, lun_address):
+        util.logger.error(
+            'Failed to discover lun address %s from %s', lun_address, host
+        )
+        return False
+
+    if not iscsiLogin('True', host, lun_address, lun_target):
+        util.logger.error(
+            'Failed to login %s on target %s from %s',
+            lun_address, lun_target, host
+        )
+        return False
+    host_obj = hostUtil.find(host)
+    host_obj_id = Host(id=host_obj.get_id())
+    iscsi = IscsiDetails(address=lun_address)
+    # TODO: This call for asyc is not working until
+    # JIRA ticket https://projects.engineering.redhat.com/browse/RHEVM-2141
+    # will be resolved
+    response, status = hostUtil.syncAction(
+        host_obj, "unregisteredstoragedomainsdiscover", True, iscsi=iscsi,
+        iscsi_target=[lun_target]
+    )
+    if not status:
+        util.logger.error('Failed to find storage domains to import')
+        return False
+    sd_object = response.get_storage_domains().get_storage_domain()[0]
+
+    storage_object = Storage()
+    storage_object.set_type(ENUMS['storage_type_iscsi'])
+
+    sd = StorageDomain(id=sd_object.get_id())
+    sd.set_type(ENUMS['storage_dom_type_data'])
+    sd.set_host(host_obj_id)
+    sd.set_storage(storage_object)
+    sd.set_import('true')
+
+    res, status = util.create(sd, True, compare=False)
+
+    return status
+
+
+@is_action()
+def get_unregistered_vms(storage_domain):
+    """
+    Get unregistered vms on storage domain
+
+    __author__ = "ratamir"
+    :param storage_domain: name of the storage domain on which
+    to find unregistered vms
+    :type storage_domain: str
+    :returns: List of unregistered vm objects,
+    or empty list when no unregistered vms are found
+    :rtype: list
+    """
+    storage_domain_obj = util.find(storage_domain)
+    unregistered_vms = util.get(
+        "%s/vms;unregistered" % storage_domain_obj.href
+    )
+    return unregistered_vms.get_vm()
+
+
+@is_action()
+def get_unregistered_templates(storage_domain):
+    """
+    Get unregistered templates on storagedomain
+
+    __author__ = "ratamir"
+    :param storage_domain: name of the storage domain on which to find
+    unregistered templates
+    :type storage_domain: str
+    :returns: List of unregistered template objects,
+    or empty list when no unregistered templates are found
+    :rtype: list
+    """
+    storage_domain_obj = util.find(storage_domain)
+    unregistered_templates = util.get(
+        "%s/templates;unregistered" % storage_domain_obj.href
+    )
+    return unregistered_templates.get_template()
+
+
+@is_action()
+def register_object(obj, cluster):
+    """
+    Register unregistered vms or templates from storage domain
+
+    __author__ = "ratamir"
+    :param obj: object of vm or template to register
+           ->  the object should be received from get_unregistered_vms() or
+               get_unregistered_templates()
+    :type obj: List of vm objects or template objects
+    :param cluster: Name of cluster on which the vms or templates should
+           be registered
+    :type cluster: str
+    :returns: True on success, False otherwise
+    :rtype: bool
+    """
+    cluster_obj = Cluster(name=cluster)
+    return util.syncAction(
+        entity=obj, action='register', positive=True, cluster=cluster_obj
+    )
 
 
 @is_action()

@@ -3199,18 +3199,19 @@ def wait_for_vm_snapshots(
     Description: Wait until snapshots_description are in the given status,
     in case snapshot_descriptions is not provided wait for all the vm's
     snapshots
-    Parameters:
-        :param vm_name: name of the vm
-        :type vm_name: str
-        :param states: list of desired snapshots' state
-        :type states: list
-        :param snapshots_description: snapshot names in case of specific
-        snapshot/s
-        :type snapshots_description: str or list
-        :param timeout: maximum amount of time this operation can take
-        :type timeout: int
-        :param sleep: polling period
-        :type sleep: int
+
+    __author__ = 'ratamir'
+    :param vm_name: name of the vm
+    :type vm_name: str
+    :param states: list of desired snapshots' state
+    :type states: list
+    :param snapshots_description: snapshot names in case of specific
+    snapshot/s
+    :type snapshots_description: str or list
+    :param timeout: maximum amount of time this operation can take
+    :type timeout: int
+    :param sleep: polling period
+    :type sleep: int
     """
     def _get_unsatisfying_snapshots(statuses, description):
         """
@@ -3232,9 +3233,11 @@ def wait_for_vm_snapshots(
             ]
         )
 
-    snapshots = snapshots_description if snapshots_description else 'all'
+    snapshots = (
+        snapshots_description if snapshots_description else "'all snapshots'"
+    )
     logger.info(
-        "Waiting until snapshots %s of %s vm are in one of following "
+        "Waiting until snapshots: %s of %s vm are in one of following "
         "states: %s", snapshots, vm_name, states
     )
 
@@ -4183,7 +4186,7 @@ def live_migrate_vm(vm_name, timeout=VM_IMAGE_OPT_TIMEOUT*2, wait=True,
 def remove_all_vm_lsm_snapshots(vm_name):
     """
     Removes all snapshots of given VM which were created during
-    live storage migration (according to snapshot description).
+    live storage migration (according to snapshot description)
     Raise: AssertionError if something went wrong
 
     __author__ = "ratamir"

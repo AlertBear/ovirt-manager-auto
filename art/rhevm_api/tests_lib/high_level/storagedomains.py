@@ -702,7 +702,7 @@ def attach_and_activate_domain(datacenter, domain):
         raise errors.StorageDomainException(
             'Unable to activate domain %s on dc %s'
             % (domain, datacenter))
-    logger.info('Domain %s actived' % domain)
+    logger.info('Domain %s was activated', domain)
 
     return True
 
