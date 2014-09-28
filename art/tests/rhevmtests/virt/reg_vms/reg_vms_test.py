@@ -26,6 +26,10 @@ VM_DSC = 'reg_vms'
 NIC_NAME = 'nic'
 ENUMS = opts['elements_conf']['RHEVM Enums']
 ANY_HOST = ENUMS['placement_host_any_host_in_cluster']
+SPICE = ENUMS['display_type_spice']
+VNC = ENUMS['display_type_vnc']
+WIN_TZ = ENUMS['timezone_win_gmt_standard_time']
+RHEL_TZ = ENUMS['timezone_rhel_etc_gmt']
 
 logger = logging.getLogger(__name__)
 
@@ -306,6 +310,7 @@ class UpdateVm(BaseVm):
     vm_name = 'update_vm'
     rhel_to_xp_vm = 'rhel_to_xp_vm'
     rhel_to_7_vm = 'rhel_to_7_vm'
+    rhel_to_7_vm_neg = 'rhel_to_7_vm_neg'
     xp_to_rhel_vm = 'xp_to_rhel_vm'
 
     @classmethod
@@ -328,6 +333,12 @@ class UpdateVm(BaseVm):
                             cluster=config.CLUSTER_NAME[0],
                             os_type=ENUMS['windowsxp']):
             raise errors.VMException("Failed to add vm")
+        logger.info("Add new vm %s with rhel os parameter, for neg tests",
+                    cls.rhel_to_7_vm_neg)
+        if not vm_api.addVm(True, name=cls.rhel_to_7_vm_neg,
+                            cluster=config.CLUSTER_NAME[0],
+                            os_type=ENUMS['rhel6x64']):
+            raise errors.VMException("Failed to add vm")
         super(UpdateVm, cls).setup_class()
 
     @istest
@@ -336,6 +347,7 @@ class UpdateVm(BaseVm):
         Negative: Update vm OS type from rhel to Windows XP
         """
         self.assertFalse(vm_api.updateVm(True, self.rhel_to_xp_vm,
+                                         timezone=WIN_TZ,
                                          os_type=ENUMS['windowsxp']))
 
     @istest
@@ -344,6 +356,7 @@ class UpdateVm(BaseVm):
         Positive: Update vm OS type from rhel to Windows 7
         """
         self.assertTrue(vm_api.updateVm(True, self.rhel_to_7_vm,
+                                        timezone=WIN_TZ,
                                         os_type=ENUMS['windows7']))
 
     @istest
@@ -352,7 +365,16 @@ class UpdateVm(BaseVm):
         Positive: Update vm OS type from Windows XP to RHEL
         """
         self.assertTrue(vm_api.updateVm(True, self.xp_to_rhel_vm,
+                                        timezone=RHEL_TZ,
                                         os_type=ENUMS['rhel6x64']))
+
+    @istest
+    def update_vm_os_type_from_rhel_to_windows_7_neg(self):
+        """
+        Negative: Update vm OS type from rhel to Windows 7, no timezone update
+        """
+        self.assertFalse(vm_api.updateVm(True, self.rhel_to_7_vm_neg,
+                                         os_type=ENUMS['windows7']))
 
     @istest
     def update_vm_os_parameters(self):
@@ -440,12 +462,16 @@ class UpdateVm(BaseVm):
         self.assertTrue(vm_api.updateVm(True, self.vm_name,
                                         description="TEST"))
 
-    # Disable this case till RHEVM-1695 resolved
-    # @istest
+    @istest
     def update_vm_cluster(self):
         """
         Update vm cluster
         """
+        logger.info("Turn VM %s back to being migratable", self.vm_name)
+        affinity = ENUMS['vm_affinity_migratable']
+        self.assertTrue(vm_api.updateVm(True, self.vm_name,
+                                        placement_host=ANY_HOST,
+                                        placement_affinity=affinity))
         cluster = config.CLUSTER_NAME[1]
         self.assertTrue(vm_api.updateVm(True, self.vm_name,
                                         cluster=cluster))
@@ -903,6 +929,7 @@ class ImportExportVm(BaseVmWithDisk):
                 % (cls.vm_name, export_domain))
         super(ImportExportVm, cls).teardown_class()
 
+    @bz({'1145466': {'engine': ['cli'], 'version': None}})
     @istest
     def basic_import_export_vm(self):
         """
@@ -988,17 +1015,18 @@ class VmDisplay(TestCase):
             raise errors.VMException("Failed to remove vms")
 
     @classmethod
-    def _check_display_parameters(cls, vm_name):
+    def _check_display_parameters(cls, vm_name, display_type):
         """
         Start vm and check display parameters
         """
-        logger.info("Check if display port exist")
-        if not vm_api.get_vm_display_port(vm_name):
-            logger.info("Vm %s display port does not exist", vm_name)
-            return False
+        if display_type != SPICE:
+            logger.info("Check if display port exist")
+            if not vm_api.get_vm_display_port(vm_name):
+                logger.info("Vm %s display port does not exist", vm_name)
+                return False
         logger.info("Check if display address exist")
         if not vm_api.get_vm_display_address(vm_name):
-            logger.info("Vm %s display port does not exist", vm_name)
+            logger.info("Vm %s display address does not exist", vm_name)
             return False
         return True
 
@@ -1007,14 +1035,16 @@ class VmDisplay(TestCase):
         """
         Check address and port parameters under display with type spice
         """
-        self.assertTrue(self._check_display_parameters(self.vm_names[0]))
+        self.assertTrue(self._check_display_parameters(self.vm_names[0],
+                                                       SPICE))
 
     @istest
     def check_vnc_parameters(self):
         """
         Check address and port parameters under display with type spice
         """
-        self.assertTrue(self._check_display_parameters(self.vm_names[1]))
+        self.assertTrue(self._check_display_parameters(self.vm_names[1],
+                                                       VNC))
 
 
 @attr(tier=0)

@@ -312,6 +312,9 @@ def _prepareVmObject(**kwargs):
     if initialization:
         vm.set_initialization(initialization=initialization)
 
+    # timezone
+    vm.timezone = kwargs.pop('timezone', None)
+
     return vm
 
 
@@ -438,6 +441,8 @@ def updateVm(positive, vm, **kwargs):
        * protected - true if vm is delete protected
        * watchdog_model - model of watchdog card (ib6300)
        * watchdog_action - action of watchdog card
+       * timezone - set to timezone out of product possible timezones.
+                    There must be a match between timezone and OS.
     Return: status (True if vm was updated properly, False otherwise)
     '''
     vmObj = VM_API.find(vm)
