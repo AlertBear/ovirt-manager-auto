@@ -48,8 +48,7 @@ class RemoteExecutor(Resource):
             self._timeout = timeout
             self._h = host
             self._ssh = paramiko.SSHClient()
-            self._ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy)
-            self._ssh.load_system_host_keys()
+            self._ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
         @property
         def logger(self):
@@ -71,6 +70,7 @@ class RemoteExecutor(Resource):
                     self._h.logger.debug("Can not close ssh session %s", ex)
 
         def open(self):
+            self._ssh.get_host_keys().clear()
             try:
                 self._ssh.connect(
                     self._h.address,
