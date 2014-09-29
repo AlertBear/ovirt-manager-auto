@@ -16,12 +16,19 @@ Configuration Options:
     | **enabled**   to enable the plugin (true/false)
 """
 
-from art.test_handler.plmanagement import Component, implements, get_logger, PluginError
+from art.test_handler.plmanagement import (
+    Component,
+    implements,
+    get_logger,
+    PluginError,
+)
 from art.test_handler.plmanagement.interfaces.application import IConfigurable
 from art.test_handler.plmanagement.interfaces.configurator import IConfigurator
 from art.test_handler.plmanagement.interfaces.packaging import IPackaging
-from art.test_handler.plmanagement.interfaces.config_validator import IConfigValidation
-from utilities.machine import Machine, LINUX
+from art.test_handler.plmanagement.interfaces.config_validator import (
+    IConfigValidation,
+)
+from art.rhevm_api.resources.vds import VDS as Host
 
 logger = get_logger('host_nic_resolution')
 
@@ -57,14 +64,8 @@ class AutoHostNicsResolution(Component):
         # 0-9]
         nics = set()
         for name, passwd in zip(self.vds, self.vds_passwd):
-            m = Machine(name, 'root', passwd).util(LINUX)
-            rc, out = m.runCmd(
-                ['ls', '-la', '/sys/class/net', '|', 'grep', "'pci'", '|',
-                 'grep', '-o', "'[^/]*$'"])
-            out = out.strip()
-            if not rc or not out:
-                raise NicResolutionFailed(out)
-            nics |= set(out.splitlines())
+            vds = Host(name, passwd)
+            nics |= set(vds.get_nics())
 
         if not nics:
             raise NicResolutionFailed("no nics found")

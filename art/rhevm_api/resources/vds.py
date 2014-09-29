@@ -28,7 +28,15 @@ class VDS(Host):
 
     @cache.lrucache(name='nics')
     def get_nics(self):
-        raise NotImplementedError()
+        executor = self.executor()
+        rc, out, err = executor.run_cmd(
+            ['ls', '-la', '/sys/class/net', '|', 'grep', "'pci'", '|',
+             'grep', '-o', "'[^/]*$'"]
+        )
+        out = out.strip()
+        if rc:
+            raise Exception("Can not get nics from host %s: %s", self, err)
+        return sorted(set(out.splitlines()))
 
     @property
     def cpu_model(self):
