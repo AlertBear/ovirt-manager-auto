@@ -149,6 +149,16 @@ if 'prepared_env' in ART_CONFIG:
     CPU_CORES = int(VMS[0]['cpu_cores'])
     CPU_SOCKET = int(VMS[0]['cpu_socket'])
 
+    UNUSED_DATA_DOMAIN_ADDRESSES = PARAMETERS.as_list('data_domain_address')
+    UNUSED_DATA_DOMAIN_PATHS = PARAMETERS.as_list('data_domain_path')
+    logger.info("Free nfs shares: %s %s",
+                UNUSED_DATA_DOMAIN_ADDRESSES, UNUSED_DATA_DOMAIN_PATHS)
+
+    UNUSED_LUNS = PARAMETERS.as_list('lun')
+    UNUSED_LUN_ADDRESSES = PARAMETERS.as_list('lun_address')
+    UNUSED_LUN_TARGETS = PARAMETERS.as_list('lun_target')
+    logger.info("Free iscsi shares: %s %s %s", UNUSED_LUNS,
+                UNUSED_LUN_ADDRESSES, UNUSED_LUN_TARGETS)
 else:
     GOLDEN_ENV = False
     # DATA CENTER SECTION
