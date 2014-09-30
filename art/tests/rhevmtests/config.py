@@ -9,6 +9,7 @@ import logging
 from art.test_handler.settings import ART_CONFIG, opts
 from art.rhevm_api.utils import test_utils
 from art.rhevm_api.tests_lib.low_level import hosts
+from art.rhevm_api import resources
 
 logger = logging.getLogger(__name__)
 
@@ -309,3 +310,25 @@ MAX_WORKERS = PARAMETERS.get('max_workers', 10)
 
 OS_TYPE = test_utils.convertOsNameToOsTypeElement(
     True, PARAMETERS['vm_os'])[1]['osTypeElement']
+
+# ### New object oriented approach
+VDS_HOSTS = [
+    resources.VDS(
+        h, HOSTS_PW,
+    ) for h in HOSTS
+]
+ENGINE_HOST = resources.Host(VDC_HOST)
+ENGINE_HOST.users.append(
+    resources.RootUser(VDC_ROOT_PASSWORD)
+)
+ENGINE = resources.Engine(
+    ENGINE_HOST,
+    resources.ADUser(
+        VDC_ADMIN_USER,
+        VDC_PASSWORD,
+        resources.Domain(VDC_ADMIN_DOMAIN),
+    ),
+    schema=REST_CONNECTION.get('schema'),
+    port=VDC_PORT,
+    entry_point=ENGINE_ENTRY_POINT,
+)
