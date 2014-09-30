@@ -1865,3 +1865,39 @@ def get_obj_by_query(obj, query_text):
     if not res:
         raise QueryNotFoundException("Query not found")
     return res
+
+
+def engine_set_mac_range(host, username, password, mac_range):
+    """
+    Set mac range on engine
+    :param host: Engine FQDN or IP
+    :param username: Engine host username
+    :param password:  Engine host password
+    :param mac_range: MAC range to apply
+    :return: True/False
+    """
+    cmd = ["engine-config", "-s", "MacPoolRanges=%s" %
+           mac_range]
+
+    host_obj = Machine(host, username, password).util(LINUX)
+    if not host_obj.runCmd(cmd)[0]:
+        logger.error("Operation failed")
+        return False
+    return restartOvirtEngine(host_obj, 5, 25, 70)
+
+
+def engine_get_mac_range(host, username, password):
+    """
+    Get current mac range from engine
+    :param host: Engine FQDN or IP
+    :param username: Engine host username
+    :param password:  Engine host password
+    :return: MAC range (str)/False
+    """
+    cmd = ["engine-config", "-g", "MacPoolRanges"]
+    host_obj = Machine(host, username, password).util(LINUX)
+    rc, out = host_obj.runCmd(cmd)
+    if not rc:
+        logger.error("Operation failed")
+        return False
+    return out.split()[1]
