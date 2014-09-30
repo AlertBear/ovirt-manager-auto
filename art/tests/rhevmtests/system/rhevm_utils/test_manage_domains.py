@@ -1,19 +1,19 @@
-from rhevmtests.system.rhevm_utils.base import RHEVMUtilsTestCase
-
-from art.test_handler import exceptions
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
-
 from datetime import datetime, timedelta
 from os.path import relpath
 from sys import modules
+
+from art.test_handler import exceptions
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.settings import ART_CONFIG as config
+from art.unittest_lib import attr
 
 from utilities.rhevm_tools.manage_domains import ManageDomainsUtility
 from utilities.rhevm_tools import errors
 from utilities import sshConnection
 
-from art.unittest_lib import attr
+from rhevmtests.system.rhevm_utils.base import RHEVMUtilsTestCase
+import unittest_conf
 
-from art.test_handler.settings import ART_CONFIG as config
 
 NAME = 'manage-domains'
 TABLE_NAME = 'vdc_options'
@@ -51,14 +51,15 @@ class ManageDomainsTestCaseBase(RHEVMUtilsTestCase):
     directoryService = None
 
     def setUp(self):
-        super(ManageDomainsTestCaseBase, self).setUp()
+        if not unittest_conf.GOLDEN_ENV:
+            super(ManageDomainsTestCaseBase, self).setUp()
         self.domainName = config[self.directoryService].get('name', None)
         self.domainUser = config[self.directoryService].get('user', None)
         self.password = config[self.directoryService].get('password', None)
         self.provider = config[self.directoryService].get('provider', None)
 
-        self.host = config['REST_CONNECTION'].get('host', None)
-        self.sshPassword = config['PARAMETERS'].get('vdc_root_password', None)
+        self.host = unittest_conf.VDC_HOST
+        self.sshPassword = unittest_conf.VDC_ROOT_PASSWORD
         cmd = ['mktemp']
         self.passwordFile = _run_ssh_command(self.host, self.sshPassword,
                                              cmd).rstrip('\n')
@@ -75,7 +76,8 @@ class ManageDomainsTestCaseBase(RHEVMUtilsTestCase):
     def tearDown(self):
         cmd = ['rm', '-f', self.password, self.passwordFile]
         _run_ssh_command(self.host, self.sshPassword, cmd)
-        super(ManageDomainsTestCaseBase, self).tearDown()
+        if not unittest_conf.GOLDEN_ENV:
+            super(ManageDomainsTestCaseBase, self).tearDown()
 
 
 @attr(tier=2)
@@ -261,7 +263,7 @@ class ManageDomainsTestCaseHelp(RHEVMUtilsTestCase):
     https://tcms.engineering.redhat.com/case/107969/?from_plan=4580
     """
 
-    __test__ = True
+    __test__ = not unittest_conf.GOLDEN_ENV
     utility = NAME
     utility_class = ManageDomainsUtility
     _multiprocess_can_split_ = True
@@ -318,7 +320,7 @@ class ManageDomainsUnpriviledgedUser(ManageDomainsTestCaseBase):
     https://tcms.engineering.redhat.com/case/127947/?from_plan=4580
     """
 
-    __test__ = True
+    __test__ = not unittest_conf.GOLDEN_ENV
     # doesn't matter what's here, but it has to be anything in order to not to
     # get key error in SetUp
     directoryService = directoryServices.values()[0]
@@ -378,7 +380,7 @@ class ManageDomainsMultipleProviders(RHEVMUtilsTestCase):
     https://tcms.engineering.redhat.com/case/109297/?from_plan=4580
     """
 
-    __test__ = True
+    __test__ = not unittest_conf.GOLDEN_ENV
     utility = NAME
     utility_class = ManageDomainsUtility
 
@@ -461,7 +463,7 @@ class ManageDomainsTestCaseNegativeScenarios(ManageDomainsTestCaseBase):
 
 @attr(tier=2)
 class ManageDomainsBug1037894(ManageDomainsTestCaseBase):
-    __test__ = True
+    __test__ = not unittest_conf.GOLDEN_ENV
     directoryService = 'ACTIVE_DIRECTORY_TLV'
 
     def setUp(self):
@@ -509,7 +511,7 @@ for action, parent in tests.iteritems():
     for service, confSection in directoryServices.iteritems():
         name = 'ManageDomainsTestCase%s%s' % (action, service)
         attributes = {
-            '__test__': True,
+            '__test__': not unittest_conf.GOLDEN_ENV,
             'directoryService': confSection
         }
         newClass = type(name, (parent,), attributes)

@@ -73,7 +73,7 @@ class RHEVMUtilsTestCase(TestCase):
         """
         cls.installation = \
             unittest_conf.ART_CONFIG['PARAMETERS'].get('installation')
-        cls.machine = Setup(unittest_conf.REST_API_HOST,
+        cls.machine = Setup(unittest_conf.VDC_HOST,
                             unittest_conf.VDC_ROOT_USER,
                             unittest_conf.VDC_ROOT_PASSWORD,
                             dbpassw=unittest_conf.PGPASS,

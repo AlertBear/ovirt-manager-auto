@@ -1,14 +1,11 @@
 import sys
 
 from rhevmtests.system.rhevm_utils import base
-from unittest_conf import (REST_API_HOST,
-                           REST_API_PASS,
-                           ISO_UP_CONF,
-                           ISO_DOMAIN_NAME,
-                           LOCAL_ISO_DOMAIN_NAME)
-from utilities.rhevm_tools.iso_uploader import ISOUploadUtility
-from art.unittest_lib import attr
+import art.rhevm_api.tests_lib.low_level.storagedomains as storagedomains
 from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.unittest_lib import attr
+import unittest_conf
+from utilities.rhevm_tools.iso_uploader import ISOUploadUtility
 
 
 ISO_UPLOADER_TEST_PLAN = 3741
@@ -19,11 +16,23 @@ ISO_UPLOAD_COMMAND = 'upload'
 
 
 def setup_module():
-    base.setup_module()
+    if unittest_conf.GOLDEN_ENV:
+        iso_domain = storagedomains.findIsoStorageDomains()[1]
+        storagedomains.attachStorageDomain(True, unittest_conf.DC_NAME[0],
+                                           iso_domain)
+    else:
+        base.setup_module()
 
 
 def teardown_module():
-    base.teardown_module()
+    if unittest_conf.GOLDEN_ENV:
+        iso_domain = storagedomains.findIsoStorageDomains()[1]
+        storagedomains.deactivateStorageDomain(True, unittest_conf.DC_NAME[0],
+                                               iso_domain)
+        storagedomains.detachStorageDomain(True, unittest_conf.DC_NAME[0],
+                                           iso_domain)
+    else:
+        base.teardown_module()
 
 
 @attr(tier=1)
@@ -39,7 +48,8 @@ class ISOUploaderTestCase(base.RHEVMUtilsTestCase):
 
     def setUp(self):
         super(ISOUploaderTestCase, self).setUp()
-        assert self.ut.setRestConnPassword(NAME, ISO_UP_CONF, REST_API_PASS)
+        assert self.ut.setRestConnPassword(NAME, unittest_conf.ISO_UP_CONF,
+                                           unittest_conf.VDC_PASSWORD)
 
     def tearDown(self):
         if self.current_iso_file:
@@ -52,7 +62,7 @@ class ISOUploaderTestCase(base.RHEVMUtilsTestCase):
         Change a row in the config file
         """
         cmd = ['sed', '-i', "'s/#[[:space:]]*%s[[:space:]]*=.*/%s=%s/'" %
-               (option, option, value), ISO_UP_CONF, '--copy']
+               (option, option, value), unittest_conf.ISO_UP_CONF, '--copy']
         self.ut.execute(name=NAME, cmd=cmd)
 
     @tcms(ISO_UPLOADER_TEST_PLAN, 275523)
@@ -61,7 +71,12 @@ class ISOUploaderTestCase(base.RHEVMUtilsTestCase):
         isoFile = DUMMY_ISO_FILE_PATTERN % sys._getframe().f_code.co_name
         self.ut.createDummyIsoFile(isoFile)
         self.current_iso_file = isoFile
-        self.ut(ISO_UPLOAD_COMMAND, isoFile, i=ISO_DOMAIN_NAME)
+        if unittest_conf.GOLDEN_ENV:
+            self.ut(ISO_UPLOAD_COMMAND, isoFile, force=None,
+                    i=unittest_conf.ISO_DOMAIN_NAME)
+        else:
+            self.ut(ISO_UPLOAD_COMMAND, isoFile,
+                    i=unittest_conf.ISO_DOMAIN_NAME)
         self.ut.autoTest()
 
     @tcms(ISO_UPLOADER_TEST_PLAN, 97800)
@@ -76,9 +91,14 @@ class ISOUploaderTestCase(base.RHEVMUtilsTestCase):
         isoFile = DUMMY_ISO_FILE_PATTERN % sys._getframe().f_code.co_name
         self.ut.createDummyIsoFile(isoFile)
         self.current_iso_file = isoFile
-        self.ut(ISO_UPLOAD_COMMAND, isoFile, i=ISO_DOMAIN_NAME)
+        if unittest_conf.GOLDEN_ENV:
+            self.ut(ISO_UPLOAD_COMMAND, isoFile, force=None,
+                    i=unittest_conf.ISO_DOMAIN_NAME)
+        else:
+            self.ut(ISO_UPLOAD_COMMAND, isoFile,
+                    i=unittest_conf.ISO_DOMAIN_NAME)
         self.ut.autoTest()
-        self.ut(ISO_UPLOAD_COMMAND, isoFile, i=ISO_DOMAIN_NAME)
+        self.ut(ISO_UPLOAD_COMMAND, isoFile, i=unittest_conf.ISO_DOMAIN_NAME)
         self.ut.autoTest(rc=3)
 
     @tcms(ISO_UPLOADER_TEST_PLAN, 97799)
@@ -88,7 +108,12 @@ class ISOUploaderTestCase(base.RHEVMUtilsTestCase):
         self.ut.createDummyIsoFile(isoFile)
         self.current_iso_file = isoFile
 
-        self.ut(ISO_UPLOAD_COMMAND, isoFile, i=LOCAL_ISO_DOMAIN_NAME)
+        if unittest_conf.GOLDEN_ENV:
+            self.ut(ISO_UPLOAD_COMMAND, isoFile, force=None,
+                    i=unittest_conf.LOCAL_ISO_DOMAIN_NAME,)
+        else:
+            self.ut(ISO_UPLOAD_COMMAND, isoFile,
+                    i=unittest_conf.LOCAL_ISO_DOMAIN_NAME)
         self.ut.autoTest()
 
     @tcms(ISO_UPLOADER_TEST_PLAN, 97803)
@@ -98,7 +123,12 @@ class ISOUploaderTestCase(base.RHEVMUtilsTestCase):
         self.ut.createDummyIsoFile(isoFile)
         self.current_iso_file = isoFile
 
-        self.ut(ISO_UPLOAD_COMMAND, isoFile, i=LOCAL_ISO_DOMAIN_NAME)
+        if unittest_conf.GOLDEN_ENV:
+            self.ut(ISO_UPLOAD_COMMAND, isoFile, force=None,
+                    i=unittest_conf.LOCAL_ISO_DOMAIN_NAME)
+        else:
+            self.ut(ISO_UPLOAD_COMMAND, isoFile,
+                    i=unittest_conf.LOCAL_ISO_DOMAIN_NAME)
         self.ut.autoTest()
 
     @tcms(ISO_UPLOADER_TEST_PLAN, 97797)
@@ -115,8 +145,13 @@ class ISOUploaderTestCase(base.RHEVMUtilsTestCase):
         self.current_iso_file = isoFile
 
         self.setInConfFile('user', 'admin@internal')
-        self.setInConfFile('engine', REST_API_HOST + ':443')
-        self.setInConfFile('iso-domain', ISO_DOMAIN_NAME)
+        self.setInConfFile('engine', unittest_conf.VDC_HOST + ':443')
+        self.setInConfFile('iso-domain', unittest_conf.ISO_DOMAIN_NAME)
 
-        self.ut(ISO_UPLOAD_COMMAND, isoFile)
+        if unittest_conf.GOLDEN_ENV:
+            self.ut(ISO_UPLOAD_COMMAND, isoFile, force=None,
+                    i=unittest_conf.ISO_DOMAIN_NAME)
+        else:
+            self.ut(ISO_UPLOAD_COMMAND, isoFile,
+                    i=unittest_conf.ISO_DOMAIN_NAME)
         self.ut.autoTest()

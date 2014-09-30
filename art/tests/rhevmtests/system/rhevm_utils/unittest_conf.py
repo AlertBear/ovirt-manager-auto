@@ -7,43 +7,37 @@ from rhevmtests.system.config import *  # flake8: noqa
 
 
 params = ART_CONFIG['PARAMETERS']
-VM_NAME = params.get('vm_name')
 ISO_UP_CONF = params.get('iso_up_conf_file',
-                         '/etc/ovirt-engine/imageuploader.conf')
+                         '/etc/ovirt-engine/isouploader.conf')
 LOG_COL_CONF = params.get('log_col_conf_file',
                           '/etc/ovirt-engine/logcollector.conf')
 IMAGE_UP_CONF = params.get('image_up_conf_file',
                            '/etc/ovirt-engine/imageuploader.conf')
 
-rest_conn = ART_CONFIG['REST_CONNECTION']
-REST_API_PASS = rest_conn.get('password')
-REST_API_HOST = rest_conn.get('host')
-
 NEW_CLUSTER_NAME = params.get('new_cluster_name', 'golden_setup_new_cluster')
 NEW_DC_NAME = params.get('new_datacenter_name', 'golden_setup_new_dc')
 
-# workaround to skip sdk for now
-MAIN_SETUP = "https://lilach-rhel.qa.lab.tlv.redhat.com:443/api"
-PGPASS = "123456"
-HOST_PASS = "qum5net"
-
 # image/iso uploader is using default names for iso/export domain, which are
 # specified in high_level.storagedomains.create_storages
-ISO_DOMAIN_NAME = 'iso_domain'
+if GOLDEN_ENV:
+    ISO_DOMAIN_NAME = iso_sds[0]['iso_domain']['name']
+    STORAGE_TYPE = STORAGE_TYPE_NFS
+else:
+    ISO_DOMAIN_NAME = 'iso_domain'
 LOCAL_ISO_DOMAIN_NAME = 'ISO_DOMAIN'
 EXPORT_DOMAIN_NAME = 'export_domain'
 DEFAULT = {
-    'def_vm_name': VM_NAME,  # name
+    'def_vm_name': VM_NAME[0],  # name
     'wait_timeout': 2400,  # wait for VM state change. Total install: ~40min
     'install_timeout': 1800,  # wait for RHEVM installation
-    '_password_host': HOST_PASS,
-    '_password': REST_API_PASS,  # default password
-    '_password_db': PGPASS,  # default db password
+    '_password_host': "qum5net",
+    '_password': VDC_PASSWORD,  # default password
+    '_password_db': "123456",  # default db password
     '_organization': 'Nice Testing Org. Name',  # organization name for certs
 }
 
 SDK = {
-    'address': MAIN_SETUP,
+    'address': "https://lilach-rhel.qa.lab.tlv.redhat.com:443/api",
     'user': "vdcadmin@rhev.lab.eng.brq.redhat.com",
     'password': '%(_password)s'
 }
@@ -80,7 +74,7 @@ ANSWERS = {
     'OVESETUP_CONFIG/adminPassword': 'str:123456',
     'OVESETUP_CONFIG/applicationMode': 'str:both',
     'OVESETUP_CONFIG/firewallManager': 'str:iptables',
-    'OVESETUP_CONFIG/fqdn': 'str:' + REST_API_HOST,
+    'OVESETUP_CONFIG/fqdn': 'str:' + VDC_HOST,
     'OVESETUP_CONFIG/storageType': 'str:nfs',
     'OVESETUP_CONFIG/websocketProxyConfig': 'bool:True',
     'OVESETUP_CONFIG/updateFirewall': 'bool:True',

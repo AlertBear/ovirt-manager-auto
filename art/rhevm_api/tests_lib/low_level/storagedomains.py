@@ -965,15 +965,19 @@ def findIsoStorageDomains(datacenter=None):
 
 
 @is_action()
-def findExportStorageDomains(datacenter):
+def findExportStorageDomains(datacenter=None):
     """
     Description: find all export storage domains
     Author: cmestreg
     Parameters:
-        * datacenter - datacenter name
+        * datacenter - datacenter name. All export domains would be returned
+                       if the datacenter parameter is set to None
     Return: List of export storage domains
     """
-    sdObjList = getDCStorages(datacenter, False)
+    if datacenter:
+        sdObjList = getDCStorages(datacenter, False)
+    else:
+        sdObjList = util.get(absLink=False)
 
     exportDomains = [sdObj.get_name() for sdObj in sdObjList if
                      sdObj.get_type() == ENUMS['storage_dom_type_export']]

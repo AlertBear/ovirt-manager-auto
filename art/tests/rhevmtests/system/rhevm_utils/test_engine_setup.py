@@ -7,7 +7,7 @@ from pprint import pformat
 
 from rhevmtests.system.rhevm_utils import base
 from utilities.rhevm_tools.setup import SetupUtility
-from unittest_conf import config, REST_API_HOST
+import unittest_conf
 
 from art.test_handler.tools import tcms
 from art.unittest_lib import attr
@@ -18,7 +18,7 @@ NAME = 'setup'
 TCMS_PLAN = 3749
 _multiprocess_can_split_ = True
 
-host = REST_API_HOST
+host = unittest_conf.VDC_HOST
 
 
 @attr(tier=0)
@@ -26,7 +26,7 @@ class SetupTestCase(base.RHEVMUtilsTestCase):
     """
         rhevm setup test cases
     """
-    __test__ = True
+    __test__ = not unittest_conf.GOLDEN_ENV
     utility = NAME
     utility_class = SetupUtility
     clear_snap = 'clear_machine'
@@ -34,8 +34,8 @@ class SetupTestCase(base.RHEVMUtilsTestCase):
 
     def create_answer_file(self):
         ans = os.path.join('/tmp', 'answer_file')
-        params = self.ut.setup.getInstallParams('__default__',
-                                                config['ANSWERS'])
+        params = self.ut.setup.getInstallParams(
+            '__default__', unittest_conf.config['CLEANUP_ANSWERS'])
         self.ut.setup.fillAnswerFile(ans, **params)
         logger.info("%s: install setup with %s", host, pformat(params))
 
@@ -46,7 +46,7 @@ class SetupTestCase(base.RHEVMUtilsTestCase):
         self.ut(config_append=self.c['answer_file'],
                 generate_answer=self.c['new_ans_file'])
         self.ut.testGenerateAnswerFile()
-        self.ut.setup.clean(config)
+        self.ut.setup.clean(unittest_conf.config)
 
     @tcms(TCMS_PLAN, 296383)
     def test_install_setup(self):
