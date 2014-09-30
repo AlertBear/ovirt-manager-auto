@@ -64,10 +64,7 @@ def _delete_job_from_db():
         host=config.VDC_HOST,
         user=config.VDC_ROOT_USER,
         passwd=config.VDC_ROOT_PASSWORD,
-        dbuser=config.DB_ENGINE_USER,
-        dbpassw=config.DB_ENGINE_PASSWORD,
         product=config.PRODUCT_NAME,
-        conf=DB_NAME_CONF
     )
     sql = '%s FROM job WHERE action_type=\'SshSoftFencing\''
     if dbConn.psql(sql, 'SELECT *'):
