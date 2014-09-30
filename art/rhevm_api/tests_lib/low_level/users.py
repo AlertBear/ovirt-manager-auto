@@ -51,6 +51,8 @@ def addUser(positive, **kwargs):
     Parameters:
        * user_name - user account name
        * domain - user domain
+       * namespace - users namespace
+       * principal - users principal
     Return: status (True if user was created properly, False otherwise)
     '''
 
@@ -58,8 +60,11 @@ def addUser(positive, **kwargs):
     domain = kwargs.pop('domain')
     userDomain = Domain(name=domain)
     userName = user_name + "@" + domain
+    namespace = kwargs.pop('namespace', None)
+    principal = kwargs.pop('principal', None)
 
-    user = User(domain=userDomain, user_name=userName)
+    user = User(domain=userDomain, user_name=userName,
+                namespace=namespace, principal=principal)
     user, status = util.create(user, positive)
 
     return status
@@ -86,7 +91,7 @@ def addRoleToUser(positive, user, role):
 
 
 @is_action()
-def removeUser(positive, user, domain=None):
+def removeUser(positive, user, domain=None, namespace=None):
     '''
     Description: remove existed user
     Parameters:
@@ -95,7 +100,16 @@ def removeUser(positive, user, domain=None):
     '''
     if domain is not None:
         user_name = '%s@%s' % (user, domain)
-        userObj = util.query('{0}={1}'.format('usrname', user_name))[0]
+        users = util.query('{0}={1}'.format('usrname', user_name))
+        if len(users) <= 0:
+            return not positive
+        if len(users) > 0 and namespace is not None:
+            namespace = namespace.lower()
+            user = filter(lambda u: u.get_namespace().lower() == namespace,
+                          users) or [None]
+            userObj = user[0]
+        else:
+            userObj = users[0]
     else:
         userObj = util.find(user)
     return util.delete(userObj, positive)

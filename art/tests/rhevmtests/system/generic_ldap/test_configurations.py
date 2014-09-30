@@ -1,17 +1,14 @@
 '''
 Test possible configuration option of properties file.
 '''
-
-
 __test__ = True
 
 import logging
 
 from rhevmtests.system.generic_ldap import config, common
 from art.rhevm_api.tests_lib.low_level import mla
-from art.unittest_lib import CoreSystemTest as TestCase
+from art.unittest_lib import attr, CoreSystemTest as TestCase
 from nose.tools import istest
-from art.unittest_lib import attr
 
 LOGGER = logging.getLogger(__name__)
 EXTENSIONS = {}

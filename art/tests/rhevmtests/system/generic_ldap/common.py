@@ -6,8 +6,10 @@ import logging
 from utilities import machine
 from functools import wraps
 from art.test_handler.exceptions import SkipTest
+from art.core_api.apis_exceptions import APIException
 from art.rhevm_api.utils import test_utils
 from rhevmtests.system.generic_ldap import config
+from art.rhevm_api.tests_lib.low_level import users, mla, general
 
 
 LOGGER = logging.getLogger(__name__)
@@ -17,6 +19,7 @@ ATTEMPTS = 25
 TIMEOUT = 70
 
 
+# Extensions utils
 def enableExtensions():
     ''' just restart ovirt engine service '''
     machineObj = machine.Machine(config.VDC_HOST, config.VDC_ROOT_USER,
@@ -48,10 +51,10 @@ def prepareExtensions(module_name, ext_dir, extensions, clean=True):
     machineObj = machine.Machine(config.VDC_HOST, config.VDC_ROOT_USER,
                                  config.VDC_ROOT_PASSWORD).util(machine.LINUX)
     LOGGER.info(module_name)
-    files = os.listdir(os.path.join(ext_path, config.FIXTURES))
-    confs = filter(lambda f: f.find(module_name) >= 0, files)
+    confs = os.listdir(os.path.join(ext_path, config.FIXTURES, module_name))
+
     for conf in confs:
-        ext_file = os.path.join(ext_path, config.FIXTURES, conf)
+        ext_file = os.path.join(ext_path, config.FIXTURES, module_name, conf)
         try:
             assert machineObj.copyTo(ext_file, ext_dir)
             res = machineObj.runCmd(['chown', 'ovirt:ovirt', ext_file])
@@ -71,9 +74,125 @@ def check(ext=None):
     def decorator(method):
         @wraps(method)
         def f(self, *args, **kwargs):
-            if ext and not ext.get(self.conf['authn_file'], False):
+            if ext and not ext.get(self.conf['authz_file'], False):
                 LOGGER.warn(SKIP_MESSAGE)
                 raise SkipTest(SKIP_MESSAGE)
             return method(self, *args, **kwargs)
         return f
     return decorator
+
+
+# -- MLA utils --
+def assignUserPermissionsOnCluster(user_name, provider, principal=None,
+                                   role=config.USERROLE,
+                                   cluster=config.DEFAULT_CLUSTER_NAME,
+                                   create_user=True):
+    '''
+    Assign user permissions on cluster.
+    Parameters:
+     * user_name - username of user
+     * provider - provider where user exists
+     * principal - principal
+     * role - role which should be assign him
+     * cluster - cluster where role should be added
+     * create_user - True/False if user should be added before perms assigned
+
+    return True if operation succeed False otherwise
+    '''
+    if (create_user and not users.addUser(True, user_name=user_name,
+                                          domain=provider,
+                                          principal=principal)):
+        return False
+
+    return mla.addClusterPermissionsToUser(True, user_name, cluster,
+                                           role, provider)
+
+
+def connectionTest():
+    try:
+        return general.getProductName()[0]
+    except (APIException, AttributeError):
+        # We expect either login will fail (wrong user) or
+        # general.getProductName() will return None (correct user + filter set)
+        return False
+    return True
+
+
+# -- Truststore utils --
+def generateCertificate(session, ssl_host, crt_dir, port='636'):
+    '''
+    Create temp file with certificate of service runnning on @host at @port.
+    Parameters:
+     * session - ssh session
+     * ssl_host - host where service is running
+     * crt_dir - directory where certificate should be generated
+     * port - default port which is used when host doesn't contain port
+    return True if cert was successfully obtained, False otherwise
+    '''
+    if ssl_host.find(':') == -1:
+        ssl_host += ':' + str(port)
+    crt_file = '%s/%s' % (crt_dir, ssl_host)
+    cmd = ['echo', '|', 'openssl', 's_client', '-connect', ssl_host, '2>&1',
+           '|', 'sed', '-ne', '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p',
+           '>', crt_file]
+    rc, _, _ = session.run_cmd(cmd)
+    return rc, crt_file
+
+
+def importCertificateToTruststore(session, filename, truststore, password):
+    '''
+    Import certificate into truststore.
+    Parameters:
+     * session - ssh session
+     * filename - filename with certificate to be imported
+     * truststore - truststore where certificate should be imported
+     * password - truststore password
+    '''
+    cmd = ['keytool', '-import', '-noprompt', '-storepass', password,
+           '-file', filename, '-alias', filename, '-keystore', truststore]
+    return session.run_cmd(cmd)
+
+
+def listTruststore(session, truststore, password):
+    '''
+    Return list of certificates in truststore. For debug purposes.
+    Parameters:
+     * session - ssh session
+     * truststore - truststore which should be listed
+     * password - truststore password
+    Return output of keytool list command
+    '''
+    cmd = ['keytool', '-list', '-storepass', password, '-keystore', truststore]
+    rc, out, _ = session.run_cmd(cmd)
+    return out
+
+
+def createTrustore(hosts, truststore, password, temp_dir='/tmp'):
+    '''
+    Parameters:
+     * hosts - list of host:port strings where certs should be obtained
+     * truststore - full path of truststore
+     * password - truststore password
+     * temp_dir - directory where temporary cert are stored
+    '''
+    executor = config.ENGINE_HOST.executor()
+    with executor.session() as ss:
+        for ssl_host in hosts:
+            rc, crt_file = generateCertificate(ss, ssl_host, temp_dir)
+            if rc:
+                LOGGER.error('Cert for %s was not obtained.', ssl_host)
+                continue
+
+            importCertificateToTruststore(ss, crt_file, truststore, password)
+
+        LOGGER.info('Truststore content is:\n%s',
+                    listTruststore(ss, truststore, password))
+
+
+def removeTruststore(truststore):
+    '''
+    Parameters:
+     * truststore - full path of truststore
+    '''
+    executor = config.ENGINE_HOST.executor()
+    executor.run_cmd(['rm', '-f', truststore])
