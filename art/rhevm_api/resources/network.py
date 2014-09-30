@@ -1,0 +1,233 @@
+import re
+import netaddr
+import functools
+from art.rhevm_api.resources.service import Service
+
+
+class _session(object):
+    """
+    It holds ssh session, in order to improve performance
+    """
+    def __init__(self, host):
+        self._e = host.executor()
+        self._s = None
+        self._c = 0
+
+    def runCmd(self, cmd):
+        return self._s.run_cmd(cmd)
+
+    def __enter__(self):
+        self._c += 1
+        if self._s is None:
+            self._s = self._e.session()
+            self._s.__enter__()
+
+    def __exit__(self, *args, **kwargs):
+        self._c -= 1
+        if self._c == 0:
+            _s = self._s
+            self._s = None
+            return _s.__exit__(*args, **kwargs)
+
+
+def keep_session(func):
+    @functools.wraps(func)
+    def _dec(self, *args, **kwargs):
+        with self._m:
+            return func(self, *args, **kwargs)
+    return _dec
+
+
+class Network(Service):
+    def __init__(self, host):
+        super(Network, self).__init__(host)
+        self._m = _session(host)
+
+    @keep_session
+    def _cmd(self, cmd):
+        rc, out, err = self._m.runCmd(cmd)
+
+        if rc:
+            cmd_out = " ".join(cmd)
+            raise Exception(
+                "Fail to run command %s: %s ; %s" % (cmd_out, out, err))
+        return out
+
+    @keep_session
+    def all_interfaces(self):
+        """
+        Lists interfaces
+
+        :return: list of interfaces
+        :rtype: list of strings
+        """
+        out = self._cmd(
+            [
+                'ls', '-la', '/sys/class/net', '|',
+                'grep', "'pci'", '|',
+                'grep', '-o', "'[^/]*$'"
+            ]
+        )
+        out = out.strip()
+        return out.splitlines()
+
+    @keep_session
+    def find_default_gw(self):
+        """
+        Find host default gateway
+
+        :return: default gateway
+        :rtype: string
+        """
+        out = self._cmd(["ip", "route"]).splitlines()
+        for i in out:
+            if re.search("default", i):
+                default_gw = re.findall(r'[0-9]+(?:\.[0-9]+){3}', i)
+                if netaddr.valid_ipv4(default_gw[0]):
+                    return default_gw[0]
+        return None
+
+    @keep_session
+    def find_ips(self):
+        """
+        Find host IPs
+
+        :return: list of ips and list of cird ips
+        :rtype: tuple(list of strings, list of strings)
+        """
+        ips = []
+        ip_and_netmask = []
+        out = self._cmd(["ip", "addr"]).splitlines()
+        for i in out:
+            cidr = re.findall(r'[0-9]+(?:\.[0-9]+){3}[/]+[0-9]{2}', i)
+            if cidr:
+                ip_and_netmask.append(cidr[0])
+                ip = cidr[0].split("/")
+                if netaddr.valid_ipv4(ip[0]):
+                    ips.append(ip[0])
+        return ips, ip_and_netmask
+
+    @keep_session
+    def find_ip_by_default_gw(self, default_gw, ips_and_mask):
+        """
+        Find IP by default gateway
+
+        :param default_gw: default gw of the host
+        :type default_gw: string
+        :param ips_and_mask: list of host ips with mask x.x.x.x/xx
+        :type ips_and_mask: list of strings
+        :return: ip
+        :rtype: string
+        """
+        dgw = netaddr.IPAddress(default_gw)
+        for ip_mask in ips_and_mask:
+            ipnet = netaddr.IPNetwork(ip_mask)
+            if dgw in ipnet:
+                ip = ip_mask.split("/")[0]
+                return ip
+        return None
+
+    @keep_session
+    def find_int_by_ip(self, ip):
+        """
+        Find host interface or bridge by IP
+
+        :param ip: ip of the interface to find
+        :type ip: string
+        :return: interface
+        :rtype: string
+        """
+        out = self._cmd(["ip", "addr", "show", "to", ip])
+        return out.split(":")[1].strip()
+
+    @keep_session
+    def find_ip_by_int(self, interface):
+        """
+        Find host interface by interface or Bridge name
+
+        :param interface: interface to get ip from
+        :type interface: string
+        :return: ip
+        :rtype: string
+        """
+        out = self._cmd(["ip", "addr", "show", interface])
+        interface_ip = (re.search(r'[0-9]+(?:\.[0-9]+){3}', out)).group()
+        if netaddr.valid_ipv4(interface_ip):
+            return interface_ip
+        return None
+
+    @keep_session
+    def find_int_by_bridge(self, bridge):
+        """
+        Find host interface by Bridge name
+
+        :param bridge: bridge to get ip from
+        :type bridge: string
+        :return: interface
+        :rtype: string
+        """
+        out = self._cmd(["brctl", "show", "|", "grep", bridge])
+        return out.split()[3]
+
+    @keep_session
+    def find_mac_by_int(self, interfaces):
+        """
+        Find interfaces MAC by interface name
+
+        :param interfaces: list of interfaces
+        :type interfaces: list of strings
+        :return: list of macs
+        :rtype: list of strings
+        """
+        mac_list = list()
+        for interface in interfaces:
+            if interface not in self.all_interfaces():
+                return False
+            out = self._cmd(["ethtool", "-P", interface])
+            mac = out.split(": ")[1]
+            mac_list.append(mac.strip())
+        return mac_list
+
+    @keep_session
+    def find_mgmt_interface(self):
+        """
+        Find host mgmt interface (interface with IP that lead
+        to default gateway)
+
+        :return: interface
+        :rtype: string
+        """
+        host_ip = self.find_ips()
+        host_dg = self.find_default_gw()
+        host_ip_by_dg = self.find_ip_by_default_gw(host_dg, host_ip[1])
+        mgmt_int = self.find_int_by_ip(host_ip_by_dg)
+        return mgmt_int
+
+    @keep_session
+    def get_info(self):
+        """
+        Get network info for host, return info for main IP.
+
+        :return: network info
+        :rtype: dict
+        """
+        net_info = {}
+        mgmt_int = self.find_mgmt_interface()
+        gateway = self.find_default_gw()
+        net_info["gateway"] = gateway
+        ips, ips_and_mask = self.find_ips()
+        if gateway is not None:
+            ip = self.find_ip_by_default_gw(gateway, ips_and_mask)
+            net_info["ip"] = ip
+            if ip is not None:
+                interface = self.find_int_by_ip(ip)
+
+                if interface == mgmt_int:
+                    net_info["bridge"] = mgmt_int
+                    interface = self.find_int_by_bridge(mgmt_int)
+                    net_info["interface"] = interface
+                else:
+                    net_info["bridge"] = "N/A"
+                    net_info["interface"] = interface
+
+        return net_info

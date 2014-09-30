@@ -2,6 +2,7 @@ import socket
 from art.rhevm_api.resources.resource import Resource
 from art.rhevm_api.resources.ssh import RemoteExecutor
 from art.rhevm_api.resources.service import SystemService, SystemctlService
+from art.rhevm_api.resources.network import Network
 
 
 class Host(Resource):
@@ -39,3 +40,10 @@ class Host(Resource):
 
     def systemctl(self, name):
         return SystemctlService(self, name)
+
+    def get_network(self):
+        return Network(self)
+
+    @property
+    def network(self):
+        return self.get_network()
