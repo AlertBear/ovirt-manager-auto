@@ -29,9 +29,9 @@ class RemoteExecutor(Resource):
         def process(self, msg, kwargs):
             return (
                 "[%s, %s, %s] %s" % (
-                    self.extra.address,
-                    self.extra.user.name,
-                    self.extra.user.password,
+                    self.extra['self'].address,
+                    self.extra['self'].user.name,
+                    self.extra['self'].user.password,
                     msg,
                 ),
                 kwargs,
