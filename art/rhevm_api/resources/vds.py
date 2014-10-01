@@ -28,15 +28,22 @@ class VDS(Host):
 
     @cache.lrucache(name='nics')
     def get_nics(self):
-        executor = self.executor()
-        rc, out, err = executor.run_cmd(
-            ['ls', '-la', '/sys/class/net', '|', 'grep', "'pci'", '|',
-             'grep', '-o', "'[^/]*$'"]
-        )
-        out = out.strip()
-        if rc:
-            raise Exception("Can not get nics from host %s: %s", self, err)
-        return sorted(set(out.splitlines()))
+        net = self.get_network()
+        nics = net.all_interfaces()
+        info = net.get_info()
+        active_int = info.get('interface')
+        if active_int is not None:
+            try:
+                nics.remove(active_int)
+                nics.insert(0, active_int)
+            except ValueError:
+                self.logger.warning(
+                    "Active interface '%s' is not listed as interface: %s",
+                    active_int, nics
+                )
+        else:
+            self.logger.warning("No active interface was recogized: %s", nics)
+        return nics
 
     @property
     def cpu_model(self):
