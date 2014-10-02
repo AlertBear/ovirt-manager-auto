@@ -266,7 +266,6 @@ class Network(Service):
         :rtype: dict
         """
         net_info = {}
-        mgmt_int = self.find_mgmt_interface()
         gateway = self.find_default_gw()
         net_info["gateway"] = gateway
         ips, ips_and_mask = self.find_ips()
@@ -275,9 +274,10 @@ class Network(Service):
             net_info["ip"] = ip
             if ip is not None:
                 interface = self.find_int_by_ip(ip)
-                if interface == mgmt_int:
-                    net_info["bridge"] = mgmt_int
-                    interface = self.find_int_by_bridge(mgmt_int)
+                bridge = self.get_bridge(interface)
+                if bridge is not None:
+                    net_info["bridge"] = bridge['name']
+                    interface = self.find_int_by_bridge(bridge['name'])
                     net_info["interface"] = interface
                 else:
                     net_info["bridge"] = "N/A"
