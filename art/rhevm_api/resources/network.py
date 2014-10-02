@@ -166,8 +166,14 @@ class Network(Service):
         :return: interface
         :rtype: string
         """
-        out = self._cmd(["brctl", "show", "|", "grep", bridge])
-        return out.split()[3]
+        bridge = self.get_bridge(bridge)
+        try:
+            # FIXME: I think it is not correct implemetation
+            # what if there are more interfaces, what to do then?
+            # I left it like this in order to preseve method-interface
+            return bridge['interfaces'][0]
+        except IndexError:
+            return None
 
     @keep_session
     def find_mac_by_int(self, interfaces):
@@ -204,6 +210,54 @@ class Network(Service):
         return mgmt_int
 
     @keep_session
+    def list_bridges(self):
+        """
+        List of bridges on host
+
+        :return: list of bridges
+        :rtype: list of dict(name, id, stp, interfaces)
+        """
+        cmd = [
+            'brctl', 'show', '|',
+            'sed', '-e', '/^bridge name/ d',  # remove header
+            # deal with multiple interfaces
+            '-e', "'s/^\s*\([a-z0-9][a-z0-9]*\)$/CONT:\\1/I'"
+        ]
+        out = self._cmd(cmd).strip()
+        lines = out.splitlines()
+        bridges = []
+        for line in lines:
+            if line.startswith("CONT:"):
+                bridge = bridges[-1]
+                bridge['interfaces'].append(line[5:])
+            else:
+                line = line.split()
+                bridge = {}
+                bridge['name'] = line[0]
+                bridge['id'] = line[1]
+                bridge['stp'] = line[2]
+                bridge['interfaces'] = []
+                if len(line) == 4:
+                    bridge['interfaces'].append(line[3])
+                bridges.append(bridge)
+        return bridges
+
+    def get_bridge(self, name):
+        """
+        Find bridge by name
+
+        :return: bridge
+        :rtype: dict(name, id, stp, interfaces)
+        """
+        bridges = [
+            bridge for bridge in self.list_bridges()
+            if bridge['name'] == name
+        ]
+        if bridges:
+            return bridges[0]
+        return None
+
+    @keep_session
     def get_info(self):
         """
         Get network info for host, return info for main IP.
@@ -221,7 +275,6 @@ class Network(Service):
             net_info["ip"] = ip
             if ip is not None:
                 interface = self.find_int_by_ip(ip)
-
                 if interface == mgmt_int:
                     net_info["bridge"] = mgmt_int
                     interface = self.find_int_by_bridge(mgmt_int)
