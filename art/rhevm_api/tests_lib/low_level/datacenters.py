@@ -22,7 +22,7 @@ import Queue
 import threading
 import time
 from art.core_api.apis_exceptions import EntityNotFound
-from art.core_api.apis_utils import getDS
+from art.core_api.apis_utils import getDS, data_st
 from art.rhevm_api.utils.test_utils import get_api, split
 from art.rhevm_api.utils.test_utils import searchForObj
 from art.core_api import is_action
@@ -34,7 +34,8 @@ ELEMENT = 'data_center'
 COLLECTION = 'datacenters'
 util = get_api(ELEMENT, COLLECTION)
 STORAGE_API = get_api('storage_domain', 'storagedomains')
-
+QOS_API = get_api("qos", "datacenters")
+QOSS_API = get_api("qoss", "datacenters")
 DataCenter = getDS('DataCenter')
 Version = getDS('Version')
 
@@ -283,3 +284,139 @@ def get_sd_datacenter(storage_domain_name):
     util.logger.info("Storage domain %s is not attached to any data-center",
                      storage_domain_name)
     return False
+
+
+def _prepare_qos_obj(qos_name, qos_type, **kwargs):
+    """
+    Prepare Qos object to add to datacenter
+    :param qos_name: QoS name
+    :param qos_type: Qos type (all, storage, cpu, network)
+    :param kwargs: description: type=string
+                Type Storage:
+                    max_throughput: type=int
+                    max_read_throughput: type=int
+                    max_write_throughput: type=int
+                    max_iops: type=int
+                    max_read_iops: type=int
+                    max_write_iops: type=int
+
+                Type CPU:
+                    cpu_limit: type=int
+
+                Type Network:
+                    inbound_average: type=int
+                    inbound_peak: type=int
+                    inbound_burst: type=int
+                    outbound_average: type=int
+                    outbound_peak: type=int
+                    outbound_burst: type=int
+    :return: Qos object or raise exceptions
+    """
+    qos_obj = data_st.QoS()
+    qos_obj.set_name(qos_name)
+    qos_obj.set_type(qos_type)
+    for key, val in kwargs.iteritems():
+        if hasattr(qos_obj, key):
+            setattr(qos_obj, key, val)
+        else:
+            raise exceptions.DataCenterException(
+                "QoS object has no attribute: %s" % key
+            )
+    return qos_obj
+
+
+def add_qos_to_datacenter(datacenter, qos_obj):
+    """
+    Add QoS object to datacenter
+    :param datacenter: Datacenter name
+    :param qos_obj: QoS object to add
+    :return: True/False
+    """
+    dc = get_data_center(datacenter)
+    qoss_coll = data_st.QoSs()
+    qoss_coll.set_qos(qos_obj)
+
+    qoss_dc_coll_href = util.getElemFromLink(
+        dc, link_name="qoss", attr="qos", get_href=True
+    )
+
+    return QOS_API.create(
+        qos_obj, collection=qoss_dc_coll_href, coll_elm_name="qos",
+        positive=True
+    )
+
+
+def get_qoss_from_datacenter(datacenter):
+    """
+    Get all QoSs in datacenter
+    :param datacenter: Datacenter name
+    :return: List of QoSs
+    """
+    dc = get_data_center(datacenter)
+    return util.getElemFromLink(
+        dc, link_name="qoss", attr="qos", get_href=False
+    )
+
+
+def get_qos_from_datacenter(datacenter, qos_name):
+    """
+    Get QoS from datacenter
+    :param datacenter: Datacenter name
+    :param qos_name: Qos name
+    :return: QoS object or False
+    """
+    qoss = get_qoss_from_datacenter(datacenter)
+    for qos in qoss:
+        if qos.get_name() == qos_name:
+            return qos
+    return False
+
+
+def delete_qos_from_datacenter(datacenter, qos_name):
+    """
+    Get QoS from datacenter
+    :param datacenter: Datacenter name
+    :param qos_name: Qos name
+    :return: True/False
+    """
+    qos = get_qos_from_datacenter(datacenter, qos_name)
+    return util.delete(qos, True)
+
+
+def update_qos_in_datacenter(datacenter, qos_name, **kwargs):
+    """
+    Update QoS in datacenter
+    :param datacenter: Datacenter name
+    :param qos_name: QoS name
+    :param kwargs: description: type=string
+                For Storage QoS type:
+                    max_throughput: type=int
+                    max_read_throughput: type=int
+                    max_write_throughput: type=int
+                    max_iops: type=int
+                    max_read_iops: type=int
+                    max_write_iops: type=int
+
+                For CPU QoS type:
+                    cpu_limit: type=int
+
+                For Network QoS type:
+                    inbound_average: type=int
+                    inbound_peak: type=int
+                    inbound_burst: type=int
+                    outbound_average: type=int
+                    outbound_peak: type=int
+                    outbound_burst: type=int
+    :return: True/False
+    """
+    qos_obj = get_qos_from_datacenter(datacenter, qos_name)
+    if not qos_obj:
+        return False
+
+    qos_type = qos_obj.get_type()
+    try:
+        new_qos_obj = _prepare_qos_obj(qos_name, qos_type, **kwargs)
+    except exceptions.DataCenterException:
+        return False
+
+    return QOS_API.update(qos_obj, new_qos_obj, True)
