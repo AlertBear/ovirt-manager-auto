@@ -35,7 +35,7 @@ def teardown_module():
 class TestCase94947(TestCase):
     """
     storage sanity test, create & remove data center
-    https://tcms.engineering.redhat.com/case/94947/?from_plan=4038
+    https://tcms.engineering.redhat.com/case/94947/
     """
     __test__ = True
     tcms_test_case = '94947'
@@ -64,7 +64,7 @@ class TestCase94947(TestCase):
 class TestCase94950(TestCase):
     """
     storage sanity test, changing domain status
-    https://tcms.engineering.redhat.com/case/94950/?from_plan=4038
+    https://tcms.engineering.redhat.com/case/94950/
     """
     __test__ = True
     tcms_test_case = '94950'
@@ -136,7 +136,7 @@ class TestCase94950(TestCase):
 class TestCase94954(TestCase):
     """
     storage sanity test, changing master domain
-    https://tcms.engineering.redhat.com/case/94954/?from_plan=4038
+    https://tcms.engineering.redhat.com/case/94954/
     """
     __test__ = True
     tcms_test_case = '94954'
