@@ -18,6 +18,9 @@
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
 from art.core_api.apis_utils import data_st
+from art.rhevm_api.tests_lib.low_level.datacenters import (
+    get_qos_from_datacenter
+)
 from art.rhevm_api.utils.test_utils import get_api, SYS_CLASS_NET_DIR
 import art.rhevm_api.tests_lib.low_level as ll
 from art.core_api.apis_exceptions import EntityNotFound
@@ -436,7 +439,7 @@ def checkIPRule(host, user, password, subnet):
 
 def updateVnicProfile(name, network, cluster=None, data_center=None,
                       new_name=None, port_mirroring=None, description=None,
-                      new_network=None):
+                      new_network=None, qos=None):
     """
     Description: Update VNIC profile with provided parameters in kwargs
     **Author**: gcheresh
@@ -450,6 +453,7 @@ def updateVnicProfile(name, network, cluster=None, data_center=None,
         *  *port_mirroring* - Enable/Disable port mirroring for profile
         *  *description* - New description of vnic profile
         *  *new_network - new network for VNIC profile (for negative case)
+        *  *qos - QoS name
     **Return**: True, if adding vnic profile was success, otherwise False
     """
     vnic_profile_obj = getVnicProfileFromNetwork(network=network,
@@ -476,6 +480,9 @@ def updateVnicProfile(name, network, cluster=None, data_center=None,
     if new_network:
         net_obj = getClusterNetwork(cluster, new_network)
         new_vnic_profile_obj.set_network(net_obj)
+
+    if qos:
+        new_vnic_profile_obj.set_qos(qos)
 
     if not VNIC_PROFILE_API.update(vnic_profile_obj, new_vnic_profile_obj,
                                    True)[1]:
@@ -1348,4 +1355,66 @@ def get_dc_network_by_cluster(cluster, network):
     dc_net = getNetworkInDataCenter(network, dc_name)
     if dc_net.get_id() == cluster_net.get_id():
         return dc_net
+    return False
+
+
+def update_qos_on_vnic_profile(datacenter, qos_name, vnic_profile_name,
+                               network_name, cluster=None):
+    """
+    Update QoS to vNIC profile.
+    Every vNIC profile has default QoS (Unlimited) so only update functions
+    is needed (No add_qos functions)
+    :param datacenter: Datacenter name
+    :param qos_name: QoS name to update
+    :param vnic_profile_name: vNIC profile name
+    :param network_name: Network name
+    :param cluster: Cluster name
+    :return: True/False
+    """
+    qos = get_qos_from_datacenter(datacenter=datacenter, qos_name=qos_name)
+    return updateVnicProfile(
+        name=vnic_profile_name, network=network_name, cluster=cluster,
+        data_center=datacenter, qos=qos
+    )
+
+
+def delete_qos_from_vnic_profile(vnic_profile_name, network_name,
+                                 datacenter=None, cluster=None):
+    """
+    Delete QoS from vNIC profile
+    :param vnic_profile_name: vNIC profile name
+    :param network_name: Network name
+    :param datacenter: datacenter name
+    :param cluster: Cluster name
+    :return: True/False
+    """
+    vnic_profile_obj = getVnicProfileObj(
+        name=vnic_profile_name, network=network_name, cluster=cluster,
+        data_center=datacenter
+    )
+    return VNIC_PROFILE_API.delete(vnic_profile_obj.get_qos(), True)
+
+
+def get_qos_from_vnic_profile(vnic_profile_name, network_name, qos_name,
+                              datacenter, cluster=None):
+    """
+    Get QoS from vNIC profile
+    :param vnic_profile_name: vNIC profile name
+    :param network_name: Network name
+    :param qos_name: QoS name
+    :param datacenter: datacenter name
+    :param cluster: Cluster name
+    :return: True/False
+    """
+    vnic_profile_obj = getVnicProfileObj(
+        name=vnic_profile_name, network=network_name, cluster=cluster,
+        data_center=datacenter
+    )
+    dc_qos_obj = get_qos_from_datacenter(
+        datacenter=datacenter, qos_name=qos_name
+    )
+    dc_qos_id = dc_qos_obj.get_id()
+    vnic_qos_id = vnic_profile_obj.get_qos().get_id()
+    if vnic_qos_id == dc_qos_id:
+            return True
     return False
