@@ -619,13 +619,13 @@ def check_connectivity(vlan=False, vm=True):
 
     """
     if vm:
-        ip = waitForIP(vm=config.VM_NAME[0], timeout=60)[1]
-        if not ip:
+        ip = waitForIP(vm=config.VM_NAME[0], timeout=60)
+        if not ip[0]:
             return False
 
         host = config.VDC_HOST if not vlan else config.HOSTS[0]
         return checkICMPConnectivity(host, config.HOSTS_USER,
-                                     config.HOSTS_PW, ip["ip"])
+                                     config.HOSTS_PW, ip[1]["ip"])
 
     else:
         return checkICMPConnectivity(config.HOSTS[0], config.HOSTS_USER,
