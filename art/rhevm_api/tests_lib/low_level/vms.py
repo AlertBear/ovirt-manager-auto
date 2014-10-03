@@ -2234,13 +2234,22 @@ def waitForIP(vm, timeout=1800, sleep=DEF_SLEEP):
         time.sleep(sleep)
         guest_info = VM_API.find(vm).get_guest_info()
         if guest_info is not None:
-            ip = guest_info.get_ips().get_ip()[0].get_address()
+            ips = guest_info.get_ips()
+            if ips is None:
+                continue
+            ip = ips.get_ip()
+            if not ip:
+                continue
+            ip = ip[0].get_address()
             VM_API.logger.debug("Got IP %s for %s", ip, vm)
             return True, {'ip': ip}
 
     if guest_info is None:
-        logger.error("%s: rhevm-guest-agent wasn't installed or it is stopped",
-                     vm)
+        logger.error(
+            "%s: rhevm-guest-agent wasn't installed or it is stopped", vm
+        )
+    else:
+        logger.error("Guest agent doesn't provide IP for vm %s", vm)
 
     return False, {'ip': None}
 
