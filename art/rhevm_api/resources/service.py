@@ -8,48 +8,129 @@ class Service(Resource):
 
 
 class SystemService(Service):
-    provider = 'service'
+    """
+    Read https://fedoraproject.org/wiki/SysVinit_to_Systemd_Cheatsheet
+    for more info / differences between Systemd and SysVinit
+    """
+    cmd = None
 
     def __init__(self, host, name):
         super(SystemService, self).__init__(host)
         self.name = name
 
-    def _compose_command(self, action):
-        return [
-            self.provider,
+    def is_enabled(self):
+        raise NotImplementedError()
+
+    def enable(self):
+        raise NotImplementedError()
+
+    def disable(self):
+        raise NotImplementedError()
+
+    def status(self):
+        raise NotImplementedError()
+
+    def start(self):
+        raise NotImplementedError()
+
+    def stop(self):
+        raise NotImplementedError()
+
+    def restart(self):
+        raise NotImplementedError()
+
+    def reload(self):
+        raise NotImplementedError()
+
+
+class SysVinit(SystemService):
+    cmd = 'service'
+    manage_cmd = 'chkconfig'
+
+    def _toggle(self, action):
+        cmd = [
+            self.cmd,
             self.name,
             action,
         ]
-
-    def _process_output(self, action, rc, out, err):
-        # TODO: make it proper
-        return not rc
-
-    def execute(self, action):
         executor = self.host.executor()
-        rc, out, err = executor.run_cmd(self._compose_command(action))
-        return self._process_output(action, rc, out, err)
+        rc, _, _ = executor.run_cmd(cmd)
+        return rc == 0
 
-    def status(self):
-        return self.execute('status')
+    def _manage(self, action):
+        cmd = [
+            self.manage_cmd,
+            self.name,
+            action,
+        ]
+        executor = self.host.executor()
+        rc, _, _ = executor.run_cmd(cmd)
+        return rc == 0
 
-    def start(self):
-        return self.execute('start')
-
-    def stop(self):
-        return self.execute('stop')
-
-    def restart(self):
-        return self.execute('restart')
-
-
-class SystemctlService(SystemService):
-    provider = 'systemctl'
-
-    def _compose_command(self, action):
-        return [
-            self.provider,
-            self.action,
+    def is_enabled(self):
+        cmd = [
+            self.manage_cmd,
             self.name,
         ]
-    # TODO: implement _process_output
+        executor = self.host.executor()
+        rc, _, _ = executor.run_cmd(cmd)
+        return rc == 0
+
+    def enable(self):
+        return self._manage('on')
+
+    def disable(self):
+        return self._manage('off')
+
+    def status(self):
+        return self._toggle('status')
+
+    def start(self):
+        return self._toggle('start')
+
+    def stop(self):
+        return self._toggle('stop')
+
+    def restart(self):
+        return self._toggle('restart')
+
+    def reload(self):
+        return self._toggle('reload')
+
+
+class Systemd(SystemService):
+    cmd = 'systemctl'
+
+    def _execute(self, action):
+        cmd = [
+            self.cmd,
+            action,
+            self.name + ".service",
+        ]
+        executor = self.host.executor()
+        rc, _, _ = executor.run_cmd(cmd)
+        return rc == 0
+
+    def is_enabled(self):
+        return self._execute('is-enabled')
+
+    def enable(self):
+        return self._execute('enable')
+
+    def disable(self):
+        return self._execute('disable')
+
+    def status(self):
+        return self._execute('status')
+
+    def start(self):
+        return self._execute('start')
+
+    def stop(self):
+        return self._execute('stop')
+
+    def restart(self):
+        return self._execute('restart')
+
+    def reload(self):
+        return self._execute('reload')
