@@ -32,10 +32,22 @@ class VDS(Host):
         nics = net.all_interfaces()
         info = net.get_info()
         active_int = info.get('interface')
+        second_int = None
         if active_int is not None:
+            active_int_mac = net.find_mac_by_int([active_int])[0]
+            for nic in nics:
+                if nic == active_int:
+                    continue
+                nic_mac = net.find_mac_by_int([nic])[0]
+                if nic_mac.split(":")[:-1] == active_int_mac.split(":")[:-1]:
+                    second_int = nic
+
             try:
                 nics.remove(active_int)
                 nics.insert(0, active_int)
+                if second_int is not None:
+                    nics.remove(second_int)
+                    nics.insert(1, second_int)
             except ValueError:
                 self.logger.warning(
                     "Active interface '%s' is not listed as interface: %s",
