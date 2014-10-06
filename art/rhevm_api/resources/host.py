@@ -6,7 +6,15 @@ from art.rhevm_api.resources.network import Network
 
 
 class Host(Resource):
+    # The purpose of inventory variable is keeping all instances of
+    # interesting resources in single place.
+    inventory = list()
+
     def __init__(self, ip):
+        """
+        :param ip: IP of host
+        :type ip: string
+        """
         super(Host, self).__init__()
         self.ip = ip
         self.users = list()
