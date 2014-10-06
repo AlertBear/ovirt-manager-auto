@@ -1,6 +1,7 @@
 from art.rhevm_api.resources.service import Service
 from art.rhevm_api.resources.db import Database
 from art.rhevm_api.resources.user import User
+from art.rhevm_api.resources.host import Host
 
 
 DATABASE_CONFIG = "/etc/ovirt-engine/engine.conf.d/10-setup-database.conf"
@@ -62,13 +63,28 @@ class Engine(Service):
         try:
             config = self._read_config(DATABASE_CONFIG)
             user = User(config['ENGINE_DB_USER'], config['ENGINE_DB_PASSWORD'])
-            # NOTE: this assume that DB is on the same machine as engine
-            # unknown root password for remote host
-            # I would create Host's register we could look up such host
+            host = self.host
             if config['ENGINE_DB_HOST'] != 'localhost':
-                self.logger.error()
-                raise NotImplementedError("Remote DB is not supported")
-            return Database(self.host, config['ENGINE_DB_DATABASE'], user)
+                remote_host = [
+                    h for h in Host.inventory
+                    if h.ip == config['ENGINE_DB_HOST'] or
+                    h.fqdn == config['ENGINE_DB_HOST']
+                ]
+                if not remote_host:
+                    raise Exception(
+                        "Can not find instance of %s in inventory: %s" % (
+                            config['ENGINE_DB_HOST'],
+                            Host.inventory,
+                        )
+                    )
+                remote_host = remote_host[0]
+                self.logger.info(
+                    "Using %s as host for DB %s",
+                    remote_host,
+                    config['ENGINE_DB_DATABASE']
+                )
+                host = remote_host
+            return Database(host, config['ENGINE_DB_DATABASE'], user)
         except KeyError as ex:
             self.logger.error(
                 "There are missing values %s in %s from %s",
