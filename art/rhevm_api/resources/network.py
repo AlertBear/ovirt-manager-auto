@@ -217,15 +217,18 @@ class Network(Service):
         :return: list of bridges
         :rtype: list of dict(name, id, stp, interfaces)
         """
+        bridges = []
         cmd = [
             'brctl', 'show', '|',
             'sed', '-e', '/^bridge name/ d',  # remove header
             # deal with multiple interfaces
-            '-e', "'s/^\s*\([a-z0-9][a-z0-9]*\)$/CONT:\\1/I'"
+            '-e', "'s/^\s\s*\(\S\S*\)$/CONT:\\1/I'"
         ]
         out = self._cmd(cmd).strip()
+        if not out:
+            # Empty list
+            return bridges
         lines = out.splitlines()
-        bridges = []
         for line in lines:
             if line.startswith("CONT:"):
                 bridge = bridges[-1]
