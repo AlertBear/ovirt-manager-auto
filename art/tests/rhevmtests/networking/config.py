@@ -15,9 +15,7 @@ if GOLDEN_ENV:
     DC_NAME = [hosts.getHostDC(HOSTS[0])]
     CLUSTER_NAME = [hosts.getHostCluster(HOSTS[0])]
     VM_NAME = vms.get_vms_from_cluster(CLUSTER_NAME[0])
-    NETWORK_GE_MAC_RANGE = "00:1A:4A:16:88:DD-00:1A:4A:16:88:FD"
-    # WA for host_nics plugin
-    HOST_NICS = ["eth0", "eth1", "eth2", "eth3", "eth4", "eth5"]
+
 
 # Global parameters
 MTU = [9000, 5000, 2000, 1500]
