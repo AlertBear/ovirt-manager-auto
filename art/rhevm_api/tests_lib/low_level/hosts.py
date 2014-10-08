@@ -25,7 +25,6 @@ import tempfile
 
 from utilities.rhevm_tools import errors
 from utilities.utils import getIpAddressByHostName, getHostName
-from utilities.machine import Machine
 from utilities import machine
 from utilities.rhevm_tools.base import Setup
 
@@ -343,7 +342,7 @@ def addHost(positive, name, wait=True, vdcPort=None, rhel_like=True,
 
     if root_password:
         hostObj = machine.Machine(host_address, 'root',
-                                  root_password).util('linux')
+                                  root_password).util(machine.LINUX)
     if positive:
         hostObj.isConnective(attempt=5, interval=5, remoteCmd=False)
         osType = hostObj.getOsInfo()
@@ -705,7 +704,7 @@ def installOvirtHost(positive, host, user_name, password, vdc, port=443,
         HOST_API.logger.error("Can't get hostname from %s" % vdc)
 
     ip = getHostIP(host)
-    hostObj = machine.Machine(ip, user_name, password).util('linux')
+    hostObj = machine.Machine(ip, user_name, password).util(machine.LINUX)
     if not hostObj.isConnective():
         HOST_API.logger.error("No connectivity to the host %s" % host)
         return False
@@ -1027,8 +1026,9 @@ def rebootHost(positive, host, username, password):
        * password - password for ssh session
     Return: status (True if host was rebooted properly, False otherwise)
     """
-    host_machine = Machine(host=host, user=username,
-                           password=password).util('linux')
+    host_machine = machine.Machine(
+        host=host, user=username, password=password,
+    ).util(machine.LINUX)
     host_machine.reboot()
     return waitForHostsStates(positive, host, ENUMS['non_responsive'], 180)
 
@@ -1051,7 +1051,9 @@ def runDelayedControlService(positive, host, host_user, host_passwd, service,
     """
     cmd = '( sleep %d; service %s %s 1>/dev/null; echo $? )' \
           % (delay, service, command)
-    host_obj = machine.Machine(host, host_user, host_passwd).util('linux')
+    host_obj = machine.Machine(
+        host, host_user, host_passwd
+    ).util(machine.LINUX)
     output = host_obj.runCmd(cmd.split(), bg=('/tmp/delayed-stdout',
                                               '/tmp/delayed-stderr'))
     if not output[0]:
@@ -1578,7 +1580,7 @@ def ifdownNic(host, root_password, nic, wait=True):
     """
     # must always run as a root in order to run ifdown
     host_obj = machine.Machine(getIpAddressByHostName(host), 'root',
-                               root_password).util('linux')
+                               root_password).util(machine.LINUX)
     if not host_obj.ifdown(nic):
         return False
     if wait:
@@ -1599,7 +1601,7 @@ def ifupNic(host, root_password, nic, wait=True):
     """
     # must always run as a root in order to run ifup
     host_obj = machine.Machine(getIpAddressByHostName(host), 'root',
-                               root_password).util('linux')
+                               root_password).util(machine.LINUX)
     if not host_obj.ifup(nic):
         return False
     if wait:
@@ -1618,7 +1620,7 @@ def getOsInfo(host, root_password=''):
          for negative tests)
     Return: True with OS info string if succeeded, False and None otherwise
     """
-    host_obj = machine.Machine(host, 'root', root_password).util('linux')
+    host_obj = machine.Machine(host, 'root', root_password).util(machine.LINUX)
     if not host_obj.isAlive():
         HOST_API.logger.error("No connectivity to the host %s" % host)
         return False, {'osName': None}
@@ -1708,7 +1710,7 @@ def checkNetworkFiltering(positive, host, user, passwd):
     return: True if network filtering is enabled, False otherwise
     """
 
-    host_obj = machine.Machine(host, user, passwd).util('linux')
+    host_obj = machine.Machine(host, user, passwd).util(machine.LINUX)
     if host_obj.runVirshCmd(['nwfilter-list'])[1].count(
             "vdsm-no-mac-spoofing") != 1:
         HOST_API.logger.error("nwfilter-list does not have"
@@ -1761,7 +1763,7 @@ def checkNetworkFilteringDumpxml(positive, host, user, passwd, vm, nics):
       * nics - number nics for vm in dumpxml
     return: True if network filtering is enabled, False otherwise
     """
-    host_obj = machine.Machine(host, user, passwd).util('linux')
+    host_obj = machine.Machine(host, user, passwd).util(machine.LINUX)
     res, out = host_obj.runVirshCmd(['dumpxml', '%s' % vm])
     if not out.count(
             "<filterref filter='vdsm-no-mac-spoofing'/>") == int(nics):
@@ -1786,7 +1788,7 @@ def checkNetworkFilteringEbtables(positive, host, user, passwd, nics, vm_macs):
     """
     count = 0
     macTemplate = re.compile('([0-9a-f]+[:]){5}[0-9a-f]+', re.I)
-    host_obj = machine.Machine(host, user, passwd).util('linux')
+    host_obj = machine.Machine(host, user, passwd).util(machine.LINUX)
     cmd = ['ebtables', '-t', 'nat', '-L']
     output = (host_obj.runCmd(cmd)[1].strip()).splitlines()
     for line in output:
@@ -1965,9 +1967,9 @@ def kill_qemu_process(vm_name, host, user, password):
     Return:
         pid, or raise EntityNotFound exception
     """
-    linux_machine = Machine(
+    linux_machine = machine.Machine(
         host=host, user=user,
-        password=password).util('linux')
+        password=password).util(machine.LINUX)
 
     cmd = FIND_QEMU % vm_name
     status, output = linux_machine.runCmd(shlex.split(cmd))
