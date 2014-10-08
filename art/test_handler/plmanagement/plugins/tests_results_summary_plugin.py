@@ -68,7 +68,7 @@ class TestsResultsSummary(Component):
 
     @classmethod
     def fill_setup_params(cls, params):
-        params['name'] = 'Results Summary'
+        params['name'] = cls.name.lower().replace(' ', '-')
         params['version'] = '1.0'
         params['author'] = 'Nelly Credi'
         params['author_email'] = 'ncredi@redhat.com'
