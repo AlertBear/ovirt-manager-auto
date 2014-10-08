@@ -56,13 +56,9 @@ def _create_vm(vm_name, highly_available):
 
 def _waitForHostPmOperation():
     if not ll_hosts.waitForHostPmOperation(
-            host=HOST_WITH_PM,
-            vdc_password=config.VDC_ROOT_PASSWORD,
-            vdc=config.VDC_HOST,
-            dbuser=config.DB_ENGINE_USER,
-            dbname=config.DB_ENGINE_NAME,
-            dbpassword=config.DB_ENGINE_PASSWORD,
-            product=config.PRODUCT_NAME):
+        host=HOST_WITH_PM,
+        engine=config.ENGINE,
+    ):
         raise HostException("cannot get last PM operation time for host: %s" %
                             HOST_WITH_PM)
 

@@ -23,10 +23,8 @@ import json
 import re
 import tempfile
 
-from utilities.rhevm_tools import errors
 from utilities.utils import getIpAddressByHostName, getHostName
 from utilities import machine
-from utilities.rhevm_tools.base import Setup
 
 from art.core_api.apis_utils import TimeoutingSampler, data_st
 from art.core_api.apis_exceptions import APITimeout, EntityNotFound
@@ -1658,48 +1656,50 @@ def getClusterCompatibilityVersion(cluster):
 
 
 @is_action()
-def waitForHostPmOperation(host, vdc_password, vdc='localhost',
-                           vdc_user='root', dbuser='engine',
-                           dbpassword='engine', dbname='engine',
-                           product='rhevm'):
+def waitForHostPmOperation(host, engine):
     """
-    Description: Wait for next PM operation availability
+    Wait for next PM operation availability
     Author: lustalov
-    Parameters:
-        * host - vds host name
-        * vdc - vdc host name/IP
-        * dbuser - vdc database username
-        * dbname - vdc database name
+
+    :param host: vds host name
+    :type host: string
+    :param engine: engine
+    :type engine: instance of resources.Engine
+## CONTINUE
     Return: True if success, False otherwise
     """
 
     timeToWait = 0
     returnVal = True
-    DB_NAME_CONF = {'RHEVM_DB_NAME': dbname}
-    dbConn = Setup(host=vdc, user=vdc_user,
-                   passwd=vdc_password, dbuser=dbuser,
-                   dbpassw=dbpassword, product=product,
-                   conf=DB_NAME_CONF)
+    db = engine.db
     try:
-        sql = "select option_value from vdc_options \
-            where option_name = 'FenceQuietTimeBetweenOperationsInSec';"
-        res = dbConn.psql(sql)
+        sql = (
+            "select option_value from vdc_options "
+            "where option_name = 'FenceQuietTimeBetweenOperationsInSec';"
+        )
+        res = db.psql(sql)
         waitSec = res[0][0]
         events = ['USER_VDS_STOP', 'USER_VDS_START', 'USER_VDS_RESTART']
         for event in events:
-            sql = "select get_seconds_to_wait_before_pm_operation(" \
-                  "'{0}','{1}',{2});".format(host, event, waitSec)
-            res = dbConn.psql(sql)
+            sql = (
+                "select get_seconds_to_wait_before_pm_operation("
+                "'%s','%s', %s);"
+            )
+            res = db.psql(sql, host, event, waitSec)
             timeSec = int(res[0][0])
             if timeSec > timeToWait:
                 timeToWait = timeSec
-    except errors.ExecuteDBQueryError as ex:
-        HOST_API.logger.error('Failed to get wait time before host %s '
-                              'PM operation: %s', host, ex)
+    except Exception as ex:
+        HOST_API.logger.error(
+            'Failed to get wait time before host %s PM operation: %s',
+            host, ex
+        )
         returnVal = False
     if timeToWait > 0:
-        HOST_API.logger.info('Wait %d seconds until PM operation will'
-                             ' be permitted.', timeToWait)
+        HOST_API.logger.info(
+            'Wait %d seconds until PM operation will be permitted.',
+            timeToWait
+        )
         time.sleep(timeToWait)
     return returnVal
 
