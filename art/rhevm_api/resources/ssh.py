@@ -78,6 +78,13 @@ class RemoteExecutor(Resource):
                     password=self._h.user.password,
                     timeout=self._timeout
                 )
+            except (socket.gaierror, socket.herror) as ex:
+                args = list(ex.args)
+                message = "%s: %s" % (self._h.address, args[1])
+                args[1] = message
+                ex.strerror = message
+                ex.args = tuple(args)
+                raise
             except socket.timeout as ex:
                 self._update_timeout_exception(ex)
                 raise
