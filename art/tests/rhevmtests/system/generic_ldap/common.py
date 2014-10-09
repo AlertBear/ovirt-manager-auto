@@ -22,6 +22,7 @@ TIMEOUT = 70
 # Extensions utils
 def enableExtensions():
     ''' just restart ovirt engine service '''
+    LOGGER.info('Restarting engine...')
     machineObj = machine.Machine(config.VDC_HOST, config.VDC_ROOT_USER,
                                  config.VDC_ROOT_PASSWORD).util(machine.LINUX)
     test_utils.restartOvirtEngine(machineObj, INTERVAL, ATTEMPTS, TIMEOUT)
@@ -116,6 +117,11 @@ def connectionTest():
         # general.getProductName() will return None (correct user + filter set)
         return False
     return True
+
+
+def loginAsAdmin():
+    users.loginAsUser(config.VDC_ADMIN_USER, config.VDC_ADMIN_DOMAIN,
+                      config.VDC_PASSWORD, False)
 
 
 # -- Truststore utils --

@@ -207,14 +207,16 @@ def groupExists(positive, group_name):
 
 
 @is_action()
-def addGroup(positive, group_name):
+def addGroup(positive, group_name, domain=None, namespace=None):
     '''
     Description: create new domain group
     Parameters:
        * group_name - name of domain group
     Return: status (True if group was created properly, False otherwise)
     '''
-    group = Group(name=group_name)
+    if domain:
+        domain = Domain(name=domain)
+    group = Group(name=group_name, domain=domain, namespace=namespace)
     group, status = groupUtil.create(group, positive)
 
     return status
