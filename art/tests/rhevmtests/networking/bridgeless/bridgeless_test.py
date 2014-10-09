@@ -39,17 +39,24 @@ class BridgelessCase1(TestCase):
 
     @istest
     def bridgeless_network(self):
-        local_dict = {config.NETWORKS[0]: {"nic": config.HOST_NICS[1],
-                                           "required": "false",
-                                           "usages": ""}}
+        local_dict = {
+            config.NETWORKS[0]: {
+                "nic": config.VDS_HOSTS[0].nics[1],
+                "required": "false",
+                "usages": "",
+            },
+        }
 
-        logger.info("Create and attach Non-VM network to DC/Cluster "
-                    "and Host")
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS[0],
-                                        network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0]]):
+        logger.info(
+            "Create and attach Non-VM network to DC/Cluster and Host"
+        )
+        if not createAndAttachNetworkSN(
+            data_center=config.DC_NAME[0],
+            cluster=config.CLUSTER_NAME[0],
+            host=config.HOSTS[0],
+            network_dict=local_dict,
+            auto_nics=[config.VDS_HOSTS[0].nics[0]],
+        ):
             raise NetworkException("Cannot create and attach network")
 
     @classmethod
@@ -58,10 +65,12 @@ class BridgelessCase1(TestCase):
         Remove network from the setup.
         """
         logger.info("Remove network from setup")
-        if not removeNetFromSetup(host=config.HOSTS[0],
-                                  data_center=config.DC_NAME[0],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.NETWORKS[0]]):
+        if not removeNetFromSetup(
+                host=config.HOSTS[0],
+                data_center=config.DC_NAME[0],
+                auto_nics=[config.VDS_HOSTS[0].nics[0]],
+                network=[config.NETWORKS[0]],
+        ):
             raise NetworkException("Cannot remove network from setup")
 
 
@@ -80,18 +89,27 @@ class BridgelessCase2(TestCase):
 
     @istest
     def vlan_bridgeless_network(self):
-        local_dict = {config.VLAN_NETWORKS[0]: {"vlan_id": config.VLAN_ID[0],
-                                                "nic": config.HOST_NICS[1],
-                                                "required": "false",
-                                                "usages": ""}}
+        local_dict = {
+            config.VLAN_NETWORKS[0]: {
+                "vlan_id": config.VLAN_ID[0],
+                "nic": config.VDS_HOSTS[0].nics[1],
+                "required": "false",
+                "usages": "",
+            },
+        }
 
-        logger.info("Create and attach Non-VM VLAN network to DC/Cluster"
-                    "and Host")
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0],
-                                                   config.HOST_NICS[1]]):
+        logger.info(
+            "Create and attach Non-VM VLAN network to DC/Cluster and Host"
+        )
+        if not createAndAttachNetworkSN(
+            data_center=config.DC_NAME[0],
+            cluster=config.CLUSTER_NAME[0],
+            network_dict=local_dict,
+            auto_nics=[
+                config.VDS_HOSTS[0].nics[0],
+                config.VDS_HOSTS[0].nics[1],
+            ],
+        ):
             raise NetworkException("Cannot create and attach network")
 
     @classmethod
@@ -100,10 +118,12 @@ class BridgelessCase2(TestCase):
         Remove networks from the setup.
         """
         logger.info("Remove network from setup")
-        if not removeNetFromSetup(host=config.HOSTS[0],
-                                  data_center=config.DC_NAME[0],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.VLAN_NETWORKS[0]]):
+        if not removeNetFromSetup(
+            host=config.HOSTS[0],
+            data_center=config.DC_NAME[0],
+            auto_nics=[config.VDS_HOSTS[0].nics[0]],
+            network=[config.VLAN_NETWORKS[0]],
+        ):
             raise NetworkException("Cannot remove network from setup")
 
 
@@ -112,6 +132,7 @@ class BridgelessCase3(TestCase):
     """
     Create and attach Non-VM network with VLAN over BOND
     """
+    # FIXME: try to move to __init__, otherwise move to setup_module
     __test__ = len(config.HOST_NICS) >= 4
 
     @classmethod
@@ -125,21 +146,31 @@ class BridgelessCase3(TestCase):
         """
         Create and attach Non-VM network with VLAN over BOND
         """
-        local_dict = {None: {"nic": config.BOND[0], "mode": 1,
-                             "slaves": [config.HOST_NICS[2],
-                                        config.HOST_NICS[3]]},
-                      config.VLAN_NETWORKS[0]: {"nic": config.BOND[0],
-                                                "vlan_id": config.VLAN_ID[0],
-                                                "required": "false",
-                                                "usages": ""}}
+        local_dict = {
+            None: {
+                "nic": config.BOND[0], "mode": 1,
+                "slaves": [
+                    config.VDS_HOSTS[0].nics[2],
+                    config.VDS_HOSTS[0].nics[3],
+                ],
+            },
+            config.VLAN_NETWORKS[0]: {
+                "nic": config.BOND[0],
+                "vlan_id": config.VLAN_ID[0],
+                "required": "false",
+                "usages": "",
+            },
+        }
 
         logger.info("Create and attach Non-VM network with VLAN "
                     "over BOND to DC/Cluster and Host")
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS[0],
-                                        network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0]]):
+        if not createAndAttachNetworkSN(
+            data_center=config.DC_NAME[0],
+            cluster=config.CLUSTER_NAME[0],
+            host=config.HOSTS[0],
+            network_dict=local_dict,
+            auto_nics=[config.VDS_HOSTS[0].nics[0]],
+        ):
             raise NetworkException("Cannot create and attach network")
 
     @classmethod
@@ -148,10 +179,12 @@ class BridgelessCase3(TestCase):
         Remove networks from the setup.
         """
         logger.info("Remove network from setup")
-        if not removeNetFromSetup(host=config.HOSTS[0],
-                                  data_center=config.DC_NAME[0],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.VLAN_NETWORKS[0]]):
+        if not removeNetFromSetup(
+            host=config.HOSTS[0],
+            data_center=config.DC_NAME[0],
+            auto_nics=[config.VDS_HOSTS[0].nics[0]],
+            network=[config.VLAN_NETWORKS[0]]
+        ):
             raise NetworkException("Cannot remove network from setup")
 
 
@@ -160,6 +193,7 @@ class BridgelessCase4(TestCase):
     """
     Create and attach Non-VM network over BOND
     """
+    # FIXME: try to move to __init__, otherwise move to setup_module
     __test__ = len(config.HOST_NICS) >= 4
 
     @classmethod
@@ -173,19 +207,28 @@ class BridgelessCase4(TestCase):
         """
         Create and attach bridgeless network over BOND
         """
-        local_dict = {config.NETWORKS[0]: {"nic": config.BOND[0], "mode": 1,
-                                           "slaves": [config.HOST_NICS[2],
-                                                      config.HOST_NICS[3]],
-                                           "required": "false",
-                                           "usages": ""}}
+        local_dict = {
+            config.NETWORKS[0]: {
+                "nic": config.BOND[0], "mode": 1,
+                "slaves": [
+                    config.VDS_HOSTS[0].nics[2],
+                    config.VDS_HOSTS[0].nics[3],
+                ],
+                "required": "false",
+                "usages": "",
+            },
+        }
 
-        logger.info("Create and attach Non-VM network "
-                    "over BOND to DC/Cluster and Host")
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS[0],
-                                        network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0]]):
+        logger.info(
+            "Create and attach Non-VM network over BOND to DC/Cluster and Host"
+        )
+        if not createAndAttachNetworkSN(
+            data_center=config.DC_NAME[0],
+            cluster=config.CLUSTER_NAME[0],
+            host=config.HOSTS[0],
+            network_dict=local_dict,
+            auto_nics=[config.VDS_HOSTS[0].nics[0]],
+        ):
             raise NetworkException("Cannot create and attach network")
 
     @classmethod
@@ -194,8 +237,10 @@ class BridgelessCase4(TestCase):
         Remove networks from the setup.
         """
         logger.info("Remove network from setup")
-        if not removeNetFromSetup(host=config.HOSTS[0],
-                                  data_center=config.DC_NAME[0],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.NETWORKS[0]]):
+        if not removeNetFromSetup(
+            host=config.HOSTS[0],
+            data_center=config.DC_NAME[0],
+            auto_nics=[config.VDS_HOSTS[0].nics[0]],
+            network=[config.NETWORKS[0]],
+        ):
             raise NetworkException("Cannot remove network from setup")
