@@ -7,6 +7,9 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 
 # Common properties
 FIXTURES = 'fixtures'
+ENGINE_PROPERTIES = 'ENGINE_PROPERTIES'
+KRB_JAVA = 'java.security.krb5.conf'
+PROPERTIES_DIRECTORY = '/etc/ovirt-engine/engine.conf.d'
 EXTENSIONS_DIRECTORY = '/etc/ovirt-engine/extensions.d'
 EXTENSIONS_PKG = 'ovirt-engine-extension-aaa-*'
 DEFAULT_CLUSTER_NAME = 'Default'
@@ -55,6 +58,25 @@ IPA_GROUP32 = 'group32'
 IPA_GROUP_USER = 'user1'
 IPA_NAMESPACE = 'dc=brq-ipa,dc=rhev,dc=lab,dc=eng,dc=brq,dc=redhat,dc=com'
 IPA_PASSWORD = '1234567'
+
+ADDIGEST_EXTENSION = {
+    'authz_file': 'ldap-authz-test_digest_ad.properties',
+    'authz_name': 'ldap-authz-test_digest_ad',
+    'authn_name': 'ldap-authn-test_digest_ad',
+}
+
+ADDIGEST_USER = 'vdcadmin'
+ADDIGEST_USER_DOMAIN = 'qa.lab.tlv.redhat.com'
+ADDIGEST_PASSWORD = '123456'
+
+IPAGSSAPI_EXTENSION = {
+    'authz_file': 'ldap-authz-test_gssapi_ipa.properties',
+    'authz_name': 'ldap-authz-test_gssapi_ipa',
+    'authn_name': 'ldap-authn-test_gssapi_ipa',
+}
+
+IPAGSSAPI_USER = 'vdcadmin'
+IPAGSSAPI_PASSWORD = '123456'
 
 # ADW2K12 properties
 ADW2K12_DOMAINS = ['ad-w2k12r2.rhev.lab.eng.brq.redhat.com',

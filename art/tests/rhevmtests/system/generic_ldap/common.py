@@ -10,6 +10,7 @@ from art.core_api.apis_exceptions import APIException
 from art.rhevm_api.utils import test_utils
 from rhevmtests.system.generic_ldap import config
 from art.rhevm_api.tests_lib.low_level import users, mla, general
+from art.unittest_lib.common import is_bz_state
 
 
 LOGGER = logging.getLogger(__name__)
@@ -17,6 +18,7 @@ SKIP_MESSAGE = 'Configuration was not setup for this test. Skipping.'
 INTERVAL = 5
 ATTEMPTS = 25
 TIMEOUT = 70
+BZ1147900_FIXED = is_bz_state('1147900')
 
 
 # Extensions utils
@@ -103,7 +105,8 @@ def assignUserPermissionsOnCluster(user_name, provider, principal=None,
     if (create_user and not users.addUser(True, user_name=user_name,
                                           domain=provider,
                                           principal=principal)):
-        return False
+        if BZ1147900_FIXED:
+            return False
 
     return mla.addClusterPermissionsToUser(True, user_name, cluster,
                                            role, provider)
@@ -202,3 +205,32 @@ def removeTruststore(truststore):
     '''
     executor = config.ENGINE_HOST.executor()
     executor.run_cmd(['rm', '-f', truststore])
+
+
+# engine configurations
+def changeEngineProperties(confname, key, value,
+                           conf_dir=config.PROPERTIES_DIRECTORY):
+    """
+    Changes properties of engine.
+    Parameters:
+     * confname - name of confile to be created
+     * key - name of property key to be changed
+     * value - value of property to be changed
+    """
+    filepath = os.path.join(conf_dir, confname)
+    property = '%s="\${%s} %s"' % (key, key, value)
+    cmd = ['echo', property, '>', filepath,
+           '&&', 'chown', 'ovirt:ovirt', filepath]
+
+    executor = config.ENGINE_HOST.executor()
+    return executor.run_cmd(cmd)
+
+
+def removeFile(filepath):
+    """
+    Remove file on engine.
+    Parameters:
+     * filepath - file to be removed
+    """
+    executor = config.ENGINE_HOST.executor()
+    return executor.run_cmd(['rm', '-f', filepath])
