@@ -32,7 +32,7 @@ tool = option('ovirt-shell', 'rhevm-shell', default='rhevm-shell')
 cli_log_file = string(default='/tmp/cli_log.log')
 validate_cli_command = boolean(default=True)
 optional_params = string(default='')
-cli_exit_timeout = integer(default=120)
+cli_exit_timeout = integer(default=240)
 
 [JAVA_SDK]
 #request_timeout = integer(default=100)
