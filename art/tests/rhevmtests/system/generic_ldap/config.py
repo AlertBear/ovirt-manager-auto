@@ -2,6 +2,7 @@ __test__ = False
 
 from rhevmtests.system.config import *  # flake8: noqa
 from art.test_handler.settings import opts
+from art.rhevm_api import resources
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 
@@ -11,7 +12,9 @@ ENGINE_PROPERTIES = 'ENGINE_PROPERTIES'
 KRB_JAVA = 'java.security.krb5.conf'
 PROPERTIES_DIRECTORY = '/etc/ovirt-engine/engine.conf.d'
 EXTENSIONS_DIRECTORY = '/etc/ovirt-engine/extensions.d'
+APACHE_EXTENSIONS = '/etc/httpd/conf.d'
 EXTENSIONS_PKG = 'ovirt-engine-extension-aaa-*'
+KRB_MODULE = 'mod_auth_kerb'
 DEFAULT_CLUSTER_NAME = 'Default'
 USERROLE = ENUMS['role_name_user_role']
 
@@ -78,6 +81,15 @@ IPAGSSAPI_EXTENSION = {
 IPAGSSAPI_USER = 'vdcadmin'
 IPAGSSAPI_PASSWORD = '123456'
 
+OPENLDAP_SSO = {
+    'authz_file': 'ldap-authz-simple_openldap.properties',
+    'authz_name': 'ldap-authz-simple_openldap',
+    'authn_name': 'http',
+}
+
+SSO_USER = 'user1'
+SSO_PASSWORD = '123456'
+
 # ADW2K12 properties
 ADW2K12_DOMAINS = ['ad-w2k12r2.rhev.lab.eng.brq.redhat.com',
                    'ad-w2k12r2p.rhev.lab.eng.brq.redhat.com',
@@ -85,3 +97,16 @@ ADW2K12_DOMAINS = ['ad-w2k12r2.rhev.lab.eng.brq.redhat.com',
                    'ad-w2k12r2lc.ad-w2k12r2.rhev.lab.eng.brq.redhat.com']
 ADW2k12_USER_PASSWORD = 'Heslo123'
 ADW2k12_USER1 = 'user1'
+
+
+# Openldap
+OPENLDAP = 'brq-openldap.rhev.lab.eng.brq.redhat.com'
+OPENLDAP_ROOT_PW = 'qum5net'
+
+OPENLDAP_HOST = resources.Host(OPENLDAP)
+OPENLDAP_HOST.users.append(
+    resources.RootUser(OPENLDAP_ROOT_PW)
+)
+
+# Services
+APACHE_SERVICE = 'httpd'

@@ -3,11 +3,10 @@ __test__ = False
 import os
 import logging
 
-from utilities import machine
+from time import sleep
 from functools import wraps
 from art.test_handler.exceptions import SkipTest
 from art.core_api.apis_exceptions import APIException
-from art.rhevm_api.utils import test_utils
 from rhevmtests.system.generic_ldap import config
 from art.rhevm_api.tests_lib.low_level import users, mla, general
 from art.unittest_lib.common import is_bz_state
@@ -17,28 +16,39 @@ LOGGER = logging.getLogger(__name__)
 SKIP_MESSAGE = 'Configuration was not setup for this test. Skipping.'
 INTERVAL = 5
 ATTEMPTS = 25
-TIMEOUT = 70
 BZ1147900_FIXED = is_bz_state('1147900')
 
 
+def _restartEngine():
+    config.ENGINE.restart()
+    for attempt in range(1, ATTEMPTS):
+        sleep(INTERVAL)
+        if config.ENGINE.health_page_status:
+            LOGGER.info('HealthPage is UP')
+            return
+    LOGGER.error('Engine was not successfully restarted.')
+
+
 # Extensions utils
-def enableExtensions():
-    ''' just restart ovirt engine service '''
-    LOGGER.info('Restarting engine...')
-    machineObj = machine.Machine(config.VDC_HOST, config.VDC_ROOT_USER,
-                                 config.VDC_ROOT_PASSWORD).util(machine.LINUX)
-    test_utils.restartOvirtEngine(machineObj, INTERVAL, ATTEMPTS, TIMEOUT)
+def enableExtensions(service, host):
+    """ restart service """
+    LOGGER.info('Restarting service %s.' % service)
+    if service == config.OVIRT_SERVICE:
+        _restartEngine()
+    else:
+        host.service(service).restart()
 
 
-def cleanExtDirectory(ext_dir):
-    ''' remove all files from extension directory '''
-    ext_files = os.path.join(ext_dir, '*')
-    machineObj = machine.Machine(config.VDC_HOST, config.VDC_ROOT_USER,
-                                 config.VDC_ROOT_PASSWORD).util(machine.LINUX)
-    machineObj.removeFile(ext_files)
+def cleanExtDirectory(ext_dir, files=['*']):
+    """ remove files from extension directory """
+    with config.ENGINE_HOST.executor().session() as ss:
+        ext_files = [os.path.join(ext_dir, f) for f in files]
+        ss.run_cmd(['rm', '-f', ' '.join(ext_files)])
 
 
-def prepareExtensions(module_name, ext_dir, extensions, clean=True):
+def prepareExtensions(module_name, ext_dir, extensions, clean=True,
+                      service=config.OVIRT_SERVICE, host=config.ENGINE_HOST,
+                      chown=None):
     '''
     prepare all extension for module_name
     Parameters:
@@ -46,22 +56,27 @@ def prepareExtensions(module_name, ext_dir, extensions, clean=True):
         ext_dir - directory where extensions should be prepared
         extensions - dictionary where is stored if setup was successfull
         clean - if True clean $ext_dir before preparing configurations
+        service - service which should be restarted at the end of function
+        host - host where extensions should be prepared
+        chown - change owner and group to of properties files
     '''
     if clean:
         cleanExtDirectory(ext_dir)
 
     ext_path = os.path.dirname(os.path.abspath(__file__))
-    machineObj = machine.Machine(config.VDC_HOST, config.VDC_ROOT_USER,
-                                 config.VDC_ROOT_PASSWORD).util(machine.LINUX)
     LOGGER.info(module_name)
     confs = os.listdir(os.path.join(ext_path, config.FIXTURES, module_name))
 
     for conf in confs:
         ext_file = os.path.join(ext_path, config.FIXTURES, module_name, conf)
         try:
-            assert machineObj.copyTo(ext_file, ext_dir)
-            res = machineObj.runCmd(['chown', 'ovirt:ovirt', ext_file])
-            assert res[0], res[1]
+            with host.executor().session() as ss:
+                assert not ss.run_cmd(['cp', ext_file, ext_dir])[0]
+                if chown:
+                    extension = os.path.join(ext_dir, conf)
+                    chown_cmd = ['chown', '%s:%s' % (chown, chown), extension]
+                    res = ss.run_cmd(chown_cmd)
+                    assert not res[0], res[1]
             LOGGER.info('Configuration "%s" has been copied.', conf)
             extensions[conf] = True
         except AssertionError as e:
@@ -69,7 +84,7 @@ def prepareExtensions(module_name, ext_dir, extensions, clean=True):
                          'this configuration will be skipped. %s', conf, e)
             extensions[conf] = False
 
-    enableExtensions()
+    enableExtensions(service, host)
 
 
 # Check if extension was correctly copied, and could be tested.

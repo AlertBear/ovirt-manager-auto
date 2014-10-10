@@ -328,6 +328,7 @@ VDS_HOSTS = [
         h, HOSTS_PW,
     ) for h in HOSTS
 ]
+OVIRT_SERVICE = 'ovirt-engine'
 ENGINE_HOST = resources.Host(VDC_HOST)
 ENGINE_HOST.users.append(
     resources.RootUser(VDC_ROOT_PASSWORD)
