@@ -45,7 +45,8 @@ class BaseNormalUserAndGroupUser(TestCase):
 
     def setUp(self):
         addUser(config.REGULAR_NAME(self.domain), self.domain)
-        users.addGroup(True, group_name=config.GROUP(self.domain))
+        users.addGroup(True, group_name=config.GROUP(self.domain),
+                       domain=self.domain)
         mla.addClusterPermissionsToGroup(True, config.GROUP(self.domain),
                                          config.MAIN_CLUSTER_NAME,
                                          role=USERROLE)
@@ -137,7 +138,8 @@ class BaseGroupsPersistency(TestCase):
     domain = None
 
     def setUp(self):
-        users.addGroup(True, group_name=config.GROUP(self.domain))
+        users.addGroup(True, group_name=config.GROUP(self.domain),
+                       domain=self.domain)
         mla.addClusterPermissionsToGroup(True, config.GROUP(self.domain),
                                          config.MAIN_CLUSTER_NAME)
 

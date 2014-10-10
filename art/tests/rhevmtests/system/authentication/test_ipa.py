@@ -106,7 +106,8 @@ class IPACase93879(TestCase):
             True, config.IPA_REGULAR_NAME, config.MAIN_CLUSTER_NAME,
             role=USER_ROLE, domain=config.IPA_DOMAIN)
         # Add user's group, and add it permissions
-        users.addGroup(True, group_name=config.IPA_GROUP)
+        users.addGroup(True, group_name=config.IPA_GROUP,
+                       domain=config.IPA_DOMAIN)
         mla.addClusterPermissionsToGroup(
             True, config.IPA_GROUP, config.MAIN_CLUSTER_NAME, role=USER_ROLE)
 
@@ -195,7 +196,8 @@ class IPACase109146(TestCase):
     __test__ = True
 
     def setUp(self):
-        users.addGroup(True, group_name=config.IPA_GROUP)
+        users.addGroup(True, group_name=config.IPA_GROUP,
+                       domain=config.IPA_DOMAIN)
         mla.addClusterPermissionsToGroup(
             True, config.IPA_GROUP, config.MAIN_CLUSTER_NAME)
 

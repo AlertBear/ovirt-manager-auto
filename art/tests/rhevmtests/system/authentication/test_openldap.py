@@ -49,7 +49,8 @@ class LDAPCase289010(TestCase):
 
     def setUp(self):
         addUser(config.LDAP_REGULAR_NAME)
-        users.addGroup(True, group_name=config.LDAP_GROUP)
+        users.addGroup(True, group_name=config.LDAP_GROUP,
+                       domain=config.LDAP_DOMAIN)
         mla.addClusterPermissionsToGroup(
             True, config.LDAP_GROUP, config.MAIN_CLUSTER_NAME)
         mla.addClusterPermissionsToUser(
@@ -224,7 +225,8 @@ class LDAPCase289072(TestCase):
     __test__ = True
 
     def setUp(self):
-        users.addGroup(True, group_name=config.LDAP_GROUP)
+        users.addGroup(True, group_name=config.LDAP_GROUP,
+                       domain=config.LDAP_DOMAIN)
         mla.addClusterPermissionsToGroup(
             True, config.LDAP_GROUP, config.MAIN_CLUSTER_NAME)
         addUser(config.LDAP_USER_FROM_GROUP)
@@ -290,7 +292,8 @@ class LDAPCase289078(TestCase):
         % (CN, config.LDAP_PASSWORD, TEST_FOLDER, ADD_LDIF)
 
     def setUp(self):
-        users.addGroup(True, group_name=config.LDAP_GROUP2)
+        users.addGroup(True, group_name=config.LDAP_GROUP2,
+                       domain=config.LDAP_DOMAIN)
         mla.addClusterPermissionsToGroup(
             True, config.LDAP_GROUP2, config.MAIN_CLUSTER_NAME)
 
