@@ -3616,6 +3616,7 @@ def remove_all_vms_from_cluster(cluster_name, skip=None):
         if vm_obj.get_cluster().get_id() == cluster_obj.get_id():
             if vm_obj.get_name() not in skip:
                 vms_in_cluster.append(vm_obj.get_name())
+    stop_vms_safely(vms_in_cluster)
     if not removeVms(True, vms_in_cluster):
         return False
     return True
