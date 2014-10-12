@@ -500,22 +500,27 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
             return False
 
     if template_name:
-        try:
-            if useAgent:
-                ip_addr = waitForIP(vmName)[1]['ip']
-            else:
-                rc, out = getVmMacAddress(True, vm=vmName, nic='nic1')
-                mac_addr = out['macAddress'] if rc else None
-                rc, out = convertMacToIpAddress(True, mac_addr)
-                ip_addr = out['ip'] if rc else None
-            setPersistentNetwork(host=ip_addr, password=vm_password)
-            stopVm(True, vm=vmName)
-            createTemplate(True, vm=vmName, cluster=cluster,
-                           name=template_name)
-        except Exception as ex:
-            logger.error("Creating template failed %s", ex,
-                         exc_info=True)
+        if useAgent:
+            ip_addr = waitForIP(vmName)[1]['ip']
+        else:
+            rc, out = getVmMacAddress(True, vm=vmName)
+            mac_addr = out['macAddress'] if rc else None
+            rc, out = convertMacToIpAddress(True, mac_addr)
+            ip_addr = out['ip'] if rc else None
+        if not setPersistentNetwork(host=ip_addr, password=vm_password):
+            logger.error("Failed to setPersistentNetwork")
             return False
+
+        if not stopVm(True, vm=vmName):
+            logger.error("Failed to stop VM")
+            return False
+
+        if not createTemplate(
+                True, vm=vmName, cluster=cluster, name=template_name
+        ):
+            logger.error("Failed to create template")
+            return False
+
         if not startVm(True, vm=vmName):
             logger.error("Can't start VM")
             return False

@@ -9,6 +9,7 @@ from collections import OrderedDict
 from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import templates
+from random import randint
 
 # Adjust parameters if running on golden environment
 if GOLDEN_ENV:
@@ -84,9 +85,10 @@ DST_HOST_IP = "172.16.200.2"
 PM_VNIC_PROFILE = ['%s_PM' % net for net in [MGMT_BRIDGE] + VLAN_NETWORKS]
 NUM_VMS = 5
 MGMT_IPS = []  # Gets filled up during the test
-NET1_IPS = ['5.5.5.1%s' % i for i in range(NUM_VMS + 1)]
-NET2_IPS = ['6.6.6.1%s' % i for i in range(NUM_VMS + 1)]
-NET2_TEMP_IP = '6.6.6.100'
+NET1_IPS = ['5.5.%s.%s' % (
+    randint(1, 250), randint(1, 250)) for i in range(NUM_VMS + 1)]
+NET2_IPS = ['6.6.%s.%s' % (
+    randint(1, 250), randint(1, 250)) for i in range(NUM_VMS + 1)]
 
 # Topologies parameters
 BOND_MODES = PARAMETERS.as_list("bond_modes")
