@@ -19,7 +19,6 @@ from art.unittest_lib import attr
 import art.test_handler.exceptions as errors
 from rhevmtests.system.soft_fencing import config
 import logging
-from utilities.rhevm_tools.base import Setup
 
 HOST_API = get_api('host', 'hosts')
 VM_API = get_api('vm', 'vms')
@@ -28,9 +27,8 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 PINNED = ENUMS['vm_affinity_pinned']
 HOST_CONNECTING = ENUMS['host_state_connecting']
 VM_DOWN = ENUMS['vm_state_down']
-DB_NAME_CONF = {'RHEVM_DB_NAME': config.DB_ENGINE_NAME}
 JOB = 'SshSoftFencing'
-
+sql = '%s FROM job WHERE action_type=\'SshSoftFencing\''
 
 logger = logging.getLogger(__name__)
 
@@ -46,10 +44,11 @@ def _check_host_state(host, service, job_status):
                                     service=service, command='stop'):
         raise errors.HostException("Trying to stop %s "
                                    "on host %s failed" % (service, host))
-    logger.info("Check if host %s is in connecting state", host)
+    logger.info("Check if %s job was invoked for host: %s", JOB, host)
     if not waitForHostsStates(True, host, states=HOST_CONNECTING):
-        raise errors.HostException("Host %s is not in connecting state" %
-                                   host)
+        if not config.ENGINE.db.psql(sql, 'SELECT *'):
+            raise errors.HostException("%s job failed to start on host: %s"
+                                       % (JOB, host))
     if not waitForHostsStates(True, host):
         raise errors.HostException("Host %s is not in up state" % host)
     status = check_recent_job(True, description=config.job_description,
@@ -60,16 +59,9 @@ def _check_host_state(host, service, job_status):
 
 
 def _delete_job_from_db():
-    dbConn = Setup(
-        host=config.VDC_HOST,
-        user=config.VDC_ROOT_USER,
-        passwd=config.VDC_ROOT_PASSWORD,
-        product=config.PRODUCT_NAME,
-    )
-    sql = '%s FROM job WHERE action_type=\'SshSoftFencing\''
-    if dbConn.psql(sql, 'SELECT *'):
-        dbConn.psql(sql, 'DELETE')
-    if dbConn.psql(sql, 'SELECT *'):
+    if config.ENGINE.db.psql(sql, 'SELECT *'):
+        config.ENGINE.db.psql(sql, 'DELETE')
+    if config.ENGINE.db.psql(sql, 'SELECT *'):
         logger.info("Deleting %s job from db failed", JOB)
 
 
