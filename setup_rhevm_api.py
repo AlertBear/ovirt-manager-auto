@@ -43,24 +43,24 @@ PACKAGE_DATA = {
 
 DATA_FILES = [
     'art/rhevm_api/data_struct/api.xsd',
-    'art/tests/rhevmtests/user_roles_tests/*.py',
-    'art/tests/rhevmtests/user_roles_tests/mla/*.py',
+    'art/tests/rhevmtests/*.py',
     'art/tests/rhevmtests/quota_tests/*.py',
     'art/tests/rhevmtests/sla/*.py',
-    'art/tests/rhevmtests/reg_hosts/*.py',
     'art/tests/rhevmtests/watchdog/*.py',
-    'art/tests/rhevmtests/rhevm_utils/*.py',
-    'art/tests/rhevmtests/rhevm_utils/lc_reports_content/*.xml',
+    'art/tests/rhevmtests/storage/*.py',
     'art/tests/rhevmtests/storage/storage_*/*.py',
+    'art/tests/rhevmtests/networking/*.py',
     'art/tests/rhevmtests/networking/*/*.py',
-    'art/tests/rhevmtests/templates/*.py',
+    'art/tests/rhevmtests/scheduler_tests/*.py',
     'art/tests/rhevmtests/scheduler_tests/*/*.py',
-    'art/tests/rhevmtests/upgradeSanity/*.py',
-    'art/tests/rhevmtests/hooks/*.py',
+    'art/tests/rhevmtests/virt/*.py',
     'art/tests/rhevmtests/virt/*/*.py',
+    'art/tests/rhevmtests/infra/*.py',
     'art/tests/rhevmtests/infra/*/*.py',
     'art/tests/rhevmtests/infra/*/*/*.py',
     'art/tests/rhevmtests/mom/*.py',
+    'art/tests/rhevmtests/system/*.py',
+    'art/tests/rhevmtests/system/*/*.py',
 ]
 
 DATA_FILES = common.expand_paths(TEST_DATA_PATH, *DATA_FILES)
@@ -71,7 +71,7 @@ SCRIPT = (
     "sed -i 's/art[.]rhevm_api/rhevm_api/g' '{}' \; &> /dev/null\n"
     "find /opt/art/unittest_lib -type f -regex '.*[.]py$' -exec "
     "sed -i 's/art[.]\(rhevm_api\|unittest_lib\)/\\1/g' '{}' \; &> /dev/null\n"
-    "find /opt/art/tests/rhevm -type f -regex '.*[.]py$' -exec "
+    "find /opt/art/tests/rhevmtests -type f -regex '.*[.]py$' -exec "
     "sed -i 's/art[.]\(rhevm_api\|unittest_lib\)/\\1/g' '{}' \; &> /dev/null\n"
     "chmod -R ugo+rw /opt/art/rhevm_api &> /dev/null\n"
 )
