@@ -31,11 +31,11 @@ from art.rhevm_api.tests_lib.low_level.networks import (
 )
 from art.rhevm_api.tests_lib.low_level.hosts import (
     sendSNRequest, commitNetConfig, genSNNic, getHostNic, removeHost,
-)
+    get_host_name_from_engine)
 from art.rhevm_api.tests_lib.low_level.templates import createTemplate
 from art.rhevm_api.tests_lib.low_level.vms import (
     getVmMacAddress, startVm, stopVm, createVm, waitForVmsStates,
-)
+    waitForIP)
 from art.rhevm_api.utils.test_utils import (
     convertMacToIpAddress, setPersistentNetwork,
 )
@@ -186,46 +186,44 @@ def removeMultiNetworks(positive, networks, data_center=None):
 
 def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
                              auto_nics=[], save_config=False, network_dict={}):
-    '''
-        Function that creates and attach the network to the:
-        a) DC, b) Cluster, c) Hosts with SetupNetworks
-        **Author**: gcheresh
-        **Parameters**:
-        *  *data_center* - DC name
-        *  *cluster* - Cluster name
-        *  *host* - list or string of remote machine ip addresses or fqdns
-        *  *auto_nics* - a list of nics
-        *  * save_config* - flag for saving configuration
-        *  *network_dict* - dictionary of dictionaries for the following
-          net parameters:
-            logical network name as the key for the following:
-                *  *nic* - interface to create the network on
-                *  *usages* - vm or ''  value (for VM or non-VM network)
-                *  *cluster_usages* - migration and/or display
-                    (can be set on one network)
-                *  *vlan_id* - list of values, each value for specific network
-                *  *mtu* - list of values, each value for specific network
-                *  *required* - required/non-required network
-                *  *bond* - bond name to create
-                *  *slaves* - interfaces that the bond will be composed from
-                *  *mode* - the mode of the bond
-                *  *bootproto* - boot protocol (none, dhcp, static)
-                *  *address* - list of IP addresses of the network
-                    if boot is Static
-                *  *netmask* - list of netmasks of the  network
-                    if boot is Static
-                *  *gateway* - list of gateways of the network
-                    if boot is Static
-                *  *profile_required* - flag to create or not VNIC profile
-                    for the network
-                *  * properties* - property of bridge_opts and/or ethtool_opts
-        **Returns**: True value if succeeded in creating and adding net list
-                to DC/Cluster and Host with all the parameters
-    '''
+    """
+    Function that creates and attach the network to the:
+    a) DC, b) Cluster, c) Hosts with SetupNetworks
+    **Author**: gcheresh
+    :param data_center: DC name
+    :param cluster: Cluster name
+    :param host: list of resources.VDS objects
+    :param auto_nics: a list of nics indexes to preserve
+    :param save_config: flag for saving configuration
+    :param network_dict: dictionary of dictionaries for the following
+    network_dict parameters:
+        logical network name as the key for the following:
+            *  *nic* - interface to create the network on
+            *  *usages* - vm or ''  value (for VM or non-VM network)
+            *  *cluster_usages* - migration and/or display
+                (can be set on one network)
+            *  *vlan_id* - VLAD ID
+            *  *mtu* - MTU
+            *  *required* - required/non-required network
+            *  *bond* - bond name to create
+            *  *slaves* - interfaces that the bond will be composed from
+            *  *mode* - the mode of the bond
+            *  *bootproto* - boot protocol (none, dhcp, static)
+            *  *address* - list of IP addresses of the network
+                if bootproto is Static
+            *  *netmask* - list of netmasks of the  network
+                if bootproto is Static
+            *  *gateway* - list of gateways of the network
+                if bootproto is Static
+            *  *profile_required* - flag to create or not VNIC profile
+                for the network
+            *  * properties* - property of bridge_opts and/or ethtool_opts
+    :return: True value if succeeded in creating and adding net list
+             to DC/Cluster and Host with all the parameters
+    """
     # Makes sure host_list is always a list
-    host_list = [host] if isinstance(host, basestring) else host
+    host_list = [host] if not isinstance(host, list) else host
 
-    net_obj = []
     for net, net_param in network_dict.items():
         if data_center and net:
             logger.info("Adding network to DC")
@@ -249,19 +247,41 @@ def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
                 return False
 
     for host in host_list:
+        host_name = get_host_name_from_engine(host.ip)
+
+        logger.info("Found host name: %s", host_name)
+
+        host_auto_nics = []
+        for index in auto_nics:
+            host_auto_nics.append(host.nics[index])
+
         net_obj = []
         for net, net_param in network_dict.items():
+            slaves = None
+            param_slaves = net_param.get('slaves')
+            param_nic = net_param.get('nic')
+            param_vlan = net_param.get('vlan_id')
+
+            if param_slaves:
+                slaves = [host.nics[s] for s in param_slaves]
+
+            nic = (
+                param_nic if "bond" in str(param_nic) else host.nics[param_nic]
+            )
+
             if 'vlan_id' in net_param:
-                vlan_interface = "%s.%s" % (
-                    net_param['nic'], net_param['vlan_id'])
+                vlan_interface = "{0}.{1}".format(nic, param_vlan)
+
             address_list = net_param.get('address', [])
             netmask_list = net_param.get('netmask', [])
             gateway_list = net_param.get('gateway', [])
 
-            nic = vlan_interface \
-                if 'vlan_id' in net_param else net_param['nic']
+            nic = (
+                vlan_interface if 'vlan_id' in net_param else nic
+            )
+
             rc, out = genSNNic(nic=nic, network=net,
-                               slaves=net_param.get('slaves', None),
+                               slaves=slaves,
                                mode=net_param.get('mode', None),
                                boot_protocol=net_param.get('bootproto', None),
                                address=address_list.pop(0)
@@ -277,49 +297,62 @@ def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
                 return False
             net_obj.append(out['host_nic'])
 
-        logger.info("Sending SN request to host %s" % host)
+        logger.info("Sending SN request to host %s" % host_name)
+
         if not sendSNRequest(True,
-                             host=host,
+                             host=host_name,
                              nics=net_obj,
-                             auto_nics=auto_nics,
+                             auto_nics=host_auto_nics,
                              check_connectivity='true',
                              connectivity_timeout=60, force='false'):
-            logger.info("Failed to send SN request to host %s" % host)
+            logger.info("Failed to send SN request to host %s" % host_name)
             return False
 
         if save_config:
-            logger.info("Saving network configuration on host %s" % host)
-            if not commitNetConfig(True, host=host):
+            logger.info("Saving network configuration on host %s" % host_name)
+            if not commitNetConfig(True, host=host_name):
                 logger.error("Couldn't save network configuration")
 
     return True
 
 
-def removeNetFromSetup(host, auto_nics=['eth0'], network=[], data_center=None):
-    '''
-        Function that removes networks from the host, Cluster and DC:
-        **Author**: gcheresh
-        **Parameters**:
-        *  *host* - remote machine ip addresses or fqdns
-        *  *auto_nics* - a list of nics
-        *  *network* - list of networks to remove
-        *  *data_center* - DC where the network is
-        Return: True value if succeeded in deleting networks
-                from Hosts, Cluster, DC
-    '''
-    host_list = [host] if isinstance(host, basestring) else host
-    try:
-        for index in range(len(network)):
-            removeNetwork(True, network=network[index],
-                          data_center=data_center)
+def remove_net_from_setup(host, auto_nics=[0], network=[], data_center=None,
+                          all_net=False, mgmt_network=None):
+    """
+    Function that removes networks from the host, Cluster and DC:
+    :param host: list of resources.VDS objects
+    :param auto_nics: a list of nics indexes
+    :param network: list of networks to remove
+    :param data_center: DC where the network is
+    :param all_net: True to remove all networks from setup (except MGMT net)
+    :param mgmt_network: Management network
+    :return: True value if succeeded in deleting networks
+            from Hosts, Cluster, DC
+    """
+    hosts_obj = [host] if not isinstance(host, list) else host
+    hosts_list = [get_host_name_from_engine(h.ip) for h in hosts_obj]
 
-        for host_i in host_list:
-            sendSNRequest(True, host=host_i,
-                          auto_nics=auto_nics,
+    if all_net:
+        if not remove_all_networks(
+                datacenter=data_center, mgmt_network=mgmt_network
+        ):
+            return False
+    else:
+        if not removeMultiNetworks(True, network, data_center):
+            return False
+
+    try:
+        for host_name, host_obj in zip(hosts_list, hosts_obj):
+            host_auto_nics = []
+            for index in auto_nics:
+                host_auto_nics.append(host_obj.nics[index])
+
+            sendSNRequest(True, host=host_name,
+                          auto_nics=host_auto_nics,
                           check_connectivity='true',
                           connectivity_timeout=CONNECTIVITY_TIMEOUT,
                           force='false')
-            commitNetConfig(True, host=host_i)
+            commitNetConfig(True, host=host_name)
 
     except Exception as ex:
         logger.error("Remove Network from setup failed %s", ex, exc_info=True)
@@ -332,7 +365,7 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
                  cluster, version, storage_type, local=False,
                  storageDomainName=None, lun_address='', lun_target='',
                  luns='', lun_port=LUN_PORT,
-                 diskType='system', auto_nics=[HOST_NICS[0]],
+                 diskType='system', auto_nics=[0],
                  vm_user='root', vm_password=None,
                  vmName=None, vmDescription='linux vm',
                  nicType='virtio', display_type='spice',
@@ -340,61 +373,48 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
                  nic='nic1', size=DISK_SIZE, useAgent=True,
                  template_name=None, attempt=ATTEMPTS,
                  interval=INTERVAL, placement_host=None,
-                 bridgeless=False, vm_network=MGMT_NETWORK,
                  mgmt_network=MGMT_NETWORK, vnic_profile=None):
     """
-        Function that creates DC, Cluster, Storage, Hosts
-        It creates VM with a NIC connected to default network and Template if
-        flag is on:
-        **Author**: gcheresh
-        **Parameters**:
-            *  *hosts* - host\s name\s or ip\s.
-                A single host, or a list of hosts separated by comma.
-            *  *cpuName* - cpu type in the Cluster
-            *  *username* - user name for the host machines
-            *  *password* - password for the host machines
-            *  *datacenter* - data center name
-            *  *storage_type* - type of storage
-            *  *cluster* - cluster name
-            *  *version* - supported version like 3.1, 3.2...
-            *  *storageDomainName* - name of the storage domain
-            *  *lun_address* - address of iSCSI machine
-            *  *lun_target* - LUN target
-            *  *luns* - lun\s id.
-                A single lun id, or a list of luns, separeted by comma.
-            *  *lun_port* - lun port
-            *  *diskType* - type of the disk
-            *  *vm_user* - user name for the VM
-            *  *vm_password* - password for the VM
-            *  *auto_nics* - a list of nics
-            *  *vmName* - VM name, if not None create VM
-            *  *vmDescription* - Decription of VM
-            *  *display_type* - type of vm display (VNC or SPICE)
-            *  *nicType* - type of the NIC (virtio, RTL or e1000)
-            *  *os_type* - type of the OS
-            *  *image* - profile in cobbler
-            *  *nic* - nic name
-            *  *size* - the size of the disk
-            *  *useAgent* - Set to 'true', if desired to read the ip from VM.
-                Agent exist on VM
-            *  *template_name* - name of the template, if not None create
-                template.
-            *  *attempt*- attempts to connect after installation
-            *  *inerval* - interval between attempts
-            *  *placement_host* - the host that will hold VM
-            *  *bridgeless* - Set management network as bridgless,
-                MUST set management network to bridge after each job.
-            *  *vm_network* - Network for VM
-            *  *mgmt_network* - management network
-        **Returns**: True if creation of the setup succeeded, otherwise False
+    Function that creates DC, Cluster, Storage, Hosts
+    It creates VM with a NIC connected to default network and Template if
+    flag is on:
+    :param hosts: list of resources.VDS objects
+    :param cpuName: cpu type in the Cluster
+    :param username: user name for the host machines
+    :param password: password for the host machines
+    :param datacenter: data center name
+    :param storage_type: type of storage
+    :param cluster: cluster name
+    :param version: supported version like 3.1, 3.2...
+    :param storageDomainName: name of the storage domain
+    :param lun_address: address of iSCSI machine
+    :param lun_target: LUN target
+    :param luns: lun\s id. A single lun id, or a list of luns, separated by
+                 comma.
+    :param lun_port: lun port
+    :param diskType: type of the disk
+    :param vm_user: user name for the VM
+    :param vm_password: password for the VM
+    :param auto_nics: a list of nics indexes
+    :param vmName: VM name, if not None create VM
+    :param vmDescription: Description of VM
+    :param display_type: type of vm display (VNC or SPICE)
+    :param nicType: type of the NIC (virtio, RTL or e1000)
+    :param os_type: type of the OS
+    :param image: profile in cobbler
+    :param nic: nic name
+    :param size: the size of the disk
+    :param useAgent: Set to 'true', if desired to read the ip from VM. Agent
+                     exist on VM
+    :param template_name: name of the template, if not None create template.
+    :param attempt: attempts to connect after installation
+    :param interval: interval between attempts
+    :param placement_host: the host that will hold VM
+    :param mgmt_network: management network
+    :return: True if creation of the setup succeeded, otherwise False
     """
-    hostArray = split(hosts)
-
-    if vmName and bridgeless:
-        if vm_network == mgmt_network:
-            logger.error("vm network name can't be %s when using"
-                         "bridgeless management network", mgmt_network)
-            return False
+    hosts_obj = [hosts] if not isinstance(hosts, list) else hosts
+    hosts_fqdn = [h.fqdn for h in hosts_obj]
 
     if not addDataCenter(
         True, name=datacenter, storage_type=storage_type,
@@ -421,7 +441,8 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
         )
     logger.info("Cluster %s was created successfully", cluster)
 
-    add_hosts(hostArray, [password] * len(hostArray), cluster)
+    add_hosts(hosts_fqdn, [password] * len(hosts_fqdn), cluster)
+    host_array = [get_host_name_from_engine(h.ip) for h in hosts_obj]
 
     storage = ConfigObj()
     storage['lun_address'] = [lun_address]
@@ -429,58 +450,28 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
     storage['lun'] = split(luns)
 
     if not create_storages(
-        storage, storage_type, hostArray[0], datacenter
+        storage, storage_type, host_array[0], datacenter
     ):
         raise StorageDomainException("Can not add storages: %s" % storage)
 
-    if bridgeless:
-        logger.info("Updating %s to bridgeless network", mgmt_network)
-        if not updateAndSyncMgmtNetwork(datacenter=datacenter,
-                                        hosts=hostArray,
-                                        nic=HOST_NICS[0],
-                                        network=mgmt_network,
-                                        bridge=False):
-            logger.error("Failed to set %s as bridgeless network",
-                         mgmt_network)
+    for host_name, host_obj in zip(host_array, hosts_obj):
+        host_auto_nics = []
+        for index in auto_nics:
+            host_auto_nics.append(host_obj.nics[index])
+
+        try:
+            logger.info("Cleaning %s interfaces", host_name)
+            sendSNRequest(True, host=host_name,
+                          auto_nics=host_auto_nics,
+                          check_connectivity='true',
+                          connectivity_timeout=CONNECTIVITY_TIMEOUT,
+                          force='false')
+            commitNetConfig(True, host=host_name)
+
+        except Exception as ex:
+            logger.error("Cleaning host interfaces failed %s", ex,
+                         exc_info=True)
             return False
-
-        logger.info("Waiting for StorageDomain %s state UP", storageDomainName)
-        if not waitForStorageDomainStatus(True, datacenter, storageDomainName,
-                                          "active"):
-            logger.error("StorageDomain %s state is not UP", storageDomainName)
-            return False
-
-        logger.info("Creating network for VM")
-        local_dict = {vm_network: {'nic': HOST_NICS[1],
-                                   'required': 'false'}}
-
-        logger.info("SetupNetworks: Attaching %s to %s", vm_network,
-                    hostArray)
-        if not createAndAttachNetworkSN(data_center=datacenter,
-                                        cluster=cluster,
-                                        host=hostArray,
-                                        network_dict=local_dict,
-                                        auto_nics=auto_nics,
-                                        save_config=True):
-            logger.error("Cannot create and attach network")
-            return False
-
-    if not bridgeless:
-        vm_network = mgmt_network
-        for host in hostArray:
-            try:
-                logger.info("Cleaning %s interfaces", host)
-                sendSNRequest(True, host=host,
-                              auto_nics=auto_nics,
-                              check_connectivity='true',
-                              connectivity_timeout=CONNECTIVITY_TIMEOUT,
-                              force='false')
-                commitNetConfig(True, host=host)
-
-            except Exception as ex:
-                logger.error("Cleaning host interfaces failed %s", ex,
-                             exc_info=True)
-                return False
 
     if vmName:
         if not createVm(True, vmName=vmName,
@@ -491,7 +482,7 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
                         display_type=display_type, os_type=os_type,
                         image=image, user=vm_user,
                         password=vm_password, installation=True,
-                        network=vm_network,
+                        network=mgmt_network,
                         useAgent=True, diskType=diskType,
                         attempt=attempt, interval=interval,
                         placement_host=placement_host,
@@ -501,10 +492,13 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
 
     if template_name:
         try:
-            rc, out = getVmMacAddress(True, vm=vmName, nic='nic1')
-            mac_addr = out['macAddress'] if rc else None
-            rc, out = convertMacToIpAddress(True, mac_addr)
-            ip_addr = out['ip'] if rc else None
+            if useAgent:
+                ip_addr = waitForIP(vmName)[1]['ip']
+            else:
+                rc, out = getVmMacAddress(True, vm=vmName, nic='nic1')
+                mac_addr = out['macAddress'] if rc else None
+                rc, out = convertMacToIpAddress(True, mac_addr)
+                ip_addr = out['ip'] if rc else None
             setPersistentNetwork(host=ip_addr, password=vm_password)
             stopVm(True, vm=vmName)
             createTemplate(True, vm=vmName, cluster=cluster,
@@ -669,25 +663,22 @@ def rhevh_remove_dummy(host, username, password):
     return True
 
 
-def updateAndSyncMgmtNetwork(datacenter, hosts=list(),
-                             nic=HOST_NICS[0],
-                             auto_nics=[],
-                             network=MGMT_NETWORK,
-                             bridge=True):
-    '''
+def updateAndSyncMgmtNetwork(datacenter, hosts=list(), nic=[0], auto_nics=[],
+                             network=MGMT_NETWORK, bridge=True):
+    """
     Function that update existing network on DC and on the host, then sync it
-    using setupnetwork. This function created to enable run tests with
-    managment network as bridgeless network.
-    **Author**: myakove
-    **Parameters**:
-        *  *datacenter* - Datacenter to update the managment network.
-        *  *host* - Host to sync the managment network.
-        *  *nic* - the nic (ETH(X)) of the managment network.
-        *  *network* - The managment network.
-        *  *bridge* - Desired network mode (True for bridge,
-            False for brideless).
-        *  *auto_nics - Host nics to preserve on setupNetworks command.
-    '''
+    using SetupNetworks. This function created to enable run tests with
+    management network as bridgeless network.
+    :param datacenter: Datacenter to update the management network.
+    :param hosts: list of resources.VDS objects.
+    :param nic: the nic (ETH(X)) of the management network.
+    :param network: The management network.
+    :param bridge: Desired network mode (True for bridge,
+                   False for bridgeless).
+    :param auto_nics: Host nics to preserve on setupNetworks command.
+    """
+    hosts_obj = [hosts] if not isinstance(hosts, list) else hosts
+    hosts_list = [get_host_name_from_engine(h.ip) for h in hosts_obj]
     mgmt_net_type = "bridge" if bridge else "bridgeless"
     network_type = "vm" if bridge else ""
 
@@ -698,21 +689,26 @@ def updateAndSyncMgmtNetwork(datacenter, hosts=list(),
                      network, mgmt_net_type)
         return False
 
-    for host in hosts:
-        host_nic = getHostNic(host=host, nic=nic)
+    for host_name, host_obj in zip(hosts_list, hosts_obj):
+        host_auto_nics = []
+        for index in auto_nics:
+            host_auto_nics.append(host_obj.nics[index])
+
+        host_nic = getHostNic(host=host_name, nic=nic)
         host_nic.set_override_configuration(True)
 
-        logger.info("setupNetwork: syncing %s network on %s", network, host)
-        if not sendSNRequest(True, host=host, nics=[host_nic],
-                             auto_nics=auto_nics,
+        logger.info(
+            "setupNetwork: syncing %s network on %s", network, host_name)
+        if not sendSNRequest(True, host=host_name, nics=[host_nic],
+                             auto_nics=host_auto_nics,
                              check_connectivity='true',
                              connectivity_timeout=CONNECTIVITY_TIMEOUT,
                              force='false'):
             logger.error("setupNetwork: Cannot sync %s network on %s",
-                         network, host)
+                         network, host_name)
             return False
 
-        commitNetConfig(True, host=host)
+        commitNetConfig(True, host=host_name)
 
     return True
 
@@ -1044,17 +1040,15 @@ def create_basic_setup(datacenter, storage_type, version, cluster=None,
     return True
 
 
-def remove_basic_setup(datacenter, cluster=None, hosts=None):
+def remove_basic_setup(datacenter, cluster=None, hosts=[]):
     """
-       Description: Remove basic setup with datacenter and optional cluster and
-       hosts
-       Author: gcheresh
-       Parameters:
-          *  *datacenter* - Datacenter name
-          *  *cluster* - Cluster name
-          *  *host* - Host name or a list of Host names
-       **Return**: True if setup removal succeeded, otherwise False
-       """
+    Description: Remove basic setup with datacenter and optional cluster and
+    hosts
+    :param datacenter: Datacenter name
+    :param cluster: name
+    :param hosts: name or a list of Host names
+    :return: True if setup removal succeeded, otherwise False
+    """
     if cluster:
         for host in hosts:
             if not removeHost(positive=True, host=host,
