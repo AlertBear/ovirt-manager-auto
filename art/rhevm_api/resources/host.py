@@ -20,7 +20,7 @@ class Host(Resource):
         self.users = list()
 
     def __str__(self):
-        return "Host(%s)" % self.address
+        return "Host(%s)" % self.ip
 
     @property
     def fqdn(self):
