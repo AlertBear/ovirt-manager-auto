@@ -1,3 +1,5 @@
+import urllib2
+import contextlib
 from art.rhevm_api.resources.service import Service
 from art.rhevm_api.resources.db import Database
 from art.rhevm_api.resources.user import User
@@ -57,6 +59,29 @@ class Engine(Service):
     def health_page(self):
         # NOTE: it is always http
         return "http://%s/ovirt-engine/services/health" % self.host.fqdn
+
+    @property
+    def health_page_status(self):
+        """
+        True / False according to health page status
+        """
+        happy_message = "DB Up!Welcome to Health Status!"
+        self.logger.info("GET %s", self.health_page)
+        try:
+            with contextlib.closing(
+                urllib2.urlopen(
+                    self.health_page
+                )
+            ) as request:
+                self.logger.info("  CODE: %s, %s", request.code, request.msg)
+                if request.code != 200:
+                    return False
+                content = request.read()
+                self.logger.info("  Content: %s", content)
+                return happy_message in content
+        except Exception as ex:
+            self.logger.error("  failed to get content of health page: %s", ex)
+        return False
 
     @property
     def db(self):
