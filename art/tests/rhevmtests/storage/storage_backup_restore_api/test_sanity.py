@@ -130,7 +130,7 @@ class CreateTemplateFromVM(BaseTestCase):
     """
     __test__ = False
     template_name = "%s-template"
-    vm_name_for_template = None
+    create_template = None
 
     def create_template(self):
         """
@@ -211,6 +211,7 @@ class TestCase303854(BaseTestCase):
     __test__ = True
     tcms_test_case = '303854'
 
+    @bz({'1158016': {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_restart_VDSM_and_engine_while_disk_attached_to_backup_vm(self):
         """
@@ -316,7 +317,7 @@ class TestCase304134(BaseTestCase):
         """
         Make sure that before starting backup vm, /var/lib/vdsm/transient/
         will not contain any backup volumes and after starting it, the
-        backup volumes will create
+        backup volumes will be created
         """
         self.assertTrue(helpers.is_transient_directory_empty(self.host_ip),
                         "Transient directory still "
@@ -412,10 +413,6 @@ class TestCase304159(BaseTestCase):
         Try to delete original snapshot of source VM that is attached to
         backup VM
         """
-        vms.attach_backup_disk_to_vm(self.vm_names[0],
-                                     self.vm_names[1],
-                                     self.snap_desc)
-
         logger.info("Removing snapshot %s of vm %s",
                     helpers.SNAPSHOT_TEMPLATE_DESC % self.vm_names[0],
                     self.vm_names[0])
@@ -696,6 +693,9 @@ class TestCase304197(TestCase):
     https://tcms.engineering.redhat.com/case/304197/?from_plan=10435
     """
     __test__ = True
+    # The ticket for sdk support:
+    # https://projects.engineering.redhat.com/browse/RHEVM-1901
+    apis = TestCase.apis - set(['sdk'])
     tcms_test_case = '304197'
 
     @classmethod
@@ -799,8 +799,8 @@ class TestCase304197(TestCase):
         new_vm_list = self.vm_names[:]
         new_vm_list[0] = helpers.RESTORED_VM
 
-        vms.start_vms(self.vm_names, 2, wait_for_ip=False)
-        vms.waitForVmsStates(True, self.vm_names)
+        vms.start_vms(new_vm_list, 2, wait_for_ip=False)
+        vms.waitForVmsStates(True, new_vm_list)
 
     @classmethod
     def teardown_class(cls):
@@ -808,7 +808,7 @@ class TestCase304197(TestCase):
         Restoring the environment
         """
         vms_to_remove = cls.vm_names[:]
-        # If the first vm was still there remove it
+        # If the first vm still exists, remove it
         vms_to_remove.append(helpers.RESTORED_VM)
 
         vms_to_remove = filter(vms.does_vm_exists, vms_to_remove)
@@ -897,11 +897,17 @@ class TestCase322486(TestCase):
     __test__ = True
     tcms_test_case = '322486'
 
-    @classmethod
-    def setup_class(cls):
-        cls.vm_names = VM_NAMES[TestCase.storage]
-        vms.stop_vms_safely(cls.vm_names)
-        logger.info("Succeeded to stop vms %s", ', '.join(cls.vm_names))
+    def setUp(self):
+        self.vm_names = VM_NAMES[TestCase.storage]
+        vms.stop_vms_safely(self.vm_names)
+        logger.info("Succeeded to stop vms %s", ', '.join(self.vm_names))
+        self.vm_disks = vms.getVmDisks(self.vm_names[0])
+        self.original_sd = vms.get_vms_disks_storage_domain_name(
+            self.vm_names[0], self.vm_disks[0].get_alias())
+        storage_domains = storagedomains.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage)
+        self.destination_sd = [
+            sd for sd in storage_domains if sd != self.original_sd][0]
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_attach_snapshot_disk_while_the_disk_is_locked(self):
@@ -910,18 +916,10 @@ class TestCase322486(TestCase):
         - During the disk movement, try to attach the snapshot disk to the
           backup VM (while the disk is locked)
         """
-        vm_disks = vms.getVmDisks(self.vm_names[0])
-        self.original_sd = vms.get_vms_disks_storage_domain_name(
-            self.vm_names[0], vm_disks[0].get_alias())
-        storage_domains = storagedomains.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, self.storage)
-        self.destination_sd = [
-            sd for sd in storage_domains if sd != self.original_sd][0]
-
-        vms.move_vm_disk(self.vm_names[0], vm_disks[0].get_alias(),
+        vms.move_vm_disk(self.vm_names[0], self.vm_disks[0].get_alias(),
                          self.destination_sd, wait=False)
 
-        disks.waitForDisksState(vm_disks[0].get_alias(),
+        disks.waitForDisksState(self.vm_disks[0].get_alias(),
                                 config.ENUMS['disk_state_locked'])
 
         status = vms.attach_backup_disk_to_vm(
@@ -931,17 +929,16 @@ class TestCase322486(TestCase):
         self.assertFalse(status, "Succeeded to attach backup snapshot disk "
                                  "to backup vm")
 
-    @classmethod
-    def teardown_class(cls):
+    def tearDown(self):
         """
         Restoring environment
         """
-        vm_disks = vms.getVmDisks(cls.vm_names[0])
+        vm_disks = vms.getVmDisks(self.vm_names[0])
         logger.info("Moving disk %s to SD %s", vm_disks[0].get_alias(),
-                    cls.original_sd)
+                    self.original_sd)
         disks.waitForDisksState(vm_disks[0].get_alias())
-        vms.move_vm_disk(cls.vm_names[0], vm_disks[0].get_alias(),
-                         cls.original_sd, wait=True)
+        vms.move_vm_disk(self.vm_names[0], vm_disks[0].get_alias(),
+                         self.original_sd, wait=True)
         disks.waitForDisksState(vm_disks[0].get_alias())
 
 
@@ -1022,18 +1019,3 @@ class TestCase322886(TestCase):
 
         self.assertFalse(status, "Succeeded to attach backup snapshot disk "
                                  "to backup vm")
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Restoring environment
-        """
-        logger.info('Detaching backup disk')
-        disks_objs = vms.get_snapshot_disks(
-            cls.vm_names[0],
-            helpers.SNAPSHOT_TEMPLATE_DESC % cls.vm_names[0])
-
-        if not disks.detachDisk(True, disks_objs[0].get_alias(),
-                                cls.vm_names[1]):
-            raise exceptions.DiskException(
-                "Failed to remove disk %s" % disks_objs[0].get_alias())

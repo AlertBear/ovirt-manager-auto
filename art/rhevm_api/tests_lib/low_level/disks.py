@@ -514,7 +514,7 @@ def checksum_disk(hostname, user, password, disk_object, dc_obj):
     image_id = disk_object.get_id()
     sd = STORAGE_DOMAIN_API.find(sd_id, attribute='id')
     sp_id = dc_obj.get_id()
-    block = sd.get_type() in BLOCK_DEVICES
+    block = sd.get_storage().get_type() in BLOCK_DEVICES
 
     if block:
         host_machine.lv_change(sd_id, vol_id, activate=True)

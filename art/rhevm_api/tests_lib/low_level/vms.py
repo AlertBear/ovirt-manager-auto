@@ -3459,7 +3459,7 @@ def get_vm_snapshots(vm):
     return snapshots
 
 
-def create_vm_from_ovf(new_vm_name, cluster_name, ovf):
+def create_vm_from_ovf(new_vm_name, cluster_name, ovf, compare=False):
     """
     Description: Creates a vm from ovf configuration file
     * The ovf configuration can be retrieved via 'get_vm_ovf_file' method
@@ -3469,11 +3469,12 @@ def create_vm_from_ovf(new_vm_name, cluster_name, ovf):
         * new_vm_name - name for the restored vm
         * cluster - name of the cluster that the vm should create in
         * ovf - ovf object. can retrieved from 'get_vm_snapshot_ovf_obj'
+        * compare - If True, run compareElements, otherwise not.
     Return: True if operation succeeded, or False otherwise
     """
     restored_vm_obj = _prepareVmObject(name=new_vm_name, cluster=cluster_name,
                                        initialization=ovf)
-    _, status = VM_API.create(restored_vm_obj, True)
+    _, status = VM_API.create(restored_vm_obj, True, compare=compare)
     return status
 
 
