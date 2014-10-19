@@ -2,12 +2,11 @@
 """
 Network labels feature test
 """
-
 import logging
 from rhevmtests.networking import config
-
-from art.rhevm_api.tests_lib.high_level.networks import create_basic_setup, \
-    remove_basic_setup
+from art.rhevm_api.tests_lib.high_level.networks import(
+    create_basic_setup, remove_basic_setup
+)
 from art.test_handler.exceptions import NetworkException
 
 logger = logging.getLogger("Network_Labels")
@@ -22,7 +21,6 @@ def setup_package():
     create 1 Cluster
     add 2 Hosts
     """
-
     if config.GOLDEN_ENV:
         logger.info("Running on golden env, no setup")
         return
@@ -41,11 +39,11 @@ def teardown_package():
     """
     Cleans environment by removing Host, Cluster and DC from the setup
     """
-
     if config.GOLDEN_ENV:
         logger.info("Running on golden env, no teardown")
         return
 
-    remove_basic_setup(datacenter=config.DC_NAME[0],
-                       cluster=config.CLUSTER_NAME[0],
-                       hosts=config.HOSTS)
+    if not remove_basic_setup(datacenter=config.DC_NAME[0],
+                              cluster=config.CLUSTER_NAME[0],
+                              hosts=config.HOSTS):
+        logger.error("Couldn't remove setup ")
