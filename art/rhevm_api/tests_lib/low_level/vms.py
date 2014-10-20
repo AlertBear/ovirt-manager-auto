@@ -29,23 +29,23 @@ from threading import Thread
 
 from art.core_api import is_action
 from art.core_api.apis_exceptions import (
-    APITimeout, EntityNotFound, TestCaseError
+    APITimeout, EntityNotFound, TestCaseError,
 )
 from art.core_api.apis_utils import data_st, TimeoutingSampler, getDS
 from art.rhevm_api.tests_lib.high_level.disks import delete_disks
 from art.rhevm_api.tests_lib.low_level.disks import (
     _prepareDiskObject, getVmDisk, getObjDisks, get_other_storage_domain,
-    waitForDisksState, get_disk_storage_domain_name
+    waitForDisksState, get_disk_storage_domain_name,
 )
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level.networks import (
-    getVnicProfileObj, MGMT_NETWORK
+    getVnicProfileObj, MGMT_NETWORK,
 )
 from art.rhevm_api.utils.name2ip import LookUpVMIpByName
 from art.rhevm_api.utils.test_utils import (
     searchForObj, getImageByOsType, convertMacToIpAddress,
     checkHostConnectivity, update_vm_status_in_database, get_api, split,
-    waitUntilPingable, restoringRandomState, waitUntilGone
+    waitUntilPingable, restoringRandomState, waitUntilGone,
 )
 from art.rhevm_api.utils.provisioning_utils import ProvisionProvider
 from art.rhevm_api.utils.resource_utils import runMachineCommand
@@ -938,13 +938,14 @@ def addDisk(positive, vm, size, wait=True, storagedomain=None,
         * type - disk type
         * interface - disk interface
         * format - disk format type
-        * sparse - if disk sparse or preallocated
+        * sparse - if disk sparse or pre-allocated
         * bootable - if disk bootable or not
         * wipe_after_delete - if disk should be wiped after deletion or not
         * propagate_errors - if propagate errors or not
         * quota - disk quota
         * active - automatically activate the disk
         * alias - alias for the disk
+        * description - description for the disk
         * read_only - if disk should be read only
         * shareable = True if disk should be shared, False otherwise
         * provisioned_size - disk's provisioned size
@@ -954,6 +955,7 @@ def addDisk(positive, vm, size, wait=True, storagedomain=None,
     disk = data_st.Disk(size=size, format=ENUMS['format_cow'],
                         interface=ENUMS['interface_ide'], sparse=True,
                         alias=kwargs.pop('alias', None),
+                        description=kwargs.pop('description', None),
                         active=kwargs.get('active', True))
 
     # replace disk params from kwargs
@@ -1070,7 +1072,7 @@ def waitForDisksStat(vm, stat='OK', timeout=VM_IMAGE_OPT_TIMEOUT):
         * vm - vm name
         * stat = status we are waiting for
         * timeout - waiting period.
-    Return True if all events passed, otherwize False
+    Return True if all events passed, otherwise False
     '''
     status = True
     disks = getVmDisks(vm)
@@ -2149,14 +2151,14 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
                  and started new created vm.
     Parameters:
         vmName = VM name
-        vmDescription = Decription of VM
+        vmDescription = Description of VM
         cluster = cluster name
         nic = nic name
-        storageDomainName = storage doamin name
+        storageDomainName = storage domain name
         size = size of disk (in bytes)
-        diskType = disk type (SYSTEM,DATA)
-        volumeType = true its mean sparse (thin provision) ,
-                     false - preallocated.
+        diskType = disk type (SYSTEM, DATA)
+        volumeType = true means sparse (thin provision),
+                     false - pre-allocated
         volumeFormat = format type (COW)
         diskInterface = disk interface (VIRTIO or IDE ...)
         bootable = True when disk bootable otherwise False
@@ -2170,7 +2172,7 @@ def createVm(positive, vmName, vmDescription, cluster='Default', nic=None,
         user - user to connect to vm after installation
         password - password to connect to vm after installation
         attempt- attempts to connect after installation
-        inerval - interval between attempts
+        interval - interval between attempts
         osType - type of OS as it appears in art/conf/elements.conf
         useAgent - Set to 'true', if desired to read the ip from VM
                    (agent exist on VM)

@@ -3,19 +3,18 @@ Storage helper functions
 """
 import logging
 from art.rhevm_api.tests_lib.low_level.disks import (
-    waitForDisksState,
-    attachDisk,
-    addDisk,
+    waitForDisksState, attachDisk, addDisk,
+    get_all_disk_permutation,
+)
+from art.rhevm_api.tests_lib.low_level.storagedomains import (
+    getStorageDomainObj,
 )
 from art.rhevm_api.tests_lib.low_level.vms import (
-    stop_vms_safely,
-    get_vm_snapshots,
-    removeSnapshot,
-    activateVmDisk,
+    stop_vms_safely, get_vm_snapshots, removeSnapshot, activateVmDisk,
 )
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.test_handler import exceptions
-from rhevmtests.storage.storage_single_disk_snapshot import config
+from rhevmtests.storage import config
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +25,7 @@ disk_args = {
     # Fixed arguments
     'provisioned_size': config.DISK_SIZE,
     'wipe_after_delete': config.BLOCK_FS,
-    'storagedomain': config.SD_NAME,
+    'storagedomain': config.SD_NAMES_LIST[0],
     'bootable': False,
     'shareable': False,
     'active': True,
@@ -35,6 +34,7 @@ disk_args = {
     'format': config.COW_DISK,
     'sparse': True,
     'alias': '',
+    'description': '',
 }
 
 
@@ -50,6 +50,7 @@ def prepare_disks_for_vm(vm_name, disks_to_prepare, read_only=False):
     is_ro = 'Read Only' if read_only else 'Read Write'
     for disk in disks_to_prepare:
         disk_args['alias'] = disk
+        disk_args['description'] = '%s_description' % disk
         assert addDisk(positive=True, **disk_args)
         waitForDisksState(disk, timeout=DISK_TIMEOUT)
         logger.info("Attaching disk %s as %s disk to vm %s",
@@ -88,3 +89,58 @@ def remove_all_vm_test_snapshots(vm_name, description):
                if snapshot.get_description() == description]
     wait_for_jobs(timeout=SNAPSHOT_TIMEOUT)
     assert False not in results
+
+
+def create_disks_from_requested_permutations(domain_to_use,
+                                             interfaces=(config.VIRTIO,
+                                                         config.VIRTIO_SCSI),
+                                             size=config.DISK_SIZE):
+    """
+    Generates a list of permutations for disks using virtio, virtio-scsi and
+    ide using thin-provisioning and pre-allocated options
+
+    :param domain_to_use: the storage domain on which to create the disks
+    :type domain_to_use: str
+    :param interfaces: list of interfaces to use in generating the disks.
+    Default is (VIRTIO, VIRTIO_SCSI)
+    :type interfaces: list
+    :param size: the disk size (in bytes) to create, uses config.DISK_SIZE as a
+    default
+    :type size: str
+    :returns: list of the disk aliases and descriptions
+    :rtype: list
+    """
+    logger.info("Generating a list of disk permutations")
+    # Get the storage domain object and its type, use this to ascertain
+    # whether the storage is of a block or file type
+    storage_domain_object = getStorageDomainObj(domain_to_use)
+    storage_type = storage_domain_object.get_storage().get_type()
+    is_block = storage_type in config.BLOCK_TYPES
+    disk_permutations = get_all_disk_permutation(block=is_block,
+                                                 shared=False,
+                                                 interfaces=interfaces)
+    # Provide a warning in the logs when the total number of disk
+    # permutations is 0
+    if len(disk_permutations) == 0:
+        logger.warn("The number of disk permutations is 0")
+    # List of the disk aliases and descriptions that will be returned when
+    # the function completes execution
+    lst_aliases_and_descriptions = []
+
+    logger.info("Create disks for all permutations generated previously")
+    for index, disk_permutation in enumerate(disk_permutations):
+        disk_alias = "%s_%s_sparse-%s_alias" % (disk_permutation['interface'],
+                                                disk_permutation['format'],
+                                                disk_permutation['sparse'])
+        disk_description = disk_alias.replace("_alias", "_description")
+        lst_aliases_and_descriptions.append({
+            "alias": disk_alias,
+            "description": disk_description
+        })
+        assert addDisk(True, alias=disk_alias, description=disk_description,
+                       size=size, interface=disk_permutation['interface'],
+                       sparse=disk_permutation['sparse'],
+                       format=disk_permutation['format'],
+                       storagedomain=domain_to_use, bootable=False)
+        assert waitForDisksState(disk_alias)
+    return lst_aliases_and_descriptions

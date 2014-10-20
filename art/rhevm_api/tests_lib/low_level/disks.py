@@ -125,9 +125,10 @@ def get_disk_obj(disk_alias):
 
 def _prepareDiskObject(**kwargs):
     """
-    Description: Prepare disk object according kwargs
+    Description: Prepare disk object according to its kwargs
     Parameters:
         * alias - name of the disk
+        * description - description of the disk
         * provisioned_size - size of the disk
         * interface - IDE or virtio
         * format - raw or cow
@@ -217,6 +218,11 @@ def _prepareDiskObject(**kwargs):
     if snapshot:
         disk.set_snapshot(snapshot)
 
+    # description
+    description = kwargs.pop('description', None)
+    if description:
+        disk.set_description(description)
+
     return disk
 
 
@@ -226,6 +232,7 @@ def addDisk(positive, **kwargs):
     Description: Adds disk to setup
     Parameters:
         * alias - name of the disk
+        * description - description of the disk
         * provisioned_size - size of the disk
         * interface - IDE or virtio
         * format - raw or cow
@@ -251,11 +258,10 @@ def addDisk(positive, **kwargs):
                    added successfully
             False - if positive but failed to add or not positive but added
     """
-#    kwargs.update(add=True)
     disk = _prepareDiskObject(**kwargs)
     disk, status = DISKS_API.create(disk, positive)
-    return status, {'diskId': disk.get_id()
-                    if disk and not isinstance(disk, Fault) else None}
+    return status, {'diskId': disk.get_id() if (disk and not isinstance(
+        disk, Fault)) else None}
 
 
 @is_action()
@@ -264,6 +270,7 @@ def updateDisk(positive, **kwargs):
     Description: Update already existing disk
     Parameters:
         * alias - name of current disk
+        * description - description for the current disk
         * name - new name of the disk
         * provisioned_size - size of the disk
         * interface - IDE or virtio
@@ -282,13 +289,20 @@ def updateDisk(positive, **kwargs):
         * storage_connection - in case of direct LUN - existing storage
                                connection to use instead of creating a new one
         * active - True or False whether disk should be automatically activated
+        * vmName - optional, will find the disk from the VM name
+                   provided instead from the disks collection
         You cannot set both storage_connection and lun_* in one call!
     Author: jlibosva
     Return: Status of the operation's result dependent on positive value
     """
-    diskObj = DISKS_API.find(kwargs.pop('alias'))
-    newDisk = _prepareDiskObject(**kwargs)
-    newDisk, status = DISKS_API.update(diskObj, newDisk, positive)
+    vm_name = kwargs.pop('vmName', None)
+    if vm_name:
+        disk_object = getVmDisk(vmName=vm_name, alias=kwargs.pop('alias'))
+    else:
+        disk_object = DISKS_API.find(kwargs.pop('alias'))
+    new_disk_object = _prepareDiskObject(**kwargs)
+    new_disk_object, status = DISKS_API.update(disk_object, new_disk_object,
+                                               positive)
     return status
 
 
@@ -489,8 +503,8 @@ def do_disk_action(action, disk_name=None, target_domain=None, disk_id=None,
         for sample in TimeoutingSampler(timeout, sleep, getStorageDomainDisks,
                                         target_domain, False):
             for target_disk in sample:
-                if disk.get_id() == target_disk.get_id() and \
-                        disk.status.state == ENUMS['disk_state_ok']:
+                if disk.get_id() == target_disk.get_id() and (
+                        disk.status.state == ENUMS['disk_state_ok']):
                     return True
     return not positive
 
@@ -530,18 +544,22 @@ def checksum_disk(hostname, user, password, disk_object, dc_obj):
     return checksum
 
 
-def get_all_disk_permutation(block=True, shared=False):
+def get_all_disk_permutation(block=True, shared=False,
+                             interfaces=(VIRTIO, VIRTIO_SCSI)):
     """
     Description: Get all disks interfaces/formats/allocation policies
     permutations possible
-    Author: ratamir
+    Author: ratamir, glazarov
     Parameters:
         * block - True if storage type is block, False otherwise
-    Return: list permutations stored in dictionary
+        * shared - True if disk is shared, False otherwise
+        * interfaces - The list of interfaces to use in generating the disk
+        permutations, default is (VIRTIO, VIRTIO_SCSI)
+    Return: list of permutations stored in dictionary
     """
     permutations = []
     for disk_format in [FORMAT_COW, FORMAT_RAW]:
-        for interface in [VIRTIO, VIRTIO_SCSI]:
+        for interface in interfaces:
             for sparse in [True, False]:
                 if disk_format is FORMAT_RAW and sparse and block:
                     continue
@@ -618,7 +636,7 @@ def get_disk_storage_domain_name(disk_name, vm_name=None, template_name=None):
     * template_name - same as vm_name, but for templates
     Return: Name of storage domain that contain disk_name
     """
-    if (vm_name is not None) and (template_name is not None):
+    if vm_name and template_name:
         raise Exception("You shouldn't specify both vm_name and template_name")
     logger.info("Get disk %s storage domain", disk_name)
     if vm_name is None and template_name is None:

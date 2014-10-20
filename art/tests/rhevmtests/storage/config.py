@@ -46,12 +46,13 @@ if not GOLDEN_ENV:
         NUMBER_OF_SDS = 0
 
     elif STORAGE_TYPE:
-        NUMBER_OF_SDS = int(STORAGE_CONF.get('%s_devices' % STORAGE_DEVICE_NAME))
+        NUMBER_OF_SDS = int(STORAGE_CONF.get('%s_devices' %
+                                             STORAGE_DEVICE_NAME))
     STORAGE_SELECTOR = [STORAGE_TYPE]
 else:
     # XXX WA until the multi selector plugin is merge
     # Get the list of sds that would the test run with testmultiplier
-    STORAGE_SELECTOR =  [STORAGE_TYPE_ISCSI]
+    STORAGE_SELECTOR = [STORAGE_TYPE_ISCSI]
     STORAGE_TYPE = STORAGE_TYPE_ISCSI
     NUMBER_OF_SDS = 3
 
@@ -93,6 +94,7 @@ DEST_DIR = PARAMETERS.get('dest_dir', "/tmp")
 
 VIRTIO_SCSI = INTERFACE_VIRTIO_SCSI
 VIRTIO_BLK = INTERFACE_VIRTIO
+IDE = INTERFACE_IDE
 
 COW_DISK = DISK_FORMAT_COW
 RAW_DISK = DISK_FORMAT_RAW
