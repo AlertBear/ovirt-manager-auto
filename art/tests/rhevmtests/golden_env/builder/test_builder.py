@@ -153,35 +153,70 @@ class CreateDC(TestCase):
             else:
                 LOGGER.warning("unknown type: %s", storage_type)
 
+    def _create_vm(self, vm, dc_name, cl_name):
+        vm_name = vm['name']
+        vm_description = vm_name
+        storage_domain_name = ll_sd.getDCStorages(dc_name, False)[0].name
+        LOGGER.info("storage domain: %s" % storage_domain_name)
+        sparse = vm['disk_sparse']
+        volume_format = vm['disk_format']
+        vm_type = vm['type']
+        disk_interface = vm['disk_interface']
+        assert vms.createVm(
+            True, vm_name, vm_description, cluster=cl_name,
+            nic='nic1', storageDomainName=storage_domain_name,
+            size=vm['disk_size'], diskType=vm['disk_type'],
+            volumeType=sparse, volumeFormat=volume_format,
+            diskInterface=disk_interface, memory=vm['memory'],
+            cpu_socket=vm['cpu_socket'], cpu_cores=vm['cpu_cores'],
+            nicType=vm['nic_type'], display_type=vm['display_type'],
+            os_type=config.OS_TYPE, slim=True, user=vm['user'],
+            password=vm['password'], type=vm_type, installation=True,
+            network=config.MGMT_BRIDGE, useAgent=config.USE_AGENT,
+            image=config.COBBLER_PROFILE)
+        assert vms.waitForVMState(vm_name)
+        status, result = vms.waitForIP(vm_name)
+        assert status
+        assert test_utils.setPersistentNetwork(
+            result['ip'], vm['password'])
+        assert vms.stopVm(True, vm_name)
+
     def add_vms(self, vms_def, dc_name, cl_name):
-        for vm_def in vms_def:
+        """ Usually, if we want to add more vms, they will be the same, so
+            we start with adding one vm and making a template from it.
+            If any of the following vms is similar to the first one, it will
+            be just cloned from this template, which is way quicker
+        """
+        if not vms_def:
+            return
+        first_vm = vms_def[0]['vm']
+        self._create_vm(first_vm, dc_name, cl_name)
+        if len(vms_def) == 1:
+            return
+        tmp_template = "tmp_template"
+        assert templates.createTemplate(
+            True, vm=first_vm['name'], name=tmp_template, cluster=cl_name)
+        for vm_def in vms_def[1:]:
             vm = vm_def['vm']
-            vm_name = vm['name']
-            vm_description = vm_name
-            storage_domain_name = ll_sd.getDCStorages(dc_name, False)[0].name
-            LOGGER.info("storage domain: %s" % storage_domain_name)
-            sparse = vm['disk_sparse']
-            volume_format = vm['disk_format']
-            vm_type = vm['type']
-            disk_interface = vm['disk_interface']
-            assert vms.createVm(
-                True, vm_name, vm_description, cluster=cl_name,
-                nic='nic1', storageDomainName=storage_domain_name,
-                size=vm['disk_size'], diskType=vm['disk_type'],
-                volumeType=sparse, volumeFormat=volume_format,
-                diskInterface=disk_interface, memory=vm['memory'],
-                cpu_socket=vm['cpu_socket'], cpu_cores=vm['cpu_cores'],
-                nicType=vm['nic_type'], display_type=vm['display_type'],
-                os_type=config.OS_TYPE, slim=True, user=vm['user'],
-                password=vm['password'], type=vm_type, installation=True,
-                network=config.MGMT_BRIDGE, useAgent=config.USE_AGENT,
-                image=config.COBBLER_PROFILE)
-            assert vms.waitForVMState(vm_name)
-            status, result = vms.waitForIP(vm_name)
-            assert status
-            assert test_utils.setPersistentNetwork(
-                result['ip'], vm['password'])
-            assert vms.stopVm(True, vm_name)
+            args = [
+                'type', 'disk_interface', 'disk_size', 'disk_type', 'memory',
+                'cpu_socket', 'cpu_cores', 'nic_type', 'display_type', 'user',
+                'password']
+            clone = True
+            for arg in args:
+                if vm[arg] != first_vm[arg]:
+                    clone = False
+                    break
+            if clone:
+                LOGGER.info(
+                    "Cloning vm %s from template %s", vm['name'], tmp_template)
+                assert vms.cloneVmFromTemplate(
+                    True, vm['name'], tmp_template, cl_name,
+                    vol_sparse=vm['disk_sparse'], vol_format=vm['disk_format'])
+            else:
+                LOGGER.info("Creating a new vm")
+                self._create_vm(vm, dc_name, cl_name)
+        assert templates.removeTemplate(True, tmp_template)
 
     def add_templates(self, templ_def, cluster):
         for template in templ_def:
@@ -192,7 +227,6 @@ class CreateDC(TestCase):
 
     def build_dc(self, dc_def, host_conf, storage_conf):
         datacenter_name = dc_def['name']
-#        storage_type = dc_def['storage_type']
         local = bool(dc_def['local'])
         comp_version = dc_def['compatibility_version']
         if not datacenters.addDataCenter(
@@ -236,14 +270,14 @@ class CreateDC(TestCase):
     def add_export_domain(self, export_domain, storage_conf, host):
         name = export_domain['name']
         address, path = storage_conf.get_unused_export_share()
-        ll_sd.addStorageDomain(
+        assert ll_sd.addStorageDomain(
             True, name=name, type=ENUMS['storage_dom_type_export'],
             storage_type=ENUMS['storage_type_nfs'], path=path, address=address,
             host=host)
 
     def import_shared_iso_domain(self, storage_conf, host):
         address, path = storage_conf.get_shared_iso()
-        ll_sd.importStorageDomain(
+        assert ll_sd.importStorageDomain(
             True, ENUMS['storage_dom_type_iso'], ENUMS['storage_type_nfs'],
             address, path, host)
 
