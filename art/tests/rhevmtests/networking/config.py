@@ -71,6 +71,8 @@ J_VLAN_NETWORKS = ['sw201', 'sw202', 'sw203', 'sw204', 'sw205']
 J_VLAN_ID = ['201', '202', '203', '204', '205']
 
 # Import/Export parameters
+IE_VM = "IE_VM"
+IE_TEMPLATE = "IE_TEMP"
 IMP_MORE_THAN_ONCE_VM = "MoreThanOnceVM"
 IMP_MORE_THAN_ONCE_TEMP = "MoreThanOnceTEMPLATE"
 EXPORT_TYPE = ENUMS['storage_dom_type_export']
