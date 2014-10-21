@@ -13,16 +13,18 @@ from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.test_handler.exceptions import NetworkException
-from art.rhevm_api.tests_lib.low_level.networks import \
-    getNetworksInDataCenter, getNetworkInDataCenter, \
-    createNetworkInDataCenter, updateNetworkInDataCenter, \
+from art.rhevm_api.tests_lib.low_level.networks import(
+    getNetworksInDataCenter, getNetworkInDataCenter,
+    createNetworkInDataCenter, updateNetworkInDataCenter,
     createNetworksInDataCenter, deleteNetworksInDataCenter, NETWORK_NAME
+)
 
 LOGGER = logging.getLogger(__name__)
 CREATE_NET_DICT = {"description": "New network", "stp": True,
                    "vlan_id": 500, "usages": [],
                    "mtu": 5555}
 VERIFY_NET_LIST = ["description", "stp", "vlan_id", "usages", "mtu"]
+DC_NAMES = [config.DC_NAME[0], "DC_NET_DC2"]
 
 ########################################################################
 
@@ -44,18 +46,18 @@ class DataCenterNetworksCase1(TestCase):
         """
         Create networks under 2 datacenters.
         """
-        LOGGER.info("Create 10 networks under %s", config.DC_NAME[0])
+        LOGGER.info("Create 10 networks under %s", DC_NAMES[0])
         cls.net_list = []
-        nets = createNetworksInDataCenter(config.DC_NAME[0], 10)
+        nets = createNetworksInDataCenter(DC_NAMES[0], 10)
         if not nets:
             raise NetworkException("Fail to create 10 network on %s" %
-                                   config.DC_NAME[0])
+                                   DC_NAMES[0])
         cls.net_list.extend(nets)
 
-        LOGGER.info("Create 5 networks under %s", config.DC_NAME[1])
-        if not createNetworksInDataCenter(config.DC_NAME[1], 5):
+        LOGGER.info("Create 5 networks under %s", DC_NAMES[1])
+        if not createNetworksInDataCenter(DC_NAMES[1], 5):
             raise NetworkException("Fail to create 5 network on %s" %
-                                   config.DC_NAME[1])
+                                   DC_NAMES[1])
 
     @istest
     @tcms(12098, 333370)
@@ -64,20 +66,20 @@ class DataCenterNetworksCase1(TestCase):
         Get all networks under the datacenter.
         """
         LOGGER.info("Checking that all networks are exist in the datacenter")
-        for net in getNetworksInDataCenter(config.DC_NAME[0]):
+        for net in getNetworksInDataCenter(DC_NAMES[0]):
             net_name = net.get_name()
             if net_name == config.MGMT_BRIDGE:
                 continue
             if net_name not in self.net_list:
                 raise NetworkException("%s was expected to be in %s" %
-                                       (net_name, config.DC_NAME[0]))
+                                       (net_name, DC_NAMES[0]))
 
     @classmethod
     def teardown_class(cls):
         """
         Remove network from the setup.
         """
-        for dc_name in (config.DC_NAME[0], config.DC_NAME[1]):
+        for dc_name in DC_NAMES:
             LOGGER.info("Remove all networks from %s", dc_name)
             if not deleteNetworksInDataCenter(dc_name, config.MGMT_BRIDGE):
                 raise NetworkException("Fail to delete all networks from DC")
@@ -103,10 +105,10 @@ class DataCenterNetworksCase2(TestCase):
         for key, val in CREATE_NET_DICT.iteritems():
             name = "_".join([NETWORK_NAME, key])
             kwargs_dict = {key: val, "name": name}
-            if not createNetworkInDataCenter(True, config.DC_NAME[0],
+            if not createNetworkInDataCenter(True, DC_NAMES[0],
                                              **kwargs_dict):
                 raise NetworkException("Fail to create %s network on %s" %
-                                       (name, config.DC_NAME[0]))
+                                       (name, DC_NAMES[0]))
 
     @istest
     @tcms(12098, 333360)
@@ -117,7 +119,7 @@ class DataCenterNetworksCase2(TestCase):
         LOGGER.info("Verify that all networks have the correct parameters")
         for key, val in CREATE_NET_DICT.iteritems():
             name = "_".join([NETWORK_NAME, key])
-            net_obj = getNetworkInDataCenter(name, config.DC_NAME[0])
+            net_obj = getNetworkInDataCenter(name, DC_NAMES[0])
 
             if key == "vlan_id":
                 res = net_obj.get_vlan().get_id()
@@ -138,7 +140,7 @@ class DataCenterNetworksCase2(TestCase):
         Remove network from the setup.
         """
         LOGGER.info("Remove all networks from DC")
-        if not deleteNetworksInDataCenter(config.DC_NAME[0],
+        if not deleteNetworksInDataCenter(DC_NAMES[0],
                                           config.MGMT_BRIDGE):
             raise NetworkException("Fail to delete all networks from DC")
 
@@ -156,12 +158,12 @@ class DataCenterNetworksCase3(TestCase):
         """
         Create 5 networks under datacenter
         """
-        LOGGER.info("Create 5 networks under %s", config.DC_NAME[0])
+        LOGGER.info("Create 5 networks under %s", DC_NAMES[0])
         cls.net_list = []
-        nets = createNetworksInDataCenter(config.DC_NAME[0], 5)
+        nets = createNetworksInDataCenter(DC_NAMES[0], 5)
         if not nets:
             raise NetworkException("Fail to create 5 network on %s" %
-                                   config.DC_NAME[0])
+                                   DC_NAMES[0])
         cls.net_list.extend(nets)
 
     @istest
@@ -175,13 +177,13 @@ class DataCenterNetworksCase3(TestCase):
         usages
         mtu
         """
-        LOGGER.info("Update networks under %s", config.DC_NAME[0])
+        LOGGER.info("Update networks under %s", DC_NAMES[0])
         for idx, net in enumerate(self.net_list):
             key = VERIFY_NET_LIST[idx]
             val = CREATE_NET_DICT[VERIFY_NET_LIST[idx]]
             kwargs_dict = {key: val}
             LOGGER.info("Updating %s %s to %s", net, key, val)
-            if not updateNetworkInDataCenter(True, net, config.DC_NAME[0],
+            if not updateNetworkInDataCenter(True, net, DC_NAMES[0],
                                              **kwargs_dict):
                 raise NetworkException("Fail to update %s %s to %s" %
                                        (net, key, val))
@@ -192,7 +194,7 @@ class DataCenterNetworksCase3(TestCase):
         Remove network from the setup.
         """
         LOGGER.info("Remove all networks from DC")
-        if not deleteNetworksInDataCenter(config.DC_NAME[0],
+        if not deleteNetworksInDataCenter(DC_NAMES[0],
                                           config.MGMT_BRIDGE):
             raise NetworkException("Fail to delete all networks from DC")
 
@@ -209,10 +211,10 @@ class DataCenterNetworksCase4(TestCase):
         """
         Create 5 networks under datacenter
         """
-        LOGGER.info("Create 5 networks under %s", config.DC_NAME[0])
-        if not createNetworksInDataCenter(config.DC_NAME[0], 5):
+        LOGGER.info("Create 5 networks under %s", DC_NAMES[0])
+        if not createNetworksInDataCenter(DC_NAMES[0], 5):
             raise NetworkException("Fail to create 5 network on %s" %
-                                   config.DC_NAME[0])
+                                   DC_NAMES[0])
 
     @istest
     @tcms(12098, 333361)
@@ -221,7 +223,7 @@ class DataCenterNetworksCase4(TestCase):
         Delete networks under datacenter.
         """
         LOGGER.info("Remove all networks from DC")
-        if not deleteNetworksInDataCenter(config.DC_NAME[0],
+        if not deleteNetworksInDataCenter(DC_NAMES[0],
                                           config.MGMT_BRIDGE):
             raise NetworkException("Fail to delete all networks from DC")
 
