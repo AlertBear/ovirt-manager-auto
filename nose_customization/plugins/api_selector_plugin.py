@@ -1,5 +1,6 @@
 import logging
 import os
+import inspect
 from nose.util import transplant_class
 from nose.plugins import Plugin as NosePlugin
 from art.test_handler.settings import opts
@@ -28,6 +29,9 @@ class APISelectorPlugin(NosePlugin):
         self.loader = loader
 
     def makeTest(self, obj, parent):
+        # Skipping non-classes objects
+        if not inspect.isclass(obj):
+            return []
         if parent and obj.__module__ != parent.__name__:
             obj = transplant_class(obj, parent.__name__)
 
