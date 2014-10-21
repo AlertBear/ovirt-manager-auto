@@ -10,10 +10,12 @@ from art.unittest_lib import attr
 from art.unittest_lib import NetworkTest as TestCase
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 import logging
-from art.rhevm_api.tests_lib.high_level.networks import \
-    createAndAttachNetworkSN, remove_all_networks
-from art.rhevm_api.tests_lib.low_level.networks import \
+from art.rhevm_api.tests_lib.high_level.networks import(
+    createAndAttachNetworkSN, remove_net_from_setup
+)
+from art.rhevm_api.tests_lib.low_level.networks import(
     addNetwork, addNetworkToCluster, updateNetwork, createNetworkInDataCenter
+)
 from art.test_handler.exceptions import NetworkException
 from art.rhevm_api.utils.test_utils import get_api
 from art.test_handler.settings import opts
@@ -22,10 +24,8 @@ from rhevmtests.networking import config
 
 HOST_API = get_api('host', 'hosts')
 VM_API = get_api('vm', 'vms')
-
-logger = logging.getLogger(__name__)
-
 ENUMS = opts['elements_conf']['RHEVM Enums']
+logger = logging.getLogger(__name__)
 
 ########################################################################
 
@@ -45,15 +45,10 @@ class IOTestCaseBase(TestCase):
         Remove networks from the setup and clean up host
         """
         logger.info("Starting teardown")
-        if not (
-            remove_all_networks(
-                datacenter=config.DC_NAME[0],
+        if not remove_net_from_setup(
+                host=config.VDS_HOSTS[0], auto_nics=[0],
+                data_center=config.DC_NAME[0], all_net=True,
                 mgmt_network=config.MGMT_BRIDGE
-            ) and createAndAttachNetworkSN(
-                host=config.HOSTS[0],
-                network_dict={},
-                auto_nics=[config.VDS_HOSTS[0].nics[0]],
-            )
         ):
             raise NetworkException("Cannot remove network from setup")
 
@@ -181,7 +176,7 @@ class Test02(IOTestCaseBase):
 
             local_dict = {
                 'invalid_ips': {
-                    'nic': config.VDS_HOSTS[0].nics[1],
+                    'nic': 1,
                     'bootproto': 'static',
                     'address': invalid_ip,
                     'netmask': ['255.255.255.0'],
@@ -191,9 +186,9 @@ class Test02(IOTestCaseBase):
 
             self.assertFalse(
                 createAndAttachNetworkSN(
-                    host=config.HOSTS[0],
+                    host=config.VDS_HOSTS[0],
                     network_dict=local_dict,
-                    auto_nics=[config.VDS_HOSTS[0].nics[0]],
+                    auto_nics=[0],
                 ),
                 "Network with invalid IP (%s) was created" % invalid_ip,
             )
@@ -247,7 +242,7 @@ class Test03(IOTestCaseBase):
 
             local_dict = {
                 'invalid_netmask': {
-                    'nic': config.VDS_HOSTS[0].nics[1],
+                    'nic': 1,
                     'bootproto': 'static',
                     'address': ['1.1.1.1'],
                     'netmask': invalid_netmask,
@@ -257,9 +252,9 @@ class Test03(IOTestCaseBase):
 
             self.assertFalse(
                 createAndAttachNetworkSN(
-                    host=config.HOSTS[0],
+                    host=config.VDS_HOSTS[0],
                     network_dict=local_dict,
-                    auto_nics=[config.VDS_HOSTS[0].nics[0]]
+                    auto_nics=[0]
                 ),
                 "Network invalid_netmask with invalid ip (%s) was created" %
                 invalid_netmask,
@@ -285,7 +280,7 @@ class Test04(IOTestCaseBase):
         )
         local_dict = {
             'netmaskWithNoIP': {
-                'nic': config.VDS_HOSTS[0].nics[1],
+                'nic': 1,
                 'bootproto': 'static',
                 'netmask': ['255.255.255.0'],
                 'required': 'false'},
@@ -294,9 +289,9 @@ class Test04(IOTestCaseBase):
             createAndAttachNetworkSN(
                 data_center=config.DC_NAME[0],
                 cluster=config.CLUSTER_NAME[0],
-                host=config.HOSTS[0],
+                host=config.VDS_HOSTS[0],
                 network_dict=local_dict,
-                auto_nics=[config.VDS_HOSTS[0].nics[0]],
+                auto_nics=[0],
             ),
             "Network without ip was created although it shouldn't have",
         )
@@ -321,7 +316,7 @@ class Test05(IOTestCaseBase):
         )
         local_dict = {
             'ipWithNoNetmask': {
-                'nic': config.VDS_HOSTS[0].nics[1],
+                'nic': 1,
                 'bootproto': 'static',
                 'address': ['1.1.1.1'],
                 'required': 'false',
@@ -331,9 +326,9 @@ class Test05(IOTestCaseBase):
             createAndAttachNetworkSN(
                 data_center=config.DC_NAME[0],
                 cluster=config.CLUSTER_NAME[0],
-                host=config.HOSTS[0],
+                host=config.VDS_HOSTS[0],
                 network_dict=local_dict,
-                auto_nics=[config.VDS_HOSTS[0].nics[0]],
+                auto_nics=[0],
             ),
             "Network without netmask was created although it shouldn't have",
         )
