@@ -8,21 +8,28 @@ from art.unittest_lib import NetworkTest as TestCase
 
 
 from art.rhevm_api.utils.test_utils import get_api
-from art.test_handler.exceptions import NetworkException, DataCenterException,\
-    VMException
+from art.test_handler.exceptions import(
+    NetworkException, DataCenterException, VMException
+)
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.core_api.apis_utils import TimeoutingSampler
-from art.rhevm_api.tests_lib.low_level.datacenters import\
+from art.rhevm_api.tests_lib.low_level.datacenters import(
     addDataCenter, removeDataCenter
-from art.rhevm_api.tests_lib.high_level.networks import\
-    createAndAttachNetworkSN, removeNetFromSetup, removeNetwork
-from art.rhevm_api.tests_lib.low_level.networks import updateNetwork,\
-    updateVnicProfile, getNetworkVnicProfiles, getVnicProfileObj,\
-    addVnicProfile, removeVnicProfile, findVnicProfile, getVnicProfileAttr
-from art.rhevm_api.tests_lib.low_level.vms import addNic, updateNic,\
-    removeNic, createVm, checkVmNicProfile, removeVm
-from art.rhevm_api.tests_lib.low_level.templates import addTemplateNic,\
-    removeTemplateNic
+)
+from art.rhevm_api.tests_lib.high_level.networks import(
+    createAndAttachNetworkSN, remove_net_from_setup, removeNetwork
+)
+from art.rhevm_api.tests_lib.low_level.networks import(
+    updateNetwork, updateVnicProfile, getNetworkVnicProfiles,
+    getVnicProfileObj, addVnicProfile, removeVnicProfile, findVnicProfile,
+    getVnicProfileAttr
+)
+from art.rhevm_api.tests_lib.low_level.vms import(
+    addNic, updateNic, removeNic, createVm, checkVmNicProfile, removeVm
+)
+from art.rhevm_api.tests_lib.low_level.templates import(
+    addTemplateNic, removeTemplateNic
+)
 
 HOST_API = get_api('host', 'hosts')
 VM_API = get_api('vm', 'vms')
@@ -432,17 +439,16 @@ class VNICProfileCase08(TestCase):
         """
         local_dict = {config.NETWORKS[0]: {'required': 'false',
                                            'vlan_id': config.VLAN_ID[0],
-                                           'nic': config.HOST_NICS[1]},
+                                           'nic': 1},
                       config.NETWORKS[1]: {'required': 'false',
                                            'vlan_id': config.VLAN_ID[1],
-                                           'nic': config.HOST_NICS[1]}}
+                                           'nic': 1}}
         logger.info("Creating networks with default vnic profile")
         if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
                                         cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS[0],
+                                        host=config.VDS_HOSTS[0],
                                         network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0],
-                                                   config.HOST_NICS[1]]):
+                                        auto_nics=[0, 1]):
             raise NetworkException("Cannot create and attach networks")
 
         logger.info("Creating additional profiles for network %s",
@@ -512,9 +518,9 @@ class VNICProfileCase08(TestCase):
             raise NetworkException("Cannot remove nic from setup")
         for i in range(2):
             logger.info("Remove network %s from setup", config.NETWORKS[i])
-            if not removeNetFromSetup(host=config.HOSTS[0],
-                                      auto_nics=[config.HOST_NICS[0]],
-                                      network=[config.NETWORKS[i]]):
+            if not remove_net_from_setup(host=config.VDS_HOSTS[0],
+                                         auto_nics=[0],
+                                         network=[config.NETWORKS[i]]):
                 raise NetworkException("Cannot remove network %s from setup"
                                        % config.NETWORKS[i])
 
@@ -648,17 +654,16 @@ class VNICProfileCase10(TestCase):
         """
         local_dict = {config.NETWORKS[0]: {'required': 'false',
                                            'vlan_id': config.VLAN_ID[0],
-                                           'nic': config.HOST_NICS[1]},
+                                           'nic': 1},
                       config.NETWORKS[1]: {'required': 'false',
                                            'vlan_id': config.VLAN_ID[1],
-                                           'nic': config.HOST_NICS[1]}}
+                                           'nic': 1}}
         logger.info("Creating networks with default vnic profiles")
         if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
                                         cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS[0],
+                                        host=config.VDS_HOSTS[0],
                                         network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0],
-                                                   config.HOST_NICS[1]]):
+                                        auto_nics=[0, 1]):
             raise NetworkException("Cannot create and attach networks")
         logger.info("Change VNIC profile attached to VM on nic3 to "
                     "have port mirroring enabled")
@@ -706,9 +711,9 @@ class VNICProfileCase10(TestCase):
                 raise NetworkException("Cannot remove nic from setup")
         for i in range(2):
             logger.info("Remove network %s from setup", config.NETWORKS[i])
-            if not removeNetFromSetup(host=config.HOSTS[0],
-                                      auto_nics=[config.HOST_NICS[0]],
-                                      network=[config.NETWORKS[i]]):
+            if not remove_net_from_setup(host=config.VDS_HOSTS[0],
+                                         auto_nics=[0],
+                                         network=[config.NETWORKS[i]]):
                 raise NetworkException("Cannot remove network %s from setup"
                                        % config.NETWORKS[i])
 
@@ -732,17 +737,16 @@ class VNICProfileCase11(TestCase):
         """
         local_dict = {config.NETWORKS[0]: {'required': 'false',
                                            'vlan_id': config.VLAN_ID[0],
-                                           'nic': config.HOST_NICS[1]},
+                                           'nic': 1},
                       config.NETWORKS[1]: {'required': 'false',
                                            'vlan_id': config.VLAN_ID[1],
-                                           'nic': config.HOST_NICS[1]}}
+                                           'nic': 1}}
         logger.info("Creating networks with default vnic profile")
         if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
                                         cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS[0],
+                                        host=config.VDS_HOSTS[0],
                                         network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0],
-                                                   config.HOST_NICS[1]]):
+                                        auto_nics=[0, 1]):
             raise NetworkException("Cannot create and attach networks")
 
         logger.info("Creating additional profiles for network %s",
@@ -841,9 +845,9 @@ class VNICProfileCase11(TestCase):
             raise NetworkException("Cannot remove nic from setup")
         for i in range(2):
             logger.info("Remove network %s from setup", config.NETWORKS[i])
-            if not removeNetFromSetup(host=config.HOSTS[0],
-                                      auto_nics=[config.HOST_NICS[0]],
-                                      network=[config.NETWORKS[i]]):
+            if not remove_net_from_setup(host=config.VDS_HOSTS[0],
+                                         auto_nics=[0],
+                                         network=[config.NETWORKS[i]]):
                 raise NetworkException("Cannot remove network %s from setup"
                                        % config.NETWORKS[i])
 
@@ -911,13 +915,13 @@ class VNICProfileCase13(TestCase):
         default VNIC profile
         """
         local_dict = {config.NETWORKS[0]: {'required': 'false',
-                                           'nic': config.HOST_NICS[1]}}
+                                           'nic': 1}}
         logger.info("Creating network with default vnic profile")
         if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
                                         cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS[0],
+                                        host=config.VDS_HOSTS[0],
                                         network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0]]):
+                                        auto_nics=[0]):
             raise NetworkException("Cannot create and attach networks")
 
     @istest
@@ -959,9 +963,9 @@ class VNICProfileCase13(TestCase):
             raise NetworkException("Cannot remove nic from setup")
 
         logger.info("Remove network %s from setup", config.NETWORKS[0])
-        if not removeNetFromSetup(host=config.HOSTS[0],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.NETWORKS[0]]):
+        if not remove_net_from_setup(host=config.VDS_HOSTS[0],
+                                     auto_nics=[0],
+                                     network=[config.NETWORKS[0]]):
             raise NetworkException("Cannot remove network %s from setup"
                                    % config.NETWORKS[0])
 
@@ -981,13 +985,13 @@ class VNICProfileCase14(TestCase):
         2) Add NIC2 to VM
         """
         local_dict = {config.NETWORKS[0]: {'required': 'false',
-                                           'nic': config.HOST_NICS[1]}}
+                                           'nic': 1}}
         logger.info("Creating network with default vnic profile")
         if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
                                         cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS[0],
+                                        host=config.VDS_HOSTS[0],
                                         network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0]]):
+                                        auto_nics=[0]):
             raise NetworkException("Cannot create and attach networks")
 
         logger.info("Hotplug %s profile to VM on nic2", config.NETWORKS[0])
@@ -1021,9 +1025,9 @@ class VNICProfileCase14(TestCase):
             raise NetworkException("Cannot remove nic from setup")
 
         logger.info("Remove network %s from setup", config.NETWORKS[0])
-        if not removeNetFromSetup(host=config.HOSTS[0],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.NETWORKS[0]]):
+        if not remove_net_from_setup(host=config.VDS_HOSTS[0],
+                                     auto_nics=[0],
+                                     network=[config.NETWORKS[0]]):
             raise NetworkException("Cannot remove network %s from setup"
                                    % config.NETWORKS[0])
 
@@ -1078,8 +1082,8 @@ class VNICProfileCase15(TestCase):
     @classmethod
     def teardown_class(cls):
         logger.info("Remove network %s from setup", config.NETWORKS[0])
-        if not removeNetFromSetup(host=config.HOSTS[0],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.NETWORKS[0]]):
+        if not remove_net_from_setup(host=config.VDS_HOSTS[0],
+                                     auto_nics=[0],
+                                     network=[config.NETWORKS[0]]):
             raise NetworkException("Cannot remove network %s from setup"
                                    % config.NETWORKS[0])
