@@ -29,6 +29,7 @@ NUMBER_OF_DISKS = int(PARAMETERS.get('no_of_disks', 8))
 STORAGE_DEVICE_TYPE_MAP = {
     STORAGE_TYPE_POSIX: STORAGE_TYPE_NFS,  # posix   -> nfs_devices
     STORAGE_TYPE_LOCAL: "local",           # localfs -> local_devices
+    STORAGE_TYPE_GLUSTER: "gluster",       # glusterfs -> gluster_devices
 }
 
 STORAGE_DEVICE_NAME = STORAGE_DEVICE_TYPE_MAP.get(STORAGE_TYPE, STORAGE_TYPE)

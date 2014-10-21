@@ -68,6 +68,7 @@ STORAGE_TYPE_FCP = ENUMS['storage_type_fcp']
 STORAGE_TYPE_LOCAL = ENUMS['storage_type_local']
 STORAGE_TYPE_POSIX = ENUMS['storage_type_posixfs']
 STORAGE_TYPE_GLANCE = ENUMS['storage_type_glance']
+STORAGE_TYPE_GLUSTER = ENUMS['storage_type_gluster']
 
 if STORAGE_TYPE is None:
     LOCAL = PARAMETERS.get('local', None)
