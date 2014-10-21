@@ -20,11 +20,12 @@ if GOLDEN_ENV:
     TEMPLATE_NAME = templates.get_template_from_cluster(CLUSTER_NAME[0])
     STORAGE_TYPE = "nfs"
     VDS_HOSTS = [resources.VDS(h, HOSTS_PW, ) for h in HOSTS_IP]
+else:
+    HOSTS_IP = [host.ip for host in VDS_HOSTS]
 
 # Global parameters
 MTU = [9000, 5000, 2000, 1500]
 NETMASK = '255.255.255.0'
-
 VNIC_PROFILE = PARAMETERS.as_list('vnic_profile')
 VLAN_NETWORKS = PARAMETERS.as_list('vlan_networks')
 VLAN_ID = PARAMETERS.as_list('vlan_id')
