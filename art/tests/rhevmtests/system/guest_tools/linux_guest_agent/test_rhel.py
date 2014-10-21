@@ -2,9 +2,11 @@
 Test installation and uninstallation of guest agent on RHEL 5/6 32b/64b
 """
 import os
+import logging
+import urlparse
+
 from rhevmtests.system.guest_tools.linux_guest_agent import config
 from rhevmtests.system.guest_tools.linux_guest_agent import common
-import logging
 from nose.tools import istest
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 
@@ -19,24 +21,31 @@ repo_name = 'latest_rhel'
 def setup_module():
     for vm_os in [eOS.RHEL_5_64b, eOS.RHEL_5_32b,
                   eOS.RHEL_6_64b, eOS.RHEL_6_32b]:
+        rhel5 = vm_os in (eOS.RHEL_5_64b, eOS.RHEL_5_32b)
         machine = common.MyLinuxMachine(config.TEMPLATES[vm_os]['ip'])
         path = os.path.join(repo_path, 'latest_rhevm.repo')
+        url = urlparse.urljoin(
+            config.RHEL_REPOSITORY,
+            '%s/%s' % (config.PRODUCT_BUILD, 'el5' if rhel5 else 'el6'),
+        )
         lines = ['[%s]' % repo_name, 'name=%s' % repo_name,
-                 'baseurl=%s' % config.RHEL_REPOSITORY, 'enabled=1',
-                 'gpgcheck=0']
-        for line in lines:
-            repo_cmd = ['echo', line, '>>', path]
-            res, out = machine.runCmd(repo_cmd, timeout=config.TIMEOUT)
-            if not res:
-                LOGGER.error("Fail to run cmd %s: %s", repo_cmd, out)
+                 'baseurl=%s' % url, 'enabled=1', 'gpgcheck=0']
+        repo_cmd = ['cat', '>', path]
+        res, out = machine.runCmd(repo_cmd, data="\n".join(lines),
+                                  timeout=config.TIMEOUT)
+        if not res:
+            LOGGER.error("Fail to run cmd %s: %s", repo_cmd, out)
 
-        if vm_os in (eOS.RHEL_5_64b, eOS.RHEL_5_32b):
+        repo_to_disable = 'rhevm'
+        if rhel5:
             common.runPackagerCommand(machine, package_manager, 'install',
-                                      '--disablerepo=rhevm', NAME, '-x',
-                                      'rhevm-guest-agent-common')
+                                      '--disablerepo=%s' % repo_to_disable,
+                                      NAME, '-x', 'rhevm-guest-agent-common')
         else:
+            repo_to_disable = 'rhevm33'
             common.runPackagerCommand(machine, package_manager, 'install',
-                                      '--disablerepo=rhevm33', NAME)
+                                      '--disablerepo=%s' % repo_to_disable,
+                                      NAME)
         LOGGER.info('Service started %s',
                     machine.startService(config.AGENT_SERVICE_NAME))
         config.TEMPLATES[vm_os]['machine'] = machine
