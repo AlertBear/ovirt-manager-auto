@@ -26,6 +26,7 @@ VDSM_LOG = "/var/log/vdsm/vdsm.log"
 SVDSM_LOCK = "/var/run/vdsm/svdsm.sock"
 SUPERVDSMD = "supervdsmd"
 VDSMD = "vdsmd"
+SERVICE_CND = "/sbin/service"
 
 HW_INFO_COMMAND = ["vdsClient", "-s", "0", "getVdsHardwareInfo"]
 SLEEP_SERVICE = 10
@@ -166,7 +167,7 @@ class TestCase289539(SuperVDSMTestBase):
             return value
 
         def runSystemInitSupervdsmd(cmd):
-            command = ["/etc/init.d/supervdsmd", cmd]
+            command = [SERVICE_CND, SUPERVDSMD, cmd]
             try:
                 pid = getSupervdsmPid(self.machine)
                 success, output = self.machine.runCmd(command)
