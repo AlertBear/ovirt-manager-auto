@@ -128,8 +128,9 @@ class CommonUsage(BaseTestCase):
         Adding new disk, edit the wipe after delete flag if update=True,
         and removes the disk to see in log file that the operation succeeded
         """
-        assert addDisk(True, config.VM_NAME, config.DISK_SIZE, SD_NAME_0,
-                       wipe_after_delete=False, interface=config.VIRTIO)
+        assert addDisk(True, config.VM_NAME, config.DISK_SIZE,
+                       storagedomain=SD_NAME_0, wipe_after_delete=False,
+                       interface=config.VIRTIO)
         start_vms([config.VM_NAME], 1, wait_for_ip=False)
         waitForVMState(config.VM_NAME)
 
@@ -193,8 +194,9 @@ class TestCase379365(CommonUsage):
         Expected Results:
             - no Errors should appear
         """
-        addDisk(True, config.VM_NAME, config.DISK_SIZE, SD_NAME_0,
-                wipe_after_delete=False, interface=config.VIRTIO)
+        addDisk(True, config.VM_NAME, config.DISK_SIZE,
+                storagedomain=SD_NAME_0, wipe_after_delete=False,
+                interface=config.VIRTIO)
         start_vms([config.VM_NAME], 1, wait_for_ip=False)
         waitForVMState(config.VM_NAME)
 
@@ -229,8 +231,9 @@ class TestCase379370(CommonUsage):
         start_vms([config.VM_NAME], 1, wait_for_ip=False)
         waitForVMState(config.VM_NAME)
 
-        addDisk(True, config.VM_NAME, config.DISK_SIZE, SD_NAME_0,
-                wipe_after_delete=False, interface=config.VIRTIO)
+        addDisk(True, config.VM_NAME, config.DISK_SIZE,
+                storagedomain=SD_NAME_0, wipe_after_delete=False,
+                interface=config.VIRTIO)
 
         self.disk_name = [d.get_alias() for d in getVmDisks(config.VM_NAME) if
                           not d.get_bootable()][0]
@@ -282,9 +285,9 @@ class TestCase384228(CommonUsage):
         """
         Prepares disk with wipe_after_delete=True for VM
         """
-        assert addDisk(True, config.VM_NAME, config.DISK_SIZE, SD_NAME_0,
-                       wipe_after_delete=True, interface=config.VIRTIO,
-                       alias=self.disk_name)
+        assert addDisk(True, config.VM_NAME, config.DISK_SIZE,
+                       storagedomain=SD_NAME_0, wipe_after_delete=True,
+                       interface=config.VIRTIO, alias=self.disk_name)
 
         start_vms([config.VM_NAME], 1, wait_for_ip=False)
         waitForVMState(config.VM_NAME)
