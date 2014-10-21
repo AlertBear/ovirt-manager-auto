@@ -3,50 +3,59 @@
 https://tcms.engineering.redhat.com/plan/12049
 """
 import logging
-from art.unittest_lib.common import StorageTest as TestCase
-from utilities.utils import getIpAddressByHostName
 
 from art.rhevm_api.tests_lib.low_level.datacenters import (
     addDataCenter, removeDataCenter,
 )
 from art.rhevm_api.tests_lib.low_level.hosts import (
-    updateHost, deactivateHost, activateHost, kill_qemu_process,
+    updateHost, deactivateHost, activateHost, kill_qemu_process, getHostIP,
+    getVmHost,
 )
 from art.rhevm_api.tests_lib.low_level.clusters import (
     addCluster, removeCluster,
 )
 from art.rhevm_api.tests_lib.low_level.disks import (
-    updateDisk, getVmDisk, getStorageDomainDisks, waitForDisksState, addDisk,
-    attachDisk,
+    updateDisk, getVmDisk, waitForDisksState, addDisk, attachDisk,
+    checkDiskExists, deleteDisk,
 )
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    cleanDataCenter, getDomainAddress, get_master_storage_domain_name,
-    attachStorageDomain, deactivateStorageDomain, findExportStorageDomains,
+    cleanDataCenter, getDomainAddress, attachStorageDomain,
+    deactivateStorageDomain, findExportStorageDomains,
+    getStorageDomainNamesForType, removeStorageDomain,
 )
+from art.rhevm_api.tests_lib.low_level.templates import (
+    removeTemplate, createTemplate, waitForTemplatesStates,
+)
+from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.tests_lib.low_level.vms import (
-    createVm, addSnapshot, getVmDisks, removeDisk, start_vms,
+    addSnapshot, getVmDisks, removeDisk, start_vms,
     deactivateVmDisk, waitForVMState, removeSnapshot,
     migrateVm, suspendVm, startVm, exportVm, importVm, get_snapshot_disks,
     cloneVmFromSnapshot, removeVm, cloneVmFromTemplate, stop_vms_safely,
     removeVms, move_vm_disk, waitForVmsStates, preview_snapshot,
     undo_snapshot_preview, commit_snapshot, addVm,
-    removeVmFromExportDomain,
+    removeVmFromExportDomain, does_vm_exist, DiskNotFound,
+    get_vms_disks_storage_domain_name, waitForDisksStat,
+    safely_remove_vms, get_vm_bootable_disk,
 )
-from art.rhevm_api.tests_lib.low_level.templates import (
-    removeTemplate, createTemplate, waitForTemplatesStates,
-)
+
 from art.rhevm_api.tests_lib.high_level.datacenters import build_setup
-from art.rhevm_api.utils.test_utils import (
-    setPersistentNetwork, wait_for_tasks,
+from art.rhevm_api.tests_lib.high_level.storagedomains import (
+    attach_and_activate_domain, detach_and_deactivate_domain,
 )
+
+from art.rhevm_api.utils.test_utils import setPersistentNetwork, wait_for_tasks
 from art.rhevm_api.utils.storage_api import (
     blockOutgoingConnection, unblockOutgoingConnection,
 )
-from rhevmtests.storage.helpers import get_vm_ip
+
+from rhevmtests.storage.helpers import get_vm_ip, create_vm_or_clone
 
 from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from art.test_handler import exceptions
+
 from art.unittest_lib import attr
+from art.unittest_lib.common import StorageTest as TestCase
 
 import helpers
 import config
@@ -63,14 +72,13 @@ NOT_PERMITTED = 'Operation not permitted'
 
 
 vmArgs = {'positive': True,
-          'vmName': config.VM_NAME[0],
-          'vmDescription': config.VM_NAME[0],
+          'vmDescription': config.TEST_NAME,
           'diskInterface': config.VIRTIO,
           'volumeFormat': config.FORMAT_COW,
           'cluster': config.CLUSTER_NAME,
           'storageDomainName': None,
           'installation': True,
-          'size': config.DISK_SIZE,
+          'size': config.VM_DISK_SIZE,
           'nic': config.NIC_NAME[0],
           'image': config.COBBLER_PROFILE,
           'useAgent': True,
@@ -94,91 +102,131 @@ def setup_module():
     and overridden with only two lun/path to sent as parameter to build_setup.
     after the build_setup finish, we return to the original lists
     """
-    logger.info("Preparing datacenter %s with hosts %s",
-                config.DATA_CENTER_NAME, config.VDC)
+    if not config.GOLDEN_ENV:
+        logger.info("Preparing datacenter %s with hosts %s",
+                    config.DATA_CENTER_NAME, config.VDC)
 
-    if config.STORAGE_TYPE == config.STORAGE_TYPE_NFS:
-        domain_path = config.PATH
-        config.PARAMETERS['data_domain_path'] = domain_path[0:2]
+        if config.STORAGE_TYPE == config.STORAGE_TYPE_NFS:
+            domain_path = config.PATH
+            config.PARAMETERS['data_domain_path'] = domain_path[0:2]
+        else:
+            luns = config.LUNS
+            config.PARAMETERS['lun'] = luns[0:2]
+
+        build_setup(config=config.PARAMETERS,
+                    storage=config.PARAMETERS,
+                    storage_type=config.STORAGE_TYPE)
+
+        if config.STORAGE_TYPE == config.STORAGE_TYPE_NFS:
+            config.PARAMETERS['data_domain_path'] = domain_path
+        else:
+            config.PARAMETERS['lun'] = luns
     else:
-        luns = config.LUNS
-        config.PARAMETERS['lun'] = luns[0:2]
+        assert attach_and_activate_domain(
+            config.DATA_CENTER_NAME, config.EXPORT_DOMAIN_NAME)
 
-    build_setup(config=config.PARAMETERS,
-                storage=config.PARAMETERS,
-                storage_type=config.STORAGE_TYPE)
+    for storage_type in config.STORAGE_SELECTOR:
+        storage_domain = getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, storage_type)[0]
 
-    if config.STORAGE_TYPE == config.STORAGE_TYPE_NFS:
-        config.PARAMETERS['data_domain_path'] = domain_path
-    else:
-        config.PARAMETERS['lun'] = luns
+        vm_name = config.VM_NAME % storage_type
 
-    vmArgs['storageDomainName'] = \
-        get_master_storage_domain_name(config.DATA_CENTER_NAME)
+        vmArgs['storageDomainName'] = storage_domain
+        vmArgs['vmName'] = vm_name
 
-    logger.info('Creating vm and installing OS on it')
+        if not create_vm_or_clone(**vmArgs):
+            raise exceptions.VMException('Unable to create vm %s for test'
+                                         % vm_name)
 
-    if not createVm(**vmArgs):
-        raise exceptions.VMException('Unable to create vm %s for test'
-                                     % config.VM_NAME[0])
-
-    logger.info('Shutting down VM %s', config.VM_NAME[0])
-    stop_vms_safely([config.VM_NAME[0]])
+        logger.info('Shutting down VM %s', vm_name)
+        stop_vms_safely([vm_name])
 
 
 def teardown_module():
     """
     Clean datacenter
     """
-    logger.info('Cleaning datacenter')
-    cleanDataCenter(True, config.DATA_CENTER_NAME, vdc=config.VDC,
-                    vdc_password=config.VDC_PASSWORD)
+    if config.GOLDEN_ENV:
+        for storage_type in config.STORAGE_SELECTOR:
+            vm_name = config.VM_NAME % storage_type
+            stop_vms_safely([vm_name])
+            removeVm(True, vm_name)
+        assert detach_and_deactivate_domain(
+            config.DATA_CENTER_NAME, config.EXPORT_DOMAIN_NAME)
+    else:
+        logger.info('Cleaning datacenter')
+        cleanDataCenter(True, config.DATA_CENTER_NAME, vdc=config.VDC,
+                        vdc_password=config.VDC_PASSWORD)
 
 
-class DefaultEnvironment(TestCase):
+class BaseTestCase(TestCase):
+    """
+    Common class for all tests with some common methods
+    """
+
+    __test__ = False
+    vm_name = config.VM_NAME % TestCase.storage
+
+    def prepare_disks_for_vm(self, read_only, vm_name=None):
+        """Attach read only disks to the vm"""
+        vm_name = self.vm_name if not vm_name else vm_name
+        return helpers.prepare_disks_for_vm(
+            vm_name, helpers.DISKS_NAMES[self.storage], read_only=read_only)
+
+
+class DefaultEnvironment(BaseTestCase):
     """
     A class with common setup and teardown methods
     """
 
-    __test__ = False
-
     spm = None
-    master_sd = None
-    vm = config.VM_NAME[0]
     shared = False
+
+    def ensure_vm_exists(self):
+        """If vm does not exist, create it"""
+        if not does_vm_exist(self.vm_name):
+            # The storage domain will be accesible at class level
+            vmArgs['storageDomainName'] = self.storage_domains[0]
+            logger.info('Creating vm and installing OS on it')
+            if not create_vm_or_clone(**vmArgs):
+                raise exceptions.VMException('Unable to create vm %s for test'
+                                             % self.vm_name)
+
+            logger.info('Shutting down VM %s', self.vm_name)
+        stop_vms_safely([self.vm_name])
 
     def setUp(self):
         """
         Creating all possible combinations of disks for test
         """
-        helpers.start_creating_disks_for_test(shared=self.shared)
-        assert waitForDisksState(helpers.DISKS_NAMES, timeout=TASK_TIMEOUT)
-        stop_vms_safely([self.vm])
-        waitForVMState(vm=self.vm, state=ENUMS['vm_state_down'])
+        self.storage_domains = getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage)
+        self.ensure_vm_exists()
+        helpers.start_creating_disks_for_test(
+            self.storage_domains[0], self.storage, shared=self.shared)
+        assert waitForDisksState(helpers.DISKS_NAMES[self.storage],
+                                 timeout=TASK_TIMEOUT)
+        stop_vms_safely([self.vm_name])
+        waitForVMState(vm=self.vm_name, state=config.VM_DOWN)
 
     def tearDown(self):
         """
         Clean environment
         """
-        stop_vms_safely([self.vm])
+        wait_for_jobs()
+        stop_vms_safely([self.vm_name])
         logger.info("Removing all disks")
-        for disk in helpers.DISKS_NAMES:
-            deactivateVmDisk(True, self.vm, disk)
-            if not removeDisk(True, self.vm, disk):
-                raise exceptions.DiskException("Failed to remove disk %s"
-                                               % disk)
-            logger.info("Disk %s removed successfully", disk)
-        sd_disks = getStorageDomainDisks(config.SD_NAME_0, get_href=False)
-        disks_to_remove = [d.get_alias for d in sd_disks if
-                           (not d.get_bootable)]
-        for disk in disks_to_remove:
-            deactivateVmDisk(True, self.vm, disk)
-            status = removeDisk(True, self.vm, disk)
-            if not status:
-                raise exceptions.DiskException("Failed to remove disk %s"
-                                               % disk)
-            logger.info("Disk %s removed successfully", disk)
-        logger.info("Finished testCase")
+        for disk in helpers.DISKS_NAMES[self.storage]:
+            try:
+                deactivateVmDisk(True, self.vm_name, disk)
+                if not removeDisk(True, self.vm_name, disk):
+                    logger.error("Failed to remove disk %s", disk)
+                logger.info("Disk %s removed successfully", disk)
+            except DiskNotFound, e:
+                logger.error("Error DiskNotFound: %s", e)
+                if checkDiskExists(True, disk):
+                    if not deleteDisk(True, disk):
+                        logger.error("Error trying to remove disk %s", disk)
 
 
 class DefaultSnapshotEnvironment(DefaultEnvironment):
@@ -189,8 +237,6 @@ class DefaultSnapshotEnvironment(DefaultEnvironment):
     __test__ = False
 
     spm = None
-    master_sd = None
-    vm = config.VM_NAME[0]
     snapshot_description = 'test_snap'
 
     def setUp(self):
@@ -198,14 +244,13 @@ class DefaultSnapshotEnvironment(DefaultEnvironment):
         Creating all possible combinations of disks for test
         """
         super(DefaultSnapshotEnvironment, self).setUp()
-        helpers.prepare_disks_for_vm(config.VM_NAME[0], helpers.DISKS_NAMES,
-                                     read_only=True)
+        self.prepare_disks_for_vm(read_only=True)
 
-        start_vms([config.VM_NAME[0]], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME[0])
+        start_vms([self.vm_name], 1, wait_for_ip=False)
+        waitForVMState(self.vm_name)
 
         logger.info("Adding new snapshot %s", self.snapshot_description)
-        assert addSnapshot(True, config.VM_NAME[0],
+        assert addSnapshot(True, self.vm_name,
                            self.snapshot_description)
 
     def tearDown(self):
@@ -233,26 +278,24 @@ class TestCase332472(DefaultEnvironment):
         - Check that disk is visible to the VM
         - Verify that it's impossible to write to the disk
         """
-        helpers.prepare_disks_for_vm(config.VM_NAME[0], helpers.DISKS_NAMES,
-                                     read_only=True)
-        start_vms([config.VM_NAME[0]], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME[0])
+        self.prepare_disks_for_vm(read_only=True)
+        start_vms([self.vm_name], 1, wait_for_ip=False)
+        waitForVMState(self.vm_name)
 
-        helpers.write_on_vms_ro_disks(config.VM_NAME[0])
+        helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
 
 
 @attr(tier=1)
-class TestCase332473(TestCase):
+class TestCase332473(BaseTestCase):
     """
     Attach a RO direct LUN disk to vm and try to write to the disk
     https://tcms.engineering.redhat.com/case/332473/?from_plan=12049
     """
-    __test__ = config.STORAGE_TYPE in config.BLOCK_TYPES
+    __test__ = BaseTestCase.storage in config.BLOCK_TYPES
     tcms_test_case = '332473'
     disk_alias = ''
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
-    @bz('1082673')
     def test_attach_RO_direct_LUN_disk(self):
         """
         - VM with OS
@@ -269,32 +312,33 @@ class TestCase332473(TestCase):
                 'active': True,
                 'format': config.FORMAT_COW,
                 'interface': interface,
-                'alias': "direct_lun_disk",
+                'alias': "direct_lun_disk_%s" % interface,
                 'lun_address': config.DIRECT_LUN_ADDRESS,
                 'lun_target': config.DIRECT_LUN_TARGET,
                 'lun_id': config.DIRECT_LUN,
-                "type_": config.STORAGE_TYPE}
+                "type_": self.storage}
 
             self.disk_alias = direct_lun_args['alias']
 
+            logger.info("Creating disk %s", self.disk_alias)
             assert addDisk(True, **direct_lun_args)
-            helpers.DISKS_NAMES.append(self.disk_alias)
+            helpers.DISKS_NAMES[self.storage].append(self.disk_alias)
 
             logger.info("Attaching disk %s as RO disk to vm %s",
-                        self.disk_alias, config.VM_NAME[0])
-            status = attachDisk(True, self.disk_alias, config.VM_NAME[0],
+                        self.disk_alias, self.vm_name)
+            status = attachDisk(True, self.disk_alias, self.vm_name,
                                 active=True, read_only=True)
 
             self.assertTrue(status, "Failed to attach direct lun as read only")
 
-            start_vms([config.VM_NAME[0]], 1, wait_for_ip=False)
-            waitForVMState(config.VM_NAME[0])
+            start_vms([self.vm_name], 1, wait_for_ip=False)
+            waitForVMState(self.vm_name)
 
-            helpers.write_on_vms_ro_disks(config.VM_NAME[0])
+            helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
 
     def tearDown(self):
-        stop_vms_safely([config.VM_NAME[0]])
-        status = removeDisk(True, config.VM_NAME[0], self.disk_alias)
+        stop_vms_safely([self.vm_name])
+        status = removeDisk(True, self.vm_name, self.disk_alias)
         self.assertTrue(status, "Failed to remove disk %s"
                                 % self.disk_alias)
 
@@ -316,18 +360,16 @@ class TestCase332474(DefaultEnvironment):
         self.shared = True
         super(TestCase332474, self).setUp()
 
-        helpers.prepare_disks_for_vm(config.VM_NAME[0], helpers.DISKS_NAMES,
-                                     read_only=False)
-        start_vms([config.VM_NAME[0]], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME[0])
+        self.prepare_disks_for_vm(read_only=False)
+        start_vms([self.vm_name], 1, wait_for_ip=False)
+        waitForVMState(self.vm_name)
 
         self.test_vm_name = 'test_%s' % self.tcms_test_case
         vmArgs['vmName'] = self.test_vm_name
-        vmArgs['storageDomainName'] = \
-            get_master_storage_domain_name(config.DATA_CENTER_NAME)
+        vmArgs['storageDomainName'] = self.storage_domains[0]
 
         logger.info('Creating vm and installing OS on it')
-        if not createVm(**vmArgs):
+        if not create_vm_or_clone(**vmArgs):
             raise exceptions.VMException("Failed to create vm %s"
                                          % self.test_vm_name)
         assert waitForVMState(self.test_vm_name)
@@ -340,9 +382,8 @@ class TestCase332474(DefaultEnvironment):
         - Attach VM1 shared disk to VM2 as RO disk and activate it
         - On VM2, Verify that it's impossible to write to the RO disk
         """
-        helpers.prepare_disks_for_vm(self.test_vm_name, helpers.DISKS_NAMES,
-                                     read_only=True)
-        for index, disk in enumerate(helpers.DISKS_NAMES):
+        self.prepare_disks_for_vm(read_only=True, vm_name=self.test_vm_name)
+        for index, disk in enumerate(helpers.DISKS_NAMES[self.storage]):
             state, out = helpers.verify_write_operation_to_disk(
                 self.test_vm_name, disk_number=index)
             logger.info("Trying to write to read only disk %s", disk)
@@ -351,7 +392,7 @@ class TestCase332474(DefaultEnvironment):
             logger.info("Failed to write to read only disk")
 
     def tearDown(self):
-        assert removeVm(True, self.test_vm_name, stopVM='true', wait=True)
+        safely_remove_vms([self.test_vm_name])
         super(TestCase332474, self).tearDown()
 
 
@@ -371,18 +412,16 @@ class TestCase337630(DefaultEnvironment):
         self.shared = True
         super(TestCase337630, self).setUp()
 
-        helpers.prepare_disks_for_vm(config.VM_NAME[0], helpers.DISKS_NAMES,
-                                     read_only=False)
-        start_vms([config.VM_NAME[0]], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME[0])
+        self.prepare_disks_for_vm(read_only=False)
+        start_vms([self.vm_name], 1, wait_for_ip=False)
+        waitForVMState(self.vm_name)
 
         self.test_vm_name = 'test_%s' % self.tcms_test_case
         vmArgs['vmName'] = self.test_vm_name
-        vmArgs['storageDomainName'] = \
-            get_master_storage_domain_name(config.DATA_CENTER_NAME)
+        vmArgs['storageDomainName'] = self.storage_domains[0]
 
         logger.info('Creating vm and installing OS on it')
-        if not createVm(**vmArgs):
+        if not create_vm_or_clone(**vmArgs):
             raise exceptions.VMException("Failed to create vm %s"
                                          % self.test_vm_name)
         waitForVMState(self.test_vm_name)
@@ -397,12 +436,10 @@ class TestCase337630(DefaultEnvironment):
         - Create a snapshot to the first VM that sees the disk as RW
         - Check that the disk is still RO for the second VM
         """
-        helpers.prepare_disks_for_vm(self.test_vm_name, helpers.DISKS_NAMES,
-                                     read_only=True)
-
+        self.prepare_disks_for_vm(read_only=True, vm_name=self.test_vm_name)
         ro_vm_disks = filter(not_bootable, getVmDisks(self.test_vm_name))
 
-        rw_vm_disks = filter(not_bootable, getVmDisks(config.VM_NAME[0]))
+        rw_vm_disks = filter(not_bootable, getVmDisks(self.vm_name))
 
         for ro_disk, rw_disk in zip(ro_vm_disks, rw_vm_disks):
             logger.info('check if disk %s is visible as RO to vm %s'
@@ -413,12 +450,12 @@ class TestCase337630(DefaultEnvironment):
                             "Only disk"
                             % (ro_disk.get_alias(), self.test_vm_name))
         logger.info("Adding new snapshot %s", self.snapshot_description)
-        assert addSnapshot(True, config.VM_NAME[0],
+        assert addSnapshot(True, self.vm_name,
                            self.snapshot_description)
 
         ro_vm_disks = filter(not_bootable, getVmDisks(self.test_vm_name))
 
-        rw_vm_disks = filter(not_bootable, getVmDisks(config.VM_NAME[0]))
+        rw_vm_disks = filter(not_bootable, getVmDisks(self.vm_name))
 
         for ro_disk, rw_disk in zip(ro_vm_disks, rw_vm_disks):
             logger.info('check if disk %s is still visible as RO to vm %s'
@@ -431,20 +468,21 @@ class TestCase337630(DefaultEnvironment):
                             % (ro_disk.get_alias(), self.test_vm_name))
 
     def tearDown(self):
-        assert removeVm(True, self.test_vm_name, stopVM='true', wait=True)
-        stop_vms_safely([config.VM_NAME[0]])
+        safely_remove_vms([self.test_vm_name])
+        stop_vms_safely([self.vm_name])
         super(TestCase337630, self).tearDown()
 
         if not removeSnapshot(True,
-                              config.VM_NAME[0],
-                              self.snapshot_description):
-            raise exceptions.SnapshotException("Failed to remove "
-                                               "snapshot %s"
-                                               % self.snapshot_description)
+                              self.vm_name,
+                              self.snapshot_description,
+                              timeout=TASK_TIMEOUT):
+            logger.error("Failed to remove snapshot %s",
+                         self.snapshot_description)
+        wait_for_jobs()
 
 
 @attr(tier=1)
-class TestCase332475(TestCase):
+class TestCase332475(BaseTestCase):
     """
     Checks that changing disk's write policy from RW to RO will fails
     when the disk is active
@@ -468,25 +506,25 @@ class TestCase332475(TestCase):
         - Deactivate the disk and change the VM permissions on the disk to RO
         - Activate the disk
         """
-        helpers.start_creating_disks_for_test()
-        start_vms([config.VM_NAME[0]], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME[0])
-        helpers.prepare_disks_for_vm(config.VM_NAME[0], helpers.DISKS_NAMES,
-                                     read_only=False)
+        helpers.start_creating_disks_for_test(self.storage_domains[0],
+                                              self.storage)
+        start_vms([self.vm_name], 1, wait_for_ip=False)
+        waitForVMState(self.vm_name)
+        self.prepare_disks_for_vm(read_only=False)
 
-        vm_disks = getVmDisks(config.VM_NAME[0])
+        vm_disks = getVmDisks(self.vm_name)
         for disk in [vm_disk.get_alias() for vm_disk in vm_disks]:
             status = updateDisk(True, alias=disk, read_only=True)
             self.assertFalse(status, "Succeeded to change RW disk %s to RO" %
                              disk)
-            assert deactivateVmDisk(True, config.VM_NAME[0], disk)
+            assert deactivateVmDisk(True, self.vm_name, disk)
 
             status = updateDisk(True, alias=disk, read_only=True)
             self.assertTrue(status, "Failed to change RW disk %s to RO" % disk)
 
 
 @attr(tier=1)
-class TestCase337936(TestCase):
+class TestCase337936(BaseTestCase):
     """
     Check that booting from RO disk should be impossible
     https://tcms.engineering.redhat.com/case/337936/?from_plan=12049
@@ -517,8 +555,9 @@ class TestCase332489(DefaultEnvironment):
     __test__ = True
     tcms_test_case = '332489'
     blocked = False
-    master_domain_ip = ''
+    storage_domain_ip = ''
 
+    @bz({'1138144': {'engine': ['rest', 'sdk'], 'version': ["3.5"]}})
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_RO_persistent_after_block_connectivity_to_storage(self):
         """
@@ -533,52 +572,51 @@ class TestCase332489(DefaultEnvironment):
           VM to start again
         - Write to the disk from the guest, it shouldn't be allowed
         """
-        helpers.prepare_disks_for_vm(config.VM_NAME[0], helpers.DISKS_NAMES,
-                                     read_only=True)
-        start_vms([config.VM_NAME[0]], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME[0])
+        self.prepare_disks_for_vm(read_only=True)
+        start_vms([self.vm_name], 1, wait_for_ip=False)
+        waitForVMState(self.vm_name)
 
-        for index, disk in enumerate(helpers.DISKS_NAMES):
+        for index, disk in enumerate(helpers.DISKS_NAMES[self.storage]):
             state, out = helpers.verify_write_operation_to_disk(
-                config.VM_NAME[0], disk_number=index)
+                self.vm_name, disk_number=index)
             logger.info("Trying to write to read only disk...")
             status = not state and (READ_ONLY in out or NOT_PERMITTED in out)
             self.assertTrue(status, "Write operation to RO disk succeeded")
             logger.info("Failed to write to read only disk")
 
-        master_domain = get_master_storage_domain_name(config.DATA_CENTER_NAME)
-        logger.info("Master domain found : %s", master_domain)
-
-        found, self.master_domain_ip = getDomainAddress(True, master_domain)
+        storage_domain_name = get_vms_disks_storage_domain_name(self.vm_name)
+        found, self.storage_domain_ip = getDomainAddress(
+            True, storage_domain_name)
         assert found
-        master_domain_ip = self.master_domain_ip['address']
-        logger.info("Master domain ip found : %s", master_domain_ip)
+        logger.info("Found IP %s for storage domain %s",
+                    self.storage_domain_ip, storage_domain_name)
 
-        host_ip = getIpAddressByHostName(config.HOSTS[0])
+        self.host_ip = getHostIP(getVmHost(self.vm_name)[1]['vmHoster'])
         logger.info("Blocking connection from vdsm to storage domain")
-        status = blockOutgoingConnection(host_ip,
+        status = blockOutgoingConnection(self.host_ip,
                                          config.HOSTS_USER,
                                          config.HOSTS_PW,
-                                         master_domain_ip)
+                                         self.storage_domain_ip)
+        self.assertTrue(status, "Blocking connection from %s to %s failed"
+                                % (self.host_ip, self.storage_domain_ip))
         if status:
             self.blocked = True
 
-        waitForVMState(config.VM_NAME[0], state=config.VM_PAUSED)
-        assert status
+        waitForVMState(self.vm_name, state=config.VM_PAUSED)
 
         logger.info("Unblocking connection from vdsm to storage domain")
-        status = unblockOutgoingConnection(host_ip,
+        status = unblockOutgoingConnection(self.host_ip,
                                            config.HOSTS_USER,
                                            config.HOSTS_PW,
-                                           master_domain_ip)
+                                           self.storage_domain_ip)
         if status:
             self.blocked = False
 
-        start_vms([config.VM_NAME[0]], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME[0])
-        for index, disk in enumerate(helpers.DISKS_NAMES):
+        start_vms([self.vm_name], 1, wait_for_ip=False)
+        waitForVMState(self.vm_name)
+        for index, disk in enumerate(helpers.DISKS_NAMES[self.storage]):
             state, out = helpers.verify_write_operation_to_disk(
-                config.VM_NAME[0], disk_number=index)
+                self.vm_name, disk_number=index)
             logger.info("Trying to write to read only disk...")
             status = (not state) and ((READ_ONLY in out) or
                                       (NOT_PERMITTED in out))
@@ -591,20 +629,20 @@ class TestCase332489(DefaultEnvironment):
         """
         if self.blocked:
             logger.info("Unblocking connectivity from host %s to storage "
-                        "domain %s", config.HOSTS[0], config.SD_NAME_0)
+                        "domain %s", self.host_ip, self.storage_domains[0])
 
             logger.info("Unblocking connection from vdsm to storage domain")
-            status = unblockOutgoingConnection(config.HOSTS[0],
+            status = unblockOutgoingConnection(self.host_ip,
                                                config.HOSTS_USER,
                                                config.HOSTS_PW,
-                                               self.master_domain_ip)
+                                               self.storage_domain_ip)
 
             if not status:
                 raise exceptions.HostException("Failed to unblock "
                                                "connectivity from host %s to "
                                                "storage domain %s"
-                                               % (config.HOSTS[0],
-                                                  self.master_domain_ip))
+                                               % (self.host,
+                                                  self.storage_domain_ip))
         super(TestCase332489, self).tearDown()
 
 
@@ -629,40 +667,38 @@ class TestCase332484(DefaultEnvironment):
         - Check that engine still reports the VM disk as RO
         - Verify that it's impossible to write to the disk
         """
-        helpers.prepare_disks_for_vm(config.VM_NAME[0], helpers.DISKS_NAMES,
-                                     read_only=True)
+        self.prepare_disks_for_vm(read_only=True)
 
-        start_vms([config.VM_NAME[0]], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME[0])
+        start_vms([self.vm_name], 1, wait_for_ip=False)
+        waitForVMState(self.vm_name)
 
-        vm_disks = filter(not_bootable, getVmDisks(config.VM_NAME[0]))
+        vm_disks = filter(not_bootable, getVmDisks(self.vm_name))
 
         for ro_disk in vm_disks:
             logger.info('check if disk %s is visible as RO to vm %s'
-                        % (ro_disk.get_alias(), config.VM_NAME[0]))
+                        % (ro_disk.get_alias(), self.vm_name))
             is_read_only = ro_disk.get_read_only()
             self.assertTrue(is_read_only,
                             "Disk %s is not visible to vm %s as Read "
                             "Only disk"
-                            % (ro_disk.get_alias(), config.VM_NAME[0]))
+                            % (ro_disk.get_alias(), self.vm_name))
 
-        self.is_migrated = migrateVm(True, config.VM_NAME[0])
+        self.is_migrated = migrateVm(True, self.vm_name)
 
         for ro_disk in vm_disks:
             logger.info('check if disk %s is still visible as RO to vm %s'
                         'after migration', ro_disk.get_alias(),
-                        config.VM_NAME[0])
+                        self.vm_name)
             is_read_only = ro_disk.get_read_only()
             self.assertTrue(is_read_only,
                             "Disk %s is not visible to vm %s as Read "
                             "Only disk"
-                            % (ro_disk.get_alias(), config.VM_NAME[0]))
+                            % (ro_disk.get_alias(), self.vm_name))
 
     def tearDown(self):
         if self.is_migrated:
-            status = migrateVm(True, config.VM_NAME[0])
-            if not status:
-                raise exceptions.VMException("Failed to migrate vm")
+            if not migrateVm(True, self.vm_name):
+                logger.error("Failed to migrate vm %s", self.vm_name)
         super(TestCase332484, self).tearDown()
 
 
@@ -687,18 +723,18 @@ class TestCase332476(DefaultEnvironment):
         - Check that disk is visible to the VM
         - Verify that it's impossible to write to the disk
         """
-        start_vms([config.VM_NAME[0]], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME[0])
+        start_vms([self.vm_name], 1, wait_for_ip=False)
+        waitForVMState(self.vm_name)
 
-        helpers.prepare_disks_for_vm(config.VM_NAME[0], helpers.DISKS_NAMES,
-                                     read_only=True)
-        logger.info("Suspending vm %s", config.VM_NAME[0])
-        suspendVm(True, config.VM_NAME[0])
-        logger.info("Re activating vm %s", config.VM_NAME[0])
-        startVm(True, config.VM_NAME[0])
-        waitForVMState(config.VM_NAME[0])
+        self.prepare_disks_for_vm(read_only=True)
 
-        helpers.write_on_vms_ro_disks(config.VM_NAME[0])
+        logger.info("Suspending vm %s", self.vm_name)
+        suspendVm(True, self.vm_name)
+        logger.info("Re activating vm %s", self.vm_name)
+        startVm(True, self.vm_name)
+        waitForVMState(self.vm_name)
+
+        helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
 
 
 @attr(tier=1)
@@ -712,6 +748,7 @@ class TestCase332480(DefaultEnvironment):
     imported_vm = 'imported_vm'
     export_domain = ''
 
+    @bz({'1169100': {'enine': ['rest', 'sdk'], 'version': ["3.5"]}})
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_export_and_import_vm_with_RO_disk(self):
         """
@@ -722,36 +759,51 @@ class TestCase332480(DefaultEnvironment):
         - Check that disk is visible to the VM
         - Verify that it's impossible to write to the disk
         """
-        helpers.prepare_disks_for_vm(config.VM_NAME[0], helpers.DISKS_NAMES,
-                                     read_only=True)
+        self.vm_exported, self.vm_imported = False, False
+        self.prepare_disks_for_vm(read_only=True)
 
-        master_domain = get_master_storage_domain_name(config.DATA_CENTER_NAME)
         self.export_domain = findExportStorageDomains(
             config.DATA_CENTER_NAME)[0]
 
-        logger.info("Exporting vm %s", config.VM_NAME[0])
-        start_vms([config.VM_NAME[0]], max_workers=1, wait_for_ip=True)
-        waitForVMState(config.VM_NAME[0])
-        vm_ip = get_vm_ip(config.VM_NAME[0])
+        logger.info("Exporting vm %s", self.vm_name)
+        start_vms([self.vm_name], max_workers=1, wait_for_ip=True)
+        waitForVMState(self.vm_name)
+        vm_ip = get_vm_ip(self.vm_name)
         setPersistentNetwork(vm_ip, config.VM_PASSWORD)
-        stop_vms_safely([config.VM_NAME[0]])
-        assert exportVm(True, config.VM_NAME[0], self.export_domain)
-        logger.info("Importing vm %s as %s", config.VM_NAME[0],
+        stop_vms_safely([self.vm_name])
+        waitForVMState(self.vm_name, config.VM_DOWN)
+        self.vm_exported = exportVm(True, self.vm_name, self.export_domain,
+                                    timeout=TASK_TIMEOUT)
+        self.assertTrue(self.vm_exported,
+                        "Couldn't export vm %s" % self.vm_name)
+        logger.info("Importing vm %s as %s", self.vm_name,
                     self.imported_vm)
-        assert importVm(True, vm=config.VM_NAME[0],
-                        export_storagedomain=self.export_domain,
-                        import_storagedomain=master_domain,
-                        cluster=config.CLUSTER_NAME, name=self.imported_vm)
+        self.vm_imported = importVm(
+            True, vm=self.vm_name,
+            export_storagedomain=self.export_domain,
+            import_storagedomain=self.storage_domains[0],
+            cluster=config.CLUSTER_NAME, name=self.imported_vm,
+            timeout=TASK_TIMEOUT)
+
+        self.assertTrue(self.vm_imported,
+                        "Couldn't import vm %s" % self.vm_name)
 
         start_vms([self.imported_vm], 1, wait_for_ip=False)
         waitForVMState(self.imported_vm)
-        helpers.write_on_vms_ro_disks(self.imported_vm, imported_vm=True)
+        helpers.write_on_vms_ro_disks(
+            self.imported_vm, self.storage, imported_vm=True)
 
     def tearDown(self):
-        assert removeVm(True, self.imported_vm, stopVM='true', wait=True)
-        assert removeVmFromExportDomain(
-            True, vm=config.VM_NAME[0], datacenter=config.DATA_CENTER_NAME,
-            export_storagedomain=self.export_domain)
+        if self.vm_imported:
+            stop_vms_safely([self.imported_vm])
+            waitForVMState(self.imported_vm, config.VM_DOWN)
+            if not removeVm(True, self.imported_vm, wait=True):
+                logger.error("Failed to remove vm %s", self.imported_vm)
+        if self.vm_exported and not removeVmFromExportDomain(
+                True, vm=self.vm_name, datacenter=config.DATA_CENTER_NAME,
+                export_storagedomain=self.export_domain):
+            logger.error("Failed to remove vm %s from export domain %s",
+                         self.imported_vm, self.export_domain)
         super(TestCase332480, self).tearDown()
 
 
@@ -768,6 +820,7 @@ class TestCase334878(DefaultEnvironment):
     imported_vm_2 = 'imported_vm_2'
     export_domain = ''
 
+    @bz({'1169100': {'enine': ['rest', 'sdk'], 'version': ["3.5"]}})
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_import_more_than_once_VM_with_RO_disk(self):
         """
@@ -778,45 +831,54 @@ class TestCase334878(DefaultEnvironment):
         - Check that disk is visible to the VM
         - Verify that it's impossible to write to the disk:
         """
-        helpers.prepare_disks_for_vm(config.VM_NAME[0], helpers.DISKS_NAMES,
-                                     read_only=True)
-        master_domain = get_master_storage_domain_name(config.DATA_CENTER_NAME)
+        self.vm_exported = False
+        self.prepare_disks_for_vm(read_only=True)
+
         self.export_domain = findExportStorageDomains(
             config.DATA_CENTER_NAME)[0]
 
-        logger.info("Exporting vm %s", config.VM_NAME[0])
-        start_vms([config.VM_NAME[0]], max_workers=1, wait_for_ip=True)
-        waitForVMState(config.VM_NAME[0])
-        vm_ip = get_vm_ip(config.VM_NAME[0])
+        logger.info("Exporting vm %s", self.vm_name)
+        start_vms([self.vm_name], max_workers=1, wait_for_ip=True)
+        waitForVMState(self.vm_name)
+        vm_ip = get_vm_ip(self.vm_name)
         setPersistentNetwork(vm_ip, config.VM_PASSWORD)
-        stop_vms_safely([config.VM_NAME[0]])
+        stop_vms_safely([self.vm_name])
+        waitForVMState(self.vm_name, config.VM_DOWN)
 
-        assert exportVm(True, config.VM_NAME[0], self.export_domain)
-        logger.info("Importing vm %s as %s", config.VM_NAME[0],
+        self.vm_exported = exportVm(True, self.vm_name, self.export_domain)
+        self.assertTrue(self.vm_exported,
+                        "Couldn't export vm %s" % self.vm_name)
+        logger.info("Importing vm %s as %s", self.vm_name,
                     self.imported_vm_1)
-        assert importVm(True, config.VM_NAME[0], self.export_domain,
-                        master_domain,
+        assert importVm(True, self.vm_name, self.export_domain,
+                        self.storage_domains[0],
                         config.CLUSTER_NAME, name=self.imported_vm_1)
         start_vms([self.imported_vm_1], max_workers=1, wait_for_ip=False)
         waitForVMState(self.imported_vm_1)
 
-        logger.info("Importing vm %s as %s", config.VM_NAME[0],
+        logger.info("Importing vm %s as %s", self.vm_name,
                     self.imported_vm_2)
-        assert importVm(True, config.VM_NAME[0], self.export_domain,
-                        master_domain,
+        assert importVm(True, self.vm_name, self.export_domain,
+                        self.storage_domains[0],
                         config.CLUSTER_NAME, name=self.imported_vm_2)
         start_vms([self.imported_vm_2], max_workers=1, wait_for_ip=False)
         waitForVMState(self.imported_vm_2)
 
-        helpers.write_on_vms_ro_disks(self.imported_vm_1, imported_vm=True)
-        helpers.write_on_vms_ro_disks(self.imported_vm_2, imported_vm=True)
+        helpers.write_on_vms_ro_disks(
+            self.imported_vm_1, self.storage, imported_vm=True)
+        helpers.write_on_vms_ro_disks(
+            self.imported_vm_2, self.storage, imported_vm=True)
 
     def tearDown(self):
-        stop_vms_safely([self.imported_vm_1, self.imported_vm_2])
-        removeVms(True, [self.imported_vm_1, self.imported_vm_2])
-        assert removeVmFromExportDomain(
-            True, vm=config.VM_NAME[0], datacenter=config.DATA_CENTER_NAME,
-            export_storagedomain=self.export_domain)
+        vms = filter(does_vm_exist, [self.imported_vm_1, self.imported_vm_2])
+        stop_vms_safely(vms)
+        waitForVmsStates(True, vms, config.VM_DOWN)
+        removeVms(True, vms)
+        if self.vm_exported and not removeVmFromExportDomain(
+                True, vm=self.vm_name, datacenter=config.DATA_CENTER_NAME,
+                export_storagedomain=self.export_domain):
+            logger.error("Failed to remove vm %s from export domain %s",
+                         self.imported_vm, self.export_domain)
         super(TestCase334878, self).tearDown()
 
 
@@ -842,9 +904,9 @@ class TestCase332483(DefaultSnapshotEnvironment):
         - Shutdown the VM and preview the snapshot. Start the VM
           and try to write to the RO disk
         """
-        snap_disks = get_snapshot_disks(config.VM_NAME[0],
+        snap_disks = get_snapshot_disks(self.vm_name,
                                         self.snapshot_description)
-        ro_vm_disks = filter(not_bootable, getVmDisks(config.VM_NAME[0]))
+        ro_vm_disks = filter(not_bootable, getVmDisks(self.vm_name))
 
         for ro_disk in ro_vm_disks:
             logger.info("Check that RO disk %s is part of the snapshot",
@@ -856,30 +918,38 @@ class TestCase332483(DefaultSnapshotEnvironment):
             self.assertTrue(is_part_of_disks, "RO disk %s is not part of the "
                                               "snapshot that was taken"
                                               % ro_disk.get_alias())
-        stop_vms_safely([config.VM_NAME[0]])
+        stop_vms_safely([self.vm_name])
+        waitForVMState(self.vm_name, config.VM_DOWN)
         logger.info("Previewing snapshot %s", self.snapshot_description)
-        self.create_snapshot = preview_snapshot(True, config.VM_NAME[0],
+        self.create_snapshot = preview_snapshot(True, self.vm_name,
                                                 self.snapshot_description)
 
         assert self.create_snapshot
-        start_vms([config.VM_NAME[0]], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME[0])
+        wait_for_jobs()
+        start_vms([self.vm_name], 1, wait_for_ip=False)
+        waitForVMState(self.vm_name)
 
-        helpers.write_on_vms_ro_disks(config.VM_NAME[0])
+        helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
 
     def tearDown(self):
-        stop_vms_safely([config.VM_NAME[0]])
+        stop_vms_safely([self.vm_name])
+        waitForVMState(self.vm_name, config.VM_DOWN)
         if self.create_snapshot:
-            assert undo_snapshot_preview(True, config.VM_NAME[0])
+            if not undo_snapshot_preview(True, self.vm_name):
+                logger.error("Error undoing snapshot snapshot preview for %s",
+                             self.vm_name)
 
         super(TestCase332483, self).tearDown()
+        waitForDisksStat(self.vm_name)
 
         if not removeSnapshot(True,
-                              config.VM_NAME[0],
-                              self.snapshot_description):
-            raise exceptions.SnapshotException("Failed to remove "
-                                               "snapshot %s"
-                                               % self.snapshot_description)
+                              self.vm_name,
+                              self.snapshot_description,
+                              timeout=TASK_TIMEOUT):
+            logger.error("Failed to remove snapshot %s",
+                         self.snapshot_description)
+
+        wait_for_jobs()
 
 
 @attr(tier=1)
@@ -905,9 +975,9 @@ class TestCase337931(DefaultSnapshotEnvironment):
         - Shutdown the VM, preview and undo the snapshot.
         - Start the VM and try to write to the RO disk
         """
-        snap_disks = get_snapshot_disks(config.VM_NAME[0],
+        snap_disks = get_snapshot_disks(self.vm_name,
                                         self.snapshot_description)
-        ro_vm_disks = filter(not_bootable, getVmDisks(config.VM_NAME[0]))
+        ro_vm_disks = filter(not_bootable, getVmDisks(self.vm_name))
 
         for ro_disk in ro_vm_disks:
             logger.info("Check that RO disk %s is part of the snapshot",
@@ -919,38 +989,42 @@ class TestCase337931(DefaultSnapshotEnvironment):
             self.assertTrue(is_part_of_disks, "RO disk %s is not part of the "
                                               "snapshot that was taken"
                                               % ro_disk.get_alias())
-        stop_vms_safely([config.VM_NAME[0]])
+        stop_vms_safely([self.vm_name])
+        waitForVMState(self.vm_name, config.VM_DOWN)
         logger.info("Previewing snapshot %s", self.snapshot_description)
-        status = preview_snapshot(True, config.VM_NAME[0],
+        status = preview_snapshot(True, self.vm_name,
                                   self.snapshot_description)
         self.create_snapshot = status
 
         assert status
 
-        status = undo_snapshot_preview(True, config.VM_NAME[0])
-        start_vms([config.VM_NAME[0]], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME[0])
+        status = undo_snapshot_preview(True, self.vm_name)
+        start_vms([self.vm_name], 1, wait_for_ip=False)
+        waitForVMState(self.vm_name)
         assert status
 
         self.create_snapshot = not status
 
-        start_vms([config.VM_NAME[0]], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME[0])
+        start_vms([self.vm_name], 1, wait_for_ip=False)
+        waitForVMState(self.vm_name)
 
-        helpers.write_on_vms_ro_disks(config.VM_NAME[0])
+        helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
 
     def tearDown(self):
-        stop_vms_safely([config.VM_NAME[0]])
+        stop_vms_safely([self.vm_name])
+        waitForVMState(self.vm_name, config.VM_DOWN)
         if self.create_snapshot:
-            undo_snapshot_preview(True, config.VM_NAME[0])
+            if not undo_snapshot_preview(True, self.vm_name):
+                logger.error("Error previewing snapshot for %s", self.vm_name)
 
         super(TestCase337931, self).tearDown()
         if not removeSnapshot(True,
-                              config.VM_NAME[0],
-                              self.snapshot_description):
-            raise exceptions.SnapshotException("Failed to remove "
-                                               "snapshot %s"
-                                               % self.snapshot_description)
+                              self.vm_name,
+                              self.snapshot_description,
+                              timeout=TASK_TIMEOUT):
+            logger.error("Failed to remove snapshot %s",
+                         self.snapshot_description)
+        wait_for_jobs()
 
 
 @attr(tier=1)
@@ -976,9 +1050,9 @@ class TestCase337930(DefaultSnapshotEnvironment):
         - Shutdown the VM, preview and commit the snapshot.
         - Start the VM and try to write to the RO disk
         """
-        snap_disks = get_snapshot_disks(config.VM_NAME[0],
+        snap_disks = get_snapshot_disks(self.vm_name,
                                         self.snapshot_description)
-        ro_vm_disks = filter(not_bootable, getVmDisks(config.VM_NAME[0]))
+        ro_vm_disks = filter(not_bootable, getVmDisks(self.vm_name))
 
         for ro_disk in ro_vm_disks:
             logger.info("Check that RO disk %s is part of the snapshot",
@@ -990,36 +1064,46 @@ class TestCase337930(DefaultSnapshotEnvironment):
             self.assertTrue(is_part_of_disks, "RO disk %s is not part of the "
                                               "snapshot that was taken"
                                               % ro_disk.get_alias())
-        stop_vms_safely([config.VM_NAME[0]])
+        stop_vms_safely([self.vm_name])
+        waitForVMState(self.vm_name, config.VM_DOWN)
         logger.info("Previewing snapshot %s", self.snapshot_description)
-        status = preview_snapshot(True, config.VM_NAME[0],
+        status = preview_snapshot(True, self.vm_name,
                                   self.snapshot_description)
         self.create_snapshot = True
         assert status
 
-        status = commit_snapshot(True, config.VM_NAME[0])
-        start_vms([config.VM_NAME[0]], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME[0])
+        status = commit_snapshot(True, self.vm_name)
+        start_vms([self.vm_name], 1, wait_for_ip=False)
+        waitForVMState(self.vm_name)
         assert status
         self.create_snapshot = not status
 
-        start_vms([config.VM_NAME[0]], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME[0])
+        start_vms([self.vm_name], 1, wait_for_ip=False)
+        waitForVMState(self.vm_name)
 
-        helpers.write_on_vms_ro_disks(config.VM_NAME[0])
+        helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
 
     def tearDown(self):
-        stop_vms_safely([config.VM_NAME[0]])
+        remove_snapshot = True
+        stop_vms_safely([self.vm_name])
+        waitForVMState(self.vm_name, config.VM_DOWN)
         if self.create_snapshot:
-            undo_snapshot_preview(True, config.VM_NAME[0])
+            if not undo_snapshot_preview(True, self.vm_name):
+                logger.error("Error previwing snapshot for %s", self.vm_name)
+                # Something went wrong removing the snapshot, remove and
+                # create the vm again
+                removeVm(self.vm_name)
+                self.ensure_vm_exists()
+                remove_snapshot = False
 
         super(TestCase337930, self).tearDown()
-        if not removeSnapshot(True,
-                              config.VM_NAME[0],
-                              self.snapshot_description):
-            raise exceptions.SnapshotException("Failed to remove "
-                                               "snapshot %s"
-                                               % self.snapshot_description)
+        if remove_snapshot and not removeSnapshot(True,
+                                                  self.vm_name,
+                                                  self.snapshot_description,
+                                                  timeout=TASK_TIMEOUT):
+            logger.error("Failed to remove snapshot %s",
+                         self.snapshot_description)
+        wait_for_jobs()
 
 
 @attr(tier=1)
@@ -1045,9 +1129,9 @@ class TestCase337934(DefaultSnapshotEnvironment):
         - Shutdown the VM and delete the snapshot.
         - Start the VM and try to write to the RO disk
         """
-        snap_disks = get_snapshot_disks(config.VM_NAME[0],
+        snap_disks = get_snapshot_disks(self.vm_name,
                                         self.snapshot_description)
-        ro_vm_disks = filter(not_bootable, getVmDisks(config.VM_NAME[0]))
+        ro_vm_disks = filter(not_bootable, getVmDisks(self.vm_name))
 
         for ro_disk in ro_vm_disks:
             logger.info("Check that RO disk %s is part of the snapshot",
@@ -1059,31 +1143,35 @@ class TestCase337934(DefaultSnapshotEnvironment):
             self.assertTrue(is_part_of_disks, "RO disk %s is not part of the "
                                               "snapshot that was taken"
                                               % ro_disk.get_alias())
-        stop_vms_safely([config.VM_NAME[0]])
+        stop_vms_safely([self.vm_name])
+        waitForVMState(self.vm_name, config.VM_DOWN)
         logger.info("Removing snapshot %s", self.snapshot_description)
 
-        status = removeSnapshot(True, config.VM_NAME[0],
+        status = removeSnapshot(True, self.vm_name,
                                 self.snapshot_description,
                                 timeout=TASK_TIMEOUT)
 
-        assert status
         self.snapshot_removed = status
+        self.assertTrue(status, "Failed to remove snapshot %s from vm %s"
+                        % (self.snapshot_description, self.vm_name))
 
-        start_vms([config.VM_NAME[0]], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME[0])
+        start_vms([self.vm_name], 1, wait_for_ip=False)
+        waitForVMState(self.vm_name)
 
-        helpers.write_on_vms_ro_disks(config.VM_NAME[0])
+        helpers.write_on_vms_ro_disks(self.vm_name, self.storage)
 
     def tearDown(self):
-        stop_vms_safely([config.VM_NAME[0]])
+        stop_vms_safely([self.vm_name])
+        waitForVMState(self.vm_name, config.VM_DOWN)
         if not self.snapshot_removed:
             if not removeSnapshot(True,
-                                  config.VM_NAME[0],
-                                  self.snapshot_description):
-                raise exceptions.SnapshotException("Failed to remove "
-                                                   "snapshot %s"
-                                                   % self.snapshot_description)
+                                  self.vm_name,
+                                  self.snapshot_description,
+                                  timeout=TASK_TIMEOUT):
+                logger.error("Failed to remove snapshot %s",
+                             self.snapshot_description)
         super(TestCase337934, self).tearDown()
+        wait_for_jobs()
 
 
 @attr(tier=1)
@@ -1100,7 +1188,7 @@ class TestCase337935(DefaultEnvironment):
     cloned_vm_name = 'cloned_vm'
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
-    @bz('1072471')
+    @bz({'1072471': {'enine': ['rest', 'sdk'], 'version': ["3.5"]}})
     def test_clone_vm_from_snapshot_with_RO_disk(self):
         """
         - VM with OS
@@ -1111,21 +1199,20 @@ class TestCase337935(DefaultEnvironment):
         - Clone a new VM from the snapshot
         - Try to write to the RO disk of the cloned VM
         """
-        helpers.prepare_disks_for_vm(config.VM_NAME[0], helpers.DISKS_NAMES,
-                                     read_only=True)
+        self.prepare_disks_for_vm(read_only=True)
 
-        start_vms([config.VM_NAME[0]], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME[0])
-        vm_ip = get_vm_ip(config.VM_NAME[0])
+        start_vms([self.vm_name], 1, wait_for_ip=False)
+        waitForVMState(self.vm_name)
+        vm_ip = get_vm_ip(self.vm_name)
 
-        ro_vm_disks = filter(not_bootable, getVmDisks(config.VM_NAME[0]))
+        ro_vm_disks = filter(not_bootable, getVmDisks(self.vm_name))
 
         logger.info("Adding new snapshot %s", self.snapshot_description)
         setPersistentNetwork(vm_ip, config.VM_PASSWORD)
-        assert addSnapshot(True, config.VM_NAME[0],
+        assert addSnapshot(True, self.vm_name,
                            self.snapshot_description)
 
-        snap_disks = get_snapshot_disks(config.VM_NAME[0],
+        snap_disks = get_snapshot_disks(self.vm_name,
                                         self.snapshot_description)
 
         for ro_disk in ro_vm_disks:
@@ -1141,7 +1228,7 @@ class TestCase337935(DefaultEnvironment):
         status = cloneVmFromSnapshot(True, name=self.cloned_vm_name,
                                      snapshot=self.snapshot_description,
                                      cluster=config.CLUSTER_NAME,
-                                     vm=config.VM_NAME[0])
+                                     vm=self.vm_name)
         if status:
             self.cloned = True
 
@@ -1160,18 +1247,20 @@ class TestCase337935(DefaultEnvironment):
         if self.cloned:
             if not removeVm(True, self.cloned_vm_name, stopVM='true',
                             wait=True):
-                raise exceptions.VMException("Failed to remove cloned vm %s"
-                                             % self.cloned_vm_name)
+                logger.error("Failed to remove cloned vms %s",
+                             self.cloned_vm_name)
 
-        stop_vms_safely([config.VM_NAME[0]])
+        stop_vms_safely([self.vm_name])
         super(TestCase337935, self).tearDown()
 
         if not removeSnapshot(True,
-                              config.VM_NAME[0],
-                              self.snapshot_description):
-            raise exceptions.SnapshotException("Failed to remove "
-                                               "snapshot %s"
-                                               % self.snapshot_description)
+                              self.vm_name,
+                              self.snapshot_description,
+                              timeout=TASK_TIMEOUT):
+            logger.error("Failed to remove snapshot %s",
+                         self.snapshot_description)
+
+        wait_for_jobs()
 
 
 @attr(tier=1)
@@ -1202,24 +1291,21 @@ class TestCase332481(DefaultEnvironment):
           that its RO
         - Try to write to that disk from both the VMs
         """
-        helpers.prepare_disks_for_vm(config.VM_NAME[0], helpers.DISKS_NAMES,
-                                     read_only=True)
+        self.prepare_disks_for_vm(read_only=True)
 
-        sd = get_master_storage_domain_name(config.DATA_CENTER_NAME)
-
-        stop_vms_safely([config.VM_NAME[0]])
+        stop_vms_safely([self.vm_name])
 
         logger.info("creating template %s", self.template_name)
-        assert createTemplate(True, vm=config.VM_NAME[0],
+        assert createTemplate(True, vm=self.vm_name,
                               name=self.template_name,
                               cluster=config.CLUSTER_NAME,
-                              storagedomain=sd)
+                              storagedomain=self.storage_domains[0])
 
         logger.info("Cloning vm from template")
 
-        self.cloned = cloneVmFromTemplate(True, self.cloned_vm_name,
-                                          self.template_name,
-                                          config.CLUSTER_NAME)
+        self.cloned = cloneVmFromTemplate(
+            True, self.cloned_vm_name, self.template_name, config.CLUSTER_NAME,
+            storagedomain=self.storage_domains[0])
 
         self.assertTrue(self.cloned, "Failed to clone vm from template")
 
@@ -1256,14 +1342,13 @@ class TestCase332481(DefaultEnvironment):
     def tearDown(self):
         if self.cloned:
             if not removeVms(True, self.cloned_vms, stop='true'):
-                raise exceptions.VMException("Failed to remove cloned vm")
+                logger.error("Failed to remove cloned vms")
         waitForTemplatesStates(self.template_name)
 
         if not removeTemplate(True, self.template_name,
                               timeout=TEMPLATE_TIMOUT):
-            raise exceptions.TemplateException("Failed to remove "
-                                               "template %s"
-                                               % self.template_name)
+            logger.error("Failed to remove template %s",
+                         self.template_name)
         super(TestCase332481, self).tearDown()
 
 
@@ -1289,16 +1374,14 @@ class TestCase334877(DefaultEnvironment):
         - Try to move the disk to the second storage domain
           while disk is unplugged and RO
         """
-        assert helpers.prepare_disks_for_vm(config.VM_NAME[0],
-                                            helpers.DISKS_NAMES,
-                                            read_only=True)
+        self.prepare_disks_for_vm(read_only=True)
 
-        ro_vm_disks = filter(not_bootable, getVmDisks(config.VM_NAME[0]))
+        ro_vm_disks = filter(not_bootable, getVmDisks(self.vm_name))
         logger.info("VM disks: %s", [d.get_alias() for d in ro_vm_disks])
 
         for index, disk in enumerate(ro_vm_disks):
             state, out = helpers.verify_write_operation_to_disk(
-                config.VM_NAME[0], disk_number=index)
+                self.vm_name, disk_number=index)
             logger.info("Trying to write to read only disk %s...", disk)
             status = (not state) and ((READ_ONLY in out)) or (NOT_PERMITTED
                                                               in out)
@@ -1307,12 +1390,13 @@ class TestCase334877(DefaultEnvironment):
 
         for index, disk in enumerate(ro_vm_disks):
             logger.info("Unplugging vm disk %s", disk.get_alias())
-            assert deactivateVmDisk(True, config.VM_NAME[0], disk.get_alias())
+            assert deactivateVmDisk(True, self.vm_name, disk.get_alias())
 
-            move_vm_disk(config.VM_NAME[0], disk.get_alias(), config.SD_NAME_1)
+            move_vm_disk(
+                self.vm_name, disk.get_alias(), self.storage_domains[1])
             waitForDisksState(disk.get_alias())
             logger.info("disk %s moved", disk.get_alias())
-            vm_disk = getVmDisk(config.VM_NAME[0], disk.get_alias())
+            vm_disk = getVmDisk(self.vm_name, disk.get_alias())
             is_disk_ro = vm_disk.get_read_only()
             self.assertTrue(is_disk_ro, "Disk %s is not read only after move "
                                         "to different storage domain"
@@ -1343,21 +1427,20 @@ class TestCase332477(DefaultEnvironment):
         - Activate the disk
         - Try to move the disk (LSM) to the second storage domain
         """
-        assert helpers.prepare_disks_for_vm(config.VM_NAME[0],
-                                            helpers.DISKS_NAMES,
-                                            read_only=True)
+        assert self.prepare_disks_for_vm(read_only=True)
 
-        ro_vm_disks = filter(not_bootable, getVmDisks(config.VM_NAME[0]))
+        ro_vm_disks = filter(not_bootable, getVmDisks(self.vm_name))
         logger.info("VM disks: %s", [d.get_alias() for d in ro_vm_disks])
 
-        start_vms([config.VM_NAME[0]], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME[0])
+        start_vms([self.vm_name], 1, wait_for_ip=False)
+        waitForVMState(self.vm_name)
 
         for index, disk in enumerate(ro_vm_disks):
-            move_vm_disk(config.VM_NAME[0], disk.get_alias(), config.SD_NAME_1)
+            move_vm_disk(
+                self.vm_name, disk.get_alias(), self.storage_domains[1])
 
             logger.info("disk %s moved", disk.get_alias())
-            vm_disk = getVmDisk(config.VM_NAME[0], disk.get_alias())
+            vm_disk = getVmDisk(self.vm_name, disk.get_alias())
             is_disk_ro = vm_disk.get_read_only()
             self.assertTrue(is_disk_ro, "Disk %s is not read only after move "
                                         "to different storage domain"
@@ -1367,7 +1450,7 @@ class TestCase332477(DefaultEnvironment):
 
 
 @attr(tier=1)
-class TestCase332482(TestCase):
+class TestCase332482(BaseTestCase):
     """
 
     https://tcms.engineering.redhat.com/case/332482/?from_plan=12049
@@ -1417,24 +1500,23 @@ class TestCase334876(DefaultEnvironment):
         - Try to move the first RW to the second storage domain
 
         """
-        bootable = getVmDisks(config.VM_NAME[0])[0]
-        assert helpers.prepare_disks_for_vm(config.VM_NAME[0],
-                                            helpers.DISKS_NAMES,
-                                            read_only=True)
+        bootable = get_vm_bootable_disk(self.vm_name)
+        assert self.prepare_disks_for_vm(read_only=True)
 
-        vm_disks = getVmDisks(config.VM_NAME[0])
+        vm_disks = getVmDisks(self.vm_name)
         ro_vm_disks = [d for d in vm_disks if (not d.get_bootable())]
 
         logger.info("VM disks: %s", [d.get_alias() for d in ro_vm_disks])
 
-        start_vms([config.VM_NAME[0]], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME[0])
+        start_vms([self.vm_name], 1, wait_for_ip=False)
+        waitForVMState(self.vm_name)
 
-        move_vm_disk(config.VM_NAME[0], bootable.get_alias(), config.SD_NAME_1)
+        move_vm_disk(self.vm_name, bootable,
+                     self.storage_domains[1])
 
 
 @attr(tier=1)
-class TestCase334923(TestCase):
+class TestCase334923(BaseTestCase):
     """
     Check that RO disk is available for lower versions than 3.4
     https://tcms.engineering.redhat.com/case/334923/?from_plan=12049
@@ -1455,7 +1537,7 @@ class TestCase334923(TestCase):
                                                  "storage type %s and "
                                                  "version %s failed."
                                                  % (self.datacenter_name,
-                                                    config.STORAGE_TYPE,
+                                                    TestCase.storage,
                                                     self.version))
         logger.info("Datacenter %s was created successfully",
                     self.datacenter_name)
@@ -1472,16 +1554,17 @@ class TestCase334923(TestCase):
                                                  self.datacenter_name))
         logger.info("Cluster %s was created successfully", self.cluster_name)
 
+        wait_for_jobs()
         deactivateHost(True, config.HOSTS[0])
         updateHost(True, config.HOSTS[0], cluster=self.cluster_name)
         activateHost(True, config.HOSTS[0])
 
-        helpers.create_third_sd(self.sd_name, config.HOSTS[0])
+        helpers.create_third_sd(self.sd_name, config.HOSTS[0], self.storage)
 
         attachStorageDomain(True, self.datacenter_name, self.sd_name)
         disk_args = {
             'provisioned_size': config.DISK_SIZE,
-            'wipe_after_delete': config.BLOCK_FS,
+            'wipe_after_delete': self.storage in config.BLOCK_TYPES,
             'storagedomain': self.sd_name,
             'bootable': False,
             'shareable': False,
@@ -1505,21 +1588,30 @@ class TestCase334923(TestCase):
             raise exceptions.VMException("Failed to create vm %s"
                                          % self.test_vm_name)
         stop_vms_safely([self.test_vm_name])
+        waitForVMState(self.test_vm_name, config.VM_DOWN)
         logger.info("Attaching a RO in %s cluster", self.version)
-        assert helpers.prepare_disks_for_vm(self.test_vm_name,
-                                            [self.disk_name],
-                                            read_only=True)
+        helpers.prepare_disks_for_vm(
+            self.test_vm_name, [self.disk_name], read_only=True)
 
     def tearDown(self):
-        logger.info("Removing vm %s", self.test_vm_name)
-        assert removeVm(True, self.test_vm_name, stopVM='true', wait=True)
+        safely_remove_vms([self.test_vm_name])
         wait_for_tasks(config.VDC, config.VDC_PASSWORD, self.datacenter_name)
         logger.info("Restoring environment")
 
-        assert deactivateStorageDomain(True, self.datacenter_name,
-                                       self.sd_name)
-        assert removeDataCenter(True, self.datacenter_name)
-        assert deactivateHost(True, config.HOSTS[0])
+        if not deactivateStorageDomain(True, self.datacenter_name,
+                                       self.sd_name):
+            logger.error("Error trying to deactivate storage domain %s",
+                         self.sd_name)
+        if not removeDataCenter(True, self.datacenter_name):
+            logger.error("Error trying to remove datacenter %s",
+                         self.datacenter_name)
+        if not removeStorageDomain(True, self.sd_name, config.HOSTS[0],
+                                   format='true'):
+            logger.error("Error trying to remove storage domain %s",
+                         self.sd_name)
+        if not deactivateHost(True, config.HOSTS[0]):
+            logger.error("Error trying to deactivate host %s",
+                         config.HOSTS[0])
         assert updateHost(True, config.HOSTS[0], cluster=config.CLUSTER_NAME)
         assert activateHost(True, config.HOSTS[0])
         assert removeCluster(True, cluster=self.cluster_name)
@@ -1543,23 +1635,23 @@ class TestCase334921(DefaultEnvironment):
         - Kill qemu process of the VM
         - Start the VM again
         """
-        assert helpers.prepare_disks_for_vm(config.VM_NAME[0],
-                                            helpers.DISKS_NAMES,
-                                            read_only=True)
+        self.prepare_disks_for_vm(read_only=True)
+        start_vms([self.vm_name], 1, wait_for_ip=False)
         logger.info("Killing qemu process")
-        status = kill_qemu_process(config.VM_NAME[0], config.HOSTS[0],
+        self.host = getVmHost(self.vm_name)[1]['vmHoster']
+        status = kill_qemu_process(self.vm_name, self.host,
                                    config.HOSTS_USER,
                                    config.HOSTS_PW)
         self.assertTrue(status, "Failed to kill qemu process")
         logger.info("qemu process killed")
-        start_vms([config.VM_NAME[0]], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME[0])
-        ro_vm_disks = getVmDisks(config.VM_NAME[0])
+        start_vms([self.vm_name], 1, wait_for_ip=False)
+        waitForVMState(self.vm_name)
+        ro_vm_disks = getVmDisks(self.vm_name)
         ro_vm_disks = [d for d in ro_vm_disks if (not d.get_bootable())]
         logger.info("VM disks: %s", [d.get_alias() for d in ro_vm_disks])
         for index, disk in enumerate(ro_vm_disks):
             state, out = helpers.verify_write_operation_to_disk(
-                config.VM_NAME[0], disk_number=index)
+                self.vm_name, disk_number=index)
             logger.info("Trying to write to read only disk...")
             status = not state and (READ_ONLY in out or NOT_PERMITTED in out)
             self.assertTrue(status, "Write operation to RO disk succeeded")
@@ -1567,7 +1659,7 @@ class TestCase334921(DefaultEnvironment):
 
 
 @attr(tier=2)
-class TestCase332485(TestCase):
+class TestCase332485(BaseTestCase):
     """
     Restart vdsm during RO disk activation
     https://tcms.engineering.redhat.com/case/332485/?from_plan=12049
@@ -1591,7 +1683,7 @@ class TestCase332485(TestCase):
 
 
 @attr(tier=2)
-class TestCase332486(TestCase):
+class TestCase332486(BaseTestCase):
     """
     Restart ovirt-engine during RO disk activation
     https://tcms.engineering.redhat.com/case/332486/?from_plan=12049
@@ -1615,7 +1707,7 @@ class TestCase332486(TestCase):
 
 
 @attr(tier=2)
-class TestCase332488(TestCase):
+class TestCase332488(BaseTestCase):
     """
     Restart libvirt during RO disk activation
     https://tcms.engineering.redhat.com/case/332488/?from_plan=12049
@@ -1641,7 +1733,7 @@ class TestCase332488(TestCase):
 
 
 @attr(tier=1)
-class TestCase332487(TestCase):
+class TestCase332487(BaseTestCase):
     """
     Changing RW disk to RO while disk is plugged to a running VM
     https://tcms.engineering.redhat.com/case/332487/?from_plan=12049

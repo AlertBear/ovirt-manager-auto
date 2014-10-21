@@ -1068,7 +1068,8 @@ def removeDisks(positive, vm, num_of_disks, wait=True):
 
 
 @is_action()
-def waitForDisksStat(vm, stat='OK', timeout=VM_IMAGE_OPT_TIMEOUT):
+def waitForDisksStat(vm, stat=ENUMS['disk_state_ok'],
+                     timeout=VM_IMAGE_OPT_TIMEOUT):
     '''
     Wait for VM disks status
     Author: atal
@@ -1761,7 +1762,7 @@ def removeTagFromVm(positive, vm, tag):
 
 @is_action()
 def exportVm(positive, vm, storagedomain, exclusive='false',
-             discard_snapshots='false'):
+             discard_snapshots='false', timeout=VM_ACTION_TIMEOUT):
     '''
     Description: export vm to export storage domain
     Author: edolinin, jhenner
@@ -1783,13 +1784,14 @@ def exportVm(positive, vm, storagedomain, exclusive='false',
                         discard_snapshots=discard_snapshots)
     status = VM_API.syncAction(vmObj, "export", positive, **actionParams)
     if status and positive:
-        return VM_API.waitForElemStatus(vmObj, expectedStatus, 300)
+        return VM_API.waitForElemStatus(
+            vmObj, expectedStatus, timeout)
     return status
 
 
 @is_action()
 def importVm(positive, vm, export_storagedomain, import_storagedomain,
-             cluster, name=None, async=False):
+             cluster, name=None, async=False, timeout=VM_ACTION_TIMEOUT):
     '''
     Description: import vm
     Author: edolinin
@@ -1837,7 +1839,7 @@ def importVm(positive, vm, export_storagedomain, import_storagedomain,
         return status
 
     if status and positive:
-        return waitForVMState(expectedName, expectedStatus)
+        return waitForVMState(expectedName, expectedStatus, timeout=timeout)
     return status
 
 

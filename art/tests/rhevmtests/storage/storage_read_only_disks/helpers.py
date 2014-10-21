@@ -7,24 +7,24 @@ from utilities.machine import Machine
 from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.tests_lib.low_level.disks import (
     waitForDisksState, addDisk, get_all_disk_permutation, attachDisk,
-    check_disk_visibility,
+    check_disk_visibility, checkDiskExists, deleteDisk,
 )
 from art.rhevm_api.tests_lib.low_level.storagedomains import addStorageDomain
 from art.rhevm_api.tests_lib.low_level.vms import (
     activateVmDisk, getVmDisks, waitForVMState, start_vms,
 )
+from art.test_handler import exceptions
+
 from rhevmtests.storage.helpers import get_vm_ip
 
-from art.test_handler import exceptions
 import shlex
-
 import config
 
 logger = logging.getLogger(__name__)
 
 ENUMS = config.ENUMS
 
-DISKS_NAMES = list()
+DISKS_NAMES = dict()  # dictionary with storage type as key
 DISK_TIMEOUT = 250
 
 DD_TIMEOUT = 1500
@@ -34,21 +34,30 @@ READ_ONLY = 'Read-only'
 NOT_PERMITTED = 'Operation not permitted'
 
 
-def add_new_disk(sd_name, permutation, shared=False):
+def add_new_disk(sd_name, storage_type, permutation, shared=False,
+                 force_create=True):
     """
     Add a new disk
     Parameters:
         * sd_name - disk wil added to this sd
+        * storage_type - storage domain type
         * shared - True if the disk should e shared
         * permutations:
             * interface - VIRTIO or VIRTIO_SCSI
             * sparse - True if thin, False preallocated
             * disk_format - 'cow' or 'raw'
+        * force_create: Remove any existing disk in the system with the same
+                        alias
     """
+    disk_alias = "%s_%s_%s_%s_disk" % (
+        permutation['interface'],
+        permutation['format'],
+        permutation['sparse'],
+        storage_type)
     disk_args = {
         # Fixed arguments
         'provisioned_size': config.DISK_SIZE,
-        'wipe_after_delete': config.BLOCK_FS,
+        'wipe_after_delete': storage_type in config.BLOCK_TYPES,
         'storagedomain': sd_name,
         'bootable': False,
         'shareable': shared,
@@ -58,28 +67,37 @@ def add_new_disk(sd_name, permutation, shared=False):
         'format': permutation['format'],
         'interface': permutation['interface'],
         'sparse': permutation['sparse'],
-        'alias': "%s_%s_%s_disk" %
-                 (permutation['interface'],
-                  permutation['format'],
-                  permutation['sparse'])}
+        'alias': disk_alias,
+    }
+
+    if force_create:
+        # Remove any existing disk in the system with the same alias
+        if checkDiskExists(True, disk_alias):
+            logger.info("Found disk with alias %s need for test. Removing...",
+                        disk_alias)
+            assert deleteDisk(True, disk_alias)
 
     assert addDisk(True, **disk_args)
-    DISKS_NAMES.append(disk_args['alias'])
+    if storage_type not in DISKS_NAMES.keys():
+        DISKS_NAMES[storage_type] = list()
+
+    DISKS_NAMES[storage_type].append(disk_args['alias'])
 
 
-def start_creating_disks_for_test(shared=False, sd_name=config.SD_NAME_0):
+def start_creating_disks_for_test(sd_name, storage_type, shared=False):
     """
     Begins asynchronous creation of disks of all permutations of disk
     interfaces, formats and allocation policies
     """
     global DISKS_NAMES
-    DISKS_NAMES = []
-    logger.info("Disks: %s", DISKS_NAMES)
+    DISKS_NAMES[storage_type] = list()
+    logger.info("Disks: %s", DISKS_NAMES[storage_type])
     logger.info("Creating all disks")
     DISK_PERMUTATIONS = get_all_disk_permutation(
-        block=config.BLOCK_FS, shared=shared)
+        block=storage_type in config.BLOCK_TYPES, shared=shared)
     for permutation in DISK_PERMUTATIONS:
-        add_new_disk(sd_name=sd_name, permutation=permutation, shared=shared)
+        add_new_disk(sd_name, storage_type,
+                     permutation=permutation, shared=shared)
 
 
 def verify_write_operation_to_disk(vm_name, disk_number):
@@ -141,23 +159,24 @@ def prepare_disks_for_vm(vm_name, disks_to_prepare, read_only=False):
     return True
 
 
-def write_on_vms_ro_disks(vm_name, imported_vm=False):
+def write_on_vms_ro_disks(vm_name, storage_type, imported_vm=False):
     """
     Check that vm's disks are all visible and write operations to RO are
     impossible
     Parameters:
         * vm_name - name of vm
+        * storage_type - storage domain type
         * imported_vm - True if the vm is imported
     """
     vm_disks = getVmDisks(vm_name)
     if imported_vm:
         global DISKS_NAMES
-        DISKS_NAMES = [disk.get_alias() for disk in vm_disks if
-                       not disk.get_bootable()]
-        logger.info("Disks: %s", DISKS_NAMES)
+        DISKS_NAMES[storage_type] = [disk.get_alias() for disk in vm_disks if
+                                     not disk.get_bootable()]
+        logger.info("Disks: %s", DISKS_NAMES[storage_type])
     logger.info("VM %s disks %s", vm_name, vm_disks)
 
-    for index, disk in enumerate(DISKS_NAMES):
+    for index, disk in enumerate(DISKS_NAMES[storage_type]):
         logger.info("Checking if disk %s visible to %s", disk, vm_name)
         is_visible = check_disk_visibility(disk, vm_disks)
 
@@ -175,26 +194,41 @@ def write_on_vms_ro_disks(vm_name, imported_vm=False):
         logger.info("Failed to write to read only disk")
 
 
-def create_third_sd(sd_name, host_name):
+def create_third_sd(sd_name, host_name, storage_type):
     """
     Helper function for creating SD
+    Params:
+        * sd_name - name of the storage domain
+        * host_name - name of the host use to create the sd
+        * storage_type - storage domain type
     Return: False if storage domain was not created,
             True otherwise
     """
     sd_args = {
         'type': ENUMS['storage_dom_type_data'],
-        'storage_type': config.STORAGE_TYPE,
+        # storage_type should be always passed in
+        'storage_type': storage_type,
         'host': host_name}
 
     sd_args['name'] = sd_name
-    if config.STORAGE_TYPE == 'nfs':
-        sd_args['address'] = config.ADDRESS[2]
-        sd_args['path'] = config.PATH[2]
-    elif config.STORAGE_TYPE == 'iscsi':
-        sd_args['lun'] = config.LUNS[2]
-        sd_args['lun_address'] = config.LUN_ADDRESS[2]
-        sd_args['lun_target'] = config.LUN_TARGET[2]
-        sd_args['lun_port'] = config.LUN_PORT
+    if config.GOLDEN_ENV:
+        if storage_type == config.STORAGE_TYPE_NFS:
+            sd_args['address'] = config.UNUSED_DATA_DOMAIN_ADDRESSES[0]
+            sd_args['path'] = config.UNUSED_DATA_DOMAIN_PATHS[0]
+        elif storage_type == config.STORAGE_TYPE_ISCSI:
+            sd_args['lun'] = config.UNUSED_LUNS[0]
+            sd_args['lun_address'] = config.UNUSED_LUN_ADDRESSES[0]
+            sd_args['lun_target'] = config.UNUSED_LUN_TARGETS[0]
+            sd_args['lun_port'] = config.LUN_PORT
+    else:
+        if storage_type == config.STORAGE_TYPE_NFS:
+            sd_args['address'] = config.ADDRESS[2]
+            sd_args['path'] = config.PATH[2]
+        elif storage_type == config.STORAGE_TYPE_ISCSI:
+            sd_args['lun'] = config.LUNS[2]
+            sd_args['lun_address'] = config.LUN_ADDRESS[2]
+            sd_args['lun_target'] = config.LUN_TARGET[2]
+            sd_args['lun_port'] = config.LUN_PORT
 
     logger.info('Creating storage domain with parameters: %s', sd_args)
     status = addStorageDomain(True, **sd_args)

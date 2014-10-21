@@ -228,7 +228,6 @@ else:
         LUN = LUNS
         LUN_ADDRESS = PARAMETERS.as_list('lun_address')
         LUN_TARGET = PARAMETERS.as_list('lun_target')
-        LUN_PORT = 3260
     elif STORAGE_TYPE == ENUMS['storage_type_posixfs']:
         VFS_TYPE = (PARAMETERS['storage_type']).split("_")[1]
         if VFS_TYPE == "pnfs":
@@ -238,6 +237,8 @@ else:
             PATH = PARAMETERS.as_list('data_domain_path')
 
         PARAMETERS['vfs_type'] = VFS_TYPE
+
+LUN_PORT = 3260
 
 HOSTS_USER = 'root'
 

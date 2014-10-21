@@ -1978,7 +1978,7 @@ def kill_qemu_process(vm_name, host, user, password):
     Description: kill qemu process of a given vm
     Parameters:
         * vm_name - the vm name that wish to find its qemu proc
-        * host - ip or fqdn of host rum qemu process
+        * host - name of the host
         * user - username for  host
         * password - password for host
     Author: ratamir
