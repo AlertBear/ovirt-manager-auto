@@ -1,5 +1,7 @@
 import logging
+from functools import wraps
 from art.test_handler.settings import plmanager, opts, ART_CONFIG
+from rhevmtests import config
 from unittest import TestCase
 from nose.plugins.attrib import attr
 logger = logging.getLogger(__name__)
@@ -31,6 +33,16 @@ def is_bz_state(bz_id):
         * bz_id - BZ number
     """
     return BZ_PLUGIN.is_state(bz_id)
+
+
+def golden_env(f):
+    @wraps(f)
+    def wrapper(*args, **kwds):
+        if config.GOLDEN_ENV:
+            logger.info("Running on golden env, no setup")
+            return
+        return f(*args, **kwds)
+    return wrapper
 
 
 class BaseTestCase(TestCase):

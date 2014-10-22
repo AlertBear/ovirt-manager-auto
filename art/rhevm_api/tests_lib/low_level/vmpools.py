@@ -19,6 +19,7 @@
 
 from art.core_api.apis_utils import getDS
 from art.rhevm_api.utils.test_utils import get_api
+from art.rhevm_api.data_struct.data_structures import Fault
 from art.core_api.validator import compareCollectionSize
 from vms import detachVm, startVm, stopVm, removeVms
 import time
@@ -86,7 +87,7 @@ def addVmPool(positive, **kwargs):
     pool = _prepareVmPoolObject(**kwargs)
     pool, status = util.create(pool, positive)
 
-    if not pool:
+    if not pool or isinstance(pool, Fault):
         return positive is False
 
     time.sleep(int(size) * 3)
@@ -279,3 +280,28 @@ def allocateVmFromPool(positive, vmpool):
     pool = util.find(vmpool)
 
     return util.syncAction(pool, 'allocatevm', positive)
+
+
+def removeWholeVmPool(positive, vmpool, size,
+                      remove_vms=True, detach_timeout=5):
+    """
+    Description: Detach vms, remove them and remove vm pool.
+    Parameters:
+      * vmpool - name of pool which should be removed
+      * size - number of vms in pool
+      * remove_vms - remove all pooled vms
+      * detach_timeout - how long wait for vms to be detached
+    Returns: True if operation was successful, false otherwise.
+    """
+    ret = detachVms(positive, vmpool)
+    if not ret:
+        return not positive
+    time.sleep(detach_timeout)
+    if remove_vms:
+        ret = removePooledVms(positive, vmpool, size)
+        if not ret:
+            return not positive
+    ret = removeVmPool(positive, vmpool)
+    if not ret:
+        return not positive
+    return positive

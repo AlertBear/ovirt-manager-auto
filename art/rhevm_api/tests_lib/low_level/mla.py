@@ -902,3 +902,17 @@ def hasUserPermissionsOnObject(user_name, obj, role):
     Return: True if user has permissions on object False otherwise
     """
     return hasUserOrGroupPermissionsOnObject(user_name, obj, role)
+
+
+def allowsViewChildren(role, database):
+    """
+    Paramters:
+     * role - name of role we need to check
+     * database - database object from rhevm_api.resources
+    Return: True if user can view children False otherwise
+    """
+    psql_cmd = "select allows_viewing_children from roles where name = '%s'"
+    try:
+        return database.psql(psql_cmd % role)[0][0] == 't'
+    except IndexError:
+        return False

@@ -82,6 +82,10 @@ def _prepareStorageDomainObject(positive, **kwargs):
     if name:
         sd.set_name(name)
 
+    description = kwargs.pop('description', None)
+    if description:
+        sd.set_description(description)
+
     type_ = kwargs.pop('type', None)
     if type_:
         sd.set_type(type_)
