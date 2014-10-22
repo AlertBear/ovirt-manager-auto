@@ -341,6 +341,8 @@ def addHost(positive, name, wait=True, vdcPort=None, rhel_like=True,
             )
             kwargs['protocol'] = transport_proto
 
+    kwargs.setdefault('override_iptables', 'true')
+
     if root_password:
         hostObj = machine.Machine(host_address, 'root',
                                   root_password).util(machine.LINUX)
@@ -632,7 +634,7 @@ def deactivateHost(positive, host,
 
 @is_action()
 def installHost(positive, host, root_password, iso_image=None,
-                override_iptables='false'):
+                override_iptables='true'):
     """
     Description: run host installation
     Author: edolinin, atal
