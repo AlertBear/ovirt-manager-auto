@@ -4106,3 +4106,45 @@ def get_vms_from_cluster(cluster):
         if x.get_cluster().get_id() == cluster_id]
     logging.info("Vms in cluster: %s", vms_in_cluster)
     return vms_in_cluster
+
+
+def does_vm_exists(vm_name):
+    """
+    Description: Checks if vm exists
+    Parameters:
+        * vm_name: name of the vm
+    Retrun:
+        True in case vm exists, False otherwise
+    """
+    try:
+        VM_API.find(vm_name)
+    except EntityNotFound:
+        return False
+    return True
+
+
+def get_vms_disks_storage_domain_name(vm_name, disk_alias=None):
+    """
+    Desription: get the vm's disks storage domain name. if no disk alias is
+                specified take the first one
+    Parameters:
+        * vm_name: name of the vm
+        * disk_alias: alias of specific disk if needed
+    Return:
+        Storage Domains' name where the disk is located
+    """
+    disks = getVmDisks(vm_name)
+    diskObj = None
+    if disk_alias:
+        for disk in disks:
+            if disk_alias == disk.get_alias():
+                diskObj = disk
+                break
+        if not diskObj:
+            raise EntityNotFound("Disk with alias %s is not attached to vm %s"
+                                 % (disk_alias, vm_name))
+    else:
+        diskObj = disks[0]
+
+    sd_id = diskObj.get_storage_domains().get_storage_domain()[0].get_id()
+    return STORAGE_DOMAIN_API.find(sd_id, attribute='id').get_name()

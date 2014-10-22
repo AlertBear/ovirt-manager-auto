@@ -1,9 +1,12 @@
 import logging
-from art.test_handler.settings import plmanager, opts
+from art.test_handler.settings import plmanager, opts, ART_CONFIG
 from unittest import TestCase
 from nose.plugins.attrib import attr
-
 logger = logging.getLogger(__name__)
+
+# WA This will be removed after multiplier is merged
+ISCSI = opts['elements_conf']['RHEVM Enums']['storage_type_iscsi']
+STORAGE_TYPE = ART_CONFIG['PARAMETERS'].get('storage_type', None)
 
 try:
     BZ_PLUGIN = [pl for pl in plmanager.configurables
@@ -44,6 +47,9 @@ class StorageTest(BaseTestCase):
     Basic class for storage tests
     """
     __test__ = False
+    # WA: storage will be the type of storage to execute the tests in
+    # wait until plugin multiplier is merged to change it
+    storage = STORAGE_TYPE if STORAGE_TYPE != "none" else ISCSI
 
 
 @attr(team="network")

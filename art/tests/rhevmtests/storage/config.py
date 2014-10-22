@@ -34,18 +34,25 @@ STORAGE_DEVICE_TYPE_MAP = {
 
 STORAGE_DEVICE_NAME = STORAGE_DEVICE_TYPE_MAP.get(STORAGE_TYPE, STORAGE_TYPE)
 
-if STORAGE_TYPE == STORAGE_TYPE_LOCAL:
-    # defined in conf as list of directories
-    NUMBER_OF_SDS = len(
-        STORAGE_CONF.as_list('%s_devices' % STORAGE_DEVICE_NAME))
+if not GOLDEN_ENV:
+    if STORAGE_TYPE == STORAGE_TYPE_LOCAL:
+        # defined in conf as list of directories
+        NUMBER_OF_SDS = len(
+            STORAGE_CONF.as_list('%s_devices' % STORAGE_DEVICE_NAME))
 
-elif STORAGE_TYPE == "none":
-    # There are a few tests that uses multiple types of storage and
-    # STORAGE_TYPE is none
-    NUMBER_OF_SDS = 0
+    elif STORAGE_TYPE == "none":
+        # There are a few tests that uses multiple types of storage and
+        # STORAGE_TYPE is none
+        NUMBER_OF_SDS = 0
 
-elif STORAGE_TYPE:
-    NUMBER_OF_SDS = int(STORAGE_CONF.get('%s_devices' % STORAGE_DEVICE_NAME))
+    elif STORAGE_TYPE:
+        NUMBER_OF_SDS = int(STORAGE_CONF.get('%s_devices' % STORAGE_DEVICE_NAME))
+else:
+    # XXX WA until the multi selector plugin is merge
+    # Get the list of sds that would the test run with testmultiplier
+    STORAGE_SELECTOR =  [STORAGE_TYPE_ISCSI]
+    STORAGE_TYPE = STORAGE_TYPE_ISCSI
+    NUMBER_OF_SDS = 3
 
 SD_NAMES_LIST = []
 for idx in range(NUMBER_OF_SDS):

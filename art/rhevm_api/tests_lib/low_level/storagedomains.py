@@ -1748,3 +1748,18 @@ def wait_for_change_total_size(storagedomain_name, original_size=0,
     util.logger.warning("Total size for %s didn't update from %d",
                         storagedomain_name, original_size)
     return False
+
+
+def getStorageDomainNamesForType(datacenter_name, storage_type):
+    """
+    Returns a list of names of available data storage domain of storage_type
+     * datacenter_name: name of datacenter
+     * storage_type: type of storage (nfs, iscsi, ...)
+    """
+    sdObjList = getDCStorages(datacenter_name, False)
+
+    return [sdObj.get_name() for sdObj in sdObjList if
+            sdObj.get_type() == ENUMS['storage_dom_type_data']
+            and sdObj.get_storage().get_type() == storage_type
+            and sdObj.get_status().get_state() ==
+            ENUMS['storage_domain_state_active']]
