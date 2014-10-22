@@ -517,23 +517,23 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
     return True
 
 
-def createDummyInterface(host, username, password, num_dummy=1):
+def create_dummy_interfaces(host, username, password, num_dummy=1):
     """
-    Description: create (X) dummy network interfaces on host
-    **Author**: myakove
-    **Parameters**:
-        *  *host* - IP or FDQN of the host
-        *  *username* - host username
-        *  *password* - host password
-        *  *num_dummy* - number of dummy interfaces to create
-    **Returns**: True if creation of the dummy interface succeeded,
-                 otherwise False
+    create (X) dummy network interfaces on host
+    :param host: IP or FDQN of the host
+    :param username* - host username
+    :param password* - host password
+    :param num_dummy* - number of dummy interfaces to create
+    :return: True if creation of the dummy interface succeeded,
+    otherwise False
     """
     host_obj = machine.Machine(host, username, password).util(machine.LINUX)
 
     dummy_list = [MODPROBE_CMD, 'dummy', 'numdummies=' + str(num_dummy)]
     rc, out = host_obj.runCmd(dummy_list)
-    append_dummy = ["/bin/sed", "-i", "'$afake_nics=dummy*'", VDSM_CONF_FILE]
+
+    append_dummy = ['/bin/sed', '-i', '/\\[vars\\]/a fake_nics=dummy*',
+                    VDSM_CONF_FILE]
 
     if not rc:
         logger.error("Create dummy interfaces failed. ERR: %s", out)
@@ -561,24 +561,17 @@ def createDummyInterface(host, username, password, num_dummy=1):
         if not host_obj.addNicConfFile(nic=ifcfg_file_name):
             return False
 
-    logger.info("Restarting VDSM")
-    if not restartVdsmd(host, password, supervdsm=True):
-        logger.error("Restart vdsm service failed")
-        return False
-
     return True
 
 
-def deleteDummyInterface(host, username, password):
+def delete_dummy_interfaces(host, username, password):
     """
-    Description: Delete dummy network interfaces on host
-    **Author**: myakove
-    **Parameters**:
-        *  *host* - IP or FDQN of the host
-        *  *username* - host username
-        *  *password* - host password
-     **Returns**: True if deletion of the dummy interface succeeded,
-                 otherwise False
+    Delete dummy network interfaces on host
+    :param host: IP or FDQN of the host
+    :param username: host username
+    :param password: host password
+    return: True if deletion of the dummy interface succeeded,
+    otherwise False
     """
     host_obj = machine.Machine(host, username, password).util(machine.LINUX)
 
@@ -617,11 +610,6 @@ def deleteDummyInterface(host, username, password):
         logger.error("Delete dummy ifcfg file failed. ERR: %s", out)
         return False
     logger.info("ifcg-dummy* files removed")
-
-    logger.info("Restarting VDSM")
-    if not restartVdsmd(host, password, supervdsm=True):
-        logger.error("Restart vdsm service failed")
-        return False
 
     return True
 
