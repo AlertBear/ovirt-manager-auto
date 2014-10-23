@@ -54,6 +54,7 @@ TAG_API = get_api('tag', 'tags')
 HOST_NICS_API = get_api('host_nic', 'host_nics')
 VM_API = get_api('vm', 'vms')
 CAP_API = get_api('version', 'capabilities')
+EVENT_API = get_api("event", "events")
 xpathMatch = is_action('xpathHosts',
                        id_name='xpathMatch')(XPathMatch(HOST_API))
 xpathHostsLinks = is_action('xpathLinksHosts',
@@ -2207,8 +2208,34 @@ def get_host_name_from_engine(host_ip):
     :param host_ip: resources.VDS object
     :return: host.name or None
     """
+
     engine_hosts = HOST_API.get(absLink=False)
     for host in engine_hosts:
         if host.get_address() == host_ip or host.name == host_ip:
             return host.name
     return None
+
+
+def refresh_host_capabilities(host):
+    """
+    Refresh Host Capabilities
+    :param host: Host name
+    :return: True/False
+    """
+    host_obj = HOST_API.find(host)
+    code = 606
+    last_event_id = EVENT_API.get(absLink=False)[0].get_id()
+    event_description = (
+        "Successfully refreshed the capabilities of host {0}.".format(
+            host)
+    )
+    refresh_href = ";".join([host_obj.get_href(), "force"])
+    HOST_API.get(href=refresh_href)
+
+    for event in EVENT_API.get(absLink=False):
+        if event.get_id() == last_event_id:
+            return False
+        if event.get_code() == code:
+            if event_description == event.get_description():
+                return True
+    return False
