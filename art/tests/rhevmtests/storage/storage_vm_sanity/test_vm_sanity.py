@@ -32,32 +32,34 @@ def setup_module():
     """ creates datacenter, adds hosts, clusters, storages according to
     the config file
     """
-    datacenters.build_setup(
-        config=config.PARAMETERS, storage=config.PARAMETERS,
-        storage_type=config.STORAGE_TYPE, basename=config.TESTNAME)
+    if not config.GOLDEN_ENV:
+        datacenters.build_setup(
+            config=config.PARAMETERS, storage=config.PARAMETERS,
+            storage_type=config.STORAGE_TYPE, basename=config.TESTNAME)
 
 
 def teardown_module():
     """ removes created datacenter, storages etc.
     """
-    storagedomains.cleanDataCenter(
-        True, config.DATA_CENTER_NAME, vdc=config.VDC,
-        vdc_password=config.VDC_PASSWORD)
+    if not config.GOLDEN_ENV:
+        storagedomains.cleanDataCenter(
+            True, config.DATA_CENTER_NAME, vdc=config.VDC,
+            vdc_password=config.VDC_PASSWORD)
 
 
 def _create_vm(vm_name, vm_description, disk_interface,
                sparse=True, volume_format=ENUMS['format_cow'],
-               vm_type=config.VM_TYPE_DESKTOP):
+               vm_type=config.VM_TYPE_DESKTOP,
+               storage_type=config.STORAGE_TYPE):
     """ helper function for creating vm (passes common arguments, mostly taken
     from the configuration file)
     """
     LOGGER.info("Creating VM %s" % vm_name)
-    storage_domain_name = storagedomains.getDCStorages(
-        config.DATA_CENTER_NAME, False)[0].name
-    LOGGER.info("storage domain: %s" % storage_domain_name)
+    storage_domain = storagedomains.getStorageDomainNamesForType(
+        config.DATA_CENTER_NAME, storage_type)[0]
     return vms.createVm(
         True, vm_name, vm_description, cluster=config.CLUSTER_NAME,
-        nic=config.HOST_NICS[0], storageDomainName=storage_domain_name,
+        nic=config.HOST_NICS[0], storageDomainName=storage_domain,
         size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
         volumeType=sparse, volumeFormat=volume_format,
         diskInterface=disk_interface, memory=GB,
@@ -86,11 +88,10 @@ class TestCase248112(TestCase):
         """ creates and removes vm
         """
         vm_name = '%s_%s_virtio' % (
-            config.VM_BASE_NAME, config.STORAGE_TYPE)
-        vm_description = '%s_%s_virtio' % (
-            config.VM_BASE_NAME, config.STORAGE_TYPE)
+            config.VM_BASE_NAME, self.storage)
         self.assertTrue(
-            _create_vm(vm_name, vm_description, config.INTERFACE_VIRTIO),
+            _create_vm(vm_name, vm_name, config.INTERFACE_VIRTIO,
+                       storage_type=self.storage),
             "VM %s creation failed!" % vm_name)
         LOGGER.info("Removing created VM")
         self.assertTrue(
@@ -98,19 +99,20 @@ class TestCase248112(TestCase):
             "Removal of vm %s failed!" % vm_name)
 
 
-def _prepare_data(sparse, vol_format, template_names):
+def _prepare_data(sparse, vol_format, template_names, storage_type):
     """ prepares data for vm
     """
     template_name = "%s_%s_%s" % (
         config.TEMPLATE_NAME, sparse, vol_format)
     vm_name = '%s_%s_%s_%s_prep' % (
-        config.VM_BASE_NAME, config.STORAGE_TYPE, sparse, vol_format)
+        config.VM_BASE_NAME, storage_type, sparse, vol_format)
     vm_description = '%s_%s_prep' % (
-        config.VM_BASE_NAME, config.STORAGE_TYPE)
+        config.VM_BASE_NAME, storage_type)
     LOGGER.info("Creating vm %s %s ..." % (sparse, vol_format))
     if not _create_vm(
             vm_name, vm_description, config.INTERFACE_IDE,
-            sparse=sparse, volume_format=vol_format):
+            sparse=sparse, volume_format=vol_format,
+            storage_type=storage_type):
         raise exceptions.VMException("Creation of vm %s failed!" % vm_name)
     LOGGER.info("Waiting for ip of %s" % vm_name)
     vm_ip = vms.waitForIP(vm_name)[1]['ip']
@@ -146,13 +148,14 @@ class TestCase248138(TestCase):
     tcms_test_case = '248138'
     data_for_vm = []
     vms_ip_address = None
-    vm_name = '%s_%s_snap' % (config.VM_BASE_NAME, config.STORAGE_TYPE)
 
     @classmethod
     def setup_class(cls):
+        cls.vm_name = '%s_%s_snap' % (config.VM_BASE_NAME, cls.storage)
         vm_description = '%s_%s_snap' % (
-            config.VM_BASE_NAME, config.STORAGE_TYPE)
-        if not _create_vm(cls.vm_name, vm_description, config.INTERFACE_IDE):
+            config.VM_BASE_NAME, cls.storage)
+        if not _create_vm(cls.vm_name, vm_description, config.INTERFACE_IDE,
+                          storage_type=cls.storage):
             raise exceptions.VMException(
                 "Creation of VM %s failed!" % cls.vm_name)
         LOGGER.info("Waiting for vm %s state 'up'" % cls.vm_name)
@@ -308,21 +311,22 @@ class TestCase300867(TestCase):
     tcms_test_case = '300867'
     data_for_vm = []
     vms_ip_address = None
-    vm_name = '%s_%s_snap' % (config.VM_BASE_NAME, config.STORAGE_TYPE)
     snapShot1_name = "%s_snapshot1" % config.VM_BASE_NAME
     snapShot2_name = "%s_snapshot2" % config.VM_BASE_NAME
     snapshots = [snapShot1_name, snapShot2_name]
-    alias = "%s_Disk1" % vm_name
     disk_size_before = 0
     disk_size_after = 0
 
     @classmethod
     def setup_class(cls):
+        cls.vm_name = '%s_%s_snap' % (config.VM_BASE_NAME, cls.storage)
+        cls.alias = "%s_Disk1" % cls.vm_name
         vm_description = '%s_%s_snap' % (
-            config.VM_BASE_NAME, config.STORAGE_TYPE)
+            config.VM_BASE_NAME, cls.storage)
         # create vm with thin provision disk
         if not _create_vm(cls.vm_name, vm_description,  config.INTERFACE_IDE,
-                          sparse=True, volume_format=ENUMS['format_cow']):
+                          sparse=True, volume_format=ENUMS['format_cow'],
+                          storage_type=cls.storage):
             raise exceptions.VMException(
                 "Creation of VM %s failed!" % cls.vm_name)
         LOGGER.info("Waiting for vm %s state 'up'" % cls.vm_name)
@@ -415,7 +419,7 @@ class TestReadLock(TestCase):
         cls.vm_name = '%s_%s' % (config.VM_BASE_NAME, cls.vm_type)
         cls.template_name = "template_%s" % (cls.vm_name)
         if not _create_vm(cls.vm_name, cls.vm_name, config.INTERFACE_IDE,
-                          vm_type=cls.vm_type):
+                          vm_type=cls.vm_type, storage_type=cls.storage):
             raise exceptions.VMException(
                 "Creation of VM %s failed!" % cls.vm_name)
         LOGGER.info("Waiting for vm %s state 'up'" % cls.vm_name)
@@ -469,10 +473,13 @@ class TestReadLock(TestCase):
 
     @classmethod
     def teardown_class(cls):
-        vms_list = ','.join([cls.vm_name, cls.vm_name_1, cls.vm_name_2])
+        vms_list = filter(vms.does_vm_exists,
+                          [cls.vm_name, cls.vm_name_1, cls.vm_name_2])
         LOGGER.info("Removing VMs %s" % vms_list)
-        if not vms.removeVms(True, vms_list, stop='true'):
-            raise exceptions.VMException("Failed removing vms %s" % vms_list)
+        vms.stop_vms_safely(vms_list)
+        for vm in vms_list:
+            if not vms.removeVm(True, vm):
+                LOGGER.error("Failed removing vm %s", vm)
         LOGGER.info("Removing template")
         if not templates.removeTemplate(True, cls.template_name):
             raise exceptions.TemplateException("Failed removing template %s"
