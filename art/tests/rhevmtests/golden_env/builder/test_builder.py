@@ -114,6 +114,9 @@ class CreateDC(TestCase):
         LOGGER.info("Cluster %s was created successfully", cluster_name)
 
         hosts_def = cl_def['hosts']
+        if not hosts_def:
+            LOGGER.info("No hosts in cluster")
+            return
         for host_def in hosts_def:
             host_ip, host_pwd = host_conf.get_unused_host()
             if not hosts.addHost(
@@ -199,27 +202,36 @@ class CreateDC(TestCase):
                 % (datacenter_name, local, comp_version))
 
         clusters = dc_def['clusters']
-        i = 0
         for cluster in clusters:
-            hosts_number = len(cluster['cluster']['hosts'])
-            end = i + hosts_number
             self.build_cluster(
                 cluster['cluster'], datacenter_name, comp_version, host_conf)
-            i = end
+            LOGGER.info("Cluster %s added", cluster['cluster']['name'])
+        LOGGER.info("Added all clusters")
 
-        storages = dc_def['storage_domains']
-        host = clusters[0]['cluster']['hosts'][0]['host']['name']
-
-        self.add_sds(storages, host, datacenter_name, storage_conf)
+        if clusters[0]['cluster']['hosts']:
+            LOGGER.info("Adding storage domains")
+            storages = dc_def['storage_domains']
+            host = clusters[0]['cluster']['hosts'][0]['host']['name']
+            self.add_sds(storages, host, datacenter_name, storage_conf)
+        else:
+            LOGGER.info("No hosts, so no adding storages")
 
         for cluster in clusters:
             cl_def = cluster['cluster']
             vms_def = cl_def['vms']
-            self.add_vms(
-                vms_def, datacenter_name, cl_def['name'])
+            if vms_def:
+                LOGGER.info("Adding vms")
+                self.add_vms(
+                    vms_def, datacenter_name, cl_def['name'])
+            else:
+                LOGGER.info("No vms to add")
 
             templ_def = cl_def['templates']
-            self.add_templates(templ_def, cl_def['name'])
+            if templ_def:
+                LOGGER.info("Adding templates")
+                self.add_templates(templ_def, cl_def['name'])
+            else:
+                LOGGER.info("No templates to add")
 
     def add_export_domain(self, export_domain, storage_conf, host):
         name = export_domain['name']
