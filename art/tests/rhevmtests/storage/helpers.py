@@ -5,15 +5,22 @@ import logging
 from art.rhevm_api.tests_lib.low_level.disks import (
     waitForDisksState,
     attachDisk,
-    addDisk)
+    addDisk,
+)
+from art.rhevm_api.tests_lib.low_level.vms import (
+    stop_vms_safely,
+    get_vm_snapshots,
+    removeSnapshot,
+    activateVmDisk,
+)
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
-from art.rhevm_api.tests_lib.low_level.vms import activateVmDisk
 from art.test_handler import exceptions
 from rhevmtests.storage.storage_single_disk_snapshot import config
 
 logger = logging.getLogger(__name__)
 
 DISK_TIMEOUT = 250
+SNAPSHOT_TIMEOUT = 15 * 60
 
 disk_args = {
     # Fixed arguments
@@ -62,3 +69,22 @@ def prepare_disks_for_vm(vm_name, disks_to_prepare, read_only=False):
                                            % (disk, vm_name))
         wait_for_jobs()
     return True
+
+
+def remove_all_vm_test_snapshots(vm_name, description):
+    """
+    Description: Removes all snapshots with given description from a given VM
+    Author: ratamir
+    Parameters:
+    * vm_name - name of the vm that should be cleaned out of snapshots
+    * description - snapshot description
+    Raise: AssertionError if something went wrong
+    """
+    logger.info("Removing all '%s'", description)
+    stop_vms_safely([vm_name])
+    snapshots = get_vm_snapshots(vm_name)
+    results = [removeSnapshot(True, vm_name, description, SNAPSHOT_TIMEOUT)
+               for snapshot in snapshots
+               if snapshot.get_description() == description]
+    wait_for_jobs(timeout=SNAPSHOT_TIMEOUT)
+    assert False not in results

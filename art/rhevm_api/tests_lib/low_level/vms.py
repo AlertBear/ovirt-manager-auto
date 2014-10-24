@@ -979,12 +979,14 @@ def removeDisk(positive, vm, disk, wait=True):
        * wait - wait until finish if True
     Return: True if disk was removed properly, False otherwise
     '''
-    status = False
+    diskExist = False
     for d in getVmDisks(vm):
         if d.name.lower() == disk.lower():
             status = VM_API.delete(d, positive)
+            diskExist = True
 
-    diskExist = True
+    if not diskExist:
+        raise EntityNotFound("Disk %s not found in vm %s" % (disk, vm))
     if positive and status and wait:
         startTime = time.time()
         logger.debug('Waiting for disk to be removed.')
@@ -1998,8 +2000,9 @@ def cloneVmFromTemplate(positive, name, template, cluster,
 
 @is_action()
 def cloneVmFromSnapshot(positive, name, cluster, vm, snapshot,
-                        storagedomain=None, wait=True,
-                        timeout=VM_IMAGE_OPT_TIMEOUT):
+                        storagedomain=None, wait=True, sparse=True,
+                        vol_format=ENUMS['format_cow'],
+                        timeout=VM_IMAGE_OPT_TIMEOUT, compare=True):
     '''
     Description: clone vm from a snapshot
     Author: cmestreg
@@ -2010,21 +2013,23 @@ def cloneVmFromSnapshot(positive, name, cluster, vm, snapshot,
        * snapshot - snapshot to clone from
        * wait
        * timeout - action timeout
+       * compare - True if need validator to work
     Return: True if vm was cloned properly, False otherwise
     '''
     # don't even try to use deepcopy, it will fail
     expectedVm = _createVmForClone(
-        name, cluster=cluster, clone="true", vol_sparse=None,
-        vol_format=None, storagedomain=storagedomain, snapshot=snapshot,
+        name, cluster=cluster, clone="true", vol_sparse=sparse,
+        vol_format=vol_format, storagedomain=storagedomain, snapshot=snapshot,
         vm_name=vm)
     newVm = _createVmForClone(
-        name, cluster=cluster, clone="true", vol_sparse=None,
-        vol_format=None, storagedomain=storagedomain, snapshot=snapshot,
+        name, cluster=cluster, clone="true", vol_sparse=sparse,
+        vol_format=vol_format, storagedomain=storagedomain, snapshot=snapshot,
         vm_name=vm)
 
     expectedVm.set_snapshots(None)
     expectedVm.set_template(data_st.Template(id=BLANK_TEMPLATE))
-    vm, status = VM_API.create(newVm, positive, expectedEntity=expectedVm)
+    vm, status = VM_API.create(newVm, positive, expectedEntity=expectedVm,
+                               compare=compare)
     if positive and status and wait:
         return VM_API.waitForElemStatus(vm, "DOWN", timeout)
     return status
@@ -4148,3 +4153,29 @@ def get_vms_disks_storage_domain_name(vm_name, disk_alias=None):
 
     sd_id = diskObj.get_storage_domains().get_storage_domain()[0].get_id()
     return STORAGE_DOMAIN_API.find(sd_id, attribute='id').get_name()
+
+
+def get_vm(vm):
+    """
+    Description: Get vm object
+    Author: ratamir
+    Parameters:
+        * vm: name of the vm
+    Returns vm object, EntityNotFound if a vm doesn't exist
+    """
+    return VM_API.find(vm)
+
+
+def get_vm_nics_obj(vm_name):
+    """
+    Description: get vm's nics objects
+    Author: ratamir
+    Parameters:
+        * vm_name: name of the vm
+    Returns: list of nics objects, or raise EntityNotFound
+    """
+    vm_obj = VM_API.find(vm_name)
+    return VM_API.getElemFromLink(vm_obj,
+                                  link_name='nics',
+                                  attr='nic',
+                                  get_href=False)
