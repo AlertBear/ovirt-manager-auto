@@ -2,16 +2,21 @@
 Adding Disk to a VM which is not down adds a Disk that is activated tests
 Author: Meital Bourvine
 """
-
-from art.rhevm_api.tests_lib.low_level import vms, disks
-from art.rhevm_api.tests_lib.high_level import vms as hi_vms
-from art.rhevm_api.utils import test_utils
-import art.test_handler.exceptions as exceptions
-from art.test_handler.tools import tcms  # pylint: disable=E0611
-from art.unittest_lib import StorageTest as TestCase, attr
 import config
 import logging
 import helpers
+
+from art.rhevm_api.utils import test_utils
+from art.rhevm_api.tests_lib.high_level import vms as hi_vms
+
+from art.rhevm_api.tests_lib.low_level import vms, disks
+from art.rhevm_api.tests_lib.low_level.storagedomains import (
+    getStorageDomainNamesForType)
+
+import art.test_handler.exceptions as exceptions
+from art.test_handler.tools import tcms  # pylint: disable=E0611
+
+from art.unittest_lib import StorageTest as TestCase, attr
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +45,9 @@ class VmWithOs(TestCase):
 
         cls.vm_name = "vm_%s" % (cls.tcms_test_case)
 
-        helpers.create_and_start_vm(cls.vm_name)
+        storage_domain = getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, cls.storage)[0]
+        helpers.create_and_start_vm(cls.vm_name, storage_domain)
 
     @classmethod
     def teardown_class(cls):

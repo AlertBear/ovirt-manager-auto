@@ -1,7 +1,5 @@
 from art.rhevm_api.tests_lib.low_level import vms
 import art.test_handler.exceptions as exceptions
-from art.rhevm_api.tests_lib.low_level.storagedomains \
-    import findMasterStorageDomain
 from art.rhevm_api.tests_lib.low_level import disks
 import logging
 import config
@@ -9,13 +7,10 @@ import config
 logger = logging.getLogger(__name__)
 
 
-def create_and_start_vm(vm_name):
+def create_and_start_vm(vm_name, storage_domain):
     """
     Creates and starts a single vm
     """
-    rc, masterSD = findMasterStorageDomain(True, config.DATA_CENTER_NAME)
-    assert rc
-    masterSD = masterSD['masterDomain']
 
     logger.info('Creating vm and installing OS on it')
 
@@ -25,7 +20,7 @@ def create_and_start_vm(vm_name):
               'diskInterface': config.VIRTIO,
               'volumeFormat': config.DISK_FORMAT_COW,
               'cluster': config.CLUSTER_NAME,
-              'storageDomainName': masterSD,
+              'storageDomainName': storage_domain,
               'installation': True,
               'size': config.DISK_SIZE,
               'nic': config.HOST_NICS[0],
