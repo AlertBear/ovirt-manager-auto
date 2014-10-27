@@ -462,6 +462,7 @@ class UpdateVm(BaseVm):
         self.assertTrue(vm_api.updateVm(True, self.vm_name,
                                         description="TEST"))
 
+    @bz({'1158458': {'engine': None, 'version': None}})
     @istest
     def update_vm_cluster(self):
         """
@@ -485,7 +486,6 @@ class UpdateVm(BaseVm):
         """
         self.assertTrue(vm_api.updateVm(True, self.vm_name, memory=2*GB))
 
-    @bz({'1082594': {'engine': ['cli'], 'version': None}})
     @istest
     def update_vm_guranteed_memory(self):
         """
@@ -929,7 +929,6 @@ class ImportExportVm(BaseVmWithDisk):
                 % (cls.vm_name, export_domain))
         super(ImportExportVm, cls).teardown_class()
 
-    @bz({'1145466': {'engine': ['cli'], 'version': None}})
     @istest
     def basic_import_export_vm(self):
         """
