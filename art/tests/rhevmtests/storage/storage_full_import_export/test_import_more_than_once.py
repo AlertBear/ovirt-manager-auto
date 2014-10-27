@@ -53,13 +53,11 @@ class TestCase174617(TestCase):
         """
         self.export_domain = storagedomains.findExportStorageDomains(
             config.DATA_CENTER_NAME)[0]
-        status, domain = storagedomains.findMasterStorageDomain(
-            True, config.DATA_CENTER_NAME)
-        assert status
-        self.master_domain = domain['masterDomain']
+        self.storage_domain = storagedomains.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage)[0]
 
         logger.info("Create vm and template")
-        assert _create_vm(self.vm_name)
+        assert _create_vm(self.vm_name, storage_domain=self.storage_domain)
         vm_ip = vms.waitForIP(vm=self.vm_name)[1]['ip']
         assert setPersistentNetwork(vm_ip, config.VM_PASSWORD)
         assert vms.shutdownVm(True, self.vm_name, 'false')
@@ -105,7 +103,7 @@ class TestCase174617(TestCase):
                     new_name, vms.importVm,
                     executor.submit(
                         vms.importVm, True, self.vm_name, self.export_domain,
-                        self.master_domain, config.CLUSTER_NAME, new_name)])
+                        self.storage_domain, config.CLUSTER_NAME, new_name)])
 
             for new_name in [self.from_template1, self.from_template2]:
                 logger.info("Importing template %s from %s to %s",
@@ -114,7 +112,7 @@ class TestCase174617(TestCase):
                     new_name, templates.importTemplate,
                     executor.submit(
                         templates.importTemplate, True, self.template_name,
-                        self.export_domain, self.master_domain,
+                        self.export_domain, self.storage_domain,
                         config.CLUSTER_NAME, new_name)])
 
             inspect_execution(execution)

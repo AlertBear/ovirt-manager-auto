@@ -40,13 +40,12 @@ class BaseExportImportTestCase(TestCase):
         self.vm_name = "original_vm_%s" % self.tcms_test_case
         self.export_domain = storagedomains.findExportStorageDomains(
             config.DATA_CENTER_NAME)[0]
-        status, domain = storagedomains.findMasterStorageDomain(
-            True, config.DATA_CENTER_NAME)
-        assert status
-        self.master_domain = domain['masterDomain']
+        self.storage_domain = storagedomains.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage)[0]
 
         logger.info("Creating vm %s with type %s", self.vm_name, self.vm_type)
-        assert _create_vm(self.vm_name, vm_type=self.vm_type)
+        assert _create_vm(self.vm_name, vm_type=self.vm_type,
+                          storage_domain=self.storage_domain)
         assert vms.shutdownVm(True, self.vm_name, 'false')
 
     def tearDown(self):
@@ -150,7 +149,7 @@ class TestCase41256(BaseExportImportTestCase):
 
         logger.info("Importing vm with collapse snapshots enabled")
         assert vms.importVm(
-            True, self.vm_name, self.export_domain, self.master_domain,
+            True, self.vm_name, self.export_domain, self.storage_domain,
             config.CLUSTER_NAME, name=self.imported_vm)
 
         logger.info("Starting vm %s should work")
@@ -220,7 +219,7 @@ class TestCase41242(BaseExportImportTestCase):
         def import_vm(vm):
             logger.info("Verifying vm %s", vm)
             return vms.importVm(
-                True, vm, self.export_domain, self.master_domain,
+                True, vm, self.export_domain, self.storage_domain,
                 config.CLUSTER_NAME, name="%s_%s" % (vm, self.prefix))
 
         def exec_with_threads(fn):

@@ -7,14 +7,22 @@ def setup_module():
     """ creates datacenter, adds hosts, clusters, storages according to
     the config file
     """
-    datacenters.build_setup(
-        config=config.PARAMETERS, storage=config.PARAMETERS,
-        storage_type=config.STORAGE_TYPE, basename=config.TESTNAME)
+    if not config.GOLDEN_ENV:
+        datacenters.build_setup(
+            config=config.PARAMETERS, storage=config.PARAMETERS,
+            storage_type=config.STORAGE_TYPE, basename=config.TESTNAME)
+    else:
+        assert storagedomains.attach_and_activate_sd(
+            config.DATA_CENTER_NAME, config.EXPORT_STORAGE_NAME)
 
 
 def teardown_module():
     """ removes created datacenter, storages etc.
     """
-    storagedomains.cleanDataCenter(
-        True, config.DATA_CENTER_NAME, vdc=config.VDC,
-        vdc_password=config.VDC_PASSWORD)
+    if not config.GOLDEN_ENV:
+        storagedomains.cleanDataCenter(
+            True, config.DATA_CENTER_NAME, vdc=config.VDC,
+            vdc_password=config.VDC_PASSWORD)
+    else:
+        assert storagedomains.detach_and_deactivate_sd(
+            config.DATA_CENTER_NAME, config.EXPORT_STORAGE_NAME)

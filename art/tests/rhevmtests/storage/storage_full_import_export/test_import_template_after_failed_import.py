@@ -51,15 +51,13 @@ class TestCase281164(TestCase):
         """
         creates a template with 2 disks of different sizes
         """
-        status, domain = storagedomains.findMasterStorageDomain(
-            True, config.DATA_CENTER_NAME)
-        assert status
-        self.master_domain = domain['masterDomain']
+        self.storage_domain = storagedomains.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage)[0]
         self.export_domain = storagedomains.findExportStorageDomains(
             config.DATA_CENTER_NAME)[0]
 
         LOGGER.info("Create a VM")
-        assert _create_vm(self.vm_name)
+        assert _create_vm(self.vm_name, storage_domain=self.storage_domain)
         assert vms.shutdownVm(True, self.vm_name, 'false')
 
         LOGGER.info("Create second VM disk")
@@ -67,7 +65,7 @@ class TestCase281164(TestCase):
 
         assert disks.addDisk(
             True, alias=disk_name, shareable=False, bootable=False,
-            size=disk_size, storagedomain=self.master_domain, sparse=False,
+            size=disk_size, storagedomain=self.storage_domain, sparse=False,
             format=config.RAW_DISK, interface=config.INTERFACE_IDE)
 
         assert disks.waitForDisksState(disk_name)
@@ -103,7 +101,7 @@ class TestCase281164(TestCase):
 
         LOGGER.info("Start importing template")
         assert templates.importTemplate(
-            True, self.templ_name, self.export_domain, self.master_domain,
+            True, self.templ_name, self.export_domain, self.storage_domain,
             config.CLUSTER_NAME, async=True)
 
         LOGGER.info("Waiting for migration to start")
@@ -126,7 +124,7 @@ class TestCase281164(TestCase):
 
         LOGGER.info("Importing second time")
         assert templates.importTemplate(
-            True, self.templ_name, self.export_domain, self.master_domain,
+            True, self.templ_name, self.export_domain, self.storage_domain,
             config.CLUSTER_NAME)
 
     def tearDown(self):

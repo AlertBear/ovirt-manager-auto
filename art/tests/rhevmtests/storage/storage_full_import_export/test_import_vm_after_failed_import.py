@@ -11,10 +11,10 @@ from art.unittest_lib import attr
 
 from art.rhevm_api.utils import test_utils
 
-from art.rhevm_api.tests_lib.low_level import vms
-from art.rhevm_api.tests_lib.low_level import disks
-from art.rhevm_api.tests_lib.low_level import hosts
-from art.rhevm_api.tests_lib.low_level import storagedomains
+from art.rhevm_api.tests_lib.low_level import (
+    disks, vms, hosts, storagedomains)
+from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
+
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 
 from common import _create_vm
@@ -48,15 +48,13 @@ class TestCase281163(TestCase):
         * creates a VM and installs an OS on it
         * adds second, much smaller disk to it
         """
-        status, domain = storagedomains.findMasterStorageDomain(
-            True, config.DATA_CENTER_NAME)
-        assert status
-        self.master_domain = domain['masterDomain']
+        self.storage_domain = storagedomains.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage)[0]
         self.export_domain = storagedomains.findExportStorageDomains(
             config.DATA_CENTER_NAME)[0]
 
         logger.info("Create a VM")
-        assert _create_vm(self.vm_name)
+        assert _create_vm(self.vm_name, storage_domain=self.storage_domain)
         assert vms.shutdownVm(True, self.vm_name, 'false')
 
         logger.info("Create second VM disk")
@@ -64,7 +62,7 @@ class TestCase281163(TestCase):
 
         assert disks.addDisk(
             True, alias=disk_name, shareable=False, bootable=False,
-            size=disk_size, storagedomain=self.master_domain, sparse=False,
+            size=disk_size, storagedomain=self.storage_domain, sparse=False,
             format=config.RAW_DISK, interface=config.INTERFACE_IDE)
 
         assert disks.waitForDisksState(disk_name)
@@ -90,16 +88,17 @@ class TestCase281163(TestCase):
 
         logger.info("Get SPM and password")
         host = hosts.getSPMHost(config.HOSTS)
+        host_ip = hosts.getHostIP(host)
 
         logger.info("Start importing VM")
         assert vms.importVm(
-            True, self.vm_name, self.export_domain, self.master_domain,
+            True, self.vm_name, self.export_domain, self.storage_domain,
             config.CLUSTER_NAME, async=True)
 
         assert vms.waitForVMState(self.vm_name, ENUMS['vm_state_image_locked'])
         logger.info("Restarting VDSM")
-        assert test_utils.restartVdsmd(host, config.HOSTS_PW)
-        logger.info("Waiting for host %s to get up", host)
+        assert test_utils.restartVdsmd(host_ip, config.HOSTS_PW)
+        logger.info("Waiting for host %s (%s) to get up", host, host_ip)
         assert hosts.waitForHostsStates(True, host)
 
         logger.info("Wait until import fail")
@@ -107,13 +106,15 @@ class TestCase281163(TestCase):
 
         logger.info("Importing second time")
         assert vms.importVm(
-            True, self.vm_name, self.export_domain, self.master_domain,
+            True, self.vm_name, self.export_domain, self.storage_domain,
             config.CLUSTER_NAME)
 
     def tearDown(self):
         """
         * Remove Vm
         """
+        logger.info("Waiting for jobs")
+        wait_for_jobs()
         logger.info("Removing vm %s from DC and from the export domain",
                     self.vm_name)
         vms.removeVm(True, self.vm_name)
