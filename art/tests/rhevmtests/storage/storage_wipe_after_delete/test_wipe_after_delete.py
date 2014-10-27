@@ -6,9 +6,10 @@ https://tcms.engineering.redhat.com/plan/14205/
 import logging
 import threading
 import time
-from utilities.utils import getIpAddressByHostName
+from concurrent.futures import ThreadPoolExecutor
+
 from art.rhevm_api.tests_lib.low_level.disks import getVmDisk
-from art.rhevm_api.tests_lib.low_level.hosts import getSPMHost
+from art.rhevm_api.tests_lib.low_level.hosts import getSPMHost, getHostIP
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.rhevm_api.utils.log_listener import watch_logs
 from art.unittest_lib.common import StorageTest as BaseTestCase
@@ -16,15 +17,13 @@ from art.rhevm_api.tests_lib.high_level.datacenters import build_setup
 
 from art.rhevm_api.tests_lib.low_level import disks
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    get_master_storage_domain_name,
-    cleanDataCenter,
+    cleanDataCenter, getStorageDomainNamesForType,
 )
 from art.rhevm_api.tests_lib.low_level.vms import (
     createVm, stop_vms_safely, waitForVMState, removeDisk, start_vms,
-    getVmDisks, updateVmDisk, live_migrate_vm_disk, addDisk,
+    getVmDisks, updateVmDisk, live_migrate_vm_disk, addDisk, removeVms,
 )
 from art.rhevm_api.utils.test_utils import get_api
-from art.test_handler import exceptions
 
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.unittest_lib import attr
@@ -42,13 +41,10 @@ TCMS_PLAN_ID = '14205'
 
 FILE_TO_WATCH = "/var/log/vdsm/vdsm.log"
 
-SD_NAME_0 = config.SD_NAMES_LIST[0]
-SD_NAME_1 = config.SD_NAMES_LIST[1]
 TASK_TIMEOUT = 5 * 60
 
 GB = config.GB
 vmArgs = {'positive': True,
-          'vmName': config.VM_NAME,
           'vmDescription': config.VM_NAME,
           'diskInterface': config.VIRTIO,
           'volumeFormat': config.COW_DISK,
@@ -65,39 +61,59 @@ vmArgs = {'positive': True,
           'network': config.MGMT_BRIDGE
           }
 
+VM_NAME = config.VM_NAME + "_%s"
+VMS_NAMES = []
+
 
 def setup_module():
     """
     Sets up the environment - creates vms with all disk types and formats
     """
-    logger.info("Preparing datacenter %s with hosts %s",
-                config.DATA_CENTER_NAME, config.VDC)
+    if not config.GOLDEN_ENV:
+        logger.info("Preparing datacenter %s with hosts %s",
+                    config.DATA_CENTER_NAME, config.VDC)
 
-    build_setup(config=config.PARAMETERS,
-                storage=config.PARAMETERS,
-                storage_type=config.STORAGE_TYPE)
+        build_setup(config=config.PARAMETERS,
+                    storage=config.PARAMETERS,
+                    storage_type=config.STORAGE_TYPE)
 
-    vmArgs['storageDomainName'] = (
-        get_master_storage_domain_name(config.DATA_CENTER_NAME)
-    )
+    exs = []
+    with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
+        for storage_type in config.STORAGE_SELECTOR:
+            storage_domain = getStorageDomainNamesForType(
+                config.DATA_CENTER_NAME, storage_type)[0]
 
-    logger.info('Creating vm and installing OS on it')
+            vm_name = VM_NAME % storage_type
+            VMS_NAMES.append(vm_name)
 
-    if not createVm(**vmArgs):
-        raise exceptions.VMException('Unable to create vm %s for test'
-                                     % config.VM_NAME)
+            args = vmArgs.copy()
+            args['storageDomainName'] = storage_domain
+            args['vmName'] = vm_name
 
-    logger.info('Shutting down VM %s', config.VM_NAME)
-    stop_vms_safely([config.VM_NAME])
+            logger.info('Creating vm %s and installing OS on it', vm_name)
+
+            exs.append((vm_name, executor.submit(createVm, **args)))
+
+    for vm_name, ex in exs:
+        if not ex.result():
+            raise Exception("Unable to create vm %s" % vm_name)
+
+    logger.info('Shutting down vms %s', VMS_NAMES)
+    stop_vms_safely(VMS_NAMES)
 
 
 def teardown_module():
     """
     Clean datacenter
     """
-    logger.info('Cleaning datacenter')
-    cleanDataCenter(True, config.DATA_CENTER_NAME, vdc=config.VDC,
-                    vdc_password=config.VDC_PASSWORD)
+    if not config.GOLDEN_ENV:
+        logger.info('Cleaning datacenter')
+        cleanDataCenter(True, config.DATA_CENTER_NAME, vdc=config.VDC,
+                        vdc_password=config.VDC_PASSWORD)
+
+    else:
+        stop_vms_safely(VMS_NAMES)
+        assert removeVms(True, VMS_NAMES)
 
 
 class CommonUsage(BaseTestCase):
@@ -105,18 +121,23 @@ class CommonUsage(BaseTestCase):
     Base class
     """
     __test__ = False
+    vm_name = VM_NAME % BaseTestCase.storage
+
+    def setUp(self):
+        self.storage_domain = getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage)[0]
 
     def tearDown(self):
-        stop_vms_safely([config.VM_NAME])
-        waitForVMState(config.VM_NAME, config.VM_DOWN)
-        assert removeDisk(True, config.VM_NAME, self.disk_name)
+        stop_vms_safely([self.vm_name])
+        waitForVMState(self.vm_name, config.VM_DOWN)
+        assert removeDisk(True, self.vm_name, self.disk_name)
 
     def _remove_disks(self, disks_names):
         """
         Removes created disks
         """
-        stop_vms_safely([config.VM_NAME])
-        waitForVMState(config.VM_NAME, config.VM_DOWN)
+        stop_vms_safely([self.vm_name])
+        waitForVMState(self.vm_name, config.VM_DOWN)
 
         for disk in disks_names:
             logger.info("Deleting disk %s", disk)
@@ -128,25 +149,28 @@ class CommonUsage(BaseTestCase):
         Adding new disk, edit the wipe after delete flag if update=True,
         and removes the disk to see in log file that the operation succeeded
         """
-        assert addDisk(True, config.VM_NAME, config.DISK_SIZE,
-                       storagedomain=SD_NAME_0, sparse=True,
+        assert addDisk(True, self.vm_name, config.DISK_SIZE,
+                       storagedomain=self.storage_domain, sparse=True,
                        wipe_after_delete=False, interface=config.VIRTIO)
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
+        start_vms([self.vm_name], 1, wait_for_ip=False)
+        waitForVMState(self.vm_name)
 
-        self.disk_name = [d.get_alias() for d in getVmDisks(config.VM_NAME) if
+        self.disk_name = [d.get_alias() for d in getVmDisks(self.vm_name) if
                           not d.get_bootable()][0]
+        logger.info("Selecting host from %s", config.HOSTS)
         host = getSPMHost(config.HOSTS)
-        self.host_ip = getIpAddressByHostName(host)
-        disk_obj = getVmDisk(config.VM_NAME, self.disk_name)
+        logger.info("Host %s", host)
+        self.host_ip = getHostIP(host)
+        assert self.host_ip
+        disk_obj = getVmDisk(self.vm_name, self.disk_name)
         self.regex = self.regex % disk_obj.get_image_id()
 
         if update:
-            assert updateVmDisk(True, config.VM_NAME, self.disk_name,
+            assert updateVmDisk(True, self.vm_name, self.disk_name,
                                 wipe_after_delete=True)
 
-        stop_vms_safely([config.VM_NAME])
-        waitForVMState(config.VM_NAME, config.VM_DOWN)
+        stop_vms_safely([self.vm_name])
+        waitForVMState(self.vm_name, config.VM_DOWN)
 
         t = threading.Thread(
             target=watch_logs,
@@ -164,7 +188,7 @@ class CommonUsage(BaseTestCase):
 
             time.sleep(5)
 
-            self.assertTrue(removeDisk(True, config.VM_NAME, self.disk_name),
+            self.assertTrue(removeDisk(True, self.vm_name, self.disk_name),
                             "Failed to remove disk %s" % self.disk_name)
 
         finally:
@@ -180,7 +204,7 @@ class TestCase379365(CommonUsage):
     """
     __test__ = True
     tcms_test_case = (
-        '379365' if config.STORAGE_TYPE in config.BLOCK_TYPES else '384227'
+        '379365' if CommonUsage.storage in config.BLOCK_TYPES else '384227'
     )
     disk_name = None
 
@@ -194,16 +218,16 @@ class TestCase379365(CommonUsage):
         Expected Results:
             - no Errors should appear
         """
-        addDisk(True, config.VM_NAME, config.DISK_SIZE,
-                storagedomain=SD_NAME_0, sparse=True, wipe_after_delete=False,
-                interface=config.VIRTIO)
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
+        addDisk(True, self.vm_name, config.DISK_SIZE,
+                storagedomain=self.storage_domain, sparse=True,
+                wipe_after_delete=False, interface=config.VIRTIO)
+        start_vms([self.vm_name], 1, wait_for_ip=False)
+        waitForVMState(self.vm_name)
 
-        self.disk_name = [d.get_alias() for d in getVmDisks(config.VM_NAME) if
+        self.disk_name = [d.get_alias() for d in getVmDisks(self.vm_name) if
                           not d.get_bootable()][0]
 
-        assert updateVmDisk(True, config.VM_NAME, self.disk_name,
+        assert updateVmDisk(True, self.vm_name, self.disk_name,
                             wipe_after_delete=True)
 
 
@@ -228,17 +252,17 @@ class TestCase379370(CommonUsage):
         Expected Results:
             - operation should succeed
         """
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
+        start_vms([self.vm_name], 1, wait_for_ip=False)
+        waitForVMState(self.vm_name)
 
-        addDisk(True, config.VM_NAME, config.DISK_SIZE,
-                storagedomain=SD_NAME_0, sparse=True, wipe_after_delete=False,
-                interface=config.VIRTIO)
+        addDisk(True, self.vm_name, config.DISK_SIZE,
+                storagedomain=self.storage_domain, sparse=True,
+                wipe_after_delete=False, interface=config.VIRTIO)
 
-        self.disk_name = [d.get_alias() for d in getVmDisks(config.VM_NAME) if
+        self.disk_name = [d.get_alias() for d in getVmDisks(self.vm_name) if
                           not d.get_bootable()][0]
 
-        assert updateVmDisk(True, config.VM_NAME, self.disk_name,
+        assert updateVmDisk(True, self.vm_name, self.disk_name,
                             wipe_after_delete=True)
 
 
@@ -272,11 +296,8 @@ class TestCase384228(CommonUsage):
     """
     Wipe after delete with LSM
     https://tcms.engineering.redhat.com/case/384228/
-
-    __test__ = False:
-    https://bugzilla.redhat.com/show_bug.cgi?id=1124321
     """
-    __test__ = False
+    __test__ = True
     tcms_test_case = '384228'
     disk_name = "disk_%s" % tcms_test_case
     regex = 'dd oflag=direct if=/dev/zero of=.*/%s'
@@ -285,13 +306,14 @@ class TestCase384228(CommonUsage):
         """
         Prepares disk with wipe_after_delete=True for VM
         """
-        assert addDisk(True, config.VM_NAME, config.DISK_SIZE,
-                       storagedomain=SD_NAME_0, sparse=True,
+        super(TestCase384228, self).setUp()
+        assert addDisk(True, self.vm_name, config.DISK_SIZE,
+                       storagedomain=self.storage_domain, sparse=True,
                        wipe_after_delete=True, interface=config.VIRTIO,
                        alias=self.disk_name)
 
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
+        start_vms([self.vm_name], 1, wait_for_ip=False)
+        waitForVMState(self.vm_name)
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_live_migration_wipe_after_delete(self):
@@ -303,10 +325,12 @@ class TestCase384228(CommonUsage):
         Expected Results:
             - editing should be blocked
         """
-        live_migrate_vm_disk(config.VM_NAME, self.disk_name, SD_NAME_1,
+        second_domain = getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage)[1]
+        live_migrate_vm_disk(self.vm_name, self.disk_name, second_domain,
                              wait=False)
 
-        assert updateVmDisk(False, config.VM_NAME, self.disk_name,
+        assert updateVmDisk(False, self.vm_name, self.disk_name,
                             wipe_after_delete=False)
 
         wait_for_jobs()
