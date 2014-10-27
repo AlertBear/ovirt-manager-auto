@@ -73,17 +73,19 @@ def setup_module():
     """ creates datacenter, adds hosts, clusters, storages according to
     the config file
     """
-    datacenters.build_setup(
-        config=config.PARAMETERS, storage=config.PARAMETERS,
-        storage_type=config.STORAGE_TYPE, basename=config.TESTNAME)
+    if not config.GOLDEN_ENV:
+        datacenters.build_setup(
+            config=config.PARAMETERS, storage=config.PARAMETERS,
+            storage_type=config.STORAGE_TYPE, basename=config.TESTNAME)
 
 
 def teardown_module():
     """ removes created datacenter, storages etc.
     """
-    ll_storagedomains.cleanDataCenter(
-        True, config.DATA_CENTER_NAME, vdc=config.VDC,
-        vdc_password=config.VDC_PASSWORD)
+    if not config.GOLDEN_ENV:
+        ll_storagedomains.cleanDataCenter(
+            True, config.DATA_CENTER_NAME, vdc=config.VDC,
+            vdc_password=config.VDC_PASSWORD)
 
 
 class SuperVDSMTestBase(TestCase):
@@ -99,9 +101,10 @@ class SuperVDSMTestBase(TestCase):
                          "Starting it up" % config.FIRST_HOST)
             self.assertTrue(hosts.activateHost(True, config.FIRST_HOST),
                             "Host %s was not activated" % config.FIRST_HOST)
+        host_ip = hosts.getHostIP(config.FIRST_HOST)
         self.machine = Machine(
-            config.FIRST_HOST, "root",
-            config.FIRST_HOST_PASSWORD).util(LINUX)
+            host_ip, config.HOSTS_USER,
+            config.HOSTS_PW).util(LINUX)
         self.machine.enableServiceSupport()
 
 
