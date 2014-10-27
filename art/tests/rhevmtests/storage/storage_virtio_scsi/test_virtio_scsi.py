@@ -5,8 +5,7 @@ from art.unittest_lib import StorageTest as TestCase
 from art.rhevm_api.tests_lib.high_level.datacenters import build_setup
 from art.rhevm_api.tests_lib.high_level.vms import add_disk_to_machine
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    findMasterStorageDomain,
-    cleanDataCenter)
+    getStorageDomainNamesForType, cleanDataCenter)
 from art.rhevm_api.tests_lib.low_level.templates import createTemplate, \
     removeTemplate
 from art.rhevm_api.tests_lib.low_level.vms import createVm, stopVm, removeVm,\
@@ -27,20 +26,22 @@ def setup_module():
     """
     Build setup accoridng to conf file
     """
-    build_setup(config.PARAMETERS,
-                config.PARAMETERS,
-                config.STORAGE_TYPE,
-                config.TESTNAME)
+    if not config.GOLDEN_ENV:
+        build_setup(config.PARAMETERS,
+                    config.PARAMETERS,
+                    config.STORAGE_TYPE,
+                    config.TESTNAME)
 
 
 def teardown_module():
     """
     Clean datacenter
     """
-    cleanDataCenter(True,
-                    config.DATA_CENTER_NAME,
-                    vdc=config.VDC,
-                    vdc_password=config.VDC_PASSWORD)
+    if not config.GOLDEN_ENV:
+        cleanDataCenter(True,
+                        config.DATA_CENTER_NAME,
+                        vdc=config.VDC,
+                        vdc_password=config.VDC_PASSWORD)
 
 
 def _create_vm(vm_name, storage_domain, interface, install_os):
@@ -96,19 +97,15 @@ class ClassWithOneVM(TestCase):
     """
 
     __test__ = True
-    vm_names = [config.VM_NAMES[0]]
     disk_interfaces = [config.VIRTIO_SCSI]
     installations = [True]
-    master_domain = None
+    storage_domain = None
 
     @classmethod
     def setup_class(cls):
-        logger.info('Finding master domain name')
-        master_domain = findMasterStorageDomain(True, config.DATA_CENTER_NAME)
-        assert master_domain[0]
-        cls.master_domain = master_domain[1]['masterDomain']
-        assert cls.master_domain
-        logger.info('Found master domain: %s', cls.master_domain)
+        cls.vm_names = [config.VM_NAMES[0]]
+        cls.storage_domain = getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, cls.storage)[0]
 
         results = []
         with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
@@ -118,7 +115,7 @@ class ClassWithOneVM(TestCase):
                                                         cls.installations):
                 results.append(executor.submit(_create_vm,
                                                vm,
-                                               cls.master_domain,
+                                               cls.storage_domain,
                                                disk_interface,
                                                installation))
 
@@ -150,12 +147,14 @@ class TestCase272386(ClassWithOneVM):
     """
 
     __test__ = True
-
-    vm_names = []
-    installations = []
-    disk_interfaces = []
     vm_name = config.VM_NAMES[0]
     tcms_case = '272386'
+
+    @classmethod
+    def setup_class(cls):
+        cls.storage_domain = getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, cls.storage)[0]
+        cls.vm_names = []
 
     @istest
     @tcms(TCMS_PLAN_ID, tcms_case)
@@ -167,7 +166,7 @@ class TestCase272386(ClassWithOneVM):
 
         logger.info('Creating vm with virtio-scsi disk as bootable device')
         self.vm_names.append(self.vm_name)
-        _create_vm(self.vm_name, self.master_domain, config.VIRTIO_SCSI, True)
+        _create_vm(self.vm_name, self.storage_domain, config.VIRTIO_SCSI, True)
         logger.info('vm with virtio-scsi boot disk created successfully')
 
 
@@ -178,7 +177,6 @@ class TestCase272383(ClassWithOneVM):
     Test creates a vm with virtio-scsi disk, installs OS, creates template
     from the vm and then creates a new vm from the template.
     """
-
     cloned_vm_name = None
     tcms_case = 272386
 
@@ -192,7 +190,7 @@ class TestCase272383(ClassWithOneVM):
                             config.VIRTIO_SCSI,
                             config.ENUMS['format_cow'],
                             True,
-                            storage_domain=cls.master_domain)
+                            storage_domain=cls.storage_domain)
         cls.cloned_vm_name = cls.vm_names[0] + '_cloned'
         cls.vm_names.append(cls.cloned_vm_name)
 
@@ -252,12 +250,14 @@ class TestCase272390(ClassWithOneVM):
         Description: Attempts to remove a vm with virtio-scsi disk
         """
         vm_disks = [disk.get_id() for disk in getVmDisks(self.vm_names[0])]
-        disks_before_removal = getStorageDomainDisks(self.master_domain, False)
+        disks_before_removal = getStorageDomainDisks(
+            self.storage_domain, False)
         disks_before_removal = [disk.get_id() for disk in disks_before_removal]
         logger.info('Removing vm %s', self.vm_names[0])
         self.assertTrue(removeVm(True, self.vm_names[0]))
+        self.vm_names.pop(0)
         logger.info('Ensuring no disks remain')
-        disks_after_removal = getStorageDomainDisks(self.master_domain, False)
+        disks_after_removal = getStorageDomainDisks(self.storage_domain, False)
         disks_after_removal = [disk.get_id() for disk in disks_after_removal]
         self.assertEqual(
             disks_after_removal,
@@ -365,7 +365,7 @@ class TestCase293163(ClassWithOneVM):
                             config.VIRTIO_BLK,
                             config.ENUMS['format_cow'],
                             True,
-                            cls.master_domain)
+                            cls.storage_domain)
 
     @istest
     @tcms(TCMS_PLAN_ID, tcms_case)
