@@ -4,32 +4,37 @@ https://tcms.engineering.redhat.com/plan/9949
 """
 
 import logging
+import time
+
+from threading import Thread
+from concurrent.futures import ThreadPoolExecutor
+
 from utilities.machine import Machine
 from art.unittest_lib import attr
-from utilities.utils import getIpAddressByHostName
+from art.unittest_lib.common import StorageTest as BaseTestCase
+
+from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.high_level.disks import \
     create_all_legal_disk_permutations
 from art.rhevm_api.tests_lib.low_level.datacenters import get_data_center
 from art.rhevm_api.tests_lib.low_level.disks import waitForDisksState,\
     getStorageDomainDisks, addDisk, attachDisk
-from art.rhevm_api.tests_lib.low_level.hosts import waitForHostsStates
+from art.rhevm_api.tests_lib.low_level.hosts import (
+    waitForHostsStates, getHostIP, getSPMHost)
 from art.rhevm_api.tests_lib.low_level.storagedomains import \
-    findMasterStorageDomain, cleanDataCenter, getDomainAddress,\
-    get_master_storage_domain_name
+    getStorageDomainNamesForType, cleanDataCenter, getDomainAddress,\
+    get_total_size
 from art.rhevm_api.tests_lib.low_level.vms import stop_vms_safely,\
     waitForVMState, deactivateVmDisk, removeDisk, createVm, addSnapshot,\
     removeSnapshot, getVmDisks, preview_snapshot, \
     commit_snapshot, start_vms, undo_snapshot_preview, extend_vm_disk_size,\
-    removeVm, waitForVmsStates, wait_for_vm_snapshots
+    removeVm, waitForVmsStates, wait_for_vm_snapshots,\
+    get_vms_disks_storage_domain_name, removeVms
+
 from art.rhevm_api.utils.log_listener import watch_logs
 from art.rhevm_api.utils.storage_api import flushIptables
 
-from art.unittest_lib.common import BaseTestCase
-from art.rhevm_api.tests_lib.high_level import datacenters
 from art.test_handler import exceptions
-from threading import Thread
-import time
-
 from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 
 import helpers
@@ -51,7 +56,7 @@ disk_args = {
     # Fixed arguments
     'provisioned_size': config.DISK_SIZE,
     'wipe_after_delete': config.BLOCK_FS,
-    'storagedomain': config.SD_NAME_0,
+    'storagedomain': None,
     'bootable': False,
     'shareable': False,
     'active': True,
@@ -64,7 +69,6 @@ disk_args = {
 
 
 vmArgs = {'positive': True,
-          'vmName': config.VM_NAME[0],
           'vmDescription': config.VM_NAME[0],
           'diskInterface': config.VIRTIO,
           'volumeFormat': config.COW_DISK,
@@ -80,6 +84,7 @@ vmArgs = {'positive': True,
           'password': config.VM_PASSWORD,
           'network': config.MGMT_BRIDGE
           }
+VMS_NAMES = []
 
 
 def setup_module():
@@ -88,24 +93,30 @@ def setup_module():
     """
     logger.info("Preparing datacenter %s with hosts %s",
                 config.DATA_CENTER_NAME, config.VDC)
-    datacenters.build_setup(config.PARAMETERS, config.PARAMETERS,
-                            config.STORAGE_TYPE, config.TESTNAME)
+    if not config.GOLDEN_ENV:
+        datacenters.build_setup(config.PARAMETERS, config.PARAMETERS,
+                                config.STORAGE_TYPE, config.TESTNAME)
 
-    rc, masterSD = findMasterStorageDomain(True, config.DATA_CENTER_NAME)
-    if not rc:
-        raise exceptions.StorageDomainException("Could not find master "
-                                                "storage domain for dc %s" %
-                                                config.DATA_CENTER_NAME)
-    vmArgs['storageDomainName'] = masterSD['masterDomain']
+    # Loop through all the storage types to execute the tests and create the vm
+    exs = []
+    with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
+        for storage_type in config.STORAGE_SELECTOR:
+            storage_domain = getStorageDomainNamesForType(
+                config.DATA_CENTER_NAME, storage_type)[0]
 
-    logger.info('Creating vm and installing OS on it')
+            vm_name = "%s_%s" % (config.VM_NAME[0], storage_type)
+            VMS_NAMES.append(vm_name)
+            args = vmArgs.copy()
+            args['storageDomainName'] = storage_domain
+            args['vmName'] = vm_name
 
-    if not createVm(**vmArgs):
-        raise exceptions.VMException('Unable to create vm %s for test'
-                                     % config.VM_NAME[0])
+            logger.info('Creating vm %s and installing OS on it', vm_name)
 
-    logger.info('Shutting down VM %s', config.VM_NAME[0])
-    stop_vms_safely([config.VM_NAME[0]])
+            exs.append(executor.submit(createVm, **args))
+
+    [ex.result() for ex in exs]  # make sure all threads are finish
+    logger.info('Shutting down vms %s', VMS_NAMES)
+    stop_vms_safely(VMS_NAMES)
 
 
 def teardown_module():
@@ -113,8 +124,13 @@ def teardown_module():
     Clean datacenter
     """
     logger.info('Cleaning datacenter')
-    cleanDataCenter(True, config.DATA_CENTER_NAME, vdc=config.VDC,
-                    vdc_password=config.VDC_PASSWORD)
+    if not config.GOLDEN_ENV:
+        cleanDataCenter(True, config.DATA_CENTER_NAME, vdc=config.VDC,
+                        vdc_password=config.VDC_PASSWORD)
+
+    else:
+        stop_vms_safely(VMS_NAMES)
+        assert removeVms(True, VMS_NAMES)
 
 
 class DisksPermutationEnvironment(BaseTestCase):
@@ -122,17 +138,23 @@ class DisksPermutationEnvironment(BaseTestCase):
     A class with common setup and teardown methods
     """
     __test__ = False
-    vm = config.VM_NAME[0]
     shared = False
     new_size = (config.DISK_SIZE + config.GB)
+    vm = "%s_%s" % (config.VM_NAME[0], BaseTestCase.storage)
+
+    @classmethod
+    def setup_class(cls):
+        cls.storage_domain = getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, cls.storage)[0]
 
     def setUp(self):
         """
         Creating all possible combinations of disks for test
         """
+        block = self.storage in config.BLOCK_TYPES
         helpers.DISKS_NAMES = create_all_legal_disk_permutations(
-            config.SD_NAME_0, shared=self.shared,
-            block=config.BLOCK_FS, size=config.DISK_SIZE)
+            self.storage_domain, shared=self.shared,
+            block=block, size=config.DISK_SIZE)
         assert waitForDisksState(helpers.DISKS_NAMES, timeout=TASK_TIMEOUT)
         stop_vms_safely([self.vm])
         waitForVMState(vm=self.vm, state=config.VM_DOWN)
@@ -150,7 +172,7 @@ class DisksPermutationEnvironment(BaseTestCase):
                 raise exceptions.DiskException("Failed to remove disk %s"
                                                % disk)
             logger.info("Disk %s removed successfully", disk)
-        sd_disks = getStorageDomainDisks(config.SD_NAME_0, get_href=False)
+        sd_disks = getStorageDomainDisks(self.storage_domain, get_href=False)
         disks_to_remove = [d.get_alias for d in sd_disks if
                            (not d.get_bootable)]
         for disk in disks_to_remove:
@@ -168,13 +190,19 @@ class BasicResize(BaseTestCase):
     A class with common setup and teardown methods
     """
     __test__ = False
-    vm = config.VM_NAME[0]
+    vm = "%s_%s" % (config.VM_NAME[0], BaseTestCase.storage)
     new_size = (config.DISK_SIZE + config.GB)
     host_ip = None
     disk_name = ''
     block_cmd = "iptables -I OUTPUT -d %s -p tcp -j DROP"
-    stop_libvirt = "service libvirtd stop"
+    stop_libvirt = "stop libvirtd"
+    start_libvirt = "start libvirtd"
     disk_args = {}
+
+    @classmethod
+    def setup_class(cls):
+        cls.storage_domain = getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, cls.storage)[0]
 
     def setUp(self):
         """
@@ -182,6 +210,7 @@ class BasicResize(BaseTestCase):
         """
         args = disk_args.copy()
         args.update(self.disk_args)
+        args['storagedomain'] = self.storage_domain
 
         self.assertTrue(addDisk(True, **args), "Failed to add disk %s"
                                                % self.disk_args['alias'])
@@ -192,6 +221,9 @@ class BasicResize(BaseTestCase):
         assert waitForDisksState(self.disk_name)
         start_vms([self.vm], 1, wait_for_ip=False)
         waitForVMState(vm=self.vm)
+
+        self.host = getSPMHost(config.HOSTS)
+        self.host_ip = getHostIP(self.host)
 
     def perform_basic_action(self):
         logger.info("Resizing disk %s", self.disk_name)
@@ -205,13 +237,14 @@ class BasicResize(BaseTestCase):
         logger.info("dd to disk %s", self.disk_name)
         helpers.verify_write_operation_to_disk(self.vm)
 
-        disks_objs = getVmDisks(config.VM_NAME[0])
+        disks_objs = getVmDisks(self.vm)
         disk_obj = [disk_obj for disk_obj in disks_objs if
                     (not disk_obj.get_bootable())][0]
         datacenter_obj = get_data_center(config.DATA_CENTER_NAME)
 
-        logger.info("Getting volume size")
-        lv_size = helpers.get_volume_size(config.HOSTS[0],
+        logger.info("Checking volum size in host %s with ip %s",
+                    self.host, self.host_ip)
+        lv_size = helpers.get_volume_size(self.host_ip,
                                           config.HOSTS_USER,
                                           config.HOSTS_PW,
                                           disk_obj,
@@ -219,27 +252,20 @@ class BasicResize(BaseTestCase):
         self.assertEqual(lv_size, self.new_size / config.GB)
 
         devices, boot_device = helpers.get_vm_storage_devices(
-            config.VM_NAME[0])
+            self.vm)
 
         start_vms([self.vm], max_workers=1, wait_for_ip=False)
         waitForVMState(self.vm)
         for device in devices:
-            size = helpers.get_vm_device_size(config.VM_NAME[0], device)
+            size = helpers.get_vm_device_size(self.vm, device)
             self.assertEqual(int(size), (self.new_size / config.GB))
 
     def block_connection_case(self):
-        found, master_domain = findMasterStorageDomain(
-            True, config.DATA_CENTER_NAME)
-        assert found
-        master_domain = master_domain['masterDomain']
-        logger.info("Master domain found : %s", master_domain)
-
-        found, master_domain_ip = getDomainAddress(
-            True, master_domain)
-        assert found
-        master_domain_ip = master_domain_ip['address']
-        self.host_ip = getIpAddressByHostName(config.HOSTS[0])
-        self.block_cmd = self.block_cmd % master_domain_ip
+        domain_name = get_vms_disks_storage_domain_name(self.vm)
+        found, storage_domain_ip = getDomainAddress(
+            True, domain_name)
+        storage_domain_ip = storage_domain_ip['address']
+        self.block_cmd = self.block_cmd % storage_domain_ip
 
         t = Thread(target=watch_logs, args=(
             FILE_TO_WATCH, REGEX, self.block_cmd, None,
@@ -261,15 +287,15 @@ class BasicResize(BaseTestCase):
         logger.info("Unblocking the connection")
         flushIptables(self.host_ip, config.HOSTS_USER, config.HOSTS_PW)
         assert waitForDisksState(self.disk_name, timeout=TASK_TIMEOUT)
-        waitForHostsStates(True, config.HOSTS[0])
+        waitForHostsStates(True, self.host)
 
-        disks_objs = getVmDisks(config.VM_NAME[0])
+        disks_objs = getVmDisks(self.vm)
         disk_obj = [disk_obj for disk_obj in disks_objs if
                     (not disk_obj.get_bootable())][0]
         datacenter_obj = get_data_center(config.DATA_CENTER_NAME)
 
         logger.info("Getting volume size")
-        lv_size = helpers.get_volume_size(config.HOSTS[0],
+        lv_size = helpers.get_volume_size(self.host_ip,
                                           config.HOSTS_USER,
                                           config.HOSTS_PW,
                                           disk_obj,
@@ -277,12 +303,12 @@ class BasicResize(BaseTestCase):
         self.assertEqual(lv_size, self.new_size / config.GB)
 
         devices, boot_device = helpers.get_vm_storage_devices(
-            config.VM_NAME[0])
+            self.vm)
 
         start_vms([self.vm], max_workers=1, wait_for_ip=False)
         waitForVMState(self.vm)
         for device in devices:
-            size = helpers.get_vm_device_size(config.VM_NAME[0], device)
+            size = helpers.get_vm_device_size(self.vm, device)
             self.assertEqual(int(size), (self.new_size / config.GB))
 
     def multiple_disks(self, vm_names):
@@ -341,18 +367,18 @@ class TestCase336099(DisksPermutationEnvironment):
         assert waitForDisksState(helpers.DISKS_NAMES, timeout=TASK_TIMEOUT)
 
         devices, boot_device = helpers.get_vm_storage_devices(
-            config.VM_NAME[0])
+            self.vm)
 
         start_vms([self.vm], max_workers=1, wait_for_ip=False)
         waitForVMState(self.vm)
         for device in devices:
-            size = helpers.get_vm_device_size(config.VM_NAME[0], device)
+            size = helpers.get_vm_device_size(self.vm, device)
             self.assertEqual(int(size), (self.new_size / config.GB))
 
     def tearDown(self):
         super(TestCase336099, self).tearDown()
 
-        if not removeSnapshot(True, config.VM_NAME[0], self.snap_description):
+        if not removeSnapshot(True, self.vm, self.snap_description):
             raise exceptions.SnapshotException("Failed to remove snapshot %s"
                                                % self.snap_description)
 
@@ -415,7 +441,7 @@ class TestCase336100(DisksPermutationEnvironment):
 
         super(TestCase336100, self).tearDown()
 
-        if not removeSnapshot(True, config.VM_NAME[0], self.snap_description):
+        if not removeSnapshot(True, self.vm, self.snap_description):
             raise exceptions.SnapshotException("Failed to remove snapshot %s"
                                                % self.snap_description)
 
@@ -624,8 +650,7 @@ class TestCase287468(BasicResize):
         super(TestCase287468, self).setUp()
         self.test_vm_name = 'test_%s' % self.tcms_test_case
         vmArgs['vmName'] = self.test_vm_name
-        vmArgs['storageDomainName'] = \
-            get_master_storage_domain_name(config.DATA_CENTER_NAME)
+        vmArgs['storageDomainName'] = self.storage_domain
 
         logger.info('Creating vm and installing OS on it')
         if not createVm(**vmArgs):
@@ -675,12 +700,13 @@ class TestCase287469(BasicResize):
     """
     __test__ = config.STORAGE_TYPE in config.BLOCK_TYPES
     tcms_test_case = '287469'
-    new_size = (config.DISK_SIZE + config.GB * config.STORAGE_SIZE)
 
     def setUp(self):
         """
         Creating disk
         """
+        storage_domain_size = get_total_size(self.storage_domain)
+        self.new_size = (config.DISK_SIZE + config.GB * storage_domain_size)
         self.disk_args['alias'] = 'disk_%s' % self.tcms_test_case
         self.disk_name = self.disk_args['alias']
         self.disk_args['sparse'] = False
@@ -713,7 +739,6 @@ class TestCase297085(BasicResize):
     """
     __test__ = True
     tcms_test_case = '297085'
-    service_to_start = 'libvirtd'
     look_for_regex = 'Run and protect: extendVolumeSize'
 
     def setUp(self):
@@ -733,7 +758,8 @@ class TestCase297085(BasicResize):
         - Resize the VM disk to 7G total
         - When SPM get The task, stop libvirt service
         """
-        host_ip = getIpAddressByHostName(config.HOSTS[0])
+        self.host = getSPMHost(config.HOSTS)
+        host_ip = getHostIP(self.host)
         t = Thread(target=watch_logs, args=(
             FILE_TO_WATCH, self.look_for_regex, self.stop_libvirt, None,
             host_ip, config.HOSTS_USER, config.HOSTS_PW))
@@ -750,18 +776,19 @@ class TestCase297085(BasicResize):
                                 % (self.disk_name, self.new_size))
         host_machine = Machine(host=host_ip, user=config.HOSTS_USER,
                                password=config.HOSTS_PW).util('linux')
-        host_machine.startService(self.service_to_start)
+        rc, output = host_machine.runCmd(self.start_libvirt.split())
+        self.assertTrue(rc, "Failed to start libvirt: %s" % output)
         assert waitForDisksState(self.disk_name, timeout=TASK_TIMEOUT)
         logger.info("dd to disk %s", self.disk_name)
         helpers.verify_write_operation_to_disk(self.vm)
         logger.info("Getting volume size")
 
-        disks_objs = getVmDisks(config.VM_NAME[0])
+        disks_objs = getVmDisks(self.vm)
         disk_obj = [disk_obj for disk_obj in disks_objs if
                     (not disk_obj.get_bootable())][0]
         datacenter_obj = get_data_center(config.DATA_CENTER_NAME)
 
-        lv_size = helpers.get_volume_size(config.HOSTS[0],
+        lv_size = helpers.get_volume_size(self.host_ip,
                                           config.HOSTS_USER,
                                           config.HOSTS_PW,
                                           disk_obj,
@@ -787,20 +814,14 @@ class TestCase287477(BasicResize):
         Creating disk
         """
         self.vm_names = list()
-        rc, masterSD = findMasterStorageDomain(True, config.DATA_CENTER_NAME)
-        if not rc:
-            raise exceptions.StorageDomainException("Could not find master "
-                                                    "storage domain "
-                                                    "for dc %s" %
-                                                    config.DATA_CENTER_NAME)
-        vmArgs['storageDomainName'] = masterSD['masterDomain']
+        vmArgs['storageDomainName'] = self.storage_domain
         vmArgs['installation'] = False
 
         logger.info('Creating vm and installing OS on it')
 
         for i in range(self.vm_count):
-            self.vm_name = "vm_%s_%s"
-            self.vm_name = self.vm_name % (self.tcms_test_case, i)
+            self.vm_name = "vm_%s_%s_%s" % (
+                self.tcms_test_case, self.storage, i)
             vmArgs['vmName'] = self.vm_name
             if not createVm(**vmArgs):
                 raise exceptions.VMException('Unable to create vm %s for test'
@@ -844,7 +865,8 @@ class TestCase287478(BasicResize):
         vmArgs['installation'] = False
 
         logger.info('Creating vm and installing OS on it')
-        sd_list = [config.SD_NAME_0, config.SD_NAME_1]
+        sd_list = getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage)[0:1]
 
         for i, sd in zip(range(self.vm_count), sd_list):
             self.vm_name = "vm_%s_%s"

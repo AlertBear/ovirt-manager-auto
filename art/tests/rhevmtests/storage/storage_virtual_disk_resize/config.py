@@ -12,8 +12,6 @@ TESTNAME = "virtual_disk_resize"
 # TODO: remove
 STORAGE_FCP = STORAGE_TYPE_FCP
 
-STORAGE_SIZE = int(ART_CONFIG['STORAGE'].get('devices_capacity', 50))
-
 BASE_SNAPSHOT = 'clean_os_base_snapshot'
 
 VM_COUNT = 2

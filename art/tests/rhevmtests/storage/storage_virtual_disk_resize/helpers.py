@@ -106,7 +106,7 @@ def get_volume_size(hostname, user, password, disk_object, dc_obj):
     Get volume size in GB
     Author: ratamir
     Parameters:
-        * hostname - name of host
+        * hostname - ip or fqdn of the host
         * user - user name for host
         * password - password for host
         * disk_object - disk object that need checksum
