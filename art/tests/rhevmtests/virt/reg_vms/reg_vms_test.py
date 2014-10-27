@@ -43,12 +43,23 @@ class BaseVm(TestCase):
     __test__ = False
     vm_name = None
     template_name = None
+    master_domain = None
+    non_master_domain = None
 
     @classmethod
     def setup_class(cls):
         """
         Add new vm with given name
         """
+        cls.master_domain = (
+            sd_api.get_master_storage_domain_name(config.DC_NAME[0])
+        )
+        non_master_domains = (
+            sd_api.findNonMasterStorageDomains(
+                True, config.DC_NAME[0]
+            )[1]
+        )
+        cls.non_master_domain = non_master_domains['nonMasterDomains'][0]
         logger.info("Add new vm %s", cls.vm_name)
         if not vm_api.addVm(True, name=cls.vm_name,
                             cluster=config.CLUSTER_NAME[0],
@@ -80,8 +91,7 @@ class BaseVmWithDisk(BaseVm):
         super(BaseVmWithDisk, cls).setup_class()
         logger.info("Add disk to vm %s", cls.vm_name)
         if not vm_api.addDisk(True, vm=cls.vm_name, size=GB,
-                              storagedomain=config.STORAGE_NAME[0],
-
+                              storagedomain=cls.master_domain,
                               type=ENUMS['disk_type_system'],
                               format=ENUMS['format_cow'],
                               interface=ENUMS['interface_virtio']):
@@ -262,9 +272,12 @@ class AddVm(TestCase):
         Positive: Add vm with disk on specific storage domain
         """
         vm_name = 'disk_specific_vm'
+        master_domain = (
+            sd_api.get_master_storage_domain_name(config.DC_NAME[0])
+        )
         self.assertTrue(vm_api.addVm(True, name=vm_name,
                                      cluster=config.CLUSTER_NAME[0],
-                                     storagedomain=config.STORAGE_NAME[0],
+                                     storagedomain=master_domain,
                                      disk_type=ENUMS['disk_type_data'],
                                      size=2*GB, format=ENUMS['format_cow'],
                                      interface=ENUMS['interface_virtio']))
@@ -719,7 +732,7 @@ class VmDisk(BaseVm):
         Add raw virtio disk to vm without sparse
         """
         self.assertTrue(vm_api.addDisk(True, vm=self.vm_name, size=GB,
-                                       storagedomain=config.STORAGE_NAME[0],
+                                       storagedomain=self.master_domain,
                                        type=ENUMS['disk_type_system'],
                                        format=ENUMS['format_raw'],
                                        interface=ENUMS['interface_virtio'],
@@ -732,7 +745,7 @@ class VmDisk(BaseVm):
         Add bootable cow ide data disk to vm
         """
         self.assertTrue(vm_api.addDisk(True, vm=self.vm_name, size=GB,
-                                       storagedomain=config.STORAGE_NAME[0],
+                                       storagedomain=self.master_domain,
                                        type=ENUMS['disk_type_data'],
                                        format=ENUMS['format_cow'],
                                        interface=ENUMS['interface_ide'],
@@ -745,7 +758,7 @@ class VmDisk(BaseVm):
         Add sparse cow virtio data disk to vm
         """
         self.assertTrue(vm_api.addDisk(True, vm=self.vm_name, size=GB,
-                                       storagedomain=config.STORAGE_NAME[0],
+                                       storagedomain=self.master_domain,
                                        type=ENUMS['disk_type_data'],
                                        format=ENUMS['format_cow'],
                                        interface=ENUMS['interface_virtio'],
@@ -763,7 +776,7 @@ class VmDisk(BaseVm):
                             " format %s and interface %s",
                             self.vm_name, disk_format, disk_interface)
                 result = vm_api.addDisk(True, vm=self.vm_name, size=GB,
-                                        storagedomain=config.STORAGE_NAME[0],
+                                        storagedomain=self.master_domain,
                                         type=ENUMS['disk_type_data'],
                                         format=disk_format,
                                         interface=disk_interface)
@@ -956,19 +969,19 @@ class ImportExportVm(BaseVmWithDisk):
         logger.info("Import exported vm %s", self.vm_name)
         self.assertTrue(vm_api.importVm(True, self.vm_name,
                                         export_domain,
-                                        config.STORAGE_NAME[0],
+                                        self.master_domain,
                                         config.CLUSTER_NAME[0]))
         logger.info("Negative: Import existed vm")
         self.assertFalse(vm_api.importVm(True, self.vm_name,
                                          export_domain,
-                                         config.STORAGE_NAME[0],
+                                         self.master_domain,
                                          config.CLUSTER_NAME[0]))
-        logger.info("Move vm to storage domain %s", config.nfs_storage_1)
+        logger.info("Move vm to storage domain %s", self.non_master_domain)
         self.assertTrue(vm_api.moveVm(True, self.vm_name,
-                                      config.STORAGE_NAME[1]))
-        logger.info("Move vm to storage domain %s", config.STORAGE_NAME[0])
+                                      self.non_master_domain))
+        logger.info("Move vm to storage domain %s", self.master_domain)
         self.assertTrue(vm_api.moveVm(True, self.vm_name,
-                                      config.STORAGE_NAME[0]))
+                                      self.master_domain))
 
 
 @attr(tier=0)
@@ -987,6 +1000,9 @@ class VmDisplay(TestCase):
         Create two new vms, one with vnc type display and
         second with spice type display
         """
+        master_domain = (
+            sd_api.get_master_storage_domain_name(config.DC_NAME[0])
+        )
         for display_type in cls.display_types:
             vm_name = '%s_vm' % display_type
             logger.info("Add new vm %s", vm_name)
@@ -995,7 +1011,7 @@ class VmDisplay(TestCase):
                                 display_type=display_type):
                 raise errors.VMException("Failed to add vm")
             if not vm_api.addDisk(True, vm=vm_name, size=GB,
-                                  storagedomain=config.STORAGE_NAME[0],
+                                  storagedomain=master_domain,
                                   type=ENUMS['disk_type_system'],
                                   format=ENUMS['format_cow'],
                                   interface=ENUMS['interface_virtio']):
@@ -1273,7 +1289,7 @@ class VmTemplate(BaseVmWithDiskTemplate):
         self.assertTrue(vm_api.addVm(True, name=vm_name,
                                      cluster=config.CLUSTER_NAME[0],
                                      template=self.template_name,
-                                     storagedomain=config.STORAGE_NAME[0]))
+                                     storagedomain=self.master_domain))
 
     @bz({'1082977': {'engine': ['cli'], 'version': None}})
     @istest
@@ -1285,7 +1301,7 @@ class VmTemplate(BaseVmWithDiskTemplate):
         self.assertFalse(vm_api.addVm(True, name=vm_name,
                                       cluster=config.CLUSTER_NAME[0],
                                       template=self.template_name,
-                                      storagedomain=config.STORAGE_NAME[1]))
+                                      storagedomain=self.non_master_domain))
 
     @istest
     def clone_vm_from_template(self):

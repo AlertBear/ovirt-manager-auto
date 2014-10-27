@@ -16,6 +16,7 @@ import art.rhevm_api.tests_lib.low_level.hosts as host_api
 import art.rhevm_api.tests_lib.high_level.hosts as high_host_api
 from art.rhevm_api.utils.test_utils import getStat, raise_if_exception
 from art.unittest_lib import attr
+import art.rhevm_api.tests_lib.low_level.storagedomains as sd_api
 
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
@@ -125,9 +126,12 @@ class MigrationOverloadHost(TestCase):
         Wrapper for createVm method, that allow to create vm with different
         amount of memory
         """
+        master_domain = (
+            sd_api.get_master_storage_domain_name(config.DC_NAME[0])
+        )
         return vm_api.createVm(True, vm_name, config.VM_DESCRIPTION,
                                cluster=config.CLUSTER_NAME[0], memory=memory,
-                               storageDomainName=config.STORAGE_NAME[0],
+                               storageDomainName=master_domain,
                                network=config.MGMT_BRIDGE,
                                size=config.DISK_SIZE, nic='nic1')
 

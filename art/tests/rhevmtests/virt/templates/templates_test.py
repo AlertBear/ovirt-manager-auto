@@ -13,7 +13,7 @@ from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import mla
 from art.rhevm_api.tests_lib.low_level import clusters
 from art.rhevm_api.tests_lib.low_level import templates
-from art.rhevm_api.tests_lib.low_level import storagedomains
+import art.rhevm_api.tests_lib.low_level.storagedomains as sd_api
 import art.rhevm_api.tests_lib.low_level.datacenters as dcs
 
 from art.rhevm_api.utils.test_utils import get_api
@@ -60,12 +60,23 @@ class BaseTemplateClass(TestCase):
     vm_parameters = BASIC_PARAMETERS.copy()
     template_name = None
     vm_name = vm_parameters.get('name')
+    master_domain = None
+    non_master_domain = None
 
     @classmethod
     def setup_class(cls):
         """
         Create a server VM and a template
         """
+        cls.master_domain = (
+            sd_api.get_master_storage_domain_name(config.DC_NAME[0])
+        )
+        non_master_domains = (
+            sd_api.findNonMasterStorageDomains(
+                True, config.DC_NAME[0]
+            )[1]
+        )
+        cls.non_master_domain = non_master_domains['nonMasterDomains'][0]
         if not vms.addVm(True, **cls.vm_parameters):
             raise errors.VMException("Cannot create vm %s" % cls.vm_name)
         logger.info("Successfully created VM.")
@@ -864,7 +875,7 @@ class NegativeTemplateCases(BaseTemplateClass):
         """
         logger.info("Add disk to vm %s", self.vm_name)
         if not vms.addDisk(True, self.vm_name, GB,
-                           storagedomain=config.STORAGE_NAME[0]):
+                           storagedomain=self.master_domain):
             raise errors.VMException("Failed add disk to vm")
         cluster = self.additional_cluster
         self.assertFalse(templates.createTemplate(positive=True,
@@ -927,7 +938,7 @@ class BasicTemplate(BaseTemplateClass):
         """
         Create new template on specific storage domain
         """
-        sd = config.STORAGE_NAME[1]
+        sd = self.non_master_domain
         self.assertTrue(templates.createTemplate(positive=True,
                                                  vm=self.vm_name,
                                                  name=self.storage_template,
@@ -995,8 +1006,7 @@ class ImportExportTemplate(BaseTemplateClass):
         """
         Import and export template
         """
-        export_domain = storagedomains.findExportStorageDomains(
-            config.DC_NAME[0])[0]
+        export_domain = sd_api.findExportStorageDomains(config.DC_NAME[0])[0]
         logger.info("Export template %s", self.template_name)
         self.assertTrue(templates.exportTemplate(True, self.template_name,
                                                  export_domain))
@@ -1013,7 +1023,7 @@ class ImportExportTemplate(BaseTemplateClass):
         logger.info("Import template %s from export domain")
         self.assertTrue(templates.importTemplate(True, self.template_name,
                                                  export_domain,
-                                                 config.STORAGE_NAME[0],
+                                                 self.master_domain,
                                                  config.CLUSTER_NAME[0]))
 
 ########################################################################
