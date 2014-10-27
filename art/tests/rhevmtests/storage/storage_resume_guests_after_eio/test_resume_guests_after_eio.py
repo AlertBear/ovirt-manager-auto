@@ -3,9 +3,7 @@ import logging
 import time
 from art.unittest_lib import attr
 from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
-from art.rhevm_api.tests_lib.low_level import vms
-from art.rhevm_api.tests_lib.low_level import storagedomains
-from art.rhevm_api.tests_lib.low_level import disks
+from art.rhevm_api.tests_lib.low_level import vms, storagedomains, disks, hosts
 from art.rhevm_api.utils import storage_api
 
 import config
@@ -31,6 +29,7 @@ def _wait_for_vm_booted(
 
 class TestResumeGuests(TestCase):
     __test__ = False
+    vm = "%s_%s" % (config.VM_NAME[0], TestCase.storage)
 
     def setUp(self):
         """ just start writing
@@ -38,7 +37,7 @@ class TestResumeGuests(TestCase):
         cmd = "dd of=%s if=/dev/urandom &" % FILE_TO_WRITE
         LOGGER.info("Starting writing process")
         assert vms.run_cmd_on_vm(
-            config.VM_NAME[0], cmd, VM_USER, VM_PASSWORD)[0]
+            self.vm, cmd, VM_USER, VM_PASSWORD)[0]
         # give it time to really start writing
         time.sleep(10)
 
@@ -47,17 +46,17 @@ class TestResumeGuests(TestCase):
         """
         # restart vm - this way we will also kill dd
         LOGGER.info("Stopping the VM")
-        assert vms.stopVm(True, config.VM_NAME[0])
+        assert vms.stopVm(True, self.vm)
 
         LOGGER.info("Starting the VM")
         assert vms.startVm(
-            True, config.VM_NAME[0], config.ENUMS['vm_state_up'], True, 3600)
+            True, self.vm, config.ENUMS['vm_state_up'], True, 3600)
 
         cmd = "rm -f %s" % FILE_TO_WRITE
         LOGGER.info("Removing file %s we were writing to" % FILE_TO_WRITE)
         # big timeout as rm may take a lot of time in case of big files
         assert vms.run_cmd_on_vm(
-            config.VM_NAME[0], cmd, VM_USER, VM_PASSWORD, 3600)[0]
+            self.vm, cmd, VM_USER, VM_PASSWORD, 3600)[0]
 
     def break_storage(self):
         pass
@@ -75,19 +74,19 @@ class TestResumeGuests(TestCase):
             vm_name, config.ENUMS['vm_state_up'], timeout=1800)
         LOGGER.info("VM is up, waiting for connectivity")
         assert _wait_for_vm_booted(
-            config.VM_NAME[0], config.OS_TYPE, VM_USER,
+            self.vm, config.OS_TYPE, VM_USER,
             VM_PASSWORD)
         LOGGER.info("VM is accessible")
 
     def run(self):
         LOGGER.info("Breaking storage")
         self.break_storage()
-        LOGGER.info("Checking if VM %s is paused", config.VM_NAME[0])
-        self.check_vm_paused(config.VM_NAME[0])
+        LOGGER.info("Checking if VM %s is paused", self.vm)
+        self.check_vm_paused(self.vm)
         LOGGER.info("Fixing storage")
         self.fix_storage()
-        LOGGER.info("Checking if VM %s is unpaused", config.VM_NAME[0])
-        self.check_vm_unpaused(config.VM_NAME[0])
+        LOGGER.info("Checking if VM %s is unpaused", self.vm)
+        self.check_vm_unpaused(self.vm)
         LOGGER.info("Test finished successfully")
 
 
@@ -98,19 +97,23 @@ class TestCaseBlockedConnection(TestResumeGuests):
     def break_storage(self):
         """ block connection from host to storage server
         """
-        self.host = config.HOSTS[0]
-        self.sd = config.STORAGE_SERVER
+        rc, host = vms.getVmHost(self.vm)
+        assert rc
+        self.host_ip = hosts.getHostIP(host)
+        self.sd = vms.get_vms_disks_storage_domain_name(self.vm)
+        self.sd_ip = storagedomains.getDomainAddress(True, self.sd)
+
         LOGGER.info(
             "Blocking outgoing connection from %s to %s", self.host, self.sd)
         assert storage_api.blockOutgoingConnection(
-            self.host, config.HOSTS_USER, config.HOSTS_PW, self.sd)
+            self.host_ip, config.HOSTS_USER, config.HOSTS_PW, self.sd_ip)
 
     def fix_storage(self):
         """ unblock connection from host to storage server
         """
         LOGGER.info("Unblocking connection from %s to %s", self.host, self.sd)
         assert storage_api.unblockOutgoingConnection(
-            self.host, config.HOSTS_USER, config.HOSTS_PW, self.sd)
+            self.host_ip, config.HOSTS_USER, config.HOSTS_PW, self.sd_ip)
         self.host = None
         self.sd = None
 
@@ -122,7 +125,7 @@ class TestCaseBlockedConnection(TestResumeGuests):
             LOGGER.info(
                 "Unblocking connection from %s to %s", self.host, self.sd)
             assert storage_api.unblockOutgoingConnection(
-                self.host, config.HOSTS_USER, config.HOSTS_PW, self.sd)
+                self.host_ip, config.HOSTS_USER, config.HOSTS_PW, self.sd_ip)
         super(TestCaseBlockedConnection, self).tearDown()
 
 
@@ -133,17 +136,16 @@ class TestNoSpaceLeftOnDevice(TestResumeGuests):
     def break_storage(self):
         """ create a very big disk on the storage domain
         """
-        master = storagedomains.findMasterStorageDomain(
-            True, config.DATA_CENTER_NAME)[1]['masterDomain']
-        domain = storagedomains.util.find(master)
-        LOGGER.info("Master domain: %s", master)
+        self.sd = vms.get_vms_disks_storage_domain_name(self.vm)
+        domain = storagedomains.util.find(self.sd)
+        LOGGER.info("Master domain: %s", self.sd)
         sd_size = domain.available
         LOGGER.info("Available space: %s", sd_size)
         disk_size = int(domain.available) - self.left_space
         LOGGER.info("Disk size: %s", disk_size)
         assert disks.addDisk(
             True, alias=self.big_disk_name, size=disk_size,
-            storagedomain=master, format=config.ENUMS['format_raw'],
+            storagedomain=self.sd, format=config.ENUMS['format_raw'],
             interface=config.INTERFACE_VIRTIO, sparse=False)
         # NFS storage on orion is sloooow
         disks.waitForDisksState(self.big_disk_name, timeout=3600)
@@ -160,10 +162,8 @@ class TestNoSpaceLeftOnDevice(TestResumeGuests):
         """ additional step in tearDown - remove big disk
         """
         LOGGER.info("Tear down - removing disk if needed")
-        master = storagedomains.findMasterStorageDomain(
-            True, config.DATA_CENTER_NAME)[1]['masterDomain']
         disk_names = [
-            x.alias for x in disks.getStorageDomainDisks(master, False)]
+            x.alias for x in disks.getStorageDomainDisks(self.sd, False)]
         LOGGER.info("All disks: %s" % disk_names)
         if self.big_disk_name in disk_names:
             disks.deleteDisk(True, self.big_disk_name)
@@ -173,11 +173,11 @@ class TestNoSpaceLeftOnDevice(TestResumeGuests):
 
 @attr(tier=2)
 class TestCase285357(TestCaseBlockedConnection):
-    __test__ = (DC_TYPE == 'nfs')
+    __test__ = (TestCaseBlockedConnection.storage == 'nfs')
     tcms_test_case = '285357'
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
-    @bz(1003588)
+    @bz({'1138144': {'enine': ['rest', 'sdk'], 'version': ["3.5"]}})
     def test_nfs_blocked_connection(self):
         """ checks if VM is paused after connection to sd is lost,
             checks if VM is unpaused after connection is restored
@@ -187,12 +187,12 @@ class TestCase285357(TestCaseBlockedConnection):
 
 @attr(tier=2)
 class TestCase285370(TestNoSpaceLeftOnDevice):
-    __test__ = (DC_TYPE == 'nfs')
+    __test__ = (TestNoSpaceLeftOnDevice.storage == 'nfs')
     tcms_test_case = '285370'
     left_space = 10 * GB
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
-    @bz(1024353)
+    @bz({'1024353': {'enine': ['rest', 'sdk'], 'version': ["3.5"]}})
     def test_nfs_no_space_left_on_device(self):
         """ checks if VM is paused after no-space-left error on sd,
             checks if VM is unpaused after there is again free space on sd
@@ -202,11 +202,11 @@ class TestCase285370(TestNoSpaceLeftOnDevice):
 
 @attr(tier=2)
 class TestCase285371(TestCaseBlockedConnection):
-    __test__ = (DC_TYPE == 'iscsi')
+    __test__ = (TestCaseBlockedConnection.storage == 'iscsi')
     tcms_test_case = '285371'
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
-    @bz(1003588)
+    @bz({'1138144': {'enine': ['rest', 'sdk'], 'version': ["3.5"]}})
     def test_iscsi_blocked_connection(self):
         """ checks if VM is paused after connection to sd is lost,
             checks if VM is unpaused after connection is restored
@@ -216,7 +216,7 @@ class TestCase285371(TestCaseBlockedConnection):
 
 @attr(tier=1)
 class TestCase285372(TestNoSpaceLeftOnDevice):
-    __test__ = (DC_TYPE == 'iscsi')
+    __test__ = (TestNoSpaceLeftOnDevice.storage == 'iscsi')
     tcms_test_case = '285372'
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
@@ -229,10 +229,11 @@ class TestCase285372(TestNoSpaceLeftOnDevice):
 
 @attr(tier=2)
 class TestCase285375(TestCaseBlockedConnection):
-    __test__ = (DC_TYPE == 'fcp')
+    __test__ = (TestCaseBlockedConnection.storage == 'fcp')
     tcms_test_case = '285375'
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @bz({'1138144': {'enine': ['rest', 'sdk'], 'version': ["3.5"]}})
     def test_fc_blocked_connection(self):
         """ checks if VM is paused after connection to sd is lost,
             checks if VM is unpaused after connection is restored
@@ -242,7 +243,7 @@ class TestCase285375(TestCaseBlockedConnection):
 
 @attr(tier=1)
 class TestCase285376(TestNoSpaceLeftOnDevice):
-    __test__ = (DC_TYPE == 'fcp')
+    __test__ = (TestNoSpaceLeftOnDevice.storage == 'fcp')
     tcms_test_case = '285376'
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)

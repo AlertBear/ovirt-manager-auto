@@ -15,33 +15,43 @@ def setup_package():
     """
     Prepares environment
     """
-    datacenters.build_setup(
-        config.PARAMETERS, config.PARAMETERS, config.STORAGE_TYPE,
-        config.TESTNAME)
-    storage_domain_name = storagedomains.getDCStorages(
-        config.DATA_CENTER_NAME, False)[0].name
-    LOGGER.info("Creating VM %s" % config.VM_NAME[0])
-    assert vms.createVm(
-        True, config.VM_NAME[0], config.VM_NAME[0],
-        cluster=config.CLUSTER_NAME,
-        nic=config.HOST_NICS[0], storageDomainName=storage_domain_name,
-        size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
-        volumeType=True, volumeFormat=config.COW_DISK,
-        diskInterface=config.INTERFACE_IDE, memory=config.GB,
-        cpu_socket=config.CPU_SOCKET, cpu_cores=config.CPU_CORES,
-        nicType=config.NIC_TYPE_VIRTIO, display_type=config.DISPLAY_TYPE,
-        os_type=config.OS_TYPE, user=config.VMS_LINUX_USER,
-        password=config.VMS_LINUX_PW, type=config.VM_TYPE_DESKTOP,
-        installation=True, slim=True, image=config.COBBLER_PROFILE,
-        network=config.MGMT_BRIDGE, useAgent=config.USE_AGENT)
+    if not config.GOLDEN_ENV:
+        datacenters.build_setup(
+            config.PARAMETERS, config.PARAMETERS, config.STORAGE_TYPE,
+            config.TESTNAME)
 
-    vms.wait_for_vm_states(config.VM_NAME[0])
+    for storage_type in config.STORAGE_SELECTOR:
+        vm_name = "%s_%s" % (config.VM_NAME[0], storage_type)
+        LOGGER.info("Creating VM %s" % vm_name)
+        storage_domain = storagedomains.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, storage_type)[0]
+        assert vms.createVm(
+            True, vm_name, vm_name,
+            cluster=config.CLUSTER_NAME,
+            nic=config.HOST_NICS[0], storageDomainName=storage_domain,
+            size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
+            volumeType=True, volumeFormat=config.COW_DISK,
+            diskInterface=config.INTERFACE_IDE, memory=config.GB,
+            cpu_socket=config.CPU_SOCKET, cpu_cores=config.CPU_CORES,
+            nicType=config.NIC_TYPE_VIRTIO, display_type=config.DISPLAY_TYPE,
+            os_type=config.OS_TYPE, user=config.VMS_LINUX_USER,
+            password=config.VMS_LINUX_PW, type=config.VM_TYPE_DESKTOP,
+            installation=True, slim=True, image=config.COBBLER_PROFILE,
+            network=config.MGMT_BRIDGE, useAgent=config.USE_AGENT)
+
+        vms.wait_for_vm_states(vm_name)
 
 
 def teardown_package():
     """
     Cleans the environment
     """
-    assert storagedomains.cleanDataCenter(
-        True, config.DATA_CENTER_NAME, vdc=config.VDC,
-        vdc_password=config.VDC_PASSWORD)
+    if not config.GOLDEN_ENV:
+        assert storagedomains.cleanDataCenter(
+            True, config.DATA_CENTER_NAME, vdc=config.VDC,
+            vdc_password=config.VDC_PASSWORD)
+    else:
+        for storage_type in config.STORAGE_SELECTOR:
+            vm_name = "%s_%s" % (config.VM_NAME[0], storage_type)
+            vms.stop_vms_safely([vm_name])
+        assert vms.removeVm(True, vm_name)
