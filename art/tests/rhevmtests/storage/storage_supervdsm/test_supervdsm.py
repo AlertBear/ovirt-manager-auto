@@ -26,7 +26,7 @@ VDSM_LOG = "/var/log/vdsm/vdsm.log"
 SVDSM_LOCK = "/var/run/vdsm/svdsm.sock"
 SUPERVDSMD = "supervdsmd"
 VDSMD = "vdsmd"
-SERVICE_CND = "/sbin/service"
+SERVICE_CMD = "/sbin/service"
 
 HW_INFO_COMMAND = ["vdsClient", "-s", "0", "getVdsHardwareInfo"]
 SLEEP_SERVICE = 10
@@ -152,29 +152,16 @@ class TestCase289539(SuperVDSMTestBase):
     tcms_plan_id = '10030'
     tcms_test_case = '289539'
 
-    @istest
     @tcms(tcms_plan_id, tcms_test_case)
     def command_options_test(self):
         """
         Test command options
         """
-        def vdsm_is_running(function):
-            try:
-                pid = getVdsmPid(self.machine)
-                value = function()
-                if pid != getVdsmPid(self.machine):
-                    self.fail("VDSM changed during supervdsm restart")
-            except IndexError:
-                self.fail("Couldn't find vdsm PID")
-
-            return value
-
         def runSystemInitSupervdsmd(cmd):
-            command = [SERVICE_CND, SUPERVDSMD, cmd]
+            command = [SERVICE_CMD, SUPERVDSMD, cmd]
             try:
-                pid = getSupervdsmPid(self.machine)
                 success, output = self.machine.runCmd(command)
-                if not success or pid == getSupervdsmPid(self.machine):
+                if not success:
                     logger.error("Executed %s, output: %s" % (command, output))
                     return False
                 return True
@@ -182,26 +169,24 @@ class TestCase289539(SuperVDSMTestBase):
                 self.fail("Couldn't find supervdsm PID")
 
         logger.info("Stopping supervdsm")
-        self.assertTrue(
-            vdsm_is_running(
-                lambda: self.machine.stopService(SUPERVDSMD)
-            ), ERROR_EXEC_SERVICE_ACTION % ("stop", "supervdsm")
-        )
+        self.assertTrue(self.machine.stopService(SUPERVDSMD),
+                        ERROR_EXEC_SERVICE_ACTION % ("stop", "supervdsm"))
+        time.sleep(SLEEP_SERVICE)
         logger.info("Starting supervdsm")
-        self.assertTrue(
-            vdsm_is_running(
-                lambda: self.machine.startService(SUPERVDSMD)
-            ), ERROR_EXEC_SERVICE_ACTION % ("start", "supervdsm")
-        )
+        self.assertTrue(self.machine.startService(SUPERVDSMD),
+                        ERROR_EXEC_SERVICE_ACTION % ("start", "supervdsm"))
+        time.sleep(SLEEP_SERVICE)
+        # for supporting rhel versions that stopping supervdsm stopps vdsm
+        # (rhel7 and up)
+        logger.info("Starting vdsmd")
+        self.machine.startService(VDSMD)
+        time.sleep(SLEEP_SERVICE)
         restart_commands = ['restart', 'condrestart', 'force-reload',
                             'try-restart']
         for command in restart_commands:
             logger.info("Restarting supervdsm")
-            self.assertTrue(
-                vdsm_is_running(
-                    lambda: runSystemInitSupervdsmd(command)
-                ), ERROR_EXEC_SERVICE_ACTION % (command, "supervdsm")
-            )
+            self.assertTrue(runSystemInitSupervdsmd(command),
+                            ERROR_EXEC_SERVICE_ACTION % (command, "supervdsm"))
 
 
 @attr(tier=0)
@@ -214,7 +199,6 @@ class TestCase289547(SuperVDSMTestBase):
     tcms_plan_id = '10030'
     tcms_test_case = '289547'
 
-    @istest
     @tcms(tcms_plan_id, tcms_test_case)
     def test_communication(self):
         """
@@ -226,6 +210,8 @@ class TestCase289547(SuperVDSMTestBase):
         time.sleep(SLEEP_SERVICE)
         self.assertTrue(isSupervdsmRunning(self.machine),
                         ERROR_SERVICE_NOT_UP % "supervdsm")
+        logger.info("Starting supervdsmd")
+        self.machine.startService(SUPERVDSMD)
         logger.info("Starting vdsmd")
         self.assertTrue(self.machine.startService(VDSMD),
                         "vdsm didn't start")
@@ -240,19 +226,18 @@ class TestCase289547(SuperVDSMTestBase):
         self.assertTrue(self.machine.stopService(SUPERVDSMD),
                         "Supervdsm didn't stop")
         time.sleep(SLEEP_SERVICE)
-        self.assertTrue(isVdsmRunning(self.machine),
-                        ERROR_SERVICE_NOT_UP % "vdsm")
-        success, output = self.machine.runCmd(HW_INFO_COMMAND)
-        self.assertFalse(success,
-                         "Get HW Info is suppose to fail:\n%s" % output)
         logger.info("Starting supervdsmd")
         self.assertTrue(self.machine.startService(SUPERVDSMD),
                         "Supervdsm didn't start")
+        # for supporting rhel versions that stopping supervdsm stopps vdsm
+        # (rhel7 and up)
+        logger.info("Starting vdsmd")
+        self.machine.startService(VDSMD)
+        # After restart vdsm wait for host to be up
+        self.assertTrue(hosts.waitForHostsStates(
+            True, config.FIRST_HOST, states='up', timeout=60),
+            "Host never activated after vdsm restarted.")
         time.sleep(SLEEP_SERVICE)
-        success, output = self.machine.runCmd(HW_INFO_COMMAND)
-        self.assertFalse(success,
-                         "Get HW Info is suppose to fail first time after "
-                         "supervdsmd restart:\n%s" % output)
         success, output = self.machine.runCmd(HW_INFO_COMMAND)
         self.assertTrue(success, ERROR_HW_OUTPUT % output)
 
@@ -267,7 +252,6 @@ class TestCase289565(SuperVDSMTestBase):
     tcms_plan_id = '10030'
     tcms_test_case = '289565'
 
-    @istest
     @tcms(tcms_plan_id, tcms_test_case)
     def supervdsm_stress_test(self):
         """
@@ -314,7 +298,8 @@ class TestCase293152(SuperVDSMTestBase):
                         ERROR_SERVICE_NOT_UP % "supervdsm")
         success, output = self.machine.runCmd(HW_INFO_COMMAND)
         self.assertTrue(
-            success, "Supervdsm didn't recover from removing log file")
+            success, "Supervdsm didn't recover from removing log file, out=%s"
+            % output)
         self.assertTrue(self.machine.isFileExists(SUPERVDSM_LOG),
                         "%s should be created" % SUPERVDSM_LOG)
 
@@ -341,6 +326,13 @@ class TestCase293152(SuperVDSMTestBase):
         self.machine.runCmd(["chmod", "0644", SUPERVDSM_LOG])
         self.machine.runCmd(["chown", "vdsm:kvm", SUPERVDSM_LOG])
         self.machine.startService(SUPERVDSMD)
+        # for supporting rhel versions that stopping supervdsm stopps vdsm
+        # (rhel7 and up)
+        self.machine.startService(VDSMD)
+        # After start vdsm wait for host to be up
+        hosts.waitForHostsStates(True, config.FIRST_HOST, states='up',
+                                 timeout=60)
+
         # after restarting supervdsm, run vdsm command that requires
         # supervdsm in order to trigger reconnection between supervdsm and vdsm
         self.machine.runCmd(HW_INFO_COMMAND)
