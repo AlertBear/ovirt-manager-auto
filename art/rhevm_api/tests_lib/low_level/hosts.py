@@ -1157,7 +1157,7 @@ def returnSPMHost(hosts):
 
 
 @is_action()
-def getAnyNonSPMHost(hosts, expected_states=None):
+def getAnyNonSPMHost(hosts, expected_states=None, cluster_name=None):
     """
     Description: get any not SPM host from the list of hosts in the expected
     state
@@ -1166,6 +1166,7 @@ def getAnyNonSPMHost(hosts, expected_states=None):
     * hosts - the list of hosts to be searched through
     * expected_states - list of states to filter hosts by. Set to None to
     disable filtering by host state
+    * cluster_name - filter for hosts belonging to a specific cluster
     """
     if isinstance(hosts, str):
         hosts = hosts.split(',')
@@ -1183,6 +1184,9 @@ def getAnyNonSPMHost(hosts, expected_states=None):
     for host in hosts:
         # TODO: remove check against string and leave as boolean when ticket
         # https://engineering.redhat.com/trac/automation/ticket/2142 is solved
+        if cluster_name and cluster_name != CL_API.find(
+                host.get_cluster().get_id(),  attribute='id').get_name():
+            continue
         if host.get_storage_manager().get_valueOf_() == 'false':
             return True, {'hsmHost': host.get_name()}
     return False, {'hsmHost': None}

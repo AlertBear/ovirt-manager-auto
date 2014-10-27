@@ -3,76 +3,108 @@ Storage full snapshot test - ram snapshot
 """
 
 import logging
-from art.unittest_lib import StorageTest as TestCase
-from art.unittest_lib import attr
+import config
+from helpers import is_pid_running_on_vm, start_cat_process_on_vm
+
+from concurrent.futures import ThreadPoolExecutor
+
 from nose.tools import istest
 
-from art.rhevm_api.tests_lib.high_level.vms import shutdown_vm_if_up
+from art.unittest_lib import StorageTest as TestCase
+from art.unittest_lib import attr
+
+from art.test_handler import exceptions as errors
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+
 from art.rhevm_api.tests_lib.low_level.datacenters import \
     waitForDataCenterState
 from art.rhevm_api.tests_lib.low_level.hosts import getSPMHost, \
     getAnyNonSPMHost
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    getDCStorages,
-    findMasterStorageDomain)
+    getStorageDomainNamesForType)
 from art.rhevm_api.tests_lib.low_level.vms import updateVm, \
     startVm, addSnapshot, is_snapshot_with_memory_state, createVm, \
     stopVm, restoreSnapshot, undo_snapshot_preview, preview_snapshot, addVm, \
     removeVm, exportVm, importVm, removeVmFromExportDomain, \
     removeSnapshot, kill_process_by_pid_on_vm, shutdownVm, \
-    wait_for_vm_snapshots
+    wait_for_vm_snapshots, removeVms, stop_vms_safely
+
+from art.rhevm_api.tests_lib.high_level.vms import shutdown_vm_if_up
+from art.rhevm_api.tests_lib.high_level.storagedomains import (
+    attach_and_activate_domain, detach_and_deactivate_domain)
+
 from art.rhevm_api.utils.name2ip import LookUpVMIpByName
 from art.rhevm_api.utils.test_utils import setPersistentNetwork
-from art.test_handler import exceptions as errors
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
-from helpers import is_pid_running_on_vm
-import config
-import helpers
 
 logger = logging.getLogger(__name__)
 TCMS_TEST_PLAN = '10134'
 
+vmArgs = {
+    'positive': True,
+    'vmDescription': "",
+    'diskInterface': config.ENUMS['interface_virtio'],
+    'volumeFormat': config.ENUMS['format_cow'],
+    'cluster': config.CLUSTER_NAME,
+    'installation': True,
+    'size': config.DISK_SIZE,
+    'nic': config.HOST_NICS[0],
+    'image': config.COBBLER_PROFILE,
+    'useAgent': True,
+    'os_type': config.ENUMS['rhel6'],
+    'user': config.VM_USER,
+    'password': config.VM_PASSWORD
+}
+
+VM_PREFIX = "vm_ram_snapshot"
+VM_NAME = VM_PREFIX + "_%s"
+VMS_NAMES = []
+
 
 def setup_module():
     """
-    Create datacenter with 2 hosts, 2 storage domains and 1 export domain
     Create vm and install OS on it, with snapshot after OS installation
     """
-    rc, masterSD = findMasterStorageDomain(True, config.DATA_CENTER_NAME)
-    assert rc
-    masterSD = masterSD['masterDomain']
+    if config.GOLDEN_ENV:
+        assert attach_and_activate_domain(
+            config.DATA_CENTER_NAME, config.EXPORT_DOMAIN_NAME)
 
-    logger.info('Creating vm and installing OS on it')
+    def create_vm_and_snapshot(**vmArgs):
+        vm_name = vmArgs['vmName']
+        logger.info('Creating vm %s and installing OS on it', vm_name)
+        assert createVm(**vmArgs)
+        logger.info('Creating base snapshot %s for vm %s',
+                    config.BASE_SNAPSHOT, vm_name)
+        assert addSnapshot(True, vm_name, config.BASE_SNAPSHOT)
 
-    vmArgs = {'positive': True,
-              'vmName': config.VM_NAME[0],
-              'vmDescription': config.VM_NAME[0],
-              'diskInterface': config.ENUMS['interface_virtio'],
-              'volumeFormat': config.ENUMS['format_cow'],
-              'cluster': config.CLUSTER_NAME,
-              'storageDomainName': masterSD,
-              'installation': True,
-              'size': config.DISK_SIZE,
-              'nic': config.HOST_NICS[0],
-              'image': config.COBBLER_PROFILE,
-              'useAgent': True,
-              'os_type': config.ENUMS['rhel6'],
-              'user': config.VM_USER,
-              'password': config.VM_PASSWORD
-              }
+    execution = []
+    with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
+        for storage_type in config.STORAGE_SELECTOR:
+            storage_domain = getStorageDomainNamesForType(
+                config.DATA_CENTER_NAME, storage_type)[0]
 
-    if not createVm(**vmArgs):
-        raise errors.VMException('Unable to create vm %s for test'
-                                 % config.VM_NAME[0])
+            vm_name = VM_NAME % storage_type
+            VMS_NAMES.append(vm_name)
 
-    logger.info('Creating base snapshot %s for vm %s', config.BASE_SNAPSHOT,
-                config.VM_NAME[0])
-    if not addSnapshot(True, config.VM_NAME[0], config.BASE_SNAPSHOT):
-        raise errors.VMException('Unable to create base snapshot for vm %s'
-                                 % config.VM_NAME[0])
+            args = vmArgs.copy()
+            args['storageDomainName'] = storage_domain
+            args['vmName'] = vm_name
 
-    logger.info('Shutting down VM %s', config.VM_NAME[0])
-    shutdown_vm_if_up(config.VM_NAME[0])
+            execution.append(executor.submit(create_vm_and_snapshot, **args))
+
+    [ex.result() for ex in execution]
+    logger.info('Shutting down vms %s', VMS_NAMES)
+    stop_vms_safely(VMS_NAMES)
+
+
+def teardown_module():
+    """
+    Remove created vms
+    """
+    stop_vms_safely(VMS_NAMES)
+    removeVms(True, VMS_NAMES)
+    if config.GOLDEN_ENV:
+        detach_and_deactivate_domain(
+            config.DATA_CENTER_NAME, config.EXPORT_DOMAIN_NAME)
 
 
 class DCWithStoragesActive(TestCase):
@@ -84,10 +116,9 @@ class DCWithStoragesActive(TestCase):
 
     spm = None
     hsm = None
-    master_sd = None
-    non_master_sd = None
+    storage_domain = None
     base_snapshot = config.BASE_SNAPSHOT
-    vm = config.VM_NAME[0]
+    vm = VM_NAME % TestCase.storage
 
     @classmethod
     def setup_class(cls):
@@ -99,21 +130,10 @@ class DCWithStoragesActive(TestCase):
             raise errors.DataCenterException('DC %s is not up' %
                                              config.DATA_CENTER_NAME)
 
-        storage_domains = getDCStorages(config.DATA_CENTER_NAME,
-                                        get_href=False)
-
-        logger.info('Ensuring all domains are up')
-        inactive_domains = [domain.get_name() for domain in storage_domains if
-                            domain.get_status().get_state() !=
-                            config.SD_ACTIVE]
-
-        if inactive_domains:
-            raise errors.StorageDomainException('Domains %s not active' %
-                                                inactive_domains)
-
         cls.spm = getSPMHost(config.HOSTS)
         rc, cls.hsm = getAnyNonSPMHost(config.HOSTS,
-                                       expected_states=[config.HOST_UP])
+                                       expected_states=[config.HOST_UP],
+                                       cluster_name=config.CLUSTER_NAME)
         logger.info('Status: %s, Got HSM host: %s', rc, cls.hsm)
         cls.hsm = cls.hsm['hsmHost']
 
@@ -122,13 +142,8 @@ class DCWithStoragesActive(TestCase):
         assert cls.spm
         assert cls.hsm
 
-        for domain in storage_domains:
-            if domain.get_master():
-                cls.master_sd = domain.get_name()
-            else:
-                cls.non_master_sd = domain.get_name()
-
-        assert cls.master_sd and cls.non_master_sd
+        cls.storage_domain = getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, cls.storage)[0]
 
     @classmethod
     def teardown_class(cls):
@@ -165,7 +180,7 @@ class VMWithMemoryStateSnapshot(DCWithStoragesActive):
         if not startVm(True, cls.vm, wait_for_ip=True):
             raise errors.VMException('Error waiting for vm %s to boot', cls.vm)
 
-        status, pid = helpers.start_cat_process_on_vm(cls.vm, cls.cmdlines[0])
+        status, pid = start_cat_process_on_vm(cls.vm, cls.cmdlines[0])
         logger.info('PID for first cat process is: %s', pid)
         cls.pids = [pid]
 
@@ -229,7 +244,7 @@ class CreateSnapshotWithMemoryState(DCWithStoragesActive):
         Create a snapshot with memory state
         """
         logger.info('Starting process on vm %s', self.vm)
-        status, _ = helpers.start_cat_process_on_vm(self.vm, '/dev/zero')
+        status, _ = start_cat_process_on_vm(self.vm, '/dev/zero')
         self.assertTrue(status)
 
         logger.info('Creating snapshot %s on vm %s', self.snapshot,
@@ -415,8 +430,8 @@ class TestCase294439(VMWithMemoryStateSnapshot):
         * Preview first snapshot and check that only first process is running
         * Preview second snapshot and check that both processes are running
         """
-        status, pid = helpers.start_cat_process_on_vm(self.vm,
-                                                      self.cmdlines[1])
+        status, pid = start_cat_process_on_vm(self.vm,
+                                              self.cmdlines[1])
         self.pids.append(pid)
 
         self.assertTrue(status, 'Unable to run process on VM %s' % self.vm)
@@ -511,7 +526,8 @@ class TestCase294617(VMWithMemoryStateSnapshot):
     __test__ = True
     persist_network = True
     tcms_test_case = '294617'
-    cloned_vm_name = '%s_cloned' % config.VM_NAME[0]
+    cloned_vm_name = '%s_%s_cloned' % (
+                     VM_PREFIX, VMWithMemoryStateSnapshot.storage)
 
     @istest
     @tcms(TCMS_TEST_PLAN, tcms_test_case)
@@ -597,9 +613,9 @@ class TestCase294624(VMWithMemoryStateSnapshot):
 
     __test__ = True
     persist_network = True
-
     tcms_test_case = '294624'
-    original_vm = '%s_original' % config.VM_NAME[0]
+    original_vm = '%s_%s_original' % (
+                  VM_PREFIX, VMWithMemoryStateSnapshot.storage)
 
     @classmethod
     def setup_class(cls):
@@ -628,7 +644,7 @@ class TestCase294624(VMWithMemoryStateSnapshot):
         logger.info('Importing vm %s from export domain %s', self.vm,
                     config.EXPORT_DOMAIN)
         self.assertTrue(importVm(True, self.vm, config.EXPORT_DOMAIN,
-                                 self.master_sd, config.CLUSTER_NAME),
+                                 self.storage_domain, config.CLUSTER_NAME),
                         'Unable to import vm %s from export domain %s' %
                         (self.vm, config.EXPORT_DOMAIN))
 
@@ -642,12 +658,13 @@ class TestCase294624(VMWithMemoryStateSnapshot):
 
         logger.info('Starting vm %s', self.vm)
         self.assertTrue(startVm(True, self.vm,
-                                wait_for_status=config.VM_UP),
+                                wait_for_status=config.VM_UP,
+                                wait_for_ip=True),
                         'Unable to start vm %s' % self.vm)
 
-        self.assertTrue(helpers.is_pid_running_on_vm(self.vm,
-                                                     self.pids[0],
-                                                     self.cmdlines[0]),
+        self.assertTrue(is_pid_running_on_vm(self.vm,
+                                             self.pids[0],
+                                             self.cmdlines[0]),
                         'process is not running on vm %s, memory state not '
                         'correctly restored' % self.vm)
 
@@ -694,8 +711,8 @@ class TestCase294631(VMWithMemoryStateSnapshot):
                         'Unable to start VM %s' % self.vm)
 
         logger.info('Ensuring vm %s started without memory state', self.vm)
-        self.assertFalse(helpers.is_pid_running_on_vm(self.vm, self.pids[0],
-                                                      self.cmdlines[0]))
+        self.assertFalse(is_pid_running_on_vm(self.vm, self.pids[0],
+                                              self.cmdlines[0]))
 
 
 @attr(tier=2)
@@ -706,10 +723,6 @@ class TestCase305433(VMWithMemoryStateSnapshot):
 
     __test__ = True
     tcms_test_case = '305433'
-
-    @classmethod
-    def setup_class(cls):
-        pass
 
     @istest
     @tcms(TCMS_TEST_PLAN, tcms_test_case)
@@ -736,10 +749,10 @@ class TestCase305433(VMWithMemoryStateSnapshot):
         logger.info('Starting vm %s', self.vm)
         self.assertTrue(startVm(True, self.vm, wait_for_status=config.VM_UP))
 
-        self.assertTrue(helpers.is_pid_running_on_vm(self.vm, self.pids[0],
-                                                     self.cmdlines[0]))
+        self.assertTrue(is_pid_running_on_vm(self.vm, self.pids[0],
+                                             self.cmdlines[0]))
 
-        logger.info('Killing process %d', self.pids[0])
+        logger.info('Killing process %s', self.pids[0])
         self.assertTrue(kill_process_by_pid_on_vm(self.vm, self.pids[0],
                                                   config.VM_USER,
                                                   config.VM_PASSWORD))
@@ -750,8 +763,8 @@ class TestCase305433(VMWithMemoryStateSnapshot):
         logger.info('Starting vm %s again', self.vm)
         self.assertTrue(startVm(True, self.vm, wait_for_status=config.VM_UP))
 
-        self.assertTrue(helpers.is_pid_running_on_vm(self.vm, self.pids[0],
-                                                     self.cmdlines[0]))
+        self.assertTrue(is_pid_running_on_vm(self.vm, self.pids[0],
+                                             self.cmdlines[0]))
 
     @classmethod
     def teardown_class(cls):
