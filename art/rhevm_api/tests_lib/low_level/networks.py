@@ -1432,3 +1432,12 @@ def get_qos_from_vnic_profile(vnic_profile_name, network_name, qos_name,
     if vnic_qos_id == dc_qos_id:
             return True
     return False
+
+
+def get_vnic_profile_objects():
+    """
+    Get all vnic profiles objects from engine
+    :return: List of vnic objects
+    :rtype: list
+    """
+    return VNIC_PROFILE_API.get(absLink=False)

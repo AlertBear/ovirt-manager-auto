@@ -732,3 +732,25 @@ def get_template_from_cluster(cluster):
                             x.get_cluster().get_id() == cluster_id]
     logging.info("Templates in cluster: %s", templates_in_cluster)
     return templates_in_cluster
+
+
+def get_all_template_objects():
+    """
+    Get all templates objects from engine
+    :return: List of template objects
+    :rtype: list
+    """
+    return TEMPLATE_API.get(absLink=False)
+
+
+def get_template_nics_objects(template):
+    """
+    Get all NICs objects from template
+    :param template: Template name
+    :type template: str
+    :return: List off template NICs
+    :rtype: list
+    """
+    template_obj = TEMPLATE_API.find(template)
+    return TEMPLATE_API.getElemFromLink(
+        template_obj, link_name="nics", attr="nic")
