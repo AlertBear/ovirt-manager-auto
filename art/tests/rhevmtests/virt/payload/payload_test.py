@@ -201,6 +201,7 @@ class CreateVmWithCdromPayload(PayloadViaCreate):
     also check if payload object exist under vm
     """
     __test__ = True
+    vm_name = 'CreateVmWithCdromPayload'
     payload_filename = PAYLOADS_FILENAME[0]
     payload_content = PAYLOADS_CONTENT[0]
     payload_type = PAYLOADS_TYPE[0]
@@ -229,6 +230,7 @@ class UpdateVmWithCdromPayloadAndCheckPayloadObject(PayloadViaUpdate):
     Create new vm with cdrom payload via update and check if payload exist
     """
     __test__ = True
+    vm_name = 'UpdateVmWithCdromPayload'
     payload_filename = PAYLOADS_FILENAME[0]
     payload_content = PAYLOADS_CONTENT[1]
     payload_type = PAYLOADS_TYPE[0]
@@ -249,6 +251,7 @@ class CdromPayloadComplexContent(PayloadViaUpdate):
     and check if payload exist
     """
     __test__ = True
+    vm_name = 'CdromPayloadComplexContent'
     payload_filename = PAYLOADS_FILENAME[0]
     payload_content = PAYLOADS_CONTENT[4]
     payload_type = PAYLOADS_TYPE[0]
@@ -267,6 +270,7 @@ class CreateVmWithFloppyPayload(PayloadViaCreate):
     Create new vm with floppy payload via create and check if payload exist
     """
     __test__ = True
+    vm_name = 'CreateVmWithFloppyPayload'
     payload_filename = PAYLOADS_FILENAME[1]
     payload_content = PAYLOADS_CONTENT[2]
     payload_type = PAYLOADS_TYPE[1]
@@ -285,6 +289,7 @@ class UpdateVmWithFloppyPayload(PayloadViaUpdate):
     Create new vm with floppy payload via update and check if payload exist
     """
     __test__ = True
+    vm_name = 'UpdateVmWithFloppyPayload'
     payload_filename = PAYLOADS_FILENAME[1]
     payload_content = PAYLOADS_CONTENT[3]
     payload_type = PAYLOADS_TYPE[1]
