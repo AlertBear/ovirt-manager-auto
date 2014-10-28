@@ -1,44 +1,84 @@
+#! /usr/bin/python
+# -*- coding: utf-8 -*-
+
 """
 Testing Jumbo frames feature.
 1 DC, 1 Cluster, 2 Hosts and 2 VMs will be created for testing.
-Jubmo frames will be tested for untagged, tagged, bond scenarios.
+jumbo frames will be tested for untagged, tagged, bond scenarios.
 It will cover scenarios for VM/non-VM networks.
 """
 
-from rhevmtests.networking import config
 import logging
+from rhevmtests.networking import config
 from art.unittest_lib import NetworkTest as TestCase
-from nose.tools import istest
 from art.unittest_lib import attr
 from art.test_handler.tools import tcms  # pylint: disable=E0611
-from art.rhevm_api.utils.test_utils import checkMTU
-from art.rhevm_api.tests_lib.low_level.hosts import genSNNic, sendSNRequest
-from art.rhevm_api.tests_lib.high_level.vms import check_vm_migration
-from art.rhevm_api.tests_lib.low_level.vms import updateNic, removeNic, \
-    waitForIP, addNic
-from art.rhevm_api.utils.test_utils import get_api, configureTempStaticIp, \
-    configureTempMTU, checkConfiguredMTU
-from art.test_handler.exceptions import NetworkException, VMException
-from art.rhevm_api.tests_lib.high_level.networks import \
-    createAndAttachNetworkSN, removeNetFromSetup, checkICMPConnectivity, \
-    TrafficMonitor
-from art.unittest_lib.network import get_host, find_ip
+from art.test_handler.exceptions import NetworkException
+import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
+import art.rhevm_api.utils.test_utils as utils
+import art.rhevm_api.tests_lib.high_level.networks as hl_networks
+import rhevmtests.networking.helper as network_helper
+import helper
 
-HOST_API = get_api('host', 'hosts')
-VM_API = get_api('vm', 'vms')
+HOST_API = utils.get_api("host", "hosts")
+VM_API = utils.get_api("vm", "vms")
+HOST_NICS0 = None  # filled in setup module
+HOST_NICS1 = None  # filled in setup module
+HOST_NAME0 = None  # Fill in setup_module
+HOST_NAME1 = None  # Fill in setup_module
 
-logger = logging.getLogger(__name__)
-
-
-########################################################################
+logger = logging.getLogger("Jumbo_Frames_Cases")
 
 ########################################################################
 #                             Test Cases                               #
 ########################################################################
 
 
+def setup_module():
+    """
+    obtain host NICs for the first Network Host
+    """
+    global HOST_NICS0, HOST_NICS1, HOST_NAME0, HOST_NAME1
+    HOST_NICS0 = config.VDS_HOSTS[0].nics
+    HOST_NICS1 = config.VDS_HOSTS[1].nics
+    HOST_NAME0 = ll_hosts.get_host_name_from_engine(config.VDS_HOSTS[0].ip)
+    HOST_NAME1 = ll_hosts.get_host_name_from_engine(config.VDS_HOSTS[1].ip)
+
+
+class TestJumboFramesTestCaseBase(TestCase):
+    """
+    base class which provides teardown class method for each test case
+    """
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Remove networks from the setup and update MTU to be default on all
+        Hosts NICs
+        """
+        logger.info("Starting the teardown_class")
+        logger.info("Updating MTU to default on all Hosts NICs")
+        for host in config.VDS_HOSTS[:2]:
+            for nic in host.nics:
+                if not utils.configure_temp_mtu(
+                    host=host.ip, user=config.HOSTS_USER,
+                    password=config.HOSTS_PW, mtu=str(config.MTU[3]), nic=nic
+                ):
+                    logger.error(
+                        "Unable to configure host's %s %s with MTU %s",
+                        host.ip, nic, config.MTU[3]
+                    )
+        logger.info("Removing all networks from setup")
+        if not hl_networks.remove_net_from_setup(
+            host=config.VDS_HOSTS[:2], auto_nics=[0],
+            data_center=config.DC_NAME[0], all_net=True,
+            mgmt_network=config.MGMT_BRIDGE
+        ):
+            logger.error("Cannot remove all networks from setup")
+
+
 @attr(tier=1)
-class JumboFramesCase01(TestCase):
+class TestJumboFramesCase01(TestJumboFramesTestCaseBase):
     """
     Test the bridged VM network with MTU 5000
     """
@@ -49,59 +89,39 @@ class JumboFramesCase01(TestCase):
         """
         Create logical vm network with MTU 5000 on DC/Cluster/Hosts
         """
-        local_dict = {config.NETWORKS[0]: {'mtu': config.MTU[1],
-                                           'nic': config.HOST_NICS[1],
-                                           'required': 'false'}}
+        local_dict = {
+            config.NETWORKS[0]: {
+                "mtu": config.MTU[1],
+                "nic": 1,
+                "required": "false"
+            }
+        }
+        logger.info("Sending SN request to %s", HOST_NAME0)
+        if not hl_networks.createAndAttachNetworkSN(
+            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
+            host=config.VDS_HOSTS[0], network_dict=local_dict, auto_nics=[0]
+        ):
+            raise NetworkException(
+                "Cannot create and attach network %s" % config.NETWORKS[0]
+            )
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        host=[config.HOSTS[0]],
-                                        network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0]]):
-            raise NetworkException("Cannot create and attach network")
-
-    @istest
     @tcms(5848, 199743)
-    def check_mtu(self):
+    def test_check_mtu(self):
         """
         Check physical and logical levels for network sw1 with Jumbo frames
         """
-        logger.info("Checking logical layer of bridged network %s on host %s"
-                    % (config.NETWORKS[0], config.HOSTS[0]))
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=config.MTU[1],
-                                 physical_layer=False,
-                                 network=config.NETWORKS[0],
-                                 nic=config.HOST_NICS[1]))
-        logger.info("Checking physical layer of bridged network %s on host %s"
-                    % (config.NETWORKS[0], config.HOSTS[0]))
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=config.MTU[1],
-                                 nic=config.HOST_NICS[1]))
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove networks from the setup.
-        """
-        logger.info("Starting the teardown_class")
-        if not removeNetFromSetup(host=[config.HOSTS[0]],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.NETWORKS[0]]):
-            raise NetworkException("Cannot remove network from setup")
-
-########################################################################
-
-########################################################################
+        # Checking physical and logical
+        helper.check_logical_physical_layer(
+            nic=HOST_NICS0[1], network=config.NETWORKS[0], mtu=config.MTU[1]
+        )
 
 
 @attr(tier=1)
-class JumboFramesCase02(TestCase):
+class TestJumboFramesCase02(TestJumboFramesTestCaseBase):
     """
     Positive: 1) Creates 2 Non_VM networks with Jumbo Frames
-              2) Checks the correct MTU values in the sys/config
-                 and sys/class/net
-              files
+              2) Checks the correct MTU values in the sys/config and
+                 sys/class/net files
               3) Removes one of the networks
               4) Check the correct values for the MTU in files
     """
@@ -112,1133 +132,700 @@ class JumboFramesCase02(TestCase):
         """
         Create bridgeless tagged networks with MTU on DC/Cluster/Hosts
         """
-        local_dict = {config.VLAN_NETWORKS[0]: {'vlan_id': config.J_VLAN_ID[0],
-                                                'usages': '',
-                                                'mtu': config.MTU[1],
-                                                'nic': config.HOST_NICS[1],
-                                                'required': 'false'},
-                      config.VLAN_NETWORKS[1]: {'vlan_id': config.J_VLAN_ID[1],
-                                                'usages': '',
-                                                'mtu': config.MTU[0],
-                                                'nic': config.HOST_NICS[1],
-                                                'required': 'false'}}
-
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        host=[config.HOSTS[0]],
-                                        network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0],
-                                                   config.HOST_NICS[1]]):
+        local_dict = {
+            config.VLAN_NETWORKS[0]: {
+                "vlan_id": config.VLAN_ID[0],
+                "usages": "",
+                "mtu": config.MTU[1],
+                "nic": 1,
+                "required": False},
+            config.VLAN_NETWORKS[1]: {
+                "vlan_id": config.VLAN_ID[1],
+                "usages": "",
+                "mtu": config.MTU[0],
+                "nic": 1,
+                "required": False
+            }
+        }
+        logger.info("Sending SN request to %s", HOST_NAME0)
+        if not hl_networks.createAndAttachNetworkSN(
+            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
+            host=config.VDS_HOSTS[0], network_dict=local_dict,
+            auto_nics=[0, 1]
+        ):
             raise NetworkException("Cannot create and attach network")
 
-    @istest
     @tcms(5848, 200156)
-    def check_mtu_after_network_removal(self):
+    def test_check_mtu_after_network_removal(self):
         """
         Check physical and logical levels for networks with Jumbo frames
         """
-        logger.info("Checking logical layer of bridgless tagged network "
-                    "%s with vlan %s", config.VLAN_NETWORKS[0],
-                    config.J_VLAN_ID[0])
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=config.MTU[1],
-                                 physical_layer=False,
-                                 network=config.VLAN_NETWORKS[0],
-                                 nic=config.HOST_NICS[1],
-                                 vlan=config.J_VLAN_ID[0],
-                                 bridged=False),
-                        "MTU on host %s should be %s and it is "
-                        "not" % (config.HOSTS[0], config.MTU[1]))
-        logger.info("Checking logical layer of bridgless tagged network "
-                    "%s with vlan %s", config.VLAN_NETWORKS[1],
-                    config.J_VLAN_ID[1])
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=config.MTU[0],
-                                 physical_layer=False,
-                                 network=config.VLAN_NETWORKS[1],
-                                 nic=config.HOST_NICS[1],
-                                 vlan=config.J_VLAN_ID[1],
-                                 bridged=False),
-                        "MTU on host %s should be %s and it is "
-                        "not" % (config.HOSTS[0], config.MTU[0]))
-        logger.info("Checking physical layer for bridgless tagged network ")
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=config.MTU[0],
-                                 nic=config.HOST_NICS[1],
-                                 bridged=False),
-                        "MTU on host %s should be %s and it is "
-                        "not" % (config.HOSTS[0], config.MTU[0]))
-
-        rc, out = genSNNic(nic=config.HOST_NICS[1],
-                           network=config.VLAN_NETWORKS[0],
-                           vlan=config.J_VLAN_ID[0])
-        if not rc:
-            raise NetworkException("Cannot generate network object")
-        sendSNRequest(True, host=config.HOSTS[0],
-                      nics=[out['host_nic']],
-                      auto_nics=[config.HOST_NICS[0],
-                                 config.HOST_NICS[1]],
-                      check_connectivity='true',
-                      connectivity_timeout=config.CONNECT_TIMEOUT,
-                      force='false')
-
-        logger.info("Checking physical layer for bridgless tagged networks ")
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=config.MTU[1],
-                                 nic=config.HOST_NICS[1],
-                                 bridged=False),
-                        "MTU on host %s should be %s and it is "
-                        "not" % (config.HOSTS[0], config.MTU[1]))
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove networks from the setup
-        """
-        logger.info("Starting the teardown_class")
-        if not removeNetFromSetup(host=[config.HOSTS[0]],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.VLAN_NETWORKS[0],
-                                           config.VLAN_NETWORKS[1]]):
-            raise NetworkException("Cannot remove network from setup")
-
-########################################################################
-
-########################################################################
+        # Checking logical
+        helper.check_logical_physical_layer(
+            nic=HOST_NICS0[1], network=config.VLAN_NETWORKS[0],
+            mtu=config.MTU[1], vlan=config.VLAN_ID[0], bridge=False,
+            physical=False
+        )
+        # Checking logical and physical
+        helper.check_logical_physical_layer(
+            nic=HOST_NICS0[1], network=config.VLAN_NETWORKS[1],
+            mtu=config.MTU[0], vlan=config.VLAN_ID[1], bridge=False
+        )
+        logger.info(
+            "Removing %s, Sending SN request to %s",
+            config.VLAN_NETWORKS[0], HOST_NAME0)
+        auto_nics = [
+            HOST_NICS0[0], HOST_NICS0[1], "%s.%s" %
+            (HOST_NICS0[1], config.VLAN_ID[0])
+        ]
+        if not ll_hosts.sendSNRequest(
+            True, host=HOST_NAME0, nics=[],
+            auto_nics=auto_nics, check_connectivity=True,
+            connectivity_timeout=config.CONNECT_TIMEOUT, force=False
+        ):
+            raise NetworkException(
+                "Failed to remove %s from %s" %
+                (config.VLAN_NETWORKS[0], HOST_NAME0)
+            )
+        # Checking logical and physical
+        helper.check_logical_physical_layer(
+            nic=HOST_NICS0[1], network=config.VLAN_NETWORKS[0],
+            mtu=config.MTU[1], vlan=config.VLAN_ID[0], bridge=False
+        )
 
 
 @attr(tier=1)
-class JumboFramesCase03(TestCase):
+class TestJumboFramesCase03(TestJumboFramesTestCaseBase):
     """
-    Positive: Creates bridged network over bond on Host
-    """
-    __test__ = len(config.HOST_NICS) > 3
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create bridged vlan network with MTU on DC/Cluster/Host over bond
-        """
-
-        local_dict = {None: {'nic': config.BOND[0], 'mode': 1,
-                             'slaves': [config.HOST_NICS[2],
-                                        config.HOST_NICS[3]]},
-                      config.VLAN_NETWORKS[0]: {'nic': config.BOND[0],
-                                                'mtu': config.MTU[1],
-                                                'vlan_id': config.J_VLAN_ID[0],
-                                                'required': 'false'}}
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        host=[config.HOSTS[0]],
-                                        network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0]]):
-            raise NetworkException("Cannot create and attach network")
-
-    @istest
-    @tcms(5848, 197212)
-    def bond_mode_change(self):
-        """
-        Check physical and logical levels for networks with Jumbo frames
-        """
-        logger.info("Checking physical and logical layers on bond")
-        logger.info("Checking logical layer of %s over bond with vlan %s",
-                    config.VLAN_NETWORKS[0], config.J_VLAN_ID[0])
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=config.MTU[1],
-                                 physical_layer=False,
-                                 network=config.VLAN_NETWORKS[0],
-                                 bond=config.BOND[0],
-                                 bridged=False),
-                        "MTU on host %s should be %s and it is "
-                        "not" % (config.HOSTS[0], config.MTU[1]))
-        logger.info("Checking physical layer of %s over bond with vlan %s",
-                    config.VLAN_NETWORKS[0], config.J_VLAN_ID[0])
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=config.MTU[1],
-                                 bond=config.BOND[0],
-                                 bond_nic1=config.HOST_NICS[2],
-                                 bond_nic2=config.HOST_NICS[3],
-                                 bridged=False),
-                        "MTU on host %s should be %s and it is "
-                        "not" % (config.HOSTS[0], config.MTU[1]))
-        logger.info("Changing the bond mode to mode4")
-        rc, out = genSNNic(nic=config.BOND[0],
-                           network=config.VLAN_NETWORKS[0],
-                           slaves=[config.HOST_NICS[2],
-                                   config.HOST_NICS[3]],
-                           mode=4)
-
-        if not rc:
-            raise NetworkException("Cannot generate network object")
-        sendSNRequest(positive=True, host=config.HOSTS[0],
-                      nics=[out['host_nic']],
-                      auto_nics=[config.HOST_NICS[0]],
-                      check_connectivity='true',
-                      connectivity_timeout=config.CONNECT_TIMEOUT,
-                      force='false')
-        logger.info("Checking layers after bond mode change")
-        logger.info("Checking logical layer after bond mode change")
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=config.MTU[1],
-                                 physical_layer=False,
-                                 network=config.VLAN_NETWORKS[0],
-                                 bond=config.BOND[0],
-                                 bridged=False),
-                        "MTU on host %s should be %s and it is "
-                        "not" % (config.HOSTS[0], config.MTU[1]))
-        logger.info("Checking physical layer after bond mode change")
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=config.MTU[1],
-                                 bond=config.BOND[0],
-                                 bond_nic1=config.HOST_NICS[2],
-                                 bond_nic2=config.HOST_NICS[3],
-                                 bridged=False),
-                        "MTU on host %s should be %s and it is "
-                        "not" % (config.HOSTS[0], config.MTU[1]))
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove networks from the setup
-        """
-        logger.info("Starting the teardown_class")
-        if not removeNetFromSetup(host=[config.HOSTS[0]],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.VLAN_NETWORKS[0]]):
-            raise NetworkException("Cannot remove networks from setup")
-
-
-########################################################################
-
-########################################################################
-
-
-@attr(tier=1)
-class JumboFramesCase04(TestCase):
-    """
-    Positive: Creates 2 bridged vlan network and check the network files.
+    Positive: Test BOND mode change
     """
     __test__ = True
 
     @classmethod
     def setup_class(cls):
         """
-        Create bridged vlan networks with MTU on DC/Cluster/Host
+        Create bridged VLAN network with MTU on DC/Cluster/Host over bond
         """
-        local_dict = {config.VLAN_NETWORKS[0]: {'vlan_id': config.J_VLAN_ID[0],
-                                                'mtu': config.MTU[1],
-                                                'nic': config.HOST_NICS[1],
-                                                'required': 'false'},
-                      config.VLAN_NETWORKS[1]: {'vlan_id': config.J_VLAN_ID[1],
-                                                'mtu': config.MTU[0],
-                                                'nic': config.HOST_NICS[1],
-                                                'required': 'false'}}
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        host=[config.HOSTS[0]],
-                                        network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0],
-                                                   config.HOST_NICS[1]]):
-            raise NetworkException("Cannot create and attach network")
 
-    @istest
-    @tcms(5848, 197742)
-    def check_mtu_values_in_files(self):
-        """
-        Check physical and logical levels for bridged vlan networks
-        """
-        logger.info("Checking physical and logical layers on interfaces")
-        logger.info("Checking logical layer of bridgless tagged network %s "
-                    "with vlan %s", config.VLAN_NETWORKS[0],
-                    config.J_VLAN_ID[0])
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=config.MTU[1],
-                                 physical_layer=False,
-                                 network=config.VLAN_NETWORKS[0],
-                                 nic=config.HOST_NICS[1],
-                                 vlan=config.J_VLAN_ID[0]),
-                        "MTU on host %s should be %s and it is "
-                        "not" % (config.HOSTS[0], config.MTU[1]))
-        logger.info("Checking logical layer of bridgless tagged network %s "
-                    "with vlan %s", config.VLAN_NETWORKS[1],
-                    config.J_VLAN_ID[1])
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=config.MTU[0],
-                                 physical_layer=False,
-                                 network=config.VLAN_NETWORKS[1],
-                                 nic=config.HOST_NICS[1],
-                                 vlan=config.J_VLAN_ID[1]),
-                        "MTU on host %s should be %s and it is "
-                        "not" % (config.HOSTS[0], config.MTU[0]))
-        logger.info("Checking physical layer for bridgless tagged networks ")
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=config.MTU[0],
-                                 nic=config.HOST_NICS[1]),
-                        "MTU on host %s should be %s and it is "
-                        "not" % (config.HOSTS[0], config.MTU[0]))
+        local_dict = {
+            None: {
+                "nic": config.BOND[0], "mode": "1",
+                "slaves": [2, 3]},
+            config.VLAN_NETWORKS[0]: {
+                "nic": config.BOND[0],
+                "mtu": config.MTU[1],
+                "vlan_id": config.VLAN_ID[0],
+                "required": False
+            }
+        }
+        logger.info("Sending SN request to %s", HOST_NAME0)
+        if not hl_networks.createAndAttachNetworkSN(
+            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
+            host=config.VDS_HOSTS[0], network_dict=local_dict,
+            auto_nics=[0]
+        ):
+            raise NetworkException(
+                "Cannot create and attach network %s" %
+                config.VLAN_NETWORKS[0]
+            )
 
-    @classmethod
-    def teardown_class(cls):
+    @tcms(5848, 197212)
+    def test_bond_mode_change(self):
         """
-        Remove networks from the setup
+        Check physical and logical levels for networks with Jumbo frames
         """
-        logger.info("Starting the teardown_class")
-        if not removeNetFromSetup(host=[config.HOSTS[0]],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.VLAN_NETWORKS[0],
-                                           config.VLAN_NETWORKS[1]]):
-            raise NetworkException("Cannot remove network from setup")
+        # Checking logical and physical
+        helper.check_logical_physical_layer(
+            network=config.VLAN_NETWORKS[0], mtu=config.MTU[1],
+            bond=config.BOND[0], bond_nic1=HOST_NICS0[2],
+            bond_nic2=HOST_NICS0[3]
+        )
+        logger.info("Changing the bond mode to mode4")
+        rc, out = ll_hosts.genSNNic(
+            nic=config.BOND[0], network=config.VLAN_NETWORKS[0],
+            slaves=[HOST_NICS0[2], HOST_NICS0[3]], mode="4")
 
-########################################################################
-
-########################################################################
+        if not rc:
+            raise NetworkException("Cannot generate network object")
+        logger.info(
+            "Sending Setup Networks request to host %s", HOST_NAME0
+        )
+        ll_hosts.sendSNRequest(
+            positive=True, host=HOST_NAME0,
+            nics=[out["host_nic"]], auto_nics=[HOST_NICS0[0]],
+            check_connectivity=True,
+            connectivity_timeout=config.CONNECT_TIMEOUT, force=False
+        )
+        # Checking logical and physical
+        helper.check_logical_physical_layer(
+            network=config.VLAN_NETWORKS[0],
+            mtu=config.MTU[1], bond=config.BOND[0], bond_nic1=HOST_NICS0[2],
+            bond_nic2=HOST_NICS0[3]
+        )
 
 
 @attr(tier=1)
-class JumboFramesCase05(TestCase):
+class TestJumboFramesCase04(TestJumboFramesTestCaseBase):
     """
-    Positive: Creates bridged vlan network over bond on host
-              Checks that increasing bond's size doesn't effect
+    Positive: Creates 2 bridged VLAN network and check the network files.
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create bridged VLAN networks with MTU on DC/Cluster/Host
+        """
+        local_dict = {
+            config.VLAN_NETWORKS[0]: {
+                "vlan_id": config.VLAN_ID[0],
+                "mtu": config.MTU[1],
+                "nic": 1,
+                "required": False
+            },
+            config.VLAN_NETWORKS[1]: {
+                "vlan_id": config.VLAN_ID[1],
+                "mtu": config.MTU[0],
+                "nic": 1,
+                "required": False
+            }
+        }
+        logger.info("Sending SN request to %s", HOST_NAME0)
+        if not hl_networks.createAndAttachNetworkSN(
+            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
+            host=config.VDS_HOSTS[0], network_dict=local_dict,
+            auto_nics=[0, 1]
+        ):
+            raise NetworkException(
+                "Cannot create and attach networks %s and %s " % (
+                    config.VLAN_NETWORKS[0], config.VLAN_NETWORKS[1]
+                )
+            )
+
+    @tcms(5848, 197742)
+    def test_check_mtu_values_in_files(self):
+        """
+        Check physical and logical levels for bridged VLAN networks
+        """
+        # Checking logical
+        helper.check_logical_physical_layer(
+            nic=HOST_NICS0[1], network=config.VLAN_NETWORKS[0],
+            mtu=config.MTU[1], vlan=config.VLAN_ID[0], physical=False
+        )
+        # Checking logical and physical
+        helper.check_logical_physical_layer(
+            nic=HOST_NICS0[1], network=config.VLAN_NETWORKS[1],
+            mtu=config.MTU[0], vlan=config.VLAN_ID[1]
+        )
+
+
+@attr(tier=1)
+class TestJumboFramesCase05(TestJumboFramesTestCaseBase):
+    """
+    Positive: Creates bridged VLAN network over bond on host
+              Checks that increasing bond size doesn't effect
               the parameters in ifcfg- and sys files
     """
-    __test__ = len(config.HOST_NICS) > 3
+    __test__ = True
 
     @classmethod
     def setup_class(cls):
         """
         Create bridged networks with MTU on DC/Cluster/Hosts over bond
         """
-        local_dict = {None: {'nic': config.BOND[0],
-                             'mode': 1,
-                             'slaves': [config.HOST_NICS[2],
-                                        config.HOST_NICS[3]]},
-                      config.VLAN_NETWORKS[0]: {'nic': config.BOND[0],
-                                                'mtu': config.MTU[1],
-                                                'vlan_id': config.J_VLAN_ID[0],
-                                                'required': 'false'}}
+        local_dict = {
+            None: {
+                "nic": config.BOND[0],
+                "mode": "1",
+                "slaves": [2, 3]},
+            config.VLAN_NETWORKS[0]: {
+                "nic": config.BOND[0],
+                "mtu": config.MTU[1],
+                "vlan_id": config.VLAN_ID[0],
+                "required": False
+            }
+        }
+        logger.info("Sending SN request to %s", HOST_NAME0)
+        if not hl_networks.createAndAttachNetworkSN(
+            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
+            host=config.VDS_HOSTS[0], network_dict=local_dict,
+            auto_nics=[0]
+        ):
+            raise NetworkException(
+                "Cannot create and attach network %s" % config.VLAN_NETWORKS[0]
+            )
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS[0],
-                                        network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0]]):
-            raise NetworkException("Cannot create and attach network")
-
-    @istest
     @tcms(5848, 199741)
-    def increasing_bond_nics(self):
+    def test_increasing_bond_nics(self):
         """
         Check physical and logical levels for networks with Jumbo frames
         """
-
-        logger.info("Checking physical and logical layers on bond")
-        logger.info("Checking logical layer of %s over bond with vlan %s",
-                    config.VLAN_NETWORKS[0], config.J_VLAN_ID[0])
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=config.MTU[1],
-                                 physical_layer=False,
-                                 network=config.VLAN_NETWORKS[0],
-                                 bond=config.BOND[0],
-                                 bridged=False),
-                        "MTU on host %s should be %s and it is "
-                        "not" % (config.HOSTS[0], config.MTU[1]))
-        logger.info("Checking physical layer of %s over bond with vlan %s",
-                    config.VLAN_NETWORKS[0], config.J_VLAN_ID[0])
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=config.MTU[1],
-                                 bond=config.BOND[0],
-                                 bond_nic1=config.HOST_NICS[2],
-                                 bond_nic2=config.HOST_NICS[3],
-                                 bridged=False),
-                        "MTU on host %s should be %s and it is "
-                        "not" % (config.HOSTS[0], config.MTU[1]))
-
+        # Checking logical and physical
+        helper.check_logical_physical_layer(
+            bond=config.BOND[0], network=config.VLAN_NETWORKS[0],
+            mtu=config.MTU[1], bond_nic1=HOST_NICS0[2], bond_nic2=HOST_NICS0[3]
+        )
         logger.info("Changing the bond to consist of 3 NICs")
-        rc, out = genSNNic(nic=config.BOND[0],
-                           network=config.VLAN_NETWORKS[0],
-                           slaves=[config.HOST_NICS[1], config.HOST_NICS[2],
-                                   config.HOST_NICS[3]])
+        rc, out = ll_hosts.genSNNic(
+            nic=config.BOND[0], network=config.VLAN_NETWORKS[0],
+            slaves=[HOST_NICS0[1], HOST_NICS0[2], HOST_NICS0[3]]
+        )
         if not rc:
             raise NetworkException("Cannot generate network object")
 
-        sendSNRequest(positive=True, host=config.HOSTS[0],
-                      nics=[out['host_nic']],
-                      auto_nics=[config.HOST_NICS[0]],
-                      check_connectivity='true',
-                      connectivity_timeout=config.CONNECT_TIMEOUT,
-                      force='false')
+        logger.info("Sending SN request to %s", HOST_NAME0)
+        ll_hosts.sendSNRequest(
+            positive=True, host=HOST_NAME0,
+            nics=[out["host_nic"]], auto_nics=[HOST_NICS0[0]],
+            check_connectivity=True,
+            connectivity_timeout=config.CONNECT_TIMEOUT, force=False
+        )
 
-        logger.info("Checking layers after increasing the number "
-                    "of bond's nics")
-        logger.info("Checking logical layer after increasing the "
-                    "number of bond's nics")
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=config.MTU[1],
-                                 physical_layer=False,
-                                 network=config.VLAN_NETWORKS[0],
-                                 bond=config.BOND[0],
-                                 bridged=False),
-                        "MTU on host %s should be %s and it is "
-                        "not" % (config.HOSTS[0], config.MTU[1]))
-        logger.info("Checking physical layer after extending the "
-                    "number of bond's nics")
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=config.MTU[1],
-                                 bond=config.BOND[0],
-                                 bond_nic1=config.HOST_NICS[2],
-                                 bond_nic2=config.HOST_NICS[3],
-                                 bridged=False),
-                        "MTU on host %s should be %s and it is "
-                        "not" % (config.HOSTS[0], config.MTU[1]))
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove networks from the setup
-        """
-        logger.info("Starting the teardown_class")
-        if not removeNetFromSetup(host=config.HOSTS[0],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.VLAN_NETWORKS[0]]):
-            raise NetworkException("Cannot remove networks from setup")
-
-########################################################################
-
-########################################################################
+        # Checking logical and physical
+        helper.check_logical_physical_layer(
+            bond=config.BOND[0], network=config.VLAN_NETWORKS[0],
+            mtu=config.MTU[1], bond_nic1=HOST_NICS0[2], bond_nic2=HOST_NICS0[3]
+        )
 
 
 @attr(tier=1)
-class JumboFramesCase06(TestCase):
+class TestJumboFramesCase06(TestJumboFramesTestCaseBase):
     """
-    Negative: 1. creates bond0 and attach vlan network with MTU 9000 to it.
+    Negative: 1. creates bond0 and attach VLAN network with MTU 9000 to it.
               2. attaches non_vm network with MTU 5000 to bond0.
     """
-    __test__ = len(config.HOST_NICS) > 3
+    __test__ = True
 
-    local_dict = {None: {'nic': config.BOND[0], 'mode': 1,
-                         'slaves': [config.HOST_NICS[2],
-                                    config.HOST_NICS[3]]},
-                  config.VLAN_NETWORKS[0]: {'nic': config.BOND[0],
-                                            'mtu': config.MTU[0],
-                                            'vlan_id': config.J_VLAN_ID[0],
-                                            'required': 'false'},
-                  config.NETWORKS[0]: {'nic': config.BOND[0],
-                                       'mtu': config.MTU[1],
-                                       'usages': '',
-                                       'required': 'false'}}
-
-    @classmethod
-    def setup_class(cls):
-        """
-        creates bond0 and attach network sw201 with MTU 9000 to it.
-        """
-
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        network_dict=cls.local_dict):
-            raise NetworkException("Cannot create and attach network")
-
-    @istest
     @tcms(5848, 199787)
-    def neg_add_networks_with_different_mtu(self):
+    def test_neg_add_networks_with_different_mtu(self):
         """
         Trying to add two networks with different MTU to the
         same interface when one is vm network and the other
         is non_vm - should fail
         """
+        local_dict = {
+            None: {
+                "nic": config.BOND[0], "mode": "1",
+                "slaves": [2, 3]},
+            config.VLAN_NETWORKS[0]: {
+                "nic": config.BOND[0],
+                "mtu": config.MTU[0],
+                "vlan_id": config.VLAN_ID[0],
+                "required": False},
+            config.NETWORKS[0]: {
+                "nic": config.BOND[0],
+                "mtu": config.MTU[1],
+                "usages": "",
+                "required": False
+            }
+        }
+        logger.info(
+            "Negative: Trying to add two networks with different MTU to the "
+            "same interface when one is vm network and the other is non_vm"
+        )
+        logger.info("Sending SN request to %s", HOST_NAME0)
+        if hl_networks.createAndAttachNetworkSN(
+            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
+            network_dict=local_dict, host=config.VDS_HOSTS[0], auto_nics=[0]
 
-        logger.info("Negative: Trying to add two networks with "
-                    "different MTU to the same interface when "
-                    "one is vm network and the other is non_vm")
-        net_obj = []
-        for net, net_param in self.local_dict.items():
-            address_list = net_param.get('address', [])
-            netmask_list = net_param.get('netmask', [])
-            gateway_list = net_param.get('gateway', [])
+        ):
+            raise NetworkException(
+                "Adding two networks with different MTU when one is vm network"
+                "and the other is non_vm was successful - Should have failed"
+            )
 
-            rc, out = genSNNic(nic=net_param['nic'],
-                               network=net,
-                               slaves=net_param.get('slaves', None),
-                               mode=net_param.get('mode', None),
-                               boot_protocol=net_param.get('bootproto', None),
-                               address=address_list.pop(0)
-                               if address_list else None,
-                               netmask=netmask_list.pop(0)
-                               if netmask_list else None,
-                               gateway=gateway_list.pop(0)
-                               if gateway_list else None)
 
-            if not rc:
-                logger.error("Cannot generate network object")
-                return False
-            net_obj.append(out['host_nic'])
+@attr(tier=1)
+class TestJumboFramesCase07(TestJumboFramesTestCaseBase):
+    """
+    Positive: Creates 2 bridged VLAN networks and check traffic between VMs
+    over those networks
+    """
+    __test__ = True
+    ips = network_helper.create_random_ips(mask=24)
 
-        logger.info("Sending SN request to host %s" % config.HOSTS[0])
-        if not sendSNRequest(positive=False,
-                             host=config.HOSTS[0],
-                             nics=net_obj,
-                             auto_nics=[config.HOST_NICS[0]],
-                             check_connectivity='true',
-                             connectivity_timeout=config.CONNECT_TIMEOUT,
-                             force='false'):
-            logger.error("Adding two networks with different MTU when "
-                         "one is vm network and the other is non_vm "
-                         "was successful - Should have failed")
-            return True
-        return False
+    @classmethod
+    def setup_class(cls):
+        """
+        Create bridged networks with MTU on DC/Cluster/Hosts
+        """
+        local_dict = {
+            config.VLAN_NETWORKS[0]: {
+                "vlan_id": config.VLAN_ID[0],
+                "mtu": config.MTU[1],
+                "nic": 1,
+                "required": False},
+            config.VLAN_NETWORKS[1]: {
+                "vlan_id": config.VLAN_ID[1],
+                "mtu": config.MTU[0],
+                "nic": 1,
+                "required": False
+            }
+        }
+        logger.info("Sending SN request to %s, %s", HOST_NAME0, HOST_NAME1)
+        if not hl_networks.createAndAttachNetworkSN(
+                data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
+                host=config.VDS_HOSTS[:2], network_dict=local_dict,
+                auto_nics=[0, 1]
+        ):
+            raise NetworkException(
+                "Cannot create and attach networks %s and %s" % (
+                    config.VLAN_NETWORKS[0], config.VLAN_NETWORKS[1]
+                    )
+
+                )
+        # Adding vnics to vms
+        helper.add_vnics_to_vms(ips=cls.ips, mtu=str(config.MTU[1]))
+
+    @tcms(5848, 200118)
+    def test_check_traffic_on_vms(self):
+        """
+        Send ping between 2 VMs
+        """
+        logger.info(
+            "Checking ICMP traffic from VM %s (IP %s) to VM %s (IP %s) via "
+            "network %s",
+            config.VM_NAME[0], self.ips[0], config.VM_NAME[1], self.ips[1],
+            config.VLAN_NETWORKS[0]
+        )
+        if not hl_networks.checkICMPConnectivity(
+            host=config.VM_IP_LIST[0], user=config.HOSTS_USER,
+            password=config.HOSTS_PW, ip=self.ips[1],
+            max_counter=config.TRAFFIC_TIMEOUT,
+            packet_size=config.SEND_MTU[0]
+        ):
+            raise NetworkException(
+                "Checking ICMP traffic from VM %s (IP %s) to VM %s (IP %s) via"
+                " network %s failed" % (
+                    config.VM_NAME[0], self.ips[0], config.VM_NAME[1],
+                    self.ips[1], config.VLAN_NETWORKS[0]
+                )
+            )
+        logger.info("Traffic between the VMs succeed")
+        logger.info(
+            "Removing network %s from the hosts", config.VLAN_NETWORKS[1]
+        )
+        host_idx = 0
+        for host_name in HOST_NAME0, HOST_NAME1:
+            ll_hosts.sendSNRequest(
+                True, host=host_name, nics=[],
+                auto_nics=[
+                    config.VDS_HOSTS[host_idx].nics[0],
+                    config.VDS_HOSTS[host_idx].nics[1],
+                    "%s.%s" % (
+                        config.VDS_HOSTS[host_idx].nics[1],
+                        config.VLAN_ID[0]
+                    )
+                ],
+                check_connectivity=True, force=False,
+                connectivity_timeout=config.CONNECT_TIMEOUT,
+            )
+            host_idx += 1
+        logger.info(
+            "Checking if sending ICMP traffic on network %s succeed after "
+            "removal of %s network",
+            config.VLAN_NETWORKS[0], config.VLAN_NETWORKS[1]
+        )
+        if not hl_networks.checkICMPConnectivity(
+            host=config.VM_IP_LIST[0], user=config.HOSTS_USER,
+            password=config.HOSTS_PW, ip=self.ips[1],
+            max_counter=config.TRAFFIC_TIMEOUT,
+            packet_size=config.SEND_MTU[0]
+        ):
+            raise NetworkException("ICMP traffic check failed")
+
+        logger.info("Traffic between the VMs succeed")
+        for host in config.VDS_HOSTS[:2]:
+            host_nics = eval("HOST_NICS%d" % config.VDS_HOSTS[:2].index(host))
+            # Checking logical and physical
+            helper.check_logical_physical_layer(
+                nic=host_nics[1], network=config.VLAN_NETWORKS[0],
+                mtu=config.MTU[1]
+            )
 
     @classmethod
     def teardown_class(cls):
         """
         Remove networks from the setup
         """
-        logger.info("Starting the teardown_class")
-        if not removeNetFromSetup(host=config.HOSTS[0],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.VLAN_NETWORKS[0],
-                                           config.NETWORKS[0]]):
-            raise NetworkException("Cannot remove networks from setup")
-
-########################################################################
-
-########################################################################
+        logger.info("Starting the teardown")
+        # Removing vnics from vms
+        helper.remove_vnics_from_vms()
+        logger.info("Call TestJumboFramesTestCaseBase teardown")
+        super(TestJumboFramesCase07, cls).teardown_class()
 
 
 @attr(tier=1)
-class JumboFramesCase07(TestCase):
+class TestJumboFramesCase08(TestJumboFramesTestCaseBase):
     """
-    Positive: Creates 2 bridged vlan network and check the traffic between VMs
+    Positive: Creates bridged VLAN network over bond on Host with MTU
+    5000, then, add another network with MTU 1500 and checking that
+    MTU on NICs are configured correctly on the logical and physical layers.
     """
+    # TODO: modify the test for RHEV 3.6 according to
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1193544
+
     __test__ = True
 
     @classmethod
     def setup_class(cls):
         """
-        Create bridged networks with MTU on DC/Cluster/Hosts
+        Create bridged VLAN network with MTU on DC/Cluster/Host over bond
         """
+        local_dict = {
+            None: {
+                "nic": config.BOND[1], "mode": "1",
+                "slaves": [2, 3]},
+            config.VLAN_NETWORKS[0]: {
+                "nic": config.BOND[1],
+                "mtu": config.MTU[1],
+                "vlan_id": config.VLAN_ID[0],
+                "required": False
+            }
+        }
+        logger.info("Sending SN request to %s", HOST_NAME0)
+        if not hl_networks.createAndAttachNetworkSN(
+            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
+            host=config.VDS_HOSTS[0], network_dict=local_dict,
+            auto_nics=[0]
+        ):
+            raise NetworkException(
+                "Cannot create and attach network %s" %
+                config.VLAN_NETWORKS[0],
+            )
 
-        local_dict = {config.VLAN_NETWORKS[0]: {'vlan_id': config.J_VLAN_ID[0],
-                                                'mtu': config.MTU[1],
-                                                'nic': config.HOST_NICS[1],
-                                                'required': 'false'},
-                      config.VLAN_NETWORKS[1]: {'vlan_id': config.J_VLAN_ID[1],
-                                                'mtu': config.MTU[0],
-                                                'nic': config.HOST_NICS[1],
-                                                'required': 'false'}}
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        host=[config.HOSTS[0],
-                                              config.HOSTS[1]],
-                                        network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0],
-                                                   config.HOST_NICS[1]]):
-            raise NetworkException("Cannot create and attach network")
-
-        for i in range(2):
-            logger.info("Adding %s with MTU %s as %s on %s",
-                        config.VLAN_NETWORKS[0], config.MTU[1],
-                        config.NIC_NAME[1],
-                        config.VM_NAME[i])
-            if not addNic(positive=True,
-                          vm=config.VM_NAME[i],
-                          name=config.NIC_NAME[1],
-                          network=config.VLAN_NETWORKS[0]):
-                raise VMException("Cannot add vnic to VM")
-
-            vm_ip = waitForIP(config.VM_NAME[i])[1]['ip']
-            if not configureTempMTU(host=vm_ip,
-                                    user=config.HOSTS_USER,
-                                    password=config.HOSTS_PW,
-                                    mtu=str(config.MTU[1])):
-                raise VMException("Unable to configure vm's nic with MTU %s" %
-                                  config.MTU[1])
-
-    @istest
-    @tcms(5848, 200118)
-    def check_traffic_on_vms(self):
-        """
-        Send ping between 2 VMS
-        """
-        ip_list = []
-        for i in range(2):
-            ip_list.append(waitForIP(config.VM_NAME[i])[1]['ip'])
-
-        logger.info("Configuring eth1 with static IP on both VMs ")
-        for i in range(2):
-            if not configureTempStaticIp(host=ip_list[i],
-                                         user=config.HOSTS_USER,
-                                         password=config.HOSTS_PW,
-                                         ip="%s%d" % (config.INTER_SUBNET,
-                                                      i + 1),
-                                         nic=config.VM_NICS[1]):
-                logger.error("Couldn't configure temp ip on VMs")
-                return False
-
-        logger.info("Checking if sending ICMP traffic on %s "
-                    "succeed", config.VLAN_NETWORKS[0])
-        if not checkICMPConnectivity(host=ip_list[0],
-                                     user=config.HOSTS_USER,
-                                     password=config.HOSTS_PW,
-                                     ip=config.IPS[1],
-                                     max_counter=config.TRAFFIC_TIMEOUT,
-                                     packet_size=config.SEND_MTU[0]):
-            raise VMException("Traffic between the VMs failed")
-        logger.info("Traffic between the VMs succeed")
-
-        logger.info("Removing %s from the hosts", config.VLAN_NETWORKS[1])
-        for host_idx in range(len(config.HOSTS)):
-            sendSNRequest(True, host=config.HOSTS[host_idx],
-                          nics=[],
-                          auto_nics=[config.HOST_NICS[0],
-                                     config.HOST_NICS[1],
-                                     "%s.%s" % (config.HOST_NICS[1],
-                                                config.J_VLAN_ID[0])],
-                          check_connectivity='true',
-                          connectivity_timeout=config.CONNECT_TIMEOUT,
-                          force='false')
-
-        logger.info("Checking if sending ICMP traffic on network %s "
-                    "succeed after removal of %s network",
-                    config.VLAN_NETWORKS[0], config.VLAN_NETWORKS[1])
-        if not checkICMPConnectivity(host=ip_list[0],
-                                     user=config.HOSTS_USER,
-                                     password=config.HOSTS_PW,
-                                     ip=config.IPS[1],
-                                     max_counter=config.TRAFFIC_TIMEOUT,
-                                     packet_size=config.SEND_MTU[0]):
-            raise VMException("Traffic between the VMs failed")
-        logger.info("Traffic between the VMs succeed")
-
-        for host_idx in range(len(config.HOSTS)):
-            logger.info("Checking logical layer of bridged vlan "
-                        "network %s on host %s"
-                        % (config.VLAN_NETWORKS[0], config.HOSTS[host_idx]))
-            self.assertTrue(checkMTU(host=config.HOSTS[host_idx],
-                                     user=config.HOSTS_USER,
-                                     password=config.HOSTS_PW,
-                                     mtu=config.MTU[1],
-                                     physical_layer=False,
-                                     network=config.VLAN_NETWORKS[0],
-                                     nic=config.HOST_NICS[1]))
-            logger.info("Checking physical layer of bridged vlan "
-                        "network %s on host %s"
-                        % (config.VLAN_NETWORKS[0], config.HOSTS[host_idx]))
-
-            self.assertTrue(checkMTU(host=config.HOSTS[host_idx],
-                                     user=config.HOSTS_USER,
-                                     password=config.HOSTS_PW,
-                                     mtu=config.MTU[1],
-                                     nic=config.HOST_NICS[1]))
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove networks from the setup
-        """
-        logger.info("Starting the teardown")
-        for i in range(2):
-            logger.info("Unpluging %s at %s" % (config.NIC_NAME[1],
-                                                config.VM_NAME[i]))
-            if not updateNic(positive=True,
-                             vm=config.VM_NAME[i],
-                             nic=config.NIC_NAME[1],
-                             plugged=False):
-                logger.error("Unplug %s failed", config.NIC_NAME[1])
-
-            logger.info("Removing %s from %s" % (config.NIC_NAME[1],
-                                                 config.VM_NAME[i]))
-            if not removeNic(positive=True,
-                             vm=config.VM_NAME[i],
-                             nic=config.NIC_NAME[1]):
-                raise VMException("Cannot remove VNIC from %s"
-                                  % (config.VM_NAME[i]))
-
-        if not removeNetFromSetup(host=config.HOSTS[0],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.VLAN_NETWORKS[0],
-                                           config.VLAN_NETWORKS[1]]):
-            raise NetworkException("Cannot remove networks from setup")
-
-########################################################################
-
-########################################################################
-
-
-@attr(tier=1)
-class JumboFramesCase08(TestCase):
-    """
-    Negative: Creates bond0 and attach network with MTU 9000 and
-    vlan 201 to it, then attaching a non_vm network with MTU 5000
-    to bond0.
-    """
-    __test__ = len(config.HOST_NICS) > 3
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create bridged networks with MTU on DC/Cluster/Hosts
-        """
-
-        local_dict = {None: {'nic': config.BOND[0], 'mode': 1,
-                             'slaves': [config.HOST_NICS[2],
-                                        config.HOST_NICS[3]]},
-                      config.VLAN_NETWORKS[0]: {'nic': config.BOND[0],
-                                                'mtu': config.MTU[0],
-                                                'vlan_id': config.J_VLAN_ID[0],
-                                                'required': 'false'}}
-        logger.info("Creating %s at DC and Cluster", config.VLAN_NETWORKS[0])
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        host=[config.HOSTS[0]],
-                                        network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0]]):
-            raise NetworkException("Cannot create and attach network")
-
-    @istest
-    @tcms(5848, 199787)
-    def add_non_vm_network_with_lower_mtu(self):
-        """
-        Negative: Adding a non vm network with mtu 5000 on the bond.
-        Should fail because non vm network must be the highest
-        """
-        new_network = {config.NETWORKS[1]: {'mtu': config.MTU[1],
-                                            'nic': config.BOND[0],
-                                            'required': 'false',
-                                            'usages': ''}}
-        logger.info("Creating %s at DC and Cluster", config.VLAN_NETWORKS[1])
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        network_dict=new_network):
-            raise NetworkException("Cannot create network")
-
-        local_dict = {None: {'nic': config.BOND[0], 'mode': 1,
-                             'slaves': [config.HOST_NICS[2],
-                                        config.HOST_NICS[3]]},
-                      config.NETWORKS[1]: {'mtu': config.MTU[1],
-                                           'nic': config.BOND[0],
-                                           'required': 'false',
-                                           'usages': ''}}
-
-        logger.info("Trying to attach the non vm network to the host "
-                    "with the second network. Should fail since non "
-                    "vm network has lower MTU")
-        if createAndAttachNetworkSN(
-                host=config.HOSTS[0], network_dict=local_dict,
-                auto_nics=[config.HOST_NICS[0],
-                           "%s.%s" % (config.BOND[0], config.J_VLAN_ID[0])]):
-            raise NetworkException("Non vm network was successfully attached "
-                                   "when it shouldn't have")
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove networks from the setup
-        """
-        logger.info("Starting the teardown")
-        if not removeNetFromSetup(host=config.HOSTS[0],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.VLAN_NETWORKS[0],
-                                           config.NETWORKS[1]]):
-            raise NetworkException("Cannot remove networks from setup")
-
-
-########################################################################
-
-########################################################################
-
-
-@attr(tier=1)
-class JumboFramesCase09(TestCase):
-    """
-    Positive: Creates bridged vlan network over bond on Host with MTU
-    5000, then, add another network with MTU 1500 and checking that
-    MTU on nics are configured correctly on the logical and physical layers.
-    """
-    __test__ = len(config.HOST_NICS) > 3
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create bridged vlan network with MTU on DC/Cluster/Host over bond
-        """
-        local_dict = {None: {'nic': config.BOND[1], 'mode': 1,
-                             'slaves': [config.HOST_NICS[2],
-                                        config.HOST_NICS[3]]},
-                      config.VLAN_NETWORKS[0]: {'nic': config.BOND[1],
-                                                'mtu': config.MTU[1],
-                                                'vlan_id': config.J_VLAN_ID[0],
-                                                'required': 'false'}}
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        host=[config.HOSTS[0]],
-                                        network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0]]):
-            raise NetworkException("Cannot create and attach network")
-
-    @istest
     @tcms(5848, 199741)
-    def check_mtu_with_two_different_mtu_networks(self):
+    def test_check_mtu_with_two_different_mtu_networks(self):
         """
         Check physical and logical levels for networks with Jumbo frames
         """
-        logger.info("Checking logical layer of %s over bond with vlan %s",
-                    config.VLAN_NETWORKS[0], config.J_VLAN_ID[0])
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=config.MTU[1],
-                                 physical_layer=False,
-                                 network=config.VLAN_NETWORKS[0],
-                                 bond=config.BOND[1],
-                                 bridged=False),
-                        "MTU on host %s should be %s and it is "
-                        "not" % (config.HOSTS[0], config.MTU[1]))
+        # Checking logical and physical
+        helper.check_logical_physical_layer(
+            bond=config.BOND[1], network=config.VLAN_NETWORKS[0],
+            mtu=config.MTU[1], bond_nic1=HOST_NICS0[2], bond_nic2=HOST_NICS0[3]
+        )
+        new_network = {
+            config.VLAN_NETWORKS[1]: {
+                "nic": config.BOND[1],
+                "required": False,
+                "vlan_id": config.VLAN_ID[1]
+            }
+        }
 
-        logger.info("Checking physical layer of %s over bond with vlan %s",
-                    config.VLAN_NETWORKS[0], config.J_VLAN_ID[0])
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=config.MTU[1],
-                                 bond=config.BOND[1],
-                                 bond_nic1=config.HOST_NICS[2],
-                                 bond_nic2=config.HOST_NICS[3],
-                                 bridged=False),
-                        "MTU on host %s should be %s and it is "
-                        "not" % (config.HOSTS[0], config.MTU[1]))
+        logger.info(
+            "Adding %s to DC, Cluster and Host", config.VLAN_NETWORKS[1]
+        )
+        config.VDS_HOSTS[0].nics.append(config.BOND[1])
+        if not hl_networks.createAndAttachNetworkSN(
+            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
+            host=config.VDS_HOSTS[0], network_dict=new_network,
+            auto_nics=[0, -1], vlan_auto_nics={config.VLAN_ID[0]: -1}
+        ):
+            raise NetworkException(
+                "Cannot create & add the following %s" % new_network
+            )
+        config.VDS_HOSTS[0].nics.pop(-1)
 
-        new_network = {None: {'nic': config.BOND[1], 'mode': 1,
-                              'slaves': [config.HOST_NICS[2],
-                                         config.HOST_NICS[3]]},
-                       config.VLAN_NETWORKS[1]: {
-                           'nic': config.BOND[1], 'required': 'false',
-                           'vlan_id': config.J_VLAN_ID[1]}}
-
-        logger.info("Adding %s to DC, Cluster and Host",
-                    config.VLAN_NETWORKS[1])
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS[0],
-                                        network_dict=new_network,
-                                        auto_nics=[
-                                            config.HOST_NICS[0],
-                                            "%s.%s" % (config.BOND[1],
-                                                       config.J_VLAN_ID[0])]):
-            raise NetworkException("Cannot create & add network")
-
-        logger.info("Checking logical & physical layer after adding "
-                    "another network")
-        logger.info("Checking logical layer for network %s",
-                    config.VLAN_NETWORKS[0])
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=config.MTU[1],
-                                 physical_layer=False,
-                                 network=config.VLAN_NETWORKS[0],
-                                 bond=config.BOND[1],
-                                 bridged=False),
-                        "MTU on host %s should be %s and it is "
-                        "not" % (config.HOSTS[0], config.MTU[1]))
-
-        logger.info("Checking logical layer for network %s",
-                    config.VLAN_NETWORKS[1])
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=config.MTU[3],
-                                 physical_layer=False,
-                                 network=config.VLAN_NETWORKS[1],
-                                 bond=config.BOND[1],
-                                 bridged=False),
-                        "MTU on host %s should be %s and it is "
-                        "not" % (config.HOSTS[0], config.MTU[3]))
-
-        logger.info("Checking physical layer for network %s",
-                    config.VLAN_NETWORKS[0])
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=config.MTU[1],
-                                 bond=config.BOND[1],
-                                 bond_nic1=config.HOST_NICS[2],
-                                 bond_nic2=config.HOST_NICS[3],
-                                 bridged=False),
-                        "MTU on host %s should be %s and it is "
-                        "not" % (config.HOSTS[0], config.MTU[1]))
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove networks from the setup
-        """
-        logger.info("Starting the teardown_class")
-        if not removeNetFromSetup(host=[config.HOSTS[0]],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.VLAN_NETWORKS[0],
-                                           config.VLAN_NETWORKS[1]]):
-            raise NetworkException("Cannot remove networks from setup")
-
-########################################################################
-
-########################################################################
+        # Checking logical and physical
+        helper.check_logical_physical_layer(
+            bond=config.BOND[1], network=config.VLAN_NETWORKS[0],
+            mtu=config.MTU[1], bond_nic1=HOST_NICS0[2], bond_nic2=HOST_NICS0[3]
+        )
+        # Checking logical
+        helper.check_logical_physical_layer(
+            bond=config.BOND[1], network=config.VLAN_NETWORKS[1],
+            mtu=config.MTU[3], physical=False
+        )
 
 
 @attr(tier=1)
-class JumboFramesCase10(TestCase):
+class TestJumboFramesCase09(TestJumboFramesTestCaseBase):
     """
-    In the host, changing eth1's MTU to 2000 (manually), then adding logical
-    network without MTU on eth1, and finally, checking that eth1's MTU is
-    still 2000
+    In the host, changing eth1 MTU to 2000 (using linux command), then adding
+    logical network without MTU on eth1, and finally, checking that eth1 MTU is
+    changed to 1500
     """
+    # TODO: modify the test for RHEV 3.6 according to
+    # https://bugzilla.redhat.com/show_bug.cgi?id=1193544
+
     __test__ = True
 
     @classmethod
     def setup_class(cls):
         """
-        For the host, changing eth1's MTU to 2000, then adding logical network
-        without MTU on eth1
+        For the host, changing eth1"s MTU to 2000, then adding logical network
+        without MTU on eth1, expected MTU is 1500
         """
+        if not utils.configure_temp_mtu(
+            host=config.VDS_HOSTS[0].ip, user=config.HOSTS_USER,
+            password=config.HOSTS_PW, mtu=str(config.MTU[2]), nic=HOST_NICS0[1]
+        ):
+            raise NetworkException(
+                "Unable to configure host's %s NIC with MTU %s" % (
+                    config.VDS_HOSTS[0].ip, config.MTU[2],
+                )
+            )
+        local_dict = {
+            config.VLAN_NETWORKS[0]: {
+                "vlan_id": config.VLAN_ID[0],
+                "nic": 1,
+                "required": False
+            }
+        }
+        logger.info("Sending SN request to %s", HOST_NAME0)
+        if not hl_networks.createAndAttachNetworkSN(
+            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
+            host=config.VDS_HOSTS[0], network_dict=local_dict,
+            auto_nics=[0, 1]
+        ):
+            raise NetworkException(
+                "Cannot create and attach network %s on host %s" % (
+                    config.VLAN_NETWORKS[0], config.VDS_HOSTS[0].ip
+                )
+            )
 
-        if not configureTempMTU(host=config.HOSTS[0],
-                                user=config.HOSTS_USER,
-                                password=config.HOSTS_PW,
-                                mtu=str(config.MTU[2])):
-            raise NetworkException("Unable to configure host's nic "
-                                   "with MTU %s" % config.MTU[2])
-
-        local_dict = {config.VLAN_NETWORKS[0]: {'vlan_id': config.J_VLAN_ID[0],
-                                                'nic': config.HOST_NICS[1],
-                                                'required': 'false'}}
-
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        host=[config.HOSTS[0]],
-                                        network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0],
-                                                   config.HOST_NICS[1]]):
-            raise NetworkException("Cannot create and attach network")
-
-    @istest
     @tcms(5848, 167549)
-    def check_mtu_pre_configured(self):
+    def test_check_mtu_pre_configured(self):
         """
-        checking that eth1's MTU is still 2000
+        checking that eth1"s MTU is changed to 1500
         """
 
-        logger.info("Checking if %s is configured correctly",
-                    config.HOST_NICS[1])
-        self.assertTrue(checkConfiguredMTU(host=config.HOSTS[0],
-                                           user=config.HOSTS_USER,
-                                           password=config.HOSTS_PW,
-                                           mtu=config.MTU[2],
-                                           inter_or_net=config.HOST_NICS[1]))
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove networks from the setup
-        """
-        logger.info("Starting the teardown_class")
-
-        logger.info("Restoring %s's MTU to %s", config.HOST_NICS[1],
-                    config.MTU[3])
-        if not configureTempMTU(host=config.HOSTS[0],
-                                user=config.HOSTS_USER,
-                                password=config.HOSTS_PW,
-                                mtu=str(config.MTU[3])):
-            raise VMException("Unable to configure host's nic "
-                              "with MTU %s" % config.MTU[3])
-
-        logger.info("Removing networks from the system")
-        if not removeNetFromSetup(host=[config.HOSTS[0]],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.VLAN_NETWORKS[0]]):
-            raise NetworkException("Cannot remove networks from setup")
-
-########################################################################
-
-########################################################################
+        logger.info(
+            "Checking if %s is configured correctly with MTU %s",
+            HOST_NICS0[1], config.MTU[3]
+        )
+        if not utils.check_configured_mtu(
+            host=config.VDS_HOSTS[0].ip, user=config.HOSTS_USER,
+            password=config.HOSTS_PW, mtu=str(config.MTU[3]),
+            inter_or_net=HOST_NICS0[1]
+        ):
+            raise NetworkException(
+                "Interface %s does not have MTU %s configured" % (
+                    HOST_NICS0[1], config.MTU[3],
+                )
+            )
 
 
 @attr(tier=1)
-class JumboFramesCase11(TestCase):
+class TestJumboFramesCase10(TestJumboFramesTestCaseBase):
     """
-    Attach a network with MTU 9000 to the host on bond, checking that
-    mtu is configured correctly, adding the network to another host,
-    finally, checking traffic between the hosts with the MTU configured.
+    Attach a network with MTU 9000 to bond on two hosts, checking that
+    mtu is configured correctly and checking traffic between the hosts with
+    configured MTU.
     """
-    __test__ = len(config.HOST_NICS) > 3
+    __test__ = True
+    ips = network_helper.create_random_ips(mask=24)
 
     @classmethod
     def setup_class(cls):
         """
-        Adding a vlan network sw201 with MTU 9000 to the first host
+        Adding a VLAN network sw162 with MTU 9000 to two hosts
         """
-        local_dict = {None: {'nic': config.BOND[0], 'mode': 1,
-                             'slaves': [config.HOST_NICS[2],
-                                        config.HOST_NICS[3]]},
-                      config.VLAN_NETWORKS[0]: {'nic': config.BOND[0],
-                                                'mtu': config.MTU[0],
-                                                'bootproto': 'static',
-                                                'address': [config.IPS[0],
-                                                            config.IPS[1]],
-                                                'netmask': [config.NETMASK,
-                                                            config.NETMASK],
-                                                'gateway': [config.GATEWAY],
-                                                'vlan_id': config.J_VLAN_ID[0],
-                                                'required': 'false'}}
+        local_dict = {
+            None: {
+                "nic": config.BOND[0], "mode": "1",
+                "slaves": [2, 3]},
+            config.VLAN_NETWORKS[0]: {
+                "nic": config.BOND[0],
+                "mtu": config.MTU[0],
+                "bootproto": "static",
+                "address": [cls.ips[0],
+                            cls.ips[1]],
+                "netmask": [config.NETMASK,
+                            config.NETMASK],
+                "gateway": [config.GATEWAY],
+                "vlan_id": config.VLAN_ID[0],
+                "required": False
+            }
+        }
+        logger.info("Sending SN request to %s %s", HOST_NAME0, HOST_NAME1)
+        if not hl_networks.createAndAttachNetworkSN(
+            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
+            host=config.VDS_HOSTS[:2], network_dict=local_dict, auto_nics=[0]
+        ):
+            raise NetworkException(
+                "Cannot create and attach network %s" % config.VLAN_NETWORKS[0]
+            )
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        host=[config.HOSTS[0],
-                                              config.HOSTS[1]],
-                                        network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0]]):
-            raise NetworkException("Cannot create and attach network")
-
-    @istest
     @tcms(5848, 148668)
-    def check_configurations_and_traffic(self):
+    def test_check_configurations_and_traffic(self):
         """
         Checking configuration of the network on the first host, adding
         the network to the second host, finally, checking traffic between
         the two hosts.
         """
-        list_check_networks = [config.HOST_NICS[2],
-                               config.HOST_NICS[3],
-                               config.VLAN_NETWORKS[0],
-                               config.BOND[0],
-                               "%s.%s" % (config.BOND[0],
-                                          config.J_VLAN_ID[0])]
-        logger.info("Checking that networks and interfaces are "
-                    "configured correctly")
-
-        for element in list_check_networks:
-            logger.info("Checking ifconfig for %s on the host %s",
-                        element, config.HOSTS[0])
-            self.assertTrue(checkConfiguredMTU(host=config.HOSTS[0],
-                                               user=config.HOSTS_USER,
-                                               password=config.HOSTS_PW,
-                                               mtu=config.MTU[0],
-                                               inter_or_net=element))
-
-        logger.info("Checking physical layer of %s over bond with vlan %s",
-                    config.VLAN_NETWORKS[0], config.J_VLAN_ID[0])
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=config.MTU[0],
-                                 physical_layer=False,
-                                 network=config.VLAN_NETWORKS[0],
-                                 bond=config.BOND[0],
-                                 bridged=False),
-                        "MTU on host %s should be %s and it is "
-                        "not" % (config.HOSTS[0], config.MTU[0]))
-
-        logger.info("Checking logical layer of %s over bond with vlan %s",
-                    config.VLAN_NETWORKS[0], config.J_VLAN_ID[0])
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=config.MTU[0],
-                                 bond=config.BOND[0],
-                                 bond_nic1=config.HOST_NICS[2],
-                                 bond_nic2=config.HOST_NICS[3],
-                                 bridged=False),
-                        "MTU on host %s should be %s and it is "
-                        "not" % (config.HOSTS[0], config.MTU[1]))
-
+        # Checking logical and physical
+        helper.check_logical_physical_layer(
+            bond=config.BOND[0], network=config.VLAN_NETWORKS[0],
+            mtu=config.MTU[0], bond_nic1=HOST_NICS0[2], bond_nic2=HOST_NICS0[3]
+        )
         logger.info("Checking traffic between the two hosts")
-        if not checkICMPConnectivity(host=config.HOSTS[0],
-                                     user=config.HOSTS_USER,
-                                     password=config.HOSTS_PW,
-                                     ip=config.IPS[1],
-                                     max_counter=config.TRAFFIC_TIMEOUT,
-                                     packet_size=config.SEND_MTU[1]):
-            raise NetworkException("Traffic between the hosts failed")
+        if not hl_networks.checkICMPConnectivity(
+            host=config.VDS_HOSTS[0].ip, user=config.HOSTS_USER,
+            password=config.HOSTS_PW, ip=self.ips[1],
+            max_counter=config.TRAFFIC_TIMEOUT, packet_size=config.SEND_MTU[1]
+        ):
+            raise NetworkException("Traffic check between the hosts failed")
         logger.info("Traffic between the hosts succeed")
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove networks from the setup
-        """
-        logger.info("Starting the teardown_class")
-        logger.info("Removing networks from the system")
-        if not removeNetFromSetup(host=[config.HOSTS[0]],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.VLAN_NETWORKS[0]]):
-            raise NetworkException("Cannot remove networks from setup")
-
-########################################################################
-
-########################################################################
 
 
 @attr(tier=1)
-class JumboFramesCase12(TestCase):
+class TestJumboFramesCase11(TestJumboFramesTestCaseBase):
     """
     Positive: Checking connectivity between two VMs over bond with the
     MTU configured
     """
-    __test__ = len(config.HOST_NICS) > 3
+    __test__ = True
+    ips = network_helper.create_random_ips(mask=24)
 
     @classmethod
     def setup_class(cls):
         """
         Create a network over bond with MTU 9000 over DC/Cluster/Hosts
         """
-        local_dict = {None: {'nic': config.BOND[0], 'mode': 1,
-                             'slaves': [config.HOST_NICS[2],
-                                        config.HOST_NICS[3]]},
-                      config.VLAN_NETWORKS[0]: {'nic': config.BOND[0],
-                                                'mtu': config.MTU[0],
-                                                'vlan_id': config.J_VLAN_ID[0],
-                                                'required': 'false'}}
+        local_dict = {
+            None: {
+                "nic": config.BOND[0], "mode": "1",
+                "slaves": [2, 3]},
+            config.VLAN_NETWORKS[0]: {
+                "nic": config.BOND[0],
+                "mtu": config.MTU[0],
+                "vlan_id": config.VLAN_ID[0],
+                "required": False
+            }
+        }
+        logger.info("Sending SN request to %s %s", HOST_NAME0, HOST_NAME1)
+        if not hl_networks.createAndAttachNetworkSN(
+            data_center=config.DC_NAME[0],
+            cluster=config.CLUSTER_NAME[0],
+            host=config.VDS_HOSTS[:2],
+            network_dict=local_dict,
+            auto_nics=[0]
+        ):
+            raise NetworkException(
+                "Cannot create and attach network %s" %
+                config.VLAN_NETWORKS[0]
+            )
+        # Adding vnics to vms
+        helper.add_vnics_to_vms(ips=cls.ips, mtu=str(config.MTU[0]))
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        host=[config.HOSTS[0],
-                                              config.HOSTS[1]],
-                                        network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0]]):
-            raise NetworkException("Cannot create and attach network")
-
-        for i in range(2):
-            logger.info("Adding %s as %s to %s",
-                        config.VLAN_NETWORKS[0], config.NIC_NAME[1],
-                        config.VM_NAME[i])
-            if not addNic(positive=True,
-                          vm=config.VM_NAME[i],
-                          name=config.NIC_NAME[1],
-                          network=config.VLAN_NETWORKS[0]):
-                raise VMException("Cannot add vnic to VM")
-
-            vm_ip = waitForIP(config.VM_NAME[i])[1]['ip']
-            if not configureTempMTU(host=vm_ip,
-                                    user=config.HOSTS_USER,
-                                    password=config.HOSTS_PW,
-                                    mtu=str(config.MTU[0])):
-                raise VMException("Unable to configure vm's nic with MTU %s" %
-                                  config.MTU[0])
-
-    @istest
     @tcms(5848, 325531)
-    def check_traffic_on_vm_over_bond(self):
+    def test_check_traffic_on_vm_over_bond(self):
         """
         Send ping with MTU 8500 between the two VMS
         """
-        ip_list = []
-        for i in range(2):
-            ip_list.append(waitForIP(config.VM_NAME[i])[1]['ip'])
-
-        logger.info("Configuring %s with static IP on both VMs ",
-                    config.VM_NICS[1])
-        for i in range(2):
-            if not configureTempStaticIp(host=ip_list[i],
-                                         user=config.HOSTS_USER,
-                                         password=config.HOSTS_PW,
-                                         ip="%s%d" % (config.INTER_SUBNET,
-                                                      i + 1),
-                                         nic=config.VM_NICS[1]):
-                logger.error("Couldn't configure temp ip on VMs")
-                return False
-
-        logger.info("Checking that sending ICMP traffic on %s "
-                    "succeeds", config.VLAN_NETWORKS[0])
-        if not checkICMPConnectivity(host=ip_list[0],
-                                     user=config.HOSTS_USER,
-                                     password=config.HOSTS_PW,
-                                     ip=config.IPS[1],
-                                     max_counter=config.TRAFFIC_TIMEOUT,
-                                     packet_size=config.SEND_MTU[1]):
+        logger.info(
+            "Checking that sending ICMP traffic on %s succeeds",
+            config.VLAN_NETWORKS[0]
+        )
+        if not hl_networks.checkICMPConnectivity(
+            host=config.VM_IP_LIST[0],
+            user=config.HOSTS_USER,
+            password=config.HOSTS_PW,
+            ip=self.ips[1],
+            max_counter=config.TRAFFIC_TIMEOUT,
+            packet_size=config.SEND_MTU[1]
+        ):
             raise Exception("Traffic between the hosts failed")
         logger.info("Traffic between the hosts succeed")
 
@@ -1248,43 +835,21 @@ class JumboFramesCase12(TestCase):
         Remove networks from the setup
         """
         logger.info("Starting the teardown")
-        for i in range(2):
-            logger.info("Unpluging %s at %s" % (config.NIC_NAME[1],
-                                                config.VM_NAME[i]))
-            if not updateNic(positive=True,
-                             vm=config.VM_NAME[i],
-                             nic=config.NIC_NAME[1],
-                             plugged=False):
-                logger.error("Unplug %s failed", config.NIC_NAME[1])
-
-            logger.info("Removing %s from %s" % (config.NIC_NAME[1],
-                                                 config.VM_NAME[i]))
-            if not removeNic(positive=True,
-                             vm=config.VM_NAME[i],
-                             nic=config.NIC_NAME[1]):
-                raise VMException("Cannot remove VNIC from %s"
-                                  % (config.VM_NAME[i]))
-
-        logger.info("Removing networks from the system")
-        if not removeNetFromSetup(host=[config.HOSTS[0],
-                                        config.HOSTS[1]],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.VLAN_NETWORKS[0]]):
-            raise NetworkException("Cannot remove networks from setup")
-
-########################################################################
-
-########################################################################
+        # Removing vnics from vms
+        helper.remove_vnics_from_vms()
+        logger.info("Call TestJumboFramesTestCaseBase teardown")
+        super(TestJumboFramesCase11, cls).teardown_class()
 
 
 @attr(tier=1)
-class JumboFramesCase13(TestCase):
+class TestJumboFramesCase12(TestJumboFramesTestCaseBase):
     """
-    Adding multiple vlans over bond, configuring different mtu's
-    on each vlan, checking configuration directly on the host and checking
+    Adding multiple VLANs over bond, configuring different MTU
+    on each VLAN, checking configuration directly on the host and checking
     connectivity between the hosts with the MTU configured
     """
-    __test__ = len(config.HOST_NICS) > 3
+    __test__ = True
+    ips = network_helper.create_random_ips(mask=24)
 
     @classmethod
     def setup_class(cls):
@@ -1292,217 +857,157 @@ class JumboFramesCase13(TestCase):
         Create networks over bond with different MTUs over DC/Cluster/Host
         Setting those networks on one host only
         """
-        local_dict = {None: {'nic': config.BOND[0], 'mode': 1,
-                             'slaves': [config.HOST_NICS[2],
-                                        config.HOST_NICS[3]]},
-                      config.VLAN_NETWORKS[0]: {'nic': config.BOND[0],
-                                                'mtu': config.MTU[1],
-                                                'vlan_id': config.J_VLAN_ID[0],
-                                                'required': 'false'},
-                      config.VLAN_NETWORKS[1]: {'nic': config.BOND[0],
-                                                'mtu': config.MTU[0],
-                                                'bootproto': 'static',
-                                                'address': [config.IPS[0]],
-                                                'netmask': [config.NETMASK],
-                                                'gateway': [config.GATEWAY],
-                                                'vlan_id': config.J_VLAN_ID[1],
-                                                'required': 'false'},
-                      config.VLAN_NETWORKS[2]: {'nic': config.BOND[0],
-                                                'mtu': config.MTU[2],
-                                                'vlan_id': config.J_VLAN_ID[2],
-                                                'required': 'false'},
-                      config.VLAN_NETWORKS[3]: {'nic': config.BOND[0],
-                                                'mtu': config.MTU[3],
-                                                'vlan_id': config.J_VLAN_ID[3],
-                                                'required': 'false'}}
+        local_dict = {
+            None: {
+                "nic": config.BOND[0], "mode": "1",
+                "slaves": [2, 3]},
+            config.VLAN_NETWORKS[0]: {
+                "nic": config.BOND[0],
+                "mtu": config.MTU[1],
+                "vlan_id": config.VLAN_ID[0],
+                "required": False},
+            config.VLAN_NETWORKS[1]: {
+                "nic": config.BOND[0],
+                "mtu": config.MTU[0],
+                "bootproto": "static",
+                "address": [cls.ips[0],
+                            cls.ips[1]],
+                "netmask": [config.NETMASK,
+                            config.NETMASK],
+                "vlan_id": config.VLAN_ID[1],
+                "required": False},
+            config.VLAN_NETWORKS[2]: {
+                "nic": config.BOND[0],
+                "mtu": config.MTU[2],
+                "vlan_id": config.VLAN_ID[2],
+                "required": False},
+            config.VLAN_NETWORKS[3]: {
+                "nic": config.BOND[0],
+                "mtu": config.MTU[3],
+                "vlan_id": config.VLAN_ID[3],
+                "required": False
+            }
+        }
+        logger.info("Sending SN request to %s %s", HOST_NAME0, HOST_NAME1)
+        if not hl_networks.createAndAttachNetworkSN(
+            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
+            host=config.VDS_HOSTS[:2], network_dict=local_dict,
+            auto_nics=[0]
+        ):
+            raise NetworkException(
+                "Cannot create and attach networks: %s, %s, %s, %s" % (
+                    config.VLAN_NETWORKS[0], config.VLAN_NETWORKS[1],
+                    config.VLAN_NETWORKS[2], config.VLAN_NETWORKS[3]
+                )
+            )
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        host=[config.HOSTS[0]],
-                                        network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0]]):
-            raise NetworkException("Cannot create and attach network")
-
-    @istest
     @tcms(5848, 325544)
-    def check_traffic_on_hosts_when_there_are_many_networks(self):
+    def test_check_traffic_on_hosts_when_there_are_many_networks(self):
         """
         Checking that the highest MTU is configured on eth2, eth3 and bond0.
         also, checking that connectivity with MTU 8500 succeed between the
         hosts.
         """
-        list_check_networks = [config.HOST_NICS[2],
-                               config.HOST_NICS[3],
-                               config.BOND[0]]
-        logger.info("Checking that networks and interfaces are "
-                    "configured correctly")
+        list_check_networks = [HOST_NICS0[2], HOST_NICS0[3], config.BOND[0]]
+        logger.info(
+            "Checking that networks and interfaces are configured correctly"
+        )
 
         for element in list_check_networks:
-            logger.info("Checking ifconfig for %s on the host %s",
-                        element, config.HOSTS[0])
-            self.assertTrue(checkConfiguredMTU(host=config.HOSTS[0],
-                                               user=config.HOSTS_USER,
-                                               password=config.HOSTS_PW,
-                                               mtu=config.MTU[0],
-                                               inter_or_net=element))
+            logger.info(
+                "Checking ifconfig for %s on the host %s",
+                element, config.VDS_HOSTS[0].ip
+            )
+            if not utils.check_configured_mtu(
+                host=config.VDS_HOSTS[0].ip, user=config.HOSTS_USER,
+                password=config.HOSTS_PW, mtu=str(config.MTU[0]),
+                inter_or_net=element
+            ):
+                raise NetworkException(
+                    "Interface %s on host %s does not have MTU %s configured"
+                    % (element, config.VDS_HOSTS[0].ip, config.MTU[0])
+                )
 
-        logger.info("Checking logical layer for host %s", config.HOSTS[0])
-        self.assertTrue(checkMTU(host=config.HOSTS[0], user=config.HOSTS_USER,
-                                 password=config.HOSTS_PW, mtu=config.MTU[0],
-                                 bond=config.BOND[0],
-                                 bond_nic1=config.HOST_NICS[2],
-                                 bond_nic2=config.HOST_NICS[3],
-                                 bridged=False),
-                        "MTU on host %s should be %s and it is "
-                        "not" % (config.HOSTS[0], config.MTU[1]))
-
-        local_dict = {None: {'nic': config.BOND[0], 'mode': 1,
-                             'slaves': [config.HOST_NICS[2],
-                                        config.HOST_NICS[3]]},
-                      config.VLAN_NETWORKS[0]: {'nic': config.BOND[0],
-                                                'mtu': config.MTU[1],
-                                                'vlan_id': config.J_VLAN_ID[0],
-                                                'required': 'false'},
-                      config.VLAN_NETWORKS[1]: {'nic': config.BOND[0],
-                                                'mtu': config.MTU[0],
-                                                'bootproto': 'static',
-                                                'address': [config.IPS[1]],
-                                                'netmask': [config.NETMASK],
-                                                'gateway': [config.GATEWAY],
-                                                'vlan_id': config.J_VLAN_ID[1],
-                                                'required': 'false'},
-                      config.VLAN_NETWORKS[2]: {'nic': config.BOND[0],
-                                                'mtu': config.MTU[2],
-                                                'vlan_id': config.J_VLAN_ID[2],
-                                                'required': 'false'},
-                      config.VLAN_NETWORKS[3]: {'nic': config.BOND[0],
-                                                'mtu': config.MTU[3],
-                                                'vlan_id': config.J_VLAN_ID[3],
-                                                'required': 'false'}}
-
-        if not createAndAttachNetworkSN(host=[config.HOSTS[1]],
-                                        network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0]]):
-            raise NetworkException("Cannot attach network to the second host")
-
+        # Checking physical
+        helper.check_logical_physical_layer(
+            mtu=config.MTU[0], bond=config.BOND[0],
+            bond_nic1=HOST_NICS0[2], bond_nic2=HOST_NICS0[3], logical=False
+        )
         logger.info("Checking traffic between the two hosts")
-        if not checkICMPConnectivity(host=config.HOSTS[0],
-                                     user=config.HOSTS_USER,
-                                     password=config.HOSTS_PW,
-                                     ip=config.IPS[1],
-                                     max_counter=config.TRAFFIC_TIMEOUT,
-                                     packet_size=config.SEND_MTU[1]):
-            raise Exception("Traffic between the hosts failed")
+        if not hl_networks.checkICMPConnectivity(
+            host=config.VDS_HOSTS[0].ip, user=config.HOSTS_USER,
+            password=config.HOSTS_PW, ip=self.ips[1],
+            max_counter=config.TRAFFIC_TIMEOUT, packet_size=config.SEND_MTU[1]
+        ):
+            raise NetworkException(
+                "Traffic check between the hosts %s and %s failed" % (
+                    config.VDS_HOSTS[0].ip, config.VDS_HOSTS[1].ip
+                )
+            )
         logger.info("Traffic between the hosts succeed")
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove networks from the setup
-        """
-        logger.info("Starting the teardown")
-        logger.info("Removing networks from the system")
-        if not removeNetFromSetup(host=[config.HOSTS[0],
-                                        config.HOSTS[1]],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.VLAN_NETWORKS[0],
-                                           config.VLAN_NETWORKS[1],
-                                           config.VLAN_NETWORKS[2],
-                                           config.VLAN_NETWORKS[3]]):
-            raise NetworkException("Cannot remove networks from setup")
-
-########################################################################
-
-########################################################################
 
 
 @attr(tier=1)
-class JumboFramesCase14(TestCase):
+class TestJumboFramesCase13(TestJumboFramesTestCaseBase):
     """
-    Adding multiple vlans over bond, configuring different mtu's
-    on each vlan and checking connectivity between the VMs with
+    Adding multiple VLANs over bond, configuring different MTU
+    on each VLAN and checking connectivity between the VMs with
     the MTU configured
     """
-    __test__ = len(config.HOST_NICS) > 3
+    __test__ = True
+    ips = network_helper.create_random_ips(mask=24)
 
     @classmethod
     def setup_class(cls):
         """
         Create networks over bond with different MTUs over DC/Cluster/Hosts
         """
-        local_dict = {None: {'nic': config.BOND[0], 'mode': 1,
-                             'slaves': [config.HOST_NICS[2],
-                                        config.HOST_NICS[3]]},
-                      config.VLAN_NETWORKS[0]: {'nic': config.BOND[0],
-                                                'mtu': config.MTU[0],
-                                                'vlan_id': config.J_VLAN_ID[0],
-                                                'required': 'false'},
-                      config.VLAN_NETWORKS[1]: {'nic': config.BOND[0],
-                                                'mtu': config.MTU[1],
-                                                'vlan_id': config.J_VLAN_ID[1],
-                                                'required': 'false'}}
+        local_dict = {
+            None: {
+                "nic": config.BOND[0], "mode": "1",
+                "slaves": [2, 3]},
+            config.VLAN_NETWORKS[0]: {
+                "nic": config.BOND[0],
+                "mtu": config.MTU[0],
+                "vlan_id": config.VLAN_ID[0],
+                "required": False},
+            config.VLAN_NETWORKS[1]: {
+                "nic": config.BOND[0],
+                "mtu": config.MTU[1],
+                "vlan_id": config.VLAN_ID[1],
+                "required": False
+            }
+        }
+        logger.info("Sending SN request to %s %s", HOST_NAME0, HOST_NAME1)
+        if not hl_networks.createAndAttachNetworkSN(
+            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
+            host=config.VDS_HOSTS[:2], network_dict=local_dict, auto_nics=[0]
+        ):
+            raise NetworkException(
+                "Cannot create and attach networks %s and %s" % (
+                    config.VLAN_NETWORKS[0], config.VLAN_NETWORKS[1],
+                )
+            )
+        # Adding vnics to vms
+        helper.add_vnics_to_vms(ips=cls.ips, mtu=str(config.MTU[0]))
+        helper.add_vnics_to_vms(
+            ips=cls.ips, mtu=str(config.MTU[1]), nic_name=config.NIC_NAME[2],
+            network=config.VLAN_NETWORKS[1], set_ip=False
+        )
 
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        host=[config.HOSTS[0],
-                                              config.HOSTS[1]],
-                                        network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0]]):
-            raise NetworkException("Cannot create and attach network")
-
-        for net_idx in range(2):
-            for vm_idx in range(2):
-                logger.info("Adding %s as %s to %s",
-                            config.VLAN_NETWORKS[net_idx],
-                            config.NIC_NAME[net_idx+1],
-                            config.VM_NAME[vm_idx])
-
-                if not addNic(positive=True,
-                              vm=config.VM_NAME[vm_idx],
-                              name=config.NIC_NAME[net_idx+1],
-                              network=config.VLAN_NETWORKS[net_idx]):
-                    raise VMException("Cannot add vnic to %s",
-                                      config.VM_NAME[vm_idx])
-
-                vm_ip = waitForIP(config.VM_NAME[vm_idx])[1]['ip']
-                if not configureTempMTU(host=vm_ip,
-                                        user=config.HOSTS_USER,
-                                        password=config.HOSTS_PW,
-                                        nic=config.HOST_NICS[net_idx+1],
-                                        mtu=str(config.MTU[net_idx])):
-                    raise VMException("Unable to configure vm's nic "
-                                      "with MTU %s" % config.MTU[net_idx])
-
-    @istest
     @tcms(5848, 148654)
-    def check_traffic_on_vms_when_host_has_many_networks(self):
+    def test_check_traffic_on_vms_when_host_has_many_networks(self):
         """
-        Send ping with MTU 8500 between the two VMS
+        Send ping with MTU 8500 between the two VMs
         """
-        ip_list = []
-        for i in range(2):
-            ip_list.append(waitForIP(config.VM_NAME[i])[1]['ip'])
-
-        logger.info("Configuring %s with static IP on both VMs ",
-                    config.VM_NICS[1])
-        for i in range(2):
-            if not configureTempStaticIp(host=ip_list[i],
-                                         user=config.HOSTS_USER,
-                                         password=config.HOSTS_PW,
-                                         ip="%s%d" % (config.INTER_SUBNET,
-                                                      i + 1),
-                                         nic=config.VM_NICS[1]):
-                logger.error("Couldn't configure temp ip on VMs")
-                return False
-
         logger.info("Checking traffic between the two VMs")
-        if not checkICMPConnectivity(host=ip_list[0],
-                                     user=config.HOSTS_USER,
-                                     password=config.HOSTS_PW,
-                                     ip=config.IPS[1],
-                                     max_counter=config.TRAFFIC_TIMEOUT,
-                                     packet_size=config.SEND_MTU[1]):
-            raise Exception("Traffic between the hosts failed")
+        if not hl_networks.checkICMPConnectivity(
+            host=config.VM_IP_LIST[0], user=config.HOSTS_USER,
+            password=config.HOSTS_PW, ip=self.ips[1],
+            max_counter=config.TRAFFIC_TIMEOUT,
+            packet_size=config.SEND_MTU[1]
+        ):
+            raise NetworkException("Traffic check between the hosts failed")
         logger.info("Traffic between the VMs succeed")
 
     @classmethod
@@ -1511,48 +1016,22 @@ class JumboFramesCase14(TestCase):
         Remove networks from the setup
         """
         logger.info("Starting the teardown")
-        for vm_idx in range(2):
-            for net_idx in range(2):
-                logger.info("Unpluging %s from %s",
-                            config.NIC_NAME[net_idx+1],
-                            config.VM_NAME[vm_idx])
-                if not updateNic(positive=True,
-                                 vm=config.VM_NAME[vm_idx],
-                                 nic=config.NIC_NAME[net_idx+1],
-                                 plugged=False):
-                    logger.error("Unplug %s failed",
-                                 config.NIC_NAME[net_idx+1])
-
-                logger.info("Removing %s from %s",
-                            config.NIC_NAME[net_idx+1],
-                            config.VM_NAME[vm_idx])
-                if not removeNic(positive=True,
-                                 vm=config.VM_NAME[vm_idx],
-                                 nic=config.NIC_NAME[net_idx+1]):
-                    raise VMException("Cannot remove VNIC from %s"
-                                      % (config.VM_NAME[vm_idx]))
-
-        logger.info("Removing networks from the system")
-        if not removeNetFromSetup(host=[config.HOSTS[0],
-                                        config.HOSTS[1]],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.VLAN_NETWORKS[0],
-                                           config.VLAN_NETWORKS[1]]):
-            raise NetworkException("Cannot remove networks from setup")
-
-########################################################################
-
-########################################################################
+        # Removing vnics from vms
+        helper.remove_vnics_from_vms()
+        helper.remove_vnics_from_vms(nic_name=config.NIC_NAME[2])
+        logger.info("Call TestJumboFramesTestCaseBase teardown")
+        super(TestJumboFramesCase13, cls).teardown_class()
 
 
 @attr(tier=1)
-class JumboFramesCase15(TestCase):
+class TestJumboFramesCase14(TestJumboFramesTestCaseBase):
     """
-    Positive: Creates 2 bridged vlan network with diffarent MTU values
-    and as display, Attaching those networks to VMs and checking the traffic
+    Positive: Creates bridged VLAN network with 5000 MTU values
+    and as display, Attaching the network to VMs and checking the traffic
     between them
     """
     __test__ = True
+    ips = network_helper.create_random_ips(mask=24)
 
     @classmethod
     def setup_class(cls):
@@ -1560,67 +1039,42 @@ class JumboFramesCase15(TestCase):
         Create bridged networks with MTU on DC/Cluster/Hosts
         """
 
-        local_dict = {config.VLAN_NETWORKS[0]: {'vlan_id': config.J_VLAN_ID[0],
-                                                'mtu': config.MTU[1],
-                                                'nic': config.HOST_NICS[1],
-                                                'cluster_usages': 'display',
-                                                'required': 'false'}}
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        host=[config.HOSTS[0],
-                                              config.HOSTS[1]],
-                                        network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0],
-                                                   config.HOST_NICS[1]]):
-            raise NetworkException("Cannot create and attach network")
+        local_dict = {
+            config.VLAN_NETWORKS[0]: {
+                "vlan_id": config.VLAN_ID[0],
+                "mtu": config.MTU[1],
+                "nic": 1,
+                "cluster_usages": "display",
+                "required": False
+            }
+        }
+        logger.info("Sending SN request to %s %s", HOST_NAME0, HOST_NAME1)
+        if not hl_networks.createAndAttachNetworkSN(
+            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
+            host=config.VDS_HOSTS[:2], network_dict=local_dict,
+            auto_nics=[0, 1]
+        ):
+            raise NetworkException(
+                "Cannot create and attach network %s" % (
+                    config.VLAN_NETWORKS[0],
+                )
+            )
+        # Adding vnics to vms
+        helper.add_vnics_to_vms(ips=cls.ips, mtu=str(config.MTU[1]))
 
-        for i in range(2):
-            logger.info("Adding %s with to %s",
-                        config.VLAN_NETWORKS[0], config.VM_NAME[i])
-            if not addNic(positive=True,
-                          vm=config.VM_NAME[i],
-                          name=config.NIC_NAME[1],
-                          network=config.VLAN_NETWORKS[0]):
-                raise VMException("Cannot add vnic to %s", config.VM_NAME[i])
-
-            vm_ip = waitForIP(config.VM_NAME[i])[1]['ip']
-            if not configureTempMTU(host=vm_ip,
-                                    user=config.HOSTS_USER,
-                                    password=config.HOSTS_PW,
-                                    mtu=str(config.MTU[1])):
-                raise VMException("Unable to configure vm's nic with MTU %s" %
-                                  config.MTU[1])
-
-    @istest
     @tcms(5848, 167554)
-    def check_traffic_on_vm_when_network_is_display(self):
+    def test_check_traffic_on_vm_when_network_is_display(self):
         """
         Send ping between 2 VMS
         """
-        ip_list = []
-        for i in range(2):
-            ip_list.append(waitForIP(config.VM_NAME[i])[1]['ip'])
-
-        logger.info("Configuring %s with static IP on both VMs ",
-                    config.VM_NICS[1])
-        for i in range(2):
-            if not configureTempStaticIp(host=ip_list[i],
-                                         user=config.HOSTS_USER,
-                                         password=config.HOSTS_PW,
-                                         ip="%s%d" % (config.INTER_SUBNET,
-                                                      i + 1),
-                                         nic=config.VM_NICS[1]):
-                logger.error("Couldn't configure temp ip on VMs")
-                return False
-
         logger.info("Checking traffic between the two VMs")
-        if not checkICMPConnectivity(host=ip_list[0],
-                                     user=config.HOSTS_USER,
-                                     password=config.HOSTS_PW,
-                                     ip=config.IPS[1],
-                                     max_counter=config.TRAFFIC_TIMEOUT,
-                                     packet_size=config.SEND_MTU[0]):
-            raise Exception("Traffic between the hosts failed")
+        if not hl_networks.checkICMPConnectivity(
+            host=config.VM_IP_LIST[0], user=config.HOSTS_USER,
+            password=config.HOSTS_PW, ip=self.ips[1],
+            max_counter=config.TRAFFIC_TIMEOUT,
+            packet_size=config.SEND_MTU[0]
+        ):
+            raise NetworkException("Traffic check between the VMs failed")
         logger.info("Traffic between the VMs succeed")
 
     @classmethod
@@ -1629,105 +1083,7 @@ class JumboFramesCase15(TestCase):
         Remove networks from the setup
         """
         logger.info("Starting the teardown")
-        for i in range(2):
-            logger.info("Unpluging %s at %s" % (config.NIC_NAME[1],
-                                                config.VM_NAME[i]))
-            if not updateNic(positive=True,
-                             vm=config.VM_NAME[i],
-                             nic=config.NIC_NAME[1],
-                             plugged=False):
-                logger.error("Unplug %s failed", config.NIC_NAME[1])
-
-            logger.info("Removing %s from %s" % (config.NIC_NAME[1],
-                                                 config.VM_NAME[i]))
-            if not removeNic(positive=True,
-                             vm=config.VM_NAME[i],
-                             nic=config.NIC_NAME[1]):
-                raise VMException("Cannot remove VNIC from %s"
-                                  % (config.VM_NAME[i]))
-
-        if not removeNetFromSetup(host=[config.HOSTS[0],
-                                        config.HOSTS[1]],
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.VLAN_NETWORKS[0]]):
-            raise NetworkException("Cannot remove networks from setup")
-
-########################################################################
-
-########################################################################
-
-
-@attr(tier=1)
-class JumboFramesCase16(TestCase):
-    """
-    Verify dedicated regular tagged network migration over Bond with MTU 9000
-    """
-    __test__ = len(config.HOST_NICS) > 3
-
-    @classmethod
-    def setup_class(cls):
-        """
-        Create logical tagged network on DC/Cluster with MTU 9000
-        Configure it as migration network and attach it to Bond on the Host
-        """
-        local_dict = {None: {'nic': config.BOND[0], 'mode': 1,
-                             'slaves': [config.HOST_NICS[2],
-                                        config.HOST_NICS[3]]},
-                      config.VLAN_NETWORKS[0]: {'nic': config.BOND[0],
-                                                'mtu': 9000,
-                                                'vlan_id': config.J_VLAN_ID[0],
-                                                'required': 'true',
-                                                'cluster_usages': 'migration',
-                                                'bootproto': 'static',
-                                                'address': [config.SOURCE_IP,
-                                                            config.DEST_IP],
-                                                'netmask': [config.NETMASK,
-                                                            config.NETMASK]},
-                      config.NETWORKS[1]: {'nic': config.HOST_NICS[1],
-                                           'required': 'true'}}
-        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
-                                        cluster=config.CLUSTER_NAME[0],
-                                        host=config.HOSTS,
-                                        network_dict=local_dict,
-                                        auto_nics=[config.HOST_NICS[0]]):
-            raise NetworkException("Cannot create and attach network")
-
-    @istest
-    @tcms(8735, 256582)
-    def dedicated_migration(self):
-        """
-        Check migration over dedicated tagged network over bond
-        """
-        orig_host = get_host(config.VM_NAME[0])
-        logger.info("Start migration from %s ", orig_host)
-        src, dst = find_ip(vm=config.VM_NAME[0],
-                           host_list=config.HOSTS,
-                           nic='.'.join([config.BOND[0], config.J_VLAN_ID[0]]))
-        if not checkICMPConnectivity(host=orig_host, user=config.HOSTS_USER,
-                                     password=config.HOSTS_PW, ip=dst):
-            logger.error("ICMP wasn't established")
-        with TrafficMonitor(machine=orig_host, user=config.HOSTS_USER,
-                            password=config.HOSTS_PW,
-                            nic=config.VLAN_NETWORKS[0],
-                            src=src, dst=dst,
-                            protocol='tcp',
-                            numPackets=config.NUM_PACKETS) as monitor:
-            monitor.addTask(check_vm_migration,
-                            vm_names=config.VM_NAME[0],
-                            orig_host=orig_host, vm_user=config.HOSTS_USER,
-                            host_password=config.HOSTS_PW,
-                            vm_password=config.HOSTS_PW,
-                            os_type='rhel')
-        self.assertTrue(monitor.getResult())
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Remove network from the setup.
-        """
-        logger.info("Remove networks from setup")
-        if not removeNetFromSetup(host=config.HOSTS,
-                                  auto_nics=[config.HOST_NICS[0]],
-                                  network=[config.VLAN_NETWORKS[0],
-                                           config.NETWORKS[1]]):
-            raise NetworkException("Cannot remove network from setup")
+        # Removing vnics from vms
+        helper.remove_vnics_from_vms()
+        logger.info("Call TestJumboFramesTestCaseBase teardown")
+        super(TestJumboFramesCase14, cls).teardown_class()

@@ -257,8 +257,9 @@ FENCE_TIMEOUT = 180
 
 MGMT_BRIDGE = PARAMETERS.get('mgmt_bridge')
 
-NIC_NAME = ["nic1", "nic2", "nic3", "nic4", "nic5", "nic6", "nic7", "nic8",
-            "nic9"]
+NIC_NAME = [
+    "nic1", "nic2", "nic3", "nic4", "nic5", "nic6", "nic7", "nic8", "nic9"
+]
 
 DISPLAY_TYPE = ENUMS['display_type_spice']
 NIC_TYPE_VIRTIO = ENUMS['nic_type_virtio']

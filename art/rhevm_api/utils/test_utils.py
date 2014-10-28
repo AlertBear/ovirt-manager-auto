@@ -1106,27 +1106,39 @@ def restart_engine(engine, interval, timeout):
 
 
 @is_action()
-def configureTempStaticIp(host, user, password, ip, nic='eth1',
-                          netmask='255.255.255.0'):
-    '''
-    Configure static IP on specific interface
-    Author: gcheresh
-    Parameters:
-       * host - remote machine ip address or fqdn
-       * user - user name for the machine
-       * password - password for root user
-       * nic - specific NIC to configure ip/netmask on
-       * ip - IP to configure on NIC
-       * netmask - Netmask to configure on NIC
-    Return: (True if command executed successfuly, False otherwise)
-    '''
+def configure_temp_static_ip(
+    host, user, password, ip, nic="eth1", netmask="255.255.255.0"
+):
+    """
+    Configure temporary static IP on specific interface
+    :param host: remote machine IP address or FQDN
+    :type host: string
+    :param user: user name for the machine
+    :type user: string
+    :param password: password for root user
+    :type password: string
+    :param ip: temporary IP to configure on NIC
+    :type ip: string
+    :param nic: specific NIC to configure ip/netmask on
+    :type nic: string
+    :param netmask: netmask to configure on NIC (full or CIDR)
+    :type netmask: string
+    :return: True if command executed successfully, False otherwise
+    :rtype: bool
+    """
     machine_obj = Machine(host, user, password).util(LINUX)
-    cmd = ["ifconfig", nic, ip, "netmask", netmask]
+    cmd = [
+        "ip", "address", "add", ip + "/" + netmask, "dev", nic
+    ]
     rc, output = machine_obj.runCmd(cmd)
     if not rc:
-        logger.error("Failed to configure ip '%s' on machine '%s' and nic"
-                     "'%s'", ip, host, nic)
-        logger.error(output)
+        logger.error(
+            "Failed to configure temporary IP %s on interface %s on Virtual "
+            "Machine %s\n"
+            "command: %s\n"
+            "ERR: %s ",
+            ip, nic, host, ' '.join(map(str, cmd)), output
+        )
         return False
     return True
 
@@ -1173,25 +1185,35 @@ def buildListFilesMtu(physical_layer=True, network=None, nic=None,
 
 
 @is_action()
-def checkConfiguredMTU(host, user, password, mtu, inter_or_net):
+def check_configured_mtu(host, user, password, mtu, inter_or_net):
     """
-    Description: Checking on host if the mtu is configured on an
-    interface or network using ifconfig command
-    **Author**: awinter
-    **Parameters**:
-        *  *host* - The requested host
-        *  *user* - The username for the host
-        *  *password* - The password for the host
-        *  *mtu* - expected MTU for the network/interface
-        *  *inter_or_net* - interface's name or network's name
-    **Returns**: True value if MTU is equal to "mtu", False otherwise.
+    Function checks if the configured MTU on an interface or network match
+    provided MTU using ip command
+    :param host: resources.VDS objects
+    :type host: object
+    :param user: The username for the host
+    :type user: string
+    :param password: The password for the host
+    :type password: string
+    :param mtu: expected MTU for the network/interface
+    :type mtu: string
+    :param inter_or_net: interface name or network name
+    :type inter_or_net: string
+    :return: True if MTU on host is equal to "mtu", False otherwise.
+    :rtype: bool
     """
-    mtu = "MTU:%s" % mtu
+
     machine_obj = Machine(host, user, password).util(LINUX)
-    cmd = ["ifconfig", inter_or_net, "|", "grep", mtu]
+    cmd = [
+        "ip", "link", "list", inter_or_net, "|", "grep", mtu
+    ]
     rc, output = machine_obj.runCmd(cmd)
     if not rc:
-        logger.error("ifconfig command failed: %s", output)
+        logger.error(
+            "command %s failed\n"
+            " ERR: %s",
+            ' '.join(map(str, cmd)), output
+        )
         return False
     if output.find(mtu) == -1:
         logger.error("MTU is not configured correctly: %s", output)
@@ -1278,25 +1300,34 @@ def testMTUInScriptList(host, user, password, script_list, mtu,
 
 
 @is_action()
-def configureTempMTU(host, user, password, mtu, nic='eth1'):
-    '''
-    Configure static IP on specific interface
-    Author: gcheresh
-    Parameters:
-       * host - remote machine ip address or fqdn
-       * user - user name for the machine
-       * password - password for root user
-       * mtu - MTU value we want to configure on machine
-       * nic - specific NIC to configure mtu on
-    Return: (True if command executed successfuly, False otherwise)
-    '''
+def configure_temp_mtu(host, user, password, mtu, nic="eth1"):
+    """
+    Configure MTU temporarily on specific host interface
+    :param host: remote machine ip address or fqdn
+    :type host: string
+    :param user: user name for the machine
+    :type user: string
+    :param password: password for root user
+    :type password: string
+    :param mtu: MTU to be configured on the host interface
+    :type mtu: string
+    :param nic: specific interface to configure MTU on
+    :type nic: string
+    :return: True if command executed successfully, False otherwise
+    :rtype: bool
+    """
     machine_obj = Machine(host, user, password).util(LINUX)
-    cmd = ["ifconfig", nic, "mtu", mtu]
+    cmd = [
+        "ip", "link", "set", "dev", nic, "mtu", mtu
+    ]
     rc, output = machine_obj.runCmd(cmd)
     if not rc:
-        logger.error("Failed to configure mtu '%s' on machine '%s'",
-                     mtu, host)
-        logger.error(output)
+        logger.error(
+            "Failed to configure MTU %s for interface %s on machine %s\n"
+            "command: %s\n"
+            "ERR: %s ",
+            mtu, nic, host, ' '.join(map(str, cmd)), output
+        )
         return False
     return True
 

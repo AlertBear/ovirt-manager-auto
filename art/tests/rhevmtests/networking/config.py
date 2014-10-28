@@ -51,7 +51,6 @@ MG_IP_ADDR = "1.1.1.1"
 FIREWALL_SRV = "iptables"
 
 # Jumbo frame parameters
-VM_NICS = ['eth0', 'eth1', 'eth2', 'eth3']
 NUM_PACKETS = 1000
 INTER_SUBNET = '3.3.3.'
 IPS = ['3.3.3.1', '3.3.3.2']
@@ -60,8 +59,7 @@ SOURCE_IP = '100.1.1.1'
 DEST_IP = '100.1.1.2'
 GATEWAY = '3.3.3.254'
 TRAFFIC_TIMEOUT = 120
-J_VLAN_NETWORKS = ['sw201', 'sw202', 'sw203', 'sw204', 'sw205']
-J_VLAN_ID = ['201', '202', '203', '204', '205']
+VM_IP_LIST = []
 
 # Import/Export parameters
 IE_VM = "IE_VM"
@@ -79,13 +77,20 @@ ADDR_AND_MASK = ["10.35.147.50", "255.255.255.240"]
 DST_HOST_IP = "10.35.147.62"
 
 # Port mirroring parameters
+VM_NICS = ['eth0', 'eth1', 'eth2', 'eth3']
 PM_VNIC_PROFILE = ['%s_PM' % net for net in [MGMT_BRIDGE] + VLAN_NETWORKS]
 NUM_VMS = 5
 MGMT_IPS = []  # Gets filled up during the test
-NET1_IPS = ['5.5.%s.%s' % (
-    randint(1, 250), randint(1, 250)) for i in range(NUM_VMS + 1)]
-NET2_IPS = ['6.6.%s.%s' % (
-    randint(1, 250), randint(1, 250)) for i in range(NUM_VMS + 1)]
+NET1_IPS = [
+    '5.5.%s.%s' % (
+        randint(1, 250), randint(1, 250)
+    ) for i in range(NUM_VMS + 1)
+]
+NET2_IPS = [
+    '6.6.%s.%s' % (
+        randint(1, 250), randint(1, 250)
+    ) for i in range(NUM_VMS + 1)
+]
 
 # Topologies parameters
 BOND_MODES = PARAMETERS.as_list("bond_modes")
