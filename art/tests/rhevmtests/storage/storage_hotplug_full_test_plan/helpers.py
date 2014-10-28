@@ -12,13 +12,11 @@ from art.rhevm_api.utils import test_utils
 from utilities import machine
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import disks
-from art.rhevm_api.tests_lib.low_level import storagedomains
+from art.rhevm_api.tests_lib.low_level.hosts import getHostIP
 
 import config
 
 LOGGER = logging.getLogger(__name__)
-
-ENUMS = config.ENUMS
 
 FILE_WITH_RESULTS = "/tmp/hook.txt"
 
@@ -30,7 +28,7 @@ HOOKJPEG = tempfile.mkstemp(suffix=".jpeg")[1]
 DISKS_TO_PLUG = ["disk_to_plug_%s" % x for x in range(10)]
 UNATTACHED_DISK = "unattached_disk"
 TEXT = 'Hello World!'
-VM_NAME = config.VM_NAME[0]
+
 
 MAIN_HOOK_DIR = "/usr/libexec/vdsm/hooks/"
 ALL_AVAILABLE_HOOKS = [
@@ -74,18 +72,23 @@ ONE_PIXEL_FILE = (
     """\x01\x00\x01?\x10\x7f\xff\xd9""")
 
 
-def create_vm_with_disks():
+def create_vm_with_disks(storage_domain, storage_type):
     """ creates a VM and installs system on it; then creates 10 disks and
         attaches them to the VM
+        Parameters:
+            * storage_domain: name of the storage domain
+            * storage_type: storage type of the domain where the disks will be
+                created
+        Returns:
+            name of the vm created
     """
-    storage_domain_name = (storagedomains.getDCStorages(
-        config.DATA_CENTER_NAME, False)[0]).name
+    vm_name = config.VM_NAME % storage_type
     vms.createVm(
-        True, VM_NAME, VM_NAME, cluster=config.CLUSTER_NAME,
-        nic=config.HOST_NICS[0], storageDomainName=storage_domain_name,
+        True, vm_name, vm_name, cluster=config.CLUSTER_NAME,
+        nic=config.HOST_NICS[0], storageDomainName=storage_domain,
         size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
-        volumeType=True, volumeFormat=ENUMS['format_cow'], memory=config.GB,
-        diskInterface=config.INTERFACE_VIRTIO,
+        volumeType=True, volumeFormat=config.DISK_FORMAT_COW,
+        memory=config.GB, diskInterface=config.INTERFACE_VIRTIO,
         cpu_cores=config.CPU_CORES, nicType=config.NIC_TYPE_VIRTIO,
         display_type=config.DISPLAY_TYPE, os_type=config.OS_TYPE,
         user=config.VMS_LINUX_USER, password=config.VMS_LINUX_PW,
@@ -96,12 +99,13 @@ def create_vm_with_disks():
     for disk_name in DISKS_TO_PLUG + [UNATTACHED_DISK]:
         disks.addDisk(
             True, alias=disk_name, size=config.GB,
-            storagedomain=storage_domain_name,
-            format=ENUMS['format_cow'], interface=config.INTERFACE_VIRTIO)
+            storagedomain=storage_domain,
+            format=config.DISK_FORMAT_COW, interface=config.INTERFACE_VIRTIO)
 
     disks.waitForDisksState(",".join(DISKS_TO_PLUG + [UNATTACHED_DISK]))
     for disk_name in DISKS_TO_PLUG:
-        disks.attachDisk(True, disk_name, VM_NAME, False)
+        disks.attachDisk(True, disk_name, vm_name, False)
+    return vm_name
 
 
 def create_local_files_with_hooks():
@@ -144,7 +148,7 @@ class HotplugHookTest(TestCase):
             * check if correct hooks were called
     """
     hook_dir = None
-    vm_name = None
+    vm_name = config.VM_NAME % TestCase.storage
     __test__ = False
     active_disk = None
     hooks = {}
@@ -169,12 +173,12 @@ class HotplugHookTest(TestCase):
         """ activate/deactivate disks we will use in the test
         """
         for disk_name in self.use_disks:
-            disk = disks.getVmDisk(VM_NAME, disk_name)
+            disk = disks.getVmDisk(self.vm_name, disk_name)
             LOGGER.info("Disk active: %s" % disk.active)
             if disk.get_active() and not self.active_disk:
-                assert vms.deactivateVmDisk(True, VM_NAME, disk_name)
+                assert vms.deactivateVmDisk(True, self.vm_name, disk_name)
             elif not disk.get_active() and self.active_disk:
-                assert vms.activateVmDisk(True, VM_NAME, disk_name)
+                assert vms.activateVmDisk(True, self.vm_name, disk_name)
 
     def clear_hooks(self):
         """ clear all vdsm hot(un)plug hook directories
@@ -209,8 +213,10 @@ class HotplugHookTest(TestCase):
             * put disks in correct state
             * install new hook(s)
         """
-        self.address = vms.getVmHost(VM_NAME)[1]['vmHoster']
-        LOGGER.info("Host: %s" % self.address)
+        assert vms.waitForVMState(self.vm_name)
+        self.host_name = vms.getVmHost(self.vm_name)[1]['vmHoster']
+        self.host_address = getHostIP(self.host_name)
+        LOGGER.info("Host: %s" % self.host_address)
 
         LOGGER.info("Looking for username and password")
         self.user = config.HOSTS_USER
@@ -218,7 +224,7 @@ class HotplugHookTest(TestCase):
 
         LOGGER.info("Creating 'machine' object")
         self.machine = machine.LinuxMachine(
-            self.address, self.user, self.password, False)
+            self.host_address, self.user, self.password, False)
 
         LOGGER.info("Clearing old hooks")
         self.clear_hooks()
@@ -263,7 +269,7 @@ class HotplugHookTest(TestCase):
                 LOGGER.info("Calling %s on %s" % (self.action[0].__name__,
                                                   disk_name))
                 results.append(executor.submit(
-                    self.action[0], True, VM_NAME, disk_name))
+                    self.action[0], True, self.vm_name, disk_name))
         for result in results:
             self.assertTrue(
                 result.result(),

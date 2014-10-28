@@ -24,6 +24,8 @@ def delete_disks(disks_names, timeout=DEFAULT_TIMEOUT, sleep=SLEEP_TIME):
         * *sleep* - how often it should poll the state(by default 10 seconds)
     **Returns**: True, if method was succeeded, else False
     """
+    if not disks_names:
+        return False
     logger.info("Wait until disks state is OK")
     if not disks.waitForDisksState(disks_names, timeout=timeout,
                                    sleep=sleep):

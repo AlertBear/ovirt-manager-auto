@@ -4197,3 +4197,19 @@ def get_vm_host(vm_name):
     except EntityNotFound:
         return None
     return host_obj.get_name()
+
+
+def safely_remove_vms(vms):
+    """
+    Description: Make sure that all vms passed are removed
+    Parameters:
+        * vms: list of vms
+    Returns: False if there's an error removing a vm or no vm were removed
+    """
+    logger.info("Removing vms %s", vms)
+    vms_exists = filter(does_vm_exists, vms)
+    if vms_exists:
+        stop_vms_safely(vms_exists)
+        return removeVms(True, vms_exists)
+    logger.error("No vms to remove")
+    return False

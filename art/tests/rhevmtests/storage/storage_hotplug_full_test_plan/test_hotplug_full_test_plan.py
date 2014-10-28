@@ -6,7 +6,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 import time
 
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.unittest_lib import attr
 
 from art.rhevm_api.utils import test_utils as utils
@@ -14,10 +14,13 @@ import art.test_handler.exceptions as exceptions
 from art.rhevm_api.utils.test_utils import wait_for_tasks
 
 import art.rhevm_api.tests_lib.high_level.datacenters as datacenters
-from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
+from art.rhevm_api.tests_lib.low_level.storagedomains import (
+    cleanDataCenter, getStorageDomainNamesForType,
+)
 
 from art.rhevm_api.tests_lib.low_level import datacenters as ll_dc
-from art.rhevm_api.tests_lib.low_level import vms, disks
+from art.rhevm_api.tests_lib.low_level import vms, disks, templates, hosts
+from art.rhevm_api.tests_lib.high_level.disks import delete_disks
 
 import config
 import helpers
@@ -33,50 +36,61 @@ UNATTACHED_DISK = helpers.UNATTACHED_DISK
 TEXT = helpers.TEXT
 
 DISK_INTERFACES = (ENUMS['interface_virtio'],)
-VM_NAME = config.VM_NAME[0]
 
 positive = True
+VM_NAMES = []
+TEMPLATE_NAMES = []
+DISK_NAMES = []
 
 
 def setup_module():
     """
     Create VM templates with different OSs and all disk type combinations
     """
+    global DISK_NAMES
     LOGGER.info("setup_module")
-    datacenters.build_setup(
-        config=config.PARAMETERS, storage=config.PARAMETERS,
-        storage_type=config.STORAGE_TYPE)
+    if not config.GOLDEN_ENV:
+        datacenters.build_setup(
+            config=config.PARAMETERS, storage=config.PARAMETERS,
+            storage_type=config.STORAGE_TYPE)
 
     helpers.create_local_files_with_hooks()
-    helpers.create_vm_with_disks()
+    for storage_type in config.STORAGE_SELECTOR:
+        storage_domain = getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, storage_type)[0]
+        block = storage_type in config.BLOCK_TYPES
 
-    disk_results = common.start_creating_disks_for_test()
+        VM_NAMES.append(
+            helpers.create_vm_with_disks(storage_domain, storage_type))
 
-    vm_results = common.start_installing_vms_for_test()
+        disks_tuple = common.start_creating_disks_for_test(
+            storage_domain, block, storage_type)
 
-    LOGGER.info("Ensuring all disks were created successfully")
-    for result in disk_results:
-        exception = result.exception()
-        if exception is not None:
-            raise exception
-        status, diskIdDict = result.result()
-        if not status:
-            raise exceptions.DiskException("Unable to create disk")
-    LOGGER.info("All disks created successfully")
-    LOGGER.info("Waiting for vms to be installed and templates to be created")
+        DISK_NAMES = [disk[0] for disk in disks_tuple]
+        disk_results = [disk[1] for disk in disks_tuple]
 
-    vdc = config.VDC
-    vdc_password = config.VDC_PASSWORD
-    dc_name = config.DATA_CENTER_NAME
-    if vdc is not None and vdc_password is not None:
-        LOGGER.info("Waiting for vms to be installed and "
-                    "templates to be created")
-        wait_for_tasks(
-            vdc=vdc, vdc_password=vdc_password, datacenter=dc_name)
-    for result in vm_results:
-        exception = result.exception()
-        if exception is not None:
-            raise exception
+        TEMPLATE_NAMES.append(
+            common.create_vm_and_template(
+                config.COBBLER_PROFILE, storage_domain, storage_type))
+
+        LOGGER.info("Ensuring all disks were created successfully")
+        for result in disk_results:
+            exception = result.exception()
+            if exception is not None:
+                raise exception
+            status, diskIdDict = result.result()
+            if not status:
+                raise exceptions.DiskException("Unable to create disk")
+        LOGGER.info("All disks created successfully")
+        LOGGER.info("Waiting for vms to be installed and templates "
+                    "to be created")
+
+        if config.VDC is not None and config.VDC_PASSWORD is not None:
+            LOGGER.info("Waiting for vms to be installed and "
+                        "templates to be created")
+            wait_for_tasks(
+                vdc=config.VDC, vdc_password=config.VDC_PASSWORD,
+                datacenter=config.DATA_CENTER_NAME)
     LOGGER.info("All templates created successfully")
     LOGGER.info("Package setup successfully")
 
@@ -88,9 +102,27 @@ def teardown_module():
     LOGGER.info("Teardown module")
     helpers.remove_hook_files()
 
-    cleanDataCenter(
-        True, config.DATA_CENTER_NAME, vdc=config.VDC,
-        vdc_password=config.VDC_PASSWORD)
+    external_vms = ["external-%s" % name for name in VM_NAMES]
+    vm_names = external_vms + VM_NAMES
+    LOGGER.info("Try to safely remove vms if they exist: %s", vm_names)
+    vms.safely_remove_vms(vm_names)
+
+    LOGGER.info("Removing disks %s", DISK_NAMES)
+    delete_disks(DISK_NAMES)
+
+    plug_disks = [disk for disk in ([helpers.UNATTACHED_DISK] +
+                  helpers.DISKS_TO_PLUG)if disks.checkDiskExists(True, disk)]
+    LOGGER.info("Removing disks from plug tests %s", plug_disks)
+    delete_disks(plug_disks)
+
+    LOGGER.info("Removing templates %s", TEMPLATE_NAMES)
+    for template in TEMPLATE_NAMES:
+        templates.removeTemplate(True, template)
+
+    if not config.GOLDEN_ENV:
+        cleanDataCenter(
+            True, config.DATA_CENTER_NAME, vdc=config.VDC,
+            vdc_password=config.VDC_PASSWORD)
 
 
 @attr(tier=0)
@@ -186,7 +218,6 @@ class TestCase286226(helpers.HotplugHookTest):
     use_disks = DISKS_TO_PLUG
     hooks = {'after_disk_hotplug': [helpers.HOOKWITHSLEEPFILENAME]}
 
-    @bz({1003649: {}, 991742: {}})
     @tcms(9940, 286226)
     def test_after_disk_hotplug_10_disks_concurrently(self):
         """ try to hotplug 10 tests concurrently and check that all hooks
@@ -214,7 +245,6 @@ class TestCase287480(helpers.HotplugHookTest):
     use_disks = DISKS_TO_PLUG
     hooks = {'after_disk_hotunplug': [helpers.HOOKWITHSLEEPFILENAME]}
 
-    @bz({1003649: {}, 991742: {}})
     @tcms(9940, 287480)
     def test_after_disk_hotunplug_10_disks_concurrently(self):
         """ Unplug concurrently 10 disks and check if after_unplug hook
@@ -235,7 +265,7 @@ class TestCase287249(helpers.HotplugHookTest):
     Check if before_disk_hotplug is called when attaching & activating
     new disk
 
-    https://tcms.engineering.redhat.com/case/286224/?from_plan=9940
+    https://tcms.engineering.redhat.com/case/287249/?from_plan=9940
     """
     __test__ = True
     active_disk = False
@@ -245,14 +275,13 @@ class TestCase287249(helpers.HotplugHookTest):
 
     def perform_action(self):
         if ll_dc.waitForDataCenterState(config.DATA_CENTER_NAME):
-            vm_disks = vms.getVmDisks(VM_NAME)
+            vm_disks = vms.getVmDisks(self.vm_name)
             disk_names = [disk.get_name() for disk in vm_disks]
             if not self.use_disks[0] in disk_names:
-                self.assertTrue(disks.attachDisk(True,
-                                                 self.use_disks[0],
-                                                 VM_NAME),
+                self.assertTrue(disks.attachDisk(True, self.use_disks[0],
+                                                 self.vm_name),
                                 "Failed to attach disk %s to vm %s"
-                                % (self.use_disks[0], VM_NAME))
+                                % (self.use_disks[0], self.vm_name))
 
     def put_disks_in_correct_state(self):
         pass
@@ -265,10 +294,10 @@ class TestCase287249(helpers.HotplugHookTest):
 
     def tearDown(self):
         super(TestCase287249, self).tearDown()
-        vm_disks = vms.getVmDisks(VM_NAME)
+        vm_disks = vms.getVmDisks(self.vm_name)
         disk_names = [disk.get_name() for disk in vm_disks]
         if self.use_disks[0] in disk_names:
-            disks.detachDisk(True, self.use_disks[0], VM_NAME)
+            disks.detachDisk(True, self.use_disks[0], self.vm_name)
 
 
 @attr(tier=2)
@@ -289,31 +318,30 @@ class TestCase287481(helpers.HotplugHookTest):
     def perform_action(self):
         LOGGER.info("Activating new HW - %s", self.use_disks[0])
 
-        vm_disks = vms.getVmDisks(VM_NAME)
+        vm_disks = vms.getVmDisks(self.vm_name)
         disk_names = [disk.get_name() for disk in vm_disks]
 
         LOGGER.info("Attached disks - %s", disk_names)
         if not self.use_disks[0] in disk_names:
             self.assertTrue(disks.attachDisk(True, self.use_disks[0],
-                                             VM_NAME, False),
+                                             self.vm_name, False),
                             "Attaching disk %s to vm %s - fails"
-                            % (self.use_disks[0], VM_NAME))
+                            % (self.use_disks[0], self.vm_name))
 
-        self.assertTrue(vms.activateVmDisk(True, VM_NAME, self.use_disks[0]),
-                        "Activation of VM disk %s should have succeed"
-                        % self.use_disks[0])
+        self.assertTrue(
+            vms.activateVmDisk(True, self.vm_name, self.use_disks[0]),
+            "Activation of VM disk %s should have succeed" % self.use_disks[0])
 
-        vms.deactivateVmDisk(True, VM_NAME, self.use_disks[0])
+        vms.deactivateVmDisk(True, self.vm_name, self.use_disks[0])
 
         self.clear_hooks()
-        assert vms.activateVmDisk(True, VM_NAME, self.use_disks[0])
+        assert vms.activateVmDisk(True, self.vm_name, self.use_disks[0])
 
     def verify_hook_called(self):
         LOGGER.info("Hooks shouldn't have been called")
         assert not self.get_hooks_result_file()
 
     @tcms(9940, 287481)
-    @bz(1015171)
     def test_after_disk_hotplug_binary_executable_hook_file(self):
         """ check that activate succeed and hook fails if hook is binary
             executable file
@@ -336,8 +364,8 @@ class TestCase286369(helpers.HotplugHookTest):
              'after_disk_hotplug': [helpers.HOOKFILENAME]}
 
     def perform_action(self):
-        assert vms.activateVmDisk(True, VM_NAME, self.use_disks[0])
-        assert vms.deactivateVmDisk(True, VM_NAME, self.use_disks[0])
+        assert vms.activateVmDisk(True, self.vm_name, self.use_disks[0])
+        assert vms.deactivateVmDisk(True, self.vm_name, self.use_disks[0])
 
     def create_hook_file(self, local_hook, remote_hook):
         LOGGER.info("Hook file: %s" % remote_hook)
@@ -373,8 +401,8 @@ class TestCase286243(helpers.HotplugHookTest):
             helpers.HOOKFILENAME, helpers.HOOKPRINTFILENAME]}
 
     def perform_action(self):
-        assert vms.activateVmDisk(True, VM_NAME, self.use_disks[0])
-        assert vms.deactivateVmDisk(True, VM_NAME, self.use_disks[0])
+        assert vms.activateVmDisk(True, self.vm_name, self.use_disks[0])
+        assert vms.deactivateVmDisk(True, self.vm_name, self.use_disks[0])
 
     def verify_hook_called(self):
         LOGGER.info("Verifying hook files...")
@@ -409,11 +437,11 @@ class TestCase286861(helpers.HotplugHookTest):
     def perform_action(self):
         def func():
             time.sleep(5)
-            utils.restartVdsmd(self.address, self.password)
+            utils.restartVdsmd(self.host_address, self.password)
 
         with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
             attach = executor.submit(
-                vms.activateVmDisk, False, VM_NAME, self.use_disks[0])
+                vms.activateVmDisk, False, self.vm_name, self.use_disks[0])
             executor.submit(func)
 
         self.assertTrue(attach.result(), "Activate should have failed")
@@ -429,19 +457,16 @@ class TestCase286861(helpers.HotplugHookTest):
         self.perform_action_and_verify_hook_called()
 
     def tearDown(self):
-        # give vdsm time to restart
+        """Give vdsm time to restart and clean the environment"""
         ll_dc.waitForDataCenterState(config.DATA_CENTER_NAME)
+        hosts.waitForHostsStates(True, [self.host_name])
         super(TestCase286861, self).tearDown()
 
 
-@attr(tier=0)
-class TestCase134134(TestCase):
-    """Plug in disk while OS is running (virtIO on supported OS type only)"""
+class BasePlugDiskTest(TestCase):
 
-    __test__ = True
-
-    tcms_plan_id = '5291'
-    tcms_test_case = '134134'
+    __test__ = False
+    template_name = config.TEMPLATE_NAME % TestCase.storage
 
     @classmethod
     def setup_class(cls):
@@ -449,13 +474,18 @@ class TestCase134134(TestCase):
         Clone a vm of each supported OS type and wait for VM boot to complete
         """
         LOGGER.info("setup class %s" % cls.__name__)
+        cls.disks = []
         cls.vm_names = []
+        cls.storage_domain = getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, cls.storage)[0]
 
-        def _create_and_start_vm(template):
+        def _create_and_start_vm():
             """
             Clones and starts a single vm from template
             """
-            vm_name = common.create_vm_from_template(template, cls.__name__)
+            vm_name = common.create_vm_from_template(
+                cls.template_name, cls.__name__, cls.storage_domain,
+                cls.storage)
             LOGGER.info("Starting VM %s" % vm_name)
             vms.startVm(positive, vm=vm_name, wait_for_ip=True)
             LOGGER.info("VM %s started successfully" % vm_name)
@@ -463,23 +493,38 @@ class TestCase134134(TestCase):
 
         results = []
         with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
-            for template in config.TEMPLATE_NAMES:
-                results.append(executor.submit(_create_and_start_vm, template))
+            results.append(executor.submit(_create_and_start_vm))
 
         utils.raise_if_exception(results)
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Shuts down the vm and removes it
+        """
+        common.shutdown_and_remove_vms(cls.vm_names)
+        delete_disks(filter(lambda w: disks.checkDiskExists(True, w),
+                     cls.disks))
+
+
+@attr(tier=0)
+class TestCase134134(BasePlugDiskTest):
+    """Plug in disk while OS is running (virtIO on supported OS type only)"""
+
+    __test__ = True
+
+    tcms_plan_id = '5291'
+    tcms_test_case = '134134'
 
     @tcms(tcms_plan_id, tcms_test_case)
     def test_plug_virtio_disk(self):
         """
         Try to plug in a new virtIO disk while OS is running
         """
-        for template in config.TEMPLATE_NAMES:
-            vm_name = config.VM_NAME_FORMAT % (
-                template,
-                self.__class__.__name__
-            )
+        for vm_name in self.vm_names:
             disk_name = config.DISK_NAME_FORMAT % (
-                template, ENUMS["interface_virtio"], "shareable")
+                ENUMS["interface_virtio"], "shareable",
+                self.storage)
             LOGGER.info("Attempting to hotplug disk %s to VM %s" %
                         (disk_name, vm_name))
             status = disks.attachDisk(positive,
@@ -489,16 +534,9 @@ class TestCase134134(TestCase):
             LOGGER.info('Done')
             self.assertTrue(status)
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        Shuts down the vm and removes it
-        """
-        common.shutdown_and_remove_vms(cls.vm_names)
-
 
 @attr(tier=0)
-class TestCase134139(TestCase):
+class TestCase134139(BasePlugDiskTest):
     """Unplug a disk and detach it. Tested as 2 independent functions"""
     __test__ = True
 
@@ -511,22 +549,17 @@ class TestCase134139(TestCase):
         Clone VMs, one for each template and create 2 additional disks
         for each vm - one should be active and the other inactive
         """
-        cls.vm_names = []
-
-        def _create_vm_and_disks(template):
-            """
-            Creates a single vm and adds 2 disks to it, deactivating
-            one of the additional disks
-            """
-            vm_name = common.create_vm_from_template(template, cls.__name__)
+        super(TestCase134139, cls).setup_class()
+        vms.stop_vms_safely(cls.vm_names)
+        for vm_name in cls.vm_names:
             LOGGER.info("Adding 2 disks to VM %s" % vm_name)
 
             disk_args = {
                 'positive': True,
                 'size': 2 * config.GB,
                 'sparse': True,
-                'wipe_after_delete': config.BLOCK_FS,
-                'storagedomain': config.STORAGE_DOMAIN_NAME,
+                'wipe_after_delete': cls.storage in config.BLOCK_TYPES,
+                'storagedomain': cls.storage_domain,
                 'bootable': False,
                 'interface': ENUMS['interface_virtio'],
                 'vm': vm_name,
@@ -534,23 +567,17 @@ class TestCase134139(TestCase):
 
             # add 2 disks:
             for active in True, False:
+                disk_alias = "%s_%s_Disk" % (vm_name, str(active))
                 LOGGER.info("Adding disk to vm %s with %s active disk",
                             vm_name, "not" if not active else "")
-                if not vms.addDisk(active=active, **disk_args):
+                if not vms.addDisk(active=active, alias=disk_alias,
+                                   **disk_args):
                     raise exceptions.DiskException("Unable to add disk to VM "
                                                    "%s" % vm_name)
+                cls.disks.append(disk_alias)
 
             if not vms.startVm(positive, vm=vm_name, wait_for_ip=True):
                 raise exceptions.VMException("Unable to start VM %s" % vm_name)
-
-            cls.vm_names.append(vm_name)
-
-        results = []
-        with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
-            for template in config.TEMPLATE_NAMES:
-                results.append(executor.submit(_create_vm_and_disks, template))
-
-        utils.raise_if_exception(results)
 
     @tcms(tcms_plan_id, tcms_test_case)
     def test_unplug_disk(self):
@@ -587,16 +614,9 @@ class TestCase134139(TestCase):
             LOGGER.info("Done detaching disk %s from vm %s" %
                         (inactive_disks[0].get_alias(), vm))
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        Shutdown all vms, forcefully if needed, and remove them
-        """
-        common.shutdown_and_remove_vms(cls.vm_names)
-
 
 @attr(tier=0)
-class TestCase231521(TestCase):
+class TestCase231521(BasePlugDiskTest):
     """Activate/Deactivate an already attached disk
     on a running VM with support OS"""
 
@@ -608,19 +628,17 @@ class TestCase231521(TestCase):
     @classmethod
     def setup_class(cls):
         """Create a VM with 2 disks extra disks - 1 active and 1 inactive"""
-        cls.vm_names = []
-
-        def _create_vm_and_disks(template):
-            vm_name = common.create_vm_from_template(template, cls.__name__)
-
+        super(TestCase231521, cls).setup_class()
+        vms.stop_vms_safely(cls.vm_names)
+        for vm_name in cls.vm_names:
             # add disk and deactivate it
             LOGGER.info("Adding 2 disks to VM %s" % vm_name)
             disk_args = {
                 'positive': True,
                 'size': 2 * config.GB,
                 'sparse': True,
-                'wipe_after_delete': config.BLOCK_FS,
-                'storagedomain': config.STORAGE_DOMAIN_NAME,
+                'wipe_after_delete': cls.storage in config.BLOCK_TYPES,
+                'storagedomain': cls.storage_domain,
                 'bootable': False,
                 'interface': ENUMS['interface_virtio'],
                 'vm': vm_name,
@@ -628,23 +646,17 @@ class TestCase231521(TestCase):
 
             # add 2 disks:
             for active in True, False:
+                disk_alias = "%s_%s_Disk" % (vm_name, str(active))
                 LOGGER.info("Adding disk to vm %s with %s active disk",
                             vm_name, "not" if not active else "")
-                if not vms.addDisk(active=active, **disk_args):
+                if not vms.addDisk(active=active, alias=disk_alias,
+                                   **disk_args):
                     raise exceptions.DiskException("Unable to add disk to VM "
                                                    "%s" % vm_name)
 
+                cls.disks.append(disk_alias)
             if not vms.startVm(positive, vm=vm_name, wait_for_ip=True):
                 raise exceptions.VMException("Unable to start VM %s" % vm_name)
-
-            cls.vm_names.append(vm_name)
-
-        results = []
-        with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
-            for template in config.TEMPLATE_NAMES:
-                results.append(executor.submit(_create_vm_and_disks, template))
-
-        utils.raise_if_exception(results)
 
     @tcms(tcms_plan_id, tcms_test_case)
     def test_activate_disk(self):
@@ -676,80 +688,40 @@ class TestCase231521(TestCase):
             LOGGER.info("Finished deactivating disk %s" % disk_name)
             self.assertTrue(status)
 
-    @classmethod
-    def teardown_class(cls):
-        """
-        remove all vms created during the test
-        """
-        common.shutdown_and_remove_vms(cls.vm_names)
-
 
 @attr(tier=0)
-class TestCase139348(TestCase):
+class TestCase139348(BasePlugDiskTest):
     """Hotplug floating disk (shareable and non-shareable)"""
 
     __test__ = True
     tcms_plan_id = '5291'
     tcms_test_case = '139348'
 
-    @classmethod
-    def setup_class(cls):
-        """
-        Clone and start vm for test
-        """
-        cls.vm_names = []
-
-        def _create_and_start_vm(template):
-            vm_name = common.create_vm_from_template(template, cls.__name__)
-            LOGGER.info("Starting vm %s" % vm_name)
-            if not vms.startVm(positive, vm_name, wait_for_ip=True):
-                raise exceptions.VMException("Unable to start VM %s" % vm_name)
-            LOGGER.info("VM %s started successfully" % vm_name)
-            cls.vm_names.append(vm_name)
-
-        results = []
-        with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
-            for template in config.TEMPLATE_NAMES:
-                results.append(executor.submit(_create_and_start_vm, template))
-
-        utils.raise_if_exception(results)
-
     @tcms(tcms_plan_id, tcms_test_case)
     def test_plug_floating_disk(self):
         """
         Hotplug floating disk (shareable/non-shareable) to vm
         """
-        for template in config.TEMPLATE_NAMES:
-            for disk_interface in DISK_INTERFACES:
-                for shareable in (True, False):
-                    disk_name = config.DISK_NAME_FORMAT % (
-                        template,
-                        disk_interface,
-                        'shareable' if shareable else 'non-shareable')
+        for disk_interface in DISK_INTERFACES:
+            for shareable in (True, False):
+                disk_name = config.DISK_NAME_FORMAT % (
+                    disk_interface,
+                    'shareable' if shareable else 'non-shareable',
+                    self.storage)
 
-                    vm_name = config.VM_NAME_FORMAT % (
-                        template,
-                        self.__class__.__name__
-                    )
+                vm_name = self.vm_names[0]
 
-                    LOGGER.info("attempting to plug disk %s to vm %s" %
-                                (disk_name, vm_name))
-                    status = disks.attachDisk(positive,
-                                              alias=disk_name,
-                                              vmName=vm_name)
-                    LOGGER.info("Done - status is %s" % status)
-                    self.assertTrue(status)
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        remove vm and disk
-        """
-        common.shutdown_and_remove_vms(cls.vm_names)
+                LOGGER.info("attempting to plug disk %s to vm %s" %
+                            (disk_name, vm_name))
+                status = disks.attachDisk(positive,
+                                          alias=disk_name,
+                                          vmName=vm_name)
+                LOGGER.info("Plug disk status is %s" % status)
+                self.assertTrue(status)
 
 
 @attr(tier=0)
-class TestCase244310(TestCase):
+class TestCase244310(BasePlugDiskTest):
     """
     Plug shared disks into 2 VMs simultaneously
     """
@@ -763,16 +735,19 @@ class TestCase244310(TestCase):
         """
         create 2 vms for each template and start them
         """
+        super(TestCase244310, cls).setup_class()
+        vms.stop_vms_safely(cls.vm_names)
         cls.vm_pairs = []
 
-        def _create_vms_and_disks(template):
-            vm_name = common.create_vm_from_template(template, cls.__name__)
+        def create_two_vms(vm_name):
             new_name = vm_name + "1"
             LOGGER.info("renaming vm %s to %s" % (vm_name, new_name))
             if not vms.updateVm(positive, vm=vm_name, name=new_name):
                 raise exceptions.VMException("Unable to rename vm %s to %s" %
                                              (vm_name, new_name))
-            vm_name = common.create_vm_from_template(template, cls.__name__)
+            vm_name = common.create_vm_from_template(
+                cls.template_name, cls.__name__, cls.storage_domain,
+                cls.storage)
             vm_pair = (vm_name, new_name)
             for vm in vm_pair:
                 LOGGER.info("Starting vm %s" % vm)
@@ -783,10 +758,9 @@ class TestCase244310(TestCase):
 
         results = []
         with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
-            for template in config.TEMPLATE_NAMES:
-                results.append(executor.submit(_create_vms_and_disks,
-                                               template))
-
+            for vm_name in cls.vm_names:
+                results.append(executor.submit(create_two_vms,
+                                               vm_name))
         utils.raise_if_exception(results)
 
     @tcms(tcms_plan_id, tcms_test_case)
@@ -794,13 +768,12 @@ class TestCase244310(TestCase):
         """
         plug same disk into 2 vms simultaneously
         """
-        for (first_vm, second_vm), template in zip(self.vm_pairs,
-                                                   config.TEMPLATE_NAMES):
+        for first_vm, second_vm in self.vm_pairs:
             LOGGER.info("VMs are: %s, %s" % (first_vm, second_vm))
             disk_name = config.DISK_NAME_FORMAT % (
-                template,
                 ENUMS['interface_virtio'],
-                'shareable'
+                'shareable',
+                self.storage,
             )
             LOGGER.info(
                 "Plugging disk %s into vm %s (first vm)",
@@ -838,6 +811,7 @@ class TestCase244314(TestCase):
     __test__ = True
     tcms_plan_id = '5291'
     tcms_test_case = '244314'
+    template_name = config.TEMPLATE_NAME % TestCase.storage
 
     @classmethod
     def setup_class(cls):
@@ -845,41 +819,37 @@ class TestCase244314(TestCase):
         create vm pair for each template, plug disk into vms and start them
         """
         cls.vm_pairs = []
+        cls.storage_domain = getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, cls.storage)[0]
 
-        def _create_vms_and_disks(template):
-            disk_name = config.DISK_NAME_FORMAT % (
-                template,
-                ENUMS['interface_virtio'],
-                'shareable'
-            )
-            vm_name = common.create_vm_from_template(template, cls.__name__)
-            new_name = vm_name + "1"
-            LOGGER.info("renaming vm %s to %s", vm_name, new_name)
-            if not vms.updateVm(positive, vm=vm_name, name=new_name):
-                raise exceptions.VMException("Unable to rename vm %s to %s" %
-                                             (vm_name, new_name))
-            vm_name = common.create_vm_from_template(template, cls.__name__)
-            vm_pair = (vm_name, new_name)
-            for vm in vm_pair:
-                LOGGER.info("Plugging and activating disk %s to vm %s" %
-                            (disk_name, vm))
-                if not disks.attachDisk(positive, alias=disk_name, vmName=vm):
-                    raise exceptions.DiskException("Unable to plug %s to vm %s"
-                                                   % (disk_name, vm))
-                LOGGER.info("Disk %s plugged to vm %s" % (disk_name, vm))
-                LOGGER.info("Starting vm %s" % vm)
-                if not vms.startVm(positive, vm, wait_for_ip=True):
-                    raise exceptions.VMException("Unable to start VM %s" % vm)
-                LOGGER.info("VM %s started successfully" % vm)
-                cls.vm_pairs.append(vm_pair)
+        disk_name = config.DISK_NAME_FORMAT % (
+            ENUMS['interface_virtio'],
+            'shareable',
+            cls.storage,
+        )
+        vm_name = common.create_vm_from_template(
+            cls.template_name, cls.__name__, cls.storage_domain, cls.storage)
+        new_name = vm_name + "1"
+        LOGGER.info("renaming vm %s to %s", vm_name, new_name)
+        if not vms.updateVm(positive, vm=vm_name, name=new_name):
+            raise exceptions.VMException("Unable to rename vm %s to %s" %
+                                         (vm_name, new_name))
+        vm_name = common.create_vm_from_template(
+            cls.template_name, cls.__name__, cls.storage_domain, cls.storage)
+        vm_pair = (vm_name, new_name)
 
-        results = []
-        with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
-            for template in config.TEMPLATE_NAMES:
-                results.append(executor.submit(_create_vms_and_disks,
-                                               template))
-
-        utils.raise_if_exception(results)
+        for vm in vm_pair:
+            LOGGER.info("Plugging and activating disk %s to vm %s" %
+                        (disk_name, vm))
+            if not disks.attachDisk(positive, alias=disk_name, vmName=vm):
+                raise exceptions.DiskException("Unable to plug %s to vm %s"
+                                               % (disk_name, vm))
+            LOGGER.info("Disk %s plugged to vm %s" % (disk_name, vm))
+            LOGGER.info("Starting vm %s" % vm)
+            if not vms.startVm(positive, vm, wait_for_ip=True):
+                raise exceptions.VMException("Unable to start VM %s" % vm)
+            LOGGER.info("VM %s started successfully" % vm)
+            cls.vm_pairs.append(vm_pair)
 
     @tcms(tcms_plan_id, tcms_test_case)
     def test_unplug_shared_disk(self):
@@ -887,25 +857,22 @@ class TestCase244314(TestCase):
         Unplug shared disk from a single VM while it is still plugged to
         another vm
         """
-        for (first_vm, second_vm), template in zip(
-            self.vm_pairs,
-            config.TEMPLATE_NAMES
-        ):
-            disk_name = config.DISK_NAME_FORMAT % (
-                template,
-                ENUMS['interface_virtio'],
-                'shareable'
-            )
-            LOGGER.info(
-                "Unplugging disk %s from vm %s",
-                disk_name,
-                first_vm
-            )
-            unplug_status = vms.deactivateVmDisk(positive,
-                                                 diskAlias=disk_name,
-                                                 vm=first_vm)
-            LOGGER.info("Disk %s unplugged from vm %s", disk_name, first_vm)
-            self.assertTrue(unplug_status)
+        first_vm = self.vm_pairs[0][0]
+        disk_name = config.DISK_NAME_FORMAT % (
+            ENUMS['interface_virtio'],
+            'shareable',
+            self.storage,
+        )
+        LOGGER.info(
+            "Unplugging disk %s from vm %s",
+            disk_name,
+            first_vm
+        )
+        unplug_status = vms.deactivateVmDisk(positive,
+                                             diskAlias=disk_name,
+                                             vm=first_vm)
+        LOGGER.info("Disk %s unplugged from vm %s", disk_name, first_vm)
+        self.assertTrue(unplug_status)
 
     @classmethod
     def teardown_class(cls):
@@ -930,7 +897,7 @@ class TestCase174616(TestCase):
     disk_count = 2
     first_vm = 'first'
     second_vm = 'second'
-    template = config.TEMPLATE_NAMES[0]
+    template_name = config.TEMPLATE_NAME % TestCase.storage
     first_disk_name = 'non-shareable_virtio_disk'
     second_disk_name = 'shareable_virtio_disk'
     disks_aliases = [first_disk_name, second_disk_name]
@@ -943,8 +910,10 @@ class TestCase174616(TestCase):
         Create 2 VMs, 2 virtio disks and one of them is shareable
         """
         cls.vm_names = []
-        cls.first_vm = common.create_vm_from_template(cls.template,
-                                                      cls.first_vm)
+        cls.storage_domain = getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, cls.storage)[0]
+        cls.first_vm = common.create_vm_from_template(
+            cls.template_name, cls.first_vm, cls.storage_domain, cls.storage)
 
         # add disk and attach it
         LOGGER.info("Adding 2 disks to VM %s" % cls.first_vm)
@@ -956,13 +925,13 @@ class TestCase174616(TestCase):
                 'provisioned_size': 3 * config.GB,
                 'format': cls.formats[index],
                 'sparse': True,
-                'wipe_after_delete': config.BLOCK_FS,
-                'storagedomain': config.STORAGE_DOMAIN_NAME,
+                'wipe_after_delete': cls.storage in config.BLOCK_TYPES,
+                'storagedomain': cls.storage_domain,
                 'bootable': False,
                 'interface': ENUMS['interface_virtio'],
                 'shareable': cls.shareable[index],
             }
-            if config.STORAGE_TYPE == config.ENUMS['storage_type_iscsi'] \
+            if cls.storage == config.ENUMS['storage_type_iscsi'] \
                     and disk_args['format'] == ENUMS['format_raw']:
                 disk_args['sparse'] = False
 
@@ -981,8 +950,8 @@ class TestCase174616(TestCase):
                                                   cls.first_vm))
             LOGGER.info("%s disk added successfully", cls.disks_aliases[index])
 
-        cls.second_vm = common.create_vm_from_template(cls.template,
-                                                       cls.second_vm)
+        cls.second_vm = common.create_vm_from_template(
+            cls.template_name, cls.second_vm, cls.storage_domain, cls.storage)
 
         if not disks.attachDisk(positive, alias=cls.second_disk_name,
                                 vmName=cls.second_vm, active=False):

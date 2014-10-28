@@ -239,7 +239,10 @@ def waitForHostsStates(positive, names, states='up',
     Author: talayan
     """
 
-    list_names = split(names)
+    if isinstance(names, basestring):
+        list_names = split(names)
+    else:
+        list_names = names[:]
     [HOST_API.find(host) for host in list_names]
     number_of_hosts = len(list_names)
 

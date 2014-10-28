@@ -14,19 +14,24 @@ __test__ = False
 logger = logging.getLogger(__name__)
 
 
-def start_creating_disks_for_test():
+def start_creating_disks_for_test(storage_domain, wipe_after_delete, sd_type):
     """
     Begins asynchronous creation of disks of all permutations of disk
-    interfaces, shareable/non-shareable for each image to be used from cobbler
-    and returns a list of Futures with calls to the creation of each disk
+    interfaces, shareable/non-shareable for each storage type
+    Parameters:
+        * storage_domain: name of the storage domain where the disks will be
+            created
+        * wipe_after_delete: Boolean if wipe_after_delete should be activated
+        * sd_type: storage type of the domain where the disks will be created
+    Returns: list of tuples with (disk_alias, Future object)
     """
     logger.info("Creating all disks for plugging/unplugging")
     disk_args = {
         # Fixed arguments
         'positive': True,
         'provisioned_size': 2 * config.GB,
-        'wipe_after_delete': config.BLOCK_FS,
-        'storagedomain': config.STORAGE_DOMAIN_NAME,
+        'wipe_after_delete': wipe_after_delete,
+        'storagedomain': storage_domain,
         'bootable': False,
         # Custom arguments - change for each disk
         'interface': None,
@@ -37,48 +42,52 @@ def start_creating_disks_for_test():
     }
     results = []
     with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
-        for template in config.TEMPLATE_NAMES:
-            for disk_interface in config.DISK_INTERFACES:
-                for shareable in (True, False):
-                    disk_args['alias'] = config.DISK_NAME_FORMAT % (
-                        template,
-                        disk_interface,
-                        'shareable' if shareable else 'non-shareable')
-                    disk_args['interface'] = disk_interface
-                    disk_args['shareable'] = shareable
-                    disk_args['format'] = 'raw' if shareable else 'cow'
-                    disk_args['sparse'] = not shareable
-                    results.append(executor.submit(disks.addDisk, **disk_args))
+        for disk_interface in config.DISK_INTERFACES:
+            for shareable in (True, False):
+                disk_args['alias'] = config.DISK_NAME_FORMAT % (
+                    disk_interface,
+                    'shareable' if shareable else 'non-shareable',
+                    sd_type)
+                disk_args['interface'] = disk_interface
+                disk_args['shareable'] = shareable
+                disk_args['format'] = 'raw' if shareable else 'cow'
+                disk_args['sparse'] = not shareable
+                results.append((
+                    disk_args['alias'],
+                    executor.submit(disks.addDisk, **disk_args)))
     return results
 
 
-def create_vm_and_template(cobbler_image, template_name):
+def create_vm_and_template(cobbler_image, storage_domain, storage_type):
     """
-    Creates and installs a VM from cobbler using the image specified.
+    Creates and installs a VM from the cobbler_image provided by foreman
     After creating the VM a template is created from the vm and the original
     VM is removed.
-    parameters:
-    cobbler_image - cobbler image used to provision VM
-    template_name - name given to template
+    Parameters:
+        * cobbler_image - name of the image used to provision the VM
+        * storage_domain - name of the storage domain to create the disk in
+        * storage_type - str with type of the storage domain (nfs, iscsi, ...)
+    Returns: template's name
     """
-    vm_name = "%sVM" % template_name
-    logger.info("Creating VM %s and installing OS from cobbler image: %s" %
+    vm_name = "%s_vm_to_remove_%s" % (config.TESTNAME, storage_type)
+    template_name = config.TEMPLATE_NAME % storage_type
+    logger.info("Creating VM %s and installing OS from image: %s" %
                 (vm_name, cobbler_image))
     if not vms.createVm(config.positive,
                         vmName=vm_name,
                         vmDescription=vm_name,
                         cluster=config.CLUSTER_NAME,
                         nic=config.HOST_NICS[0],
-                        storageDomainName=config.STORAGE_DOMAIN_NAME,
+                        storageDomainName=storage_domain,
                         size=10 * config.GB,
                         diskInterface=config.ENUMS['interface_virtio'],
                         memory=2 * config.GB,
                         image=cobbler_image,
                         installation=True,
                         useAgent=True,
-                        os_type='rhel_6',
-                        user='root',
-                        password='qum5net',
+                        os_type=config.ENUMS['rhel6'],
+                        user=config.VMS_LINUX_USER,
+                        password=config.VMS_LINUX_PW,
                         network=config.MGMT_BRIDGE):
         raise exceptions.VMException("Could not create vm %s" % vm_name)
     logger.info("VM %s created and started successfully" % vm_name)
@@ -110,36 +119,23 @@ def create_vm_and_template(cobbler_image, template_name):
     if not vms.removeVm(config.positive, vm=vm_name):
         raise exceptions.VMException("Unable to remove vm - %s" % vm_name)
 
-
-def start_installing_vms_for_test():
-    """
-    Creates a VM for each image defined in the config file and installs it
-    After installation is complete creates a template for each vm
-    returns a list of Futures with calls to installations and template creation
-    """
-    logger.info("Starting installation of all master VMs for templates")
-    results = []
-
-    with ThreadPoolExecutor(config.MAX_WORKERS) as executor:
-        for image, template_name in zip([config.COBBLER_PROFILE],
-                                        config.TEMPLATE_NAMES):
-            results.append(executor.submit(create_vm_and_template,
-                                           image,
-                                           template_name))
-    return results
+    return template_name
 
 
-def create_vm_from_template(template_name, class_name):
+def create_vm_from_template(template_name, class_name, storage_domain,
+                            storage_type):
     """
     Clones a vm from the template of the given image name
     with class name as part of the VM name:
     """
-    vm_name = config.VM_NAME_FORMAT % (template_name, class_name)
+    vm_name = config.CLASS_VM_NAME_FORMAT % (
+        class_name, storage_type)
     logger.info("Cloning VM %s from template %s" % (vm_name, template_name))
     if not vms.createVm(positive=config.positive,
                         vmName=vm_name,
                         vmDescription=vm_name,
                         template=template_name,
+                        storageDomainName=storage_domain,
                         start='false',
                         cluster=config.CLUSTER_NAME,
                         network=config.MGMT_BRIDGE):
@@ -168,7 +164,7 @@ def shutdown_and_remove_vms(vm_names):
         for disk in vmDisks:
             if not disk.get_bootable():
                 assert disks.detachDisk(True, disk.get_alias(), vm_name)
-        stopVm = vms.get_vm_state(vm_name) == config.ENUMS['vm_state_up']
+        stopVm = vms.get_vm_state(vm_name) == config.VM_UP
         assert vms.removeVm(config.positive, vm_name, stopVM=str(stopVm))
 
     with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
