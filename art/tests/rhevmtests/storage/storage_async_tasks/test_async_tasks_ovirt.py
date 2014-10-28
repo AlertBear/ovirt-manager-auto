@@ -4,8 +4,7 @@ import logging
 import time
 
 from concurrent.futures import ThreadPoolExecutor
-
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from nose.plugins.attrib import attr
 
 import config
@@ -154,6 +153,7 @@ class TestCase288728(RestartOvirt):
 
         self.restart_before_tasks_start()
 
+    @bz({'1158016': {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
     @tcms(tcms_plan_id, tcms_test_case)
     def test_restart_during_tasks(self):
         """
@@ -272,6 +272,7 @@ class TestCase288972(RestartOvirt):
         """
         self.restart_before_tasks_start()
 
+    @bz({'1158016': {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
     @tcms(tcms_plan_id, tcms_test_case)
     def test_restart_during_tasks(self):
         """
