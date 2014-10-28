@@ -1191,8 +1191,8 @@ class VmPool(BaseVmWithDiskTemplate):
     """
     __test__ = True
     pool_name = 'vm_pool'
-    template_name = 'basic_template'
-    vm_name = 'template_vm'
+    template_name = 'template_for_vmpool'
+    vm_name = 'vm_for_vmpool'
     new_vm_pool = 'new_vm_pool'
 
     @tcms('13398', '366362')
