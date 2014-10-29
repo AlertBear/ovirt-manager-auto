@@ -1,5 +1,6 @@
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level import storagedomains
+from art.rhevm_api.tests_lib.high_level import storagedomains as hl_sd
 from rhevmtests.storage.storage_full_import_export import config
 
 
@@ -12,7 +13,7 @@ def setup_module():
             config=config.PARAMETERS, storage=config.PARAMETERS,
             storage_type=config.STORAGE_TYPE, basename=config.TESTNAME)
     else:
-        assert storagedomains.attach_and_activate_sd(
+        assert hl_sd.attach_and_activate_domain(
             config.DATA_CENTER_NAME, config.EXPORT_STORAGE_NAME)
 
 
@@ -24,5 +25,5 @@ def teardown_module():
             True, config.DATA_CENTER_NAME, vdc=config.VDC,
             vdc_password=config.VDC_PASSWORD)
     else:
-        assert storagedomains.detach_and_deactivate_sd(
+        assert hl_sd.detach_and_deactivate_domain(
             config.DATA_CENTER_NAME, config.EXPORT_STORAGE_NAME)
