@@ -23,14 +23,12 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 
 VM_IP_ADDRESSES = dict()
 BASE_SNAP_DESC = "base_snap"  # Base snapshot description
-VM_NAME_TEMPLATE = 'vm_%s'
 SNAPSHOT_TEMPLATE_DESC = 'snap_%s'
 RESTORED_VM = "restored_vm"
 VM_DISK_SIZE = 6 * config.GB
 SHOULD_CREATE_SNAPSHOT = (True, False)
 TRANSIENT_DIR_PATH = "/var/lib/vdsm/transient"
 DD_COMMAND = 'dd if=/dev/%s of=/dev/%s bs=1M oflag=direct'
-VM_NAMES = [VM_NAME_TEMPLATE % idx for idx in range(config.VM_COUNT)]
 
 vm_args = {
     'positive': True,
@@ -39,7 +37,6 @@ vm_args = {
     'cluster': config.CLUSTER_NAME,
     'nic': config.HOST_NICS[0],
     'nicType': ENUMS['nic_type_virtio'],
-    'storageDomainName': config.SD_NAME_0,
     'size': VM_DISK_SIZE,
     'diskInterface': ENUMS['interface_virtio'],
     'volumeFormat': ENUMS['format_cow'],
@@ -61,13 +58,14 @@ vm_args = {
 }
 
 
-def prepare_vm(vm_name, create_snapshot=False):
+def prepare_vm(vm_name, create_snapshot=False, storage_domain=None):
     """
     Installs vm with disks and create snapshot by demand
 
     Parameters:
         * vm_name - vm name
         * create_snapshot - True if should create snapshot
+        * storage_domain - name of the storage domain
         * vm_args:
         - vmName = VM name
         - vmDescription = Decription of VM
@@ -94,8 +92,10 @@ def prepare_vm(vm_name, create_snapshot=False):
                   port mirroring will be selected for the VNIC arbitrarily
                   from the network's profiles).
     """
-    vm_args['vmName'] = vm_name
-    assert vms.createVm(**vm_args)
+    args = vm_args.copy()
+    args['storageDomainName'] = storage_domain
+    args['vmName'] = vm_name
+    assert vms.createVm(**args)
 
     vm_ip = vms.waitForIP(vm_name)[1]['ip']
     LOGGER.info("Storing ip address %s for vm %s", vm_ip, vm_name)
@@ -110,15 +110,16 @@ def prepare_vm(vm_name, create_snapshot=False):
             description=SNAPSHOT_TEMPLATE_DESC % vm_name)
 
 
-def is_transient_directory_empty():
+def is_transient_directory_empty(host):
     """
     Checking the transient folder
+        * host - host ip or fqdn
     return:
         True if the directory is empty, False otherwise
     """
     LOGGER.info("Checking transient directory")
     vdsm_machine = Machine(
-        host=config.HOSTS[0], user=config.HOSTS_USER,
+        host=host, user=config.HOSTS_USER,
         password=config.HOSTS_PW).util('linux')
 
     return vdsm_machine.is_dir_empty(dir_path=TRANSIENT_DIR_PATH)

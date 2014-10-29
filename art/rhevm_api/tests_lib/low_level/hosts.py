@@ -2256,3 +2256,18 @@ def refresh_host_capabilities(host):
             if event_description == event.get_description():
                 return True
     return False
+
+
+def get_cluster_hosts(cluster_name, host_status=ENUMS['host_state_up']):
+    """
+    Get a list of host names for a given cluster.
+        * cluster_name: name of the cluster
+        * host_status: status of the host
+    Return: List of host names in a cluster with host_status or empty list
+    """
+    elementStatus, hosts = searchElement(True, ELEMENT, COLLECTION,
+                                         'cluster', cluster_name)
+    if elementStatus:
+        return [host.get_name() for host in hosts
+                if host.get_status().get_state() == host_status]
+    return []
