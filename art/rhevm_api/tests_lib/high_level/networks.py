@@ -185,7 +185,8 @@ def removeMultiNetworks(positive, networks, data_center=None):
 
 
 def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
-                             auto_nics=[], save_config=False, network_dict={}):
+                             auto_nics=[], save_config=False,
+                             network_dict={}, vlan_auto_nics={}):
     """
     Function that creates and attach the network to the:
     a) DC, b) Cluster, c) Hosts with SetupNetworks
@@ -195,6 +196,9 @@ def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
     :param host: list of resources.VDS objects
     :param auto_nics: a list of nics indexes to preserve
     :param save_config: flag for saving configuration
+    :param vlan_auto_nics: dictionary for auto_nics with vlan.
+    for example vlan_auto_nics = {162: 0} where 162 is the vlan ID and
+    0 is the host_nic index. (all int)
     :param network_dict: dictionary of dictionaries for the following
     network_dict parameters:
         logical network name as the key for the following:
@@ -254,6 +258,11 @@ def createAndAttachNetworkSN(data_center=None, cluster=None, host=[],
         host_auto_nics = []
         for index in auto_nics:
             host_auto_nics.append(host.nics[index])
+
+        for key, val in vlan_auto_nics.iteritems():
+            host_int = host.nics[val]
+            host_vlan_int = ".".join([host_int, str(key)])
+            host_auto_nics.append(host_vlan_int)
 
         net_obj = []
         for net, net_param in network_dict.items():
