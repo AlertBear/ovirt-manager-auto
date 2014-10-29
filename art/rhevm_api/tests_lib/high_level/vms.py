@@ -136,7 +136,8 @@ def check_vm_migration(vm_names, orig_host, vm_user, host_password,
         # Turn on the NIC with required network and activate Host.
         # Return the state of the original Host as before the migration
         LOGGER.info("Put the NIC in the UP state and activate the Host")
-        if not hosts.ifupNic(host=orig_host, root_password=host_password,
+        ip = hosts.getHostIP(orig_host)
+        if not hosts.ifupNic(host=ip, root_password=host_password,
                              nic=nic, wait=False):
             LOGGER.error("Couldn't put NIC %s in up state", nic)
             return False

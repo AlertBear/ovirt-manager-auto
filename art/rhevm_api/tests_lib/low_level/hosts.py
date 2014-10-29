@@ -2218,6 +2218,17 @@ def get_host_name_from_engine(host_ip):
     return None
 
 
+def get_host_ip_from_engine(host):
+    """
+    Get host name from engine by host IP
+    :param host_ip: resources.VDS object
+    :return: host.name or None
+    """
+
+    host_name = HOST_API.find(host)
+    return host_name.get_address()
+
+
 def refresh_host_capabilities(host):
     """
     Refresh Host Capabilities
