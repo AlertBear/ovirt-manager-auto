@@ -100,6 +100,18 @@ def getVmDisk(vmName, alias):
     return DISKS_API.getElemFromElemColl(vmObj, alias)
 
 
+def getTemplateDisk(template_name, alias):
+    """
+    Description: Returns disk from template collection
+    Parameters:
+        *  template_name - name of template
+        * alias - name of disk
+    Return: Disk from template collection
+    """
+    template_obj = TEMPLATE_API.find(template_name)
+    return DISKS_API.getElemFromElemColl(template_obj, alias)
+
+
 def get_disk_obj(disk_alias):
     """
     Description: Returns disk obj from disks collection
@@ -585,7 +597,7 @@ def get_other_storage_domain(disk_name, vm_name=None):
     return improper_sd
 
 
-def get_disk_storage_domain_name(disk_name, vm_name=None):
+def get_disk_storage_domain_name(disk_name, vm_name=None, template_name=None):
     """
     Description: gets the disks' storage domain name
     Author: ratamir
@@ -594,13 +606,18 @@ def get_disk_storage_domain_name(disk_name, vm_name=None):
     * vm_name - name of vm (None by default), that contains disk disk_name.
                 None if the disk is floating disk (will be searched in disks
                 collection)
+    * template_name - same as vm_name, but for templates
     Return: Name of storage domain that contain disk_name
     """
+    if (vm_name is not None) and (template_name is not None):
+        raise Exception("You shouldn't specify both vm_name and template_name")
     logger.info("Get disk %s storage domain", disk_name)
-    if vm_name is None:
+    if vm_name is None and template_name is None:
         disk = DISKS_API.find(disk_name)
-    else:
+    elif vm_name is not None:
         disk = getVmDisk(vm_name, disk_name)
+    else:
+        disk = getTemplateDisk(template_name, disk_name)
     sd_id = disk.get_storage_domains().get_storage_domain()[0].get_id()
     disk_sd_name = STORAGE_DOMAIN_API.find(sd_id, 'id').get_name()
     logger.info("Disk %s storage domain is: %s", disk_name, disk_sd_name)

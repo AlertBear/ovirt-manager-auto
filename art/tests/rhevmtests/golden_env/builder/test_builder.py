@@ -9,6 +9,7 @@ from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import templates
 from art.rhevm_api.tests_lib.low_level import clusters
+from art.rhevm_api.tests_lib.low_level import disks
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_sd
 
 from art.rhevm_api.tests_lib.high_level import storagedomains
@@ -218,12 +219,27 @@ class CreateDC(TestCase):
                 self._create_vm(vm, dc_name, cl_name)
         assert templates.removeTemplate(True, tmp_template)
 
-    def add_templates(self, templ_def, cluster):
+    def copy_template_disks(self, template, all_sds):
+        template_disks = [
+            x.get_name() for x in templates.getTemplateDisks(template)]
+        template_disk = template_disks[0]
+        disk_sd = disks.get_disk_storage_domain_name(
+            template_disk, template_name=template)
+        for sd in all_sds:
+            if disk_sd != sd:
+                templates.copy_template_disks(
+                    True, template, ",".join(template_disks), sd, False)
+
+    def add_templates(self, templ_def, cluster, datacenter):
+        sds = ll_sd.getDCStorages(datacenter, False)
+        data_type = ENUMS['storage_dom_type_data']
+        data_sds = [x.get_name() for x in sds if x.get_type() == data_type]
         for template in templ_def:
             template_name = template['template']['name']
             assert templates.createTemplate(
                 True, vm=template['template']['base_vm'], name=template_name,
                 cluster=cluster)
+            self.copy_template_disks(template_name, data_sds)
 
     def build_dc(self, dc_def, host_conf, storage_conf):
         datacenter_name = dc_def['name']
@@ -263,7 +279,7 @@ class CreateDC(TestCase):
             templ_def = cl_def['templates']
             if templ_def:
                 LOGGER.info("Adding templates")
-                self.add_templates(templ_def, cl_def['name'])
+                self.add_templates(templ_def, cl_def['name'], datacenter_name)
             else:
                 LOGGER.info("No templates to add")
 

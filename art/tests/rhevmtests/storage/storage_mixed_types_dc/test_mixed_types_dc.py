@@ -318,7 +318,7 @@ class TestCase336522(IscsiNfsSD):
             True, name=self.template_name, vm=self.vm_name,
             cluster=config.CLUSTER_NAME, storagedomain=self.nfs)
 
-        disk = ll_templates._getTemplateDisks(self.template_name)[0]
+        disk = ll_templates.getTemplateDisks(self.template_name)[0]
         logger.info("Copy template disk %s to %s storage domain",
                     disk.get_alias(), self.iscsi)
         ll_disks.copy_disk(disk_id=disk.get_id(), target_domain=self.iscsi)
@@ -953,8 +953,7 @@ class TestCase336876(IscsiNfsSD):
         Thin provision disk on block form template that resides on NFS
 
         """
-        disk_id = ll_templates._getTemplateDisks(
-            self.template_name)[0].get_id()
+        disk_id = ll_templates.getTemplateDisks(self.template_name)[0].get_id()
 
         assert ll_disks.copy_disk(disk_id=disk_id, target_domain=self.iscsi)
 

@@ -531,7 +531,7 @@ def importTemplate(positive, template, export_storagedomain,
     return status
 
 
-def _getTemplateDisks(template):
+def getTemplateDisks(template):
     tmpObj = TEMPLATE_API.find(template)
     disks = TEMPLATE_API.getElemFromLink(
         tmpObj, link_name='disks', attr='disk', get_href=False)
@@ -549,7 +549,7 @@ def _getTemplateFirstDiskByName(template, diskName, idx=0):
     Return: Disk object
     """
     disk_not_found_msg = "Disk %s was not found in tmp's %s disk collection"
-    disks = _getTemplateDisks(template)
+    disks = getTemplateDisks(template)
     found = [disk for disk in disks if disk.get_name() == diskName]
     if not found:
         raise DiskNotFound(disk_not_found_msg % (diskName, template))
