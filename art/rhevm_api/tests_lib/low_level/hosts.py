@@ -848,20 +848,22 @@ def _prepareHostNicObject(**kwargs):
     mode = kwargs.get('mode')
     miimon = kwargs.get('miimon')
 
-    if slave_list is not None:
+    if slave_list:
         bond_obj = data_st.Bonding()
-        if slave_list is not None:
-            slaves = data_st.Slaves()
-            for nic in slave_list:
-                slaves.add_host_nic(data_st.HostNIC(name=nic.strip()))
+        slaves = data_st.Slaves()
+        for nic in slave_list:
+            slaves.add_host_nic(data_st.HostNIC(name=nic.strip()))
 
-            bond_obj.set_slaves(slaves)
+        bond_obj.set_slaves(slaves)
 
-        if mode is not None:
+        if mode:
             options = data_st.Options()
             options.add_option(data_st.Option(name='mode', value=mode))
+            # for bond mode 1 miimon is reuqired
+            if mode == 1 and not miimon:
+                miimon = 100
 
-            if miimon is not None:
+            if miimon:
                 options.add_option(data_st.Option(name='miimon', value=miimon))
             bond_obj.set_options(options)
 
