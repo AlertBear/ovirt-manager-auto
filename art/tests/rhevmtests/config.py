@@ -327,7 +327,7 @@ OS_TYPE = test_utils.convertOsNameToOsTypeElement(
 VDS_HOSTS = [
     resources.VDS(
         h, HOSTS_PW,
-    ) for h in HOSTS
+    ) for h in HOSTS_IP
 ]
 OVIRT_SERVICE = 'ovirt-engine'
 ENGINE_HOST = resources.Host(VDC_HOST)
