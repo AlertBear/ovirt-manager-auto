@@ -331,6 +331,9 @@ class TestCase174613(TestCase):
             raise exceptions.VMException(
                 "Failed to remove vm %s" % config.VM_NAME)
 
+        logger.info('Waiting for all vms to be removed')
+        wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                       config.DATA_CENTER_NAME)
         logger.info('Removing storage domains')
         assert ll_st_domains.removeStorageDomains(
             True, cls.sd_names, config.FIRST_HOST)
