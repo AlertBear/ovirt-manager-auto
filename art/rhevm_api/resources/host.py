@@ -1,4 +1,6 @@
 import socket
+import netaddr
+from art.rhevm_api.resources.common import fqdn2ip
 from art.rhevm_api.resources.resource import Resource
 from art.rhevm_api.resources.ssh import RemoteExecutor
 from art.rhevm_api.resources.service import Systemd, SysVinit
@@ -35,12 +37,14 @@ class Host(Resource):
 
     def __init__(self, ip, service_provider=None):
         """
-        :param ip: IP adress of machine
+        :param ip: IP adress of machine or resolvable fqdn
         :type ip: string
         :param service_provider: system service handler
         :type service_provider: class wich implemets SystemService interface
         """
         super(Host, self).__init__()
+        if not netaddr.valid_ipv4(ip):
+            ip = fqdn2ip(ip)
         self.ip = ip
         self.users = list()
         self._service_provider = service_provider
