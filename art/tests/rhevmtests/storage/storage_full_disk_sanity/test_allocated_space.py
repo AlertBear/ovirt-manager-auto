@@ -324,6 +324,7 @@ class TestCase286775(BaseCase):
         self.assertEqual(self.current_used_size[self.master_domain],
                          get_used_size(self.master_domain))
 
+    @bz({'1159637': {'engine': None, 'version': ['3.5']}})
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_extend_domain_and_check_details(self):
         """
@@ -474,6 +475,7 @@ class TestCaseUsedSpace(BaseCase):
     __test__ = False
     apis = BaseCase.apis - set(['sdk'])
 
+    @bz({'1159637': {'engine': None, 'version': ['3.5']}})
     def test_used_space(self):
         """
         Test extending an iscsi domain doesn't remove used space

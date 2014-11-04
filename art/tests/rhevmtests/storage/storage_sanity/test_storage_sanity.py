@@ -4,7 +4,7 @@ from nose.tools import istest
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.high_level import storagedomains
 from art.rhevm_api.tests_lib.low_level import storagedomains as ll_st_domains
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 import config
 
 logger = logging.getLogger(__name__)
@@ -40,6 +40,7 @@ class TestCase94947(TestCase):
     __test__ = True
     tcms_test_case = '94947'
 
+    @bz({"1159637": {'engine': None, 'version': ['3.5']}})
     @istest
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def create_remove_data_center_test(self):
