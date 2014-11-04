@@ -47,6 +47,7 @@ if not GOLDEN_ENV:
 
     elif STORAGE_TYPE:
         NUMBER_OF_SDS = int(STORAGE_CONF.get('%s_devices' % STORAGE_DEVICE_NAME))
+    STORAGE_SELECTOR = [STORAGE_TYPE]
 else:
     # XXX WA until the multi selector plugin is merge
     # Get the list of sds that would the test run with testmultiplier
