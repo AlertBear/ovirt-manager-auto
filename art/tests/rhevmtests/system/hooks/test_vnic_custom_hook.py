@@ -39,11 +39,11 @@ HOTUNPLUG_NIC = 'hotunplug_nic'
 
 
 def setup_module():
-    assert vms.createVm(True, config.VM_NAME[0], '',
+    assert vms.createVm(True, config.HOOKS_VM_NAME, '',
                         cluster=config.CLUSTER_NAME[0],
                         display_type=config.DISPLAY_TYPE,
                         template=config.TEMPLATE_NAME)
-    assert vms.startVm(True, vm=config.VM_NAME[0],
+    assert vms.startVm(True, vm=config.HOOKS_VM_NAME,
                        wait_for_status=config.VM_UP,
                        wait_for_ip=True)
     assert networks.addVnicProfile(True, name=PROFILE_A,
@@ -62,19 +62,19 @@ def setup_module():
                                    cluster=config.CLUSTER_NAME[0],
                                    network=config.MGMT_BRIDGE,
                                    custom_properties='speed=abc')
-    assert vms.addNic(True, vm=config.VM_NAME[0], name=UPDATE_NIC,
+    assert vms.addNic(True, vm=config.HOOKS_VM_NAME, name=UPDATE_NIC,
                       network=config.MGMT_BRIDGE, vnic_profile=PROFILE_A,
                       linked=True)
-    assert vms.addNic(True, vm=config.VM_NAME[0], name=HOTUNPLUG_NIC,
+    assert vms.addNic(True, vm=config.HOOKS_VM_NAME, name=HOTUNPLUG_NIC,
                       network=config.MGMT_BRIDGE, vnic_profile=PROFILE_A)
 
 
 def teardown_module():
-    assert runMachineCommand(True, ip=config.HOSTS[0],
+    assert runMachineCommand(True, ip=config.HOSTS_IP[0],
                              user=config.HOSTS_USER,
                              password=config.HOSTS_PW,
                              cmd=REMOVE_HOOKS)[0]
-    assert vms.removeVm(True, config.VM_NAME[0], stopVM='true')
+    assert vms.removeVm(True, config.HOOKS_VM_NAME, stopVM='true')
 
 
 class TestCaseVnic(TestCase):
@@ -86,7 +86,7 @@ class TestCaseVnic(TestCase):
         my_hook = '%s.hook' % name
         scriptName = '%s.%s' % (name, 'py')
         hooks.createPythonScriptToVerifyCustomHook(
-            ip=config.HOSTS[0], password=config.HOSTS_PW,
+            ip=config.HOSTS_IP[0], password=config.HOSTS_PW,
             scriptName=scriptName, customHook=self.CUSTOM_HOOK,
             target=path.join(HOOK_PATH, name),
             outputFile=path.join(TMP, my_hook))
@@ -94,7 +94,7 @@ class TestCaseVnic(TestCase):
     def _create_one_line_shell_script(self, name):
         my_hook = '%s.hook' % name
         scriptName = '%s.%s' % (name, 'sh')
-        hooks.createOneLineShellScript(ip=config.HOSTS[0],
+        hooks.createOneLineShellScript(ip=config.HOSTS_IP[0],
                                        password=config.HOSTS_PW,
                                        scriptName=scriptName, command='touch',
                                        arguments=path.join(TMP, my_hook),
@@ -117,7 +117,7 @@ class TestCaseVnic(TestCase):
             my_hook = '%s.hook' % name
             LOGGER.info("Checking existence of %s%s", TMP, my_hook)
             ret = hooks.checkForFileExistenceAndContent(
-                True, ip=config.HOSTS[0], password=config.HOSTS_PW,
+                True, ip=config.HOSTS_IP[0], password=config.HOSTS_PW,
                 filename=path.join(TMP, my_hook),
                 content=(SPEED if t == SCRIPT_TYPE.PYTHON else None))
             result = result or (not ret)
@@ -128,7 +128,7 @@ class TestCaseVnic(TestCase):
         """ remove created script """
         for name, t in self.HOOK_NAMES.iteritems():
             hook_name = '%s/%s.%s' % (name, name, t)
-            test_utils.removeFileOnHost(positive=True, ip=config.HOSTS[0],
+            test_utils.removeFileOnHost(positive=True, ip=config.HOSTS_IP[0],
                                         password=config.HOSTS_PW,
                                         filename=path.join(HOOK_PATH,
                                                            hook_name))
@@ -148,14 +148,14 @@ class TestCaseAfterBeforeNicHotplug(TestCaseVnic):
     def setUp(self):
         """ hot plug nic """
         super(TestCaseAfterBeforeNicHotplug, self).setUp()
-        assert vms.addNic(True, vm=config.VM_NAME[0], name=self.NIC_NAME,
+        assert vms.addNic(True, vm=config.HOOKS_VM_NAME, name=self.NIC_NAME,
                           network=config.MGMT_BRIDGE, vnic_profile=PROFILE_A)
 
     def tearDown(self):
         """ remove created nic """
-        assert vms.stopVm(True, config.VM_NAME[0])
-        assert vms.removeNic(True, config.VM_NAME[0], self.NIC_NAME)
-        assert vms.startVm(True, vm=config.VM_NAME[0],
+        assert vms.stopVm(True, config.HOOKS_VM_NAME)
+        assert vms.removeNic(True, config.HOOKS_VM_NAME, self.NIC_NAME)
+        assert vms.startVm(True, vm=config.HOOKS_VM_NAME,
                            wait_for_status=config.VM_UP,
                            wait_for_ip=True)
         super(TestCaseAfterBeforeNicHotplug, self).tearDown()
@@ -181,12 +181,13 @@ class TestCaseAfterBeforeNicHotunplug(TestCaseVnic):
     def setUp(self):
         """ hot unplug nic """
         super(TestCaseAfterBeforeNicHotunplug, self).setUp()
-        assert vms.hotUnplugNic(True, vm=config.VM_NAME[0], nic=HOTUNPLUG_NIC)
+        assert vms.hotUnplugNic(True, vm=config.HOOKS_VM_NAME,
+                                nic=HOTUNPLUG_NIC)
 
     def tearDown(self):
         """ plug nic back """
         super(TestCaseAfterBeforeNicHotunplug, self).tearDown()
-        assert vms.hotPlugNic(True, config.VM_NAME[0], HOTUNPLUG_NIC)
+        assert vms.hotPlugNic(True, config.HOOKS_VM_NAME, HOTUNPLUG_NIC)
 
     @istest
     @tcms(PLAN, 295128)
@@ -208,7 +209,7 @@ class TestCaseAfterBeforeUpdateDevice(TestCaseVnic):
     def setUp(self):
         """ update nic """
         super(TestCaseAfterBeforeUpdateDevice, self).setUp()
-        assert vms.updateNic(True, vm=config.VM_NAME[0], nic=UPDATE_NIC,
+        assert vms.updateNic(True, vm=config.HOOKS_VM_NAME, nic=UPDATE_NIC,
                              linked=False, network=config.MGMT_BRIDGE,
                              vnic_profile=PROFILE_A)
 
@@ -235,15 +236,15 @@ class TestCaseAfterUpdateDeviceFail(TestCaseVnic):
         cmd_nic = ('virsh -r dumpxml %s | '
                    'awk \"/<interface type=\'bridge\'>/,/<\/interface>/\" | '
                    'grep alias | grep -oP "(?<=<alias name=\').*?(?=\'/>)"')
-        fail_nic = runMachineCommand(True, ip=config.HOSTS[0],
+        fail_nic = runMachineCommand(True, ip=config.HOSTS_IP[0],
                                      user=config.HOSTS_USER,
                                      password=config.HOSTS_PW,
-                                     cmd=cmd_nic % config.VM_NAME[0]
+                                     cmd=cmd_nic % config.HOOKS_VM_NAME
                                      )[1]['out'][:-2].split()[0]
-        vm_id = vms.VM_API.find(config.VM_NAME[0]).get_id()
+        vm_id = vms.VM_API.find(config.HOOKS_VM_NAME).get_id()
         cmd = self.UPDATE_FAIL % (vm_id, fail_nic, self.NONEXISTENT)
         self.assertFalse(
-            runMachineCommand(True, ip=config.HOSTS[0],
+            runMachineCommand(True, ip=config.HOSTS_IP[0],
                               user=config.HOSTS_USER,
                               password=config.HOSTS_PW,
                               cmd=cmd)[0])

@@ -26,7 +26,7 @@ TMP = '/var/tmp'
 
 
 def setup_module():
-    assert vms.createVm(True, config.VM_NAME[0], '',
+    assert vms.createVm(True, config.HOOKS_VM_NAME, '',
                         cluster=config.CLUSTER_NAME[0],
                         display_type=config.DISPLAY_TYPE,
                         template=config.TEMPLATE_NAME,
@@ -34,22 +34,23 @@ def setup_module():
 
 
 def teardown_module():
-    assert runMachineCommand(True, ip=config.HOSTS[0], user=config.HOSTS_USER,
+    assert runMachineCommand(True, ip=config.HOSTS_IP[0],
+                             user=config.HOSTS_USER,
                              password=config.HOSTS_PW,
                              cmd=REMOVE_HOOKS)[0]
-    assert vms.removeVm(True, config.VM_NAME[0], stopVM='true')
+    assert vms.removeVm(True, config.HOOKS_VM_NAME, stopVM='true')
 
 
 def check_vdsmd():
-    if not test_utils.isVdsmdRunning(config.HOSTS[0], config.HOSTS_USER,
+    if not test_utils.isVdsmdRunning(config.HOSTS_IP[0], config.HOSTS_USER,
                                      config.HOSTS_PW):
         hosts.start_vdsm(config.HOSTS[0], config.HOSTS_PW,
                          config.DC_NAME[0])
 
 
 def check_vm():
-    if not vms.checkVmState(True, config.VM_NAME[0], config.VM_UP):
-        vms.restartVm(config.VM_NAME[0], wait_for_ip=True)
+    if not vms.checkVmState(True, config.HOOKS_VM_NAME, config.VM_UP):
+        vms.restartVm(config.HOOKS_VM_NAME, wait_for_ip=True)
 
 
 class TestCaseVm(TestCase):
@@ -62,7 +63,7 @@ class TestCaseVm(TestCase):
         """ create shell script """
         check_vm()
         hooks.createPythonScriptToVerifyCustomHook(
-            ip=config.HOSTS[0], password=config.HOSTS_PW,
+            ip=config.HOSTS_IP[0], password=config.HOSTS_PW,
             scriptName=self._hook_name(ext=self.PY),
             customHook=self.CUSTOM_HOOK,
             target=path.join(HOOK_DIR, self.NAME),
@@ -72,7 +73,7 @@ class TestCaseVm(TestCase):
         """ Check for file created by vdsm_stop hook """
         LOGGER.info("Checking for existence of file %s/%s", TMP, self.NAME)
         return hooks.checkForFileExistenceAndContent(
-            positive, ip=config.HOSTS[0], password=config.HOSTS_PW,
+            positive, ip=config.HOSTS_IP[0], password=config.HOSTS_PW,
             filename=path.join(TMP, self._hook_name()), content=HOOK_VALUE)
 
     def _hook_name(self, ext='hook'):
@@ -81,7 +82,7 @@ class TestCaseVm(TestCase):
     def tearDown(self):
         """ remove created script """
         hook_name = path.join(self.NAME, self._hook_name(ext=self.PY))
-        test_utils.removeFileOnHost(positive=True, ip=config.HOSTS[0],
+        test_utils.removeFileOnHost(positive=True, ip=config.HOSTS_IP[0],
                                     password=config.HOSTS_PW,
                                     filename=path.join(HOOK_DIR, hook_name))
         check_vm()
@@ -96,7 +97,7 @@ class TestCaseVdsm(TestCase):
         """ create shell script """
         check_vdsmd()
         script_name = self._hook_name(ext=self.SHELL)
-        hooks.createOneLineShellScript(ip=config.HOSTS[0],
+        hooks.createOneLineShellScript(ip=config.HOSTS_IP[0],
                                        password=config.HOSTS_PW,
                                        scriptName=script_name,
                                        command='touch',
@@ -108,7 +109,7 @@ class TestCaseVdsm(TestCase):
         """ Check for file created by vdsm_stop hook """
         LOGGER.info("Checking for existence of file %s/%s", TMP, self.NAME)
         return hooks.checkForFileExistenceAndContent(
-            True, ip=config.HOSTS[0], password=config.HOSTS_PW,
+            True, ip=config.HOSTS_IP[0], password=config.HOSTS_PW,
             filename=path.join(TMP, self._hook_name()))
 
     def _hook_name(self, ext='hook'):
@@ -117,10 +118,10 @@ class TestCaseVdsm(TestCase):
     def tearDown(self):
         """ remove created script """
         hook_name = path.join(self.NAME, self._hook_name(ext=self.SHELL))
-        test_utils.removeFileOnHost(positive=True, ip=config.HOSTS[0],
+        test_utils.removeFileOnHost(positive=True, ip=config.HOSTS_IP[0],
                                     password=config.HOSTS_PW,
                                     filename=path.join(HOOK_DIR, hook_name))
-        test_utils.removeFileOnHost(positive=True, ip=config.HOSTS[0],
+        test_utils.removeFileOnHost(positive=True, ip=config.HOSTS_IP[0],
                                     password=config.HOSTS_PW,
                                     filename=path.join(TMP, self._hook_name()))
         check_vdsmd()
@@ -167,9 +168,9 @@ class TestCaseBeforeVmStart(TestCaseVm):
     @tcms(config.TCMS_PLAN_CUSTOM, 289791)
     def before_vm_start(self):
         """ Check for file created by before_vm_start hook """
-        self.assertTrue(vms.stopVm(True, vm=config.VM_NAME[0]))
+        self.assertTrue(vms.stopVm(True, vm=config.HOOKS_VM_NAME))
         self.assertFalse(self.check_for_file(positive=False))
-        self.assertTrue(vms.startVm(True, vm=config.VM_NAME[0],
+        self.assertTrue(vms.startVm(True, vm=config.HOOKS_VM_NAME,
                                     wait_for_status=config.VM_UP,
                                     wait_for_ip=True))
         self.assertTrue(self.check_for_file(positive=True))
@@ -185,5 +186,7 @@ class TestCaseAfterVmPause(TestCaseVm):
     @tcms(config.TCMS_PLAN_CUSTOM, 289793)
     def after_vm_pause(self):
         """ Check for file created by after_vm_pause hook """
-        self.assertTrue(vms.suspendVm(True, vm=config.VM_NAME[0], wait=True))
+        self.assertTrue(
+            vms.suspendVm(True, vm=config.HOOKS_VM_NAME, wait=True)
+        )
         self.assertTrue(self.check_for_file(positive=True))

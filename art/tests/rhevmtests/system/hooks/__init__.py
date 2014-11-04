@@ -8,15 +8,16 @@ from rhevmtests.system.hooks import config
 
 
 def setup_module():
-    datacenters.build_setup(config=config.PARAMETERS,
-                            storage=config.PARAMETERS,
-                            storage_type=config.STORAGE_TYPE,
-                            basename=config.TEST_NAME)
+    if not config.GOLDEN_ENV:
+        datacenters.build_setup(config=config.PARAMETERS,
+                                storage=config.PARAMETERS,
+                                storage_type=config.STORAGE_TYPE,
+                                basename=config.TEST_NAME)
 
     storage_domain = storagedomains.getDCStorages(
         config.DC_NAME[0], False)[0].get_name()
     assert vms.createVm(
-        True, config.VM_NAME[0], '', cluster=config.CLUSTER_NAME[0],
+        True, config.HOOKS_VM_NAME, '', cluster=config.CLUSTER_NAME[0],
         nic=config.HOST_NICS[0], storageDomainName=storage_domain,
         size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
         diskInterface=config.DISK_INTERFACE, memory=config.GB,
@@ -28,15 +29,15 @@ def setup_module():
         slim=True, useAgent=True, image=config.COBBLER_PROFILE,
         network=config.MGMT_BRIDGE)
 
-    ip = vms.waitForIP(config.VM_NAME[0])
+    ip = vms.waitForIP(config.HOOKS_VM_NAME)
     assert ip[0]
     assert test_utils.setPersistentNetwork(ip[1]['ip'],
                                            config.VMS_LINUX_PW)
-    assert vms.stopVm(True, vm=config.VM_NAME[0])
-    assert templates.createTemplate(True, vm=config.VM_NAME[0],
+    assert vms.stopVm(True, vm=config.HOOKS_VM_NAME)
+    assert templates.createTemplate(True, vm=config.HOOKS_VM_NAME,
                                     name=config.TEMPLATE_NAME,
                                     cluster=config.CLUSTER_NAME[0])
-    assert vms.removeVm(True, config.VM_NAME[0])
+    assert vms.removeVm(True, config.HOOKS_VM_NAME)
 
     machine = Machine(config.VDC_HOST, config.VDC_ROOT_USER,
                       config.VDC_ROOT_PASSWORD).util(LINUX)
@@ -53,6 +54,8 @@ def setup_module():
 
 
 def teardown_module():
-    storagedomains.cleanDataCenter(True, config.DC_NAME[0],
-                                   vdc=config.VDC_HOST,
-                                   vdc_password=config.VDC_ROOT_PASSWORD)
+    assert templates.removeTemplate(True, config.TEMPLATE_NAME)
+    if not config.GOLDEN_ENV:
+        storagedomains.cleanDataCenter(True, config.DC_NAME[0],
+                                       vdc=config.VDC_HOST,
+                                       vdc_password=config.VDC_ROOT_PASSWORD)
