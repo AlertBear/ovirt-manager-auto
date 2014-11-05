@@ -162,7 +162,7 @@ class TestUpdateHostName(TestCase):
             raise HostException("Cannot change host %s's name" % HOST)
 
 
-@attr(tier=0)
+@attr(tier=0, extra_reqs={'pm': PM1_TYPE})
 class TestAddRemovePowerManagement(TestCase):
     """
     Positive - add power management to host then remove it
@@ -183,7 +183,7 @@ class TestAddRemovePowerManagement(TestCase):
         remove_power_management(host=HOST, pm_type=PM1_TYPE)
 
 
-@attr(tier=0)
+@attr(tier=0, extra_reqs={'pm': PM1_TYPE})
 class TestUpdatePowerManagementType(TestPowerManagement):
     """
     Positive - update power management type on host
@@ -207,7 +207,7 @@ class TestUpdatePowerManagementType(TestPowerManagement):
                                 " in host: %s" % HOST)
 
 
-@attr(tier=0)
+@attr(tier=0, extra_reqs={'pm': PM1_TYPE})
 class TestUpdatePowerManagementInvalidType(TestPowerManagement):
     """
     Negative - update power management type on host
@@ -468,7 +468,7 @@ class SearchForHost(TestCase):
             raise HostException("couldn't find host %s" % HOST)
 
 
-@attr(tier=0)
+@attr(tier=0, extra_reqs={'pm': PM1_TYPE})
 class AddSecondaryPowerManagement(TestPowerManagement):
     """
     Positive - add secondary power management
