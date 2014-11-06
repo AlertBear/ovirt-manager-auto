@@ -1234,7 +1234,8 @@ def setPersistentNetwork(host, password):
         logger.debug('%s Final configurations: \n%s', nic, out)
 
     network_configuration = '/etc/sysconfig/network'
-    cmd = ["sed", "-i", "/HOSTNAME/d", network_configuration]
+    cmd = ["sed", "-i", "s/^HOSTNAME.*/HOSTNAME=localhost.localdomain/g",
+           network_configuration]
     rc, out = vm_obj.runCmd(cmd)
     if not rc:
         logger.error("Failed to remove HOSTNAME from network config: %s", out)
