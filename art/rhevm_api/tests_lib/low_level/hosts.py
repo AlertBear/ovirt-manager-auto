@@ -183,20 +183,19 @@ def getHostDC(host):
 
 def isHostUp(positive, host):
     """
-    Description: Checks if host is up
-    Author: cmestreg
-    Parameters:
-        * host - host to check
-    Return: positive if host is up, False otherwise
-    """
-    try:
-        host_status = getHostState(host)
-    except EntityNotFound:
-        return False
+    Checks if host is in state "up"
 
-    if (host_status == ENUMS['host_state_up']) == positive:
-        return True
-    return False
+    __author__ = "cmestreg"
+    :param positive: True if action should succeed, False otherwise
+    :type positive: bool
+    :param host: name of the host
+    :type host: str
+    :return: True if host is in state "up", False otherwise
+    :rtype: bool
+    """
+    host_status = getHostState(host)
+
+    return (host_status == ENUMS['host_state_up']) == positive
 
 
 @is_action()

@@ -328,6 +328,7 @@ HOST_UP = ENUMS['host_state_up']
 HOST_DOWN = ENUMS['host_state_down']
 HOST_NONOPERATIONAL = ENUMS["host_state_non_operational"]
 HOST_NONRESPONSIVE = ENUMS["host_state_non_responsive"]
+HOST_MAINTENANCE = ENUMS["host_state_maintenance"]
 
 # Snapshot states
 SNAPSHOT_OK = ENUMS['snapshot_state_ok']

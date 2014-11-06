@@ -10,8 +10,6 @@ from art.rhevm_api.utils.log_listener import watch_logs
 from art.unittest_lib.common import StorageTest as TestCase
 from art.unittest_lib import attr
 from art.rhevm_api.utils import test_utils
-from concurrent.futures import ThreadPoolExecutor
-from art.rhevm_api.utils.name2ip import LookUpVMIpByName
 from art.rhevm_api.utils.test_utils import restartOvirtEngine
 from utilities.utils import getIpAddressByHostName
 from utilities.machine import Machine
@@ -22,22 +20,23 @@ from art.rhevm_api.tests_lib.low_level import templates
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.tests_lib.low_level import disks as ll_disks
 from art.rhevm_api.tests_lib.low_level import hosts
+from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
+
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 import art.test_handler.exceptions as errors
+from rhevmtests.storage.helpers import create_vm_or_clone
 
 logger = logging.getLogger(__name__)
 
 GB = config.GB
 ENUMS = config.ENUMS
 
-BZID = "1066834"
-VM_NAME = "vm_%s" % BZID
+TIMEOUT_10_MINUTES = 600
+SLEEP_TIME = 10
+
 STORAGE_DOMAIN_API = test_utils.get_api('storage_domain', 'storagedomains')
 VDSM_RESPAWN_FILE = '/usr/share/vdsm/respawn'
 LINUX = test_utils.LINUX
-
-VM_PASSWORD = config.VMS_LINUX_PW
-VM_USER = config.VMS_LINUX_USER
 
 VDSM_LOG_FILE = "/var/log/vdsm/vdsm.log"
 IO_ERROR_TIMEOUT = 10
@@ -59,30 +58,104 @@ FILE_REMOVE_FAILURE = 'No such file or directory'
 CLI_CMD_GENERATE_BIG_FILE = 'dd if=/dev/urandom of=sample1.txt bs=64M count=32'
 GENERATE_BIG_FILE_TIMEOUT = 60 * 5
 
-"""
-TCMS Test Case 355191 355191, exposing BZ 1066834
-Add a second bootable disks to a vm should fail
-"""
+
+def _create_vm(vm_name, vm_description="",
+               disk_interface=config.INTERFACE_VIRTIO,
+               sparse=True, volume_format=config.DISK_FORMAT_COW,
+               vm_type=config.VM_TYPE_DESKTOP, storage_domain=None,
+               installation=True, placement_host=None,
+               highly_available=None):
+    """ helper function for creating vm (passes common arguments, mostly taken
+    from the configuration file)
+    """
+    logger.info("Creating VM %s", vm_name)
+    return create_vm_or_clone(
+        True, vm_name, vm_description, cluster=config.CLUSTER_NAME,
+        nic=config.NIC_NAME[0], storageDomainName=storage_domain,
+        size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
+        volumeType=sparse, volumeFormat=volume_format,
+        diskInterface=disk_interface, memory=GB, cpu_socket=config.CPU_SOCKET,
+        cpu_cores=config.CPU_CORES, nicType=config.NIC_TYPE_VIRTIO,
+        display_type=config.DISPLAY_TYPE, os_type=config.OS_TYPE,
+        user=config.VMS_LINUX_USER, password=config.VMS_LINUX_PW, type=vm_type,
+        installation=installation, bootable=True, image=config.COBBLER_PROFILE,
+        slim=True, highly_available=highly_available,
+        network=config.MGMT_BRIDGE, useAgent=config.USE_AGENT,
+        placement_host=placement_host)
 
 
 def setup_module():
     """ creates datacenter, adds hosts, clusters, storages according to
     the config file
     """
-    datacenters.build_setup(
-        config=config.PARAMETERS, storage=config.PARAMETERS,
-        storage_type=config.STORAGE_TYPE)
+    if not config.GOLDEN_ENV:
+        datacenters.build_setup(
+            config=config.PARAMETERS, storage=config.PARAMETERS,
+            storage_type=config.STORAGE_TYPE)
 
 
 def teardown_module():
     """ removes created datacenter, storages etc.
     """
-    datacenters.clean_datacenter(
-        True,
-        config.DATA_CENTER_NAME,
-        vdc=config.VDC,
-        vdc_password=config.VDC_PASSWORD
-    )
+    if not config.GOLDEN_ENV:
+        datacenters.clean_datacenter(
+            True,
+            config.DATA_CENTER_NAME,
+            vdc=config.VDC,
+            vdc_password=config.VDC_PASSWORD
+        )
+
+
+class EnvironmentWithTwoHosts(TestCase):
+    """Setup/teardown for an environment with 2 hosts as part of a cluster"""
+    __test__ = False
+    hosts = []
+    num_active_hosts = 2
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Make sure there are only two active hosts for the given cluster
+        """
+        wait_for_jobs()
+        cls.hosts = []
+        for host in config.HOSTS:
+            if hosts.getHostCluster(host) == config.CLUSTER_NAME:
+                if hosts.isHostUp(True, host):
+                    if cls.num_active_hosts > 0:
+                        cls.num_active_hosts -= 1
+                    else:
+                        hosts.deactivateHost(True, host)
+            else:
+                hosts.deactivateHost(True, host)
+
+        hosts.waitForSPM(
+            config.DATA_CENTER_NAME, TIMEOUT_10_MINUTES, SLEEP_TIME)
+        logger.info("Getting SPM host")
+        cls.spm_host = hosts.getSPMHost(config.HOSTS)
+
+        logger.info("Getting HSM host")
+        cls.hsm_host = hosts.getAnyNonSPMHost(
+            config.HOSTS,
+            expected_states=[config.HOST_UP],
+            cluster_name=config.CLUSTER_NAME,
+        )[1]['hsmHost']
+
+        cls.hosts = [cls.spm_host, cls.hsm_host]
+
+    @classmethod
+    def teardown_class(cls):
+        """Activate all the hosts"""
+        for host in config.HOSTS:
+            if not hosts.isHostUp(True, host):
+                logger.info("Activating host %s", host)
+                hosts.activateHost(True, host)
+
+
+"""
+TCMS Test Case 355191 355191, exposing BZ 1066834
+Add a second bootable disks to a vm should fail
+"""
 
 
 @attr(tier=1)
@@ -95,69 +168,47 @@ class TestCase355191(TestCase):
     tcms_plan_id = '2515'
     tcms_test_case = '355191'
     expected_disk_number = 2
+    vm_name = "vm_%s" % tcms_test_case
+    bz_id = '1066834'
     __test__ = True
-
-    def _create_vm(
-            self, vm_name, disk_interface, sparse=True,
-            volume_format=config.DISK_FORMAT_COW,
-            vm_type=config.VM_TYPE_DESKTOP):
-        """
-        helper function for creating vm (passes common arguments, mostly taken
-        from the configuration file)
-        """
-        storage_domain = storagedomains.getDCStorages(
-            config.DATA_CENTER_NAME, False)[0].get_name()
-        logger.info("Creating VM %s at SD %s", vm_name, storage_domain)
-        return ll_vms.createVm(
-            True, vm_name, vm_name, cluster=config.CLUSTER_NAME,
-            nic=config.NIC_NAME[0], storageDomainName=storage_domain,
-            size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
-            volumeType=sparse, volumeFormat=volume_format,
-            diskInterface=disk_interface, memory=GB,
-            cpu_socket=config.CPU_SOCKET, cpu_cores=config.CPU_CORES,
-            nicType=config.NIC_TYPE_VIRTIO, display_type=config.DISPLAY_TYPE,
-            os_type=config.OS_TYPE, user=config.VMS_LINUX_USER,
-            password=config.VMS_LINUX_PW,
-            type=vm_type, installation=False,
-            slim=True, network=config.MGMT_BRIDGE, useAgent=config.USE_AGENT,
-            bootable=True)
 
     def setUp(self):
         """
         Create a vm with a bootable disk
         """
-        assert self._create_vm(
-            config.VM_NAME[0],
-            ENUMS['interface_virtio_scsi']
+        self.storage_domain = storagedomains.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage,
+        )[0]
+        assert _create_vm(
+            self.vm_name, storage_domain=self.storage_domain,
+            installation=False,
         )
-        self.storage_domain = storagedomains.getDCStorages(
-            config.DATA_CENTER_NAME, False)[0].get_name()
 
     @tcms(tcms_plan_id, tcms_test_case)
     def test_add_multiple_bootable_disks(self):
         """
         Verify adding a second bootable disk should fail
         """
-        disks = ll_vms.getVmDisks(config.VM_NAME[0])
+        disks = ll_vms.getVmDisks(self.vm_name)
         assert len(disks) == 1
         assert disks[0].get_bootable()
 
         # Could add a non bootable disk
         logger.info("Adding a new non bootable disk works")
-        self.second_disk = "second_disk_%s" % BZID
+        self.second_disk = "second_disk_%s" % self.bz_id
         assert ll_vms.addDisk(
-            True, config.VM_NAME[0], GB, wait=True,
+            True, self.vm_name, GB, wait=True,
             storagedomain=self.storage_domain, bootable=False,
             alias=self.second_disk)
 
-        disks = ll_vms.getVmDisks(config.VM_NAME[0])
+        disks = ll_vms.getVmDisks(self.vm_name)
         assert len(disks) == self.expected_disk_number
         assert False in [disk.get_bootable() for disk in disks]
 
         logger.info("Adding a second bootable disk to vm %s should fail",
-                    config.VM_NAME[0])
-        self.bootable_disk = "bootable_disk_%s" % BZID
-        self.assertTrue(ll_vms.addDisk(False, config.VM_NAME[0], GB, wait=True,
+                    self.vm_name)
+        self.bootable_disk = "bootable_disk_%s" % self.bz_id
+        self.assertTrue(ll_vms.addDisk(False, self.vm_name, GB, wait=True,
                                        alias=self.bootable_disk,
                                        storagedomain=self.storage_domain,
                                        bootable=True),
@@ -169,9 +220,9 @@ class TestCase355191(TestCase):
         """
         # If it fails, the disk are still being added, wait for them
         disks_aliases = [disk.get_alias() for disk in ll_vms.getVmDisks(
-            config.VM_NAME[0])]
+            self.vm_name)]
         ll_disks.wait_for_disks_status(disks=disks_aliases)
-        assert ll_vms.removeVm(True, config.VM_NAME[0])
+        assert ll_vms.removeVm(True, self.vm_name)
 
 
 """
@@ -194,33 +245,42 @@ class TestCase305452(TestCase):
     tcms_plan_id = '6468'
     tcms_test_case = '305452'
 
-    @classmethod
     def setUp(self):
-        # Add a VM
+        """Create the vm"""
+        self.storage_domain = storagedomains.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage,
+        )[0]
         if not ll_vms.addVm(True, name=config.VM_BASE_NAME,
-                            storagedomain=config.DOMAIN_NAME_1,
+                            storagedomain=self.storage_domain,
                             cluster=config.CLUSTER_NAME):
             raise errors.VMException("Cannot create vm %s" %
                                      config.VM_BASE_NAME)
 
         # Add a disk to the VM
         if not ll_vms.addDisk(True, config.VM_BASE_NAME, config.DISK_SIZE,
-                              storagedomain=config.DOMAIN_NAME_1):
+                              storagedomain=self.storage_domain):
             raise errors.DiskException("Cannot create disk for vm %s" %
                                        config.VM_BASE_NAME)
 
-    @classmethod
     def tearDown(self):
-        # Remove the vm
+        """Remove template and vm"""
+        if self.template_created:
+            if not templates.removeTemplate(positive=True,
+                                            template=self.template_name):
+                logger.error("Failure to remove template %s",
+                             self.template_name)
+
         if not ll_vms.removeVm(
                 True, config.VM_BASE_NAME, **{'stopVM': 'true'}):
-            raise errors.VMException("Cannot delete vm %s" %
-                                     config.VM_BASE_NAME)
+            logger.error("Cannot delete vm %s", config.VM_BASE_NAME)
+
+        wait_for_jobs()
 
     @tcms(tcms_plan_id, tcms_test_case)
     def test_create_template_from_vm(self):
         """ creates template from vm
         """
+        self.template_created = False
         logger.info("Adding a non-ascii character to the disk name")
         disk_name = u"DiskNonAsciié"
         disk_params = {"disk": "%s_Disk1" % config.VM_BASE_NAME,
@@ -228,20 +288,17 @@ class TestCase305452(TestCase):
         self.assertTrue(ll_vms.updateVmDisk(True, config.VM_BASE_NAME,
                                             **disk_params))
 
-        template_name = '%s_%s_template_' % (
-            config.VM_BASE_NAME, config.STORAGE_TYPE)
+        self.template_name = '%s_%s_template_' % (
+            config.VM_BASE_NAME, self.storage)
         template_kwargs = {"vm": config.VM_BASE_NAME,
-                           "name": template_name}
-        logger.info("Creating template")
-        self.assertTrue(templates.createTemplate(True, **template_kwargs))
-
-    @classmethod
-    def teardown_class(cls):
-        """
-        Wait for un-finished tasks
-        """
-        test_utils.wait_for_tasks(config.VDC, config.VDC_PASSWORD,
-                                  config.DATA_CENTER_NAME)
+                           "name": self.template_name}
+        logger.info("Creating template %s", self.template_name)
+        self.template_created = templates.createTemplate(True,
+                                                         **template_kwargs)
+        self.assertTrue(
+            self.template_created,
+            "Couldn't create template %s" % self.template_name,
+        )
 
 
 """
@@ -251,7 +308,7 @@ Test exposing BZ 969343
 
 
 @attr(tier=1)
-class TestCase289683(TestCase):
+class TestCase289683(EnvironmentWithTwoHosts):
     """
     test exposing https://bugzilla.redhat.com/show_bug.cgi?id=969343
     scenario:
@@ -264,56 +321,49 @@ class TestCase289683(TestCase):
 
     https://tcms.engineering.redhat.com/case/289683/?from_plan=9583
     """
-    __test__ = True
+    # TODO: Due to BZ1210771 this test case couldn't be fully verified (as in
+    # is sure to PASS after the bz is fixed), so marking it as False until it
+    # can be fully verified.
+    __test__ = False
     tcms_plan_id = '9583'
     tcms_test_case = '289683'
     vm_name_base = "vm_%s" % tcms_test_case
     num_of_vms = 6
     vm_names = []
     vm_ips = []
-
-    def _createVm(self, vm_name, sd, host):
-        return ll_vms.createVm(
-            True, vm_name, vm_name, config.CLUSTER_NAME,
-            storageDomainName=sd, size=config.DISK_SIZE,
-            installation=True, diskType=config.DISK_TYPE_SYSTEM, memory=GB,
-            cpu_socket=config.CPU_SOCKET, cpu_cores=config.CPU_CORES,
-            nicType=config.NIC_TYPE_VIRTIO, highly_available=True,
-            display_type=config.DISPLAY_TYPE, os_type=config.OS_TYPE,
-            user=config.VMS_LINUX_USER, password=config.VMS_LINUX_PW,
-            type=config.VM_TYPE_SERVER,
-            slim=True, nic=config.NIC_NAME[0], volumeType=True,
-            volumeFormat=config.DISK_FORMAT_COW, useAgent=config.USE_AGENT,
-            image=config.COBBLER_PROFILE, network=config.MGMT_BRIDGE,
-            placement_host=host)
+    bz = {'1210771': {'engine': None, 'version': ["3.5", "3.6"]}}
 
     def setUp(self):
         """
         create 6 VMs
         """
+        self.machine_rebooted = None
         self.vm_names = []
         self.vm_ips = []
         self.original_perms = None
-        master_domain = storagedomains.findMasterStorageDomain(
-            True, config.DATA_CENTER_NAME)[1]['masterDomain']
-        host = hosts.getSPMHost(config.HOSTS)
+        self.sd = storagedomains.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage)[0]
+        self.spm_host = hosts.getSPMHost(config.HOSTS)
+        self.spm_host_ip = hosts.getHostIP(self.spm_host)
+        self.spm_admin = config.HOSTS_USER
+        self.spm_password = config.HOSTS_PW
+
+        args = {
+            "highly_available": True,
+            "placement_host": self.spm_host,
+            "storage_domain": self.sd,
+        }
 
         logger.info("Create VMs")
-        results = []
-        with ThreadPoolExecutor(max_workers=config.MAX_WORKERS) as executor:
-            for i in range(self.num_of_vms):
-                name = "%s_%s" % (self.vm_name_base, i)
-                self.vm_names.append(name)
-                results.append(
-                    executor.submit(self._createVm, name, master_domain, host))
-
-        for result in results:
-            if not result.result():
-                self.fail("Creation of at least one VM failed: %s" %
-                          [x.result() for x in results])
+        for i in range(self.num_of_vms):
+            name = "%s_%s" % (self.vm_name_base, i)
+            self.vm_names.append(name)
+            args["vm_name"] = name
+            if not _create_vm(**args):
+                logger.error("Error creating vm %s", name)
 
         for name in self.vm_names:
-            self.vm_ips.append(LookUpVMIpByName('ip', 'name').get_ip(name))
+            self.vm_ips.append(ll_vms.waitForIP(name, timeout=30)[1]['ip'])
 
     def _shutdown_machine(self, ip):
         machine = test_utils.Machine(ip, config.VMS_LINUX_USER,
@@ -332,22 +382,15 @@ class TestCase289683(TestCase):
             * change the perms of the respawn file and reboot the old SPM host
             * wait for everything being up (host & VMs)
         """
-        master_domain = storagedomains.findMasterStorageDomain(
-            True, config.DATA_CENTER_NAME)[1]['masterDomain']
-        self.spm_host = hosts.getSPMHost(config.HOSTS)
-        self.spm_admin = config.HOSTS_USER
-        self.spm_password = config.HOSTS_PW
+        assert ll_vms.waitForVmsStates(True, ",".join(self.vm_names))
 
         logger.info("Stopping vdsm")
-        test_utils.stopVdsmd(self.spm_host, self.spm_password)
+        test_utils.stopVdsmd(self.spm_host_ip, self.spm_password)
 
         machine = test_utils.Machine(
-            self.spm_host, self.spm_admin, self.spm_password).util(LINUX)
+            self.spm_host_ip, self.spm_admin, self.spm_password).util(LINUX)
 
-        rc, self.original_perms = machine.runCmd(
-            ['stat', '-c', '%a', VDSM_RESPAWN_FILE])
-        assert rc
-
+        self.machine_rebooted = False
         rc, out = machine.runCmd(['chmod', '111', VDSM_RESPAWN_FILE])
         logger.info("output: %s" % out)
         assert rc
@@ -355,45 +398,71 @@ class TestCase289683(TestCase):
         logger.info("Waiting for host being non responsive")
         hosts.waitForHostsStates(
             True, self.spm_host, ENUMS['search_host_state_non_responsive'],
-            timeout=1800)
+            timeout=TIMEOUT_10_MINUTES,
+        )
 
         logger.info("Waiting for VM state unknown")
         assert ll_vms.waitForVmsStates(
             True, ",".join(self.vm_names), ENUMS['vm_state_unknown'],
-            timeout=900)
+            timeout=300,
+        )
 
         logger.info("Waiting for storage domain state")
         storagedomains.waitForStorageDomainStatus(
-            True, config.DATA_CENTER_NAME, master_domain,
-            ENUMS['storage_domain_state_unknown'], timeOut=900)
+            True, config.DATA_CENTER_NAME, self.sd,
+            ENUMS['storage_domain_state_unknown'], timeOut=900,
+        )
 
         logger.info("Shutting down the VMs")
         for ip in self.vm_ips:
-            logger.info("Shutting down %s" % ip)
+            logger.info("Shutting down %s", ip)
             self._shutdown_machine(ip)
 
         rc, out = machine.runCmd(['chmod', '755', VDSM_RESPAWN_FILE])
         assert rc
 
         logger.info("Rebooting the old SPM host")
-        test_utils.rebootMachine(
-            True, self.spm_host, self.spm_admin, self.spm_password, LINUX)
+        self.machine_rebooted = test_utils.rebootMachine(
+            True, self.spm_host_ip, self.spm_admin, self.spm_password, LINUX)
 
         logger.info("Wait for hosts being up")
-        assert hosts.waitForHostsStates(True, self.spm_host)
+        assert hosts.waitForHostsStates(True, [self.spm_host])
 
         logger.info("Wait for SPM")
-        assert hosts.waitForSPM(config.DATA_CENTER_NAME, 1200, 10)
+        assert hosts.waitForSPM(
+            config.DATA_CENTER_NAME, 2 * TIMEOUT_10_MINUTES, SLEEP_TIME,
+        )
 
         logger.info("Wait from VMs being up")
         assert ll_vms.waitForVmsStates(True, ",".join(self.vm_names))
 
     def tearDown(self):
-        machine = test_utils.Machine(
-            self.spm_host, self.spm_admin, self.spm_password).util(LINUX)
-        if self.original_perms is not None:
-            machine.runCmd(
-                ['chmod', self.original_perms, VDSM_RESPAWN_FILE])
+        """Make sure host and datacenter are up and remove vms"""
+        if not self.machine_rebooted:
+            # Make sure that if something went wrong duing the test, the
+            # permissions are correct and the machine is rebooted
+            machine = test_utils.Machine(
+                self.spm_host_ip, self.spm_admin,
+                self.spm_password).util(LINUX)
+            rc, out = machine.runCmd(['chmod', '755', VDSM_RESPAWN_FILE])
+            result = 'succeed' if rc else 'failed'
+            logger.info("Putting permissions back %s: %s", result, out)
+            test_utils.rebootMachine(
+                True, self.spm_host_ip, self.spm_admin, self.spm_password,
+                LINUX,
+            )
+
+            logger.info("Wait for the host to come up")
+            if not hosts.waitForHostsStates(True, [self.spm_host]):
+                logger.error("Host %s didn't came back up", self.spm_host)
+
+        logger.info("Make sure the Data Center is up before cleaning up")
+        if not hosts.waitForSPM(config.DATA_CENTER_NAME, TIMEOUT_10_MINUTES,
+                                SLEEP_TIME):
+            logger.error("Datacenter %s didn't came back up",
+                         config.DATA_CENTER_NAME)
+
+        ll_vms.stop_vms_safely(self.vm_names)
         ll_vms.removeVms(True, self.vm_names)
 
 
@@ -417,41 +486,19 @@ class TestCase320223(TestCase):
     template_name = "template_from_%s" % vm_name
     vm_from_template = "vm_from_template"
 
-    @classmethod
-    def _create_vm(
-            cls, vm_name, vm_description, disk_interface,
-            sparse=True, volume_format=config.DISK_FORMAT_COW):
-        """ helper function for creating vm
-        (passes common arguments, mostly taken from the configuration file)
-        """
-        logger.info("Creating VM %s" % vm_name)
-        storage_domain_name = storagedomains.getDCStorages(
-            config.DATA_CENTER_NAME, False)[0].name
-        logger.info("storage domain: %s" % storage_domain_name)
-        return ll_vms.createVm(
-            True, vm_name, vm_description, cluster=config.CLUSTER_NAME,
-            nic=config.NIC_NAME[0], storageDomainName=storage_domain_name,
-            size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
-            volumeType=sparse, volumeFormat=volume_format,
-            diskInterface=disk_interface, memory=GB,
-            cpu_socket=config.CPU_SOCKET,
-            cpu_cores=config.CPU_CORES, nicType=config.NIC_TYPE_VIRTIO,
-            display_type=config.DISPLAY_TYPE, os_type=config.OS_TYPE,
-            user=config.VMS_LINUX_USER, password=config.VMS_LINUX_PW,
-            type=config.VM_TYPE_DESKTOP, installation=True, slim=True,
-            image=config.COBBLER_PROFILE,
-            network=config.MGMT_BRIDGE, useAgent=config.USE_AGENT,
-            attempt=3, interval=20)
-
-    @classmethod
-    def setup_class(cls):
-
-        if not cls._create_vm(cls.vm_name, cls.vm_desc, config.INTERFACE_IDE):
-            raise errors.VMException("Failed to create vm %s" % cls.vm_name)
+    def setUp(self):
+        """Create vm for test"""
+        self.test_failed = False
+        self.storage_domain = storagedomains.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage,
+        )[0]
+        if not _create_vm(self.vm_name, self.vm_desc, config.INTERFACE_VIRTIO,
+                          storage_domain=self.storage_domain):
+            raise errors.VMException("Failed to create vm %s" % self.vm_name)
         logger.info("Successfully created VM.")
 
-        if not ll_vms.shutdownVm(True, cls.vm_name, async="false"):
-            raise errors.VMException("Cannot shutdown vm %s" % cls.vm_name)
+        if not ll_vms.shutdownVm(True, self.vm_name, async="false"):
+            raise errors.VMException("Cannot shutdown vm %s" % self.vm_name)
         logger.info("Successfully shutdown VM.")
 
     def _create_template(self):
@@ -523,23 +570,23 @@ class TestCase320223(TestCase):
                         "Can't start vm %s" % self.vm_from_template)
         logger.info("Successfully started VM %s", self.vm_from_template)
 
-    @classmethod
-    def teardown_class(cls):
+    def tearDown(self):
         """
-        Remove VM's and template
+        Remove vms and template
         """
-        for vm in [cls.vm_name, cls.vm_from_template]:
+        for vm in [self.vm_name, self.vm_from_template]:
             logger.info("Removing vm %s", vm)
             if not ll_vms.removeVm(positive=True, vm=vm, stopVM='true'):
-                raise errors.VMException("Cannot remove vm %s" % vm)
-            logger.info("Successfully removed %s.", vm)
+                logger.error("Cannot remove vm %s", vm)
+                self.test_failed = True
 
-        logger.info("Removing template %s", cls.template_name)
+        logger.info("Removing template %s", self.template_name)
         if not templates.removeTemplate(positive=True,
-                                        template=cls.template_name):
-            raise errors.TemplateException("Failed to remove template %s"
-                                           % cls.template_name)
-        logger.info("Successfully removed %s." % cls.template_name)
+                                        template=self.template_name):
+            logger.error("Failed to remove template %s", self.template_name)
+            self.test_failed = True
+        if self.test_failed:
+            raise errors.TestException("Test failed during tearDown")
 
 
 """
@@ -549,7 +596,7 @@ Maintenance spm with a running vm
 
 
 @attr(tier=0)
-class TestCase315489(TestCase):
+class TestCase315489(EnvironmentWithTwoHosts):
     """
     test exposing https://bugzilla.redhat.com/show_bug.cgi?id=986961
     scenario:
@@ -563,50 +610,39 @@ class TestCase315489(TestCase):
     tcms_test_case = '315489'
     vm_name_base = "vm_%s" % tcms_test_case
 
-    def _createVm(self, vm_name, sd, host):
-        return ll_vms.createVm(
-            True, vm_name, vm_name, config.CLUSTER_NAME,
-            storageDomainName=sd, size=config.DISK_SIZE,
-            installation=True, diskType=config.DISK_TYPE_SYSTEM, memory=GB,
-            cpu_socket=config.CPU_SOCKET, cpu_cores=config.CPU_CORES,
-            nicType=config.NIC_TYPE_VIRTIO, highly_available=True,
-            display_type=config.DISPLAY_TYPE, os_type=config.OS_TYPE,
-            user=config.VMS_LINUX_USER, password=config.VMS_LINUX_PW,
-            type=config.VM_TYPE_SERVER,
-            slim=True, nic=config.NIC_NAME[0], volumeType=True,
-            volumeFormat=config.DISK_FORMAT_COW, useAgent=config.USE_AGENT,
-            image=config.COBBLER_PROFILE, network=config.MGMT_BRIDGE,
-            placement_host=host)
-
     def setUp(self):
         """
         create a VM on SPM
         """
-        master_domain = storagedomains.findMasterStorageDomain(
-            True, config.DATA_CENTER_NAME)[1]['masterDomain']
-        host = hosts.getSPMHost(config.HOSTS)
+        self.storage_domain = storagedomains.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage)[0]
 
         logger.info("Create VM")
-        assert self._createVm(self.vm_name_base, master_domain, host)
+        assert _create_vm(self.vm_name_base,
+                          storage_domain=self.storage_domain,
+                          placement_host=self.spm_host,
+                          highly_available=True)
 
     @tcms(tcms_plan_id, tcms_test_case)
     def test_maintenance_spm_with_running_vm(self):
         """
             * maintenance SPM
         """
-        self.spm_host = hosts.getSPMHost(config.HOSTS)
-
         logger.info("Deactivating SPM host %s", self.spm_host)
-        assert hosts.deactivateHost(True, self.spm_host)
+        hosts.deactivateHost(True, self.spm_host)
+        hosts.waitForHostsStates(True, self.spm_host, config.HOST_MAINTENANCE)
 
         logger.info("Waiting DC state to be up with the new spm")
         ll_dc.wait_for_datacenter_state_api(config.DATA_CENTER_NAME)
 
-        new_spm = hosts.getSPMHost(config.HOSTS)
+        assert hosts.waitForSPM(
+            config.DATA_CENTER_NAME, TIMEOUT_10_MINUTES, SLEEP_TIME,
+        )
+        new_spm = hosts.getSPMHost(self.hosts)
         logger.info("New SPM is: %s", new_spm)
 
     def tearDown(self):
-        # delete vm
+        """Delete the vm"""
         assert ll_vms.removeVm(True, self.vm_name_base, **{'stopVM': 'true'})
 
 
@@ -634,14 +670,21 @@ class TestCase284324(TestCase):
         Tries to create a raw disk via REST API without specifying 'sparse'
         flag. Such call should fail.
         """
-        master_domain = storagedomains.findMasterStorageDomain(
-            True, config.DATA_CENTER_NAME)[1]['masterDomain']
-        disk_name = "disk_%s" % self.tcms_test_case
+        self.storage_domain = storagedomains.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage,
+        )[0]
+        self.disk_name = "disk_%s" % self.tcms_test_case
 
         assert ll_disks.addDisk(
-            False, alias=disk_name, shareable=False, bootable=False,
-            size=1 * GB, storagedomain=master_domain, sparse=None,
+            False, alias=self.disk_name, shareable=False, bootable=False,
+            size=1 * GB, storagedomain=self.storage_domain, sparse=None,
             format=ENUMS['format_raw'], interface=ENUMS['interface_ide'])
+
+    def tearDown(self):
+        """Remove the disk in case the test fails (since disk is created)"""
+        if ll_disks.checkDiskExists(True, self.disk_name):
+            ll_disks.waitForDisksState([self.disk_name])
+            assert ll_disks.deleteDisk(True, self.disk_name)
 
 
 """
@@ -676,27 +719,33 @@ class TestCase280628(TestCase):
         run on SPM and removed when the VM was moved to an HSM, can be booted
         """
         logger.info("Create VM")
-        master_domain = storagedomains.findMasterStorageDomain(
-            True, config.DATA_CENTER_NAME)[1]['masterDomain']
+        self.storage_domain = storagedomains.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage,
+        )[0]
         spm_host = hosts.getSPMHost(config.HOSTS)
-        assert ll_vms.createVm(
-            True, self.vm_name, self.vm_name, config.CLUSTER_NAME,
-            installation=True, nic=config.NIC_NAME[0],
-            storageDomainName=master_domain, size=config.DISK_SIZE,
-            diskType=config.DISK_TYPE_SYSTEM, memory=GB,
-            cpu_socket=config.CPU_SOCKET, cpu_cores=config.CPU_CORES,
-            nicType=config.NIC_TYPE_VIRTIO, display_type=config.DISPLAY_TYPE,
-            os_type=config.OS_TYPE, user=config.VMS_LINUX_USER,
-            password=config.VMS_LINUX_PW,
-            type=config.VM_TYPE_DESKTOP, slim=True, placement_host=spm_host,
-            volumeType=False, volumeFormat=ENUMS['format_raw'],
-            image=config.COBBLER_PROFILE, network=config.MGMT_BRIDGE,
-            useAgent=config.USE_AGENT)
+        if hosts.getHostCluster(spm_host) != config.CLUSTER_NAME:
+            _, host_dict = hosts.getAnyNonSPMHost(
+                config.HOSTS, cluster_name=config.CLUSTER_NAME,
+            )
+            host = host_dict['hsmHost']
+            assert hosts.select_host_as_spm(True, host,
+                                            config.DATA_CENTER_NAME)
+            spm_host = host
+
+        assert hosts.waitForSPM(
+            config.DATA_CENTER_NAME, TIMEOUT_10_MINUTES, SLEEP_TIME,
+        )
+
+        assert _create_vm(self.vm_name,
+                          storage_domain=self.storage_domain,
+                          placement_host=spm_host)
         logger.info("Stopping VM")
         assert ll_vms.stopVm(True, self.vm_name)
         logger.info("Adding snapshot")
         assert ll_vms.addSnapshot(True, self.vm_name, self.snap_name)
-        hsm_host = hosts.getAnyNonSPMHost(",".join(config.HOSTS))[1]['hsmHost']
+        hsm_host = hosts.getAnyNonSPMHost(
+            config.HOSTS, cluster_name=config.CLUSTER_NAME,
+        )[1]['hsmHost']
         assert hsm_host
         assert ll_vms.updateVm(True, self.vm_name, placement_host=hsm_host)
         logger.info("Starting VM on HSM")
@@ -709,35 +758,12 @@ class TestCase280628(TestCase):
         logger.info("Starting again")
         assert ll_vms.startVm(True, self.vm_name, wait_for_ip=True)
 
-    @classmethod
-    def teardown_class(cls):
-        ll_vms.removeVm(True, cls.vm_name, stopVM='true')
-
-
-def _create_vm(vm_name, vm_description, disk_interface,
-               sparse=True, volume_format=config.DISK_FORMAT_COW,
-               vm_type=config.VM_TYPE_DESKTOP):
-    """ helper function for creating vm (passes common arguments, mostly taken
-    from the configuration file)
-    """
-    logger.info("Creating VM %s", vm_name)
-    storage_domain_name = storagedomains.getDCStorages(
-        config.DATA_CENTER_NAME, False)[0].name
-    logger.info("storage domain: %s", storage_domain_name)
-    return ll_vms.createVm(
-        True, vm_name, vm_description, cluster=config.CLUSTER_NAME,
-        nic=config.NIC_NAME[0], storageDomainName=storage_domain_name,
-        size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
-        volumeType=sparse, volumeFormat=volume_format,
-        diskInterface=disk_interface, memory=GB, cpu_socket=config.CPU_SOCKET,
-        cpu_cores=config.CPU_CORES, nicType=config.NIC_TYPE_VIRTIO,
-        display_type=config.DISPLAY_TYPE, os_type=config.OS_TYPE,
-        user=config.VMS_LINUX_USER, password=config.VMS_LINUX_PW, type=vm_type,
-        installation=True,
-        slim=True, cobblerAddress=config.COBBLER_ADDRESS,
-        cobblerUser=config.COBBLER_USER,
-        cobblerPasswd=config.COBBLER_PASSWD, image=config.COBBLER_PROFILE,
-        network=config.MGMT_BRIDGE, useAgent=config.USE_AGENT)
+    def tearDown(self):
+        """
+        Remove the vm
+        """
+        if not ll_vms.safely_remove_vms([self.vm_name]):
+            raise errors.VMException("Failed to remove vm %s" % self.vm_name)
 
 
 @attr(tier=3)
@@ -753,20 +779,24 @@ class TestCase398664(TestCase):
 
     def setUp(self):
         # on the spm host - trigger "read error" by manipulating dd behaviour
+        self.test_failed = False
         self.spm_host_name = hosts.getSPMHost(config.HOSTS)
         self.spm_host_ip = hosts.getHostIP(self.spm_host_name)
         connection = Machine(host=self.spm_host_ip, user=config.HOSTS_USER,
                              password=config.HOSTS_PW).util('linux')
 
+        self.storage_domain = storagedomains.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage,
+        )[0]
         # put all other hosts in maintenance
         for host in config.HOSTS:
-            if host != self.spm_host_name:
+            if host != self.spm_host_name and hosts.isHostUp(True, host):
                 hosts.deactivateHost(True, host)
+        wait_for_jobs()
 
         # create a vm with 1 thin provision disk
         logger.info("Create a vm named %s ", self.vm_name)
-        if not _create_vm(self.vm_name, self.vm_name,
-                          config.INTERFACE_VIRTIO):
+        if not _create_vm(self.vm_name, storage_domain=self.storage_domain):
             raise errors.VMException(
                 "Creation of VM %s failed!" % self.vm_name)
 
@@ -796,33 +826,67 @@ class TestCase398664(TestCase):
         # unlink /bin/dd
         # mv -f /usr/bin/dd.real /bin/dd
         # rm -f /usr/bin/dd.fake
-        output = hosts.run_command(self.spm_host_name, config.HOSTS_USER,
-                                   config.HOSTS_PW, CLI_CMD_DISABLE_IO_ERR)
-        if FILE_REMOVE_FAILURE not in output:
-            hosts.run_command(self.spm_host_name, config.HOSTS_USER,
-                              config.HOSTS_PW, CLI_CMD_UNLINK_DD)
-            hosts.run_command(self.spm_host_name, config.HOSTS_USER,
-                              config.HOSTS_PW, CLI_CMD_MV_REAL_DD_BACK)
-            hosts.run_command(self.spm_host_name, config.HOSTS_USER,
-                              config.HOSTS_PW, CLI_CMD_RM_FAKE_DD)
+        try:
+            output = hosts.run_command(self.spm_host_name, config.HOSTS_USER,
+                                       config.HOSTS_PW, CLI_CMD_DISABLE_IO_ERR)
+            if FILE_REMOVE_FAILURE not in output:
+                hosts.run_command(self.spm_host_name, config.HOSTS_USER,
+                                  config.HOSTS_PW, CLI_CMD_UNLINK_DD)
+                hosts.run_command(self.spm_host_name, config.HOSTS_USER,
+                                  config.HOSTS_PW, CLI_CMD_MV_REAL_DD_BACK)
+                hosts.run_command(self.spm_host_name, config.HOSTS_USER,
+                                  config.HOSTS_PW, CLI_CMD_RM_FAKE_DD)
+
+        except RuntimeError, e:
+            logger.error(e)
+            self.test_failed = True
+
+        logger.info("Restarting vdsmd")
+        test_utils.restartVdsmd(self.spm_host_ip, config.HOSTS_PW)
+        if not hosts.waitForHostsStates(
+            True, [self.spm_host_name], ENUMS['host_state_connecting'],
+        ):
+            logger.error("Host %s didn't change to status 'connecting'",
+                         self.spm_host_name)
+            self.test_failed = True
+
+        logger.info("Waiting for host %s to be back up", self.spm_host_name)
+        if not hosts.waitForHostsStates(True, [self.spm_host_name]):
+            logger.error("Waiting for Host %s status 'up' failed",
+                         self.spm_host_name)
+            self.test_failed = True
+
+        if not hosts.waitForSPM(config.DATA_CENTER_NAME, TIMEOUT_10_MINUTES,
+                                SLEEP_TIME):
+            logger.error("Waiting for SPM host status 'up' failed")
+            self.test_failed = True
 
         logger.info("Shutting down %s", self.vm_name)
         if not ll_vms.stopVm(True, self.vm_name):
-            raise errors.VMException("shutting down %s failed" % self.vm_name)
+            logger.error("shutting down %s failed", self.vm_name)
+            self.test_failed = True
 
         logger.info("Waiting for vm %s state 'down'", self.vm_name)
         if not ll_vms.waitForVMState(self.vm_name, state=config.VM_DOWN):
-            raise errors.VMException(
-                "Waiting for VM %s status 'down' failed" % self.vm_name)
+            logger.error(
+                "Waiting for VM %s status 'down' failed", self.vm_name)
+            self.test_failed = True
 
         logger.info("removing vm's %s state 'down'", self.vm_name)
-        if not ll_vms.remove_all_vms_from_cluster(config.CLUSTER_NAME):
-            raise errors.VMException(
-                "Waiting for VM %s status 'down' failed" % self.vm_name)
+        if not ll_vms.removeVm(True, self.vm_name):
+            logger.error(
+                "Waiting for VM %s status 'down' failed", self.vm_name)
+            self.test_failed = True
 
-        # reactivate all none SPM hosts
+        if self.test_failed:
+            raise errors.TestException("Test failed during tearDown")
+
+    @classmethod
+    def teardown_class(cls):
+        """Make sure that the hosts are activated even if tearDown fails"""
+        logger.info("Activating hosts back again")
         for host in config.HOSTS:
-            if host != self.spm_host_name:
+            if not hosts.isHostUp(True, host):
                 hosts.activateHost(True, host, True)
 
     @tcms(tcms_plan_id, tcms_test_case)

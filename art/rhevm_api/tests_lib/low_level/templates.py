@@ -229,9 +229,22 @@ def removeTemplate(positive, template, wait=True, sleepTime=10, timeout=60):
 
 @is_action()
 def removeTemplates(positive, templates):
-    # TODO: Doc
+    """
+    Remove multiple templates
+
+    :param positive: True if test is positive, False if negative
+    :type positive: bool
+    :param templates: The templates to be removed
+    :type templates: list or str
+    :return: True if all the templates are removed properly, False otherwise
+    :rtype: bool
+    """
+    if isinstance(templates, basestring):
+        templates_list = split(templates)
+    else:
+        templates_list = templates
     jobs = [Job(
-        target=removeTemplate, args=(True, tmpl)) for tmpl in split(templates)]
+        target=removeTemplate, args=(True, tmpl)) for tmpl in templates_list]
     js = JobsSet()
     js.addJobs(jobs)
     js.start()
