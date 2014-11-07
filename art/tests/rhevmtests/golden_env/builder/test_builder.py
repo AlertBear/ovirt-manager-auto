@@ -276,8 +276,8 @@ class CreateDC(TestCase):
             template_disk, template_name=template)
         for sd in all_sds:
             if disk_sd != sd:
-                templates.copy_template_disks(
-                    True, template, ",".join(template_disks), sd, False)
+                for disk in template_disks:
+                    templates.copyTemplateDisk(template, disk, sd)
 
     def add_templates(self, templ_def, cluster, datacenter):
         sds = ll_sd.getDCStorages(datacenter, False)
