@@ -38,10 +38,90 @@ def keep_session(func):
     return _dec
 
 
+class HostnameHandler(object):
+    """
+    Handles hostname on <= RHEL6 systems
+
+    Follows:
+    http://www.putorius.net/2013/09/how-to-change-machines-hostname-in.html
+    """
+    def __init__(self, session):
+        self._m = session
+
+    @keep_session
+    def get_hostname(self):
+        """
+        Get hostname
+        :return: hostname
+        :rtype: string
+        """
+        rc, out, _ = self._m.runCmd(['hostname'])
+        if rc:
+            return None
+        return out.strip()
+
+    @keep_session
+    def set_hostname(self, name):
+        """
+        Set hostname persistently
+        :param name: hostname to be set
+        :type name: string
+        """
+        net_config = '/etc/sysconfig/network'
+        cmd = [
+            'hostname', name, ';',
+            'sed', '-i', '-e', '/^HOSTNAME/d', net_config, '&&',
+            'echo', 'HOSTNAME=%s' % name, '>>', net_config
+        ]
+        rc, _, err = self._m.runCmd(cmd)
+        if rc:
+            raise Exception("Unable to set hostname: %s" % err)
+
+
+class HostnameCtlHandler(HostnameHandler):
+    """
+    Handles hostname on >= RHEL7 systems
+
+    Follows:
+    http://www.itzgeek.com/how-tos/linux/centos-how-tos/
+    change-hostname-in-centos-7-rhel-7.html#axzz3IkdUGHUl
+    """
+    @keep_session
+    def get_hostname(self):
+        """
+        Get hostname
+        :return: hostname
+        :rtype: string
+        """
+        cmd = [
+            'hostnamectl', 'status', '|',
+            'grep', 'hostname', '|',
+            'tr', '-d', ' ', '|',
+            'cut', '-d:', '-f2'
+        ]
+        rc, out, _ = self._m.runCmd(cmd)
+        if rc:
+            return None
+        return out.strip()
+
+    @keep_session
+    def set_hostname(self, name):
+        """
+        Set hostname persistently
+        :param name: hostname to be set
+        :type name: string
+        """
+        cmd = ['hostnamectl', 'set-hostname', name]
+        rc, _, err = self._m.runCmd(cmd)
+        if rc:
+            raise Exception("Unable to set hostname: %s" % err)
+
+
 class Network(Service):
     def __init__(self, host):
         super(Network, self).__init__(host)
         self._m = _session(host)
+        self._hnh = None
 
     @keep_session
     def _cmd(self, cmd):
@@ -52,6 +132,36 @@ class Network(Service):
             raise Exception(
                 "Fail to run command %s: %s ; %s" % (cmd_out, out, err))
         return out
+
+    @keep_session
+    def _get_hostname_handler(self):
+        if self._hnh is None:
+            # NOTE: this strategy can be changed, but right now there are
+            # no other Handlers
+            rc, out, err = self._m.runCmd(['which', 'hostnamectl'])
+            if not rc:
+                self._hnh = HostnameCtlHandler(self._m)
+            else:
+                self._hnh = HostnameHandler(self._m)
+        return self._hnh
+
+    @keep_session
+    def _get_hostname(self):
+        h = self._get_hostname_handler()
+        return h.get_hostname()
+
+    @keep_session
+    def _set_hostname(self, name):
+        h = self._get_hostname_handler()
+        h.set_hostname(name)
+
+    hostname = property(_get_hostname, _set_hostname)
+    """
+    Get / Set hostname (persistently)
+
+    print network.hostname
+    network.hostname = "new.hostname.com"
+    """
 
     @keep_session
     def all_interfaces(self):
