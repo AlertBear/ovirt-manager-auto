@@ -76,12 +76,8 @@ DISK_FORMAT = config.ENUMS['format_cow']
 DISK_INTERFACE = config.ENUMS['interface_virtio']
 
 # Bugs:
-# 1) Bug 1111150 - No quota-id option in add disk auto-completion
-# 2) Bug 1111128 - If I have vm with domain(also when it empty),
-#                  update vm via python SDK failed
-# 3) Bug 1070890 - Run vm with odd number of cores drop libvirt error
-# 4) Bug 1125331 - memory_policy-guaranteed option is missing
-#                  in update vm auto-completion
+#
+# Bug 1162780 - [REST API] Get vm disks, in case no disks exists, fail
 
 quota_ui = QuotaTest()  # raut object to CRUD quota
 db = DB(None)  # db instance to access db to check resources
@@ -203,7 +199,6 @@ class QuotaTestMode(TestCase):
         self.assertTrue(vms.stopVm(True, VM_NAME))
 
     @istest
-    @bz({'1091688': {'engine': ['sdk'], 'version': ['3.5']}})
     @tcms('9428', '268990')
     def b_quota_memory_limit_in_grace(self):
         """ Quota RAM Limit in grace.
@@ -216,7 +211,6 @@ class QuotaTestMode(TestCase):
         # TODO: check if warning event was generated
 
     @istest
-    @bz({'1091688': {'engine': ['sdk'], 'version': ['3.5']}})
     @tcms('9428', '268991')
     def c_quota_memory_limit_over_grace(self):
         """ Quota RAM Limit over grace.
@@ -245,7 +239,6 @@ class QuotaTestMode(TestCase):
         self.assertTrue(vms.stopVm(True, VM_NAME))
 
     @istest
-    @bz({'1091688': {'engine': ['sdk'], 'version': ['3.5']}})
     @tcms('9428', '268993')
     def e_quota_vcpu_limit_in_grace(self):
         """ Quota vCPU limit in grace """
@@ -256,7 +249,6 @@ class QuotaTestMode(TestCase):
         # TODO: check if warning event was generated
 
     @istest
-    @bz({'1070890': {'engine': None, 'version': ['3.5']}})
     @tcms('9428', '268994')
     def f_quota_vcpu_limit_over_grace(self):
         """ Quota vCPU limit over grace """
@@ -268,7 +260,6 @@ class QuotaTestMode(TestCase):
         # TODO: check if warning event was generated
 
     @istest
-    @bz({'1111150': {'engine': ['sdk', 'cli'], 'version': ['3.5']}})
     @tcms('9428', '268995')
     def g_quota_storage_limit(self):
         """ Quota storage limit.
@@ -288,7 +279,6 @@ class QuotaTestMode(TestCase):
         self.assertTrue(delete_disks([DISK_NAME]))
 
     @istest
-    @bz({'1111150': {'engine': ['sdk', 'cli'], 'version': ['3.5']}})
     @tcms('9428', '268996')
     def h_quota_storage_limit_in_grace(self):
         """ Quota storage limit in grace """
@@ -303,7 +293,6 @@ class QuotaTestMode(TestCase):
         # TODO: check if warning event was generated
 
     @istest
-    @bz({'1111150': {'engine': ['sdk', 'cli'], 'version': ['3.5']}})
     @tcms('9428', '268997')
     def i_quota_storage_limit_over_grace(self):
         """ Quota storage limit over grace """
@@ -398,8 +387,6 @@ class QuotaTestObjectWithoutQuota(TestCase):
         assert disks.waitForDisksGone(True, DISK_NAME)
 
     @istest
-    @bz({'1111128': {'engine': ['sdk'], 'version': ['3.5']},
-         '1125331': {'engine': ['cli'], 'version': ['3.5']}})
     @tcms(TCMS_PLAN_ID, '236244')
     def update_vm(self):
         """ Update vm with quota enforce mode """
@@ -494,7 +481,7 @@ class QuotaConsumptionCalc(TestCase):
         vms.removeVm(True, VM_NAME)
 
     @istest
-    @bz({'1111150': {'engine': ['sdk', 'cli'], 'version': ['3.5']}})
+    @bz({'1159642': {'engine': None, 'version': ['3.5']}})
     @tcms(TCMS_PLAN_ID, 236236)
     def remove_vm(self):
         """ Remove vm """
