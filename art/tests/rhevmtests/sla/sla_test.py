@@ -651,8 +651,10 @@ class CPUPinCase1(BasicSlaClass):
             raise errors.SkipTest("Too few CPU cores")
         vcpu_pinning = adapt_vcpu_pinning_to_cli([{'0': '0-3,^1'}])
         logger.info("Setting VCPU pinning to 0#0-3,^1")
+        compare = config.opts['engine'] != 'cli'
         self.assertTrue(vms.updateVm(True, self.vm_name,
-                                     vcpu_pinning=vcpu_pinning),
+                                     vcpu_pinning=vcpu_pinning,
+                                     compare=compare),
                         "Failed to change VCPU pinning")
         logger.info("Successfully changed VCPU pinning to 0#0-3,^1.")
 
@@ -668,8 +670,10 @@ class CPUPinCase1(BasicSlaClass):
             raise errors.SkipTest("Too few CPU cores")
         vcpu_pinning = adapt_vcpu_pinning_to_cli([{'0': '0-3,^1,^2'}])
         logger.info("Setting VCPU pinning to 0#0-3,^1,^2")
+        compare = config.opts['engine'] != 'cli'
         self.assertTrue(vms.updateVm(True, self.vm_name,
-                                     vcpu_pinning=vcpu_pinning),
+                                     vcpu_pinning=vcpu_pinning,
+                                     compare=compare),
                         "Failed to change VCPU pinning")
         logger.info("Successfully changed VCPU pinning to 0#0-3,^1,^2.")
 
@@ -685,8 +689,10 @@ class CPUPinCase1(BasicSlaClass):
             raise errors.SkipTest("Too few CPU cores")
         vcpu_pinning = adapt_vcpu_pinning_to_cli([{'0': '1,2,3'}])
         logger.info("Setting VCPU pinning to 0#1,2,3")
+        compare = config.opts['engine'] != 'cli'
         self.assertTrue(vms.updateVm(True, self.vm_name,
-                                     vcpu_pinning=vcpu_pinning),
+                                     vcpu_pinning=vcpu_pinning,
+                                     compare=compare),
                         "Failed to change VCPU pinning")
         logger.info("Successfully changed VCPU pinning to 0#1,2,3.")
 

@@ -449,11 +449,14 @@ def updateVm(positive, vm, **kwargs):
        * watchdog_action - action of watchdog card
        * timezone - set to timezone out of product possible timezones.
                     There must be a match between timezone and OS.
+       * compare - disable or enable validation for update
     Return: status (True if vm was updated properly, False otherwise)
     '''
-    vmObj = VM_API.find(vm)
-    vmNewObj = _prepareVmObject(**kwargs)
-    vmNewObj, status = VM_API.update(vmObj, vmNewObj, positive)
+    vm_obj = VM_API.find(vm)
+    vm_new_obj = _prepareVmObject(**kwargs)
+    compare = kwargs.get('compare', True)
+    vm_new_obj, status = VM_API.update(vm_obj, vm_new_obj, positive,
+                                       compare=compare)
 
     watchdog_model = kwargs.pop('watchdog_model', None)
     watchdog_action = kwargs.pop('watchdog_action', None)
