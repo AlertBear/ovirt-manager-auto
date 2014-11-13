@@ -1295,8 +1295,14 @@ def check_ethtool_opts(host, user, password, nic, opts, value):
     **Return**: True if the value for ethtool_opts is equal to the value
     provided, False otherwise
     """
-    cmd = [ETHTOOL_CMD, "-k", nic] if opts in ETHTOOL_OFFLOAD else (
-        [ETHTOOL_CMD, nic])
+    cmd = []
+    if opts == "tx-checksumming":
+        cmd = [ETHTOOL_CMD, "-k", nic]
+    elif opts == "Autonegotiate":
+        cmd = [ETHTOOL_CMD, "-a", nic]
+    else:
+        logger.error("Not implemented for opts %s" % opts)
+        return False
     machine_obj = Machine(host, user, password).util(LINUX)
     rc, output = machine_obj.runCmd(cmd)
     if not rc:
@@ -1304,7 +1310,7 @@ def check_ethtool_opts(host, user, password, nic, opts, value):
         return False
     for line in output.splitlines():
         if opts in line:
-            return line.split(": ")[1] == value
+            return line.split(":")[1].lstrip() == value
     return False
 
 

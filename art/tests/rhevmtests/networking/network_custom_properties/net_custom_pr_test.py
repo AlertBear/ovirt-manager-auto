@@ -16,7 +16,7 @@ from art.rhevm_api.tests_lib.high_level.networks import(
     createAndAttachNetworkSN, update_network_host, remove_net_from_setup
 )
 from art.rhevm_api.tests_lib.low_level.networks import(
-    check_bridge_file_exist, check_bridge_opts
+    check_bridge_file_exist, check_bridge_opts, check_ethtool_opts
 )
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ def setup_module():
 
 class NCPTestCaseBase(TestCase):
     """
-    base class which provides  teardown class method for each test case
+    base class which provides teardown class method for each test case
     """
 
     @classmethod
@@ -49,11 +49,11 @@ class NCPTestCaseBase(TestCase):
         """
         logger.info("Starting teardown")
         if not remove_net_from_setup(
-                host=config.VDS_HOSTS[0], auto_nics=[0],
-                data_center=config.DC_NAME[0], all_net=True,
-                mgmt_network=config.MGMT_BRIDGE
+            host=config.VDS_HOSTS[0], auto_nics=[0],
+            data_center=config.DC_NAME[0], all_net=True,
+            mgmt_network=config.MGMT_BRIDGE
         ):
-            raise NetworkException("Cannot remove network from setup")
+            raise NetworkException("Cannot remove networks from setup")
 
 
 @attr(tier=1)
@@ -74,12 +74,19 @@ class NetCustPrCase01(NCPTestCaseBase):
                       config.NETWORKS[1]: {'nic': 2,
                                            'usages': "",
                                            'required': "false"}}
-
+        logger.info(
+            "Create networks %s and %s on DC, Cluster, Host",
+            config.NETWORKS[0], config.NETWORKS[1]
+        )
         if not createAndAttachNetworkSN(
-                data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-                host=config.VDS_HOSTS[0], network_dict=local_dict,
-                auto_nics=[0]):
-            raise NetworkException("Cannot create and attach network")
+            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
+            host=config.VDS_HOSTS[0], network_dict=local_dict,
+            auto_nics=[0]
+        ):
+            raise NetworkException(
+                "Cannot create and attach networks %s and %s" %
+                (config.NETWORKS[0], config.NETWORKS[1])
+            )
 
     @istest
     @tcms(13967, 372428)
@@ -93,8 +100,8 @@ class NetCustPrCase01(NCPTestCaseBase):
             config.NETWORKS[1]
         )
         if not check_bridge_file_exist(
-                config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
-                config.NETWORKS[0]
+            config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
+            config.NETWORKS[0]
         ):
             raise NetworkException(
                 "Bridge_opts doesn't exists for VM network %s " %
@@ -102,8 +109,8 @@ class NetCustPrCase01(NCPTestCaseBase):
             )
 
         if check_bridge_file_exist(
-                config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
-                config.NETWORKS[1]
+            config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
+            config.NETWORKS[1]
         ):
             raise NetworkException(
                 "Bridge_opts does exist for VM network %s but shouldn't" %
@@ -133,12 +140,17 @@ class NetCustPrCase02(NCPTestCaseBase):
                                                 "usages": "",
                                                 "required": "false",
                                                 "vlan_id": config.VLAN_ID[1]}}
-
+        logger.info("Create networks %s and %s on DC, Cluster and Host Bond",
+                    config.NETWORKS[0], config.NETWORKS[1])
         if not createAndAttachNetworkSN(
-                data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-                host=config.VDS_HOSTS[0], network_dict=local_dict,
-                auto_nics=[0]):
-            raise NetworkException("Cannot create and attach network")
+            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
+            host=config.VDS_HOSTS[0], network_dict=local_dict,
+            auto_nics=[0]
+        ):
+            raise NetworkException(
+                "Cannot create and attach networks %s and %s" %
+                (config.NETWORKS[0], config.NETWORKS[1])
+            )
 
     @istest
     @tcms(13967, 372468)
@@ -152,8 +164,8 @@ class NetCustPrCase02(NCPTestCaseBase):
             config.NETWORKS[0], config.NETWORKS[1]
         )
         if not check_bridge_file_exist(
-                config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
-                config.VLAN_NETWORKS[0]
+            config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
+            config.VLAN_NETWORKS[0]
         ):
             raise NetworkException(
                 "Bridge_opts doesn't exists for VM network %s " %
@@ -161,8 +173,8 @@ class NetCustPrCase02(NCPTestCaseBase):
             )
 
         if check_bridge_file_exist(
-                config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
-                config.VLAN_NETWORKS[1]
+            config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
+            config.VLAN_NETWORKS[1]
         ):
             raise NetworkException(
                 "Bridge_opts does exist for VM network %s but shouldn't" %
@@ -190,12 +202,18 @@ class NetCustPrCase03(NCPTestCaseBase):
                               "required": "false",
                               "properties": {"bridge_opts": config.PRIORITY}}
         local_dict = {config.NETWORKS[0]: network_param_dict}
-
+        logger.info(
+            "Create logical VM network %s on DC/Cluster/Host with bridge_opts"
+            " having non-default value for priority field", config.NETWORKS[0]
+        )
         if not createAndAttachNetworkSN(
-                data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-                host=config.VDS_HOSTS[0], network_dict=local_dict,
-                auto_nics=[0]):
-            raise NetworkException("Cannot create and attach network")
+            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
+            host=config.VDS_HOSTS[0], network_dict=local_dict,
+            auto_nics=[0]
+        ):
+            raise NetworkException(
+                "Cannot create and attach network %s" % config.NETWORKS[0]
+            )
 
     @istest
     @tcms(13967, 372628)
@@ -211,9 +229,9 @@ class NetCustPrCase03(NCPTestCaseBase):
             "non-default value "
         )
         if not check_bridge_opts(
-                config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
-                config.NETWORKS[0], config.KEY1,
-                config.BRIDGE_OPTS.get(config.KEY1)[1]
+            config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
+            config.NETWORKS[0], config.KEY1,
+            config.BRIDGE_OPTS.get(config.KEY1)[1]
         ):
             raise NetworkException(
                 "Priority value of bridge_opts was not updated correctly"
@@ -223,8 +241,8 @@ class NetCustPrCase03(NCPTestCaseBase):
             "Update bridge_opts for priority with the default parameter "
         )
         if not update_network_host(
-                config.HOSTS[0], HOST_NICS[1], auto_nics=[HOST_NICS[0]],
-                **kwargs
+            config.HOSTS[0], HOST_NICS[1], auto_nics=[HOST_NICS[0]],
+            **kwargs
         ):
             raise NetworkException(
                 "Couldn't update bridge_opts with default parameters for "
@@ -235,9 +253,9 @@ class NetCustPrCase03(NCPTestCaseBase):
             "Check that bridge_opts parameter has an updated default value "
         )
         if not check_bridge_opts(
-                config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
-                config.NETWORKS[0], config.KEY1,
-                config.BRIDGE_OPTS.get(config.KEY1)[0]
+            config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
+            config.NETWORKS[0], config.KEY1,
+            config.BRIDGE_OPTS.get(config.KEY1)[0]
         ):
             raise NetworkException(
                 "Priority value of bridge opts was not updated correctly"
@@ -266,12 +284,18 @@ class NetCustPrCase04(NCPTestCaseBase):
                               "required": "false",
                               "properties": {"bridge_opts": config.PRIORITY}}
         local_dict = {config.NETWORKS[0]: network_param_dict}
-
+        logger.info(
+            "Create logical VM network %s on DC/Cluster/Host with bridge_opts"
+            " having non-default value for priority field", config.NETWORKS[0]
+        )
         if not createAndAttachNetworkSN(
-                data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-                host=config.VDS_HOSTS[0], network_dict=local_dict,
-                auto_nics=[0]):
-            raise NetworkException("Cannot create and attach network")
+            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
+            host=config.VDS_HOSTS[0], network_dict=local_dict,
+            auto_nics=[0]
+        ):
+            raise NetworkException(
+                "Cannot create and attach network %s" % config.NETWORKS[0]
+            )
 
     @istest
     @tcms(13967, 372701)
@@ -296,8 +320,8 @@ class NetCustPrCase04(NCPTestCaseBase):
             "querier"
         )
         if not update_network_host(
-                config.HOSTS[0], HOST_NICS[1], auto_nics=[HOST_NICS[0]],
-                **kwargs1
+            config.HOSTS[0], HOST_NICS[1], auto_nics=[HOST_NICS[0]],
+            **kwargs1
         ):
             raise NetworkException(
                 "Couldn't update bridge_opts with additional key:value "
@@ -307,8 +331,8 @@ class NetCustPrCase04(NCPTestCaseBase):
         logger.info("Check that bridge_opts parameter has an updated value ")
         for key, value in config.BRIDGE_OPTS.iteritems():
             if not check_bridge_opts(
-                    config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
-                    config.NETWORKS[0], key, value[1]
+                config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
+                config.NETWORKS[0], key, value[1]
             ):
                 raise NetworkException(
                     "Value of bridge opts key %s was not updated correctly "
@@ -317,8 +341,8 @@ class NetCustPrCase04(NCPTestCaseBase):
 
         logger.info("Update bridge_opts with the default parameter ")
         if not update_network_host(
-                config.HOSTS[0], HOST_NICS[1], auto_nics=[HOST_NICS[0]],
-                **kwargs2
+            config.HOSTS[0], HOST_NICS[1], auto_nics=[HOST_NICS[0]],
+            **kwargs2
         ):
             raise NetworkException(
                 "Couldn't update bridge_opts with default parameters for "
@@ -330,8 +354,8 @@ class NetCustPrCase04(NCPTestCaseBase):
         )
         for key, value in config.BRIDGE_OPTS.items():
             if not check_bridge_opts(
-                    config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
-                    config.NETWORKS[0], key, value[0]
+                config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
+                config.NETWORKS[0], key, value[0]
             ):
                 raise NetworkException(
                     "Priority value of bridge opts key %s was not updated "
@@ -362,11 +386,16 @@ class NetCustPrCase05(NCPTestCaseBase):
                               "required": "false",
                               "properties": {"bridge_opts": config.PRIORITY}}
         local_dict = {config.NETWORKS[0]: network_param_dict}
-
+        logger.info(
+            "Create logical VM network %s on DC/Cluster/Host bond with "
+            "bridge_opts having non-default value for priority field",
+            config.NETWORKS[0]
+        )
         if not createAndAttachNetworkSN(
-                data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-                host=config.VDS_HOSTS[0], network_dict=local_dict,
-                auto_nics=[0]):
+            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
+            host=config.VDS_HOSTS[0], network_dict=local_dict,
+            auto_nics=[0]
+        ):
             raise NetworkException("Cannot create and attach network")
 
     @istest
@@ -393,8 +422,8 @@ class NetCustPrCase05(NCPTestCaseBase):
             "querier"
         )
         if not update_network_host(
-                config.HOSTS[0], config.BOND[0], auto_nics=[HOST_NICS[0]],
-                **kwargs1
+            config.HOSTS[0], config.BOND[0], auto_nics=[HOST_NICS[0]],
+            **kwargs1
         ):
             raise NetworkException(
                 "Couldn't update bridge_opts with additional key:value "
@@ -404,8 +433,8 @@ class NetCustPrCase05(NCPTestCaseBase):
         logger.info("Check that bridge_opts parameter has an updated value ")
         for key, value in config.BRIDGE_OPTS.iteritems():
             if not check_bridge_opts(
-                    config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
-                    config.NETWORKS[0], key, value[1]
+                config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
+                config.NETWORKS[0], key, value[1]
             ):
                 raise NetworkException(
                     "Value of bridge opts key %s was not updated correctly "
@@ -414,8 +443,8 @@ class NetCustPrCase05(NCPTestCaseBase):
 
         logger.info("Update bridge_opts with the default parameters for keys ")
         if not update_network_host(
-                config.HOSTS[0], config.BOND[0], auto_nics=[HOST_NICS[0]],
-                **kwargs2
+            config.HOSTS[0], config.BOND[0], auto_nics=[HOST_NICS[0]],
+            **kwargs2
         ):
             raise NetworkException(
                 "Couldn't update bridge_opts with default parameters for "
@@ -427,8 +456,8 @@ class NetCustPrCase05(NCPTestCaseBase):
         )
         for key, value in config.BRIDGE_OPTS.iteritems():
             if not check_bridge_opts(
-                    config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
-                    config.NETWORKS[0], key, value[0]
+                config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
+                config.NETWORKS[0], key, value[0]
             ):
                 raise NetworkException(
                     "Value of bridge opts key %s was not updated correctly "
@@ -467,12 +496,21 @@ class NetCustPrCase06(NCPTestCaseBase):
                                                 "properties": {
                                                     "bridge_opts":
                                                     config.PRIORITY}}}
-
+        logger.info("Create 2 logical VM networks on DC, Cluster and Host when"
+                    " the untagged %s is attached to the bond %s and tagged "
+                    "%s is attached to the host interface %s"
+                    "(bridge_opts is configured for both)",
+                    config.NETWORKS[0], config.BOND[0],
+                    config.VLAN_NETWORKS[0], HOST_NICS[1])
         if not createAndAttachNetworkSN(
-                data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-                host=config.VDS_HOSTS[0], network_dict=local_dict,
-                auto_nics=[0, 1]):
-            raise NetworkException("Cannot create and attach network")
+            data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
+            host=config.VDS_HOSTS[0], network_dict=local_dict,
+            auto_nics=[0, 1]
+        ):
+            raise NetworkException(
+                "Cannot create and attach networks %s and %s" %
+                (config.NETWORKS[0], config.VLAN_NETWORKS[0])
+            )
 
     @istest
     @tcms(13967, 372857)
@@ -486,9 +524,9 @@ class NetCustPrCase06(NCPTestCaseBase):
         logger.info("Check that bridge_opts parameter has an updated value ")
         for network in (config.NETWORKS[0], config.VLAN_NETWORKS[0]):
             if not check_bridge_opts(
-                    config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
-                    network, config.KEY1,
-                    config.BRIDGE_OPTS.get(config.KEY1)[1]
+                config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
+                network, config.KEY1,
+                config.BRIDGE_OPTS.get(config.KEY1)[1]
             ):
                 raise NetworkException(
                     "Priority value of bridge opts key was not updated "
@@ -512,12 +550,13 @@ class NetCustPrCase06(NCPTestCaseBase):
                                            "slaves": [2, 3],
                                            "required": "false"},
                       config.VLAN_NETWORKS[0]: {"nic": 1,
-                                                'vlan_id': config.VLAN_ID[0],
+                                                "vlan_id": config.VLAN_ID[0],
                                                 "required": "false"}}
 
         if not createAndAttachNetworkSN(
-                host=config.VDS_HOSTS[0], network_dict=local_dict,
-                auto_nics=[0, 1]):
+            host=config.VDS_HOSTS[0], network_dict=local_dict,
+            auto_nics=[0, 1]
+        ):
             raise NetworkException("Cannot create and attach network")
 
         logger.info(
@@ -525,11 +564,580 @@ class NetCustPrCase06(NCPTestCaseBase):
         )
         for network in (config.NETWORKS[0], config.VLAN_NETWORKS[0]):
             if not check_bridge_opts(
-                    config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
-                    network, config.KEY1,
-                    config.BRIDGE_OPTS.get(config.KEY1)[0]
+                config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
+                network, config.KEY1,
+                config.BRIDGE_OPTS.get(config.KEY1)[0]
             ):
                 raise NetworkException(
                     "Value of bridge opts key was not updated correctly "
                     "with value %s" % config.BRIDGE_OPTS.get(config.KEY1)[0]
+                )
+
+
+@attr(tier=1)
+class NetCustPrCase07(NCPTestCaseBase):
+    """
+    Configure ethtool with non-default value
+    Verify ethtool_opts were updated
+    Update ethtool_opts with default value
+    Verify ethtool_opts were updated with the default value
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create logical VLAN VM network on DC/Cluster/Host with ethtool_opts
+        having non-default value for tx_checksum field
+        """
+        prop_dict = {"ethtool_opts": config.TX_CHECKSUM.format(
+            nic=HOST_NICS[1], state="off")}
+        network_param_dict = {"nic": 1, "required": "false",
+                              "vlan_id": config.VLAN_ID[0],
+                              "properties": prop_dict}
+
+        local_dict = {config.VLAN_NETWORKS[0]: network_param_dict}
+        logger.info("Create logical VLAN VM network %s on DC/Cluster/Host "
+                    "with ethtool_opts having non-default value for "
+                    "tx_checksum field", config.VLAN_NETWORKS[0])
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
+                                        host=config.VDS_HOSTS[0],
+                                        network_dict=local_dict,
+                                        auto_nics=[0, 1]):
+            raise NetworkException(
+                "Cannot create and attach network %s" % config.VLAN_NETWORKS[0]
+            )
+
+    @istest
+    @tcms(13967, 372880)
+    def update_ethtool_opts(self):
+        """
+        1) Verify ethtool_opts have updated value for tx_checksum opts
+        2) Update ethtool_opts with the default value
+        3) Verify ethtool_opts have updated default value for tx_checksum opts
+        """
+        kwargs = {"properties": {"ethtool_opts": config.TX_CHECKSUM.format(
+            nic=HOST_NICS[1], state="on")}}
+
+        logger.info("Check that ethtool_opts parameter for tx_checksum have "
+                    "an updated non-default value ")
+        if not check_ethtool_opts(config.HOSTS_IP[0], config.HOSTS_USER,
+                                  config.HOSTS_PW, HOST_NICS[1],
+                                  "tx-checksumming", "off"):
+            raise NetworkException("tx-checksum value of ethtool_opts was not "
+                                   "updated correctly with non-default value")
+
+        logger.info("Update ethtool_opts for tx_checksum with the default "
+                    "parameter ")
+        if not update_network_host(config.HOSTS[0],
+                                   ".".join([HOST_NICS[1],
+                                             config.VLAN_ID[0]]),
+                                   auto_nics=HOST_NICS[:2], **kwargs):
+            raise NetworkException("Couldn't update ethtool_opts with default "
+                                   "parameters for tx_checksum_opts")
+
+        logger.info("Check that ethtool_opts parameter has an updated default "
+                    "value ")
+        if not check_ethtool_opts(config.HOSTS_IP[0], config.HOSTS_USER,
+                                  config.HOSTS_PW, HOST_NICS[1],
+                                  "tx-checksumming", "on"):
+            raise NetworkException("tx-checksum value of ethtool_opts was not "
+                                   "updated correctly with default value")
+
+
+@attr(tier=1)
+class NetCustPrCase08(NCPTestCaseBase):
+    """
+    Configure ethtool_opts with non-default value
+    Verify ethtool_opts was updated
+    Update the NIC with additional ethtool_opts value
+    Verify ethtool_opts were updated with both values
+    Update both values of ethtool_opts with the default values
+    Verify ethtool_opts were updated accordingly
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create logical non-VM and network on DC/Cluster/Host with
+        ethtool_opts having non-default value for tx_checksum field
+        """
+        prop_dict = {"ethtool_opts": config.TX_CHECKSUM.format(
+            nic=HOST_NICS[1], state="off")}
+        network_param_dict = {"nic": 1, "required": "false",
+                              "usages": "",
+                              "properties": prop_dict}
+        local_dict = {config.NETWORKS[0]: network_param_dict}
+        logger.info("Create logical non-VM and network %s on DC/Cluster/Host "
+                    "with ethtool_opts having non - default value for "
+                    "tx_checksum field", config.NETWORKS[0])
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
+                                        host=config.VDS_HOSTS[0],
+                                        network_dict=local_dict,
+                                        auto_nics=[0]):
+            raise NetworkException("Cannot create and attach network %s" %
+                                   config.NETWORKS[0])
+
+    @istest
+    @tcms(13967, 372881)
+    def check_several_ethtool_opts_exist_nic(self):
+        """
+        1) Update ethtool_opts with additional parameter (autoneg)
+        2) Verify ethtool_opts have updated value for tx_checksum and autoneg
+        3) Update ethtool_opts with the default value for both keys
+        4) Verify ethtool_opts have updated default value
+        """
+        default_ethtool_opts = " ".join([config.TX_CHECKSUM.format(
+            nic=HOST_NICS[1], state="on"), config.AUTONEG.format(
+                nic=HOST_NICS[1], state="on")])
+        non_default_ethtool_opts = " ".join([config.TX_CHECKSUM.format(
+            nic=HOST_NICS[1], state="off"),
+            config.AUTONEG.format(nic=HOST_NICS[1], state="off")])
+        kwargs1 = {"properties": {"ethtool_opts": non_default_ethtool_opts}}
+        kwargs2 = {"properties": {"ethtool_opts": default_ethtool_opts}}
+        logger.info("Update ethtool_opts with additional parameter for "
+                    "auto negotiation")
+        if not update_network_host(config.HOSTS[0], HOST_NICS[1],
+                                   auto_nics=[HOST_NICS[0]], **kwargs1):
+            raise NetworkException("Couldn't update bridge_opts with "
+                                   "additional autoneg parameter")
+
+        logger.info("Check that ethtool_opts parameter has an updated value ")
+        for prop in ("Autonegotiate", "tx-checksumming"):
+            if not check_ethtool_opts(config.HOSTS_IP[0], config.HOSTS_USER,
+                                      config.HOSTS_PW, HOST_NICS[1],
+                                      prop, "off"):
+                raise NetworkException("tx-checksum value of ethtool_opts was "
+                                       "not updated correctly with non-default"
+                                       " value")
+
+        logger.info("Update ethtool_opts with the default parameters for "
+                    "both checksum and autoneg values ")
+        if not update_network_host(config.HOSTS[0], HOST_NICS[1],
+                                   auto_nics=[HOST_NICS[0]], **kwargs2):
+            raise NetworkException("Couldn't update ethtool_opts with default "
+                                   "parameters for both values")
+
+        logger.info("Check that ethtool_opts parameters have an updated "
+                    "default value for checksum and autoneg")
+        for prop in ("Autonegotiate", "tx-checksumming"):
+            if not check_ethtool_opts(config.HOSTS_IP[0], config.HOSTS_USER,
+                                      config.HOSTS_PW, HOST_NICS[1],
+                                      prop, "on"):
+                raise NetworkException("tx-checksum and autoneg values of "
+                                       "ethtool_opts were not updated "
+                                       "correctly with default value")
+
+
+@attr(tier=1)
+class NetCustPrCase09(NCPTestCaseBase):
+    """
+    Configure ethtool with non-default value for the NIC with network
+    Verify ethtool_opts were updated
+    Remove network from Host NIC
+    Reattach network to the Host NIC
+    Verify ethtool_opts has the non-default value for the NIC with network
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create logical VM network on DC/Cluster/Host with ethtool_opts
+        having non-default value for tx_checksum field
+        """
+        prop_dict = {"ethtool_opts": config.TX_CHECKSUM.format(
+            nic=HOST_NICS[1], state="off")}
+        network_param_dict = {"nic": 1, "required": "false",
+                              "properties": prop_dict}
+
+        local_dict = {config.NETWORKS[0]: network_param_dict}
+        logger.info("Create logical VM network %s on DC/Cluster/Host with "
+                    "ethtool_opts having non-default value for tx_checksum "
+                    "field", config.NETWORKS[0])
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
+                                        host=config.VDS_HOSTS[0],
+                                        network_dict=local_dict,
+                                        auto_nics=[0]):
+            raise NetworkException("Cannot create and attach network %s" %
+                                   config.NETWORKS[0])
+
+        logger.info("Check that ethtool_opts parameter for tx_checksum have "
+                    "an updated non-default value ")
+        if not check_ethtool_opts(config.HOSTS_IP[0], config.HOSTS_USER,
+                                  config.HOSTS_PW, HOST_NICS[1],
+                                  "tx-checksumming", "off"):
+            raise NetworkException("tx-checksum value of ethtool_opts was not "
+                                   "updated correctly")
+
+    @istest
+    @tcms(13967, 372886)
+    def reattach_network(self):
+        """
+        1) Detach the network from the Host NIC
+        2) Verify ethtool_opts has non default value on the NIC
+        3) Reattach network to the same NIC
+        3) Verify ethtool_opts has non default value on the NIC
+        """
+        logger.info("Remove network %s from the Host NIC", config.NETWORKS[0])
+        if not createAndAttachNetworkSN(host=config.VDS_HOSTS[0],
+                                        network_dict={},
+                                        auto_nics=[0]):
+            raise NetworkException("Couldn't remove network %s from the Host "
+                                   "NIC" % config.NETWORKS[0])
+
+        logger.info("Check that ethtool_opts parameter has an updated "
+                    "non-default value after removing network")
+        if not check_ethtool_opts(config.HOSTS_IP[0], config.HOSTS_USER,
+                                  config.HOSTS_PW, HOST_NICS[1],
+                                  "tx-checksumming", "off"):
+            raise NetworkException("tx-checksum value of ethtool_has default "
+                                   "value, but shouldn't")
+
+        logger.info("Reattach the network %s to the same Host NIC",
+                    config.NETWORKS[0])
+        network_param_dict = {"nic": 1, "required": "false"}
+        local_dict = {config.NETWORKS[0]: network_param_dict}
+        if not createAndAttachNetworkSN(host=config.VDS_HOSTS[0],
+                                        network_dict=local_dict,
+                                        auto_nics=[0]):
+            raise NetworkException("Cannot create and attach network %s" %
+                                   config.NETWORKS[0])
+
+        logger.info("Check that ethtool_opts parameter has non-default value "
+                    "after reattaching new network")
+        if not check_ethtool_opts(config.HOSTS_IP[0], config.HOSTS_USER,
+                                  config.HOSTS_PW, HOST_NICS[1],
+                                  "tx-checksumming", "off"):
+            raise NetworkException("tx-checksum value of ethtool_has default "
+                                   "value, but shouldn't")
+
+    @classmethod
+    def teardown_class(cls):
+        """
+        Update ethtool with the default values and remove networks from the
+        setup.
+        """
+        def_ethtool_opts = config.TX_CHECKSUM.format(
+            nic=HOST_NICS[1], state="on")
+        kwargs2 = {"properties": {"ethtool_opts": def_ethtool_opts}}
+
+        logger.info("Update ethtool_opts with the default parameters for "
+                    "checksum value ")
+        if not update_network_host(config.HOSTS[0], HOST_NICS[1],
+                                   auto_nics=[HOST_NICS[0]], **kwargs2):
+            raise NetworkException("Couldn't update ethtool_opts with default "
+                                   "parameter")
+
+        logger.info("Check that ethtool_opts parameters have an updated "
+                    "default value for checksum")
+        if not check_ethtool_opts(config.HOSTS_IP[0], config.HOSTS_USER,
+                                  config.HOSTS_PW, HOST_NICS[1],
+                                  "tx-checksumming", "on"):
+            raise NetworkException("tx-checksum value of ethtool_opts was "
+                                   "not updated correctly with default "
+                                   "value")
+        super(NetCustPrCase09, cls).teardown_class()
+
+
+@attr(tier=1)
+class NetCustPrCase10(NCPTestCaseBase):
+    """
+    Configure ethtool and bridge opts with non-default value
+    Verify ethtool and bridge_opts were updated with non-default values
+    Update ethtool_and bridge opts with default value
+    Verify ethtool and bridge_opts were updated with the default value
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create logical VM network on DC/Cluster/Host with ethtool_opts
+        and bridge_opts having non-default values
+        """
+
+        prop_dict = {"ethtool_opts": config.TX_CHECKSUM.format(
+            nic=HOST_NICS[1], state="off"),
+            "bridge_opts": config.PRIORITY}
+        network_param_dict = {"nic": 1,
+                              "required": "false",
+                              "properties": prop_dict}
+
+        local_dict = {config.NETWORKS[0]: network_param_dict}
+        logger.info("Create logical VM network %s on DC/Cluster/Host with "
+                    "ethtool_opts and bridge_opts having non-default "
+                    "values", config.NETWORKS[0])
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
+                                        host=config.VDS_HOSTS[0],
+                                        network_dict=local_dict,
+                                        auto_nics=[0]):
+            raise NetworkException("Cannot create and attach network %s" %
+                                   config.NETWORKS[0])
+
+    @istest
+    @tcms(13967, 373094)
+    def update_ethtool_bridge_opts(self):
+        """
+        1) Verify ethtool_and bridge opts have updated values
+        2) Update ethtool and bridge_opts with the default value
+        3) Verify ethtool_and bridge opts have been updated with default values
+        """
+        logger.info("Check that ethtool_opts parameter for tx_checksum "
+                    "have an updated non-default value ")
+        if not check_ethtool_opts(config.HOSTS_IP[0], config.HOSTS_USER,
+                                  config.HOSTS_PW, HOST_NICS[1],
+                                  "tx-checksumming", "off"):
+            raise NetworkException("tx-checksum value of ethtool_opts was not "
+                                   "updated correctly with non-default value")
+
+        logger.info("Check that bridge_opts parameter for priority  have an "
+                    "updated non-default value ")
+        if not check_bridge_opts(config.HOSTS_IP[0], config.HOSTS_USER,
+                                 config.HOSTS_PW, config.NETWORKS[0],
+                                 config.KEY1,
+                                 config.BRIDGE_OPTS.get(config.KEY1)[1]):
+            raise NetworkException("Priority value of bridge_opts was not "
+                                   "updated correctly with non-default value")
+
+        logger.info("Update ethtool_opts for tx_checksum and bridge_opts "
+                    "for priority with the default parameters ")
+        kwargs = {"properties": {"ethtool_opts": config.TX_CHECKSUM.format(
+            nic=HOST_NICS[1], state="on"),
+            "bridge_opts": config.DEFAULT_PRIORITY}}
+        if not update_network_host(config.HOSTS[0], HOST_NICS[1],
+                                   auto_nics=[HOST_NICS[0]], **kwargs):
+            raise NetworkException("Couldn't update ethtool and bridge_opts "
+                                   "with default parameters for tx_checksum "
+                                   "and priority opts")
+
+        logger.info("Check that ethtool_opts parameter has an updated default "
+                    "value ")
+        if not check_ethtool_opts(config.HOSTS_IP[0], config.HOSTS_USER,
+                                  config.HOSTS_PW, HOST_NICS[1],
+                                  "tx-checksumming", "on"):
+            raise NetworkException("tx-checksum value of ethtool_opts was not "
+                                   "updated correctly with default value")
+
+        logger.info("Check that bridge_opts parameter has an updated default "
+                    "value ")
+        if not check_bridge_opts(config.HOSTS_IP[0], config.HOSTS_USER,
+                                 config.HOSTS_PW, config.NETWORKS[0],
+                                 config.KEY1,
+                                 config.BRIDGE_OPTS.get(config.KEY1)[0]):
+            raise NetworkException("Priority value of bridge opts was not "
+                                   "updated correctly with default value")
+
+
+@attr(tier=1)
+class NetCustPrCase11(NCPTestCaseBase):
+    """
+    Create a network without ethtool or bridge opts configured
+    Configure ethtool and bridge opts with non-default value
+    Verify ethtool and bridge_opts were updated with non-default values
+    Update ethtool_and bridge opts with default value
+    Verify ethtool and bridge_opts were updated with the default value
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create logical VM network on DC/Cluster/Host
+        """
+        network_param_dict = {"nic": 1,
+                              "required": "false"}
+
+        local_dict = {config.NETWORKS[0]: network_param_dict}
+        logger.info("Create logical VM network %s on DC/Cluster/Host",
+                    config.NETWORKS[0])
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
+                                        host=config.VDS_HOSTS[0],
+                                        network_dict=local_dict,
+                                        auto_nics=[0]):
+            raise NetworkException("Cannot create and attach network %s" %
+                                   config.NETWORKS[0])
+
+    @istest
+    @tcms(13967, 373096)
+    def update_bridge_ethtool_opts(self):
+        """
+        1) Update existing network with non-default values for bridge and
+        ethtool opts
+        2) Verify ethtool_and bridge opts have updated non-default values
+        3) Update ethtool and bridge_opts with the default value
+        4) Verify ethtool_and bridge opts have been updated with default values
+        """
+        logger.info("Update ethtool and bridge opts for tx_checksum and "
+                    "priority appropriately with the default parameters ")
+        kwargs = {"properties": {"ethtool_opts": config.TX_CHECKSUM.format(
+            nic=HOST_NICS[1], state="off"),
+            "bridge_opts": config.PRIORITY}}
+        if not update_network_host(config.HOSTS[0], HOST_NICS[1],
+                                   auto_nics=[HOST_NICS[0]], **kwargs):
+            raise NetworkException("Couldn't update ethtool and bridge opts "
+                                   "with non default parameters for "
+                                   "tx_checksum and priority opts")
+        logger.info("Check that ethtool_opts parameter for tx_checksum "
+                    "have an updated non-default value ")
+        if not check_ethtool_opts(config.HOSTS_IP[0], config.HOSTS_USER,
+                                  config.HOSTS_PW, HOST_NICS[1],
+                                  "tx-checksumming", "off"):
+            raise NetworkException("tx-checksum value of ethtool_opts was not "
+                                   "updated correctly with non-default value")
+
+        logger.info("Check that bridge_opts parameter for priority  have an "
+                    "updated non-default value ")
+        if not check_bridge_opts(config.HOSTS_IP[0], config.HOSTS_USER,
+                                 config.HOSTS_PW, config.NETWORKS[0],
+                                 config.KEY1,
+                                 config.BRIDGE_OPTS.get(config.KEY1)[1]):
+            raise NetworkException("Priority value of bridge_opts was not "
+                                   "updated correctly with non-default value")
+
+        logger.info("Update ethtool and bridge opts for tx_checksum and "
+                    "priority appropriately with the default parameters ")
+        kwargs = {"properties": {"ethtool_opts": config.TX_CHECKSUM.format(
+            nic=HOST_NICS[1], state="on"),
+            "bridge_opts": config.DEFAULT_PRIORITY}}
+        if not update_network_host(config.HOSTS[0], HOST_NICS[1],
+                                   auto_nics=[HOST_NICS[0]], **kwargs):
+            raise NetworkException("Couldn't update ethtool and bridge_opts "
+                                   "with default parameters for tx_checksum "
+                                   "and priority opts accordingly")
+
+        logger.info("Check that ethtool_opts parameter has an updated default "
+                    "value ")
+        if not check_ethtool_opts(config.HOSTS_IP[0], config.HOSTS_USER,
+                                  config.HOSTS_PW, HOST_NICS[1],
+                                  "tx-checksumming", "on"):
+            raise NetworkException("tx-checksum value of ethtool_opts was not "
+                                   "updated correctly with default value")
+
+        logger.info("Check that bridge_opts parameter has an updated default "
+                    "value ")
+        if not check_bridge_opts(config.HOSTS_IP[0], config.HOSTS_USER,
+                                 config.HOSTS_PW, config.NETWORKS[0],
+                                 config.KEY1,
+                                 config.BRIDGE_OPTS.get(config.KEY1)[0]):
+            raise NetworkException("Priority value of bridge opts was not "
+                                   "updated correctly with default value")
+
+
+@attr(tier=1)
+class NetCustPrCase12(NCPTestCaseBase):
+    """
+    Configure several ethtool_opts  with non-default value for the NIC with
+     attached Network (different key:value)
+    Configure several bridge_opts with non-default value for the same network
+     attached to the NIC (different key:value)
+    Test on the Host that the ethtool values were updated correctly
+    Test on the Host that bridge_opts values were updated correctly
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create logical VM network on DC/Cluster/Host
+        """
+        network_param_dict = {"nic": 1, "required": "false"}
+        local_dict = {config.NETWORKS[0]: network_param_dict}
+        logger.info("Attach network %s to DC/Cluste/Host", config.NETWORKS[0])
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
+                                        host=config.VDS_HOSTS[0],
+                                        network_dict=local_dict,
+                                        auto_nics=[0]):
+            raise NetworkException("Cannot create and attach network %s" %
+                                   config.NETWORKS[0])
+
+    @istest
+    @tcms(13967, 373097)
+    def check_several_bridge_ethtool_opts_exist(self):
+        """
+        1) Configure several ethtool_opts  with non-default value for the
+        NIC with attached Network (different key:value)
+        2) Configure several bridge_opts with non-default value for the same
+        network attached to the NIC (different key:value)
+        3) Test on the Host that the ethtool values were updated correctly
+        4) Test on the Host that bridge_opts values were updated correctly
+        """
+        default_ethtool_opts = " ".join([config.TX_CHECKSUM.format(
+            nic=HOST_NICS[1], state="on"),
+            config.AUTONEG.format(nic=HOST_NICS[1], state="on")])
+        non_default_ethtool_opts = " ".join([config.TX_CHECKSUM.format(
+            nic=HOST_NICS[1], state="off"),
+            config.AUTONEG.format(nic=HOST_NICS[1], state="off")])
+        default_bridge_opts = " ".join(
+            [config.DEFAULT_PRIORITY, config.DEFAULT_MULT_QUERIER]
+        )
+        non_default_bridge_opts = " ".join(
+            [config.PRIORITY, config.MULT_QUERIER]
+        )
+        kwargs1 = {"properties": {"ethtool_opts": non_default_ethtool_opts,
+                                  "bridge_opts": non_default_bridge_opts}}
+        kwargs2 = {"properties": {"ethtool_opts": default_ethtool_opts,
+                                  "bridge_opts": default_bridge_opts}}
+        logger.info("Update ethtool_opts with non-default parameters for "
+                    "tx_checksup and autoneg and priority and "
+                    "querier of bridge opts")
+        if not update_network_host(config.HOSTS[0], HOST_NICS[1],
+                                   auto_nics=[HOST_NICS[0]], **kwargs1):
+            raise NetworkException("Couldn't update bridge_opts with "
+                                   "additional autoneg parameter")
+
+        logger.info("Check that ethtool_opts parameter has an updated value ")
+        for prop in ("Autonegotiate", "tx-checksumming"):
+            if not check_ethtool_opts(config.HOSTS_IP[0], config.HOSTS_USER,
+                                      config.HOSTS_PW, HOST_NICS[1],
+                                      prop, "off"):
+                raise NetworkException("tx-checksum value of ethtool_opts was "
+                                       "not updated correctly with non-default"
+                                       " value")
+        logger.info("Check that bridge_opts parameter has an updated value ")
+        for key, value in config.BRIDGE_OPTS.iteritems():
+            if not check_bridge_opts(
+                    config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
+                    config.NETWORKS[0], key, value[1]
+            ):
+                raise NetworkException(
+                    "Value of bridge opts key %s was not updated correctly "
+                    "with value %s" % (key, value[1])
+                )
+
+        logger.info("Update ethtool_opts with default parameters for "
+                    "tx_checksup and autoneg and priority and "
+                    "querier of bridge opts")
+        if not update_network_host(config.HOSTS[0], HOST_NICS[1],
+                                   auto_nics=[HOST_NICS[0]], **kwargs2):
+            raise NetworkException("Couldn't update ethtool_opts with default "
+                                   "parameters for both values")
+
+        logger.info("Check that ethtool_opts parameters have an updated "
+                    "default value for checksum and autoneg")
+        for prop in ("Autonegotiate", "tx-checksumming"):
+            if not check_ethtool_opts(config.HOSTS_IP[0], config.HOSTS_USER,
+                                      config.HOSTS_PW, HOST_NICS[1],
+                                      prop, "on"):
+                raise NetworkException("tx-checksum and autoneg values of "
+                                       "ethtool_opts were not updated "
+                                       "correctly with default value")
+        logger.info(
+            "Check that bridge_opts parameter has an updated default value"
+        )
+        for key, value in config.BRIDGE_OPTS.items():
+            if not check_bridge_opts(
+                    config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
+                    config.NETWORKS[0], key, value[0]
+            ):
+                raise NetworkException(
+                    "Priority value of bridge opts key %s was not updated "
+                    "correctly with value %s" % (key, value[0])
                 )

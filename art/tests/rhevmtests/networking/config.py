@@ -20,7 +20,7 @@ if GOLDEN_ENV:
     VM_NAME = vms.get_vms_from_cluster(CLUSTER_NAME[0])
     TEMPLATE_NAME = templates.get_template_from_cluster(CLUSTER_NAME[0])
     STORAGE_TYPE = "nfs"
-    VDS_HOSTS = [resources.VDS(h, HOSTS_PW, ) for h in HOSTS_IP]
+    VDS_HOSTS = [resources.VDS(h, HOSTS_PW) for h in HOSTS_IP]
 else:
     HOSTS_IP = [host.ip for host in VDS_HOSTS]
 
@@ -44,6 +44,8 @@ PRIORITY = "=".join([KEY1, BRIDGE_OPTS[KEY1][1]])
 DEFAULT_PRIORITY = "=".join([KEY1, BRIDGE_OPTS[KEY1][0]])
 MULT_QUERIER = "=".join([KEY2, BRIDGE_OPTS[KEY2][1]])
 DEFAULT_MULT_QUERIER = "=".join([KEY2, BRIDGE_OPTS[KEY2][0]])
+TX_CHECKSUM = "-K {nic} tx {state}"
+AUTONEG = "-A {nic} autoneg {state}"
 
 # Network Migration
 NM_SOURCE_IP = '101.1.1.1'
