@@ -473,7 +473,7 @@ class TestReadLock(TestCase):
 
     @classmethod
     def teardown_class(cls):
-        vms_list = filter(vms.does_vm_exists,
+        vms_list = filter(vms.does_vm_exist,
                           [cls.vm_name, cls.vm_name_1, cls.vm_name_2])
         LOGGER.info("Removing VMs %s" % vms_list)
         vms.stop_vms_safely(vms_list)

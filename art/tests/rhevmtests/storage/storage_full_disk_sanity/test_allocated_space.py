@@ -3,20 +3,25 @@ Test Allocation/Total size properties
 """
 from art.unittest_lib import StorageTest as TestCase
 from art.unittest_lib import attr
-from art.rhevm_api.tests_lib.high_level.storagedomains import \
-    extend_storage_domain
-from art.rhevm_api.tests_lib.low_level.datacenters import \
-    waitForDataCenterState
-from art.rhevm_api.tests_lib.low_level.disks import addDisk, deleteDisk, \
-    waitForDisksState, move_disk, get_disk_obj
-from art.rhevm_api.tests_lib.low_level.hosts import waitForHostsStates, \
-    waitForSPM
-from art.rhevm_api.tests_lib.low_level.storagedomains import \
-    get_allocated_size, get_total_size, findMasterStorageDomain, \
-    findNonMasterStorageDomains, wait_for_change_total_size, \
-    get_used_size
-from art.rhevm_api.tests_lib.low_level.templates import createTemplate, \
-    removeTemplate
+from art.rhevm_api.tests_lib.high_level.storagedomains import (
+    extend_storage_domain, addISCSIDataDomain, remove_storage_domain,
+)
+from art.rhevm_api.tests_lib.low_level.datacenters import (
+    waitForDataCenterState,
+)
+from art.rhevm_api.tests_lib.low_level.disks import (
+    addDisk, deleteDisk,  waitForDisksState, move_disk, get_disk_obj,
+)
+from art.rhevm_api.tests_lib.low_level.hosts import (
+    waitForHostsStates, waitForSPM, getSPMHost, getHostIP,
+)
+from art.rhevm_api.tests_lib.low_level.storagedomains import (
+    get_allocated_size, get_total_size, wait_for_change_total_size,
+    get_used_size, getStorageDomainNamesForType,
+)
+from art.rhevm_api.tests_lib.low_level.templates import (
+    createTemplate, removeTemplate,
+)
 from art.rhevm_api.tests_lib.low_level.vms import createVm, removeVm
 from art.rhevm_api.utils.test_utils import restartVdsmd
 from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
@@ -37,7 +42,6 @@ class BaseCase(TestCase):
     Base class. Ensures environment is running and checks, creates disks
     and checks for the disk's value
     """
-
     __test__ = False
 
     domains = []
@@ -93,23 +97,14 @@ class BaseCase(TestCase):
         logger.info('Waiting for DC %s to be up', config.DATA_CENTER_NAME)
         assert waitForDataCenterState(config.DATA_CENTER_NAME)
 
-        rc, master_dom = findMasterStorageDomain(True, config.DATA_CENTER_NAME)
-        assert rc
+        cls.domains = getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, cls.storage)
 
-        rc, nonmaster_dom = findNonMasterStorageDomains(
-            True, config.DATA_CENTER_NAME)
-        assert rc
+        logger.info('Found data domains of type %s: %s', cls.storage,
+                    cls.domains)
 
-        cls.master_domain = master_dom['masterDomain']
-        cls.nonmaster_domain = nonmaster_dom['nonMasterDomains'][0]
-
-        logger.info('Found master domain: %s, nonmaster domain: %s',
-                    cls.master_domain, cls.nonmaster_domain)
-
-        cls.domains = [cls.master_domain, cls.nonmaster_domain]
-
-        # by default create both disks on master domain
-        cls.disk_domains = [cls.master_domain, cls.master_domain]
+        # by default create both disks on the same domain
+        cls.disk_domains = [cls.domains[0], cls.domains[0]]
 
         # set up parameters used by test
         for domain in cls.domains:
@@ -176,13 +171,12 @@ class TestCase286305(BaseCase):
         self.create_disks()
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
-    @bz('1025294')
     def test_create_disks_and_check_size(self):
         """
         Create preallocated and thin provision disk then check if storage
         domain details are updated accordingly
         """
-        self.domains = [self.master_domain]
+        self.domains = [self.domains[0]]
         self.run_scenario()
 
     def tearDown(self):
@@ -215,7 +209,7 @@ class TestCase286768(BaseCase):
         """
         Delete disk and check storage details are updated
         """
-        self.domains = [self.master_domain]
+        self.domains = [self.domains[0]]
         self.run_scenario()
 
     def perform_action(self):
@@ -226,7 +220,7 @@ class TestCase286768(BaseCase):
             disk = get_disk_obj(disk_name)
             logger.info('Removing disk %s', disk.get_alias())
             self.assertTrue(deleteDisk(True, disk.get_alias()))
-            self.expected_allocated_size[self.master_domain] -= \
+            self.expected_allocated_size[self.domains[0]] -= \
                 disk.get_size()
 
 
@@ -255,21 +249,21 @@ class TestCase286772(BaseCase):
 
     def perform_action(self):
         """
-        Move disks from master domain to second domain
+        Move disks from first domain to second domain
         """
         for disk_name in self.disk_names:
             disk = get_disk_obj(disk_name)
             logger.info('Moving disk %s from domain %s to domain %s',
-                        disk.get_alias(), self.master_domain,
-                        self.nonmaster_domain)
+                        disk.get_alias(), self.domains[0],
+                        self.domains[1])
             self.assertTrue(
                 move_disk(
                     disk_name=disk.get_alias(),
-                    target_domain=self.nonmaster_domain
+                    target_domain=self.domains[1]
                 )
             )
-            self.expected_allocated_size[self.master_domain] -= disk.get_size()
-            self.expected_allocated_size[self.nonmaster_domain] += \
+            self.expected_allocated_size[self.domains[0]] -= disk.get_size()
+            self.expected_allocated_size[self.domains[1]] += \
                 disk.get_size()
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
@@ -294,35 +288,54 @@ class TestCase286775(BaseCase):
     TCMS Test Case 286775 - Extend domain and check storage details
     https://tcms.engineering.redhat.com/case/286775
     """
-
     # test case only relevant to iscsi domains
-    __test__ = config.STORAGE_TYPE == config.STORAGE_TYPE_ISCSI
-    # disable since there's a bug while extending twice the storage domain
-    # cmestreg: enable once this issue is resolved
+    __test__ = BaseCase.storage == config.STORAGE_TYPE_ISCSI
     apis = BaseCase.apis - set(['sdk'])
     tcms_test_case = '286775'
+    new_sd_name = "storage_domain_%s" % tcms_test_case
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Add a new storage domain and extend it. Needed so that the original
+        environment is not changed in case is run in a common environment,
+        such as in the case of the golden environment or in a tiered approach
+        """
+        cls.spm_host = getSPMHost(config.HOSTS)
+        assert addISCSIDataDomain(
+            config.HOSTS[0], cls.new_sd_name, config.DATA_CENTER_NAME,
+            config.EXTEND_LUN[0], config.EXTEND_LUN_ADDRESS[0],
+            config.EXTEND_LUN_TARGET[0],
+        )
+        super(TestCase286775, cls).setup_class()
+
+    @classmethod
+    def teardown_class(cls):
+        """Remove the added storage domain"""
+        remove_storage_domain(
+            cls.new_sd_name, config.DATA_CENTER_NAME, cls.spm_host)
 
     def perform_action(self):
         """
-        Extend master domain
+        Extend first domain
         """
-        logger.info('Extending master domain')
+        logger.info('Extending first domain %s', self.new_sd_name)
         extend_luns = config.EXTEND_LUNS.pop()
-        extend_storage_domain(self.master_domain,
+        extend_storage_domain(self.new_sd_name,
                               config.STORAGE_TYPE,
                               config.HOSTS[0],
                               **extend_luns)
-        self.expected_total_size[self.master_domain] += \
+        self.expected_total_size[self.new_sd_name] += \
             config.EXTEND_SIZE * config.GB
 
         # Waits until total size changes (extend is done)
         # wait_for_tasks doesn't work (value is not updated properly)
         wait_for_change_total_size(
-            self.master_domain, self.current_total_size[self.master_domain])
+            self.new_sd_name, self.current_total_size[self.new_sd_name])
 
         # Assert size hasn't changed during the extend
-        self.assertEqual(self.current_used_size[self.master_domain],
-                         get_used_size(self.master_domain))
+        self.assertEqual(self.current_used_size[self.new_sd_name],
+                         get_used_size(self.new_sd_name))
 
     @bz({'1159637': {'engine': None, 'version': ['3.5']}})
     @tcms(TCMS_PLAN_ID, tcms_test_case)
@@ -358,14 +371,14 @@ class TestCase321336(BaseCase):
                 'vmName': vm_name,
                 'vmDescription': vm_name,
                 'cluster': config.CLUSTER_NAME,
-                'storageDomainName': self.master_domain,
+                'storageDomainName': self.domains[0],
                 'size': VM_DISK_SIZE,
                 'volumeType': is_thin_provision,
                 'volumeFormat': disk_format
             }
             self.assertTrue(createVm(**vm_args),
                             'unable to create vm %s' % vm_name)
-            self.expected_allocated_size[self.master_domain] += VM_DISK_SIZE
+            self.expected_allocated_size[self.domains[0]] += VM_DISK_SIZE
 
         self.template_names = ['%s_template' % name for name in self.vms]
 
@@ -397,10 +410,9 @@ class TestCase321336(BaseCase):
             }
             self.assertTrue(createTemplate(**template_args),
                             "Unable to create template %s" % template_name)
-            self.expected_allocated_size[self.master_domain] += VM_DISK_SIZE
+            self.expected_allocated_size[self.domains[0]] += VM_DISK_SIZE
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
-    @bz('1025294')
     def test_create_templates(self):
         """
         Create templates and check storage domain details
@@ -426,21 +438,23 @@ class TestCase286779(BaseCase):
         Start moving disk, then restart vdsm and wait for action to fail
         """
         logger.info('Starting to move disk %s', self.disk_name)
-        self.assertTrue(move_disk(self.disk_name, self.master_domain,
-                                  self.nonmaster_domain, wait=False))
+        self.assertTrue(move_disk(self.disk_name, self.domains[0],
+                                  self.domains[1], wait=False))
         self.assertTrue(waitForDisksState([self.disk_name],
                                           status=config.DISK_LOCKED),
                         'Disk %s never moved to locked status'
                         % self.disk_name)
 
-        logger.info('Restarting vdsm on host %s', config.HOSTS[0])
-        self.assertTrue(restartVdsmd(config.HOSTS[0], config.HOSTS_PW),
-                        'Unable to restart vdsm on host %s' % config.HOSTS[0])
+        self.spm = getSPMHost(config.HOSTS)
+        self.spm_ip = getHostIP(self.spm)
+        logger.info('Restarting vdsm on host %s [%s]', self.spm, self.spm_ip)
+        self.assertTrue(restartVdsmd(self.spm_ip, config.HOSTS_PW),
+                        'Unable to restart vdsm on host %s' % self.spm)
 
         logger.info('Waiting for host to come back up')
         self.assertTrue(waitForSPM(config.DATA_CENTER_NAME, 60, 5),
                         'SPM was not elected on datacenter %s'
-                        % config.STORAGE_TYPE)
+                        % config.DATA_CENTER_NAME)
 
         logger.info('Waiting for disk %s to be OK after rollback',
                     self.disk_name)
@@ -452,7 +466,7 @@ class TestCase286779(BaseCase):
         """
         self.disk_types = (PREALLOCATED)
         self.disk_sizes = (5 * config.GB,)
-        self.disk_domains = (self.master_domain,)
+        self.disk_domains = (self.domains[0],)
         self.disk_name = 'preallocated_disk'
         self.disk_names = [self.disk_name]
         self.create_disks()
@@ -480,9 +494,10 @@ class TestCaseUsedSpace(BaseCase):
         """
         Test extending an iscsi domain doesn't remove used space
         """
+        self.storage_domain = self.domains[0]
         for extend_lun in config.EXTEND_LUNS:
-            logger.info('Extending master domain')
-            extend_storage_domain(self.master_domain,
+            logger.info('Extending storage domain %s', self.storage_domain)
+            extend_storage_domain(self.domains[0],
                                   config.STORAGE_TYPE,
                                   config.HOSTS[0],
                                   **extend_lun)
@@ -490,22 +505,24 @@ class TestCaseUsedSpace(BaseCase):
             # Waits until total size changes (extend is done)
             # wait_for_tasks doesn't work (value is not updated properly)
             wait_for_change_total_size(
-                self.master_domain,
-                self.current_total_size[self.master_domain])
+                self.storage_domain,
+                self.current_total_size[self.storage_domain])
 
             # Assert size hasn't changed during the extend
-            previous = self.current_used_size[self.master_domain]
-            current = get_used_size(self.master_domain)
-            total = get_total_size(self.master_domain)
-            allocated = get_allocated_size(self.master_domain)
+            # TODO: The logic is pretty strange here, why isn't this captured
+            # TODO: before the extend operation?
+            previous = self.current_used_size[self.storage_domain]
+            current = get_used_size(self.storage_domain)
+            total = get_total_size(self.storage_domain)
+            allocated = get_allocated_size(self.storage_domain)
 
             logger.info("Storage domain %s. Allocated: %s Total: %d Used: %d",
-                        self.master_domain, allocated, total, current)
+                        self.storage_domain, allocated, total, current)
 
             if previous != current:
                 logger.error("Used size for %s is %d, before extend was %d",
-                             self.master_domain, current, previous)
+                             self.storage_domain, current, previous)
 
-            self.current_total_size[self.master_domain] = total
-            self.current_used_size[self.master_domain] = current
-            self.current_allocated_size[self.master_domain] = allocated
+            self.current_total_size[self.storage_domain] = total
+            self.current_used_size[self.storage_domain] = current
+            self.current_allocated_size[self.storage_domain] = allocated

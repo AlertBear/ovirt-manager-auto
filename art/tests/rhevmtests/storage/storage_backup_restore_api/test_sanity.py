@@ -79,7 +79,7 @@ def teardown_module():
 
     else:
         for storage_type, vm_names in VM_NAMES.iteritems():
-            vm_names = filter(vms.does_vm_exists, vm_names)
+            vm_names = filter(vms.does_vm_exist, vm_names)
             vms.stop_vms_safely(vm_names)
             vms.removeVms(True, vm_names)
 
@@ -811,7 +811,7 @@ class TestCase304197(TestCase):
         # If the first vm still exists, remove it
         vms_to_remove.append(helpers.RESTORED_VM)
 
-        vms_to_remove = filter(vms.does_vm_exists, vms_to_remove)
+        vms_to_remove = filter(vms.does_vm_exist, vms_to_remove)
         vms.stop_vms_safely(vms_to_remove)
         vms.removeVms(True, vms_to_remove)
 

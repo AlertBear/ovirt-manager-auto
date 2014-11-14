@@ -4115,7 +4115,7 @@ def get_vms_from_cluster(cluster):
     return vms_in_cluster
 
 
-def does_vm_exists(vm_name):
+def does_vm_exist(vm_name):
     """
     Description: Checks if vm exists
     Parameters:

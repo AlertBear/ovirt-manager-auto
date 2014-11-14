@@ -8,13 +8,12 @@ from art.unittest_lib import StorageTest as TestCase, attr
 from art.rhevm_api.utils import test_utils
 from art.test_handler import exceptions
 
-from art.rhevm_api.tests_lib.low_level import vms
-from art.rhevm_api.tests_lib.low_level import templates
+from art.rhevm_api.tests_lib.low_level import vms, templates, storagedomains
 from art.rhevm_api.utils import log_listener
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 
 import config
-from common import _create_vm
+from common import create_vm
 
 LOGGER = logging.getLogger(__name__)
 
@@ -32,17 +31,20 @@ ENUMS = config.ENUMS
 #     tcms_test_case = '248112'
 
 
-def _prepare_data(sparse, vol_format, template_names):
+def _prepare_data(sparse, vol_format, template_names, storage_type):
     """ prepares data for vm
     """
-    template_name = "%s_%s_%s" % (
-        config.TEMPLATE_NAME, sparse, vol_format)
+    storage_domain = storagedomains.getStorageDomainNamesForType(
+        config.DATA_CENTER_NAME, storage_type)[0]
+    template_name = "%s_%s_%s_%s" % (
+        config.TEMPLATE_NAME, sparse, vol_format, storage_type)
     vm_name = '%s_%s_%s_%s_prep' % (
-        config.VM_BASE_NAME, config.STORAGE_TYPE, sparse, vol_format)
-    LOGGER.info("Creating vm %s %s ..." % (sparse, vol_format))
-    if not _create_vm(
+        config.TESTNAME, sparse, vol_format, storage_type)
+    LOGGER.info("Creating vm %s %s %s..." % (sparse, vol_format, storage_type))
+    if not create_vm(
             vm_name, config.INTERFACE_IDE,
-            sparse=sparse, volume_format=vol_format):
+            sparse=sparse, volume_format=vol_format,
+            storage_domain=storage_domain):
         raise exceptions.VMException("Creation of vm %s failed!" % vm_name)
     LOGGER.info("Waiting for ip of %s" % vm_name)
     vm_ip = vms.waitForIP(vm_name)[1]['ip']
@@ -86,11 +88,12 @@ class TestCase248132(TestCase):
                 for vol_format in (ENUMS['format_cow'], ENUMS['format_raw']):
                     if not sparse and vol_format == ENUMS['format_cow']:
                         continue
-                    if (config.STORAGE_TYPE != ENUMS['storage_type_nfs']
+                    if (cls.storage != ENUMS['storage_type_nfs']
                             and sparse and vol_format == ENUMS['format_raw']):
                         continue
                     results.append(executor.submit(
-                        _prepare_data, sparse, vol_format, cls.template_names))
+                        _prepare_data, sparse, vol_format, cls.template_names,
+                        cls.storage))
 
         test_utils.raise_if_exception(results)
 
@@ -101,7 +104,7 @@ class TestCase248132(TestCase):
     def create_vm_from_template_validate_disks(
             self, name, template_name, sparse, vol_format):
         vm_name = "%s_%s_clone_%s" % (
-            config.VM_BASE_NAME, config.STORAGE_TYPE, name)
+            config.TESTNAME, self.storage, name)
         LOGGER.info("Clone vm %s, from %s, sparse=%s, volume format = %s" % (
             vm_name, template_name, sparse, vol_format))
         self.assertTrue(
@@ -124,7 +127,7 @@ class TestCase248132(TestCase):
         template_name = self.template_names[(sparse, vol_format)]
         self.create_vm_from_template_validate_disks(
             name, template_name, True, ENUMS['format_cow'])
-        if config.STORAGE_TYPE == ENUMS['storage_type_nfs']:
+        if self.storage == ENUMS['storage_type_nfs']:
             name = '%s_sparse_raw' % name_prefix
             self.create_vm_from_template_validate_disks(
                 name, template_name, True, ENUMS['format_raw'])
@@ -143,7 +146,7 @@ class TestCase248132(TestCase):
     def test_disk_conv_from_sparse_raw_test(self):
         """ creates vms from template with sparse raw disk
         """
-        if config.STORAGE_TYPE == ENUMS['storage_type_nfs']:
+        if self.storage == ENUMS['storage_type_nfs']:
             self.create_vms_from_template_convert_disks(
                 True, ENUMS['format_raw'], 'from_sparse_raw')
 
@@ -185,16 +188,19 @@ class TestReadLock(TestCase):
     vm_type = None
     vm_name = None
     template_name = None
-    vm_name_1 = '%s_1' % (config.VM_BASE_NAME)
-    vm_name_2 = '%s_2' % (config.VM_BASE_NAME)
+    vm_name_1 = '%s_readlock_1' % (config.TEST_NAME)
+    vm_name_2 = '%s_readlock_2' % (config.TEST_NAME)
     SLEEP_AMOUNT = 5
 
     @classmethod
     def setup_class(cls):
-        cls.vm_name = '%s_%s' % (config.VM_BASE_NAME, cls.vm_type)
+        cls.vm_name = '%s_readlock_%s' % (config.TEST_NAME, cls.vm_type)
         cls.template_name = "template_%s" % (cls.vm_name)
-        if not _create_vm(cls.vm_name, config.INTERFACE_IDE,
-                          vm_type=cls.vm_type):
+        storage_domain = storagedomains.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, cls.storage)[0]
+        if not create_vm(cls.vm_name, config.INTERFACE_IDE,
+                         vm_type=cls.vm_type,
+                         storage_domain=storage_domain):
             raise exceptions.VMException(
                 "Creation of VM %s failed!" % cls.vm_name)
         LOGGER.info("Waiting for vm %s state 'up'" % cls.vm_name)

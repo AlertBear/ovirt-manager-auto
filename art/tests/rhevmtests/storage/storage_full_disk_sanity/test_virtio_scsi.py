@@ -5,24 +5,16 @@ from concurrent.futures.thread import ThreadPoolExecutor
 from art.unittest_lib import StorageTest as TestCase, attr
 from art.rhevm_api.tests_lib.high_level.vms import add_disk_to_machine
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    findMasterStorageDomain)
+    getStorageDomainNamesForType)
 from art.rhevm_api.tests_lib.low_level.templates import createTemplate, \
     removeTemplate
+from art.rhevm_api.tests_lib.low_level.hosts import get_cluster_hosts
 from art.rhevm_api.tests_lib.low_level.vms import (
-    createVm,
-    stopVm,
-    removeVm,
-    checkVmState,
-    startVm,
-    waitForIP,
-    migrateVm,
-    cloneVmFromTemplate,
-    addSnapshot,
-    addVm,
-    waitForVmsDisks,
-    getVmHost)
+    createVm, stopVm, removeVm, checkVmState, startVm, waitForIP, migrateVm,
+    cloneVmFromTemplate, addSnapshot, addVm, waitForVmsDisks, getVmHost,
+    does_vm_exist)
 from art.rhevm_api.utils.test_utils import setPersistentNetwork
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 import config
 import logging
 
@@ -84,7 +76,7 @@ def _create_vm(vm_name, storage_domain, interface, install_os):
 
 class ClassWithOneVM(TestCase):
     """
-    Base test class that ensures master domain is active and creates
+    Base test class that ensures storage domain is active and creates
     vms as specificied in vm_names with interfaces per disk
     """
 
@@ -92,16 +84,13 @@ class ClassWithOneVM(TestCase):
     vm_names = VM_NAMES
     disk_interfaces = [config.VIRTIO_SCSI]
     installations = [True]
-    master_domain = None
+    storage_domain = None
 
     @classmethod
     def setup_class(cls):
-        logger.info('Finding master domain name')
-        master_domain = findMasterStorageDomain(True, config.DATA_CENTER_NAME)
-        assert master_domain[0]
-        cls.master_domain = master_domain[1]['masterDomain']
-        assert cls.master_domain
-        logger.info('Found master domain: %s', cls.master_domain)
+        cls.storage_domain = getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, cls.storage)[0]
+        logger.info('Found storage domain: %s', cls.storage_domain)
 
         results = []
         with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
@@ -111,7 +100,7 @@ class ClassWithOneVM(TestCase):
                                                         cls.installations):
                 results.append(executor.submit(_create_vm,
                                                vm,
-                                               cls.master_domain,
+                                               cls.storage_domain,
                                                disk_interface,
                                                installation))
 
@@ -124,7 +113,8 @@ class ClassWithOneVM(TestCase):
     @classmethod
     def teardown_class(cls):
         logger.info('Removing vms: %s', cls.vm_names)
-        for vm in cls.vm_names:
+        vm_names = filter(does_vm_exist, cls.vm_names)
+        for vm in vm_names:
             if checkVmState(True, vm, config.ENUMS['vm_state_up']):
                 logger.info('Stopping vm %s', vm)
                 assert stopVm(True, vm)
@@ -165,7 +155,7 @@ class TestCase272383(ClassWithOneVM):
                             config.VIRTIO_SCSI,
                             config.ENUMS['format_cow'],
                             True,
-                            storage_domain=cls.master_domain)
+                            storage_domain=cls.storage_domain)
         cls.cloned_vm_name = cls.vm_names[0] + '_cloned'
         cls.vm_names.append(cls.cloned_vm_name)
 
@@ -234,16 +224,18 @@ class TestCase272388(ClassWithOneVM):
         assert startVm(True, cls.vm_names[0], wait_for_ip=True)
         logger.info('Checking which host vm is currently running on')
         status, vm_host = getVmHost(cls.vm_names[0])
+        cls.vm_host = vm_host['vmHoster']
         assert status
 
     @tcms(TCMS_PLAN_ID, tcms_case)
-    @bz('996146')
     def test_migrate_vm_with_virtio_scsi_disk(self):
         """
         Migrate a vm from the host it is currently running on to another host
         """
         logger.info('Migrating VM %s', self.vm_names[0])
-        self.assertTrue(migrateVm(True, self.vm_names[0]),
+        hosts = get_cluster_hosts(config.CLUSTER_NAME)
+        host = filter(lambda w: w != self.vm_host, hosts)[0]
+        self.assertTrue(migrateVm(True, self.vm_names[0], host),
                         'Error during migration of vm %s' % self.vm_names[0])
 
 
@@ -272,7 +264,6 @@ class TestCase272914(ClassWithOneVM):
         assert addSnapshot(True, cls.vm_names[0], cls.snapshot_name)
 
     @tcms(TCMS_PLAN_ID, tcms_case)
-    @bz('1003523')
     def test_clone_vm_with_virtio_scsi_disk_from_snapshot(self):
         """
         Clones a vm from a snapshot that has a virtio-scsi disk
@@ -309,7 +300,7 @@ class TestCase293163(ClassWithOneVM):
                             config.VIRTIO_BLK,
                             config.ENUMS['format_cow'],
                             True,
-                            cls.master_domain)
+                            cls.storage_domain)
 
     @tcms(TCMS_PLAN_ID, tcms_case)
     def test_vm_with_virtio_and_virtio_scsi_disk(self):

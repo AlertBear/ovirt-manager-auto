@@ -4,10 +4,9 @@ Storage VM Floating Disk
 import logging
 from art.unittest_lib import StorageTest as TestCase, attr
 from art.rhevm_api.tests_lib.low_level import disks, storagedomains
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 import config
 
-VM_1, VM_2 = config.VM1_NAME, config.VM2_NAME
 ENUMS = config.ENUMS
 
 logger = logging.getLogger(__name__)
@@ -25,13 +24,15 @@ class TestCase174621(TestCase):
 
     tcms_plan_id = '6458'
     tcms_test_case = '174621'
+    vm_1 = config.VM1_NAME % TestCase.storage
+    vm_2 = config.VM2_NAME % TestCase.storage
     disk_name = "shareableDisk"
 
     def setUp(self):
         """Start the two vms and get the storage_domain name"""
-        self.storage_domain = storagedomains.getDCStorages(
-            config.DATA_CENTER_NAME, False)[0].get_name()
-        for vm in [VM_1, VM_2]:
+        self.storage_domain = storagedomains.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage)[0]
+        for vm in [self.vm_1, self.vm_2]:
             assert vms.startVm(True, vm, wait_for_status=ENUMS['vm_state_up'])
 
     @tcms(tcms_plan_id, tcms_test_case)
@@ -47,19 +48,19 @@ class TestCase174621(TestCase):
                 shareable=True, sparse=False))
 
         self.assertTrue(disks.waitForDisksState(disksNames=[self.disk_name]))
-        logger.info("Attaching disk to vm %s" % VM_1)
-        self.assertTrue(disks.attachDisk(True, self.disk_name, VM_1))
+        logger.info("Attaching disk to vm %s" % self.vm_1)
+        self.assertTrue(disks.attachDisk(True, self.disk_name, self.vm_1))
         self.assertTrue(disks.waitForDisksState(disksNames=[self.disk_name]))
-        self.assertTrue(vms.waitForVmDiskStatus(VM_1, True,
+        self.assertTrue(vms.waitForVmDiskStatus(self.vm_1, True,
                         diskAlias=self.disk_name, timeout=2, sleep=1))
         # TBD Extra validation ?
 
-        logger.info("Attaching disk to vm %s" % VM_2)
-        self.assertTrue(disks.attachDisk(True, self.disk_name, VM_2))
+        logger.info("Attaching disk to vm %s" % self.vm_2)
+        self.assertTrue(disks.attachDisk(True, self.disk_name, self.vm_2))
         self.assertTrue(disks.waitForDisksState(disksNames=[self.disk_name]))
-        self.assertTrue(vms.waitForVmDiskStatus(VM_1, True,
+        self.assertTrue(vms.waitForVmDiskStatus(self.vm_1, True,
                         diskAlias=self.disk_name, timeout=2, sleep=1))
-        self.assertTrue(vms.waitForVmDiskStatus(VM_2, True,
+        self.assertTrue(vms.waitForVmDiskStatus(self.vm_2, True,
                         diskAlias=self.disk_name, timeout=2, sleep=1))
         # TBD Extra validation ?
 
@@ -67,7 +68,7 @@ class TestCase174621(TestCase):
         """
         Make sure vms are down and the disk is removed
         """
-        assert vms.stopVms(",".join([VM_1, VM_2]), wait='true')
+        assert vms.stopVms(",".join([self.vm_1, self.vm_2]), wait='true')
         assert disks.deleteDisk(True, self.disk_name)
 
 
@@ -90,7 +91,6 @@ class TestCase275816(TestCase):
     disk_name = None
     disk_size = 1 * config.GB
 
-    @bz("834893")
     @tcms(tcms_plan_id, tcms_test_case)
     def test_several_vms_with_same_shared_disk_on_one_host_test(self):
         """ tests if running a few VMs with the same shared disk on the same
@@ -104,13 +104,13 @@ class TestCase275816(TestCase):
                 True, vm_name, vm_name, config.CLUSTER_NAME, nic=nic,
                 placement_host=config.HOSTS[0], network=config.MGMT_BRIDGE)
             self.vm_names.append(vm_name)
-        storage_domain_name = storagedomains.getDCStorages(
-            config.DATA_CENTER_NAME, False)[0].name
+        storage_domain = storagedomains.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage)[0]
         self.disk_name = 'disk_%s' % self.tcms_test_case
         logger.info("Creating disk")
         assert disks.addDisk(
             True, alias=self.disk_name, shareable=True, bootable=False,
-            size=self.disk_size, storagedomain=storage_domain_name,
+            size=self.disk_size, storagedomain=storage_domain,
             format=ENUMS['format_raw'], interface=config.VIRTIO_SCSI,
             sparse=False)
         assert disks.waitForDisksState(self.disk_name)

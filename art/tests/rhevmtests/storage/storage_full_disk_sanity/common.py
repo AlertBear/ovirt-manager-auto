@@ -1,21 +1,20 @@
 import config
 import logging
-from art.rhevm_api.tests_lib.low_level import vms, storagedomains
+from art.rhevm_api.tests_lib.low_level import vms
 
 logger = logging.getLogger(__name__)
 
 ENUMS = config.ENUMS
 
 
-def _create_vm(vm_name, disk_interface,
-               sparse=True, volume_format=config.COW_DISK,
-               vm_type=config.VM_TYPE_DESKTOP):
+def create_vm(vm_name, disk_interface,
+              sparse=True, volume_format=config.COW_DISK,
+              vm_type=config.VM_TYPE_DESKTOP,
+              storage_domain=None):
     """
     helper function for creating vm (passes common arguments, mostly taken
     from the configuration file)
     """
-    storage_domain = storagedomains.getDCStorages(
-        config.DATA_CENTER_NAME, False)[0].get_name()
     logger.info("Creating VM %s at SD %s" % (vm_name, storage_domain))
     return vms.createVm(
         True, vm_name, vm_name, cluster=config.CLUSTER_NAME,

@@ -2,19 +2,21 @@
 Test Direct Lun Sanity - TCMS plan 5426
 """
 import logging
-from art.rhevm_api.tests_lib.low_level.hosts import getHostIP
+from art.rhevm_api.tests_lib.low_level.hosts import (
+    getHostIP, get_cluster_hosts,
+)
+from art.core_api.apis_exceptions import EntityNotFound
 from art.unittest_lib.common import StorageTest as TestCase
 from utilities.machine import Machine, LINUX
 
 import config
 from art.rhevm_api.tests_lib.low_level.disks import (
     addDisk, attachDisk, detachDisk, deleteDisk,
-    waitForDisksState,
+    waitForDisksState, get_other_storage_domain,
 )
 
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    findMasterStorageDomain,
-    findNonMasterStorageDomains,
+    getStorageDomainNamesForType,
 )
 
 from art.rhevm_api.tests_lib.low_level.templates import (
@@ -25,7 +27,7 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     stop_vms_safely, waitForVMState, getVmDisks, startVm, suspendVm,
     runVmOnce, addSnapshot, updateVm, removeSnapshot,
     get_snapshot_disks, migrateVm, moveVm, removeVm,
-    getVmHost, deactivateVmDisk,
+    getVmHost, deactivateVmDisk, get_vms_disks_storage_domain_name,
 )
 
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
@@ -44,18 +46,28 @@ BASE_KWARGS = {
     "format": config.COW_DISK,
     "size": config.DISK_SIZE,
     "bootable": False,
-    "lun_address": config.EXTEND_LUN_ADDRESS[0],
-    "lun_target": config.EXTEND_LUN_TARGET[0],
-    "lun_id": config.EXTEND_LUN[0],
     "type_": config.STORAGE_TYPE,
 }
+
+
+def setup_module():
+    """Set up the proper BASE args"""
+    if hasattr(config, 'EXTEND_LUN_ADDRESS'):
+        BASE_KWARGS.update({
+            "lun_address": config.EXTEND_LUN_ADDRESS[0],
+            "lun_target": config.EXTEND_LUN_TARGET[0],
+            "lun_id": config.EXTEND_LUN[0],
+        })
 
 
 class DirectLunAttachTestCase(TestCase):
     """
     Base class for Direct Lun tests
     """
-    __test__ = False
+    # This tests are only desing to run on ISCSI
+    # TODO: Enable for FC when our environment is stable
+    __test__ = TestCase.storage == config.STORAGE_TYPE_ISCSI
+    vm_name = config.VM1_NAME % TestCase.storage
     tcms_test_case = ""
 
     def setUp(self):
@@ -64,17 +76,17 @@ class DirectLunAttachTestCase(TestCase):
         """
         self.disk_alias = "direct_lun_%s" % self.tcms_test_case
 
-        status, masterDomain = findMasterStorageDomain(
-            True, config.DATA_CENTER_NAME)
-        assert status
-        self.master_domain = masterDomain['masterDomain']
+        self.storage_domains = getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage)
 
+        self.vm_storage_domain = get_vms_disks_storage_domain_name(
+            self.vm_name)
         self.lun_kwargs = BASE_KWARGS.copy()
         self.lun_kwargs["alias"] = self.disk_alias
-        self.lun_kwargs["storagedomain"] = self.master_domain
+        self.lun_kwargs["storagedomain"] = self.vm_storage_domain
 
-        stop_vms_safely([config.VM1_NAME])
-        waitForVMState(config.VM1_NAME, config.VM_DOWN)
+        stop_vms_safely([self.vm_name])
+        waitForVMState(self.vm_name, config.VM_DOWN)
 
     def attach_disk_to_vm(self):
         """
@@ -85,25 +97,29 @@ class DirectLunAttachTestCase(TestCase):
         wait_for_jobs()
 
         logger.info("Attaching disk %s to vm %s", self.disk_alias,
-                    config.VM1_NAME)
-        status = attachDisk(True, self.disk_alias, config.VM1_NAME,
+                    self.vm_name)
+        status = attachDisk(True, self.disk_alias, self.vm_name,
                             active=True)
         wait_for_jobs()
         self.assertTrue(status, "Failed to attach direct lun to vm")
         assert self.disk_alias in (
-            [d.get_alias() for d in getVmDisks(config.VM1_NAME)]
+            [d.get_alias() for d in getVmDisks(self.vm_name)]
         )
 
     def detach_and_delete_disk_from_vm(self, disk_alias):
         logger.info("Wait in case an disks are not ready")
         wait_for_jobs()
 
-        stop_vms_safely([config.VM1_NAME])
-        waitForVMState(config.VM1_NAME, config.VM_DOWN)
+        stop_vms_safely([self.vm_name])
+        waitForVMState(self.vm_name, config.VM_DOWN)
 
         logger.info("Detaching disk %s from vm %s", disk_alias,
-                    config.VM1_NAME)
-        assert detachDisk(True, disk_alias, config.VM1_NAME)
+                    self.vm_name)
+        try:
+            detachDisk(True, disk_alias, self.vm_name)
+        except EntityNotFound:
+            logger.error("Disk %s was not found attached to %s", disk_alias,
+                         self.vm_name)
         wait_for_jobs()
 
         logger.info("Deleting disk %s", disk_alias)
@@ -121,7 +137,6 @@ class TestCase138744(DirectLunAttachTestCase):
     """
     Verify that a lun can be created
     """
-    __test__ = True
     tcms_test_case = "138744"
 
     def test_add_lun(self):
@@ -142,13 +157,12 @@ class TestCase138745(DirectLunAttachTestCase):
     """
     Attach a lun when vm is down.
     """
-    __test__ = True
     tcms_test_case = "138745"
 
     def setUp(self):
         super(TestCase138745, self).setUp()
-        stop_vms_safely([config.VM1_NAME], config.VM_DOWN)
-        waitForVMState(config.VM1_NAME, config.VM_DOWN)
+        stop_vms_safely([self.vm_name], config.VM_DOWN)
+        waitForVMState(self.vm_name, config.VM_DOWN)
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_attach_lun_vm_down(self):
@@ -162,7 +176,6 @@ class TestCase138746(DirectLunAttachTestCase):
     """
     Attach a lun when vm is running
     """
-    __test__ = True
     tcms_test_case = "138746"
 
     def setUp(self):
@@ -170,7 +183,7 @@ class TestCase138746(DirectLunAttachTestCase):
         Start the vm
         """
         super(TestCase138746, self).setUp()
-        assert startVm(True, config.VM1_NAME, config.VM_UP)
+        assert startVm(True, self.vm_name, config.VM_UP)
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_attach_lun_vm_running(self):
@@ -184,7 +197,6 @@ class TestCase138749(DirectLunAttachTestCase):
     """
     Attach the lun to the vm and run it.
     """
-    __test__ = True
     tcms_test_case = "138749"
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
@@ -193,14 +205,13 @@ class TestCase138749(DirectLunAttachTestCase):
         Attach the lun to the vm and run it.
         """
         self.attach_disk_to_vm()
-        assert startVm(True, config.VM1_NAME, config.VM_UP)
+        assert startVm(True, self.vm_name, config.VM_UP)
 
 
 class TestCase231815(DirectLunAttachTestCase):
     """
     Suspend vm with direct lun attached
     """
-    __test__ = True
     tcms_test_case = "231815"
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
@@ -210,15 +221,15 @@ class TestCase231815(DirectLunAttachTestCase):
         """
         self.attach_disk_to_vm()
         wait_for_jobs()
-        startVm(True, config.VM1_NAME, config.VM_UP)
-        assert suspendVm(True, config.VM1_NAME)
+        startVm(True, self.vm_name, config.VM_UP)
+        assert suspendVm(True, self.vm_name)
 
     def tearDown(self):
         """
         Remove disk
         """
-        assert startVm(True, config.VM1_NAME)
-        waitForVMState(config.VM1_NAME)
+        assert startVm(True, self.vm_name)
+        waitForVMState(self.vm_name)
         super(TestCase231815, self).tearDown()
 
 
@@ -226,7 +237,6 @@ class TestCase138755(DirectLunAttachTestCase):
     """
     Add more then one direct lun to the same vm
     """
-    __test__ = True
     tcms_test_case = "138755"
     disk_to_add = 'disk_%s'
 
@@ -270,7 +280,6 @@ class TestCase138756(DirectLunAttachTestCase):
     part of the template
     """
     # TODO: verify template's disks
-    __test__ = True
     tcms_test_case = "138756"
     template_name = "template_%s" % tcms_test_case
     temp_created = False
@@ -281,7 +290,7 @@ class TestCase138756(DirectLunAttachTestCase):
         Create template from vm with direct lun attached
         """
         self.attach_disk_to_vm()
-        self.temp_created = createTemplate(True, vm=config.VM1_NAME,
+        self.temp_created = createTemplate(True, vm=self.vm_name,
                                            name=self.template_name,
                                            cluster=config.CLUSTER_NAME)
 
@@ -289,8 +298,8 @@ class TestCase138756(DirectLunAttachTestCase):
 
     def tearDown(self):
         if self.temp_created:
-            stop_vms_safely([config.VM1_NAME])
-            waitForVMState(config.VM1_NAME, config.VM_DOWN)
+            stop_vms_safely([self.vm_name])
+            waitForVMState(self.vm_name, config.VM_DOWN)
             logger.info("Removing template %s", self.template_name)
             assert removeTemplate(True, self.template_name)
             wait_for_jobs()
@@ -302,7 +311,6 @@ class TestCase138757(DirectLunAttachTestCase):
     attach lun to vm, run vm as stateless and create snapshot.
     snapshot should not be created
     """
-    __test__ = True
     tcms_test_case = "138757"
     snap_desc = "snapshot_name_%s" % tcms_test_case
     snap_added = False
@@ -312,18 +320,18 @@ class TestCase138757(DirectLunAttachTestCase):
         """
         """
         self.attach_disk_to_vm()
-        assert runVmOnce(True, config.VM1_NAME, stateless=True)
-        waitForVMState(config.VM1_NAME)
-        self.snap_added = addSnapshot(False, config.VM1_NAME, self.snap_desc)
+        assert runVmOnce(True, self.vm_name, stateless=True)
+        waitForVMState(self.vm_name)
+        self.snap_added = addSnapshot(False, self.vm_name, self.snap_desc)
         assert self.snap_added
 
     def tearDown(self):
-        stop_vms_safely([config.VM1_NAME])
-        assert waitForVMState(config.VM1_NAME, config.VM_DOWN)
+        stop_vms_safely([self.vm_name])
+        assert waitForVMState(self.vm_name, config.VM_DOWN)
 
         if not self.snap_added:
             logger.info("Removing snapshot %s", self.snap_desc)
-            assert removeSnapshot(True, config.VM1_NAME, self.snap_desc)
+            assert removeSnapshot(True, self.vm_name, self.snap_desc)
             wait_for_jobs()
 
         super(TestCase138757, self).tearDown()
@@ -334,7 +342,6 @@ class TestCase138758(DirectLunAttachTestCase):
     Attach lun to vm and verify the direct lun will not be
     part of the snapshot
     """
-    __test__ = True
     tcms_test_case = "138758"
     snap_desc = "snapshot_name_%s" % tcms_test_case
     snap_added = False
@@ -348,11 +355,11 @@ class TestCase138758(DirectLunAttachTestCase):
         wait_for_jobs()
 
         logger.info("Create new snapshot %s", self.snap_desc)
-        self.snap_added = addSnapshot(True, config.VM1_NAME, self.snap_desc)
+        self.snap_added = addSnapshot(True, self.vm_name, self.snap_desc)
         assert self.snap_added
         wait_for_jobs()
 
-        snap_disks = get_snapshot_disks(config.VM1_NAME, self.snap_desc)
+        snap_disks = get_snapshot_disks(self.vm_name, self.snap_desc)
 
         if self.disk_alias in snap_disks:
             raise exceptions.SnapshotException(
@@ -361,10 +368,10 @@ class TestCase138758(DirectLunAttachTestCase):
 
     def tearDown(self):
         if self.snap_added:
-            stop_vms_safely([config.VM1_NAME])
-            waitForVMState(config.VM1_NAME, config.VM_DOWN)
+            stop_vms_safely([self.vm_name])
+            waitForVMState(self.vm_name, config.VM_DOWN)
             logger.info("Removing snapshot %s", self.snap_desc)
-            assert removeSnapshot(True, config.VM1_NAME, self.snap_desc)
+            assert removeSnapshot(True, self.vm_name, self.snap_desc)
             wait_for_jobs()
         super(TestCase138758, self).tearDown()
 
@@ -373,7 +380,6 @@ class TestCase138760(DirectLunAttachTestCase):
     """
     HA vm with direct lun
     """
-    __test__ = True
     tcms_test_case = "138760"
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
@@ -383,22 +389,22 @@ class TestCase138760(DirectLunAttachTestCase):
         * kill qemu precess
         """
         self.attach_disk_to_vm()
-        assert updateVm(True, config.VM1_NAME, highly_available='true')
-        startVm(True, config.VM1_NAME)
+        assert updateVm(True, self.vm_name, highly_available='true')
+        startVm(True, self.vm_name)
 
-        _, host = getVmHost(config.VM1_NAME)
+        _, host = getVmHost(self.vm_name)
         host_ip = getHostIP(host['vmHoster'])
         host_machine = Machine(
             host_ip, config.HOSTS_USER, config.HOSTS_PW).util(LINUX)
 
-        assert host_machine.kill_qemu_process(config.VM1_NAME)
+        assert host_machine.kill_qemu_process(self.vm_name)
 
-        assert waitForVMState(config.VM1_NAME)
+        assert waitForVMState(self.vm_name)
         wait_for_jobs()
 
     def tearDown(self):
         wait_for_jobs()
-        assert updateVm(True, config.VM1_NAME, highly_available='false')
+        assert updateVm(True, self.vm_name, highly_available='false')
         super(TestCase138760, self).tearDown()
 
 
@@ -417,16 +423,17 @@ class TestCase138761(DirectLunAttachTestCase):
         Select a specific host for vm, with direct lun, and try to migrate it
         """
         self.attach_disk_to_vm()
-        assert updateVm(True, config.VM1_NAME, placement_host=config.HOSTS[0])
-        startVm(True, config.VM1_NAME)
+        host = get_cluster_hosts(config.CLUSTER_NAME)
+        assert updateVm(True, self.vm_name, placement_host=host)
+        startVm(True, self.vm_name)
 
-        assert migrateVm(False, config.VM1_NAME)
+        assert migrateVm(False, self.vm_name)
         wait_for_jobs()
 
-        assert waitForVMState(config.VM1_NAME)
+        assert waitForVMState(self.vm_name)
 
     def tearDown(self):
-        assert updateVm(True, config.VM1_NAME, placement_host=None)
+        assert updateVm(True, self.vm_name, placement_host=None)
         super(TestCase138761, self).tearDown()
 
 
@@ -434,7 +441,7 @@ class TestCase138763(DirectLunAttachTestCase):
     """
     direct lun and disk interface
     """
-    __test__ = False
+    __test__ = False  # TODO: Why?
     tcms_test_case = "138763"
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
@@ -467,7 +474,6 @@ class TestCase138764(DirectLunAttachTestCase):
     """
     direct lun as bootable disk
     """
-    __test__ = True
     tcms_test_case = '138764'
 
     def setUp(self):
@@ -494,7 +500,6 @@ class TestCase138765(DirectLunAttachTestCase):
     """
     shared disk from direct lun
     """
-    __test__ = True
     tcms_test_case = '138765'
 
     def setUp(self):
@@ -521,7 +526,6 @@ class TestCase138766(DirectLunAttachTestCase):
     """
     move vm with direct lun
     """
-    __test__ = True
     tcms_test_case = "138766"
     target_domain = None
 
@@ -530,16 +534,24 @@ class TestCase138766(DirectLunAttachTestCase):
         """
         Attache a direct lun to vm and move it to other domain
         """
+        self.target_sd, self.vm_moved = None, None
         self.attach_disk_to_vm()
-        _, non_master_domain = findNonMasterStorageDomains(
-            True, config.DATA_CENTER_NAME)
-        self.target_domain = non_master_domain['nonMasterDomains'][0]
+        vm_disk = filter(lambda w: w.get_alias() != self.disk_alias,
+                         getVmDisks(self.vm_name))[0]
+        self.original_sd = get_vms_disks_storage_domain_name(
+            self.vm_name, vm_disk.get_alias())
+        self.target_sd = get_other_storage_domain(
+            vm_disk.get_alias(), self.vm_name, storage_type=self.storage)
 
-        assert moveVm(True, config.VM1_NAME, self.target_domain)
-        wait_for_jobs()
+        assert self.target_sd
+        self.vm_moved = moveVm(True, self.vm_name, self.target_sd)
+        self.assertTrue(self.vm_moved, "Failed to move vm %s" % self.vm_name)
 
     def tearDown(self):
-        moveVm(True, config.VM1_NAME, self.master_domain)
+        """Move the vm back to the original storage domain"""
+        wait_for_jobs()
+        if self.target_sd and self.vm_moved:
+            moveVm(True, self.vm_name, self.original_sd)
         wait_for_jobs()
         super(TestCase138766, self).tearDown()
 
@@ -548,7 +560,6 @@ class TestCase138768(DirectLunAttachTestCase):
     """
     detach a direct lun
     """
-    __test__ = True
     tcms_test_case = "138768"
     detached = False
 
@@ -559,6 +570,7 @@ class TestCase138768(DirectLunAttachTestCase):
         assert self.detached
         wait_for_jobs()
 
+    # TODO
     #  Not working!
     # @tcms(TCMS_PLAN_ID, tcms_test_case)
     # def test_live_detach_direct_lun(self):
@@ -567,9 +579,9 @@ class TestCase138768(DirectLunAttachTestCase):
     #     """
     #     self.attach_disk_to_vm()
     #
-    #     startVm(True, config.VM1_NAME)
-    #     waitForVMState(config.VM1_NAME)
-    #     self.detach_disk_from_vm(config.VM1_NAME, self.disk_alias)
+    #     startVm(True, self.vm_name)
+    #     waitForVMState(self.vm_name)
+    #     self.detach_disk_from_vm(self.vm_name, self.disk_alias)
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_cold_detach_direct_lun(self):
@@ -578,17 +590,17 @@ class TestCase138768(DirectLunAttachTestCase):
         """
         self.attach_disk_to_vm()
 
-        stop_vms_safely([config.VM1_NAME])
-        waitForVMState(config.VM1_NAME, config.VM_DOWN)
+        stop_vms_safely([self.vm_name])
+        waitForVMState(self.vm_name, config.VM_DOWN)
 
-        self.detach_disk_from_vm(config.VM1_NAME, self.disk_alias)
+        self.detach_disk_from_vm(self.vm_name, self.disk_alias)
 
     def tearDown(self):
         if self.detached:
             assert deleteDisk(True, self.disk_alias)
 
         else:
-            detachDisk(True, self.disk_alias, config.VM1_NAME)
+            detachDisk(True, self.disk_alias, self.vm_name)
             waitForDisksState(self.disk_alias)
             assert deleteDisk(True, self.disk_alias)
 
@@ -599,7 +611,6 @@ class TestCase138769(DirectLunAttachTestCase):
     """
     remove direct lun
     """
-    __test__ = True
     tcms_test_case = "138769"
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
@@ -611,7 +622,7 @@ class TestCase138769(DirectLunAttachTestCase):
         self.attach_disk_to_vm()
 
         logger.info("Detaching direct lun %s", self.disk_alias)
-        assert detachDisk(True, self.disk_alias, config.VM1_NAME)
+        assert detachDisk(True, self.disk_alias, self.vm_name)
         wait_for_jobs()
         logger.info("Removing direct lun %s", self.disk_alias)
         assert deleteDisk(True, self.disk_alias)
@@ -625,7 +636,6 @@ class TestCase138770(DirectLunAttachTestCase):
     """
     remove a vm with a direct lun
     """
-    __test__ = True
     tcms_test_case = "138770"
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
@@ -633,22 +643,30 @@ class TestCase138770(DirectLunAttachTestCase):
         """
         Remove vm with direct lun attached
         """
+        self.vm_removed = False
         self.attach_disk_to_vm()
 
-        stop_vms_safely([config.VM1_NAME])
-        waitForVMState(config.VM1_NAME, config.VM_DOWN)
-        assert removeVm(True, config.VM1_NAME)
+        stop_vms_safely([self.vm_name])
+        waitForVMState(self.vm_name, config.VM_DOWN)
+        self.vm_removed = removeVm(True, self.vm_name)
+        self.assertTrue(self.vm_removed,
+                        "Failed to remove vm %s" % self.vm_name)
 
     def tearDown(self):
-        assert common._create_vm(config.VM1_NAME, config.VIRTIO_BLK)
-        wait_for_jobs()
+        if self.vm_removed:
+            # Adding back vm since the test removes it
+            assert common.create_vm(
+                self.vm_name, config.VIRTIO_BLK,
+                storage_domain=self.vm_storage_domain)
+            wait_for_jobs()
+        else:
+            super(TestCase138770, self).tearDown()
 
 
 class TestCase138773(DirectLunAttachTestCase):
     """
     Direct lun - wipe after delete
     """
-    __test__ = True
     tcms_test_case = '138773'
 
     def setUp(self):
