@@ -371,6 +371,40 @@ class Network(Service):
         return None
 
     @keep_session
+    def add_bridge(self, bridge, network):
+        """
+        Add bridge and add network to the bridge on host
+
+        :param bridge: Bridge name
+        :type bridge: str
+        :param network: Network name
+        :type network: str
+        :return: True/False
+        :rtype: bool
+        """
+        cmd_add_br = ["brctl", "addbr", bridge]
+        cmd_add_if = ["brctl", "addif", bridge, network]
+        self._cmd(cmd_add_br)
+        self._cmd(cmd_add_if)
+        return True
+
+    @keep_session
+    def delete_bridge(self, bridge):
+        """
+        Add bridge and add network to the bridge on host
+
+        :param bridge: Bridge name
+        :type bridge: str
+        :return: True/False
+        :rtype: bool
+        """
+        cmd_br_down = ["ip", "link", "set", "down", bridge]
+        cmd_del_br = ["brctl", "delbr", bridge]
+        self._cmd(cmd_br_down)
+        self._cmd(cmd_del_br)
+        return True
+
+    @keep_session
     def get_info(self):
         """
         Get network info for host, return info for main IP.
