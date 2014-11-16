@@ -971,7 +971,7 @@ class CliUtil(RestUtil):
             else:
                 # adding to some element collection
                 createCmd = (
-                    "add {0} --{1}-identifier '{2}' {3}"
+                    "add {0} --{1}-identifier '{2}' {3} "
                     "--expect '201-created'".format(
                         self.cli_element_name,
                         ownerId.rstrip('s'),
