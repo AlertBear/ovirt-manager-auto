@@ -22,7 +22,10 @@ from art.core_api.apis_exceptions import EntityNotFound
 from art.rhevm_api.utils.test_utils import get_api, split
 from art.core_api import is_action
 from art.test_handler.settings import opts
-from networks import findNetwork, getVnicProfileObj
+from art.rhevm_api.tests_lib.low_level.networks import (
+    findNetwork,
+    getVnicProfileObj
+)
 
 ENUMS = opts['elements_conf']['RHEVM Enums']
 CONF_PERMITS = opts['elements_conf']['RHEVM Permits']
@@ -40,11 +43,9 @@ hostUtil = get_api('host', 'hosts')
 permitUtil = get_api('permit', 'capabilities')
 vmUtil = get_api('vm', 'vms')
 userUtil = get_api('user', 'users')
-hostUtil = get_api('host', 'hosts')
 sdUtil = get_api('storage_domain', 'storagedomains')
 clUtil = get_api('cluster', 'clusters')
 templUtil = get_api('template', 'templates')
-dcUtil = get_api('data_center', 'datacenters')
 poolUtil = get_api('vmpool', 'vmpools')
 domUtil = get_api('domain', 'domains')
 groupUtil = get_api('group', 'groups')
