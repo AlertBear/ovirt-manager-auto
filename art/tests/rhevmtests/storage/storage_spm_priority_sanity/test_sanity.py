@@ -38,15 +38,14 @@ DEFAULT_SPM_PRIORITY = '5'
 SLEEP_AMOUNT = 600
 
 
-def set_spm_priority_in_db(positive, host, priority):
+def set_spm_priority_in_db(host, priority):
     """
     Changes spm priority value in DB for the host
     """
 
-    assert ll_hosts.setSPMPriorityInDB(
-        positive, hostName=host, spm_priority=priority,
-        ip=config.DB_HOST, user=config.DB_HOST_USER,
-        password=config.DB_HOST_PASSWORD, db_user=config.DB_USER)
+    return ll_hosts.set_spm_priority_in_db(
+        host_name=host, spm_priority=priority, engine=config.ENGINE
+    )
 
 
 def restart_vdsm(host_index):
@@ -320,7 +319,7 @@ class PriorityOutOfRange(SPMPriorityMinusOne):
         for value in (
                 config.MAX_VALUE, config.MAX_VALUE - 1, config.MIN_VALUE,
                 config.MIN_VALUE + 1):
-            set_spm_priority_in_db(True, self.host, value)
+            assert set_spm_priority_in_db(self.host, value)
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_priority_greater_than_range(self):
@@ -328,7 +327,8 @@ class PriorityOutOfRange(SPMPriorityMinusOne):
         Test that greater value than defined maximum cannot be set even in
         database
         """
-        set_spm_priority_in_db(False, self.host, config.MAX_VALUE + 1)
+        self.assertFalse(set_spm_priority_in_db(self.host,
+                                                config.MAX_VALUE + 1))
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_priority_lesser_than_range(self):
@@ -336,7 +336,8 @@ class PriorityOutOfRange(SPMPriorityMinusOne):
         Test that lesser value than defined minimum cannot be set even in
         database
         """
-        set_spm_priority_in_db(False, self.host, config.MIN_VALUE - 1)
+        self.assertFalse(set_spm_priority_in_db(self.host,
+                                                config.MIN_VALUE - 1))
 
 
 @attr(tier=0)
@@ -425,11 +426,11 @@ class RestartVdsm(DCUp):
         """
         assert ll_hosts.checkHostSpmStatus(True, config.HOSTS[2])
         assert hosts.deactivate_host_if_up(config.HOSTS[2])
-        set_spm_priority_in_db(True, config.HOSTS[2], '-1')
+        assert set_spm_priority_in_db(config.HOSTS[2], '-1')
         restart_vdsm(2)
         assert ll_hosts.activateHost(True, config.HOSTS[2])
         self._check_no_spm()
-        set_spm_priority_in_db(True, config.HOSTS[0], '2')
+        assert set_spm_priority_in_db(config.HOSTS[0], '2')
         restart_vdsm(0)
         self._check_host_for_spm(config.HOSTS[0])
 

@@ -1274,30 +1274,26 @@ def setSPMPriority(positive, hostName, spmPriority):
     return new_priority == int(spmPriority)
 
 
+# noinspection PyBroadException
 @is_action()
-def setSPMPriorityInDB(
-        positive, hostName, spm_priority, ip, user, password, db_user):
+def set_spm_priority_in_db(host_name, spm_priority, engine):
     """
     Description: set SPM priority for host in DB
-    Author: pdufek
-    Parameters:
-    * hostName - the name of the host
-    * spm_priority - SPM priority to be set for host
-    * ip - IP of the machine where DB resides
-    * user - username for remote access
-    * password - password for remote access
-    Returns: True (successfully set) / False (failure)
+
+    :param host_name: the name of the host
+    :type host_name: string
+    :param spm_priority: SPM priority to be set for host
+    :type spm_priority: int
+    :param engine: engine machine
+    :type engine: instance of Engine
+    :return: True if update of db success, otherwise False
     """
-    cmd = 'psql engine %s -c \"UPDATE vds_static SET ' \
-          'vds_spm_priority=\'%s\' WHERE vds_name=\'%s\';\"' \
-          % (db_user, spm_priority, hostName)
-    status = runMachineCommand(True, ip=ip, user=user, password=password,
-                               cmd=cmd)
-    if not status[0]:
-        log_fce = HOST_API.logger.error \
-            if (positive is not None) and positive else HOST_API.logger.info
-        log_fce('Command \'%s\' failed: %s' % (cmd, status[1]['out']))
-    return status[0] == positive
+    sql = "UPDATE vds_static SET vds_spm_priority = '%s' WHERE vds_name = '%s'"
+    try:
+        engine.db.psql(sql, spm_priority, host_name)
+    except Exception:
+        return False
+    return True
 
 
 @is_action()
