@@ -1902,3 +1902,59 @@ def engine_get_mac_range(host, username, password):
         logger.error("Operation failed")
         return False
     return out.split()[1]
+
+
+def set_engine_properties(engine_obj, param, attempts=20, interval=5):
+    """
+    Running engine-config command to set specific value
+    Author: gcheresh
+    Parameters:
+    :param engine_obj: Resources Engine object
+    :type engine_obj: object
+    :param param: Command to run with engine config
+    :type param: list
+    :param attempts: number of attempts to check if engine is up
+    :type attempts: int
+    :param interval: interval between attempts
+    :type interval: int
+    :return: True/False
+    :rtype: bool
+    """
+    cmd = ["engine-config", "-s"]
+    cmd.extend(param)
+    engine_exec = engine_obj.host.executor()
+    rc, out, error = engine_exec.run_cmd(cmd)
+    if rc:
+        logger.error("Operation failed. Err: %s %s", out, error)
+        return False
+    engine_obj.restart()
+    sample = TimeoutingSampler(
+        timeout=60, sleep=1, func=lambda: engine_obj.health_page_status
+    )
+    if not sample.waitForFuncStatus(result=True):
+        logger.error("Couldn't update correct linked state")
+        return False
+    return True
+
+
+def get_engine_properties(engine_obj, param):
+    """
+    Running engine-config command to get specific value
+    Author: gcheresh
+    Parameters:
+    :param engine_obj: Resources Engine object
+    :type engine_obj: object
+    :param param: Command to run with engine config
+    :type param: list
+    :return: tuple of value and version
+    :rtype: tuple
+    """
+    cmd = ["engine-config", "-g"]
+    cmd.extend(param)
+    engine_exec = engine_obj.host.executor()
+    rc, out, error = engine_exec.run_cmd(cmd)
+    if rc:
+        logger.error("Operation failed. Err: %s %s", out, error)
+        return "", ""
+    value, version = out.split("{0}:".format(param))[1].split('version:')
+    return value.strip(), version.strip()
