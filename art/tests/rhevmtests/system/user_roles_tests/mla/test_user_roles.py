@@ -68,6 +68,16 @@ def tearDownModule():
     templates.removeTemplate(True, config.TEMPLATE_NO_DISK)
 
 
+def _retrieve_current_role(curr_role):
+    return [temp_role for temp_role in mla.util.get(absLink=False)
+            if temp_role.name == curr_role.name][0]
+
+
+def _get_role_permits(curr_role):
+    return mla.util.getElemFromLink(curr_role, link_name='permits',
+                                    attr='permit', get_href=False)
+
+
 class RoleCase54413(TestCase):
     """
     Check that only users which are permitted to create role, can create role.
@@ -79,22 +89,34 @@ class RoleCase54413(TestCase):
     def createRolePerms(self):
         """ Check if user can add/del role if he has permissions for it """
         cantLogin = "Role %s not tested, because don't have login permissions."
+        roles = mla.util.get(absLink=False)
+        size = len(roles)
+        index = 1
 
-        for r in mla.util.get(absLink=False):
-            rolePermits = mla.util.getElemFromLink(
-                r, link_name='permits', attr='permit', get_href=False)
-            if 'login' not in [p.get_name() for p in rolePermits]:
-                LOGGER.info(cantLogin, r.get_name())
+        for curr_role in roles:
+            LOGGER.info("Role named ({0}/{1}): {2}".format(
+                index, size, curr_role.get_name()))
+            loginAsAdmin()
+            users.addUser(True, user_name=config.USER_NAME,
+                          domain=config.USER_DOMAIN)
+            # need to retrieve the roles again since inside the loop we logout
+            # which means disconnect from the server and reconnect again
+            index += 1
+            curr_role = _retrieve_current_role(curr_role)
+            role_permits = _get_role_permits(curr_role)
+            permit_list = [temp_role.get_name() for temp_role in role_permits]
+            if 'login' not in permit_list:
+                LOGGER.info(cantLogin, curr_role.get_name())
                 continue
 
-            self.assertTrue(
-                users.addRoleToUser(True, config.USER_NAME, r.get_name()))
-            LOGGER.info("Testing if role %s can add new role.", r.get_name())
-            l = [r.get_name() for r in rolePermits]
+            self.assertTrue(users.addRoleToUser(
+                True, config.USER_NAME, curr_role.get_name()))
+            LOGGER.info("Testing if role %s can add new role.",
+                        curr_role.get_name())
             users.loginAsUser(config.USER_NAME, config.USER_DOMAIN,
                               config.USER_PASSWORD,
-                              filter=not r.administrative)
-            if 'manipulate_roles' in l:
+                              filter=not curr_role.administrative)
+            if 'manipulate_roles' in permit_list:
                 self.assertTrue(mla.addRole(True, name=config.USER_ROLE,
                                             permits='login'))
                 self.assertTrue(mla.removeRole(True, config.USER_ROLE))
@@ -107,23 +129,17 @@ class RoleCase54413(TestCase):
                     )
                 )
                 self.assertTrue(mla.removeRole(True, config.ADMIN_ROLE))
-                LOGGER.info("%s can manipulate with roles.", r.get_name())
+                LOGGER.info("%s can manipulate with roles.",
+                            curr_role.get_name())
             else:
-                self.assertTrue(
-                    mla.addRole(False, name=config.USER_ROLE, permits='login'))
-                self.assertTrue(
-                    mla.addRole(
-                        False,
-                        name=config.ADMIN_ROLE,
-                        permits='login'
-                    )
-                )
-                LOGGER.info("%s can't manipulate with roles.", r.get_name())
-
+                self.assertTrue(mla.addRole(False, name=config.USER_ROLE,
+                                            permits='login'))
+                self.assertTrue(mla.addRole(False, name=config.ADMIN_ROLE,
+                                permits='login'))
+                LOGGER.info("%s can't manipulate with roles.",
+                            curr_role.get_name())
             loginAsAdmin()
             users.removeUser(True, config.USER_NAME)
-            users.addUser(
-                True, user_name=config.USER_NAME, domain=config.USER_DOMAIN)
 
     @classmethod
     def teardown_class(cls):
@@ -216,29 +232,35 @@ class RoleCase54415(TestCase):
         msg = "Role %s is not tested because can't login."
         roles = mla.util.get(absLink=False)
         size = len(roles)
+        index = 1
 
-        for r in roles:
-            rolePermits = mla.util.getElemFromLink(
-                r, link_name='permits', attr='permit', get_href=False)
-            if 'login' not in [p.get_name() for p in rolePermits]:
-                LOGGER.info(msg % r.get_name())
+        for curr_role in roles:
+            LOGGER.info("Role named ({0}/{1}): {2}".format(
+                index, size, curr_role.get_name()))
+            loginAsAdmin()
+            self.assertTrue(users.addUser(True, user_name=config.USER_NAME,
+                                          domain=config.USER_DOMAIN))
+            # need to retrieve the roles again since inside the loop we logout
+            # which means disconnect from the server and reconnect again
+            index += 1
+            curr_role = _retrieve_current_role(curr_role)
+            role_permits = _get_role_permits(curr_role)
+            if 'login' not in [p.get_name() for p in role_permits]:
+                LOGGER.info(msg, curr_role.get_name())
                 continue
 
-            self.assertTrue(users.addRoleToUser(
-                True, config.USER_NAME, r.get_name()))
-            users.loginAsUser(
-                config.USER_NAME, config.USER_DOMAIN, config.USER_PASSWORD,
-                filter=not r.administrative)
-            self.assertEqual(len(mla.util.get(absLink=False)), size)
-            LOGGER.info(
-                "User with role %s can see all roles.",
-                r.get_name()
-            )
-
-            loginAsAdmin()
-            self.assertTrue(users.removeUser(True, config.USER_NAME))
             self.assertTrue(users.addUser(
                 True, user_name=config.USER_NAME, domain=config.USER_DOMAIN))
+            self.assertTrue(users.addRoleToUser(
+                True, config.USER_NAME, curr_role.get_name()))
+            users.loginAsUser(
+                config.USER_NAME, config.USER_DOMAIN, config.USER_PASSWORD,
+                filter=not curr_role.administrative)
+            self.assertEqual(len(mla.util.get(absLink=False)), size)
+            LOGGER.info("User with role %s can see all roles.",
+                        curr_role.get_name())
+            loginAsAdmin()
+            self.assertTrue(users.removeUser(True, config.USER_NAME))
 
 
 class RoleCase54402(TestCase):
