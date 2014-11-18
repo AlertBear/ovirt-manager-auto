@@ -30,16 +30,14 @@ VALS_IGNORE_DICT = {
 }
 
 DS_CLASS_MAPPER = {
-    'ClusterNetwork': 'Network',
-    'VMCdRom': 'CdRom',
-    'RolePermits': 'Permits',
-    'HostNICStatistics': 'Statistics',
-    'HostNicStatistics': 'Statistics',
-    'DiskStatistics': 'Statistics',
-    'DataCenterNetworkVnicProfile': 'VnicProfile',
-    'JobStep': 'Step',
-    'HostNICLabels': 'Labels',
-    'HostNicLabels': 'Labels'
+    'clusternetwork': 'Network',
+    'vmcdrom': 'CdRom',
+    'rolepermits': 'Permits',
+    'hostnicstatistics': 'Statistics',
+    'diskstatistics': 'Statistics',
+    'datacenternetworkvnicprofile': 'VnicProfile',
+    'jobstep': 'Step',
+    'hostniclabels': 'Labels',
 }
 
 
@@ -276,8 +274,7 @@ def getAttibuteValue(elm, attrName):
 
 
 def getClassName(elmClass):
-
-    return DS_CLASS_MAPPER.get(elmClass, elmClass)
+    return DS_CLASS_MAPPER.get(elmClass.lower(), elmClass)
 
 
 def compareElements(expElm, actElm, logger, root, equal=True,
