@@ -29,6 +29,9 @@ class SystemService(Service):
         self.timeout = timeout
         self._can_handle()
 
+    def __str__(self):
+        return "%s(%s)" % (self.__class__.__name__, self.name)
+
     def is_enabled(self):
         raise NotImplementedError()
 
@@ -52,6 +55,12 @@ class SystemService(Service):
 
     def reload(self):
         raise NotImplementedError()
+
+    def mask(self):
+        raise NotImplementedError("Method supported only under systemd")
+
+    def unmask(self):
+        raise NotImplementedError("Method supported only under systemd")
 
     def _can_handle(self):
         """
@@ -189,6 +198,12 @@ class Systemd(SystemService):
 
     def reload(self):
         return self._execute('reload')
+
+    def mask(self):
+        return self._execute('mask')
+
+    def unmask(self):
+        return self._execute('unmask')
 
 
 class InitCtl(SystemService):

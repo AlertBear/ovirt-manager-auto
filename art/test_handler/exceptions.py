@@ -175,3 +175,10 @@ class TearDownException(RHEVMEntityException):
     Exception for failed teardown
     """
     pass
+
+
+class HostedEngineException(RHEVMEntityException):
+    """
+    Exception for hosted engine errors
+    """
+    pass
