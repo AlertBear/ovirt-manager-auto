@@ -4120,21 +4120,31 @@ def live_migrate_vm(vm_name, timeout=VM_IMAGE_OPT_TIMEOUT*2, wait=True,
 @is_action('removeAllVmLmSnapshots')
 def remove_all_vm_lsm_snapshots(vm_name):
     """
-    Description: Removes all snapshots of given VM which were created during
-    live storage migration (according to snapshot description)
-    Author: ratamir
-    Parameters:
-        * vm_name - name of the vm that should be cleaned out of snapshots
-    created during live migration
+    Removes all snapshots of given VM which were created during
+    live storage migration (according to snapshot description).
     Raise: AssertionError if something went wrong
+
+    __author__ = "ratamir"
+    :param vm_name: name of the vm that should be cleaned out of snapshots
+    created during live migration
+    :type vm_name: str
+    :return: None
+    :rtype: None
     """
     logger.info("Removing all '%s'", LIVE_SNAPSHOT_DESCRIPTION)
     stop_vms_safely([vm_name])
+    waitForVMState(vm_name, state=ENUMS['vm_state_down'])
+    waitForDisksStat(vm_name)
     snapshots = _getVmSnapshots(vm_name, False)
-    results = [removeSnapshot(True, vm_name, LIVE_SNAPSHOT_DESCRIPTION,
-                              SNAPSHOT_TIMEOUT)
-               for snapshot in snapshots
-               if snapshot.description == LIVE_SNAPSHOT_DESCRIPTION]
+    results = []
+    for snapshot in snapshots:
+        if snapshot.get_description() == LIVE_SNAPSHOT_DESCRIPTION:
+            results.append(
+                removeSnapshot(
+                    True, vm_name, LIVE_SNAPSHOT_DESCRIPTION,
+                    VM_REMOVE_SNAPSHOT_TIMEOUT,
+                )
+            )
     assert False not in results
     wait_for_jobs()
 

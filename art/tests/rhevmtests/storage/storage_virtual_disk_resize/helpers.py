@@ -5,12 +5,10 @@
 import logging
 from utilities.machine import Machine
 from art.core_api.apis_exceptions import EntityNotFound
-from art.rhevm_api.tests_lib.low_level.disks import wait_for_disks_status
 from art.rhevm_api.tests_lib.low_level.vms import (
-    activateVmDisk, waitForVMState, start_vms,
+    start_vms, waitForVMState,
 )
 
-from art.rhevm_api.tests_lib.low_level import disks
 from art.test_handler import exceptions
 from rhevmtests.storage.helpers import get_vm_ip
 
@@ -20,34 +18,6 @@ logger = logging.getLogger(__name__)
 
 DISK_TIMEOUT = 250
 FILTER = '[sv]d'
-
-
-def prepare_disks_for_vm(vm_name, disks_to_prepare):
-    """
-    Attach disks to vm
-    Parameters:
-        * vm_name - name of vm which disk should attach to
-        * disks_to_prepare - list of disks aliases
-        * read_only - if the disks should attach as RO disks
-
-    Raise DiskException if operation fails
-    """
-    for disk in disks_to_prepare:
-        assert wait_for_disks_status(disk, timeout=DISK_TIMEOUT)
-        logger.info("Attaching disk %s to vm %s",
-                    disk, vm_name)
-        status = disks.attachDisk(True, disk, vm_name, active=False)
-        if not status:
-            raise exceptions.DiskException("Failed to attach disk %s to"
-                                           " vm %s"
-                                           % (disk, vm_name))
-
-        logger.info("Plugging disk %s", disk)
-        status = activateVmDisk(True, vm_name, disk)
-        if not status:
-            raise exceptions.DiskException("Failed to plug disk %s "
-                                           "to vm %s"
-                                           % (disk, vm_name))
 
 
 def get_vm_storage_devices(vm_name):

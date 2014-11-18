@@ -5,13 +5,11 @@ import config
 import logging
 from art.test_handler import exceptions
 from art.rhevm_api.tests_lib.low_level.disks import (
-    wait_for_disks_status, addDisk, get_all_disk_permutation, attachDisk,
+    addDisk, get_all_disk_permutation,
     check_disk_visibility, checkDiskExists, deleteDisk,
 )
 from art.rhevm_api.tests_lib.low_level.storagedomains import addStorageDomain
-from art.rhevm_api.tests_lib.low_level.vms import (
-    activateVmDisk, getVmDisks,
-)
+from art.rhevm_api.tests_lib.low_level.vms import getVmDisks
 from rhevmtests.storage import helpers
 
 logger = logging.getLogger(__name__)
@@ -93,36 +91,6 @@ def start_creating_disks_for_test(sd_name, storage_type, shared=False):
     for permutation in DISK_PERMUTATIONS:
         add_new_disk(sd_name, storage_type,
                      permutation=permutation, shared=shared)
-
-
-def prepare_disks_for_vm(vm_name, disks_to_prepare, read_only=False):
-    """
-    Attach disks to vm
-    Parameters:
-        * vm_name - name of vm which disk should attach to
-        * disks_to_prepare - list of disks aliases
-        * read_only - if the disks should attach as RO disks
-    Return: True if ok, or raise DiskException otherwise
-    """
-    is_ro = 'Read Only' if read_only else 'Read Write'
-    for disk in disks_to_prepare:
-        wait_for_disks_status(disk, timeout=DISK_TIMEOUT)
-        logger.info("Attaching disk %s as %s disk to vm %s",
-                    disk, is_ro, vm_name)
-        status = attachDisk(True, disk, vm_name, active=False,
-                            read_only=read_only)
-        if not status:
-            raise exceptions.DiskException("Failed to attach disk %s to"
-                                           " vm %s"
-                                           % (disk, vm_name))
-
-        logger.info("Plugging disk %s", disk)
-        status = activateVmDisk(True, vm_name, disk)
-        if not status:
-            raise exceptions.DiskException("Failed to plug disk %s "
-                                           "to vm %s"
-                                           % (disk, vm_name))
-    return True
 
 
 def write_on_vms_ro_disks(vm_name, storage_type, imported_vm=False):

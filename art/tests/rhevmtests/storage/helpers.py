@@ -2,7 +2,9 @@
 Storage helper functions
 """
 import logging
+import os
 import shlex
+from art.core_api.apis_utils import TimeoutingSampler
 from art.rhevm_api.tests_lib.low_level.hosts import getSPMHost, getHostIP
 from utilities.machine import Machine, LINUX
 from art.rhevm_api.tests_lib.low_level.disks import (
@@ -28,9 +30,15 @@ logger = logging.getLogger(__name__)
 DISK_TIMEOUT = 250
 SNAPSHOT_TIMEOUT = 15 * 60
 DD_TIMEOUT = 60 * 6
-DD_COMMAND = 'dd bs=1M count=%d if=%s of=%s'
+DD_EXEC = '/bin/dd'
+DD_COMMAND = '{0} bs=1M count=%d if=%s of=%s'.format(DD_EXEC)
 DEFAULT_DD_SIZE = 20 * config.MB
 ERROR_MSG = "Error: Boot device is protected"
+TARGET_FILE = 'written_test_storage'
+FILESYSTEM = 'ext4'
+WAIT_DD_STARTS = 'ps -ef | grep "{0}" | grep -v grep'.format(
+    DD_EXEC,
+)
 
 disk_args = {
     # Fixed arguments
@@ -51,19 +59,19 @@ disk_args = {
 
 def prepare_disks_for_vm(vm_name, disks_to_prepare, read_only=False):
     """
-    Adding disks, Attach disks to vm, and activate them
-    Parameters:
-        * vm_name - name of vm which disk should attach to
-        * disks_to_prepare - list of disks aliases
-        * read_only - if the disks should attach as RO disks
-    Return: True if ok, or raise DiskException otherwise
+    Attach disks to vm
+
+    :param vm_name: name of vm which disk should be attached to
+    :type vm_name: str
+    :param disks_to_prepare: list of disks' aliases
+    :type disks_to_prepare: list
+    :param read_only: Determines if the disks should be attached in RO mode
+    :param read_only: bool
+    :returns: True if successful, or raise DiskException otherwise
+    :rtype bool
     """
     is_ro = 'Read Only' if read_only else 'Read Write'
     for disk in disks_to_prepare:
-        disk_args['alias'] = disk
-        disk_args['description'] = '%s_description' % disk
-        assert addDisk(positive=True, **disk_args)
-        wait_for_disks_status([disk], timeout=DISK_TIMEOUT)
         logger.info("Attaching disk %s as %s disk to vm %s",
                     disk, is_ro, vm_name)
         status = attachDisk(True, disk, vm_name, active=False,
@@ -79,7 +87,6 @@ def prepare_disks_for_vm(vm_name, disks_to_prepare, read_only=False):
             raise exceptions.DiskException("Failed to plug disk %s "
                                            "to vm %s"
                                            % (disk, vm_name))
-        wait_for_jobs()
     return True
 
 
@@ -161,10 +168,11 @@ def create_disks_from_requested_permutations(domain_to_use,
 
 def perform_dd_to_disk(
     vm_name, disk_alias, protect_boot_device=True, size=DEFAULT_DD_SIZE,
+    write_to_file=False,
 ):
     """
-    Function that performs dd command from urandom to the requested disk (by
-    alias)
+    Function that performs dd command from the bootable device to the requested
+    disk (by alias)
     **** Important note: Guest Agent must be installed in the OS for this
     function to work ****
 
@@ -181,6 +189,9 @@ def perform_dd_to_disk(
     : type protect_boot_device: bool
     :param size: number of bytes to dd (Default size 20MB)
     :type size: int
+    :param write_to_file: Determines whether a file should be written into the
+    file system (True) or directly to the device (False)
+    :param write_to_file: bool
     :returns: ecode and output
     :rtype: tuple
     """
@@ -209,8 +220,25 @@ def perform_dd_to_disk(
 
             return False, ERROR_MSG
 
+    if write_to_file:
+        dev = disk_logical_volume_name.split('/')[-1]
+        dev_size = vm_machine.get_storage_device_size(dev)
+        # Create a partition of the size of the disk but take into account the
+        # usual offset for logical partitions, setting to 10 MB
+        partition = vm_machine.createPartition(
+            disk_logical_volume_name, dev_size*config.GB - config.MB * 10,
+        )
+        assert partition
+        mount_point = vm_machine.createFileSystem(
+            disk_logical_volume_name, partition, FILESYSTEM, '?',
+        )
+        assert mount_point
+        destination = os.path.join(mount_point, TARGET_FILE)
+    else:
+        destination = disk_logical_volume_name
+
     command = DD_COMMAND % (
-        size/config.MB, "/dev/{0}".format(boot_disk), disk_logical_volume_name
+        size/config.MB, "/dev/{0}".format(boot_disk), destination,
     )
     logger.info("Performing command '%s'", command)
 
@@ -311,3 +339,20 @@ def host_to_use():
     host = getHostIP(host)
     return Machine(host=host, user=config.HOSTS_USER,
                    password=config.HOSTS_PW).util(LINUX)
+
+
+def wait_for_dd_to_start(vm_name, timeout=20, interval=1):
+    """
+    Waits until dd starts execution in the machine
+    """
+    vm_ip = get_vm_ip(vm_name)
+    vm_machine = Machine(
+        host=vm_ip, user=config.VM_USER, password=config.VM_PASSWORD
+    ).util(LINUX)
+
+    cmd = shlex.split(WAIT_DD_STARTS)
+    for code, out in TimeoutingSampler(
+            timeout, interval, vm_machine.runCmd, cmd):
+        if code:
+            return True
+    return False

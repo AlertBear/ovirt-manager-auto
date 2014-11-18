@@ -5,48 +5,63 @@ https://tcms.engineering.redhat.com/plan/6128/
 import config
 import logging
 from time import sleep
+from multiprocessing import Process, Queue
+
+from art.unittest_lib import attr
+from art.unittest_lib.common import StorageTest
+
+from art.test_handler import exceptions
+from art.test_handler.tools import tcms  # pylint: disable=E0611
+
 from utilities.machine import Machine
-from utilities.utils import getIpAddressByHostName
-from art.rhevm_api.tests_lib.low_level.disks import (
-    wait_for_disks_status, get_other_storage_domain, attachDisk,
-    deleteDisk, getVmDisk, get_disk_storage_domain_name,
-    getObjDisks, detachDisk, addDisk,
-)
-from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    get_master_storage_domain_name, deactivateStorageDomain,
-    waitForStorageDomainStatus, activateStorageDomain, extendStorageDomain,
-    getDomainAddress, get_free_space,
-)
-from art.rhevm_api.tests_lib.low_level.vms import (
-    createVm, stop_vms_safely, waitForVMState, deactivateVmDisk, removeDisk,
-    start_vms, live_migrate_vm, remove_all_vm_lsm_snapshots, addVm,
-    suspendVm, removeSnapshot, live_migrate_vm_disk, move_vm_disk,
-    waitForVmsStates, getVmDisks, stopVm, migrateVm, verify_vm_disk_moved,
-    updateVm, getVmHost, removeVms, shutdownVm, runVmOnce, startVm,
-    get_vm_snapshots, get_vm_state,
-    waitForVmsDisks, wait_for_vm_snapshots, addSnapshot, removeVm,
-    activateVmDisk,
-)
-from art.rhevm_api.tests_lib.low_level.hosts import (
-    getSPMHost, rebootHost, getHSMHost,
-)
-from art.rhevm_api.tests_lib.low_level import templates
-from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
-from art.rhevm_api.tests_lib.high_level.datacenters import (
-    build_setup, clean_all_disks_from_dc,
-    clean_datacenter)
+
 from art.rhevm_api.utils.log_listener import watch_logs
 from art.rhevm_api.utils.storage_api import (
     blockOutgoingConnection, unblockOutgoingConnection,
 )
-import rhevmtests.storage.helpers as storage_helpers
-from rhevmtests.storage.storage_live_migration import helpers
-from art.unittest_lib.common import StorageTest as BaseTestCase
 from art.rhevm_api.utils.test_utils import (
     get_api, setPersistentNetwork, restartVdsmd, wait_for_tasks,
 )
-from art.test_handler import exceptions
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.rhevm_api.tests_lib.high_level.datacenters import (
+    clean_datacenter, build_setup,
+)
+from art.rhevm_api.tests_lib.high_level.storagedomains import (
+    addISCSIDataDomain, remove_storage_domain,
+)
+from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
+from art.rhevm_api.tests_lib.low_level.disks import (
+    wait_for_disks_status, get_other_storage_domain, attachDisk,
+    deleteDisk, getVmDisk, get_disk_storage_domain_name,
+    addDisk, detachDisk, getObjDisks, updateDisk, checkDiskExists,
+)
+from art.rhevm_api.tests_lib.low_level.hosts import (
+    getSPMHost, rebootHost, getHSMHost, getHostIP, waitForHostsStates,
+)
+from art.rhevm_api.tests_lib.low_level.templates import (
+    createTemplate, removeTemplate, waitForTemplatesStates,
+    wait_for_template_disks_state, copy_template_disks,
+)
+from art.rhevm_api.tests_lib.low_level.storagedomains import (
+    deactivateStorageDomain, waitForStorageDomainStatus,
+    activateStorageDomain, extendStorageDomain, getDomainAddress,
+    get_free_space, getStorageDomainNamesForType,
+)
+from art.rhevm_api.tests_lib.low_level.vms import (
+    waitForVMState, deactivateVmDisk, removeDisk, start_vms, live_migrate_vm,
+    remove_all_vm_lsm_snapshots, addVm, suspendVm,
+    live_migrate_vm_disk, move_vm_disk, waitForVmsStates, getVmDisks,
+    stopVm, migrateVm, verify_vm_disk_moved, updateVm, getVmHost, removeVms,
+    shutdownVm, runVmOnce, startVm, get_vm_snapshots, safely_remove_vms,
+    stop_vms_safely, activateVmDisk, cloneVmFromTemplate, removeVm,
+    waitForVmsDisks, addSnapshot, wait_for_vm_snapshots,
+    get_vm_disk_logical_name,
+)
+
+from rhevmtests.storage.storage_live_migration import helpers
+from rhevmtests.helpers import get_golden_template_name
+
+import rhevmtests.storage.helpers as storage_helpers
+
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +69,6 @@ VM_API = get_api('vm', 'vms')
 
 ENUMS = config.ENUMS
 
-BLOCK_TYPES = (ENUMS['storage_type_iscsi'], ENUMS['storage_type_fcp'])
 
 TCMS_PLAN_ID = '6128'
 
@@ -66,26 +80,23 @@ LIVE_MIGRATION_TIMEOUT = 30 * 60
 DISK_TIMEOUT = 900
 LIVE_MIGRATE_LARGE_SIZE = 3600
 
-FILE_TO_WATCH = "/var/log/vdsm/vdsm.log"
+# After the deletion of a snapshot, vdsm allocates around 128MB of data for
+# the extent metadata
+EXTENT_METADATA_SIZE = 128 * config.MB
 
-SD_NAME_0 = config.SD_NAME_0
-SD_NAME_1 = config.SD_NAME_1
-SD_NAME_2 = config.SD_NAME_2
+FILE_TO_WATCH = "/var/log/vdsm/vdsm.log"
 
 SDK_ENGINE = 'sdk'
 VMS_PID_LIST = 'pgrep qemu'
 
-vm_names = list()
-
 vmArgs = {'positive': True,
-          'vmName': config.VM_NAME,
-          'vmDescription': config.VM_NAME,
+          'vmDescription': config.VM_NAME % "description",
           'diskInterface': config.VIRTIO,
           'volumeFormat': config.COW_DISK,
           'cluster': config.CLUSTER_NAME,
           'storageDomainName': None,
           'installation': True,
-          'size': config.DISK_SIZE,
+          'size': config.VM_DISK_SIZE,
           'nic': config.NIC_NAME[0],
           'image': config.COBBLER_PROFILE,
           'useAgent': True,
@@ -95,63 +106,138 @@ vmArgs = {'positive': True,
           'network': config.MGMT_BRIDGE
           }
 
+LOCAL_LUN = []
+LOCAL_LUN_ADDRESS = []
+LOCAL_LUN_TARGET = []
+
+# TOOD: Once the patch for test_failure is merged and tested change the
+# tearDown of the test to only log during the execution and raise the
+# exceptions at the end.
+
 
 def setup_module():
     """
     Sets up the environment - creates vms with all disk types and formats
 
     for this TCMS plan we need 2 SD but only two of them should be created on
-    setup. the other SD will be created manually in the test case 334923.
+    setup. the other SD will be created manually in test case 373597.
     so to accomplish this behaviour, the luns and paths lists are saved
     and overridden with only two lun/path to sent as parameter to build_setup.
     after the build_setup finish, we return to the original lists
     """
-    logger.info("Preparing datacenter %s with hosts %s",
-                config.DATA_CENTER_NAME, config.VDC)
+    global LOCAL_LUN, LOCAL_LUN_ADDRESS, LOCAL_LUN_TARGET
+    if not config.GOLDEN_ENV:
+        logger.info("Preparing datacenter %s with hosts %s",
+                    config.DATA_CENTER_NAME, config.VDC)
 
-    if config.STORAGE_TYPE == config.STORAGE_TYPE_ISCSI:
-        luns = config.LUNS
-        config.PARAMETERS['lun'] = luns[0:3]
+        if config.STORAGE_TYPE == config.STORAGE_TYPE_ISCSI:
+            luns = config.LUNS
+            LOCAL_LUN = config.LUNS[3:]
+            LOCAL_LUN_ADDRESS = config.LUN_ADDRESS[3:]
+            LOCAL_LUN_TARGET = config.LUN_TARGET[3:]
 
-    build_setup(config=config.PARAMETERS,
-                storage=config.PARAMETERS,
-                storage_type=config.STORAGE_TYPE)
+            config.PARAMETERS['lun'] = luns[0:3]
+        build_setup(config=config.PARAMETERS,
+                    storage=config.PARAMETERS,
+                    storage_type=config.STORAGE_TYPE)
 
-    if config.STORAGE_TYPE == config.STORAGE_TYPE_ISCSI:
-        config.PARAMETERS['lun'] = luns
+        if config.STORAGE_TYPE == config.STORAGE_TYPE_ISCSI:
+            config.PARAMETERS['lun'] = luns
 
-    vmArgs['storageDomainName'] = \
-        get_master_storage_domain_name(config.DATA_CENTER_NAME)
+        storage_type = config.STORAGE_SELECTOR[0]
+        logger.info(
+            "For non-golden env run create a template to clone the vm from",
+        )
+        storage_domain = getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, storage_type)[0]
 
-    logger.info('Creating vm and installing OS on it')
+        vm_name = config.VM_NAME % storage_type
+        vmArgs['storageDomainName'] = storage_domain
+        vmArgs['vmName'] = vm_name
 
-    if not createVm(**vmArgs):
-        raise exceptions.VMException('Unable to create vm %s for test'
-                                     % config.VM_NAME)
+        logger.info('Creating vm and installing OS on it')
 
-    logger.info('Shutting down VM %s', config.VM_NAME)
-    stop_vms_safely([config.VM_NAME])
+        if not storage_helpers.create_vm_or_clone(**vmArgs):
+            raise exceptions.VMException('Unable to create vm %s for test'
+                                         % vm_name)
+
+        startVm(True, vm_name, config.VM_UP, wait_for_ip=False)
+        ip_addr = storage_helpers.get_vm_ip(vm_name)
+        setPersistentNetwork(ip_addr, config.VM_PASSWORD)
+        stopVm(True, vm_name)
+        assert createTemplate(
+            True, True, vm=vm_name, name=config.TEMPLATE_NAME_LSM,
+            cluster=config.CLUSTER_NAME, storagedomain=storage_domain
+        )
+
+        logger.info('Deleting VM %s', vm_name)
+        safely_remove_vms([vm_name])
+
+    else:
+        LOCAL_LUN = config.UNUSED_LUNS[:]
+        LOCAL_LUN_ADDRESS = config.UNUSED_LUN_ADDRESSES[:]
+        LOCAL_LUN_TARGET = config.UNUSED_LUN_TARGETS[:]
 
 
 def teardown_module():
     """
     Clean datacenter
     """
-    logger.info('Cleaning datacenter')
-    clean_datacenter(
-        True, config.DATA_CENTER_NAME, vdc=config.VDC,
-        vdc_password=config.VDC_PASSWORD
-    )
+    if not config.GOLDEN_ENV:
+        logger.info('Cleaning datacenter')
+        clean_datacenter(
+            True, config.DATA_CENTER_NAME, vdc=config.VDC,
+            vdc_password=config.VDC_PASSWORD
+        )
 
 
-class SimpleCase(BaseTestCase):
+class BaseTestCase(StorageTest):
     """
-    A class with common teardown method
+    A class with a simple setUp
     """
-    __test__ = False
+    vm_name = config.VM_NAME % StorageTest.storage
+    vm_sd = None
+
+    # VM's bootable disk default parameters
+    sparse = True
+    interface = config.VIRTIO
+    disk_format = config.DISK_FORMAT_COW
+
+    def setUp(self):
+        """
+        Get all the storage domains from a specific domain type
+        """
+        self.storage_domains = getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage)
+        if config.GOLDEN_ENV:
+            template = get_golden_template_name(config.CLUSTER_NAME)
+        else:
+            template = config.TEMPLATE_NAME_LSM
+        if self.vm_sd:
+            self.disk_sd = self.vm_sd
+        else:
+            self.disk_sd = self.storage_domains[0]
+
+        # For each test, create a vm and remove it once the test completes
+        # execution. This is faster than removing snapshots
+        assert cloneVmFromTemplate(
+            True, self.vm_name, template, config.CLUSTER_NAME,
+            storagedomain=self.disk_sd, vol_sparse=self.sparse,
+            vol_format=self.disk_format, virtio_scsi=True,
+        )
+        disk_obj = getVmDisks(self.vm_name)[0]
+        self.vm_disk_name = "{0}_Disk1".format(self.vm_name)
+        updateDisk(
+            True, vmName=self.vm_name, id=disk_obj.get_id(),
+            alias=self.vm_disk_name, interface=self.interface,
+        )
 
     def tearDown(self):
-        remove_all_vm_lsm_snapshots(config.VM_NAME)
+        """
+        Clean environment
+        """
+        wait_for_jobs()
+        safely_remove_vms([self.vm_name])
 
 
 class CommonUsage(BaseTestCase):
@@ -164,9 +250,6 @@ class CommonUsage(BaseTestCase):
         """
         Removes created disks
         """
-        stop_vms_safely([config.VM_NAME])
-        waitForVMState(config.VM_NAME, config.VM_DOWN)
-
         for disk in disks_names:
             logger.info("Deleting disk %s", disk)
             if not deleteDisk(True, disk):
@@ -177,47 +260,51 @@ class AllPermutationsDisks(BaseTestCase):
     """
     A class with common setup and teardown methods
     """
-    apis = set('rest')
     __test__ = False
 
     spm = None
     master_sd = None
-    vm = config.VM_NAME
     shared = False
 
     def setUp(self):
         """
         Creating all possible combinations of disks for test
         """
-        helpers.start_creating_disks_for_test(shared=self.shared)
-        assert wait_for_disks_status(helpers.DISKS_NAMES, timeout=TASK_TIMEOUT)
-        stop_vms_safely([self.vm])
-        waitForVMState(vm=self.vm, state=ENUMS['vm_state_down'])
-        helpers.prepare_disks_for_vm(config.VM_NAME, helpers.DISKS_NAMES)
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
+        super(AllPermutationsDisks, self).setUp()
+        helpers.start_creating_disks_for_test(
+            shared=self.shared, sd_name=self.disk_sd,
+            sd_type=self.storage
+        )
+        if not wait_for_disks_status(
+            helpers.DISK_NAMES[self.storage], timeout=TASK_TIMEOUT,
+        ):
+            logger.error(
+                "Disks %s are not in status OK",
+                helpers.DISK_NAMES[self.storage],
+            )
+        storage_helpers.prepare_disks_for_vm(
+            self.vm_name, helpers.DISK_NAMES[self.storage],
+        )
 
-    def tearDown(self):
+    def verify_lsm(self, moved=True):
         """
-        Clean environment
+        Verifies if the disks have been moved
         """
-        stop_vms_safely([self.vm])
-        waitForVMState(config.VM_NAME, config.VM_DOWN)
-        logger.info("Removing all disks")
-        for disk in helpers.DISKS_NAMES:
-            deactivateVmDisk(True, self.vm, disk)
-            if not removeDisk(True, self.vm, disk):
-                raise exceptions.DiskException("Failed to remove disk %s"
-                                               % disk)
-            logger.info("Disk %s removed successfully", disk)
-        vm_disks = getVmDisks(self.vm)
-        boot_disk = [d.get_alias() for d in vm_disks if d.get_bootable()][0]
+        if moved:
+            failure_str = "Failed"
+        else:
+            failure_str = "Succeeded"
 
-        clean_all_disks_from_dc(config.DATA_CENTER_NAME, [boot_disk])
-        remove_all_vm_lsm_snapshots(self.vm)
-        logger.info("Finished testCase")
+        for disk in helpers.DISK_NAMES[self.storage]:
+            self.assertTrue(
+                moved == verify_vm_disk_moved(
+                    self.vm_name, disk, self.disk_sd,
+                ),
+                "%s to live migrate vm disk %s" % (disk, failure_str),
+            )
 
 
+@attr(tier=0)
 class TestCase165965(AllPermutationsDisks):
     """
     live migrate
@@ -234,10 +321,11 @@ class TestCase165965(AllPermutationsDisks):
         Expected Results:
             - move should succeed
         """
-        live_migrate_vm(self.vm)
-        wait_for_jobs()
+        live_migrate_vm(self.vm_name)
+        self.verify_lsm()
 
 
+@attr(tier=1)
 class TestCase166167(BaseTestCase):
     """
     vm in paused mode
@@ -245,9 +333,6 @@ class TestCase166167(BaseTestCase):
     """
     __test__ = True
     tcms_test_case = '166167'
-
-    def setUp(self):
-        stop_vms_safely([config.VM_NAME])
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_vms_live_migration(self):
@@ -259,25 +344,26 @@ class TestCase166167(BaseTestCase):
             - VM has running qemu process so LSM should succeed
         """
         logger.info("Running vm in paused state")
-        assert runVmOnce(True, config.VM_NAME, pause='true')
-        waitForVMState(config.VM_NAME, config.VM_PAUSED)
-        live_migrate_vm(config.VM_NAME)
+        assert runVmOnce(True, self.vm_name, pause='true')
+        waitForVMState(self.vm_name, config.VM_PAUSED)
+        live_migrate_vm(self.vm_name)
         wait_for_jobs()
+        vm_disk = getVmDisks(self.vm_name)[0].get_alias()
+        self.assertTrue(
+            verify_vm_disk_moved(self.vm_name, vm_disk, self.disk_sd),
+            "Failed to live migrate disk %s" % vm_disk,
+        )
 
-    def tearDown(self):
-        remove_all_vm_lsm_snapshots(config.VM_NAME)
-        assert startVm(True, config.VM_NAME)
-        waitForVMState(config.VM_NAME)
 
-
-class TestCase166089(SimpleCase):
+@attr(tier=1)
+class TestCase166089(BaseTestCase):
     """
     different vm status
     https://tcms.engineering.redhat.com/case/166089/?from_plan=6128
 
-
     __test__ = False : A race situation can occur here. Manual test only
     """
+    # TODO: Make sure this is really a problem
     __test__ = False
     tcms_test_case = '166089'
 
@@ -289,10 +375,10 @@ class TestCase166089(SimpleCase):
         Expected Results:
             - live migration should fail
         """
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME, config.VM_WAIT_FOR_LAUNCH)
+        startVm(True, self.vm_name, wait_for_status=None)
+        waitForVMState(self.vm_name, config.VM_WAIT_FOR_LAUNCH)
         self.assertRaises(exceptions.DiskException, live_migrate_vm,
-                          config.VM_NAME)
+                          self.vm_name)
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_lsm_during_powering_up_state(self):
@@ -302,10 +388,10 @@ class TestCase166089(SimpleCase):
         Expected Results:
             - migration should fail
         """
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME, config.VM_POWERING_UP)
+        startVm(True, self.vm_name, wait_for_status=None)
+        waitForVMState(self.vm_name, config.VM_POWERING_UP)
         self.assertRaises(exceptions.DiskException, live_migrate_vm,
-                          config.VM_NAME)
+                          self.vm_name)
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_lsm_during_powering_off_state(self):
@@ -315,27 +401,28 @@ class TestCase166089(SimpleCase):
         Expected Results:
             - migration should fail
         """
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
-        shutdownVm(True, config.VM_NAME)
-        waitForVMState(config.VM_NAME, ENUMS['vm_state_powering_down'])
+        startVm(True, self.vm_name, wait_for_status=None)
+        waitForVMState(self.vm_name)
+        shutdownVm(True, self.vm_name)
+        waitForVMState(self.vm_name, ENUMS['vm_state_powering_down'])
         self.assertRaises(exceptions.DiskException, live_migrate_vm,
-                          config.VM_NAME)
+                          self.vm_name)
 
 
-class TestCase166090(BaseTestCase):
+@attr(tier=1)
+class TestCase166090(StorageTest):
     """
     live migration with thin provision copy
     https://tcms.engineering.redhat.com/case/166090/?from_plan=6128
-
-    __test__ = False due to bug:
-    https://bugzilla.redhat.com/show_bug.cgi?id=1110798
     """
+    # TODO: This has not been verified since the bz prevents to run it,
+    # make sure it works properly
     __test__ = False
     tcms_test_case = '166090'
     test_templates = ['template_single', 'template_both']
-    base_vm = config.VM_NAME
+    base_vm = config.VM_NAME % BaseTestCase.storage
     vm_names = ['vm_from_both', 'vm_from_single']
+    bz = {'1110798': {'engine': ['rest', 'sdk'], 'version': ["3.5"]}}
 
     def _prepare_templates(self):
         """
@@ -356,39 +443,42 @@ class TestCase166090(BaseTestCase):
 
         logger.info("Creating template %s from vm %s to storage domain %s",
                     self.test_templates[0], self.base_vm, target_domain)
-        assert templates.createTemplate(
+        assert createTemplate(
             True, True, vm=self.base_vm, name=self.test_templates[0],
             cluster=config.CLUSTER_NAME, storagedomain=target_domain)
 
         second_domain = get_other_storage_domain(
-            disks_objs[0].get_alias())
+            disks_objs[0].get_alias(), storage_type=self.storage)
 
-        target_domain = SD_NAME_1 if (second_domain == SD_NAME_0) \
-            else SD_NAME_0
+        target_domain = filter(
+            lambda w: w != second_domain, self.storage_domains)[0]
 
         logger.info("Creating second template %s from vm %s to storage domain "
                     "%s",
                     self.test_templates[1], self.base_vm, target_domain)
-        assert templates.createTemplate(True, True, vm=self.base_vm,
-                                        name=self.test_templates[1],
-                                        cluster=config.CLUSTER_NAME,
-                                        storagedomain=target_domain)
+        assert createTemplate(True, True, vm=self.base_vm,
+                              name=self.test_templates[1],
+                              cluster=config.CLUSTER_NAME,
+                              storagedomain=target_domain)
 
-        templates.copy_template_disks(
+        copy_template_disks(
             True, self.test_templates[1], "%s_Disk1" % self.base_vm,
             second_domain)
-        assert templates.waitForTemplatesStates(
+        assert waitForTemplatesStates(
             names=",".join(self.test_templates))
 
         for templ in self.test_templates:
-            templates.wait_for_template_disks_state(templ)
+            wait_for_template_disks_state(templ)
 
     def setUp(self):
         """
         Prepares templates test_templates and vms based on that templates
         """
+        self.storage_domains = getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage,
+        )
         self._prepare_templates()
-        for template, vm_name in zip(self.test_templates, vm_names):
+        for template, vm_name in zip(self.test_templates, self.vm_names):
             dsks = getObjDisks(
                 template, get_href=False, is_template=True)
 
@@ -411,7 +501,7 @@ class TestCase166090(BaseTestCase):
         - create a vm from template and run the vm
         - move vm to target domain
         """
-        live_migrate_vm(vm_names[0], LIVE_MIGRATION_TIMEOUT)
+        live_migrate_vm(self.vm_names[0], LIVE_MIGRATION_TIMEOUT)
         wait_for_jobs()
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
@@ -421,7 +511,7 @@ class TestCase166090(BaseTestCase):
         - create vm from template and run the vm
         - move the vm to second domain
         """
-        live_migrate_vm(vm_names[1], LIVE_MIGRATION_TIMEOUT)
+        live_migrate_vm(self.vm_names[1], LIVE_MIGRATION_TIMEOUT)
         wait_for_jobs()
 
     def tearDown(self):
@@ -434,11 +524,12 @@ class TestCase166090(BaseTestCase):
                     "Cannot remove or stop vm %s" % vm)
 
         for template in self.test_templates:
-            if not templates.removeTemplate(True, template):
+            if not removeTemplate(True, template):
                 raise exceptions.TemplateException(
                     "Failed to remove template %s" % template)
 
 
+@attr(tier=1)
 class TestCase166137(BaseTestCase):
     """
     snapshots and move vm
@@ -449,23 +540,26 @@ class TestCase166137(BaseTestCase):
     snapshot_desc = 'snap1'
 
     def _prepare_snapshots(self, vm_name):
-            """
-            Creates one snapshot on the vm vm_name
-            """
-            stop_vms_safely([vm_name])
-            logger.info("Add snapshot to vm %s", vm_name)
-            if not addSnapshot(True, vm_name, self.snapshot_desc):
-                raise exceptions.VMException(
-                    "Add snapshot to vm %s failed" % vm_name)
-            wait_for_vm_snapshots(vm_name, ENUMS['snapshot_state_ok'])
-            start_vms([vm_name], 1,  wait_for_ip=False)
-            waitForVMState(vm_name)
+        """
+        Creates one snapshot on the input vm
+        """
+        wait_for_jobs()
+        logger.info("Add snapshot to vm %s", vm_name)
+        if not addSnapshot(True, vm_name, self.snapshot_desc):
+            raise exceptions.VMException(
+                "Add snapshot to vm %s failed" % vm_name)
+        wait_for_vm_snapshots(
+            vm_name, config.SNAPSHOT_OK,
+        )
+        start_vms([vm_name], 1,  wait_for_ip=False)
+        waitForVMState(vm_name)
 
     def setUp(self):
         """
         Creates snapshot
         """
-        self._prepare_snapshots(config.VM_NAME)
+        super(TestCase166137, self).setUp()
+        self._prepare_snapshots(self.vm_name)
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_snapshot(self):
@@ -475,22 +569,10 @@ class TestCase166137(BaseTestCase):
         - run the vm
         - migrate the vm to second domain
         """
-        live_migrate_vm(config.VM_NAME)
-        wait_for_jobs()
-
-    def tearDown(self):
-        """
-        Removed created snapshots
-        """
-        stop_vms_safely([config.VM_NAME])
-        logger.info("Deleting snapshot %s", self.snapshot_desc)
-        if not removeSnapshot(True, config.VM_NAME, self.snapshot_desc):
-            raise exceptions.VMException("Cannot delete snapshot %s "
-                                         "of vm %s" %
-                                         (self.snapshot_desc, config.VM_NAME))
-        remove_all_vm_lsm_snapshots(config.VM_NAME)
+        live_migrate_vm(self.vm_name)
 
 
+@attr(tier=1)
 class TestCase166166(BaseTestCase):
     """
     live migration with shared disk
@@ -500,6 +582,7 @@ class TestCase166166(BaseTestCase):
     tcms_test_case = '166166'
     test_vm_name = 'test_vm_%s' % tcms_test_case
     permutation = {}
+    disk_name = "disk_%s" % tcms_test_case
 
     def _prepare_shared_disk_environment(self):
             """
@@ -510,23 +593,31 @@ class TestCase166166(BaseTestCase):
                          cluster=config.CLUSTER_NAME):
                 raise exceptions.VMException("Failed to create vm %s"
                                              % self.test_vm_name)
-            self.permutation['alias'] = 'disk_for_test'
-            self.permutation['interface'] = config.VIRTIO
-            self.permutation['format'] = config.RAW_DISK
-            self.permutation['sparse'] = False
-            logger.info('Adding new disk')
-            helpers.add_new_disk(sd_name=config.SD_NAME_0,
-                                 permutation=self.permutation, shared=True)
-            helpers.prepare_disks_for_vm(self.test_vm_name,
-                                         helpers.DISKS_NAMES)
-            helpers.prepare_disks_for_vm(config.VM_NAME,
-                                         helpers.DISKS_NAMES)
+            disk_args = {
+                'alias': self.disk_name,
+                'provisioned_size': config.DISK_SIZE,
+                'interface': config.VIRTIO,
+                'format': config.RAW_DISK,
+                'sparse': False,
+                'active': True,
+                'storagedomain': self.storage_domains[0],
+                'shareable': True
+            }
+            logger.info("Adding new disk %s" % self.disk_name)
+            addDisk(True, **disk_args)
+            wait_for_disks_status(self.disk_name)
+            storage_helpers.prepare_disks_for_vm(
+                self.test_vm_name, [self.disk_name],
+            )
+            storage_helpers.prepare_disks_for_vm(
+                self.vm_name, [self.disk_name],
+            )
 
     def setUp(self):
         """
         Prepare environment with shared disk
         """
-        helpers.DISKS_NAMES = []
+        super(TestCase166166, self).setUp()
         self._prepare_shared_disk_environment()
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
@@ -535,67 +626,53 @@ class TestCase166166(BaseTestCase):
         create and run several vm's with the same shared disk
         - try to move one of the vm's images
         """
-        target_sd = get_other_storage_domain(helpers.DISKS_NAMES[0],
-                                             config.VM_NAME)
-        live_migrate_vm_disk(config.VM_NAME, helpers.DISKS_NAMES[0], target_sd)
+        target_sd = get_other_storage_domain(
+            self.disk_name, self.vm_name, self.storage,
+        )
+        live_migrate_vm_disk(self.vm_name, self.disk_name, target_sd)
         wait_for_jobs()
 
     def tearDown(self):
         """
         Removed created snapshots
         """
-        stop_vms_safely([config.VM_NAME, self.test_vm_name])
-        waitForVmsStates(True, [config.VM_NAME, self.test_vm_name],
-                         config.VM_DOWN)
-        if not removeDisk(True, config.VM_NAME, helpers.DISKS_NAMES[0]):
-            raise exceptions.DiskException("Cannot remove disk %s "
-                                           "of vm %s"
-                                           % (helpers.DISKS_NAMES[0],
-                                              config.VM_NAME))
+        stop_vms_safely([self.vm_name, self.test_vm_name])
+        waitForVmsStates(
+            True, [self.vm_name, self.test_vm_name], config.VM_DOWN,
+        )
+        if checkDiskExists(True, self.disk_name):
+            if not removeDisk(True, self.vm_name, self.disk_name):
+                logger.error(
+                    "Cannot remove disk %s from vm %s", self.disk_name,
+                    self.vm_name,
+                )
         if not removeVm(True, self.test_vm_name):
-            raise exceptions.VMException("Cannot remove vm %s"
-                                         % config.VM_NAME)
-        remove_all_vm_lsm_snapshots(config.VM_NAME)
+            logger.error("Cannot remove vm %s", self.vm_name)
+        super(TestCase166166, self).tearDown()
 
 
+@attr(tier=1)
 class TestCase166168(BaseTestCase):
     """
     suspended vm
     https://tcms.engineering.redhat.com/case/166168
-
-    __test__ = False: https://projects.engineering.redhat.com/browse/RHEVM-1595
     """
-    __test__ = False
+    __test__ = True
     tcms_test_case = '166168'
 
     def setUp(self):
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
-
-    def _ensure_vm_state_up(self):
-        """
-        Prepare vm state for test
-        """
-        state = get_vm_state(config.VM_NAME)
-        if state == config.VM_DOWN:
-            assert startVm(True, config.VM_NAME)
-        elif state == config.VM_SAVING:
-            waitForVMState(config.VM_NAME, config.VM_SUSPENDED)
-            startVm(True, config.VM_NAME)
-        elif state == config.VM_SUSPENDED:
-            startVm(True, config.VM_NAME)
-
-        waitForVMState(config.VM_NAME)
-        wait_for_jobs()
+        super(TestCase166168, self).setUp()
+        startVm(True, self.vm_name, config.VM_UP)
 
     def _suspended_vm_and_wait_for_state(self, state):
         """
         Suspending vm and perform LSM after vm is in desired state
         """
-        assert suspendVm(True, config.VM_NAME, wait=False)
-        assert waitForVMState(config.VM_NAME, state)
-        live_migrate_vm(config.VM_NAME, LIVE_MIGRATION_TIMEOUT,
-                        ensure_on=False)
+        assert suspendVm(True, self.vm_name, wait=False)
+        assert waitForVMState(self.vm_name, state)
+        live_migrate_vm(
+            self.vm_name, LIVE_MIGRATION_TIMEOUT, ensure_on=False,
+        )
         wait_for_jobs()
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
@@ -607,13 +684,9 @@ class TestCase166168(BaseTestCase):
             - try to move vm's images while vm is in saving state
         * We should not be able to migrate images
         """
-        # self._ensure_vm_state_up()
         self.assertRaises(exceptions.DiskException,
                           self._suspended_vm_and_wait_for_state,
                           config.VM_SAVING)
-        waitForVMState(config.VM_NAME, config.VM_SUSPENDED)
-        startVm(True, config.VM_NAME)
-        wait_for_jobs()
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_lsm_while_suspended_state(self):
@@ -624,20 +697,19 @@ class TestCase166168(BaseTestCase):
             - try to migrate the vm's images once the vm is suspended
         * We should not be able to migrate images
         """
-        # self._ensure_vm_state_up()
         self.assertRaises(exceptions.DiskException,
                           self._suspended_vm_and_wait_for_state,
                           config.VM_SUSPENDED)
-        waitForVMState(config.VM_NAME, config.VM_SUSPENDED)
-        startVm(True, config.VM_NAME)
-        wait_for_jobs()
 
     def tearDown(self):
-        stopVm(True, config.VM_NAME)
-        waitForVMState(config.VM_NAME, config.VM_DOWN)
-        remove_all_vm_lsm_snapshots(config.VM_NAME)
+        """Stop the vm in suspend state"""
+        # Make sure the vm is in suspended state before stopping it
+        waitForVMState(self.vm_name, config.VM_SUSPENDED)
+        stopVm(True, self.vm_name)
+        super(TestCase166168, self).tearDown()
 
 
+@attr(tier=1)
 class TestCase166170(AllPermutationsDisks):
     """
     Create live snapshot during live storage migration
@@ -648,17 +720,23 @@ class TestCase166170(AllPermutationsDisks):
     snapshot_desc = 'snap_%s' % tcms_test_case
     snap_created = None
 
+    def setUp(self):
+        """Start the vm"""
+        super(TestCase166170, self).setUp()
+        startVm(True, self.vm_name, config.VM_UP)
+
     def _prepare_snapshots(self, vm_name):
         """
         Creates one snapshot on the vm vm_name
         """
-        start_vms([vm_name], 1, wait_for_ip=False)
-        waitForVMState(vm_name)
         logger.info("Creating new snapshot for vm %s", vm_name)
         if not addSnapshot(True, vm_name, self.snapshot_desc):
             raise exceptions.VMException(
-                "Add snapshot to vm %s failed" % vm_name)
-        wait_for_vm_snapshots(vm_name, ENUMS['snapshot_state_ok'])
+                "Add snapshot to vm %s failed" % vm_name,
+            )
+        wait_for_vm_snapshots(
+            vm_name, config.SNAPSHOT_OK, self.snapshot_desc,
+        )
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_lsm_before_snapshot(self):
@@ -669,11 +747,9 @@ class TestCase166170(AllPermutationsDisks):
             - try to create a live snapshot
         * we should succeed to create a live snapshot
         """
-        self.snap_created = False
-        live_migrate_vm(config.VM_NAME, LIVE_MIGRATION_TIMEOUT)
-        wait_for_jobs()
-        self._prepare_snapshots(config.VM_NAME)
-        self.snap_created = True
+        live_migrate_vm(self.vm_name, LIVE_MIGRATION_TIMEOUT)
+        self.verify_lsm()
+        self._prepare_snapshots(self.vm_name)
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_lsm_after_snapshot(self):
@@ -684,11 +760,9 @@ class TestCase166170(AllPermutationsDisks):
             - move the vm's images
         * we should succeed to move the vm
         """
-        self.snap_created = False
-        self._prepare_snapshots(config.VM_NAME)
-        live_migrate_vm(config.VM_NAME, LIVE_MIGRATION_TIMEOUT)
-        wait_for_jobs()
-        self.snap_created = True
+        self._prepare_snapshots(self.vm_name)
+        live_migrate_vm(self.vm_name, LIVE_MIGRATION_TIMEOUT)
+        self.verify_lsm()
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_lsm_while_snapshot(self):
@@ -698,35 +772,26 @@ class TestCase166170(AllPermutationsDisks):
             - try to create a live snapshot + move
         * we should block move+create live snapshot in backend.
         """
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
-
-        for disk in helpers.DISKS_NAMES:
-            self.snap_created = True
-            target_sd = get_other_storage_domain(disk, config.VM_NAME)
-            live_migrate_vm_disk(config.VM_NAME, disk, target_sd,
-                                 timeout=LIVE_MIGRATION_TIMEOUT, wait=False)
-            self.assertRaises(exceptions.VMException, self._prepare_snapshots,
-                              config.VM_NAME)
-            self.snap_created = False
-            wait_for_jobs()
-
-    def tearDown(self):
-        stop_vms_safely([config.VM_NAME])
-        wait_for_jobs()
-        super(TestCase166170, self).tearDown()
-        remove_all_vm_lsm_snapshots(config.VM_NAME)
-        if self.snap_created:
-            assert removeSnapshot(True, config.VM_NAME, self.snapshot_desc)
-        wait_for_jobs()
+        for disk in helpers.DISK_NAMES[self.storage]:
+            target_sd = get_other_storage_domain(
+                disk, self.vm_name, self.storage,
+            )
+            live_migrate_vm_disk(
+                self.vm_name, disk, target_sd,
+                timeout=LIVE_MIGRATION_TIMEOUT, wait=False,
+            )
+            self.assertRaises(
+                exceptions.VMException, self._prepare_snapshots, self.vm_name,
+            )
 
 
+@attr(tier=1)
 class TestCase166173(CommonUsage):
     """
     Time out
     https://tcms.engineering.redhat.com/case/166173/?from_plan=6128
     """
-    # TODO: Check results
+    # TODO: Fix this case
     __test__ = False
     tcms_test_case = '166173'
     disk_name = "disk_%s" % tcms_test_case
@@ -735,11 +800,13 @@ class TestCase166173(CommonUsage):
         """
         Prepares a floating disk
         """
-        helpers.add_new_disk_for_test(config.VM_NAME, self.disk_name,
+        super(TestCase166173, self).setUp()
+        helpers.add_new_disk_for_test(self.vm_name, self.disk_name,
                                       provisioned_size=(60 * config.GB),
-                                      wipe_after_delete=True, attach=True)
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
+                                      wipe_after_delete=True, attach=True,
+                                      sd_name=self.storage_domains[0])
+        wait_for_disks_status(self.disk_name)
+        startVm(True, self.vm_name, config.VM_UP)
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_vms_live_migration(self):
@@ -752,7 +819,10 @@ class TestCase166173(CommonUsage):
         Expected Results:
             - move should succeed
         """
-        live_migrate_vm_disk(config.VM_NAME, self.disk_name, SD_NAME_1,
+        target_sd = get_other_storage_domain(
+            self.disk_name, self.vm_name, self.storage,
+        )
+        live_migrate_vm_disk(self.vm_name, self.disk_name, target_sd,
                              timeout=LIVE_MIGRATE_LARGE_SIZE, wait=True)
         wait_for_jobs(timeout=LIVE_MIGRATE_LARGE_SIZE)
 
@@ -760,10 +830,11 @@ class TestCase166173(CommonUsage):
         """
         Restore environment
         """
+        super(TestCase166173, self).tearDown()
         self._remove_disks([self.disk_name])
-        remove_all_vm_lsm_snapshots(config.VM_NAME)
 
 
+@attr(tier=1)
 class TestCase166177(AllPermutationsDisks):
     """
     Images located on different domain
@@ -778,16 +849,21 @@ class TestCase166177(AllPermutationsDisks):
         """
         Move one disk to second storage domain
         """
-        stop_vms_safely([vm_name])
         self.disk_to_move = disk_name
-        target_sd = get_other_storage_domain(self.disk_to_move, vm_name)
+        target_sd = get_other_storage_domain(
+            self.disk_to_move, vm_name, self.storage,
+        )
         move_vm_disk(vm_name, self.disk_to_move, target_sd)
         wait_for_jobs()
         start_vms([vm_name], 1, wait_for_ip=False)
         waitForVMState(vm_name)
-        target_sd = get_other_storage_domain(self.disk_to_move, vm_name)
-        live_migrate_vm_disk(config.VM_NAME, self.disk_to_move, target_sd,
-                             LIVE_MIGRATION_TIMEOUT)
+        target_sd = get_other_storage_domain(
+            self.disk_to_move, vm_name, self.storage,
+        )
+        live_migrate_vm_disk(
+            self.vm_name, self.disk_to_move, target_sd,
+            LIVE_MIGRATION_TIMEOUT,
+        )
         wait_for_jobs()
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
@@ -795,14 +871,11 @@ class TestCase166177(AllPermutationsDisks):
         """
         move disk images to a domain that already has one of the images on it
         """
-        for disk in helpers.DISKS_NAMES:
-            self._perform_action(config.VM_NAME, disk)
-
-    def tearDown(self):
-        super(TestCase166177, self).tearDown()
-        remove_all_vm_lsm_snapshots(config.VM_NAME)
+        for disk in helpers.DISK_NAMES[self.storage]:
+            self._perform_action(self.vm_name, disk)
 
 
+@attr(tier=1)
 class TestCase166180(CommonUsage):
     """
     hot plug disk
@@ -825,13 +898,15 @@ class TestCase166180(CommonUsage):
         """
         Prepares a floating disk
         """
+        super(TestCase166180, self).setUp()
         self.disk_name_pattern = self.disk_name_pattern \
             % (self.tcms_test_case, self.__class__.__name__)
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
+        startVm(True, self.vm_name, config.VM_UP)
         helpers.add_new_disk_for_test(
-            config.VM_NAME, self.disk_name_pattern, sparse=True,
-            disk_format=config.COW_DISK)
+            self.vm_name, self.disk_name_pattern, sparse=True,
+            disk_format=config.COW_DISK,
+            sd_name=self.storage_domains[0],
+        )
 
     def _test_plugged_disk(self, vm_name, activate=True):
         """
@@ -873,22 +948,23 @@ class TestCase166180(CommonUsage):
         """
         Tests storage live migration with one disk in inactive status
         """
-        self._test_plugged_disk(config.VM_NAME, False)
+        self._test_plugged_disk(self.vm_name, False)
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_active_disk(self):
         """
         Tests storage live migration with floating disk in active status
         """
-        self._test_plugged_disk(config.VM_NAME)
+        self._test_plugged_disk(self.vm_name)
 
     def tearDown(self):
-        """
-        Restore environment
-        """
-        self._remove_disks([self.disk_name_pattern])
+        """Remove floating disk"""
+        if not deleteDisk(True, self.disk_name_pattern):
+            logger.error("Failure to remove disk %s", self.disk_name_pattern)
+        super(TestCase166180, self).tearDown()
 
 
+@attr(tier=1)
 class TestCase168768(BaseTestCase):
     """
     Attach disk during migration
@@ -902,11 +978,12 @@ class TestCase168768(BaseTestCase):
         """
         Prepares a floating disk
         """
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
+        super(TestCase168768, self).setUp()
+        startVm(True, self.vm_name, config.VM_UP)
         helpers.add_new_disk_for_test(
-            config.VM_NAME, self.disk_alias, sparse=True,
-            disk_format=config.COW_DISK)
+            self.vm_name, self.disk_alias, sparse=True,
+            disk_format=config.COW_DISK,
+            sd_name=self.storage_domains[0])
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_attach_disk_during_lsm(self):
@@ -914,19 +991,19 @@ class TestCase168768(BaseTestCase):
         migrate vm's images -> try to attach a disk during migration
         * we should fail to attach disk
         """
-        live_migrate_vm(config.VM_NAME, timeout=LIVE_MIGRATION_TIMEOUT,
+        live_migrate_vm(self.vm_name, timeout=LIVE_MIGRATION_TIMEOUT,
                         wait=False)
-
-        status = attachDisk(True, self.disk_alias, config.VM_NAME)
+        status = attachDisk(True, self.disk_alias, self.vm_name)
         self.assertFalse(status, "Succeeded to attach disk during LSM")
-        wait_for_jobs()
 
     def tearDown(self):
-        remove_all_vm_lsm_snapshots(config.VM_NAME)
-        assert deleteDisk(True, self.disk_alias)
-        wait_for_jobs()
+        """Remove floating disk"""
+        if not deleteDisk(True, self.disk_alias):
+            logger.error("Failure to remove disk %s", self.disk_alias)
+        super(TestCase168768, self).tearDown()
 
 
+@attr(tier=1)
 class TestCase168839(BaseTestCase):
     """
     LSM to domain in maintenance
@@ -941,11 +1018,12 @@ class TestCase168839(BaseTestCase):
         """
         Prepares one domain in maintenance
         """
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
-        self.vm_disk = getVmDisks(config.VM_NAME)[0]
-        self.target_sd = get_other_storage_domain(self.vm_disk.get_alias(),
-                                                  config.VM_NAME)
+        super(TestCase168839, self).setUp()
+        startVm(True, self.vm_name, config.VM_UP)
+        self.vm_disk = getVmDisks(self.vm_name)[0]
+        self.target_sd = get_other_storage_domain(
+            self.vm_disk.get_alias(), self.vm_name, self.storage,
+        )
 
         logger.info("Waiting for tasks before deactivating the storage domain")
         wait_for_tasks(config.VDC, config.VDC_PASSWORD,
@@ -962,7 +1040,7 @@ class TestCase168839(BaseTestCase):
         * we should fail to attach disk
         """
         self.assertRaises(exceptions.DiskException, live_migrate_vm_disk,
-                          config.VM_NAME, self.vm_disk.get_alias(),
+                          self.vm_name, self.vm_disk.get_alias(),
                           self.target_sd, LIVE_MIGRATION_TIMEOUT, True)
         self.succeeded = True
 
@@ -970,10 +1048,10 @@ class TestCase168839(BaseTestCase):
         wait_for_jobs()
         assert activateStorageDomain(
             True, config.DATA_CENTER_NAME, self.target_sd)
-        if self.succeeded:
-            remove_all_vm_lsm_snapshots(config.VM_NAME)
+        super(TestCase168839, self).tearDown()
 
 
+@attr(tier=1)
 class TestCase174424(CommonUsage):
     """
     live migrate vm with multiple disks on multiple domains
@@ -983,17 +1061,16 @@ class TestCase174424(CommonUsage):
     tcms_test_case = '174424'
     disk_name = "disk_%s_%s"
     disk_count = 3
-    sd_list = [SD_NAME_0, SD_NAME_1, SD_NAME_2]
 
     def setUp(self):
         """
         Prepares disks on different domains
         """
+        super(TestCase174424, self).setUp()
         self.disks_names = []
-        stop_vms_safely([config.VM_NAME])
-        self._prepare_disks_for_vm(config.VM_NAME)
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
+        stop_vms_safely([self.vm_name])
+        self._prepare_disks_for_vm(self.vm_name)
+        startVm(True, self.vm_name, config.VM_UP)
 
     def _prepare_disks_for_vm(self, vm_name):
             """
@@ -1012,7 +1089,7 @@ class TestCase174424(CommonUsage):
             for index in range(self.disk_count):
                 disk_params['alias'] = self.disk_name % (index,
                                                          self.tcms_test_case)
-                disk_params['storagedomain'] = self.sd_list[index]
+                disk_params['storagedomain'] = self.storage_domains[index]
                 if not addDisk(True, **disk_params):
                     raise exceptions.DiskException(
                         "Can't create disk with params: %s" % disk_params)
@@ -1032,24 +1109,16 @@ class TestCase174424(CommonUsage):
             - move should succeed
         """
         for disk in self.disks_names[:-1]:
-            live_migrate_vm_disk(config.VM_NAME, disk, SD_NAME_2)
-
-            wait_for_jobs()
-
-    def tearDown(self):
-        """
-        Removes disks and snapshots
-        """
-        self._remove_disks(self.disks_names)
-        remove_all_vm_lsm_snapshots(config.VM_NAME)
+            live_migrate_vm_disk(self.vm_name, disk, self.storage_domains[2])
 
 
+@attr(tier=1)
 class TestCase231544(CommonUsage):
     """
     Wipe after delete
     https://tcms.engineering.redhat.com/case/231544/?from_plan=6128
     """
-    __test__ = True
+    __test__ = CommonUsage.storage in config.BLOCK_TYPES
     tcms_test_case = '231544'
     disk_name = "disk_%s" % tcms_test_case
     regex = 'dd oflag=direct if=/dev/zero of=.*/%s'
@@ -1058,10 +1127,11 @@ class TestCase231544(CommonUsage):
         """
         Prepares disk with wipe_after_delete=True for VM
         """
-        helpers.add_new_disk_for_test(config.VM_NAME, self.disk_name,
-                                      wipe_after_delete=True, attach=True)
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
+        super(TestCase231544, self).setUp()
+        helpers.add_new_disk_for_test(self.vm_name, self.disk_name,
+                                      wipe_after_delete=True, attach=True,
+                                      sd_name=self.storage_domains[0])
+        startVm(True, self.vm_name, config.VM_UP)
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_live_migration_wipe_after_delete(self):
@@ -1076,47 +1146,85 @@ class TestCase231544(CommonUsage):
               disk and snapshot
         """
         host = getSPMHost(config.HOSTS)
-        self.host_ip = getIpAddressByHostName(host)
-        live_migrate_vm_disk(config.VM_NAME, self.disk_name, SD_NAME_1,
-                             wait=False)
-        disk_obj = getVmDisk(config.VM_NAME, self.disk_name)
+        self.host_ip = getHostIP(host)
+        target_sd = get_other_storage_domain(
+            self.disk_name, self.vm_name, self.storage)
+        disk_obj = getVmDisk(self.vm_name, self.disk_name)
         self.regex = self.regex % disk_obj.get_image_id()
-        watch_logs(FILE_TO_WATCH, self.regex, '', LIVE_MIGRATION_TIMEOUT,
-                   self.host_ip, config.HOSTS_USER, config.HOSTS_PW)
+
+        def f(q):
+            q.put(
+                watch_logs(
+                    FILE_TO_WATCH, self.regex, '', LIVE_MIGRATION_TIMEOUT,
+                    self.host_ip, config.HOSTS_USER, config.HOSTS_PW
+                )
+            )
+
+        q = Queue()
+        p = Process(target=f, args=(q,))
+        p.start()
+        sleep(5)
+        live_migrate_vm_disk(self.vm_name, self.disk_name, target_sd,
+                             wait=False)
+        p.join()
         wait_for_jobs()
-
-    def tearDown(self):
-        """
-        Restore environment
-        """
-        self._remove_disks([self.disk_name])
-        remove_all_vm_lsm_snapshots(config.VM_NAME)
+        exception_code, output = q.get()
+        self.assertTrue(
+            exception_code,
+            "Couldn't find regex %s, output: %s" % (self.regex, output),
+        )
 
 
+@attr(tier=1)
 class TestCase232947(AllPermutationsDisks):
     """
-    Power off of vm during LSM
+    Power off/Shutdown of vm during LSM
     https://tcms.engineering.redhat.com/case/232947/?from_plan=6128
-
-    __test__ = False due to:
-    - https://bugzilla.redhat.com/show_bug.cgi?id=1107758
     """
+    # TODO: Fix this case
     __test__ = False
     tcms_test_case = '232947'
 
+    def setUp(self):
+        """Start the vm"""
+        super(TestCase232947, self).setUp()
+        startVm(True, self.vm_name, config.VM_UP)
+
+    def turn_off_method(self):
+        raise NotImplemented("This should not be executed")
+
     def _perform_action_on_disk_and_wait_for_regex(self, disk_name, regex):
         host = getSPMHost(config.HOSTS)
-        self.host_ip = getIpAddressByHostName(host)
-        target_sd = get_other_storage_domain(disk_name, config.VM_NAME)
-        live_migrate_vm_disk(config.VM_NAME, disk_name, target_sd,
+        self.host_ip = getHostIP(host)
+        target_sd = get_other_storage_domain(
+            disk_name, self.vm_name, self.storage)
+
+        def f(q):
+            q.put(
+                watch_logs(
+                    FILE_TO_WATCH, regex, '', MIGRATION_TIMEOUT,
+                    self.host_ip, config.HOSTS_USER, config.HOSTS_PW
+                )
+            )
+        q = Queue()
+        p = Process(target=f, args=(q,))
+        p.start()
+        sleep(5)
+        live_migrate_vm_disk(self.vm_name, disk_name, target_sd,
                              wait=False)
-        watch_logs(FILE_TO_WATCH, regex, '', MIGRATION_TIMEOUT,
-                   self.host_ip, config.HOSTS_USER, config.HOSTS_PW)
-        assert stopVm(True, config.VM_NAME)
-        wait_for_disks_status(disk_name, timeout=LIVE_MIGRATION_TIMEOUT)
+        p.join()
+        ex_code, output = q.get()
+        self.assertTrue(
+            ex_code,
+            "Couldn't find regex %s, output: %s" % (regex, output)
+        )
+        self.turn_off_method()
+        # Is need to wait for the rollback after the LSM fails
         wait_for_jobs()
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
+        self.assertFalse(
+            verify_vm_disk_moved(self.vm_name, disk_name, self.disk_sd),
+            "Succeeded to live migrate vm disk %s" % disk_name,
+        )
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_power_off_createVolume(self):
@@ -1127,9 +1235,10 @@ class TestCase232947(AllPermutationsDisks):
         Expected Results:
             - we should fail the LSM nicely
         """
-        for disk_name in helpers.DISKS_NAMES:
-            self._perform_action_on_disk_and_wait_for_regex(disk_name,
-                                                            'createVolume')
+        for disk_name in helpers.DISK_NAMES[self.storage]:
+            self._perform_action_on_disk_and_wait_for_regex(
+                disk_name, 'createVolume',
+            )
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_power_off_cloneImageStructure(self):
@@ -1140,22 +1249,24 @@ class TestCase232947(AllPermutationsDisks):
         Expected Results:
             - we should fail the LSM nicely
         """
-        for disk_name in helpers.DISKS_NAMES:
+        for disk_name in helpers.DISK_NAMES[self.storage]:
             self._perform_action_on_disk_and_wait_for_regex(
-                disk_name, 'cloneImageStructure')
+                disk_name, 'cloneImageStructure',
+            )
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
-    def test_power_off_syncdData(self):
+    def test_power_off_syncImageData(self):
         """
         Actions:
-            - Live migrate vm disks and wait for 'syncdData' command
+            - Live migrate vm disks and wait for 'syncImageData' command
             - power off vm
         Expected Results:
             - we should fail the LSM nicely
         """
-        for disk_name in helpers.DISKS_NAMES:
-            self._perform_action_on_disk_and_wait_for_regex(disk_name,
-                                                            'syncdData')
+        for disk_name in helpers.DISK_NAMES[self.storage]:
+            self._perform_action_on_disk_and_wait_for_regex(
+                disk_name, 'syncImageData',
+            )
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_power_off_deleteImage(self):
@@ -1166,18 +1277,29 @@ class TestCase232947(AllPermutationsDisks):
         Expected Results:
             - we should fail the LSM nicely
         """
-        for disk_name in helpers.DISKS_NAMES:
-            self._perform_action_on_disk_and_wait_for_regex(disk_name,
-                                                            'deleteImage')
-
-    def tearDown(self):
-        """
-        Restore environment
-        """
-        remove_all_vm_lsm_snapshots(config.VM_NAME)
-        super(TestCase232947, self).tearDown()
+        for disk_name in helpers.DISK_NAMES[self.storage]:
+            self._perform_action_on_disk_and_wait_for_regex(
+                disk_name, 'deleteImage'
+            )
 
 
+class TestCase232947PowerOff(TestCase232947):
+    # TODO: Fix this case
+    __test__ = False
+
+    def turn_off_method(self):
+        stopVm(True, self.vm_name, 'false')
+
+
+class TestCase232947Shutdown(TestCase232947):
+    # TODO: Fix this case
+    __test__ = False
+
+    def turn_off_method(self):
+        shutdownVm(True, self.vm_name, 'false')
+
+
+@attr(tier=1)
 class TestCase233434(AllPermutationsDisks):
     """
     Auto-Shrink - Live Migration
@@ -1199,27 +1321,31 @@ class TestCase233434(AllPermutationsDisks):
             - the image actual size should not exceed the disks
               virtual size once we delete the snapshot
         """
-        status = False
-        for disk in helpers.DISKS_NAMES:
-            target_sd = get_other_storage_domain(disk, config.VM_NAME)
-            live_migrate_vm_disk(config.VM_NAME, disk, target_sd)
+        for disk in helpers.DISK_NAMES[self.storage]:
+            target_sd = get_other_storage_domain(
+                disk, self.vm_name, self.storage,
+            )
+            startVm(True, self.vm_name, config.VM_UP)
+            live_migrate_vm_disk(self.vm_name, disk, target_sd)
+            assert stopVm(True, self.vm_name)
+            remove_all_vm_lsm_snapshots(self.vm_name)
             wait_for_jobs()
-            remove_all_vm_lsm_snapshots(config.VM_NAME)
-            wait_for_jobs()
-            disk_obj = getVmDisk(config.VM_NAME, disk)
+            disk_obj = getVmDisk(self.vm_name, disk)
             actual_size = disk_obj.get_actual_size()
             virtual_size = disk_obj.get_provisioned_size()
             logger.info("Actual size after live migrate disk %s is: %s",
                         disk, actual_size)
             logger.info("Virtual size after live migrate disk %s is: %s",
                         disk, virtual_size)
-            if disk_obj.get_sparse() is False:
-                status = actual_size == virtual_size
-            elif disk_obj.get_sparse() is True:
-                status = actual_size < virtual_size
-            self.assertTrue(status, "Actual size exceeded to virtual size")
+            if self.storage in config.BLOCK_TYPES:
+                actual_size -= EXTENT_METADATA_SIZE
+            self.assertTrue(
+                actual_size <= virtual_size,
+                "Actual size exceeded to virtual size",
+            )
 
 
+@attr(tier=1)
 class TestCase233436(AllPermutationsDisks):
     """
     Auto-Shrink - Live Migration failure
@@ -1242,34 +1368,33 @@ class TestCase233436(AllPermutationsDisks):
               virtual size once we delete the snapshot
             - make sure that we can delete the snapshot and run the vm
         """
-        status = False
-        for disk in helpers.DISKS_NAMES:
-            target_sd = get_other_storage_domain(disk, config.VM_NAME)
-            host = getSPMHost(config.HOSTS)
-            self.host_ip = getIpAddressByHostName(host)
-            live_migrate_vm_disk(config.VM_NAME, disk, target_sd,
-                                 wait=True)
-            assert stopVm(True, config.VM_NAME)
+        for disk in helpers.DISK_NAMES[self.storage]:
+            target_sd = get_other_storage_domain(
+                disk, self.vm_name, self.storage,
+            )
+            startVm(True, self.vm_name, config.VM_UP)
+            live_migrate_vm_disk(
+                self.vm_name, disk, target_sd, wait=True,
+            )
+            assert stopVm(True, self.vm_name)
+            remove_all_vm_lsm_snapshots(self.vm_name)
             wait_for_jobs()
-
-            remove_all_vm_lsm_snapshots(config.VM_NAME)
-            wait_for_jobs()
-            start_vms([config.VM_NAME], 1, wait_for_ip=False)
-            waitForVMState(config.VM_NAME)
-            disk_obj = getVmDisk(config.VM_NAME, disk)
+            disk_obj = getVmDisk(self.vm_name, disk)
             actual_size = disk_obj.get_actual_size()
             virtual_size = disk_obj.get_provisioned_size()
             logger.info("Actual size after live migrate disk %s is: %s",
                         disk, actual_size)
             logger.info("Virtual size after live migrate disk %s is: %s",
                         disk, virtual_size)
-            if disk_obj.get_sparse() is False:
-                status = actual_size == virtual_size
-            elif disk_obj.get_sparse() is True:
-                status = actual_size < virtual_size
-            self.assertTrue(status, "Actual size exceeded to virtual size")
+            if self.storage in config.BLOCK_TYPES:
+                actual_size -= EXTENT_METADATA_SIZE
+            self.assertTrue(
+                actual_size <= virtual_size,
+                "Actual size exceeded virtual size"
+            )
 
 
+@attr(tier=1)
 class TestCase281156(AllPermutationsDisks):
     """
     merge snapshot
@@ -1290,14 +1415,16 @@ class TestCase281156(AllPermutationsDisks):
             - we should succeed to delete the snapshot
             - we should succeed to run the vm
         """
-        for disk in helpers.DISKS_NAMES:
-            target_sd = get_other_storage_domain(disk, config.VM_NAME)
-            start_vms([config.VM_NAME], 1, wait_for_ip=False)
-            waitForVMState(config.VM_NAME)
-            live_migrate_vm_disk(config.VM_NAME, disk, target_sd, wait=False)
+        for index, disk in enumerate(helpers.DISK_NAMES[self.storage]):
+            target_sd = get_other_storage_domain(
+                disk, self.vm_name, self.storage,
+            )
+            startVm(True, self.vm_name, config.VM_UP)
+            live_migrate_vm_disk(self.vm_name, disk, target_sd, wait=False)
 
             status, _ = storage_helpers.perform_dd_to_disk(
-                config.VM_NAME, disk
+                self.vm_name, disk, size=int(config.DISK_SIZE * 0.9),
+                write_to_file=True,
             )
             if not status:
                 raise exceptions.DiskException(
@@ -1305,16 +1432,12 @@ class TestCase281156(AllPermutationsDisks):
                 )
 
             wait_for_jobs()
-            stop_vms_safely([config.VM_NAME])
-            remove_all_vm_lsm_snapshots(config.VM_NAME)
+            stop_vms_safely([self.vm_name])
+            remove_all_vm_lsm_snapshots(self.vm_name)
             wait_for_jobs()
-            start_vms([config.VM_NAME], 1, wait_for_ip=False)
-
-    def tearDown(self):
-        super(TestCase281156, self).tearDown()
-        remove_all_vm_lsm_snapshots(config.VM_NAME)
 
 
+@attr(tier=1)
 class TestCase281168(BaseTestCase):
     """
     offline migration for disk attached to running vm
@@ -1333,13 +1456,14 @@ class TestCase281168(BaseTestCase):
         # the disk movement in this case is cold move and not live storage
         # migration
 
-        remove_all_vm_lsm_snapshots(config.VM_NAME)
+        super(TestCase281168, self).setUp()
+        remove_all_vm_lsm_snapshots(self.vm_name)
         wait_for_jobs()
-        helpers.add_new_disk_for_test(config.VM_NAME, self.disk_name,
-                                      attach=True)
-        assert deactivateVmDisk(True, config.VM_NAME, self.disk_name)
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
+        helpers.add_new_disk_for_test(self.vm_name, self.disk_name,
+                                      attach=True,
+                                      sd_name=self.storage_domains[0])
+        assert deactivateVmDisk(True, self.vm_name, self.disk_name)
+        startVm(True, self.vm_name, config.VM_UP)
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_offline_migration(self):
@@ -1353,29 +1477,28 @@ class TestCase281168(BaseTestCase):
             - we should succeed to migrate the disk offline
               (as in not with LSM command)
         """
-        target_sd = get_other_storage_domain(self.disk_name, config.VM_NAME)
-        live_migrate_vm_disk(config.VM_NAME, self.disk_name, target_sd)
+        target_sd = get_other_storage_domain(
+            self.disk_name, self.vm_name, self.storage,
+        )
+        live_migrate_vm_disk(self.vm_name, self.disk_name, target_sd)
         wait_for_jobs()
 
-        snapshots = get_vm_snapshots(config.VM_NAME)
+        snapshots = get_vm_snapshots(self.vm_name)
         LSM_snapshots = [s for s in snapshots if
                          (s.get_description() ==
                           config.LIVE_SNAPSHOT_DESCRIPTION)]
         logger.info("Verify that the migration was not live migration")
         self.assertEqual(len(LSM_snapshots), self.expected_lsm_snap_count)
 
-    def tearDown(self):
-        assert removeDisk(True, config.VM_NAME, self.disk_name)
-        wait_for_jobs()
-        remove_all_vm_lsm_snapshots(config.VM_NAME)
 
-
+@attr(tier=1)
 class TestCase281206(BaseTestCase):
     """
     Deactivate vm disk during live migrate
     https://tcms.engineering.redhat.com/case/281206/?from_plan=6128
     """
-    __test__ = True
+    # TODO: Fix this case
+    __test__ = False
     tcms_test_case = '281206'
     disk_name = "disk_%s" % tcms_test_case
 
@@ -1383,10 +1506,11 @@ class TestCase281206(BaseTestCase):
         """
         Prepares disk with wipe_after_delete=True for VM
         """
-        helpers.add_new_disk_for_test(config.VM_NAME, self.disk_name,
-                                      attach=True)
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
+        super(TestCase281206, self).setUp()
+        helpers.add_new_disk_for_test(self.vm_name, self.disk_name,
+                                      attach=True,
+                                      sd_name=self.storage_domains[0])
+        startVm(True, self.vm_name, config.VM_UP)
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_deactivate_disk_during_lsm(self):
@@ -1398,23 +1522,26 @@ class TestCase281206(BaseTestCase):
         Expected Results:
             - we should block with canDoAction
         """
-        target_sd = get_other_storage_domain(self.disk_name, config.VM_NAME)
-        live_migrate_vm_disk(config.VM_NAME, self.disk_name,
+        target_sd = get_other_storage_domain(
+            self.disk_name, self.vm_name, self.storage)
+        live_migrate_vm_disk(self.vm_name, self.disk_name,
                              target_sd=target_sd, wait=False)
         sleep(5)
-        status = deactivateVmDisk(False, config.VM_NAME, self.disk_name)
+        status = deactivateVmDisk(False, self.vm_name, self.disk_name)
         self.assertTrue(status, "Succeeded to deactivate vm disk %s during "
                                 "live storage migration" % self.disk_name)
-        wait_for_disks_status(self.disk_name)
-        wait_for_jobs()
 
     def tearDown(self):
-        stop_vms_safely([config.VM_NAME])
-        assert removeDisk(True, config.VM_NAME, self.disk_name)
-        remove_all_vm_lsm_snapshots(config.VM_NAME)
+        """Remove the extra disk"""
+        wait_for_jobs()
+        wait_for_disks_status([self.disk_name])
+        if not removeDisk(True, self.vm_name, self.disk_name):
+            logger.error("Unable to remove disk %s", self.disk_name)
+        super(TestCase281206, self).tearDown()
 
 
-class TestCase281203(SimpleCase):
+@attr(tier=1)
+class TestCase281203(BaseTestCase):
     """
     migrate a vm between hosts + LSM
     https://tcms.engineering.redhat.com/case/281203/?from_plan=6128
@@ -1423,13 +1550,10 @@ class TestCase281203(SimpleCase):
     tcms_test_case = '281203'
 
     def _migrate_vm_during_lsm_ops(self, wait):
-        spm_host = getSPMHost(config.HOSTS)
-        self.host_ip = getIpAddressByHostName(spm_host)
-        live_migrate_vm(config.VM_NAME, wait=wait)
-        status = migrateVm(True, config.VM_NAME, wait=False)
+        live_migrate_vm(self.vm_name, wait=wait)
+        status = migrateVm(True, self.vm_name, wait=False)
         wait_for_jobs()
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
+        startVm(True, self.vm_name, config.VM_UP)
         return status
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
@@ -1442,16 +1566,14 @@ class TestCase281203(SimpleCase):
         Expected Results:
             - we should be stopped by CanDoAction
         """
-        spm_host = getSPMHost(config.HOSTS)
-        self.host_ip = getIpAddressByHostName(spm_host)
-        disk_name = getVmDisks(config.VM_NAME)[0].get_alias()
-        target_sd = get_other_storage_domain(disk_name, config.VM_NAME)
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
-        migrateVm(True, config.VM_NAME, wait=False)
+        disk_name = getVmDisks(self.vm_name)[0].get_alias()
+        target_sd = get_other_storage_domain(
+            disk_name, self.vm_name, self.storage,
+        )
+        startVm(True, self.vm_name, config.VM_UP)
+        migrateVm(True, self.vm_name, wait=False)
         self.assertRaises(exceptions.DiskException, live_migrate_vm_disk,
-                          config.VM_NAME, disk_name, target_sd)
-        wait_for_jobs()
+                          self.vm_name, disk_name, target_sd)
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_migrate_vm_during_snap_creation_of_LSM(self):
@@ -1482,20 +1604,43 @@ class TestCase281203(SimpleCase):
         self.assertTrue(status, "Succeeded to migrate vm during LSM")
 
 
-class TestCase373597(SimpleCase):
+@attr(tier=1)
+class TestCase373597(BaseTestCase):
     """
     Extend storage domain while lsm
     https://tcms.engineering.redhat.com/case/373597/?from_plan=6128
     """
-    __test__ = config.STORAGE_TYPE in config.BLOCK_TYPES
+    __test__ = BaseTestCase.storage in config.BLOCK_TYPES
+    __test__ = False  # Needs 4 iscsi storage domains
     tcms_test_case = '373597'
 
-    sd_args = {'storage_type': config.STORAGE_TYPE,
-               'host': config.HOSTS[0],
-               'lun': config.LUNS[-1],
-               'lun_address': config.LUN_ADDRESS[-1],
-               'lun_target': config.LUN_TARGET[-1],
-               'lun_port': config.LUN_PORT}
+    def generate_sd_dict(self, index):
+        return {
+            'storage_type': BaseTestCase.storage,
+            'host': config.HOSTS[0],
+            'lun': LOCAL_LUN[index],
+            'lun_address': LOCAL_LUN_ADDRESS[index],
+            'lun_target': LOCAL_LUN_TARGET[index],
+            'lun_port': config.LUN_PORT
+        }
+
+    def setUp(self):
+        """Set the args with luns"""
+        self.sd_src = "src_domain_%s" % self.tcms_test_case
+        self.sd_target = "target_domain_%s" % self.tcms_test_case
+        for index, sd_name in [self.sd_src, self.sd_target]:
+            sd_name_dict = self.generate_sd_dict(index)
+            sd_name_dict.update(
+                {"storage": sd_name, "data_center": config.DATA_CENTER_NAME}
+            )
+            if not addISCSIDataDomain(**sd_name_dict):
+                logger.error("Error adding storage %s", sd_name_dict)
+
+            wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                           config.DATA_CENTER_NAME)
+
+        self.vm_sd = self.sd_src
+        super(TestCase373597, self).setUp()
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_extend_domains_during_LSM(self):
@@ -1510,42 +1655,40 @@ class TestCase373597(SimpleCase):
             - LSM should succeed
             - Extend storage domain to both domains should succeed
         """
-        disk_name = getVmDisks(config.VM_NAME)[0].get_alias()
-        target_sd = get_other_storage_domain(disk_name, config.VM_NAME)
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
-        src_sd = get_disk_storage_domain_name(disk_name, config.VM_NAME)
-        live_migrate_vm_disk(config.VM_NAME, disk_name, target_sd, wait=False)
-        extendStorageDomain(True, src_sd, **self.sd_args)
+        disk_name = getVmDisks(self.vm_name)[0].get_alias()
+        startVm(True, self.vm_name, config.VM_UP)
+        live_migrate_vm_disk(
+            self.vm_name, disk_name, self.sd_target, wait=False,
+        )
+        extendStorageDomain(True, self.sd_src, **self.generate_sd_dict(2))
+        extendStorageDomain(True, self.sd_target, **self.generate_sd_dict(3))
 
-        self.sd_args['lun'] = config.LUNS[-2]
-        self.sd_args['lun_address'] = config.LUN_ADDRESS[-2]
-        self.sd_args['lun_target'] = config.LUN_TARGET[-2]
+    def tearDown(self):
+        """Remove the added storage domains"""
+        super(TestCase373597, self).tearDown()
+        for sd_name in [self.sd_src, self.sd_target]:
+            remove_storage_domain(sd_name, config.HOSTS[0], True)
+            wait_for_tasks(config.VDC, config.VDC_PASSWORD,
+                           config.DATA_CENTER_NAME)
 
-        extendStorageDomain(True, target_sd, **self.sd_args)
-        wait_for_disks_status(disk_name)
-        wait_for_jobs()
 
-
+@attr(tier=3)
 class TestCase168840(BaseTestCase):
     """
     live migrate - storage connectivity issues
     https://tcms.engineering.redhat.com/case/168840/?from_plan=6128
-
-    __test__ = False due to:
-    - https://bugzilla.redhat.com/show_bug.cgi?id=1106593
-    - https://bugzilla.redhat.com/show_bug.cgi?id=1078095
     """
+    # TODO: tier3 jobs have not been verified
     __test__ = False
+    bz = {'1106593': {'engine': None, 'version': ["3.5"]}}
     tcms_test_case = '168840'
 
     def _migrate_vm_disk_and_block_connection(self, disk, source, username,
                                               password, target,
                                               target_ip):
 
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
-        live_migrate_vm_disk(config.VM_NAME, disk, target, wait=False)
+        startVm(True, self.vm_name, config.VM_UP)
+        live_migrate_vm_disk(self.vm_name, disk, target, wait=False)
         status = blockOutgoingConnection(source, username, password,
                                          target_ip)
         self.assertTrue(status, "Failed to block connection")
@@ -1561,10 +1704,11 @@ class TestCase168840(BaseTestCase):
             - we should fail migrate and roll back
         """
         spm_host = getSPMHost(config.HOSTS)
-        host_ip = getIpAddressByHostName(spm_host)
-        vm_disk = getVmDisks(config.VM_NAME)[0].get_alias()
-        source_sd = get_disk_storage_domain_name(vm_disk, config.VM_NAME)
-        target_sd = get_other_storage_domain(vm_disk, config.VM_NAME)
+        host_ip = getHostIP(spm_host)
+        vm_disk = getVmDisks(self.vm_name)[0].get_alias()
+        source_sd = get_disk_storage_domain_name(vm_disk, self.vm_name)
+        target_sd = get_other_storage_domain(
+            vm_disk, self.vm_name, self.storage)
         status, target_sd_ip = getDomainAddress(True, target_sd)
         assert status
         self.target_sd_ip = target_sd_ip['address']
@@ -1574,7 +1718,7 @@ class TestCase168840(BaseTestCase):
         self._migrate_vm_disk_and_block_connection(
             vm_disk, host_ip, config.HOSTS_USER, config.HOSTS_PW, target_sd,
             target_sd_ip)
-        status = verify_vm_disk_moved(config.VM_NAME, vm_disk, source_sd,
+        status = verify_vm_disk_moved(self.vm_name, vm_disk, source_sd,
                                       target_sd)
         self.assertFalse(status, "Disk moved but shouldn't have")
 
@@ -1584,20 +1728,19 @@ class TestCase168840(BaseTestCase):
         """
         unblockOutgoingConnection(self.source_ip, self.username,
                                   self.password, self.target_sd_ip)
-        wait_for_jobs()
-        remove_all_vm_lsm_snapshots(config.VM_NAME)
+
+        super(TestCase168840, self).setUp()
 
 
-class TestCase168836(SimpleCase):
+@attr(tier=3)
+class TestCase168836(BaseTestCase):
     """
     VDSM restart during live migration
     https://tcms.engineering.redhat.com/case/168836/?from_plan=6128
-
-    __test__ = False due to:
-    - https://bugzilla.redhat.com/show_bug.cgi?id=1107758
     """
-    __test__ = False
+    __test__ = True
     tcms_test_case = '168836'
+    bz = {'1210771': {'engine': None, 'version': ["3.5", "3.6"]}}
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_restart_spm_during_lsm(self):
@@ -1609,26 +1752,20 @@ class TestCase168836(SimpleCase):
         Expected Results:
             - live migrate should fail
         """
-        spm_host = getSPMHost(config.HOSTS)
-        live_migrate_vm(config.VM_NAME, wait=False)
+        spm_host = getHostIP(getSPMHost(config.HOSTS))
+        live_migrate_vm(self.vm_name, wait=False)
         restartVdsmd(spm_host, config.HOSTS_PW)
-        wait_for_jobs()
 
 
-class TestCase174418(SimpleCase):
+@attr(tier=1)
+class TestCase174418(BaseTestCase):
     """
     live migrate during host restart
     https://tcms.engineering.redhat.com/case/174418/?from_plan=6128
-
-    __test__ = False due to:
-    - https://bugzilla.redhat.com/show_bug.cgi?id=1107758
     """
-    __test__ = False
+    __test__ = True
     tcms_test_case = '174418'
-
-    def setUp(self):
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
+    bz = {'1210771': {'engine': None, 'version': ["3.5", "3.6"]}}
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_reboot_spm_during_lsm(self):
@@ -1640,19 +1777,29 @@ class TestCase174418(SimpleCase):
         Expected Results:
             - we should fail migration
         """
-        vm_disk = getVmDisks(config.VM_NAME)[0].get_alias()
-        source_sd = get_disk_storage_domain_name(vm_disk, config.VM_NAME)
         spm_host = getSPMHost(config.HOSTS)
-        live_migrate_vm(config.VM_NAME, wait=False)
+        assert updateVm(
+            True, self.vm_name, highly_available='true',
+            placement_host=spm_host,
+        )
+        startVm(True, self.vm_name, config.VM_UP)
+        vm_disk = getVmDisks(self.vm_name)[0].get_alias()
+        source_sd = get_disk_storage_domain_name(vm_disk, self.vm_name)
+        live_migrate_vm(self.vm_name, wait=False)
         logger.info("Rebooting host (SPM) %s", spm_host)
-        assert rebootHost(True, spm_host, config.HOSTS_USER, config.HOSTS_PW)
+        assert rebootHost(
+            True, spm_host, config.HOSTS_USER, config.HOSTS_PW,
+        )
+        logger.info("Waiting for host %s to come back up", spm_host)
+        waitForHostsStates(True, spm_host)
         wait_for_disks_status(vm_disk, timeout=DISK_TIMEOUT)
 
-        status = verify_vm_disk_moved(config.VM_NAME, vm_disk, source_sd)
-        self.assertFalse(status, "Succeeded to live migrate vm disk %s"
-                                 % vm_disk)
-
-        wait_for_jobs()
+        status = verify_vm_disk_moved(self.vm_name, vm_disk, source_sd)
+        self.assertFalse(
+            status,
+            "Succeeded to live migrate vm disk %s during SPM host reboot" %
+            vm_disk,
+        )
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_reboot_hsm_during_lsm(self):
@@ -1664,53 +1811,52 @@ class TestCase174418(SimpleCase):
         Expected Results:
             - we should fail migration
         """
-        vm_disk = getVmDisks(config.VM_NAME)[0].get_alias()
-        source_sd = get_disk_storage_domain_name(vm_disk, config.VM_NAME)
         spm_host = [getSPMHost(config.HOSTS)]
         hsm_host = [x for x in config.HOSTS if x not in spm_host][0]
-        live_migrate_vm(config.VM_NAME, wait=False)
-        logger.info("Rebooting host (SPM) %s", spm_host)
-        assert rebootHost(True, hsm_host, config.HOSTS_USER, config.HOSTS_PW)
+        assert updateVm(
+            True, self.vm_name, highly_available='true',
+            placement_host=hsm_host,
+        )
+        vm_disk = getVmDisks(self.vm_name)[0].get_alias()
+        source_sd = get_disk_storage_domain_name(vm_disk, self.vm_name)
+        live_migrate_vm(self.vm_name, wait=False)
+        logger.info("Rebooting host (HSM) %s", hsm_host)
+        assert rebootHost(
+            True, hsm_host, config.HOSTS_USER, config.HOSTS_PW)
+        logger.info("Waiting for host %s to be UP", hsm_host)
+        waitForHostsStates(True, hsm_host)
 
         wait_for_disks_status(vm_disk, timeout=DISK_TIMEOUT)
 
-        status = verify_vm_disk_moved(config.VM_NAME, vm_disk, source_sd)
+        status = verify_vm_disk_moved(self.vm_name, vm_disk, source_sd)
         self.assertFalse(status, "Succeeded to live migrate vm disk %s"
                                  % vm_disk)
 
-        wait_for_jobs()
 
-
+@attr(tier=3)
 class TestCase174419(BaseTestCase):
     """
     reboot host during live migration on HA vm
     https://tcms.engineering.redhat.com/case/174419/?from_plan=6128
-
-    __test__ = False due to:
-    - https://bugzilla.redhat.com/show_bug.cgi?id=1107758
     """
-    __test__ = False
+    __test__ = True
+    bz = {'1210771': {'engine': None, 'version': ["3.5", "3.6"]}}
     tcms_test_case = '174419'
 
-    def setUp(self):
-        assert updateVm(True, config.VM_NAME, highly_available='true')
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
-
     def _perform_action(self, host):
-        vm_disk = getVmDisks(config.VM_NAME)[0].get_alias()
-        source_sd = get_disk_storage_domain_name(vm_disk, config.VM_NAME)
+        vm_disk = getVmDisks(self.vm_name)[0].get_alias()
+        source_sd = get_disk_storage_domain_name(vm_disk, self.vm_name)
 
-        live_migrate_vm(config.VM_NAME, wait=False)
+        live_migrate_vm(self.vm_name, wait=False)
         logger.info("Rebooting host %s", host)
         assert rebootHost(True, host, config.HOSTS_USER, config.HOSTS_PW)
+        logger.info("Waiting for host %s to be UP", host)
+        waitForHostsStates(True, host)
         wait_for_disks_status(vm_disk, timeout=DISK_TIMEOUT)
 
-        status = verify_vm_disk_moved(config.VM_NAME, vm_disk, source_sd)
+        status = verify_vm_disk_moved(self.vm_name, vm_disk, source_sd)
         self.assertFalse(status, "Succeeded to live migrate vm disk %s"
                                  % vm_disk)
-
-        wait_for_jobs()
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_reboot_spm_during_lsm(self):
@@ -1723,6 +1869,11 @@ class TestCase174419(BaseTestCase):
             - we should fail migration
         """
         spm_host = getSPMHost(config.HOSTS)
+        assert updateVm(
+            True, self.vm_name, highly_available='true',
+            placement_host=spm_host
+        )
+        startVm(True, self.vm_name, config.VM_UP)
         self._perform_action(spm_host)
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
@@ -1735,44 +1886,44 @@ class TestCase174419(BaseTestCase):
         Expected Results:
             - we should fail migration
         """
-        hsm_host = getHSMHost(config.HOSTS)
+        spm_host = [getSPMHost(config.HOSTS)]
+        hsm_host = [host for host in config.HOSTS if host not in spm_host][0]
+        assert updateVm(
+            True, self.vm_name, highly_available='true',
+            placement_host=hsm_host
+        )
+        startVm(True, self.vm_name, config.VM_UP)
         self._perform_action(hsm_host)
 
-    def tearDown(self):
-        remove_all_vm_lsm_snapshots(config.VM_NAME)
-        assert updateVm(True, config.VM_NAME, highly_available='false')
 
-
+@attr(tier=3)
 class TestCase174420(BaseTestCase):
     """
     kill vm's pid during live migration
     https://tcms.engineering.redhat.com/case/174420/?from_plan=6128
-
-    __test__ = False due to:
-    - https://bugzilla.redhat.com/show_bug.cgi?id=1107758
     """
+    # TODO: tier3 jobs have not been verified
     __test__ = False
     tcms_test_case = '174420'
 
     def _kill_vm_pid(self):
-        host = getVmHost(config.VM_NAME)[1]['vmHoster']
+        host = getVmHost(self.vm_name)[1]['vmHoster']
         host_machine = Machine(host=host, user=config.HOSTS_USER,
                                password=config.HOSTS_PW).util('linux')
-        host_machine.kill_qemu_process(config.VM_NAME)
+        host_machine.kill_qemu_process(self.vm_name)
 
     def perform_action(self):
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
+        startVm(True, self.vm_name, config.VM_UP)
 
-        vm_disk = getVmDisks(config.VM_NAME)[0].get_alias()
-        source_sd = get_disk_storage_domain_name(vm_disk, config.VM_NAME)
-        live_migrate_vm(config.VM_NAME, wait=False)
-        logger.info("Killing vms %s pid", config.VM_NAME)
+        vm_disk = getVmDisks(self.vm_name)[0].get_alias()
+        source_sd = get_disk_storage_domain_name(vm_disk, self.vm_name)
+        live_migrate_vm(self.vm_name, wait=False)
+        logger.info("Killing vms %s pid", self.vm_name)
         self._kill_vm_pid()
 
         wait_for_disks_status(vm_disk, timeout=DISK_TIMEOUT)
 
-        status = verify_vm_disk_moved(config.VM_NAME, vm_disk, source_sd)
+        status = verify_vm_disk_moved(self.vm_name, vm_disk, source_sd)
         self.assertFalse(status, "Succeeded to live migrate vm disk %s"
                                  % vm_disk)
 
@@ -1788,9 +1939,9 @@ class TestCase174420(BaseTestCase):
         Expected Results:
             - we should fail migration
         """
-        stop_vms_safely([config.VM_NAME], async=False)
+        stop_vms_safely([self.vm_name], async=False)
         wait_for_jobs()
-        assert updateVm(True, config.VM_NAME, highly_available='true')
+        assert updateVm(True, self.vm_name, highly_available='true')
         self.perform_action()
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
@@ -1803,20 +1954,19 @@ class TestCase174420(BaseTestCase):
         Expected Results:
             - we should fail migration
         """
-        stop_vms_safely([config.VM_NAME], async=True)
-        assert updateVm(True, config.VM_NAME, highly_available='false')
+        stop_vms_safely([self.vm_name], async=True)
+        assert updateVm(True, self.vm_name, highly_available='false')
         self.perform_action()
 
-    def tearDown(self):
-        remove_all_vm_lsm_snapshots(config.VM_NAME)
-        assert updateVm(True, config.VM_NAME, highly_available='false')
 
-
+@attr(tier=1)
 class TestCase174421(BaseTestCase):
     """
     no space left
     https://tcms.engineering.redhat.com/case/174421/?from_plan=6128
     """
+    # TODO: Fix, our storage domains are too big for creating preallocated
+    # disks
     __test__ = False
     tcms_test_case = '174421'
     disk_name = "disk_%s" % tcms_test_case
@@ -1830,45 +1980,47 @@ class TestCase174421(BaseTestCase):
         Expected Results:
             - migration or create disk should fail nicely.
         """
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
-        sd_size = get_free_space(SD_NAME_0)
-        vm_disk = getVmDisks(config.VM_NAME)[0].get_alias()
-        source_sd = get_disk_storage_domain_name(vm_disk, config.VM_NAME)
-        target_sd = get_other_storage_domain(vm_disk, config.VM_NAME)
-        live_migrate_vm_disk(config.VM_NAME, vm_disk, target_sd, wait=False)
+        startVm(True, self.vm_name, config.VM_UP)
+        vm_disk = getVmDisks(self.vm_name)[0].get_alias()
+        source_sd = get_disk_storage_domain_name(vm_disk, self.vm_name)
+        target_sd = get_other_storage_domain(
+            vm_disk, self.vm_name, self.storage)
+        sd_size = get_free_space(target_sd)
+        live_migrate_vm_disk(self.vm_name, vm_disk, target_sd, wait=False)
         helpers.add_new_disk_for_test(
-            config.VM_NAME, self.disk_name,
-            provisioned_size=sd_size - (1 * config.GB))
+            self.vm_name, self.disk_name,
+            provisioned_size=sd_size - (1 * config.GB),
+            sd_name=target_sd)
 
+        wait_for_disks_status([self.disk_name], timeout=TASK_TIMEOUT)
         wait_for_jobs()
-        self.assertFalse(verify_vm_disk_moved(config.VM_NAME, vm_disk,
+        self.assertFalse(verify_vm_disk_moved(self.vm_name, vm_disk,
                                               source_sd, target_sd),
                          "Succeeded to live migrate vm disk %s" % vm_disk)
 
     def tearDown(self):
+        """Remove created disk"""
+        wait_for_jobs()
         wait_for_disks_status(self.disk_name)
         assert deleteDisk(True, self.disk_name)
-        remove_all_vm_lsm_snapshots(config.VM_NAME)
+        super(TestCase174421, self).tearDown()
 
 
+@attr(tier=1)
 class TestCase174426(CommonUsage):
     """
     multiple domains - only one domain unreachable
     https://tcms.engineering.redhat.com/case/174426/?from_plan=6128
     """
-    __test__ = False
+    __test__ = True
     tcms_test_case = '174426'
-    disk_name = ''
     disk_count = 3
-    sd_list = [SD_NAME_0, SD_NAME_1, SD_NAME_2]
 
     def _prepare_disks_for_vm(self, vm_name):
             """
             Prepares disk for given vm
             """
             disk_params = {
-                'alias': self.disk_name,
                 'provisioned_size': 1 * config.GB,
                 'active': True,
                 'interface': config.VIRTIO,
@@ -1882,7 +2034,7 @@ class TestCase174426(CommonUsage):
 
                 disk_params['alias'] = "disk_%s_%s" % \
                                        (index, self.tcms_test_case)
-                disk_params['storagedomain'] = self.sd_list[index]
+                disk_params['storagedomain'] = self.storage_domains[index]
                 if index == 2:
                     disk_params['active'] = False
                 if not addDisk(True, **disk_params):
@@ -1900,20 +2052,22 @@ class TestCase174426(CommonUsage):
         Prepares disks on different domains
         """
         self.disks_names = []
-        stop_vms_safely([config.VM_NAME])
-        self._prepare_disks_for_vm(config.VM_NAME)
+        super(TestCase174426, self).setUp()
+        stop_vms_safely([self.vm_name])
+        self._prepare_disks_for_vm(self.vm_name)
         logger.info("Waiting for tasks before deactivating the storage domain")
         wait_for_tasks(config.VDC, config.VDC_PASSWORD,
                        config.DATA_CENTER_NAME)
         assert deactivateStorageDomain(
-            True, config.DATA_CENTER_NAME, SD_NAME_2)
+            True, config.DATA_CENTER_NAME, self.storage_domains[2],
+        )
 
-        waitForStorageDomainStatus(True, config.DATA_CENTER_NAME, SD_NAME_2,
+        waitForStorageDomainStatus(True, config.DATA_CENTER_NAME,
+                                   self.storage_domains[2],
                                    config.SD_MAINTENANCE)
         wait_for_jobs()
 
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
+        startVm(True, self.vm_name, config.VM_UP)
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_lsm_with_multiple_disks_one_sd_in_maintenance(self):
@@ -1926,20 +2080,22 @@ class TestCase174426(CommonUsage):
             - we should fail migrate
         """
         for index, disk in enumerate(self.disks_names):
-            src_sd = get_disk_storage_domain_name(disk, config.VM_NAME)
-            target_sd = get_other_storage_domain(disk, config.VM_NAME)
+            src_sd = get_disk_storage_domain_name(disk, self.vm_name)
+            target_sd = get_other_storage_domain(
+                disk, self.vm_name, self.storage,
+            )
 
             if index == 2:
                 self.assertRaises(exceptions.DiskException,
-                                  live_migrate_vm_disk, config.VM_NAME, disk,
+                                  live_migrate_vm_disk, self.vm_name, disk,
                                   target_sd)
 
-                self.assertFalse(verify_vm_disk_moved(config.VM_NAME,
+                self.assertFalse(verify_vm_disk_moved(self.vm_name,
                                                       disk, src_sd),
                                  "Succeeded to live migrate disk %s" % disk)
             else:
-                live_migrate_vm_disk(config.VM_NAME, disk, target_sd=target_sd)
-                self.assertTrue(verify_vm_disk_moved(config.VM_NAME,
+                live_migrate_vm_disk(self.vm_name, disk, target_sd=target_sd)
+                self.assertTrue(verify_vm_disk_moved(self.vm_name,
                                                      disk, src_sd),
                                 "Failed to live migrate disk %s" % disk)
 
@@ -1949,14 +2105,16 @@ class TestCase174426(CommonUsage):
         """
         Removes disks and snapshots
         """
-        assert activateStorageDomain(True, config.DATA_CENTER_NAME, SD_NAME_2)
-        wait_for_jobs()
-        waitForStorageDomainStatus(True, config.DATA_CENTER_NAME, SD_NAME_2,
-                                   ENUMS['storage_domain_state_active'])
-        self._remove_disks(self.disks_names)
-        remove_all_vm_lsm_snapshots(config.VM_NAME)
+        activateStorageDomain(
+            True, config.DATA_CENTER_NAME, self.storage_domains[2],
+        )
+        waitForStorageDomainStatus(
+            True, config.DATA_CENTER_NAME, self.storage_domains[2],
+            ENUMS['storage_domain_state_active'])
+        super(TestCase174426, self).tearDown()
 
 
+@attr(tier=1)
 class TestCase281166(BaseTestCase):
     """
     offline migration + LSM
@@ -1970,9 +2128,11 @@ class TestCase281166(BaseTestCase):
         """
         Prepares disk with wipe_after_delete=True for VM
         """
-        helpers.add_new_disk_for_test(config.VM_NAME, self.disk_name)
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
+        super(TestCase281166, self).setUp()
+        helpers.add_new_disk_for_test(
+            self.vm_name, self.disk_name, sd_name=self.storage_domains[0],
+        )
+        startVm(True, self.vm_name, config.VM_UP)
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_offline_migration_and_lsm(self):
@@ -1986,25 +2146,24 @@ class TestCase281166(BaseTestCase):
             - we should either not be able to attach the disk to a vm
               which is in the middle of LSM
         """
-        live_migrate_vm(config.VM_NAME, wait=False)
-        status = attachDisk(True, self.disk_name, config.VM_NAME)
+        live_migrate_vm(self.vm_name, wait=False)
+        status = attachDisk(True, self.disk_name, self.vm_name)
         self.assertFalse(status, "Attache operation succeeded during LSM")
-        wait_for_jobs()
 
     def tearDown(self):
-        stop_vms_safely([config.VM_NAME])
+        """Remove the floating disk"""
+        wait_for_jobs()
+        super(TestCase281166, self).tearDown()
         assert deleteDisk(True, self.disk_name)
-        remove_all_vm_lsm_snapshots(config.VM_NAME)
 
 
-class TestCase280750(SimpleCase):
+@attr(tier=3)
+class TestCase280750(BaseTestCase):
     """
     kill vdsm during LSM
     https://tcms.engineering.redhat.com/case/280750/?from_plan=6128
-
-    __test__ = False due to:
-    - https://bugzilla.redhat.com/show_bug.cgi?id=1107758
     """
+    # TODO: tier3 jobs have not been verified
     __test__ = False
     tcms_test_case = '280750'
 
@@ -2018,13 +2177,12 @@ class TestCase280750(SimpleCase):
         Expected Results:
             - LSM should fail nicely
         """
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
-        host = getVmHost(config.VM_NAME)[1]['vmHoster']
+        startVm(True, self.vm_name, config.VM_UP)
+        host = getVmHost(self.vm_name)[1]['vmHoster']
         host_machine = Machine(host=host, user=config.HOSTS_USER,
                                password=config.HOSTS_PW).util('linux')
 
-        live_migrate_vm(config.VM_NAME, wait=False)
+        live_migrate_vm(self.vm_name, wait=False)
         sleep(5)
         host_machine.kill_vdsm_service()
         wait_for_jobs()
@@ -2040,26 +2198,27 @@ class TestCase280750(SimpleCase):
         Expected Results:
             - LSM should fail nicely
         """
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
-        host = getVmHost(config.VM_NAME)[1]['vmHoster']
+        startVm(True, self.vm_name, config.VM_UP)
+        host = getVmHost(self.vm_name)[1]['vmHoster']
         host_machine = Machine(host=host, user=config.HOSTS_USER,
                                password=config.HOSTS_PW).util('linux')
 
-        live_migrate_vm(config.VM_NAME, wait=True)
-        live_migrate_vm(config.VM_NAME, wait=False)
+        live_migrate_vm(self.vm_name, wait=True)
+        live_migrate_vm(self.vm_name, wait=False)
         sleep(5)
         host_machine.kill_vdsm_service()
 
         wait_for_jobs()
 
 
+@attr(tier=1)
 class TestCase281162(AllPermutationsDisks):
     """
     merge after a failure in LSM
     https://tcms.engineering.redhat.com/case/281162/?from_plan=6128
     """
-    __test__ = True
+    # TODO: Fix this case
+    __test__ = False
     tcms_test_case = '281162'
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
@@ -2077,34 +2236,46 @@ class TestCase281162(AllPermutationsDisks):
             - we should be able to merge the snapshot
             - we should be able to run the vm
         """
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
-        for disk in helpers.DISKS_NAMES:
-            target_sd = get_other_storage_domain(disk, config.VM_NAME)
-            live_migrate_vm_disk(config.VM_NAME, disk, target_sd, wait=False)
+        spm_host = [getSPMHost(config.HOSTS)]
+        hsm_host = [x for x in config.HOSTS if x not in spm_host][0]
+        updateVm(True, self.vm_name, placement_host=hsm_host)
+        startVm(True, self.vm_name, config.VM_UP, True)
+        for index, disk in enumerate(helpers.DISK_NAMES[self.storage]):
+            source_sd = get_disk_storage_domain_name(disk, self.vm_name)
+            target_sd = get_other_storage_domain(
+                disk, self.vm_name, self.storage)
+            logger.info("Make sure disk is accesible")
+            assert get_vm_disk_logical_name(self.vm_name, disk)
+            live_migrate_vm_disk(self.vm_name, disk, target_sd, wait=False)
 
-            logger.info("Writing to disk")
-            status, _ = storage_helpers.perform_dd_to_disk(
-                config.VM_NAME, disk
-            )
-            if not status:
-                raise exceptions.DiskException(
-                    "Failed to perform dd operation on disk %s" % disk
+            def f():
+                status, _ = storage_helpers.perform_dd_to_disk(
+                    self.vm_name, disk, size=int(config.DISK_SIZE * 0.9),
+                    write_to_file=True,
                 )
 
+            logger.info("Writing to disk")
+            p = Process(target=f, args=())
+            p.start()
+            status = storage_helpers.wait_for_dd_to_start(self.vm_name)
+            self.assertTrue(status, "dd didn't start writing to disk")
+            logger.info(
+                "Stop the vm while the live storage migration is running",
+            )
+            stop_vms_safely([self.vm_name])
+            waitForVMState(self.vm_name, config.VM_DOWN)
             wait_for_jobs()
-            stop_vms_safely([config.VM_NAME])
-            remove_all_vm_lsm_snapshots(config.VM_NAME)
-            wait_for_jobs()
-            start_vms([config.VM_NAME], 1, wait_for_ip=False)
-            waitForVMState(config.VM_NAME)
+            remove_all_vm_lsm_snapshots(self.vm_name)
+            startVm(True, self.vm_name, config.VM_UP, True)
+            self.assertFalse(
+                verify_vm_disk_moved(
+                    self.vm_name, disk, source_sd, target_sd
+                ), "Disk moved but shouldn't have",
+            )
             logger.info("Disk %s done", disk)
 
-    def tearDown(self):
-        super(TestCase281162, self).tearDown()
-        remove_all_vm_lsm_snapshots(config.VM_NAME)
 
-
+@attr(tier=1)
 class TestCase281152(BaseTestCase):
     """
     migrate multiple vm's disks
@@ -2112,23 +2283,24 @@ class TestCase281152(BaseTestCase):
     """
     __test__ = True
     tcms_test_case = '281152'
-    vm_name = 'vm_%s_%s'
+    vm_name_format = 'vm_%s_%s'
     vm_count = 5
     vm_names = None
     vm_args = vmArgs.copy()
 
     def setUp(self):
+        super(TestCase281152, self).setUp()
         self.vm_names = []
         self.vm_args['installation'] = False
         for index in range(self.vm_count):
-            self.vm_args['storageDomainName'] = \
-                get_master_storage_domain_name(config.DATA_CENTER_NAME)
-            self.vm_args['vmName'] = self.vm_name % (index,
-                                                     self.tcms_test_case)
+            self.vm_args['storageDomainName'] = self.storage_domains[0]
+            self.vm_args['vmName'] = self.vm_name_format % (
+                index, self.tcms_test_case,
+            )
 
             logger.info('Creating vm %s', self.vm_args['vmName'])
 
-            if not createVm(**self.vm_args):
+            if not storage_helpers.create_vm_or_clone(**self.vm_args):
                 raise exceptions.VMException('Unable to create vm %s for test'
                                              % self.vm_args['vmName'])
             self.vm_names.append(self.vm_args['vmName'])
@@ -2146,7 +2318,7 @@ class TestCase281152(BaseTestCase):
     def test_migrate_multiple_vms_on_spm(self):
         """
         Actions:
-            - create 5 vms and run them on hsm host only
+            - create 5 vms and run them on spm host only
             - LSM the disks
         Expected Results:
             - we should succeed to migrate all disks
@@ -2167,30 +2339,30 @@ class TestCase281152(BaseTestCase):
         self._perform_action(hsm)
 
     def tearDown(self):
+        """Remove created vms"""
         stop_vms_safely(self.vm_names)
         removeVms(True, self.vm_names)
-        remove_all_vm_lsm_snapshots(config.VM_NAME)
+        super(TestCase281152, self).tearDown()
 
 
+@attr(tier=3)
 class TestCase281145(BaseTestCase):
     """
     connectivity issues to pool
     https://tcms.engineering.redhat.com/case/281145/?from_plan=6128
-
-    __test__ = False due to:
-    - https://bugzilla.redhat.com/show_bug.cgi?id=1106593
     - https://bugzilla.redhat.com/show_bug.cgi?id=1078095
     """
+    # TODO: tier3 jobs have not been verified
     __test__ = False
+    bz = {'1106593': {'engine': ['rest', 'sdk'], 'version': ["3.5"]}}
     tcms_test_case = '281145'
 
     def _migrate_vm_disk_and_block_connection(self, disk, source, username,
                                               password, target,
                                               target_ip):
 
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
-        live_migrate_vm_disk(config.VM_NAME, disk, target, wait=False)
+        startVm(True, self.vm_name, config.VM_UP)
+        live_migrate_vm_disk(self.vm_name, disk, target, wait=False)
         status = blockOutgoingConnection(source, username, password,
                                          target_ip)
         self.assertTrue(status, "Failed to block connection")
@@ -2206,10 +2378,11 @@ class TestCase281145(BaseTestCase):
             - we should fail migrate and roll back
         """
         hsm = getHSMHost(config.HOSTS)
-        hsm_ip = getIpAddressByHostName(hsm)
-        vm_disk = getVmDisks(config.VM_NAME)[0].get_alias()
-        source_sd = get_disk_storage_domain_name(vm_disk, config.VM_NAME)
-        target_sd = get_other_storage_domain(vm_disk, config.VM_NAME)
+        hsm_ip = getHostIP(hsm)
+        vm_disk = getVmDisks(self.vm_name)[0].get_alias()
+        source_sd = get_disk_storage_domain_name(vm_disk, self.vm_name)
+        target_sd = get_other_storage_domain(
+            vm_disk, self.vm_name, self.storage)
         status, target_sd_ip = getDomainAddress(True, target_sd)
         assert status
         self.target_sd_ip = target_sd_ip['address']
@@ -2219,7 +2392,7 @@ class TestCase281145(BaseTestCase):
         self._migrate_vm_disk_and_block_connection(
             vm_disk, hsm_ip, config.HOSTS_USER, config.HOSTS_PW, target_sd,
             target_sd_ip)
-        status = verify_vm_disk_moved(config.VM_NAME, vm_disk, source_sd,
+        status = verify_vm_disk_moved(self.vm_name, vm_disk, source_sd,
                                       target_sd)
         self.assertFalse(status, "Disk moved but shouldn't have")
 
@@ -2230,16 +2403,16 @@ class TestCase281145(BaseTestCase):
         unblockOutgoingConnection(self.source_ip, self.username,
                                   self.password, self.target_sd_ip)
         wait_for_jobs()
-        remove_all_vm_lsm_snapshots(config.VM_NAME)
+        super(TestCase281145, self).tearDown()
 
 
+@attr(tier=3)
 class TestCase281142(BaseTestCase):
     """
     LSM during pause due to EIO
     https://tcms.engineering.redhat.com/case/281142/?from_plan=6128
-
-    __test__ = False
     """
+    # TODO: tier3 jobs have not been verified
     __test__ = False
     tcms_test_case = '281142'
     source_ip = ''
@@ -2255,13 +2428,13 @@ class TestCase281142(BaseTestCase):
         Expected Results:
             - we should no be able to LSM a vm which is paused on EIO
         """
-        start_vms([config.VM_NAME], 1, wait_for_ip=False)
-        waitForVMState(config.VM_NAME)
+        startVm(True, self.vm_name, config.VM_UP)
         host = getHSMHost(config.HOSTS)
-        host_ip = getIpAddressByHostName(host)
-        vm_disk = getVmDisks(config.VM_NAME)[0].get_alias()
-        source_sd = get_disk_storage_domain_name(vm_disk, config.VM_NAME)
-        target_sd = get_other_storage_domain(vm_disk, config.VM_NAME)
+        host_ip = getHostIP(host)
+        vm_disk = getVmDisks(self.vm_name)[0].get_alias()
+        source_sd = get_disk_storage_domain_name(vm_disk, self.vm_name)
+        target_sd = get_other_storage_domain(
+            vm_disk, self.vm_name, self.storage)
         status, target_sd_ip = getDomainAddress(True, target_sd)
         assert status
         self.target_sd_ip = target_sd_ip['address']
@@ -2272,11 +2445,11 @@ class TestCase281142(BaseTestCase):
         status = blockOutgoingConnection(host_ip, self.username, self.password,
                                          target_sd_ip)
         self.assertTrue(status, "Failed to block connection")
-        waitForVMState(config.VM_NAME, ENUMS['vm_state_paused'])
-        live_migrate_vm(config.VM_NAME)
+        waitForVMState(self.vm_name, ENUMS['vm_state_paused'])
+        live_migrate_vm(self.vm_name)
         wait_for_jobs()
 
-        status = verify_vm_disk_moved(config.VM_NAME, vm_disk, source_sd,
+        status = verify_vm_disk_moved(self.vm_name, vm_disk, source_sd,
                                       target_sd)
         self.assertFalse(status, "Disk moved but shouldn't have")
 
@@ -2287,4 +2460,4 @@ class TestCase281142(BaseTestCase):
         unblockOutgoingConnection(self.source_ip, self.username,
                                   self.password, self.target_sd_ip)
         wait_for_jobs()
-        remove_all_vm_lsm_snapshots(config.VM_NAME)
+        super(TestCase281142, self).tearDown()

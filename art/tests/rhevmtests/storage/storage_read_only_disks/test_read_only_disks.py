@@ -158,7 +158,7 @@ class BaseTestCase(TestCase):
     def prepare_disks_for_vm(self, read_only, vm_name=None):
         """Attach read only disks to the vm"""
         vm_name = self.vm_name if not vm_name else vm_name
-        return helpers.prepare_disks_for_vm(
+        return storage_helpers.prepare_disks_for_vm(
             vm_name, helpers.DISKS_NAMES[self.storage], read_only=read_only
         )
 

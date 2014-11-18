@@ -162,7 +162,7 @@ class DisksPermutationEnvironment(BaseTestCase):
         assert wait_for_disks_status(helpers.DISKS_NAMES, timeout=TASK_TIMEOUT)
         stop_vms_safely([self.vm])
         waitForVMState(vm=self.vm, state=config.VM_DOWN)
-        helpers.prepare_disks_for_vm(self.vm, helpers.DISKS_NAMES)
+        storage_helpers.prepare_disks_for_vm(self.vm, helpers.DISKS_NAMES)
 
     def tearDown(self):
         """

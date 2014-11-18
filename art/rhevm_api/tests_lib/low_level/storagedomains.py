@@ -1412,7 +1412,7 @@ def get_free_space(storagedomain):
     Returns: total size of the storage domain in bytes
     """
     sdObj = util.find(storagedomain)
-    return sdObj.get_available() - sdObj.get_used()
+    return sdObj.get_available()
 
 
 @is_action()

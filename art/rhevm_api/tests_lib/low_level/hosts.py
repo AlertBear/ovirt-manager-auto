@@ -81,6 +81,7 @@ KSMTUNED_CONF = '/etc/ksmtuned.conf'
 MEGABYTE = 1024 ** 2
 IP_PATTERN = '10.35.*'
 TIMEOUT = 120
+TIMEOUT_NON_RESPONSIVE_HOST = 360
 FIND_QEMU = 'ps aux |grep qemu | grep -e "-name %s"'
 MOM_CONF = '/etc/vdsm/mom.conf'
 MOM_SCRIPT_LOCAL = 'tests/rhevmtests/sla/mom/momStats.py'
@@ -1040,19 +1041,27 @@ def searchForHost(positive, query_key, query_val, key_name=None, **kwargs):
 @is_action()
 def rebootHost(positive, host, username, password):
     """
-    Description: rebooting host via ssh session
-    Author: edolinin
-    Parameters:
-       * host - fqdn (name) of a host to be rebooted
-       * username - user name for ssh session
-       * password - password for ssh session
-    Return: status (True if host was rebooted properly, False otherwise)
+    Rebooting host via ssh session
+
+    __author__ = "edolinin"
+    :param host: name of the host to be rebooted
+    :type host: str
+    :param username: user name for ssh session
+    :type username: str
+    :param password: password for ssh session
+    :type password: str
+    :returns: True if host was rebooted successfully, False otherwise
+    :rtype: bool
     """
+    host_ip = getHostIP(host)
     host_machine = machine.Machine(
-        host=host, user=username, password=password,
+        host=host_ip, user=username, password=password,
     ).util(machine.LINUX)
     host_machine.reboot()
-    return waitForHostsStates(positive, host, ENUMS['non_responsive'], 180)
+    return waitForHostsStates(
+        positive, host, ENUMS['host_state_non_responsive'],
+        TIMEOUT_NON_RESPONSIVE_HOST,
+    )
 
 
 @is_action()
