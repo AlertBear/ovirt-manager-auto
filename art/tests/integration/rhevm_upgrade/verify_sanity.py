@@ -9,10 +9,13 @@ from art.rhevm_api.tests_lib.low_level.vms import removeVm, checkVMConnectivity
 from art.test_handler.exceptions import VMException
 from art.unittest_lib import CoreSystemTest as TestCase
 from art.unittest_lib import attr
+from art.rhevm_api.utils.test_utils import get_api
 
 from rhevm_upgrade import config
 
 LOGGER = logging.getLogger(__name__)
+domUtil = get_api('domain', 'domains')
+userUtil = get_api('user', 'users')
 
 
 def teardown_module():
@@ -42,3 +45,18 @@ class UpgradeSanityVerification(TestCase):
                                    nic=config.NIC_NAME,
                                    user=config.VM_LINUX_USER,
                                    password=config.VMS_LINUX_PW)
+
+    def test_legacy_providers(self):
+        """ test if legacy providers are accessible after upgrade """
+        domains = domUtil.get(absLink=False)
+        for domain in domains:
+            LOGGER.info("Fetching users from domain %s", domain.name)
+            users = userUtil.getElemFromLink(
+                domain,
+                link_name='users',
+                attr='user',
+                get_href=False
+            )
+            LOGGER.debug(users)
+            assert len(users) > 0, "Domain %s is not accesible." % domain.name
+            LOGGER.info("Domain %s is accessible.", domain.name)
