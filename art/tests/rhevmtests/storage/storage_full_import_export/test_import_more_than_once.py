@@ -8,7 +8,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 
 from art.unittest_lib import StorageTest as TestCase, attr
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.rhevm_api.utils.test_utils import get_api, setPersistentNetwork
 from art.rhevm_api.tests_lib.low_level import storagedomains, vms, templates
 
@@ -74,12 +74,10 @@ class TestCase174617(TestCase):
         assert vms.removeVm(True, self.vm_name)
         assert templates.removeTemplate(True, self.template_name)
 
-    @bz('1083488')
-    @bz('853045')
     @tcms(tcms_plan_id, tcms_test_case)
     def test_import_more_than_once(self):
         """
-        Import a vm and a template more than onces and make sure it works
+        Import a vm and a template more than once and make sure it works
         """
         def inspect_execution(execution):
             """
