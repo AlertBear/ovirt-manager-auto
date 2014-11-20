@@ -1352,7 +1352,8 @@ def addSnapshot(positive, vm, description, wait=True, persist_memory=None,
     vmSnapshots = _getVmSnapshots(vm)
 
     snapshot, status = SNAPSHOT_API.create(snapshot, positive,
-                                           collection=vmSnapshots)
+                                           collection=vmSnapshots,
+                                           compare=wait)
 
     if wait:
         wait_for_jobs()

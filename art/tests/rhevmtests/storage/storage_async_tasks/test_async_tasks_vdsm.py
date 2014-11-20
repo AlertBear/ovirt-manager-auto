@@ -1,8 +1,9 @@
 from art.unittest_lib import StorageTest as TestCase
 import logging
-
+import time
+from threading import Thread
 from art.rhevm_api.utils import log_listener
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from nose.plugins.attrib import attr
 
 import config
@@ -57,17 +58,24 @@ class RestartVDSM(TestCase):
         """
         We are waiting for the first task to finish and then restart VDSM
         """
-        self.perform_action()
         LOGGER.info("Waiting for the first task to finish")
         regex = 'Parent Command %s.*ended successfully' % action_name
         cmd = 'service vdsmd restart'
-        log_listener.watch_logs(
-            ENGINE_LOG, regex, cmd, ip_for_files=config.VDC,
-            username=config.VDC_ROOT_USER, password=config.VDC_PASSWORD,
-            ip_for_execute_command=config.HOSTS[0],
-            remote_username=config.HOSTS_USER, remote_password=config.HOSTS_PW,
-            time_out=TIMEOUT)
+
+        t = Thread(target=log_listener.watch_logs, args=(
+            ENGINE_LOG, regex, cmd, TIMEOUT, config.VDC,
+            config.VDC_ROOT_USER, config.VDC_PASSWORD,
+            config.HOSTS[0], config.HOSTS_USER, config.HOSTS_PW)
+        )
+        t.start()
+
+        time.sleep(5)
+
+        self.perform_action()
+
         LOGGER.info("VDSM restarted")
+
+        t.join()
         wait_for_datacenter_state_api(config.DATA_CENTER_NAME,
                                       timeout=DATA_CENTER_INIT_TIMEOUT)
         wait_for_tasks(
@@ -113,9 +121,7 @@ class TestCase287892(RestartVDSM):
                                       timeout=DATA_CENTER_INIT_TIMEOUT)
 
     def perform_action(self):
-        self.assertTrue(
-            addSnapshot(True, config.VM_NAME[0], self.snapshot_name, False),
-            "Adding snapshot %s failed" % self.snapshot_name)
+        addSnapshot(True, config.VM_NAME[0], self.snapshot_name, False)
 
     def check_action_failed(self):
         self.assertTrue(
@@ -123,6 +129,7 @@ class TestCase287892(RestartVDSM):
             "Snapshot %s doesn't exists!" % self.snapshot_name)
 
     @tcms(tcms_plan_id, tcms_test_case)
+    @bz({'1069610': {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
     def test_restart_before_tasks_start(self):
         """
         Restart VDSM before tasks were sent to it - snapshot creation
