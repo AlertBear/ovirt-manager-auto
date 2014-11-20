@@ -14,9 +14,16 @@ class SystemService(Service):
     """
     cmd = None
 
+    class CanNotHandle(Exception):
+        pass
+
+    class Error(Exception):
+        pass
+
     def __init__(self, host, name):
         super(SystemService, self).__init__(host)
         self.name = name
+        self._can_handle()
 
     def is_enabled(self):
         raise NotImplementedError()
@@ -42,10 +49,35 @@ class SystemService(Service):
     def reload(self):
         raise NotImplementedError()
 
+    def _can_handle(self):
+        """
+        :raises: CanNotHandle
+        """
+        executor = self.host.executor()
+        rc, _, _ = executor.run_cmd(['which', self.cmd])
+        if rc:
+            raise self.CanNotHandle("Missing %s" % self.cmd)
+
 
 class SysVinit(SystemService):
     cmd = 'service'
     manage_cmd = 'chkconfig'
+    _not_supported = (
+        'libvirtd',
+    )
+
+    def _can_handle(self):
+        if self.name in self._not_supported:
+            raise self.CanNotHandle("%s is not supported" % self.name)
+        super(SysVinit, self)._can_handle()
+        init_script = '/etc/init.d/%s' % self.name
+        executor = self.host.executor()
+        cmd = ('[', '-e', init_script, ']')
+        rc, _, _ = executor.run_cmd(cmd)
+        if rc:
+            raise self.CanNotHandle(
+                "there is missing init script %s" % init_script
+            )
 
     def _toggle(self, action):
         cmd = [
@@ -101,6 +133,22 @@ class SysVinit(SystemService):
 class Systemd(SystemService):
     cmd = 'systemctl'
 
+    def _can_handle(self):
+        super(Systemd, self)._can_handle()
+        cmd = (
+            'systemctl', '--all', '|',
+            'grep', '-o', '^[^.][^.]*.service', '|',
+            'cut', '-d.', '-f1', '|',
+            'sort', '|', 'uniq',
+        )
+        executor = self.host.executor()
+        rc, out, _ = executor.run_cmd(cmd)
+        out = out.strip().splitlines()
+        if rc or self.name not in out:
+            raise self.CanNotHandle(
+                "%s is not listed in %s" % (self.name, out)
+            )
+
     def _execute(self, action):
         cmd = [
             self.cmd,
@@ -134,3 +182,64 @@ class Systemd(SystemService):
 
     def reload(self):
         return self._execute('reload')
+
+
+class InitCtl(SystemService):
+    cmd = 'initctl'
+
+    def _can_handle(self):
+        super(InitCtl, self)._can_handle()
+        executor = self.host.executor()
+        cmd = [
+            self.cmd, 'list', '|',
+            'cut', '-d', ' ', '-f1', '|',
+            'sort', '|', 'uniq',
+        ]
+        rc, out, _ = executor.run_cmd(cmd)
+        out = out.strip().splitlines()
+        if rc or self.name not in out:
+            raise self.CanNotHandle(
+                "%s is not listed in %s" % (self.name, out)
+            )
+
+    def _execute(self, action):
+        cmd = [
+            self.cmd,
+            action,
+            self.name,
+        ]
+        executor = self.host.executor()
+        rc, out, err = executor.run_cmd(cmd)
+        if rc:
+            raise self.Error(err)
+        return out.strip()
+
+    def _toggle(self, action):
+        try:
+            self._execute(action)
+        except self.Error as ex:
+            self.logger.error("Failed to %s service: %s", action, ex)
+            return False
+        return True
+
+    def status(self):
+        out = self._execute('status')
+        return '/running' in out
+
+    def start(self):
+        return self._toggle('start')
+
+    def stop(self):
+        return self._toggle('stop')
+
+    def restart(self):
+        if not self.status():
+            # NOTE: see man(initctl) restart part:
+            # Note that this command can only be used when there is
+            # an instance of JOB, if there is none then it returns an error
+            # instead of starting a new one.
+            return self.start()
+        return self._toggle('restart')
+
+    def reload(self):
+        return self._toggle('reload')

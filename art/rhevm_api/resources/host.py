@@ -3,7 +3,7 @@ import netaddr
 from art.rhevm_api.resources.common import fqdn2ip
 from art.rhevm_api.resources.resource import Resource
 from art.rhevm_api.resources.ssh import RemoteExecutor
-from art.rhevm_api.resources.service import Systemd, SysVinit
+from art.rhevm_api.resources.service import Systemd, SysVinit, InitCtl
 from art.rhevm_api.resources.network import Network
 
 
@@ -19,6 +19,7 @@ class Host(Resource):
     default_service_providers = [
         Systemd,
         SysVinit,
+        InitCtl,
     ]
 
     class LoggerAdapter(Resource.LoggerAdapter):
@@ -73,6 +74,27 @@ class Host(Resource):
             user = self.root_user
         return RemoteExecutor(user, self.ip)
 
+    def _create_service(self, name):
+        for provider in self.default_service_providers:
+            try:
+                service = provider(self, name)
+            except provider.CanNotHandle:
+                pass
+            else:
+                self.logger.info(
+                    "Setting %s as service provider", provider
+                )
+                self._service_provider = provider
+                break
+        else:
+            msg = (
+                "Can not find suitable service provider: %s" %
+                self.default_service_providers
+            )
+            self.logger.error(msg)
+            raise Exception(msg)
+        return service
+
     def service(self, name):
         """
         Create service provider for desired service
@@ -83,25 +105,20 @@ class Host(Resource):
         :rtype: instance of SystemService
         """
         if self._service_provider is None:
-            for provider in self.default_service_providers:
-                # NOTE: we can implement different strategy ...
-                # for example it would be good to verify that service
-                # has implemented interface for such provider ...
-                rc, _, _ = self.executor().run_cmd(['which', provider.cmd])
-                if not rc:
-                    self.logger.info(
-                        "Setting %s as service provider", provider
-                    )
-                    self._service_provider = provider
-                    break
-            else:
-                msg = (
-                    "Can not find suitable service provider: %s" %
-                    self.default_service_providers
-                )
-                self.logger.error(msg)
-                raise Exception(msg)
-        return self._service_provider(self, name)
+            # we need to pick up service provider,
+            # assume same provider for all next services.
+            service = self._create_service(name)
+            self._service_provider = service.__class__
+            return service
+        try:
+            return self._service_provider(self, name)
+        except self._service_provider.CanNotHandle:
+            # it may happen there is some special service
+            # which needs different provider.
+            # try to select different one
+            service = self._create_service(name)
+            self._service_provider = service.__class__
+            return service
 
     def get_network(self):
         return Network(self)
