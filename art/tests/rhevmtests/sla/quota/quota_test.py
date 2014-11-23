@@ -31,6 +31,7 @@ from nose.tools import istest
 from utilities.rhevm_tools.base import Setup
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import disks
+from art.rhevm_api.tests_lib.low_level import events
 from art.rhevm_api.tests_lib.high_level.disks import delete_disks
 from art.rhevm_api.tests_lib.low_level import templates
 from art.unittest_lib import attr
@@ -63,6 +64,10 @@ CLUSTER_NAME = 'quota__cluster'
 QUOTA_NONE = 0
 QUOTA_AUDIT = 1
 QUOTA_ENFORCED = 2
+AUDIT_MODE = 'AUDIT'
+ENFORCED_MODE = 'ENFORCED'
+GRACE_MODE = 'GRACE'
+EXCEED_MODE = 'EXCEED'
 QUOTA_NAME = 'quota_1'
 QUOTA_DESC = 'quota_1_desc'
 QUOTA2_NAME = 'quota_2'
@@ -77,10 +82,24 @@ DISK_INTERFACE = config.ENUMS['interface_virtio']
 
 # Bugs:
 #
-# Bug 1162780 - [REST API] Get vm disks, in case no disks exists, fail
+# Bug 1167081 - Possible to run vm under quota with exceeded number of vcpu
 
 quota_ui = QuotaTest()  # raut object to CRUD quota
 db = DB(None)  # db instance to access db to check resources
+GRACE_MSG = "limit exceeded and entered the grace zone"
+EXCEED_AUDIT = "limit exceeded, proceeding since in Permissive (Audit) mode"
+EXCEED_ENFORCED = "limit exceeded and operation was blocked"
+QUOTA_EVENTS = {
+    AUDIT_MODE: {
+        GRACE_MODE: GRACE_MSG,
+        EXCEED_MODE: EXCEED_AUDIT
+    },
+    ENFORCED_MODE: {
+        GRACE_MODE: GRACE_MSG,
+        EXCEED_MODE: EXCEED_ENFORCED
+    }
+}
+EVENT_TIMEOUT = 10
 
 
 def setup_module():
@@ -140,7 +159,15 @@ class QuotaTestCRUD(TestCase):
         self.assertTrue(db.check_quota_limits(QUOTA2_NAME, mem_size_mb=2048,
                                               virtual_cpu=2,
                                               storage_size_gb=20))
-        # TODO: check properties (thresholds, grace percentage, description)
+        self.assertTrue(
+            db.check_quota_properties(
+                QUOTA2_NAME, description=QUOTA_DESC,
+                threshold_vds_group_percentage=80,
+                threshold_storage_percentage=80,
+                grace_vds_group_percentage=20,
+                grace_storage_percentage=20
+            )
+        )
 
     @istest
     @tcms(TCMS_PLAN_ID, 231141)
@@ -154,7 +181,6 @@ class QuotaTestCRUD(TestCase):
     @tcms(TCMS_PLAN_ID, 231139)
     def d_delete_quota(self):
         """ Delete Quota """
-        # TODO: Check if quota can be removed even when some object have
         quota_ui.remove_quota(config.DC_NAME[0], QUOTA2_NAME)
         self.assertFalse(db.check_quota_exists(QUOTA2_NAME))
         quota_ui.remove_quota(config.DC_NAME[0], QUOTA3_NAME)
@@ -183,7 +209,15 @@ class QuotaTestMode(TestCase):
     @classmethod
     def tearDownClass(cls):
         """ Delete/release resources of test """
+        vms.stop_vms_safely([VM_NAME])
         assert vms.removeVm(True, VM_NAME)
+
+    def _check_quota_message(self, max_id, limit):
+        mode = AUDIT_MODE if self.positive else ENFORCED_MODE
+        message = QUOTA_EVENTS[mode][limit]
+        LOGGER.info("Waiting for event with message %s, "
+                    "after event with id %s", message, max_id)
+        return events.wait_for_event(message, start_id=max_id)
 
     @istest
     @tcms('9428', '268989')
@@ -205,10 +239,11 @@ class QuotaTestMode(TestCase):
         Create quota with 1024MB limit (Grace 120%)
         Create vm with 1228 MB RAM, try to run it.
         """
+        max_id = events.get_max_event_id(None)
         self.assertTrue(vms.updateVm(True, VM_NAME, memory=1228*MB))
         self.assertTrue(vms.startVm(True, VM_NAME))
         self.assertTrue(vms.stopVm(True, VM_NAME))
-        # TODO: check if warning event was generated
+        self.assertTrue(self._check_quota_message(max_id, GRACE_MODE))
 
     @istest
     @tcms('9428', '268991')
@@ -217,12 +252,13 @@ class QuotaTestMode(TestCase):
         Create quota with 1024MB limit (Grace 120%)
         Create vm with 2048 MB RAM, try to run it.
         """
+        max_id = events.get_max_event_id(None)
         self.assertTrue(vms.updateVm(True, VM_NAME, memory=2*GB))
         self.assertTrue(vms.startVm(self.positive, VM_NAME))
         if self.positive:
             self.assertTrue(vms.stopVm(True, VM_NAME))
         self.assertTrue(vms.updateVm(True, VM_NAME, memory=GB))
-        # TODO: check if warning event was generated
+        self.assertTrue(self._check_quota_message(max_id, EXCEED_MODE))
 
     @istest
     @tcms('9428', '268992')
@@ -242,26 +278,79 @@ class QuotaTestMode(TestCase):
     @tcms('9428', '268993')
     def e_quota_vcpu_limit_in_grace(self):
         """ Quota vCPU limit in grace """
+        max_id = events.get_max_event_id(None)
         self.assertTrue(vms.updateVm(True, VM_NAME, cpu_cores=2))
         self.assertTrue(vms.startVm(True, VM_NAME))
         self.assertTrue(vms.stopVm(True, VM_NAME))
         self.assertTrue(vms.updateVm(True, VM_NAME, cpu_cores=1))
-        # TODO: check if warning event was generated
+        self.assertTrue(self._check_quota_message(max_id, GRACE_MODE))
 
     @istest
     @tcms('9428', '268994')
     def f_quota_vcpu_limit_over_grace(self):
         """ Quota vCPU limit over grace """
+        max_id = events.get_max_event_id(None)
         self.assertTrue(vms.updateVm(True, VM_NAME, cpu_cores=3))
         self.assertTrue(vms.startVm(self.positive, VM_NAME))
         if self.positive:
             self.assertTrue(vms.stopVm(True, VM_NAME))
         self.assertTrue(vms.updateVm(True, VM_NAME, cpu_cores=1))
-        # TODO: check if warning event was generated
+        self.assertTrue(self._check_quota_message(max_id, EXCEED_MODE))
+
+    def _check_hotplug(self, vm_state, mode, sockets):
+        max_id = events.get_max_event_id(None)
+        self.assertTrue(
+            vms.startVm(
+                True, VM_NAME,  wait_for_status=vm_state
+            )
+        )
+        compare = self.positive
+        self.assertTrue(
+            vms.updateVm(True, VM_NAME, cpu_socket=sockets, compare=compare)
+        )
+        self.assertTrue(self._check_quota_message(max_id, mode))
+        self.assertTrue(vms.stopVm(True, VM_NAME))
+        if self.positive and mode != GRACE_MODE:
+            self.assertTrue(vms.updateVm(True, VM_NAME, cpu_socket=1))
+        self.assertTrue(vms.updateVm(True, VM_NAME, cpu_socket=1))
+
+    @istest
+    def g_quota_vcpu_hotplug_in_grace_vm_up(self):
+        """
+        Hotplug additional vCPU, when vm up, to put quota vCPU limit in grace
+        """
+        self._check_hotplug(config.ENUMS['vm_state_up'], GRACE_MODE, 2)
+
+    @istest
+    def h_quota_vcpu_hotplug_in_exceed_vm_up(self):
+        """
+        Hotplug additional vCPU, when vm up, to put quota vCPU limit over grace
+        """
+        self._check_hotplug(config.ENUMS['vm_state_up'], EXCEED_MODE, 3)
+
+    @bz({'1167081': {'engine': None, 'version': ['3.5']}})
+    @istest
+    def i_quota_vcpu_hotplug_in_grace_vm_powering_up(self):
+        """
+        Hotplug additional vCPU, when vm powering up,
+        to put quota vCPU limit in grace
+        """
+        self._check_hotplug(
+            config.ENUMS['vm_state_powering_up'], GRACE_MODE, 2)
+
+    @bz({'1167081': {'engine': None, 'version': ['3.5']}})
+    @istest
+    def j_quota_vcpu_hotplug_in_exceed_vm_up(self):
+        """
+        Hotplug additional vCPU, when vm powering up,
+        to put quota vCPU limit over grace
+        """
+        self._check_hotplug(
+            config.ENUMS['vm_state_powering_up'], EXCEED_MODE, 3)
 
     @istest
     @tcms('9428', '268995')
-    def g_quota_storage_limit(self):
+    def k_quota_storage_limit(self):
         """ Quota storage limit.
         Disable cluster quota
         """
@@ -280,8 +369,9 @@ class QuotaTestMode(TestCase):
 
     @istest
     @tcms('9428', '268996')
-    def h_quota_storage_limit_in_grace(self):
+    def l_quota_storage_limit_in_grace(self):
         """ Quota storage limit in grace """
+        max_id = events.get_max_event_id(None)
         q_id = db.get_quota_id_by_name(QUOTA_NAME)
         self.assertTrue(disks.addDisk(True, alias=DISK_NAME,
                                       provisioned_size=14*GB,
@@ -289,13 +379,14 @@ class QuotaTestMode(TestCase):
                                       format=DISK_FORMAT,
                                       storagedomain=config.STORAGE_NAME[0],
                                       quota=q_id))
+        self.assertTrue(self._check_quota_message(max_id, GRACE_MODE))
         self.assertTrue(delete_disks([DISK_NAME]))
-        # TODO: check if warning event was generated
 
     @istest
     @tcms('9428', '268997')
-    def i_quota_storage_limit_over_grace(self):
+    def m_quota_storage_limit_over_grace(self):
         """ Quota storage limit over grace """
+        max_id = events.get_max_event_id(None)
         q_id = db.get_quota_id_by_name(QUOTA_NAME)
         self.assertTrue(disks.addDisk(self.positive, alias=DISK_NAME,
                         provisioned_size=15*GB,
@@ -303,16 +394,16 @@ class QuotaTestMode(TestCase):
                         format=DISK_FORMAT,
                         storagedomain=config.STORAGE_NAME[0],
                         quota=q_id))
+        self.assertTrue(self._check_quota_message(max_id, EXCEED_MODE))
         if self.positive:
             self.assertTrue(delete_disks([DISK_NAME]))
         with ui_setup(quota_ui):
             quota_ui.edit_quota(config.DC_NAME[0], QUOTA_NAME,
                                 mem_limit=0, vcpu_limit=0, storage_limit=0)
-        # TODO: check if warning event was generated
 
     @istest
     @tcms('9428', '268998')
-    def j_delete_quota_in_use(self):
+    def n_delete_quota_in_use(self):
         """ Delete quota in use """
         with ui_setup(quota_ui):
             self.assertRaises(GeneralException, quota_ui.remove_quota,

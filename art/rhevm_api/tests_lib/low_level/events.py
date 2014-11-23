@@ -16,6 +16,8 @@
 # License along with this software; if not, write to the Free
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+from art.core_api.apis_exceptions import APITimeout
+from art.core_api.apis_utils import TimeoutingSampler
 
 from art.rhevm_api.utils.test_utils import get_api
 from art.core_api.validator import compareCollectionSize
@@ -29,8 +31,17 @@ DEF_TIMEOUT = 120
 DEF_SLEEP = 5
 
 
-def _getMaxEventId(query):
-    events = util.query(query)
+def get_max_event_id(query):
+    """
+    Function get id of last event or id of last given event under query
+
+    :param query: query of event
+    :type query: str
+    :returns: If query is empty, return id of last event,
+    if query not empty return id of last event with given query,
+    if no events founded return None
+    """
+    events = util.query(query) if query else util.get(absLink=False)
     if not events:
         return None
     return max(int(event.get_id()) for event in events)
@@ -59,7 +70,7 @@ def searchForRecentEvent(positive, win_start_query, query, expected_count=1):
     expected_count = int(expected_count)
 
     # Pick the event with maximum id, matching the win_start_query.
-    win_start_event_id = _getMaxEventId(win_start_query)
+    win_start_event_id = get_max_event_id(win_start_query)
     if win_start_event_id is None:
         util.logger.error('Couln\'t find the event that marks the '
                           'matching-window start, win_start_query="%s"',
@@ -75,23 +86,47 @@ def searchForRecentEvent(positive, win_start_query, query, expected_count=1):
 
 
 @is_action()
-def waitForEvent(query, start_id=None, win_start_query=None,
-                 timeout=DEF_TIMEOUT, sleep=DEF_SLEEP):
-    '''
-    Wait until there is an event matching query with id greater than start_id.
+def wait_for_event(query, start_id=None, win_start_query=None,
+                   timeout=DEF_TIMEOUT, sleep=DEF_SLEEP):
+    """
+    Wait until there is an event matching query with id greater than start_id
 
-    Parameters:
-     * query - query specifying the event to wait for.
-     * start_id - All the returned events will have id greater than start_id.
-     * win_start_query - A query for the event which id should be used for
-                         start_id.
-     * timeout - Duration of polling for the event to appear in seconds.
-     * sleep - Interval between the poll requests in seconds.
-    '''
+    :param query: query specifying the event to wait for
+    :type query: str
+    :param start_id: All the returned events will have id greater than start_id
+    :type start_id: str
+    :param win_start_query: A query for the event which id
+     should be used for start_id
+    :type win_start_query: str
+    :param timeout: Duration of polling for the event to appear in seconds
+    :type timeout: int
+    :param sleep: Interval between the poll requests in seconds
+    :type timeout: int
+    :returns: True, if found event in give timeout, else False
+    """
     if win_start_query:
-        start_id = _getMaxEventId(win_start_query)
+        start_id = get_max_event_id(win_start_query)
     if start_id is None:
-        start_id = _getMaxEventId('')
+        start_id = get_max_event_id('')
+    sampler = TimeoutingSampler(
+        timeout, sleep, get_events_after_some_event, start_id
+    )
+    try:
+        for events in sampler:
+            for event in events:
+                if query in event.get_description():
+                    return True
+    except APITimeout:
+        return False
 
-    util.waitForQuery(query, str(start_id), timeout, sleep)
-    return True
+
+def get_events_after_some_event(event_id):
+    """
+    Return all events after specific event id
+
+    :param event_id: event id
+    :type event_id: str
+    :returns: list of event instances
+    """
+    events_obj = util.get(absLink=False)
+    return filter(lambda x: int(x.get_id()) > int(event_id), events_obj)

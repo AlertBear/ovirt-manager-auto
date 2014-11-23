@@ -121,6 +121,28 @@ class DB(object):
         return self._check_values(quota_name, T_QUOTA_LIMITATION,
                                   sql, **kwargs)
 
+    def check_quota_properties(self, quota_name, **kwargs):
+        """
+        Check quota properties
+
+        :param quota_name: name of quota to check
+        :type quota_name: str
+        :param description: quota description
+        :type description: str
+        :param threshold_vds_group_percentage: memory and cpu threshold
+        :type threshold_vds_group_percentage: int
+        :param threshold_storage_percentage: storage threshold to check
+        :type threshold_storage_percentage: int
+        :param grace_vds_group_percentage: memory and cpu grace to check
+        :type grace_vds_group_percentage: int
+        :param grace_storage_percentage: storage grace to check
+        :type grace_storage_percentage: int
+        :returns: True if quota limits are equal else False
+        """
+        sql = "SELECT %s FROM %s WHERE id = '%s'"
+        return self._check_values(quota_name, T_QUOTA,
+                                  sql, **kwargs)
+
     def check_global_consumption(self, quota_name, **kwargs):
         """
         Parameters:
@@ -160,8 +182,9 @@ class DB(object):
     def _check_values(self, quota_name, table, sql, **kwargs):
         quota_id = self.get_quota_id_by_name(quota_name)
         for k, v in kwargs.iteritems():
-            d = int(self.setup.psql(sql, k, table, quota_id)[0][0])
-            if not int(v) == d:
+            d = self.setup.psql(sql, k, table, quota_id)[0][0]
+            d = int(d) if k != 'description' else d
+            if not v == d:
                 LOGGER.warn("%s does not equal to %s, but to %s", k, v, d)
                 return False
         return True
