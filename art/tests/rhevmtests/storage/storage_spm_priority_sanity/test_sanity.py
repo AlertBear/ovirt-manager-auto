@@ -205,7 +205,7 @@ class DCUp(AllHostsUp):
                                    POLLING_INTERVAL)
 
 
-@attr(tier=3)
+@attr(tier=2)
 class TwoHostsAndOneWithHigherPriority(AllHostsUp):
     """
     Setup with 3 hosts -
@@ -528,6 +528,7 @@ class TwoHost(AllHostsUp):
     https://tcms.engineering.redhat.com/case/138271/
     """
     __test__ = True
+    apis = AllHostsUp.apis - set(['sdk'])
     tcms_test_case = '138271'
 
     @classmethod
@@ -583,6 +584,7 @@ class SingleHostChangePriority(DCUp):
     https://tcms.engineering.redhat.com/case/174269/
     """
     __test__ = True
+    apis = DCUp.apis - set(['sdk'])
     tcms_test_case = '174269'
 
     @classmethod
@@ -632,6 +634,7 @@ class SingleHostChangePriorityIllegal(DCUp):
     https://tcms.engineering.redhat.com/case/174272/
     """
     __test__ = True
+    apis = DCUp.apis - set(['sdk'])
     tcms_test_case = '174272'
 
     @classmethod
