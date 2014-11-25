@@ -9,24 +9,18 @@ from rhevmtests.storage.config import * # flake8: noqa
 # Name of the test
 TESTNAME = "storage_spm_priority_sanity"
 
-# Hosts settings
-
 # Priority range
 MAX_VALUE = PARAMETERS.get('max_value', 10)
 MIN_VALUE = PARAMETERS.get('min_value', -1)
 
-# Storage Servers
-if STORAGE_TYPE == ENUMS['storage_type_nfs']:
-    STORAGE_SERVERS = PARAMETERS.as_list('data_domain_address') + \
-        [PARAMETERS['master_export_address']]
-    MASTER_VERSION_TAG = 'MASTER_VERSION'
-else:
-    STORAGE_SERVERS = PARAMETERS.as_list('lun_address') + \
-        [PARAMETERS['master_lun_address']]
-    MASTER_VERSION_TAG = 'MDT_MASTER_VERSION'
+NUMBER_OF_HOSTS = 3
+TEST_HOSTS = []
+TEST_HOSTS_PRIORITIES = {}
 
-# TODO: remove
-DB_HOST = DB_ENGINE_HOST
-DB_USER = DB_ENGINE_USER
-DB_HOST_PASSWORD = VDC_ROOT_PASSWORD
-DB_HOST_USER = VDC_ROOT_USER
+spms_136167 = [4,4,6]
+spms_136169 = [-1,-1,-1]
+spms_136171 = [1,2,3]
+spms_136468 = [-1,-1,2]
+spms_136466 = [5,5,5]
+spms_136168 = [5,5,-1]
+spms_136447 = [-1,-1,10]

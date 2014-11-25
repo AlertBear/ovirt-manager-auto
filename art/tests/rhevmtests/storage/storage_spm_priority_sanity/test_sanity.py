@@ -9,7 +9,7 @@ from art.unittest_lib import StorageTest as TestCase
 from art.unittest_lib import attr
 
 from art.rhevm_api.tests_lib.high_level import hosts as hosts
-from art.rhevm_api.tests_lib.low_level import datacenters
+from art.rhevm_api.tests_lib.low_level import datacenters, storagedomains
 import art.rhevm_api.tests_lib.low_level.hosts as ll_hosts
 from art.rhevm_api.utils.test_utils import get_api, toggleServiceOnHost,\
     raise_if_false
@@ -17,7 +17,6 @@ from art.rhevm_api.utils.test_utils import get_api, toggleServiceOnHost,\
 from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from art.test_handler import exceptions
 from art.test_handler.handler_lib.utils import no_datatype_validation
-from art.unittest_lib.common import is_bz_state
 from art.rhevm_api.utils.storage_api import blockOutgoingConnection, \
     unblockOutgoingConnection
 
@@ -27,8 +26,6 @@ import config
 LOGGER = logging.getLogger(__name__)
 ENUMS = config.ENUMS
 HOST_API = get_api('host', 'hosts')
-
-BZ986961_NOT_FIXED = not is_bz_state('986961')
 
 TCMS_PLAN_ID = '5299'
 TMP_CLUSTER = "Default"
@@ -52,8 +49,9 @@ def restart_vdsm(host_index):
     """
     Restarts vdsm on the host given by index
     """
+    host_ip = ll_hosts.getHostIP(config.TEST_HOSTS[host_index])
     assert toggleServiceOnHost(
-        True, host=config.HOSTS[host_index], user=config.HOSTS_USER,
+        True, host=host_ip, user=config.HOSTS_USER,
         password=config.HOSTS_PW, service='vdsmd',
         action='restart')
 
@@ -65,20 +63,19 @@ class BaseTestCase(TestCase):
     __test__ = False
     tcms_plan_id = TCMS_PLAN_ID
     tcms_test_case = "-1"
-    STRING_HOSTS = ",".join(config.HOSTS)
 
     @classmethod
     def _set_priorities(cls):
         """
         Sets priorities to hosts
         """
-        priorities = config.PARAMETERS.as_list('spms_%s' % cls.tcms_test_case)
+        priorities = getattr(config, 'spms_%s' % cls.tcms_test_case)
         res = list()
-        for pri, host in zip(priorities, config.HOSTS):
+        for pri, host in zip(priorities, config.TEST_HOSTS):
             LOGGER.debug("Setting SPM priority of host %s to %s", host, pri)
             res.append(ll_hosts.setSPMPriority(True, host, pri))
         raise_if_false(
-            res, config.HOSTS, "Setting SPM priority failed on hosts %s",
+            res, config.TEST_HOSTS, "Setting SPM priority failed on hosts %s",
             exceptions.HostException)
 
     def _check_host_for_spm(self, host):
@@ -99,28 +96,20 @@ class BaseTestCase(TestCase):
         LOGGER.info("Deactivating host %s", host)
         assert hosts.deactivate_host_if_up(host)
         LOGGER.debug("Waiting until DC is up")
-        assert datacenters.waitForDataCenterState(config.DATA_CENTER_NAME) or \
-            BZ986961_NOT_FIXED
-        # WA BZ#986961
-        if BZ986961_NOT_FIXED:
-            LOGGER.info("Due to BZ#986961 waiting until one of hosts is "
-                        "selected as SPM")
-            assert ll_hosts.waitForSPM(
-                config.DATA_CENTER_NAME, 600, POLLING_INTERVAL)
+        assert datacenters.waitForDataCenterState(config.DATA_CENTER_NAME)
 
     def _maintenance_and_activate_all_hosts(self):
         # Deactivate all hosts
         LOGGER.debug("Deactivating all hosts")
-        assert hosts.deactivate_hosts_if_up(config.HOSTS)
+        assert hosts.deactivate_hosts_if_up(config.TEST_HOSTS)
 
         # Activate all hosts
         LOGGER.debug("Activating all hosts")
-        assert ll_hosts.activateHosts(True, config.HOSTS)
+        assert ll_hosts.activateHosts(True, config.TEST_HOSTS)
 
         # Wait for a spm to be chosen
         assert datacenters.waitForDataCenterState(
-            config.DATA_CENTER_NAME) or \
-            BZ986961_NOT_FIXED
+            config.DATA_CENTER_NAME)
 
     def _get_new_spm(self, spm, expected):
         """
@@ -142,10 +131,10 @@ class BaseTestCase(TestCase):
                                    SPM_TIMEOUT,
                                    POLLING_INTERVAL)
 
-        spm_host = ll_hosts.getSPMHost(config.HOSTS)
+        spm_host = ll_hosts.getSPMHost(config.TEST_HOSTS)
         LOGGER.debug("SPM is %s", spm_host)
-        LOGGER.debug("Deactivating hosts %s", config.HOSTS)
-        assert hosts.deactivate_hosts_if_up(cls.STRING_HOSTS)
+        LOGGER.debug("Deactivating hosts %s", config.TEST_HOSTS)
+        assert hosts.deactivate_hosts_if_up(config.TEST_HOSTS)
 
 
 class AllHostsUp(BaseTestCase):
@@ -175,7 +164,7 @@ class AllHostsUp(BaseTestCase):
         LOGGER.info("Sleeping for %d seconds in order to make sure no SPM was"
                     " selected", SLEEP_AMOUNT)
         time.sleep(SLEEP_AMOUNT)
-        self.assertTrue(ll_hosts.checkSPMPresence(False, self.STRING_HOSTS))
+        self.assertTrue(ll_hosts.checkSPMPresence(False, config.TEST_HOSTS))
         LOGGER.info("No SPM was selected, that's correct")
 
     @classmethod
@@ -183,7 +172,7 @@ class AllHostsUp(BaseTestCase):
         """
         Moves all maintenannced hosts to up status
         """
-        for host_name in config.HOSTS:
+        for host_name in config.TEST_HOSTS:
             host_obj = HOST_API.find(host_name)
             if host_obj.get_status().get_state() == \
                     ENUMS['host_state_maintenance']:
@@ -228,7 +217,7 @@ class TwoHostsAndOneWithHigherPriority(AllHostsUp):
         """
         for _ in range(self.number_of_iterations):
             self._maintenance_and_activate_all_hosts()
-            self._check_host_for_spm(config.HOSTS[2])
+            self._check_host_for_spm(config.TEST_HOSTS[2])
 
 
 @attr(tier=1)
@@ -249,9 +238,9 @@ class SPMPriorityMinusOne(AllHostsUp):
         this method will cause a TimeOut
         """
         cls._set_priorities()
-        LOGGER.debug("Deactivating hosts %s", config.HOSTS)
-        assert hosts.deactivate_hosts_if_up(cls.STRING_HOSTS)
-        if not ll_hosts.activateHosts(True, config.HOSTS):
+        LOGGER.debug("Deactivating hosts %s", config.TEST_HOSTS)
+        assert hosts.deactivate_hosts_if_up(config.TEST_HOSTS)
+        if not ll_hosts.activateHosts(True, config.TEST_HOSTS):
             raise exceptions.HostException("Failed to activate hosts")
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
@@ -268,7 +257,7 @@ class SPMPriorityMinusOne(AllHostsUp):
         Set some SPM in order to clean up
         """
         assert ll_hosts.setSPMPriority(
-            True, config.HOSTS[0], DEFAULT_SPM_PRIORITY)
+            True, config.TEST_HOSTS[0], DEFAULT_SPM_PRIORITY)
         assert datacenters.waitForDataCenterState(config.DATA_CENTER_NAME)
         super(SPMPriorityMinusOne, cls).teardown_class()
 
@@ -288,9 +277,9 @@ class SeveralHosts(DCUp):
         """
         SPM host is always the host with the highest SPM Priority value.
         """
-        self._get_new_spm(config.HOSTS[0], config.HOSTS[2])
-        self._get_new_spm(config.HOSTS[2], config.HOSTS[1])
-        self._get_new_spm(config.HOSTS[1], config.HOSTS[2])
+        self._get_new_spm(config.TEST_HOSTS[0], config.TEST_HOSTS[2])
+        self._get_new_spm(config.TEST_HOSTS[2], config.TEST_HOSTS[1])
+        self._get_new_spm(config.TEST_HOSTS[1], config.TEST_HOSTS[2])
 
 
 @attr(tier=2)
@@ -302,14 +291,13 @@ class PriorityOutOfRange(SPMPriorityMinusOne):
     """
     __test__ = True
     tcms_test_case = '136454'
-    host = config.HOSTS[0]
 
     @classmethod
     def setup_class(cls):
         """
-        Do nothing
+        Initialize host attribute
         """
-        pass
+        cls.host = config.TEST_HOSTS[0]
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_priority(self):
@@ -363,11 +351,11 @@ class ADefaultSPMPriority(BaseTestCase):
         Check that all hosts have default priority 5
         """
         priorities = list()
-        for host in config.HOSTS:
+        for host in config.TEST_HOSTS:
             priorities.append(ll_hosts.checkSPMPriority(True, host, '5'))
         raise_if_false(
-            priorities, config.HOSTS, "Hosts %s doesn't have default priority",
-            exceptions.HostException)
+            priorities, config.TEST_HOSTS,
+            "Hosts %s doesn't have default priority", exceptions.HostException)
 
 
 @attr(tier=0)
@@ -387,13 +375,13 @@ class RandomSelection(DCUp):
         new SPM is the same as before. All hosts should have the same SPM
         priority
         """
-        former_spm = ll_hosts._getSPMHostname(config.HOSTS)
+        former_spm = ll_hosts._getSPMHostname(config.TEST_HOSTS)
         self._maintenance_and_wait_for_dc(former_spm)
         assert ll_hosts.activateHost(True, former_spm)
         assert ll_hosts.waitForSPM(config.DATA_CENTER_NAME,
                                    SPM_TIMEOUT,
                                    POLLING_INTERVAL)
-        new_spm = ll_hosts._getSPMHostname(config.HOSTS)
+        new_spm = ll_hosts._getSPMHostname(config.TEST_HOSTS)
         self.assertTrue(
             former_spm != new_spm,
             "Selected the same SPM - former spm: %s, current spm: %s" %
@@ -424,15 +412,15 @@ class RestartVdsm(DCUp):
         """
         Ensure that after vdsm is restarted, priority change is not ignored
         """
-        assert ll_hosts.checkHostSpmStatus(True, config.HOSTS[2])
-        assert hosts.deactivate_host_if_up(config.HOSTS[2])
-        assert set_spm_priority_in_db(config.HOSTS[2], '-1')
+        assert ll_hosts.checkHostSpmStatus(True, config.TEST_HOSTS[2])
+        assert hosts.deactivate_host_if_up(config.TEST_HOSTS[2])
+        assert set_spm_priority_in_db(config.TEST_HOSTS[2], '-1')
         restart_vdsm(2)
-        assert ll_hosts.activateHost(True, config.HOSTS[2])
+        assert ll_hosts.activateHost(True, config.TEST_HOSTS[2])
         self._check_no_spm()
-        assert set_spm_priority_in_db(config.HOSTS[0], '2')
+        assert set_spm_priority_in_db(config.TEST_HOSTS[0], '2')
         restart_vdsm(0)
-        self._check_host_for_spm(config.HOSTS[0])
+        self._check_host_for_spm(config.TEST_HOSTS[0])
 
 
 @attr(tier=2)
@@ -451,9 +439,9 @@ class SingleHost(AllHostsUp):
         """
         Puts two hosts into default cluster
         """
-        hosts.switch_host_to_cluster(config.HOSTS[1], TMP_CLUSTER)
-        hosts.switch_host_to_cluster(config.HOSTS[2], TMP_CLUSTER)
-        assert ll_hosts.setSPMPriority(True, config.HOSTS[0], '-1')
+        hosts.switch_host_to_cluster(config.TEST_HOSTS[1], TMP_CLUSTER)
+        hosts.switch_host_to_cluster(config.TEST_HOSTS[2], TMP_CLUSTER)
+        assert ll_hosts.setSPMPriority(True, config.TEST_HOSTS[0], '-1')
 
     @classmethod
     def teardown_class(cls):
@@ -461,9 +449,9 @@ class SingleHost(AllHostsUp):
         Moves two hosts back from default cluster
         """
         assert ll_hosts.setSPMPriority(
-            True, config.HOSTS[0], DEFAULT_SPM_PRIORITY)
-        hosts.switch_host_to_cluster(config.HOSTS[1], config.CLUSTER_NAME)
-        hosts.switch_host_to_cluster(config.HOSTS[2], config.CLUSTER_NAME)
+            True, config.TEST_HOSTS[0], DEFAULT_SPM_PRIORITY)
+        hosts.switch_host_to_cluster(config.TEST_HOSTS[1], config.CLUSTER_NAME)
+        hosts.switch_host_to_cluster(config.TEST_HOSTS[2], config.CLUSTER_NAME)
         super(SingleHost, cls).teardown_class()
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
@@ -472,8 +460,8 @@ class SingleHost(AllHostsUp):
         Maintenace host several times and make sure it was not selected as SPM
         """
         for _ in range(self.iteration_number):
-            assert hosts.deactivate_host_if_up(config.HOSTS[0])
-            assert ll_hosts.activateHost(True, config.HOSTS[0])
+            assert hosts.deactivate_host_if_up(config.TEST_HOSTS[0])
+            assert ll_hosts.activateHost(True, config.TEST_HOSTS[0])
             self._check_no_spm()
 
 
@@ -494,11 +482,11 @@ class SPMPriorityOneHostMinusOne(DCUp):
         and checks that new SPM is the same as before. All hosts should have
         the same SPM priority
         """
-        former_spm = ll_hosts.returnSPMHost(config.HOSTS)
+        former_spm = ll_hosts.returnSPMHost(config.TEST_HOSTS)
         LOGGER.info("former SPM - %s", former_spm)
         self._maintenance_and_wait_for_dc(former_spm)
         assert ll_hosts.activateHost(True, former_spm)
-        new_spm = ll_hosts.returnSPMHost(config.HOSTS)
+        new_spm = ll_hosts.returnSPMHost(config.TEST_HOSTS)
         self.assertNotEqual(
             former_spm, new_spm,
             "Selected the same SPM - former spm: %s, current spm: %s" %
@@ -512,10 +500,10 @@ class SPMPriorityOneHostMinusOne(DCUp):
         """
         for _ in range(self.iteration_number):
             self._maintenance_and_activate_all_hosts()
-            _, current_spm = ll_hosts.returnSPMHost(config.HOSTS)
+            _, current_spm = ll_hosts.returnSPMHost(config.TEST_HOSTS)
             # Make sure that the host with -1 priority is not chosen to spm
             self.assertNotEqual(
-                current_spm, config.HOSTS[2],
+                current_spm, config.TEST_HOSTS[2],
                 "Selected host with -1 priority to be SPM - current spm: %s"
                 % current_spm)
 
@@ -537,21 +525,21 @@ class TwoHost(AllHostsUp):
         Puts the SPM in maintenance, so we'll have only 2 active hosts and
         new election
         """
-        if not ll_hosts.isHostUp(True, config.HOSTS[2]):
-            ll_hosts.activateHost(True, config.HOSTS[2])
+        if not ll_hosts.isHostUp(True, config.TEST_HOSTS[2]):
+            ll_hosts.activateHost(True, config.TEST_HOSTS[2])
         ll_hosts.select_host_as_spm(
-            True, config.HOSTS[2], config.DATA_CENTER_NAME)
-        assert ll_hosts.setSPMPriority(True, config.HOSTS[0], '4')
-        assert ll_hosts.setSPMPriority(True, config.HOSTS[1], '5')
-        if ll_hosts.waitForHostsStates(True, config.HOSTS[2], timeout=10):
-            assert hosts.deactivate_host_if_up(config.HOSTS[2])
+            True, config.TEST_HOSTS[2], config.DATA_CENTER_NAME)
+        assert ll_hosts.setSPMPriority(True, config.TEST_HOSTS[0], '4')
+        assert ll_hosts.setSPMPriority(True, config.TEST_HOSTS[1], '5')
+        if ll_hosts.waitForHostsStates(True, config.TEST_HOSTS[2], timeout=10):
+            assert hosts.deactivate_host_if_up(config.TEST_HOSTS[2])
 
     @classmethod
     def teardown_class(cls):
         """
         Activate the host we deactivate in setup_class
         """
-        ll_hosts.activateHost(True, config.HOSTS[2])
+        ll_hosts.activateHost(True, config.TEST_HOSTS[2])
         super(TwoHost, cls).teardown_class()
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
@@ -560,20 +548,20 @@ class TwoHost(AllHostsUp):
         Switch priorities between 2 hosts
         """
         # Make sure that the host with the highest priority is the spm
-        self._check_host_for_spm(config.HOSTS[1])
+        self._check_host_for_spm(config.TEST_HOSTS[1])
 
         # Deactivate all hosts
-        assert hosts.deactivate_host_if_up(config.HOSTS[0])
-        assert hosts.deactivate_host_if_up(config.HOSTS[1])
+        assert hosts.deactivate_host_if_up(config.TEST_HOSTS[0])
+        assert hosts.deactivate_host_if_up(config.TEST_HOSTS[1])
 
         # Swap host priorities
-        assert ll_hosts.setSPMPriority(True, config.HOSTS[0], '5')
-        assert ll_hosts.setSPMPriority(True, config.HOSTS[1], '4')
+        assert ll_hosts.setSPMPriority(True, config.TEST_HOSTS[0], '5')
+        assert ll_hosts.setSPMPriority(True, config.TEST_HOSTS[1], '4')
 
         # Activate both hosts, the host with highest priority should be spm
-        assert ll_hosts.activateHost(True, config.HOSTS[0])
-        assert ll_hosts.activateHost(True, config.HOSTS[1])
-        self._check_host_for_spm(config.HOSTS[0])
+        assert ll_hosts.activateHost(True, config.TEST_HOSTS[0])
+        assert ll_hosts.activateHost(True, config.TEST_HOSTS[1])
+        self._check_host_for_spm(config.TEST_HOSTS[0])
 
 
 @attr(tier=0)
@@ -592,9 +580,9 @@ class SingleHostChangePriority(DCUp):
         """
         Puts two hosts into default cluster
         """
-        hosts.switch_host_to_cluster(config.HOSTS[1], TMP_CLUSTER)
-        hosts.switch_host_to_cluster(config.HOSTS[2], TMP_CLUSTER)
-        assert ll_hosts.setSPMPriority(True, config.HOSTS[0], '-1')
+        hosts.switch_host_to_cluster(config.TEST_HOSTS[1], TMP_CLUSTER)
+        hosts.switch_host_to_cluster(config.TEST_HOSTS[2], TMP_CLUSTER)
+        assert ll_hosts.setSPMPriority(True, config.TEST_HOSTS[0], '-1')
 
     @classmethod
     def teardown_class(cls):
@@ -602,9 +590,9 @@ class SingleHostChangePriority(DCUp):
         Moves two hosts back from default cluster
         """
         assert ll_hosts.setSPMPriority(
-            True, config.HOSTS[0], DEFAULT_SPM_PRIORITY)
-        hosts.switch_host_to_cluster(config.HOSTS[1], config.CLUSTER_NAME)
-        hosts.switch_host_to_cluster(config.HOSTS[2], config.CLUSTER_NAME)
+            True, config.TEST_HOSTS[0], DEFAULT_SPM_PRIORITY)
+        hosts.switch_host_to_cluster(config.TEST_HOSTS[1], config.CLUSTER_NAME)
+        hosts.switch_host_to_cluster(config.TEST_HOSTS[2], config.CLUSTER_NAME)
         super(SingleHostChangePriority, cls).teardown_class()
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
@@ -613,16 +601,16 @@ class SingleHostChangePriority(DCUp):
         Change priorities a few times and make sure that they actually changed
         """
         assert ll_hosts.setSPMPriority(True,
-                                       config.HOSTS[0],
+                                       config.TEST_HOSTS[0],
                                        DEFAULT_SPM_PRIORITY)
 
-        ll_hosts.checkSPMPriority(True,  config.HOSTS[0], '5')
+        ll_hosts.checkSPMPriority(True,  config.TEST_HOSTS[0], '5')
 
-        assert ll_hosts.setSPMPriority(True, config.HOSTS[0], '-1')
-        ll_hosts.checkSPMPriority(True,  config.HOSTS[0], '-1')
+        assert ll_hosts.setSPMPriority(True, config.TEST_HOSTS[0], '-1')
+        ll_hosts.checkSPMPriority(True,  config.TEST_HOSTS[0], '-1')
 
-        assert ll_hosts.setSPMPriority(True, config.HOSTS[0], '10')
-        ll_hosts.checkSPMPriority(True,  config.HOSTS[0], '10')
+        assert ll_hosts.setSPMPriority(True, config.TEST_HOSTS[0], '10')
+        ll_hosts.checkSPMPriority(True,  config.TEST_HOSTS[0], '10')
 
 
 @attr(tier=2)
@@ -642,9 +630,9 @@ class SingleHostChangePriorityIllegal(DCUp):
         """
         Puts two hosts into default cluster
         """
-        hosts.switch_host_to_cluster(config.HOSTS[1], TMP_CLUSTER)
-        hosts.switch_host_to_cluster(config.HOSTS[2], TMP_CLUSTER)
-        assert ll_hosts.setSPMPriority(True, config.HOSTS[0], '-1')
+        hosts.switch_host_to_cluster(config.TEST_HOSTS[1], TMP_CLUSTER)
+        hosts.switch_host_to_cluster(config.TEST_HOSTS[2], TMP_CLUSTER)
+        assert ll_hosts.setSPMPriority(True, config.TEST_HOSTS[0], '-1')
 
     @classmethod
     def teardown_class(cls):
@@ -652,9 +640,9 @@ class SingleHostChangePriorityIllegal(DCUp):
         Moves two hosts back from default cluster
         """
         assert ll_hosts.setSPMPriority(
-            True, config.HOSTS[0], DEFAULT_SPM_PRIORITY)
-        hosts.switch_host_to_cluster(config.HOSTS[1], config.CLUSTER_NAME)
-        hosts.switch_host_to_cluster(config.HOSTS[2], config.CLUSTER_NAME)
+            True, config.TEST_HOSTS[0], DEFAULT_SPM_PRIORITY)
+        hosts.switch_host_to_cluster(config.TEST_HOSTS[1], config.CLUSTER_NAME)
+        hosts.switch_host_to_cluster(config.TEST_HOSTS[2], config.CLUSTER_NAME)
         super(SingleHostChangePriorityIllegal, cls).teardown_class()
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
@@ -663,20 +651,25 @@ class SingleHostChangePriorityIllegal(DCUp):
         Change priorities a few times and make sure that they actually changed
         """
         assert ll_hosts.setSPMPriority(True,
-                                       config.HOSTS[0],
+                                       config.TEST_HOSTS[0],
                                        DEFAULT_SPM_PRIORITY)
 
-        ll_hosts.checkSPMPriority(True, config.HOSTS[0], DEFAULT_SPM_PRIORITY)
+        ll_hosts.checkSPMPriority(True, config.TEST_HOSTS[0],
+                                  DEFAULT_SPM_PRIORITY)
 
-        self.assertFalse(ll_hosts.setSPMPriority(True, config.HOSTS[0], '-2'),
-                         "Succeeded to set SPM priority to -2 - must be "
-                         "greater than or equal to -1")
-        ll_hosts.checkSPMPriority(True, config.HOSTS[0], DEFAULT_SPM_PRIORITY)
+        self.assertFalse(
+            ll_hosts.setSPMPriority(True, config.TEST_HOSTS[0], '-2'),
+            "Succeeded to set SPM priority to -2 - must be "
+            "greater than or equal to -1")
+        ll_hosts.checkSPMPriority(
+            True, config.TEST_HOSTS[0], DEFAULT_SPM_PRIORITY)
 
-        self.assertFalse(ll_hosts.setSPMPriority(True, config.HOSTS[0], '11'),
-                         "Succeeded to set SPM priority to 11 - must be less "
-                         "than or equal to 10")
-        ll_hosts.checkSPMPriority(True, config.HOSTS[0], DEFAULT_SPM_PRIORITY)
+        self.assertFalse(
+            ll_hosts.setSPMPriority(True, config.TEST_HOSTS[0], '11'),
+            "Succeeded to set SPM priority to 11 - must be less "
+            "than or equal to 10")
+        ll_hosts.checkSPMPriority(
+            True, config.TEST_HOSTS[0], DEFAULT_SPM_PRIORITY)
 
 
 @attr(tier=1)
@@ -702,10 +695,10 @@ class SingleHostChangePriorityIllegalValue(DCUp):
         """
         Puts two hosts into default cluster
         """
-        hosts.switch_host_to_cluster(config.HOSTS[1], TMP_CLUSTER)
-        hosts.switch_host_to_cluster(config.HOSTS[2], TMP_CLUSTER)
+        hosts.switch_host_to_cluster(config.TEST_HOSTS[1], TMP_CLUSTER)
+        hosts.switch_host_to_cluster(config.TEST_HOSTS[2], TMP_CLUSTER)
         assert ll_hosts.setSPMPriority(True,
-                                       config.HOSTS[0],
+                                       config.TEST_HOSTS[0],
                                        DEFAULT_SPM_PRIORITY)
 
     @classmethod
@@ -714,9 +707,9 @@ class SingleHostChangePriorityIllegalValue(DCUp):
         Moves two hosts back from default cluster
         """
         assert ll_hosts.setSPMPriority(
-            True, config.HOSTS[0], DEFAULT_SPM_PRIORITY)
-        hosts.switch_host_to_cluster(config.HOSTS[1], config.CLUSTER_NAME)
-        hosts.switch_host_to_cluster(config.HOSTS[2], config.CLUSTER_NAME)
+            True, config.TEST_HOSTS[0], DEFAULT_SPM_PRIORITY)
+        hosts.switch_host_to_cluster(config.TEST_HOSTS[1], config.CLUSTER_NAME)
+        hosts.switch_host_to_cluster(config.TEST_HOSTS[2], config.CLUSTER_NAME)
         super(SingleHostChangePriorityIllegalValue, cls).teardown_class()
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
@@ -725,9 +718,11 @@ class SingleHostChangePriorityIllegalValue(DCUp):
         """
         Change priority to an illegal value - '#'
         """
-        self.assertTrue(ll_hosts.setSPMPriority(False, config.HOSTS[0], '#'),
-                        "Failed to set SPM priority to # - illegal value")
-        ll_hosts.checkSPMPriority(True,  config.HOSTS[0], DEFAULT_SPM_PRIORITY)
+        self.assertTrue(
+            ll_hosts.setSPMPriority(False, config.TEST_HOSTS[0], '#'),
+            "Failed to set SPM priority to # - illegal value")
+        ll_hosts.checkSPMPriority(
+            True,  config.TEST_HOSTS[0], DEFAULT_SPM_PRIORITY)
 
 
 @attr(tier=1)
@@ -742,14 +737,13 @@ class StorageDisconnect(DCUp):
     __test__ = True
     tcms_test_case = '136447'
 
-    @classmethod
-    def teardown_class(cls):
+    def tearDown(self):
         """
         Unblock outgoing connection
         """
-        if not unblockOutgoingConnection(config.HOSTS[2], config.HOSTS_USER,
-                                         config.HOSTS_PW,
-                                         config.STORAGE_SERVERS[-1]):
+        if not unblockOutgoingConnection(
+                config.TEST_HOSTS[2], config.HOSTS_USER, config.HOSTS_PW,
+                self.storage_domain_ip['address']):
             logging.debug("Failed to unblock outgoing connection")
 
     @bz('1017207')
@@ -762,18 +756,23 @@ class StorageDisconnect(DCUp):
         """
         # Make sure the the new spm is the host with the highest priority
 
-        self._check_host_for_spm(config.HOSTS[2])
+        self.storage_domains = storagedomains.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage)
+        status, self.storage_domain_ip = storagedomains.getDomainAddress(
+            True, self.storage_domains[0])
+        assert status
+        self._check_host_for_spm(config.TEST_HOSTS[2])
         self.assertTrue(blockOutgoingConnection(
-            config.HOSTS[2], config.HOSTS_USER, config.HOSTS_PW,
-            config.STORAGE_SERVERS[-1]))
+            config.TEST_HOSTS[2], config.HOSTS_USER, config.HOSTS_PW,
+            self.storage_domain_ip['address']))
         self._check_no_spm()
 
         self.assertTrue(ll_hosts.setSPMPriority(True,
-                        config.HOSTS[1],
+                        config.TEST_HOSTS[1],
                         DEFAULT_SPM_PRIORITY),
                         "Failed to change SPM priority for host %s to "
                         "default - %s" %
-                        (config.HOSTS[1], DEFAULT_SPM_PRIORITY))
+                        (config.TEST_HOSTS[1], DEFAULT_SPM_PRIORITY))
 
-        ll_hosts.getSPMPriority(config.HOSTS[1])
-        self._check_host_for_spm(config.HOSTS[1])
+        ll_hosts.getSPMPriority(config.TEST_HOSTS[1])
+        self._check_host_for_spm(config.TEST_HOSTS[1])

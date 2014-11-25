@@ -43,7 +43,6 @@ from art.rhevm_api.tests_lib.low_level.datacenters import \
 from art.rhevm_api.tests_lib.low_level.vms import stopVm, getVmHost, \
     get_vm_state
 from art.rhevm_api.utils.xpath_utils import XPathMatch, XPathLinks
-from art.rhevm_api.utils.resource_utils import runMachineCommand
 
 ELEMENT = 'host'
 COLLECTION = 'hosts'
@@ -1325,7 +1324,11 @@ def checkSPMPresence(positive, hosts):
     Returns: True (success - SPM is present on any host from list)
              False (failure - SPM not present)
     """
-    for host in hosts.split(','):
+    if isinstance(hosts, str):
+        hosts_list = split(',')
+    else:
+        hosts_list = hosts[:]
+    for host in hosts_list:
         if checkHostSpmStatus(True, host):
             return positive
     else:

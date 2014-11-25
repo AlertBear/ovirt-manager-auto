@@ -81,10 +81,12 @@ def deactivate_hosts_if_up(hosts_list):
     Returns: True (success) / False (failure)
     """
     if isinstance(hosts_list, str):
-        hosts_list = hosts_list.split(',')
-    spm = hosts.getSPMHost(hosts_list)
+        _hosts_list = hosts_list.split(',')
+    else:
+        _hosts_list = hosts_list[:]
+    spm = hosts.getSPMHost(_hosts_list)
     logging.info("spm host - %s", spm)
-    sorted_hosts = hosts._sort_hosts_by_priority(hosts_list, False)
+    sorted_hosts = hosts._sort_hosts_by_priority(_hosts_list, False)
     sorted_hosts.remove(spm)
     sorted_hosts.append(spm)
 
