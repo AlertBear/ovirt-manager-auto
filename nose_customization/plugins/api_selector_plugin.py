@@ -22,6 +22,7 @@ class APISelectorPlugin(NosePlugin):
         log.info('Configuring APISelector')
         if options.enable_plugin_apiselector:
             self.enabled = True
+        self.allowed_engines = set(opts.get('engines', ['rest']))
         self.original_engine = opts['engine']
 
     def prepareTestLoader(self, loader):
@@ -36,7 +37,8 @@ class APISelectorPlugin(NosePlugin):
             obj = transplant_class(obj, parent.__name__)
 
         objs = []
-        for api in iter(getattr(obj, 'apis', ['rest'])):
+        required_apis = set(getattr(obj, 'apis', ['rest']))
+        for api in iter(self.allowed_engines & required_apis):
             log.info('creating  %s for api %s', obj.__name__, api)
             new_name = "%s%s" % (obj.__name__, api.upper())
             new_dict = dict(obj.__dict__)
