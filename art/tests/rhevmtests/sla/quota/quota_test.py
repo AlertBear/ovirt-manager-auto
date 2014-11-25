@@ -22,7 +22,7 @@ Check different cases for quota limitations in None, Audit and Enforce mode
 Include CRUD tests, different limitations of storage, memory and vcpu tests
 """
 import logging
-from rhevmtests.quota_tests import config
+from rhevmtests.sla import config
 
 from common import DB, ui_setup
 from nose.tools import istest

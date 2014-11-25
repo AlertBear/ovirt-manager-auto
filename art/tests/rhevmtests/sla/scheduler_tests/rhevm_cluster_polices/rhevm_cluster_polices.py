@@ -4,10 +4,10 @@ Check different cases for migration when cluster police is Evenly Distributed
 and Power Saving
 """
 import time
-import config
 import random
 import logging
 from nose.tools import istest
+from rhevmtests.sla import config
 from art.unittest_lib import attr
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.unittest_lib import ComputeTest as TestCase
@@ -21,7 +21,7 @@ from art.rhevm_api.tests_lib.low_level.clusters import updateCluster
 logger = logging.getLogger(__name__)
 timestamp = False
 
-VMS = [config.VM_FOR_MIGRATION, config.SUPPORT_VM_1, config.SUPPORT_VM_2]
+VMS = [config.VM_NAME[0], config.VM_NAME[1], config.VM_NAME[2]]
 MAX_CPU_LOAD = 100
 AVERAGE_CPU_LOAD = 50
 MIN_CPU_LOAD = 0
@@ -111,7 +111,7 @@ class RhevmClusterPolicies(TestCase):
         """
         Check that no migration happened
         """
-        self.assertTrue(vm_api.no_vm_migration(config.VM_FOR_MIGRATION,
+        self.assertTrue(vm_api.no_vm_migration(config.VM_NAME[0],
                                                host, WAIT_FOR_MIGRATION))
 
     def _maintenance_migration(self, src_host, dst_host):
@@ -119,7 +119,7 @@ class RhevmClusterPolicies(TestCase):
         Check that after deactivation of src host, vm migrated on dst host
         """
         self.assertTrue(
-            vm_api.maintenance_vm_migration(config.VM_FOR_MIGRATION,
+            vm_api.maintenance_vm_migration(config.VM_NAME[0],
                                             src_host, dst_host))
 
 
@@ -171,8 +171,8 @@ class MigrateFromUnderUtilizedHost(PowerSaving):
         """
         super(MigrateFromUnderUtilizedHost, cls).setup_class()
         logger.info("Load host %s CPU up to %d percent",
-                    config.LOAD_HOST_1, AVERAGE_CPU_LOAD)
-        cls._load_hosts_cpu([config.LOAD_HOST_1], AVERAGE_CPU_LOAD)
+                    config.HOSTS[1], AVERAGE_CPU_LOAD)
+        cls._load_hosts_cpu([config.HOSTS[1]], AVERAGE_CPU_LOAD)
 
     @tcms('9904', '50879')
     @istest
@@ -182,15 +182,15 @@ class MigrateFromUnderUtilizedHost(PowerSaving):
         with CPU utilization between Low
         and High utilization after CpuOverCommitDuration
         """
-        self._check_migration(config.LOAD_HOST_1)
+        self._check_migration(config.HOSTS[1])
 
     @classmethod
     def teardown_class(cls):
         """
         Release host CPU and stop vm
         """
-        logger.info("Release host %s CPU", config.LOAD_HOST_1)
-        cls._release_hosts_cpu([config.LOAD_HOST_1])
+        logger.info("Release host %s CPU", config.HOSTS[1])
+        cls._release_hosts_cpu([config.HOSTS[1]])
         super(MigrateFromUnderUtilizedHost, cls).teardown_class()
 
 
@@ -207,8 +207,8 @@ class NoAvailableHostForMigrationPS(PowerSaving):
         """
         super(NoAvailableHostForMigrationPS, cls).setup_class()
         logger.info("Load host %s CPU up to %d percent",
-                    config.LOAD_HOST_1, MAX_CPU_LOAD)
-        cls._load_hosts_cpu([config.LOAD_HOST_1], MAX_CPU_LOAD)
+                    config.HOSTS[1], MAX_CPU_LOAD)
+        cls._load_hosts_cpu([config.HOSTS[1]], MAX_CPU_LOAD)
 
     @tcms('9904', '50882')
     @istest
@@ -217,15 +217,15 @@ class NoAvailableHostForMigrationPS(PowerSaving):
         Vm run on host with low cpu utilization, but another host in cluster
         above maximum service level of CPU, so vm must stay on old host
         """
-        self._no_migration(config.LOAD_HOST_0)
+        self._no_migration(config.HOSTS[0])
 
     @classmethod
     def teardown_class(cls):
         """
         Release host CPU and stop vm
         """
-        logger.info("Release host %s CPU", config.LOAD_HOST_1)
-        cls._release_hosts_cpu([config.LOAD_HOST_1])
+        logger.info("Release host %s CPU", config.HOSTS[1])
+        cls._release_hosts_cpu([config.HOSTS[1]])
         super(NoAvailableHostForMigrationPS, cls).teardown_class()
 
 
@@ -244,11 +244,11 @@ class MigrationFromLowCPUUtilization(PowerSaving):
         """
         super(MigrationFromLowCPUUtilization, cls).setup_class()
         logger.info("Load host %s CPU up to %d percent",
-                    config.LOAD_HOST_2, MAX_CPU_LOAD)
-        cls._load_hosts_cpu([config.LOAD_HOST_2], MAX_CPU_LOAD)
+                    config.HOSTS[2], MAX_CPU_LOAD)
+        cls._load_hosts_cpu([config.HOSTS[2]], MAX_CPU_LOAD)
         logger.info("Load host %s CPU up to %d percent",
-                    config.LOAD_HOST_1, AVERAGE_CPU_LOAD)
-        cls._load_hosts_cpu([config.LOAD_HOST_1], AVERAGE_CPU_LOAD)
+                    config.HOSTS[1], AVERAGE_CPU_LOAD)
+        cls._load_hosts_cpu([config.HOSTS[1]], AVERAGE_CPU_LOAD)
 
     @tcms('9904', '50884')
     @istest
@@ -258,7 +258,7 @@ class MigrationFromLowCPUUtilization(PowerSaving):
         host with low CPU utilization, to host with correct
         utilization after CpuOverCommitDuration
         """
-        self._check_migration(config.LOAD_HOST_1)
+        self._check_migration(config.HOSTS[1])
 
     @classmethod
     def teardown_class(cls):
@@ -266,8 +266,8 @@ class MigrationFromLowCPUUtilization(PowerSaving):
         Release host CPU and stop vm
         """
         logger.info("Release host %s and %s CPU",
-                    config.LOAD_HOST_1, config.LOAD_HOST_2)
-        cls._release_hosts_cpu([config.LOAD_HOST_1, config.LOAD_HOST_2])
+                    config.HOSTS[1], config.HOSTS[2])
+        cls._release_hosts_cpu([config.HOSTS[1], config.HOSTS[2]])
         super(MigrationFromLowCPUUtilization,
               cls).teardown_class()
 
@@ -285,9 +285,9 @@ class PutHostToMaintenancePS(PowerSaving):
         to correct utilization CPU level
         """
         logger.info("Load host %s and %s CPU up to %d percent",
-                    config.LOAD_HOST_0, config.LOAD_HOST_1, AVERAGE_CPU_LOAD)
-        cls._load_hosts_cpu([config.LOAD_HOST_0,
-                             config.LOAD_HOST_1], AVERAGE_CPU_LOAD)
+                    config.HOSTS[0], config.HOSTS[1], AVERAGE_CPU_LOAD)
+        cls._load_hosts_cpu([config.HOSTS[0],
+                             config.HOSTS[1]], AVERAGE_CPU_LOAD)
         super(PutHostToMaintenancePS, cls).setup_class()
 
     @tcms('9904', '50888')
@@ -298,19 +298,19 @@ class PutHostToMaintenancePS(PowerSaving):
         maintenance and check if vm migrated on host with correct
         CPU utilization level
         """
-        self._maintenance_migration(config.LOAD_HOST_0, config.LOAD_HOST_1)
+        self._maintenance_migration(config.HOSTS[0], config.HOSTS[1])
 
     @classmethod
     def teardown_class(cls):
         """
         Release hosts CPU, activate host and stop vm
         """
-        if not host_api.activateHost(True, config.LOAD_HOST_0):
+        if not host_api.activateHost(True, config.HOSTS[0]):
             raise errors.HostException("Activation of host %s failed" %
-                                       config.LOAD_HOST_0)
+                                       config.HOSTS[0])
         logger.info("Release host %s and %s CPU",
-                    config.LOAD_HOST_0, config.LOAD_HOST_1)
-        cls._release_hosts_cpu([config.LOAD_HOST_0, config.LOAD_HOST_1])
+                    config.HOSTS[0], config.HOSTS[1])
+        cls._release_hosts_cpu([config.HOSTS[0], config.HOSTS[1]])
         super(PutHostToMaintenancePS, cls).teardown_class()
 
 
@@ -327,9 +327,9 @@ class MigrateFromOverUtilizedHost(EvenlyDistributed):
         """
         super(MigrateFromOverUtilizedHost, cls).setup_class()
         logger.info("Load hosts %s and %s CPU up to %d percent",
-                    config.LOAD_HOST_0, config.LOAD_HOST_1, MAX_CPU_LOAD)
-        cls._load_hosts_cpu([config.LOAD_HOST_0,
-                             config.LOAD_HOST_1], MAX_CPU_LOAD)
+                    config.HOSTS[0], config.HOSTS[1], MAX_CPU_LOAD)
+        cls._load_hosts_cpu([config.HOSTS[0],
+                             config.HOSTS[1]], MAX_CPU_LOAD)
 
     @tcms('9904', '51149')
     @istest
@@ -338,7 +338,7 @@ class MigrateFromOverUtilizedHost(EvenlyDistributed):
         Vm run on host with high cpu utilization and must migrate to host
         with correct CPU utilization after CpuOverCommitDuration
         """
-        self._check_migration(config.LOAD_HOST_2)
+        self._check_migration(config.HOSTS[2])
 
     @classmethod
     def teardown_class(cls):
@@ -346,8 +346,8 @@ class MigrateFromOverUtilizedHost(EvenlyDistributed):
         Release host CPU and stop vm
         """
         logger.info("Release host %s and %s CPU",
-                    config.LOAD_HOST_0, config.LOAD_HOST_1)
-        cls._release_hosts_cpu([config.LOAD_HOST_0, config.LOAD_HOST_1])
+                    config.HOSTS[0], config.HOSTS[1])
+        cls._release_hosts_cpu([config.HOSTS[0], config.HOSTS[1]])
         super(MigrateFromOverUtilizedHost, cls).teardown_class()
 
 
@@ -364,9 +364,9 @@ class NoAvailableHostForMigrationED(EvenlyDistributed):
         """
         super(NoAvailableHostForMigrationED, cls).setup_class()
         logger.info("Load host %s and %s CPU up to %d percent",
-                    config.LOAD_HOST_1, config.LOAD_HOST_2, MAX_CPU_LOAD)
-        cls._load_hosts_cpu([config.LOAD_HOST_1,
-                             config.LOAD_HOST_2], MAX_CPU_LOAD)
+                    config.HOSTS[1], config.HOSTS[2], MAX_CPU_LOAD)
+        cls._load_hosts_cpu([config.HOSTS[1],
+                             config.HOSTS[2]], MAX_CPU_LOAD)
 
     @tcms('9904', '51152')
     @istest
@@ -375,7 +375,7 @@ class NoAvailableHostForMigrationED(EvenlyDistributed):
         Vm run on host with low cpu utilization, but another host in cluster
         above maximum service level of CPU, so vm must stay on old host
         """
-        self._no_migration(config.LOAD_HOST_0)
+        self._no_migration(config.HOSTS[0])
 
     @classmethod
     def teardown_class(cls):
@@ -383,8 +383,8 @@ class NoAvailableHostForMigrationED(EvenlyDistributed):
         Release host CPU and stop vm
         """
         logger.info("Release host %s and %s CPU",
-                    config.LOAD_HOST_1, config.LOAD_HOST_2)
-        cls._release_hosts_cpu([config.LOAD_HOST_1, config.LOAD_HOST_2])
+                    config.HOSTS[1], config.HOSTS[2])
+        cls._release_hosts_cpu([config.HOSTS[1], config.HOSTS[2]])
         super(NoAvailableHostForMigrationED, cls).teardown_class()
 
 
@@ -402,8 +402,8 @@ class PutHostToMaintenanceED(EvenlyDistributed):
         """
         super(PutHostToMaintenanceED, cls).setup_class()
         logger.info("Load host %s CPU up to %d percent",
-                    config.LOAD_HOST_2, MAX_CPU_LOAD)
-        cls._load_hosts_cpu([config.LOAD_HOST_2], MAX_CPU_LOAD)
+                    config.HOSTS[2], MAX_CPU_LOAD)
+        cls._load_hosts_cpu([config.HOSTS[2]], MAX_CPU_LOAD)
 
     @tcms('9904', '51185')
     @istest
@@ -413,18 +413,18 @@ class PutHostToMaintenanceED(EvenlyDistributed):
         maintenance and check if vm migrated on host with correct
         CPU utilization level
         """
-        self._maintenance_migration(config.LOAD_HOST_0, config.LOAD_HOST_1)
+        self._maintenance_migration(config.HOSTS[0], config.HOSTS[1])
 
     @classmethod
     def teardown_class(cls):
         """
         Release host CPU, activate host and stop vm
         """
-        if not host_api.activateHost(True, config.LOAD_HOST_0):
+        if not host_api.activateHost(True, config.HOSTS[0]):
             raise errors.HostException("Activation of host %s failed" %
-                                       config.LOAD_HOST_0)
-        logger.info("Release host %s CPU", config.LOAD_HOST_2)
-        cls._release_hosts_cpu([config.LOAD_HOST_2])
+                                       config.HOSTS[0])
+        logger.info("Release host %s CPU", config.HOSTS[2])
+        cls._release_hosts_cpu([config.HOSTS[2]])
         super(PutHostToMaintenanceED, cls).teardown_class()
 
 

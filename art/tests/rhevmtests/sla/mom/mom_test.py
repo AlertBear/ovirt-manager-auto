@@ -50,7 +50,7 @@ MEM_OVERCMT = 200
 BALLOON_POOL = "balloon"
 KSM_POOL = "ksm"
 HOST_ALLOC_PATH = '/tmp/hostAlloc.py'
-ALLOC_SCRIPT_LOCAL = 'tests/rhevmtests/mom/hostAlloc.py'
+ALLOC_SCRIPT_LOCAL = 'tests/rhevmtests/sla/mom/hostAlloc.py'
 CUR = 0
 MAX = 1
 
@@ -160,8 +160,8 @@ class MOM(TestCase):
         sleep(wait_time)
 
         rc, out = self.allocate_host_memory(config.HOSTS[host_id],
-                                            config.HOSTS_USER[host_id],
-                                            config.HOSTS_PW[host_id])
+                                            config.HOSTS_USER,
+                                            config.HOSTS_PW)
         self.assertTrue(rc, "Failed to allocate memory on host %s, output "
                             "%s" % (config.HOSTS[host_id], out))
         pid = int(out)
@@ -235,8 +235,8 @@ class MOM(TestCase):
             host_id - host index in config.HOSTS
         """
         rc, stats = hosts.get_mom_statistics(config.HOSTS[host_id],
-                                             config.HOSTS_USER[host_id],
-                                             config.HOSTS_PW[host_id])
+                                             config.HOSTS_USER,
+                                             config.HOSTS_PW)
         self.assertTrue(rc, "Failed to obtain mom statistics")
 
         for vm in vm_list:
@@ -252,8 +252,8 @@ class MOM(TestCase):
         if (not i % RESTART_VDSM_INDEX) and mom_off:
             host_machine = machine.Machine(
                 config.HOSTS[host_id],
-                config.HOSTS_USER[host_id],
-                config.HOSTS_PW[host_id]).util(machine.LINUX)
+                config.HOSTS_USER,
+                config.HOSTS_PW).util(machine.LINUX)
             self.assertTrue(host_machine.restartService("vdsmd"),
                             "Restart of vdsm failed")
 
@@ -282,8 +282,8 @@ class MOM(TestCase):
                             "Failed to stop VMs %s " % ', '.join(vm_list))
         if dealloc:
             rc = self.cancel_host_allocation(pid, config.HOSTS[host_id],
-                                             config.HOSTS_USER[host_id],
-                                             config.HOSTS_PW[host_id])
+                                             config.HOSTS_USER,
+                                             config.HOSTS_PW)
             self.assertTrue(rc, "Failed to cancel memory load on host "
                                 "%s" % config.HOSTS[host_id])
             if self.pid_list:
@@ -382,8 +382,8 @@ class KSM(MOM):
             raise errors.VMException("Failed to update cluster")
 
         host_machine = machine.Machine(
-            config.HOSTS[0], config.HOSTS_USER[0],
-            config.HOSTS_PW[0]).util(machine.LINUX)
+            config.HOSTS[0], config.HOSTS_USER,
+            config.HOSTS_PW).util(machine.LINUX)
         if not host_machine.restartService("vdsmd"):
             raise errors.VMException("Failed to restart vdsm")
         if not hosts.waitForHostsStates(True, config.HOSTS[0]):
@@ -412,8 +412,8 @@ class KSM(MOM):
             sleep(sleep_time)
             self.threshold_list.append(vm)
             ksm_running = self.ksm_running(config.HOSTS[0],
-                                           config.HOSTS_USER[0],
-                                           config.HOSTS_PW[0])
+                                           config.HOSTS_USER,
+                                           config.HOSTS_PW)
             if ksm_running is not None:
                 if ksm_running:
                     self.threshold.append(int(vm[-1]))
@@ -442,7 +442,7 @@ class KSM(MOM):
         sleep(sleep_time)
         self.assertTrue(
             self.ksm_running(
-                config.HOSTS[0], config.HOSTS_USER[0], config.HOSTS_PW[0]),
+                config.HOSTS[0], config.HOSTS_USER, config.HOSTS_PW),
             "KSM not running on %d vms" % self.threshold[0])
         logger.info("KSM successfully triggered")
 
@@ -461,10 +461,10 @@ class KSM(MOM):
         sleep(sleep_time)
         self.assertFalse(
             self.ksm_running(
-                config.HOSTS[0], config.HOSTS_USER[0], config.HOSTS_PW[0]),
+                config.HOSTS[0], config.HOSTS_USER, config.HOSTS_PW),
             "KSM not running after migration on host %s" % config.HOSTS[0])
         if not self.ksm_running(
-                config.HOSTS[1], config.HOSTS_USER[1], config.HOSTS_PW[1]):
+                config.HOSTS[1], config.HOSTS_USER, config.HOSTS_PW):
             logger.warning(
                 "KSM not running after migration on host %s", config.HOSTS[1])
         logger.info("KSM successfully turned off after migration")
@@ -486,7 +486,7 @@ class KSM(MOM):
         sleep(sleep_time)
         self.assertFalse(
             self.ksm_running(
-                config.HOSTS[0], config.HOSTS_USER[0], config.HOSTS_PW[0]),
+                config.HOSTS[0], config.HOSTS_USER, config.HOSTS_PW),
             "KSM running after migration on host %s" % config.HOSTS[0])
         logger.info("KSM successfully turned off after migration")
 
@@ -504,8 +504,8 @@ class KSM(MOM):
             raise errors.VMException("Failed to update cluster")
 
         host_machine = machine.Machine(
-            config.HOSTS[0], config.HOSTS_USER[0],
-            config.HOSTS_PW[0]).util(machine.LINUX)
+            config.HOSTS[0], config.HOSTS_USER,
+            config.HOSTS_PW).util(machine.LINUX)
         if not host_machine.restartService("vdsmd"):
             raise errors.VMException("Failed to restart vdsm")
         if not hosts.waitForHostsStates(True, config.HOSTS[0]):
@@ -653,8 +653,8 @@ class Balloon(MOM):
                     " ".join(str(i) for i in cls.pid_list))
         if cls.pid_list:
             host_machine = machine.Machine(
-                config.HOSTS[1], config.HOSTS_USER[1],
-                config.HOSTS_PW[1]).util(machine.LINUX)
+                config.HOSTS[1], config.HOSTS_USER,
+                config.HOSTS_PW).util(machine.LINUX)
             host_machine.killProcess(cls.pid_list)
 
         if not clusters.updateCluster(

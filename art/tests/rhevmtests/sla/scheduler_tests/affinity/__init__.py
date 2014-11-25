@@ -3,8 +3,8 @@ Scheduler - Affinity Test initialization
 """
 
 import os
-import config
 import logging
+from rhevmtests.sla import config
 
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as vm_api

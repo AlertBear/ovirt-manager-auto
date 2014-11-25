@@ -132,8 +132,8 @@ def setup_package():
                                                 "export domain")
 
         # disable swapping on hosts for faster tests
-        for host, pwd in [(config.HOSTS[0], config.HOSTS_PW[0]),
-                          (config.HOSTS[1], config.HOSTS_PW[1])]:
+        for host, pwd in [(config.HOSTS[0], config.HOSTS_PW),
+                          (config.HOSTS[1], config.HOSTS_PW)]:
             host_machine = machine.Machine(host, 'root',
                                            pwd).util(machine.LINUX)
             logger.info("Turning off swapping on host %s", host)
@@ -174,8 +174,8 @@ def teardown_package():
         dc_name = config.DC_NAME[0]
         # turn on swaps on host
         failhost = []
-        for host, pwd in [(config.HOSTS[0], config.HOSTS_PW[0]),
-                          (config.HOSTS[1], config.HOSTS_PW[1])]:
+        for host, pwd in [(config.HOSTS[0], config.HOSTS_PW),
+                          (config.HOSTS[1], config.HOSTS_PW)]:
 
             host_machine = machine.Machine(host,
                                            'root', pwd).util(machine.LINUX)
@@ -188,8 +188,8 @@ def teardown_package():
             raise errors.HostException(
                 "Failed to turn on swap on host %s" % ' '.join(failhost))
 
-        for host, pwd in [(config.HOSTS[0], config.HOSTS_PW[0]),
-                          (config.HOSTS[1], config.HOSTS_PW[1])]:
+        for host, pwd in [(config.HOSTS[0], config.HOSTS_PW),
+                          (config.HOSTS[1], config.HOSTS_PW)]:
 
             if not hosts.change_mom_rpc_port(host, 'root', pwd, -1):
                 raise errors.HostException("Failed to set mom port for rpc "

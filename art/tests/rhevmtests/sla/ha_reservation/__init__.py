@@ -10,7 +10,7 @@ from art.rhevm_api.tests_lib.high_level.datacenters import build_setup
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.tests_lib.low_level import vms
 
-from rhevmtests.ha_reservation import config
+from rhevmtests.sla.ha_reservation import config
 from rhevmtests.system.rhevm_utils import unittest_conf
 
 logger = logging.getLogger("HA_Reservation")

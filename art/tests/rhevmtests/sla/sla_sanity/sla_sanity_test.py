@@ -5,11 +5,11 @@ count threads as cores and placement policy
 
 
 import re
-import config
 import random
 import logging
 from nose.tools import istest
 from utilities import machine
+from rhevmtests.sla import config
 
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import hosts

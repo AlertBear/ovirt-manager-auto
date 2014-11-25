@@ -10,9 +10,9 @@ Tests covers:
 """
 
 import logging
-from rhevmtests.ha_reservation import config
+from rhevmtests.sla.ha_reservation import config
 
-from unittest_lib import ComputeTest as TestCase
+from art.unittest_lib import ComputeTest as TestCase
 from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from nose.plugins.attrib import attr
 

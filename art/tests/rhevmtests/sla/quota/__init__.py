@@ -24,6 +24,7 @@ per whole test run, since it is very slow.
 
 import os
 import logging
+from rhevmtests.sla import config
 from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 
@@ -37,7 +38,6 @@ def setup_package():
     creates and activates main storage.
     """
     if os.environ.get("JENKINS_URL"):
-        import config
         LOGGER.info("Building setup...")
         datacenters.build_setup(config.PARAMETERS, config.PARAMETERS,
                                 config.STORAGE_TYPE, config.TEST_NAME)
@@ -52,7 +52,6 @@ def teardown_package():
     Can be skipped by setting the config variable `SKIP_MAIN_TEARDOWN`.
     """
     if os.environ.get("JENKINS_URL"):
-        import config
         LOGGER.info("Teardown...")
         cleanDataCenter(True, config.DC_NAME[0], vdc=config.VDC_HOST,
                         vdc_password=config.VDC_PASSWORD)

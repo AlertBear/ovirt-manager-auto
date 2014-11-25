@@ -33,7 +33,7 @@ from art.unittest_lib.common import is_bz_state
 from utilities import machine
 from nose.plugins.attrib import attr
 
-from rhevmtests.watchdog import config
+from rhevmtests.sla.watchdog import config
 
 HOST_API = get_api('host', 'hosts')
 VM_API = get_api('vm', 'vms')

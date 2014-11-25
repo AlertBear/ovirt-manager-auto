@@ -84,7 +84,7 @@ IP_PATTERN = '10.35.*'
 TIMEOUT = 120
 FIND_QEMU = 'ps aux |grep qemu | grep -e "-name %s"'
 MOM_CONF = '/etc/vdsm/mom.conf'
-MOM_SCRIPT_LOCAL = 'tests/rhevmtests/mom/momStats.py'
+MOM_SCRIPT_LOCAL = 'tests/rhevmtests/sla/mom/momStats.py'
 MOM_SCRIPT_PATH = '/tmp/momStats.py'
 
 virsh_cmd = ['nwfilter-dumpxml', 'vdsm-no-mac-spoofing']

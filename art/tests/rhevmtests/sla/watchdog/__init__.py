@@ -10,7 +10,7 @@ from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 import art.rhevm_api.tests_lib.low_level.vms as vms
 import art.test_handler.exceptions as errors
 
-from rhevmtests.watchdog import config
+from rhevmtests.sla.watchdog import config
 
 logger = logging.getLogger("SLA")
 AFFINITY = config.ENUMS['vm_affinity_user_migratable']

@@ -4,10 +4,9 @@ Check different cases for migration and starting of vms, when vms in different
 or in the same affinities groups(soft/hard, positive/negative)
 """
 
-
-import config
 import logging
 from art.unittest_lib import attr
+from rhevmtests.sla import config
 
 from art.unittest_lib import ComputeTest as TestCase
 from nose.tools import istest
@@ -26,6 +25,7 @@ logger = logging.getLogger(__name__)
 TIMEOUT = 120
 ENUMS = opts['elements_conf']['RHEVM Enums']
 VM_DOWN = ENUMS['vm_state_down']
+TCMS_PLAN_ID = '12145'
 
 
 @attr(tier=0)
@@ -107,7 +107,7 @@ class StartVmsUnderHardPositiveAffinity(StartVms):
     positive = True
     hard = True
 
-    @tcms(config.TCMS_PLAN_ID, '333894')
+    @tcms(TCMS_PLAN_ID, '333894')
     @istest
     def check_vms_host(self):
         """
@@ -129,7 +129,7 @@ class StartVmsUnderSoftPositiveAffinity(StartVms):
     positive = True
     hard = False
 
-    @tcms(config.TCMS_PLAN_ID, '390980')
+    @tcms(TCMS_PLAN_ID, '390980')
     @istest
     def check_vms_host(self):
         """
@@ -151,7 +151,7 @@ class StartVmsUnderHardNegativeAffinity(StartVms):
     positive = False
     hard = True
 
-    @tcms(config.TCMS_PLAN_ID, '333896')
+    @tcms(TCMS_PLAN_ID, '333896')
     @istest
     def check_vms_host(self):
         """
@@ -173,7 +173,7 @@ class StartVmsUnderSoftNegativeAffinity(StartVms):
     positive = False
     hard = True
 
-    @tcms(config.TCMS_PLAN_ID, '390984')
+    @tcms(TCMS_PLAN_ID, '390984')
     @istest
     def check_vms_host(self):
         """
@@ -225,7 +225,7 @@ class MigrateVmUnderHardPositiveAffinity(MigrateVm):
     positive = True
     hard = True
 
-    @tcms(config.TCMS_PLAN_ID, '333900')
+    @tcms(TCMS_PLAN_ID, '333900')
     @istest
     def check_vm_migration(self):
         """
@@ -250,7 +250,7 @@ class MigrateVmUnderSoftPositiveAffinity(MigrateVm):
     positive = True
     hard = False
 
-    @tcms(config.TCMS_PLAN_ID, '390998')
+    @tcms(TCMS_PLAN_ID, '390998')
     @istest
     def check_vm_migration(self):
         """
@@ -275,7 +275,7 @@ class MigrateVmUnderHardNegativeAffinity(MigrateVm):
     positive = False
     hard = True
 
-    @tcms(config.TCMS_PLAN_ID, '333901')
+    @tcms(TCMS_PLAN_ID, '333901')
     @istest
     def check_vm_migration(self):
         """
@@ -300,7 +300,7 @@ class MigrateVmUnderSoftNegativeAffinity(MigrateVm):
     positive = False
     hard = False
 
-    @tcms(config.TCMS_PLAN_ID, '391001')
+    @tcms(TCMS_PLAN_ID, '391001')
     @istest
     def check_vm_migration(self):
         """
@@ -324,7 +324,7 @@ class NegativeMigrateVmUnderHardPositiveAffinity(MigrateVm):
     positive = True
     hard = True
 
-    @tcms(config.TCMS_PLAN_ID, '333902')
+    @tcms(TCMS_PLAN_ID, '333902')
     @bz({'1084794': {'engine': None, 'version': ['3.5']}})
     @istest
     def check_vm_migration(self):
@@ -346,7 +346,7 @@ class MigrateVmOppositeUnderSoftPositiveAffinity(MigrateVm):
     positive = True
     hard = False
 
-    @tcms(config.TCMS_PLAN_ID, '396271')
+    @tcms(TCMS_PLAN_ID, '396271')
     @istest
     def check_vm_migration(self):
         """
@@ -368,7 +368,7 @@ class NegativeMigrateVmUnderHardNegativeAffinity(MigrateVm):
     positive = False
     hard = True
 
-    @tcms(config.TCMS_PLAN_ID, '396270')
+    @tcms(TCMS_PLAN_ID, '396270')
     @istest
     def check_vm_migration(self):
         """
@@ -389,7 +389,7 @@ class MigrateVmSameUnderSoftNegativeAffinity(MigrateVm):
     positive = False
     hard = False
 
-    @tcms(config.TCMS_PLAN_ID, '396272')
+    @tcms(TCMS_PLAN_ID, '396272')
     @istest
     def check_vm_migration(self):
         """
@@ -431,7 +431,7 @@ class RemoveVmFromAffinityGroupOnClusterChange(Affinity):
                                cluster=cls.additional_cluster_name):
             raise errors.VMException("Failed update vm cluster")
 
-    @tcms(config.TCMS_PLAN_ID, '333904')
+    @tcms(TCMS_PLAN_ID, '333904')
     @istest
     def check_affinity_group(self):
         """
@@ -502,7 +502,7 @@ class PutHostToMaintenanceUnderHardPositiveAffinity(PutHostToMaintenance):
 
     @istest
     @bz({'1139031': {'engine': None, 'version': ['3.5']}})
-    @tcms(config.TCMS_PLAN_ID, '335350')
+    @tcms(TCMS_PLAN_ID, '335350')
     def check_affinity_group(self):
         """
         Check that after deactivate hosts vms migrated on the same host
@@ -523,7 +523,7 @@ class PutHostToMaintenanceUnderHardNegativeAffinity(PutHostToMaintenance):
     hard = True
 
     @istest
-    @tcms(config.TCMS_PLAN_ID, '413044')
+    @tcms(TCMS_PLAN_ID, '413044')
     def check_affinity_group(self):
         """
         Check that after deactivate hosts vms migrated on different hosts
@@ -592,7 +592,7 @@ class TwoDifferentAffinitiesScenario1(AdditionalAffinityGroup):
     additional_hard = False
 
     @istest
-    @tcms(config.TCMS_PLAN_ID, '335565')
+    @tcms(TCMS_PLAN_ID, '335565')
     def check_vms_placement(self):
         """
         Start vms under to opposite affinity groups,
@@ -619,7 +619,7 @@ class TwoDifferentAffinitiesScenario2(AdditionalAffinityGroup):
     additional_hard = False
 
     @istest
-    @tcms(config.TCMS_PLAN_ID, '335566')
+    @tcms(TCMS_PLAN_ID, '335566')
     def check_vms_placement(self):
         """
         Start vms under to opposite affinity groups,
@@ -668,7 +668,7 @@ class TwoDifferentAffinitiesScenario3(Affinity):
         super(TwoDifferentAffinitiesScenario3, cls).setup_class()
 
     @istest
-    @tcms(config.TCMS_PLAN_ID, '335567')
+    @tcms(TCMS_PLAN_ID, '335567')
     def start_vms(self):
         """
         Start vms
@@ -732,7 +732,7 @@ class FailedToStartHAVmUnderHardNegativeAffinity(MigrateVm):
             raise errors.ClusterException("Failed to add vm to affinity group")
 
     @istest
-    @tcms(config.TCMS_PLAN_ID, '413043')
+    @tcms(TCMS_PLAN_ID, '413043')
     def check_ha_vm(self):
         """
         Kill HA vm and check that vm failed to run because affinity policy
@@ -782,7 +782,7 @@ class StartHAVmsUnderHardPositiveAffinity(StartVms):
 
     @istest
     @bz({'1142141': {'engine': None, 'version': ['3.5']}})
-    @tcms(config.TCMS_PLAN_ID, '338997')
+    @tcms(TCMS_PLAN_ID, '338997')
     def check_ha_vms(self):
         """
         Kill qemu process of HA vms and check if vms started on the same host
@@ -849,7 +849,7 @@ class SoftPositiveAffinityVsMemoryFilter(StartVms):
 
     @istest
     @bz({'1156011': {'engine': None, 'version': ['3.5']}})
-    @tcms(config.TCMS_PLAN_ID, '335358')
+    @tcms(TCMS_PLAN_ID, '335358')
     def start_vms(self):
         """
         Check that affinity policy not prevent to start vms
