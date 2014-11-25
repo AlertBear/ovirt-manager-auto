@@ -17,10 +17,8 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 
-import inspect
 import time
 import logging
-from ovirtsdk.infrastructure import common as infra_common
 from art.core_api import validator, measure_time
 from art.core_api.apis_utils import data_st, NEGATIVE_CODES, DEF_TIMEOUT, \
     DEF_SLEEP, ApiOperation
@@ -32,6 +30,10 @@ from ovirtsdk.infrastructure.errors import RequestError, DisconnectedError
 from art.core_api.apis_utils import APIUtil
 
 logger = logging.getLogger(__name__)
+
+PROPERTIES_MAP = {
+    'type_': 'type',
+}
 
 
 class SdkUtil(APIUtil):
@@ -192,12 +194,12 @@ class SdkUtil(APIUtil):
         '''
         Set property for sdk object
         '''
-        if property_name in entity.__dict__.keys():
-            self.logger.debug("Setting %s.%s property to '%s'",
-                              entity.__class__.__name__,
-                              property_name,
-                              property_value)
-            entity.__dict__[property_name] = property_value
+        property_name = PROPERTIES_MAP.get(property_name, property_name)
+        self.logger.debug("Setting %s.%s property to '%s'",
+                          entity.__class__.__name__,
+                          property_name,
+                          property_value)
+        getattr(entity, 'set_' + property_name)(property_value)
 
     def _translate_params(self, entity):
         """
@@ -206,7 +208,6 @@ class SdkUtil(APIUtil):
          * entity - instance data_st.Entity
         Return: instance of ovirtsdk.xml.params.Entity
         """
-        new_entity = entity
         if isinstance(entity, data_st.GeneratedsSuper):
             entity_name = validator.getClassName(entity.__class__.__name__)
             self.logger.debug("Translation data_st.%s to ovirtsdk.%s",
@@ -216,67 +217,39 @@ class SdkUtil(APIUtil):
             entity_name = entity.__class__.__name__
             self.logger.debug("%s is already instance of ovirtsdk.%s",
                               entity_name, entity_name)
+            new_entity = entity
+        else:
+            # in this case here is no reason to translate it
+            return entity
 
-        entity_dict = self.get_entity_dict(entity)
-        for attr, value in entity_dict.iteritems():
+        for attr, value in entity.__dict__.iteritems():
             if value is not None:
-                if isinstance(value, (sdk_params.GeneratedsSuper,
-                                      data_st.GeneratedsSuper)):
-                    new_value = self._translate_params(value)
-                # TODO remove the following elif condition
-                # which is workaround until the following bug
-                # https://bugzilla.redhat.com/1024696 will merge
-                # should merge in version 3.6
-                elif isinstance(value, infra_common.Base):
-                    new_value = None
-                # ----------- remove until here and replace the elif to if
+                if isinstance(value, data_st.GeneratedsSuper):
+                    self.logger.debug("%s is instance of data_st.%s, "
+                                      "translate to ovirtsdk.%s", attr,
+                                      entity_name, entity_name)
+                    value = self._translate_params(value)
                 elif isinstance(value, list):
                     self.logger.debug("%s is list, going over items", attr)
-                    new_value = self._translate_list(value)
-                elif inspect.ismethod(value):
-                    continue
-                else:
-                    new_value = value
+                    self._translate_list(value)
                 try:
-                    self.__set_property(new_entity, attr, new_value)
+                    self.__set_property(new_entity, attr, value)
                 except AttributeError:
                     self.logger.warn("Attribute doesn't exist %s", attr)
         return new_entity
 
-    def get_entity_dict(self, entity):
-        """
-        Create new dict for all class members which are not None
-         * entity - object to discover its dict
-        Return: the discovered dictionary
-        """
-        entity_dict = entity.__dict__
-        # getting python getters
-        python_getters = [
-            name for name, attr in inspect.getmembers(
-                entity, lambda x: inspect.ismethod(x)
-            ) if name.startswith("get_")
-        ]
-        for getter in python_getters:
-            # remove the prefix of get methods("get_")
-            item_name = getter[4:]
-            if item_name not in entity_dict:
-                item_value = getattr(entity, item_name, None)
-                if item_value:
-                    entity_dict[item_name] = item_value
-        return entity_dict
-
     def _translate_list(self, list_):
         """
         Translates list of data_st.Entity to list ovirtsdk.xml.params.Entity.
+        NOTE: It is done in the place.
         """
         for i in xrange(len(list_)):
             value = list_[i]
             if isinstance(value, list):
-                list_[i] = self._translate_list(value)
+                self._translate_list(value)
             elif isinstance(value, (data_st.GeneratedsSuper,
                                     sdk_params.GeneratedsSuper)):
                 list_[i] = self._translate_params(value)
-        return list_
 
     def update(self, origEntity, newEntity, positive,
                expected_neg_status=NEGATIVE_CODES, current=None, compare=True):
@@ -295,7 +268,6 @@ class SdkUtil(APIUtil):
         '''
         response = None
         newEntity = self._translate_params(newEntity)
-        origEntity = self._translate_params(origEntity)
         for attr in newEntity.__dict__.keys():
             try:
                 attrVal = newEntity.__dict__[attr]
