@@ -5,6 +5,7 @@ from art.rhevm_api.resources.resource import Resource
 from art.rhevm_api.resources.ssh import RemoteExecutor
 from art.rhevm_api.resources.service import Systemd, SysVinit, InitCtl
 from art.rhevm_api.resources.network import Network
+from art.rhevm_api.resources.filesystem import FileSystem
 
 
 class Host(Resource):
@@ -126,3 +127,7 @@ class Host(Resource):
     @property
     def network(self):
         return self.get_network()
+
+    @property
+    def fs(self):
+        return FileSystem(self)
