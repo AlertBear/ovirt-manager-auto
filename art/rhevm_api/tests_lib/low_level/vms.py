@@ -328,17 +328,29 @@ def _prepareVmObject(**kwargs):
 
 
 def createCustomPropertiesFromArg(prop_arg):
+    """
+    Create custom properties object
+    :param prop_arg: Custom properties to create (send clear to remove any
+    configured custom properties)
+    :type prop_arg: str
+    :return: cps
+    :rtype: object
+    """
     cps = data_st.CustomProperties()
+    if prop_arg == "clear":
+        return cps
+
     props = prop_arg.split(';')
     for prop in props:
         try:
             name, value = prop.split('=', 1)
         except ValueError:
-            E = "Custom Properties should be in form " \
+            e = "Custom Properties should be in form " \
                 "'name1=value1;name2=value2'. Got '%s' instead."
-            raise Exception(E % prop_arg)
-        cps.add_custom_property(data_st.CustomProperty(name=name,
-                                                       value=value))
+            raise Exception(e % prop_arg)
+        cps.add_custom_property(
+            data_st.CustomProperty(name=name, value=value)
+        )
     return cps
 
 

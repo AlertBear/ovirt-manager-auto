@@ -1889,7 +1889,7 @@ def get_obj_by_query(obj, query_text):
 
 
 def set_engine_properties(
-    engine_obj, param, attempts=20, interval=5, restart=True
+        engine_obj, param, attempts=20, interval=5, restart=True
 ):
     """
     Running engine-config command to set specific value

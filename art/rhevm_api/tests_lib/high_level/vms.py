@@ -242,21 +242,30 @@ def get_vm_ip(vm_name, start_vm=True):
     return result.get('ip')
 
 
-def start_vm_on_specific_host(vm, host):
+def start_vm_on_specific_host(vm, host, wait_for_ip=False):
     """
     Start vm on specific host
-    **Author**: alukiano
-    **Parameters**:
-        * *vm* - vm name
-        * *host* - host name
-    **Returns**: True if vm started successfully on host,
-                 otherwise False
+    :param vm: vm name
+    :type vm: str
+    :param host: host name in the engine
+    :type host: str
+    :param wait_for_ip: Wait for VM IP
+    :type wait_for_ip: bool
+    :return: True if vm started successfully on host otherwise False
+    :rtype: bool
     """
     logging.info("Update vm %s to run on host %s", vm, host)
     if not vms.updateVm(True, vm, placement_host=host):
         return False
+
     logging.info("Start vm %s", vm)
-    return vms.startVm(True, vm)
+    if vms.startVm(True, vm, wait_for_ip=wait_for_ip):
+        vm_host = vms.getVmHost(vm)[1]["vmHoster"]
+        if not host == vm_host:
+            logging.error(
+                "VM should start on %s instead off %s", host, vm_host)
+            return False
+    return True
 
 
 def start_vms_on_specific_host(

@@ -439,27 +439,25 @@ def checkIPRule(host, user, password, subnet):
 
 def updateVnicProfile(name, network, cluster=None, data_center=None,
                       new_name=None, port_mirroring=None, description=None,
-                      new_network=None, qos=None):
+                      new_network=None, qos=None, custom_properties=None):
     """
     Description: Update VNIC profile with provided parameters in kwargs
-    **Author**: gcheresh
-    **Parameters**:
-        *  *name* - name of VNIC profile to update
-        *  *network* - network name used by profile to be updated
-        *  *cluster* - name of cluster in which the network is located
-        *  *data_center* - name of the data center in which the network
-                           is located
-        *  *new_name* - new name for the VNIC profile
-        *  *port_mirroring* - Enable/Disable port mirroring for profile
-        *  *description* - New description of vnic profile
-        *  *new_network - new network for VNIC profile (for negative case)
-        *  *qos - QoS name
-    **Return**: True, if adding vnic profile was success, otherwise False
+    :param name: name of VNIC profile to update
+    :param network: network name used by profile to be updated
+    :param cluster: name of cluster in which the network is located
+    :param data_center: name of the data center in which the network is located
+    :param new_name: new name for the VNIC profile
+    :param port_mirroring: Enable/Disable port mirroring for profile
+    :param description: New description of vnic profile
+    :param new_network: new network for VNIC profile (for negative case)
+    :param qos: QoS name
+    :param custom_properties: vNIC profile custom properties
+    :return: True, if adding vnic profile was success, otherwise False
     """
-    vnic_profile_obj = getVnicProfileFromNetwork(network=network,
-                                                 vnic_profile=name,
-                                                 cluster=cluster,
-                                                 data_center=data_center)
+    vnic_profile_obj = getVnicProfileFromNetwork(
+        network=network, vnic_profile=name, cluster=cluster,
+        data_center=data_center
+    )
     if not vnic_profile_obj:
         logger.error("Failed to get VNIC profile object")
         return False
@@ -484,8 +482,17 @@ def updateVnicProfile(name, network, cluster=None, data_center=None,
     if qos:
         new_vnic_profile_obj.set_qos(qos)
 
-    if not VNIC_PROFILE_API.update(vnic_profile_obj, new_vnic_profile_obj,
-                                   True)[1]:
+    if custom_properties:
+        from art.rhevm_api.tests_lib.low_level.vms import(
+            createCustomPropertiesFromArg
+        )
+        vnic_profile_obj.set_custom_properties(
+            createCustomPropertiesFromArg(custom_properties)
+        )
+
+    if not VNIC_PROFILE_API.update(
+        vnic_profile_obj, new_vnic_profile_obj, True
+    )[1]:
         logger.error("Updating %s profile failed", name)
         return False
 
@@ -617,8 +624,9 @@ def addVnicProfile(positive, name, cluster=None, data_center=None,
         vnic_profile_obj.set_description(description)
 
     if custom_properties:
-        from art.rhevm_api.tests_lib.low_level.vms import \
+        from art.rhevm_api.tests_lib.low_level.vms import (
             createCustomPropertiesFromArg
+        )
         vnic_profile_obj.set_custom_properties(
             createCustomPropertiesFromArg(custom_properties))
 
