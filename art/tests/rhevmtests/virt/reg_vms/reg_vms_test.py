@@ -30,6 +30,8 @@ SPICE = ENUMS['display_type_spice']
 VNC = ENUMS['display_type_vnc']
 WIN_TZ = ENUMS['timezone_win_gmt_standard_time']
 RHEL_TZ = ENUMS['timezone_rhel_etc_gmt']
+# Timeout for VM creation in Vmpool
+VMPOOL_TIMEOUT = 30
 
 logger = logging.getLogger(__name__)
 
@@ -1193,6 +1195,7 @@ class VmPool(BaseVmWithDiskTemplate):
     template_name = 'template_for_vmpool'
     vm_name = 'vm_for_vmpool'
     new_vm_pool = 'new_vm_pool'
+    new_vm = 'new_vm_pool-1'
 
     @tcms('13398', '366362')
     @istest
@@ -1217,6 +1220,12 @@ class VmPool(BaseVmWithDiskTemplate):
                                                  name=self.new_vm_pool,
                                                  description=description,
                                                  size=3))
+        # Following VM state check is essential for following actions
+        logger.info("Verify added vm to pool, %s is in down state",
+                    self.new_vm)
+        self.assertTrue(vm_api.waitForVMState(vm=self.new_vm,
+                                              state=ENUMS['vm_state_down'],
+                                              timeout=VMPOOL_TIMEOUT))
         logger.info("Search for vms in vm pool %s", self.new_vm_pool)
         self.assertTrue(vm_api.searchForVm(True, query_key='name',
                                            query_val="%s*" % self.new_vm_pool,
