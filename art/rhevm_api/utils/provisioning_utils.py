@@ -88,10 +88,6 @@ class ForemanProvisioning(ProvisioningAPI):
         """
         hostname = socket.gethostname().split(".")[0]
         name = 'ART-test-vm-%s-%s' % (hostname, generateShortGuid())
-        # getconf HOST_NAME_MAX ---> 64
-        # len("qa.lab.tlv.redhat.com") = 22
-        if len(name) > 40:
-            name = name[:40]
         return api.create_host(
             name, mac, hostgroup=provisioning_profile['hostgroup'],
             common_parameters=common_parameters)
