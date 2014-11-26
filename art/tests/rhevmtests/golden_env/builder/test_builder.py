@@ -179,49 +179,94 @@ class CreateDC(TestCase):
             password=vm['password'], type=vm_type, installation=True,
             network=config.MGMT_BRIDGE, useAgent=config.USE_AGENT,
             image=config.COBBLER_PROFILE)
-        assert vms.waitForVMState(vm_name)
-        status, result = vms.waitForIP(vm_name)
-        assert status
-        assert test_utils.setPersistentNetwork(
-            result['ip'], vm['password'])
+        assert vms.waitForVMState(vm_name, state=ENUMS['vm_state_up'])
         assert vms.stopVm(True, vm_name)
 
+    def _seal_vm(self, vm_name, vm_password):
+        vm_state = vms.get_vm_state(vm_name)
+        if vm_state == ENUMS['vm_state_down']:
+            vms.startVm(True, vm_name, wait_for_status=ENUMS['vm_state_up'])
+
+        LOGGER.info("Waiting for IP of %s", vm_name)
+        status, result = vms.waitForIP(vm_name)
+        assert status
+
+        LOGGER.info("Sealing: set persistent network for %s", vm_name)
+
+        assert test_utils.setPersistentNetwork(
+            result['ip'], vm_password)
+        LOGGER.info("Stopping %s to create template", vm_name)
+        assert vms.stopVm(True, vm_name)
+
+    def _create_and_seal_vm(self, vm, dc_name, cl_name):
+        self._create_vm(vm, dc_name, cl_name)
+        self._seal_vm(vm['name'], vm['password'])
+
     def add_vms(self, vms_def, dc_name, cl_name):
-        """ Usually, if we want to add more vms, they will be the same, so
-            we start with adding one vm and making a template from it.
-            If any of the following vms is similar to the first one, it will
-            be just cloned from this template, which is way quicker
+        """ add description
         """
         if not vms_def:
             return
-        first_vm = vms_def[0]['vm']
-        self._create_vm(first_vm, dc_name, cl_name)
-        if len(vms_def) == 1:
-            return
-        tmp_template = "tmp_template"
-        assert templates.createTemplate(
-            True, vm=first_vm['name'], name=tmp_template, cluster=cl_name)
-        for vm_def in vms_def[1:]:
-            vm = vm_def['vm']
-            args = [
-                'type', 'disk_interface', 'disk_size', 'disk_type', 'memory',
-                'cpu_socket', 'cpu_cores', 'nic_type', 'display_type', 'user',
-                'password']
-            clone = True
-            for arg in args:
-                if vm[arg] != first_vm[arg]:
-                    clone = False
-                    break
-            if clone:
+
+        for vm_description in vms_def:
+            LOGGER.info(vm_description)
+            prefix_vm_name = vm_description['vm']['name']
+            if 'number_of_vms' in vm_description['vm']:
                 LOGGER.info(
-                    "Cloning vm %s from template %s", vm['name'], tmp_template)
-                assert vms.cloneVmFromTemplate(
-                    True, vm['name'], tmp_template, cl_name,
-                    vol_sparse=vm['disk_sparse'], vol_format=vm['disk_format'])
+                    "Creating a template and clone %s vms out of it",
+                    vm_description['vm']['number_of_vms']
+                )
+                suffix_num = 0
+                vm_description['vm']['name'] += repr(suffix_num)
+                suffix_num += 1
+                self._create_and_seal_vm(
+                    vm_description['vm'],
+                    dc_name,
+                    cl_name
+                )
+                tmp_template = "tmp_template"
+                template_creation_status = templates.createTemplate(
+                    True,
+                    vm=vm_description['vm']['name'],
+                    name=tmp_template, cluster=cl_name
+                )
+                assert template_creation_status
+
+                cloned_vms = []
+                while suffix_num < vm_description['vm']['number_of_vms']:
+                    vm_description['vm']['name'] = prefix_vm_name
+                    vm_description['vm']['name'] += repr(suffix_num)
+                    suffix_num += 1
+                    LOGGER.info(
+                        "Cloning vm %s from template %s",
+                        vm_description['vm']['name'], tmp_template
+                    )
+
+                    vms.cloneVmFromTemplate(
+                        True,
+                        vm_description['vm']['name'], tmp_template,
+                        cl_name,
+                        vol_sparse=vm_description['vm']['disk_sparse'],
+                        vol_format=vm_description['vm']['disk_format'],
+                        wait=False)
+
+                    cloned_vms.append(vm_description['vm']['name'])
+
+                for cloned_vm in cloned_vms:
+                    LOGGER.info("Waiting until %s state is down...", cloned_vm)
+                    assert vms.waitForVMState(
+                        cloned_vm,
+                        state=ENUMS['vm_state_down']
+                    )
+
+                assert templates.removeTemplate(True, tmp_template)
             else:
                 LOGGER.info("Creating a new vm")
-                self._create_vm(vm, dc_name, cl_name)
-        assert templates.removeTemplate(True, tmp_template)
+                self._create_and_seal_vm(
+                    vm_description['vm'],
+                    dc_name,
+                    cl_name
+                )
 
     def copy_template_disks(self, template, all_sds):
         template_disks = [

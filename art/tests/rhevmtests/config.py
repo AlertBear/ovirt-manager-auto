@@ -5,6 +5,7 @@ Consolidated config module
 __test__ = False
 
 import logging
+import copy
 
 from art.test_handler.settings import ART_CONFIG, opts
 from art.rhevm_api.utils import test_utils
@@ -118,7 +119,18 @@ if 'prepared_env' in ART_CONFIG:
     VMS = []
     for cluster in CLUSTERS:
         for vm in cluster['vms']:
-            VMS.append(vm['vm'])
+            if 'number_of_vms' in vm['vm']:
+                num_of_vms = repr(vm['vm']['number_of_vms'])
+                suffix_n = 0
+                vm_name = vm['vm']['name']
+                while suffix_n < int(num_of_vms):
+                    another_vm = copy.deepcopy(vm)
+                    another_vm['vm']['name'] = vm_name + str(suffix_n)
+                    suffix_n += 1
+                    VMS.append(another_vm['vm'])
+            else:
+                VMS.append(vm['vm'])
+
     VM_NAME = [x['name'] for x in VMS]
     VMS_LINUX_USER = VMS[0]['user']
     VMS_LINUX_PW = VMS[0]['password']
