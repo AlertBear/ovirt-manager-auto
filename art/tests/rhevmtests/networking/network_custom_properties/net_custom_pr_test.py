@@ -1141,3 +1141,502 @@ class NetCustPrCase12(NCPTestCaseBase):
                     "Priority value of bridge opts key %s was not updated "
                     "correctly with value %s" % (key, value[0])
                 )
+
+
+@attr(tier=1)
+class NetCustPrCase13(NCPTestCaseBase):
+    """
+    Create several ethtool and bridge opts while adding network to the Host
+    Configure several ethtool_opts  with non-default value for the NIC with
+     attached Network (different key:value)
+    Configure several bridge_opts with non-default value for the same network
+     attached to the NIC (different key:value)
+    Test on the Host that the ethtool values were updated correctly
+    Test on the Host that bridge_opts values were updated correctly
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create logical VM network on DC/Cluster/Host with several ethtool
+        and bridge opts configured
+        """
+        default_ethtool_opts = " ".join(
+            [config.TX_CHECKSUM.format(nic=HOST_NICS[1], state="on"),
+             config.AUTONEG.format(nic=HOST_NICS[1], state="on")])
+        default_bridge_opts = " ".join(
+            [config.DEFAULT_PRIORITY, config.DEFAULT_MULT_QUERIER]
+        )
+        prop_dict = {"ethtool_opts": default_ethtool_opts,
+                     "bridge_opts": default_bridge_opts}
+        network_param_dict = {"nic": 1,
+                              "required": "false",
+                              "properties": prop_dict}
+        local_dict = {config.NETWORKS[0]: network_param_dict}
+        logger.info(
+            "Create network %s with ethtool and bridge opts",
+            config.NETWORKS[0]
+        )
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
+                                        host=config.VDS_HOSTS[0],
+                                        network_dict=local_dict,
+                                        auto_nics=[0]):
+            raise NetworkException(
+                "Cannot create and attach network %s" % config.NETWORKS[0]
+            )
+
+    @istest
+    @tcms(13967, 373098)
+    def check_several_bridge_ethtool_opts_exist(self):
+        """
+        1) Update several ethtool_opts for the NIC with attached Network
+        with additional parameter and non-default value (different key:value)
+        2) Update several bridge_opts for Network, attached to the NIC with
+        additional parameter and non-default value (different key:value)
+        3) Test on the Host that the ethtool values were updated correctly
+        for the ethtool_opts
+        4) Test for the network on the the Host that the bridge values were
+        updated correctlydefault_bridge_opts = " ".join(
+            [config.DEFAULT_PRIORITY, config.DEFAULT_MULT_QUERIER]
+        )
+        5) Update  ethtool_opts with the default values for configured values.
+        6) Update  bridge_opts with the default values for configured values.
+        7) Test on the Host that the ethtool values were updated correctly
+        8) Test for the network on the the Host that the bridge values were
+        updated correctly
+
+        """
+        default_ethtool_opts = " ".join([config.TX_CHECKSUM.format(
+            nic=HOST_NICS[1], state="on"), config.AUTONEG.format(
+            nic=HOST_NICS[1], state="on")])
+        non_default_ethtool_opts = " ".join([config.TX_CHECKSUM.format(
+            nic=HOST_NICS[1], state="off"), config.AUTONEG.format(
+            nic=HOST_NICS[1], state="off")])
+        default_bridge_opts = " ".join(
+            [config.DEFAULT_PRIORITY, config.DEFAULT_MULT_QUERIER]
+        )
+        non_default_bridge_opts = " ".join(
+            [config.PRIORITY, config.MULT_QUERIER]
+        )
+        kwargs1 = {"properties": {"ethtool_opts": non_default_ethtool_opts,
+                                  "bridge_opts": non_default_bridge_opts}}
+        kwargs2 = {"properties": {"ethtool_opts": default_ethtool_opts,
+                                  "bridge_opts": default_bridge_opts}}
+        logger.info("Update ethtool_opts with non-default parameters for "
+                    "tx_checksup and autoneg and priority and "
+                    "querier of bridge opts")
+        if not update_network_host(config.HOSTS[0], HOST_NICS[1],
+                                   auto_nics=[HOST_NICS[0]], **kwargs1):
+            raise NetworkException(
+                "Couldn't update bridge_opts with additional autoneg parameter"
+            )
+
+        logger.info(
+            "Check that ethtool_opts parameter has an updated value "
+        )
+        for prop in ("Autonegotiate", "tx-checksumming"):
+            if not check_ethtool_opts(config.HOSTS_IP[0], config.HOSTS_USER,
+                                      config.HOSTS_PW, HOST_NICS[1],
+                                      prop, "off"):
+                raise NetworkException(
+                    "tx-checksum value of ethtool_opts was not updated "
+                    "correctly with non-default value"
+                )
+        logger.info(
+            "Check that bridge_opts parameter has an updated value "
+        )
+        for key, value in config.BRIDGE_OPTS.iteritems():
+            if not check_bridge_opts(
+                    config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
+                    config.NETWORKS[0], key, value[1]
+            ):
+                raise NetworkException(
+                    "Value of bridge opts key %s was not updated correctly "
+                    "with value %s" % (key, value[1])
+                )
+
+        logger.info(
+            "Update ethtool_opts with default parameters for tx_checksum and "
+            "autoneg and priority and querier of bridge opts"
+        )
+        if not update_network_host(config.HOSTS[0], HOST_NICS[1],
+                                   auto_nics=[HOST_NICS[0]], **kwargs2):
+            raise NetworkException(
+                "Couldn't update ethtool_opts with default parameters for "
+                "both values"
+            )
+
+        logger.info("Check that ethtool_opts parameters have an updated "
+                    "default value for checksum and autoneg")
+        for prop in ("Autonegotiate", "tx-checksumming"):
+            if not check_ethtool_opts(config.HOSTS_IP[0], config.HOSTS_USER,
+                                      config.HOSTS_PW, HOST_NICS[1],
+                                      prop, "on"):
+                raise NetworkException("tx-checksum and autoneg values of "
+                                       "ethtool_opts were not updated "
+                                       "correctly with default value")
+        logger.info(
+            "Check that bridge_opts parameter has an updated default value"
+        )
+        for key, value in config.BRIDGE_OPTS.items():
+            if not check_bridge_opts(
+                    config.HOSTS_IP[0], config.HOSTS_USER, config.HOSTS_PW,
+                    config.NETWORKS[0], key, value[0]
+            ):
+                raise NetworkException(
+                    "Priority value of bridge opts key %s was not updated "
+                    "correctly with value %s" % (key, value[0])
+                )
+
+
+@attr(tier=1)
+class NetCustPrCase14(NCPTestCaseBase):
+    """
+    Configure ethtool with non-default value over bond
+    Verify ethtool_opts were updated for each slave of the bond
+    Update ethtool_opts with default value over bond
+    Verify ethtool_opts were updated with the default value for each slave
+    of the bond
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create logical VM network on DC/Cluster/Host
+        """
+        network_param_dict = {"nic": config.BOND[0],
+                              "slaves": [2, 3],
+                              "required": "false"}
+
+        local_dict = {config.NETWORKS[0]: network_param_dict}
+        logger.info(
+            "Create logical VM network %s on DC/Cluster/Host bond",
+            config.NETWORKS[0]
+        )
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
+                                        host=config.VDS_HOSTS[0],
+                                        network_dict=local_dict,
+                                        auto_nics=[0]):
+            raise NetworkException(
+                "Cannot create and attach network %s to bond %s" %
+                (config.NETWORKS[0], config.BOND[0])
+            )
+
+    @istest
+    @tcms(13967, 421935)
+    def update_ethtool_opts_bond(self):
+        """
+        1) Configure ethtool_opts tx_checksum value to be non-default on Bond
+        1) Verify ethtool_opts have updated value for tx_checksum opts for
+        each slave of the bond
+        2) Update ethtool_opts with the default value for the bond
+        3) Verify ethtool_opts have updated default value for tx_checksum
+        opts for each slave of the bond
+        """
+        kwargs1 = {"properties": {"ethtool_opts": config.TX_CHECKSUM.format(
+            nic="*", state="off")}}
+        kwargs2 = {"properties": {"ethtool_opts": config.TX_CHECKSUM.format(
+            nic="*", state="on")}}
+
+        logger.info(
+            "Update ethtool_opts for tx_checksum with the non-default "
+            "parameter "
+        )
+        if not update_network_host(config.HOSTS[0],
+                                   config.BOND[0],
+                                   auto_nics=[HOST_NICS[0]], **kwargs1):
+            raise NetworkException(
+                "Couldn't update ethtool_opts with default parameters for "
+                "tx_checksum_opts"
+            )
+
+        logger.info(
+            "Check that ethtool_opts parameter for tx_checksum have an "
+            "updated non-default value for both slaves"
+        )
+        for interface in (HOST_NICS[2], HOST_NICS[3]):
+            if not check_ethtool_opts(config.HOSTS_IP[0], config.HOSTS_USER,
+                                      config.HOSTS_PW, interface,
+                                      "tx-checksumming", "off"):
+                raise NetworkException(
+                    "tx-checksum value of ethtool_opts was not updated "
+                    "correctly with non-default value"
+                )
+
+        logger.info(
+            "Update ethtool_opts for tx_checksum with the default parameter"
+        )
+        if not update_network_host(config.HOSTS[0],
+                                   config.BOND[0],
+                                   auto_nics=[HOST_NICS[0]], **kwargs2):
+            raise NetworkException(
+                "Couldn't update ethtool_opts with default parameters for "
+                "tx_checksum_opts"
+            )
+
+        logger.info(
+            "Check that ethtool_opts parameter has an updated default "
+            "value for both slaves of the bond "
+        )
+        for interface in (HOST_NICS[2], HOST_NICS[3]):
+            if not check_ethtool_opts(config.HOSTS_IP[0], config.HOSTS_USER,
+                                      config.HOSTS_PW, interface,
+                                      "tx-checksumming", "on"):
+                raise NetworkException(
+                    "tx-checksum value of ethtool_opts was not updated "
+                    "correctly with default value"
+                )
+
+
+@attr(tier=1)
+class NetCustPrCase15(NCPTestCaseBase):
+    """
+    Configure ethtool_opts with non-default value
+    Verify ethtool_opts was updated
+    Update the NIC with additional ethtool_opts value
+    Verify ethtool_opts were updated with both values
+    Update both values of ethtool_opts with the default values
+    Verify ethtool_opts were updated accordingly
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create logical VM network on DC/Cluster and Host Bond
+        """
+        network_param_dict = {"nic": config.BOND[0],
+                              "slaves": [2, 3],
+                              "required": "false"}
+
+        local_dict = {config.NETWORKS[0]: network_param_dict}
+        logger.info(
+            "Create logical VM network %s on DC/Cluster/Host bond",
+            config.NETWORKS[0]
+        )
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
+                                        host=config.VDS_HOSTS[0],
+                                        network_dict=local_dict,
+                                        auto_nics=[0]):
+            raise NetworkException(
+                "Cannot create and attach network %s to bond %s" %
+                (config.NETWORKS[0], config.BOND[0])
+            )
+
+    @istest
+    @tcms(13967, 372883)
+    def check_several_ethtool_opts_exist_bond(self):
+        """
+        1) Update ethtool_opts with non-default parameter (tx_checksum)
+        2) Verify ethtool_opts have updated value for tx_checksum
+        1) Update ethtool_opts with additional parameter (autoneg)
+        2) Verify ethtool_opts have updated value for tx_checksum and autoneg
+        3) Update ethtool_opts with the default value for both keys
+        4) Verify ethtool_opts have updated default value
+        """
+        kwargs = {"properties": {"ethtool_opts": config.TX_CHECKSUM.format(
+            nic="*", state="off")}}
+
+        logger.info(
+            "Update ethtool_opts for tx_checksum with the non-default "
+            "parameter "
+        )
+        if not update_network_host(config.HOSTS[0],
+                                   config.BOND[0],
+                                   auto_nics=[HOST_NICS[0]], **kwargs):
+            raise NetworkException(
+                "Couldn't update ethtool_opts with default parameters for "
+                "tx_checksum_opts"
+            )
+
+        logger.info(
+            "Check that ethtool_opts parameter for tx_checksum have an "
+            "updated non-default value for both slaves"
+        )
+        for interface in (HOST_NICS[2], HOST_NICS[3]):
+            if not check_ethtool_opts(config.HOSTS_IP[0], config.HOSTS_USER,
+                                      config.HOSTS_PW, interface,
+                                      "tx-checksumming", "off"):
+                raise NetworkException(
+                    "tx-checksum value of ethtool_opts was not updated "
+                    "correctly with non-default value"
+                )
+
+        default_ethtool_opts = " ".join(
+            [config.TX_CHECKSUM.format(nic="*", state="on"),
+             config.AUTONEG.format(nic="*", state="on")])
+        non_default_ethtool_opts = " ".join(
+            [config.TX_CHECKSUM.format(nic="*", state="off"),
+             config.AUTONEG.format(nic="*", state="off")])
+        kwargs1 = {"properties": {"ethtool_opts": non_default_ethtool_opts}}
+        kwargs2 = {"properties": {"ethtool_opts": default_ethtool_opts}}
+        logger.info("Update ethtool_opts with additional parameter for "
+                    "auto negotiation")
+        if not update_network_host(config.HOSTS[0], config.BOND[0],
+                                   auto_nics=[HOST_NICS[0]], **kwargs1):
+            raise NetworkException(
+                "Couldn't update bridge_opts with additional autoneg parameter"
+            )
+        logger.info(
+            "Check that ethtool_opts parameter has an updated value "
+            "for autonet and tx_checksumming for both slaves of the bond"
+        )
+        for prop in ("Autonegotiate", "tx-checksumming"):
+            for interface in (HOST_NICS[2], HOST_NICS[3]):
+                if not check_ethtool_opts(config.HOSTS_IP[0],
+                                          config.HOSTS_USER,
+                                          config.HOSTS_PW, interface,
+                                          prop, "off"):
+                    raise NetworkException(
+                        "tx-checksum value of ethtool_opts was not updated "
+                        "correctly with non-default value"
+                    )
+
+        logger.info(
+            "Update ethtool_opts with the default parameters for both "
+            "checksum and autoneg values for Bond "
+        )
+        if not update_network_host(config.HOSTS[0], config.BOND[0],
+                                   auto_nics=[HOST_NICS[0]], **kwargs2):
+            raise NetworkException(
+                "Couldn't update ethtool_opts with default parameters for "
+                "both values"
+            )
+
+        logger.info(
+            "Check that ethtool_opts parameters have an updated default value "
+            "for checksum and autoneg"
+        )
+        for prop in ("Autonegotiate", "tx-checksumming"):
+            for interface in (HOST_NICS[2], HOST_NICS[3]):
+                if not check_ethtool_opts(config.HOSTS_IP[0],
+                                          config.HOSTS_USER,
+                                          config.HOSTS_PW, interface,
+                                          prop, "on"):
+                    raise NetworkException(
+                        "tx-checksum and autoneg values of ethtool_opts were "
+                        "not updated correctly with default value for "
+                        "both slaves of the bond"
+                    )
+
+
+@attr(tier=1)
+class NetCustPrCase16(NCPTestCaseBase):
+    """
+    Configure ethtool and bridge opts with non-default value over Bond
+    Verify ethtool and bridge_opts were updated with non-default values
+    Update ethtool_and bridge opts with default value over Bond
+    Verify ethtool and bridge_opts were updated with the default value
+    """
+    __test__ = True
+
+    @classmethod
+    def setup_class(cls):
+        """
+        Create logical VM network on DC/Cluster/Host Bond with ethtool_opts
+        and bridge_opts having non-default values
+        """
+
+        prop_dict = {"ethtool_opts": config.TX_CHECKSUM.format(
+            nic="*", state="off"), "bridge_opts": config.PRIORITY}
+        network_param_dict = {"nic": config.BOND[0],
+                              "slaves": [2, 3],
+                              "required": "false",
+                              "properties": prop_dict}
+
+        local_dict = {config.NETWORKS[0]: network_param_dict}
+        logger.info(
+            "Create logical VM network %s on DC/Cluster/Host with "
+            "ethtool_opts and bridge_opts having non-default "
+            "values over Bond", config.NETWORKS[0]
+        )
+        if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
+                                        cluster=config.CLUSTER_NAME[0],
+                                        host=config.VDS_HOSTS[0],
+                                        network_dict=local_dict,
+                                        auto_nics=[0]):
+            raise NetworkException(
+                "Cannot create and attach network %s over Bond %s" %
+                (config.NETWORKS[0], config.BOND[0])
+            )
+
+    @istest
+    @tcms(13967, 373100)
+    def update_ethtool_bridge_opts_bond(self):
+        """
+        1) Verify ethtool_and bridge opts have updated values over Bond
+        2) Update ethtool and bridge_opts with the default value over Bond
+        3) Verify ethtool_and bridge opts have been updated with default values
+        """
+
+        logger.info(
+            "Check that ethtool_opts parameter for tx_checksum have an "
+            "updated non-default value for every slave of the Bond"
+        )
+        for interface in (HOST_NICS[2], HOST_NICS[3]):
+            if not check_ethtool_opts(config.HOSTS_IP[0],
+                                      config.HOSTS_USER,
+                                      config.HOSTS_PW, interface,
+                                      "tx-checksumming", "off"):
+                raise NetworkException(
+                    "tx-checksum value of ethtool_opts was"
+                    " not updated correctly with non-default value for Bond "
+                    "slaves"
+                )
+
+        logger.info(
+            "Check that bridge_opts parameter for priority  have an updated "
+            "non-default value "
+        )
+        if not check_bridge_opts(config.HOSTS_IP[0], config.HOSTS_USER,
+                                 config.HOSTS_PW, config.NETWORKS[0],
+                                 config.KEY1,
+                                 config.BRIDGE_OPTS.get(config.KEY1)[1]):
+            raise NetworkException(
+                "Priority value of bridge_opts was not updated correctly "
+                "with non-default value"
+            )
+
+        logger.info(
+            "Update ethtool_opts for tx_checksum and bridge_opts for "
+            "priority with the default parameters ")
+        kwargs = {"properties": {"ethtool_opts": config.TX_CHECKSUM.format(
+            nic="*", state="on"), "bridge_opts":
+            config.DEFAULT_PRIORITY}}
+        if not update_network_host(config.HOSTS[0], config.BOND[0],
+                                   auto_nics=[HOST_NICS[0]], **kwargs):
+            raise NetworkException(
+                "Couldn't update ethtool and bridge_opts with default "
+                "parameters for tx_checksum and priority opts"
+            )
+
+        logger.info(
+            "Check that ethtool_opts parameter has an updated default value "
+            "for both slaves of the Bond"
+        )
+        for interface in (HOST_NICS[2], HOST_NICS[3]):
+            if not check_ethtool_opts(config.HOSTS_IP[0],
+                                      config.HOSTS_USER,
+                                      config.HOSTS_PW, interface,
+                                      "tx-checksumming", "on"):
+                raise NetworkException(
+                    "tx-checksum value of ethtool_opts was not updated "
+                    "correctly with default value for Bond Slaves"
+                )
+
+        logger.info(
+            "Check that bridge_opts parameter has an updated default value"
+        )
+        if not check_bridge_opts(config.HOSTS_IP[0], config.HOSTS_USER,
+                                 config.HOSTS_PW, config.NETWORKS[0],
+                                 config.KEY1,
+                                 config.BRIDGE_OPTS.get(config.KEY1)[0]):
+            raise NetworkException(
+                "Priority value of bridge opts was not updated correctly "
+                "with default value"
+            )
