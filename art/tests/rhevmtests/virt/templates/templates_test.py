@@ -165,7 +165,7 @@ class VMTypeServer(BaseOsTypeTemplate):
     copy_vm = 'server_vm'
 
     @istest
-    @tcms('9798', '284040')
+    @tcms('16167', '441243')
     def check_server_inheritance_template(self):
         """
         Check if template type is 'server'
@@ -173,7 +173,7 @@ class VMTypeServer(BaseOsTypeTemplate):
         self.assertTrue(self._check_type_inheritance_template())
 
     @istest
-    @tcms('9798', '284041')
+    @tcms('16167', '441244')
     def check_server_inheritance_vm(self):
         """
         Check if cloned VM type is 'server'
@@ -194,7 +194,7 @@ class VMTypeDesktop(BaseOsTypeTemplate):
     copy_vm = 'desktop_vm'
 
     @istest
-    @tcms('9798', '284042')
+    @tcms('16167', '441245')
     def check_desktop_inheritance_template(self):
         """
         Check if template type is 'desktop'
@@ -202,7 +202,7 @@ class VMTypeDesktop(BaseOsTypeTemplate):
         self.assertTrue(self._check_type_inheritance_template())
 
     @istest
-    @tcms('9798', '284043')
+    @tcms('16167', '441246')
     def check_desktop_inheritance_vm(self):
         """
         Check if cloned VM type is 'desktop'
@@ -235,7 +235,7 @@ class VMMemory(BaseTemplateVMClass):
         super(VMMemory, cls).setup_class()
 
     @istest
-    @tcms('9798', '284044')
+    @tcms('16167', '441247')
     def check_memory_inheritance_template(self):
         """
         Check if template's memory matches master VM's memory
@@ -251,7 +251,7 @@ class VMMemory(BaseTemplateVMClass):
         logger.info("Template's memory matches original VM's memory.")
 
     @istest
-    @tcms('9798', '284045')
+    @tcms('16167', '441248')
     def check_memory_inheritance_vm(self):
         """
         Check if cloned VM's memory matches master VM's memory
@@ -296,7 +296,7 @@ class VMCpuTopology(BaseTemplateVMClass):
         super(VMCpuTopology, cls).setup_class()
 
     @istest
-    @tcms('9798', '284046')
+    @tcms('16167', '441249')
     def check_cpu_topology_inheritance_template(self):
         """
         Check if template's CPU topology matches master VM's CPU topology
@@ -320,7 +320,7 @@ class VMCpuTopology(BaseTemplateVMClass):
                     " topology.")
 
     @istest
-    @tcms('9798', '284047')
+    @tcms('16167', '441250')
     def check_cpu_topology_inheritance_vm(self):
         """
         Check if cloned VM's CPU topology matches master VM's CPU topology
@@ -382,7 +382,7 @@ class VMOs(BaseTemplateVMClass):
         super(VMOs, cls).setup_class()
 
     @istest
-    @tcms('9798', '284048')
+    @tcms('16167', '441251')
     def check_os_inheritance_template(self):
         """
         Check if template's OS type matches master VM's OS type
@@ -397,7 +397,7 @@ class VMOs(BaseTemplateVMClass):
         logger.info("Template's OS type matches original VM's OS type.")
 
     @istest
-    @tcms('9798', '284049')
+    @tcms('16167', '441252')
     def check_os_inheritance_vm(self):
         """
         Check if cloned VM's OS type matches master VM's OS type
@@ -444,7 +444,7 @@ class VMHa(BaseTemplateVMClass):
         super(VMHa, cls).setup_class()
 
     @istest
-    @tcms('9798', '284050')
+    @tcms('16167', '441253')
     def check_ha_inheritance_template(self):
         """
         Check if template's HA matches master VM's HA
@@ -468,7 +468,7 @@ class VMHa(BaseTemplateVMClass):
         logger.info("Template's HA matches original VM's HA.")
 
     @istest
-    @tcms('9798', '284051')
+    @tcms('16167', '441254')
     def check_ha_inheritance_vm(self):
         """
         Check if cloned VM's HA matches master VM's HA
@@ -519,7 +519,7 @@ class VMDisplay(BaseTemplateVMClass):
         super(VMDisplay, cls).setup_class()
 
     @istest
-    @tcms('9798', '284052')
+    @tcms('16167', '441255')
     def check_display_inheritance_template(self):
         """
         Check if template's display type matches master VM's display type
@@ -535,7 +535,7 @@ class VMDisplay(BaseTemplateVMClass):
         logger.info("Template's display type matches original VM's HA.")
 
     @istest
-    @tcms('9798', '284053')
+    @tcms('16167', '441256')
     def check_display_inheritance_vm(self):
         """
         Check if cloned VM's display type matches master VM's display type
@@ -577,7 +577,7 @@ class VMStateless(BaseTemplateVMClass):
         super(VMStateless, cls).setup_class()
 
     @istest
-    @tcms('9798', '284109')
+    @tcms('16167', '441262')
     def check_stateless_inheritance_template(self):
         """
         Check if template's stateless status matches master VM's
@@ -595,7 +595,7 @@ class VMStateless(BaseTemplateVMClass):
                     " stateless status.")
 
     @istest
-    @tcms('9798', '284054')
+    @tcms('16167', '441257')
     def check_stateless_inheritance_vm(self):
         """
         Check if cloned VM's stateless status matches master VM's
@@ -640,7 +640,7 @@ class VMDeleteProtection(BaseTemplateVMClass):
         super(VMDeleteProtection, cls).setup_class()
 
     @istest
-    @tcms('9798', '284055')
+    @tcms('16167', '441258')
     def check_protection_inheritance_template(self):
         """
         Check if template's delete protection status matches master VM's
@@ -659,7 +659,7 @@ class VMDeleteProtection(BaseTemplateVMClass):
                     " original VM's delete protection status.")
 
     @istest
-    @tcms('9798', '284056')
+    @tcms('16167', '441259')
     def check_protection_inheritance_vm(self):
         """
         Check if cloned VM's delete protection status matches master VM's
@@ -735,7 +735,7 @@ class VMBoot(BaseTemplateVMClass):
         super(VMBoot, cls).setup_class()
 
     @istest
-    @tcms('9798', '284057')
+    @tcms('16167', '441260')
     def check_boot_inheritance_template(self):
         """
         Check if template's boot device matches master VM's boot device status
@@ -751,7 +751,7 @@ class VMBoot(BaseTemplateVMClass):
                     " boot device.")
 
     @istest
-    @tcms('9798', '284058')
+    @tcms('16167', '441261')
     def check_boot_inheritance_vm(self):
         """
         Check if cloned VM's boot device matches master VM's boot device
