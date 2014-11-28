@@ -60,7 +60,7 @@ SIMPLE_IPA = {
 IPA_GROUP32 = 'group32'
 IPA_GROUP_USER = 'user1'
 IPA_NAMESPACE = 'dc=brq-ipa,dc=rhev,dc=lab,dc=eng,dc=brq,dc=redhat,dc=com'
-IPA_PASSWORD = '1234567'
+IPA_PASSWORD = '123456'
 
 ADDIGEST_EXTENSION = {
     'authz_file': 'ldap-authz-test_digest_ad.properties',

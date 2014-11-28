@@ -10,7 +10,6 @@ from rhevmtests.system.generic_ldap import config, common
 from art.test_handler.tools import bz
 from art.rhevm_api.tests_lib.low_level import users, mla
 from art.unittest_lib import attr, CoreSystemTest as TestCase
-from art.unittest_lib.common import is_bz_state
 from nose.tools import istest
 
 LOGGER = logging.getLogger(__name__)
@@ -19,7 +18,6 @@ NAME = __name__
 NAME = NAME[NAME.rfind('.') + 1:]
 CONF_NAME = '99-krb_ipa.conf'
 KRB_CONF = 'krb_ipa.conf'
-BZ1147900_FIXED = is_bz_state('1147900')
 
 
 def setup_module():
@@ -51,7 +49,7 @@ class DirectLogin(TestCase):
         user_upn = user = self.USER
         if self.DOMAIN:
             user_upn = '%s@%s' % (self.USER, self.DOMAIN)
-        users.addUser(True, user_name=user_upn if BZ1147900_FIXED else user,
+        users.addUser(True, user_name=user,
                       domain=self.conf['authz_name'])
         mla.addClusterPermissionsToUser(True, user_upn,
                                         config.DEFAULT_CLUSTER_NAME,
