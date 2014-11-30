@@ -17,9 +17,10 @@ from art.rhevm_api.tests_lib.low_level import vms, disks
 from art.rhevm_api.tests_lib.low_level import templates
 from art.rhevm_api.tests_lib.low_level import storagedomains
 from art.rhevm_api.utils import log_listener
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 
 import config
+from rhevmtests.storage.helpers import get_vm_ip
 
 LOGGER = logging.getLogger(__name__)
 GB = 1024 * 1024 * 1024
@@ -119,8 +120,9 @@ def _prepare_data(sparse, vol_format, template_names, storage_type):
     LOGGER.info("Setting persistent network")
     test_utils.setPersistentNetwork(vm_ip, config.VM_LINUX_PASSWORD)
     LOGGER.info("Stopping VM %s" % vm_name)
-    if not vms.stopVm(True, vm_name):
+    if not vms.shutdownVm(True, vm_name):
         raise exceptions.VMException("Stopping vm %s failed" % vm_name)
+    vms.waitForVMState(vm_name, state=config.VM_DOWN)
     LOGGER.info(
         "Creating template %s from vm %s" % (template_name, vm_name))
     if not templates.createTemplate(
@@ -187,9 +189,10 @@ class TestCase248138(TestCase):
 
     def _copy_data_to_vm_and_make_snapshot(self, source_path, snapshot_name):
         LOGGER.info("Copying data from %s to %s" % (source_path, self.vm_name))
+        vm_ip = get_vm_ip(self.vm_name)
         self.assertTrue(
             resource_utils.copyDataToVm(
-                vmName=self.vm_name, user=config.VM_LINUX_USER,
+                ip=vm_ip, user=config.VM_LINUX_USER,
                 password=config.VM_LINUX_PASSWORD, osType='linux',
                 src=source_path, dest=config.DEST_DIR),
             "Copying data to vm %s failed" % self.vms_ip_address)
@@ -197,8 +200,9 @@ class TestCase248138(TestCase):
         self._verify_data_on_vm([source_path])
         LOGGER.info("Stopping VM %s" % self.vm_name)
         self.assertTrue(
-            vms.stopVm(True, self.vm_name),
+            vms.shutdownVm(True, self.vm_name),
             "Stopping vm %s failed!" % self.vm_name)
+        vms.waitForVMState(self.vm_name, state=config.VM_DOWN)
         LOGGER.info("Creating snapshot %s" % snapshot_name)
         self.assertTrue(
             vms.addSnapshot(True, self.vm_name, snapshot_name),
@@ -212,9 +216,10 @@ class TestCase248138(TestCase):
     def _verify_data_on_vm(self, paths):
         for path in paths:
             LOGGER.info("Verify data from %s in VM %s" % (path, self.vm_name))
+            vm_ip = get_vm_ip(self.vm_name)
             self.assertTrue(
                 resource_utils.verifyDataOnVm(
-                    positive=True, vmName=self.vm_name,
+                    positive=True, ip=vm_ip,
                     user=config.VM_LINUX_USER,
                     password=config.VM_LINUX_PASSWORD, osType='linux',
                     dest=config.DEST_DIR, destToCompare=path),
@@ -223,8 +228,9 @@ class TestCase248138(TestCase):
     def _remove_snapshot_verify_data(self, snapshot_name, expected_data):
         LOGGER.info("Stopping VM %s" % self.vm_name)
         self.assertTrue(
-            vms.stopVm(True, vm=self.vm_name),
+            vms.shutdownVm(True, vm=self.vm_name),
             "Stopping vm %s failed!" % self.vm_name)
+        vms.waitForVMState(self.vm_name, state=config.VM_DOWN)
         LOGGER.info("Removing snapshot %s" % snapshot_name)
         self.assertTrue(
             vms.removeSnapshot(
@@ -298,7 +304,7 @@ class TestCase248138(TestCase):
         vms.removeVm(True, vm=cls.vm_name, stopVM='true')
 
 
-@attr(tier=0)
+@attr(tier=1)
 class TestCase300867(TestCase):
     """
     storage vm sanity test, creates 2 snapshots and removes them.
@@ -340,8 +346,7 @@ class TestCase300867(TestCase):
         cls.vms_ip_address = vm_ip['ip']
         LOGGER.info("Stopping VM %s" % cls.vm_name)
         vms.shutdownVm(True, cls.vm_name)
-        if not vms.waitForVmsStates(True, cls.vm_name,
-                                    states=ENUMS['vm_state_down']):
+        if not vms.waitForVMState(cls.vm_name, state=config.VM_DOWN):
             vms.stopVm(True, cls.vm_name)
         LOGGER.info("setup finished with success")
 
@@ -362,6 +367,7 @@ class TestCase300867(TestCase):
                     timeout=2100),
                 "Removing snapshot %s failed!" % snapshot)
 
+    @bz({"1185782": {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
     @tcms(tcms_plan_id, tcms_test_case)
     def test_auto_shrink_qcow_volumes(self):
         """
@@ -410,15 +416,15 @@ class TestReadLock(TestCase):
     vm_type = None
     vm_name = None
     template_name = None
-    vm_name_1 = '%s_1' % (config.VM_BASE_NAME)
-    vm_name_2 = '%s_2' % (config.VM_BASE_NAME)
+    vm_name_1 = '%s_1' % config.VM_BASE_NAME
+    vm_name_2 = '%s_2' % config.VM_BASE_NAME
     SLEEP_AMOUNT = 5
 
     @classmethod
     def setup_class(cls):
         cls.vm_name = '%s_%s' % (config.VM_BASE_NAME, cls.vm_type)
-        cls.template_name = "template_%s" % (cls.vm_name)
-        if not _create_vm(cls.vm_name, cls.vm_name, config.INTERFACE_VIRTIO,
+        cls.template_name = "template_%s" % cls.vm_name
+        if not _create_vm(cls.vm_name, cls.vm_name, config.INTERFACE_IDE,
                           vm_type=cls.vm_type, storage_type=cls.storage):
             raise exceptions.VMException(
                 "Creation of VM %s failed!" % cls.vm_name)
@@ -430,6 +436,7 @@ class TestReadLock(TestCase):
         if not vms.shutdownVm(True, cls.vm_name, async='false'):
             raise exceptions.VMException("Can't shut down vm %s" %
                                          cls.vm_name)
+        vms.waitForVMState(cls.vm_name, state=config.VM_DOWN)
         LOGGER.info("Creating template %s from VM %s" % (cls.template_name,
                                                          cls.vm_name))
         template_args = {
