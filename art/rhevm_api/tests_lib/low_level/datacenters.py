@@ -286,11 +286,53 @@ def get_sd_datacenter(storage_domain_name):
     return False
 
 
-def _prepare_qos_obj(qos_name, qos_type, **kwargs):
+def _prepare_qos_obj(**kwargs):
     """
     Prepare Qos object to add to datacenter
     :param qos_name: QoS name
-    :param qos_type: Qos type (all, storage, cpu, network)
+    :param qos_type: QoS type (all, storage, cpu, network)
+    :param kwargs: qos_name: QoS name
+                   qos type: (all, storage, cpu, network)
+                   description: type=string
+                Type Storage:
+                    max_throughput: type=int
+                    max_read_throughput: type=int
+                    max_write_throughput: type=int
+                    max_iops: type=int
+                    max_read_iops: type=int
+                    max_write_iops: type=int
+
+                Type CPU:
+                    cpu_limit: type=int
+
+                Type Network:
+                    inbound_average: type=int
+                    inbound_peak: type=int
+                    inbound_burst: type=int
+                    outbound_average: type=int
+                    outbound_peak: type=int
+                    outbound_burst: type=int
+    :return: QoS object or raise exceptions
+    """
+    exclude_kwargs = ["new_name"]
+    qos_obj = data_st.QoS()
+    for key, val in kwargs.iteritems():
+        if hasattr(qos_obj, key):
+            setattr(qos_obj, key, val)
+        else:
+            if key not in exclude_kwargs:
+                raise exceptions.DataCenterException(
+                    "QoS object has no attribute: %s" % key
+                )
+    return qos_obj
+
+
+def add_qos_to_datacenter(datacenter, qos_name, qos_type, **kwargs):
+    """
+    Add QoS object to datacenter
+    :param datacenter: Datacenter name
+    :param qos_name: QoS name
+    :param qos_type: QoS type (all, storage, cpu, network)
     :param kwargs: description: type=string
                 Type Storage:
                     max_throughput: type=int
@@ -310,28 +352,11 @@ def _prepare_qos_obj(qos_name, qos_type, **kwargs):
                     outbound_average: type=int
                     outbound_peak: type=int
                     outbound_burst: type=int
-    :return: Qos object or raise exceptions
-    """
-    qos_obj = data_st.QoS()
-    qos_obj.set_name(qos_name)
-    qos_obj.set_type(qos_type)
-    for key, val in kwargs.iteritems():
-        if hasattr(qos_obj, key):
-            setattr(qos_obj, key, val)
-        else:
-            raise exceptions.DataCenterException(
-                "QoS object has no attribute: %s" % key
-            )
-    return qos_obj
-
-
-def add_qos_to_datacenter(datacenter, qos_obj):
-    """
-    Add QoS object to datacenter
-    :param datacenter: Datacenter name
-    :param qos_obj: QoS object to add
     :return: True/False
     """
+    kwargs["name"] = qos_name
+    kwargs["type_"] = qos_type
+    qos_obj = _prepare_qos_obj(**kwargs)
     dc = get_data_center(datacenter)
     qoss_coll = data_st.QoSs()
     qoss_coll.set_qos(qos_obj)
@@ -413,9 +438,11 @@ def update_qos_in_datacenter(datacenter, qos_name, **kwargs):
     if not qos_obj:
         return False
 
-    qos_type = qos_obj.get_type()
+    if kwargs.get("new_name"):
+        kwargs["name"] = kwargs.get("new_name")
+
     try:
-        new_qos_obj = _prepare_qos_obj(qos_name, qos_type, **kwargs)
+        new_qos_obj = _prepare_qos_obj(**kwargs)
     except exceptions.DataCenterException:
         return False
 
