@@ -289,8 +289,6 @@ def get_sd_datacenter(storage_domain_name):
 def _prepare_qos_obj(**kwargs):
     """
     Prepare Qos object to add to datacenter
-    :param qos_name: QoS name
-    :param qos_type: QoS type (all, storage, cpu, network)
     :param kwargs: qos_name: QoS name
                    qos type: (all, storage, cpu, network)
                    description: type=string

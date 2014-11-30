@@ -666,7 +666,7 @@ def changeVMStatus(positive, vm, action, expectedStatus, async='true'):
 
 
 def restartVm(vm, wait_for_ip=False, timeout=VM_ACTION_TIMEOUT, async='false',
-              wait_for_status=ENUMS['vm_state_up']):
+              wait_for_status=ENUMS['vm_state_up'], placement_host=None):
     '''
     Description: Stop and start vm.
     Parameters:
@@ -675,39 +675,49 @@ def restartVm(vm, wait_for_ip=False, timeout=VM_ACTION_TIMEOUT, async='false',
       * timeout - timeout of wait for vm
       * async - stop VM asynchronously if 'true' ('false' by default)
       * wait_for_status - status which should have vm after starting it
+      * placement_host - host where the vm should be started
     '''
     if not checkVmState(True, vm, ENUMS['vm_state_down']):
         if not stopVm(True, vm, async=async):
             return False
     return startVm(True, vm, wait_for_status=wait_for_status,
-                   wait_for_ip=True, timeout=timeout)
+                   wait_for_ip=True, timeout=timeout,
+                   placement_host=placement_host)
 
 
 @is_action()
 def startVm(positive, vm, wait_for_status=ENUMS['vm_state_powering_up'],
-            wait_for_ip=False, timeout=VM_ACTION_TIMEOUT):
-    '''
-    Description: start vm
-    Author: edolinin
-    Parameters:
-       * vm - name of vm
-       * wait_for_status - vm status should wait for (default is "powering_up")
-
-           List of available statuses/states of VM:
+            wait_for_ip=False, timeout=VM_ACTION_TIMEOUT, placement_host=None):
+    """
+    Start VM
+    :param vm: name of vm
+    :type vm: str
+    :param wait_for_status: vm status should wait for (default is
+    "powering_up") list of available statuses/states of VM:
            [unassigned, up, down, powering_up, powering_down,
            paused, migrating_from, migrating_to, unknown,
            not_responding, wait_for_launch, reboot_in_progress,
            saving_state, restoring_state, suspended,
-           image_illegal, image_locked]
-
-    NOTE: positive="false" or wait_for_status=None implies no wait for VM
-          status
-    Return: status (True if vm was started properly, False otherwise)
-    '''
+           image_illegal, image_locked, None]
+    :type wait_for_status: str
+    :param wait_for_ip: wait for VM ip
+    :type wait_for_ip: bool
+    :param timeout: timeout to wait for ip to start
+    :type timeout: int
+    :param placement_host: host where the VM should start
+    :type placement_host: str
+    :return: status (True if vm was started properly, False otherwise)
+    :rtype: bool
+    """
     if not positive:
         wait_for_status = None
 
     vmObj = VM_API.find(vm)
+
+    if placement_host:
+        logging.info("Update vm %s to run on host %s", vm, placement_host)
+        if not updateVm(True, vm, placement_host=placement_host):
+            return False
 
     if not VM_API.syncAction(vmObj, 'start', positive):
         return False
