@@ -306,9 +306,10 @@ class CreateDC(TestCase):
 
     def import_shared_iso_domain(self, storage_conf, host):
         address, path = storage_conf.get_shared_iso()
+        LOGGER.info("Importing iso domain %s:%s", address, path)
         assert ll_sd.importStorageDomain(
             True, ENUMS['storage_dom_type_iso'], ENUMS['storage_type_nfs'],
-            address, path, host)
+            address[0], path[0], host)
 
     def test_build_env(self):
         GOLDEN_ENV = config.ART_CONFIG['prepared_env']
