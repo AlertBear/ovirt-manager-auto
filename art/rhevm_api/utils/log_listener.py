@@ -61,6 +61,8 @@ class LogListener():
         Executes command on a local or remote machine -
         if "ip_for_execute_command" is None then command will executes on the
         same host as the file
+        return:
+        True if command executed successfully or False otherwise
         """
         rc = None
         if not run_locally:
@@ -81,6 +83,10 @@ class LogListener():
         else:
             try:
                 logger.info("run command %s locally", command_to_exec)
+                # os.system returns an exit status code.
+                # 0 means that there weren't any errors.
+                # converting 0 to bool --> False --> not False --> True
+                # when no errors
                 rc = not bool(os.system(command_to_exec))
             except RuntimeError, ex:
                 logger.info("Can't run command %s, exception is %s",
@@ -208,6 +214,7 @@ def watch_logs(files_to_watch, regex, command_to_exec, time_out=None,
         command executes on
 
     Returns: (found_regex,cmd_rc)
+
             found_regex - True if the regex was found , False otherwise
             cmd_rc - True if command exit successfully , False otherwise
 
@@ -216,7 +223,6 @@ def watch_logs(files_to_watch, regex, command_to_exec, time_out=None,
        the command will executes on same machine that the "files_to_watch"
        is on
     """
-
     run_locally = False
     if not ip_for_execute_command:
         if not ip_for_files:
