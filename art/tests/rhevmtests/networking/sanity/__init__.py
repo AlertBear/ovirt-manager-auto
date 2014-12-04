@@ -3,14 +3,18 @@ Sanity Test
 """
 
 import logging
-from rhevmtests.networking import config
+from art.rhevm_api.tests_lib.low_level.vms import startVm
+from art.rhevm_api.utils.test_utils import set_engine_properties
+from rhevmtests.networking import config, network_cleanup
 from art.rhevm_api.tests_lib.low_level import vms
-from art.rhevm_api.tests_lib.high_level import vms as hl_vm
 from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 from art.rhevm_api.tests_lib.high_level.networks import prepareSetup
 from art.test_handler.exceptions import NetworkException
+from rhevmtests.networking.arbitrary_vlan_device_name.helper import(
+    set_libvirtd_sasl, passwordless_ssh
+)
 
-logger = logging.getLogger("Sanity")
+logger = logging.getLogger("Sanity_Init")
 
 #################################################
 
@@ -19,39 +23,54 @@ def setup_package():
     """
     Prepare environment
     """
+    logger.info("Configuring engine to support ethtool opts for 3.5 version")
+    cmd = ["UserDefinedNetworkCustomProperties=ethtool_opts=.*", "--cver=3.5"]
+    if not set_engine_properties(config.ENGINE, cmd, restart=False):
+        raise NetworkException("Failed to set ethtool via engine-config")
+
+    logger.info("Configuring engine to support queues for 3.5 version")
+    param = [
+        "CustomDeviceProperties='{type=interface;prop={queues=[1-9][0-9]*}}'",
+        "'--cver=3.5'"
+    ]
+    if not set_engine_properties(engine_obj=config.ENGINE, param=param):
+        raise NetworkException("Failed to enable queue via engine-config")
+
+    logger.info("Setting passwordless ssh to %s", config.VDS_HOSTS[0].fqdn)
+    if not passwordless_ssh(config.ENGINE_HOST, config.VDS_HOSTS[0]):
+        raise NetworkException(
+            "Failed to set passwordless SSH to %s" % config.VDS_HOSTS[0].fqdn
+        )
+
     if not config.GOLDEN_ENV:
         logger.info("Creating data center, cluster, adding host and storage")
-        if not prepareSetup(hosts=config.VDS_HOSTS[0],
-                            cpuName=config.CPU_NAME,
-                            username=config.HOSTS_USER,
-                            password=config.HOSTS_PW,
-                            datacenter=config.DC_NAME[0],
-                            storageDomainName=config.STORAGE_NAME[0],
-                            storage_type=config.STORAGE_TYPE,
-                            cluster=config.CLUSTER_NAME[0],
-                            lun_address=config.LUN_ADDRESS[0],
-                            lun_target=config.LUN_TARGET[0],
-                            luns=config.LUN[0], version=config.COMP_VERSION,
-                            vmName=config.VM_NAME[0],
-                            vm_password=config.VMS_LINUX_PW,
-                            mgmt_network=config.MGMT_BRIDGE,
-                            auto_nics=[0]):
+        if not prepareSetup(
+            hosts=config.VDS_HOSTS[0], cpuName=config.CPU_NAME,
+            username=config.HOSTS_USER, password=config.HOSTS_PW,
+            datacenter=config.DC_NAME[0],
+            storageDomainName=config.STORAGE_NAME[0],
+            storage_type=config.STORAGE_TYPE, cluster=config.CLUSTER_NAME[0],
+            lun_address=config.LUN_ADDRESS[0], lun_target=config.LUN_TARGET[0],
+            luns=config.LUN[0], version=config.COMP_VERSION,
+            vmName=config.VM_NAME[0], vm_password=config.VMS_LINUX_PW,
+            mgmt_network=config.MGMT_BRIDGE,
+        ):
             raise NetworkException("Cannot create setup")
 
     else:
+        network_cleanup()
         logger.info(
-            "Running on golden env, starting VM %s on host %s",
-            config.VM_NAME[0], config.HOSTS[0]
+            "Running on golden env, starting VM %s", config.VM_NAME[0]
         )
-        if not hl_vm.start_vm_on_specific_host(
-                vm=config.VM_NAME[0], host=config.HOSTS[0]
+        if not startVm(
+            positive=True, vm=config.VM_NAME[0], wait_for_ip=True,
+            placement_host=config.HOSTS[0]
         ):
-            raise NetworkException(
-                "Cannot start VM %s on host %s" %
-                (config.VM_NAME[0], config.HOSTS[0])
-            )
-        if not vms.waitForVMState(vm=config.VM_NAME[0]):
-            raise NetworkException("VM %s did not come up" % config.VM_NAME[0])
+            raise NetworkException("Failed to start %s" % config.VM_NAME[0])
+
+    logger.info("Disabling sasl in libvirt")
+    if not set_libvirtd_sasl(host_obj=config.VDS_HOSTS[0], sasl=False):
+        raise NetworkException("Failed to disable sasl on %s", config.HOSTS[0])
 
 
 def teardown_package():
@@ -68,4 +87,8 @@ def teardown_package():
     else:
         logger.info("Running on golden env, stopping VM %s", config.VM_NAME[0])
         if not vms.stopVm(True, vm=config.VM_NAME[0]):
-            raise NetworkException("Failed to stop VM: %s" % config.VM_NAME[0])
+            logger.error("Failed to stop VM: %s", config.VM_NAME[0])
+
+        logger.info("Enabling sasl in libvirt")
+        if not set_libvirtd_sasl(host_obj=config.VDS_HOSTS[0]):
+            logger.error("Failed to enable sasl on %s", config.HOSTS[0])
