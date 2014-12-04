@@ -113,5 +113,5 @@ class GenerateDataStructures(Component):
         section_spec = spec.get(DS_GEN_OPTIONS, {})
         section_spec['enabled'] = 'boolean(default=%s)' % DEFAULT_STATE
         section_spec[VITAL] = 'boolean(default=%s)' % DEFAULT_VITAL
-        section_spec['encoding'] = 'option("ascii", "utf-8", default="ascii")'
+        section_spec['encoding'] = 'option("ascii", "utf-8", default="utf-8")'
         spec[DS_GEN_OPTIONS] = section_spec

@@ -16,9 +16,7 @@ Examples:
 import sys
 import os
 import urllib2
-import ftplib
 import copy
-import types
 from optparse import OptionParser, Values
 import itertools
 from copy import deepcopy
@@ -32,21 +30,52 @@ from lxml import etree
 # Do not modify the following VERSION comments.
 # Used by updateversion.py.
 ##VERSION##
-VERSION = '2.7b'
+VERSION = '2.12a'
 ##VERSION##
 
 Namespaces = {'xs': 'http://www.w3.org/2001/XMLSchema'}
 Xsd_namespace_uri = 'http://www.w3.org/2001/XMLSchema'
+CatalogDict = {}
+# the base url to use for all relative paths in the catalog
+CatalogBaseUrl = None
 
+
+def load_catalog(catalogpath):
+    global CatalogBaseUrl
+    if catalogpath:
+        CatalogBaseUrl = os.path.split(catalogpath)[0]
+        catalog = etree.parse(open(catalogpath))
+        for elements in catalog.getroot().findall(
+                "{urn:oasis:names:tc:entity:xmlns:xml:catalog}public"):
+            CatalogDict[elements.get("publicId")] = elements.get("uri")
 
 #
 # Functions for external use
 
-def process_include_files(infile, outfile, inpath=''):
+
+def process_include_files(
+        infile, outfile, inpath='', catalogpath=None,
+        fixtypenames=None):
+    load_catalog(catalogpath)
     options = Values({
         'force': False,
-        })
+        'fixtypenames': fixtypenames,
+    })
     prep_schema_doc(infile, outfile, inpath, options)
+
+
+def get_all_root_file_paths(infile, inpath='', catalogpath=None):
+    load_catalog(catalogpath)
+
+    doc1 = etree.parse(infile)
+    root1 = doc1.getroot()
+    rootPaths = []
+    params = Params()
+    params.parent_url = infile
+    params.base_url = os.path.split(inpath)[0]
+    get_root_file_paths(root1, params, rootPaths)
+    rootPaths.append(inpath)
+    return rootPaths
 
 
 #
@@ -54,10 +83,12 @@ def process_include_files(infile, outfile, inpath=''):
 
 class Params(object):
     members = ('base_url', 'already_processed', 'parent_url', )
+
     def __init__(self):
         self.base_url = None
         self.already_processed = set()
         self.parent_url = None
+
     def __setattr__(self, name, value):
         if name not in self.members:
             raise AttributeError('Class %s has no set-able attribute "%s"' % (
@@ -67,6 +98,7 @@ class Params(object):
 
 class SchemaIOError(IOError):
     pass
+
 
 class RaiseComplexTypesError(Exception):
     pass
@@ -85,32 +117,54 @@ def clear_includes_and_imports(node):
         node.replace(child, repl)
 
 
-def resolve_ref(node, params, options):
-    content = None
-    url = node.get('schemaLocation')
+def get_ref_info(node, params):
+    # first look for the schema location in the catalog, if not
+    # there, then see if it's specified in the node
+    namespace = node.get('namespace')
+    url = None
+    baseUrl = None
+    if namespace in CatalogDict:
+        url = CatalogDict[namespace]
+        # setup the base url in case the path
+        # in the catalog was a relative path
+        baseUrl = CatalogBaseUrl
+    if not url:
+        url = node.get('schemaLocation')
+
     if not url:
         msg = '*** Warning: missing "schemaLocation" attribute in %s\n' % (
             params.parent_url, )
         sys.stderr.write(msg)
-        return None
-    # Uncomment the next line to help track down missing schemaLocation etc.
-    # print '(resolve_ref) url: %s\n    parent-url: %s' % (url, params.parent_url, )
+        return (None, None)
+    # Uncomment the next lines to help track down missing schemaLocation etc.
+    # print '(resolve_ref) url: %s\n    parent-url: %s' % (
+    #     url, params.parent_url, )
 
-    if params.base_url and not (
-        url.startswith('/') or
-        url.startswith('http:') or
-        url.startswith('ftp:')
-        ):
-        locn = '%s/%s' % (params.base_url, url, )
+    if not baseUrl:
+        baseUrl = params.base_url
+
+    if baseUrl and not (
+            url.startswith('/') or
+            url.startswith('http:') or
+            url.startswith('ftp:')):
+        locn = '%s/%s' % (baseUrl, url, )
         schema_name = locn
     else:
         locn = url
         schema_name = url
-    if not (
-        url.startswith('/') or
-        url.startswith('http:') or
-        url.startswith('ftp:')
-        ):
+
+    return locn, schema_name
+
+
+def resolve_ref(node, params, options):
+    content = None
+
+    locn, schema_name = get_ref_info(node, params)
+
+    if locn is not None and not (
+            locn.startswith('/') or
+            locn.startswith('http:') or
+            locn.startswith('ftp:')):
         schema_name = os.path.abspath(locn)
     if locn is not None:
         if schema_name not in params.already_processed:
@@ -128,7 +182,7 @@ def resolve_ref(node, params, options):
                     urlfile.close()
                     params.parent_url = locn
                     params.base_url = os.path.split(locn)[0]
-                except urllib2.HTTPError, exp:
+                except urllib2.HTTPError:
                     msg = "Can't find file %s referenced in %s." % (
                         locn, params.parent_url, )
                     raise SchemaIOError(msg)
@@ -152,27 +206,58 @@ def resolve_ref(node, params, options):
 
 def collect_inserts(node, params, inserts, options):
     namespace = node.nsmap[node.prefix]
+    roots = []
     child_iter1 = node.iterfind('{%s}include' % (namespace, ))
     child_iter2 = node.iterfind('{%s}import' % (namespace, ))
     for child in itertools.chain(child_iter1, child_iter2):
-        collect_inserts_aux(child, params, inserts, options)
+        aux_roots = collect_inserts_aux(child, params, inserts, options)
+        roots.extend(aux_roots)
+
+    return roots
 
 
 def collect_inserts_aux(child, params, inserts, options):
+    roots = []
     save_base_url = params.base_url
     string_content = resolve_ref(child, params, options)
     if string_content is not None:
         root = etree.fromstring(string_content, base_url=params.base_url)
+        roots.append(root)
         for child1 in root:
             if not isinstance(child1, etree._Comment):
                 namespace = child1.nsmap[child1.prefix]
                 if (child1.tag != '{%s}include' % (namespace, ) and
-                    child1.tag != '{%s' % (namespace, )):
+                        child1.tag != '{%s' % (namespace, )):
                     comment = etree.Comment(etree.tostring(child))
                     comment.tail = '\n'
                     inserts.append(comment)
                     inserts.append(child1)
-        collect_inserts(root, params, inserts, options)
+        insert_roots = collect_inserts(root, params, inserts, options)
+        roots.extend(insert_roots)
+    params.base_url = save_base_url
+    return roots
+
+
+def get_root_file_paths(node, params, rootPaths):
+
+    namespace = node.nsmap[node.prefix]
+    child_iter1 = node.iterfind('{%s}include' % (namespace, ))
+    child_iter2 = node.iterfind('{%s}import' % (namespace, ))
+    for child in itertools.chain(child_iter1, child_iter2):
+        get_root_file_paths_aux(child, params, rootPaths)
+
+
+def get_root_file_paths_aux(child, params, rootPaths):
+    save_base_url = params.base_url
+    path, _ = get_ref_info(child, params)
+    string_content = resolve_ref(child, params, None)
+    if string_content is not None:
+        root = etree.fromstring(string_content, base_url=params.base_url)
+        get_root_file_paths(root, params, rootPaths)
+
+    if path is not None and path not in rootPaths:
+        rootPaths.append(path)
+
     params.base_url = save_base_url
 
 
@@ -201,6 +286,7 @@ def prep_schema_doc(infile, outfile, inpath, options):
         root2.append(insert_node)
     process_groups(root2)
     raise_anon_complextypes(root2)
+    fix_type_names(root2, options)
     doc2 = etree.ElementTree(root2)
     doc2.write(outfile)
     return doc2
@@ -238,6 +324,81 @@ def process_groups(root):
     replace_group_defs(def_dict, refs)
 
 
+def fix_type_names(root, options):
+    fixnamespec = options.fixtypenames
+    if fixnamespec:
+        namespecs = fixnamespec.split(';')
+    else:
+        namespecs = []
+    for namespec in namespecs:
+        names = namespec.split(':')
+        if len(names) == 2:
+            oldname = names[0]
+            newname = names[1]
+        elif len(names) == 1:
+            oldname = names[0]
+            newname = '%sxx' % (oldname, )
+        else:
+            continue
+        # Change the name (name attribute) of the complexType.
+        pat = './/%s:complexType[@name="%s"]' % (
+            root.prefix, oldname)
+        elements = xpath_find(root, pat)
+        if len(elements) < 1:
+            sys.stderr.write(
+                "\nWarning: fix-type-names can't find complexType '%s'.  "
+                "Exiting.\n\n" % (oldname, ))
+            sys.exit(1)
+        if len(elements) < 1:
+            sys.stderr.write(
+                "Warning: fix-type-names found more than "
+                "one complexType '%s'.  "
+                "Changing first." % (oldname, ))
+        element = elements[0]
+        element.set('name', newname)
+        # Change the reference (type attribute) of child elements.
+        pat = './/%s:element' % (root.prefix, )
+        elements = xpath_find(root, pat)
+        for element in elements:
+            typename = element.get('type')
+            if not typename:
+                continue
+            names = typename.split(':')
+            if len(names) == 2:
+                typename = names[1]
+            elif len(names) == 1:
+                typename = names[0]
+            else:
+                continue
+            if typename != oldname:
+                continue
+            if not element.getchildren():
+                element.set('type', newname)
+        # Change the extensions ('base' attribute) that refer to the old type.
+        pat = './/%s:extension' % (root.prefix, )
+        elements = xpath_find(root, pat)
+        for element in elements:
+            typename = element.get('base')
+            if not typename:
+                continue
+            names = typename.split(':')
+            if len(names) == 2:
+                typename = names[1]
+            elif len(names) == 1:
+                typename = names[0]
+            else:
+                continue
+            if typename != oldname:
+                continue
+            element.set('base', newname)
+
+
+def xpath_find(node, pat):
+    namespaces = {node.prefix: node.nsmap[node.prefix]}
+    elements = node.xpath(pat, namespaces=namespaces)
+    return elements
+
+
 def replace_group_defs(def_dict, refs):
     for ref_node in refs:
         name = trim_prefix(ref_node.get('ref'))
@@ -245,7 +406,8 @@ def replace_group_defs(def_dict, refs):
             continue
         def_node = def_dict.get(name)
         if def_node is not None:
-            content = def_node.xpath('./xs:sequence|./xs:choice|./xs:all',
+            content = def_node.xpath(
+                './xs:sequence|./xs:choice|./xs:all',
                 namespaces=Namespaces)
             if content:
                 content = content[0]
@@ -267,18 +429,8 @@ def raise_anon_complextypes(root):
     """ Raise each anonymous complexType to top level and give it a name.
     Rename if necessary to prevent duplicates.
     """
-    element_tag = '{%s}element' % (Xsd_namespace_uri, )
-    def_names = {}
-    # Collect top level complexTypes.
-    defs = root.xpath('./xs:complexType', namespaces=Namespaces)
-    for node in defs:
-        type_name = node.get('name')
-        def_names[type_name] = node
-    # Collect top level simpleTypes.
-    defs = root.xpath('./xs:simpleType', namespaces=Namespaces)
-    for node in defs:
-        type_name = node.get('name')
-        def_names[type_name] = node
+    def_names = collect_type_names(root)
+    def_count = 0
     # Find all complexTypes below top level.
     #   Raise them to top level and name them.
     #   Re-name if there is a duplicate (simpleType, complexType, or
@@ -289,7 +441,15 @@ def raise_anon_complextypes(root):
     el = etree.Comment(text="Raised anonymous complexType definitions")
     el.tail = "\n\n"
     root.append(el)
-    defs = root.xpath('./*/*//xs:complexType', namespaces=Namespaces)
+    prefix = root.prefix
+    if prefix:
+        pattern = './*/*//%s:complexType|./*/*//%s:simpleType' % (
+            prefix, prefix, )
+        element_tag = '{%s}element' % (root.nsmap[prefix], )
+    else:
+        pattern = './*/*//complexType|./*/*//simpleType'
+        element_tag = 'element'
+    defs = root.xpath(pattern, namespaces=Namespaces)
     for node in defs:
         parent = node.getparent()
         if parent.tag != element_tag:
@@ -298,22 +458,44 @@ def raise_anon_complextypes(root):
         if not name:
             continue
         type_name = '%sType' % (name, )
-        type_name = unique_name(type_name, def_names)
-        def_names[type_name] = node
+        type_name, def_count = unique_name(type_name, def_names, def_count)
+        def_names.add(type_name)
         parent.set('type', type_name)
         node.set('name', type_name)
         # Move the complexType node to top level.
         root.append(node)
 
-def unique_name(type_name, def_names):
+
+#
+# Collect the names of all currently defined types (complexType,
+#   simpleType, element).
+def collect_type_names(node):
+    prefix = node.prefix
+    if prefix is not None and prefix.strip():
+        pattern = './/%s:complexType|.//%s:simpleType|.//%s:element' % (
+            prefix, prefix, prefix)
+        # Must make sure that we have a namespace dictionary that does *not*
+        # have a key None.
+        namespaces = {prefix: node.nsmap[prefix]}
+        elements = node.xpath(pattern, namespaces=namespaces)
+    else:
+        pattern = './/complexType|.//simpleType|.//element'
+        elements = node.xpath(pattern)
+    names = [
+        el.attrib['name'] for el in elements if
+        'name' in el.attrib and el.getchildren()
+    ]
+    names = set(names)
+    return names
+
+
+def unique_name(type_name, def_names, def_count):
     orig_type_name = type_name
-    count = 0
-    while count < 100:
+    while True:
         if type_name not in def_names:
-            return type_name
-        count += 1
-        type_name = '%s%d' % (orig_type_name, count, )
-    raise RaiseComplexTypesError('duplicate name count max (100) exceeded')
+            return type_name, def_count
+        def_count += 1
+        type_name = '%s%d' % (orig_type_name, def_count, )
 
 
 def trim_prefix(name):
@@ -328,6 +510,7 @@ def trim_prefix(name):
 
 USAGE_TEXT = __doc__
 
+
 def usage(parser):
     parser.print_help()
     sys.exit(1)
@@ -335,7 +518,8 @@ def usage(parser):
 
 def main():
     parser = OptionParser(USAGE_TEXT)
-    parser.add_option("-f", "--force", action="store_true",
+    parser.add_option(
+        "-f", "--force", action="store_true",
         dest="force", default=False,
         help="force overwrite without asking")
     (options, args) = parser.parse_args()
@@ -356,4 +540,3 @@ def main():
 if __name__ == "__main__":
     #import pdb; pdb.set_trace()
     main()
-

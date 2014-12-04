@@ -27,7 +27,7 @@ from decimal import Decimal
 
 from art.core_api import validator, measure_time
 from art.core_api.apis_exceptions import EntityNotFound
-from art.rhevm_api.data_struct.data_structures import ClassesMapping
+from art.rhevm_api.data_struct.data_structures import GDSClassesMapping
 from art.core_api.apis_exceptions import APIException, APILoginError
 from art.core_api.apis_utils import APIUtil, NEGATIVE_CODES, api_error,\
     ApiOperation
@@ -147,8 +147,8 @@ def get_object_name_from_ds(object_name):
     Returns: returns SDK name of object
     """
     ds_key = filter(lambda x: x.lower() == object_name.lower(),
-                    ClassesMapping.keys())[0]
-    return ClassesMapping[ds_key].__name__
+                    GDSClassesMapping.keys())[0]
+    return GDSClassesMapping[ds_key].__name__
 
 
 def get_getters_and_setters(python_object=None, java_object=None):

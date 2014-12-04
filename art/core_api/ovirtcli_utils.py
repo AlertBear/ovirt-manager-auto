@@ -25,7 +25,7 @@ import uuid
 from functools import wraps
 from abc import ABCMeta, abstractmethod
 from time import strftime, sleep
-from art.rhevm_api.data_struct.data_structures import ClassesMapping
+from art.rhevm_api.data_struct.data_structures import GDSClassesMapping
 from art.core_api.rest_utils import RestUtil
 from art.core_api.apis_utils import NEGATIVE_CODES, api_error, ApiOperation
 from art.core_api.apis_exceptions import CLIError, CLITimeout,\
@@ -1377,7 +1377,7 @@ class CliUtil(RestUtil):
         else:
             addParams = ''
             for p in params:
-                if ClassesMapping.get(p, None):
+                if GDSClassesMapping.get(p, None):
                     if params[p] is None:
                         self.logger.error("%s is None", p)
                         self.logger.error("syncAction failed to run")
