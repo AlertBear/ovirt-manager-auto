@@ -102,10 +102,8 @@ if 'prepared_env' in ART_CONFIG:
     CPU_NAME = CLUSTERS[0]['cpu_name']
 
     HOSTS = []
-    HOST_NICS = set()
     HOSTS_IP = []
     HOST_OBJS = []
-    NETWORK_HOSTS = []
 
     for cluster in CLUSTERS:
         for host in cluster['hosts']:
@@ -114,19 +112,9 @@ if 'prepared_env' in ART_CONFIG:
             HOST_OBJS.append(host_obj)
             HOSTS.append(host_obj.name)
             HOSTS_PW = host_obj.password
-            logger.info("getting nics of host %s", host['host']['name'])
-            host_nics = list(host_obj.nics)
-            up = host_obj.up_nics
-            logger.info("host nics: %s, all: %s, up: %s",
-                        host_nics, HOST_NICS, up)
-            HOST_NICS.update(set(host_nics))
             HOSTS_IP.append(host_obj.ip)
             logger.info("host ips: %s", HOSTS_IP)
-            if len(up) > 3:
-                NETWORK_HOSTS.append(host_obj)
 
-    HOST_NICS = list(HOST_NICS)
-    HOST_NICS.reverse()
     VMS = []
     for cluster in CLUSTERS:
         for vm in cluster['vms']:

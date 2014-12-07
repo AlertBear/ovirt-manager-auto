@@ -13,8 +13,6 @@ from random import randint
 
 # Adjust parameters if running on golden environment
 if GOLDEN_ENV:
-    HOSTS = [host.name for host in NETWORK_HOSTS]
-    HOSTS_IP = [host.ip for host in NETWORK_HOSTS]
     DC_NAME = [hosts.getHostDC(HOSTS[0])]
     CLUSTER_NAME = [hosts.getHostCluster(HOSTS[0])]
     VM_NAME = vms.get_vms_from_cluster(CLUSTER_NAME[0])
