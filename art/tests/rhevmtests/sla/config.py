@@ -64,3 +64,9 @@ cheetah_servers = dict(
 
 for server_dict in (compute_servers, puma_servers, cheetah_servers):
     pm_mapping.update(server_dict)
+
+
+NUM_OF_DEVICES = int(STORAGE_CONF.get("%s_devices" % STORAGE_TYPE_NFS, 0))
+STORAGE_NAME = [
+    "_".join([STORAGE_TYPE_NFS, str(i)]) for i in xrange(NUM_OF_DEVICES)
+]

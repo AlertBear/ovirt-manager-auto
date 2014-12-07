@@ -25,7 +25,9 @@ per whole test run, since it is very slow.
 import os
 import logging
 from rhevmtests.sla import config
+import art.test_handler.exceptions as errors
 from art.rhevm_api.tests_lib.high_level import datacenters
+from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 
 LOGGER = logging.getLogger(__name__)
@@ -37,7 +39,7 @@ def setup_package():
     Create the main datacenter and cluster, installs a host and starts it,
     creates and activates main storage.
     """
-    if os.environ.get("JENKINS_URL"):
+    if os.environ.get("JENKINS_URL") and not config.GOLDEN_ENV:
         LOGGER.info("Building setup...")
         datacenters.build_setup(config.PARAMETERS, config.PARAMETERS,
                                 config.STORAGE_TYPE, config.TEST_NAME)
@@ -53,5 +55,11 @@ def teardown_package():
     """
     if os.environ.get("JENKINS_URL"):
         LOGGER.info("Teardown...")
-        cleanDataCenter(True, config.DC_NAME[0], vdc=config.VDC_HOST,
-                        vdc_password=config.VDC_PASSWORD)
+        LOGGER.info("Remove all exceed vms")
+        if not vms.remove_all_vms_from_cluster(
+            config.CLUSTER_NAME[0], skip=config.VM_NAME
+        ):
+            raise errors.VMException("Failed to remove vms")
+        if not config.GOLDEN_ENV:
+            cleanDataCenter(True, config.DC_NAME[0], vdc=config.VDC_HOST,
+                            vdc_password=config.VDC_PASSWORD)

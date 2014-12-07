@@ -10,7 +10,7 @@ import logging
 from rhevmtests.sla import config
 from nose.tools import istest
 from art.unittest_lib import attr
-from art.test_handler.tools import tcms
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
 from art.unittest_lib import ComputeTest as TestCase

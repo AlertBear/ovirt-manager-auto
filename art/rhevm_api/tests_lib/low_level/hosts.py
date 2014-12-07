@@ -1998,18 +1998,17 @@ def kill_qemu_process(vm_name, host, user, password):
 
 @is_action()
 def change_mom_rpc_port(host, host_user, host_pwd, port=8080):
-    '''
+    """
     Change port for mom rpc communication
-    Author: lsvaty
-    Parameters:
-        * host - ip of host
-        * host_user - user on host machine (root)
-        * host_pwd - password for host_user user
-        * port - port for xmlrpc communication
-    @return value - (return code, output)
-    '''
-    host_machine = machine.Machine(
-        host, host_user, host_pwd).util(machine.LINUX)
+
+    :param host: ip of host
+    :param host_user: user on host machine (root)
+    :param host_pwd: password for host_user user
+    :param port: port for xmlrpc communication
+    :return: return code, output
+    :rtype: tuple
+    """
+    host_machine = get_linux_machine_obj(host, host_user, host_pwd)
     rc, out = host_machine.runCmd(['sed', '-i',
                                    's/rpc-port: [-0-9]\\+/rpc-port: ' +
                                    str(port) + '/',
@@ -2022,57 +2021,53 @@ def change_mom_rpc_port(host, host_user, host_pwd, port=8080):
 
 
 def set_mom_script(host, host_user, host_pwd, path=MOM_SCRIPT_PATH):
-    '''
+    """
     Set script for xmlrpc communication with mom
-    Author: lsvaty
-    Parameters:
-        * host - ip of host
-        * host_user - user on host machine (root)
-        * host_pwd - password for host_user user
-        * path - path to file
-    @return value - tuple (return code, output)
-    '''
-    host_machine = machine.Machine(
-        host, host_user, host_pwd).util(machine.LINUX)
 
+    :param host: ip of host
+    :param host_user: user on host machine (root)
+    :param host_pwd: password for host_user user
+    :param path: path to mom script
+    :return: return code, output
+    :rtype: tuple
+    """
+    host_machine = get_linux_machine_obj(host, host_user, host_pwd)
     return host_machine.copyTo(find_test_file(MOM_SCRIPT_LOCAL),
-                               MOM_SCRIPT_PATH)
+                               path)
 
 
 def remove_mom_script(host, host_user, host_pwd, path=MOM_SCRIPT_PATH):
-    '''
+    """
     Remove script for xmlrpc communication with mom
-    Author: lsvaty
-    Parameters:
-        * host - ip of host
-        * host_user - user on host machine (root)
-        * host_pwd - password for host_user user
-        * path - path to file
-    @return value - tuple (return code, output)
-    '''
-    host_machine = machine.Machine(
-        host, host_user, host_pwd).util(machine.LINUX)
+
+    :param host: ip of host
+    :param host_user: user on host machine (root)
+    :param host_pwd: password for host_user user
+    :param path: path to mom script
+    :return: return code, output
+    :rtype: tuple
+    """
+    host_machine = get_linux_machine_obj(host, host_user, host_pwd)
     return host_machine.runCmd(['rm', '-f', path])
 
 
 @is_action()
 def get_mom_statistics(host, host_user, host_pwd, port=8080,
                        path=MOM_SCRIPT_PATH):
-    '''
-    get statistics from mom through xmlrpc
+    """
+    Get statistics from mom through xmlrpc
     first need to set the script for usage by setMomScript()
-    Author: lsvaty
-    Parameters:
-        * host - ip of host
-        * host_user - user on host machine (root)
-        * host_pwd - password for host_user user
-        * port - port for rpc communication
-        * path - path to mom script producing statistics
-    @return value - tuple (True, dictionary of stats on succeess
-        otherwise (False, output of run commands)
-    '''
-    host_machine = machine.Machine(
-        host, host_user, host_pwd).util(machine.LINUX)
+
+    :param host: ip of host
+    :param host_user: user on host machine (root)
+    :param host_pwd: password for host_user user
+    :param port: port for xmlrpc communication
+    :param path: path to mom script
+    :return: True, dictionary of stats on success
+             otherwise False and output of run commands
+    :rtype: tuple
+    """
+    host_machine = get_linux_machine_obj(host, host_user, host_pwd)
     rc, out = host_machine.runCmd(['python', path, str(port)])
     if rc:
         try:
@@ -2225,7 +2220,7 @@ def get_host_name_from_engine(host_ip):
 def get_host_ip_from_engine(host):
     """
     Get host name from engine by host IP
-    :param host_ip: resources.VDS object
+    :param host: resources.VDS object
     :return: host.name or None
     """
 
@@ -2273,19 +2268,21 @@ def get_cluster_hosts(cluster_name, host_status=ENUMS['host_state_up']):
     return []
 
 
-def get_linux_machine_obj(host, host_user, host_passwd):
+def get_linux_machine_obj(host, host_user, host_passwd, by_ip=True):
     """
-    Get linux machine object.
+    Get linux machine object
 
-    :param host: name of host.
-    :type host: str.
-    :param host_user: user name to login to host.
-    :type host_user: str.
-    :param host_passwd: user password to login to host.
-    :type host_passwd: str.
-    :returns: object of linux machine.
+    :param host: name of host
+    :type host: str
+    :param host_user: user name to login to host
+    :type host_user: str
+    :param host_passwd: user password to login to host
+    :type host_passwd: str
+    :param by_ip: if get linux machine by ip
+    :type by_ip: bool
+    :returns: object of linux machine
     """
-    host_ip = getHostIP(host)
+    host_ip = getHostIP(host) if by_ip else host
     return machine.Machine(host_ip, host_user, host_passwd).util(machine.LINUX)
 
 
@@ -2293,9 +2290,9 @@ def get_host_memory(host_name):
     """
     Get host memory
 
-    :param host_name: host name.
-    :type host_name: str.
-    :returns: total host memory.
+    :param host_name: host name
+    :type host_name: str
+    :returns: total host memory
     """
     stats = getStat(host_name, ELEMENT, COLLECTION, ["memory.total"])
     return stats["memory.total"]
@@ -2303,11 +2300,11 @@ def get_host_memory(host_name):
 
 def get_host_max_scheduling_memory(host_name):
     """
-    Get host max scheduling memory.
+    Get host max scheduling memory
 
-    :param host_name: host name.
-    :type host_name: str.
-    :returns: host max scheduling memory.
+    :param host_name: host name
+    :type host_name: str
+    :returns: host max scheduling memory
     """
     host_obj = get_host_object(host_name)
     return host_obj.get_max_scheduling_memory()

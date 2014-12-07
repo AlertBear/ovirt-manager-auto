@@ -16,23 +16,22 @@
 # License along with this software; if not, write to the Free
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+from concurrent.futures import ThreadPoolExecutor
 
+import time
 from art.core_api.apis_utils import getDS
-from art.rhevm_api.utils.test_utils import get_api
+from art.rhevm_api.utils import test_utils
 from art.rhevm_api.data_struct.data_structures import Fault
 from art.core_api.validator import compareCollectionSize
-from vms import detachVm, startVm, stopVm, removeVms
-import time
-from utilities.jobs import Job, JobsSet
-from art.rhevm_api.utils.test_utils import searchForObj
+from art.rhevm_api.tests_lib.low_level import vms
 from art.core_api import is_action
 
 ELEMENT = 'vmpool'
 COLLECTION = 'vmpools'
-util = get_api(ELEMENT, COLLECTION)
-vmUtil = get_api('vm', 'vms')
-clUtil = get_api('cluster', 'clusters')
-templUtil = get_api('template', 'templates')
+util = test_utils.get_api(ELEMENT, COLLECTION)
+vmUtil = test_utils.get_api('vm', 'vms')
+clUtil = test_utils.get_api('cluster', 'clusters')
+templUtil = test_utils.get_api('template', 'templates')
 
 VmPool = getDS('VmPool')
 Template = getDS('Template')
@@ -139,81 +138,72 @@ def updateVmPool(positive, vmpool, **kwargs):
     return status
 
 
-def _controlVMsInPool(positive, vmpool, action):
-    '''
+def _control_vms_in_pool(vm_pool, action, max_workers=2):
+    """
     Description: Common function for starting, stopping and detaching
-    all VMs in a pool.
-    Author: adarazs
-    Parameters:
-      * vmpool - name of the pool
-      * action - action to run on VMs, can be start, stop or detach
-    Returns: True if every operation was successful, false otherwise.
-    '''
+    all VMs in a pool
+
+    :param vm_pool: name of the pool
+    :param action: action to run on VMs, can be start, stop or detach
+    :return: True if every operation was successful, False otherwise
+    :rtype: bool
+    """
     if action == "start":
-        action_function = startVm
+        action_function = vms.startVm
     elif action == "stop":
-        action_function = stopVm
+        action_function = vms.stopVm
     elif action == "detach":
-        action_function = detachVm
+        action_function = vms.detachVm
     else:
         raise ValueError("Unsupported action given")
 
-    pool = util.find(vmpool)
-
-    vms = []
+    pool = util.find(vm_pool)
+    vms_list = []
     for vm in vmUtil.get(absLink=False):
         if vm.get_vmpool() and vm.get_vmpool().get_id() == pool.get_id():
-            vms.append(vm.get_name())
-
-    jobs = [Job(target=action_function, args=(True, vm)) for vm in vms]
-    js = JobsSet()
-    js.addJobs(jobs)
-    js.start()
-    js.join()
-
-    status = True
-    for job in jobs:
-        if not job.result:
-            status = False
-            util.logger.error(
-                'Operation %s failed on VM %s', action, job.args[1])
-    return status
+            vms_list.append(vm.get_name())
+    results = list()
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        for vm_name in vms_list:
+            results.append(executor.submit(action_function, True, vm_name))
+    test_utils.raise_if_exception(results)
+    return True
 
 
 @is_action()
-def startVmPool(positive, vmpool):
-    '''
-    Description: Wrapper for starting all VMs in a pool.
-    Author: adarazs
-    Parameters:
-      * vmpool - name of the pool
-    Returns: True if every operation was successful, false otherwise.
-    '''
-    return _controlVMsInPool(positive, vmpool, "start")
+def start_vm_pool(vm_pool):
+    """
+    Wrapper for starting all VMs in a pool
+
+    :param vm_pool: name of the pool
+    :return: True if every operation was successful, False otherwise
+    :rtype: bool
+    """
+    return _control_vms_in_pool(vm_pool, "start")
 
 
 @is_action()
-def stopVmPool(positive, vmpool):
-    '''
-    Description: Wrapper for stopping all VMs in a pool.
-    Author: adarazs
-    Parameters:
-      * vmpool - name of the pool
-    Returns: True if every operation was successful, false otherwise.
-    '''
-    return _controlVMsInPool(positive, vmpool, "stop")
+def stopVmPool(positive, vm_pool):
+    """
+    Wrapper for stopping all VMs in a pool
+
+    :param vm_pool: name of the pool
+    :return: True if every operation was successful, False otherwise
+    :rtype: bool
+    """
+    return _control_vms_in_pool(vm_pool, "stop")
 
 
 @is_action()
-def detachVms(positive, vmpool):
-    '''
-    Description: Wrapper for detaching all VMs in a pool.
-    Author: adarazs
-    Parameters:
-      * vmpool - name of the pool
-    Returns: True if every operation was successful, false otherwise.
-    '''
-    return _controlVMsInPool(positive, vmpool, "detach")
+def detachVms(positive, vm_pool):
+    """
+    Wrapper for detaching all VMs in a pool
+
+    :param vm_pool: name of the pool
+    :return: True if every operation was successful, False otherwise
+    :rtype: bool
+    """
+    return _control_vms_in_pool(vm_pool, "detach")
 
 
 @is_action()
@@ -228,15 +218,15 @@ def removePooledVms(positive, name, vm_total, vm_to_remove=-1):
                        high end of the list (if it's -1, then remove all)
     Returns: True if all VMs were removed, false otherwise.
     '''
-    vmlist = []
+    vm_list = []
     for i in range(vm_total):
         vm_number = str(i + 1)
-        vmlist.append("%s-%s" % (name, vm_number))
+        vm_list.append("%s-%s" % (name, vm_number))
     if vm_to_remove == -1:
-        vms = ",".join(vmlist)
+        vms_to_remove = ",".join(vm_list)
     else:
-        vms = ",".join(vmlist[-vm_to_remove:])
-    return removeVms(True, vms)
+        vms_to_remove = ",".join(vm_list[-vm_to_remove:])
+    return vms.removeVms(True, vms_to_remove)
 
 
 @is_action()
@@ -267,7 +257,9 @@ def searchForVmPool(positive, query_key, query_val, key_name, **kwargs):
                     found by search, False otherwise)
     '''
 
-    return searchForObj(util, query_key, query_val, key_name, **kwargs)
+    return test_utils.searchForObj(
+        util, query_key, query_val, key_name, **kwargs
+    )
 
 
 def allocateVmFromPool(positive, vmpool):

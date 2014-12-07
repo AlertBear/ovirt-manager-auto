@@ -17,8 +17,9 @@ import logging
 import re
 import time
 
-import art.rhevm_api.tests_lib.low_level.vms as vms
-import art.rhevm_api.tests_lib.low_level.templates as templates
+from art.rhevm_api.tests_lib.low_level import vms
+from art.rhevm_api.tests_lib.low_level import hosts
+from art.rhevm_api.tests_lib.low_level import templates
 
 from art.rhevm_api.utils.test_utils import get_api, setPersistentNetwork
 
@@ -151,7 +152,7 @@ def install_watchdog(vm_machine):
     if not rc:
         logger.error("Cannot add Vm to RHN, output: %s", output)
         return False
-    rc = vm_machine.yum('watchdog', 'install', timeout=900)
+    rc = vm_machine.yum('watchdog', 'install', timeout=600)
     if not rc:
         logger.error("Can't install watchdog")
         return False
@@ -243,7 +244,7 @@ class WatchdogCRUD(WatchdogVM):
         """
         Add watchdog to clean VM
         """
-        self.assertTrue(vms.updateVm(vm=config.WATCHDOG_CRUD_VM,
+        self.assertTrue(vms.updateVm(vm=config.VM_NAME[0],
                                      positive=True,
                                      watchdog_model='i6300esb',
                                      watchdog_action='reset'),
@@ -252,7 +253,7 @@ class WatchdogCRUD(WatchdogVM):
         self.assertTrue(vms.startVm(
             positive=True,
             wait_for_status=config.ENUMS['vm_state_up'],
-            vm=config.WATCHDOG_CRUD_VM), "VM did not start")
+            vm=config.VM_NAME[0]), "VM did not start")
 
         logger.info("Watchdog added to VM")
 
@@ -265,10 +266,10 @@ class WatchdogCRUD(WatchdogVM):
         """
         self.assertTrue(
             vms.checkVmState(
-                True, config.WATCHDOG_CRUD_VM, config.ENUMS['vm_state_up']
+                True, config.VM_NAME[0], config.ENUMS['vm_state_up']
             ),
             "VM is not running")
-        self.lspci_watchdog(True, config.WATCHDOG_CRUD_VM)
+        self.lspci_watchdog(True, config.VM_NAME[0])
 
     @bz({'1107992': {'engine': ['java'], 'version': None},
          '1159642': {'engine': ['sdk'], 'version': None}})
@@ -279,10 +280,10 @@ class WatchdogCRUD(WatchdogVM):
         """
 
         self.assertTrue(vms.stopVm(positive=True,
-                                   vm=config.WATCHDOG_CRUD_VM),
+                                   vm=config.VM_NAME[0]),
                         "Can't shutdown VM")
 
-        self.assertTrue(vms.updateVm(vm=config.WATCHDOG_CRUD_VM,
+        self.assertTrue(vms.updateVm(vm=config.VM_NAME[0],
                                      positive=True,
                                      watchdog_model=''),
                         "Can't delete watchdog model")
@@ -291,16 +292,16 @@ class WatchdogCRUD(WatchdogVM):
             vms.startVm(
                 positive=True,
                 wait_for_status=config.ENUMS['vm_state_up'],
-                vm=config.WATCHDOG_CRUD_VM
+                vm=config.VM_NAME[0]
             ),
             "VM did not start")
 
-        self.lspci_watchdog(False, config.WATCHDOG_CRUD_VM)
+        self.lspci_watchdog(False, config.VM_NAME[0])
         logger.info("Watchdog successfully deleted")
 
     @classmethod
     def teardown_class(cls):
-        vms.stop_vms_safely([config.WATCHDOG_CRUD_VM])
+        vms.stop_vms_safely([config.VM_NAME[0]])
 
 #####################################################################
 
@@ -317,7 +318,7 @@ class WatchdogInstall(TestCase):
         """
         Install watchdog and enable service
         """
-        run_watchdog_service(config.VM_NAME[0])
+        run_watchdog_service(config.WATCHDOG_VM)
         logger.info("Watchdog install test successful")
 
 #######################################################################
@@ -335,23 +336,23 @@ class WatchdogTestNone(WatchdogVM):
         """
         Change action to none
         """
-        change_watchdog_action(config.VM_NAME[0], 'none')
-        run_watchdog_service(config.VM_NAME[0])
+        change_watchdog_action(config.WATCHDOG_VM, 'none')
+        run_watchdog_service(config.WATCHDOG_VM)
 
     @tcms('9846', '285346')
     def test_action_none(self):
         """
         Test action none, wm should stay in kernel panic
         """
-        self.assertTrue(vms.waitForVMState(config.VM_NAME[0]),
+        self.assertTrue(vms.waitForVMState(config.WATCHDOG_VM),
                         "Vm not in up status")
 
-        self.kill_watchdog(config.VM_NAME[0])
+        self.kill_watchdog(config.WATCHDOG_VM)
 
-        self.assertTrue(vms.waitForVMState(config.VM_NAME[0]),
+        self.assertTrue(vms.waitForVMState(config.WATCHDOG_VM),
                         "Watchdog action none did not succeed")
 
-        self.lspci_watchdog(True, config.VM_NAME[0])
+        self.lspci_watchdog(True, config.WATCHDOG_VM)
 
         logger.info("Watchdog action none succeeded")
 
@@ -361,8 +362,10 @@ class WatchdogTestNone(WatchdogVM):
         Set watchdog VM to starting state
         """
         logger.info("rebooting VM")
-        if not vms.rebootVm(positive=True, vm=config.VM_NAME[0]):
-            raise errors.VMException("Cannot reboot VM %s" % config.VM_NAME[0])
+        if not vms.reboot_vms([config.WATCHDOG_VM]):
+            raise errors.VMException(
+                "Cannot reboot VM %s" % config.WATCHDOG_VM
+            )
 
 #######################################################################
 
@@ -379,17 +382,17 @@ class WatchdogTestReset(WatchdogVM):
         """
         Set action to reset
         """
-        change_watchdog_action(config.VM_NAME[0], 'reset')
-        run_watchdog_service(config.VM_NAME[0])
+        change_watchdog_action(config.WATCHDOG_VM, 'reset')
+        run_watchdog_service(config.WATCHDOG_VM)
 
     @tcms('9846', '285336')
     def test_action_reset(self):
         """
         Test action reset
         """
-        self.kill_watchdog(config.VM_NAME[0], 0)
+        self.kill_watchdog(config.WATCHDOG_VM, 0)
 
-        vm_machine = vms.get_vm_machine(config.VM_NAME[0],
+        vm_machine = vms.get_vm_machine(config.WATCHDOG_VM,
                                         config.VMS_LINUX_USER,
                                         config.VMS_LINUX_PW)
 
@@ -415,8 +418,10 @@ class WatchdogTestReset(WatchdogVM):
         Set watchdog VM to starting state
         """
         logger.info("rebooting VM")
-        if not vms.rebootVm(positive=True, vm=config.VM_NAME[0]):
-            raise errors.VMException("Cannot reboot VM %s" % config.VM_NAME[0])
+        if not vms.reboot_vms([config.WATCHDOG_VM]):
+            raise errors.VMException(
+                "Cannot reboot VM %s" % config.WATCHDOG_VM
+            )
 
 #######################################################################
 
@@ -433,18 +438,18 @@ class WatchdogTestPoweroff(WatchdogVM):
         """
         Change action to poweroff
         """
-        change_watchdog_action(config.VM_NAME[0], 'poweroff')
-        run_watchdog_service(config.VM_NAME[0])
+        change_watchdog_action(config.WATCHDOG_VM, 'poweroff')
+        run_watchdog_service(config.WATCHDOG_VM)
 
     @tcms('9846', '285335')
     def test_action_poweroff(self):
         """
         Test action poweroff
         """
-        self.kill_watchdog(config.VM_NAME[0])
+        self.kill_watchdog(config.WATCHDOG_VM)
 
         self.assertTrue(
-            vms.waitForVMState(config.VM_NAME[0],
+            vms.waitForVMState(config.WATCHDOG_VM,
                                state=config.ENUMS['vm_state_down']),
             "Watchdog action poweroff failed")
 
@@ -454,8 +459,10 @@ class WatchdogTestPoweroff(WatchdogVM):
         Set watchdog VM to starting state
         """
         logger.info("rebooting VM")
-        if not vms.rebootVm(positive=True, vm=config.VM_NAME[0]):
-            raise errors.VMException("Cannot reboot VM %s" % config.VM_NAME[0])
+        if not vms.reboot_vms([config.WATCHDOG_VM]):
+            raise errors.VMException(
+                "Cannot reboot VM %s" % config.WATCHDOG_VM
+            )
 
 #######################################################################
 
@@ -472,17 +479,17 @@ class WatchdogTestPause(WatchdogVM):
         """
         Change action to pause
         """
-        change_watchdog_action(config.VM_NAME[0], 'pause')
-        run_watchdog_service(config.VM_NAME[0])
+        change_watchdog_action(config.WATCHDOG_VM, 'pause')
+        run_watchdog_service(config.WATCHDOG_VM)
 
     @tcms('9846', '285339')
     def test_action_pause(self):
         """
         Test action pause
         """
-        self.kill_watchdog(config.VM_NAME[0])
+        self.kill_watchdog(config.WATCHDOG_VM)
 
-        self.assertTrue(vms.waitForVMState(config.VM_NAME[0],
+        self.assertTrue(vms.waitForVMState(config.WATCHDOG_VM,
                                            state='paused'),
                         "Watchdog action pause failed")
 
@@ -494,8 +501,10 @@ class WatchdogTestPause(WatchdogVM):
         Set watchdog VM to starting state
         """
         logger.info("rebooting VM")
-        if not vms.rebootVm(positive=True, vm=config.VM_NAME[0]):
-            raise errors.VMException("Cannot reboot VM %s" % config.VM_NAME[0])
+        if not vms.reboot_vms([config.WATCHDOG_VM]):
+            raise errors.VMException(
+                "Cannot reboot VM %s" % config.WATCHDOG_VM
+            )
 
 #######################################################################
 
@@ -512,8 +521,8 @@ class WatchdogTestDump(WatchdogVM):
         """
         Change action to dump
         """
-        change_watchdog_action(config.VM_NAME[0], 'dump')
-        run_watchdog_service(config.VM_NAME[0])
+        change_watchdog_action(config.WATCHDOG_VM, 'dump')
+        run_watchdog_service(config.WATCHDOG_VM)
 
     @tcms('9846', '285345')
     def test_action_dump(self):
@@ -521,8 +530,9 @@ class WatchdogTestDump(WatchdogVM):
         Test action pause
         """
         dump_path = DUMP_PATH
-        host_machine = machine.Machine(config.HOSTS[0], config.HOSTS_USER,
-                                       config.HOSTS_PW).util(machine.LINUX)
+        host_machine = hosts.get_linux_machine_obj(
+            config.HOSTS[0], config.HOSTS_USER, config.HOSTS_PW
+        )
 
         rc, output = host_machine.runCmd(
             ['grep', '^auto_dump_path', QEMU_CONF])
@@ -541,9 +551,9 @@ class WatchdogTestDump(WatchdogVM):
         logger.info("files in dumpath: %s", output)
         logs_count = int(output)
 
-        self.kill_watchdog(config.VM_NAME[0])
+        self.kill_watchdog(config.WATCHDOG_VM)
 
-        self.lspci_watchdog(True, config.VM_NAME[0])
+        self.lspci_watchdog(True, config.WATCHDOG_VM)
 
         logger.info("Watchdog action dump successful")
 
@@ -561,8 +571,10 @@ class WatchdogTestDump(WatchdogVM):
         Set watchdog VM to starting state
         """
         logger.info("rebooting VM")
-        if not vms.rebootVm(positive=True, vm=config.VM_NAME[0]):
-            raise errors.VMException("Cannot reboot VM %s" % config.VM_NAME[0])
+        if not vms.reboot_vms([config.WATCHDOG_VM]):
+            raise errors.VMException(
+                "Cannot reboot VM %s" % config.WATCHDOG_VM
+            )
 
 ######################################################################
 
@@ -599,8 +611,8 @@ class WatchdogMigration(TestCase):
         """
         Change watchdog action to poweroff
         """
-        change_watchdog_action(config.VM_NAME[0], 'poweroff')
-        run_watchdog_service(config.VM_NAME[0])
+        change_watchdog_action(config.WATCHDOG_VM, 'poweroff')
+        run_watchdog_service(config.WATCHDOG_VM)
 
     @tcms('9846', '294620')
     def test_migration(self):
@@ -615,13 +627,13 @@ class WatchdogMigration(TestCase):
         logger.info("Migrating VM")
         self.assertTrue(
             vms.migrateVm(positive=True,
-                          vm=config.VM_NAME[0],
+                          vm=config.WATCHDOG_VM,
                           host=config.HOSTS[1],
                           force=True),
             "Migration Failed")
         logger.info("Migrating successfull")
         time.sleep(WATCHDOG_TIMER)
-        self.assertTrue(vms.waitForVMState(config.VM_NAME[0]),
+        self.assertTrue(vms.waitForVMState(config.WATCHDOG_VM),
                         "Watchdog was triggered")
         logger.info("Migration of vm did not trigger watchdog")
 
@@ -631,8 +643,10 @@ class WatchdogMigration(TestCase):
         Set watchdog VM to starting state
         """
         logger.info("rebooting VM")
-        if not vms.rebootVm(positive=True, vm=config.VM_NAME[0]):
-            raise errors.VMException("Cannot reboot VM %s" % config.VM_NAME[0])
+        if not vms.reboot_vms([config.WATCHDOG_VM]):
+            raise errors.VMException(
+                "Cannot reboot VM %s" % config.WATCHDOG_VM
+            )
 
 #######################################################################
 
@@ -650,22 +664,23 @@ class WatchdogHighAvailability(WatchdogVM):
         """
         Test high availability with action shutdown
         """
-        if not vms.stopVm(positive=True, vm=config.VM_NAME[0]):
-            raise errors.VMException("Cannot stop VM %s" % config.VM_NAME[0])
+        if not vms.stopVm(positive=True, vm=config.WATCHDOG_VM):
+            raise errors.VMException("Cannot stop VM %s" % config.WATCHDOG_VM)
 
         if not vms.updateVm(
-            positive=True, vm=config.VM_NAME[0],
+            positive=True, vm=config.WATCHDOG_VM,
             placement_affinity=config.ENUMS['vm_affinity_migratable'],
-            highly_available='true'
+            highly_available=True
         ):
             raise errors.VMException(
-                "Vm %s not set to automatic migratable \
-                and highly available" % config.VM_NAME[0])
+                "Vm %s not set to automatic migratable and highly available" %
+                config.WATCHDOG_VM
+            )
 
-        if not vms.startVm(positive=True, vm=config.VM_NAME[0]):
-            raise errors.VMException("Cannot start VM %s" % config.VM_NAME[0])
-        change_watchdog_action(config.VM_NAME[0], 'poweroff')
-        run_watchdog_service(config.VM_NAME[0])
+        if not vms.startVm(positive=True, vm=config.WATCHDOG_VM):
+            raise errors.VMException("Cannot start VM %s" % config.WATCHDOG_VM)
+        change_watchdog_action(config.WATCHDOG_VM, 'poweroff')
+        run_watchdog_service(config.WATCHDOG_VM)
 
     @tcms('9846', '294619')
     def test_high_availability(self):
@@ -675,9 +690,9 @@ class WatchdogHighAvailability(WatchdogVM):
 
         logger.info("Killing watchdog process")
 
-        self.kill_watchdog(config.VM_NAME[0])
+        self.kill_watchdog(config.WATCHDOG_VM)
 
-        self.assertTrue(vms.waitForVMState(config.VM_NAME[0]),
+        self.assertTrue(vms.waitForVMState(config.WATCHDOG_VM),
                         "VM did not start as high available")
 
         logger.info("Vm started successfully")
@@ -688,17 +703,17 @@ class WatchdogHighAvailability(WatchdogVM):
         Run the VM to start state
         """
         logger.info("rebooting VM")
-        if not vms.stopVm(positive=True, vm=config.VM_NAME[0]):
-            raise errors.VMException("Cannot stop VM %s" % config.VM_NAME[0])
+        if not vms.stopVm(positive=True, vm=config.WATCHDOG_VM):
+            raise errors.VMException("Cannot stop VM %s" % config.WATCHDOG_VM)
         if not vms.updateVm(
-            positive=True, vm=config.VM_NAME[0],
+            positive=True, vm=config.WATCHDOG_VM,
             placement_affinity=config.ENUMS['vm_affinity_user_migratable'],
             highly_available='false'
         ):
-            raise errors.VMException("Cannot eddit vm %s" % config.VM_NAME[0])
+            raise errors.VMException("Cannot edit vm %s" % config.WATCHDOG_VM)
 
-        if not vms.startVm(positive=True, vm=config.VM_NAME[0]):
-            raise errors.VMException("Cannot start VM %s" % config.VM_NAME[0])
+        if not vms.startVm(positive=True, vm=config.WATCHDOG_VM):
+            raise errors.VMException("Cannot start VM %s" % config.WATCHDOG_VM)
 
 #######################################################################
 
@@ -716,8 +731,8 @@ class WatchdogEvents(WatchdogVM):
         """
         Change watchdog action to reset
         """
-        change_watchdog_action(config.VM_NAME[0], 'reset')
-        run_watchdog_service(config.VM_NAME[0])
+        change_watchdog_action(config.WATCHDOG_VM, 'reset')
+        run_watchdog_service(config.WATCHDOG_VM)
 
     @tcms('9846', '294615')
     def test_event(self):
@@ -734,7 +749,7 @@ class WatchdogEvents(WatchdogVM):
 
         self.assertTrue(rc, "Cannot read watchdog_test_event.log")
 
-        self.kill_watchdog(config.VM_NAME[0])
+        self.kill_watchdog(config.WATCHDOG_VM)
 
         rc, out = engine_machine.runCmd(
             ['diff', '/var/log/ovirt-engine/engine.log',
@@ -755,8 +770,10 @@ class WatchdogEvents(WatchdogVM):
             config.VDC_ROOT_PASSWORD).util(machine.LINUX)
         _, _ = engine_machine.runCmd(['rm', 'watchdog_test_event.log'])
         logger.info("rebooting VM")
-        if not vms.rebootVm(positive=True, vm=config.VM_NAME[0]):
-            raise errors.VMException("Cannot reboot VM %s" % config.VM_NAME[0])
+        if not vms.reboot_vms([config.WATCHDOG_VM]):
+            raise errors.VMException(
+                "Cannot reboot VM %s" % config.WATCHDOG_VM
+            )
 
 #######################################################################
 
@@ -775,22 +792,22 @@ class WatchdogCRUDTemplate(WatchdogVM):
         """
         Create Template
         """
-        if not vms.startVm(True, config.WATCHDOG_TEMPLATE_VM):
+        if not vms.startVm(True, config.VM_NAME[0]):
             raise errors.VMException("Cannot stop VM")
-        status, guest = vms.waitForIP(config.WATCHDOG_TEMPLATE_VM,
+        status, guest = vms.waitForIP(config.VM_NAME[0],
                                       timeout=600,
                                       sleep=10)
 
         if not setPersistentNetwork(guest['ip'], config.VMS_LINUX_PW):
             raise errors.VMException("Cannot set persistent network")
 
-        if not (vms.stopVm(positive=True, vm=config.WATCHDOG_TEMPLATE_VM)):
+        if not (vms.stopVm(positive=True, vm=config.VM_NAME[0])):
             raise errors.VMException(
-                "Cannot shutdown VM %s" % config.WATCHDOG_TEMPLATE_VM)
+                "Cannot shutdown VM %s" % config.VM_NAME[0])
         if not templates.createTemplate(
                 positive=True,
                 wait=True,
-                vm=config.WATCHDOG_TEMPLATE_VM,
+                vm=config.VM_NAME[0],
                 name=cls.template_name
         ):
             raise errors.VMException(
@@ -864,20 +881,12 @@ class WatchdogCRUDTemplate(WatchdogVM):
 
     @classmethod
     def teardown_class(cls):
-        status = True
-        try:
-            vms.stop_vms_safely([cls.vm_name1, cls.vm_name2])
-            status = vms.removeVms(True, [cls.vm_name1, cls.vm_name2])
-        except Exception as ex:
-                logger.warning("caught: %s", ex)
-
+        if not vms.safely_remove_vms([cls.vm_name1, cls.vm_name2]):
+            raise errors.VMException("Failed to remove vms")
         if not templates.removeTemplate(
             positive=True, template=cls.template_name
         ):
             raise errors.VMException("Cannot remove template")
         logger.info("template removed")
-
-        if not status:
-            raise errors.VMException("Failed to remove vms")
 
 ######################################################################

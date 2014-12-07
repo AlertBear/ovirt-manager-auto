@@ -3,6 +3,7 @@ MOM test initialization and teardown
 """
 
 import os
+import config
 import logging
 import art.rhevm_api.tests_lib.high_level.datacenters as datacenters
 import art.rhevm_api.tests_lib.low_level.storagedomains as storagedomains
@@ -14,12 +15,11 @@ import art.test_handler.exceptions as errors
 
 from art.rhevm_api.utils.test_utils import setPersistentNetwork
 from art.test_handler.settings import opts
-from utilities import machine
 
 logger = logging.getLogger("MOM")
 ENUMS = opts['elements_conf']['RHEVM Enums']
 RHEL_TEMPLATE = "rhel_template"
-IMPORT_TIMEOUT = 7200
+IMPORT_TIMEOUT = 1800
 
 #################################################
 
@@ -29,9 +29,43 @@ def setup_package():
     Prepare environment for MOM test
     """
     if os.environ.get("JENKINS_URL"):
-        import config
-        datacenters.build_setup(config.PARAMETERS, config.PARAMETERS,
-                                config.STORAGE_TYPE, config.TEST_NAME)
+        if not config.GOLDEN_ENV:
+            datacenters.build_setup(config.PARAMETERS, config.PARAMETERS,
+                                    config.STORAGE_TYPE, config.TEST_NAME)
+            logger.info("Create vm %s to use as template", config.VM_NAME[0])
+            if not vms.createVm(
+                    positive=True, vmName=config.VM_NAME[0],
+                    vmDescription="RHEL VM",
+                    cluster=config.CLUSTER_NAME[0],
+                    storageDomainName=config.STORAGE_NAME[0],
+                    size=6 * config.GB, nic=config.NIC_NAME[0],
+                    memory=2 * config.GB,
+                    network=config.MGMT_BRIDGE,
+                    installation=True, image=config.COBBLER_PROFILE,
+                    user=config.VMS_LINUX_USER, password=config.VMS_LINUX_PW,
+                    os_type=config.OS_TYPE):
+                raise errors.VMException("Failed to create vm")
+            logger.info("Wait for vm %s ip", config.VM_NAME[0])
+            if not vms.waitForIP(config.VM_NAME[0]):
+                raise errors.VMException("Vm still not have ip")
+            logger.info("Seal vm %s", config.VM_NAME[0])
+            if not setPersistentNetwork(
+                    config.VM_NAME[0], config.VMS_LINUX_PW
+            ):
+                raise errors.VMException("Failed to set persistent network")
+            logger.info("Stop vm %s", config.VM_NAME[0])
+            if not vms.stopVm(True, config.VM_NAME[0]):
+                raise errors.VMException("Failed to stop vm")
+            logger.info("Create template from vm %s", config.VM_NAME[0])
+            if not templates.createTemplate(
+                    True, name=RHEL_TEMPLATE, vm=config.VM_NAME[0]
+            ):
+                raise errors.TemplateException(
+                    "Failed to create template for pool"
+                )
+            rhel_template = RHEL_TEMPLATE
+        else:
+            rhel_template = config.TEMPLATE_NAME[0]
 
         if not storagedomains.importStorageDomain(
                 True, type=ENUMS['storage_dom_type_export'],
@@ -59,83 +93,63 @@ def setup_package():
             raise errors.StorageDomainException(
                 "Failed to activate export storage domain")
 
-        for vm in [config.RHEL, config.W7, config.W2K]:
+        for vm in [config.W7, config.W2K]:
             if not vms.importVm(True, vm,
                                 export_storagedomain=config.MOM_EXPORT_DOMAIN,
                                 import_storagedomain=config.STORAGE_NAME[0],
                                 cluster=config.CLUSTER_NAME[0], async=True):
                 raise errors.VMException("Failed to import vm %s" % vm)
-
-        if not vms.waitForVMState(config.RHEL,
-                                  state=ENUMS['vm_state_down'],
-                                  timeout=IMPORT_TIMEOUT):
-            raise errors.VMException("Failed to import vm %s" % config.RHEL)
-
-        if not vms.startVm(True, config.RHEL):
-            raise errors.VMException("Failed to start vm %s" % config.RHEL)
-
-        if not vms.waitForIP(config.RHEL):
-            raise errors.VMException("guest-agent failed on %s" % config.RHEL)
-        # update tools
-        vm_machine = vms.get_vm_machine(
-            config.RHEL, config.VMS_LINUX_USER, config.VMS_LINUX_PW)
-        rc = vm_machine.yum('rhevm-guest-agent-common', 'update', timeout=120,
-                            conn_timeout=120)
-        if rc:
-            logger.info("Guest agent updated on %s", config.RHEL)
-        else:
-            logger.warning("Guest agent not updated on %s continuing "
-                           "with old GA, output", config.RHEL)
-
-        status, ip = vms.waitForIP(config.RHEL, timeout=7200, sleep=10)
-        if not status:
-            raise errors.VMException(
-                "Failed to obtain vm %s machine" % config.RHEL)
-        if not setPersistentNetwork(ip['ip'], config.VMS_LINUX_PW):
-            raise errors.VMException("Failed to set persistent network")
-
-        if not vms.stopVm(True, config.RHEL):
-            raise errors.VMException("Failed to stop VM %s" % config.RHEL)
-
-        if not templates.createTemplate(True, name=RHEL_TEMPLATE,
-                                        vm=config.RHEL):
-            raise errors.TemplateException("Failed to create "
-                                           "template for pool")
-
         # create VMs for KSM and balloon
         for name, vm_num, in [
                 ("ksm", config.KSM_VM_NUM),
                 ("balloon", config.BALLOON_VM_NUM)]:
+            logger.info("Create vms pool %s", name)
             if not pools.addVmPool(
                     True, name=name, size=vm_num,
                     cluster=config.CLUSTER_NAME[0],
-                    template=RHEL_TEMPLATE, description="%s pool" % name):
+                    template=rhel_template, description="%s pool" % name):
                 raise errors.VMException("Failed creation of pool for %s" %
                                          name)
             # detach VMs from pool to be editable
+            logger.info("Detach vms from vms pool %s", name)
             if not pools.detachVms(True, name):
                 raise errors.VMException("Failed to detach VMs from %s pool" %
                                          name)
+            logger.info("Remove vms pool %s", name)
+            if not pools.removeVmPool(True, name):
+                raise errors.VMException("Failed to remove vms pool")
 
-        for vm_name in [config.W7, config.W2K]:
-            if not vms.waitForVMState(vm_name, state=ENUMS['vm_state_down']):
+        for vm_name in (config.W7, config.W2K):
+            if not vms.waitForVMState(
+                    vm_name, state=ENUMS['vm_state_down'],
+                    timeout=IMPORT_TIMEOUT
+            ):
                 raise errors.VMException("Failed to import vm %s" % vm_name)
 
         # safely detach export storage domain
         if not storagedomains.deactivateStorageDomain(
                 True, config.DC_NAME[0], config.MOM_EXPORT_DOMAIN):
             raise errors.StorageDomainException(
-                "Failed to deactivate export domain")
+                "Failed to deactivate export domain %s" %
+                config.MOM_EXPORT_DOMAIN
+            )
         if not storagedomains.detachStorageDomain(
                 True, config.DC_NAME[0], config.MOM_EXPORT_DOMAIN):
-            raise errors.StorageDomainException("Failed to detach "
-                                                "export domain")
+            raise errors.StorageDomainException(
+                "Failed to detach export domain %s" % config.MOM_EXPORT_DOMAIN
+            )
+        if not storagedomains.removeStorageDomain(
+                True, config.MOM_EXPORT_DOMAIN, config.HOSTS[0]
+        ):
+            raise errors.StorageDomainException(
+                "Failed to remove storage domain %s" % config.MOM_EXPORT_DOMAIN
+            )
 
         # disable swapping on hosts for faster tests
         for host, pwd in [(config.HOSTS[0], config.HOSTS_PW),
                           (config.HOSTS[1], config.HOSTS_PW)]:
-            host_machine = machine.Machine(host, 'root',
-                                           pwd).util(machine.LINUX)
+            host_machine = hosts.get_linux_machine_obj(
+                host, config.HOSTS_USER, pwd)
             logger.info("Turning off swapping on host %s", host)
             rc, out = host_machine.runCmd(['swapoff', '-a'])
             if not rc:
@@ -169,7 +183,6 @@ def teardown_package():
     Cleans the environment
     """
     if os.environ.get("JENKINS_URL"):
-        import config
         logger.info("Teardown...")
         dc_name = config.DC_NAME[0]
         # turn on swaps on host
@@ -177,8 +190,8 @@ def teardown_package():
         for host, pwd in [(config.HOSTS[0], config.HOSTS_PW),
                           (config.HOSTS[1], config.HOSTS_PW)]:
 
-            host_machine = machine.Machine(host,
-                                           'root', pwd).util(machine.LINUX)
+            host_machine = hosts.get_linux_machine_obj(
+                host, config.HOSTS_USER, pwd)
             rc, out = host_machine.runCmd(['swapon', '-a'])
             logger.info("Swap switched on for host %s", host)
             if not rc:
@@ -207,6 +220,11 @@ def teardown_package():
             raise errors.StorageDomainException(
                 "Failed to activate storage domain "
                 "after restart of VDSM on hosts")
-
-        storagedomains.cleanDataCenter(True, dc_name, vdc=config.VDC_HOST,
-                                       vdc_password=config.VDC_PASSWORD)
+        logger.info("Remove all exceed vms")
+        if not vms.remove_all_vms_from_cluster(
+            config.CLUSTER_NAME[0], skip=config.VM_NAME
+        ):
+            raise errors.VMException("Failed to remove vms")
+        if not config.GOLDEN_ENV:
+            storagedomains.cleanDataCenter(True, dc_name, vdc=config.VDC_HOST,
+                                           vdc_password=config.VDC_PASSWORD)

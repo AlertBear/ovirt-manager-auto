@@ -21,7 +21,6 @@ from art.rhevm_api.tests_lib.low_level.clusters import updateCluster
 logger = logging.getLogger(__name__)
 timestamp = False
 
-VMS = [config.VM_NAME[0], config.VM_NAME[1], config.VM_NAME[2]]
 MAX_CPU_LOAD = 100
 AVERAGE_CPU_LOAD = 50
 MIN_CPU_LOAD = 0
@@ -37,6 +36,9 @@ HIGH_UTILIZATION = random.randint(70, 90)
 LOW_UTILIZATION = random.randint(10, 30)
 CLUSTER_POLICIES = [config.ENUMS['scheduling_policy_evenly_distributed'],
                     config.ENUMS['scheduling_policy_power_saving'], 'none']
+START_VMS = {config.VM_NAME[0]: config.HOSTS[0],
+             config.VM_NAME[1]: config.HOSTS[1],
+             config.VM_NAME[2]: config.HOSTS[2]}
 
 
 @attr(tier=1)
@@ -49,8 +51,10 @@ class RhevmClusterPolicies(TestCase):
         Start vm on specific host for future migration
         """
         logger.info("Starting all vms")
-        if not vm_api.startVms(VMS):
-            raise errors.VMException("Starting vms failed")
+        for vm, host in START_VMS.iteritems():
+            logger.info("Run vm %s on host %s", vm, host)
+            if not vm_api.runVmOnce(True, vm, host=host):
+                raise errors.VMException("Failed to run vm")
 
     @classmethod
     def teardown_class(cls):
@@ -58,8 +62,7 @@ class RhevmClusterPolicies(TestCase):
         Stop vm
         """
         logger.info("Stopping all vms")
-        if not vm_api.stopVms(VMS):
-            raise errors.VMException("Stopping vms failed")
+        vm_api.stop_vms_safely(config.VM_NAME[:3])
         logger.info("Update cluster policy to none")
         if not updateCluster(True, config.CLUSTER_NAME[0],
                              scheduling_policy=CLUSTER_POLICIES[2]):
@@ -268,8 +271,7 @@ class MigrationFromLowCPUUtilization(PowerSaving):
         logger.info("Release host %s and %s CPU",
                     config.HOSTS[1], config.HOSTS[2])
         cls._release_hosts_cpu([config.HOSTS[1], config.HOSTS[2]])
-        super(MigrationFromLowCPUUtilization,
-              cls).teardown_class()
+        super(MigrationFromLowCPUUtilization, cls).teardown_class()
 
 
 class PutHostToMaintenancePS(PowerSaving):

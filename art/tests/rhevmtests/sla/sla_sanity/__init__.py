@@ -5,8 +5,10 @@ SLA test
 import os
 import logging
 from rhevmtests.sla import config
+import art.test_handler.exceptions as errors
 
-import art.rhevm_api.tests_lib.high_level.datacenters as datacenters
+from art.rhevm_api.tests_lib.low_level import vms
+from art.rhevm_api.tests_lib.high_level import datacenters
 from art.rhevm_api.tests_lib.low_level.storagedomains import cleanDataCenter
 
 logger = logging.getLogger("SLA")
@@ -18,7 +20,7 @@ def setup_package():
     """
     Prepare environment for SLA test
     """
-    if os.environ.get("JENKINS_URL"):
+    if os.environ.get("JENKINS_URL") and not config.GOLDEN_ENV:
         logger.info("Building setup...")
         datacenters.build_setup(config.PARAMETERS, config.PARAMETERS,
                                 config.STORAGE_TYPE, config.TEST_NAME)
@@ -30,6 +32,11 @@ def teardown_package():
     """
     if os.environ.get("JENKINS_URL"):
         logger.info("Teardown...")
-        dc_name = config.DC_NAME[0]
-        cleanDataCenter(True, dc_name, vdc=config.VDC_HOST,
-                        vdc_password=config.VDC_ROOT_PASSWORD)
+        logger.info("Remove all exceed vms")
+        if not vms.remove_all_vms_from_cluster(
+            config.CLUSTER_NAME[0], skip=config.VM_NAME
+        ):
+            raise errors.VMException("Failed to remove vms")
+        if not config.GOLDEN_ENV:
+            cleanDataCenter(True, config.DC_NAME[0], vdc=config.VDC_HOST,
+                            vdc_password=config.VDC_ROOT_PASSWORD)

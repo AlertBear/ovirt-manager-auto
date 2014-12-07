@@ -44,8 +44,7 @@ from raut.tests.webadmin.quota import QuotaTest
 from utilities.errors import GeneralException
 
 # BZ, TCMS plugins
-from art.test_handler.plmanagement.plugins.bz_plugin import bz
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 
 LOGGER = logging.getLogger(__name__)
 
@@ -113,6 +112,7 @@ def setup_module():
 
 
 def teardown_module():
+    db.set_dc_quota_mode(config.DC_NAME[0], QUOTA_NONE)
     with ui_setup(quota_ui):
         quota_ui.remove_quota(config.DC_NAME[0], QUOTA_NAME)
 

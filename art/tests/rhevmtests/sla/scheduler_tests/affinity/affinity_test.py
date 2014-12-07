@@ -10,8 +10,7 @@ from rhevmtests.sla import config
 
 from art.unittest_lib import ComputeTest as TestCase
 from nose.tools import istest
-from art.test_handler.tools import tcms  # pylint: disable=E0611
-from art.test_handler.plmanagement.plugins.bz_plugin import bz
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
 import art.rhevm_api.tests_lib.low_level.vms as vm_api

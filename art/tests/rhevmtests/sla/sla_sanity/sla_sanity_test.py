@@ -8,15 +8,13 @@ import re
 import random
 import logging
 from nose.tools import istest
-from utilities import machine
 from rhevmtests.sla import config
 
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.low_level import clusters
 import art.test_handler.exceptions as errors
-from art.test_handler.tools import tcms  # pylint: disable=E0611
-from art.test_handler.plmanagement.plugins.bz_plugin import bz
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from art.unittest_lib import ComputeTest as TestCase
 from art.unittest_lib import attr
 
@@ -70,7 +68,7 @@ def get_pinned_cpu_info(host, host_user, host_pwd, vm, vcpu):
     Return value: On success, returns the number of the pcpu that the vcpu
         is running on and it's pinning affinity. Otherwise returns False.
     """
-    host_machine = machine.Machine(host, host_user, host_pwd).util('linux')
+    host_machine = hosts.get_linux_machine_obj(host, host_user, host_pwd)
     rc, output = host_machine.runCmd(['virsh', '-r', 'list', '|grep', vm])
     if not rc or not output:
         logger.error("Can't read 'virsh -r list' on %s", host)
@@ -103,7 +101,7 @@ def get_cpu_flags(host, host_user, host_pwd):
     Return value: On success, returns a list of CPU flags.
         Otherwise returns False.
     """
-    host_machine = machine.Machine(host, host_user, host_pwd).util('linux')
+    host_machine = hosts.get_linux_machine_obj(host, host_user, host_pwd)
     rc, output = host_machine.runCmd(['cat', '/proc/cpuinfo', '|grep',
                                       'flags', '|uniq'])
     if not rc or not output:
@@ -125,7 +123,7 @@ def get_qemu_value(host, host_user, host_pwd, vm, arg):
     Return value: On success, returns a list of CPU flags.
         Otherwise returns False.
     """
-    host_machine = machine.Machine(host, host_user, host_pwd).util('linux')
+    host_machine = hosts.get_linux_machine_obj(host, host_user, host_pwd)
     rc, output = host_machine.runCmd(['ps', '-F', '-C', 'qemu-kvm',
                                       '|grep', vm])
     if not rc or not output:

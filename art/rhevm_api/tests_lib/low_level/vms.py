@@ -2960,18 +2960,17 @@ def wait_for_vm_states(vm_name, states=[ENUMS['vm_state_up']],
             break
 
 
-@is_action('startVmsParallel')
-def start_vms(vm_list, max_workers,
+def start_vms(vm_list, max_workers=2,
               wait_for_status=ENUMS['vm_state_powering_up'],
               wait_for_ip=True):
     """
-    Description: Starts all vms in vm_list. Throws an exception if it fails
+    Starts all vms in vm_list. Throws an exception if it fails
 
-    Parameters:
-        * vm_list - List of vm names
-        * max_workers - In how many threads should vms start
-        * wait_for_status - from ENUMS, to which state we wait for
-        * wait_for_ip - Boolean, wait to get an ip from the vm
+    :param vm_list: list of vm names
+    :param max_workers: In how many threads should vms start
+    :param wait_for_status: from ENUMS, to which state we wait for
+    :param wait_for_ip: Boolean, wait to get an ip from the vm
+    :raises: VMException
     """
     results = list()
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -3613,13 +3612,12 @@ def get_vm_boot_sequence(vm_name):
 
 def remove_all_vms_from_cluster(cluster_name, skip=None):
     """
-    Remove all exists vms from specific cluster
-    **Author**: alukiano
+    Stop if need and remove all exists vms from specific cluster
 
-    **Parameters**:
-        * *cluster_name* - cluster name
-        * *skip* - list of names of vms which should be left
-    **Returns**: True, if all vms removed from cluster, False otherwise
+    :param cluster_name: cluster name
+    :param skip: list of names of vms which should be left
+    :return: True, if all vms removed from cluster, False otherwise
+    :rtype: bool
     """
     if skip is None:
         skip = []
@@ -3823,16 +3821,16 @@ def get_vm_machine(vm_name, user, password):
     return Machine(got_ip['ip'], user, password).util(LINUX)
 
 
-def rebootVm(positive, vm):
-    '''
-    Atomic Reboot VM (stop && start)
-    Author: lsvaty
-    Parameters:
-        * vm - name of VM
-    Return: False if VM failed to start.
-    '''
-    stop_vms_safely([vm])
-    return startVm(positive=True, vm=vm)
+def reboot_vms(vms):
+    """
+    Atomic Reboot vms (stop && start)
+
+    :param vms: list of vms
+    :return: False if vms failed to start
+    :rtype: bool
+    """
+    stop_vms_safely(vms)
+    return startVms(vms)
 
 
 @is_action()
@@ -4220,9 +4218,9 @@ def safely_remove_vms(vms):
     Returns: False if there's an error removing a vm or no vm were removed
     """
     logger.info("Removing vms %s", vms)
-    vms_exists = filter(does_vm_exists, vms)
+    vms_exists = filter(does_vm_exist, vms)
     if vms_exists:
         stop_vms_safely(vms_exists)
         return removeVms(True, vms_exists)
-    logger.error("No vms to remove")
-    return False
+    logger.info("No vms to remove")
+    return True

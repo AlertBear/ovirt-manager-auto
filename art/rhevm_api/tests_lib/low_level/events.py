@@ -36,7 +36,7 @@ def get_max_event_id(query):
     Function get id of last event or id of last given event under query
 
     :param query: query of event
-    :type query: str
+    :type query: str or None
     :returns: If query is empty, return id of last event,
     if query not empty return id of last event with given query,
     if no events founded return None

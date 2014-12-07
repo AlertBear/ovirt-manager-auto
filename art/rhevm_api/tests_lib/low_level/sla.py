@@ -20,9 +20,8 @@ import os
 import logging
 import re
 import random
-from utilities import machine
-from art.core_api import is_action
-from vms import updateVm, startVm, stopVm
+from art.rhevm_api.tests_lib.low_level import vms
+from art.rhevm_api.tests_lib.low_level.hosts import get_linux_machine_obj
 from art.rhevm_api.utils.test_utils import get_api
 from art.test_handler.settings import opts
 
@@ -35,20 +34,19 @@ LOAD_SCRIPT_DIR = "/tmp"
 logger = logging.getLogger(__name__)
 
 
-@is_action()
-def getPinnedCPU(positive, host, host_user, host_pwd, vm, vcpu):
-    '''
-    Gets the pCPU which vCPU is running on.
-    Author: ibegun
-    Parameters:
-        * host - ip of host
-        * host_user - user for the host
-        * host_pwd - user password
-        * vm - name of the vm
-        * vcpu - number of virtual CPU
-    Return value: number of pCPU on success, False on failure
-    '''
-    host_machine = machine.Machine(host, host_user, host_pwd).util('linux')
+def get_pinned_cpu(host, host_user, host_pwd, vm, vcpu):
+    """
+    Get the pCPU which vCPU is running on
+
+    :param host: ip of host
+    :param host_user: user for connection to host
+    :param host_pwd: password for connection to host
+    :param vm: name of the vm
+    :param vcpu: number of virtual CPU
+
+    :returns: number of pCPU on success, False on failure
+    """
+    host_machine = get_linux_machine_obj(host, host_user, host_pwd)
     rc, output = host_machine.runCmd(['virsh', '-r', 'list', '|grep', vm])
     if not rc or not output:
         HOST_API.logger.error("Can't read 'virsh -r list' on %s", host)
@@ -67,21 +65,19 @@ def getPinnedCPU(positive, host, host_user, host_pwd, vm, vcpu):
     return res
 
 
-@is_action()
-def getPinnedCPUAffinity(positive, host, host_user, host_pwd, vm, vcpu):
-    '''
-    Gets the vCPU pinning affinity.
-    Author: ibegun
-    Parameters:
-        * host - ip of host
-        * host_user - user for the host
-        * host_pwd - user password
-        * vm - name of the vm
-        * vcpu - number of virtual CPU
-    Return value: String containing the affinity on success,
+def get_pinned_cpu_affinity(host, host_user, host_pwd, vm, vcpu):
+    """
+    Gets the vCPU pinning affinity
+
+    :param host: ip of host
+    :param host_user: user for connection to host
+    :param host_pwd: password for connection to host
+    :param vm: name of the vm
+    :param vcpu: number of virtual CPU
+    :returns: String containing the affinity on success,
                     False on failure
-    '''
-    host_machine = machine.Machine(host, host_user, host_pwd).util('linux')
+    """
+    host_machine = get_linux_machine_obj(host, host_user, host_pwd)
     rc, output = host_machine.runCmd(['virsh', '-r', 'list', '|grep', vm])
     if not rc or not output:
         HOST_API.logger.error("Can't read 'virsh -r list' on %s", host)
@@ -99,43 +95,41 @@ def getPinnedCPUAffinity(positive, host, host_user, host_pwd, vm, vcpu):
     return res
 
 
-@is_action()
-def checkRandomPinning(positive, host, host_user, host_pwd, vm):
-    '''
+def check_random_pinning(host, host_user, host_pwd, vm):
+    """
     Pins a VM with a single core CPU to a random core on host, checking
-    if pinning works as expected.
-    Author: ibegun
-    Parameters:
-        * host - ip of host
-        * host_user - user for the host
-        * host_pwd - user password
-        * vm - name of the vm
-    Return value: True on success, False on failure
-    '''
+    if pinning works as expected
+
+    :param host: ip of host
+    :param host_user: user for connection to host
+    :param host_pwd: password for connection to host
+    :param vm: name of the vm
+    :returns: True on success, False on failure
+    """
     host_obj = HOST_API.find(host)
     total_cores = int(
         host_obj.cpu.topology.sockets) * int(host_obj.cpu.topology.cores)
     expected_pin = str(random.randint(0, total_cores - 1))
     expected_affinity = '-' * int(expected_pin) + 'y' + '-' * (
         total_cores - int(expected_pin) - 1)
-    if not updateVm(
+    if not vms.updateVm(
             positive=True, vm=vm, vcpu_pinning={'0': expected_pin},
             placement_affinity=ENUMS['vm_affinity_pinned'],
             placement_host=host):
         VM_API.logger.error("Could not update VM.")
-        return not positive
-    if not startVm(positive=True, vm=vm):
+        return False
+    if not vms.startVm(positive=True, vm=vm):
         VM_API.logger.error("Could not start VM.")
-        return not positive
-    actual_pin = getPinnedCPU(positive, host, host_user, host_pwd, vm, '0')
-    actual_affinity = getPinnedCPUAffinity(
-        positive, host, host_user, host_pwd, vm, '0')[:total_cores]
-    if not stopVm(positive=True, vm=vm):
+        return False
+    actual_pin = get_pinned_cpu(host, host_user, host_pwd, vm, '0')
+    actual_affinity = get_pinned_cpu_affinity(
+        host, host_user, host_pwd, vm, '0')[:total_cores]
+    if not vms.stopVm(positive=True, vm=vm):
         VM_API.logger.error("Could not stop VM.")
-        return not positive
+        return False
     if (not actual_pin) or (not actual_affinity):
         HOST_API.logger.error("Could not retrieve VM pinning information.")
-        return not positive
+        return False
     VM_API.logger.info(
         "vCPU #0 is expected to be pinned to vCPU #{0}, and is actually pinned"
         " to vCPU #{1}.".format(expected_pin, actual_pin))
@@ -143,69 +137,63 @@ def checkRandomPinning(positive, host, host_user, host_pwd, vm):
         "vCPU #0 is expected to have pinning affinity of {0}, and actually has"
         " {1}.".format(expected_affinity, actual_affinity))
     if (actual_pin != expected_pin) or (actual_affinity != expected_affinity):
-        return not positive
-    return positive
+        return False
+    return True
 
 
-@is_action()
-def testPinningLoad(positive, host, host_user, host_pwd, vm):
-    '''
+def test_pinning_load(host, host_user, host_pwd, vm):
+    """
     Pins all vCPU's of a VM to a single pCPU on host, checking
-    if pinning holds.
-    Author: ibegun
-    Parameters:
-        * host - ip of host
-        * host_user - user for the host
-        * host_pwd - user password
-        * vm - name of the vm
-    Return value: True on success, False on failure
-    '''
+    if pinning holds
+
+    :param host: ip of host
+    :param host_user: user for connection to host
+    :param host_pwd: password for connection to host
+    :param vm: name of the vm
+    :returns: True on success, False on failure
+    """
     vm_obj = VM_API.find(vm)
     vm_total_cores = int(
         vm_obj.cpu.topology.sockets) * int(vm_obj.cpu.topology.cores)
-    actual_pin = 0
     pinning = dict()
     for i in range(vm_total_cores):
         pinning[str(i)] = '0'
-    if not updateVm(positive=True, vm=vm, vcpu_pinning=pinning,
-                    placement_affinity=ENUMS['vm_affinity_pinned'],
-                    placement_host=host):
+    if not vms.updateVm(
+            positive=True, vm=vm, vcpu_pinning=pinning,
+            placement_affinity=ENUMS['vm_affinity_pinned'],
+            placement_host=host
+    ):
         VM_API.logger.error("Could not update VM.")
-        return not positive
-    if not startVm(positive=True, vm=vm):
+        return False
+    if not vms.startVm(positive=True, vm=vm):
         VM_API.logger.error("Could not start VM.")
-        return not positive
+        return False
     for i in range(vm_total_cores):
-        actual_pin = getPinnedCPU(
-            positive, host, host_user, host_pwd, vm, str(i))
-        if (not actual_pin):
+        actual_pin = get_pinned_cpu(host, host_user, host_pwd, vm, str(i))
+        if not actual_pin:
             HOST_API.logger.error("Could not retrieve VM pinning information.")
-            return not positive
+            return False
         if actual_pin != '0':
             VM_API.logger.error(
                 "vCPU #{0} is not running on pCPU #0.".format(i))
-            return not positive
-    if not stopVm(positive=True, vm=vm):
+            return False
+    if not vms.stopVm(positive=True, vm=vm):
         VM_API.logger.error("Could not stop VM.")
-        return not positive
-    return positive
+        return False
+    return True
 
 
-@is_action()
 def get_num_of_cpus(host, host_user, host_passwd):
     """
     Return number of physical cpus on host
-    **Author**: alukiano
 
-    **Parameters**:
-        * *host* - name of host
-        * *host_user - user for connection to host
-        * *host_passwd - password for connection to host
+    :param host: name of host
+    :param host_user: user for connection to host
+    :param host_passwd: password for connection to host
 
-    **Returns**: number of physical cpu's
+    :returns: number of physical cpu's
     """
-    host_machine = machine.Machine(host, host_user,
-                                   host_passwd).util(machine.LINUX)
+    host_machine = get_linux_machine_obj(host, host_user, host_passwd)
     logger.debug("Run lscpu command on host %s", host)
     rc, output = host_machine.runCmd(['lscpu'])
     num_of_cpus = re.findall(r'CPU\(s\):\s*\d+', output)
@@ -213,25 +201,21 @@ def get_num_of_cpus(host, host_user, host_passwd):
     return int(num_of_cpus)
 
 
-@is_action()
 def cpu_load_script(num_of_cpus, script_name, target,
                     host, host_user, host_passwd):
     """
     Create bash script for loading cpu's on host
-    **Author**: alukiano
 
-    **Parameters**:
-        * *num_of_cpus* - number of cpu's to load
-        * *script_name* - name of script to create
-        * *target* - directory on host to copy script
-        * *host* - name of host
-        * *host_user* - user for connection to host
-        * *host_passwd* - password for connection to host
+    :param num_of_cpus: number of cpu's to load
+    :param script_name: name of script to create
+    :param target: directory on host to copy script
+    :param host: name of host
+    :param host_user: user for connection to host
+    :param host_passwd: password for connection to host
 
-    **Returns**: True, if script was created, else False
+    :returns: True, if script was created, else False
     """
-    host_machine = machine.Machine(host, host_user,
-                                   host_passwd).util(machine.LINUX)
+    host_machine = get_linux_machine_obj(host, host_user, host_passwd)
     with open(script_name, 'w+') as fd:
         fd.write("#!/bin/bash\n"
                  "for i in `seq 1 %d`;\n"
@@ -253,29 +237,25 @@ def cpu_load_script(num_of_cpus, script_name, target,
     return True
 
 
-@is_action()
 def load_cpu(host, host_user, host_passwd, load,
              name_of_script=LOAD_SCRIPT_NAME,
              dir_of_script=LOAD_SCRIPT_DIR):
     """
     Load cpu on given host
-    **Author**: alukiano
 
-    **Parameters**:
-        * *host* - name or ip of host
-        * *host_user* - user for connection to host
-        * *host_passwd* - password for connection to host
-        * *load* - number of CPU's to load
-        * *name_of_script* - name of loading script(by default load_host.sh)
-        * *dir_of_script* - directory where to put script(by default /tmp)
-    **Returns**: True, if method was succeeded, else False
+    :param host: name of host
+    :param host_user: user for connection to host
+    :param host_passwd: password for connection to host
+    :param load: number of CPU's to load
+    :param name_of_script: name of loading script(by default load_host.sh)
+    :param dir_of_script: directory where to put script(by default /tmp)
+    :returns: True, if method was succeeded, else False
     """
     if not cpu_load_script(load, name_of_script, dir_of_script,
                            host, host_user, host_passwd):
         logger.info("Creating loading script failed")
         return False
-    host_machine = machine.Machine(host, host_user,
-                                   host_passwd).util(machine.LINUX)
+    host_machine = get_linux_machine_obj(host, host_user, host_passwd)
     cmd = ["sh", os.path.join(dir_of_script, name_of_script)]
     rc, out = host_machine.runCmd(cmd)
     if rc == -1:
@@ -287,23 +267,20 @@ def load_cpu(host, host_user, host_passwd, load,
     return True
 
 
-@is_action()
 def stop_loading_cpu(host, host_user, host_passwd,
                      name_of_script=LOAD_SCRIPT_NAME,
                      dir_of_script=LOAD_SCRIPT_DIR):
     """
     Stop loading cpu on host
-    **Author**: alukiano
 
-    **Parameters**:
-        * *host* - name or ip of host
-        * *host_user* - user for connection to host
-        * *host_passwd* - password for connection to host
-        * *name_of_script* - name of loading script(by default load_host.sh)
-        * *dir_of_script* - directory where to put script(by default /tmp)
+    :param host: name of host
+    :param host_user: user for connection to host
+    :param host_passwd: password for connection to host
+    :param name_of_script: name of loading script(by default load_host.sh)
+    :param dir_of_script: directory where to put script(by default /tmp)
+    :returns: True, if method was succeeded, else False
     """
-    host_machine = machine.Machine(host, host_user,
-                                   host_passwd).util(machine.LINUX)
+    host_machine = get_linux_machine_obj(host, host_user, host_passwd)
     cmd = ["kill", "$(pidof", "sh",
            os.path.join(dir_of_script, name_of_script) + ")"]
     logger.info("Running command %s on host %s", " ".join(cmd), host)

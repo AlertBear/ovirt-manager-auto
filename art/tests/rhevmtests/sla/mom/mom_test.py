@@ -33,7 +33,6 @@ from art.test_handler.settings import opts
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.rhevm_api.utils.test_utils import getStat
 
-from utilities import machine
 from nose.plugins.attrib import attr
 
 logger = logging.getLogger(__name__)
@@ -97,8 +96,7 @@ class MOM(TestCase):
         @return value - Pid of thread holding memory on failure return -1
         """
 
-        host_machine = machine.Machine(
-            host, host_user, host_pwd).util(machine.LINUX)
+        host_machine = hosts.get_linux_machine_obj(host, host_user, host_pwd)
 
         out = ''
         memory_allocated = False
@@ -138,8 +136,7 @@ class MOM(TestCase):
         @return value - True on success otherwise False
         """
         killed = False
-        host_machine = machine.Machine(
-            host, host_user, host_pwd).util(machine.LINUX)
+        host_machine = hosts.get_linux_machine_obj(host, host_user, host_pwd)
         for i in range(ITERS):
             host_machine.killProcess([pid])
 
@@ -250,10 +247,9 @@ class MOM(TestCase):
         mom_off = maxb == curb
 
         if (not i % RESTART_VDSM_INDEX) and mom_off:
-            host_machine = machine.Machine(
-                config.HOSTS[host_id],
-                config.HOSTS_USER,
-                config.HOSTS_PW).util(machine.LINUX)
+            host_machine = hosts.get_linux_machine_obj(
+                config.HOSTS[host_id], config.HOSTS_USER, config.HOSTS_PW
+            )
             self.assertTrue(host_machine.restartService("vdsmd"),
                             "Restart of vdsm failed")
 
@@ -381,10 +377,7 @@ class KSM(MOM):
                 ballooning_enabled=False, mem_ovrcmt_prc=MEM_OVERCMT):
             raise errors.VMException("Failed to update cluster")
 
-        host_machine = machine.Machine(
-            config.HOSTS[0], config.HOSTS_USER,
-            config.HOSTS_PW).util(machine.LINUX)
-        if not host_machine.restartService("vdsmd"):
+        if not config.VDS_HOSTS[0].service('vdsmd').restart():
             raise errors.VMException("Failed to restart vdsm")
         if not hosts.waitForHostsStates(True, config.HOSTS[0]):
             raise errors.VMException("Failed to reactivate host")
@@ -503,9 +496,9 @@ class KSM(MOM):
                 ksm_enabled=True):
             raise errors.VMException("Failed to update cluster")
 
-        host_machine = machine.Machine(
-            config.HOSTS[0], config.HOSTS_USER,
-            config.HOSTS_PW).util(machine.LINUX)
+        host_machine = hosts.get_linux_machine_obj(
+            config.HOSTS[0], config.HOSTS_USER, config.HOSTS_PW
+        )
         if not host_machine.restartService("vdsmd"):
             raise errors.VMException("Failed to restart vdsm")
         if not hosts.waitForHostsStates(True, config.HOSTS[0]):
@@ -652,9 +645,9 @@ class Balloon(MOM):
         logger.info("Pids of processes allocating memory - %s",
                     " ".join(str(i) for i in cls.pid_list))
         if cls.pid_list:
-            host_machine = machine.Machine(
-                config.HOSTS[1], config.HOSTS_USER,
-                config.HOSTS_PW).util(machine.LINUX)
+            host_machine = hosts.get_linux_machine_obj(
+                config.HOSTS[1], config.HOSTS_USER, config.HOSTS_PW
+            )
             host_machine.killProcess(cls.pid_list)
 
         if not clusters.updateCluster(

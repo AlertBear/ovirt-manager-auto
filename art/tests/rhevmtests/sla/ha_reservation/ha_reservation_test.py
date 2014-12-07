@@ -13,15 +13,14 @@ import logging
 from rhevmtests.sla.ha_reservation import config
 
 from art.unittest_lib import ComputeTest as TestCase
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from nose.plugins.attrib import attr
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 
 import art.test_handler.exceptions as errors
 
 from art.rhevm_api.tests_lib.low_level import vms
 from art.rhevm_api.tests_lib.low_level import hosts
 
-from utilities import machine
 from time import sleep
 from art.unittest_lib.common import is_bz_state
 
@@ -34,7 +33,7 @@ RESERVATION_TIMEOUT = 300
 ########################################################################
 
 
-class HA_Reservation(TestCase):
+class HAReservation(TestCase):
     """
     Base class for operations
     """
@@ -45,13 +44,12 @@ class HA_Reservation(TestCase):
         """
         Check if cluster is HA safe return True/False or None in case of error
 
-        :param engine: fqdn/ip of engine
-        :param root_pwd: password for root on engine
-        :rtype: True if cluster if HA safe otherwise False
+        :returns: True if cluster if HA safe otherwise False
         """
-        engine_machine = machine.Machine(
-            config.VDC_HOST, 'root', config.VDC_ROOT_PASSWORD
-        ).util(machine.LINUX)
+        engine_machine = hosts.get_linux_machine_obj(
+            config.VDC_HOST, config.VDC_ROOT_USER,
+            config.VDC_ROOT_PASSWORD, by_ip=False
+        )
         rc, out = engine_machine.runCmd(
             ['cp', config.ENGINE_LOG, TMP_LOG]
         )
@@ -86,7 +84,7 @@ class HA_Reservation(TestCase):
 
 
 @attr(tier=2)
-class Maintenance(HA_Reservation):
+class Maintenance(HAReservation):
     """
     Moving host to maintenance should make cluster not HA safe
     """
@@ -99,15 +97,15 @@ class Maintenance(HA_Reservation):
         """
         Create and startHA VM
         """
+        config.GENERAL_VM_PARAMS['memory'] = 4 * config.GB
+        config.INSTALL_VM_PARAMS['installation'] = False
+        config.GENERAL_VM_PARAMS.update(config.INSTALL_VM_PARAMS)
+        logger.info("Create vm %s with parameters %s",
+                    cls.vm_name, config.GENERAL_VM_PARAMS)
         if not vms.createVm(
             True, vmName=cls.vm_name,
             vmDescription="VM for testcase 339927",
-            cluster=config.CLUSTER_NAME[0],
-            storageDomainName=config.STORAGE_NAME[0],
-            size=config.DISK_SIZE, nic=config.NIC_NAME[0],
-            memory=4*config.GB, placement_host=config.HOSTS[0],
-            placement_affinity=config.ENUMS['vm_affinity_migratable'],
-            highly_available=True, network=config.MGMT_BRIDGE
+            **config.GENERAL_VM_PARAMS
         ):
             raise errors.VMException("Failed to create VM")
         logger.info("VM %s successfully created", cls.vm_name)
@@ -155,13 +153,13 @@ class Maintenance(HA_Reservation):
         """
         Remove VM
         """
-        if not vms.removeVm(True, cls.vm_name, stopVM='True'):
+        if not vms.safely_remove_vms([cls.vm_name]):
             raise errors.VMException("Failed to remove VM %s" % cls.vm_name)
         logger.info("VM %s successfully removed", cls.vm_name)
 
 
 @attr(tier=1)
-class NotCompatibleHost(HA_Reservation):
+class NotCompatibleHost(HAReservation):
     """
     Cluster failing HA reservation check based on
     insufficient resources
@@ -217,7 +215,7 @@ class NotCompatibleHost(HA_Reservation):
 
 
 @attr(tier=1)
-class MultiVM(HA_Reservation):
+class MultiVM(HAReservation):
     """
     Create 8 Ha Vms in HA safe cluster and make
     host fail (move to maintenance)
@@ -232,20 +230,20 @@ class MultiVM(HA_Reservation):
         Create 8 VMs and run them on 1st host
         """
         if is_bz_state('1107992'):
+            config.GENERAL_VM_PARAMS['memory'] = config.GB / 2
+            config.INSTALL_VM_PARAMS['installation'] = False
+            config.GENERAL_VM_PARAMS.update(config.INSTALL_VM_PARAMS)
             cls.vm_list = ["%s_%d" % (cls.vm_name, i) for i in range(8)]
             for vm in cls.vm_list:
+                logger.info("Create vm %s with parameters %s",
+                            vm, config.GENERAL_VM_PARAMS)
                 if not vms.createVm(
                     True, vmName=vm,
                     vmDescription="VM allocating memory",
-                    cluster=config.CLUSTER_NAME[0],
-                    storageDomainName=config.STORAGE_NAME[0],
-                    size=config.DISK_SIZE, nic=config.NIC_NAME[0],
-                    memory=config.GB/2, placement_host=config.HOSTS[0],
-                    highly_available=True, network=config.MGMT_BRIDGE,
-                    placement_affinity=config.ENUMS['vm_affinity_migratable']
+                    **config.GENERAL_VM_PARAMS
                 ):
                     raise errors.VMException("Failed to create VM %s" % vm)
-            if not vms.startVms(" ".join(cls.vm_list)):
+            if not vms.startVms(cls.vm_list):
                 raise errors.VMException("Failed to start VMs")
             logger.info(
                 "VMs %s successfully created and all VMs running",
@@ -254,7 +252,7 @@ class MultiVM(HA_Reservation):
 
     @bz({'1107992': {'engine': None, 'version': None}})
     @tcms('12344', '339926')
-    def test_multiVM(self):
+    def test_multi_vms(self):
         """
         Make Host fail (move to maintenance)
         """
@@ -284,9 +282,8 @@ class MultiVM(HA_Reservation):
         """
         logger.info("MultiVM teardown")
         if is_bz_state('1107992'):
-            for vm in cls.vm_list:
-                if not vms.removeVm(True, vm, stopVM='True'):
-                    raise errors.VMException("Failed to remove VMs")
+            if not vms.safely_remove_vms(cls.vm_list):
+                raise errors.VMException("Failed to remove VMs")
             logger.info("All VMs removed")
 
             if not hosts.activateHost(True, config.HOSTS[0]):
