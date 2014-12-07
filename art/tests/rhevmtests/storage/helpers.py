@@ -2,15 +2,17 @@
 Storage helper functions
 """
 import logging
+import shlex
+from utilities.machine import Machine
 from art.rhevm_api.tests_lib.low_level.disks import (
-    waitForDisksState, attachDisk, addDisk,
-    get_all_disk_permutation,
+    waitForDisksState, attachDisk, addDisk, get_all_disk_permutation,
 )
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
     getStorageDomainObj,
 )
 from art.rhevm_api.tests_lib.low_level.vms import (
     stop_vms_safely, get_vm_snapshots, removeSnapshot, activateVmDisk,
+    get_vm_ip, get_vm_disk_logical_name,
 )
 from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
 from art.test_handler import exceptions
@@ -20,6 +22,8 @@ logger = logging.getLogger(__name__)
 
 DISK_TIMEOUT = 250
 SNAPSHOT_TIMEOUT = 15 * 60
+DD_TIMEOUT = 30
+DD_COMMAND = 'dd if=/dev/urandom of=%s'
 
 disk_args = {
     # Fixed arguments
@@ -99,6 +103,7 @@ def create_disks_from_requested_permutations(domain_to_use,
     Generates a list of permutations for disks using virtio, virtio-scsi and
     ide using thin-provisioning and pre-allocated options
 
+    __author__ = "glazarov"
     :param domain_to_use: the storage domain on which to create the disks
     :type domain_to_use: str
     :param interfaces: list of interfaces to use in generating the disks.
@@ -144,3 +149,49 @@ def create_disks_from_requested_permutations(domain_to_use,
                        storagedomain=domain_to_use, bootable=False)
         assert waitForDisksState(disk_alias)
     return lst_aliases_and_descriptions
+
+
+def perform_dd_to_disk(vm_name, disk_alias, protect_boot_device=True):
+    """
+    Function that performs dd command from urandom to the requested disk (by
+    alias)
+    **** Important note: Guest Agent must be installed in the OS for this
+    function to work ****
+
+    __author__ = "glazarov"
+    :param vm_name: name of the vm which which contains the disk on which
+    the dd should be performed
+    :type: str
+    :param disk_alias: The alias of the disk on which the dd operations will
+    occur
+    :type disk_alias: str
+    :param protect_boot_device: True if boot device should be protected and
+    writing to this device ignored, False if boot device should be
+    overwritten (use with caution!)
+    : type protect_boot_device: bool
+    :returns: ecode and output
+    :rtype: int, str
+    """
+    vm_ip = get_vm_ip(vm_name)
+    vm_machine = Machine(host=vm_ip, user=config.VM_USER,
+                         password=config.VM_PASSWORD).util('linux')
+    output = vm_machine.get_boot_storage_device()
+    boot_disk = 'vda' if 'vd' in output else 'sda'
+
+    disk_logical_volume_name = get_vm_disk_logical_name(vm_name, disk_alias)
+    logger.info("The logical volume name for the requested disk is: '%s'",
+                disk_logical_volume_name)
+    if protect_boot_device:
+        if disk_logical_volume_name == boot_disk:
+            logger.warn("perform_dd_to_disk function aborted since the "
+                        "requested disk alias translates into the boot "
+                        "device, this would overwrite the OS")
+            # TODO: Need to return an error code here
+            return
+
+    command = DD_COMMAND % disk_logical_volume_name
+    logger.info("Performing command '%s'", command)
+
+    ecode, out = vm_machine.runCmd(shlex.split(command), timeout=DD_TIMEOUT)
+
+    return ecode, out

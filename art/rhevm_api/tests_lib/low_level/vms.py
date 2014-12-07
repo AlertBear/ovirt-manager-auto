@@ -16,7 +16,6 @@
 # Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 import shlex
-
 from concurrent.futures import ThreadPoolExecutor
 import logging
 from operator import and_
@@ -26,7 +25,6 @@ import os
 import re
 import time
 from threading import Thread
-
 from art.core_api import is_action
 from art.core_api.apis_exceptions import (
     APITimeout, EntityNotFound, TestCaseError,
@@ -4325,3 +4323,22 @@ def safely_remove_vms(vms):
         return removeVms(True, vms_exists)
     logger.info("No vms to remove")
     return True
+
+
+def get_vm_disk_logical_name(vm_name, disk_alias):
+    """
+    Retrieves the logical name of a disk that is attached to a VM
+    **** Important note: Guest Agent must be installed in the OS for this
+    function to work ****
+
+    __author__ = "glazarov"
+    :param vm_name - name of the vm which which contains the disk
+    :type: str
+    :param disk_alias: The alias of the disk for which the logical volume
+    name should be retrieved
+    :type disk_alias: str
+    :returns: Disk logical name
+    :rtype: str
+    """
+    disk_object = getVmDisk(vm_name, disk_alias)
+    return disk_object.get_logical_name()
