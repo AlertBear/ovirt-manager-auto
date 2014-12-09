@@ -9,11 +9,13 @@ from rhevmtests.system.rhevm_utils import base
 from utilities.rhevm_tools.setup import SetupUtility
 from unittest_conf import config, REST_API_HOST
 
+from art.test_handler.tools import tcms
 from art.unittest_lib import attr
 
 logger = logging.getLogger(__name__)
 
 NAME = 'setup'
+TCMS_PLAN = 3749
 _multiprocess_can_split_ = True
 
 host = REST_API_HOST
@@ -37,6 +39,7 @@ class SetupTestCase(base.RHEVMUtilsTestCase):
         self.ut.setup.fillAnswerFile(ans, **params)
         logger.info("%s: install setup with %s", host, pformat(params))
 
+    @tcms(TCMS_PLAN, 296387)
     def test_generating_answer_file(self):
         """ generating_Answer_File """
         self.create_answer_file()
@@ -45,6 +48,7 @@ class SetupTestCase(base.RHEVMUtilsTestCase):
         self.ut.testGenerateAnswerFile()
         self.ut.setup.clean(config)
 
+    @tcms(TCMS_PLAN, 296383)
     def test_install_setup(self):
         """ install_Setup """
         self.create_answer_file()
