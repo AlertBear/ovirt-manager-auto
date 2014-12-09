@@ -25,9 +25,7 @@ from lxml import etree
 import random
 import re
 import time
-from traceback import format_exc
 import os
-import shlex
 import shutil
 from socket import gethostname
 import string
@@ -37,17 +35,30 @@ import art.test_handler.settings as settings
 from utilities.rhevm_tools.base import Setup
 from art.core_api.validator import compareCollectionSize
 from art.core_api.apis_utils import TimeoutingSampler
-from utilities.utils import readConfFile, calculateTemplateUuid, \
-    convertMacToIp, pingToVms, getIpAddressByHostName, createDirTree
+from utilities.utils import (
+    calculateTemplateUuid,
+    convertMacToIp,
+    pingToVms,
+    getIpAddressByHostName,
+    createDirTree,
+)
 from utilities.machine import Machine, eServiceAction, LINUX
-from art.core_api.apis_exceptions import APITimeout, EntityNotFound, \
-    TestCaseError
-from utilities.tools import updateGuestTools, verifyToolsFilesExist, \
-    removeToolsFromGuest, waitForGuestReboot, GuestToolsMachine, \
-    installToolsFromDir
-#from upgradeSetup.prepSetup import Rhevm
-from art.rhevm_api.utils.threads import CreateThread, ThreadSafeDict
+from art.core_api.apis_exceptions import (
+    APITimeout,
+    EntityNotFound,
+    TestCaseError,
+)
+from utilities.tools import (
+    updateGuestTools,
+    verifyToolsFilesExist,
+    waitForGuestReboot,
+    GuestToolsMachine,
+    installToolsFromDir,
+)
+# from upgradeSetup.prepSetup import Rhevm
+from art.rhevm_api.utils.threads import CreateThread
 from art.core_api import is_action
+from art.rhevm_api.resources import Host, RootUser
 
 logger = logging.getLogger('test_utils')
 
@@ -1197,53 +1208,58 @@ def setPersistentNetwork(host, password):
        * password - password for root user
     Return: (True if command executed successfuly, False otherwise)
     '''
-    vm_obj = Machine(host, 'root', password).util(LINUX)
+    vm_obj = Host(host)
+    vm_obj.users.append(RootUser(password))
 
-    persistent_rule = "/etc/udev/rules.d/70-persistent-net.rules"
-    cmd = ["rm", "-f", persistent_rule]
-    rc, out = vm_obj.runCmd(cmd)
-    logger.debug('Running command %s : result %s', cmd, rc)
-    if not rc:
-        logger.error('Failed to erase %s. %s', persistent_rule, out)
+    # Files
+    persistent_rule = '/etc/udev/rules.d/70-persistent-net.rules'
+    net_scripts_dir = '/etc/sysconfig/network-scripts'
+    network_configuration = '/etc/sysconfig/network'
+
+    if not vm_obj.fs.unlink(persistent_rule):
+        logger.error('Failed to erase %s', persistent_rule)
+        return False
+    logger.debug(
+        "Does persistent udev rules exist? : %s",
+        vm_obj.fs.exists(persistent_rule),
+    )
+
+    nics = vm_obj.network.all_interfaces()
+    if not nics:
+        logger.error('PCI network interfaces do not exist on %s', host)
         return False
 
-    nics = set()
-    rc, out = vm_obj.runCmd(['ls', '-la', '/sys/class/net', '|', \
-                             'grep', "'pci'", '|', \
-                             'grep', '-o', "'[^/]*$'"])
-    out = out.strip()
-    if not rc or not out:
-        logger.error('PCI interfaces do not exist in %s', host)
-        return False
-    nics |= set(out.splitlines())
+    remove_ifcfg_attrs_cmd = [
+        'sed', '-i', '-e', '/HWADDR/d', '-e', '/HOSTNAME/d',
+        '-e', '/DHCP_HOSTNAME/d', '-e', '/UUID/d',
+    ]  # Missing target file, adding it in loop bellow
+    with vm_obj.executor().session() as ss:
+        for nic in nics:
+            nic = 'ifcfg-%s' % nic
+            ifcfg_path = os.path.join(net_scripts_dir, nic)
 
-    for nic in nics:
-        nic = 'ifcfg-%s' % nic
-        ifcfg_path = os.path.join('/etc/sysconfig/network-scripts', nic)
-        lines_to_remove = ["HWADDR", "HOSTNAME", "DHCP_HOSTNAME", "UUID"]
+            cmd = remove_ifcfg_attrs_cmd + [ifcfg_path]
 
-        for line in lines_to_remove:
-            cmd = ["sed", "-i", "/%s/d" % line, ifcfg_path]
-            logger.debug('Running command %s', cmd)
-            rc, out = vm_obj.runCmd(cmd)
-            if not rc:
-                logger.error("Failed to remove %s: %s", line, out)
+            rc, out, err = ss.run_cmd(cmd)
+            if rc:
+                logger.error(
+                    "Failed to remove relevant attrs from %s: %s, %s",
+                    ifcfg_path, out, err,
+                )
                 return False
 
-        rc, out = vm_obj.runCmd(['cat', ifcfg_path])
-        logger.debug('%s Final configurations: \n%s', nic, out)
+            with ss.open_file(ifcfg_path) as fd:
+                logger.debug(
+                    '%s Final configurations: \n%s',
+                    nic, fd.read()
+                )
 
-    network_configuration = '/etc/sysconfig/network'
-    cmd = ["sed", "-i", "s/^HOSTNAME.*/HOSTNAME=localhost.localdomain/g",
-           network_configuration]
-    rc, out = vm_obj.runCmd(cmd)
-    if not rc:
-        logger.error("Failed to remove HOSTNAME from network config: %s", out)
-        return False
+    vm_obj.network.hostname = "localhost.localdomain"
 
-    rc, out = vm_obj.runCmd(['cat', network_configuration])
-    logger.debug('Final network configurations: \n%s', out)
-
+    # TODO: This is not relevant for el7, but I don't want to remove it
+    with vm_obj.executor().session() as ss:
+        with ss.open_file(network_configuration) as fd:
+            logger.debug('Final network configurations: \n%s', fd.read())
     return True
 
 
