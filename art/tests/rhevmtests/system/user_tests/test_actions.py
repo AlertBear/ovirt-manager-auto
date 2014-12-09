@@ -307,7 +307,7 @@ class CaseRoleActions(TestCase):
                         config.CREATE_VM,
                     ],
                     mla.addVmPoolPermissionToUser: [
-                        config.CREATE_POOL,
+                        config.CREATE_POOL, config.DELETE_POOL,
                     ],
                     mla.addPermissionsForTemplate: [
                         config.DELETE_TEMPLATE,
