@@ -23,7 +23,6 @@ import os
 from configobj import ConfigObj
 
 from utilities import machine
-from art.rhevm_api.utils.test_utils import restartVdsmd, sendICMP
 from art.rhevm_api.tests_lib.low_level.networks import (
     addNetwork, getClusterNetwork, getNetworksInDataCenter, removeNetwork,
     addNetworkToCluster, NET_API, DC_API, updateNetwork, getClusterNetworks,
@@ -37,13 +36,16 @@ from art.rhevm_api.tests_lib.low_level.vms import (
     getVmMacAddress, startVm, stopVm, createVm, waitForVmsStates,
     waitForIP)
 from art.rhevm_api.utils.test_utils import (
-    convertMacToIpAddress, setPersistentNetwork,
+    convertMacToIpAddress, setPersistentNetwork, sendICMP,
+)
+from art.rhevm_api.utils.cpumodel import (
+    CpuModelDenominator, CpuModelError,
 )
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
     waitForStorageDomainStatus, cleanDataCenter,
 )
 from art.rhevm_api.tests_lib.low_level.clusters import (
-    addCluster, removeCluster,
+    addCluster, removeCluster, updateCluster,
 )
 from art.rhevm_api.tests_lib.high_level.storagedomains import (
     create_storages,
@@ -452,6 +454,19 @@ def prepareSetup(hosts, cpuName, username, password, datacenter,
 
     add_hosts(hosts_fqdn, [password] * len(hosts_fqdn), cluster)
     host_array = [get_host_name_from_engine(h.ip) for h in hosts_obj]
+
+    # setting up cpu_model
+    cpu_den = CpuModelDenominator()
+    try:
+        cpu_info = cpu_den.get_common_cpu_model(hosts_obj, version=version)
+    except CpuModelError as ex:
+        logger.error("Can not determine the best cpu_model: %s", ex)
+    else:
+        logger.info("Cpu info %s for cluster: %s", cpu_info, cluster)
+        if not updateCluster(True, cluster, cpu=cpu_info['cpu']):
+            logger.error(
+                "Can not update cluster cpu_model to: %s", cpu_info['cpu']
+            )
 
     storage = ConfigObj()
     storage['lun_address'] = [lun_address]
