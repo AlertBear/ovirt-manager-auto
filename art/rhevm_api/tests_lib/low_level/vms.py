@@ -1891,6 +1891,26 @@ def attach_cdrom_vm(positive, vm_name, cdrom_image):
     return status
 
 
+def eject_cdrom_vm(vm_name):
+    """
+    Eject the CD/DVD from the vm
+
+    :param vm_name: name of the vm
+    :type vm_name: str
+    :return True in case of success/False otherwise
+    :rtype bool
+    """
+    cdroms = getCdRomsObjList(vm_name)
+    newCdrom = data_st.CdRom()
+    # Eject action is done through setting the File property to empty
+    newCdrom.set_file(data_st.File())
+
+    # Is important to pass current=True so the action takes place in the
+    # current execution
+    cdrom, status = CDROM_API.update(cdroms[0], newCdrom, True, current=True)
+    return status
+
+
 def getCdRomsObjList(vm_name, href=False):
     """
     Description: Returns a list of cdrom objects

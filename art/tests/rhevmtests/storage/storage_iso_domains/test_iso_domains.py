@@ -11,12 +11,15 @@ import helpers
 import config
 
 from art.unittest_lib import StorageTest as TestCase
+from art.unittest_lib import attr
 
 import art.rhevm_api.tests_lib.high_level.storagedomains as hl_sd
 import art.rhevm_api.tests_lib.low_level.storagedomains as ll_sd
 import art.rhevm_api.tests_lib.low_level.vms as ll_vms
-
-from art.rhevm_api.utils import test_utils
+from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
+from art.rhevm_api.tests_lib.low_level.hosts import (
+    getSPMHost,
+)
 
 from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 
@@ -34,10 +37,11 @@ def setup_module():
     """
     Sets the iso uploader config file's password
     """
-    setup = Setup(config.VDC, config.VDC_USER, config.VDC_PASSWORD)
+    logger.info("Set the iso uploader config file password")
+    setup = Setup(config.VDC, config.VDC_ROOT_USER, config.VDC_PASSWORD)
     utility = Utility(setup)
     assert utility.setRestConnPassword(
-        "iso-uploader", config.ISO_UPLOADER_CONF_FILE, config.VDC_PASSWORD)
+        "iso-uploader", config.ISO_UPLOADER_CONF_FILE, config.REST_PASS)
 
 
 def create_vm(vm_name, master_domain):
@@ -49,23 +53,10 @@ def create_vm(vm_name, master_domain):
         storageDomainName=master_domain,
         size=config.DISK_SIZE, diskType=config.DISK_TYPE_SYSTEM,
         volumeType=True, volumeFormat=config.DISK_FORMAT_COW,
-        diskInterface=config.VIRTIO_SCSI, memory=config.GB,
+        diskInterface=config.INTERFACE_VIRTIO_SCSI, memory=config.GB,
         cpu_socket=config.CPU_SOCKET, cpu_cores=config.CPU_CORES,
         os_type=config.OS_TYPE, type=config.VM_TYPE_DESKTOP,
     )
-
-
-def clean_iso_domains(datacenter=None, format_disk=False):
-    """
-    Find all the ISO domains and remove them
-        * datacenter - only from the specified datacenter
-        * format_disk - if the storage domain should be formatted
-    """
-    for iso_domain in ll_sd.findIsoStorageDomains(datacenter):
-        hl_sd.remove_storage_domain(
-            iso_domain, config.DATA_CENTER_NAME, config.HOST,
-            format_disk=format_disk
-        )
 
 
 class BaseCaseIsoDomains(TestCase):
@@ -84,46 +75,42 @@ class BaseCaseIsoDomains(TestCase):
         """
         Creates the environment with the storage domains
         Adds a vm
-        Remove all the iso storages domains
         """
-        helpers.build_environment(
-            storage_domains=cls.storagedomains,
-            local=cls.local
-        )
+        if not config.GOLDEN_ENV:
+            helpers.build_environment(
+                storage_domains=cls.storagedomains,
+                local=cls.local
+            )
 
-        if cls.storagedomains:
-            found, master_domain = ll_sd.findMasterStorageDomain(
-                True, config.DATA_CENTER_NAME)
-            assert found
-            cls.master_domain = master_domain['masterDomain']
+        cls.data_center_name = config.DATA_CENTER_NAME
 
-            if len(cls.storagedomains) > 1:
-                found, non_master = ll_sd.findNonMasterStorageDomains(
-                    True, config.DATA_CENTER_NAME)
-                assert found
-                cls.non_master = non_master['nonMasterDomains']
-
+        found, master_domain = ll_sd.findMasterStorageDomain(
+            True, cls.data_center_name)
+        assert found
+        cls.master_domain = master_domain['masterDomain']
+        cls.spm_host = getSPMHost(config.HOSTS)
         assert create_vm(cls.vm_name, cls.master_domain)
 
-        # Make sure there's no ISO Domains in the environment
-        clean_iso_domains()
         cls.machine = machine.LinuxMachine(
-            config.VDC, config.VDC_USER, config.VDC_PASSWORD, local=False)
+            config.VDC, config.VDC_ROOT_USER, config.VDC_PASSWORD, local=False)
 
     @classmethod
     def teardown_class(cls):
         """
         Clean the whole environment
         """
-        # Wait for all the tasks to finish in case of error
-        test_utils.wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
+        # Wait for all jobs to finish in case of an error
+        wait_for_jobs()
+        if config.GOLDEN_ENV:
+            ll_vms.stop_vms_safely([cls.vm_name])
+            assert ll_vms.removeVm(True, cls.vm_name)
+        else:
+            ll_sd.cleanDataCenter(
+                True, cls.data_center_name, vdc=config.VDC,
+                vdc_password=config.VDC_PASSWORD)
 
-        ll_sd.cleanDataCenter(
-            True, config.DATA_CENTER_NAME, vdc=config.VDC,
-            vdc_password=config.VDC_PASSWORD)
 
-
+@attr(tier=0)
 class TestCasesPlan6107(BaseCaseIsoDomains):
 
     mount_target = None
@@ -133,17 +120,18 @@ class TestCasesPlan6107(BaseCaseIsoDomains):
         Make sure vm is stopped and doesn't have an iso attached
         Clean the iso domains
         """
-        assert ll_vms.remove_cdrom_vm(True, self.vm_name)
+        assert ll_vms.eject_cdrom_vm(self.vm_name)
         if ll_vms.checkVmState(False, self.vm_name, config.VM_DOWN):
             assert ll_vms.shutdownVm(True, self.vm_name)
 
-        # Safely remove the iso domain
-        # WARNING: It will be formatted too
-        clean_iso_domains(config.DATA_CENTER_NAME, format_disk=True)
+        if self.iso_domain_name:
+            logger.info("Removing iso domain %s", self.iso_domain_name)
+            hl_sd.remove_storage_domain(
+                self.iso_domain_name, self.data_center_name, self.spm_host,
+                format_disk=True
+            )
 
-        # Make sure the iso domain is removed
-        test_utils.wait_for_tasks(
-            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
+        wait_for_jobs()
 
     def attach_iso_and_maintenance(self, run_once=None, iso_domain=None):
         """
@@ -153,8 +141,10 @@ class TestCasesPlan6107(BaseCaseIsoDomains):
         4. Eject the ISO and try to put the domain in maintenance
         """
         logger.info("Adding iso domain %s", iso_domain['name'])
+        self.iso_domain_name = None
         assert helpers.add_storage_domain(
-            config.DATA_CENTER_NAME, **iso_domain)
+            self.data_center_name, self.spm_host, **iso_domain)
+        self.iso_domain_name = iso_domain['name']
 
         # Mount the nfs partition with all the isos
         logger.info("Mouting nfs partition %s:%s to upload isos to the "
@@ -176,17 +166,17 @@ class TestCasesPlan6107(BaseCaseIsoDomains):
             path.rstrip("\r\n")
             if iso_domain['storage_type'] == ENUMS['storage_type_local']:
                 # Can only upload to local domains via ssh
-                ssh = "--ssh-user=%s" % config.HOST_ADMIN
+                ssh = "--ssh-user=%s" % config.HOSTS_USER
             else:
                 ssh = ""
             upload_cmd = "engine-iso-uploader -f upload -i %s %s %s" % (
-                iso_domain['name'], ssh, path)
+                self.iso_domain_name, ssh, path)
             logger.info("Executing %s", upload_cmd)
             rc, out = self.machine.runCmd(
-                upload_cmd.split(), data=config.HOST_PASSWORD)
+                upload_cmd.split(), data=config.HOSTS_PW)
             if not rc:
                 logger.error("Error uploading iso %s to domain %s => %s",
-                             path, iso_domain['name'], out)
+                             path, self.iso_domain_name, out)
                 assert rc
 
         if run_once:
@@ -197,17 +187,17 @@ class TestCasesPlan6107(BaseCaseIsoDomains):
             assert ll_vms.startVm(True, self.vm_name)
 
         status = ll_sd.deactivateStorageDomain(
-            False, config.DATA_CENTER_NAME, iso_domain['name'])
+            False, self.data_center_name, self.iso_domain_name)
         self.assertTrue(
             status, "ISO domain %s was deactivated while one of the isos "
             "is attached to vm %s" % (iso_domain['name'], self.vm_name))
 
-        assert ll_vms.remove_cdrom_vm(True, self.vm_name)
+        assert ll_vms.eject_cdrom_vm(self.vm_name)
         status = ll_sd.deactivateStorageDomain(
-            True, config.DATA_CENTER_NAME, iso_domain['name'])
+            True, self.data_center_name, self.iso_domain_name)
         self.assertTrue(
             status, "ISO domain %s wasn't deactivated after ejecting one of "
-            "the isos from the vm %s" % (iso_domain['name'], self.vm_name))
+            "the isos from the vm %s" % (self.iso_domain_name, self.vm_name))
 
     @tcms(TCMS_TEST_PLAN, TCMS_CASE_ATTACH)
     def test_detaching_posixfs_iso_vm(self):
@@ -260,7 +250,8 @@ class TestCasesPlan6107Local(TestCasesPlan6107):
     Test detaching iso domains when an iso is inserted in a vm
     Local DC
     """
-    __test__ = True
+    # Local data center tests are not supported by the golden environment
+    __test__ = not config.GOLDEN_ENV
     local = True
     vm_name = "TestCasesPlan6107Local"
     storagedomains = [config.LOCAL_DOMAIN]

@@ -12,47 +12,30 @@ import config
 logger = logging.getLogger(__name__)
 
 
-def add_storage_domain(datacenter_name, **domain):
+def add_storage_domain(datacenter_name, host, **domain):
     """
     Add and attach an storege domain to datacenter_name
     """
-    if domain['storage_type'] == config.ISCSI_SD_TYPE:
-        if not hl_sd._ISCSIdiscoverAndLogin(config.HOST,
+    if domain['storage_type'] == config.STORAGE_TYPE_ISCSI:
+        if not hl_sd._ISCSIdiscoverAndLogin(host,
                                             domain['lun_address'],
                                             domain['lun_target']):
             return False
 
-    if not ll_sd.addStorageDomain(True, host=config.HOST, **domain):
+    if not ll_sd.addStorageDomain(True, host=host, **domain):
         return False
 
     if domain['storage_type'] == config.ENUMS['storage_type_local']:
         # local storage domains should be attached and activated after
         # being added
         return ll_sd.is_storage_domain_active(
-            config.DATA_CENTER_NAME, domain['name'])
+            datacenter_name, domain['name'])
 
     status = ll_sd.attachStorageDomain(
         True, datacenter_name, domain['name'], True)
 
     return status and ll_sd.activateStorageDomain(
         True, datacenter_name, domain['name'])
-
-
-def import_and_activate_storage_domain(datacenter_name, **storage_domain):
-    """
-    Import a Domain (This is for iso/export domains on nfs/posixfs)
-    """
-    domain = storage_domain.copy()
-    name = domain.pop("name")
-
-    if not ll_sd.importStorageDomain(True, host=config.HOST, **domain):
-        return False
-
-    status = ll_sd.attachStorageDomain(
-        True, datacenter_name, name, True)
-
-    return status and ll_sd.activateStorageDomain(
-        True, datacenter_name, name)
 
 
 def build_environment(storage_domains, compatibility_version="3.4",
@@ -86,4 +69,4 @@ def build_environment(storage_domains, compatibility_version="3.4",
         cluster_name)
 
     for domain in storage_domains:
-        assert add_storage_domain(datacenter_name, **domain)
+        assert add_storage_domain(datacenter_name, config.HOSTS[0], **domain)
