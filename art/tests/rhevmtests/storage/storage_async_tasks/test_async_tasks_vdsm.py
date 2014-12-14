@@ -139,16 +139,19 @@ class TestCase287892(RestartVDSM):
 
         self.restart_before_tasks_start()
 
-    @tcms(tcms_plan_id, tcms_test_case)
-    def test_restart_during_tasks(self):
-        """
-        Restart VDSM when only part of the tasks were finished
-        - snapshot creation
-        """
-        stop_vms_safely([config.VM_NAME[0]])
-        waitForVMState(config.VM_NAME[0], config.VM_DOWN)
-
-        self.restart_during_tasks('CreateAllSnapshotsFromVm')
+    # TODO: Commented out due to:
+    #    https://projects.engineering.redhat.com/browse/RHEVM-1940
+    #
+    # @tcms(tcms_plan_id, tcms_test_case)
+    # def test_restart_during_tasks(self):
+    #     """
+    #     Restart VDSM when only part of the tasks were finished
+    #     - snapshot creation
+    #     """
+    #     stop_vms_safely([config.VM_NAME[0]])
+    #     waitForVMState(config.VM_NAME[0], config.VM_DOWN)
+    #
+    #     self.restart_during_tasks('CreateAllSnapshotsFromVm')
 
 
 class TestCase287893(RestartVDSM):
