@@ -706,7 +706,8 @@ def create_nfs_domain_and_verify_options(domain_list, host=None,
             datacenter=datacenter)
 
     logger.info("Getting info about mounted resources")
-    mounted_resources = storagedomains.get_mounted_nfs_resources(host,
+    host_ip = hosts.getHostIP(host)
+    mounted_resources = storagedomains.get_mounted_nfs_resources(host_ip,
                                                                  password)
 
     logger.info("verifying nfs options")

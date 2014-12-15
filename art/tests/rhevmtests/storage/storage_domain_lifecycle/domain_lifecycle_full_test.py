@@ -36,8 +36,8 @@ VM_API = get_api('vm', 'vms')
 SD_API = get_api('storage_domain', 'storagedomains')
 CLUSTER_API = get_api('cluster', 'clusters')
 CLI_CMD_DF = 'df -H'
-GB = 1024 ** 3
-TEN_GB = 10 * GB
+TEN_GB = 10 * config.GB
+DATA_CENTER_TIMEOUT = 60 * 5
 
 ProvisionContext = vms.ProvisionContext
 
@@ -53,40 +53,66 @@ def setup_module():
     and overridden with only one lun/path to sent as parameter to build_setup.
     after the build_setup finish, we return to the original lists
     """
-    if config.STORAGE_TYPE == config.STORAGE_TYPE_NFS:
-        domain_path = config.PATH
-        config.PARAMETERS['data_domain_path'] = [domain_path[0]]
+    if not config.GOLDEN_ENV:
+        if config.STORAGE_TYPE == config.STORAGE_TYPE_NFS:
+            domain_path = config.PATH
+            config.PARAMETERS['data_domain_path'] = [domain_path[0]]
+        else:
+            luns = config.LUNS
+            config.PARAMETERS['lun'] = [luns[0]]
+
+        logger.info("Preparing datacenter %s with hosts %s",
+                    config.DATA_CENTER_NAME, config.VDC)
+
+        datacenters.build_setup(config=config.PARAMETERS,
+                                storage=config.PARAMETERS,
+                                storage_type=config.STORAGE_TYPE)
+
+        if config.STORAGE_TYPE == config.STORAGE_TYPE_NFS:
+            config.PARAMETERS['data_domain_path'] = domain_path
+        else:
+            config.PARAMETERS['lun'] = luns
+
+    # LIFECYCLE_* will be the device parameters used for this tests
+    if not config.GOLDEN_ENV:
+        if config.STORAGE_TYPE == config.STORAGE_TYPE_NFS:
+            config.LIFECYCLE_ADDRESS = config.ADDRESS
+            config.LIFECYCLE_PATH = config.PATH
+            config.PARAMETERS['data_domain_path'] = domain_path
+        elif config.STORAGE_TYPE == config.STORAGE_TYPE_ISCSI:
+            config.LIFECYCLE_LUNS = config.LUNS
+            config.LIFECYCLE_LUN_ADDRESS = config.LUN_ADDRESS
+            config.LIFECYCLE_LUN_TARGET = config.LUN_TARGET
+            config.PARAMETERS['lun'] = luns
     else:
-        luns = config.LUNS
-        config.PARAMETERS['lun'] = [luns[0]]
+        config.LIFECYCLE_ADDRESS = config.UNUSED_DATA_DOMAIN_ADDRESSES
+        config.LIFECYCLE_PATH = config.UNUSED_DATA_DOMAIN_PATHS
+        config.LIFECYCLE_LUNS = config.UNUSED_LUNS
+        config.LIFECYCLE_LUN_ADDRESS = config.UNUSED_LUN_ADDRESSES
+        config.LIFECYCLE_LUN_TARGET = config.UNUSED_LUN_TARGETS
 
-    logger.info("Preparing datacenter %s with hosts %s",
-                config.DATA_CENTER_NAME, config.VDC)
-
-    datacenters.build_setup(config=config.PARAMETERS,
-                            storage=config.PARAMETERS,
-                            storage_type=config.STORAGE_TYPE)
-
-    logger.info("Adding temporary cluster %s for upgrade tests to default dc ",
-                config.TMP_CLUSTER_NAME)
+    logger.info("Adding temporary cluster %s for upgrade tests to dc %s",
+                config.TMP_CLUSTER_NAME, config.DATA_CENTER_NAME)
     assert addCluster(True, name=config.TMP_CLUSTER_NAME,
                       cpu=config.PARAMETERS['cpu_name'],
-                      data_center='Default',
+                      data_center=config.DATA_CENTER_NAME,
                       version=config.COMPATIBILITY_VERSION)
-
-    if config.STORAGE_TYPE == config.STORAGE_TYPE_NFS:
-        config.PARAMETERS['data_domain_path'] = domain_path
-    else:
-        config.PARAMETERS['lun'] = luns
 
 
 def teardown_module():
     """
     Removes created datacenter, storages etc.
     """
-    ll_st_domains.cleanDataCenter(
-        True, config.DATA_CENTER_NAME, vdc=config.VDC,
-        vdc_password=config.VDC_PASSWORD)
+    logger.info("Putting host %s back to cluster %s",
+                config.FIRST_HOST, config.CLUSTER_NAME)
+    put_host_to_cluster(config.FIRST_HOST, config.CLUSTER_NAME)
+    logger.info("Removing cluster %s", config.TMP_CLUSTER_NAME)
+    ll_clusters.removeCluster(True, config.TMP_CLUSTER_NAME)
+
+    if not config.GOLDEN_ENV:
+        ll_st_domains.cleanDataCenter(
+            True, config.DATA_CENTER_NAME, vdc=config.VDC,
+            vdc_password=config.VDC_PASSWORD)
 
 
 def put_host_to_cluster(host, cluster):
@@ -134,28 +160,29 @@ class BaseTestCase(TestCase):
         logger.info("Master domain ip found : %s", cls.master_domain_ip)
 
         cls.engine_ip = getIpAddressByHostName(config.VDC)
+        cls.first_host_ip = hosts.getHostIP(config.FIRST_HOST)
 
 
-def _create_sds():
+def _create_sds(storage_type, host):
     """
-    helper function for creating 2 SD
-    Return: False if not all the storage domains was created,
+    Helper function for creating two storage domains
+    Return: False if not all the storage domains were created,
             True otherwise
     """
     status = True
     sd_args = {'type': ENUMS['storage_dom_type_data'],
-               'storage_type': config.STORAGE_TYPE,
-               'host': config.FIRST_HOST}
+               'storage_type': storage_type,
+               'host': host}
 
-    for index in range(1, 3):
-        sd_args['name'] = config.SD_NAMES_LIST[index]
-        if config.STORAGE_TYPE == 'nfs':
-            sd_args['address'] = config.ADDRESS[index]
-            sd_args['path'] = config.PATH[index]
-        elif config.STORAGE_TYPE == 'iscsi':
-            sd_args['lun'] = config.LUNS[index]
-            sd_args['lun_address'] = config.LUN_ADDRESS[index]
-            sd_args['lun_target'] = config.LUN_TARGET[index]
+    for index in range(1, config.EXTRA_SD_INDEX):
+        sd_args['name'] = config.LIFECYCLE_DOMAIN_NAMES[index]
+        if storage_type == config.STORAGE_TYPE_NFS:
+            sd_args['address'] = config.LIFECYCLE_ADDRESS[index]
+            sd_args['path'] = config.LIFECYCLE_PATH[index]
+        elif storage_type == config.STORAGE_TYPE_ISCSI:
+            sd_args['lun'] = config.LIFECYCLE_LUNS[index]
+            sd_args['lun_address'] = config.LIFECYCLE_LUN_ADDRESS[index]
+            sd_args['lun_target'] = config.LIFECYCLE_LUN_TARGET[index]
             sd_args['lun_port'] = config.LUN_PORT
 
         logger.info('Creating storage domain with parameters: %s', sd_args)
@@ -166,8 +193,8 @@ def _create_sds():
 
 def _create_vm(vm_name, vm_description, disk_interface,
                sparse=True, volume_format=config.COW_DISK,
-               storageDomainName=config.SD_NAME_0,
-               vm_type=config.VM_TYPE_DESKTOP):
+               vm_type=config.VM_TYPE_DESKTOP,
+               storageDomainName=None):
     """
     helper function for creating vm (passes common arguments, mostly taken
     from the configuration file)
@@ -175,7 +202,7 @@ def _create_vm(vm_name, vm_description, disk_interface,
     logger.info("Creating VM %s" % vm_name)
     return vms.createVm(
         True, vm_name, vm_description, cluster=config.CLUSTER_NAME,
-        nic=config.HOST_NICS[0], storageDomainName=storageDomainName,
+        nic=config.NIC_NAME[0], storageDomainName=storageDomainName,
         size=config.DISK_SIZE,
         diskType=config.DISK_TYPE_SYSTEM,
         volumeType=sparse, volumeFormat=volume_format,
@@ -183,7 +210,7 @@ def _create_vm(vm_name, vm_description, disk_interface,
         cpu_socket=config.CPU_SOCKET,
         cpu_cores=config.CPU_CORES, nicType=config.NIC_TYPE_VIRTIO,
         display_type=config.DISPLAY_TYPE, os_type=config.OS_TYPE,
-        user=config.VM_USER, password=config.VM_PASSWORD,
+        user=config.VMS_LINUX_USER, password=config.VMS_LINUX_PW,
         type=vm_type, installation=True, slim=True,
         image=config.COBBLER_PROFILE, network=config.MGMT_BRIDGE,
         useAgent=config.USE_AGENT)
@@ -210,12 +237,12 @@ class TestCase174610(BaseTestCase):
         Check that the host is UP again.
         """
         assert ip_action.block_and_wait(self.engine_ip, config.HOSTS_USER,
-                                        config.HOSTS_PW, config.FIRST_HOST,
+                                        config.HOSTS_PW, self.first_host_ip,
                                         config.FIRST_HOST,
                                         config.HOST_NONRESPONSIVE)
 
         assert ip_action.unblock_and_wait(self.engine_ip, config.HOSTS_USER,
-                                          config.HOSTS_PW, config.FIRST_HOST,
+                                          config.HOSTS_PW, self.first_host_ip,
                                           config.FIRST_HOST)
 
     @classmethod
@@ -224,9 +251,11 @@ class TestCase174610(BaseTestCase):
         unblock all connections that were blocked during the test
         """
         def everything_ok():
-            return ll_datacenters.waitForDataCenterState(
-                config.DATA_CENTER_NAME) and hosts.isHostUp(
-                True, config.FIRST_HOST)
+            return (
+                ll_datacenters.waitForDataCenterState(
+                    config.DATA_CENTER_NAME, timeout=DATA_CENTER_TIMEOUT) and
+                hosts.isHostUp(True, config.FIRST_HOST)
+            )
 
         if not everything_ok():
             logger.info('Unblocking connections, something went wront')
@@ -234,7 +263,7 @@ class TestCase174610(BaseTestCase):
                 st_api.unblockOutgoingConnection(cls.engine_ip,
                                                  config.HOSTS_USER,
                                                  config.HOSTS_PW,
-                                                 config.FIRST_HOST)
+                                                 cls.first_host_ip)
             except exceptions.NetworkException, msg:
                 logging.info("Connection already unblocked. reason: %s", msg)
 
@@ -255,7 +284,7 @@ class TestCase174613(TestCase):
     nfs_timeout = 10
     nfs_version = 'v3'
     mount_options = 'sync'
-    sd_names = config.SD_NAMES_LIST[1:]
+    sd_names = config.LIFECYCLE_DOMAIN_NAMES[1:]
 
     @istest
     @tcms(tcms_plan_id, tcms_test_case)
@@ -265,7 +294,7 @@ class TestCase174613(TestCase):
         """
         version = None
         mount_options = None
-        for index in range(1, 3):
+        for index in range(1, config.EXTRA_SD_INDEX):
             logger.info("creating storage domain #%s with values:"
                         "retrans = %d, timeout = %d, vers = %s",
                         index,
@@ -274,9 +303,9 @@ class TestCase174613(TestCase):
                         version)
 
             storage = ll_st_domains.NFSStorage(
-                name=config.SD_NAMES_LIST[index],
-                address=config.ADDRESS[index],
-                path=config.PATH[index],
+                name=config.LIFECYCLE_DOMAIN_NAMES[index],
+                address=config.LIFECYCLE_ADDRESS[index],
+                path=config.LIFECYCLE_PATH[index],
                 timeout_to_set=self.nfs_timeout,
                 retrans_to_set=self.nfs_retrans,
                 mount_options_to_set=mount_options,
@@ -299,59 +328,56 @@ class TestCase174613(TestCase):
             mount_options = self.mount_options
 
         logger.info('Creating vm and installing OS on it')
-        if not _create_vm(config.VM_NAME[0],
-                          config.VM_NAME[0],
+        if not _create_vm(config.LIFECYCLE_VM,
+                          config.LIFECYCLE_VM,
                           config.INTERFACE_IDE,
-                          storageDomainName=config.SD_NAMES_LIST[2]):
+                          storageDomainName=config.LIFECYCLE_DOMAIN_NAMES[2]):
             raise exceptions.VMException("Failed to create VM")
 
-        logger.info("Waiting for vm %s state 'up'", config.VM_NAME[0])
-        if not vms.waitForVMState(config.VM_NAME[0]):
+        logger.info("Waiting for vm %s state 'up'", config.LIFECYCLE_VM)
+        if not vms.waitForVMState(config.LIFECYCLE_VM):
             raise exceptions.VMException("Waiting for VM %s status 'up' failed"
-                                         % config.VM_NAME[0])
+                                         % config.LIFECYCLE_VM)
 
-        rc, out = vms.run_cmd_on_vm(config.VM_NAME[0], CLI_CMD_DF,
+        rc, out = vms.run_cmd_on_vm(config.LIFECYCLE_VM, CLI_CMD_DF,
                                     config.VMS_LINUX_USER, config.VMS_LINUX_PW)
         if not rc:
             raise exceptions.VMException("fail to run %s on %s, output is %s" %
-                                         CLI_CMD_DF, config.VM_NAME[0], out)
+                                         CLI_CMD_DF, config.LIFECYCLE_VM, out)
         logger.info("%s output on %s, is %s",
-                    CLI_CMD_DF, config.VM_NAME[0], out)
+                    CLI_CMD_DF, config.LIFECYCLE_VM, out)
 
     @classmethod
     def teardown_class(cls):
         """
         Removes VM and SD
         """
-
-        assert vms.stopVm(True, config.VM_NAME[0])
-
-        logger.info('Removing vm %s', config.VM_NAME)
-        if not vms.removeVm(True, config.VM_NAME[0], wait=True):
-            raise exceptions.VMException(
-                "Failed to remove vm %s" % config.VM_NAME)
+        if not vms.safely_remove_vms([config.LIFECYCLE_VM]):
+            logger.info("Failed to remove vm %s", config.LIFECYCLE_VM)
 
         logger.info('Waiting for all vms to be removed')
         wait_for_tasks(config.VDC, config.VDC_PASSWORD,
                        config.DATA_CENTER_NAME)
+
         logger.info('Removing storage domains')
         assert ll_st_domains.removeStorageDomains(
             True, cls.sd_names, config.FIRST_HOST)
 
+        host_ip = hosts.getHostIP(config.FIRST_HOST)
         logger.info("Getting info about mounted resources")
-        mounted_resources = storagedomains.get_mounted_nfs_resources(
-            host=config.FIRST_HOST,
+        mounted_resources = ll_st_domains.get_mounted_nfs_resources(
+            host=host_ip,
             password=config.HOSTS_PW)
 
-        for index in range(1, 3):
-            if ((config.ADDRESS[index], config.PATH[index]) in
-                    mounted_resources.keys()):
+        for index in range(1, config.EXTRA_SD_INDEX):
+            if ((config.LIFECYCLE_ADDRESS[index], config.LIFECYCLE_PATH[index])
+                    in mounted_resources.keys()):
                 raise exceptions.StorageDomainException(
                     "Mount of %s:%s was found on %s, although SD was removed" %
-                    config.ADDRESS[index],
-                    config.PATH[index],
+                    config.LIFECYCLE_ADDRESS[index],
+                    config.LIFECYCLE_PATH[index],
                     config.FIRST_HOST,
-                    config.SD_NAMES_LIST[index])
+                    config.LIFECYCLE_DOMAIN_NAMES[index])
 
 
 @attr(tier=0)
@@ -361,7 +387,7 @@ class TestCase147888(TestCase):
     domain are blocked
     https://tcms.engineering.redhat.com/case/147888/
     """
-    __test__ = (config.STORAGE_TYPE == config.STORAGE_TYPE_NFS)
+    __test__ = TestCase.storage == config.STORAGE_TYPE_NFS
     tcms_plan_id = '5849'
     tcms_test_case = '147888'
 
@@ -409,7 +435,7 @@ class TestCase147888(TestCase):
         'mount_options': None,
     })
 
-    sd_names = config.SD_NAMES_LIST[1:]
+    sd_names = config.LIFECYCLE_DOMAIN_NAMES[1:]
 
     @tcms(tcms_plan_id, tcms_test_case)
     def test_create_sd_with_defined_values(self):
@@ -427,9 +453,9 @@ class TestCase147888(TestCase):
                         sd_params['mount_options'])
 
             storage = ll_st_domains.NFSStorage(
-                name=config.SD_NAMES_LIST[1],
-                address=config.ADDRESS[1],
-                path=config.PATH[1],
+                name=config.LIFECYCLE_DOMAIN_NAMES[1],
+                address=config.LIFECYCLE_ADDRESS[1],
+                path=config.LIFECYCLE_PATH[1],
                 timeout_to_set=sd_params['nfs_timeout'],
                 retrans_to_set=sd_params['nfs_retrans'],
                 mount_options_to_set=sd_params['mount_options'],
@@ -472,21 +498,24 @@ class TestCase174631(TestCase):
     """
     __test__ = True
     tcms_test_case = '174631'
-    sd_names = config.SD_NAMES_LIST[1:]
+    sd_names = config.LIFECYCLE_DOMAIN_NAMES[1:]
     interfaces = [config.INTERFACE_VIRTIO, config.INTERFACE_IDE]
     formats = [ENUMS['format_cow'], ENUMS['format_raw']]
     num_of_disks = 2
 
     @classmethod
     def setup_class(cls):
+        cls.first_domain = ll_st_domains.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, cls.storage)[0]
         logger.info('Creating vm and installing OS on it')
-        if not _create_vm(config.VM_NAME[0],
-                          config.VM_NAME[0],
-                          config.INTERFACE_VIRTIO_SCSI):
+        if not _create_vm(config.LIFECYCLE_VM,
+                          config.LIFECYCLE_VM,
+                          config.INTERFACE_VIRTIO_SCSI,
+                          storageDomainName=cls.first_domain):
             raise exceptions.VMException("Failed to create VM")
 
         logger.info('Creating 2 storage domains')
-        if not _create_sds():
+        if not _create_sds(cls.storage, config.FIRST_HOST):
             raise exceptions.StorageDomainException("Failed to create SDs")
 
         for sd in cls.sd_names:
@@ -495,10 +524,10 @@ class TestCase174631(TestCase):
                 raise exceptions.StorageDomainException(
                     "Failed to attach SD %s" % sd)
 
-        logger.info('Shutting down VM %s', config.VM_NAME[0])
-        if not vms.stopVm(True, config.VM_NAME[0]):
+        logger.info('Shutting down VM %s', config.LIFECYCLE_VM)
+        if not vms.stopVm(True, config.LIFECYCLE_VM):
             raise exceptions.VMException("Failed to shutdown vm %s"
-                                         % config.VM_NAME[0])
+                                         % config.LIFECYCLE_VM)
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
     def test_multiple_disks_on_different_sd(self):
@@ -517,7 +546,7 @@ class TestCase174631(TestCase):
                 else:
                     # policy_allocation = True --> sparse
                     policy_allocation = True
-                self.assertTrue(vms.addDisk(True, config.VM_NAME[0],
+                self.assertTrue(vms.addDisk(True, config.LIFECYCLE_VM,
                                             config.DISK_SIZE, True, sd,
                                             type=ENUMS['disk_type_data'],
                                             interface=self.interfaces[index],
@@ -525,21 +554,21 @@ class TestCase174631(TestCase):
                                             sparse=policy_allocation),
                                 "Failed to add disk")
 
-        self.assertTrue(vms.startVm(True, config.VM_NAME[0]),
-                        "Failed to start vm %s" % config.VM_NAME[0])
+        self.assertTrue(vms.startVm(True, config.LIFECYCLE_VM),
+                        "Failed to start vm %s" % config.LIFECYCLE_VM)
 
-        self.assertTrue(vms.stopVm(True, config.VM_NAME[0]),
-                        "Failed to stop vm %s" % config.VM_NAME[0])
+        self.assertTrue(vms.stopVm(True, config.LIFECYCLE_VM),
+                        "Failed to stop vm %s" % config.LIFECYCLE_VM)
 
     @classmethod
     def teardown_class(cls):
         """
         Removes disks, vm and SDs
         """
-        logger.info('Removing vm %s', config.VM_NAME[0])
-        if not vms.removeVm(True, config.VM_NAME[0], wait=True):
+        logger.info('Removing vm %s', config.LIFECYCLE_VM)
+        if not vms.removeVm(True, config.LIFECYCLE_VM, wait=True):
             raise exceptions.VMException(
-                "Failed to remove vm %s" % config.VM_NAME[0])
+                "Failed to remove vm %s" % config.LIFECYCLE_VM)
 
         wait_for_tasks(config.VDC, config.VDC_PASSWORD,
                        config.DATA_CENTER_NAME)
@@ -558,17 +587,17 @@ class TestCase284310(TestCase):
     __test__ = True
     tcms_plan_id = '5292'
     tcms_test_case = '284310'
-    sd_names = config.SD_NAMES_LIST[1:]
+    sd_names = config.LIFECYCLE_DOMAIN_NAMES[1:]
 
     @tcms(tcms_plan_id, tcms_test_case)
-    def add_another_storage_domain_test(self):
+    def test_add_another_storage_domain_test(self):
         """
         Check that both storage domains were automatically activated
         after attaching them.
         """
 
         logger.info('Creating 2 storage domains')
-        if not _create_sds():
+        if not _create_sds(self.storage, config.FIRST_HOST):
             raise exceptions.StorageDomainException("Failed to create SDs")
 
         for sd in self.sd_names:
@@ -607,22 +636,25 @@ class TestUpgrade(TestCase):
     upgraded_storage_format = None
     cluster_version = "3.3"
     host = config.FIRST_HOST
-    vm_name = 'vm_test'
+    vm_name = 'TestUpgrade_vm_test'
     domain_kw = None
     tcms_plan_id = '6127'
     tcms_test_case = '165844'
-
-    if config.STORAGE_TYPE == config.STORAGE_TYPE_NFS:
-        sd_paths = config.PARAMETERS['data_domain_path'][1:]
-
-    else:
-        sd_luns = config.PARAMETERS['lun'][1:]
 
     @classmethod
     def setup_class(cls):
         """
         Prepares data-center without storages
         """
+        if cls.storage == config.STORAGE_TYPE_NFS:
+            cls.sd_paths = config.LIFECYCLE_PATH[1:]
+            cls.sd_address = config.LIFECYCLE_ADDRESS[1:]
+
+        else:
+            cls.sd_luns = config.LIFECYCLE_LUNS[1:]
+            cls.sd_luns_address = config.LIFECYCLE_LUN_ADDRESS[1:]
+            cls.sd_luns_target = config.LIFECYCLE_LUN_TARGET[1:]
+
         LOGGER.info("Running class %s setup", cls.__name__)
         assert ll_datacenters.addDataCenter(True, name=cls.dc_name,
                                             storage_type=cls.storage_type,
@@ -640,21 +672,8 @@ class TestUpgrade(TestCase):
         temporary cluster
         """
         LOGGER.info("Running class %s teardown", cls.__name__)
-        vms_objects = VM_API.get(absLink=False)
-        up_vms = [vm.get_name() for vm in vms_objects if not
-                  vm.get_status().get_state() == config.ENUMS['vm_state_down']]
-        up_vms = ','.join(up_vms)
-        LOGGER.info("Stopping vms")
-        vms.stopVms(up_vms)
-        LOGGER.info("Removing vms")
-        for vm_obj in vms_objects:
-            vms.removeVm(True, vm_obj.get_name())
-        vdc = config.VDC
-        vdc_password = config.VDC_PASSWORD
-        if vdc is not None and vdc_password is not None:
-            LOGGER.info('Waiting for vms to be removed')
-            wait_for_tasks(
-                vdc=vdc, vdc_password=vdc_password, datacenter=cls.dc_name)
+        LOGGER.info("Remove vm %s", cls.vm_name)
+        vms.safely_remove_vms([cls.vm_name])
 
         LOGGER.info('Deactivating non master storage domains')
         assert ll_st_domains.execOnNonMasterDomains(
@@ -692,8 +711,7 @@ class TestUpgrade(TestCase):
         """
         Changes DC version while installing a VM
         """
-        nic = config.PARAMETERS['host_nics'][0]
-
+        nic = config.NIC_NAME[0]
         assert vms.createVm(
             True, self.vm_name, '', cluster=self.cluster_name,
             nic=nic, nicType=config.ENUMS['nic_type_virtio'],
@@ -703,7 +721,7 @@ class TestUpgrade(TestCase):
             diskInterface=config.INTERFACE_VIRTIO,
             bootable=True, wipe_after_delete=False,
             type=config.ENUMS['vm_type_server'], os_type="rhel6x64",
-            memory=1073741824, cpu_socket=1, cpu_cores=1,
+            memory=config.GB, cpu_socket=1, cpu_cores=1,
             display_type=config.DISPLAY_TYPE,
             network=config.MGMT_BRIDGE)
         try:
@@ -740,8 +758,10 @@ class TestUpgradeNFS(TestUpgrade):
     @classmethod
     def setup_class(cls):
         super(TestUpgradeNFS, cls).setup_class()
+        logger.info("Adding nfs storage domains needed for tests")
+        logger.info("Addresses: %s, Paths: %s", cls.sd_address, cls.sd_paths)
         for index, (address, path) in enumerate(zip(
-                config.PARAMETERS.as_list('data_domain_address'),
+                cls.sd_address,
                 cls.sd_paths)):
             assert storagedomains.addNFSDomain(
                 cls.host, cls.sd_name_pattern % index, cls.dc_name, address,
@@ -761,8 +781,8 @@ class TestUpgradeISCSI(TestUpgrade):
     def setup_class(cls):
         super(TestUpgradeISCSI, cls).setup_class()
         for index, (lun_address, lun_target, lun) in enumerate(zip(
-                config.PARAMETERS.as_list('lun_address'),
-                config.PARAMETERS.as_list('lun_target'),
+                cls.sd_luns_address,
+                cls.sd_luns_target,
                 cls.sd_luns)):
             assert storagedomains.addISCSIDataDomain(
                 cls.host, cls.sd_name_pattern % index, cls.dc_name, lun,
@@ -838,32 +858,34 @@ TYPE_TO_CLASS = {
 }
 
 storage_v3_format = config.ENUMS['storage_format_version_v3']
-for dc_version in config.DC_VERSIONS:
-    dc_version_name = dc_version.replace('.', '')
-    for dc_upgrade_version in config.DC_UPGRADE_VERSIONS:
-        if dc_version == dc_upgrade_version:
-            continue
-        dc_upgrade_version_name = dc_upgrade_version.replace('.', '')
-        if config.STORAGE_TYPE == config.ENUMS['storage_type_nfs']:
-            storage_format = config.ENUMS['storage_format_version_v1']
-        elif config.STORAGE_TYPE == config.ENUMS['storage_type_iscsi']:
-            storage_format = config.ENUMS['storage_format_version_v2']
-        name_pattern = (config.STORAGE_TYPE, dc_version_name,
-                        dc_upgrade_version_name)
-        class_name = "TestUpgrade%s%s%s" % name_pattern
-        doc = "Test case upgrades %s datacenter from %s to %s" % name_pattern
-        class_attrs = {
-            '__doc__': doc,
-            '__test__': True,
-            'dc_name': 'dc_%s_upgrade_%s_%s' % name_pattern,
-            'cluster_name': 'c_%s_upgrade_%s_%s' % name_pattern,
-            'sd_name_pattern': "%s%%d_%s_%s" % name_pattern,
-            'dc_version': dc_version,
-            'dc_upgraded_version': dc_upgrade_version,
-            'storage_format': storage_format,
-            'upgraded_storage_format': storage_v3_format
-        }
-        new_class = type(class_name, (TYPE_TO_CLASS[config.STORAGE_TYPE],),
-                         class_attrs)
-        setattr(__THIS_MODULE, class_name, new_class)
-delattr(__THIS_MODULE, 'new_class')
+for storage_type in config.STORAGE_SELECTOR:
+    for dc_version in config.DC_VERSIONS:
+        dc_version_name = dc_version.replace('.', '')
+        for dc_upgrade_version in config.DC_UPGRADE_VERSIONS:
+            if dc_version == dc_upgrade_version:
+                continue
+            dc_upgrade_version_name = dc_upgrade_version.replace('.', '')
+            if storage_type == config.ENUMS['storage_type_nfs']:
+                storage_format = config.ENUMS['storage_format_version_v1']
+            elif storage_type == config.ENUMS['storage_type_iscsi']:
+                storage_format = config.ENUMS['storage_format_version_v2']
+            name_pattern = (storage_type, dc_version_name,
+                            dc_upgrade_version_name)
+            class_name = "TestUpgrade%s%s%s" % name_pattern
+            doc = ("Test case upgrades %s datacenter from %s to %s"
+                   % name_pattern)
+            class_attrs = {
+                '__doc__': doc,
+                '__test__': True,
+                'dc_name': 'dc_%s_upgrade_%s_%s' % name_pattern,
+                'cluster_name': 'c_%s_upgrade_%s_%s' % name_pattern,
+                'sd_name_pattern': "%s%%d_%s_%s" % name_pattern,
+                'dc_version': dc_version,
+                'dc_upgraded_version': dc_upgrade_version,
+                'storage_format': storage_format,
+                'upgraded_storage_format': storage_v3_format
+            }
+            new_class = type(class_name, (TYPE_TO_CLASS[config.STORAGE_TYPE],),
+                             class_attrs)
+            setattr(__THIS_MODULE, class_name, new_class)
+    delattr(__THIS_MODULE, 'new_class')
