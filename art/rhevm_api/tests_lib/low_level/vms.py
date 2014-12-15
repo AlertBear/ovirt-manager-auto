@@ -122,8 +122,11 @@ class DiskNotFound(Exception):
 def _prepareVmObject(**kwargs):
 
     add = kwargs.pop('add', False)
-    vm = data_st.VM(name=kwargs.pop('name', None),
-                    description=kwargs.pop('description', None))
+    description = kwargs.pop('description', None)
+    if description is None or description == '':
+        vm = data_st.VM(name=kwargs.pop('name', None))
+    else:
+        vm = data_st.VM(name=kwargs.pop('name', None), description=description)
 
     # snapshot
     snapshot_name = kwargs.pop('snapshot', None)
