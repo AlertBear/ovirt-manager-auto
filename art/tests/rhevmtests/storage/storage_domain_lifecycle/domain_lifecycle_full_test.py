@@ -246,10 +246,10 @@ class TestCase174613(TestCase):
     """
     test check if creating storage domain with defined values
     is working properly
-    https://tcms.engineering.redhat.com/case/174613/?from_plan=12050
+    https://tcms.engineering.redhat.com/case/174613/
     """
     __test__ = (config.STORAGE_TYPE == ENUMS['storage_type_nfs'])
-    tcms_plan_id = '12050'
+    tcms_plan_id = '5849'
     tcms_test_case = '174613'
     nfs_retrans = 5
     nfs_timeout = 10
@@ -359,10 +359,10 @@ class TestCase147888(TestCase):
     """
     test check if bad and conflict parameters for creating storage
     domain are blocked
-    https://tcms.engineering.redhat.com/case/147888/?from_plan=12050
+    https://tcms.engineering.redhat.com/case/147888/
     """
     __test__ = (config.STORAGE_TYPE == config.STORAGE_TYPE_NFS)
-    tcms_plan_id = '12050'
+    tcms_plan_id = '5849'
     tcms_test_case = '147888'
 
     sds_params = []
