@@ -19,6 +19,7 @@ from art.rhevm_api.utils import test_utils
 from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from test_base import connectionTest
 from utilities.machine import LINUX, Machine
+from art.core_api.apis_utils import TimeoutingSampler
 
 LOGGER = logging.getLogger(__name__)
 OUT = '> /dev/null 2>&1 &'
@@ -48,11 +49,11 @@ class ActiveDirectory(TestCase):
 
     PASSWORD = None
     domain = None
+    product = ENGINE
 
     def __init__(self, *args, **kwargs):
         super(ActiveDirectory, self).__init__(*args, **kwargs)
-        self.product = RHEVM
-        if OVIRT in general.getProductName()[1]['product_name'].lower():
+        if OVIRT not in general.getProductName()[1]['product_name'].lower():
             self.product = ENGINE
 
     def _loginAsUser(self, user_name, filter=True):
@@ -85,6 +86,20 @@ class ActiveDirectory(TestCase):
             user, domain = username.split('@')
             assert users.removeUser(True, user, domain)
         assert users.deleteGroup(True, config.GROUP(cls.domain))
+
+        config.ENGINE_HOST.executor().run_cmd([
+            '%s-config' % cls.product,
+            '-s',
+            'SASL_QOP=auth'
+        ])
+        config.ENGINE.restart()
+        for status in TimeoutingSampler(
+            timeout=70,
+            sleep=5,
+            func=lambda: config.ENGINE.health_page_status,
+        ):
+            if status:
+                break
 
     def setUp(self):
         users.loginAsUser(config.VDC_ADMIN_USER, config.VDC_ADMIN_DOMAIN,
