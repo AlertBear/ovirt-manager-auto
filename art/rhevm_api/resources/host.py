@@ -50,9 +50,36 @@ class Host(Resource):
         self.ip = ip
         self.users = list()
         self._service_provider = service_provider
+        self.add()  # adding host to inventory
 
     def __str__(self):
         return "Host(%s)" % self.ip
+
+    @classmethod
+    def get(cls, ip):
+        """
+        Get host from inventory
+        :param ip: IP adress of machine or resolvable fqdn
+        :type ip: str
+        :return: host
+        :rtype: Host
+        """
+        host = [h for h in cls.inventory if h.ip == ip or h.fqdn == ip]
+        if not host:
+            raise ValueError("There is no host with %s" % ip)
+        return host[0]
+
+    def add(self):
+        """
+        Add host to inventory
+        """
+        try:
+            host = self.get(self.ip)
+        except ValueError:
+            pass
+        else:
+            self.inventory.remove(host)
+        self.inventory.append(self)
 
     @property
     def fqdn(self):
