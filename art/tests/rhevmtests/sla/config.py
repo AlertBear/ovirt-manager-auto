@@ -37,6 +37,12 @@ compute_servers = {
         PM_USERNAME: IBM_PM_USERNAME,
         PM_PASSWORD: IBM_PM_PASSWORD,
         PM_SLOT: 3
+    },
+    'aqua-vds2.qa.lab.tlv.redhat.com': {
+        PM_ADDRESS: 'aqua-vds2-mgmt.qa.lab.tlv.redhat.com',
+        PM_TYPE: ENUMS['pm_ipmilan'],
+        PM_USERNAME: DELL_PM_USERNAME,
+        PM_PASSWORD: DELL_PM_PASSWORD
     }
 }
 
@@ -44,7 +50,7 @@ puma_servers = dict(
     (
         'puma%d.scl.lab.tlv.redhat.com' % i, {
             PM_ADDRESS: 'puma%d-mgmt.qa.lab.tlv.redhat.com' % i,
-            PM_TYPE: ENUMS['pm_ilo4'],
+            PM_TYPE: ENUMS['pm_ipmilan'],
             PM_USERNAME: HP_PM_USERNAME,
             PM_PASSWORD: HP_PM_PASSWORD
         }

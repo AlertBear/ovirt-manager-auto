@@ -250,6 +250,7 @@ VERSION = ["3.0", "3.1", "3.2", "3.3", "3.4", "3.5"]
 SAMPLER_TIMEOUT = 210
 CONNECT_TIMEOUT = 60
 ENGINE_RESTART_TIMEOUT = 120  # seconds
+FENCE_TIMEOUT = 180
 
 MGMT_BRIDGE = PARAMETERS.get('mgmt_bridge')
 
@@ -318,6 +319,7 @@ VM_TYPE_SERVER = ENUMS['vm_type_server']
 
 # Host states
 HOST_UP = ENUMS['host_state_up']
+HOST_DOWN = ENUMS['host_state_down']
 HOST_NONOPERATIONAL = ENUMS["host_state_non_operational"]
 HOST_NONRESPONSIVE = ENUMS["host_state_non_responsive"]
 

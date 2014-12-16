@@ -381,44 +381,60 @@ def addHost(positive, name, wait=True, vdcPort=None, rhel_like=True,
 @is_action()
 def updateHost(positive, host, **kwargs):
     """
-    Description: update properties of existed host (provided in parameters)
-    Author: edolinin
-    Parameters:
-       * host - name of a target host
-       * name - host name to change to
-       * address - host address to change to
-       * root_password - host password to change to
-       * cluster - host cluster to change to
-       * pm - host power management to change to
-       * pm_type - host pm type to change to
-       * pm_address - host pm address to change to
-       * pm_username - host pm username to change to
-       * pm_password - host pm password to change to
-       * pm_port - host pm port to change to
-       * pm_secure - host pm security to change to
-    Return: status (True if host was updated properly, False otherwise)
+    Update properties of existed host (provided in parameters)
+
+    :param host: name of a target host
+    :type host: str
+    :param name: host name to change to
+    :type name: str
+    :param address: host address to change to
+    :type address: str
+    :param root_password: host password to change to
+    :type root_password: str
+    :param cluster: host cluster to change to
+    :type cluster: str
+    :param pm: host power management to change to
+    :type pm: bool
+    :param pm_type: host pm type to change to
+    :type pm_type: str
+    :param pm_address: host pm address to change to
+    :type pm_address: str
+    :param pm_username: host pm username to change to
+    :type pm_username: str
+    :param pm_password: host pm password to change to
+    :type pm_password: str
+    :param pm_port: host pm port to change to
+    :type pm_port: int
+    :param pm_secure: host pm security to change to
+    :type pm_secure: bool
+    :param pm_automatic: host automatic_pm_enabled flag
+    :type pm_automatic: bool
+    :param agents: if you have number of pm's, need to specify it under agents
+    :type agents: dict
+    :return: status (True if host was updated properly, False otherwise)
+    :rtype: bool
     """
 
-    hostObj = HOST_API.find(host)
-    hostUpd = Host()
+    host_obj = HOST_API.find(host)
+    host_upd = Host()
 
     if 'name' in kwargs:
-        hostUpd.set_name(kwargs.pop('name'))
+        host_upd.set_name(kwargs.pop('name'))
     if 'address' in kwargs:
-        hostUpd.set_address(kwargs.pop('address'))
+        host_upd.set_address(kwargs.pop('address'))
     if 'root_password' in kwargs:
-        hostUpd.set_root_password(kwargs.pop('root_password'))
+        host_upd.set_root_password(kwargs.pop('root_password'))
 
     if 'cluster' in kwargs:
         cl = CL_API.find(kwargs.pop('cluster', 'Default'))
-        hostUpd.set_cluster(cl)
+        host_upd.set_cluster(cl)
 
     if 'storage_manager_priority' in kwargs:
         new_priority = kwargs.pop('storage_manager_priority')
         sm = StorageManager(new_priority,
-                            hostObj.storage_manager.get_valueOf_())
+                            host_obj.storage_manager.get_valueOf_())
 
-        hostUpd.set_storage_manager(sm)
+        host_upd.set_storage_manager(sm)
 
     if 'pm' in kwargs:
         pm_address = kwargs.get('pm_address')
@@ -427,29 +443,30 @@ def updateHost(positive, host, **kwargs):
         pm_port = kwargs.get('pm_port')
         pm_slot = kwargs.get('pm_slot')
         pm_secure = kwargs.get('pm_secure')
-        pmOptions = None
-        pm_proxies = None
+        pm_automatic = kwargs.get('pm_automatic')
 
+        pm_options = None
         if pm_port or pm_secure or pm_slot:
-            pmOptions = Options()
+            pm_options = Options()
             if pm_port and pm_port.strip():
                 op = Option(name='port', value=pm_port)
-                pmOptions.add_option(op)
+                pm_options.add_option(op)
             if pm_secure:
                 op = Option(name='secure', value=pm_secure)
-                pmOptions.add_option(op)
+                pm_options.add_option(op)
             if pm_slot:
                 op = Option(name='slot', value=pm_slot)
-                pmOptions.add_option(op)
+                pm_options.add_option(op)
 
+        pm_proxies = None
         if kwargs.get('pm_proxies'):
             pm_proxies_list = [PmProxy(type_=proxy) for proxy
                                in kwargs.get('pm_proxies')]
             pm_proxies = PmProxies(pm_proxy=pm_proxies_list)
 
         if kwargs.get('agents'):
-            agents_array = []
             agents = None
+            agents_array = []
             use_agents = kwargs.get('agents')
             for pm_agent_type, pm_agent_addr, pm_agent_usr, pm_agent_passwd, \
                 pm_agent_opts, pm_agent_concurrent, pm_agent_order in \
@@ -462,25 +479,23 @@ def updateHost(positive, host, **kwargs):
                                   order=pm_agent_order)
                 agents_array.append(agent_obj)
                 agents = Agents(agent=agents_array)
-
-        if kwargs.get('agents') and kwargs.get('pm_proxies'):
-            hostPm = PowerManagement(type_=kwargs.get('pm_type'),
-                                     address=pm_address,
-                                     enabled=kwargs.get('pm'),
-                                     username=pm_username,
-                                     password=pm_password,
-                                     options=pmOptions, pm_proxies=pm_proxies,
-                                     agents=agents)
         else:
-            hostPm = PowerManagement(type_=kwargs.get('pm_type'),
-                                     address=pm_address,
-                                     enabled=kwargs.get('pm'),
-                                     username=pm_username,
-                                     password=pm_password, options=pmOptions)
-        hostUpd.set_power_management(hostPm)
+            agents = host_obj.get_power_management().get_agents()
+
+        host_pm = PowerManagement(type_=kwargs.get('pm_type'),
+                                  address=pm_address,
+                                  enabled=kwargs.get('pm'),
+                                  username=pm_username,
+                                  password=pm_password,
+                                  options=pm_options,
+                                  pm_proxies=pm_proxies,
+                                  automatic_pm_enabled=pm_automatic,
+                                  agents=agents)
+
+        host_upd.set_power_management(host_pm)
 
     try:
-        hostObj, status = HOST_API.update(hostObj, hostUpd, positive)
+        host_obj, status = HOST_API.update(host_obj, host_upd, positive)
     except TypeError:
         # TypeError expected on all backends except REST for negative cases
         # when passing wrong parameter type due to type-checking
@@ -762,7 +777,7 @@ def commitNetConfig(positive, host):
 
 
 @is_action()
-def fenceHost(positive, host, fence_type):
+def fenceHost(positive, host, fence_type, timeout=500):
     """
     Description: host fencing
     Author: edolinin
@@ -772,29 +787,34 @@ def fenceHost(positive, host, fence_type):
     Return: status (True if host was fenced properly, False otherwise)
     """
 
-    hostObj = HOST_API.find(host)
+    host_obj = HOST_API.find(host)
     # this is meant to differentiate between fencing a host in maintenance
     # and fencing a host in down state. since 3.4 fencing a host in maintenance
     # will result with the host staying in maintenance and not up state.
-    host_in_maintenance = HOST_API.waitForElemStatus(hostObj, "maintenance",
-                                                     30)
-    status = HOST_API.syncAction(hostObj, "fence", positive,
-                                 fence_type=fence_type.upper())
+    host_in_maintenance = getHostState(host) == ENUMS['host_state_maintenance']
+    status = HOST_API.syncAction(
+        host_obj, "fence", positive, fence_type=fence_type.upper()
+    )
 
     # if test type is negative, we don't have to wait for element status,
     # since host state will not be changed
     if status and not positive:
         return True
-    testHostStatus = True
+    test_host_status = True
     if fence_type == "restart" or fence_type == "start":
         if host_in_maintenance:
-            testHostStatus = HOST_API.waitForElemStatus(hostObj, "maintenance",
-                                                        500)
+            test_host_status = HOST_API.waitForElemStatus(
+                host_obj, "maintenance", timeout
+            )
         else:
-            testHostStatus = HOST_API.waitForElemStatus(hostObj, "up", 500)
+            test_host_status = HOST_API.waitForElemStatus(
+                host_obj, "up", timeout
+            )
     if fence_type == "stop":
-        testHostStatus = HOST_API.waitForElemStatus(hostObj, "down", 300)
-    return (testHostStatus and status) == positive
+        test_host_status = HOST_API.waitForElemStatus(
+            host_obj, "down", timeout
+        )
+    return (test_host_status and status) == positive
 
 
 def _prepareHostNicObject(**kwargs):
@@ -2259,9 +2279,10 @@ def get_cluster_hosts(cluster_name, host_status=ENUMS['host_state_up']):
         * host_status: status of the host
     Return: List of host names in a cluster with host_status or empty list
     """
-    elementStatus, hosts = searchElement(True, ELEMENT, COLLECTION,
-                                         'cluster', cluster_name)
-    if elementStatus:
+    elm_status, hosts = searchElement(
+        True, ELEMENT, COLLECTION, 'cluster', cluster_name
+    )
+    if elm_status:
         return [host.get_name() for host in hosts
                 if host.get_status().get_state() == host_status]
     return []
@@ -2307,3 +2328,42 @@ def get_host_max_scheduling_memory(host_name):
     """
     host_obj = get_host_object(host_name)
     return host_obj.get_max_scheduling_memory()
+
+
+def wait_until_num_of_hosts_in_state(num_of_hosts, timeout,
+                                     sleep, cluster_name,
+                                     state=ENUMS['host_state_up']):
+    """
+    Wait until number of hosts will have specific state
+
+    :param num_of_hosts: Wait until number of hosts will have some state
+    :type num_of_hosts: int
+    :param timeout: Timeout in seconds
+    :type timeout: int
+    :param sleep: Time between samples in seconds
+    :type sleep: int
+    :param cluster_name: hosts on this cluster
+    :type cluster_name: str
+    :param state: Expected state of hosts
+    :type state: str
+    :return: True, if engine have given number of hosts in given state,
+     otherwise False
+    :rtype: bool
+    """
+    cluster_obj = CL_API.find(cluster_name)
+    sampler = TimeoutingSampler(timeout, sleep, HOST_API.get, absLink=False)
+    try:
+        for sample in sampler:
+            count = 0
+            for host in sample:
+                if host.get_cluster().get_id() == cluster_obj.get_id():
+                    if host.get_status().get_state().lower() == state:
+                        count += 1
+            if count == num_of_hosts:
+                return True
+    except APITimeout:
+        HOST_API.logger.error(
+            "Timeout when waiting for number of hosts %d in state %s",
+            num_of_hosts, state
+        )
+        return False
