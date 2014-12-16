@@ -3,10 +3,10 @@ Test exposing BZ 908327, checks if roll-back of the import removes
 already imported disks - if it doesn't, the second import will fail
 
 """
+
 import config
 import logging
 
-from nose.tools import istest
 from art.unittest_lib import attr
 from art.unittest_lib.common import StorageTest as TestCase
 
@@ -17,7 +17,8 @@ from art.rhevm_api.tests_lib.low_level import disks
 from art.rhevm_api.tests_lib.low_level import hosts
 from art.rhevm_api.tests_lib.low_level import templates
 from art.rhevm_api.tests_lib.low_level import storagedomains
-from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
+from art.rhevm_api.tests_lib.low_level.jobs import wait_for_jobs
+from art.test_handler.tools import tcms  # pylint: disable=E0611
 
 from common import _create_vm
 
@@ -41,7 +42,7 @@ class TestCase281164(TestCase):
 
     https://tcms.engineering.redhat.com/case/281164/?from_plan=9583
     """
-    __test__ = True
+    __test__ = not config.GOLDEN_ENV
     tcms_plan_id = '9583'
     tcms_test_case = '281164'
     vm_name = "vm_%s" % tcms_test_case
@@ -78,10 +79,8 @@ class TestCase281164(TestCase):
         LOGGER.info("Remove the VM")
         assert vms.removeVm(True, self.vm_name)
 
-    @bz('1072400')
-    @istest
     @tcms(tcms_plan_id, tcms_test_case)
-    def import_template_after_failed_import_test(self):
+    def test_import_template_after_failed_import(self):
         """
         * exports the template
         * removes the original template
@@ -98,6 +97,7 @@ class TestCase281164(TestCase):
 
         LOGGER.info("Get SPM and password")
         host = hosts.getSPMHost(config.HOSTS)
+        host_ip = hosts.getHostIP(host)
 
         LOGGER.info("Start importing template")
         assert templates.importTemplate(
@@ -111,7 +111,7 @@ class TestCase281164(TestCase):
             timeout=10, sleep=1)
 
         LOGGER.info("Restarting VDSM")
-        assert test_utils.restartVdsmd(host, config.HOSTS_PW)
+        assert test_utils.restartVdsmd(host_ip, config.HOSTS_PW)
 
         LOGGER.info("Waiting for host %s to be down", host)
         assert hosts.waitForHostsStates(False, host)
@@ -120,7 +120,8 @@ class TestCase281164(TestCase):
         assert hosts.waitForHostsStates(True, host)
 
         LOGGER.info("Wait until import fail")
-        assert templates.waitForTemplatesGone(True, self.templ_name)
+        assert templates.waitForTemplatesGone(True, self.templ_name,
+                                              timeout=1200)
 
         LOGGER.info("Importing second time")
         assert templates.importTemplate(
@@ -131,4 +132,5 @@ class TestCase281164(TestCase):
         """
         * Removing template
         """
+        wait_for_jobs()
         templates.removeTemplate(True, self.templ_name)
