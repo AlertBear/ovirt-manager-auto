@@ -1868,43 +1868,9 @@ def get_obj_by_query(obj, query_text):
     return res
 
 
-def engine_set_mac_range(host, username, password, mac_range):
-    """
-    Set mac range on engine
-    :param host: Engine FQDN or IP
-    :param username: Engine host username
-    :param password:  Engine host password
-    :param mac_range: MAC range to apply
-    :return: True/False
-    """
-    cmd = ["engine-config", "-s", "MacPoolRanges=%s" %
-           mac_range]
-
-    host_obj = Machine(host, username, password).util(LINUX)
-    if not host_obj.runCmd(cmd)[0]:
-        logger.error("Operation failed")
-        return False
-    return restartOvirtEngine(host_obj, 5, 25, 70)
-
-
-def engine_get_mac_range(host, username, password):
-    """
-    Get current mac range from engine
-    :param host: Engine FQDN or IP
-    :param username: Engine host username
-    :param password:  Engine host password
-    :return: MAC range (str)/False
-    """
-    cmd = ["engine-config", "-g", "MacPoolRanges"]
-    host_obj = Machine(host, username, password).util(LINUX)
-    rc, out = host_obj.runCmd(cmd)
-    if not rc:
-        logger.error("Operation failed")
-        return False
-    return out.split()[1]
-
-
-def set_engine_properties(engine_obj, param, attempts=20, interval=5):
+def set_engine_properties(
+    engine_obj, param, attempts=20, interval=5, restart=True
+):
     """
     Running engine-config command to set specific value
     Author: gcheresh
@@ -1917,6 +1883,8 @@ def set_engine_properties(engine_obj, param, attempts=20, interval=5):
     :type attempts: int
     :param interval: interval between attempts
     :type interval: int
+    :param restart: Restart engine service
+    :type restart: bool
     :return: True/False
     :rtype: bool
     """
@@ -1927,13 +1895,17 @@ def set_engine_properties(engine_obj, param, attempts=20, interval=5):
     if rc:
         logger.error("Operation failed. Err: %s %s", out, error)
         return False
-    engine_obj.restart()
-    sample = TimeoutingSampler(
-        timeout=60, sleep=1, func=lambda: engine_obj.health_page_status
-    )
-    if not sample.waitForFuncStatus(result=True):
-        logger.error("Couldn't update correct linked state")
-        return False
+
+    if restart:
+        engine_obj.restart()
+        timeout = attempts * interval
+        sample = TimeoutingSampler(
+            timeout=timeout, sleep=interval, func=lambda:
+            engine_obj.health_page_status
+        )
+        if not sample.waitForFuncStatus(result=True):
+            logger.error("Engine service is not UP")
+            return False
     return True
 
 
@@ -1956,7 +1928,7 @@ def get_engine_properties(engine_obj, param):
     if rc:
         logger.error("Operation failed. Err: %s %s", out, error)
         return "", ""
-    value, version = out.split("{0}:".format(param))[1].split('version:')
+    value, version = out.split("{0}:".format(param[0]))[1].split("version:")
     return value.strip(), version.strip()
 
 
