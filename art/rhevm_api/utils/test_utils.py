@@ -1260,6 +1260,9 @@ def setPersistentNetwork(host, password):
     with vm_obj.executor().session() as ss:
         with ss.open_file(network_configuration) as fd:
             logger.debug('Final network configurations: \n%s', fd.read())
+
+    # Flush FS buffers
+    vm_obj.executor().run_cmd(['sync'])
     return True
 
 
