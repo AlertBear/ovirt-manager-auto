@@ -40,14 +40,11 @@ DS_CLASS_MAPPER = {
     'hostniclabels': 'Labels',
 }
 
+primitive = (int, str, bool, float, long)
 
-def compose_attr_ignore_list():
-    # FIXME: encapsulate it into specific api's backend implementation
-    list_ = ATTR_IGNORE_LIST[:]
-    if settings.opts.get('engine') == 'sdk':
-        list_.extend(['actions', 'disks', 'certificate', 'lun_storage',
-                      'statistic'])
-    return list_
+
+def is_primitive(obj):
+    return isinstance(obj, primitive)
 
 
 def dump_entity(ds, root_name):
@@ -94,14 +91,15 @@ def cli_entity(elm, node_name, level=0, collection=False, start=False):
     '''
 
     dumped_ent = ''
-    ignore = ['supported_versions', 'valueOf_']
+    ignore_list = ['supported_versions', 'valueOf_']
+    ignore_list.extend(ATTR_IGNORE_LIST)
 
     elmClass = elm.__class__.__name__
     elmInstance = getattr(ds, elmClass)()
     attrList = getObjAttributes(elmInstance, elmInstance)
 
     # cleaning from unneeded attributes
-    for attr in compose_attr_ignore_list() + ignore:
+    for attr in ignore_list:
         if attr in attrList:
             attrList.remove(attr)
 
@@ -291,8 +289,8 @@ def compareElements(expElm, actElm, logger, root, equal=True,
     * java_sdk_mode - run with java sdk backend
     Returns: True is elements are equal, False otherwise
     '''
-    ignore = compose_attr_ignore_list()
-    ignore.extend(['status', 'role', 'active', 'total', 'required', 'permit'])
+    ignore_list = ['status', 'role', 'active', 'total', 'required', 'permit']
+    ignore_list.extend(ATTR_IGNORE_LIST)
 
     if not actElm:
         logger.warn("Attribute '{0}' doesn't exist"
@@ -309,7 +307,7 @@ def compareElements(expElm, actElm, logger, root, equal=True,
     attrList = getObjAttributes(elmInstance, elmInstance)
 
     for attr in attrList:
-        if attr in ignore:
+        if attr in ignore_list:
             continue
 
         try:
@@ -350,7 +348,7 @@ def compareElements(expElm, actElm, logger, root, equal=True,
                 logger.warn(MSG.format(root, attr))
                 continue
 
-            if attrType.startswith('xs:'):
+            if attrType.startswith('xs:') or is_primitive(attrActVal):
                 if attrContainer and isinstance(attrExpVal, list):
                     if not isinstance(attrActVal, list):
                         attrExpVal = attrExpVal[0]
@@ -364,7 +362,8 @@ def compareElements(expElm, actElm, logger, root, equal=True,
                             attrActVal = list(set(attrActVal) -
                                               set(ignoreVals))
 
-                if re.search('boolean', attrType):
+                if (re.search('boolean', attrType) or
+                        isinstance(attrActVal, bool)):
                     attrExpVal = str(attrExpVal).lower()
                     attrActVal = str(attrActVal).lower()
 
