@@ -265,14 +265,16 @@ class CPUHostCase2(BasicSlaClass):
     @tcms('8140', '274202')
     def set_cpuhost_user_migratable(self):
         """
-        Attempt to change a VM to use CPU host + user migratable
+        Negative: Attempt to change a VM to use CPU host + user migratable
         """
         logger.info("Attempting to change VM to migratable.")
-        self.assertTrue(vms.updateVm(True, self.vm_name,
-                                     placement_affinity=USER_MIGRATABLE,
-                                     cpu_mode=HOST_PASSTHROUGH))
-        logger.info("Successfully changed a CPU host VM's placement affinity "
-                    "from user migratable to migratable")
+        self.assertFalse(
+            vms.updateVm(
+                True, self.vm_name,
+                placement_affinity=USER_MIGRATABLE,
+                cpu_mode=HOST_PASSTHROUGH
+            ), "Successfully changed a CPU host vm placement affinity"
+        )
 
 ########################################################################
 
@@ -359,9 +361,12 @@ class CPUHostCase5(BasicSlaClass):
         to user migratable.
         """
         logger.info("Attempting to change VM to user migratable.")
-        self.assertTrue(vms.updateVm(True, self.vm_name,
-                                     placement_affinity=USER_MIGRATABLE,
-                                     placement_host=ANY_HOST))
+        self.assertTrue(
+            vms.updateVm(
+                True, self.vm_name, placement_affinity=USER_MIGRATABLE,
+                placement_host=ANY_HOST, cpu_mode=''
+            )
+        )
         logger.info("Successfully change a CPU host VM's placement affinity "
                     "from pinned to user migratable")
 
@@ -376,7 +381,7 @@ class CPUHostCase6(BasicSlaClass):
     vm_name = "cpuhost_vm6"
     vm_desc = "CPU Host VM"
     vm_basic_parameters = VM_BASIC_PARAMETERS.copy()
-    vm_basic_parameters.update({'placement_affinity': USER_MIGRATABLE,
+    vm_basic_parameters.update({'placement_affinity': PINNED,
                                 'placement_host': config.HOSTS[0],
                                 'cpu_mode': HOST_PASSTHROUGH})
 
