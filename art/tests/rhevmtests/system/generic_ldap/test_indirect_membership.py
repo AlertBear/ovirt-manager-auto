@@ -90,3 +90,45 @@ class IndirectMembershipNonRecursive(IndirectMembership):
     def ipa_indirect_group_membership(self):
         """ test IPA indirect group membership """
         self.indirect_group_membership()
+
+
+class GroupRecursion(TestCase):
+    """
+    Test group recursion handle.
+    https://bugzilla.redhat.com/show_bug.cgi?id=1168631
+    """
+    __test__ = True
+    conf = config.SIMPLE_IPA
+    GROUPS = [config.IPA_GROUP_LOOP1, config.IPA_GROUP_LOOP2]
+    USER = config.IPA_GROUP_USER
+    PASSWORD = config.IPA_PASSWORD
+
+    def setUp(self):
+        for group in self.GROUPS:
+            assert users.addGroup(
+                True,
+                group,
+                self.conf['authz_name']
+            )
+            assert mla.addClusterPermissionsToGroup(
+                True,
+                group,
+                config.DEFAULT_CLUSTER_NAME
+            )
+
+    @classmethod
+    def teardown_class(cls):
+        common.loginAsAdmin()
+        for group in cls.GROUPS:
+            assert users.deleteGroup(True, group)
+        assert users.removeUser(True, cls.USER, cls.conf['authz_name'])
+
+    def test_group_recursion(self):
+        """  test if engine can handle group recursion """
+        users.loginAsUser(
+            self.USER,
+            self.conf['authn_name'],
+            self.PASSWORD,
+            True
+        )
+        self.assertTrue(common.connectionTest(), "%s can't login" % self.USER)
