@@ -488,24 +488,29 @@ class PutHostToMaintenance(StartVms):
         super(PutHostToMaintenance, cls).teardown_class()
 
 
-class PutHostToMaintenanceUnderHardPositiveAffinity(PutHostToMaintenance):
+class PutHostToMaintenanceUnderHardPositiveAffinity(StartVms):
     """
     Put host to maintenance under hard positive affinity
     and check vms migration destination
     """
-    # Bug 1139031, bug appear in setup of test case
-    __test__ = False
+    # Patch to bug 1147396 block maintenance action for host with vms,
+    # under hard positive affinity
+    __test__ = True
     affinity_group_name = 'maintenance_hard_positive_affinity_group'
     positive = True
     hard = True
 
     @istest
-    @bz({'1139031': {'engine': None, 'version': ['3.5']}})
     @tcms(TCMS_PLAN_ID, '335350')
     def check_affinity_group(self):
         """
         Check that after deactivate hosts vms migrated on the same host
         """
+        vm_host = vm_api.get_vm_host(config.VM_NAME[0])
+        self.assertFalse(
+            host_api.deactivateHost(True, vm_host, timeout=TIMEOUT),
+            "Success to deactivate host"
+        )
         self.assertEqual(vm_api.get_vm_host(config.VM_NAME[0]),
                          vm_api.get_vm_host(config.VM_NAME[1]),
                          "Vm's migrated on different hosts")
