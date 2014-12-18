@@ -763,7 +763,9 @@ class CaseRoleActions(TestCase):
             )
         )
 
-    @istest
+    # TODO: https://projects.engineering.redhat.com/browse/RHEVM-1960
+    # After ticket is resolved enable case again.
+    # @istest
     @user_case(
         login_as=config.USER_CLUSTER,
     )
