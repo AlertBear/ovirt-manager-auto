@@ -8,8 +8,6 @@ import random
 from functools import wraps
 from nose.tools import istest
 from art.unittest_lib import attr
-from java_sdk import JavaError
-from ovirtsdk.infrastructure.errors import RequestError
 from art.core_api.apis_exceptions import EntityNotFound
 from art.test_handler.tools import bz  # pylint: disable=E0611
 from art.unittest_lib import CoreSystemTest as TestCase
@@ -320,7 +318,7 @@ class CaseRoleActions(TestCase):
                 },
                 config.USER_CLUSTER: {
                     mla.addVMPermissionsToUser: [
-                        config.RUNNING_VM, config.DELETE_VM, config.CREATE_VM,
+                        config.RUNNING_VM, config.DELETE_VM,
                     ],
                 },
                 config.USER_STORAGE: {
@@ -779,7 +777,7 @@ class CaseRoleActions(TestCase):
                     storage_manager_priority=str(random.randint(1, 5))
                 )
             )
-        except (EntityNotFound, RequestError, JavaError) as e:
+        except EntityNotFound as e:
             if not self.filter_:
                 raise e
 
