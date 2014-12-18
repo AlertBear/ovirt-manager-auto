@@ -195,7 +195,7 @@ class RestUtil(APIUtil):
 
         parsedResp = None
         try:
-            parsedResp = parse(ret[RespKey.body])
+            parsedResp = parse(ret[RespKey.body], silence=True)
         except etree.XMLSyntaxError:
             self.logger.error("Cant parse xml response")
             return None
@@ -320,25 +320,27 @@ class RestUtil(APIUtil):
         if positive:
             if ret[RespKey.body]:
                 self.logger.info("New entity was added")
-                actlEntity = validator.dump_entity(parse(ret[RespKey.body]),
-                                                   self.element_name)
+                actlEntity = validator.dump_entity(
+                    parse(ret[RespKey.body], silence=True), self.element_name)
 
                 expEntity = entity if not expectedEntity else (
                     validator.dump_entity(expectedEntity, self.element_name))
 
                 if compare and not validator.compareElements(
-                        parse(expEntity), parse(actlEntity), self.logger,
+                        parse(expEntity, silence=True),
+                        parse(actlEntity, silence=True),
+                        self.logger,
                         self.element_name):
                     return None, False
 
                 if not async:
-                    self.find(parse(actlEntity).id, 'id',
+                    self.find(parse(actlEntity, silence=True).id, 'id',
                               collection=collection, absLink=False)
 
             else:
                 return ret[RespKey.body], True
         self.validateResponseViaXSD(href, ret)
-        return parse(ret[RespKey.body]), True
+        return parse(ret[RespKey.body], silence=True), True
 
     def update(self, origEntity, newEntity, positive,
                expected_pos_status=[200, 201],
@@ -387,12 +389,13 @@ class RestUtil(APIUtil):
             self.logger.info(self.element_name + " was updated")
 
             if compare and not validator.compareElements(
-                    parse(entity), parse(ret[RespKey.body]),
+                    parse(entity, silence=True),
+                    parse(ret[RespKey.body], silence=True),
                     self.logger, self.element_name):
                 return None, False
 
         self.validateResponseViaXSD(origEntity.href, ret)
-        return parse(ret[RespKey.body]), True
+        return parse(ret[RespKey.body], silence=True), True
 
     def delete(self, entity, positive, body=None, element_name=None,
                expected_pos_status=[200, 202, 204],
@@ -538,7 +541,8 @@ class RestUtil(APIUtil):
 
         self.validateResponseViaXSD(href, ret)
 
-        return getattr(parse(ret[RespKey.body]), self.element_name)
+        return getattr(parse(ret[RespKey.body], silence=True),
+                       self.element_name)
 
     def syncAction(self, entity, action, positive, async=False,
                    positive_async_stat=[200, 202],
@@ -592,7 +596,7 @@ class RestUtil(APIUtil):
                           ret[RespKey.body])
         resp_action = None
         try:
-            resp_action = parse(ret[RespKey.body])
+            resp_action = parse(ret[RespKey.body], silence=True)
         except etree.XMLSyntaxError:
             self.logger.error("Cant parse xml response")
             return False
