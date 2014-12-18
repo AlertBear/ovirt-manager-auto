@@ -23,6 +23,7 @@ else:
     HOSTS_IP = [host.ip for host in VDS_HOSTS]
 
 # Global parameters
+EXTRA_DC = "NET_DC_2"
 MTU = [9000, 5000, 2000, 1500]
 NETMASK = '255.255.255.0'
 VNIC_PROFILE = PARAMETERS.as_list('vnic_profile')
@@ -30,8 +31,7 @@ VLAN_NETWORKS = PARAMETERS.as_list('vlan_networks')
 VLAN_ID = PARAMETERS.as_list('vlan_id')
 BOND = PARAMETERS.as_list('bond')
 NETWORKS = PARAMETERS.as_list('networks')
-# Topologies parameters
-BOND_MODES = PARAMETERS.as_list("bond_modes")
+TIMEOUT = 60
 
 # Network Custom Priority parameters
 BRIDGE_OPTS = OrderedDict({"priority": ["32768", "1"],
@@ -46,8 +46,8 @@ TX_CHECKSUM = "-K {nic} tx {state}"
 AUTONEG = "-A {nic} autoneg {state}"
 
 # Network Migration
-NM_SOURCE_IP = '101.1.1.1'
-NM_DEST_IP = '101.1.1.2'
+NM_SOURCE_IP = '5.5.5.10'
+NM_DEST_IP = '5.5.5.20'
 
 # MultiHost and multiple_gw parameters
 SUBNET = "1.1.1.0"
@@ -97,3 +97,12 @@ BOND_MODES = PARAMETERS.as_list("bond_modes")
 
 # Labels parameters
 LABEL_LIST = ["_".join(["label", str(elm)]) for elm in range(10)]
+
+# Queues parameters
+NUM_QUEUES = [5, 6]
+PROP_QUEUES = ["=".join(["queues", str(i)]) for i in NUM_QUEUES]
+VM_FROM_TEMPLATE = "vm_from_queues_template"
+
+# Big MAC pool range
+BMPR_VM_NAME = "BigRangeMacPool_VM1"
+MAC_POOL_RANGE_CMD = "MacPoolRanges"
