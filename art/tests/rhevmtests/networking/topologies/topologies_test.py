@@ -363,8 +363,10 @@ class TopologiesCase04(TestCase):
     """
     Check connectivity to VM with BOND mode 4 network
     Check virtIO, e1000 and rtl8139 drivers
+    TODO: bond mode 4 requires switch side configuration disabling case until
+     we have swith side support on all hosts including GE
     """
-    __test__ = True
+    __test__ = False
 
     @classmethod
     def setup_class(cls):
@@ -595,7 +597,7 @@ class TopologiesCase08(TestCase):
     @classmethod
     def setup_class(cls):
         """
-        Create and attach BOND mode 5 network to host
+        Create and attach BOND mode 6 network to host
         """
         logger.info(
             "Create and attach BOND mode %s network", config.BOND_MODES[6]
