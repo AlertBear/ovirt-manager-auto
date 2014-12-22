@@ -10,7 +10,7 @@ import logging
 from rhevmtests.sla import config
 from nose.tools import istest
 from art.unittest_lib import attr
-from art.test_handler.tools import tcms  # pylint: disable=E0611
+from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
 from art.unittest_lib import ComputeTest as TestCase
@@ -32,6 +32,11 @@ ENUMS = opts['elements_conf']['RHEVM Enums']
 CLUSTER_POLICIES = [ENUMS['scheduling_policy_vm_evenly_distributed'], 'none']
 PROPERTIES = {'HighVmCount': 2, 'MigrationThreshold': 2, 'SpmVmGrace': 1}
 NON_RESPONSIVE = ENUMS['host_state_non_responsive']
+
+# BUGS:
+# 1) Bug 1175824 - [JSON RPC] shutdown/reboot a host on state 'up'
+#    result in fault behaviour which is resolved only by engine restart
+
 ########################################################################
 #                             Test Cases                               #
 ########################################################################
@@ -256,6 +261,7 @@ class HaVmStartOnHostAboveMaxLevel(TwoHostsTests):
         super(HaVmStartOnHostAboveMaxLevel, cls).setup_class()
 
     @tcms('12212', '338999')
+    @bz({'1175824': {'engine': None, 'version': ['3.5']}})
     @istest
     def check_migration(self):
         """
