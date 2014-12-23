@@ -1036,12 +1036,12 @@ class TemplateNic(BaseTemplateClass):
         """
         network = config.MGMT_BRIDGE
         logger.info("Add nic %s to template %s",
-                    self.template_name, self.nic)
+                    self.nic, self.template_name)
         self.assertTrue(templates.addTemplateNic(True, self.template_name,
                                                  name=self.nic,
                                                  network=network))
         logger.info("Update nic %s on template %s",
-                    self.template_name, self.nic)
+                    self.nic, self.template_name)
         self.assertTrue(templates.updateTemplateNic(True, self.template_name,
                                                     self.nic,
                                                     name=self.update_nic))
