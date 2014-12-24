@@ -1,4 +1,5 @@
 import logging
+from art.rhevm_api.utils.test_utils import wait_for_tasks
 from art.unittest_lib import StorageTest as TestCase, attr
 from nose.tools import istest
 from art.rhevm_api.tests_lib.high_level import datacenters
@@ -154,6 +155,8 @@ class TestCase94954(TestCase):
         old_master_domain_name = master_domain['masterDomain']
 
         logger.info("Deactivating master domain")
+        wait_for_tasks(
+            config.VDC, config.VDC_PASSWORD, config.DATA_CENTER_NAME)
         self.assertTrue(
             ll_st_domains.deactivateStorageDomain(
                 True, config.DATA_CENTER_NAME, old_master_domain_name),
