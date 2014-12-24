@@ -24,7 +24,7 @@ def _wait_for_vm_booted(
         vm_name, os_type, user, password, timeout=300, interval=15):
     return vms.checkVMConnectivity(
         True, vm_name, os_type, timeout / interval, interval, user=user,
-        password=password, nic=config.HOST_NICS[0])
+        password=password, nic=config.NIC_NAME[0])
 
 
 class TestResumeGuests(TestCase):
@@ -78,7 +78,7 @@ class TestResumeGuests(TestCase):
             VM_PASSWORD)
         LOGGER.info("VM is accessible")
 
-    def run(self):
+    def run_flow(self):
         LOGGER.info("Breaking storage")
         self.break_storage()
         LOGGER.info("Checking if VM %s is paused", self.vm)
@@ -131,7 +131,7 @@ class TestCaseBlockedConnection(TestResumeGuests):
 
 class TestNoSpaceLeftOnDevice(TestResumeGuests):
     big_disk_name = "big_disk_eio"
-    left_space = int(4.1 * GB)
+    left_space = int(3 * GB)
 
     def break_storage(self):
         """ create a very big disk on the storage domain
@@ -147,7 +147,7 @@ class TestNoSpaceLeftOnDevice(TestResumeGuests):
             True, alias=self.big_disk_name, size=disk_size,
             storagedomain=self.sd, format=config.ENUMS['format_raw'],
             interface=config.INTERFACE_VIRTIO, sparse=False)
-        # NFS storage on orion is sloooow
+
         disks.waitForDisksState(self.big_disk_name, timeout=3600)
 
         LOGGER.info("Big disk created")
@@ -182,7 +182,7 @@ class TestCase285357(TestCaseBlockedConnection):
         """ checks if VM is paused after connection to sd is lost,
             checks if VM is unpaused after connection is restored
         """
-        self.run()
+        self.run_flow()
 
 
 @attr(tier=2)
@@ -197,7 +197,7 @@ class TestCase285370(TestNoSpaceLeftOnDevice):
         """ checks if VM is paused after no-space-left error on sd,
             checks if VM is unpaused after there is again free space on sd
         """
-        self.run()
+        self.run_flow()
 
 
 @attr(tier=2)
@@ -211,7 +211,7 @@ class TestCase285371(TestCaseBlockedConnection):
         """ checks if VM is paused after connection to sd is lost,
             checks if VM is unpaused after connection is restored
         """
-        self.run()
+        self.run_flow()
 
 
 @attr(tier=1)
@@ -220,11 +220,12 @@ class TestCase285372(TestNoSpaceLeftOnDevice):
     tcms_test_case = '285372'
 
     @tcms(TCMS_PLAN_ID, tcms_test_case)
+    @bz({'1177507': {'enine': ['rest', 'sdk'], 'version': ["3.5"]}})
     def test_iscsi_no_space_left_on_device(self):
         """ checks if VM is paused after no-space-left error on sd,
             checks if VM is unpaused after there is again free space on sd
         """
-        self.run()
+        self.run_flow()
 
 
 @attr(tier=2)
@@ -238,7 +239,7 @@ class TestCase285375(TestCaseBlockedConnection):
         """ checks if VM is paused after connection to sd is lost,
             checks if VM is unpaused after connection is restored
         """
-        self.run()
+        self.run_flow()
 
 
 @attr(tier=1)
@@ -251,4 +252,4 @@ class TestCase285376(TestNoSpaceLeftOnDevice):
         """ checks if VM is paused after no-space-left error on sd,
             checks if VM is unpaused after there is again free space on sd
         """
-        self.run()
+        self.run_flow()
