@@ -91,34 +91,32 @@ class BaseTestCase(TestCase):
     __test__ = False
     tcms_test_case = None
 
-    @classmethod
-    def setup_class(cls):
-        cls.vm_names = VM_NAMES[TestCase.storage]
-        vms.start_vms(cls.vm_names, 2, wait_for_ip=False)
-        vms.waitForVmsStates(True, cls.vm_names)
-        if not vms.attach_backup_disk_to_vm(cls.vm_names[0],
-                                            cls.vm_names[1],
+    def setUp(self):
+        self.vm_names = VM_NAMES[TestCase.storage]
+        vms.start_vms(self.vm_names, 2, wait_for_ip=False)
+        vms.waitForVmsStates(True, self.vm_names)
+        if not vms.attach_backup_disk_to_vm(self.vm_names[0],
+                                            self.vm_names[1],
                                             helpers.SNAPSHOT_TEMPLATE_DESC
-                                            % cls.vm_names[0]):
+                                            % self.vm_names[0]):
             raise exceptions.DiskException("Failed to attach backup disk "
                                            "to backup vm %s"
-                                           % cls.vm_names[1])
+                                           % self.vm_names[1])
 
-    @classmethod
-    def teardown_class(cls):
+    def tearDown(self):
         """
         Start vm and detach backup disk and start vms
         """
         logger.info('Detaching backup disk')
         disks_objs = vms.get_snapshot_disks(
-            cls.vm_names[0],
-            helpers.SNAPSHOT_TEMPLATE_DESC % cls.vm_names[0])
+            self.vm_names[0],
+            helpers.SNAPSHOT_TEMPLATE_DESC % self.vm_names[0])
 
-        vms.stop_vms_safely(cls.vm_names)
-        logger.info("Succeeded to stop vms %s", ', '.join(cls.vm_names))
+        vms.stop_vms_safely(self.vm_names)
+        logger.info("Succeeded to stop vms %s", ', '.join(self.vm_names))
 
         if not disks.detachDisk(True, disks_objs[0].get_alias(),
-                                cls.vm_names[1]):
+                                self.vm_names[1]):
             raise exceptions.DiskException("Failed to remove disk %s"
                                            % disks_objs[0].get_alias())
 
@@ -163,7 +161,7 @@ class CreateTemplateFromVM(BaseTestCase):
             raise exceptions.TemplateException("Failed to remove template %s"
                                                % template_name)
 
-        super(CreateTemplateFromVM, self).teardown_class()
+        super(CreateTemplateFromVM, self).tearDown()
 
 
 @attr(tier=1)
@@ -296,21 +294,20 @@ class TestCase304134(BaseTestCase):
     __test__ = True
     tcms_test_case = '304134'
 
-    @classmethod
-    def setup_class(cls):
-        cls.vm_names = VM_NAMES[TestCase.storage]
-        vms.stop_vms_safely([cls.vm_names[1]])
-        logger.info("Succeeded to stop vm %s", cls.vm_names[1])
+    def setUp(self):
+        self.vm_names = VM_NAMES[TestCase.storage]
+        vms.stop_vms_safely([self.vm_names[1]])
+        logger.info("Succeeded to stop vm %s", self.vm_names[1])
 
-        cls.host = hosts.get_cluster_hosts(config.CLUSTER_NAME)[0]
-        cls.host_ip = hosts.getHostIP(cls.host)
+        self.host = hosts.get_cluster_hosts(config.CLUSTER_NAME)[0]
+        self.host_ip = hosts.getHostIP(self.host)
         logger.info("Updating vm %s to placement host %s",
-                    cls.vm_names[1], cls.host)
-        assert vms.updateVm(True, cls.vm_names[1], placement_host=cls.host)
-        vms.attach_backup_disk_to_vm(cls.vm_names[0],
-                                     cls.vm_names[1],
+                    self.vm_names[1], self.host)
+        assert vms.updateVm(True, self.vm_names[1], placement_host=self.host)
+        vms.attach_backup_disk_to_vm(self.vm_names[0],
+                                     self.vm_names[1],
                                      helpers.SNAPSHOT_TEMPLATE_DESC
-                                     % cls.vm_names[0])
+                                     % self.vm_names[0])
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_temporary_snapshot_is_created_after_backup_vm_starts(self):
@@ -348,11 +345,10 @@ class TestCase304156(BaseTestCase):
     __test__ = True
     tcms_test_case = '304156'
 
-    @classmethod
-    def setup_class(cls):
-        cls.vm_names = VM_NAMES[TestCase.storage]
-        vms.start_vms(cls.vm_names, 2, wait_for_ip=False)
-        vms.waitForVmsStates(True, cls.vm_names)
+    def setUp(self):
+        self.vm_names = VM_NAMES[TestCase.storage]
+        vms.start_vms(self.vm_names, 2, wait_for_ip=False)
+        vms.waitForVmsStates(True, self.vm_names)
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_attach_and_hotplug_snapshot_disk_of_source_vm_to_backup_vm(self):
@@ -401,11 +397,10 @@ class TestCase304159(BaseTestCase):
     tcms_test_case = '304159'
     snap_desc = None
 
-    @classmethod
-    def setup_class(cls):
-        cls.vm_names = VM_NAMES[TestCase.storage]
-        cls.snap_desc = helpers.SNAPSHOT_TEMPLATE_DESC % cls.vm_names[0]
-        super(TestCase304159, cls).setup_class()
+    def setUp(self):
+        self.vm_names = VM_NAMES[TestCase.storage]
+        self.snap_desc = helpers.SNAPSHOT_TEMPLATE_DESC % self.vm_names[0]
+        super(TestCase304159, self).setUp()
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_delete_original_snapshot_while_attached_to_another_vm(self):
@@ -450,19 +445,18 @@ class TestCase304161(TestCase):
     first_snapshot = ""
     second_snapshot = ""
 
-    @classmethod
-    def setup_class(cls):
-        cls.vm_names = VM_NAMES[TestCase.storage]
-        cls.first_snapshot = helpers.SNAPSHOT_TEMPLATE_DESC \
-            % cls.vm_names[0]
+    def setUp(self):
+        self.vm_names = VM_NAMES[TestCase.storage]
+        self.first_snapshot = helpers.SNAPSHOT_TEMPLATE_DESC \
+            % self.vm_names[0]
 
-        cls.second_snapshot = cls.snapshot_name_format % (
+        self.second_snapshot = self.snapshot_name_format % (
             "second", helpers.SNAPSHOT_TEMPLATE_DESC
-            % cls.vm_names[0])
+            % self.vm_names[0])
 
-        vms.attach_backup_disk_to_vm(cls.vm_names[0],
-                                     cls.vm_names[1],
-                                     cls.first_snapshot)
+        vms.attach_backup_disk_to_vm(self.vm_names[0],
+                                     self.vm_names[1],
+                                     self.first_snapshot)
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_operations_with_attached_snapshot(self):
@@ -504,22 +498,21 @@ class TestCase304161(TestCase):
             True, self.vm_names[0], self.first_snapshot),
             "Failed to delete snapshot %s" % self.first_snapshot)
 
-    @classmethod
-    def teardown_class(cls):
+    def tearDown(self):
         """
         Detach backup disk
         """
         logger.info('Detaching backup disk')
         disks_objs = vms.get_snapshot_disks(
-            cls.vm_names[0],
-            helpers.SNAPSHOT_TEMPLATE_DESC % cls.vm_names[0])
+            self.vm_names[0],
+            helpers.SNAPSHOT_TEMPLATE_DESC % self.vm_names[0])
 
         if not disks.detachDisk(True, disks_objs[0].get_alias(),
-                                cls.vm_names[1]):
+                                self.vm_names[1]):
             raise exceptions.DiskException("Failed to remove disk %s"
                                            % disks_objs[0].get_alias())
 
-        vms.start_vms(cls.vm_names[1], 1, wait_for_ip=False)
+        vms.start_vms(self.vm_names[1], 1, wait_for_ip=False)
 
 
 @attr(tier=1)
@@ -531,13 +524,16 @@ class TestCase304166(CreateTemplateFromVM):
     __test__ = True
     tcms_test_case = '304166'
 
+    def setUp(self):
+        super(CreateTemplateFromVM, self).setUp()
+        self.vm_name_for_template = self.vm_names[1]
+
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_create_template_of_backup_vm(self):
         """
         Create a template of a backup VM after attaching snapshot disk of
         source VM to backup VM
         """
-        self.vm_name_for_template = self.vm_names[1]
         self.create_template()
 
 
@@ -550,13 +546,16 @@ class TestCase304167(CreateTemplateFromVM):
     __test__ = True
     tcms_test_case = '304167'
 
+    def setUp(self):
+        super(TestCase304167, self).setUp()
+        self.vm_name_for_template = self.vm_names[0]
+
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_create_template_of_source_vm(self):
         """
         Create a template of source VM after attaching snapshot disk of
         source VM to backup VM
         """
-        self.vm_name_for_template = self.vm_names[0]
         self.create_template()
 
 
@@ -578,30 +577,33 @@ class TestCase304168(TestCase):
     storage_domain_ip = None
     blocked = False
 
-    @classmethod
-    def setup_class(cls):
-        cls.vm_names = VM_NAMES[TestCase.storage]
+    def setUp(self):
+        self.vm_names = VM_NAMES[TestCase.storage]
 
-        cls.storage_domains = storagedomains.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, cls.storage)
-        status, cls.storage_domain_ip = storagedomains.getDomainAddress(
-            True, cls.storage_domains[0])
+        self.storage_domains = storagedomains.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage)
+
+        self.host = hosts.getSPMHost(config.HOSTS)
+        self.host_ip = hosts.getHostIP(self.host)
+
+        status, self.storage_domain_ip = storagedomains.getDomainAddress(
+            True, self.storage_domains[0])
         if not status:
             raise exceptions.SkipTest("Unable to get storage domain %s "
-                                      "address" % cls.storage_domains[0])
+                                      "address" % self.storage_domains[0])
 
-        vms.stop_vms_safely([cls.vm_names[1]])
-        logger.info("Succeeded to stop vm %s", cls.vm_names[1])
+        vms.stop_vms_safely([self.vm_names[1]])
+        logger.info("Succeeded to stop vm %s", self.vm_names[1])
 
-        if not vms.moveVm(True, cls.vm_names[1], cls.storage_domains[1]):
+        if not vms.moveVm(True, self.vm_names[1], self.storage_domains[1]):
             raise exceptions.VMException("Failed to move vm %s to storage "
                                          "domain %s"
-                                         % (cls.vm_names[1],
-                                            cls.storage_domains[1]))
+                                         % (self.vm_names[1],
+                                            self.storage_domains[1]))
 
         vms.attach_backup_disk_to_vm(
-            cls.vm_names[0], cls.vm_names[1],
-            helpers.SNAPSHOT_TEMPLATE_DESC % cls.vm_names[0])
+            self.vm_names[0], self.vm_names[1],
+            helpers.SNAPSHOT_TEMPLATE_DESC % self.vm_names[0])
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_storage_failure_of_snapshot(self):
@@ -614,8 +616,6 @@ class TestCase304168(TestCase):
         vms.start_vms([self.vm_names[1]], 1, wait_for_ip=False)
         vms.waitForVmsStates(True, [self.vm_names[1]])
 
-        self.host = hosts.getSPMHost(config.HOSTS)
-        self.host_ip = hosts.getHostIP(self.host)
         logger.info("Blocking connectivity from host %s to storage domain %s",
                     self.host, self.storage_domains[0])
 
@@ -698,16 +698,15 @@ class TestCase304197(TestCase):
     apis = TestCase.apis - set(['sdk'])
     tcms_test_case = '304197'
 
-    @classmethod
-    def setup_class(cls):
-        cls.vm_names = VM_NAMES[TestCase.storage]
-        vms.start_vms(cls.vm_names, 2, wait_for_ip=False)
-        vms.waitForVmsStates(True, cls.vm_names)
-        cls.storage_domains = storagedomains.getStorageDomainNamesForType(
-            config.DATA_CENTER_NAME, cls.storage)
+    def setUp(self):
+        self.vm_names = VM_NAMES[TestCase.storage]
+        vms.start_vms(self.vm_names, 2, wait_for_ip=False)
+        vms.waitForVmsStates(True, self.vm_names)
+        self.vm_machine_ip = vms.get_vm_ip(self.vm_names[1])
+        self.storage_domains = storagedomains.getStorageDomainNamesForType(
+            config.DATA_CENTER_NAME, self.storage)
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
-    @bz('1077678')
     def test_full_flow_of_backup_restore(self):
         """
         Full backup API flow:
@@ -732,6 +731,8 @@ class TestCase304197(TestCase):
         ovf = vms.get_vm_snapshot_ovf_obj(self.vm_names[0],
                                           helpers.SNAPSHOT_TEMPLATE_DESC
                                           % self.vm_names[0])
+        status = ovf is None
+        self.assertFalse(status, "OVF object wasn't found")
 
         self.assertTrue(vms.addDisk(
             True, self.vm_names[1], 6 * config.GB, True,
@@ -744,16 +745,14 @@ class TestCase304197(TestCase):
 
                 vms.activateVmDisk(True, self.vm_names[1], disk.get_alias())
 
-        vm_machine_ip = vms.get_vm_ip(self.vm_names[1])
-
         linux_machine = Machine(
-            host=vm_machine_ip, user=config.VMS_LINUX_USER,
+            host=self.vm_machine_ip, user=config.VMS_LINUX_USER,
             password=config.VMS_LINUX_PW).util('linux')
 
         devices = linux_machine.get_storage_devices()
 
         logger.info("Copy disk from %s to %s", devices[1], devices[2])
-        status = helpers.copy_backup_disk(vm_machine_ip, devices[1],
+        status = helpers.copy_backup_disk(self.vm_machine_ip, devices[1],
                                           devices[2],
                                           timeout=TASK_TIMEOUT)
 
@@ -771,9 +770,13 @@ class TestCase304197(TestCase):
                 True, disks_objs[0].get_alias(), self.vm_names[1]),
             "Failed to detach disk %s" % disks_objs[0].get_alias())
 
-        snapshot = vms.get_vm_snapshots(self.vm_names[0])[0]
-        vms.removeSnapshot(True, self.vm_names[0],
-                           snapshot.get_description())
+        snapshots = vms.get_vm_snapshots(self.vm_names[0])
+        snaps_to_remove = [s.get_description() for s in snapshots if
+                           (s.get_description() ==
+                            helpers.SNAPSHOT_TEMPLATE_DESC)]
+        for snap in snaps_to_remove:
+            vms.removeSnapshot(True, self.vm_names[0],
+                               snap)
 
         vms.stop_vms_safely([self.vm_names[0]])
         vms.removeVms(True, self.vm_names[0])
@@ -802,12 +805,11 @@ class TestCase304197(TestCase):
         vms.start_vms(new_vm_list, 2, wait_for_ip=False)
         vms.waitForVmsStates(True, new_vm_list)
 
-    @classmethod
-    def teardown_class(cls):
+    def tearDown(self):
         """
         Restoring the environment
         """
-        vms_to_remove = cls.vm_names[:]
+        vms_to_remove = self.vm_names[:]
         # If the first vm still exists, remove it
         vms_to_remove.append(helpers.RESTORED_VM)
 
@@ -817,9 +819,9 @@ class TestCase304197(TestCase):
 
         for index in range(config.VM_COUNT):
             helpers.prepare_vm(
-                cls.vm_names[index],
+                self.vm_names[index],
                 create_snapshot=helpers.SHOULD_CREATE_SNAPSHOT[index],
-                storage_domain=cls.storage_domains[0])
+                storage_domain=self.storage_domains[0])
 
 
 @attr(tier=1)
@@ -832,9 +834,8 @@ class TestCase322485(TestCase):
     tcms_test_case = '322485'
     snapshot_template_name = "%s-snapshot"
 
-    @classmethod
-    def setup_class(cls):
-        cls.vm_names = VM_NAMES[TestCase.storage]
+    def setUp(self):
+        self.vm_names = VM_NAMES[TestCase.storage]
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_hotplug_more_than_1_disk(self):
@@ -856,35 +857,34 @@ class TestCase322485(TestCase):
             self.snapshot_template_name % self.vm_names[0]),
             "Failed to attach all snapshot disks to backup vm")
 
-    @classmethod
-    def teardown_class(cls):
+    def tearDown(self):
         """
         Restoring the environment
         """
         logger.info('Detaching backup disk')
         disks_objs = vms.get_snapshot_disks(
-            cls.vm_names[0],
-            cls.snapshot_template_name % cls.vm_names[0])
+            self.vm_names[0],
+            self.snapshot_template_name % self.vm_names[0])
 
         for disk_obj in disks_objs:
             if not disks.detachDisk(True, disk_obj.get_alias(),
-                                    cls.vm_names[1]):
+                                    self.vm_names[1]):
                 raise exceptions.DiskException("Failed to remove disk %s"
                                                % disk_obj.get_alias())
-        vms.stop_vms_safely([cls.vm_names[0]])
-        logger.info("Succeeded to stop vm %s", cls.vm_names[0])
+        vms.stop_vms_safely([self.vm_names[0]])
+        logger.info("Succeeded to stop vm %s", self.vm_names[0])
 
         if not vms.removeSnapshot(
-                True, cls.vm_names[0],
-                cls.snapshot_template_name % cls.vm_names[0]):
-            snapshot_name = cls.snapshot_template_name % cls.vm_names[0]
+                True, self.vm_names[0],
+                self.snapshot_template_name % self.vm_names[0]):
+            snapshot_name = self.snapshot_template_name % self.vm_names[0]
             raise exceptions.VMException("Failed to remove snapshot %s"
                                          % snapshot_name)
 
-        disks_to_remove = vms.getVmDisks(cls.vm_names[0])
+        disks_to_remove = vms.getVmDisks(self.vm_names[0])
         for disk in disks_to_remove:
             if not disk.get_bootable():
-                vms.removeDisk(True, cls.vm_names[0], disk.get_alias())
+                vms.removeDisk(True, self.vm_names[0], disk.get_alias())
                 logger.info("Disk %s - removed", disk.get_alias())
 
 
@@ -951,9 +951,8 @@ class TestCase322487(BaseTestCase):
     __test__ = True
     tcms_test_case = '322487'
 
-    @classmethod
-    def setup_class(cls):
-        cls.vm_names = VM_NAMES[TestCase.storage]
+    def setUp(self):
+        self.vm_names = VM_NAMES[TestCase.storage]
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_attach_the_same_disk_twice_to_a_VM(self):
@@ -987,13 +986,12 @@ class TestCase322886(TestCase):
     __test__ = True
     tcms_test_case = '322886'
 
-    @classmethod
-    def setup_class(cls):
-        cls.vm_names = VM_NAMES[TestCase.storage]
-        vms.waitForDisksStat(cls.vm_names[0])
-        vms.waitForDisksStat(cls.vm_names[1])
-        vms.start_vms(cls.vm_names, 2, wait_for_ip=False)
-        vms.waitForVmsStates(True, cls.vm_names)
+    def setUp(self):
+        self.vm_names = VM_NAMES[TestCase.storage]
+        vms.waitForDisksStat(self.vm_names[0])
+        vms.waitForDisksStat(self.vm_names[1])
+        vms.start_vms(self.vm_names, 2, wait_for_ip=False)
+        vms.waitForVmsStates(True, self.vm_names)
 
     @tcms(TEST_PLAN_ID, tcms_test_case)
     def test_Attach_disk_while_performing_LSM(self):

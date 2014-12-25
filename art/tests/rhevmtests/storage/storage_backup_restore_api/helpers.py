@@ -35,7 +35,7 @@ vm_args = {
     'vmName': "",
     'vmDescription': '',
     'cluster': config.CLUSTER_NAME,
-    'nic': config.HOST_NICS[0],
+    'nic': config.NIC_NAME[0],
     'nicType': ENUMS['nic_type_virtio'],
     'size': VM_DISK_SIZE,
     'diskInterface': ENUMS['interface_virtio'],
