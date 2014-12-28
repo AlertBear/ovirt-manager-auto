@@ -391,7 +391,7 @@ class GatewaysCase7(TestCase):
     """
     Verify you can add additional NIC to the already created bond
     """
-    __test__ = len(config.HOST_NICS) > 3
+    __test__ = True
 
     @classmethod
     def setup_class(cls):
@@ -468,7 +468,7 @@ class GatewaysCase8(TestCase):
     """
     Verify you can remove Nic from bond having network with gw configured on it
     """
-    __test__ = len(config.HOST_NICS) > 3
+    __test__ = True
 
     @classmethod
     def setup_class(cls):
