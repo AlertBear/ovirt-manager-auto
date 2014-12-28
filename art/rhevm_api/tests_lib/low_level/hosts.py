@@ -2228,28 +2228,27 @@ def get_host_ip_from_engine(host):
     return host_name.get_address()
 
 
-def refresh_host_capabilities(host):
+def refresh_host_capabilities(host, start_event_id):
     """
     Refresh Host Capabilities
     :param host: Host name
+    :type host: str
+    :param start_event_id: Event id to search from
+    :type start_event_id: str
     :return: True/False
+    :rtype: bool
     """
     host_obj = HOST_API.find(host)
-    code = 606
-    last_event_id = EVENT_API.get(absLink=False)[0].get_id()
-    event_description = (
-        "Successfully refreshed the capabilities of host {0}.".format(
-            host)
-    )
-    refresh_href = ";".join([host_obj.get_href(), "force"])
+    code = [606, 607]
+    query = "type={0} OR type={1}".format(code[0], code[1])
+    refresh_href = "{0};force".format(host_obj.get_href())
     HOST_API.get(href=refresh_href)
 
-    for event in EVENT_API.get(absLink=False):
-        if event.get_id() == last_event_id:
+    for event in EVENT_API.query(query):
+        if int(event.get_id()) < int(start_event_id):
             return False
-        if event.get_code() == code:
-            if event_description == event.get_description():
-                return True
+        if event.get_code() in code:
+            return True if event.get_code() == code[0] else False
     return False
 
 
