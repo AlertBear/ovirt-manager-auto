@@ -32,10 +32,10 @@ STORAGE = copy.deepcopy(ART_CONFIG['PARAMETERS'])
 STORAGE['data_domain_path'] = [PARAMETERS.as_list('data_domain_path')[0]]
 STORAGE['data_domain_address'] = [PARAMETERS.as_list('data_domain_address')[0]]
 
-PM1_ADDRESS = PARAMETERS['pm_address_ipmilan']
-PM2_ADDRESS = PARAMETERS['pm_address_apc_snmp']
-PM1_USER = PARAMETERS['pm_username_ipmilan']
-PM2_USER = PARAMETERS['pm_username_apc_snmp']
-PM1_PASS = PARAMETERS['pm_password_ipmilan']
-PM2_PASS = PARAMETERS['pm_password_apc_snmp']
-PM2_SLOT = PARAMETERS['pm_slot']
+PM1_ADDRESS = PARAMETERS.get('pm_address_ipmilan', None)
+PM2_ADDRESS = PARAMETERS.get('pm_address_apc_snmp', None)
+PM1_USER = PARAMETERS.get('pm_username_ipmilan', None)
+PM2_USER = PARAMETERS.get('pm_username_apc_snmp', None)
+PM1_PASS = PARAMETERS.get('pm_password_ipmilan', None)
+PM2_PASS = PARAMETERS.get('pm_password_apc_snmp', None)
+PM2_SLOT = PARAMETERS.get('pm_slot', None)
