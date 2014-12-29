@@ -27,7 +27,7 @@ logger = get_logger('host_cleanup')
 DEFAULT_STATE = False
 CLEANUP = 'HOSTS_CLEANUP'
 RUN_SECTION = 'RUN'
-SERVICES = ['rpcbind', 'iptables']
+SERVICES = ['rpcbind', 'nfslock', 'iptables']
 PROCESSES = ['yum']
 DC_DIR = '/rhev/data-center'
 
