@@ -5,7 +5,6 @@ Testing Display of NIC Slave/Bond fault on RHEV-M Event Log
 
 import helper
 import logging
-from nose.tools import istest
 from art.rhevm_api.tests_lib.high_level.hosts import activate_host_if_not_up
 from art.rhevm_api.tests_lib.low_level.networks import remove_label, add_label
 from art.unittest_lib import attr
@@ -28,7 +27,7 @@ STATE_UP = helper.STATE_UP
 STATE_DOWN = helper.STATE_DOWN
 
 
-class NicFaultTestCaseBase(TestCase):
+class TestNicFaultTestCaseBase(TestCase):
     """
     base class which provides teardown class method for each test case
     """
@@ -58,7 +57,7 @@ class NicFaultTestCaseBase(TestCase):
 
 
 @attr(tier=1)
-class NicFault01(NicFaultTestCaseBase):
+class TestNicFault01(TestNicFaultTestCaseBase):
     """
     1. Attach label to host interface
     2. ip link set down the host interface
@@ -81,9 +80,8 @@ class NicFault01(NicFaultTestCaseBase):
                                    (config.LABEL_LIST[0],
                                     config.VDS_HOSTS[0].nics[1]))
 
-    @istest
     @tcms(13885, 366409)
-    def label_nic_fault(self):
+    def test_label_nic_fault(self):
         """
         Check NIC fault
         """
@@ -91,7 +89,7 @@ class NicFault01(NicFaultTestCaseBase):
 
 
 @attr(tier=1)
-class NicFault02(NicFaultTestCaseBase):
+class TestNicFault02(TestNicFaultTestCaseBase):
     """
     1. Attach required network to host NIC
     2. ip link set down the host NIC
@@ -114,9 +112,8 @@ class NicFault02(NicFaultTestCaseBase):
                                         auto_nics=[0]):
             raise NetworkException("Cannot create and attach networks")
 
-    @istest
     @tcms(13885, 366410)
-    def required_nic_fault(self):
+    def test_required_nic_fault(self):
         """
         Check NIC fault
         """
@@ -132,19 +129,18 @@ class NicFault02(NicFaultTestCaseBase):
             raise NetworkException("Failed to activate the host")
 
         logger.info("Call LabelTestCaseBase teardown")
-        super(NicFault02, cls).teardown_class()
+        super(TestNicFault02, cls).teardown_class()
 
 
 @attr(tier=1)
-class NicFault03(NicFaultTestCaseBase):
+class TestNicFault03(TestNicFaultTestCaseBase):
     """
     No setup needed
     """
     __test__ = True
 
-    @istest
     @tcms(13885, 366412)
-    def empty_nic_fault(self):
+    def test_empty_nic_fault(self):
         """
         Check empty NIC fault
         """
@@ -152,7 +148,7 @@ class NicFault03(NicFaultTestCaseBase):
 
 
 @attr(tier=1)
-class NicFault04(NicFaultTestCaseBase):
+class TestNicFault04(TestNicFaultTestCaseBase):
     """
     1. Attach label to BOND
     2. ifconfig down slave1 of the BOND
@@ -189,9 +185,8 @@ class NicFault04(NicFaultTestCaseBase):
                                    "NIC %s but should" %
                                    (config.LABEL_LIST[0], config.BOND[0]))
 
-    @istest
     @tcms(13885, 366414)
-    def label_bond_fault(self):
+    def test_label_bond_fault(self):
         """
         Check BOND fault
         """
@@ -199,7 +194,7 @@ class NicFault04(NicFaultTestCaseBase):
 
 
 @attr(tier=1)
-class NicFault05(NicFaultTestCaseBase):
+class TestNicFault05(TestNicFaultTestCaseBase):
     """
     1. Attach required network to BOND
     2. ip link set down slave1 of the BOND
@@ -227,9 +222,8 @@ class NicFault05(NicFaultTestCaseBase):
                                         auto_nics=[0]):
             raise NetworkException("Cannot create and attach network")
 
-    @istest
     @tcms(13885, 366415)
-    def required_bond_fault(self):
+    def test_required_bond_fault(self):
         """
         Check BOND fault
         """
@@ -245,11 +239,11 @@ class NicFault05(NicFaultTestCaseBase):
             raise NetworkException("Failed to activate the host")
 
         logger.info("Call LabelTestCaseBase teardown")
-        super(NicFault05, cls).teardown_class()
+        super(TestNicFault05, cls).teardown_class()
 
 
 @attr(tier=1)
-class NicFault06(NicFaultTestCaseBase):
+class TestNicFault06(TestNicFaultTestCaseBase):
     """
     1. Create BOND without label or network attached.
     2. ifconfig down slave1 of the BOND
@@ -277,9 +271,8 @@ class NicFault06(NicFaultTestCaseBase):
 
             raise NetworkException("Cannot create bond %s " % config.BOND[0])
 
-    @istest
     @tcms(13885, 366416)
-    def empty_bond_fault(self):
+    def test_empty_bond_fault(self):
         """
         Check empty BOND fault
         """
@@ -287,7 +280,7 @@ class NicFault06(NicFaultTestCaseBase):
 
 
 @attr(tier=1)
-class NicFault07(NicFaultTestCaseBase):
+class TestNicFault07(TestNicFaultTestCaseBase):
     """
     1. Attach non-required network to host NIC
     2. ip link set down the host NIC
@@ -311,9 +304,8 @@ class NicFault07(NicFaultTestCaseBase):
                                         auto_nics=[0]):
             raise NetworkException("Cannot create and attach networks")
 
-    @istest
     @tcms(13885, 366418)
-    def non_required_nic_fault(self):
+    def test_non_required_nic_fault(self):
         """
         Check NIC fault
         """
@@ -321,7 +313,7 @@ class NicFault07(NicFaultTestCaseBase):
 
 
 @attr(tier=1)
-class NicFault08(NicFaultTestCaseBase):
+class TestNicFault08(TestNicFaultTestCaseBase):
     """
     1. Attach non-required network to BOND
     2. ip link set down slave1 of the BOND
@@ -350,9 +342,8 @@ class NicFault08(NicFaultTestCaseBase):
                                         auto_nics=[0]):
             raise NetworkException("Cannot create and attach network")
 
-    @istest
     @tcms(13885, 366419)
-    def non_required_bond_fault(self):
+    def test_non_required_bond_fault(self):
         """
         Check BOND fault
         """
@@ -360,7 +351,7 @@ class NicFault08(NicFaultTestCaseBase):
 
 
 @attr(tier=1)
-class NicFault09(NicFaultTestCaseBase):
+class TestNicFault09(TestNicFaultTestCaseBase):
     """
     1. Attach non-vm network to host NIC
     2. ip link set down the host NIC
@@ -385,9 +376,8 @@ class NicFault09(NicFaultTestCaseBase):
                                         auto_nics=[0]):
             raise NetworkException("Cannot create and attach networks")
 
-    @istest
     @tcms(13885, 366420)
-    def non_required_nic_fault(self):
+    def test_non_required_nic_fault(self):
         """
         Check NIC fault
         """
@@ -395,7 +385,7 @@ class NicFault09(NicFaultTestCaseBase):
 
 
 @attr(tier=1)
-class NicFault10(NicFaultTestCaseBase):
+class TestNicFault10(TestNicFaultTestCaseBase):
     """
     1. Attach non-vm network to BOND
     2. ip link set down slave1 of the BOND
@@ -425,9 +415,8 @@ class NicFault10(NicFaultTestCaseBase):
                                         auto_nics=[0]):
             raise NetworkException("Cannot create and attach network")
 
-    @istest
     @tcms(13885, 366421)
-    def non_required_bond_fault(self):
+    def test_non_required_bond_fault(self):
         """
         Check BOND fault
         """

@@ -1,12 +1,13 @@
 """
 Functions for nic_slave_bond_fault_event_log job
 """
-
+import logging
+import time
+from art.rhevm_api.tests_lib.low_level.events import get_max_event_id
 from art.rhevm_api.tests_lib.low_level.hosts import ifdownNic, ifupNic
 from art.rhevm_api.utils.test_utils import get_api
 from art.core_api.apis_utils import TimeoutingSampler
 from rhevmtests.networking import config
-import logging
 
 logger = logging.getLogger("int_fault_event_helper")
 
@@ -18,6 +19,7 @@ HOST_BOND_SLAVE_STATE_DOWN = 612
 STATE_UP = "up"
 STATE_DOWN = "down"
 SAMPLER_TIMEOUT = 60
+INT_SLEEP = 15
 
 
 class EventException(Exception):
@@ -60,8 +62,16 @@ def if_down_nic(nic, wait=True):
     """
     Set NIC down on host
     :param nic: NIC to set down
+    :type nic: str
+    :param wait: Wait to NIC status
+    :type wait: bool
     :return: True if NIC is down otherwise False
+    :rtype: bool
     """
+    logger.info("Sleeping for 15 seconds")
+    # On engine if events is checked every 15 seconds so need to sleep for
+    # 15 to ensure that we catch the next event
+    time.sleep(INT_SLEEP)
     return ifdownNic(
         host=config.HOSTS_IP[0], root_password=config.HOSTS_PW, nic=nic,
         wait=wait
@@ -72,52 +82,68 @@ def if_up_nic(nic, wait=True):
     """
     Set NIC up on host
     :param nic: NIC to set up
+    :type nic: str
+    :param wait: Wait to NIC status
+    :type wait: bool
     :return: True if NIC is down otherwise False
+    :rtype: bool
     """
+    logger.info("Sleeping for 15 seconds")
+    # On engine if events is checked every 15 seconds so need to sleep for
+    # 15 to ensure that we catch the next event
+    time.sleep(INT_SLEEP)
     return ifupNic(
         host=config.HOSTS_IP[0], root_password=config.HOSTS_PW, nic=nic,
         wait=wait
     )
 
 
-def find_event(last_event, event_code, interface, state):
+def find_event(last_event, event_code, interface):
     """
     Find event in RHEV-M event log by event code and keywords in event
     description. Search for the event only from last event ID.
-    :param last_event: Event object to search from
+    :param last_event: Event id to search from
+    :type last_event: int
     :param event_code: Event code to search for
+    :type event_code: int
     :param interface: Interface to search in description
-    :param state: NIC state to search in description
+    :type interface: str
     :return: True if event was found otherwise False
+    :rtype: bool
     """
-    processed_events = []
-    all_events = EVENT_API.get(absLink=False)
-    last_event_index = [event.id for event in all_events].index(last_event.id)
-    logger.info("Last event ID: %s", last_event.id)
-    for event in all_events[:last_event_index]:
-            event_id = event.get_id()
-            event_description = event.get_description()
-            if (
-                event.get_code() == event_code and state in event_description
-                and interface in event_description
-            ):
-                logger.info("Event found: %s", event_description)
-                return True
-            processed_events.append((event_id, event_description))
+    query = "type={0}".format(event_code)
+    logger.info("Last event ID: %s", last_event)
+    all_events = EVENT_API.query(query)
+    events_for_log = []
+    for event in all_events:
+        event_id = event.get_id()
+        if int(event_id) < last_event:
+            logger.info("No new events since %s", last_event)
+            return False
 
-    events = processed_events if processed_events else "No new events"
-    logger.info("processed events: %s", events)
+        event_description = event.get_description()
+        if interface in event_description:
+            logger.info(
+                "Event found: [%s] %s", event_id, event_description
+            )
+            return True
+
+        events_for_log.append((event_id, event_description))
+    logger.info("processed events: %s", events_for_log)
     return False
 
 
-def find_event_sampler(last_event, event_code, interface, state):
+def find_event_sampler(last_event, event_code, interface):
     """
     Run find_event function in sampler.
-    :param last_event: Event object to search from
+    :param last_event: Event id to search from
+    :type last_event: int
     :param event_code: Event code to search for
+    :type event_code: int
     :param interface: Interface to search in description
-    :param state: NIC state to search in description
+    :type interface: str
     :return: True if event was found otherwise False
+    :rtype: bool
     """
     sample = TimeoutingSampler(
         timeout=SAMPLER_TIMEOUT,
@@ -126,7 +152,6 @@ def find_event_sampler(last_event, event_code, interface, state):
         last_event=last_event,
         event_code=event_code,
         interface=interface,
-        state=state
     )
     return sample.waitForFuncStatus(result=True)
 
@@ -135,15 +160,131 @@ def event_log_logging(code, state, interface):
     """
     Generate log for event log search function
     :param code: Event code
+    :type code: int
     :param state: NIC state to search in description
+    :type state: str
     :param interface: Interface to search in description
+    :type interface: str
     :return: logger info or error
+    :rtype: str
     """
     info = (
         "Checking for event log: event code={0}, state={1}, interface={2}"
         .format(code, state, interface)
     )
     logger.info(info)
+
+
+def set_link_down(last_event, nic, slave_id):
+    """
+    ip link set down slave of the BOND and check for event log.
+    :param last_event: last event to search from
+    :type last_event: int
+    :param nic: NIC name
+    :type nic: str
+    :param slave_id: BOND slave ID
+    :type slave_id: int
+    :return: raise EventException if False
+    :rtype: EventException
+    """
+    logger.info("Set %s %s (bond slave %s)", nic, STATE_DOWN, slave_id)
+    if not if_down_nic(nic=nic):
+        raise SetNicException(STATE_DOWN, nic)
+
+    event_log_logging(
+        HOST_BOND_SLAVE_STATE_DOWN, STATE_DOWN, nic
+    )
+    if not find_event_sampler(
+        last_event=last_event, event_code=HOST_BOND_SLAVE_STATE_DOWN,
+        interface=nic
+    ):
+        raise EventException(
+            HOST_BOND_SLAVE_STATE_DOWN, STATE_DOWN, nic, True
+        )
+
+
+def set_link_up(last_event, nic, slave_id):
+    """
+    ip link set up slave of the BOND and check for event log.
+    :param last_event: last event to search from
+    :type last_event: int
+    :param nic: NIC name
+    :type nic: str
+    :param slave_id: BOND slave ID
+    :type slave_id: int
+    :return: raise EventException if False
+    :rtype: EventException
+    """
+    logger.info("Set %s %s (bond slave %s)", nic, STATE_UP, slave_id)
+    if not if_up_nic(nic=nic):
+        raise SetNicException(STATE_UP, nic)
+
+    event_log_logging(
+        HOST_BOND_SLAVE_STATE_UP, STATE_UP, nic
+    )
+    if not find_event_sampler(
+        last_event=last_event, event_code=HOST_BOND_SLAVE_STATE_UP,
+        interface=nic
+    ):
+        raise EventException(
+            HOST_BOND_SLAVE_STATE_UP, STATE_UP, nic, True
+        )
+
+
+def empty_bond_link_down(last_event, nic, slave_id):
+    """
+    ip link set down slave of the BOND and check for event log.
+    :param last_event: last event to search from
+    :type last_event: int
+    :param nic: NIC name
+    :type nic: str
+    :param slave_id: BOND slave ID
+    :type slave_id: int
+    :return: raise EventException if False
+    :rtype: EventException
+    """
+    logger.info("Set %s %s (bond slave %s)", nic, STATE_DOWN, slave_id)
+    if not if_down_nic(nic=nic):
+        raise SetNicException(STATE_DOWN, nic)
+
+    event_log_logging(
+        HOST_BOND_SLAVE_STATE_DOWN, STATE_DOWN, nic
+    )
+    if find_event_sampler(
+        last_event=last_event, event_code=HOST_BOND_SLAVE_STATE_DOWN,
+        interface=nic
+    ):
+        raise EventException(
+            HOST_BOND_SLAVE_STATE_DOWN, STATE_DOWN, nic, False
+        )
+
+
+def empty_bond_link_up(last_event, nic, slave_id):
+    """
+    ip link set up slave of the BOND and check for event log.
+    :param last_event: last event to search from
+    :type last_event: int
+    :param nic: NIC name
+    :type nic: str
+    :param slave_id: BOND slave ID
+    :type slave_id: int
+    :return: raise EventException if False
+    :rtype: EventException
+    """
+    logger.info("Set %s %s (bond slave %s)", nic, STATE_DOWN, slave_id)
+    if not if_down_nic(nic=nic):
+        raise SetNicException(STATE_UP, nic)
+
+    event_log_logging(
+        HOST_BOND_SLAVE_STATE_UP, STATE_UP, nic
+    )
+    if find_event_sampler(
+        last_event=last_event, event_code=HOST_BOND_SLAVE_STATE_UP,
+        interface=nic
+    ):
+        raise EventException(
+            HOST_BOND_SLAVE_STATE_UP, STATE_UP, nic, False
+        )
 
 
 def bond_fault():
@@ -155,7 +296,7 @@ def bond_fault():
     ip link set down the BOND interface and check for event log.
     ip link set up the BOND interface and check for event log.
     """
-    last_event = EVENT_API.get(absLink=False)[0]
+    last_event = get_max_event_id(query="")
 
     # set slave 1 and 2 down and check for event log
     set_link_down(last_event, config.VDS_HOSTS[0].nics[2], 1)
@@ -167,7 +308,7 @@ def bond_fault():
     )
     if not find_event_sampler(
         last_event=last_event, event_code=HOST_INTERFACE_STATE_DOWN,
-        interface=config.BOND[0], state=STATE_DOWN
+        interface=config.BOND[0]
     ):
         raise EventException(
             HOST_INTERFACE_STATE_DOWN, STATE_DOWN, config.BOND[0], True
@@ -182,7 +323,7 @@ def bond_fault():
     )
     if not find_event_sampler(
         last_event=last_event, event_code=HOST_INTERFACE_STATE_UP,
-        interface=config.BOND[0], state=STATE_UP
+        interface=config.BOND[0]
     ):
         raise EventException(
             HOST_INTERFACE_STATE_UP, STATE_UP, config.BOND[0], True
@@ -192,7 +333,7 @@ def bond_fault():
     set_link_up(last_event, config.VDS_HOSTS[0].nics[3], 2)
 
     # ip link set down the BOND interface and check for event log.
-    last_event = EVENT_API.get(absLink=False)[0]
+    last_event = get_max_event_id(query="")
     logger.info("Set %s %s", config.BOND[0], STATE_DOWN)
     if_down_nic(nic=config.BOND[0], wait=False)
 
@@ -201,7 +342,7 @@ def bond_fault():
     )
     if not find_event_sampler(
         last_event=last_event, event_code=HOST_INTERFACE_STATE_DOWN,
-        interface=config.BOND[0], state=STATE_DOWN
+        interface=config.BOND[0]
     ):
         raise EventException(
             HOST_INTERFACE_STATE_DOWN, STATE_DOWN, config.BOND[0], True
@@ -215,7 +356,7 @@ def bond_fault():
     )
     if not find_event_sampler(
         last_event=last_event, event_code=HOST_INTERFACE_STATE_DOWN,
-        interface=config.BOND[0], state=STATE_DOWN
+        interface=config.BOND[0]
     ):
         raise EventException(
             HOST_INTERFACE_STATE_UP, STATE_UP, config.BOND[0], True
@@ -227,7 +368,7 @@ def nic_fault():
     ip link set down eth1 and check for event log.
     ip link set up eth1 and check for event log.
     """
-    last_event = EVENT_API.get(absLink=False)[0]
+    last_event = get_max_event_id(query="")
 
     # ip link set down eth1 and check for event log
     logger.info("Set %s %s", config.VDS_HOSTS[0].nics[1], STATE_DOWN)
@@ -239,7 +380,7 @@ def nic_fault():
     )
     if not find_event_sampler(
         last_event=last_event, event_code=HOST_INTERFACE_STATE_DOWN,
-        interface=config.VDS_HOSTS[0].nics[1], state=STATE_DOWN
+        interface=config.VDS_HOSTS[0].nics[1]
     ):
         raise EventException(
             HOST_INTERFACE_STATE_DOWN, STATE_DOWN, config.VDS_HOSTS[0].nics[1],
@@ -256,7 +397,7 @@ def nic_fault():
     )
     if not find_event_sampler(
         last_event=last_event, event_code=HOST_INTERFACE_STATE_UP,
-        interface=config.VDS_HOSTS[0].nics[1], state=STATE_UP
+        interface=config.VDS_HOSTS[0].nics[1]
     ):
         raise EventException(
             HOST_INTERFACE_STATE_UP, STATE_UP, config.VDS_HOSTS[0].nics[1],
@@ -273,7 +414,7 @@ def empty_bond_fault():
     ip link set down the BOND interface and check for event log.
     ip link set up the BOND interface and check for event log.
     """
-    last_event = EVENT_API.get(absLink=False)[0]
+    last_event = get_max_event_id(query="")
 
     # set down slaves 1 and 2 and check for event log
     empty_bond_link_down(last_event, config.VDS_HOSTS[0].nics[2], 1)
@@ -285,7 +426,7 @@ def empty_bond_fault():
     )
     if find_event_sampler(
         last_event=last_event, event_code=HOST_INTERFACE_STATE_DOWN,
-        interface=config.BOND[0], state=STATE_DOWN
+        interface=config.BOND[0]
     ):
         raise EventException(
             HOST_INTERFACE_STATE_DOWN, STATE_DOWN, config.BOND[0], False
@@ -300,7 +441,7 @@ def empty_bond_fault():
     )
     if find_event_sampler(
         last_event=last_event, event_code=HOST_BOND_SLAVE_STATE_UP,
-        interface=config.BOND[0], state=STATE_UP
+        interface=config.BOND[0]
     ):
         raise EventException(
             HOST_INTERFACE_STATE_UP, STATE_UP, config.BOND[0], False
@@ -311,7 +452,7 @@ def empty_bond_fault():
 
     # ip link set down the BOND interface and check for event log.
     logger.info("Set %s %s", config.BOND[0], STATE_DOWN)
-    last_event = EVENT_API.get(absLink=False)[0]
+    last_event = get_max_event_id(query="")
     if_down_nic(nic=config.BOND[0], wait=False)
 
     event_log_logging(
@@ -319,7 +460,7 @@ def empty_bond_fault():
     )
     if find_event_sampler(
         last_event=last_event, event_code=HOST_INTERFACE_STATE_DOWN,
-        interface=config.BOND[0], state=STATE_DOWN
+        interface=config.BOND[0]
     ):
         raise EventException(
             HOST_INTERFACE_STATE_DOWN, STATE_DOWN, config.BOND[0], False
@@ -334,7 +475,7 @@ def empty_bond_fault():
     )
     if find_event_sampler(
         last_event=last_event, event_code=HOST_INTERFACE_STATE_UP,
-        interface=config.BOND[0], state=STATE_UP
+        interface=config.BOND[0]
     ):
         raise EventException(
             HOST_INTERFACE_STATE_UP, STATE_UP, config.BOND[0], False
@@ -346,7 +487,7 @@ def empty_nic_fault():
     ip link set down eth1 and check for event log.
     ip link set up eth1 and check for event log.
     """
-    last_event = EVENT_API.get(absLink=False)[0]
+    last_event = get_max_event_id(query="")
 
     # ip link set down eth1 and check for event log
     logger.info("Set %s %s", config.VDS_HOSTS[0].nics[1], STATE_DOWN)
@@ -358,7 +499,7 @@ def empty_nic_fault():
     )
     if find_event_sampler(
         last_event=last_event, event_code=HOST_INTERFACE_STATE_DOWN,
-        interface=config.VDS_HOSTS[0].nics[1], state=STATE_DOWN
+        interface=config.VDS_HOSTS[0].nics[1]
     ):
         raise EventException(
             HOST_INTERFACE_STATE_DOWN, STATE_DOWN, config.VDS_HOSTS[0].nics[1],
@@ -375,105 +516,9 @@ def empty_nic_fault():
     )
     if find_event_sampler(
         last_event=last_event, event_code=HOST_INTERFACE_STATE_UP,
-        interface=config.VDS_HOSTS[0].nics[1], state=STATE_UP
+        interface=config.VDS_HOSTS[0].nics[1]
     ):
         raise EventException(
             HOST_INTERFACE_STATE_UP, STATE_UP, config.VDS_HOSTS[0].nics[1],
             False
-        )
-
-
-def set_link_down(last_event, nic, slave_id):
-    """
-    ip link set down slave of the BOND and check for event log.
-    :param last_event: last event to search from
-    :param nic: NIC name
-    :param slave_id: BOND slave ID
-    :return: raise EventException if False
-    """
-    logger.info("Set %s %s (bond slave %s)", nic, STATE_DOWN, slave_id)
-    if not if_down_nic(nic=nic):
-        raise SetNicException(STATE_DOWN, nic)
-
-    event_log_logging(
-        HOST_BOND_SLAVE_STATE_DOWN, STATE_DOWN, nic
-    )
-    if not find_event_sampler(
-        last_event=last_event, event_code=HOST_BOND_SLAVE_STATE_DOWN,
-        interface=nic, state=STATE_DOWN
-    ):
-        raise EventException(
-            HOST_BOND_SLAVE_STATE_DOWN, STATE_DOWN, nic, True
-        )
-
-
-def set_link_up(last_event, nic, slave_id):
-    """
-    ip link set up slave of the BOND and check for event log.
-    :param last_event: last event to search from
-    :param nic: NIC name
-    :param slave_id: BOND slave ID
-    :return: raise EventException if False
-    """
-    logger.info("Set %s %s (bond slave %s)", nic, STATE_UP, slave_id)
-    if not if_up_nic(nic=nic):
-        raise SetNicException(STATE_UP, nic)
-
-    event_log_logging(
-        HOST_BOND_SLAVE_STATE_UP, STATE_UP, nic
-    )
-    if not find_event_sampler(
-        last_event=last_event, event_code=HOST_BOND_SLAVE_STATE_UP,
-        interface=nic, state=STATE_UP
-    ):
-        raise EventException(
-            HOST_BOND_SLAVE_STATE_UP, STATE_UP, nic, True
-        )
-
-
-def empty_bond_link_down(last_event, nic, slave_id):
-    """
-    ip link set down slave of the BOND and check for event log.
-    :param last_event: last event to search from
-    :param nic: NIC name
-    :param slave_id: BOND slave ID
-    :return: raise EventException if False
-    """
-    logger.info("Set %s %s (bond slave %s)", nic, STATE_DOWN, slave_id)
-    if not if_down_nic(nic=nic):
-        raise SetNicException(STATE_DOWN, nic)
-
-    event_log_logging(
-        HOST_BOND_SLAVE_STATE_DOWN, STATE_DOWN, nic
-    )
-    if find_event_sampler(
-        last_event=last_event, event_code=HOST_BOND_SLAVE_STATE_DOWN,
-        interface=nic, state=STATE_DOWN
-    ):
-        raise EventException(
-            HOST_BOND_SLAVE_STATE_DOWN, STATE_DOWN, nic, False
-        )
-
-
-def empty_bond_link_up(last_event, nic, slave_id):
-    """
-    ip link set up slave of the BOND and check for event log.
-    :param last_event: last event to search from
-    :param nic: NIC name
-    :param slave_id: BOND slave ID
-    :return: raise EventException if False
-    """
-    logger.info("Set %s %s (bond slave %s)", nic, STATE_DOWN, slave_id)
-    if not if_down_nic(nic=nic):
-        raise SetNicException(STATE_UP, nic)
-
-    event_log_logging(
-        HOST_BOND_SLAVE_STATE_UP, STATE_UP, nic
-    )
-    if find_event_sampler(
-        last_event=last_event, event_code=HOST_BOND_SLAVE_STATE_UP,
-        interface=nic, state=STATE_UP
-    ):
-        raise EventException(
-            HOST_BOND_SLAVE_STATE_UP, STATE_UP, nic, False
         )
