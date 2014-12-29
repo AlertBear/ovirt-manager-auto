@@ -6,6 +6,8 @@ from art.unittest_lib.common import (
     StorageTest,
     NetworkTest,
     ComputeTest,
+    VirtTest,
+    SlaTest,
     CoreSystemTest,
     attr,
 )
@@ -15,6 +17,8 @@ __all__ = [
     'StorageTest',
     'NetworkTest',
     'ComputeTest',
+    'VirtTest',
+    'SlaTest',
     'CoreSystemTest',
     'attr',
 ]

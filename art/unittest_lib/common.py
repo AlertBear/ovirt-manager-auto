@@ -68,6 +68,22 @@ class ComputeTest(BaseTestCase):
     __test__ = False
 
 
+@attr(team="virt")
+class VirtTest(BaseTestCase):
+    """
+    Basic class for compute/virt tests
+    """
+    __test__ = False
+
+
+@attr(team="sla")
+class SlaTest(BaseTestCase):
+    """
+    Basic class for compute/sla tests
+    """
+    __test__ = False
+
+
 @attr(team="CoreSystem")
 class CoreSystemTest(BaseTestCase):
     """

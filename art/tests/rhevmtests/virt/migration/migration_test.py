@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from rhevmtests.virt import config
 import logging
-from art.unittest_lib import ComputeTest as TestCase
+from art.unittest_lib import VirtTest as TestCase
 from nose.tools import istest
 from art.test_handler.tools import tcms  # pylint: disable=E0611
 from art.test_handler.settings import opts

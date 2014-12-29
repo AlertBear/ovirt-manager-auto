@@ -6,7 +6,7 @@ Then new VM from this template is checked, if it matches the template type.
 """
 
 from nose.tools import istest
-from art.unittest_lib import ComputeTest as TestCase
+from art.unittest_lib import VirtTest as TestCase
 import logging
 
 from art.rhevm_api.tests_lib.low_level import vms
