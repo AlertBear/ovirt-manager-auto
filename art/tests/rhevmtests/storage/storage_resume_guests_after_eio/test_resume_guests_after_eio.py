@@ -4,6 +4,9 @@ import time
 from art.unittest_lib import attr
 from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from art.rhevm_api.tests_lib.low_level import vms, storagedomains, disks, hosts
+from art.rhevm_api.tests_lib.low_level.vms import (
+    addDisk, get_vms_disks_storage_domain_name,
+)
 from art.rhevm_api.utils import storage_api
 
 import config
@@ -34,7 +37,7 @@ class TestResumeGuests(TestCase):
     def setUp(self):
         """ just start writing
         """
-        cmd = "dd of=%s if=/dev/urandom &" % FILE_TO_WRITE
+        cmd = "dd of=%s if=/dev/urandom bs=128M oflag=direct &" % FILE_TO_WRITE
         LOGGER.info("Starting writing process")
         assert vms.run_cmd_on_vm(
             self.vm, cmd, VM_USER, VM_PASSWORD)[0]
@@ -131,7 +134,7 @@ class TestCaseBlockedConnection(TestResumeGuests):
 
 class TestNoSpaceLeftOnDevice(TestResumeGuests):
     big_disk_name = "big_disk_eio"
-    left_space = int(3 * GB)
+    left_space = int(1.5 * GB)
 
     def break_storage(self):
         """ create a very big disk on the storage domain
@@ -161,6 +164,7 @@ class TestNoSpaceLeftOnDevice(TestResumeGuests):
     def tearDown(self):
         """ additional step in tearDown - remove big disk
         """
+        super(TestNoSpaceLeftOnDevice, self).tearDown()
         LOGGER.info("Tear down - removing disk if needed")
         disk_names = [
             x.alias for x in disks.getStorageDomainDisks(self.sd, False)]
@@ -168,7 +172,6 @@ class TestNoSpaceLeftOnDevice(TestResumeGuests):
         if self.big_disk_name in disk_names:
             disks.deleteDisk(True, self.big_disk_name)
         LOGGER.info("Upper tear down")
-        super(TestNoSpaceLeftOnDevice, self).tearDown()
 
 
 @attr(tier=2)
@@ -219,8 +222,19 @@ class TestCase285372(TestNoSpaceLeftOnDevice):
     __test__ = (TestNoSpaceLeftOnDevice.storage == 'iscsi')
     tcms_test_case = '285372'
 
+    def setUp(self):
+        storage = get_vms_disks_storage_domain_name(self.vm)
+        addDisk(True, self.vm, config.DISK_SIZE, storagedomain=storage,
+                interface=config.VIRTIO)
+
+        cmd = "dd of=/dev/vda if=/dev/urandom &"
+        LOGGER.info("Starting writing process")
+        assert vms.run_cmd_on_vm(
+            self.vm, cmd, VM_USER, VM_PASSWORD)[0]
+        # give it time to really start writing
+        time.sleep(10)
+
     @tcms(TCMS_PLAN_ID, tcms_test_case)
-    @bz({'1177507': {'enine': ['rest', 'sdk'], 'version': ["3.5"]}})
     def test_iscsi_no_space_left_on_device(self):
         """ checks if VM is paused after no-space-left error on sd,
             checks if VM is unpaused after there is again free space on sd
