@@ -73,7 +73,7 @@ def teardown_package():
         logger.info(
             "Running on golden env, stopping VM %s", config.VM_NAME[0])
         if not vms.stopVm(True, vm=config.VM_NAME[0]):
-            raise NetworkException(
+            logger.error(
                 "Failed to stop VM: %s" % config.VM_NAME[0]
             )
     else:
@@ -81,4 +81,4 @@ def teardown_package():
             positive=True, datacenter=config.DC_NAME[0],
             vdc=config.VDC_HOST, vdc_password=config.VDC_ROOT_PASSWORD
         ):
-            raise NetworkException("Cannot remove setup")
+            logger.error("Cannot remove setup")

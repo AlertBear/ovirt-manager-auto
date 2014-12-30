@@ -67,7 +67,7 @@ class MultiHostTestCaseBase(TestCase):
         """
         logger.info("Starting teardown")
         if not remove_net_from_setup(
-            host=config.VDS_HOSTS, auto_nics=[0],
+            host=config.VDS_HOSTS[:2], auto_nics=[0],
             data_center=config.DC_NAME[0], all_net=True,
             mgmt_network=config.MGMT_BRIDGE
         ):
@@ -957,7 +957,7 @@ class MultiHostCase07(MultiHostTestCaseBase):
         logger.info("Attach network to DC/Cluster and 2 Hosts")
         if not createAndAttachNetworkSN(
             data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-            host=config.VDS_HOSTS, network_dict=local_dict, auto_nics=[0]
+            host=config.VDS_HOSTS[:2], network_dict=local_dict, auto_nics=[0]
         ):
             raise NetworkException("Cannot create and attach network")
 
@@ -990,7 +990,7 @@ class MultiHostCase07(MultiHostTestCaseBase):
         logger.info(
             "Check that both Hosts are updated with correct MTU value"
         )
-        for host, nic in zip(config.HOSTS, (HOST1_NICS[1], HOST2_NICS[1])):
+        for host, nic in zip(config.HOSTS[:2], (HOST1_NICS[1], HOST2_NICS[1])):
             sample1.append(
                 TimeoutingSampler(
                     timeout=config.SAMPLER_TIMEOUT,
@@ -1057,7 +1057,7 @@ class MultiHostCase07(MultiHostTestCaseBase):
             )
 
         logger.info("Check correct MTU on both Hosts")
-        for host, nic in zip(config.HOSTS, (HOST1_NICS[1], HOST2_NICS[1])):
+        for host, nic in zip(config.HOSTS[:2], (HOST1_NICS[1], HOST2_NICS[1])):
             sample1.append(
                 TimeoutingSampler(
                     timeout=config.SAMPLER_TIMEOUT,
@@ -1157,7 +1157,7 @@ class MultiHostCase08(MultiHostTestCaseBase):
         logger.info(
             "Check that both Hosts are updated with correct MTU value"
         )
-        for host, nic in zip(config.HOSTS, (HOST1_NICS[1], HOST2_NICS[1])):
+        for host, nic in zip(config.HOSTS[:2], (HOST1_NICS[1], HOST2_NICS[1])):
             sample1.append(
                 TimeoutingSampler(
                     timeout=config.SAMPLER_TIMEOUT,
@@ -1228,7 +1228,7 @@ class MultiHostCase08(MultiHostTestCaseBase):
             )
 
         logger.info("Check correct MTU on both Hosts")
-        for host, nic in zip(config.HOSTS, (HOST1_NICS[1], HOST2_NICS[1])):
+        for host, nic in zip(config.HOSTS[:2], (HOST1_NICS[1], HOST2_NICS[1])):
             sample1.append(
                 TimeoutingSampler(
                     timeout=config.SAMPLER_TIMEOUT,
@@ -1245,7 +1245,7 @@ class MultiHostCase08(MultiHostTestCaseBase):
 
         logger.info("Remove network %s from setup", config.VLAN_NETWORKS[0])
         if not remove_net_from_setup(
-            host=config.VDS_HOSTS, auto_nics=[0],
+            host=config.VDS_HOSTS[:2], auto_nics=[0],
             network=[config.VLAN_NETWORKS[0]]
         ):
             raise NetworkException("Cannot remove network from setup")

@@ -71,7 +71,7 @@ class LabelTestCaseBase(TestCase):
                                            config.HOSTS[1]: HOST1_NICS}):
             raise NetworkException("Couldn't remove labels from Hosts ")
 
-        if not remove_net_from_setup(host=config.VDS_HOSTS, auto_nics=[0],
+        if not remove_net_from_setup(host=config.VDS_HOSTS[:2], auto_nics=[0],
                                      data_center=config.DC_NAME[0],
                                      mgmt_network=config.MGMT_BRIDGE,
                                      all_net=True):
@@ -565,7 +565,7 @@ class NetLabels06(LabelTestCaseBase):
         logger.info("Create bond on both Hosts in the setup")
         if not createAndAttachNetworkSN(data_center=config.DC_NAME[0],
                                         cluster=config.CLUSTER_NAME[0],
-                                        host=config.VDS_HOSTS,
+                                        host=config.VDS_HOSTS[:2],
                                         network_dict=local_dict1,
                                         auto_nics=[0]):
             raise NetworkException("Cannot create bond on both Hosts")
@@ -613,7 +613,7 @@ class NetLabels06(LabelTestCaseBase):
         """
 
         logger.info("Break bond on both Hosts")
-        for i, host_i in enumerate(config.HOSTS):
+        for i, host_i in enumerate(config.HOSTS[:2]):
             if not sendSNRequest(True, host=host_i,
                                  auto_nics=[config.VDS_HOSTS[i].nics[0]],
                                  check_connectivity='true',

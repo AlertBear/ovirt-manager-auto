@@ -79,7 +79,7 @@ def setup_package():
         "Create %s, %s on %s/%s and attach them to %s",
         config.VLAN_NETWORKS[0], ".".join(
             [config.BOND[0], config.VLAN_NETWORKS[1]]),
-        config.DC_NAME[0], config.CLUSTER_NAME[0], config.HOSTS
+        config.DC_NAME[0], config.CLUSTER_NAME[0], config.HOSTS[:2]
     )
     network_params = {None: {'nic': config.BOND[0], 'mode': 1,
                              'slaves': [2, 3]},
@@ -94,7 +94,7 @@ def setup_package():
 
     if not createAndAttachNetworkSN(
         data_center=config.DC_NAME[0], cluster=config.CLUSTER_NAME[0],
-        host=config.VDS_HOSTS, network_dict=network_params,
+        host=config.VDS_HOSTS[:2], network_dict=network_params,
         auto_nics=[0, 1]
     ):
         raise NetworkException("Cannot create and attach networks")
