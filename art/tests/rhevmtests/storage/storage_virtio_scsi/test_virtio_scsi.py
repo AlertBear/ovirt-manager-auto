@@ -1,16 +1,19 @@
 from concurrent.futures.thread import ThreadPoolExecutor
-from nose.tools import istest
 from art.unittest_lib import attr
 from art.unittest_lib import StorageTest as TestCase
 from art.rhevm_api.tests_lib.high_level.datacenters import build_setup
 from art.rhevm_api.tests_lib.high_level.vms import add_disk_to_machine
 from art.rhevm_api.tests_lib.low_level.storagedomains import (
-    getStorageDomainNamesForType, cleanDataCenter)
-from art.rhevm_api.tests_lib.low_level.templates import createTemplate, \
-    removeTemplate
-from art.rhevm_api.tests_lib.low_level.vms import createVm, stopVm, removeVm,\
-    checkVmState, getVmHost, startVm, waitForIP, migrateVm, \
-    cloneVmFromTemplate, addSnapshot, addVm, waitForVmsDisks, getVmDisks
+    getStorageDomainNamesForType, cleanDataCenter,
+)
+from art.rhevm_api.tests_lib.low_level.templates import (
+    createTemplate, removeTemplate,
+)
+from art.rhevm_api.tests_lib.low_level.vms import (
+    createVm, stopVm, removeVm, checkVmState, getVmHost, startVm, waitForIP,
+    migrateVm, cloneVmFromTemplate, addSnapshot, waitForVmsDisks,
+    getVmDisks, cloneVmFromSnapshot,
+)
 from art.rhevm_api.tests_lib.low_level.disks import getStorageDomainDisks
 from art.rhevm_api.utils.test_utils import setPersistentNetwork
 from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
@@ -69,7 +72,7 @@ def _create_vm(vm_name, storage_domain, interface, install_os):
 
     if install_os:
         vmArgs.update({
-            'nic': config.HOST_NICS[0],
+            'nic': config.NIC_NAME[0],
             'image': config.COBBLER_PROFILE,
             'useAgent': True,
             'os_type': config.ENUMS['rhel6'],
@@ -156,7 +159,6 @@ class TestCase272386(ClassWithOneVM):
             config.DATA_CENTER_NAME, cls.storage)[0]
         cls.vm_names = []
 
-    @istest
     @tcms(TCMS_PLAN_ID, tcms_case)
     def test_start_vm_with_virtio_scsi_bootable_disk(self):
         """
@@ -194,7 +196,6 @@ class TestCase272383(ClassWithOneVM):
         cls.cloned_vm_name = cls.vm_names[0] + '_cloned'
         cls.vm_names.append(cls.cloned_vm_name)
 
-    @istest
     @tcms(TCMS_PLAN_ID, tcms_case)
     def test_create_template_from_vm_with_virtio_scsi_disk(self):
         """
@@ -243,7 +244,6 @@ class TestCase272390(ClassWithOneVM):
     tcms_case = '272390'
     installations = [False]
 
-    @istest
     @tcms(TCMS_PLAN_ID, tcms_case)
     def test_remove_vm_with_virtio_scsi_disk(self):
         """
@@ -290,9 +290,7 @@ class TestCase272388(ClassWithOneVM):
         status, vm_host = getVmHost(cls.vm_names[0])
         assert status
 
-    @istest
     @tcms(TCMS_PLAN_ID, tcms_case)
-    @bz('996146')
     def test_migrate_vm_with_virtio_scsi_disk(self):
         """
         Migrate a vm from the host it is currently running on to another host
@@ -326,20 +324,20 @@ class TestCase272914(ClassWithOneVM):
         cls.cloned_vm_name = cls.vm_names[0] + '_cloned'
         assert addSnapshot(True, cls.vm_names[0], cls.snapshot_name)
 
-    @istest
     @tcms(TCMS_PLAN_ID, tcms_case)
-    @bz('1003523')
+    @bz({"1178508": {'engine': ['rest', 'sdk'], 'version': ['3.5']}})
     def test_clone_vm_with_virtio_scsi_disk_from_snapshot(self):
         """
         Clones a vm from a snapshot that has a virtio-scsi disk
         """
         logger.info('Cloning vm %s from snapshot %s',
                     self.vm_names[0], self.snapshot_name)
-        self.assertTrue(addVm(True,
-                              name=self.cloned_vm_name,
-                              description=self.cloned_vm_name,
-                              snapshot=self.snapshot_name,
-                              cluster=config.CLUSTER_NAME))
+
+        self.assertTrue(cloneVmFromSnapshot(True,
+                                            name=self.cloned_vm_name,
+                                            cluster=config.CLUSTER_NAME,
+                                            vm=self.vm_names[0],
+                                            snapshot=self.snapshot_name))
         self.vm_names.append(self.cloned_vm_name)
         self.assertTrue(waitForVmsDisks(self.cloned_vm_name))
         logger.info('Vm %s cloned. Starting it', self.cloned_vm_name)
@@ -367,7 +365,6 @@ class TestCase293163(ClassWithOneVM):
                             True,
                             cls.storage_domain)
 
-    @istest
     @tcms(TCMS_PLAN_ID, tcms_case)
     def test_vm_with_virtio_and_virtio_scsi_disk(self):
         """
