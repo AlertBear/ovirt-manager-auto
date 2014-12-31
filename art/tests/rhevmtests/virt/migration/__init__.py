@@ -92,9 +92,13 @@ def setup_package():
         if config.GOLDEN_ENV:
             # Create the VMs from existing template, in the golden env.
             for vm_name in config.VM_NAMES[:5]:
-                vm_api.cloneVmFromTemplate(True, vm_name,
-                                           config.TEMPLATE_NAME[0],
-                                           config.CLUSTER_NAME[0])
+                if not vm_api.createVm(
+                    positive=True, vmName=vm_name,
+                    cluster=config.CLUSTER_NAME[0],
+                    vmDescription="mig_vm",
+                    template=config.TEMPLATE_NAME[0]
+                ):
+                    raise errors.VMException("Fail to add VM %s" % vm_name)
 
 
 def teardown_package():
