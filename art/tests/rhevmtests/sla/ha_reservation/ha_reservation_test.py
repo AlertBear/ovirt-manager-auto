@@ -12,7 +12,7 @@ Tests covers:
 import logging
 from rhevmtests.sla.ha_reservation import config
 
-from art.unittest_lib import ComputeTest as TestCase
+from art.unittest_lib import SlaTest as TestCase
 from nose.plugins.attrib import attr
 from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 

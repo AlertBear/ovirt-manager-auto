@@ -14,7 +14,7 @@ Tests covers:
         agent, multipls VMs on one hsot with ballooning enabled
 """
 
-from art.unittest_lib import ComputeTest as TestCase
+from art.unittest_lib import SlaTest as TestCase
 
 import logging
 import config

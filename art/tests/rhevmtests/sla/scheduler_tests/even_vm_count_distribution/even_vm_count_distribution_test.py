@@ -13,7 +13,7 @@ from art.unittest_lib import attr
 from art.test_handler.tools import tcms, bz  # pylint: disable=E0611
 from art.test_handler.settings import opts
 import art.test_handler.exceptions as errors
-from art.unittest_lib import ComputeTest as TestCase
+from art.unittest_lib import SlaTest as TestCase
 import art.rhevm_api.tests_lib.low_level.vms as vm_api
 import art.rhevm_api.tests_lib.low_level.hosts as host_api
 from art.rhevm_api.tests_lib.low_level.clusters import updateCluster

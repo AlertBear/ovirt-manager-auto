@@ -11,7 +11,7 @@ Tests covers:
     Triggering watchdog actions (dump, none, pause, poweroff, reset)
 """
 
-from art.unittest_lib import ComputeTest as TestCase
+from art.unittest_lib import SlaTest as TestCase
 
 import logging
 import re

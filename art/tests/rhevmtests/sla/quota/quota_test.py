@@ -35,7 +35,7 @@ from art.rhevm_api.tests_lib.low_level import events
 from art.rhevm_api.tests_lib.high_level.disks import delete_disks
 from art.rhevm_api.tests_lib.low_level import templates
 from art.unittest_lib import attr
-from art.unittest_lib import ComputeTest as TestCase
+from art.unittest_lib import SlaTest as TestCase
 
 # raut quota
 from raut.tests.webadmin.quota import QuotaTest

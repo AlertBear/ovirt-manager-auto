@@ -60,14 +60,6 @@ class NetworkTest(BaseTestCase):
     __test__ = False
 
 
-@attr(team="compute")
-class ComputeTest(BaseTestCase):
-    """
-    Basic class for compute tests
-    """
-    __test__ = False
-
-
 @attr(team="virt")
 class VirtTest(BaseTestCase):
     """
